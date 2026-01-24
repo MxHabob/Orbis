@@ -1,5 +1,3 @@
-import { openai } from "@ai-sdk/openai";
-import { generateObject } from "ai";
 import { z } from "zod";
 
 const schema = z.object({
@@ -63,39 +61,3 @@ const schema = z.object({
     .optional()
     .describe("End date for invoice due dates (ISO-8601)."),
 });
-
-export async function generateLLMFilters(
-  query: string,
-): Promise<z.infer<typeof schema>> {
-  const { object } = await generateObject({
-    model: openai("gpt-4o-mini"),
-    system: `You are an AI assistant that converts natural language search queries into structured search filters.
-
-Current date: ${new Date().toISOString().split("T")[0]}
-
-GUIDELINES:
-- Extract search terms, date ranges, amounts, and other filters from the query
-- When dates are mentioned but incomplete (like "March" or "last year"), infer reasonable date ranges
-- For currency values, default to the user's local currency if not specified
-- Choose appropriate types based on the query context:
-  * "transactions" for money movements, payments, expenses
-  * "invoices" are for user created invoices, "Unpaid invoices for customer X"
-  * "tracker_projects" for work items, tasks, projects
-  * "customers" for client or customer information
-  * "documents" for files, attachments, contracts, receipts, bills, invoices etc, but also in the query like "invoices from vendor X"
-
-EXAMPLES:
-- "show me invoices from last month" → {types: ["documents"], startDate: "2023-05-01", endDate: "2023-05-31", language: "english"}
-- "show me invoices from vendor X" → {types: ["documents"], searchTerm: "vendor X", language: "english"}
-- "unpaid invoices for customer X" → {types: ["invoices"], searchTerm: "customer X", status: "unpaid", language: "english"}
-- "paid invoices last week" → {types: ["invoices"], status: "paid", startDate: "2023-05-01", endDate: "2023-05-31", language: "english"}
-- "transactions with Apple between January and March" → {types: ["transactions"], searchTerm: "Apple", startDate: "2024-01-01", endDate: "2024-03-31", language: "english"}
-
-For language, detect the appropriate language of the query for PostgreSQL text search.
-`,
-    schema,
-    prompt: query,
-  });
-
-  return object;
-}

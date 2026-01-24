@@ -1,7 +1,7 @@
 import type { Session } from "@api/utils/auth";
 import { withRetryOnPrimary } from "@api/utils/db-retry";
-import { teamCache } from "@midday/cache/team-cache";
 import type { Database } from "@midday/db/client";
+import { getUserWithRoles } from "@midday/db/queries/users";
 import { TRPCError } from "@trpc/server";
 
 export const withTeamPermission = async <TReturn>(opts: {
@@ -14,6 +14,8 @@ export const withTeamPermission = async <TReturn>(opts: {
       session?: Session | null;
       db: Database;
       teamId: string | null;
+      role: string;
+      employeeRoles: string[];
     };
   }) => Promise<TReturn>;
 }) => {
@@ -24,66 +26,37 @@ export const withTeamPermission = async <TReturn>(opts: {
   if (!userId) {
     throw new TRPCError({
       code: "UNAUTHORIZED",
-      message: "No permission to access this team",
+      message: "No permission to access this resource",
     });
   }
 
-  // Try replica first (fast path), fallback to primary on failure
-  // This preserves the benefit of fast replicas while handling replication lag gracefully
-  // retryOnNull: true ensures we check primary if replica returns null (replication lag)
-  const result = await withRetryOnPrimary(
+  // Get user details and roles using the helper query
+  const userData = await withRetryOnPrimary(
     ctx.db,
     async (db) => {
-      return await db.query.users.findFirst({
-        with: {
-          usersOnTeams: {
-            columns: {
-              id: true,
-              teamId: true,
-            },
-          },
-        },
-        where: (users, { eq }) => eq(users.id, userId),
-      });
+      return getUserWithRoles(db, userId);
     },
     { retryOnNull: true },
   );
 
-  if (!result) {
+  if (!userData) {
     throw new TRPCError({
       code: "NOT_FOUND",
       message: "User not found",
     });
   }
 
-  const teamId = result.teamId;
-
-  // If teamId is null, user has no team assigned but this is now allowed
-  if (teamId !== null) {
-    const cacheKey = `user:${userId}:team:${teamId}`;
-    let hasAccess = await teamCache.get(cacheKey);
-
-    if (hasAccess === undefined) {
-      hasAccess = result.usersOnTeams.some(
-        (membership) => membership.teamId === teamId,
-      );
-
-      await teamCache.set(cacheKey, hasAccess);
-    }
-
-    if (!hasAccess) {
-      throw new TRPCError({
-        code: "FORBIDDEN",
-        message: "No permission to access this team",
-      });
-    }
-  }
+  // In the school system context, teamId might be used for multi-school/branch support later.
+  // For now, it's null or could be derived from user context if needed.
+  const teamId = null;
 
   return next({
     ctx: {
       session: ctx.session,
       teamId,
       db: ctx.db,
+      role: userData.role || "user",
+      employeeRoles: userData.employeeRoles,
     },
   });
 };

@@ -1,10 +1,8 @@
-import { createClient } from "@api/services/supabase";
-import { verifyAccessToken } from "@api/utils/auth";
+import { verifySession } from "@api/utils/auth";
 import type { Session } from "@api/utils/auth";
 import { getGeoContext } from "@api/utils/geo";
 import type { Database } from "@midday/db/client";
 import { db } from "@midday/db/client";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { TRPCError, initTRPC } from "@trpc/server";
 import type { Context } from "hono";
 import superjson from "superjson";
@@ -13,7 +11,6 @@ import { withTeamPermission } from "./middleware/team-permission";
 
 type TRPCContext = {
   session: Session | null;
-  supabase: SupabaseClient;
   db: Database;
   geo: ReturnType<typeof getGeoContext>;
   teamId?: string;
@@ -24,9 +21,8 @@ export const createTRPCContext = async (
   _: unknown,
   c: Context,
 ): Promise<TRPCContext> => {
-  const accessToken = c.req.header("Authorization")?.split(" ")[1];
-  const session = await verifyAccessToken(accessToken);
-  const supabase = await createClient(accessToken);
+  const authResult = await verifySession(c);
+  const session = authResult ? authResult : null;
 
   // Use the singleton database instance - no need for caching
   const geo = getGeoContext(c.req);
@@ -36,7 +32,6 @@ export const createTRPCContext = async (
 
   return {
     session,
-    supabase,
     db,
     geo,
     forcePrimary,
@@ -73,7 +68,7 @@ export const protectedProcedure = t.procedure
   .use(async (opts) => {
     const { teamId, session } = opts.ctx;
 
-    if (!session) {
+    if (!session || !session.user) {
       throw new TRPCError({ code: "UNAUTHORIZED" });
     }
 

@@ -18,7 +18,11 @@
     "./payment-cache": "./src/payment-cache.ts",
     "./report-cache": "./src/report-cache.ts",
     "./schedule-cache": "./src/schedule-cache.ts",
-    "./teacher-cache": "./src/teacher-cache.ts"
+    "./teacher-cache": "./src/teacher-cache.ts",
+    "./subject-cache": "./src/subject-cache.ts",
+    "./lesson-cache": "./src/lesson-cache.ts",
+    "./level-cache": "./src/level-cache.ts",
+    "./parent-cache": "./src/parent-cache.ts"
   },
   "dependencies": {
     "redis": "5.10.0",

@@ -6,13 +6,11 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 import { Scalar } from "@scalar/hono-api-reference";
 import { cors } from "hono/cors";
 import { secureHeaders } from "hono/secure-headers";
-import { routers } from "./rest/routers";
-import type { Context } from "./rest/types";
 import { createTRPCContext } from "./trpc/init";
 import { appRouter } from "./trpc/routers/_app";
 import { httpLogger } from "./utils/logger";
 
-const app = new OpenAPIHono<Context>();
+const app = new OpenAPIHono();
 
 app.use(httpLogger());
 app.use(
@@ -36,9 +34,8 @@ app.use(
       "x-user-timezone",
       "x-user-country",
       "x-force-primary",
-      // Slack webhook headers
-      "x-slack-signature",
-      "x-slack-request-timestamp",
+      // School system specific headers
+      "x-school-id",
     ],
     exposeHeaders: [
       "Content-Length",
@@ -66,47 +63,38 @@ app.doc("/openapi", {
   openapi: "3.1.0",
   info: {
     version: "0.0.1",
-    title: "Midday API",
-    description:
-      "Midday is a platform for Invoicing, Time tracking, File reconciliation, Storage, Financial Overview & your own Assistant.",
+    title: "Entity API",
+    description: "School Management System API Platform",
     contact: {
-      name: "Midday Support",
-      email: "engineer@midday.ai",
-      url: "https://midday.ai",
+      name: "Entity Support",
+      email: "engineer@entity.com",
+      url: "https://entity.com",
     },
     license: {
-      name: "AGPL-3.0 license",
-      url: "https://github.com/midday-ai/midday/blob/main/LICENSE",
+      name: "Proprietary",
+      url: "https://entity.com/terms",
     },
   },
   servers: [
     {
-      url: "https://api.midday.ai",
-      description: "Production API",
+      url: process.env.API_URL || "http://localhost:3000",
+      description: "API Server",
     },
   ],
-  security: [
-    {
-      oauth2: [],
-    },
-    { token: [] },
-  ],
+  security: [{ token: [] }],
 });
 
 // Register security scheme
 app.openAPIRegistry.registerComponent("securitySchemes", "token", {
   type: "http",
   scheme: "bearer",
-  description: "Default authentication mechanism",
-  "x-speakeasy-example": "MIDDAY_API_KEY",
+  description: "Session Token",
 });
 
 app.get(
   "/",
-  Scalar({ url: "/openapi", pageTitle: "Midday API", theme: "saturn" }),
+  Scalar({ url: "/openapi", pageTitle: "Entity API Docs", theme: "saturn" }),
 );
-
-app.route("/", routers);
 
 export default {
   port: process.env.PORT ? Number.parseInt(process.env.PORT) : 3000,

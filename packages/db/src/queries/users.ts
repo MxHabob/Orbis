@@ -1,118 +1,56 @@
 import type { Database } from "@db/client";
-import { teams, users, usersOnTeam } from "@db/schema";
-import { teamPermissionsCache } from "@midday/cache/team-permissions-cache";
-import { eq, inArray, sql } from "drizzle-orm";
+import { employeeRoles, users } from "@db/schema";
+import { eq } from "drizzle-orm";
 
-export const getUserById = async (db: Database, id: string) => {
-  const [result] = await db
-    .select({
-      id: users.id,
-      fullName: users.fullName,
-      email: users.email,
-      avatarUrl: users.avatarUrl,
-      locale: users.locale,
-      timeFormat: users.timeFormat,
-      dateFormat: users.dateFormat,
-      weekStartsOnMonday: users.weekStartsOnMonday,
-      timezone: users.timezone,
-      timezoneAutoSync: users.timezoneAutoSync,
-      teamId: users.teamId,
-      team: {
-        id: teams.id,
-        name: teams.name,
-        logoUrl: teams.logoUrl,
-        plan: teams.plan,
-        inboxId: teams.inboxId,
-        createdAt: teams.createdAt,
-        countryCode: teams.countryCode,
-        canceledAt: teams.canceledAt,
-        baseCurrency: teams.baseCurrency,
-      },
-    })
-    .from(users)
-    .leftJoin(teams, eq(users.teamId, teams.id))
-    .where(eq(users.id, id));
+export const getUserWithRoles = async (db: Database, userId: string) => {
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+    columns: {
+      id: true,
+      role: true,
+      email: true,
+      name: true,
+    },
+  });
 
-  return result;
+  if (!user) return null;
+
+  const roles = await db
+    .select({ role: employeeRoles.role })
+    .from(employeeRoles)
+    .where(eq(employeeRoles.employeeId, userId));
+
+  return {
+    ...user,
+    employeeRoles: roles.map((r) => r.role),
+  };
 };
 
 export type UpdateUserParams = {
   id: string;
-  fullName?: string | null;
-  teamId?: string | null;
-  email?: string | null;
-  avatarUrl?: string | null;
-  locale?: string | null;
-  timeFormat?: number | null;
-  dateFormat?: string | null;
-  weekStartsOnMonday?: boolean | null;
-  timezone?: string | null;
-  timezoneAutoSync?: boolean | null;
+  name?: string | null;
+  image?: string | null;
+  // Add other fields from schema if needed (locale, timezone etc)
 };
 
-export const updateUser = async (db: Database, data: UpdateUserParams) => {
-  const { id, ...updateData } = data;
+export const updateUser = async (db: Database, params: UpdateUserParams) => {
+  const { id, ...data } = params;
 
-  const [result] = await db
+  // Filter undefined values
+  const updateData: Record<string, any> = {};
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.image !== undefined) updateData.image = data.image;
+
+  if (Object.keys(updateData).length === 0) return null;
+
+  const [updatedUser] = await db
     .update(users)
-    .set(updateData)
-    .where(eq(users.id, id))
-    .returning({
-      id: users.id,
-      fullName: users.fullName,
-      email: users.email,
-      avatarUrl: users.avatarUrl,
-      locale: users.locale,
-      timeFormat: users.timeFormat,
-      dateFormat: users.dateFormat,
-      weekStartsOnMonday: users.weekStartsOnMonday,
-      timezone: users.timezone,
-      timezoneAutoSync: users.timezoneAutoSync,
-      teamId: users.teamId,
-    });
-
-  // If teamId was updated, invalidate the team permissions cache
-  if (updateData.teamId !== undefined) {
-    const cacheKey = `user:${id}:team`;
-    await teamPermissionsCache.delete(cacheKey);
-  }
-
-  return result;
-};
-
-export const getUserTeamId = async (db: Database, userId: string) => {
-  const result = await db.query.users.findFirst({
-    columns: { teamId: true },
-    where: eq(users.id, userId),
-  });
-
-  return result?.teamId || null;
-};
-
-export const deleteUser = async (db: Database, id: string) => {
-  // Find teams where this user is a member
-  const teamsWithUser = await db
-    .select({
-      teamId: usersOnTeam.teamId,
-      memberCount: sql<number>`count(${usersOnTeam.userId})`.as("member_count"),
+    .set({
+      ...updateData,
+      updatedAt: new Date(),
     })
-    .from(usersOnTeam)
-    .where(eq(usersOnTeam.userId, id))
-    .groupBy(usersOnTeam.teamId);
+    .where(eq(users.id, id))
+    .returning();
 
-  // Extract team IDs with only one member (this user)
-  const teamIdsToDelete = teamsWithUser
-    .filter((team) => team.memberCount === 1)
-    .map((team) => team.teamId);
-
-  // Delete the user and teams with only this user as a member
-  // Foreign key constraints with cascade delete will handle related records
-  await Promise.all([
-    db.delete(users).where(eq(users.id, id)),
-    teamIdsToDelete.length > 0
-      ? db.delete(teams).where(inArray(teams.id, teamIdsToDelete))
-      : Promise.resolve(),
-  ]);
-
-  return { id };
+  return updatedUser;
 };

@@ -3,122 +3,87 @@ import {
   searchAttachmentsSchema,
 } from "@api/schemas/search";
 import { createTRPCRouter, protectedProcedure } from "@api/trpc/init";
-import { generateLLMFilters } from "@api/utils/search-filters";
-import {
-  getInboxSearch,
-  getInvoices,
-  globalSearchQuery,
-  globalSemanticSearchQuery,
-} from "@midday/db/queries";
+import { getClasses } from "@midday/db/queries/class";
+import { getStudents } from "@midday/db/queries/student";
+import { getSubjects } from "@midday/db/queries/subject";
+import { getTeachers } from "@midday/db/queries/teacher";
 
 export const searchRouter = createTRPCRouter({
   global: protectedProcedure
     .input(globalSearchSchema)
-    .query(async ({ input, ctx: { db, teamId } }) => {
+    .query(async ({ input, ctx: { db } }) => {
       const { searchTerm } = input;
 
-      // Determine if we should fall back to LLM-generated filters:
-      // we only do this when the user provides a multi-word query.
-      const shouldUseLLMFilters =
-        !!searchTerm && searchTerm.trim().split(/\s+/).length > 1;
-
-      const results = await globalSearchQuery(db, {
-        teamId: teamId!,
-        ...input,
-        searchTerm: searchTerm,
-        /**
-         * Tighten the relevance threshold whenever the user enters a multi-word query.
-         *
-         * Rationale:
-         * 1. A longer query usually implies a more specific intent, so we only want
-         *    results that score highly on relevance.
-         * 2. If this stricter search returns nothing, we immediately fall back to the
-         *    LLM-generated filter logic below.  By filtering aggressively here we avoid
-         *    surfacing low-quality matches and give the LLM a chance to produce a more
-         *    intelligent result instead.
-         */
-        relevanceThreshold: shouldUseLLMFilters
-          ? 0.01
-          : input.relevanceThreshold,
-      });
-
-      if (shouldUseLLMFilters && !results.length) {
-        const filters = await generateLLMFilters(searchTerm);
-
-        const semanticResults = await globalSemanticSearchQuery(db, {
-          teamId: teamId!,
-          itemsPerTableLimit: input.itemsPerTableLimit,
-          ...filters,
-        });
-
-        return semanticResults;
+      if (!searchTerm || searchTerm.length < 2) {
+        return [];
       }
+
+      // Parallel search across key entities
+      const [students, teachers, classes, subjects] = await Promise.all([
+        getStudents(db, { q: searchTerm, pageSize: 5 }),
+        getTeachers(db, { q: searchTerm, pageSize: 5 }),
+        getClasses(db, { q: searchTerm, pageSize: 5 }),
+        getSubjects(db, { q: searchTerm, pageSize: 5 }),
+      ]);
+
+      const results = [
+        ...students.data.map((s) => ({
+          type: "student",
+          id: s.userId,
+          relevance: 1,
+          created_at: new Date().toISOString(),
+          data: {
+            title: s.name || s.surname,
+            subtitle: `Student - ${s.studentNumber}`,
+            url: `/students/${s.userId}`,
+            ...s,
+          },
+        })),
+        ...teachers.data.map((t) => ({
+          type: "teacher",
+          id: t.userId,
+          relevance: 1,
+          created_at: new Date().toISOString(),
+          data: {
+            title: t.name,
+            subtitle: `Teacher - ${t.employeeNumber}`,
+            url: `/teachers/${t.userId}`,
+            ...t,
+          },
+        })),
+        ...classes.data.map((c) => ({
+          type: "class",
+          id: c.id.toString(),
+          relevance: 1,
+          created_at: new Date().toISOString(),
+          data: {
+            title: c.name,
+            subtitle: `Class - ${c.code || ""}`,
+            url: `/classes/${c.id}`,
+            ...c,
+          },
+        })),
+        ...subjects.data.map((s) => ({
+          type: "subject",
+          id: s.id.toString(),
+          relevance: 1,
+          created_at: new Date().toISOString(),
+          data: {
+            title: s.name,
+            subtitle: `Subject - ${s.code || ""}`,
+            url: `/subjects/${s.id}`,
+            ...s,
+          },
+        })),
+      ];
 
       return results;
     }),
 
   attachments: protectedProcedure
     .input(searchAttachmentsSchema)
-    .query(async ({ input, ctx: { db, teamId } }) => {
-      const { q, transactionId, limit = 30 } = input;
-
-      const [inboxResults, invoiceResults] = await Promise.all([
-        getInboxSearch(db, {
-          teamId: teamId!,
-          q: q ?? undefined,
-          transactionId: transactionId ?? undefined,
-          limit: limit,
-        }),
-        getInvoices(db, {
-          teamId: teamId!,
-          q: q ?? undefined,
-          statuses: ["unpaid", "overdue", "paid"],
-          pageSize: limit,
-          sort: null,
-        }),
-      ]);
-
-      // Transform inbox results
-      const inboxItems =
-        inboxResults.map((item) => ({
-          type: "inbox" as const,
-          id: item.id,
-          fileName: item.fileName ?? null,
-          filePath: item.filePath ?? [],
-          displayName: item.displayName ?? null,
-          amount: item.amount ?? null,
-          currency: item.currency ?? null,
-          contentType: item.contentType ?? null,
-          date: item.date ?? null,
-          size: item.size ?? null,
-          description: item.description ?? null,
-          status: item.status ?? null,
-          website: item.website ?? null,
-          baseAmount: item.baseAmount ?? null,
-          baseCurrency: item.baseCurrency ?? null,
-          taxAmount: item.taxAmount ?? null,
-          taxRate: item.taxRate ?? null,
-          taxType: item.taxType ?? null,
-          createdAt: item.createdAt,
-        })) ?? [];
-
-      // Transform invoice results
-      const invoices =
-        invoiceResults.data.map((invoice) => ({
-          type: "invoice" as const,
-          id: invoice.id,
-          invoiceNumber: invoice.invoiceNumber ?? null,
-          customerName: invoice.customerName ?? null,
-          amount: invoice.amount ?? null,
-          currency: invoice.currency ?? null,
-          filePath: invoice.filePath ?? [],
-          dueDate: invoice.dueDate ?? null,
-          status: invoice.status,
-          size: invoice.fileSize ?? null,
-          createdAt: invoice.createdAt,
-        })) ?? [];
-
-      // Combine and return results
-      return [...inboxItems, ...invoices];
+    .query(async () => {
+      // TODO: Implement attachment search for student documents/homework
+      return [];
     }),
 });
