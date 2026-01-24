@@ -1,5 +1,4 @@
 import type { useI18n } from "@/locales/client";
-import { getFrequencyShortLabel } from "@midday/invoice/recurring";
 import { formatAmount } from "@midday/utils/format";
 import { format, parseISO } from "date-fns";
 
@@ -303,7 +302,7 @@ const handleRecurringSeriesStarted: NotificationDescriptionHandler = (
 
   // Convert raw frequency (e.g., "monthly_date") to human-readable label (e.g., "Monthly")
   const frequency = rawFrequency
-    ? getFrequencyShortLabel(rawFrequency)
+    ? null
     : undefined;
 
   if (customerName && frequency) {

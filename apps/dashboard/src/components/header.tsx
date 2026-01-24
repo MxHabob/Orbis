@@ -20,9 +20,9 @@ export function Header() {
       <OpenSearchButton />
 
       <div className="flex space-x-2 ml-auto">
-        <Trial />
-        <ConnectionStatus />
-        <NotificationCenter />
+        {/* <Trial /> */}
+        {/* <ConnectionStatus /> */}
+        {/* <NotificationCenter /> */}
         <UserMenu />
       </div>
     </header>

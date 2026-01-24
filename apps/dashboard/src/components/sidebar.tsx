@@ -1,10 +1,10 @@
 "use client";
 
 import { cn } from "@midday/ui/cn";
-import { Icons } from "@midday/ui/icons";
 import Link from "next/link";
 import { useState } from "react";
 import { MainMenu } from "./main-menu";
+import { Zap } from "lucide-react";
 import { TeamDropdown } from "./team-dropdown";
 
 export function Sidebar() {
@@ -27,7 +27,7 @@ export function Sidebar() {
         )}
       >
         <Link href="/" className="absolute left-[22px] transition-none">
-          <Icons.LogoSmall />
+          <Zap />
         </Link>
       </div>
 
@@ -35,7 +35,7 @@ export function Sidebar() {
         <MainMenu isExpanded={isExpanded} />
       </div>
 
-      <TeamDropdown isExpanded={isExpanded} />
+      {/* <TeamDropdown isExpanded={isExpanded} /> */}
     </aside>
   );
 }

@@ -40,7 +40,6 @@ function WidgetsContent() {
   const isCustomizing = useIsCustomizing();
   const { tab, setTab } = useOverviewTab();
 
-  // Prefetch metrics data in background when on overview tab
   usePrefetchMetrics();
 
   if (isChatPage) {

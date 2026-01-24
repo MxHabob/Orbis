@@ -3,6 +3,7 @@
 import { revalidateAfterTeamChange } from "@/actions/revalidate-action";
 import { useUserQuery } from "@/hooks/use-user";
 import { useTRPC } from "@/trpc/client";
+import { authClient } from "@midday/auth/auth-client";
 import { Avatar, AvatarFallback, AvatarImageNext } from "@midday/ui/avatar";
 import { Button } from "@midday/ui/button";
 import { cn } from "@midday/ui/cn";
@@ -41,7 +42,8 @@ function TeamDropdownSkeleton({ isExpanded }: { isExpanded: boolean }) {
 
 export function TeamDropdown({ isExpanded = false }: Props) {
   const ref = useRef<HTMLDivElement>(null);
-  const { data: user } = useUserQuery();
+  const { data: session, isPending } = authClient.useSession();
+  const user = session?.user;
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 

@@ -104,7 +104,6 @@ export default async function Layout({
         )}
       >
         <DesktopHeader />
-
         <NuqsAdapter>
           <Providers locale={locale}>
             {children}

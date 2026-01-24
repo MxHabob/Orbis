@@ -1,6 +1,5 @@
 "use client";
 
-import { useUserQuery } from "@/hooks/use-user";
 import { Avatar, AvatarFallback, AvatarImageNext } from "@midday/ui/avatar";
 import {
   DropdownMenu,
@@ -14,22 +13,24 @@ import {
 import Link from "next/link";
 import { SignOut } from "./sign-out";
 import { ThemeSwitch } from "./theme-switch";
+import { authClient } from "@midday/auth/auth-client";
 
 type Props = {
   onlySignOut?: boolean;
 };
 
 export function UserMenu({ onlySignOut }: Props) {
-  const { data: user } = useUserQuery();
+  const { data: session } = authClient.useSession();
+  const user = session?.user;
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Avatar className="rounded-full w-8 h-8 cursor-pointer bg-accent">
-          {user?.avatarUrl && (
+          {user?.image && (
             <AvatarImageNext
-              src={user?.avatarUrl}
-              alt={user?.fullName ?? ""}
+              src={user?.image}
+              alt={user?.name ?? ""}
               width={32}
               height={32}
               quality={100}
@@ -37,7 +38,7 @@ export function UserMenu({ onlySignOut }: Props) {
           )}
           <AvatarFallback>
             <span className="text-xs">
-              {user?.fullName?.charAt(0)?.toUpperCase()}
+              {user?.name?.charAt(0)?.toUpperCase()}
             </span>
           </AvatarFallback>
         </Avatar>
@@ -49,7 +50,7 @@ export function UserMenu({ onlySignOut }: Props) {
               <div className="flex justify-between items-center">
                 <div className="flex flex-col">
                   <span className="truncate line-clamp-1 max-w-[155px] block text-xs">
-                    {user?.fullName}
+                    {user?.name}
                   </span>
                   <span className="truncate text-xs text-[#606060] font-normal">
                     {user?.email}

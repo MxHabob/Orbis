@@ -1,6 +1,5 @@
 "use client";
 
-import { useChatInterface } from "@/hooks/use-chat-interface";
 import { cn } from "@midday/ui/cn";
 import { Icons } from "@midday/ui/icons";
 import Link from "next/link";
@@ -287,7 +286,6 @@ type Props = {
 
 export function MainMenu({ onSelect, isExpanded = false }: Props) {
   const pathname = usePathname();
-  const { isChatPage } = useChatInterface();
   const part = pathname?.split("/")[1];
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
 
@@ -297,8 +295,6 @@ export function MainMenu({ onSelect, isExpanded = false }: Props) {
     pathnameWithoutQuery.startsWith(knownPath),
   );
 
-  // Only treat as chat page if isChatPage is true AND it's not a known menu path
-  const isValidChatPage = isChatPage && !isKnownMenuPath;
 
   // Reset expanded item when sidebar expands/collapses
   useEffect(() => {
@@ -313,7 +309,6 @@ export function MainMenu({ onSelect, isExpanded = false }: Props) {
             // Check if current path matches item path or is a child of it
             const isActive =
               (pathname === "/" && item.path === "/") ||
-              (item.path === "/" && isValidChatPage) ||
               (pathname !== "/" && item.path.startsWith(`/${part}`));
 
             return (
