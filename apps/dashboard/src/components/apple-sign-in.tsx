@@ -2,7 +2,7 @@
 
 import { getUrl } from "@/utils/environment";
 import { isDesktopApp } from "@midday/desktop-client/platform";
-import { createClient } from "@midday/supabase/client";
+import { authClient } from "@midday/auth/auth-client";
 import { Icons } from "@midday/ui/icons";
 import { SubmitButton } from "@midday/ui/submit-button";
 import { useState } from "react";
@@ -13,7 +13,7 @@ type Props = {
 
 export function AppleSignIn({ showLastUsed = false }: Props) {
   const [isLoading, setLoading] = useState(false);
-  const supabase = createClient();
+
 
   const handleSignIn = async () => {
     setLoading(true);
@@ -24,21 +24,14 @@ export function AppleSignIn({ showLastUsed = false }: Props) {
       redirectTo.searchParams.append("provider", "apple");
       redirectTo.searchParams.append("client", "desktop");
 
-      await supabase.auth.signInWithOAuth({
+      await authClient.signIn.social({
         provider: "apple",
-        options: {
-          redirectTo: redirectTo.toString(),
-          queryParams: {
-            client: "desktop",
-          },
-        },
+        callbackURL: redirectTo.toString(),
       });
     } else {
-      await supabase.auth.signInWithOAuth({
+      await authClient.signIn.social({
         provider: "apple",
-        options: {
-          redirectTo: `${getUrl()}/api/auth/callback?provider=apple`,
-        },
+        callbackURL: `${getUrl()}/api/auth/callback?provider=apple`,
       });
     }
 

@@ -30,7 +30,6 @@ const config = {
   transpilePackages: [
     "@midday/ui",
     "@midday/tailwind",
-    "@midday/invoice",
     "@midday/api",
   ],
   serverExternalPackages: ["@react-pdf/renderer", "pino"],

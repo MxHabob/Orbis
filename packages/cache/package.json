@@ -27,5 +27,8 @@
   "dependencies": {
     "redis": "5.10.0",
     "@types/redis": "^4.0.11"
+  },
+  "devDependencies": {
+    "@midday/tsconfig": "workspace:*"
   }
 }

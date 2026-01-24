@@ -3,19 +3,29 @@ import { GithubSignIn } from "@/components/github-sign-in";
 import { GoogleSignIn } from "@/components/google-sign-in";
 import { LoginAccordion } from "@/components/login-accordion";
 import { LoginVideoBackground } from "@/components/login-video-background";
-import { OTPSignIn } from "@/components/otp-sign-in";
+import { UserAuthForm } from "@/components/user-auth-form";
 import { Cookies } from "@/utils/constants";
+import { auth } from "@midday/auth";
 import { Icons } from "@midday/ui/icons";
 import type { Metadata } from "next";
 import { cookies, headers } from "next/headers";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { userAgent } from "next/server";
 
 export const metadata: Metadata = {
-  title: "Login | Midday",
+  title: "Login | Entity",
 };
 
 export default async function Page() {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (session) {
+    redirect("/");
+  }
+
   const cookieStore = await cookies();
   const preferred = cookieStore.get(Cookies.PreferredSignInProvider);
   const { device } = userAgent({ headers: await headers() });
@@ -40,7 +50,7 @@ export default async function Page() {
         <>
           <GoogleSignIn />
           <GithubSignIn />
-          <OTPSignIn className="border-t-[1px] border-border pt-8" />
+          <UserAuthForm className="border-t-[1px] border-border pt-8" />
         </>
       );
       break;
@@ -51,7 +61,7 @@ export default async function Page() {
         <>
           <GoogleSignIn />
           <AppleSignIn />
-          <OTPSignIn className="border-t-[1px] border-border pt-8" />
+          <UserAuthForm className="border-t-[1px] border-border pt-8" />
         </>
       );
       break;
@@ -62,13 +72,13 @@ export default async function Page() {
         <>
           <AppleSignIn />
           <GithubSignIn />
-          <OTPSignIn className="border-t-[1px] border-border pt-8" />
+          <UserAuthForm className="border-t-[1px] border-border pt-8" />
         </>
       );
       break;
 
-    case "otp":
-      preferredSignInOption = <OTPSignIn />;
+    case "email":
+      preferredSignInOption = <UserAuthForm />;
       moreSignInOptions = (
         <>
           <GoogleSignIn />
@@ -83,7 +93,7 @@ export default async function Page() {
         moreSignInOptions = (
           <>
             <GithubSignIn />
-            <OTPSignIn className="border-t-[1px] border-border pt-8" />
+            <UserAuthForm className="border-t-[1px] border-border pt-8" />
           </>
         );
       } else {
@@ -91,7 +101,7 @@ export default async function Page() {
           <>
             <AppleSignIn />
             <GithubSignIn />
-            <OTPSignIn className="border-t-[1px] border-border pt-8" />
+            <UserAuthForm className="border-t-[1px] border-border pt-8" />
           </>
         );
       }
@@ -103,7 +113,7 @@ export default async function Page() {
       <nav className="fixed top-0 left-0 right-0 z-50 w-full pointer-events-none">
         <div className="relative py-3 xl:py-4 px-4 sm:px-4 md:px-4 lg:px-4 xl:px-6 2xl:px-8 flex items-center">
           <Link
-            href="https://midday.ai"
+            href="/"
             className="flex items-center gap-2 hover:opacity-80 active:opacity-80 transition-opacity duration-200 pointer-events-auto"
           >
             <div className="w-6 h-6">
@@ -122,7 +132,7 @@ export default async function Page() {
           <div className="space-y-8 flex-1 flex flex-col justify-center">
             {/* Header */}
             <div className="text-center space-y-2">
-              <h1 className="text-lg mb-4 font-serif">Welcome to Midday</h1>
+              <h1 className="text-lg mb-4 font-serif">Welcome to Entity</h1>
               <p className="font-sans text-sm text-[#878787]">
                 Sign in or create an account
               </p>
@@ -149,19 +159,20 @@ export default async function Page() {
             <LoginAccordion>{moreSignInOptions}</LoginAccordion>
           </div>
 
+
           {/* Terms and Privacy Policy - Bottom aligned */}
           <div className="text-center mt-auto">
             <p className="font-sans text-xs text-[#878787]">
               By signing in you agree to our{" "}
               <Link
-                href="https://midday.ai/terms"
+                href="https://entity.ai/terms"
                 className="text-[#878787] hover:text-foreground transition-colors underline"
               >
                 Terms of service
               </Link>{" "}
               &{" "}
               <Link
-                href="https://midday.ai/policy"
+                href="https://entity.ai/policy"
                 className="text-[#878787] hover:text-foreground transition-colors underline"
               >
                 Privacy policy

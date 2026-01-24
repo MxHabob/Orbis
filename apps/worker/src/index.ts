@@ -5,7 +5,7 @@ import { closeWorkerDb } from "@midday/db/worker-client";
 import * as Sentry from "@sentry/bun";
 import { Worker } from "bullmq";
 import { Hono } from "hono";
-import { workbench } from "workbench/hono";
+// import { workbench } from "workbench/hono";
 import { getProcessor } from "./processors/registry";
 import { getAllQueues, queueConfigs } from "./queues";
 import { registerStaticSchedulers } from "./schedulers/registry";
@@ -122,6 +122,7 @@ function initializeWorkbench() {
   }
 
   // Mount workbench with optional auth
+  /*
   app.route(
     basePath,
     workbench({
@@ -137,6 +138,7 @@ function initializeWorkbench() {
       tags: ["teamId"],
     }),
   );
+  */
 
   console.log(
     `Workbench initialized with ${queues.length} queues:`,

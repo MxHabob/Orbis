@@ -3,7 +3,7 @@ import "server-only";
 import { Cookies } from "@/utils/constants";
 import type { AppRouter } from "@midday/api/trpc/routers/_app";
 import { getCountryCode, getLocale, getTimezone } from "@midday/location";
-import { createClient } from "@midday/supabase/server";
+
 import { HydrationBoundary } from "@tanstack/react-query";
 import { dehydrate } from "@tanstack/react-query";
 import { createTRPCClient, httpBatchLink, loggerLink } from "@trpc/client";
@@ -28,15 +28,9 @@ export const trpc = createTRPCOptionsProxy<AppRouter>({
         url: `${process.env.NEXT_PUBLIC_API_URL}/trpc`,
         transformer: superjson,
         async headers() {
-          const supabase = await createClient();
           const cookieStore = await cookies();
 
-          const {
-            data: { session },
-          } = await supabase.auth.getSession();
-
           const headers: Record<string, string> = {
-            Authorization: `Bearer ${session?.access_token}`,
             "x-user-timezone": await getTimezone(),
             "x-user-locale": await getLocale(),
             "x-user-country": await getCountryCode(),
@@ -102,12 +96,7 @@ export function batchPrefetch<T extends ReturnType<TRPCQueryOptions<any>>>(
  * For queries, use the `trpc` proxy with `queryOptions` instead
  */
 export async function getTRPCClient() {
-  const supabase = await createClient();
   const cookieStore = await cookies();
-
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
 
   return createTRPCClient<AppRouter>({
     links: [
@@ -115,7 +104,6 @@ export async function getTRPCClient() {
         url: `${process.env.NEXT_PUBLIC_API_URL}/trpc`,
         transformer: superjson,
         headers: {
-          Authorization: `Bearer ${session?.access_token}`,
           "x-user-timezone": await getTimezone(),
           "x-user-locale": await getLocale(),
           "x-user-country": await getCountryCode(),

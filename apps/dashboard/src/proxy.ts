@@ -1,5 +1,3 @@
-import { updateSession } from "@midday/supabase/middleware";
-import { createClient } from "@midday/supabase/server";
 import { createI18nMiddleware } from "next-international/middleware";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -9,10 +7,8 @@ const I18nMiddleware = createI18nMiddleware({
   urlMappingStrategy: "rewrite",
 });
 
-export async function middleware(request: NextRequest) {
-  // @ts-ignore-error - NextRequest type with current bun version is not compatible with NextResponse type
-  const response = await updateSession(request, I18nMiddleware(request));
-  const supabase = await createClient();
+export async function proxy(request: NextRequest) {
+  const response = I18nMiddleware(request);
   const url = new URL("/", request.url);
   const nextUrl = request.nextUrl;
 
@@ -26,13 +22,20 @@ export async function middleware(request: NextRequest) {
   // Create a new URL without the locale in the pathname
   const newUrl = new URL(pathnameWithoutLocale || "/", request.url);
 
-  const encodedSearchParams = `${newUrl?.pathname?.substring(1)}${
+  const encodedSearchParams = `${newUrl.pathname.substring(1)}${
     newUrl.search
   }`;
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  const data = await fetch(
+    `${request.nextUrl.origin}/api/auth/get-session`,
+    {
+      headers: {
+        cookie: request.headers.get("cookie") || "",
+      },
+    },
+  ).then((res) => res.json().catch(() => null));
+
+  const session = data?.session;
 
   // 1. Not authenticated
   if (
@@ -68,25 +71,6 @@ export async function middleware(request: NextRequest) {
           `${url.origin}${request.nextUrl.pathname}`,
         );
       }
-    }
-
-    // 3. Check MFA Verification
-    const { data: mfaData } =
-      await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (
-      mfaData &&
-      mfaData.nextLevel === "aal2" &&
-      mfaData.nextLevel !== mfaData.currentLevel &&
-      newUrl.pathname !== "/mfa/verify"
-    ) {
-      const url = new URL("/mfa/verify", request.url);
-
-      if (encodedSearchParams) {
-        url.searchParams.append("return_to", encodedSearchParams);
-      }
-
-      // Redirect to MFA verification if needed and not already there
-      return NextResponse.redirect(url);
     }
   }
 

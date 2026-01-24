@@ -1,4 +1,4 @@
-import { auth } from "@api/lib/auth";
+import { auth } from "@midday/auth";
 import { type Context } from "hono";
 
 export type Session = typeof auth.$Infer.Session;

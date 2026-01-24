@@ -1,7 +1,7 @@
 "use server";
 
 import { Cookies } from "@/utils/constants";
-import { createClient } from "@midday/supabase/server";
+
 import { addYears } from "date-fns";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -17,6 +17,7 @@ export const verifyOtpAction = actionClient
     }),
   )
   .action(async ({ parsedInput: { email, token, redirectTo } }) => {
+    /*
     const supabase = await createClient();
 
     await supabase.auth.verifyOtp({
@@ -33,6 +34,8 @@ export const verifyOtpAction = actionClient
     if (!session) {
       throw new Error("Failed to establish session after OTP verification");
     }
+    */
+    throw new Error("OTP verification not implemented with new auth yet");
 
     (await cookies()).set(Cookies.PreferredSignInProvider, "otp", {
       expires: addYears(new Date(), 1),

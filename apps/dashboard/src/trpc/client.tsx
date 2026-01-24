@@ -2,7 +2,7 @@
 
 import { Cookies } from "@/utils/constants";
 import type { AppRouter } from "@midday/api/trpc/routers/_app";
-import { createClient } from "@midday/supabase/client";
+
 import type { QueryClient } from "@tanstack/react-query";
 import { QueryClientProvider, isServer } from "@tanstack/react-query";
 import { createTRPCClient, httpBatchLink, loggerLink } from "@trpc/client";
@@ -52,14 +52,7 @@ export function TRPCReactProvider(
           url: `${process.env.NEXT_PUBLIC_API_URL}/trpc`,
           transformer: superjson,
           async headers() {
-            const supabase = createClient();
-
-            const {
-              data: { session },
-            } = await supabase.auth.getSession();
-
             const headers: Record<string, string> = {
-              Authorization: `Bearer ${session?.access_token}`,
             };
 
             // Pass force-primary cookie as header to API for replication lag handling

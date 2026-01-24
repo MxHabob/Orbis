@@ -15,21 +15,18 @@ export const metadata: Metadata = {
 };
 
 export default async function Page() {
-  const queryClient = getQueryClient();
-
-  batchPrefetch([
-    trpc.apps.get.queryOptions(),
-    trpc.oauthApplications.list.queryOptions(),
-    trpc.oauthApplications.authorized.queryOptions(),
-    trpc.inboxAccounts.get.queryOptions(),
-    trpc.invoicePayments.stripeStatus.queryOptions(),
-  ]);
+  // batchPrefetch([
+  //   trpc.apps.get.queryOptions(),
+  //   trpc.oauthApplications.list.queryOptions(),
+  //   trpc.oauthApplications.authorized.queryOptions(),
+  //   trpc.inboxAccounts.get.queryOptions(),
+  //   trpc.invoicePayments.stripeStatus.queryOptions(),
+  // ]);
 
   return (
     <HydrateClient>
       <div className="mt-4">
         <AppsHeader />
-
         <Suspense fallback={<AppsSkeleton />}>
           <Apps />
         </Suspense>

@@ -1,0 +1,1 @@
+export { GET, POST } from "@midday/auth/route";

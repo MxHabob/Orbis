@@ -16,6 +16,7 @@
     "@date-fns/tz": "^1.4.1",
     "@midday/cache": "workspace:*",
     "@midday/db": "workspace:*",
+    "@midday/auth": "workspace:*",
     "@midday/logger": "workspace:*",
     "@midday/utils": "workspace:*",
     "@hono/mcp": "^0.2.3",

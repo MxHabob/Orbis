@@ -2,7 +2,7 @@
 
 import { getUrl } from "@/utils/environment";
 import { isDesktopApp } from "@midday/desktop-client/platform";
-import { createClient } from "@midday/supabase/client";
+import { authClient } from "@midday/auth/auth-client";
 import { Icons } from "@midday/ui/icons";
 import { SubmitButton } from "@midday/ui/submit-button";
 import { useSearchParams } from "next/navigation";
@@ -14,7 +14,7 @@ type Props = {
 
 export function GoogleSignIn({ showLastUsed = false }: Props) {
   const [isLoading, setLoading] = useState(false);
-  const supabase = createClient();
+
   const searchParams = useSearchParams();
   const returnTo = searchParams.get("return_to");
 
@@ -27,15 +27,9 @@ export function GoogleSignIn({ showLastUsed = false }: Props) {
       redirectTo.searchParams.append("provider", "google");
       redirectTo.searchParams.append("client", "desktop");
 
-      await supabase.auth.signInWithOAuth({
+      await authClient.signIn.social({
         provider: "google",
-        options: {
-          redirectTo: redirectTo.toString(),
-          queryParams: {
-            prompt: "select_account",
-            client: "desktop",
-          },
-        },
+        callbackURL: redirectTo.toString(),
       });
     } else {
       const redirectTo = new URL("/api/auth/callback", getUrl());
@@ -44,16 +38,9 @@ export function GoogleSignIn({ showLastUsed = false }: Props) {
         redirectTo.searchParams.append("return_to", returnTo);
       }
 
-      redirectTo.searchParams.append("provider", "google");
-
-      await supabase.auth.signInWithOAuth({
+      await authClient.signIn.social({
         provider: "google",
-        options: {
-          redirectTo: redirectTo.toString(),
-          queryParams: {
-            prompt: "select_account",
-          },
-        },
+        callbackURL: redirectTo.toString(),
       });
     }
 

@@ -21,6 +21,7 @@
   "dependencies": {
     "@biomejs/biome": "1.9.4",
     "@manypkg/cli": "^0.25.1",
+    "@midday/tsconfig": "workspace:*",
     "turbo": "2.7.0",
     "typescript": "^5.9.3"
   },

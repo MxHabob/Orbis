@@ -1,4 +1,6 @@
 import { betterAuth } from "better-auth";
+import { randomUUID } from "node:crypto";
+
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "@midday/db/client";
 import { 
@@ -10,7 +12,7 @@ import {
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
-    provider: "pg", // أو "sqlite" أو "mysql" حسب قاعدة البيانات، سنفترض pg بناءً على @midday/db/schema
+    provider: "pg",
     schema: {
       user: users,
       session: sessions,
@@ -18,9 +20,13 @@ export const auth = betterAuth({
       verification: verifications,
     },
   }),
+  advanced: {
+    database: {
+      generateId: false,
+    },
+  },
   emailAndPassword: {
     enabled: true,
   },
-  // يمكنك إضافة social providers هنا لاحقاً
-  // socialProviders: { ... }
 });
+
