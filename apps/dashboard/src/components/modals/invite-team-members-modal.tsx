@@ -19,9 +19,9 @@ export function InviteTeamMembersModal({
     <DialogContent className="max-w-[455px]">
       <div className="p-4">
         <DialogHeader>
-          <DialogTitle>Invite Members</DialogTitle>
+          <DialogTitle>Create User</DialogTitle>
           <DialogDescription>
-            Invite new members by email address.
+            Create new user.
           </DialogDescription>
         </DialogHeader>
 

@@ -3,7 +3,6 @@ import { cn } from "@midday/ui/cn";
 import "@midday/ui/globals.css";
 import { DesktopHeader } from "@/components/desktop-header";
 import { isDesktopApp } from "@/utils/desktop";
-import { Provider as Analytics } from "@midday/events/client";
 import { Toaster } from "@midday/ui/toaster";
 import type { Metadata } from "next";
 import { Hedvig_Letters_Sans, Hedvig_Letters_Serif } from "next/font/google";
@@ -109,7 +108,6 @@ export default async function Layout({
             {children}
             <Toaster />
           </Providers>
-          <Analytics />
         </NuqsAdapter>
       </body>
     </html>

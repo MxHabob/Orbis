@@ -1,6 +1,5 @@
 "use client";
 
-import { useBillableHours } from "@/hooks/use-billable-hours";
 import { useCalendarDates } from "@/hooks/use-calendar-dates";
 import { useTrackerParams } from "@/hooks/use-tracker-params";
 import { useUserQuery } from "@/hooks/use-user";
@@ -208,7 +207,6 @@ export function TrackerCalendar({ weeklyCalendar }: Props) {
         <CalendarHeader
           totalDuration={billableHoursData?.totalDuration}
           selectedView={selectedView as "week" | "month"}
-          billableHoursData={billableHoursData}
         />
         {selectedView === "month" ? (
           <CalendarMonthView

@@ -1,6 +1,5 @@
 import { getQueryClient, trpc } from "@/trpc/server";
 import { logger } from "@/utils/logger";
-import { setupAnalytics } from "@midday/events/server";
 
 import {
   DEFAULT_SERVER_ERROR_MESSAGE,
@@ -61,15 +60,8 @@ export const authActionClient = actionClientWithMeta
       throw new Error("Unauthorized");
     }
 
-    const analytics = await setupAnalytics();
-
-    if (metadata?.track) {
-      analytics.track(metadata.track);
-    }
-
     return next({
       ctx: {
-        analytics,
         user,
         teamId: user.teamId,
       },

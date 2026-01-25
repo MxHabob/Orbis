@@ -23,7 +23,7 @@ const formSchema = z.object({
   invites: z.array(
     z.object({
       email: z.string().email(),
-      role: z.enum(["owner", "member"]),
+      role: z.enum(["admin", "parent"]),
     }),
   ),
 });
@@ -39,28 +39,18 @@ export function InviteForm({ onSuccess, skippable = true }: InviteFormProps) {
   const { toast } = useToast();
 
   const inviteMutation = useMutation(
-    trpc.team.invite.mutationOptions({
+    trpc.user.create.mutationOptions({
       onSuccess: (data) => {
         queryClient.invalidateQueries({
-          queryKey: trpc.team.teamInvites.queryKey(),
+          queryKey: trpc.user.get.queryKey(),
         });
 
         // Show appropriate feedback based on results
-        if (data.sent > 0 && data.skipped === 0) {
+        if (data && data.length > 0) {
           toast({
             title: "Invites sent",
-            description: `${data.sent} invite${data.sent > 1 ? "s" : ""} sent successfully`,
+            description: `Successfully sent ${data.length} invite(s).`,
             variant: "success",
-          });
-        } else if (data.sent > 0 && data.skipped > 0) {
-          toast({
-            title: "Invites partially sent",
-            description: `${data.sent} invite${data.sent > 1 ? "s" : ""} sent, ${data.skipped} skipped (already members or invited)`,
-          });
-        } else if (data.sent === 0 && data.skipped > 0) {
-          toast({
-            title: "No invites sent",
-            description: `All ${data.skipped} invite${data.skipped > 1 ? "s" : ""} were skipped (already members or invited)`,
           });
         }
 
@@ -74,7 +64,7 @@ export function InviteForm({ onSuccess, skippable = true }: InviteFormProps) {
       invites: [
         {
           email: "",
-          role: "member",
+          role: "parent",
         },
       ],
     },
@@ -133,8 +123,8 @@ export function InviteForm({ onSuccess, skippable = true }: InviteFormProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="owner">Owner</SelectItem>
-                      <SelectItem value="member">Member</SelectItem>
+                      <SelectItem value="admin">Owner</SelectItem>
+                      <SelectItem value="parent">Member</SelectItem>
                     </SelectContent>
                   </Select>
                 </FormItem>
@@ -147,7 +137,7 @@ export function InviteForm({ onSuccess, skippable = true }: InviteFormProps) {
           variant="outline"
           type="button"
           className="mt-4 border-none bg-[#F2F1EF] text-[11px] dark:bg-[#1D1D1D]"
-          onClick={() => append({ email: "", role: "member" })}
+          onClick={() => append({ email: "", role: "parent" })}
         >
           Add more
         </Button>

@@ -14,8 +14,6 @@
     "@hono/node-server": "^1.19.7",
     "@midday/db": "workspace:*",
     "@midday/email": "workspace:*",
-    "@midday/job-client": "workspace:*",
-    "@midday/jobs": "workspace:*",
     "@midday/logger": "workspace:*",
     "@midday/notifications": "workspace:*",
     "@midday/utils": "workspace:*",

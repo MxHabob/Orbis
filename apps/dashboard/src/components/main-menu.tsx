@@ -38,7 +38,6 @@ const items = [
         path: "/students/parents",
         name: "Parents",
       },
-      { path: "/students/graduates", name: "Graduates" },
     ],
   },
   {

@@ -26,7 +26,7 @@ export function DataTable() {
   const [isOpen, onOpenChange] = useState(false);
   const { data: user } = useUserQuery();
   const { data } = useSuspenseQuery({
-    ...trpc.team.members.queryOptions(),
+    ...trpc.user.get.queryOptions(),
   });
 
   const table = useReactTable({
@@ -40,8 +40,8 @@ export function DataTable() {
       columnFilters,
     },
     meta: {
-      currentUser: data?.find((member) => member?.user?.id === user?.id),
-      totalOwners: data?.filter((member) => member?.role === "owner").length,
+      currentUser: data?.find((member) => member?.id === user?.id),
+      totalOwners: data?.filter((member) => member?.role === "admin").length,
     },
   });
 
@@ -61,7 +61,7 @@ export function DataTable() {
           spellCheck="false"
         />
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-          <Button onClick={() => onOpenChange(true)}>Invite member</Button>
+          <Button onClick={() => onOpenChange(true)}>Create user</Button>
           <InviteTeamMembersModal onOpenChange={onOpenChange} />
         </Dialog>
       </div>

@@ -23,7 +23,6 @@
     "@midday/api": "workspace:*",
     "@midday/auth": "workspace:*",
     "@midday/desktop-client": "workspace:*",
-    "@midday/events": "workspace:*",
     "@midday/location": "workspace:*",
     "@midday/ui": "workspace:*",
     "@midday/utils": "workspace:*",

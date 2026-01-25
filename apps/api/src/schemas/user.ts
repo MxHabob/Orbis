@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+export const createUserSchema = z.object({
+  name: z.string().min(2).max(100).optional(),
+  email: z.string().email(),
+  role: z.enum(["admin", "parent"]),
+});
+
 export const updateUserSchema = z.object({
   fullName: z.string().min(2).max(100).optional(),
   locale: z.string().optional(),
@@ -13,3 +19,4 @@ export const updatePasswordSchema = z.object({
   currentPassword: z.string().min(1),
   newPassword: z.string().min(8),
 });
+
