@@ -2,10 +2,10 @@ import { CustomersColumnVisibility } from "./customers-column-visibility";
 import { OpenCustomerSheet } from "./open-customer-sheet";
 import { SearchField } from "./search-field";
 
-export async function CustomersHeader() {
+export async function StudentsHeader() {
   return (
     <div className="flex items-center justify-between">
-      <SearchField placeholder="Search customers" />
+      <SearchField placeholder="Search students" />
 
       <div className="flex items-center gap-2">
         <CustomersColumnVisibility />

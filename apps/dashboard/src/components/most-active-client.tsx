@@ -7,7 +7,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 export function MostActiveClient() {
   const trpc = useTRPC();
   const { data } = useSuspenseQuery(
-    trpc.invoice.mostActiveClient.queryOptions(),
+    trpc.student.get.queryOptions(),
   );
 
   if (!data) {
@@ -43,7 +43,7 @@ export function MostActiveClient() {
     <Card className="hidden sm:block">
       <CardHeader className="pb-2">
         <CardTitle className="font-medium text-2xl font-serif">
-          {data.customerName}
+          {data.name}
         </CardTitle>
       </CardHeader>
 

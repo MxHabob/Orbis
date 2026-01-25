@@ -7,7 +7,7 @@ import type {
 /**
  * Table identifiers for all supported tables
  */
-export type TableId = "transactions" | "customers" | "invoices" | "vault";
+export type TableId = "transactions" | "customers" | "invoices" | "vault" | "students";
 
 /**
  * Settings for a single table
@@ -47,6 +47,7 @@ export const defaultHiddenColumns: Record<TableId, string[]> = {
     "internalNote",
   ],
   vault: [], // No hidden columns by default
+  students: [],
 };
 
 /**

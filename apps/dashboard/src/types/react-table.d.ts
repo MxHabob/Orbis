@@ -1,7 +1,8 @@
 import type { RouterOutputs } from "@/trpc/client";
+import type { RowData } from "@tanstack/react-table";
 import type { Dispatch, SetStateAction } from "react";
 
-declare module "@tanstack/table-core" {
+declare module "@tanstack/react-table" {
   interface TableMeta<TData extends RowData> {
     // Transaction table meta
     dateFormat?: string | null;

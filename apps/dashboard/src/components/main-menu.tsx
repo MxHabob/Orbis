@@ -8,14 +8,13 @@ import { useEffect, useState } from "react";
 
 const icons = {
   "/": () => <Icons.Overview size={20} />,
-  "/transactions": () => <Icons.Transactions size={20} />,
-  "/invoices": () => <Icons.Invoice size={20} />,
-  "/tracker": () => <Icons.Tracker size={20} />,
-  "/customers": () => <Icons.Customers size={20} />,
-  "/vault": () => <Icons.Vault size={20} />,
+  "/students": () => <Icons.Transactions size={20} />,
+  "/subjects": () => <Icons.Category size={20} />,
+  "/grades": () => <Icons.Bolt size={20} />,
+  "/exams": () => <Icons.Check size={20} />,
+  "/fees": () => <Icons.Amount size={20} />,
   "/settings": () => <Icons.Settings size={20} />,
-  "/apps": () => <Icons.Apps size={20} />,
-  "/inbox": () => <Icons.Inbox2 size={20} />,
+  "/reports": () => <Icons.Customers size={20} />,
 } as const;
 
 const items = [
@@ -24,83 +23,81 @@ const items = [
     name: "Overview",
   },
   {
-    path: "/transactions",
-    name: "Transactions",
+    path: "/students",
+    name: "Students",
     children: [
       {
-        path: "/transactions/categories",
-        name: "Categories",
+        path: "/students/enroll",
+        name: "Enroll",
       },
       {
-        path: "/transactions?step=connect",
-        name: "Connect bank",
+        path: "/students/promotion",
+        name: "Promotion",
       },
       {
-        path: "/transactions?step=import&hide=true",
-        name: "Import",
+        path: "/students/parents",
+        name: "Parents",
       },
-      { path: "/transactions?createTransaction=true", name: "Create new" },
+      { path: "/students/graduates", name: "Graduates" },
     ],
   },
   {
-    path: "/inbox",
-    name: "Inbox",
-    children: [{ path: "/inbox/settings", name: "Settings" }],
+    path: "/subjects",
+    name: "Subjects",
   },
   {
-    path: "/invoices",
-    name: "Invoices",
+    path: "/grades",
+    name: "Grades",
     children: [
-      { path: "/invoices/products", name: "Products" },
-      { path: "/invoices?type=create", name: "Create new" },
+      { path: "/grades/reports", name: "Reports" },
     ],
   },
   {
-    path: "/tracker",
-    name: "Tracker",
-    children: [{ path: "/tracker?create=true", name: "Create new" }],
-  },
-  {
-    path: "/customers",
-    name: "Customers",
-    children: [{ path: "/customers?createCustomer=true", name: "Create new" }],
-  },
-  {
-    path: "/vault",
-    name: "Vault",
-  },
-  {
-    path: "/apps",
-    name: "Apps",
+    path: "/exams",
+    name: "Exams",
     children: [
-      { path: "/apps", name: "All" },
-      { path: "/apps?tab=installed", name: "Installed" },
+      { path: "/exams/schedules", name: "Schedules" },
+      { path: "/exams/committees", name: "Committees" },
     ],
+  },
+  {
+    path: "/fees",
+    name: "Fees & Payments",
   },
   {
     path: "/settings",
     name: "Settings",
     children: [
       { path: "/settings", name: "General" },
-      { path: "/settings/billing", name: "Billing" },
       { path: "/settings/accounts", name: "Bank Connections" },
-      { path: "/settings/members", name: "Members" },
-      { path: "/settings/notifications", name: "Notifications" },
-      { path: "/settings/developer", name: "Developer" },
+      { path: "/settings/users", name: "Users" },
+      { path: "/settings/classes", name: "Classes" },
+      { path: "/settings/holidays", name: "Holidays" },
+      { path: "/settings/academic-years", name: "Academic Years" },
+      { path: "/settings/staff", name: "Staff & Teachers" },
     ],
+  },
+  {
+    path: "/reports",
+    name: "Reports",
+    children: [
+      { path: "/reports/academic",      name: "Academic Reports" },
+      { path: "/reports/financial",     name: "Financial Reports" },
+      { path: "/reports/attendance",    name: "Attendance Reports" },
+      { path: "/reports/ministerial",   name: "Ministerial Reports" },
+    ]
   },
 ];
 
 // Known menu base paths that should not be treated as chat IDs
 const KNOWN_MENU_PATHS = [
-  "/transactions",
-  "/inbox",
-  "/invoices",
-  "/tracker",
-  "/customers",
-  "/vault",
-  "/apps",
+  "/students",
+  "/subjects",
+  "/grades",
+  "/exams",
+  "/fees",
   "/settings",
+  "/reports",
 ];
 
 interface ItemProps {

@@ -71,7 +71,7 @@ export const getStudentsSchema = z.object({
   cursor: z.string().optional().nullable(),
   pageSize: z.coerce.number().min(1).max(100).optional().default(25),
   q: z.string().optional().nullable(),
-  sort: z.array(z.string()).length(2).optional(),
+  sort: z.array(z.string()).length(2).optional().nullable(),
   classId: z.coerce.number().int().positive().optional().nullable(),
   academicYearId: z.coerce.number().int().positive().optional().nullable(),
   status: studentStatusSchema.optional().nullable(),

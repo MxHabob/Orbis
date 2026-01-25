@@ -1,14 +1,14 @@
 import {
   createStudentEnrollmentSchema,
   createStudentSchema,
-  getStudentAttendanceSummarySchema,
-  getStudentGradesSummarySchema,
-  getStudentPaymentSummarySchema,
   getStudentsByClassSchema,
   getStudentsSchema,
   updateStudentEnrollmentSchema,
   updateStudentSchema,
 } from "@api/schemas/student";
+import { getStudentAttendanceSummarySchema } from "@api/schemas/attendance";
+import { getStudentGradesSummarySchema } from "@api/schemas/grade";
+import { getStudentPaymentSummarySchema } from "@api/schemas/payment";
 import { createTRPCRouter, protectedProcedure } from "@api/trpc/init";
 import { classCache } from "@midday/cache/class-cache";
 import { studentCache } from "@midday/cache/student-cache";

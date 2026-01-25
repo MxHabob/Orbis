@@ -1,12 +1,6 @@
 "use client";
 
-import { createClient } from "@midday/supabase/client";
-import type { Database } from "@midday/supabase/types";
-import type {
-  RealtimePostgresChangesFilter,
-  RealtimePostgresChangesPayload,
-  SupabaseClient,
-} from "@supabase/supabase-js";
+
 import { useEffect, useRef, useState } from "react";
 
 type PublicSchema = Database[Extract<keyof Database, "public">];

@@ -32,7 +32,6 @@ import { columns } from "./columns";
 import { EmptyState, NoResults } from "./empty-states";
 import { DataTableHeader } from "./table-header";
 
-// Stable reference for non-clickable columns (avoids recreation on each render)
 const NON_CLICKABLE_COLUMNS = new Set(["actions"]);
 
 type Props = {
@@ -50,10 +49,8 @@ export function DataTable({ initialSettings }: Props) {
 
   const deferredSearch = useDeferredValue(filter.q);
 
-  // Hide header and summary grid on scroll
   useScrollHeader(parentRef, { extraOffset: SUMMARY_GRID_HEIGHTS.customers });
 
-  // Use unified table settings hook for column state management
   const {
     columnVisibility,
     setColumnVisibility,
@@ -62,14 +59,14 @@ export function DataTable({ initialSettings }: Props) {
     columnOrder,
     setColumnOrder,
   } = useTableSettings({
-    tableId: "customers",
+    tableId: "students",
     initialSettings,
   });
 
-  const infiniteQueryOptions = trpc.customers.get.infiniteQueryOptions(
+  const infiniteQueryOptions = trpc.student.get.infiniteQueryOptions(
     {
       ...filter,
-      sort: params.sort,
+      sort: params.sort ?? undefined,
       q: deferredSearch,
     },
     {
@@ -81,15 +78,7 @@ export function DataTable({ initialSettings }: Props) {
     useSuspenseInfiniteQuery(infiniteQueryOptions);
 
   const deleteCustomerMutation = useMutation(
-    trpc.customers.delete.mutationOptions({
-      onSuccess: () => {
-        refetch();
-      },
-    }),
-  );
-
-  const enrichCustomerMutation = useMutation(
-    trpc.customers.enrich.mutationOptions({
+    trpc.student.delete.mutationOptions({
       onSuccess: () => {
         refetch();
       },
@@ -98,16 +87,9 @@ export function DataTable({ initialSettings }: Props) {
 
   const handleDeleteCustomer = useCallback(
     (id: string) => {
-      deleteCustomerMutation.mutate({ id });
+      deleteCustomerMutation.mutate({ userId: id });
     },
     [deleteCustomerMutation],
-  );
-
-  const handleEnrichCustomer = useCallback(
-    (id: string) => {
-      enrichCustomerMutation.mutate({ id });
-    },
-    [enrichCustomerMutation],
   );
 
   const tableData = useMemo(() => {
@@ -128,14 +110,13 @@ export function DataTable({ initialSettings }: Props) {
   const tableMeta = useMemo(
     () => ({
       deleteCustomer: handleDeleteCustomer,
-      enrichCustomer: handleEnrichCustomer,
     }),
-    [handleDeleteCustomer, handleEnrichCustomer],
+    [handleDeleteCustomer],
   );
 
   const table = useReactTable({
     data: tableData,
-    getRowId: (row) => row.id,
+    getRowId: (row) => row.userId,
     columns,
     getCoreRowModel: getCoreRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
@@ -195,9 +176,9 @@ export function DataTable({ initialSettings }: Props) {
 
   // Realtime subscription for customer updates (enrichment status, etc.)
   useRealtime({
-    channelName: "realtime_customers",
-    table: "customers",
-    filter: user?.teamId ? `team_id=eq.${user.teamId}` : undefined,
+    channelName: "realtime_students",
+    table: "students",
+    filter: undefined,
     onEvent: (payload) => {
       if (payload.eventType === "INSERT" || payload.eventType === "UPDATE") {
         refetch();
