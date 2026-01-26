@@ -4,7 +4,7 @@ import type { Database } from "@midday/db/client";
 import { getUserWithRoles } from "@midday/db/queries/users";
 import { TRPCError } from "@trpc/server";
 
-export const withTeamPermission = async <TReturn>(opts: {
+export const withPermission = async <TReturn>(opts: {
   ctx: {
     session?: Session | null;
     db: Database;
@@ -13,7 +13,6 @@ export const withTeamPermission = async <TReturn>(opts: {
     ctx: {
       session?: Session | null;
       db: Database;
-      teamId: string | null;
       role: string;
       employeeRoles: string[];
     };
@@ -46,14 +45,9 @@ export const withTeamPermission = async <TReturn>(opts: {
     });
   }
 
-  // In the school system context, teamId might be used for multi-school/branch support later.
-  // For now, it's null or could be derived from user context if needed.
-  const teamId = null;
-
   return next({
     ctx: {
       session: ctx.session,
-      teamId,
       db: ctx.db,
       role: userData.role || "user",
       employeeRoles: userData.employeeRoles,

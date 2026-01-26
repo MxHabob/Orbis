@@ -7,7 +7,7 @@ import { TRPCError, initTRPC } from "@trpc/server";
 import type { Context } from "hono";
 import superjson from "superjson";
 import { withPrimaryReadAfterWrite } from "./middleware/primary-read-after-write";
-import { withTeamPermission } from "./middleware/team-permission";
+import { withPermission } from "./middleware/permission";
 
 type TRPCContext = {
   session: Session | null;
@@ -53,8 +53,8 @@ const withPrimaryDbMiddleware = t.middleware(async (opts) => {
   });
 });
 
-const withTeamPermissionMiddleware = t.middleware(async (opts) => {
-  return withTeamPermission({
+const withPermissionMiddleware = t.middleware(async (opts) => {
+  return withPermission({
     ctx: opts.ctx,
     next: opts.next,
   });
@@ -63,10 +63,10 @@ const withTeamPermissionMiddleware = t.middleware(async (opts) => {
 export const publicProcedure = t.procedure.use(withPrimaryDbMiddleware);
 
 export const protectedProcedure = t.procedure
-  .use(withTeamPermissionMiddleware) // NOTE: This is needed to ensure that the teamId is set in the context
+  .use(withPermissionMiddleware) // NOTE: This is needed to ensure that the teamId is set in the context
   .use(withPrimaryDbMiddleware)
   .use(async (opts) => {
-    const { teamId, session } = opts.ctx;
+    const { session } = opts.ctx;
 
     if (!session || !session.user) {
       throw new TRPCError({ code: "UNAUTHORIZED" });
@@ -74,7 +74,6 @@ export const protectedProcedure = t.procedure
 
     return opts.next({
       ctx: {
-        teamId,
         session,
       },
     });

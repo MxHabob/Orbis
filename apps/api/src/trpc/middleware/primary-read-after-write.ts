@@ -9,7 +9,6 @@ import type { Database, DatabaseWithPrimary } from "@midday/db/client";
 export const withPrimaryReadAfterWrite = async <TReturn>(opts: {
   ctx: {
     session?: Session | null;
-    teamId?: string | null;
     db: Database;
     forcePrimary?: boolean;
   };
@@ -17,14 +16,12 @@ export const withPrimaryReadAfterWrite = async <TReturn>(opts: {
   next: (opts: {
     ctx: {
       session?: Session | null;
-      teamId?: string | null;
       db: Database;
       forcePrimary?: boolean;
     };
   }) => Promise<TReturn>;
 }) => {
   const { ctx, type, next } = opts;
-  const teamId = ctx.teamId;
   const forcePrimary = ctx.forcePrimary;
 
   // If x-force-primary header is set, force primary DB reads (for new users)
@@ -38,10 +35,9 @@ export const withPrimaryReadAfterWrite = async <TReturn>(opts: {
     return result;
   }
 
-  if (teamId) {
     // For mutations, always use primary DB and update the team's timestamp
     if (type === "mutation") {
-      await replicationCache.set(teamId);
+      await replicationCache.set(ctx.session?.user.id);
 
       // Use primary-only mode to maintain interface consistency
       const dbWithPrimary = ctx.db as DatabaseWithPrimary;
@@ -52,7 +48,7 @@ export const withPrimaryReadAfterWrite = async <TReturn>(opts: {
     }
     // For queries, check if the team recently performed a mutation
     else {
-      const timestamp = await replicationCache.get(teamId);
+      const timestamp = await replicationCache.get(ctx.session?.user.id);
       const now = Date.now();
 
       // If the timestamp exists and hasn't expired, use primary DB
@@ -65,14 +61,13 @@ export const withPrimaryReadAfterWrite = async <TReturn>(opts: {
         // If usePrimaryOnly doesn't exist, we're already using the primary DB
       }
     }
-  } else {
+
     // When no team ID is present, always use primary DB
     const dbWithPrimary = ctx.db as DatabaseWithPrimary;
     if (dbWithPrimary.usePrimaryOnly) {
       ctx.db = dbWithPrimary.usePrimaryOnly();
     }
-    // If usePrimaryOnly doesn't exist, we're already using the primary DB
-  }
+      // If usePrimaryOnly doesn't exist, we're already using the primary DB
 
   const result = await next({ ctx });
 
