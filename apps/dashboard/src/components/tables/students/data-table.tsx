@@ -4,14 +4,12 @@ import { VirtualRow } from "@/components/tables/core";
 import { useCustomerFilterParams } from "@/hooks/use-customer-filter-params";
 import { useCustomerParams } from "@/hooks/use-customer-params";
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
-import { useRealtime } from "@/hooks/use-realtime";
 import { useScrollHeader } from "@/hooks/use-scroll-header";
 import { useSortParams } from "@/hooks/use-sort-params";
 import { useStickyColumns } from "@/hooks/use-sticky-columns";
 import { useTableDnd } from "@/hooks/use-table-dnd";
 import { useTableScroll } from "@/hooks/use-table-scroll";
 import { useTableSettings } from "@/hooks/use-table-settings";
-import { useUserQuery } from "@/hooks/use-user";
 import { useCustomersStore } from "@/store/customers";
 import { useTRPC } from "@/trpc/client";
 import { STICKY_COLUMNS, SUMMARY_GRID_HEIGHTS } from "@/utils/table-configs";
@@ -40,7 +38,6 @@ type Props = {
 
 export function DataTable({ initialSettings }: Props) {
   const trpc = useTRPC();
-  const { data: user } = useUserQuery();
   const { setParams } = useCustomerParams();
   const { filter, hasFilters } = useCustomerFilterParams();
   const { params } = useSortParams();
@@ -84,6 +81,8 @@ export function DataTable({ initialSettings }: Props) {
       },
     }),
   );
+
+
 
   const handleDeleteCustomer = useCallback(
     (id: string) => {
@@ -174,17 +173,6 @@ export function DataTable({ initialSettings }: Props) {
     threshold: 50,
   });
 
-  // Realtime subscription for customer updates (enrichment status, etc.)
-  useRealtime({
-    channelName: "realtime_students",
-    table: "students",
-    filter: undefined,
-    onEvent: (payload) => {
-      if (payload.eventType === "INSERT" || payload.eventType === "UPDATE") {
-        refetch();
-      }
-    },
-  });
 
   if (!tableData.length && hasFilters) {
     return <NoResults />;

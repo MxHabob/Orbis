@@ -34,13 +34,11 @@ export const appRouter = createTRPCRouter({
   level: levelRouter,
   assessment: assessmentRouter,
 
-  // Core / Shared
   user: userRouter,
   search: searchRouter,
   suggestedActions: suggestedActionsRouter,
 });
 
-// export type definition of API
 export type AppRouter = typeof appRouter;
 export type RouterOutputs = inferRouterOutputs<AppRouter>;
 export type RouterInputs = inferRouterInputs<AppRouter>;
