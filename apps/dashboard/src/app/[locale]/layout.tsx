@@ -11,41 +11,41 @@ import type { ReactElement } from "react";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://app.midday.ai"),
-  title: "Midday | Your AI-Powered Business Assistant",
+  metadataBase: new URL("https://app.entity.com"),
+  title: "Entity | School Management",
   description:
     "Automate financial tasks, stay organized, and make informed decisions effortlessly.",
   twitter: {
-    title: "Midday | Your AI-Powered Business Assistant",
+    title: "Entity | School Management",
     description:
       "Automate financial tasks, stay organized, and make informed decisions effortlessly.",
     images: [
       {
-        url: "https://cdn.midday.ai/opengraph-image-v1.jpg",
+        url: "https://cdn.entity.ai/opengraph-image-v1.jpg",
         width: 800,
         height: 600,
       },
       {
-        url: "https://cdn.midday.ai/opengraph-image-v1.jpg",
+        url: "https://cdn.entity.ai/opengraph-image-v1.jpg",
         width: 1800,
         height: 1600,
       },
     ],
   },
   openGraph: {
-    title: "Midday | Your AI-Powered Business Assistant",
+    title: "Entity | School Management",
     description:
       "Automate financial tasks, stay organized, and make informed decisions effortlessly.",
-    url: "https://app.midday.ai",
-    siteName: "Midday",
+    url: "https://app.entity.com",
+    siteName: "Entity",
     images: [
       {
-        url: "https://cdn.midday.ai/opengraph-image-v1.jpg",
+        url: "https://cdn.entity.ai/opengraph-image-v1.jpg",
         width: 800,
         height: 600,
       },
       {
-        url: "https://cdn.midday.ai/opengraph-image-v1.jpg",
+        url: "https://cdn.entity.ai/opengraph-image-v1.jpg",
         width: 1800,
         height: 1600,
       },
