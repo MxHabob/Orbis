@@ -39,6 +39,26 @@ function getQueryClient() {
   return browserQueryClient;
 }
 
+// Get API URL with fallback for development
+function getApiUrl(): string {
+  // Use environment variable if set
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  
+  // Default to localhost:3002 for development (API server port from package.json)
+  // API server runs on port 3002 in development mode
+  if (typeof window !== "undefined") {
+    const hostname = window.location.hostname;
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+      return "http://localhost:3002";
+    }
+  }
+  
+  // Production fallback
+  return "https://api.midday.ai";
+}
+
 export function TRPCReactProvider(
   props: Readonly<{
     children: React.ReactNode;
@@ -49,8 +69,14 @@ export function TRPCReactProvider(
     createTRPCClient<AppRouter>({
       links: [
         httpBatchLink({
-          url: `${process.env.NEXT_PUBLIC_API_URL}/trpc`,
+          url: `${getApiUrl()}/trpc`,
           transformer: superjson,
+          fetch(url, options) {
+            return fetch(url, {
+              ...options,
+              credentials: "include",
+            });
+          },
           async headers() {
             const headers: Record<string, string> = {
             };

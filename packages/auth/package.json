@@ -11,16 +11,19 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@midday/db": "workspace:*",
     "better-auth": "1.4.17",
-    "@midday/db": "workspace:*"
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@midday/tsconfig": "workspace:*",
+    "next": "^16.1.5",
     "typescript": "^5.9.3"
   },
   "exports": {
     ".": "./src/index.ts",
     "./auth-client": "./src/auth-client.ts",
-    "./route": "./src/route.ts"
+    "./route": "./src/route.ts",
+    "./server-auth": "./src/server-auth.ts"
   }
 }

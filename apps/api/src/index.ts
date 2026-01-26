@@ -19,13 +19,27 @@ app.use(
   }),
 );
 
+// Get allowed origins from environment or use defaults for development
+function getAllowedOrigins(): string[] {
+  if (process.env.ALLOWED_API_ORIGINS) {
+    return process.env.ALLOWED_API_ORIGINS.split(",").map((origin) => origin.trim());
+  }
+  
+  // Default origins for development
+  if (process.env.NODE_ENV !== "production") {
+    return ["http://localhost:3001", "http://localhost:3000"];
+  }
+  
+  return [];
+}
+
 app.use(
   "*",
   cors({
-    origin: process.env.ALLOWED_API_ORIGINS?.split(",") ?? [],
+    origin: getAllowedOrigins(),
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allowHeaders: [
-      "Authorization",
+      "Authorization", // For Bearer token authentication (server-to-server)
       "Content-Type",
       "User-Agent",
       "accept-language",
@@ -34,6 +48,7 @@ app.use(
       "x-user-timezone",
       "x-user-country",
       "x-force-primary",
+      "Cookie", // For cookie-based authentication (client-to-server)
       // School system specific headers
       "x-school-id",
     ],
@@ -42,7 +57,9 @@ app.use(
       "Content-Type",
       "Cache-Control",
       "Cross-Origin-Resource-Policy",
+      "Set-Cookie",
     ],
+    credentials: true,
     maxAge: 86400,
   }),
 );
@@ -99,6 +116,6 @@ app.get(
 export default {
   port: process.env.PORT ? Number.parseInt(process.env.PORT) : 3000,
   fetch: app.fetch,
-  host: "::", // Listen on all interfaces
+  host: "0.0.0.0",
   idleTimeout: 60,
 };

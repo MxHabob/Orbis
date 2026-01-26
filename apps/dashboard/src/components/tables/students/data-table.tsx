@@ -184,6 +184,8 @@ export function DataTable({ initialSettings }: Props) {
 
   const virtualItems = rowVirtualizer.getVirtualItems();
 
+  console.log("data :", data);
+
   return (
     <div className="relative">
       <div className="w-full">

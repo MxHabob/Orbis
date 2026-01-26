@@ -14,4 +14,5 @@ export * from "./level";
 export * from "./parent";
 export * from "./assessment";
 export * from "./users";
+export * from "./sessions";
 
