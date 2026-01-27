@@ -46,7 +46,7 @@ export function DataTable({ initialSettings }: Props) {
 
   const deferredSearch = useDeferredValue(filter.q);
 
-  useScrollHeader(parentRef, { extraOffset: SUMMARY_GRID_HEIGHTS.customers });
+  useScrollHeader(parentRef, { extraOffset: SUMMARY_GRID_HEIGHTS.students });
 
   const {
     columnVisibility,
@@ -73,6 +73,9 @@ export function DataTable({ initialSettings }: Props) {
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } =
     useSuspenseInfiniteQuery(infiniteQueryOptions);
+
+    console.log("data :", data);
+    console.log("infiniteQueryOptions :", infiniteQueryOptions);
 
   const deleteCustomerMutation = useMutation(
     trpc.student.delete.mutationOptions({

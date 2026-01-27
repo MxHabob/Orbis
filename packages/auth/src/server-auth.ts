@@ -1,4 +1,4 @@
-import "server-only";
+
 
 import { auth } from "./index";
 import { db } from "@midday/db/client";
@@ -29,8 +29,40 @@ export async function getServerSession(headers?: RequestHeaders) {
       return null;
     }
 
+    // Create a new Headers object to ensure we can modify it
+    const finalHeaders = new Headers();
+    
+    // Helper to safely get headers
+    if (headersList instanceof Headers) {
+      headersList.forEach((value, key) => {
+        finalHeaders.set(key, value);
+      });
+    } else if (typeof (headersList as any).get === 'function') {
+      // Handle Next.js ReadonlyHeaders or similar
+      // We can't iterate easily, so we'll check common ones
+      const auth = (headersList as any).get("authorization");
+      if (auth) finalHeaders.set("authorization", auth);
+      const cookie = (headersList as any).get("cookie");
+      if (cookie) finalHeaders.set("cookie", cookie);
+    } else {
+      // Handle Record<string, string>
+      for (const [key, value] of Object.entries(headersList)) {
+        finalHeaders.set(key, value as string);
+      }
+    }
+
+    // Support Bearer token by converting to cookie for better-auth compatibility if needed
+    const authHeader = finalHeaders.get("authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      const token = authHeader.substring(7);
+      const currentCookie = finalHeaders.get("cookie") || "";
+      if (!currentCookie.includes("better-auth.session_token")) {
+        finalHeaders.set("cookie", `${currentCookie}${currentCookie ? "; " : ""}better-auth.session_token=${token}`);
+      }
+    }
+
     const session = await auth.api.getSession({
-      headers: headersList as Headers,
+      headers: finalHeaders,
     });
 
     return session;

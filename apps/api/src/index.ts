@@ -1,6 +1,3 @@
-// Import Sentry instrumentation first, before any other modules
-import "./instrument";
-
 import { trpcServer } from "@hono/trpc-server";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { Scalar } from "@scalar/hono-api-reference";
