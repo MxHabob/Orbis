@@ -1,6 +1,5 @@
 "use client";
 
-import { useTeamMutation, useTeamQuery } from "@/hooks/use-team";
 import { useZodForm } from "@/hooks/use-zod-form";
 import {
   Card,
@@ -26,17 +25,16 @@ const formSchema = z.object({
 });
 
 export function CompanyCountry() {
-  const { data } = useTeamQuery();
-  const updateTeamMutation = useTeamMutation();
+
 
   const form = useZodForm(formSchema, {
     defaultValues: {
-      countryCode: data?.countryCode ?? "",
+      countryCode: "",
     },
   });
 
   const onSubmit = form.handleSubmit((data) => {
-    updateTeamMutation.mutate(data);
+    console.log(data);
   });
 
   return (
@@ -73,8 +71,8 @@ export function CompanyCountry() {
 
           <CardFooter className="flex justify-end">
             <SubmitButton
-              isSubmitting={updateTeamMutation.isPending}
-              disabled={updateTeamMutation.isPending}
+              // isSubmitting={updateTeamMutation.isPending}
+              // disabled={updateTeamMutation.isPending}
             >
               Save
             </SubmitButton>

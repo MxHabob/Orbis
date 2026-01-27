@@ -9,7 +9,7 @@ import {
 } from "@midday/ui/table";
 import { Header } from "./header";
 
-export function CategoriesSkeleton() {
+export function SubjectsSkeleton() {
   return (
     <div className="w-full">
       <Header />

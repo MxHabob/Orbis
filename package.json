@@ -12,6 +12,7 @@
     "dev:api": "turbo dev --filter=@midday/api",
     "dev:dashboard": "turbo dev --filter=@midday/dashboard",
     "build:dashboard": "turbo build --filter=@midday/dashboard",
+    "seed": "bun packages/db/src/seed.ts",
     "dev:desktop": "turbo dev --filter=@midday/desktop",
     "format": "biome format --write .",
     "lint": "turbo lint && manypkg check",

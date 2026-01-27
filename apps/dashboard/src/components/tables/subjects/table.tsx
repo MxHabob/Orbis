@@ -23,15 +23,15 @@ import {
 } from "@tanstack/react-table";
 import React from "react";
 import {
-  type CategoriesTableMeta,
+  type SubjectsTableMeta,
   columns,
-  flattenCategories,
+  flattenSubjects,
 } from "./columns";
 import { Header } from "./header";
 
 export function DataTable() {
-  const [expandedCategories, setExpandedCategories] = React.useState<
-    Set<string>
+  const [expandedSubjects, setExpandedSubjects] = React.useState<
+    Set<number>
   >(new Set());
 
   const trpc = useTRPC();
@@ -39,14 +39,14 @@ export function DataTable() {
   const { setParams } = useCategoryParams();
 
   const { data } = useSuspenseQuery(
-    trpc.transactionCategories.get.queryOptions(),
+    trpc.subject.get.queryOptions({}),
   );
 
-  const deleteCategoryMutation = useMutation(
-    trpc.transactionCategories.delete.mutationOptions({
+  const deleteSubjectMutation = useMutation(
+    trpc.subject.delete.mutationOptions({
       onSuccess: () => {
         queryClient.invalidateQueries({
-          queryKey: trpc.transactionCategories.get.queryKey(),
+          queryKey: trpc.subject.get.queryKey({}),
         });
       },
     }),
@@ -54,7 +54,7 @@ export function DataTable() {
 
   // Flatten categories - include all parents and all children
   const flattenedData = React.useMemo(() => {
-    return flattenCategories(data ?? []);
+    return flattenSubjects(data?.data ?? []);
   }, [data]);
 
   // Get search filter value
@@ -62,7 +62,7 @@ export function DataTable() {
 
   // Create a map of parent IDs to their children for efficient lookup
   const childrenByParentId = React.useMemo(() => {
-    const map = new Map<string, typeof flattenedData>();
+    const map = new Map<number, typeof flattenedData>();
     for (const category of flattenedData) {
       if (category.isChild && category.parentId) {
         if (!map.has(category.parentId)) {
@@ -83,7 +83,7 @@ export function DataTable() {
           return true; // Always show parents
         }
         // Only show children if their parent is expanded
-        return category.parentId && expandedCategories.has(category.parentId);
+        return category.parentId && expandedSubjects.has(category.parentId);
       });
     }
 
@@ -109,17 +109,17 @@ export function DataTable() {
       // For children: only show if they match the search
       return matchesSearch;
     });
-  }, [flattenedData, expandedCategories, searchValue, childrenByParentId]);
+  }, [flattenedData, expandedSubjects, searchValue, childrenByParentId]);
 
-  const tableMeta: CategoriesTableMeta = {
-    deleteCategory: (id: string) => {
-      deleteCategoryMutation.mutate({ id });
+  const tableMeta: SubjectsTableMeta = {
+    deleteSubject: (id: number) => {
+      deleteSubjectMutation.mutate({ id });
     },
-    onEdit: (id: string) => {
-      setParams({ categoryId: id });
+    onEditSubject: (id: number) => {
+      setParams({ categoryId: id.toString() });
     },
-    expandedCategories,
-    setExpandedCategories,
+    expandedSubjects,
+    setExpandedSubjects,
     searchValue,
     setSearchValue,
   };
@@ -162,7 +162,7 @@ export function DataTable() {
             <TableRow
               className="hover:bg-muted/50 cursor-pointer"
               key={row.id}
-              onClick={() => setParams({ categoryId: row.original.id })}
+              onClick={() => setParams({ categoryId: row.original.id.toString() })}
             >
               {row.getVisibleCells().map((cell, index) => (
                 <TableCell

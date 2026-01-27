@@ -1,6 +1,6 @@
 "use client";
 
-import { useTeamMutation, useTeamQuery } from "@/hooks/use-team";
+import { useUsersMutation, useUsersQuery } from "@/hooks/use-team";
 import { useZodForm } from "@/hooks/use-zod-form";
 import {
   Card,
@@ -26,17 +26,17 @@ const formSchema = z.object({
 });
 
 export function CompanyName() {
-  const { data } = useTeamQuery();
-  const updateTeamMutation = useTeamMutation();
+  const { data } = useUsersQuery();
+  const updateTeamMutation = useUsersMutation();
 
   const form = useZodForm(formSchema, {
     defaultValues: {
-      name: data?.name ?? "",
+      name: data?.[0]?.name ?? "",
     },
   });
 
   const onSubmit = form.handleSubmit((data) => {
-    updateTeamMutation.mutate(data);
+    updateTeamMutation.mutate({ fullName: data.name });
   });
 
   return (

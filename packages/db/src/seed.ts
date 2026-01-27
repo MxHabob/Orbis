@@ -1,189 +1,460 @@
-import * as schema from './schema';
-import { connectDb } from './client';
+// packages/db/src/seed.ts
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
+import { eq, sql, getTableName } from "drizzle-orm";
+import { randomUUID } from "crypto";
 
-async function seed() {
-  const db = await connectDb();
+import * as schema from "./schema";
 
-  try {
-    await db.transaction(async (tx) => {
-      console.log('Cleaning up old data...');
-      await tx.delete(schema.holidays);
-      await tx.delete(schema.employeeRoles);
-      await tx.delete(schema.employees);
-      await tx.delete(schema.curriculumSubjects);
-      await tx.delete(schema.curriculumLevels);
-      await tx.delete(schema.subjects);
-      await tx.delete(schema.levels);
-      await tx.delete(schema.academicTerms);
-      await tx.delete(schema.academicYears);
-      await tx.delete(schema.users);
+// ────────────────────────────────────────────────
+// Configuration & DB Setup
+// ────────────────────────────────────────────────
 
-      console.log('Starting the seeding process for the 2025-2026 academic year...');
+const isProduction = process.env.NODE_ENV === "production";
 
-      // 1. إنشاء السنة الدراسية
-      const [academicYear] = await tx
-        .insert(schema.academicYears)
-        .values({
-          year: '2025-2026',
-          startDate: new Date('2025-09-15'),
-          endDate: new Date('2026-06-20'),
-          isCurrent: true,
-          isActive: true,
-        })
-        .returning({ id: schema.academicYears.id });
+if (isProduction) {
+  console.error("❌ Seeding is prohibited in production environment");
+  process.exit(1);
+}
 
-      if (!academicYear) {
-        throw new Error('Failed to create academic year');
-      }
+const pool = new Pool({
+  connectionString: process.env.DATABASE_PRIMARY_URL,
+  max: 5,
+  idleTimeoutMillis: 10000,
+  connectionTimeoutMillis: 5000,
+});
 
-      const yearId = academicYear.id;
+const db = drizzle(pool, {
+  schema,
+  casing: "snake_case",
+  logger: true,
+});
 
-      // 2. الفصول الدراسية (bulk)
-      await tx.insert(schema.academicTerms).values([
-        { academicYearId: yearId, name: 'الفصل الأول', startDate: new Date('2025-09-15'), endDate: new Date('2026-01-05'), order: 1 },
-        { academicYearId: yearId, name: 'الفصل الثاني', startDate: new Date('2026-01-18'), endDate: new Date('2026-06-20'), order: 2 },
-      ]);
+// ────────────────────────────────────────────────
+// Utility Helpers
+// ────────────────────────────────────────────────
 
-      // 3. المراحل الدراسية (bulk)
-      const levelData: (typeof schema.levels.$inferInsert)[] = [
-        { name: 'الصف الأول أساسي',   stage: 'basic' as const,     order: 1 },
-        { name: 'الصف الثاني أساسي',   stage: 'basic' as const,     order: 2 },
-        { name: 'الصف الثالث أساسي',   stage: 'basic' as const,     order: 3 },
-        { name: 'الصف الرابع أساسي',   stage: 'basic' as const,     order: 4 },
-        { name: 'الصف الخامس أساسي',   stage: 'basic' as const,     order: 5 },
-        { name: 'الصف السادس أساسي',   stage: 'basic' as const,     order: 6 },
-        { name: 'الصف السابع أساسي',   stage: 'basic' as const,     order: 7 },
-        { name: 'الصف الثامن أساسي',   stage: 'basic' as const,     order: 8 },
-        { name: 'الصف التاسع أساسي',   stage: 'basic' as const,     order: 9 },
-        { name: 'الأول ثانوي علمي',     stage: 'secondary' as const, order: 10 },
-        { name: 'الثاني ثانوي علمي',    stage: 'secondary' as const, order: 11 },
-        { name: 'الثالث ثانوي علمي',    stage: 'secondary' as const, order: 12 },
-      ];
+const now = () => new Date();
 
-      const levels = await tx
-        .insert(schema.levels)
-        .values(levelData)
-        .returning({ id: schema.levels.id });
+async function resetDatabase() {
+  console.log("→ Resetting database tables...");
 
-      // 4. تفعيل المناهج لكل مرحلة (bulk)
-      await tx.insert(schema.curriculumLevels).values(
-        levels.map(l => ({ academicYearId: yearId, levelId: l.id, isActive: true }))
+  // Explicit list of tables only (no relations, no enums)
+  const tables = [
+    schema.gradeEntries,
+    schema.assessmentItems,
+    schema.students,
+    schema.classes,
+    schema.subjects,
+    schema.academicTerms,
+    schema.academicYears,
+    schema.notifications,
+    schema.auditLogs,
+    schema.verifications,
+    schema.sessions,
+    schema.accounts,
+    schema.users, // users last → many foreign keys reference it
+  ];
+
+  for (const table of tables) {
+    if (!table) continue;
+    const tableName = getTableName(table);
+
+    try {
+      // Correct PostgreSQL syntax: TRUNCATE table_name RESTART IDENTITY CASCADE;
+      await db.execute(
+        sql.raw(`TRUNCATE TABLE "${tableName}" RESTART IDENTITY CASCADE;`)
       );
+      console.log(`  Truncated: ${tableName}`);
+    } catch (err) {
+      console.warn(`  Warning: Failed to truncate ${tableName}:`, err);
+    }
+  }
 
-      // 5. المواد الدراسية (bulk)
-      const subjectData: (typeof schema.subjects.$inferInsert)[] = [
-        { code: 'ARB', name: 'اللغة العربية',     shortName: 'عربي',   department: 'languages' as const  },
-        { code: 'ENG', name: 'اللغة الإنجليزية', shortName: 'إنج',   department: 'languages' as const  },
-        { code: 'MATH',name: 'الرياضيات',         shortName: 'رياض',  department: 'mathematics' as const},
-        { code: 'SCI', name: 'العلوم',            shortName: 'علوم',  department: 'sciences' as const   },
-        { code: 'ISLM',name: 'التربية الإسلامية', shortName: 'إسلام', department: 'religious' as const  },
-        { code: 'HIST',name: 'التاريخ والجغرافيا',shortName: 'تاريخ', department: 'social' as const     },
-      ];
+  console.log("✓ Database reset completed");
+}
 
-      const subjects = await tx
-        .insert(schema.subjects)
-        .values(subjectData)
-        .returning({ id: schema.subjects.id, name: schema.subjects.name });
+// ────────────────────────────────────────────────
+// Seed Functions
+// ────────────────────────────────────────────────
 
-      // 6. ربط المواد بالمناهج لكل مرحلة (bulk – prepared data)
-      const curriculumSubjectsData: (typeof schema.curriculumSubjects.$inferInsert)[] = [];
-      for (const level of levels) {
-        let levelOrder = 1;
-        for (const subj of subjects) {
-          curriculumSubjectsData.push({
-            academicYearId: yearId,
-            levelId: level.id,
-            subjectId: subj.id,
-            isMandatory: true,
-            weeklyPeriods: (subj.name ?? '').includes('رياضيات') || (subj.name ?? '').includes('علوم') ? '5.00' : '4.00',
-            orderInReport: levelOrder++,
-            maxScore: '100.00',
-          });
-        }
+async function seedAcademicYears(): Promise<number> {
+  console.log("→ Seeding academic years...");
+
+  const years = [
+    { yearName: "2024-2025", isCurrent: false },
+    { yearName: "2025-2026", isCurrent: true },
+  ];
+
+  await db.insert(schema.academicYears).values(years).onConflictDoNothing();
+
+  const [current] = await db
+    .select({ id: schema.academicYears.id })
+    .from(schema.academicYears)
+    .where(eq(schema.academicYears.isCurrent, true))
+    .limit(1);
+
+  if (!current) throw new Error("No current academic year found after seeding");
+
+  return current.id;
+}
+
+async function seedAcademicTerms(yearId: number): Promise<number> {
+  console.log("→ Seeding academic terms...");
+
+  const terms = [
+    {
+      name: "الفصل الدراسي الأول",
+      academicYearId: yearId,
+      startDate: "2025-09-01",
+      endDate: "2026-01-15",
+      isCurrent: true,
+    },
+    {
+      name: "الفصل الدراسي الثاني",
+      academicYearId: yearId,
+      startDate: "2026-02-01",
+      endDate: "2026-06-20",
+      isCurrent: false,
+    },
+  ];
+
+  await db.insert(schema.academicTerms).values(terms).onConflictDoNothing();
+
+  const [current] = await db
+    .select({ id: schema.academicTerms.id })
+    .from(schema.academicTerms)
+    .where(eq(schema.academicTerms.isCurrent, true))
+    .limit(1);
+
+  if (!current) throw new Error("No current term found after seeding");
+
+  return current.id;
+}
+
+async function seedSubjects() {
+  console.log("→ Seeding subjects...");
+
+  const subjects = [
+    { name: "اللغة العربية", code: "ARA", color_code: "#FFCDD2" },
+    { name: "اللغة الإنجليزية", code: "ENG", color_code: "#BBDEFB" },
+    { name: "الرياضيات", code: "MAT", color_code: "#C8E6C9" },
+    { name: "العلوم", code: "SCI", color_code: "#FFF9C4" },
+    { name: "الدراسات الاجتماعية", code: "SST", color_code: "#E1BEE7" },
+    { name: "التربية الإسلامية", code: "ISL", color_code: "#D1C4E9" },
+  ];
+
+  await db.insert(schema.subjects).values(subjects).onConflictDoNothing();
+  console.log(`  ✓ ${subjects.length} subjects seeded`);
+}
+
+async function seedClasses(yearId: number) {
+  console.log("→ Seeding classes...");
+
+  const classesData = [
+    { name: "الصف الأول الابتدائي", division: "أ", academicYearId: yearId },
+    { name: "الصف الأول الابتدائي", division: "ب", academicYearId: yearId },
+    { name: "الصف الثاني الابتدائي", division: "أ", academicYearId: yearId },
+    { name: "الصف الثالث الاعدادي", division: "أ", academicYearId: yearId },
+  ];
+
+  await db.insert(schema.classes).values(classesData).onConflictDoNothing();
+
+  const inserted = await db.select().from(schema.classes);
+  console.log(`  ✓ ${inserted.length} classes created`);
+
+  return inserted;
+}
+
+async function seedUsersAndStudents() {
+  console.log("→ Seeding users and students...");
+
+  const admin = {
+    id: randomUUID(),
+    username: "admin",
+    name: "مدير النظام",
+    email: "admin@school.com",
+    phone: "+966501234567",
+    role: "admin" as const,
+    sex: "unspecified" as const,
+    emailVerified: true,
+    createdAt: now(),
+    updatedAt: now(),
+  };
+
+  const teacher = {
+    id: randomUUID(),
+    username: "teacher1",
+    name: "أ. محمد أحمد",
+    email: "teacher1@school.com",
+    phone: "+966551234567",
+    role: "teacher" as const,
+    sex: "male" as const,
+    emailVerified: true,
+    createdAt: now(),
+    updatedAt: now(),
+  };
+
+  const studentsData = [
+    {
+      user: {
+        id: randomUUID(),
+        username: "stu1001",
+        name: "سارة عبدالله",
+        email: "sara1001@school.com",
+        phone: "+966501001001",
+        role: "student" as const,
+        sex: "female" as const,
+        createdAt: now(),
+        updatedAt: now(),
+      },
+      studentNumber: "STU-1001",
+    },
+    {
+      user: {
+        id: randomUUID(),
+        username: "stu1002",
+        name: "عمر خالد",
+        email: "omar1002@school.com",
+        phone: "+966501002002",
+        role: "student" as const,
+        sex: "male" as const,
+        createdAt: now(),
+        updatedAt: now(),
+      },
+      studentNumber: "STU-1002",
+    },
+  ];
+
+  // Insert users
+  await db
+    .insert(schema.users)
+    .values([admin, teacher, ...studentsData.map((s) => s.user)])
+    .onConflictDoNothing();
+
+  // Insert students
+  await db
+    .insert(schema.students)
+    .values(
+      studentsData.map((s) => ({
+        userId: s.user.id,
+        studentNumber: s.studentNumber,
+        status: "active" as const,
+      })),
+    )
+    .onConflictDoNothing();
+
+  console.log("  ✓ Admin, 1 teacher, and 2 students created");
+
+  return { adminId: admin.id, teacherId: teacher.id, studentsData };
+}
+
+async function assignStudentsToClasses(classes: any[], studentsData: any[]) {
+  if (classes.length < 2 || studentsData.length < 2) return;
+
+  await db
+    .update(schema.students)
+    .set({ currentClassId: classes[0].id })
+    .where(eq(schema.students.studentNumber, studentsData[0].studentNumber));
+
+  await db
+    .update(schema.students)
+    .set({ currentClassId: classes[1].id })
+    .where(eq(schema.students.studentNumber, studentsData[1].studentNumber));
+
+  console.log("  ✓ Students assigned to classes");
+}
+
+async function seedAssessmentsAndGrades(
+  termId: number,
+  classes: any[],
+  subjects: any[],
+  teacherId: string,
+  studentIdsByClass: Map<number, string[]>,
+) {
+  console.log("→ Seeding assessment items and grades...");
+
+  const assessmentItemsData: (typeof schema.assessmentItems.$inferInsert)[] = [];
+  const months = [9, 10];
+
+  for (const cls of classes) {
+    for (const subj of subjects.slice(0, 4)) {
+      for (const month of months) {
+        assessmentItemsData.push({
+          title: month === 9 ? "Monthly Quiz – September" : "Monthly Exam – October",
+          type: (month === 9 ? "quiz" : "exam") as any,
+          maxScore: month === 9 ? "20" : "30",
+          weight: "2.0",
+          subjectId: subj.id,
+          classId: cls.id,
+          month,
+          termId,
+        });
       }
+    }
+  }
 
-      await tx.insert(schema.curriculumSubjects).values(curriculumSubjectsData);
+  await db.insert(schema.assessmentItems).values(assessmentItemsData).onConflictDoNothing();
 
-      // 7. الموظفون + الأدوار (bulk)
-      const adminNames = ['محمد علي الشريف', 'أحمد صالح القاضي'];
-      const teacherNames = [
-        'فاطمة عبدالله الجابري',
-        'علي حسن الدبعي',
-        'مريم يحيى السنيني',
-        'خالد عبدالكريم المطري',
-      ];
+  const items = await db
+    .select()
+    .from(schema.assessmentItems)
+    .where(eq(schema.assessmentItems.termId, termId));
 
-      // إنشاء users (admins + teachers)
-      const adminUsers = await tx
-        .insert(schema.users)
-        .values(adminNames.map(name => ({ 
-          name, 
-          email: `${name.replace(/\s+/g, '.').toLowerCase()}@admin.school.ye`, 
-          role: 'admin' as const
-        })))
-        .returning({ id: schema.users.id });
+  console.log(`  ✓ ${items.length} assessment items created`);
 
-      const teacherUsers = await tx
-        .insert(schema.users)
-        .values(teacherNames.map((name, i) => ({
-          name,
-          email: `t${i+1}@school.ye`,
-          role: 'admin' as const, // حسب الـ enum الحالي – يمكن تعديله لاحقاً
-        })))
-        .returning({ id: schema.users.id });
+  // Grades
+  const grades: (typeof schema.gradeEntries.$inferInsert)[] = [];
 
-      // Employees
-      const employeeData: (typeof schema.employees.$inferInsert)[] = [
-        ...adminUsers.map((u, i) => ({
-          userId: u.id,
-          employeeNumber: `ADM-${2025}-${String(i+1).padStart(3,'0')}`,
-          hireDate: new Date('2020-08-01'),
-          phone: `+967 777 12 ${30 + i}${30 + i}`,
-          sex: 'male' as const,
-          birthday: new Date(1982 + i*3, 4, 15),
-          nationality: 'Yemeni',
-        })),
-        ...teacherUsers.map((u, i) => ({
-          userId: u.id,
-          employeeNumber: `TCH-${2025}-${String(i+1).padStart(3,'0')}`,
-          hireDate: new Date('2022-09-01'),
-          phone: `+967 771 00 ${10 + i}${10 + i}`,
-          sex: i % 2 === 0 ? 'female' as const : 'male' as const,
-          birthday: new Date(1988 + i*2, 6, 10),
-          nationality: 'Yemeni',
-        })),
-      ];
+  for (const item of items) {
+    if (item.classId === null) continue;
+    const classStudentIds = studentIdsByClass.get(item.classId) || [];
 
-      await tx.insert(schema.employees).values(employeeData);
+    for (const studentId of classStudentIds.slice(0, 2)) {
+      const score = Number((Math.random() * 10 + 10).toFixed(1));
 
-      // Employee roles (bulk)
-      const roleData: (typeof schema.employeeRoles.$inferInsert)[] = [
-        ...adminUsers.map(u => ({ employeeId: u.id, role: 'admin' as const, startDate: new Date('2020-08-01') })),
-        ...teacherUsers.map(u => ({ employeeId: u.id, role: 'teacher' as const, startDate: new Date('2022-09-01') })),
-      ];
+      grades.push({
+        studentId,
+        assessmentItemId: item.id,
+        score: score.toString(),
+        isAbsent: false,
+        comments: score > 15 ? "Excellent" : score > 10 ? "Good" : "Needs improvement",
+        gradedById: teacherId,
+        updatedAt: now(),
+      });
+    }
 
-      await tx.insert(schema.employeeRoles).values(roleData);
+    // Random absence
+    if (Math.random() > 0.7 && classStudentIds.length > 0) {
+      grades.push({
+        studentId: classStudentIds[0],
+        assessmentItemId: item.id,
+        score: null,
+        isAbsent: true,
+        comments: "Absent without excuse",
+        gradedById: teacherId,
+        updatedAt: now(),
+      });
+    }
+  }
 
-      // ───────────────────────────────────────────────
-      // باقي الجداول (يمكن توسيعها بنفس الأسلوب: جمع البيانات أولاً ثم bulk insert)
-      // ───────────────────────────────────────────────
-
-      // مثال: إجازات (realistic Yemeni & Islamic holidays approx 2025-2026)
-      await tx.insert(schema.holidays).values([
-        { name: 'عيد الفطر المبارك',        date: '2026-03-21', academicYearId: yearId },
-        { name: 'عيد الأضحى المبارك',       date: '2026-05-28', academicYearId: yearId },
-        { name: 'المولد النبوي الشريف',     date: '2026-09-04', academicYearId: yearId },
-        { name: 'ثورة 26 سبتمبر',           date: '2025-09-26', academicYearId: yearId },
-        { name: 'عيد الثورة 14 أكتوبر',     date: '2025-10-14', academicYearId: yearId },
-      ]);
-    });
-
-    console.log('Seeding successful ✓');
-    process.exit(0);
-  } catch (err) {
-    console.error('Error during seeding:', err);
-    process.exit(1);
+  if (grades.length > 0) {
+    await db.insert(schema.gradeEntries).values(grades).onConflictDoNothing();
+    console.log(`  ✓ ${grades.length} grade / absence records inserted`);
   }
 }
 
-seed();
+async function seedNotifications(
+  adminId: string,
+  teacherId: string,
+  studentIds: string[],
+  classes: any[],
+  firstAssessmentId?: number,
+) {
+  console.log("→ Seeding sample notifications...");
+
+  const notifications = [
+    {
+      senderId: teacherId,
+      recipientId: studentIds[0]!,
+      type: "grade_published" as const,
+      title: "Grades Published - Monthly Quiz",
+      message: "You can now view your September grades in Mathematics.",
+      isRead: false,
+      isHighPriority: true,
+      relatedEntityType: "assessment_item",
+      relatedEntityId: firstAssessmentId?.toString(),
+      createdAt: now(),
+    },
+    {
+      senderId: adminId,
+      recipientId: studentIds[0]!, // Schema requires recipientId to be not null
+      classId: classes[0]?.id,
+      type: "announcement" as const,
+      title: "Parent-Teacher Meeting",
+      message: "A parent meeting will be held next Sunday at 5:00 PM.",
+      isRead: false,
+      isHighPriority: true,
+      createdAt: now(),
+    },
+    {
+      senderId: teacherId,
+      recipientId: studentIds[1]!,
+      type: "attendance_alert" as const,
+      title: "Absence Alert",
+      message: "You were marked absent in the Arabic Language quiz without excuse.",
+      isRead: false,
+      isHighPriority: true,
+      createdAt: now(),
+    },
+  ];
+
+  await db.insert(schema.notifications).values(notifications).onConflictDoNothing();
+  console.log("  ✓ Sample notifications created");
+}
+
+// ────────────────────────────────────────────────
+// Main Execution
+// ────────────────────────────────────────────────
+
+async function main() {
+  console.log("🌱 Starting database seeding...");
+
+  try {
+    await resetDatabase();
+
+    const yearId = await seedAcademicYears();
+    const termId = await seedAcademicTerms(yearId);
+    await seedSubjects();
+
+    const classes = await seedClasses(yearId);
+    const { adminId, teacherId, studentsData } = await seedUsersAndStudents();
+
+    await assignStudentsToClasses(classes, studentsData);
+
+    // Prepare student IDs grouped by class
+    const studentIdsByClass = new Map<number, string[]>();
+
+    for (const cls of classes) {
+      const studentsInClass = await db
+        .select({ userId: schema.students.userId })
+        .from(schema.students)
+        .where(eq(schema.students.currentClassId, cls.id));
+
+      studentIdsByClass.set(
+        cls.id,
+        studentsInClass.map((s) => s.userId),
+      );
+    }
+
+    const subjects = await db.select().from(schema.subjects);
+
+    await seedAssessmentsAndGrades(termId, classes, subjects, teacherId, studentIdsByClass);
+
+    const firstItem = await db
+      .select({ id: schema.assessmentItems.id })
+      .from(schema.assessmentItems)
+      .limit(1);
+
+    await seedNotifications(
+      adminId,
+      teacherId,
+      studentsData.map((s) => s.user.id),
+      classes,
+      firstItem[0]?.id,
+    );
+
+    console.log("\n✨ Seeding completed successfully!");
+  } catch (error) {
+    console.error("❌ Seeding failed:", error);
+    process.exit(1);
+  } finally {
+    await pool.end();
+    console.log("→ Database connection pool closed");
+  }
+}
+
+main().catch((err) => {
+  console.error("Unexpected error in main:", err);
+  process.exit(1);
+});

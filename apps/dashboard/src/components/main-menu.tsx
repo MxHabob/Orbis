@@ -25,20 +25,6 @@ const items = [
   {
     path: "/students",
     name: "Students",
-    children: [
-      {
-        path: "/students/enroll",
-        name: "Enroll",
-      },
-      {
-        path: "/students/promotion",
-        name: "Promotion",
-      },
-      {
-        path: "/students/parents",
-        name: "Parents",
-      },
-    ],
   },
   {
     path: "/subjects",
@@ -60,6 +46,16 @@ const items = [
     ],
   },
   {
+    path: "/reports",
+    name: "Reports",
+    children: [
+      { path: "/reports/academic",      name: "Academic Reports" },
+      { path: "/reports/financial",     name: "Financial Reports" },
+      { path: "/reports/attendance",    name: "Attendance Reports" },
+      { path: "/reports/ministerial",   name: "Ministerial Reports" },
+    ]
+  },
+  {
     path: "/fees",
     name: "Fees & Payments",
   },
@@ -75,16 +71,6 @@ const items = [
       { path: "/settings/academic-years", name: "Academic Years" },
       { path: "/settings/staff", name: "Staff & Teachers" },
     ],
-  },
-  {
-    path: "/reports",
-    name: "Reports",
-    children: [
-      { path: "/reports/academic",      name: "Academic Reports" },
-      { path: "/reports/financial",     name: "Financial Reports" },
-      { path: "/reports/attendance",    name: "Attendance Reports" },
-      { path: "/reports/ministerial",   name: "Ministerial Reports" },
-    ]
   },
 ];
 

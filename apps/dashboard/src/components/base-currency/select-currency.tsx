@@ -2,8 +2,6 @@
 
 import { SelectCurrency as SelectCurrencyBase } from "@/components/select-currency";
 import { useJobStatus } from "@/hooks/use-job-status";
-import { useTeamMutation } from "@/hooks/use-team";
-import { useTeamQuery } from "@/hooks/use-team";
 import { useTRPC } from "@/trpc/client";
 import { uniqueCurrencies } from "@midday/location/currencies";
 import { Button } from "@midday/ui/button";
@@ -19,36 +17,35 @@ export function SelectCurrency() {
   const [toastId, setToastId] = useState<string | null>(null);
   const toastIdRef = useRef<string | null>(null);
   const lastProgressRef = useRef<number | undefined>(undefined);
-  const updateTeamMutation = useTeamMutation();
-  const { data: team } = useTeamQuery();
 
-  const updateBaseCurrencyMutation = useMutation(
-    trpc.team.updateBaseCurrency.mutationOptions({
-      onMutate: () => {
-        setSyncing(true);
-      },
-      onSuccess: (data) => {
-        if (data?.id) {
-          setJobId(data.id);
-        }
-      },
-      onError: () => {
-        if (toastIdRef.current) {
-          dismiss(toastIdRef.current);
-          setToastId(null);
-          toastIdRef.current = null;
-        }
-        setJobId(undefined);
-        setSyncing(false);
 
-        toast({
-          duration: 3500,
-          variant: "error",
-          title: "Something went wrong please try again.",
-        });
-      },
-    }),
-  );
+  // const updateBaseCurrencyMutation = useMutation(
+  //   trpc.team.updateBaseCurrency.mutationOptions({
+  //     onMutate: () => {
+  //       setSyncing(true);
+  //     },
+  //     onSuccess: (data) => {
+  //       if (data?.id) {
+  //         setJobId(data.id);
+  //       }
+  //     },
+  //     onError: () => {
+  //       if (toastIdRef.current) {
+  //         dismiss(toastIdRef.current);
+  //         setToastId(null);
+  //         toastIdRef.current = null;
+  //       }
+  //       setJobId(undefined);
+  //       setSyncing(false);
+
+  //       toast({
+  //         duration: 3500,
+  //         variant: "error",
+  //         title: "Something went wrong please try again.",
+  //       });
+  //     },
+  //   }),
+  // );
 
   const { status, progress } = useJobStatus({
     jobId,
@@ -69,11 +66,11 @@ export function SelectCurrency() {
             duration: 7000,
             footer: (
               <Button
-                onClick={() =>
-                  updateBaseCurrencyMutation.mutate({
-                    baseCurrency: baseCurrency.toUpperCase(),
-                  })
-                }
+                // onClick={() =>
+                //   updateBaseCurrencyMutation.mutate({
+                //     baseCurrency: baseCurrency.toUpperCase(),
+                //   })
+                // }
               >
                 Update
               </Button>

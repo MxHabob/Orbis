@@ -16,22 +16,22 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@midday/ui/tooltip";
-import { getTaxTypeLabel } from "@midday/utils/tax";
+
 import { DotsHorizontalIcon } from "@radix-ui/react-icons";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 
-export interface CategoriesTableMeta {
-  deleteCategory: (id: string) => void;
-  onEdit: (id: string) => void;
-  expandedCategories: Set<string>;
-  setExpandedCategories: Dispatch<SetStateAction<Set<string>>>;
+export interface SubjectsTableMeta {
+  deleteSubject: (id: number) => void;
+  onEditSubject: (id: number) => void;
+  expandedSubjects: Set<number>;
+  setExpandedSubjects: Dispatch<SetStateAction<Set<number>>>;
   searchValue?: string;
   setSearchValue?: Dispatch<SetStateAction<string>>;
 }
 
-export type Category = RouterOutputs["transactionCategories"]["get"][number];
+export type Subject = RouterOutputs["subject"]["get"]["data"][number];
 
 // Check if a category should show a tooltip
 function shouldShowCategoryTooltip(category: any): boolean {
@@ -73,7 +73,7 @@ function CategoryTooltip({ category }: { category: any }) {
 }
 
 // Flatten categories to include both parents and children with hierarchy info
-export function flattenCategories(categories: any[]): any[] {
+export function flattenSubjects(categories: any[]): any[] {
   const flattened: any[] = [];
 
   for (const category of categories) {
@@ -106,24 +106,24 @@ export const columns: ColumnDef<any>[] = [
     accessorKey: "name",
     cell: ({ row, table }) => {
       // Get expanded state from table meta
-      const meta = table.options.meta as CategoriesTableMeta;
-      const tableExpandedCategories = meta?.expandedCategories || new Set();
-      const setTableExpandedCategories = meta?.setExpandedCategories;
+      const meta = table.options.meta as unknown as SubjectsTableMeta;
+      const tableExpandedSubjects = meta?.expandedSubjects || new Set();
+      const setTableExpandedSubjects = meta?.setExpandedSubjects;
 
-      const isExpanded = tableExpandedCategories.has(row.original.id);
+      const isExpanded = tableExpandedSubjects.has(row.original.id);
       const hasChildren = row.original.hasChildren;
       const isChild = row.original.isChild;
 
       const toggleExpanded = () => {
-        if (!setTableExpandedCategories) return;
+        if (!setTableExpandedSubjects) return;
 
-        const newExpanded = new Set(tableExpandedCategories);
+        const newExpanded = new Set(tableExpandedSubjects);
         if (isExpanded) {
           newExpanded.delete(row.original.id);
         } else {
           newExpanded.add(row.original.id);
         }
-        setTableExpandedCategories(newExpanded);
+        setTableExpandedSubjects(newExpanded);
       };
 
       return (
@@ -211,26 +211,26 @@ export const columns: ColumnDef<any>[] = [
     },
   },
   {
-    header: "Tax Type",
-    accessorKey: "taxType",
-    cell: ({ row }) =>
-      row.getValue("taxType") ? getTaxTypeLabel(row.getValue("taxType")) : "-",
+    header: "Short Name",
+    accessorKey: "shortName",
+    cell: ({ row }) => row.getValue("shortName") || "-",
   },
   {
-    header: "Tax Rate",
-    accessorKey: "taxRate",
-    cell: ({ row }) =>
-      row.getValue("taxRate") ? `${row.getValue("taxRate")}%` : "-",
+    header: "Department",
+    accessorKey: "department",
+    cell: ({ row }) => (
+      <span className="capitalize">{row.getValue("department") || "-"}</span>
+    ),
   },
   {
-    header: () => <span className="whitespace-nowrap">Report Code</span>,
-    accessorKey: "taxReportingCode",
-    cell: ({ row }) => row.getValue("taxReportingCode") || "-",
+    header: "Code",
+    accessorKey: "code",
+    cell: ({ row }) => row.getValue("code") || "-",
   },
   {
     id: "actions",
     cell: ({ row, table }) => {
-      const meta = table.options.meta as CategoriesTableMeta;
+      const meta = table.options.meta as unknown as SubjectsTableMeta;
 
       return (
         <div className="text-right">
@@ -248,13 +248,13 @@ export const columns: ColumnDef<any>[] = [
               align="end"
               onClick={(e) => e.stopPropagation()}
             >
-              <DropdownMenuItem onClick={() => meta?.onEdit?.(row.original.id)}>
+              <DropdownMenuItem onClick={() => meta?.onEditSubject?.(row.original.id)}>
                 Edit
               </DropdownMenuItem>
 
               {!row.original.system && (
                 <DropdownMenuItem
-                  onClick={() => meta?.deleteCategory?.(row.original.id)}
+                  onClick={() => meta?.deleteSubject?.(row.original.id)}
                 >
                   Remove
                 </DropdownMenuItem>

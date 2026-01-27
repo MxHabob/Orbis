@@ -4,16 +4,16 @@ import { useCategoryParams } from "@/hooks/use-category-params";
 import { Button } from "@midday/ui/button";
 import { Input } from "@midday/ui/input";
 import type { Table } from "@tanstack/react-table";
-import type { Category } from "./columns";
+import type { Subject } from "./columns";
 
 type Props = {
-  table?: Table<Category>;
+  table?: Table<Subject>;
 };
 
 export function Header({ table }: Props) {
   const { setParams } = useCategoryParams();
 
-  const handleCreateCategory = () => {
+  const handleCreateSubject = () => {
     setParams({ createCategory: true });
   };
 
@@ -33,7 +33,7 @@ export function Header({ table }: Props) {
         className="max-w-sm"
       />
 
-      <Button onClick={handleCreateCategory}>Create</Button>
+      <Button onClick={handleCreateSubject}>Create</Button>
     </div>
   );
 }

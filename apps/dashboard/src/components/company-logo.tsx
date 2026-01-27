@@ -1,7 +1,6 @@
 "use client";
 
-import { useTeamMutation, useTeamQuery } from "@/hooks/use-team";
-import { useUpload } from "@/hooks/use-upload";
+import { useUsersMutation, useUsersQuery } from "@/hooks/use-team";
 import { Avatar, AvatarFallback, AvatarImage } from "@midday/ui/avatar";
 import {
   Card,
@@ -16,9 +15,8 @@ import { useRef } from "react";
 
 export function CompanyLogo() {
   const inputRef = useRef<HTMLInputElement>(null);
-  const { isLoading, uploadFile } = useUpload();
-  const { data } = useTeamQuery();
-  const { mutate: updateTeam } = useTeamMutation();
+  const { data } = useUsersQuery();
+  const { mutate: updateTeam } = useUsersMutation();
 
   const handleUpload = async (evt: React.ChangeEvent<HTMLInputElement>) => {
     const { files } = evt.target;
@@ -26,14 +24,10 @@ export function CompanyLogo() {
 
     const filename = stripSpecialCharacters(selectedFile[0]?.name ?? "");
 
-    const { url } = await uploadFile({
-      bucket: "avatars",
-      path: [data?.id ?? "", filename],
-      file: selectedFile[0] as File,
-    });
+    const url = ""
 
     if (url) {
-      updateTeam({ logoUrl: url });
+      updateTeam({ avatarUrl: url });
     }
   };
 
@@ -57,13 +51,13 @@ export function CompanyLogo() {
           ) : (
             <>
               <AvatarImage
-                src={data?.logoUrl ?? undefined}
-                alt={data?.name ?? undefined}
+                src={data?.[0]?.image ?? undefined}
+                alt={data?.[0]?.name ?? undefined}
                 width={64}
                 height={64}
               />
               <AvatarFallback>
-                <span className="text-md">{data?.name?.charAt(0)}</span>
+                <span className="text-md">{data?.[0]?.name?.charAt(0)}</span>
               </AvatarFallback>
             </>
           )}

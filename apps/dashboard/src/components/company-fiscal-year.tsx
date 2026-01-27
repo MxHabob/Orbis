@@ -1,6 +1,6 @@
 "use client";
 
-import { useTeamMutation, useTeamQuery } from "@/hooks/use-team";
+import { useCurrentAcademicYearQuery, useUpdateAcademicYearMutation } from "@/hooks/use-academic-year";
 import { useZodForm } from "@/hooks/use-zod-form";
 import {
   Card,
@@ -18,25 +18,34 @@ import {
   FormMessage,
 } from "@midday/ui/form";
 import { SubmitButton } from "@midday/ui/submit-button";
-import { z } from "zod/v3";
-import { SelectFiscalMonth } from "./select-fiscal-month";
+import { z } from "zod";
+import { Input } from "@midday/ui/input";
 
 const formSchema = z.object({
-  fiscalYearStartMonth: z.number().int().min(1).max(12).nullable(),
+  year: z.string().min(1).max(20),
+  startDate: z.coerce.date(),
+  endDate: z.coerce.date().optional().nullable(),
 });
 
-export function CompanyFiscalYear() {
-  const { data } = useTeamQuery();
-  const updateTeamMutation = useTeamMutation();
+export function SchoolAcademicYear() {
+  const { data } = useCurrentAcademicYearQuery();
+  const updateAcademicYearMutation = useUpdateAcademicYearMutation();
 
   const form = useZodForm(formSchema, {
     defaultValues: {
-      fiscalYearStartMonth: data?.fiscalYearStartMonth ?? null,
+      year: data?.year ?? "",
+      startDate: data?.startDate ? new Date(data.startDate) : new Date(),
+      endDate: data?.endDate ? new Date(data.endDate) : null,
     },
   });
 
-  const onSubmit = form.handleSubmit((data) => {
-    updateTeamMutation.mutate(data);
+  const onSubmit = form.handleSubmit((values) => {
+    if (data?.id) {
+      updateAcademicYearMutation.mutate({
+        id: data.id,
+        ...values,
+      });
+    }
   });
 
   return (
@@ -44,32 +53,68 @@ export function CompanyFiscalYear() {
       <form onSubmit={onSubmit}>
         <Card>
           <CardHeader>
-            <CardTitle>Fiscal year</CardTitle>
+            <CardTitle>Academic Year</CardTitle>
             <CardDescription>
-              Set when your fiscal year begins. This determines the default date
-              ranges for all reports and widgets throughout the application.
+              Set the current academic year and its duration. This will be used
+              for student enrollments, grading, and reporting.
             </CardDescription>
           </CardHeader>
 
-          <CardContent>
+          <CardContent className="space-y-4">
             <FormField
               control={form.control}
-              name="fiscalYearStartMonth"
+              name="year"
               render={({ field }) => (
                 <FormItem className="max-w-[300px]">
                   <FormControl>
-                    <SelectFiscalMonth {...field} />
+                    <Input {...field} placeholder="Academic Year (e.g. 2024/2025)" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
+            <div className="flex gap-4">
+              <FormField
+                control={form.control}
+                name="startDate"
+                render={({ field }) => (
+                  <FormItem className="flex-1">
+                    <FormControl>
+                      <Input 
+                        type="date" 
+                        {...field} 
+                        value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : field.value}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="endDate"
+                render={({ field }) => (
+                  <FormItem className="flex-1">
+                    <FormControl>
+                      <Input 
+                        type="date" 
+                        {...field} 
+                        value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : (field.value ?? "")}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
           </CardContent>
 
           <CardFooter className="flex justify-end">
             <SubmitButton
-              disabled={updateTeamMutation.isPending || !form.formState.isDirty}
-              isSubmitting={updateTeamMutation.isPending}
+              disabled={updateAcademicYearMutation.isPending || !form.formState.isDirty}
+              isSubmitting={updateAcademicYearMutation.isPending}
             >
               Save
             </SubmitButton>

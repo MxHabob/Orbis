@@ -7,30 +7,30 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query";
 
-export function useTeamQuery() {
+export function useUsersQuery() {
   const trpc = useTRPC();
-  return useSuspenseQuery(trpc.team.current.queryOptions());
+  return useSuspenseQuery(trpc.user.get.queryOptions());
 }
 
-export function useTeamMutation() {
+export function useUsersMutation() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
   return useMutation(
-    trpc.team.update.mutationOptions({
+    trpc.user.update.mutationOptions({
       onMutate: async (newData) => {
         // Cancel outgoing refetches
         await queryClient.cancelQueries({
-          queryKey: trpc.team.current.queryKey(),
+          queryKey: trpc.user.get.queryKey(),
         });
 
         // Get current data
         const previousData = queryClient.getQueryData(
-          trpc.team.current.queryKey(),
+          trpc.user.get.queryKey(),
         );
 
         // Optimistically update
-        queryClient.setQueryData(trpc.team.current.queryKey(), (old: any) => ({
+        queryClient.setQueryData(trpc.user.get.queryKey(), (old: any) => ({
           ...old,
           ...newData,
         }));
@@ -40,14 +40,14 @@ export function useTeamMutation() {
       onError: (_, __, context) => {
         // Rollback on error
         queryClient.setQueryData(
-          trpc.team.current.queryKey(),
+          trpc.user.get.queryKey(),
           context?.previousData,
         );
       },
       onSettled: () => {
         // Refetch after error or success
         queryClient.invalidateQueries({
-          queryKey: trpc.team.current.queryKey(),
+          queryKey: trpc.user.get.queryKey(),
         });
       },
     }),
