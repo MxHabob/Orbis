@@ -1,7 +1,6 @@
 import "server-only";
 
 import { Cookies } from "@/utils/constants";
-import { getSessionToken } from "@midday/auth/server-auth";
 import type { AppRouter } from "@midday/api/trpc/routers/_app";
 import { getCountryCode, getLocale, getTimezone } from "@midday/location";
 
@@ -59,31 +58,24 @@ export const trpc = createTRPCOptionsProxy<AppRouter>({
           headers.set("x-user-locale", await getLocale());
           headers.set("x-user-country", await getCountryCode());
 
-          // Get session token for server-to-server authentication
-          // This is more reliable than passing cookies
-          const sessionToken = await getSessionToken();
-          if (sessionToken) {
-            headers.set("Authorization", `Bearer ${sessionToken}`);
-          } else {
-            // Fallback to cookies if session token is not available
-            try {
-              const cookieStore = await cookies();
-              const allCookies = cookieStore.getAll();
-              if (allCookies.length > 0) {
-                const cookieHeader = allCookies
-                  .map((cookie) => `${cookie.name}=${cookie.value}`)
-                  .join("; ");
-                headers.set("cookie", cookieHeader);
-              }
-
-              // Pass force-primary cookie as header to API for replication lag handling
-              const forcePrimary = cookieStore.get(Cookies.ForcePrimary);
-              if (forcePrimary?.value === "true") {
-                headers.set("x-force-primary", "true");
-              }
-            } catch (error) {
-              // Ignore cookie errors
+          // Forward cookies to the API for authentication
+          try {
+            const cookieStore = await cookies();
+            const allCookies = cookieStore.getAll();
+            if (allCookies.length > 0) {
+              const cookieHeader = allCookies
+                .map((cookie) => `${cookie.name}=${cookie.value}`)
+                .join("; ");
+              headers.set("cookie", cookieHeader);
             }
+
+            // Pass force-primary cookie as header to API for replication lag handling
+            const forcePrimary = cookieStore.get(Cookies.ForcePrimary);
+            if (forcePrimary?.value === "true") {
+              headers.set("x-force-primary", "true");
+            }
+          } catch (error) {
+            // Ignore cookie errors
           }
 
           try {
@@ -164,31 +156,24 @@ export async function getTRPCClient() {
           headers.set("x-user-locale", await getLocale());
           headers.set("x-user-country", await getCountryCode());
 
-          // Get session token for server-to-server authentication
-          // This is more reliable than passing cookies
-          const sessionToken = await getSessionToken();
-          if (sessionToken) {
-            headers.set("Authorization", `Bearer ${sessionToken}`);
-          } else {
-            // Fallback to cookies if session token is not available
-            try {
-              const cookieStore = await cookies();
-              const allCookies = cookieStore.getAll();
-              if (allCookies.length > 0) {
-                const cookieHeader = allCookies
-                  .map((cookie) => `${cookie.name}=${cookie.value}`)
-                  .join("; ");
-                headers.set("cookie", cookieHeader);
-              }
-
-              // Pass force-primary cookie as header to API for replication lag handling
-              const forcePrimary = cookieStore.get(Cookies.ForcePrimary);
-              if (forcePrimary?.value === "true") {
-                headers.set("x-force-primary", "true");
-              }
-            } catch (error) {
-              // Ignore cookie errors
+          // Forward cookies to the API for authentication
+          try {
+            const cookieStore = await cookies();
+            const allCookies = cookieStore.getAll();
+            if (allCookies.length > 0) {
+              const cookieHeader = allCookies
+                .map((cookie) => `${cookie.name}=${cookie.value}`)
+                .join("; ");
+              headers.set("cookie", cookieHeader);
             }
+
+            // Pass force-primary cookie as header to API for replication lag handling
+            const forcePrimary = cookieStore.get(Cookies.ForcePrimary);
+            if (forcePrimary?.value === "true") {
+              headers.set("x-force-primary", "true");
+            }
+          } catch (error) {
+            // Ignore cookie errors
           }
 
           try {

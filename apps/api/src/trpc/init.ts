@@ -1,5 +1,5 @@
 import { verifySession } from "@api/utils/auth";
-import type { Session } from "@api/utils/auth";
+import type { Session, HonoEnv } from "@api/utils/auth";
 import { getGeoContext } from "@api/utils/geo";
 import type { Database } from "@midday/db/client";
 import { db } from "@midday/db/client";
@@ -19,7 +19,7 @@ type TRPCContext = {
 
 export const createTRPCContext = async (
   _: unknown,
-  c: Context,
+  c: Context<HonoEnv>,
 ): Promise<TRPCContext> => {
   const authResult = await verifySession(c);
   const session = authResult ? authResult : null;

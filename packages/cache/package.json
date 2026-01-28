@@ -3,26 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "exports": {
-    "./replication-cache": "./src/replication-cache.ts",
-    "./health": "./src/health.ts",
-    "./redis-client": "./src/redis-client.ts",
-    "./shared-redis": "./src/shared-redis.ts",
-    "./widget-preferences-cache": "./src/widget-preferences-cache.ts",
-    "./suggested-actions-cache": "./src/suggested-actions-cache.ts",
-    "./academic-year-cache": "./src/academic-year-cache.ts",
-    "./student-cache": "./src/student-cache.ts",
-    "./attendance-cache": "./src/attendance-cache.ts",
-    "./class-cache": "./src/class-cache.ts",
-    "./exam-cache": "./src/exam-cache.ts",
-    "./grade-cache": "./src/grade-cache.ts",
-    "./payment-cache": "./src/payment-cache.ts",
-    "./report-cache": "./src/report-cache.ts",
-    "./schedule-cache": "./src/schedule-cache.ts",
-    "./teacher-cache": "./src/teacher-cache.ts",
-    "./subject-cache": "./src/subject-cache.ts",
-    "./lesson-cache": "./src/lesson-cache.ts",
-    "./level-cache": "./src/level-cache.ts",
-    "./parent-cache": "./src/parent-cache.ts"
+    ".": "./src/index.ts"
   },
   "dependencies": {
     "redis": "5.10.0",

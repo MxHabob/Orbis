@@ -6,10 +6,28 @@ import { secureHeaders } from "hono/secure-headers";
 import { createTRPCContext } from "./trpc/init";
 import { appRouter } from "./trpc/routers/_app";
 import { httpLogger } from "./utils/logger";
+import { auth } from "@midday/auth";
+import type { HonoEnv } from "./utils/auth";
 
-const app = new OpenAPIHono();
+const app = new OpenAPIHono<HonoEnv>();
 
 app.use(httpLogger());
+app.use("*", async (c, next) => {
+  const session = await auth.api.getSession({
+    headers: c.req.raw.headers,
+  });
+
+  if (!session) {
+    c.set("user", null);
+    c.set("session", null);
+    await next();
+    return;
+  }
+
+  c.set("user", session.user);
+  c.set("session", session.session);
+  await next();
+});
 app.use(
   secureHeaders({
     crossOriginResourcePolicy: "cross-origin",
@@ -68,6 +86,10 @@ app.use(
     createContext: createTRPCContext,
   }),
 );
+
+app.on(["POST", "GET"], "/api/auth/*", (c) => {
+  return auth.handler(c.req.raw);
+});
 
 app.get("/health", (c) => {
   return c.json({ status: "ok" }, 200);
