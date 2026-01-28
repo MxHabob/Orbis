@@ -19,6 +19,8 @@
     "@midday/auth": "workspace:*",
     "@midday/logger": "workspace:*",
     "@midday/utils": "workspace:*",
+    "@midday/encryption": "workspace:*",
+    "@midday/location": "workspace:*",
     "@hono/mcp": "^0.2.3",
     "@hono/trpc-server": "^0.4.1",
     "@hono/zod-openapi": "^1.1.5",

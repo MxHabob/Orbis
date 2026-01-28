@@ -1,15 +1,12 @@
-// packages/db/src/seed.ts
-import { drizzle } from "drizzle-orm/node-postgres";
-import { Pool } from "pg";
 import { eq, sql, getTableName } from "drizzle-orm";
 import { randomUUID } from "crypto";
-
 import * as schema from "./schema";
+import { notificationTypeEnum } from "./schema";
+import { db } from "./client";
 
 // ────────────────────────────────────────────────
-// Configuration & DB Setup
+// Config & DB Setup
 // ────────────────────────────────────────────────
-
 const isProduction = process.env.NODE_ENV === "production";
 
 if (isProduction) {
@@ -17,33 +14,17 @@ if (isProduction) {
   process.exit(1);
 }
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_PRIMARY_URL,
-  max: 5,
-  idleTimeoutMillis: 10000,
-  connectionTimeoutMillis: 5000,
-});
-
-const db = drizzle(pool, {
-  schema,
-  casing: "snake_case",
-  logger: true,
-});
-
-// ────────────────────────────────────────────────
-// Utility Helpers
-// ────────────────────────────────────────────────
 
 const now = () => new Date();
 
 async function resetDatabase() {
   console.log("→ Resetting database tables...");
 
-  // Explicit list of tables only (no relations, no enums)
   const tables = [
     schema.gradeEntries,
     schema.assessmentItems,
     schema.students,
+    schema.enrollments,
     schema.classes,
     schema.subjects,
     schema.academicTerms,
@@ -53,37 +34,32 @@ async function resetDatabase() {
     schema.verifications,
     schema.sessions,
     schema.accounts,
-    schema.users, // users last → many foreign keys reference it
+    schema.users, // users last (most foreign keys point to it)
   ];
 
   for (const table of tables) {
     if (!table) continue;
     const tableName = getTableName(table);
-
     try {
-      // Correct PostgreSQL syntax: TRUNCATE table_name RESTART IDENTITY CASCADE;
       await db.execute(
         sql.raw(`TRUNCATE TABLE "${tableName}" RESTART IDENTITY CASCADE;`)
       );
-      console.log(`  Truncated: ${tableName}`);
+      console.log(`   Truncated: ${tableName}`);
     } catch (err) {
-      console.warn(`  Warning: Failed to truncate ${tableName}:`, err);
+      console.warn(`   Warning: Failed to truncate ${tableName}:`, err);
     }
   }
-
   console.log("✓ Database reset completed");
 }
 
 // ────────────────────────────────────────────────
 // Seed Functions
 // ────────────────────────────────────────────────
-
 async function seedAcademicYears(): Promise<number> {
   console.log("→ Seeding academic years...");
-
   const years = [
-    { yearName: "2024-2025", isCurrent: false },
-    { yearName: "2025-2026", isCurrent: true },
+    { yearName: "2025", isCurrent: false },
+    { yearName: "2026", isCurrent: true },
   ];
 
   await db.insert(schema.academicYears).values(years).onConflictDoNothing();
@@ -94,24 +70,22 @@ async function seedAcademicYears(): Promise<number> {
     .where(eq(schema.academicYears.isCurrent, true))
     .limit(1);
 
-  if (!current) throw new Error("No current academic year found after seeding");
-
+  if (!current) throw new Error("No current academic year found");
   return current.id;
 }
 
 async function seedAcademicTerms(yearId: number): Promise<number> {
   console.log("→ Seeding academic terms...");
-
   const terms = [
     {
-      name: "الفصل الدراسي الأول",
+      name: "First Semester",
       academicYearId: yearId,
       startDate: "2025-09-01",
       endDate: "2026-01-15",
       isCurrent: true,
     },
     {
-      name: "الفصل الدراسي الثاني",
+      name: "Second Semester",
       academicYearId: yearId,
       startDate: "2026-02-01",
       endDate: "2026-06-20",
@@ -127,43 +101,151 @@ async function seedAcademicTerms(yearId: number): Promise<number> {
     .where(eq(schema.academicTerms.isCurrent, true))
     .limit(1);
 
-  if (!current) throw new Error("No current term found after seeding");
-
+  if (!current) throw new Error("No current term found");
   return current.id;
 }
 
 async function seedSubjects() {
   console.log("→ Seeding subjects...");
-
   const subjects = [
-    { name: "اللغة العربية", code: "ARA", color_code: "#FFCDD2" },
-    { name: "اللغة الإنجليزية", code: "ENG", color_code: "#BBDEFB" },
-    { name: "الرياضيات", code: "MAT", color_code: "#C8E6C9" },
-    { name: "العلوم", code: "SCI", color_code: "#FFF9C4" },
-    { name: "الدراسات الاجتماعية", code: "SST", color_code: "#E1BEE7" },
-    { name: "التربية الإسلامية", code: "ISL", color_code: "#D1C4E9" },
+    { name: "Arabic Language",      code: "ARA", color: "#ffcdd2" },
+    { name: "English Language",     code: "ENG", color: "#bbdefb" },
+    { name: "Mathematics",          code: "MAT", color: "#c8e6c9" },
+    { name: "Science",              code: "SCI", color: "#fff9c4" },
+    { name: "Social Studies",       code: "SST", color: "#e1bee7" },
+    { name: "Islamic Education",    code: "ISL", color: "#d1c4e9" },
+    { name: "Holy Quran",           code: "HQ", color: "#d1c4e9" },
+    { name: "Physical Education",   code: "PE", color: "#c8e6c9" },
   ];
 
   await db.insert(schema.subjects).values(subjects).onConflictDoNothing();
-  console.log(`  ✓ ${subjects.length} subjects seeded`);
+  console.log(`   ✓ ${subjects.length} subjects seeded`);
+
+  return await db.select().from(schema.subjects);
 }
 
 async function seedClasses(yearId: number) {
-  console.log("→ Seeding classes...");
+  console.log("→ Seeding classes with hierarchy (parent grade → divisions A/B)...");
 
-  const classesData = [
-    { name: "الصف الأول الابتدائي", division: "أ", academicYearId: yearId },
-    { name: "الصف الأول الابتدائي", division: "ب", academicYearId: yearId },
-    { name: "الصف الثاني الابتدائي", division: "أ", academicYearId: yearId },
-    { name: "الصف الثالث الاعدادي", division: "أ", academicYearId: yearId },
+  const gradeNames = [
+    "First grade",
+    "Second grade",
+    "Third grade",
+    "Fourth grade",
+    "Fifth grade",
+    "Sixth grade",
+    "Seventh grade",
+    "Eighth grade",
+    "Ninth grade",
+    "Tenth grade",
+    "Eleventh grade",
+    "Twelfth grade",
   ];
 
-  await db.insert(schema.classes).values(classesData).onConflictDoNothing();
+  const divisions = ["A", "B"];
+  const colors = [
+    "#e3f2fd", "#e8f5e9", "#f3e5f5", "#ffecb3",
+    "#e1f5fe", "#f1f8e9", "#ede7f6", "#fff3e0",
+    "#e0f7fa", "#dcedc8", "#d1c4e9", "#ffecb3",
+  ];
 
-  const inserted = await db.select().from(schema.classes);
-  console.log(`  ✓ ${inserted.length} classes created`);
+  const classesData: typeof schema.classes.$inferInsert[] = [];
+  let colorIndex = 0;
 
-  return inserted;
+  for (const gradeName of gradeNames) {
+    const color = colors[colorIndex % colors.length];
+    colorIndex++;
+
+    // Parent (grade level)
+    classesData.push({
+      name: gradeName,
+      type: 'classroom' as const,
+      division: null,
+      parentClassId: null,
+      academicYearId: yearId,
+      color,
+    });
+
+    // Children (divisions A & B)
+    for (const div of divisions) {
+      classesData.push({
+        name: `${gradeName} (${div})`,
+        type: 'classroom' as const,
+        division: div,
+        parentClassId: null,           // will be updated later
+        academicYearId: yearId,
+        color,                    // same color as parent
+      });
+    }
+  }
+
+  // Step 2: Insert all classes at once
+  await db.insert(schema.classes)
+    .values(classesData)
+    .onConflictDoNothing();
+
+  // Step 3: Fetch inserted classes in insertion order
+  const insertedClasses = await db
+    .select()
+    .from(schema.classes)
+    .where(eq(schema.classes.academicYearId, yearId))
+    .orderBy(schema.classes.id);
+
+  console.log(`   Inserted ${insertedClasses.length} classes`);
+
+  // Step 4: Link children to their parents (safe iteration)
+  const updatePromises: Promise<any>[] = [];
+
+  for (let i = 0; i < insertedClasses.length; i += 3) {
+    const parent = insertedClasses[i];
+    if (!parent) {
+      console.warn(`   Skipping invalid parent at index ${i}`);
+      continue;
+    }
+
+    const childA = insertedClasses[i + 1];
+    const childB = insertedClasses[i + 2];
+
+    if (childA) {
+      updatePromises.push(
+        db.update(schema.classes)
+          .set({ parentClassId: parent.id })
+          .where(eq(schema.classes.id, childA.id))
+      );
+    }
+
+    if (childB) {
+      updatePromises.push(
+        db.update(schema.classes)
+          .set({ parentClassId: parent.id })
+          .where(eq(schema.classes.id, childB.id))
+      );
+    }
+  }
+
+  if (updatePromises.length > 0) {
+    await Promise.all(updatePromises);
+    console.log(`   ✓ Linked ${updatePromises.length} division classes to parents`);
+  } else {
+    console.log("   No linking needed (empty result?)");
+  }
+
+  // Final fetch for return (with hierarchy info)
+  const finalClasses = await db
+    .select()
+    .from(schema.classes)
+    .where(eq(schema.classes.academicYearId, yearId))
+    .orderBy(schema.classes.id);
+
+  const parentCount = finalClasses.filter(c => c.parentClassId === null).length;
+  const childCount = finalClasses.length - parentCount;
+
+  console.log(
+    `   ✓ Created ${parentCount} parent classes + ${childCount} divisions ` +
+    `(total: ${finalClasses.length})`
+  );
+
+  return finalClasses;
 }
 
 async function seedUsersAndStudents() {
@@ -172,7 +254,7 @@ async function seedUsersAndStudents() {
   const admin = {
     id: randomUUID(),
     username: "admin",
-    name: "مدير النظام",
+    name: "System Administrator",
     email: "admin@school.com",
     phone: "+966501234567",
     role: "admin" as const,
@@ -185,7 +267,7 @@ async function seedUsersAndStudents() {
   const teacher = {
     id: randomUUID(),
     username: "teacher1",
-    name: "أ. محمد أحمد",
+    name: "Mr. Ahmed Mohammed",
     email: "teacher1@school.com",
     phone: "+966551234567",
     role: "teacher" as const,
@@ -200,7 +282,7 @@ async function seedUsersAndStudents() {
       user: {
         id: randomUUID(),
         username: "stu1001",
-        name: "سارة عبدالله",
+        name: "Sarah Abdullah",
         email: "sara1001@school.com",
         phone: "+966501001001",
         role: "student" as const,
@@ -214,7 +296,7 @@ async function seedUsersAndStudents() {
       user: {
         id: randomUUID(),
         username: "stu1002",
-        name: "عمر خالد",
+        name: "Omar Khaled",
         email: "omar1002@school.com",
         phone: "+966501002002",
         role: "student" as const,
@@ -232,7 +314,7 @@ async function seedUsersAndStudents() {
     .values([admin, teacher, ...studentsData.map((s) => s.user)])
     .onConflictDoNothing();
 
-  // Insert students
+  // Insert student profiles
   await db
     .insert(schema.students)
     .values(
@@ -244,7 +326,7 @@ async function seedUsersAndStudents() {
     )
     .onConflictDoNothing();
 
-  console.log("  ✓ Admin, 1 teacher, and 2 students created");
+  console.log("   ✓ Admin, 1 teacher, and 2 students created");
 
   return { adminId: admin.id, teacherId: teacher.id, studentsData };
 }
@@ -262,7 +344,7 @@ async function assignStudentsToClasses(classes: any[], studentsData: any[]) {
     .set({ currentClassId: classes[1].id })
     .where(eq(schema.students.studentNumber, studentsData[1].studentNumber));
 
-  console.log("  ✓ Students assigned to classes");
+  console.log("   ✓ Students assigned to classes");
 }
 
 async function seedAssessmentsAndGrades(
@@ -278,17 +360,18 @@ async function seedAssessmentsAndGrades(
   const months = [9, 10];
 
   for (const cls of classes) {
-    for (const subj of subjects.slice(0, 4)) {
+    for (const subj of subjects.slice(0, 4)) { // first 4 subjects
       for (const month of months) {
         assessmentItemsData.push({
-          title: month === 9 ? "Monthly Quiz – September" : "Monthly Exam – October",
-          type: (month === 9 ? "quiz" : "exam") as any,
+          title: month === 9 ? "Monthly Quiz – September" : "Midterm Exam – October",
+          type: month === 9 ? "quiz" : "exam",
           maxScore: month === 9 ? "20" : "30",
           weight: "2.0",
           subjectId: subj.id,
           classId: cls.id,
           month,
           termId,
+          isPublished: true,
         });
       }
     }
@@ -301,37 +384,36 @@ async function seedAssessmentsAndGrades(
     .from(schema.assessmentItems)
     .where(eq(schema.assessmentItems.termId, termId));
 
-  console.log(`  ✓ ${items.length} assessment items created`);
+  console.log(`   ✓ ${items.length} assessment items created`);
 
-  // Grades
+  // ── Grades ─────────────────────────────────────
   const grades: (typeof schema.gradeEntries.$inferInsert)[] = [];
 
   for (const item of items) {
-    if (item.classId === null) continue;
+    if (!item.classId) continue;
     const classStudentIds = studentIdsByClass.get(item.classId) || [];
 
     for (const studentId of classStudentIds.slice(0, 2)) {
-      const score = Number((Math.random() * 10 + 10).toFixed(1));
-
+      const score = Number((Math.random() * 10 + 10).toFixed(1)); // 10–20 range
       grades.push({
         studentId,
         assessmentItemId: item.id,
         score: score.toString(),
         isAbsent: false,
-        comments: score > 15 ? "Excellent" : score > 10 ? "Good" : "Needs improvement",
+        comments: score >= 16 ? "Excellent" : score >= 12 ? "Good" : "Needs improvement",
         gradedById: teacherId,
         updatedAt: now(),
       });
     }
 
-    // Random absence
+    // Random absence example
     if (Math.random() > 0.7 && classStudentIds.length > 0) {
       grades.push({
         studentId: classStudentIds[0],
         assessmentItemId: item.id,
         score: null,
         isAbsent: true,
-        comments: "Absent without excuse",
+        comments: "Absent without valid excuse",
         gradedById: teacherId,
         updatedAt: now(),
       });
@@ -340,8 +422,10 @@ async function seedAssessmentsAndGrades(
 
   if (grades.length > 0) {
     await db.insert(schema.gradeEntries).values(grades).onConflictDoNothing();
-    console.log(`  ✓ ${grades.length} grade / absence records inserted`);
+    console.log(`   ✓ ${grades.length} grade/absence records inserted`);
   }
+
+  return items;
 }
 
 async function seedNotifications(
@@ -357,9 +441,9 @@ async function seedNotifications(
     {
       senderId: teacherId,
       recipientId: studentIds[0]!,
-      type: "grade_published" as const,
+      type: notificationTypeEnum.enumValues[0],
       title: "Grades Published - Monthly Quiz",
-      message: "You can now view your September grades in Mathematics.",
+      message: "Your September quiz grades in Mathematics are now available.",
       isRead: false,
       isHighPriority: true,
       relatedEntityType: "assessment_item",
@@ -368,11 +452,11 @@ async function seedNotifications(
     },
     {
       senderId: adminId,
-      recipientId: studentIds[0]!, // Schema requires recipientId to be not null
+      recipientId: studentIds[0]!,
       classId: classes[0]?.id,
-      type: "announcement" as const,
+      type: notificationTypeEnum.enumValues[1],
       title: "Parent-Teacher Meeting",
-      message: "A parent meeting will be held next Sunday at 5:00 PM.",
+      message: "A parent-teacher meeting is scheduled for next Sunday at 5:00 PM.",
       isRead: false,
       isHighPriority: true,
       createdAt: now(),
@@ -380,9 +464,9 @@ async function seedNotifications(
     {
       senderId: teacherId,
       recipientId: studentIds[1]!,
-      type: "attendance_alert" as const,
-      title: "Absence Alert",
-      message: "You were marked absent in the Arabic Language quiz without excuse.",
+      type: notificationTypeEnum.enumValues[2],
+      title: "Absence Notification",
+      message: "You were marked absent during the Arabic Language quiz.",
       isRead: false,
       isHighPriority: true,
       createdAt: now(),
@@ -390,71 +474,63 @@ async function seedNotifications(
   ];
 
   await db.insert(schema.notifications).values(notifications).onConflictDoNothing();
-  console.log("  ✓ Sample notifications created");
+  console.log("   ✓ Sample notifications created");
 }
 
 // ────────────────────────────────────────────────
-// Main Execution
+// Main
 // ────────────────────────────────────────────────
-
 async function main() {
   console.log("🌱 Starting database seeding...");
 
   try {
     await resetDatabase();
 
-    const yearId = await seedAcademicYears();
-    const termId = await seedAcademicTerms(yearId);
-    await seedSubjects();
+    const yearId     = await seedAcademicYears();
+    const termId     = await seedAcademicTerms(yearId);
+    const subjects   = await seedSubjects();
+    const classes    = await seedClasses(yearId);
 
-    const classes = await seedClasses(yearId);
-    const { adminId, teacherId, studentsData } = await seedUsersAndStudents();
+    const { adminId, teacherId, studentsData } =
+      await seedUsersAndStudents();
 
     await assignStudentsToClasses(classes, studentsData);
 
-    // Prepare student IDs grouped by class
+    // Group students by class for easier grade seeding
     const studentIdsByClass = new Map<number, string[]>();
-
     for (const cls of classes) {
-      const studentsInClass = await db
+      const res = await db
         .select({ userId: schema.students.userId })
         .from(schema.students)
         .where(eq(schema.students.currentClassId, cls.id));
 
-      studentIdsByClass.set(
-        cls.id,
-        studentsInClass.map((s) => s.userId),
-      );
+      studentIdsByClass.set(cls.id, res.map(r => r.userId));
     }
 
-    const subjects = await db.select().from(schema.subjects);
-
-    await seedAssessmentsAndGrades(termId, classes, subjects, teacherId, studentIdsByClass);
-
-    const firstItem = await db
-      .select({ id: schema.assessmentItems.id })
-      .from(schema.assessmentItems)
-      .limit(1);
+    const items = await seedAssessmentsAndGrades(
+      termId,
+      classes,
+      subjects,
+      teacherId,
+      studentIdsByClass,
+    );
 
     await seedNotifications(
       adminId,
       teacherId,
-      studentsData.map((s) => s.user.id),
+      studentsData.map(s => s.user.id),
       classes,
-      firstItem[0]?.id,
+      items[0]?.id,
     );
 
-    console.log("\n✨ Seeding completed successfully!");
+    console.log("\n✨ Seeding completed successfully! ✓");
   } catch (error) {
     console.error("❌ Seeding failed:", error);
     process.exit(1);
-  } finally {
-    await pool.end();
-    console.log("→ Database connection pool closed");
   }
 }
 
 main().catch((err) => {
-  console.error("Unexpected error in main:", err);
+  console.error("Unexpected error:", err);
   process.exit(1);
 });

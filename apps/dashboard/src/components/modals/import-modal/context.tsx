@@ -3,47 +3,49 @@ import type { Control, UseFormSetValue, UseFormWatch } from "react-hook-form";
 import { z } from "zod/v3";
 
 export const mappableFields = {
-  date: {
-    label: "Date",
-    required: true,
+  students: {
+    studentNumber: { label: "Student Number", required: true },
+    name: { label: "Full Name", required: true },
+    phone: { label: "Phone", required: false },
+    email: { label: "Email", required: false },
+    sex: { label: "Sex (Male/Female)", required: false },
   },
-  description: {
-    label: "Description",
-    required: true,
-  },
-  amount: {
-    label: "Amount",
-    required: true,
-  },
-  balance: {
-    label: "Balance",
-    required: false,
+  grades: {
+    studentNumber: { label: "Student Number", required: true },
+    score: { label: "Score", required: true },
+    isAbsent: { label: "Is Absent", required: false },
+    comments: { label: "Comments", required: false },
   },
 } as const;
 
+
 export const importSchema = z.object({
   file: z.custom<File>(),
-  currency: z.string(),
-  bank_account_id: z.string(),
-  amount: z.string(),
-  balance: z.string().optional(),
-  date: z.string(),
-  description: z.string(),
-  inverted: z.boolean(),
+  type: z.enum(["students", "grades"]).default("students"),
+  // Student fields
+  studentNumber: z.string().optional(),
+  name: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().optional(),
+  sex: z.string().optional(),
+  // Grade fields
+  score: z.string().optional(),
+  isAbsent: z.string().optional(),
+  comments: z.string().optional(),
+  // School context
+  classId: z.number().optional(),
+  subjectId: z.number().optional(),
+  termId: z.number().optional(),
+  month: z.number().optional(),
+  assessmentItemId: z.number().optional(),
+  
   table: z.array(z.record(z.string(), z.string())).optional(),
 });
 
-export type ImportCsvFormData = {
-  file: File;
-  currency: string;
-  bank_account_id: string;
-  amount: string;
-  balance?: string;
-  date: string;
-  description: string;
-  inverted: boolean;
-  table?: Record<string, string>[];
-};
+
+
+export type ImportCsvFormData = z.infer<typeof importSchema>;
+
 
 export const ImportCsvContext = createContext<{
   fileColumns: string[] | null;

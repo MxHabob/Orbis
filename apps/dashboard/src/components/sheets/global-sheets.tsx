@@ -26,37 +26,37 @@ import { TransactionSheet } from "@/components/sheets/transaction-sheet";
 export function GlobalSheets() {
   return (
     <>
-      <TrackerUpdateSheet />
+      {/* <TrackerUpdateSheet />
       <TrackerCreateSheet />
-      <TrackerScheduleSheet />
+      <TrackerScheduleSheet /> */}
 
-      <CategoryCreateSheet />
-      <CategoryEditSheet />
+      {/* <CategoryCreateSheet />
+      <CategoryEditSheet /> */}
 
-      <CustomerCreateSheet />
-      <CustomerDetailsSheet />
-      <CustomerEditSheet />
+      {/* <CustomerCreateSheet /> */}
+      {/* <CustomerDetailsSheet /> */}
+      {/* <CustomerEditSheet /> */}
 
-      <ProductCreateSheet />
-      <ProductEditSheet />
+      {/* <ProductCreateSheet />
+      <ProductEditSheet /> */}
 
-      <TransactionSheet />
+      {/* <TransactionSheet />
       <TransactionCreateSheet />
-      <TransactionEditSheet />
+      <TransactionEditSheet /> */}
 
-      <SelectBankAccountsModal />
+      {/* <SelectBankAccountsModal /> */}
 
-      <SearchModal />
+      {/* <SearchModal /> */}
 
-      <DocumentSheet />
-      <InboxDetailsSheet />
+      {/* <DocumentSheet /> */}
+      {/* <InboxDetailsSheet /> */}
 
-      <ImportModal />
-      <ConnectTransactionsModal />
+      {/* <ImportModal /> */}
+      {/* <ConnectTransactionsModal /> */}
 
-      <InvoiceDetailsSheet />
-      <InvoiceSheet />
-      <EditRecurringSheet />
+      {/* <InvoiceDetailsSheet /> */}
+      {/* <InvoiceSheet /> */}
+      {/* <EditRecurringSheet /> */}
     </>
   );
 }

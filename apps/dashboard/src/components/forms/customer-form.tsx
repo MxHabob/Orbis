@@ -100,7 +100,7 @@ const excludedDomains = [
 ];
 
 type Props = {
-  data?: RouterOutputs["customers"]["getById"];
+  data?: RouterOutputs["students"]["getById"];
 };
 
 export function CustomerForm({ data }: Props) {
@@ -113,10 +113,10 @@ export function CustomerForm({ data }: Props) {
   const fromInvoice = type === "create" || type === "edit";
 
   const upsertCustomerMutation = useMutation(
-    trpc.customers.upsert.mutationOptions({
+    trpc.students.upsert.mutationOptions({
       onSuccess: (data) => {
         queryClient.invalidateQueries({
-          queryKey: trpc.customers.get.infiniteQueryKey(),
+          queryKey: trpc.students.get.infiniteQueryKey(),
         });
 
         queryClient.invalidateQueries({

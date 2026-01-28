@@ -61,3 +61,15 @@ export const getAssessmentsForClass = async (classId: number, subjectId?: number
   }
   return results;
 };
+
+export const updateAssessment = async (id: number, data: Partial<CreateAssessmentParams>) => {
+  const [result] = await db.update(assessmentItems).set(data).where(eq(assessmentItems.id, id)).returning();
+  if (result) await assessmentCache.delete(`class:${result.classId}`);
+  return result;
+};
+
+export const deleteAssessment = async (id: number) => {
+  const [existing] = await db.select().from(assessmentItems).where(eq(assessmentItems.id, id));
+  await db.delete(assessmentItems).where(eq(assessmentItems.id, id));
+  if (existing) await assessmentCache.delete(`class:${existing.classId}`);
+};

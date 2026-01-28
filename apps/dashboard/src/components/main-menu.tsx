@@ -8,11 +8,9 @@ import { useEffect, useState } from "react";
 
 const icons = {
   "/": () => <Icons.Overview size={20} />,
-  "/students": () => <Icons.Transactions size={20} />,
+  "/classes": () => <Icons.Transactions size={20} />,
   "/subjects": () => <Icons.Category size={20} />,
   "/grades": () => <Icons.Bolt size={20} />,
-  "/exams": () => <Icons.Check size={20} />,
-  "/fees": () => <Icons.Amount size={20} />,
   "/settings": () => <Icons.Settings size={20} />,
   "/reports": () => <Icons.Customers size={20} />,
 } as const;
@@ -23,8 +21,8 @@ const items = [
     name: "Overview",
   },
   {
-    path: "/students",
-    name: "Students",
+    path: "/classes",
+    name: "Classes",
   },
   {
     path: "/subjects",
@@ -38,14 +36,6 @@ const items = [
     ],
   },
   {
-    path: "/exams",
-    name: "Exams",
-    children: [
-      { path: "/exams/schedules", name: "Schedules" },
-      { path: "/exams/committees", name: "Committees" },
-    ],
-  },
-  {
     path: "/reports",
     name: "Reports",
     children: [
@@ -54,10 +44,6 @@ const items = [
       { path: "/reports/attendance",    name: "Attendance Reports" },
       { path: "/reports/ministerial",   name: "Ministerial Reports" },
     ]
-  },
-  {
-    path: "/fees",
-    name: "Fees & Payments",
   },
   {
     path: "/settings",

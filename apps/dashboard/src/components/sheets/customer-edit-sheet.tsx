@@ -32,14 +32,14 @@ export function CustomerEditSheet() {
   const isOpen = Boolean(customerId && !details);
 
   const { data: customer } = useQuery(
-    trpc.customers.getById.queryOptions(
-      { id: customerId! },
+    trpc.students.getByNumber.queryOptions(
+      { studentNumber: customerId! },
       {
         enabled: isOpen,
         staleTime: 0, // Always consider data stale so it always refetches
         initialData: () => {
           const pages = queryClient
-            .getQueriesData({ queryKey: trpc.customers.get.infiniteQueryKey() })
+            .getQueriesData({ queryKey: trpc.students.getAll.infiniteQueryKey() })
             // @ts-expect-error
             .flatMap(([, data]) => data?.pages ?? [])
             .flatMap((page) => page.data ?? []);
@@ -51,10 +51,10 @@ export function CustomerEditSheet() {
   );
 
   const deleteCustomerMutation = useMutation(
-    trpc.customers.delete.mutationOptions({
+    trpc.students.delete.mutationOptions({
       onSuccess: () => {
         queryClient.invalidateQueries({
-          queryKey: trpc.customers.get.infiniteQueryKey(),
+          queryKey: trpc.students.getAll.infiniteQueryKey(),
         });
         setParams(null);
       },
@@ -65,7 +65,7 @@ export function CustomerEditSheet() {
     <Sheet open={isOpen} onOpenChange={() => setParams(null)}>
       <SheetContent stack>
         <SheetHeader className="mb-6 flex justify-between items-center flex-row">
-          <h2 className="text-xl">Edit Customer</h2>
+          <h2 className="text-xl">Edit Student</h2>
 
           {customerId && (
             <DropdownMenu>
@@ -99,7 +99,7 @@ export function CustomerEditSheet() {
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
                       <AlertDialogAction
                         onClick={() =>
-                          deleteCustomerMutation.mutate({ id: customerId })
+                          deleteCustomerMutation.mutate({ userId: customerId })
                         }
                       >
                         Delete

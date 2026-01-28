@@ -30,3 +30,23 @@ export const getSubjectById = async (id: number) => {
     }
     return result;
 }
+
+export type CreateSubjectParams = typeof subjects.$inferInsert;
+export const createSubject = async (data: CreateSubjectParams) => {
+    const [result] = await db.insert(subjects).values(data).returning();
+    await subjectCache.delete("all");
+    return result;
+};
+
+export const updateSubject = async (id: number, data: Partial<CreateSubjectParams>) => {
+    const [result] = await db.update(subjects).set(data).where(eq(subjects.id, id)).returning();
+    await subjectCache.delete("all");
+    await subjectCache.delete(`id:${id}`);
+    return result;
+};
+
+export const deleteSubject = async (id: number) => {
+    await db.delete(subjects).where(eq(subjects.id, id));
+    await subjectCache.delete("all");
+    await subjectCache.delete(`id:${id}`);
+};

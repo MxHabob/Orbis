@@ -58,3 +58,16 @@ export const markAsRead = async (id: number, userId: string) => {
     await notifCache.delete(`list:${userId}:20`); // Assuming default limit
     await notifCache.delete(`unread:${userId}`);
 };
+
+export type CreateNotificationParams = typeof notifications.$inferInsert;
+
+export const createNotification = async (data: CreateNotificationParams) => {
+    const [result] = await db.insert(notifications).values(data).returning();
+    
+    // Invalidate
+    if (result) {
+        await notifCache.delete(`list:${result.recipientId}:20`);
+        await notifCache.delete(`unread:${result.recipientId}`);
+    }
+    return result;
+};

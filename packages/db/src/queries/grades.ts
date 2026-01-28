@@ -28,7 +28,7 @@ export const getStudentGrades = async (studentId: string, termId?: number) => {
       subject: {
         name: subjects.name,
         code: subjects.code,
-        colorCode: subjects.color_code
+        color: subjects.color
       }
     })
     .from(gradeEntries)
@@ -48,3 +48,68 @@ export const getStudentGrades = async (studentId: string, termId?: number) => {
 
   return results;
 };
+
+export type CreateGradeParams = typeof gradeEntries.$inferInsert;
+export const createGradeEntry = async (data: CreateGradeParams) => {
+    const [result] = await db.insert(gradeEntries).values(data).returning();
+    if (result) await gradeCache.delete(`student:${result.studentId}:all`);
+    return result;
+};
+
+export const updateGradeEntry = async (id: number, data: Partial<CreateGradeParams>) => {
+    const [result] = await db.update(gradeEntries).set(data).where(eq(gradeEntries.id, id)).returning();
+    if (result) await gradeCache.delete(`student:${result.studentId}:all`);
+    return result;
+};
+
+import { students } from "@db/schema";
+
+export const bulkImportGrades = async (assessmentItemId: number, gradeData: {
+    studentNumber: string;
+    score: number | null;
+    isAbsent?: boolean;
+    comments?: string;
+}[], gradedById?: string) => {
+    const results = [];
+
+    for (const item of gradeData) {
+        try {
+            // 1. Find student by studentNumber
+            const [student] = await db.select().from(students).where(eq(students.studentNumber, item.studentNumber)).limit(1);
+            
+            if (!student) {
+                results.push({ studentNumber: item.studentNumber, status: 'error', error: 'Student not found' });
+                continue;
+            }
+
+            // 2. Upsert grade entry
+            // We use studentId and assessmentItemId as unique key
+            const [result] = await db.insert(gradeEntries).values({
+                studentId: student.userId,
+                assessmentItemId,
+                score: item.score?.toString(),
+                isAbsent: item.isAbsent,
+                comments: item.comments,
+                gradedById,
+                updatedAt: new Date(),
+            }).onConflictDoUpdate({
+                target: [gradeEntries.studentId, gradeEntries.assessmentItemId],
+                set: {
+                    score: item.score?.toString(),
+                    isAbsent: item.isAbsent,
+                    comments: item.comments,
+                    gradedById,
+                    updatedAt: new Date(),
+                }
+            }).returning();
+
+            results.push({ studentNumber: item.studentNumber, status: 'success' });
+            await gradeCache.delete(`student:${student.userId}:all`);
+        } catch (error) {
+            results.push({ studentNumber: item.studentNumber, status: 'error', error: (error as Error).message });
+        }
+    }
+
+    return results;
+};
+

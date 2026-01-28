@@ -1,5 +1,5 @@
 {
-  "id": "c13a716a-c998-494a-862b-34b53e801676",
+  "id": "a557d051-5d38-4005-85bf-4d1808d9828c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -286,6 +286,13 @@
           "type": "integer",
           "primaryKey": false,
           "notNull": false
+        },
+        "is_published": {
+          "name": "is_published",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         }
       },
       "indexes": {
@@ -456,9 +463,23 @@
           "primaryKey": false,
           "notNull": true
         },
+        "type": {
+          "name": "type",
+          "type": "class_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'classroom'"
+        },
         "division": {
           "name": "division",
           "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "parent_class_id": {
+          "name": "parent_class_id",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false
         },
@@ -467,6 +488,13 @@
           "type": "integer",
           "primaryKey": false,
           "notNull": false
+        },
+        "color_code": {
+          "name": "color_code",
+          "type": "varchar(7)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'e6e6e6'"
         }
       },
       "indexes": {
@@ -490,9 +518,37 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "classes_parent_idx": {
+          "name": "classes_parent_idx",
+          "columns": [
+            {
+              "expression": "parent_class_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
+        "classes_parent_class_id_classes_id_fk": {
+          "name": "classes_parent_class_id_classes_id_fk",
+          "tableFrom": "classes",
+          "tableTo": "classes",
+          "columnsFrom": [
+            "parent_class_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
         "classes_academic_year_id_academic_years_id_fk": {
           "name": "classes_academic_year_id_academic_years_id_fk",
           "tableFrom": "classes",
@@ -509,6 +565,108 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.enrollments": {
+      "name": "enrollments",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "class_id": {
+          "name": "class_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "academic_year_id": {
+          "name": "academic_year_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "student_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'active'"
+        },
+        "enrolled_at": {
+          "name": "enrolled_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "enrollments_student_id_students_user_id_fk": {
+          "name": "enrollments_student_id_students_user_id_fk",
+          "tableFrom": "enrollments",
+          "tableTo": "students",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "user_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "enrollments_class_id_classes_id_fk": {
+          "name": "enrollments_class_id_classes_id_fk",
+          "tableFrom": "enrollments",
+          "tableTo": "classes",
+          "columnsFrom": [
+            "class_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "enrollments_academic_year_id_academic_years_id_fk": {
+          "name": "enrollments_academic_year_id_academic_years_id_fk",
+          "tableFrom": "enrollments",
+          "tableTo": "academic_years",
+          "columnsFrom": [
+            "academic_year_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "student_class_year_unique": {
+          "name": "student_class_year_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "student_id",
+            "class_id",
+            "academic_year_id"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -1318,6 +1476,20 @@
         "attendance",
         "behavior",
         "homework"
+      ]
+    },
+    "public.class_type": {
+      "name": "class_type",
+      "schema": "public",
+      "values": [
+        "classroom",
+        "laboratory",
+        "library",
+        "computer_lab",
+        "music_room",
+        "exam_hall",
+        "workshop",
+        "multi-purpose_room"
       ]
     },
     "public.notification_type": {

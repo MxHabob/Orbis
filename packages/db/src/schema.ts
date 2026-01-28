@@ -24,6 +24,7 @@ export const userSexEnum = pgEnum('user_sex', ['unspecified','male', 'female']);
 export const assessmentTypeEnum = pgEnum('assessment_type', [
   'exam', 'quiz', 'assignment', 'participation', 'oral', 'attendance', 'behavior', 'homework'
 ]);
+export const classTypeEnum = pgEnum('class_type', ['classroom','laboratory','library','computer_lab','music_room','exam_hall','workshop','multi-purpose_room']);
 export const studentStatusEnum = pgEnum('student_status', ['active', 'graduated', 'transferred', 'suspended']);
 export const notificationTypeEnum = pgEnum('notification_type', ['grade_published', 'new_assessment', 'attendance_alert', 'announcement', 'message', 'parent_meeting', 'fee_reminder', 'account_action', 'behavior_alert', 'system']);
 
@@ -110,17 +111,21 @@ export const subjects = pgTable('subjects', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 255 }).notNull(),
   code: varchar('code', { length: 50 }).unique(),
-  color_code: varchar('color_code', { length: 7 }).default("e6e6e6").notNull(),
+  color: text('color').default("#FFF3E0").notNull(),
 });
 
 // جدول الفصول الدراسية
 export const classes = pgTable('classes', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 100 }).notNull(),
+  type: classTypeEnum('type').default('classroom').notNull(),
   division: varchar('division', { length: 10 }),
+  parentClassId: integer('parent_class_id').references((): any => classes.id, { onDelete: 'set null' }),
   academicYearId: integer('academic_year_id').references(() => academicYears.id),
+  color: text('color').default("#e6e6e6").notNull(),
 }, (table) => ({
   classYearIdx: index('class_year_idx').on(table.academicYearId, table.name),
+  parentIdx: index('classes_parent_idx').on(table.parentClassId),
 }));
 
 // ==========================================
@@ -140,6 +145,19 @@ export const students = pgTable('students', {
   secretNumIdx: index('secret_num_idx').on(table.secretNumber),
 }));
 
+// جدول تسجيل الطلاب في الفصول
+export const enrollments = pgTable('enrollments', {
+  id: serial('id').primaryKey(),
+  studentId: uuid('student_id').references(() => students.userId, { onDelete: 'cascade' }),
+  classId: integer('class_id').references(() => classes.id),
+  academicYearId: integer('academic_year_id').references(() => academicYears.id),
+  status: studentStatusEnum('status').default('active'),
+  enrolledAt: timestamp('enrolled_at').defaultNow().notNull(),
+}, (table) => ({
+  studentClassYearIdx: unique('student_class_year_unique').on(table.studentId, table.classId, table.academicYearId),
+}));
+
+
 // جدول بنود التقييم (مواظبة، شفوي، حضور، اختبار)
 export const assessmentItems = pgTable('assessment_items', {
   id: serial('id').primaryKey(),
@@ -151,6 +169,7 @@ export const assessmentItems = pgTable('assessment_items', {
   classId: integer('class_id').references(() => classes.id),
   month: integer('month').notNull(), // رقم الشهر (1-12)
   termId: integer('term_id').references(() => academicTerms.id),
+  isPublished: boolean('is_published').default(false).notNull(),
 }, (table) => ({
   itemLookupIdx: index('item_lookup_idx').on(table.classId, table.subjectId, table.month),
 }));
@@ -236,7 +255,14 @@ export const sessionsRelations = relations(sessions, ({ one }) => ({
 export const studentsRelations = relations(students, ({ one, many }) => ({
   user: one(users, { fields: [students.userId], references: [users.id], relationName: "studentProfile" }),
   grades: many(gradeEntries, { relationName: "studentGrades" }),
+  enrollments: many(enrollments, { relationName: "studentEnrollments" }),
   class: one(classes, { fields: [students.currentClassId], references: [classes.id], relationName: "studentClass" }),
+}));
+
+export const enrollmentsRelations = relations(enrollments, ({ one }) => ({
+  student: one(students, { fields: [enrollments.studentId], references: [students.userId], relationName: "studentEnrollments" }),
+  class: one(classes, { fields: [enrollments.classId], references: [classes.id], relationName: "enrollmentClass" }),
+  academicYear: one(academicYears, { fields: [enrollments.academicYearId], references: [academicYears.id], relationName: "enrollmentYear" }),
 }));
 
 export const gradeEntriesRelations = relations(gradeEntries, ({ one }) => ({
@@ -249,6 +275,7 @@ export const assessmentItemsRelations = relations(assessmentItems, ({ one, many 
   subject: one(subjects, { fields: [assessmentItems.subjectId], references: [subjects.id], relationName: "assessmentItems" }),
   class: one(classes, { fields: [assessmentItems.classId], references: [classes.id], relationName: "assessmentItems" }),
   grades: many(gradeEntries, { relationName: "assessmentGrades" }),
+  term: one(academicTerms, { fields: [assessmentItems.termId], references: [academicTerms.id], relationName: "termAssessments" }),
 }));
 
 export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
@@ -260,4 +287,10 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
   sender: one(users, { fields: [notifications.senderId], references: [users.id], relationName: "sentNotifications" }),
   class: one(classes, { fields: [notifications.classId], references: [classes.id], relationName: "notifications" }),
   term: one(academicTerms, { fields: [notifications.academicTermId], references: [academicTerms.id], relationName: "notifications" }),
+}));
+
+export const classesRelations = relations(classes, ({ one, many }) => ({
+  year: one(academicYears, { fields: [classes.academicYearId], references: [academicYears.id] }),
+  parent: one(classes, { fields: [classes.parentClassId], references: [classes.id], relationName: "classChildren" }),
+  children: many(classes, { relationName: "classChildren" }),
 }));

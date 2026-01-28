@@ -48,3 +48,16 @@ export const deleteUser = async (db: Database, id: string) => {
   await userCache.invalidate(id);
   return { id };
 };
+export const getUserWithRoles = async (db: Database, id: string) => {
+  const result = await getUserById(db, id);
+
+  if (!result) return null;
+
+  return {
+    ...result,
+    employeeRoles: [],
+  };
+};
+export const getUserInvites = async (_db: Database, _email: string) => {
+  return [];
+};

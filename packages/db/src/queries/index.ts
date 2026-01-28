@@ -7,3 +7,4 @@ export * from "./subjects";
 export * from "./academic-calendar";
 export * from "./assessments";
 export * from "./notifications";
+export * from "./audit-logs";

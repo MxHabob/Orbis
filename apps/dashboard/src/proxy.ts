@@ -1,5 +1,6 @@
 import { createI18nMiddleware } from "next-international/middleware";
 import { type NextRequest, NextResponse } from "next/server";
+import { auth } from "@midday/auth";
 
 const I18nMiddleware = createI18nMiddleware({
   locales: ["en"],
@@ -8,6 +9,10 @@ const I18nMiddleware = createI18nMiddleware({
 });
 
 export async function proxy(request: NextRequest) {
+  const session = await auth.api.getSession({
+    headers: request.headers,
+  });
+
   const response = I18nMiddleware(request);
   const url = new URL("/", request.url);
   const nextUrl = request.nextUrl;
@@ -26,16 +31,6 @@ export async function proxy(request: NextRequest) {
     newUrl.search
   }`;
 
-  const data = await fetch(
-    `${request.nextUrl.origin}/api/auth/get-session`,
-    {
-      headers: {
-        cookie: request.headers.get("cookie") || "",
-      },
-    },
-  ).then((res) => res.json().catch(() => null));
-
-  const session = data?.session;
 
   // 1. Not authenticated
   if (

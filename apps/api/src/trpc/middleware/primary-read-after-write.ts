@@ -1,5 +1,5 @@
 import type { Session } from "@api/utils/auth";
-import { replicationCache } from "@midday/cache/replication-cache";
+import { replicationCache } from "@midday/cache";
 import type { Database, DatabaseWithPrimary } from "@midday/db/client";
 
 // Database middleware that handles replication lag based on mutation operations

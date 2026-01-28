@@ -34,9 +34,10 @@ const NON_CLICKABLE_COLUMNS = new Set(["actions"]);
 
 type Props = {
   initialSettings?: Partial<TableSettings>;
+  id?: string;
 };
 
-export function DataTable({ initialSettings }: Props) {
+export function DataTable({ initialSettings, id }: Props) {
   const trpc = useTRPC();
   const { setParams } = useCustomerParams();
   const { filter, hasFilters } = useCustomerFilterParams();
@@ -60,11 +61,12 @@ export function DataTable({ initialSettings }: Props) {
     initialSettings,
   });
 
-  const infiniteQueryOptions = trpc.student.get.infiniteQueryOptions(
+  const infiniteQueryOptions = id ? trpc.students.getByClassId.infiniteQueryOptions(
     {
       ...filter,
       sort: params.sort ?? undefined,
       q: deferredSearch,
+      id,
     },
     {
       getNextPageParam: ({ meta }) => meta?.cursor,
@@ -78,7 +80,7 @@ export function DataTable({ initialSettings }: Props) {
     console.log("infiniteQueryOptions :", infiniteQueryOptions);
 
   const deleteCustomerMutation = useMutation(
-    trpc.student.delete.mutationOptions({
+    trpc.students.delete.mutationOptions({
       onSuccess: () => {
         refetch();
       },

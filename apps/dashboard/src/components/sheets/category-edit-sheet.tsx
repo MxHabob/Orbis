@@ -32,14 +32,14 @@ export function CategoryEditSheet() {
   const isOpen = Boolean(categoryId);
 
   const { data: category } = useQuery(
-    trpc.transactionCategories.getById.queryOptions(
-      { id: categoryId! },
+    trpc.classes.getById.queryOptions(
+      { id: Number(categoryId) },
       {
         enabled: isOpen,
         initialData: () => {
           const pages = queryClient
             .getQueriesData({
-              queryKey: trpc.transactionCategories.get.queryKey(),
+              queryKey: trpc.classes.getAll.queryKey(),
             })
             // @ts-expect-error
             .flatMap(([, data]) => data?.pages ?? [])
@@ -52,10 +52,10 @@ export function CategoryEditSheet() {
   );
 
   const deleteCategoryMutation = useMutation(
-    trpc.transactionCategories.delete.mutationOptions({
+    trpc.classes.delete.mutationOptions({
       onSuccess: () => {
         queryClient.invalidateQueries({
-          queryKey: trpc.transactionCategories.get.queryKey(),
+          queryKey: trpc.classes.getAll.queryKey(),
         });
         setParams(null);
       },
@@ -100,7 +100,7 @@ export function CategoryEditSheet() {
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
                       <AlertDialogAction
                         onClick={() =>
-                          deleteCategoryMutation.mutate({ id: categoryId })
+                          deleteCategoryMutation.mutate({ id: Number(categoryId) })
                         }
                       >
                         Delete

@@ -5,11 +5,11 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 export const metadata: Metadata = {
-  title: "Subjects | Midday",
+  title: "Subjects | Entity",
 };
 
 export default async function Subjects() {
-  prefetch(trpc.subject.get.queryOptions({}));
+  prefetch(trpc.subjects.getAll.queryOptions());
 
   return (
     <div className="max-w-screen-lg">

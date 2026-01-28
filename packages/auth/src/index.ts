@@ -9,7 +9,6 @@ import {
 } from "@midday/db/schema";
 import { sessionCache, userCache } from "@midday/cache";
 
-// Get API URL from environment or default to localhost
 function getApiUrl(): string {
   if (process.env.BETTER_AUTH_URL) {
     return process.env.BETTER_AUTH_URL;
@@ -63,42 +62,10 @@ export const auth = betterAuth({
       verification: verifications,
     },
   }),
-  databaseHooks: {
-    session: {
-      create: {
-        after: async (session) => {
-          await sessionCache.setByToken(session.token, session as any);
-          await sessionCache.setById(session.id, session as any);
-        },
-      },
-      update: {
-        after: async (session) => {
-          if (session) {
-             await sessionCache.setByToken(session.token, session as any);
-             await sessionCache.setById(session.id, session as any);
-          }
-        },
-      },
-    },
-    user: {
-      create: {
-        after: async (user) => {
-          await userCache.setById(user.id, user as any);
-          await userCache.setByEmail(user.email, user as any);
-        },
-      },
-      update: {
-        after: async (user) => {
-          if (user) {
-            await userCache.setById(user.id, user as any);
-            await userCache.setByEmail(user.email, user as any);
-            await userCache.invalidate(user.id, user as any); 
-          }
-        },
-      },
-    },
-  },
   advanced: {
+    crossSubDomainCookies: {
+      enabled: true,
+    },
     database: {
       generateId: false,
     },
@@ -106,19 +73,4 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
-  secondaryStorage: {
-    get: async (key) => {
-      const session = await sessionCache.getByToken(key);
-      if (session) {
-          return JSON.stringify(session);
-      }
-      return null;
-    },
-    set: async (key, value, ttl) => {
-        // We rely on database hooks for writing to cache
-    },
-    delete: async (key) => {
-        await sessionCache.invalidate(key);
-    }
-  }
 });

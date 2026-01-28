@@ -1,10 +1,6 @@
 "use client";
 
-import { useInvalidateTransactionQueries } from "@/hooks/use-invalidate-transaction-queries";
-import { useJobStatus } from "@/hooks/use-job-status";
-import { useTeamQuery } from "@/hooks/use-team";
-import { useUpload } from "@/hooks/use-upload";
-import { useUserQuery } from "@/hooks/use-user";
+
 import { useZodForm } from "@/hooks/use-zod-form";
 import { useTRPC } from "@/trpc/client";
 import { uniqueCurrencies } from "@midday/location/currencies";
@@ -16,12 +12,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@midday/ui/dialog";
-import { Icons } from "@midday/ui/icons";
 import { SubmitButton } from "@midday/ui/submit-button";
 import { useToast } from "@midday/ui/use-toast";
-import { stripSpecialCharacters } from "@midday/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import Papa from "papaparse";
 import { parseAsBoolean, parseAsString, useQueryStates } from "nuqs";
+
 import { useEffect, useState } from "react";
 import { ImportCsvContext, importSchema } from "./context";
 import { FieldMapping } from "./field-mapping";
@@ -30,66 +26,60 @@ import { SelectFile } from "./select-file";
 const pages = ["select-file", "confirm-import"] as const;
 
 export function ImportModal() {
-  const { data: team } = useTeamQuery();
-  const defaultCurrency = team?.baseCurrency || "USD";
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const invalidateTransactionQueries = useInvalidateTransactionQueries();
-  const [jobId, setJobId] = useState<string | undefined>();
   const [isImporting, setIsImporting] = useState(false);
   const [fileColumns, setFileColumns] = useState<string[] | null>(null);
   const [firstRows, setFirstRows] = useState<Record<string, string>[] | null>(
     null,
   );
 
-  const { data: user } = useUserQuery();
-
   const [pageNumber, setPageNumber] = useState<number>(0);
   const page = pages[pageNumber];
-
-  const { uploadFile } = useUpload();
 
   const { toast } = useToast();
 
   const [params, setParams] = useQueryStates({
     step: parseAsString,
-    accountId: parseAsString,
-    type: parseAsString,
+    type: parseAsString.withDefault("students"),
+    classId: parseAsString,
+    subjectId: parseAsString,
+    assessmentItemId: parseAsString,
     hide: parseAsBoolean.withDefault(false),
   });
 
   const isOpen = params.step === "import";
 
-  const { status } = useJobStatus({
-    jobId,
-    enabled: !!jobId && isOpen,
-  });
-
-  const importTransactions = useMutation(
-    trpc.transactions.import.mutationOptions({
-      onSuccess: (data) => {
-        if (data?.id) {
-          setJobId(data.id);
-        } else {
-          setIsImporting(false);
-          toast({
-            duration: 3500,
-            variant: "error",
-            title: "Something went wrong please try again.",
-          });
-        }
-      },
-      onError: () => {
+  // Mutations
+  const importStudentsMutation = useMutation(
+    trpc.students.import.mutationOptions({
+      onSuccess: () => {
         setIsImporting(false);
-        setJobId(undefined);
-
-        toast({
-          duration: 3500,
-          variant: "error",
-          title: "Something went wrong please try again.",
-        });
+        toast({ title: "تم استيراد الطلاب بنجاح", variant: "success" });
+        onclose();
+        queryClient.invalidateQueries({ queryKey: trpc.students.getByUserId.queryKey() });
       },
-    }),
+      onError: (err) => {
+        setIsImporting(false);
+        toast({ title: "خطأ في استيراد الطلاب", description: err.message, variant: "error" });
+      }
+    })
+  );
+
+  const importGradesMutation = useMutation(
+    trpc.assessments.importGrades.mutationOptions({
+      onSuccess: () => {
+        setIsImporting(false);
+        toast({ title: "تم استيراد الدرجات بنجاح", variant: "success" });
+        onclose();
+        queryClient.invalidateQueries({ queryKey: trpc.assessments.getGrades.queryKey() });
+
+      },
+      onError: (err) => {
+        setIsImporting(false);
+        toast({ title: "خطأ في استيراد الدرجات", description: err.message, variant: "error" });
+      }
+    })
   );
 
   const {
@@ -101,11 +91,13 @@ export function ImportModal() {
     formState: { isValid },
   } = useZodForm(importSchema, {
     defaultValues: {
-      currency: defaultCurrency,
-      bank_account_id: params.accountId ?? undefined,
-      inverted: params.type === "credit",
+      type: (params.type as any) || "students",
+      classId: params.classId ? parseInt(params.classId) : undefined,
+      subjectId: params.subjectId ? parseInt(params.subjectId) : undefined,
+      assessmentItemId: params.assessmentItemId ? parseInt(params.assessmentItemId) : undefined,
     },
   });
+
 
   const file = watch("file");
 
@@ -114,68 +106,17 @@ export function ImportModal() {
     setFileColumns(null);
     setFirstRows(null);
     setPageNumber(0);
-    setJobId(undefined);
     reset();
 
     setParams({
       step: null,
-      accountId: null,
       type: null,
+      classId: null,
+      subjectId: null,
+      assessmentItemId: null,
       hide: null,
     });
   };
-
-  useEffect(() => {
-    if (params.accountId) {
-      setValue("bank_account_id", params.accountId);
-    }
-  }, [params.accountId]);
-
-  useEffect(() => {
-    if (params.type) {
-      setValue("inverted", params.type === "credit");
-    }
-  }, [params.type]);
-
-  useEffect(() => {
-    if (status === "failed") {
-      setIsImporting(false);
-      setJobId(undefined);
-
-      toast({
-        duration: 3500,
-        variant: "error",
-        title: "Something went wrong please try again or contact support.",
-      });
-    }
-  }, [status, toast]);
-
-  useEffect(() => {
-    if (status === "completed") {
-      setIsImporting(false);
-      setJobId(undefined);
-
-      // Invalidate all transaction-related queries (transactions, reports, widgets)
-      invalidateTransactionQueries();
-
-      // Also invalidate bank-related queries
-      queryClient.invalidateQueries({
-        queryKey: trpc.bankAccounts.get.queryKey(),
-      });
-
-      queryClient.invalidateQueries({
-        queryKey: trpc.bankConnections.get.queryKey(),
-      });
-
-      toast({
-        duration: 3500,
-        variant: "success",
-        title: "Transactions imported successfully.",
-      });
-
-      onclose();
-    }
-  }, [status]);
 
   // Go to second page if file looks good
   useEffect(() => {
@@ -190,27 +131,19 @@ export function ImportModal() {
         <div className="p-4 pb-0 max-h-[calc(100svh-10vw)] overflow-y-auto overflow-x-visible">
           <DialogHeader>
             <div className="flex space-x-4 items-center mb-4">
-              {!params.hide && (
-                <button
-                  type="button"
-                  className="items-center border bg-accent p-1"
-                  onClick={() => setParams({ step: "connect" })}
-                >
-                  <Icons.ArrowBack />
-                </button>
-              )}
-              <DialogTitle className="m-0 p-0">
-                {page === "select-file" && "Select file"}
-                {page === "confirm-import" && "Confirm import"}
+              <DialogTitle className="m-0 p-0 text-right w-full">
+                {page === "select-file" && "اختر ملف الاستيراد"}
+                {page === "confirm-import" && "تأكيد واستيراد البيانات"}
               </DialogTitle>
             </div>
-            <DialogDescription>
+            <DialogDescription className="text-right">
               {page === "select-file" &&
-                "Upload a CSV file of your transactions."}
+                `قم برفع ملف CSV يحتوي على بيانات ${params.type === 'students' ? 'الطلاب' : 'الدرجات'}.`}
               {page === "confirm-import" &&
-                "We've mapped each column to what we believe is correct, but please review the data below to confirm it's accurate."}
+                "لقد قمنا بربط الأعمدة تلقائياً، يرجى مراجعة البيانات للتأكد من صحتها."}
             </DialogDescription>
           </DialogHeader>
+
 
           <div className="relative overflow-visible">
             <AnimatedSizeContainer height>
@@ -231,27 +164,70 @@ export function ImportModal() {
                     onSubmit={handleSubmit(async (data) => {
                       setIsImporting(true);
 
-                      const filename = stripSpecialCharacters(data.file.name);
-                      const { path } = await uploadFile({
-                        bucket: "vault",
-                        path: [user?.team?.id ?? "", "imports", filename],
-                        file,
-                      });
+                      // Parse the complete file
+                      Papa.parse(data.file, {
+                        header: true,
+                        skipEmptyLines: true,
+                        complete: async (results) => {
+                          const rows = results.data as Record<string, string>[];
 
-                      importTransactions.mutate({
-                        filePath: path,
-                        currency: data.currency,
-                        bankAccountId: data.bank_account_id,
-                        currentBalance: data.balance,
-                        inverted: data.inverted,
-                        mappings: {
-                          amount: data.amount,
-                          date: data.date,
-                          description: data.description,
-                          balance: data.balance,
+                          if (data.type === "students") {
+                            const students = rows
+                              .map((row) => {
+                                const studentNumber = row[data.studentNumber!];
+                                const name = row[data.name!];
+                                if (!studentNumber || !name) return null;
+
+                                return {
+                                  studentNumber,
+                                  name,
+                                  phone: (data.phone && row[data.phone]) ? row[data.phone] : undefined,
+                                  email: (data.email && row[data.email]) ? row[data.email] : undefined,
+                                  sex: (data.sex && row[data.sex]) ? (row[data.sex]!.toLowerCase() as any) : 'unspecified',
+                                };
+
+                              })
+                              .filter((s): s is NonNullable<typeof s> => s !== null);
+
+                            importStudentsMutation.mutate({
+                              classId: data.classId!,
+                              students,
+                            });
+                          } else if (data.type === "grades") {
+                            const grades = rows
+                              .map((row) => {
+                                const studentNumber = row[data.studentNumber!];
+                                if (!studentNumber) return null;
+
+                                return {
+                                  studentNumber,
+                                  score: (data.score && row[data.score]) ? parseFloat(row[data.score]!) : null,
+                                  isAbsent: (data.isAbsent && row[data.isAbsent]) ? row[data.isAbsent]?.toLowerCase() === 'true' || row[data.isAbsent] === '1' : false,
+                                  comments: (data.comments && row[data.comments]) ? row[data.comments] : undefined,
+                                };
+
+                              })
+                              .filter((g): g is NonNullable<typeof g> => g !== null);
+
+                            importGradesMutation.mutate({
+                              assessmentItemId: data.assessmentItemId!,
+                              grades,
+                            });
+
+
+                          } else {
+                            // Fallback for legacy transaction import if needed
+                            toast({ title: "Transaction import not implemented in this version", variant: "error" });
+                            setIsImporting(false);
+                          }
                         },
+                        error: (err) => {
+                          setIsImporting(false);
+                          toast({ title: "Error parsing CSV", description: err.message, variant: "error" });
+                        }
                       });
                     })}
+
                   >
                     {page === "select-file" && <SelectFile />}
                     {page === "confirm-import" && (
@@ -263,8 +239,9 @@ export function ImportModal() {
                           disabled={!isValid}
                           className="mt-4"
                         >
-                          Confirm import
+                          تأكيد الاستيراد
                         </SubmitButton>
+
 
                         <button
                           type="button"

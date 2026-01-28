@@ -4,7 +4,6 @@ import { CopyInput } from "@/components/copy-input";
 import { OpenURL } from "@/components/open-url";
 import { useCustomerParams } from "@/hooks/use-customer-params";
 import { useInvoiceParams } from "@/hooks/use-invoice-params";
-import { useRealtime } from "@/hooks/use-realtime";
 import { useUserQuery } from "@/hooks/use-user";
 import { downloadFile } from "@/lib/download";
 import { useTRPC } from "@/trpc/client";
@@ -109,11 +108,11 @@ export function CustomerDetails() {
 
   // Toggle portal mutation
   const togglePortalMutation = useMutation(
-    trpc.customers.togglePortal.mutationOptions({
+    trpc.students.togglePortal.mutationOptions({
       onSuccess: () => {
         // Invalidate customer query to refresh portal data
         queryClient.invalidateQueries({
-          queryKey: trpc.customers.getById.queryKey({ id: customerId! }),
+          queryKey: trpc.students.getById.queryKey({ id: customerId! }),
         });
       },
       onError: () => {
@@ -131,7 +130,7 @@ export function CustomerDetails() {
     isLoading: isLoadingCustomer,
     refetch,
   } = useQuery({
-    ...trpc.customers.getById.queryOptions({ id: customerId! }),
+    ...trpc.students.getById.queryOptions({ id: customerId! }),
     enabled: isOpen,
     placeholderData: keepPreviousData,
     staleTime: 0, // Always refetch when component mounts
@@ -139,16 +138,16 @@ export function CustomerDetails() {
 
   // Mutation for re-enriching customer
   const enrichMutation = useMutation(
-    trpc.customers.enrich.mutationOptions({
+    trpc.students.enrich.mutationOptions({
       onMutate: async () => {
         // Cancel outgoing refetches
         await queryClient.cancelQueries({
-          queryKey: trpc.customers.getById.queryKey({ id: customerId! }),
+          queryKey: trpc.students.getById.queryKey({ id: customerId! }),
         });
 
         // Optimistically update to pending status
         queryClient.setQueryData(
-          trpc.customers.getById.queryKey({ id: customerId! }),
+          trpc.students.getById.queryKey({ id: customerId! }),
           (old: typeof customer) =>
             old ? { ...old, enrichmentStatus: "pending" as const } : old,
         );
@@ -170,7 +169,7 @@ export function CustomerDetails() {
 
   // Mutation for cancelling enrichment
   const cancelEnrichmentMutation = useMutation({
-    ...trpc.customers.cancelEnrichment.mutationOptions(),
+    ...trpc.students.cancelEnrichment.mutationOptions(),
     onSuccess: () => {
       refetch();
     },
@@ -178,7 +177,7 @@ export function CustomerDetails() {
 
   // Mutation for clearing enrichment data
   const clearEnrichmentMutation = useMutation({
-    ...trpc.customers.clearEnrichment.mutationOptions(),
+    ...trpc.students.clearEnrichment.mutationOptions(),
     onSuccess: () => {
       refetch();
     },

@@ -55,7 +55,7 @@ export default async function Layout({
         </div>
 
         {/* <ExportStatus /> */}
-        {/* <GlobalSheetsProvider /> */}
+        <GlobalSheetsProvider />
         {/* <GlobalTimerProvider /> */}
         {/* <TimezoneDetector /> */}
       </div>

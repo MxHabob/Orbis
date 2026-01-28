@@ -40,7 +40,7 @@ const formSchema = z.object({
 type UpdateCategoriesFormValues = z.infer<typeof formSchema>;
 
 type Props = {
-  data?: RouterOutputs["transactionCategories"]["getById"];
+  data?: RouterOutputs["classes"]["getById"];
 };
 
 export function CategoryEditForm({ data }: Props) {
@@ -70,15 +70,15 @@ export function CategoryEditForm({ data }: Props) {
   }, [data, form]);
 
   const updateCategoryMutation = useMutation(
-    trpc.transactionCategories.update.mutationOptions({
+    trpc.classes.update.mutationOptions({
       onSuccess: (_, variables) => {
         // Always invalidate category queries
         queryClient.invalidateQueries({
-          queryKey: trpc.transactionCategories.get.queryKey(),
+          queryKey: trpc.classes.getAll.queryKey(),
         });
 
         queryClient.invalidateQueries({
-          queryKey: trpc.transactionCategories.getById.queryKey(),
+          queryKey: trpc.classes.getById.queryKey(),
         });
 
         // Check if excluded or taxRate changed (affects calculations)

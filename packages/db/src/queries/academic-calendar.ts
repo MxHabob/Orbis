@@ -67,3 +67,33 @@ export const getTermsByYear = async (yearId: number) => {
     }
     return results;
 }
+
+export type CreateAcademicYearParams = typeof academicYears.$inferInsert;
+export const createAcademicYear = async (data: CreateAcademicYearParams) => {
+  const [result] = await db.insert(academicYears).values(data).returning();
+  await calendarCache.delete("years:all");
+  return result;
+};
+
+export const updateAcademicYear = async (id: number, data: Partial<CreateAcademicYearParams>) => {
+  const [result] = await db.update(academicYears).set(data).where(eq(academicYears.id, id)).returning();
+  await calendarCache.delete("years:all");
+  if (result?.isCurrent) await calendarCache.delete("year:current");
+  return result;
+};
+
+export type CreateAcademicTermParams = typeof academicTerms.$inferInsert;
+export const createAcademicTerm = async (data: CreateAcademicTermParams) => {
+  const [result] = await db.insert(academicTerms).values(data).returning();
+  if (result) await calendarCache.delete(`terms:${result.academicYearId}`);
+  return result;
+};
+
+export const updateAcademicTerm = async (id: number, data: Partial<CreateAcademicTermParams>) => {
+  const [result] = await db.update(academicTerms).set(data).where(eq(academicTerms.id, id)).returning();
+  if (result) {
+    await calendarCache.delete(`terms:${result.academicYearId}`);
+    if (result.isCurrent) await calendarCache.delete("term:current");
+  }
+  return result;
+};

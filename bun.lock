@@ -23,6 +23,8 @@
         "@midday/auth": "workspace:*",
         "@midday/cache": "workspace:*",
         "@midday/db": "workspace:*",
+        "@midday/encryption": "workspace:*",
+        "@midday/location": "workspace:*",
         "@midday/logger": "workspace:*",
         "@midday/utils": "workspace:*",
         "@modelcontextprotocol/sdk": "^1.0.0",
@@ -60,7 +62,9 @@
         "@hookform/resolvers": "^5.2.2",
         "@midday/api": "workspace:*",
         "@midday/auth": "workspace:*",
+        "@midday/db": "workspace:*",
         "@midday/desktop-client": "workspace:*",
+        "@midday/import": "workspace:*",
         "@midday/location": "workspace:*",
         "@midday/ui": "workspace:*",
         "@midday/utils": "workspace:*",
@@ -166,11 +170,9 @@
         "@midday/cache": "workspace:*",
         "@midday/db": "workspace:*",
         "better-auth": "1.4.17",
-        "server-only": "^0.0.1",
       },
       "devDependencies": {
         "@midday/tsconfig": "workspace:*",
-        "next": "16.1.5",
         "typescript": "^5.9.3",
       },
     },
@@ -241,6 +243,17 @@
       "version": "1.0.0",
       "dependencies": {
         "jose": "^6.1.3",
+      },
+    },
+    "packages/import": {
+      "name": "@midday/import",
+      "version": "1.0.0",
+      "dependencies": {
+        "date-fns": "^4.1.0",
+      },
+      "devDependencies": {
+        "@midday/tsconfig": "workspace:*",
+        "typescript": "^5.9.3",
       },
     },
     "packages/location": {
@@ -659,6 +672,8 @@
     "@midday/email": ["@midday/email@workspace:packages/email"],
 
     "@midday/encryption": ["@midday/encryption@workspace:packages/encryption"],
+
+    "@midday/import": ["@midday/import@workspace:packages/import"],
 
     "@midday/location": ["@midday/location@workspace:packages/location"],
 
