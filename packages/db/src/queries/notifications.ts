@@ -11,7 +11,7 @@ const notifCache = new RedisCache("notifications", 30);
 
 export const getUserNotifications = async (userId: string, limit = 20) => {
   const cacheKey = `list:${userId}:${limit}`;
-  const cached = await notifCache.get(cacheKey);
+  const cached = await notifCache.get<any[]>(cacheKey);
   
   if (cached) return cached;
 
@@ -36,7 +36,7 @@ export const getUnreadCount = async (userId: string) => {
     
     // Attempting cache for 10 seconds to burst-protect
     const cacheKey = `unread:${userId}`;
-    const cached = await notifCache.get(cacheKey);
+    const cached = await notifCache.get<number>(cacheKey);
     if (cached) return cached;
 
     const count = await db.$count(notifications, and(

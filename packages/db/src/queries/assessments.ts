@@ -20,7 +20,7 @@ export const createAssessment = async (data: CreateAssessmentParams) => {
 export const getAssessmentsForClass = async (classId: number, subjectId?: number, termId?: number) => {
   // Simple caching strategy for list
   const cacheKey = `class:${classId}:${subjectId || 'all'}:${termId || 'all'}`;
-  const cached = await assessmentCache.get(cacheKey);
+  const cached = await assessmentCache.get<any[]>(cacheKey);
   
   if (cached) return cached;
 

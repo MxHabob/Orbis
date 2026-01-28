@@ -7,7 +7,7 @@ const calendarCache = new RedisCache("calendar", 60 * 60 * 24); // 24 hours
 
 export const getCurrentAcademicYear = async () => {
   const cacheKey = "year:current";
-  const cached = await calendarCache.get(cacheKey);
+  const cached = await calendarCache.get<typeof academicYears.$inferSelect>(cacheKey);
   if (cached) return cached;
 
   const [currentYear] = await db
@@ -24,7 +24,7 @@ export const getCurrentAcademicYear = async () => {
 
 export const getAcademicYears = async () => {
     const cacheKey = "years:all";
-    const cached = await calendarCache.get(cacheKey);
+    const cached = await calendarCache.get<Array<typeof academicYears.$inferSelect>>(cacheKey);
     if (cached) return cached;
 
     const results = await db.select().from(academicYears).orderBy(desc(academicYears.yearName));
@@ -37,7 +37,7 @@ export const getAcademicYears = async () => {
 
 export const getCurrentTerm = async () => {
     const cacheKey = "term:current";
-    const cached = await calendarCache.get(cacheKey);
+    const cached = await calendarCache.get<typeof academicTerms.$inferSelect>(cacheKey);
     if (cached) return cached;
 
     const [currentTerm] = await db
@@ -54,7 +54,7 @@ export const getCurrentTerm = async () => {
 
 export const getTermsByYear = async (yearId: number) => {
     const cacheKey = `terms:${yearId}`;
-    const cached = await calendarCache.get(cacheKey);
+    const cached = await calendarCache.get<Array<typeof academicTerms.$inferSelect>>(cacheKey);
     if (cached) return cached;
 
     const results = await db

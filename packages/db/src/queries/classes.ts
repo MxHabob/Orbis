@@ -2,17 +2,25 @@ import { db } from "@db/client";
 import { classes, academicYears } from "@db/schema";
 import { eq } from "drizzle-orm";
 import { RedisCache } from "@midday/cache";
+import { getCurrentAcademicYear } from "./academic-calendar";
 
 const classCache = new RedisCache("classes", 60 * 60);
 
 export const getClasses = async (academicYearId?: number) => {
-  const cacheKey = `list:${academicYearId || "all"}`;
-  const cached = await classCache.get(cacheKey);
+  let targetYearId = academicYearId;
+
+  if (!targetYearId) {
+    const currentYear = await getCurrentAcademicYear();
+    targetYearId = currentYear?.id;
+  }
+
+  const cacheKey = `list:${targetYearId || "all"}`;
+  const cached = await classCache.get<any[]>(cacheKey);
   if (cached) return cached;
 
   const results = await db.query.classes.findMany({
-    where: academicYearId 
-      ? eq(classes.academicYearId, academicYearId) 
+    where: targetYearId 
+      ? eq(classes.academicYearId, targetYearId) 
       : undefined,
 
     columns: {
@@ -48,23 +56,14 @@ export const getClasses = async (academicYearId?: number) => {
     orderBy: (fields, { asc }) => [asc(fields.name)],
   });
 
-  const formattedResults = results.map(cls => ({
-    ...cls,
-    year: cls.year ? {
-      ...cls.year,
-      name: (cls.year as any).yearName
-    } : null
-  }));
 
-  const roots = formattedResults.filter((cls) => cls.parentClassId === null);
+  await classCache.set(cacheKey, results);
 
-  await classCache.set(cacheKey, roots);
-
-  return roots;
+  return results;
 };
 
 export const getClassById = async (id: number) => {
-    const cached = await classCache.get(`id:${id}`);
+    const cached = await classCache.get<typeof classes.$inferSelect>(`id:${id}`);
     if (cached) return cached;
 
     const [result] = await db

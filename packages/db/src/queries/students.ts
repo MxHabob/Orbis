@@ -1,15 +1,14 @@
 import { db } from "@db/client";
 import { students, classes, users } from "@db/schema";
-import { eq } from "drizzle-orm";
-// We might want to create a specific student cache later, but for now we can use a generic approach or user cache if linked
-// Assuming we want to cache student profiles.
+import { eq, asc, desc, and, or, ilike } from "drizzle-orm";
+
 import { RedisCache } from "@midday/cache";
 
 const studentCache = new RedisCache("student", 30 * 60);
 
 export const getAllStudents = async () => {
     const cacheKey = `all`;
-    const cached = await studentCache.get(cacheKey);
+    const cached = await studentCache.get<typeof students.$inferSelect>(cacheKey);
     if (cached) return cached;
 
     const [student] = await db
@@ -22,25 +21,75 @@ export const getAllStudents = async () => {
     return student;
 };
 
-export const getStudentsByClassId  = async (classId: number) => {
-    const cacheKey = `class:${classId}`;
-    const cached = await studentCache.get(cacheKey);
-    if (cached) return cached;
+export const getStudentsByClassId = async (
+  classId: number, 
+  limit = 50, 
+  offset = 0, 
+  q?: string, 
+  sort?: string[] | null
+) => {
+    const orderBy = [];
 
-    const [student] = await db
-        .select()
-        .from(students)
-        .where(eq(students.currentClassId, classId));
-    
-    if (student) {
-        await studentCache.set(cacheKey, student);
+    if (sort?.length) {
+        sort.forEach((s) => {
+            const [column, direction] = s.split(":");
+            const dirFunc = direction === "desc" ? desc : asc;
+
+            switch (column) {
+                case "user.name":
+                case "name":
+                    orderBy.push(dirFunc(users.name));
+                    break;
+                case "studentNumber":
+                case "student_number":
+                    orderBy.push(dirFunc(students.studentNumber));
+                    break;
+                case "status":
+                    orderBy.push(dirFunc(students.status));
+                    break;
+            }
+        });
     }
-    return student;
+
+    if (orderBy.length === 0) {
+        orderBy.push(asc(users.name));
+    }
+
+    return db
+        .select({
+            userId: students.userId,
+            studentNumber: students.studentNumber,
+            secretNumber: students.secretNumber,
+            currentClassId: students.currentClassId,
+            status: students.status,
+            stats: students.stats,
+            user: {
+                id: users.id,
+                name: users.name,
+                image: users.image,
+                email: users.email,
+            }
+        })
+        .from(students)
+        .innerJoin(users, eq(students.userId, users.id))
+        .where(
+            and(
+                eq(students.currentClassId, classId),
+                q ? or(
+                    ilike(users.name, `%${q}%`),
+                    ilike(students.studentNumber, `%${q}%`)
+                ) : undefined
+            )
+        )
+        .orderBy(...orderBy)
+        .limit(limit)
+        .offset(offset);
 };
+
 
 export const getStudentByUserId = async (userId: string) => {
   const cacheKey = `user:${userId}`;
-  const cached = await studentCache.get(cacheKey);
+  const cached = await studentCache.get<any>(cacheKey);
   
   if (cached) return cached;
 
@@ -77,7 +126,7 @@ export const getStudentByUserId = async (userId: string) => {
 
 export const getStudentByNumber = async (studentNumber: string) => {
     const cacheKey = `number:${studentNumber}`;
-    const cached = await studentCache.get(cacheKey);
+    const cached = await studentCache.get<typeof students.$inferSelect>(cacheKey);
     if (cached) return cached;
 
     const [student] = await db

@@ -81,7 +81,10 @@ export const columns: ColumnDef<any>[] = [
         <div className={cn("flex space-x-2 items-center ")}>
           <div
             className="size-3"
-            style={{ backgroundColor: row.original.color ? `#${row.original.color}` : undefined }}
+            style={row.original?.color
+              ? { backgroundColor: row.original.color }
+              : { backgroundColor: "transparent" }
+            }
           />
           {shouldShowSubjectTooltip(row.original) ? (
             <TooltipProvider delayDuration={0}>

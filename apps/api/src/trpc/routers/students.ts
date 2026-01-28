@@ -19,9 +19,39 @@ export const studentsRouter = createTRPCRouter({
     return getAllStudents();
   }),
   getByClassId: protectedProcedure
-    .input(z.object({ classId: z.number() }))
+    .input(
+      z.object({
+        id: z.string(),
+        cursor: z.number().nullish(),
+        limit: z.number().min(1).max(100).default(50),
+        q: z.string().optional(),
+        sort: z.array(z.string()).nullish(),
+      })
+    )
     .query(async ({ input }) => {
-      return getStudentsByClassId(input.classId);
+      const limit = input.limit ?? 50;
+      const cursor = input.cursor ?? 0;
+      
+      const data = await getStudentsByClassId(
+        Number(input.id),
+        limit + 1,
+        cursor,
+        input.q,
+        input.sort
+      );
+
+      let nextCursor: typeof cursor | null = null;
+      if (data.length > limit) {
+        data.pop();
+        nextCursor = cursor + limit;
+      }
+
+      return {
+        data,
+        meta: {
+          cursor: nextCursor,
+        },
+      };
     }),
   getByUserId: protectedProcedure
     .input(z.object({ userId: z.string().uuid() }))

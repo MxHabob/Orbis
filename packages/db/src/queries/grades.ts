@@ -8,7 +8,7 @@ const gradeCache = new RedisCache("grades", 5 * 60);
 
 export const getStudentGrades = async (studentId: string, termId?: number) => {
   const cacheKey = `student:${studentId}:${termId || 'all'}`;
-  const cached = await gradeCache.get(cacheKey);
+  const cached = await gradeCache.get<any[]>(cacheKey);
   
   if (cached) return cached;
 

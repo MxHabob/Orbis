@@ -39,13 +39,15 @@ export default async function Page(props: Props) {
 
   if (!Id) return null;
 
-  batchPrefetch([
-    trpc.students.getByClassId.infiniteQueryOptions({
-      ...filter,
-      sort,
-      id: Id,
-    }),
-  ]);
+  const infiniteOptions = trpc.students.getByClassId.infiniteQueryOptions?.({
+    id: Id,
+    q: filter.q ?? undefined,
+    sort: sort ?? undefined,
+  });
+
+  if (infiniteOptions) {
+    batchPrefetch([infiniteOptions]);
+  }
 
   return (
     <HydrateClient>

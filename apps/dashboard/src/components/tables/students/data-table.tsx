@@ -34,7 +34,7 @@ const NON_CLICKABLE_COLUMNS = new Set(["actions"]);
 
 type Props = {
   initialSettings?: Partial<TableSettings>;
-  id?: string;
+  id: string;
 };
 
 export function DataTable({ initialSettings, id }: Props) {
@@ -61,15 +61,14 @@ export function DataTable({ initialSettings, id }: Props) {
     initialSettings,
   });
 
-  const infiniteQueryOptions = id ? trpc.students.getByClassId.infiniteQueryOptions(
+  const infiniteQueryOptions = trpc.students.getByClassId.infiniteQueryOptions(
     {
-      ...filter,
-      sort: params.sort ?? undefined,
-      q: deferredSearch,
       id,
+      q: deferredSearch ?? undefined,
+      sort: params.sort ?? undefined,
     },
     {
-      getNextPageParam: ({ meta }) => meta?.cursor,
+      getNextPageParam: (lastPage) => lastPage.meta.cursor,
     },
   );
 
