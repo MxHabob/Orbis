@@ -22,14 +22,14 @@ export function getSharedRedisClient(): RedisClientType {
 
   sharedRedisClient = createClient({
     url: redisUrl,
-    pingInterval: 60 * 1000, // 1-minute ping to detect stale connections
+    pingInterval: 60 * 1000, 
+    disableOfflineQueue: true, // Fail fast if Redis is down
     socket: {
-      family: isProduction ? 6 : 4, // IPv6 for Fly.io 6PN internal network
+      family: isProduction ? 6 : 4, 
       connectTimeout: isProduction ? 10000 : 5000,
-      keepAlive: true, // TCP keepalive for connection health
-      noDelay: true, // Disable Nagle's algorithm for lower latency
+      keepAlive: true, 
+      noDelay: true, 
       reconnectStrategy: (retries) => {
-        // Exponential backoff: 100ms, 200ms, 400ms... max 3s
         const delay = Math.min(100 * 2 ** retries, 3000);
         console.log(
           `[Redis] Reconnecting in ${delay}ms (attempt ${retries + 1})`,

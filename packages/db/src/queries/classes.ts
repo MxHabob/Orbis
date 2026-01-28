@@ -56,7 +56,7 @@ export const getClasses = async (academicYearId?: number) => {
     orderBy: (fields, { asc }) => [asc(fields.name)],
   });
 
-
+  
   await classCache.set(cacheKey, results);
 
   return results;
