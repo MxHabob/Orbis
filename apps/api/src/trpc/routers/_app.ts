@@ -1,9 +1,12 @@
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import { createTRPCRouter } from "../init";
 import { academicRouter } from "./academic";
+import { attendanceRouter } from "./attendance";
 import { assessmentsRouter } from "./assessments";
 import { auditLogsRouter } from "./audit-logs";
 import { classesRouter } from "./classes";
+import { gradesRouter } from "./grades";
+import { lessonsRouter } from "./lessons";
 import { notificationsRouter } from "./notifications";
 import { studentsRouter } from "./students";
 import { subjectsRouter } from "./subjects";
@@ -11,9 +14,12 @@ import { userRouter } from "./user";
 
 export const appRouter = createTRPCRouter({
   academic: academicRouter,
+  attendance: attendanceRouter,
   assessments: assessmentsRouter,
   auditLogs: auditLogsRouter,
   classes: classesRouter,
+  grades: gradesRouter,
+  lessons: lessonsRouter,
   notifications: notificationsRouter,
   students: studentsRouter,
   subjects: subjectsRouter,

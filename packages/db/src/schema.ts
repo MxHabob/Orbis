@@ -12,7 +12,8 @@ import {
   unique,
   numeric,
   date,
-  jsonb
+  jsonb,
+  time
 } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 
@@ -21,14 +22,13 @@ import { relations, sql } from 'drizzle-orm';
 // ==========================================
 export const roleEnum = pgEnum('role', ['admin', 'student', 'parent', 'teacher', 'staff']);
 export const userSexEnum = pgEnum('user_sex', ['unspecified','male', 'female']);
-export const assessmentTypeEnum = pgEnum('assessment_type', [
-  'exam', 'quiz', 'assignment', 'participation', 'oral', 'attendance', 'behavior', 'homework'
-]);
+export const assessmentTypeEnum = pgEnum('assessment_type', ['exam', 'quiz', 'assignment', 'participation', 'oral', 'attendance', 'behavior', 'homework']);
 export const classTypeEnum = pgEnum('class_type', ['classroom','laboratory','library','computer_lab','music_room','exam_hall','workshop','multi-purpose_room']);
 export const studentStatusEnum = pgEnum('student_status', ['active', 'graduated', 'transferred', 'suspended']);
 export const notificationTypeEnum = pgEnum('notification_type', ['grade_published', 'new_assessment', 'attendance_alert', 'announcement', 'message', 'parent_meeting', 'fee_reminder', 'account_action', 'behavior_alert', 'system']);
+export const attendanceStatusEnum = pgEnum('attendance_status', ['present','absent','late','excused','sick','authorized_leave','field_trip']);
 
-// ==========================================
+// =========================================
 // 2. Core Tables (الجداول الأساسية)
 // ==========================================
 
@@ -44,6 +44,7 @@ export const users = pgTable('users', {
   sex: userSexEnum('sex').default('unspecified').notNull(),
   image: varchar('image', { length: 255 }),
   metadata: jsonb('metadata'),
+  deletedAt: timestamp('deleted_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -94,6 +95,7 @@ export const academicYears = pgTable('academic_years', {
   id: serial('id').primaryKey(),
   yearName: varchar('year_name', { length: 20 }).unique().notNull(), // مثال: 2025-2026
   isCurrent: boolean('is_current').default(false).notNull(),
+  deletedAt: timestamp('deleted_at'),
 });
 
 // جدول الفترات الدراسية (الترم الأول / الترم الثاني)
@@ -104,6 +106,7 @@ export const academicTerms = pgTable('academic_terms', {
   startDate: date('start_date'),
   endDate: date('end_date'),
   isCurrent: boolean('is_current').default(false),
+  deletedAt: timestamp('deleted_at'),
 });
 
 // جدول المواد الدراسية
@@ -112,6 +115,7 @@ export const subjects = pgTable('subjects', {
   name: varchar('name', { length: 255 }).notNull(),
   code: varchar('code', { length: 50 }).unique(),
   color: text('color').default("#FFF3E0").notNull(),
+  deletedAt: timestamp('deleted_at'),
 });
 
 // جدول الفصول الدراسية
@@ -123,6 +127,7 @@ export const classes = pgTable('classes', {
   parentClassId: integer('parent_class_id').references((): any => classes.id, { onDelete: 'set null' }),
   academicYearId: integer('academic_year_id').references(() => academicYears.id),
   color: text('color').default("#e6e6e6").notNull(),
+  deletedAt: timestamp('deleted_at'),
 }, (table) => ({
   classYearIdx: index('class_year_idx').on(table.academicYearId, table.name),
   parentIdx: index('classes_parent_idx').on(table.parentClassId),
@@ -140,6 +145,7 @@ export const students = pgTable('students', {
   currentClassId: integer('current_class_id').references(() => classes.id),
   status: studentStatusEnum('status').default('active'),
   stats: jsonb('stats'),
+  deletedAt: timestamp('deleted_at'),
 }, (table) => ({
   studentNumIdx: index('student_num_idx').on(table.studentNumber),
   secretNumIdx: index('secret_num_idx').on(table.secretNumber),
@@ -153,6 +159,7 @@ export const enrollments = pgTable('enrollments', {
   academicYearId: integer('academic_year_id').references(() => academicYears.id),
   status: studentStatusEnum('status').default('active'),
   enrolledAt: timestamp('enrolled_at').defaultNow().notNull(),
+  deletedAt: timestamp('deleted_at'),
 }, (table) => ({
   studentClassYearIdx: unique('student_class_year_unique').on(table.studentId, table.classId, table.academicYearId),
 }));
@@ -170,6 +177,7 @@ export const assessmentItems = pgTable('assessment_items', {
   month: integer('month').notNull(), // رقم الشهر (1-12)
   termId: integer('term_id').references(() => academicTerms.id),
   isPublished: boolean('is_published').default(false).notNull(),
+  deletedAt: timestamp('deleted_at'),
 }, (table) => ({
   itemLookupIdx: index('item_lookup_idx').on(table.classId, table.subjectId, table.month),
 }));
@@ -184,6 +192,7 @@ export const gradeEntries = pgTable('grade_entries', {
   metadata: jsonb('metadata'),
   gradedById: uuid('graded_by_id').references(() => users.id),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  deletedAt: timestamp('deleted_at'),
 }, (table) => ({
   studentAssessmentIdx: unique('student_assessment_unique').on(table.studentId, table.assessmentItemId),
   fastGradeLookupIdx: index('fast_grade_lookup_idx').on(table.assessmentItemId, table.score),
@@ -230,6 +239,64 @@ export const notifications = pgTable('notifications', {
   recipientUnreadIdx: index('notif_recipient_unread_idx').on(table.recipientId).where(sql`${table.isRead} = false`),
   typeRecipientIdx:    index('notif_type_recipient_idx').on(table.type, table.recipientId),
 }));
+
+
+export const timeSlots = pgTable('time_slots', {
+  id: serial('id').primaryKey(),
+  slotNumber: integer('slot_number').notNull(),
+  startTime: time('start_time').notNull(),
+  endTime:   time('end_time').notNull(),
+  durationMinutes: integer('duration_minutes').default(40).notNull(),
+  isBreak: boolean('is_break').default(false),
+  academicYearId: integer('academic_year_id').references(() => academicYears.id, { onDelete: 'cascade' }).notNull(),
+  deletedAt: timestamp('deleted_at'),
+}, (t) => ({
+  uniqueSlotPerYear: unique('unique_slot_per_year').on(t.academicYearId, t.slotNumber),
+  yearSlotIdx: index('time_slots_year_slot_idx').on(t.academicYearId, t.slotNumber),
+}));
+
+export const scheduledLessons = pgTable('scheduled_lessons', {
+  id: serial('id').primaryKey(),
+  classId: integer('class_id').references(() => classes.id, { onDelete: 'cascade' }).notNull(),
+  subjectId: integer('subject_id').references(() => subjects.id, { onDelete: 'restrict' }).notNull(),
+  teacherId: uuid('teacher_id').references(() => users.id, { onDelete: 'restrict' }).notNull(),
+  timeSlotId: integer('time_slot_id').references(() => timeSlots.id, { onDelete: 'restrict' }).notNull(),
+  dayOfWeek: integer('day_of_week').notNull(),
+  academicYearId: integer('academic_year_id').references(() => academicYears.id, { onDelete: 'cascade' }).notNull(),
+  academicTermId: integer('academic_term_id').references(() => academicTerms.id, { onDelete: 'set null' }),
+  roomId: integer('room_id').references(() => classes.id, { onDelete: 'set null' }),
+  isActive: boolean('is_active').default(true),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (t) => ({
+  uniqueLessonConstraint: unique('unique_lesson_per_class_slot_day').on(t.classId,t.timeSlotId,t.dayOfWeek,t.academicYearId),
+  teacherDaySlotIdx: index('sched_teacher_day_slot_idx').on(t.teacherId, t.dayOfWeek, t.timeSlotId, t.academicYearId),
+  classDaySlotIdx: index('sched_class_day_slot_idx').on(t.classId, t.dayOfWeek, t.timeSlotId, t.academicYearId),
+}));
+
+export const attendanceRecords = pgTable('attendance_records', {
+    id: serial('id').primaryKey(),
+    studentId: uuid('student_id').notNull().references(() => students.userId, { onDelete: 'cascade' }),
+    scheduledLessonId: integer('scheduled_lesson_id').notNull().references(() => scheduledLessons.id, { onDelete: 'cascade' }),
+    date: date('date').notNull(),
+    status: attendanceStatusEnum('status').notNull().default('absent'),
+    arrivalTime: time('arrival_time'),
+    notes: text('notes'),
+    markedById: uuid('marked_by_id').references(() => users.id, { onDelete: 'set null' }),
+    isVerified: boolean('is_verified').default(false).notNull(),
+    deletedAt: timestamp('deleted_at'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+    uniqueStudentLesson: unique('unique_attendance_student_lesson').on(table.studentId, table.scheduledLessonId),
+    studentDateIdx: index('attendance_student_date_idx').on(table.studentId, table.date),
+    lessonDateIdx: index('attendance_lesson_date_idx').on(table.scheduledLessonId, table.date),
+    statusIdx: index('attendance_status_idx').on(table.status),
+    compositeStudentLessonDate: index('attendance_student_lesson_date_idx').on(table.studentId, table.scheduledLessonId, table.date),
+}));
+
+
 // ==========================================
 // 5. Relations (العلاقات البرمجية لسهولة الاستعلام)
 // ==========================================
@@ -257,6 +324,7 @@ export const studentsRelations = relations(students, ({ one, many }) => ({
   grades: many(gradeEntries, { relationName: "studentGrades" }),
   enrollments: many(enrollments, { relationName: "studentEnrollments" }),
   class: one(classes, { fields: [students.currentClassId], references: [classes.id], relationName: "studentClass" }),
+  attendanceRecords: many(attendanceRecords, { relationName: 'studentAttendance' }),
 }));
 
 export const enrollmentsRelations = relations(enrollments, ({ one }) => ({
@@ -293,4 +361,20 @@ export const classesRelations = relations(classes, ({ one, many }) => ({
   year: one(academicYears, { fields: [classes.academicYearId], references: [academicYears.id] }),
   parent: one(classes, { fields: [classes.parentClassId], references: [classes.id], relationName: "classChildren" }),
   children: many(classes, { relationName: "classChildren" }),
+}));
+
+export const scheduledLessonsRelations = relations(scheduledLessons, ({ one, many }) => ({
+  class: one(classes, { fields: [scheduledLessons.classId], references: [classes.id] }),
+  subject: one(subjects, { fields: [scheduledLessons.subjectId], references: [subjects.id] }),
+  teacher: one(users, { fields: [scheduledLessons.teacherId], references: [users.id] }),
+  timeSlot: one(timeSlots, { fields: [scheduledLessons.timeSlotId], references: [timeSlots.id] }),
+  academicYear: one(academicYears, { fields: [scheduledLessons.academicYearId], references: [academicYears.id] }),
+  term: one(academicTerms, { fields: [scheduledLessons.academicTermId], references: [academicTerms.id] }),
+  attendanceRecords: many(attendanceRecords, { relationName: 'lessonAttendance' }),
+}));
+
+export const attendanceRecordsRelations = relations(attendanceRecords, ({ one }) => ({
+  student: one(students, { fields: [attendanceRecords.studentId], references: [students.userId], relationName: 'studentAttendance' }),
+  scheduledLesson: one(scheduledLessons, { fields: [attendanceRecords.scheduledLessonId], references: [scheduledLessons.id], relationName: 'lessonAttendance' }),
+  markedBy: one(users, { fields: [attendanceRecords.markedById], references: [users.id], relationName: 'markedAttendance' }),
 }));

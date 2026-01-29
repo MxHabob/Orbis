@@ -13,9 +13,9 @@ export const subjectSchema = z.object({
     description: "Code of the subject",
     example: "MATH101",
   }),
-  colorCode: z.string().max(7).openapi({
-    description: "Color code for the subject UI",
-    example: "#e6e6e6",
+  color: z.string().max(7).openapi({
+    description: "Color for the subject UI",
+    example: "#FFF3E0",
   }),
 });
 

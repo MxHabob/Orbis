@@ -1,4 +1,5 @@
 CREATE TYPE "public"."assessment_type" AS ENUM('exam', 'quiz', 'assignment', 'participation', 'oral', 'attendance', 'behavior', 'homework');--> statement-breakpoint
+CREATE TYPE "public"."attendance_status" AS ENUM('present', 'absent', 'late', 'excused', 'sick', 'authorized_leave', 'field_trip');--> statement-breakpoint
 CREATE TYPE "public"."class_type" AS ENUM('classroom', 'laboratory', 'library', 'computer_lab', 'music_room', 'exam_hall', 'workshop', 'multi-purpose_room');--> statement-breakpoint
 CREATE TYPE "public"."notification_type" AS ENUM('grade_published', 'new_assessment', 'attendance_alert', 'announcement', 'message', 'parent_meeting', 'fee_reminder', 'account_action', 'behavior_alert', 'system');--> statement-breakpoint
 CREATE TYPE "public"."role" AS ENUM('admin', 'student', 'parent', 'teacher', 'staff');--> statement-breakpoint
@@ -10,13 +11,15 @@ CREATE TABLE "academic_terms" (
 	"academic_year_id" integer,
 	"start_date" date,
 	"end_date" date,
-	"is_current" boolean DEFAULT false
+	"is_current" boolean DEFAULT false,
+	"deleted_at" timestamp
 );
 --> statement-breakpoint
 CREATE TABLE "academic_years" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"year_name" varchar(20) NOT NULL,
 	"is_current" boolean DEFAULT false NOT NULL,
+	"deleted_at" timestamp,
 	CONSTRAINT "academic_years_year_name_unique" UNIQUE("year_name")
 );
 --> statement-breakpoint
@@ -47,7 +50,24 @@ CREATE TABLE "assessment_items" (
 	"class_id" integer,
 	"month" integer NOT NULL,
 	"term_id" integer,
-	"is_published" boolean DEFAULT false NOT NULL
+	"is_published" boolean DEFAULT false NOT NULL,
+	"deleted_at" timestamp
+);
+--> statement-breakpoint
+CREATE TABLE "attendance_records" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"student_id" uuid NOT NULL,
+	"scheduled_lesson_id" integer NOT NULL,
+	"date" date NOT NULL,
+	"status" "attendance_status" DEFAULT 'absent' NOT NULL,
+	"arrival_time" time,
+	"notes" text,
+	"marked_by_id" uuid,
+	"is_verified" boolean DEFAULT false NOT NULL,
+	"deleted_at" timestamp,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "unique_attendance_student_lesson" UNIQUE("student_id","scheduled_lesson_id")
 );
 --> statement-breakpoint
 CREATE TABLE "audit_logs" (
@@ -68,7 +88,8 @@ CREATE TABLE "classes" (
 	"division" varchar(10),
 	"parent_class_id" integer,
 	"academic_year_id" integer,
-	"color_code" varchar(7) DEFAULT 'e6e6e6' NOT NULL
+	"color" text DEFAULT '#e6e6e6' NOT NULL,
+	"deleted_at" timestamp
 );
 --> statement-breakpoint
 CREATE TABLE "enrollments" (
@@ -78,6 +99,7 @@ CREATE TABLE "enrollments" (
 	"academic_year_id" integer,
 	"status" "student_status" DEFAULT 'active',
 	"enrolled_at" timestamp DEFAULT now() NOT NULL,
+	"deleted_at" timestamp,
 	CONSTRAINT "student_class_year_unique" UNIQUE("student_id","class_id","academic_year_id")
 );
 --> statement-breakpoint
@@ -91,6 +113,7 @@ CREATE TABLE "grade_entries" (
 	"metadata" jsonb,
 	"graded_by_id" uuid,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"deleted_at" timestamp,
 	CONSTRAINT "student_assessment_unique" UNIQUE("student_id","assessment_item_id")
 );
 --> statement-breakpoint
@@ -113,6 +136,23 @@ CREATE TABLE "notifications" (
 	"metadata" jsonb
 );
 --> statement-breakpoint
+CREATE TABLE "scheduled_lessons" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"class_id" integer NOT NULL,
+	"subject_id" integer NOT NULL,
+	"teacher_id" uuid NOT NULL,
+	"time_slot_id" integer NOT NULL,
+	"day_of_week" integer NOT NULL,
+	"academic_year_id" integer NOT NULL,
+	"academic_term_id" integer,
+	"room_id" integer,
+	"is_active" boolean DEFAULT true,
+	"notes" text,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "unique_lesson_per_class_slot_day" UNIQUE("class_id","time_slot_id","day_of_week","academic_year_id")
+);
+--> statement-breakpoint
 CREATE TABLE "sessions" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"token" varchar(255) NOT NULL,
@@ -132,6 +172,7 @@ CREATE TABLE "students" (
 	"current_class_id" integer,
 	"status" "student_status" DEFAULT 'active',
 	"stats" jsonb,
+	"deleted_at" timestamp,
 	CONSTRAINT "students_student_number_unique" UNIQUE("student_number")
 );
 --> statement-breakpoint
@@ -139,8 +180,21 @@ CREATE TABLE "subjects" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"name" varchar(255) NOT NULL,
 	"code" varchar(50),
-	"color_code" varchar(7) DEFAULT 'e6e6e6' NOT NULL,
+	"color" text DEFAULT '#FFF3E0' NOT NULL,
+	"deleted_at" timestamp,
 	CONSTRAINT "subjects_code_unique" UNIQUE("code")
+);
+--> statement-breakpoint
+CREATE TABLE "time_slots" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"slot_number" integer NOT NULL,
+	"start_time" time NOT NULL,
+	"end_time" time NOT NULL,
+	"duration_minutes" integer DEFAULT 40 NOT NULL,
+	"is_break" boolean DEFAULT false,
+	"academic_year_id" integer NOT NULL,
+	"deleted_at" timestamp,
+	CONSTRAINT "unique_slot_per_year" UNIQUE("academic_year_id","slot_number")
 );
 --> statement-breakpoint
 CREATE TABLE "users" (
@@ -154,6 +208,7 @@ CREATE TABLE "users" (
 	"sex" "user_sex" DEFAULT 'unspecified' NOT NULL,
 	"image" varchar(255),
 	"metadata" jsonb,
+	"deleted_at" timestamp,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "users_username_unique" UNIQUE("username"),
@@ -176,6 +231,9 @@ ALTER TABLE "accounts" ADD CONSTRAINT "accounts_user_id_users_id_fk" FOREIGN KEY
 ALTER TABLE "assessment_items" ADD CONSTRAINT "assessment_items_subject_id_subjects_id_fk" FOREIGN KEY ("subject_id") REFERENCES "public"."subjects"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "assessment_items" ADD CONSTRAINT "assessment_items_class_id_classes_id_fk" FOREIGN KEY ("class_id") REFERENCES "public"."classes"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "assessment_items" ADD CONSTRAINT "assessment_items_term_id_academic_terms_id_fk" FOREIGN KEY ("term_id") REFERENCES "public"."academic_terms"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "attendance_records" ADD CONSTRAINT "attendance_records_student_id_students_user_id_fk" FOREIGN KEY ("student_id") REFERENCES "public"."students"("user_id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "attendance_records" ADD CONSTRAINT "attendance_records_scheduled_lesson_id_scheduled_lessons_id_fk" FOREIGN KEY ("scheduled_lesson_id") REFERENCES "public"."scheduled_lessons"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "attendance_records" ADD CONSTRAINT "attendance_records_marked_by_id_users_id_fk" FOREIGN KEY ("marked_by_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "audit_logs" ADD CONSTRAINT "audit_logs_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "classes" ADD CONSTRAINT "classes_parent_class_id_classes_id_fk" FOREIGN KEY ("parent_class_id") REFERENCES "public"."classes"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "classes" ADD CONSTRAINT "classes_academic_year_id_academic_years_id_fk" FOREIGN KEY ("academic_year_id") REFERENCES "public"."academic_years"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -189,15 +247,30 @@ ALTER TABLE "notifications" ADD CONSTRAINT "notifications_sender_id_users_id_fk"
 ALTER TABLE "notifications" ADD CONSTRAINT "notifications_recipient_id_users_id_fk" FOREIGN KEY ("recipient_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "notifications" ADD CONSTRAINT "notifications_class_id_classes_id_fk" FOREIGN KEY ("class_id") REFERENCES "public"."classes"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "notifications" ADD CONSTRAINT "notifications_academic_term_id_academic_terms_id_fk" FOREIGN KEY ("academic_term_id") REFERENCES "public"."academic_terms"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "scheduled_lessons" ADD CONSTRAINT "scheduled_lessons_class_id_classes_id_fk" FOREIGN KEY ("class_id") REFERENCES "public"."classes"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "scheduled_lessons" ADD CONSTRAINT "scheduled_lessons_subject_id_subjects_id_fk" FOREIGN KEY ("subject_id") REFERENCES "public"."subjects"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "scheduled_lessons" ADD CONSTRAINT "scheduled_lessons_teacher_id_users_id_fk" FOREIGN KEY ("teacher_id") REFERENCES "public"."users"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "scheduled_lessons" ADD CONSTRAINT "scheduled_lessons_time_slot_id_time_slots_id_fk" FOREIGN KEY ("time_slot_id") REFERENCES "public"."time_slots"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "scheduled_lessons" ADD CONSTRAINT "scheduled_lessons_academic_year_id_academic_years_id_fk" FOREIGN KEY ("academic_year_id") REFERENCES "public"."academic_years"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "scheduled_lessons" ADD CONSTRAINT "scheduled_lessons_academic_term_id_academic_terms_id_fk" FOREIGN KEY ("academic_term_id") REFERENCES "public"."academic_terms"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "scheduled_lessons" ADD CONSTRAINT "scheduled_lessons_room_id_classes_id_fk" FOREIGN KEY ("room_id") REFERENCES "public"."classes"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sessions" ADD CONSTRAINT "sessions_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "students" ADD CONSTRAINT "students_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "students" ADD CONSTRAINT "students_current_class_id_classes_id_fk" FOREIGN KEY ("current_class_id") REFERENCES "public"."classes"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "time_slots" ADD CONSTRAINT "time_slots_academic_year_id_academic_years_id_fk" FOREIGN KEY ("academic_year_id") REFERENCES "public"."academic_years"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "item_lookup_idx" ON "assessment_items" USING btree ("class_id","subject_id","month");--> statement-breakpoint
+CREATE INDEX "attendance_student_date_idx" ON "attendance_records" USING btree ("student_id","date");--> statement-breakpoint
+CREATE INDEX "attendance_lesson_date_idx" ON "attendance_records" USING btree ("scheduled_lesson_id","date");--> statement-breakpoint
+CREATE INDEX "attendance_status_idx" ON "attendance_records" USING btree ("status");--> statement-breakpoint
+CREATE INDEX "attendance_student_lesson_date_idx" ON "attendance_records" USING btree ("student_id","scheduled_lesson_id","date");--> statement-breakpoint
 CREATE INDEX "class_year_idx" ON "classes" USING btree ("academic_year_id","name");--> statement-breakpoint
 CREATE INDEX "classes_parent_idx" ON "classes" USING btree ("parent_class_id");--> statement-breakpoint
 CREATE INDEX "fast_grade_lookup_idx" ON "grade_entries" USING btree ("assessment_item_id","score");--> statement-breakpoint
 CREATE INDEX "notif_recipient_created_idx" ON "notifications" USING btree ("recipient_id","created_at" DESC NULLS LAST);--> statement-breakpoint
 CREATE INDEX "notif_recipient_unread_idx" ON "notifications" USING btree ("recipient_id") WHERE "notifications"."is_read" = false;--> statement-breakpoint
 CREATE INDEX "notif_type_recipient_idx" ON "notifications" USING btree ("type","recipient_id");--> statement-breakpoint
+CREATE INDEX "sched_teacher_day_slot_idx" ON "scheduled_lessons" USING btree ("teacher_id","day_of_week","time_slot_id","academic_year_id");--> statement-breakpoint
+CREATE INDEX "sched_class_day_slot_idx" ON "scheduled_lessons" USING btree ("class_id","day_of_week","time_slot_id","academic_year_id");--> statement-breakpoint
 CREATE INDEX "student_num_idx" ON "students" USING btree ("student_number");--> statement-breakpoint
-CREATE INDEX "secret_num_idx" ON "students" USING btree ("secret_number");
+CREATE INDEX "secret_num_idx" ON "students" USING btree ("secret_number");--> statement-breakpoint
+CREATE INDEX "time_slots_year_slot_idx" ON "time_slots" USING btree ("academic_year_id","slot_number");

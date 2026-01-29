@@ -230,3 +230,24 @@ export const bulkImportStudents = async (classId: number, studentData: {
   return results;
 };
 
+export const getStudentEnrollments = async (studentId: string) => {
+    return db
+        .select({
+            id: enrollments.id,
+            status: enrollments.status,
+            enrolledAt: enrollments.enrolledAt,
+            class: {
+                id: classes.id,
+                name: classes.name,
+            },
+            academicYear: {
+                id: academicYears.id,
+                name: academicYears.yearName,
+            }
+        })
+        .from(enrollments)
+        .innerJoin(classes, eq(enrollments.classId, classes.id))
+        .innerJoin(academicYears, eq(enrollments.academicYearId, academicYears.id))
+        .where(eq(enrollments.studentId, studentId));
+};
+
