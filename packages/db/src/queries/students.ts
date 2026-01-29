@@ -1,5 +1,5 @@
 import { db } from "@db/client";
-import { students, classes, users } from "@db/schema";
+import { students, classes, users, enrollments } from "@db/schema";
 import { eq, asc, desc, and, or, ilike } from "drizzle-orm";
 
 import { RedisCache } from "@midday/cache";
@@ -63,15 +63,23 @@ export const getStudentsByClassId = async (
             currentClassId: students.currentClassId,
             status: students.status,
             stats: students.stats,
-            user: {
-                id: users.id,
-                name: users.name,
-                image: users.image,
-                email: users.email,
-            }
+            name: users.name,
+            image: users.image,
+            email: users.email,
+            sex: users.sex,
+            currentClass: {
+                id: classes.id,
+                name: classes.name,
+            },
+            enrollmentDate: enrollments.enrolledAt,
         })
         .from(students)
         .innerJoin(users, eq(students.userId, users.id))
+        .leftJoin(classes, eq(students.currentClassId, classes.id))
+        .leftJoin(enrollments, and(
+            eq(enrollments.studentId, students.userId),
+            eq(enrollments.classId, classId) // Get enrollment for this specific class
+        ))
         .where(
             and(
                 eq(students.currentClassId, classId),
@@ -158,10 +166,9 @@ export const deleteStudent = async (userId: string) => {
     // But if we delete just student profile:
     await db.delete(students).where(eq(students.userId, userId));
     await studentCache.delete(`user:${userId}`);
-};
+}
 
-import { enrollments, academicYears } from "@db/schema";
-import { sql } from "drizzle-orm";
+import { academicYears } from "@db/schema";
 
 export const bulkImportStudents = async (classId: number, studentData: {
   studentNumber: string;

@@ -1,5 +1,7 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+
 import { useCategoryParams } from "@/hooks/use-category-params";
 import { useTRPC } from "@/trpc/client";
 import { cn } from "@midday/ui/cn";
@@ -37,6 +39,7 @@ export function DataTable() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const { setParams } = useCategoryParams();
+  const router = useRouter();
 
   const { data } = useSuspenseQuery(
     trpc.classes.getAll.queryOptions(),
@@ -162,7 +165,7 @@ export function DataTable() {
             <TableRow
               className="hover:bg-muted/50 cursor-pointer"
               key={row.id}
-              onClick={() => setParams({ categoryId: row.original.id.toString() })}
+              onClick={() => router.push(`/classes/${row.original.id}/students`)}
             >
               {row.getVisibleCells().map((cell, index) => (
                 <TableCell
