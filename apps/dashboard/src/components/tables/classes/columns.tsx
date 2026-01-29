@@ -52,16 +52,16 @@ function CategoryTooltip({ category }: { category: any }) {
   const t = useI18n();
 
   // Priority 1: User-defined description
-  if (category.color_code) {
-    return <span>{category.color_code}</span>;
+  if (category.color) {
+    return <span>{category.color}</span>;
   }
 
   // Priority 2: System description from localization (only for system categories)
-  if (category.color_code) {
+  if (category.color) {
     try {
       return (
         // @ts-expect-error - slug is not nullable
-        <span>{t(`transaction_categories.${category.color_code}`)}</span>
+        <span>{t(`transaction_categories.${category.color}`)}</span>
       );
     } catch {
       return <span>Category description not available</span>;
@@ -147,7 +147,7 @@ export const columns: ColumnDef<any>[] = [
           {!hasChildren && !isChild && <div className="w-4" />}
           <div
             className="size-3"
-            style={{ backgroundColor: row.original.color_code}}
+            style={{ backgroundColor: row.original.color}}
           />
           {shouldShowCategoryTooltip(row.original) ? (
             <TooltipProvider delayDuration={0}>

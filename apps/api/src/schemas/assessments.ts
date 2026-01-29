@@ -49,3 +49,33 @@ export const assessmentItemSchema = z.object({
 
 export const createAssessmentItemSchema = assessmentItemSchema.omit({ id: true });
 export const updateAssessmentItemSchema = assessmentItemSchema.partial().required({ id: true });
+
+export const gradeEntrySchema = z.object({
+  id: z.number().openapi({
+    description: "Unique identifier of the grade entry",
+    example: 1,
+  }),
+  studentId: z.string().uuid().openapi({
+    description: "Student ID",
+    example: "123e4567-e89b-12d3-a456-426614174000",
+  }),
+  assessmentItemId: z.number().openapi({
+    description: "Assessment Item ID",
+    example: 1,
+  }),
+  score: z.number().nullable().openapi({
+    description: "Score obtained",
+    example: 85,
+  }),
+  isAbsent: z.boolean().default(false).openapi({
+    description: "Is absent",
+    example: false,
+  }),
+  comments: z.string().nullable().optional().openapi({
+    description: "Comments",
+    example: "Excellent work",
+  }),
+});
+
+export const createGradeEntrySchema = gradeEntrySchema.omit({ id: true });
+export const updateGradeEntrySchema = gradeEntrySchema.partial().required({ id: true });

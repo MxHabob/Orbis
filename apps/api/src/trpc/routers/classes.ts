@@ -7,7 +7,7 @@ import {
   createClass,
   deleteClass,
   getClassById,
-  getClasses,
+  getClassesV3,
   updateClass,
 } from "@midday/db/queries";
 import { z } from "zod";
@@ -16,7 +16,7 @@ export const classesRouter = createTRPCRouter({
   getAll: protectedProcedure
     .input(z.object({ academicYearId: z.number().optional() }).optional())
     .query(async ({ input }) => {
-      return getClasses(input?.academicYearId);
+      return getClassesV3(input?.academicYearId);
     }),
 
   getById: protectedProcedure

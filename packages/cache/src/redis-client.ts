@@ -9,27 +9,9 @@ export class RedisCache {
     this.defaultTTL = defaultTTL;
   }
 
-  // Get client lazily - allows picking up reconnected clients
+  // Get client lazily
   private get redis() {
     return getSharedRedisClient();
-  }
-
-  private parseValue<T>(value: string | null): T | undefined {
-    if (!value) return undefined;
-
-    try {
-      return JSON.parse(value) as T;
-    } catch {
-      // If parsing fails, return the raw string (for backwards compatibility)
-      return value as unknown as T;
-    }
-  }
-
-  private stringifyValue(value: unknown): string {
-    if (typeof value === "string") {
-      return value;
-    }
-    return JSON.stringify(value);
   }
 
   private getKey(key: string): string {
@@ -39,32 +21,36 @@ export class RedisCache {
   async get<T>(key: string): Promise<T | undefined> {
     try {
       const value = await this.redis.get(this.getKey(key));
-      return this.parseValue<T>(value);
+      if (value === null) return undefined;
+
+      try {
+        return JSON.parse(value) as T;
+      } catch {
+        // fallback to raw string (backward compatibility)
+        return value as unknown as T;
+      }
     } catch (error) {
-      console.error(
-        `Redis get error for ${this.prefix} cache, key "${key}":`,
-        error,
-      );
+      console.error(`Redis get error for ${this.prefix} cache, key "${key}":`, error);
       return undefined;
     }
   }
 
   async set(key: string, value: unknown, ttlSeconds?: number): Promise<void> {
     try {
-      const serializedValue = this.stringifyValue(value);
+      const serializedValue =
+        typeof value === "string" ? value : JSON.stringify(value);  
+
       const redisKey = this.getKey(key);
-      const ttl = ttlSeconds ?? this.defaultTTL;
+      const ttl = ttlSeconds ?? this.defaultTTL;  
 
       if (ttl > 0) {
-        await this.redis.setEx(redisKey, ttl, serializedValue);
+        // Use positional arguments for EX
+        await this.redis.set(redisKey, serializedValue, "EX", ttl);
       } else {
         await this.redis.set(redisKey, serializedValue);
       }
     } catch (error) {
-      console.error(
-        `Redis set error for ${this.prefix} cache, key "${key}":`,
-        error,
-      );
+      console.error(`Redis set error for ${this.prefix} cache, key "${key}":`, error);
     }
   }
 
@@ -72,16 +58,16 @@ export class RedisCache {
     try {
       await this.redis.del(this.getKey(key));
     } catch (error) {
-      console.error(
-        `Redis delete error for ${this.prefix} cache, key "${key}":`,
-        error,
-      );
+      console.error(`Redis delete error for ${this.prefix} cache, key "${key}":`, error);
     }
   }
 
   async healthCheck(): Promise<void> {
     try {
-      await this.redis.ping();
+      const reply = await this.redis.ping();
+      if (reply !== "PONG") {
+        throw new Error("Ping did not return PONG");
+      }
     } catch (error) {
       throw new Error(`Redis health check failed: ${error}`);
     }

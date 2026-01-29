@@ -1,7 +1,6 @@
 import { RedisCache } from "./redis-client";
 
-// Redis-based cache for tracking suggested action usage per team + user
-const cache = new RedisCache("suggested-actions", 7 * 24 * 60 * 60); // 7 days TTL
+const cache = new RedisCache("suggested-actions", 7 * 24 * 60 * 60); 
 
 export interface SuggestedActionUsage {
   actionId: string;
@@ -10,7 +9,6 @@ export interface SuggestedActionUsage {
 }
 
 export const suggestedActionsCache = {
-  // Get usage stats for a specific action
   getUsage: async (
     teamId: string,
     userId: string,
@@ -20,20 +18,16 @@ export const suggestedActionsCache = {
     return cache.get<SuggestedActionUsage>(key);
   },
 
-  // Get all usage stats for a user in a team
   getAllUsage: async (
     teamId: string,
     userId: string,
   ): Promise<Record<string, SuggestedActionUsage>> => {
-    // Note: Redis doesn't support pattern matching efficiently
-    // We'll store a summary object as well for efficient retrieval
     const summaryKey = `${teamId}:${userId}:summary`;
     const summary =
       await cache.get<Record<string, SuggestedActionUsage>>(summaryKey);
     return summary || {};
   },
 
-  // Increment usage for a specific action
   incrementUsage: async (
     teamId: string,
     userId: string,

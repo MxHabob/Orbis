@@ -36,7 +36,7 @@ export default async function Page(props: Props) {
 
   return (
     <ScrollableContent>
-      {/* <TrackerCalendar weeklyCalendar={weeklyCalendar?.value === "true"} /> */}
+      <TrackerCalendar weeklyCalendar={weeklyCalendar?.value === "true"} />
 
       <div className="mt-14 mb-6 flex items-center justify-between space-x-4">
         <h2 className="text-md font-medium">Projects</h2>

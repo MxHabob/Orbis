@@ -146,6 +146,12 @@ async function seedClasses(yearId: number) {
     "الصف التاسع", "الصف العاشر", "الصف الحادي عشر", "الصف الثاني عشر"
   ];
 
+  const colors = [
+    "#b21d18", "#0e7ea0", "#00838f", "#a00e32",
+    "#c5caef", "#500ce1", "#c5caef", "#500ce1",
+    "#c5caef", "#500ce1", "#c5caef", "#500ce1"
+  ];
+
   const divisions = ["أ", "ب", "ج"];
   const classesData: any[] = [];
 
@@ -157,7 +163,7 @@ async function seedClasses(yearId: number) {
       division: null,
       parentClassId: null,
       academicYearId: yearId,
-      color: "#E3F2FD",
+      color: colors[grades.indexOf(grade)],
     });
 
     // Divisions
@@ -168,7 +174,7 @@ async function seedClasses(yearId: number) {
         division: div,
         parentClassId: null, // سيتم تحديثه لاحقًا
         academicYearId: yearId,
-        color: "#E3F2FD",
+        color: colors[grades.indexOf(grade)],
       });
     }
   }

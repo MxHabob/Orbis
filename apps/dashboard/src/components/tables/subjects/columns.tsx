@@ -76,7 +76,6 @@ export const columns: ColumnDef<any>[] = [
     accessorKey: "name",
     cell: ({ row, table }) => {
       const meta = table.options.meta as unknown as SubjectsTableMeta;
-      console.log("data", row.original);
       return (
         <div className={cn("flex space-x-2 items-center ")}>
           <div
