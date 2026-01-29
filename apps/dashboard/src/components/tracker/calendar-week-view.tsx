@@ -3,7 +3,8 @@
 import { useUserQuery } from "@/hooks/use-user";
 import { secondsToHoursAndMinutes } from "@/utils/format";
 import { createSafeDate, formatHour, getSlotFromDate } from "@/utils/tracker";
-import type { RouterOutputs } from "@api/trpc/routers/_app";
+import type { CalendarEvent } from "@/actions/get-calendar-events-action";
+// import type { RouterOutputs } from "@api/trpc/routers/_app";
 import { TZDate } from "@date-fns/tz";
 import { cn } from "@midday/ui/cn";
 import { format } from "date-fns";
@@ -13,7 +14,7 @@ type CalendarWeekViewProps = {
   weekDays: TZDate[];
   currentDate: TZDate;
   selectedDate: string | null;
-  data: RouterOutputs["trackerEntries"]["byRange"]["result"] | undefined;
+  data: Record<string, CalendarEvent[]> | undefined;
   range: [string, string] | null;
   localRange: [string | null, string | null];
   isDragging: boolean;
@@ -31,9 +32,7 @@ const HOUR_HEIGHT = 26; // Fill the available height (600px - header) / 24 hours
 const hours = Array.from({ length: 25 }, (_, i) => i); // 0-24 for cleaner display
 
 type ProcessedEntry = {
-  event: NonNullable<
-    RouterOutputs["trackerEntries"]["byRange"]["result"]
-  >[string][number];
+  event: CalendarEvent;
   eventIndex: string | number;
   displayStartSlot: number;
   displayEndSlot: number;
@@ -192,7 +191,6 @@ const DayEntries = memo(
   ({
     day,
     data,
-    user,
     handleMouseDown,
     handleMouseEnter,
     handleMouseUp,
@@ -200,8 +198,7 @@ const DayEntries = memo(
     currentTime,
   }: {
     day: TZDate;
-    data: RouterOutputs["trackerEntries"]["byRange"]["result"] | undefined;
-    user: any;
+    data: Record<string, CalendarEvent[]> | undefined;
     handleMouseDown: (date: TZDate) => void;
     handleMouseEnter: (date: TZDate) => void;
     handleMouseUp: () => void;
@@ -220,7 +217,7 @@ const DayEntries = memo(
         const endDate = createSafeDate(event.stop);
 
         // Convert UTC times to user timezone for display slot calculation
-        const displayTimezone = user?.timezone || "UTC";
+        const displayTimezone = "UTC";
         let startSlot: number;
         let originalEndSlot: number;
 
@@ -309,7 +306,7 @@ const DayEntries = memo(
       });
 
       // Check previous day for entries that continue into current day
-      const userTimezone = user?.timezone || "UTC";
+      const userTimezone =  "UTC";
 
       // Simple previous day calculation using the date string directly
       const parts = currentDayStr.split("-").map(Number);
@@ -379,7 +376,7 @@ const DayEntries = memo(
 
       // Calculate positions for overlapping events
       return calculateEventPositions(allEntries);
-    }, [day, data, user?.timezone, currentTime]);
+    }, [day, data, currentTime]);
 
     return (
       <>
@@ -536,7 +533,6 @@ const DayEntries = memo(
 
 DayEntries.displayName = "DayEntries";
 
-// Optimized: Main component with memoization
 export const CalendarWeekView = memo(
   ({
     weekDays,
@@ -547,8 +543,8 @@ export const CalendarWeekView = memo(
     handleMouseUp,
     onEventClick,
   }: CalendarWeekViewProps) => {
-    const { data: user } = useUserQuery();
-    const is24Hour = user?.timeFormat === 24;
+    
+    const is24Hour = 24;
 
     // State to force re-render for running timers
     const [currentTime, setCurrentTime] = useState(new Date());
@@ -625,7 +621,7 @@ export const CalendarWeekView = memo(
                   className="flex items-center justify-center text-[12px] text-[#878787] border-b border-border"
                   style={{ height: `${HOUR_HEIGHT}px` }}
                 >
-                  {hour < 24 && formatHour(hour, user?.timeFormat)}
+                  {hour < 24 && formatHour(hour, 24)}
                 </div>
               ),
             )}
@@ -655,7 +651,7 @@ export const CalendarWeekView = memo(
 
                       {/* Time indicator on hover */}
                       <div className="absolute left-1 top-0.5 text-xs text-muted-foreground opacity-0 group-hover:opacity-100 pointer-events-none bg-background/80 px-1 rounded">
-                        {formatHour(hour, user?.timeFormat)}
+                        {formatHour(hour, 24)}
                       </div>
                     </div>
                   );
@@ -665,7 +661,6 @@ export const CalendarWeekView = memo(
                 <DayEntries
                   day={day}
                   data={data}
-                  user={user}
                   handleMouseDown={handleMouseDown}
                   handleMouseEnter={handleMouseEnter}
                   handleMouseUp={handleMouseUp}

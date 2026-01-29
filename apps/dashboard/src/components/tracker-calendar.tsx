@@ -1,9 +1,10 @@
 "use client";
 
+import { getCalendarEventsAction } from "@/actions/get-calendar-events-action";
 import { useCalendarDates } from "@/hooks/use-calendar-dates";
 import { useTrackerParams } from "@/hooks/use-tracker-params";
 import { useUserQuery } from "@/hooks/use-user";
-import { useTRPC } from "@/trpc/client";
+// import { useTRPC } from "@/trpc/client";
 import { TZDate } from "@date-fns/tz";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -32,10 +33,9 @@ type Props = {
 
 export function TrackerCalendar({ weeklyCalendar }: Props) {
   const ref = useRef(null);
-  const { data: user } = useUserQuery();
-  const trpc = useTRPC();
+  // const trpc = useTRPC();
 
-  const weekStartsOnMonday = user?.weekStartsOnMonday ?? false;
+  const weekStartsOnMonday = false;
 
   const {
     date: currentDate,
@@ -107,16 +107,15 @@ export function TrackerCalendar({ weeklyCalendar }: Props) {
     };
   };
 
-  const { data } = useQuery(
-    trpc.trackerEntries.byRange.queryOptions(getDateRange()),
-  );
-
-  // Single source of truth for billable hours calculations
-  const { data: billableHoursData } = useBillableHours({
-    date: currentDate,
-    view: selectedView,
-    weekStartsOnMonday,
+  const { data } = useQuery({
+    queryKey: ["calendar-events", getDateRange()],
+    queryFn: async () => {
+      const range = getDateRange();
+      const res = await getCalendarEventsAction(range);
+      return res.data;
+    },
   });
+
 
   function handlePeriodChange(direction: number) {
     if (selectedView === "week") {
@@ -205,7 +204,7 @@ export function TrackerCalendar({ weeklyCalendar }: Props) {
     <div ref={ref}>
       <div className="mt-4">
         <CalendarHeader
-          totalDuration={billableHoursData?.totalDuration}
+          // totalDuration={billableHoursData?.totalDuration}
           selectedView={selectedView as "week" | "month"}
         />
         {selectedView === "month" ? (
@@ -214,7 +213,7 @@ export function TrackerCalendar({ weeklyCalendar }: Props) {
             calendarDays={calendarDays}
             currentDate={currentTZDate}
             selectedDate={selectedDate}
-            data={data?.result}
+            data={data}
             range={validRange}
             localRange={localRange}
             isDragging={isDragging}
@@ -229,7 +228,7 @@ export function TrackerCalendar({ weeklyCalendar }: Props) {
             weekDays={currentWeekDays}
             currentDate={currentTZDate}
             selectedDate={selectedDate}
-            data={data?.result}
+            data={data}
             range={validRange}
             localRange={localRange}
             isDragging={isDragging}

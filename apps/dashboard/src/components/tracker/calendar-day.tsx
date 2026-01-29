@@ -1,4 +1,5 @@
-import type { RouterOutputs } from "@api/trpc/routers/_app";
+import type { CalendarEvent } from "@/actions/get-calendar-events-action";
+// import type { RouterOutputs } from "@api/trpc/routers/_app";
 import { TZDate } from "@date-fns/tz";
 import { cn } from "@midday/ui/cn";
 import { format, formatISO, isToday } from "date-fns";
@@ -15,10 +16,8 @@ type CalendarDayProps = {
   date: TZDate;
   currentDate: TZDate;
   selectedDate: string | null;
-  dayData:
-    | RouterOutputs["trackerEntries"]["byRange"]["result"][string]
-    | undefined;
-  allData?: RouterOutputs["trackerEntries"]["byRange"]["result"];
+  dayData: CalendarEvent[] | undefined;
+  allData?: Record<string, CalendarEvent[]>;
   range: [string, string] | null;
   localRange: [string | null, string | null];
   isDragging: boolean;

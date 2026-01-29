@@ -1,5 +1,4 @@
 import NumberFlow from "@number-flow/react";
-import { TotalEarnings } from "../total-earnings";
 import { TrackerCalendarType } from "../tracker-calendar-type";
 import { TrackerPeriodSelect } from "../tracker-period-select";
 import { TrackerSettings } from "../tracker-settings";
@@ -10,7 +9,7 @@ type CalendarHeaderProps = {
 };
 
 export function CalendarHeader({
-  totalDuration,
+  totalDuration = 20,
   selectedView,
 }: CalendarHeaderProps) {
   const hours = Math.floor((totalDuration || 0) / 3600);

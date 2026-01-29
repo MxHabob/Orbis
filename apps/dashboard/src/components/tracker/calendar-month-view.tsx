@@ -1,4 +1,4 @@
-import type { RouterOutputs } from "@api/trpc/routers/_app";
+import type { CalendarEvent } from "@/actions/get-calendar-events-action";
 import type { TZDate } from "@date-fns/tz";
 import { format } from "date-fns";
 import { CalendarDay } from "./calendar-day";
@@ -8,7 +8,7 @@ type CalendarGridProps = {
   calendarDays: TZDate[];
   currentDate: TZDate;
   selectedDate: string | null;
-  data: RouterOutputs["trackerEntries"]["byRange"]["result"] | undefined;
+  data: Record<string, CalendarEvent[]> | undefined;
   range: [string, string] | null;
   localRange: [string | null, string | null];
   isDragging: boolean;

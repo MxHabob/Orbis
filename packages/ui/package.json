@@ -82,6 +82,8 @@
     "./suggestion": "./src/components/suggestion.tsx",
     "./text-shimmer": "./src/components/text-shimmer.tsx",
     "./text-effect": "./src/components/text-effect.tsx",
+    "./toggle": "./src/components/toggle.tsx",
+    "./toggle-group": "./src/components/toggle-group.tsx",
     "./tool-call-indicator": "./src/components/tool-call-indicator.tsx",
     "./web-search-sources": "./src/components/web-search-sources.tsx"
   },
@@ -110,6 +112,8 @@
     "@radix-ui/react-switch": "^1.2.5",
     "@radix-ui/react-tabs": "^1.1.12",
     "@radix-ui/react-toast": "^1.2.14",
+    "@radix-ui/react-toggle": "^1.1.10",
+    "@radix-ui/react-toggle-group": "^1.1.11",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@radix-ui/react-use-controllable-state": "^1.2.2",
     "@tiptap/extension-bold": "^2.12.0",
