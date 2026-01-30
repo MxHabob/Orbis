@@ -1,6 +1,6 @@
 import { db } from "@db/client";
 import { students, classes, users, enrollments } from "@db/schema";
-import { eq, asc, desc, and, or, ilike } from "drizzle-orm";
+import { eq, asc, desc, and, or, ilike, inArray } from "drizzle-orm";
 
 import { RedisCache } from "@midday/cache";
 
@@ -55,6 +55,17 @@ export const getStudentsByClassId = async (
         orderBy.push(asc(users.name));
     }
 
+    // Get the class IDs for the selected class and its children (sections)
+    const classIds = db
+        .select({ id: classes.id })
+        .from(classes)
+        .where(
+            or(
+                eq(classes.id, classId),
+                eq(classes.parentClassId, classId)
+            )
+        );
+
     return db
         .select({
             userId: students.userId,
@@ -78,11 +89,11 @@ export const getStudentsByClassId = async (
         .leftJoin(classes, eq(students.currentClassId, classes.id))
         .leftJoin(enrollments, and(
             eq(enrollments.studentId, students.userId),
-            eq(enrollments.classId, classId) // Get enrollment for this specific class
+            inArray(enrollments.classId, classIds) // Get enrollment for any relevant class
         ))
         .where(
             and(
-                eq(students.currentClassId, classId),
+                inArray(students.currentClassId, classIds),
                 q ? or(
                     ilike(users.name, `%${q}%`),
                     ilike(students.studentNumber, `%${q}%`)
