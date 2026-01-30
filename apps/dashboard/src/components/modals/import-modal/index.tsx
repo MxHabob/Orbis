@@ -3,7 +3,6 @@
 
 import { useZodForm } from "@/hooks/use-zod-form";
 import { useTRPC } from "@/trpc/client";
-import { uniqueCurrencies } from "@midday/location/currencies";
 import { AnimatedSizeContainer } from "@midday/ui/animated-size-container";
 import {
   Dialog,
@@ -43,6 +42,7 @@ export function ImportModal() {
     step: parseAsString,
     type: parseAsString.withDefault("students"),
     classId: parseAsString,
+    academicYearId: parseAsString,
     subjectId: parseAsString,
     assessmentItemId: parseAsString,
     hide: parseAsBoolean.withDefault(false),
@@ -55,13 +55,13 @@ export function ImportModal() {
     trpc.students.import.mutationOptions({
       onSuccess: () => {
         setIsImporting(false);
-        toast({ title: "تم استيراد الطلاب بنجاح", variant: "success" });
+        toast({ title: "Students imported successfully", variant: "success" });
         onclose();
-        queryClient.invalidateQueries({ queryKey: trpc.students.getByUserId.queryKey() });
+        queryClient.invalidateQueries({ queryKey: trpc.students.getAll.queryKey() });
       },
       onError: (err) => {
         setIsImporting(false);
-        toast({ title: "خطأ في استيراد الطلاب", description: err.message, variant: "error" });
+        toast({ title: "Error importing students", description: err.message, variant: "error" });
       }
     })
   );
@@ -70,14 +70,14 @@ export function ImportModal() {
     trpc.assessments.importGrades.mutationOptions({
       onSuccess: () => {
         setIsImporting(false);
-        toast({ title: "تم استيراد الدرجات بنجاح", variant: "success" });
+        toast({ title: "Grades imported successfully", variant: "success" });
         onclose();
         queryClient.invalidateQueries({ queryKey: trpc.assessments.getGrades.queryKey() });
 
       },
       onError: (err) => {
         setIsImporting(false);
-        toast({ title: "خطأ في استيراد الدرجات", description: err.message, variant: "error" });
+        toast({ title: "Error importing grades", description: err.message, variant: "error" });
       }
     })
   );
@@ -93,6 +93,7 @@ export function ImportModal() {
     defaultValues: {
       type: (params.type as any) || "students",
       classId: params.classId ? parseInt(params.classId) : undefined,
+      academicYearId: params.academicYearId ? parseInt(params.academicYearId) : undefined,
       subjectId: params.subjectId ? parseInt(params.subjectId) : undefined,
       assessmentItemId: params.assessmentItemId ? parseInt(params.assessmentItemId) : undefined,
     },
@@ -112,6 +113,7 @@ export function ImportModal() {
       step: null,
       type: null,
       classId: null,
+      academicYearId: null,
       subjectId: null,
       assessmentItemId: null,
       hide: null,
@@ -131,16 +133,16 @@ export function ImportModal() {
         <div className="p-4 pb-0 max-h-[calc(100svh-10vw)] overflow-y-auto overflow-x-visible">
           <DialogHeader>
             <div className="flex space-x-4 items-center mb-4">
-              <DialogTitle className="m-0 p-0 text-right w-full">
-                {page === "select-file" && "اختر ملف الاستيراد"}
-                {page === "confirm-import" && "تأكيد واستيراد البيانات"}
+              <DialogTitle className="m-0 p-0 w-full">
+                {page === "select-file" && "Choose import file"}
+                {page === "confirm-import" && "Confirm and import data"}
               </DialogTitle>
             </div>
-            <DialogDescription className="text-right">
+            <DialogDescription>
               {page === "select-file" &&
-                `قم برفع ملف CSV يحتوي على بيانات ${params.type === 'students' ? 'الطلاب' : 'الدرجات'}.`}
+                `Upload a CSV file containing ${params.type === "students" ? "student" : "grade"} data.`}
               {page === "confirm-import" &&
-                "لقد قمنا بربط الأعمدة تلقائياً، يرجى مراجعة البيانات للتأكد من صحتها."}
+                "We've automatically mapped the columns, please review the data to ensure correctness."}
             </DialogDescription>
           </DialogHeader>
 
@@ -173,8 +175,11 @@ export function ImportModal() {
 
                           if (data.type === "students") {
                             const students = rows
-                              .map((row) => {
-                                const studentNumber = row[data.studentNumber!];
+                              .map((row, index) => {
+                                let studentNumber = data.autoGenerateStudentNumber 
+                                  ? `STU-${Date.now()}-${index}`
+                                  : row[data.studentNumber!];
+                                
                                 const name = row[data.name!];
                                 if (!studentNumber || !name) return null;
 
@@ -232,14 +237,14 @@ export function ImportModal() {
                     {page === "select-file" && <SelectFile />}
                     {page === "confirm-import" && (
                       <>
-                        <FieldMapping currencies={uniqueCurrencies} />
+                        <FieldMapping />
 
                         <SubmitButton
                           isSubmitting={isImporting}
                           disabled={!isValid}
                           className="mt-4"
                         >
-                          تأكيد الاستيراد
+                          Confirm Import
                         </SubmitButton>
 
 

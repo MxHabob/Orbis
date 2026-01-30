@@ -24,6 +24,7 @@ export const importSchema = z.object({
   type: z.enum(["students", "grades"]).default("students"),
   // Student fields
   studentNumber: z.string().optional(),
+  autoGenerateStudentNumber: z.boolean().default(false),
   name: z.string().optional(),
   phone: z.string().optional(),
   email: z.string().optional(),
@@ -34,12 +35,23 @@ export const importSchema = z.object({
   comments: z.string().optional(),
   // School context
   classId: z.number().optional(),
+  academicYearId: z.number().optional(),
   subjectId: z.number().optional(),
   termId: z.number().optional(),
   month: z.number().optional(),
   assessmentItemId: z.number().optional(),
   
   table: z.array(z.record(z.string(), z.string())).optional(),
+}).refine((data) => {
+  if (data.type === "students") {
+    if (!data.classId) return false;
+    if (!data.autoGenerateStudentNumber && !data.studentNumber) return false;
+    if (!data.name) return false;
+  }
+  return true;
+}, {
+  message: "Required fields are missing",
+  path: ["classId"]
 });
 
 

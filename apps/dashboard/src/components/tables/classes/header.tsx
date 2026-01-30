@@ -33,7 +33,15 @@ export function Header({ table }: Props) {
         className="max-w-sm"
       />
 
-      <Button onClick={handleCreateClass}>Create</Button>
+      <div className="flex items-center space-x-2">
+        <Button
+          variant="outline"
+          onClick={() => setParams({ step: "import", type: "students" })}
+        >
+          Import
+        </Button>
+        <Button onClick={handleCreateClass}>Create</Button>
+      </div>
     </div>
   );
 }

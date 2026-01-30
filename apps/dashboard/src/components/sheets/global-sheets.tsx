@@ -64,7 +64,7 @@ export function GlobalSheets() {
       {/* <DocumentSheet /> */}
       {/* <InboxDetailsSheet /> */}
 
-      {/* <ImportModal /> */}
+      <ImportModal />
       {/* <ConnectTransactionsModal /> */}
 
       {/* <InvoiceDetailsSheet /> */}
