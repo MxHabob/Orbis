@@ -1,6 +1,6 @@
 "use client";
 
-import { useCustomerParams } from "@/hooks/use-customer-params";
+import { useStudentParams } from "@/hooks/use-student-params";
 import type { RouterOutputs } from "@api/trpc/routers/_app";
 import { Avatar, AvatarFallback, AvatarImageNext } from "@midday/ui/avatar";
 import { Badge } from "@midday/ui/badge";
@@ -16,19 +16,17 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { memo, useCallback } from "react";
 
-export type Student = RouterOutputs["student"]["get"]["data"][number];
+export type Student = RouterOutputs["students"]["getByClassId"]["data"][number];
 
 const NameCell = memo(
   ({
     name,
-    surname,
     image,
   }: {
     name: string | null;
-    surname: string | null;
     image: string | null;
   }) => {
-    const displayName = name ? `${name} ${surname ?? ""}` : surname ?? "-";
+    const displayName = name ?? "-";
 
     return (
       <div className="flex items-center space-x-2">
@@ -62,10 +60,10 @@ const ActionsCell = memo(
     studentId: string;
     onDelete?: (id: string) => void;
   }) => {
-    const { setParams } = useCustomerParams();
+    const { setParams } = useStudentParams();
 
     const handleEdit = useCallback(() => {
-      setParams({ customerId: studentId });
+      setParams({ studentId: studentId });
     }, [studentId, setParams]);
 
     const handleDelete = useCallback(() => {
@@ -117,7 +115,6 @@ export const columns: ColumnDef<Student>[] = [
     cell: ({ row }) => (
       <NameCell 
         name={row.original.name} 
-        surname={row.original.surname} 
         image={row.original.image} 
       />
     ),

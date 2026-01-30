@@ -2,7 +2,7 @@
 
 import { VirtualRow } from "@/components/tables/core";
 import { useCustomerFilterParams } from "@/hooks/use-customer-filter-params";
-import { useCustomerParams } from "@/hooks/use-customer-params";
+import { useStudentParams } from "@/hooks/use-student-params";
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { useScrollHeader } from "@/hooks/use-scroll-header";
 import { useSortParams } from "@/hooks/use-sort-params";
@@ -39,7 +39,7 @@ type Props = {
 
 export function DataTable({ initialSettings, id }: Props) {
   const trpc = useTRPC();
-  const { setParams } = useCustomerParams();
+  const { setParams } = useStudentParams();
   const { filter, hasFilters } = useCustomerFilterParams();
   const { params } = useSortParams();
   const parentRef = useRef<HTMLDivElement>(null);
@@ -102,7 +102,7 @@ export function DataTable({ initialSettings, id }: Props) {
   const setOpen = useCallback(
     (id?: string) => {
       if (id) {
-        setParams({ customerId: id, details: true });
+        setParams({ studentId: id, details: true });
       } else {
         setParams(null);
       }
@@ -188,7 +188,6 @@ export function DataTable({ initialSettings, id }: Props) {
 
   const virtualItems = rowVirtualizer.getVirtualItems();
 
-  console.log("data :", data);
 
   return (
     <div className="relative">

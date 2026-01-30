@@ -1,5 +1,5 @@
 import { CustomersColumnVisibility } from "./customers-column-visibility";
-import { OpenCustomerSheet } from "./open-customer-sheet";
+import { OpenStudentSheet } from "./open-customer-sheet";
 import { SearchField } from "./search-field";
 
 export async function StudentsHeader() {
@@ -10,7 +10,7 @@ export async function StudentsHeader() {
       <div className="flex items-center gap-2">
         <CustomersColumnVisibility />
         <div className="hidden sm:block">
-          <OpenCustomerSheet />
+          <OpenStudentSheet />
         </div>
       </div>
     </div>

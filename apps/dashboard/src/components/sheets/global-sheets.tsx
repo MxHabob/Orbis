@@ -22,6 +22,9 @@ import { TrackerUpdateSheet } from "@/components/sheets/tracker-update-sheet";
 import { TransactionCreateSheet } from "@/components/sheets/transaction-create-sheet";
 import { TransactionEditSheet } from "@/components/sheets/transaction-edit-sheet";
 import { TransactionSheet } from "@/components/sheets/transaction-sheet";
+import { StudentCreateSheet } from "@/components/sheets/student-create-sheet";
+import { StudentEditSheet } from "@/components/sheets/student-edit-sheet";
+import { StudentDetailsSheet } from "@/components/sheets/student-details-sheet";
 
 export function GlobalSheets() {
   return (
@@ -33,7 +36,9 @@ export function GlobalSheets() {
       {/* <CategoryCreateSheet />
       <CategoryEditSheet /> */}
 
-      {/* <CustomerCreateSheet /> */}
+      <StudentCreateSheet />
+      <StudentEditSheet />
+      <StudentDetailsSheet />
       {/* <CustomerDetailsSheet /> */}
       {/* <CustomerEditSheet /> */}
 

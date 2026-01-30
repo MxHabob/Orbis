@@ -107,50 +107,84 @@ export const getStudentsByClassId = async (
 
 
 export const getStudentByUserId = async (userId: string) => {
-  const cacheKey = `user:${userId}`;
-  const cached = await studentCache.get<any>(cacheKey);
-  
-  if (cached) return cached;
+    const cacheKey = `user:${userId}`;
+    const cached = await studentCache.get<any>(cacheKey);
+    if (cached) return cached;
 
-  const [student] = await db
-    .select({
-      userId: students.userId,
-      studentNumber: students.studentNumber,
-      secretNumber: students.secretNumber,
-      currentClassId: students.currentClassId,
-      status: students.status,
-      stats: students.stats,
-      user: {
-        id: users.id,
-        name: users.name,
-        image: users.image,
-      },
-      class: {
-        id: classes.id,
-        name: classes.name,
-        division: classes.division
-      }
-    })
-    .from(students)
-    .innerJoin(users, eq(students.userId, users.id))
-    .leftJoin(classes, eq(students.currentClassId, classes.id))
-    .where(eq(students.userId, userId));
+    const [student] = await db
+        .select({
+            userId: students.userId,
+            studentNumber: students.studentNumber,
+            secretNumber: students.secretNumber,
+            currentClassId: students.currentClassId,
+            status: students.status,
+            stats: students.stats,
+            name: users.name,
+            email: users.email,
+            phone: users.phone,
+            sex: users.sex,
+            image: users.image,
+        })
+        .from(students)
+        .innerJoin(users, eq(students.userId, users.id))
+        .where(eq(students.userId, userId));
+    
+    if (student) {
+        await studentCache.set(cacheKey, student);
+    }
+    return student;
+};
 
-  if (student) {
-    await studentCache.set(cacheKey, student);
-  }
+export const getStudentById = async (id: string) => {
+    const cacheKey = `user:${id}`;
+    const cached = await studentCache.get<any>(cacheKey);
+    if (cached) return cached;
 
-  return student;
+    const [student] = await db
+        .select({
+            userId: students.userId,
+            studentNumber: students.studentNumber,
+            secretNumber: students.secretNumber,
+            currentClassId: students.currentClassId,
+            status: students.status,
+            stats: students.stats,
+            name: users.name,
+            email: users.email,
+            phone: users.phone,
+            sex: users.sex,
+            image: users.image,
+        })
+        .from(students)
+        .innerJoin(users, eq(students.userId, users.id))
+        .where(eq(students.userId, id));
+    
+    if (student) {
+        await studentCache.set(cacheKey, student);
+    }
+    return student;
 };
 
 export const getStudentByNumber = async (studentNumber: string) => {
     const cacheKey = `number:${studentNumber}`;
-    const cached = await studentCache.get<typeof students.$inferSelect>(cacheKey);
+    const cached = await studentCache.get<any>(cacheKey);
     if (cached) return cached;
 
     const [student] = await db
-        .select()
+        .select({
+            userId: students.userId,
+            studentNumber: students.studentNumber,
+            secretNumber: students.secretNumber,
+            currentClassId: students.currentClassId,
+            status: students.status,
+            stats: students.stats,
+            name: users.name,
+            email: users.email,
+            phone: users.phone,
+            sex: users.sex,
+            image: users.image,
+        })
         .from(students)
+        .innerJoin(users, eq(students.userId, users.id))
         .where(eq(students.studentNumber, studentNumber));
     
     if (student) {
@@ -170,6 +204,67 @@ export const updateStudent = async (userId: string, data: Partial<CreateStudentP
     await studentCache.delete(`user:${userId}`);
     if (result) await studentCache.delete(`number:${result.studentNumber}`);
     return result;
+};
+
+export const upsertStudent = async (data: any) => {
+    const { userId, name, email, phone, sex, studentNumber, secretNumber, currentClassId, status, stats } = data;
+
+    let targetUserId = userId;
+
+    if (targetUserId) {
+        // Update
+        await db.update(users).set({
+            name,
+            email,
+            phone,
+            sex,
+            updatedAt: new Date(),
+        }).where(eq(users.id, targetUserId));
+
+        await db.update(students).set({
+            studentNumber,
+            secretNumber,
+            currentClassId,
+            status,
+            stats,
+        }).where(eq(students.userId, targetUserId));
+    } else {
+        // Create
+        const [newUser] = await db.insert(users).values({
+            name,
+            email,
+            phone,
+            sex,
+            role: 'student',
+        }).returning();
+
+        if (!newUser) throw new Error("Failed to create user");
+        targetUserId = newUser.id;
+
+        await db.insert(students).values({
+            userId: targetUserId,
+            studentNumber,
+            secretNumber,
+            currentClassId,
+            status,
+            stats,
+        });
+
+        // Ensure enrollment if class is provided
+        if (currentClassId) {
+            const [currentYear] = await db.select().from(academicYears).where(eq(academicYears.isCurrent, true)).limit(1);
+            if (currentYear) {
+                await db.insert(enrollments).values({
+                    studentId: targetUserId,
+                    classId: currentClassId,
+                    academicYearId: currentYear.id,
+                }).onConflictDoNothing();
+            }
+        }
+    }
+
+    await studentCache.delete(`user:${targetUserId}`);
+    return { id: targetUserId };
 };
 
 export const deleteStudent = async (userId: string) => {

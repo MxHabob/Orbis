@@ -1,16 +1,19 @@
 import {
   createStudentSchema,
   updateStudentSchema,
+  upsertStudentSchema,
 } from "@api/schemas/students";
 import { createTRPCRouter, protectedProcedure } from "@api/trpc/init";
 import {
   createStudent,
   deleteStudent,
   getStudentByNumber,
-  getStudentByUserId,
+  getStudentById,
   updateStudent,
+  getStudentByUserId,
   getStudentsByClassId,
   getAllStudents,
+  upsertStudent,
 } from "@midday/db/queries";
 import { z } from "zod";
 
@@ -53,10 +56,15 @@ export const studentsRouter = createTRPCRouter({
         },
       };
     }),
-  getByUserId: protectedProcedure
-    .input(z.object({ userId: z.string().uuid() }))
+  getStudentByUserId: protectedProcedure
+    .input(z.object({ userId: z.string() }))
     .query(async ({ input }) => {
       return getStudentByUserId(input.userId);
+    }),
+  getById: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ input }) => {
+      return getStudentById(input.id);
     }),
 
   getByNumber: protectedProcedure
@@ -97,6 +105,11 @@ export const studentsRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       const { bulkImportStudents } = await import("@midday/db/queries");
       return bulkImportStudents(input.classId, input.students);
+    }),
+  upsert: protectedProcedure
+    .input(upsertStudentSchema)
+    .mutation(async ({ input }) => {
+      return upsertStudent(input);
     }),
 });
 
