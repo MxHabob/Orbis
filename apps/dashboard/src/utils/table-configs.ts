@@ -15,9 +15,14 @@ export const STICKY_COLUMNS: Record<TableId, StickyColumnConfig[]> = {
     { id: "invoiceNumber", width: 180 },
   ],
   customers: [{ id: "name", width: 320 }],
+  students: [{ id: "name", width: 250 }],
   vault: [
     { id: "select", width: 50 },
     { id: "title", width: 250 },
+  ],
+  grades: [
+    { id: "studentName", width: 300 },
+    { id: "total", width: 120 },
   ],
 };
 
@@ -59,7 +64,13 @@ export const SORT_FIELD_MAPS: Record<TableId, Record<string, string>> = {
     lastInvoice: "last_invoice",
     tags: "tags",
   },
+  students: {
+    name: "name",
+    studentNumber: "studentNumber",
+    enrollmentDate: "enrollmentDate",
+  },
   vault: {}, // Vault doesn't have sorting
+  grades: {},
 };
 
 /**
@@ -69,7 +80,9 @@ export const NON_REORDERABLE_COLUMNS: Record<TableId, Set<string>> = {
   transactions: new Set(["select", "date", "description", "actions"]),
   invoices: new Set(["select", "invoiceNumber", "actions"]),
   customers: new Set(["name", "actions"]),
+  students: new Set(["name", "actions"]),
   vault: new Set(["select", "title", "actions"]),
+  grades: new Set(["studentName", "total"]),
 };
 
 /**
@@ -79,7 +92,9 @@ export const ROW_HEIGHTS: Record<TableId, number> = {
   transactions: 45,
   invoices: 57,
   customers: 45,
+  students: 45,
   vault: 45,
+  grades: 45,
 };
 
 /**
@@ -88,6 +103,8 @@ export const ROW_HEIGHTS: Record<TableId, number> = {
 export const SUMMARY_GRID_HEIGHTS: Partial<Record<TableId, number>> = {
   invoices: 180,
   customers: 180,
+  students: 0,
+  grades: 0,
 };
 
 /**
@@ -117,12 +134,27 @@ export const TABLE_CONFIGS: Record<TableId, TableConfig> = {
     rowHeight: ROW_HEIGHTS.customers,
     summaryGridHeight: SUMMARY_GRID_HEIGHTS.customers,
   },
+  students: {
+    tableId: "students",
+    stickyColumns: STICKY_COLUMNS.students,
+    sortFieldMap: SORT_FIELD_MAPS.students,
+    nonReorderableColumns: NON_REORDERABLE_COLUMNS.students,
+    rowHeight: ROW_HEIGHTS.students,
+    summaryGridHeight: SUMMARY_GRID_HEIGHTS.students,
+  },
   vault: {
     tableId: "vault",
     stickyColumns: STICKY_COLUMNS.vault,
     sortFieldMap: SORT_FIELD_MAPS.vault,
     nonReorderableColumns: NON_REORDERABLE_COLUMNS.vault,
     rowHeight: ROW_HEIGHTS.vault,
+  },
+  grades: {
+    tableId: "grades",
+    stickyColumns: STICKY_COLUMNS.grades,
+    sortFieldMap: SORT_FIELD_MAPS.grades,
+    nonReorderableColumns: NON_REORDERABLE_COLUMNS.grades,
+    rowHeight: ROW_HEIGHTS.grades,
   },
 };
 

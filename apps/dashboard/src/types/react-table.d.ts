@@ -48,6 +48,11 @@ declare module "@tanstack/react-table" {
     // Members table meta
     currentUser?: RouterOutputs["team"]["members"][number];
     totalOwners?: number;
+
+    // Grades table meta
+    getGradeValue?: (studentId: string, assessmentItemId: number) => string | null;
+    onGradeChange?: (studentId: string, assessmentItemId: number, value: string | null) => void;
+    items?: { id: number; title: string; maxScore: number }[];
   }
 
   interface ColumnMeta<TData extends RowData, TValue> {
@@ -68,5 +73,7 @@ declare module "@tanstack/react-table" {
     };
     /** Header label for skeleton headers */
     headerLabel?: string;
+    assessmentItemId?: number;
+    maxScore?: number;
   }
 }

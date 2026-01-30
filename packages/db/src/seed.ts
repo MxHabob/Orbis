@@ -229,28 +229,40 @@ async function seedUsers() {
       sex: "unspecified" as const,
       emailVerified: true,
     },
-    // Teachers (4 teachers)
-    ...[1, 2, 3, 4].map((i) => ({
+    // Teachers (8 teachers)
+    ...[1, 2, 3, 4, 5, 6, 7, 8].map((i) => ({
       id: randomUUID(),
       username: `teacher${i}`,
-      name: `أ. ${["محمد", "أحمد", "خالد", "عبدالله"][i - 1]} السعدي`,
+      name: `أ. ${["محمد", "أحمد", "خالد", "عبدالله", "فاطمة", "نورة", "سارة", "مريم"][i - 1]} السعدي`,
       email: `teacher${i}@madrasa.com`,
       phone: `+96650111111${i}`,
       role: "teacher" as const,
-      sex: "male" as const,
+      sex: (i <= 4 ? "male" : "female") as "male" | "female",
       emailVerified: true,
     })),
-    // Students (12 students - 3 per class example)
-    ...[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => ({
-      id: randomUUID(),
-      username: `stu${1000 + i}`,
-      name: ["سارة", "عمر", "نورة", "يوسف", "لين", "زيد", "ريم", "خالد", "مريم", "عبدالرحمن", "فاطمة", "حسن"][i - 1] + " " + ["عبدالله", "محمد", "أحمد", "خالد"][(i - 1) % 4],
-      email: `stu${1000 + i}@madrasa.com`,
-      phone: `+96650100${1000 + i}`,
-      role: "student" as const,
-      sex: (i % 2 === 1 ? "female" : "male") as "female" | "male",
-      emailVerified: true,
-    })),
+    // Students (60 students - 5 per class division)
+    ...[...Array(60)].map((_, i) => {
+      const studentNames = [
+        "سارة", "عمر", "نورة", "يوسف", "لين", "زيد", "ريم", "خالد", "مريم", "عبدالرحمن",
+        "فاطمة", "حسن", "علي", "هند", "محمد", "عائشة", "أحمد", "زينب", "عبدالله", "رقية",
+        "إبراهيم", "خديجة", "عثمان", "آمنة", "طارق", "صفية", "سعيد", "حفصة", "ياسر", "جويرية",
+        "وليد", "سمية", "فيصل", "أسماء", "ماجد", "ميمونة", "راشد", "سودة", "بدر", "ليلى",
+        "سلمان", "رباب", "منصور", "دعاء", "جابر", "إيمان", "حمزة", "شيماء", "طلال", "نجلاء",
+        "عادل", "هدى", "كريم", "بشرى", "نايف", "سلمى", "فهد", "منى", "صالح", "وفاء"
+      ];
+      const familyNames = ["عبدالله", "محمد", "أحمد", "خالد", "علي", "حسن", "إبراهيم", "عثمان"];
+      
+      return {
+        id: randomUUID(),
+        username: `stu${1000 + i + 1}`,
+        name: `${studentNames[i]} ${familyNames[i % familyNames.length]}`,
+        email: `stu${1000 + i + 1}@madrasa.com`,
+        phone: `+96650100${1000 + i + 1}`,
+        role: "student" as const,
+        sex: (i % 2 === 0 ? "female" : "male") as "female" | "male",
+        emailVerified: true,
+      };
+    }),
   ];
 
   await db.insert(schema.users).values(usersData).onConflictDoNothing();
@@ -385,13 +397,41 @@ async function main() {
     const classes     = await seedClasses(yearId);
     const { adminId, teacherIds, studentIds } = await seedUsers();
 
-    // Assign students to classes (simple round-robin example)
-    const classIds = classes.map(c => c.id);
-    for (let i = 0; i < studentIds.length; i++) {
-      const clsId = classIds[i % classIds.length];
-      await db.update(schema.students)
-        .set({ currentClassId: clsId })
-        .where(eq(schema.students.userId, studentIds[i]!));
+    console.log(`→ Assigning ${studentIds.length} students to classes...`);
+
+    // Get only division classes (children with parentClassId)
+    const divisionClasses = classes.filter(c => c.division !== null);
+    console.log(`   Found ${divisionClasses.length} division classes`);
+
+    // Assign 5 students per division class
+    const studentsPerClass = 5;
+    const enrollments: any[] = [];
+
+    for (let i = 0; i < divisionClasses.length; i++) {
+      const divClass = divisionClasses[i]!;
+      const startIdx = i * studentsPerClass;
+      const classStudents = studentIds.slice(startIdx, startIdx + studentsPerClass);
+
+      for (const studentId of classStudents) {
+        // Update student's current class
+        await db.update(schema.students)
+          .set({ currentClassId: divClass.id })
+          .where(eq(schema.students.userId, studentId));
+
+        // Create enrollment record
+        enrollments.push({
+          studentId,
+          classId: divClass.id,
+          academicYearId: yearId,
+          status: "active",
+        });
+      }
+    }
+
+    // Insert all enrollments
+    if (enrollments.length > 0) {
+      await db.insert(schema.enrollments).values(enrollments).onConflictDoNothing();
+      console.log(`   ✓ Created ${enrollments.length} enrollments`);
     }
 
     const timeSlots = await seedTimeSlots(yearId);
@@ -400,7 +440,7 @@ async function main() {
     await seedScheduledLessons(
       yearId,
       termId,
-      classIds,
+      classes.map(c => c.id),
       subjects.map(s => s.id),
       teacherIds,
       timeSlotIds

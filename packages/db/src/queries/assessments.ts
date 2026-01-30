@@ -73,3 +73,84 @@ export const deleteAssessment = async (id: number) => {
   await db.delete(assessmentItems).where(eq(assessmentItems.id, id));
   if (existing) await assessmentCache.delete(`class:${existing.classId}`);
 };
+
+export const getMonthlyAssessmentItems = async (params: {
+  classId: number;
+  subjectId: number;
+  termId: number;
+  month: number;
+}) => {
+  return db
+    .select()
+    .from(assessmentItems)
+    .where(
+      and(
+        eq(assessmentItems.classId, params.classId),
+        eq(assessmentItems.subjectId, params.subjectId),
+        eq(assessmentItems.termId, params.termId),
+        eq(assessmentItems.month, params.month)
+      )
+    );
+};
+
+export const initializeStandardMonthlyAssessments = async (params: {
+  classId: number;
+  subjectId: number;
+  termId: number;
+  month: number;
+}) => {
+  const itemsToCreate = [
+    {
+      title: "Attendance",
+      type: "attendance" as const,
+      maxScore: "5",
+      weight: "1.0",
+      classId: params.classId,
+      subjectId: params.subjectId,
+      termId: params.termId,
+      month: params.month,
+      isPublished: true,
+    },
+    {
+      title: "Participation",
+      type: "participation" as const,
+      maxScore: "10",
+      weight: "1.0",
+      classId: params.classId,
+      subjectId: params.subjectId,
+      termId: params.termId,
+      month: params.month,
+      isPublished: true,
+    },
+    {
+      title: "Homework",
+      type: "homework" as const,
+      maxScore: "15",
+      weight: "1.0",
+      classId: params.classId,
+      subjectId: params.subjectId,
+      termId: params.termId,
+      month: params.month,
+      isPublished: true,
+    },
+    {
+      title: "Written Exam",
+      type: "exam" as const,
+      maxScore: "20",
+      weight: "1.0",
+      classId: params.classId,
+      subjectId: params.subjectId,
+      termId: params.termId,
+      month: params.month,
+      isPublished: true,
+    },
+  ];
+
+  const results = await db.insert(assessmentItems).values(itemsToCreate).returning();
+  
+  if (results.length > 0) {
+    await assessmentCache.delete(`class:${params.classId}`);
+  }
+  
+  return results;
+};
