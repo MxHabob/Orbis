@@ -1,6 +1,5 @@
 "use client";
 
-import { useI18n } from "@/locales/client";
 import type { RouterOutputs } from "@api/trpc/routers/_app";
 import { Button } from "@midday/ui/button";
 import { cn } from "@midday/ui/cn";
@@ -10,13 +9,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@midday/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@midday/ui/tooltip";
-
 import { DotsHorizontalIcon } from "@radix-ui/react-icons";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ChevronDown, ChevronRight } from "lucide-react";
@@ -33,63 +25,25 @@ export interface ClassesTableMeta {
 
 export type Class = RouterOutputs["classes"]["getAll"];
 
-// Check if a category should show a tooltip
-function shouldShowCategoryTooltip(category: any): boolean {
-  // Show tooltip if category has a user-defined description
-  if (category.description) {
-    return true;
-  }
-  // Show tooltip for system categories (they have localized descriptions)
-  if (category.system) {
-    return true;
-  }
-  // Don't show tooltip for user-created categories without descriptions
-  return false;
-}
-
-// Component to display category description from localization
-function CategoryTooltip({ category }: { category: any }) {
-  const t = useI18n();
-
-  // Priority 1: User-defined description
-  if (category.color) {
-    return <span>{category.color}</span>;
-  }
-
-  // Priority 2: System description from localization (only for system categories)
-  if (category.color) {
-    try {
-      return (
-        // @ts-expect-error - slug is not nullable
-        <span>{t(`transaction_categories.${category.color}`)}</span>
-      );
-    } catch {
-      return <span>Category description not available</span>;
-    }
-  }
-
-  return null;
-}
-
-// Flatten categories to include both parents and children with hierarchy info
-export function flattenClasses(categories: any[]): any[] {
+// Flatten classes to include both parents and children with hierarchy info
+export function flattenClasses(classes: any[]): any[] {
   const flattened: any[] = [];
 
-  for (const category of categories) {
-    // Add parent category
+  for (const cls of classes) {
+    // Add parent class
     flattened.push({
-      ...category,
+      ...cls,
       isChild: false,
-      hasChildren: category.children && category.children.length > 0,
+      hasChildren: cls.children && cls.children.length > 0,
     });
 
     // Add children if they exist
-    if (category.children && category.children.length > 0) {
-      for (const child of category.children) {
+    if (cls.children && cls.children.length > 0) {
+      for (const child of cls.children) {
         flattened.push({
           ...child,
           isChild: true,
-          parentId: category.id,
+          parentId: cls.id,
           hasChildren: false,
         });
       }
@@ -106,23 +60,23 @@ export const columns: ColumnDef<any>[] = [
     cell: ({ row, table }) => {
       // Get expanded state from table meta
       const meta = table.options.meta as unknown as ClassesTableMeta;
-      const tableExpandedSubjects = meta?.expandedClasses || new Set();
-      const setTableExpandedSubjects = meta?.setExpandedClasses;
+      const expandedClasses = meta?.expandedClasses || new Set();
+      const setExpandedClasses = meta?.setExpandedClasses;
 
-      const isExpanded = tableExpandedSubjects.has(row.original.id);
+      const isExpanded = expandedClasses.has(row.original.id);
       const hasChildren = row.original.hasChildren;
       const isChild = row.original.isChild;
 
       const toggleExpanded = () => {
-        if (!setTableExpandedSubjects) return;
+        if (!setExpandedClasses) return;
 
-        const newExpanded = new Set(tableExpandedSubjects);
+        const newExpanded = new Set(expandedClasses);
         if (isExpanded) {
           newExpanded.delete(row.original.id);
         } else {
           newExpanded.add(row.original.id);
         }
-        setTableExpandedSubjects(newExpanded);
+        setExpandedClasses(newExpanded);
       };
 
       return (
@@ -146,65 +100,25 @@ export const columns: ColumnDef<any>[] = [
           )}
           {!hasChildren && !isChild && <div className="w-4" />}
           <div
-            className="size-3"
-            style={{ backgroundColor: row.original.color}}
+            className="size-3 rounded-sm border"
+            style={{ backgroundColor: row.original.color || "#e6e6e6" }}
           />
-          {shouldShowCategoryTooltip(row.original) ? (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span
-                    className={cn(
-                      hasChildren && !isChild
-                        ? "cursor-pointer"
-                        : "cursor-default",
-                    )}
-                    onClick={
-                      hasChildren && !isChild
-                        ? (e) => {
-                            e.stopPropagation();
-                            toggleExpanded();
-                          }
-                        : undefined
-                    }
-                  >
-                    {row.getValue("name")}
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent
-                  className="px-3 py-1.5 text-xs"
-                  side="right"
-                  sideOffset={10}
-                >
-                  <CategoryTooltip category={row.original} />
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          ) : (
-            <span
-              className={cn(
-                hasChildren && !isChild ? "cursor-pointer" : "cursor-default",
-              )}
-              onClick={
-                hasChildren && !isChild
-                  ? (e) => {
-                      e.stopPropagation();
-                      toggleExpanded();
-                    }
-                  : undefined
-              }
-            >
-              {row.getValue("name")}
-            </span>
-          )}
-
-          {row.original.name && (
-            <div className="pl-2">
-              <span className="border border-border rounded-full py-1 px-2 text-[10px] text-[#878787] font-mono">
-                System
-              </span>
-            </div>
-          )}
+          <span
+            className={cn(
+              "font-medium",
+              hasChildren && !isChild ? "cursor-pointer" : "cursor-default",
+            )}
+            onClick={
+              hasChildren && !isChild
+                ? (e) => {
+                    e.stopPropagation();
+                    toggleExpanded();
+                  }
+                : undefined
+            }
+          >
+            {row.getValue("name")}
+          </span>
         </div>
       );
     },
@@ -212,7 +126,9 @@ export const columns: ColumnDef<any>[] = [
   {
     header: "Division",
     accessorKey: "division",
-    cell: ({ row }) => row.getValue("division") || "-",
+    cell: ({ row }) => (
+      <span className="text-muted-foreground">{row.getValue("division") || "-"}</span>
+    ),
   },
   {
     header: "Type",
@@ -220,9 +136,16 @@ export const columns: ColumnDef<any>[] = [
     cell: ({ row }) => {
       const type = row.getValue("type") as string | null;
       return (
-        <span className="capitalize">{type?.replace(/_/g, ' ') || "-"}</span>
+        <span className="capitalize text-muted-foreground">{type?.replace(/_/g, ' ') || "-"}</span>
       );
     },
+  },
+  {
+    header: "Year",
+    accessorKey: "yearName",
+    cell: ({ row }) => (
+       <span className="text-muted-foreground">{row.original.yearName || "-"}</span>
+    ),
   },
   {
     id: "actions",
@@ -248,14 +171,12 @@ export const columns: ColumnDef<any>[] = [
               <DropdownMenuItem onClick={() => meta?.onEditClass?.(row.original.id)}>
                 Edit
               </DropdownMenuItem>
-
-              {!row.original.system && (
-                <DropdownMenuItem
+              <DropdownMenuItem
+                  className="text-destructive"
                   onClick={() => meta?.deleteClass?.(row.original.id)}
                 >
-                  Remove
-                </DropdownMenuItem>
-              )}
+                  Delete
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

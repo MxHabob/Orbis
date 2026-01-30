@@ -1,6 +1,6 @@
 "use client";
 
-import { useCategoryParams } from "@/hooks/use-category-params";
+import { useSubjectParams } from "@/hooks/use-subject-params";
 import { useTRPC } from "@/trpc/client";
 import { cn } from "@midday/ui/cn";
 import {
@@ -25,18 +25,13 @@ import React from "react";
 import {
   type SubjectsTableMeta,
   columns,
-  flattenSubjects,
 } from "./columns";
 import { Header } from "./header";
 
 export function DataTable() {
-  const [expandedSubjects, setExpandedSubjects] = React.useState<
-    Set<number>
-  >(new Set());
-
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const { setParams } = useCategoryParams();
+  const { setParams } = useSubjectParams();
 
   const { data } = useSuspenseQuery(
     trpc.subjects.getAll.queryOptions(),
@@ -52,25 +47,31 @@ export function DataTable() {
     }),
   );
 
-
   // Get search filter value
   const [searchValue, setSearchValue] = React.useState<string>("");
+
+  const filteredData = React.useMemo(() => {
+    if (!searchValue) return data;
+    const searchLower = searchValue.toLowerCase();
+    return data.filter(subject => 
+      subject.name.toLowerCase().includes(searchLower) || 
+      subject.code?.toLowerCase().includes(searchLower)
+    );
+  }, [data, searchValue]);
 
   const tableMeta: SubjectsTableMeta = {
     deleteSubject: (id: number) => {
       deleteSubjectMutation.mutate({ id });
     },
     onEditSubject: (id: number) => {
-      setParams({ categoryId: id.toString() });
+      setParams({ subjectId: id.toString() });
     },
-    expandedSubjects,
-    setExpandedSubjects,
     searchValue,
     setSearchValue,
   };
 
   const table = useReactTable({
-    data,
+    data: filteredData,
     getRowId: ({ id }) => id,
     columns,
     getCoreRowModel: getCoreRowModel(),
@@ -106,7 +107,7 @@ export function DataTable() {
             <TableRow
               className="hover:bg-muted/50 cursor-pointer"
               key={row.id}
-              onClick={() => setParams({ categoryId: row.original.id.toString() })}
+              onClick={() => setParams({ subjectId: row.original.id.toString() })}
             >
               {row.getVisibleCells().map((cell, index) => (
                 <TableCell

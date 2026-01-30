@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 
-import { useCategoryParams } from "@/hooks/use-category-params";
+import { useClassParams } from "@/hooks/use-class-params";
 import { useTRPC } from "@/trpc/client";
 import { cn } from "@midday/ui/cn";
 import {
@@ -38,7 +38,7 @@ export function DataTable() {
 
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const { setParams } = useCategoryParams();
+  const { setParams } = useClassParams();
   const router = useRouter();
 
   const { data } = useSuspenseQuery(
@@ -49,15 +49,14 @@ export function DataTable() {
     trpc.classes.delete.mutationOptions({
       onSuccess: () => {
         queryClient.invalidateQueries({
-          queryKey: trpc.classes.getAll.queryKey({}),
+          queryKey: trpc.classes.getAll.queryKey(),
         });
       },
     }),
   );
 
   const flattenedData = React.useMemo(() => {
-    const flattened = flattenClasses(data as any ?? []);
-    return flattened;
+    return flattenClasses(data as any ?? []);
   }, [data]);
 
   // Get search filter value
@@ -66,12 +65,12 @@ export function DataTable() {
   // Create a map of parent IDs to their children for efficient lookup
   const childrenByParentId = React.useMemo(() => {
     const map = new Map<number, typeof flattenedData>();
-    for (const category of flattenedData) {
-      if (category.isChild && category.parentId) {
-        if (!map.has(category.parentId)) {
-          map.set(category.parentId, []);
+    for (const cls of flattenedData) {
+      if (cls.isChild && cls.parentClassId) {
+        if (!map.has(cls.parentClassId)) {
+          map.set(cls.parentClassId, []);
         }
-        map.get(category.parentId)!.push(category);
+        map.get(cls.parentClassId)!.push(cls);
       }
     }
     return map;
@@ -81,26 +80,24 @@ export function DataTable() {
   const filteredData = React.useMemo(() => {
     if (!searchValue) {
       // No search: only show parents and children of expanded parents
-      return flattenedData.filter((category) => {
-        if (!category.isChild) {
+      return flattenedData.filter((cls) => {
+        if (!cls.isChild) {
           return true; // Always show parents
         }
         // Only show children if their parent is expanded
-        return category.parentId && expandedClasses.has(category.parentId);
+        return cls.parentClassId && expandedClasses.has(cls.parentClassId);
       });
     }
 
-    // With search: show only categories that match the search
-    // Parents are shown if they match OR if they have matching children
-    // Children are only shown if they match the search
+    // With search: show only classes that match the search
     const searchLower = searchValue.toLowerCase();
 
-    return flattenedData.filter((category) => {
-      const matchesSearch = category.name?.toLowerCase().includes(searchLower);
+    return flattenedData.filter((cls) => {
+      const matchesSearch = cls.name?.toLowerCase().includes(searchLower);
 
-      if (!category.isChild) {
+      if (!cls.isChild) {
         // Check if any children match
-        const children = childrenByParentId.get(category.id) || [];
+        const children = childrenByParentId.get(cls.id) || [];
         const hasMatchingChild = children.some((child) =>
           child.name?.toLowerCase().includes(searchLower),
         );
@@ -119,7 +116,7 @@ export function DataTable() {
       deleteClassMutation.mutate({ id });
     },
     onEditClass: (id: number) => {
-      setParams({ categoryId: id.toString() });
+      setParams({ classId: id.toString() });
     },
     expandedClasses,
     setExpandedClasses,

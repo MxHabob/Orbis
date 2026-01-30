@@ -25,6 +25,10 @@ import { TransactionSheet } from "@/components/sheets/transaction-sheet";
 import { StudentCreateSheet } from "@/components/sheets/student-create-sheet";
 import { StudentEditSheet } from "@/components/sheets/student-edit-sheet";
 import { StudentDetailsSheet } from "@/components/sheets/student-details-sheet";
+import { ClassCreateSheet } from "@/components/sheets/class-create-sheet";
+import { ClassEditSheet } from "@/components/sheets/class-edit-sheet";
+import { SubjectCreateSheet } from "@/components/sheets/subject-create-sheet";
+import { SubjectEditSheet } from "@/components/sheets/subject-edit-sheet";
 
 export function GlobalSheets() {
   return (
@@ -39,6 +43,10 @@ export function GlobalSheets() {
       <StudentCreateSheet />
       <StudentEditSheet />
       <StudentDetailsSheet />
+      <ClassCreateSheet />
+      <ClassEditSheet />
+      <SubjectCreateSheet />
+      <SubjectEditSheet />
       {/* <CustomerDetailsSheet /> */}
       {/* <CustomerEditSheet /> */}
 

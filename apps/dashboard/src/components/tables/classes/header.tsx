@@ -1,6 +1,6 @@
 "use client";
 
-import { useCategoryParams } from "@/hooks/use-category-params";
+import { useClassParams } from "@/hooks/use-class-params";
 import { Button } from "@midday/ui/button";
 import { Input } from "@midday/ui/input";
 import type { Table } from "@tanstack/react-table";
@@ -11,10 +11,10 @@ type Props = {
 };
 
 export function Header({ table }: Props) {
-  const { setParams } = useCategoryParams();
+  const { setParams } = useClassParams();
 
   const handleCreateClass = () => {
-    setParams({ createCategory: true });
+    setParams({ createClass: true });
   };
 
   const meta = table?.options.meta as
