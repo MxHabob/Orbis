@@ -8,10 +8,12 @@ import { appRouter } from "./trpc/routers/_app";
 import { httpLogger } from "./utils/logger";
 import { auth } from "@midday/auth";
 import type { HonoEnv } from "./utils/auth";
+import { realtimeHandler } from "./realtime";
 
 const app = new OpenAPIHono<HonoEnv>();
 
 app.use(httpLogger());
+app.get("/realtime", (c) => realtimeHandler(c));
 app.use("*", async (c, next) => {
   const session = await auth.api.getSession({
     headers: c.req.raw.headers,

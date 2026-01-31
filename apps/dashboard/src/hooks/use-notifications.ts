@@ -4,19 +4,39 @@ import { useRealtime } from "@/hooks/use-realtime";
 import { useUserQuery } from "@/hooks/use-user";
 import { useTRPC } from "@/trpc/client";
 import type { AppRouter } from "@midday/api/trpc/routers/_app";
+import { authClient } from "@midday/auth/auth-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import { useCallback, useMemo } from "react";
 
 // Infer types from tRPC router
-type RouterOutputs = inferRouterOutputs<AppRouter>;
+// Define types locally until tRPC inference catches up
+export interface Activity {
+  id: number;
+  type: string;
+  title: string;
+  message: string;
+  status: 'unread' | 'read' | 'archived';
+  isRead: boolean;
+  isArchived: boolean;
+  isHighPriority: boolean;
+  createdAt: Date | string;
+  metadata?: any;
+}
+
+export interface NotificationResponse {
+  data: Activity[];
+  meta: {
+    cursor: string | null;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
+}
+
+type NotificationsList = NotificationResponse;
+type NotificationsData = Activity[];
+
 type RouterInputs = inferRouterInputs<AppRouter>;
-type NotificationsList = RouterOutputs["notifications"]["list"];
-type NotificationsData = NotificationsList["data"];
-
-// Use the natural tRPC types without modification
-export type Activity = NotificationsData[number];
-
 type UpdateStatusInput = RouterInputs["notifications"]["updateStatus"];
 type UpdateAllStatusInput = RouterInputs["notifications"]["updateAllStatus"];
 
@@ -38,7 +58,8 @@ function get24HoursAgo(): string {
 export function useNotifications() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const { data: user } = useUserQuery();
+  const { data: session } = authClient.useSession();
+  const user = session?.user;
 
   const {
     data: activitiesData,
@@ -64,14 +85,11 @@ export function useNotifications() {
 
   // Real-time subscription for activities filtered by user_id
   useRealtime({
-    channelName: "user-notifications",
-    event: "INSERT",
-    table: "activities",
-    filter: `user_id=eq.${user?.id}`,
+    channelName: `user:${user?.id}:notifications`,
     onEvent: (payload) => {
-      // Only handle new notifications (priority <= 3), not archived updates
-      const newRecord = payload?.new as any; // Supabase payload type
-      if (newRecord?.priority && newRecord.priority <= 3) {
+      // payload will be { type: 'NOTIFICATION_CREATED', payload: result }
+      if (payload.type === 'NOTIFICATION_CREATED') {
+        const newRecord = payload.payload;
         // Invalidate both inbox and archived queries
         queryClient.invalidateQueries({
           queryKey: trpc.notifications.list.queryKey(),
@@ -154,7 +172,7 @@ export function useNotifications() {
               ...old,
               data: old.data.map((notification) =>
                 notification.id === variables.activityId
-                  ? { ...notification, status: variables.status }
+                  ? { ...notification, status: variables.status as Activity["status"] }
                   : notification,
               ),
             };
@@ -257,7 +275,7 @@ export function useNotifications() {
               ...old,
               data: old.data.map((notification) => ({
                 ...notification,
-                status: variables.status,
+                status: variables.status as Activity["status"],
               })),
             };
           });
@@ -290,12 +308,12 @@ export function useNotifications() {
   );
 
   // Return notification activities directly without transformation
-  const notifications = activitiesData?.data || [];
-  const archivedNotifications = archivedActivitiesData?.data || [];
+  const notifications = (activitiesData as unknown as NotificationResponse)?.data || [];
+  const archivedNotifications = (archivedActivitiesData as unknown as NotificationResponse)?.data || [];
 
   // Mark a single message as read (archived)
   const markMessageAsRead = useCallback(
-    (messageId: string) => {
+    (messageId: number) => {
       updateStatusMutation.mutate({
         activityId: messageId,
         status: "archived",

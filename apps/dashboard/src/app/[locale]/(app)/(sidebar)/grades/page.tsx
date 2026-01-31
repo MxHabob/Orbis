@@ -50,17 +50,17 @@ export default async function Transactions(props: Props) {
   };
 
   // Prefetch all data needed for instant experience
-  batchPrefetch([
-    // Transaction data for both tabs
-    trpc.transactions.get.infiniteQueryOptions(allTabFilter),
-    trpc.transactions.get.infiniteQueryOptions(reviewTabFilter),
-    trpc.transactions.getReviewCount.queryOptions(),
-    // Shared data used by table rows (assign user, tags)
-    trpc.team.members.queryOptions(),
-    trpc.tags.get.queryOptions(),
-    // Apps for export bar (accounting providers)
-    trpc.apps.get.queryOptions(),
-  ]);
+  // batchPrefetch([
+  //   // Transaction data for both tabs
+  //   trpc.transactions.get.infiniteQueryOptions(allTabFilter),
+  //   trpc.transactions.get.infiniteQueryOptions(reviewTabFilter),
+  //   trpc.transactions.getReviewCount.queryOptions(),
+  //   // Shared data used by table rows (assign user, tags)
+  //   trpc.team.members.queryOptions(),
+  //   trpc.tags.get.queryOptions(),
+  //   // Apps for export bar (accounting providers)
+  //   trpc.apps.get.queryOptions(),
+  // ]);
 
   return (
     <HydrateClient>
@@ -86,7 +86,7 @@ export default async function Transactions(props: Props) {
               />
             }
           >
-            <DataTable initialSettings={initialSettings} initialTab={tab} />
+            {/* <DataTable initialSettings={initialSettings} initialTab={tab} /> */}
           </Suspense>
         </TransactionsUploadZone>
       </ScrollableContent>

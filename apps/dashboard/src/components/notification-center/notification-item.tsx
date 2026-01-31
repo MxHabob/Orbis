@@ -5,7 +5,6 @@ import {
   getMetadata,
   getMetadataProperty,
 } from "@/hooks/use-notifications";
-import { useUserQuery } from "@/hooks/use-user";
 import { useI18n } from "@/locales/client";
 import { Button } from "@midday/ui/button";
 import { cn } from "@midday/ui/cn";
@@ -13,12 +12,13 @@ import { Icons } from "@midday/ui/icons";
 import { formatDistanceToNow } from "date-fns";
 import { getNotificationDescription } from "./notification-descriptions";
 import { NotificationLink } from "./notification-link";
+import { authClient } from "@midday/auth/auth-client";
 
 interface NotificationItemProps {
-  id: string;
+  id: number;
   setOpen: (open: boolean) => void;
   activity: Activity;
-  markMessageAsRead?: (id: string) => void;
+  markMessageAsRead?: (id: number) => void;
 }
 
 export function NotificationItem({
@@ -28,7 +28,8 @@ export function NotificationItem({
   markMessageAsRead,
 }: NotificationItemProps) {
   const t = useI18n();
-  const { data: user } = useUserQuery();
+    const { data: session } = authClient.useSession();
+    const user = session?.user;
 
   const recordId = getMetadataProperty(activity, "recordId");
   const metadata = getMetadata(activity);

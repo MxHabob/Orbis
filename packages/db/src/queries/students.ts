@@ -8,17 +8,17 @@ const studentCache = new RedisCache("student", 30 * 60);
 
 export const getAllStudents = async () => {
     const cacheKey = `all`;
-    const cached = await studentCache.get<typeof students.$inferSelect>(cacheKey);
+    const cached = await studentCache.get<any[]>(cacheKey);
     if (cached) return cached;
 
-    const [student] = await db
+    const results = await db
         .select()
         .from(students);
     
-    if (student) {
-        await studentCache.set(cacheKey, student);
+    if (results.length > 0) {
+        await studentCache.set(cacheKey, results);
     }
-    return student;
+    return results;
 };
 
 export const getStudentsByClassId = async (

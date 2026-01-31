@@ -62,6 +62,16 @@ export class RedisCache {
     }
   }
 
+  async publish(channel: string, data: unknown): Promise<void> {
+    try {
+      const serializedData =
+        typeof data === "string" ? data : JSON.stringify(data);
+      await this.redis.publish(channel, serializedData);
+    } catch (error) {
+      console.error(`Redis publish error on channel ${channel}:`, error);
+    }
+  }
+
   async healthCheck(): Promise<void> {
     try {
       const reply = await this.redis.ping();

@@ -49,4 +49,45 @@ export const academicRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       return updateAcademicTerm(input.id, input);
     }),
+
+  connectionStatus: protectedProcedure.query(async () => {
+    const currentYear = await getCurrentAcademicYear();
+    const currentTerm = await getCurrentTerm();
+
+    const integrations = [
+      {
+        id: "noor",
+        name: "نظام نور",
+        status: "connected",
+        type: "noor",
+      },
+      {
+        id: "whatsapp",
+        name: "واتساب",
+        status: "disconnected",
+        type: "whatsapp",
+      },
+      {
+        id: "sms",
+        name: "بوابة الرسائل (SMS)",
+        status: "warning",
+        type: "sms",
+      },
+    ];
+
+    const issues = [...integrations];
+
+    if (!currentYear) {
+      issues.push({
+        id: "academic-year",
+        name: "السنة الدراسية",
+        status: "disconnected",
+        type: "academic",
+      });
+    }
+
+    return {
+      integrations: issues,
+    };
+  }),
 });

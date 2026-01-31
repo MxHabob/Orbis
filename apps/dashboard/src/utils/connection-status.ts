@@ -6,122 +6,42 @@ const WARNING_DAYS = 14;
 const ERROR_DAYS = 7;
 
 // Type from unified connectionStatus endpoint
-type ConnectionStatusData = RouterOutputs["team"]["connectionStatus"];
+type ConnectionStatusData = RouterOutputs["academic"]["connectionStatus"];
 
 // Legacy types for backward compatibility
-type BankConnection = NonNullable<
-  RouterOutputs["bankConnections"]["get"]
->[number];
-type InboxAccount = NonNullable<RouterOutputs["inboxAccounts"]["get"]>[number];
+type BankConnection = any;
+type InboxAccount = any;
 
 /**
- * Unified connection issue type for both bank and inbox connections
+ * Unified connection issue type for school system integrations
  */
 export type ConnectionIssue = {
-  type: "bank" | "inbox";
+  type: "noor" | "whatsapp" | "sms" | "bank" | "inbox";
   severity: "error" | "warning";
   title: string;
   message: string;
   path: string;
   linkText: string;
-  // For bank connections
   logoUrl?: string | null;
-  // For inbox accounts
-  provider?: "gmail" | "outlook";
+  provider?: "gmail" | "outlook" | "whatsapp" | "sms" | "noor";
 };
 
 /**
- * Get all connection issues from bank connections
+ * Get all connection issues from bank connections (Legacy support)
  */
 export function getBankIssues(
   connections: BankConnection[] | undefined,
 ): ConnectionIssue[] {
-  if (!connections) return [];
-
-  const issues: ConnectionIssue[] = [];
-
-  for (const connection of connections) {
-    // Disconnected bank
-    if (connection.status === "disconnected") {
-      issues.push({
-        type: "bank",
-        severity: "error",
-        title: connection.name || "Bank account",
-        message: "Connection lost",
-        path: "/settings/accounts",
-        linkText: "Reconnect",
-      });
-      continue;
-    }
-
-    // Check expiration status
-    if (connection.expiresAt) {
-      const daysUntilExpiry = differenceInDays(
-        new Date(connection.expiresAt),
-        new Date(),
-      );
-
-      if (daysUntilExpiry <= 0) {
-        // Expired
-        issues.push({
-          type: "bank",
-          severity: "error",
-          title: connection.name || "Bank account",
-          message: "Connection expired",
-          path: "/settings/accounts",
-          linkText: "Reconnect",
-        });
-      } else if (daysUntilExpiry <= ERROR_DAYS) {
-        // Expiring very soon (within 7 days)
-        issues.push({
-          type: "bank",
-          severity: "error",
-          title: connection.name || "Bank account",
-          message: `Expires in ${daysUntilExpiry} day${daysUntilExpiry === 1 ? "" : "s"}`,
-          path: "/settings/accounts",
-          linkText: "Renew",
-        });
-      } else if (daysUntilExpiry <= WARNING_DAYS) {
-        // Expiring soon (within 14 days)
-        issues.push({
-          type: "bank",
-          severity: "warning",
-          title: connection.name || "Bank account",
-          message: `Expires in ${daysUntilExpiry} days`,
-          path: "/settings/accounts",
-          linkText: "Renew",
-        });
-      }
-    }
-  }
-
-  return issues;
+  return [];
 }
 
 /**
- * Get all connection issues from inbox accounts
+ * Get all connection issues from inbox accounts (Legacy support)
  */
 export function getInboxIssues(
   accounts: InboxAccount[] | undefined,
 ): ConnectionIssue[] {
-  if (!accounts) return [];
-
-  const issues: ConnectionIssue[] = [];
-
-  for (const account of accounts) {
-    if (account.status === "disconnected") {
-      issues.push({
-        type: "inbox",
-        severity: "error",
-        title: account.email,
-        message: "Reconnection required",
-        path: "/inbox/settings",
-        linkText: "Reconnect",
-      });
-    }
-  }
-
-  return issues;
+  return [];
 }
 
 /**
@@ -146,74 +66,30 @@ export function buildConnectionIssues(
 
   const issues: ConnectionIssue[] = [];
 
-  // Process bank connections
-  for (const connection of data.bankConnections) {
-    const baseIssue = {
-      type: "bank" as const,
-      logoUrl: connection.logoUrl,
-    };
-
-    if (connection.status === "disconnected") {
-      issues.push({
-        ...baseIssue,
-        severity: "error",
-        title: connection.name || "Bank account",
-        message: "Connection lost",
-        path: "/settings/accounts",
-        linkText: "Reconnect",
-      });
-      continue;
-    }
-
-    if (connection.expiresAt) {
-      const daysUntilExpiry = differenceInDays(
-        new Date(connection.expiresAt),
-        new Date(),
-      );
-
-      if (daysUntilExpiry <= 0) {
+  // Process system integrations (Noor, WhatsApp, SMS)
+  if (data.integrations) {
+    for (const integration of data.integrations) {
+      if (integration.status === "disconnected") {
         issues.push({
-          ...baseIssue,
+          type: integration.type as any,
           severity: "error",
-          title: connection.name || "Bank account",
-          message: "Connection expired",
-          path: "/settings/accounts",
-          linkText: "Reconnect",
+          title: integration.name,
+          message: "يوجد مشكلة في الاتصال",
+          path: "/settings/integrations",
+          linkText: "إعادة ربط",
+          provider: integration.type as any,
         });
-      } else if (daysUntilExpiry <= ERROR_DAYS) {
+      } else if (integration.status === "warning") {
         issues.push({
-          ...baseIssue,
-          severity: "error",
-          title: connection.name || "Bank account",
-          message: `Expires in ${daysUntilExpiry} day${daysUntilExpiry === 1 ? "" : "s"}`,
-          path: "/settings/accounts",
-          linkText: "Renew",
-        });
-      } else if (daysUntilExpiry <= WARNING_DAYS) {
-        issues.push({
-          ...baseIssue,
+          type: integration.type as any,
           severity: "warning",
-          title: connection.name || "Bank account",
-          message: `Expires in ${daysUntilExpiry} days`,
-          path: "/settings/accounts",
-          linkText: "Renew",
+          title: integration.name,
+          message: "تنبيه في النظام",
+          path: "/settings/integrations",
+          linkText: "تفاصيل",
+          provider: integration.type as any,
         });
       }
-    }
-  }
-
-  // Process inbox accounts
-  for (const account of data.inboxAccounts) {
-    if (account.status === "disconnected") {
-      issues.push({
-        type: "inbox",
-        severity: "error",
-        title: account.email,
-        message: "Reconnection required",
-        path: "/inbox/settings",
-        linkText: "Reconnect",
-        provider: account.provider as "gmail" | "outlook",
-      });
     }
   }
 

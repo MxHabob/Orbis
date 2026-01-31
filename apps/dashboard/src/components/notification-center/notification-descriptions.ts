@@ -5,6 +5,9 @@ import { format, parseISO } from "date-fns";
 type UseI18nReturn = ReturnType<typeof useI18n>;
 
 interface NotificationUser {
+  id?: string;
+  name?: string;
+  email?: string;
   locale?: string | null;
   dateFormat?: string | null;
 }
