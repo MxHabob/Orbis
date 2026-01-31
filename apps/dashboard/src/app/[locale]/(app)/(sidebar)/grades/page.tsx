@@ -1,55 +1,95 @@
-import { Suspense } from "react";
-import type { Metadata } from "next";
-import { GradeGridHeader } from "@/components/grades/grade-grid-header";
-import { GradeGridWrapper } from "@/components/grades/grade-grid-wrapper";
+import { AddTransactions } from "@/components/add-transactions";
 import { ScrollableContent } from "@/components/scrollable-content";
-import { getClassesV3 } from "@midday/db/queries/classes";
-import { getAllSubjects } from "@midday/db/queries/subjects";
-import { getAcademicYears, getTermsByYear, getCurrentAcademicYear } from "@midday/db/queries/academic-calendar";
-import { GradesSkeleton } from "@/components/tables/grades/skeleton";
+import { DataTable } from "@/components/tables/transactions/data-table";
+import { Loading } from "@/components/tables/transactions/loading";
+import { TransactionTabs } from "@/components/transaction-tabs";
+import { TransactionsColumnVisibility } from "@/components/transactions-column-visibility";
+import { TransactionsSearchFilter } from "@/components/transactions-search-filter";
+import { TransactionsUploadZone } from "@/components/transactions-upload-zone";
+import { loadSortParams } from "@/hooks/use-sort-params";
+import { loadTransactionFilterParams } from "@/hooks/use-transaction-filter-params";
+import { loadTransactionTab } from "@/hooks/use-transaction-tab";
+import { HydrateClient, batchPrefetch, trpc } from "@/trpc/server";
 import { getInitialTableSettings } from "@/utils/columns";
-import { ErrorBoundary } from "next/dist/client/components/error-boundary";
-import { ErrorFallback } from "@/components/error-fallback";
+import type { Metadata } from "next";
+import type { SearchParams } from "nuqs/server";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
-  title: "Grade | Entity",
+  title: "Transactions | Midday",
 };
 
-export default async function GradesPage() {
-  const currentYear = await getCurrentAcademicYear();
-  const years = await getAcademicYears();
-  const classes = await getClassesV3(currentYear?.id);
-  const subjects = await getAllSubjects();
-  const terms = currentYear ? await getTermsByYear(currentYear.id) : [];
-  const initialSettings = await getInitialTableSettings("grades");
+type Props = {
+  searchParams: Promise<SearchParams>;
+};
 
-  const initialData = {
-    classes: classes.map((c: any) => ({
-      id: c.id,
-      name: c.name,
-      division: c.division,
-    })),
-    subjects: subjects.map((s: any) => ({ id: s.id, name: s.name })),
-    terms: terms.map((t: any) => ({
-      id: t.id,
-      name: t.name,
-      academicYearId: t.academicYearId,
-    })),
-    years: years.map((y: any) => ({ id: y.id, yearName: y.yearName })),
+export default async function Transactions(props: Props) {
+  const searchParams = await props.searchParams;
+
+  const filter = loadTransactionFilterParams(searchParams);
+  const { sort } = loadSortParams(searchParams);
+  const { tab } = loadTransactionTab(searchParams);
+
+  // Get unified table settings from cookie
+  const initialSettings = await getInitialTableSettings("transactions");
+
+  // Build query filters for both tabs
+  const allTabFilter = {
+    ...filter,
+    amountRange: filter.amount_range ?? null,
+    sort,
   };
 
+  const reviewTabFilter = {
+    ...filter,
+    amountRange: filter.amount_range ?? null,
+    sort,
+    fulfilled: true,
+    exported: false,
+    pageSize: 10000,
+  };
+
+  // Prefetch all data needed for instant experience
+  batchPrefetch([
+    // Transaction data for both tabs
+    trpc.transactions.get.infiniteQueryOptions(allTabFilter),
+    trpc.transactions.get.infiniteQueryOptions(reviewTabFilter),
+    trpc.transactions.getReviewCount.queryOptions(),
+    // Shared data used by table rows (assign user, tags)
+    trpc.team.members.queryOptions(),
+    trpc.tags.get.queryOptions(),
+    // Apps for export bar (accounting providers)
+    trpc.apps.get.queryOptions(),
+  ]);
+
   return (
+    <HydrateClient>
       <ScrollableContent>
-        <div className="flex flex-col gap-6">
+        <TransactionsUploadZone>
+          <div className="flex justify-between items-center py-6">
+            <TransactionsSearchFilter />
+            <div className="flex items-center gap-4">
+              <div className="hidden md:flex items-center gap-2">
+                <TransactionsColumnVisibility />
+                <AddTransactions />
+              </div>
+              <TransactionTabs />
+            </div>
+          </div>
 
-          <GradeGridHeader initialData={initialData} />
-
-          <ErrorBoundary errorComponent={ErrorFallback}>
-            <Suspense fallback={<GradesSkeleton />}>
-              <GradeGridWrapper initialSettings={initialSettings} />
-            </Suspense>
-          </ErrorBoundary>
-        </div>
+          <Suspense
+            fallback={
+              <Loading
+                columnVisibility={initialSettings.columns}
+                columnSizing={initialSettings.sizing}
+                columnOrder={initialSettings.order}
+              />
+            }
+          >
+            <DataTable initialSettings={initialSettings} initialTab={tab} />
+          </Suspense>
+        </TransactionsUploadZone>
       </ScrollableContent>
+    </HydrateClient>
   );
 }
