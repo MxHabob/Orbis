@@ -9,6 +9,8 @@ import {
   createAcademicTerm,
   createAcademicYear,
   getAcademicYears,
+  getCurrentAcademicYear,
+  getCurrentTerm,
   getTermsByYear,
   updateAcademicTerm,
   updateAcademicYear,
@@ -56,20 +58,20 @@ export const academicRouter = createTRPCRouter({
 
     const integrations = [
       {
-        id: "noor",
-        name: "نظام نور",
+        id: "Bank",
+        name: "Bank",
         status: "connected",
-        type: "noor",
+        type: "Bank",
       },
       {
         id: "whatsapp",
-        name: "واتساب",
+        name: "whatsapp",
         status: "disconnected",
         type: "whatsapp",
       },
       {
         id: "sms",
-        name: "بوابة الرسائل (SMS)",
+        name: "sms",
         status: "warning",
         type: "sms",
       },
@@ -80,7 +82,7 @@ export const academicRouter = createTRPCRouter({
     if (!currentYear) {
       issues.push({
         id: "academic-year",
-        name: "السنة الدراسية",
+        name: "academic year",
         status: "disconnected",
         type: "academic",
       });

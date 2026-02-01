@@ -43,6 +43,5 @@ export const createUserSchema = userSchema.omit({
 });
 
 export const updateUserSchema = userSchema.partial().omit({ 
-  id: true,
   emailVerified: true 
 });

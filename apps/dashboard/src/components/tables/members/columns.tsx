@@ -1,4 +1,4 @@
-import { useI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import type { RouterOutputs } from "@api/trpc/routers/_app";
 import {
   AlertDialog,
@@ -36,14 +36,14 @@ import { useTRPC } from "@/trpc/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
-type TeamMember = RouterOutputs["team"]["members"][number];
+type TeamMember = RouterOutputs["user"]["getStaff"][number];
 
 const userFilterFn: FilterFn<TeamMember> = (
   row: Row<TeamMember>,
   _: string,
   filterValue: string,
 ) => {
-  const memberName = row.original.user?.fullName?.toLowerCase();
+  const memberName = row.original.name?.toLowerCase();
 
   return memberName?.includes(filterValue.toLowerCase()) ?? false;
 };
@@ -51,7 +51,7 @@ const userFilterFn: FilterFn<TeamMember> = (
 export const columns: ColumnDef<TeamMember>[] = [
   {
     id: "user",
-    accessorKey: "user.full_name",
+    accessorKey: "name",
     filterFn: userFilterFn,
     cell: ({ row }) => {
       return (
@@ -59,23 +59,23 @@ export const columns: ColumnDef<TeamMember>[] = [
           <div className="flex items-center space-x-4">
             <Avatar className="rounded-full w-8 h-8">
               <AvatarImageNext
-                src={row.original.user?.avatarUrl ?? ""}
-                alt={row.original.user?.fullName ?? ""}
+                src={row.original.image ?? ""}
+                alt={row.original.name ?? ""}
                 width={32}
                 height={32}
               />
               <AvatarFallback>
                 <span className="text-xs">
-                  {row.original.user?.fullName?.charAt(0)?.toUpperCase()}
+                  {row.original.name?.charAt(0)?.toUpperCase()}
                 </span>
               </AvatarFallback>
             </Avatar>
             <div className="flex flex-col">
               <span className="font-medium text-sm">
-                {row.original.user?.fullName}
+                {row.original.name}
               </span>
               <span className="text-sm text-[#606060]">
-                {row.original.user?.email}
+                {row.original.email}
               </span>
             </div>
           </div>
@@ -87,6 +87,7 @@ export const columns: ColumnDef<TeamMember>[] = [
     id: "actions",
     cell: ({ row, table }) => {
       const t = useI18n();
+      const tRoles = useScopedI18n("roles");
       const { toast } = useToast();
       const meta = table.options.meta;
       const trpc = useTRPC();
@@ -94,10 +95,10 @@ export const columns: ColumnDef<TeamMember>[] = [
       const router = useRouter();
 
       const deleteMemberMutation = useMutation(
-        trpc.team.deleteMember.mutationOptions({
+        trpc.user.delete.mutationOptions({
           onSuccess: () => {
             queryClient.invalidateQueries({
-              queryKey: trpc.team.members.queryKey(),
+              queryKey: trpc.user.getStaff.queryKey(),
             });
           },
           onError: () => {
@@ -109,7 +110,7 @@ export const columns: ColumnDef<TeamMember>[] = [
       );
 
       const leaveTeamMutation = useMutation(
-        trpc.team.leave.mutationOptions({
+        trpc.user.delete.mutationOptions({
           onSuccess: async () => {
             router.push("/teams");
           },
@@ -117,10 +118,10 @@ export const columns: ColumnDef<TeamMember>[] = [
       );
 
       const updateMemberMutation = useMutation(
-        trpc.team.updateMember.mutationOptions({
+        trpc.user.update.mutationOptions({
           onSuccess: () => {
             queryClient.invalidateQueries({
-              queryKey: trpc.team.members.queryKey(),
+              queryKey: trpc.user.getStaff.queryKey(),
             });
           },
         }),
@@ -129,36 +130,38 @@ export const columns: ColumnDef<TeamMember>[] = [
       return (
         <div className="flex justify-end">
           <div className="flex space-x-2 items-center">
-            {(meta?.currentUser?.role === "owner" &&
-              meta?.currentUser?.user?.id !== row.original.user?.id) ||
-            (meta?.currentUser?.role === "owner" &&
+            {(meta?.currentUser?.role === "admin" &&
+              meta?.currentUser?.id !== row.original.id) ||
+            (meta?.currentUser?.role === "admin" &&
               (meta?.totalOwners ?? 0) > 1) ? (
               <Select
                 value={row.original.role ?? undefined}
                 onValueChange={(role) => {
                   updateMemberMutation.mutate({
-                    userId: row.original.user?.id!,
-                    teamId: row.original.teamId!,
-                    role: role as "owner" | "member",
+                    id: row.original.id!,
+                    role: role as "admin" | "student" | "parent" | "teacher" | "staff",
                   });
                 }}
               >
                 <SelectTrigger>
                   <SelectValue
-                    placeholder={t(`roles.${row.original.role || "member"}`)}
+                    placeholder={tRoles((row.original.role as any) || "member")}
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="owner">Owner</SelectItem>
-                  <SelectItem value="member">Member</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="student">Student</SelectItem>
+                  <SelectItem value="parent">Parent</SelectItem>
+                  <SelectItem value="teacher">Teacher</SelectItem>
+                  <SelectItem value="staff">Staff</SelectItem>
                 </SelectContent>
               </Select>
             ) : (
               <span className="text-sm text-[#606060]">
-                {t(`roles.${row.original.role || "member"}`)}
+                {tRoles((row.original.role as any) || "member")}
               </span>
             )}
-            {meta?.currentUser?.role === "owner" && (
+            {meta?.currentUser?.role === "admin" && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-8 w-8 p-0">
@@ -166,7 +169,7 @@ export const columns: ColumnDef<TeamMember>[] = [
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  {meta?.currentUser?.user?.id !== row.original.user?.id && (
+                  {meta?.currentUser?.id !== row.original.id && (
                     <AlertDialog>
                       <DropdownMenuItem
                         className="text-destructive"
@@ -191,8 +194,7 @@ export const columns: ColumnDef<TeamMember>[] = [
                             disabled={deleteMemberMutation.isPending}
                             onClick={() => {
                               deleteMemberMutation.mutate({
-                                userId: row.original.user?.id!,
-                                teamId: row.original.teamId!,
+                                id: row.original.id!,
                               });
                             }}
                           >
@@ -207,7 +209,7 @@ export const columns: ColumnDef<TeamMember>[] = [
                     </AlertDialog>
                   )}
 
-                  {meta?.currentUser?.user?.id === row.original.user?.id && (
+                  {meta?.currentUser?.id === row.original.id && (
                     <AlertDialog>
                       <DropdownMenuItem
                         className="text-destructive"
@@ -234,7 +236,7 @@ export const columns: ColumnDef<TeamMember>[] = [
                             disabled={leaveTeamMutation.isPending}
                             onClick={() =>
                               leaveTeamMutation.mutate({
-                                teamId: row.original.teamId!,
+                                id: row.original.id!,
                               })
                             }
                           >

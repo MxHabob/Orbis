@@ -74,9 +74,9 @@ export function buildConnectionIssues(
           type: integration.type as any,
           severity: "error",
           title: integration.name,
-          message: "يوجد مشكلة في الاتصال",
+          message: "There is a connection problem",
           path: "/settings/integrations",
-          linkText: "إعادة ربط",
+          linkText: "Re-link",
           provider: integration.type as any,
         });
       } else if (integration.status === "warning") {
@@ -84,9 +84,9 @@ export function buildConnectionIssues(
           type: integration.type as any,
           severity: "warning",
           title: integration.name,
-          message: "تنبيه في النظام",
+          message: "System alert",
           path: "/settings/integrations",
-          linkText: "تفاصيل",
+          linkText: "Details",
           provider: integration.type as any,
         });
       }

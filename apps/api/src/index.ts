@@ -8,7 +8,7 @@ import { appRouter } from "./trpc/routers/_app";
 import { httpLogger } from "./utils/logger";
 import { auth } from "@midday/auth";
 import type { HonoEnv } from "./utils/auth";
-import { realtimeHandler } from "./realtime";
+import { realtimeHandler } from "./services/realtime";
 
 const app = new OpenAPIHono<HonoEnv>();
 

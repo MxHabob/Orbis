@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 };
 
 export default function Staff() {
-  prefetch(trpc.user.get.queryOptions());
+  prefetch(trpc.user.getStaff.queryOptions());
 
   return <TeamMembers />;
 }

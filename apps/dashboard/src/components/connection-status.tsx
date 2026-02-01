@@ -114,7 +114,7 @@ export function ConnectionStatus() {
       <HoverCardContent className="w-[320px] p-0" align="end" sideOffset={10}>
         <div className="px-4 py-2.5 border-b text-right">
           <p className="text-[11px] font-medium text-muted-foreground">
-            تنبيهات النظام
+            System Alerts
           </p>
         </div>
         <div className="max-h-[280px] overflow-y-auto">

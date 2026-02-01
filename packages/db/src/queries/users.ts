@@ -1,7 +1,11 @@
 import type { Database } from "@db/client";
 import { users } from "@db/schema";
 import { userCache } from "@midday/cache";
-import { eq } from "drizzle-orm";
+import { eq, not } from "drizzle-orm";
+
+export const getStaffUsers = async (db: Database) => {
+  return db.select().from(users).where(not(eq(users.role, "student")));
+};
 
 export const getUserById = async (db: Database, id: string) => {
   const cached = await userCache.get(id);
@@ -26,6 +30,7 @@ export type UpdateUserParams = {
   image?: string | null;
   phone?: string | null;
   metadata?: any;
+  role?: "admin" | "student" | "parent" | "teacher" | "staff";
 };
 
 export const updateUser = async (db: Database, data: UpdateUserParams) => {

@@ -82,8 +82,11 @@ export default {
     unverified: "Unverified",
   },
   roles: {
-    owner: "Owner",
-    member: "Member",
+    admin: "Admin",
+    student: "Student",
+    parent: "Parent",
+    teacher: "Teacher",
+    staff: "Staff",
   },
   tracker_status: {
     in_progress: "In progress",
