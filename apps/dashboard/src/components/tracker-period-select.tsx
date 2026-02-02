@@ -1,5 +1,4 @@
 import { useTrackerParams } from "@/hooks/use-tracker-params";
-import { useUserQuery } from "@/hooks/use-user";
 import { TZDate } from "@date-fns/tz";
 import { Button } from "@midday/ui/button";
 import { cn } from "@midday/ui/cn";
@@ -21,9 +20,8 @@ type Props = {
 
 export function TrackerPeriodSelect({ className, dateFormat = "MMM" }: Props) {
   const { date, view, setParams } = useTrackerParams();
-  const { data: user } = useUserQuery();
 
-  const weekStartsOnMonday = user?.weekStartsOnMonday ?? false;
+  const weekStartsOnMonday = false;
   const currentDate = date
     ? new TZDate(date, "UTC")
     : new TZDate(new Date(), "UTC");

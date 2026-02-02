@@ -8,7 +8,7 @@ import {
 } from "@/hooks/use-accounting-error";
 import { useJobStatus } from "@/hooks/use-job-status";
 import { useSuccessSound } from "@/hooks/use-success-sound";
-import { useTransactionTab } from "@/hooks/use-transaction-tab";
+import { useTransactionTab } from "@/hooks/use-grades-tab";
 import { useExportStore } from "@/store/export";
 import { useTransactionsStore } from "@/store/transactions";
 import { useTRPC } from "@/trpc/client";

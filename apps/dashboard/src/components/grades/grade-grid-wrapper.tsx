@@ -2,20 +2,17 @@
 
 import { useAction } from "next-safe-action/hooks";
 import { getGradeGridDataAction } from "@/actions/assessments/get-grade-grid-data-action";
-import { useEffect } from "react";
-import { useQueryState, parseAsInteger } from "nuqs";
+import { useEffect, useMemo } from "react";
 import { GradeDataTable } from "@/components/tables/grades/data-table";
 import { GradesSkeleton } from "@/components/tables/grades/skeleton";
 import { InitializeAssessmentsButton } from "./initialize-assessments-button";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@midday/ui/alert";
+import { useGradeFilterParams } from "@/hooks/use-grade-filter-params";
 
 export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) {
-  const [classId] = useQueryState("classId", parseAsInteger);
-  const [subjectId] = useQueryState("subjectId", parseAsInteger);
-  const [termId] = useQueryState("termId", parseAsInteger);
-  const [month] = useQueryState("month", parseAsInteger);
-  const [yearId] = useQueryState("yearId", parseAsInteger);
+  const { filter } = useGradeFilterParams();
+  const { classId, subjectId, termId, month, yearId, q } = filter;
 
   const { execute, result, status } = useAction(getGradeGridDataAction);
 
@@ -24,6 +21,24 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
       execute({ classId, subjectId, termId, month, academicYearId: yearId });
     }
   }, [classId, subjectId, termId, month, yearId, execute]);
+
+  const filteredData = useMemo(() => {
+    if (!result.data) return null;
+
+    if (!q) return result.data;
+
+    const lowerQ = q.toLowerCase();
+    const filteredStudents = result.data.students.filter(
+      (student) =>
+        student.name?.toLowerCase().includes(lowerQ) ||
+        student.studentNumber?.toLowerCase().includes(lowerQ)
+    );
+
+    return {
+      ...result.data,
+      students: filteredStudents,
+    };
+  }, [result.data, q]);
 
   if (!classId || !subjectId || !termId || !month || !yearId) {
     return (
@@ -65,15 +80,23 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
     );
   }
 
-  if (result.data) {
-    const { items, students } = result.data;
+  if (filteredData) {
+    const { items, students } = filteredData;
 
     // First check: Are there any students?
-    if (students.length === 0) {
+    if (students.length === 0 && !q) {
       return (
         <div className="flex flex-col items-center justify-center p-20 border border-dashed rounded-xl bg-muted/5 text-muted-foreground">
           <p className="text-lg font-semibold">No students enrolled in this class</p>
           <p className="text-sm">Make sure students are enrolled in this class for the selected academic year first.</p>
+        </div>
+      );
+    }
+
+    if (students.length === 0 && q) {
+       return (
+        <div className="flex flex-col items-center justify-center p-20 border border-dashed rounded-xl bg-muted/5 text-muted-foreground">
+          <p className="text-lg font-semibold">No students found matching "{q}"</p>
         </div>
       );
     }
@@ -91,7 +114,7 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
     }
 
     // Pass the data to the new data table component
-    return <GradeDataTable initialSettings={initialSettings} data={result.data as any} />;
+    return <GradeDataTable initialSettings={initialSettings} data={filteredData as any} />;
   }
 
   // If we are here and not executing/not having data, it might mean nothing found or initial state

@@ -2,7 +2,7 @@
 
 import { BulkActions } from "@/components/bulk-actions";
 import { Portal } from "@/components/portal";
-import { useTransactionTab } from "@/hooks/use-transaction-tab";
+import { useTransactionTab } from "@/hooks/use-grades-tab";
 import { useTransactionsStore } from "@/store/transactions";
 import { useTRPC } from "@/trpc/client";
 import {

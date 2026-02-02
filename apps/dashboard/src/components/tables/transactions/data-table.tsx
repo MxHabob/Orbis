@@ -11,7 +11,7 @@ import { useTableScroll } from "@/hooks/use-table-scroll";
 import { useTableSettings } from "@/hooks/use-table-settings";
 import { useTransactionFilterParamsWithPersistence } from "@/hooks/use-transaction-filter-params-with-persistence";
 import { useTransactionParams } from "@/hooks/use-transaction-params";
-import { useTransactionTab } from "@/hooks/use-transaction-tab";
+import { useTransactionTab } from "@/hooks/use-grades-tab";
 import { useUpdateTransactionCategory } from "@/hooks/use-update-transaction-category";
 import { useUploadProcessingToast } from "@/hooks/use-upload-processing-toast";
 import { useUserQuery } from "@/hooks/use-user";

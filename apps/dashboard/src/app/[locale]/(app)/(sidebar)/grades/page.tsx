@@ -1,4 +1,5 @@
 import { AddTransactions } from "@/components/add-transactions";
+import { GradeGridWrapper } from "@/components/grades/grade-grid-wrapper";
 import { ScrollableContent } from "@/components/scrollable-content";
 import { DataTable } from "@/components/tables/transactions/data-table";
 import { Loading } from "@/components/tables/transactions/loading";
@@ -6,43 +7,53 @@ import { TransactionTabs } from "@/components/transaction-tabs";
 import { TransactionsColumnVisibility } from "@/components/transactions-column-visibility";
 import { TransactionsSearchFilter } from "@/components/transactions-search-filter";
 import { TransactionsUploadZone } from "@/components/transactions-upload-zone";
+import { GradesSearchFilter } from "@/components/grades/grades-search-filter";
+import { loadGradeFilterParams } from "@/hooks/use-grade-filter-params";
 import { loadSortParams } from "@/hooks/use-sort-params";
 import { loadTransactionFilterParams } from "@/hooks/use-transaction-filter-params";
-import { loadTransactionTab } from "@/hooks/use-transaction-tab";
+import { loadGradesTab } from "@/hooks/use-grades-tab";
 import { HydrateClient, batchPrefetch, trpc } from "@/trpc/server";
 import { getInitialTableSettings } from "@/utils/columns";
 import type { Metadata } from "next";
 import type { SearchParams } from "nuqs/server";
 import { Suspense } from "react";
+import { ClassesSelect } from "@/components/grades/classes-select";
+import { SubjectsSelect } from "@/components/grades/subjects-select";
+import { PeriodSelect } from "@/components/grades/period-select";
+import { GradesTabs } from "@/components/grades/grades-tabs";
+import { GradesColumnVisibility } from "@/components/grades/grades-column-visibility";
+import { GradesActions } from "@/components/grades/grades-actions";
+import { GradeDataTable } from "@/components/tables/grades/data-table";
+import { GradesUploadZone } from "@/components/grades/grades-upload-zone";
 
 export const metadata: Metadata = {
-  title: "Transactions | Midday",
+  title: "Grades | Midday",
 };
 
 type Props = {
   searchParams: Promise<SearchParams>;
 };
 
-export default async function Transactions(props: Props) {
+export default async function Grades(props: Props) {
   const searchParams = await props.searchParams;
 
-  const filter = loadTransactionFilterParams(searchParams);
+  const filter = loadGradeFilterParams(searchParams);
   const { sort } = loadSortParams(searchParams);
-  const { tab } = loadTransactionTab(searchParams);
+  const { tab } = loadGradesTab(searchParams);
 
   // Get unified table settings from cookie
-  const initialSettings = await getInitialTableSettings("transactions");
+  const initialSettings = await getInitialTableSettings("grades");
 
   // Build query filters for both tabs
   const allTabFilter = {
     ...filter,
-    amountRange: filter.amount_range ?? null,
+    month: filter.month ?? null,
     sort,
   };
 
   const reviewTabFilter = {
     ...filter,
-    amountRange: filter.amount_range ?? null,
+    month: filter.month ?? null,
     sort,
     fulfilled: true,
     exported: false,
@@ -65,15 +76,18 @@ export default async function Transactions(props: Props) {
   return (
     <HydrateClient>
       <ScrollableContent>
-        <TransactionsUploadZone>
+        <GradesUploadZone>
           <div className="flex justify-between items-center py-6">
-            <TransactionsSearchFilter />
+            <GradesSearchFilter />
             <div className="flex items-center gap-4">
               <div className="hidden md:flex items-center gap-2">
-                <TransactionsColumnVisibility />
-                <AddTransactions />
+                <GradesColumnVisibility />
+                <GradesActions />
+                {/* <PeriodSelect />
+                <SubjectsSelect />
+                <ClassesSelect /> */}
               </div>
-              <TransactionTabs />
+              <GradesTabs />
             </div>
           </div>
 
@@ -86,9 +100,9 @@ export default async function Transactions(props: Props) {
               />
             }
           >
-            {/* <DataTable initialSettings={initialSettings} initialTab={tab} /> */}
+            <GradeDataTable initialSettings={initialSettings} initialTab={tab}/>
           </Suspense>
-        </TransactionsUploadZone>
+        </GradesUploadZone>
       </ScrollableContent>
     </HydrateClient>
   );

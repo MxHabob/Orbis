@@ -1,10 +1,9 @@
 "use client";
 
-import { useUserQuery } from "@/hooks/use-user";
 import { usePendingUploadsStore } from "@/store/pending-uploads";
 import { useTRPC } from "@/trpc/client";
 import { resumableUpload } from "@/utils/upload";
-import { createClient } from "@midday/supabase/client";
+import { authClient } from "@midday/auth/auth-client";
 import { cn } from "@midday/ui/cn";
 import { useToast } from "@midday/ui/use-toast";
 import { stripSpecialCharacters } from "@midday/utils";
@@ -32,8 +31,8 @@ type Props = {
 
 export function TransactionsUploadZone({ children }: Props) {
   const trpc = useTRPC();
-  const { data: user } = useUserQuery();
-  const supabase = createClient();
+  const { data: session } = authClient.useSession();
+  const user = session?.user;
   const queryClient = useQueryClient();
   const [progress, setProgress] = useState(0);
   const [showProgress, setShowProgress] = useState(false);
@@ -41,12 +40,6 @@ export function TransactionsUploadZone({ children }: Props) {
   const uploadProgress = useRef<number[]>([]);
   const { toast, dismiss, update } = useToast();
   const addPending = usePendingUploadsStore((state) => state.addPending);
-  const processAttachmentsMutation = useMutation(
-    trpc.inbox.processAttachments.mutationOptions(),
-  );
-  const createInboxItemMutation = useMutation(
-    trpc.inbox.create.mutationOptions(),
-  );
 
   useEffect(() => {
     if (!toastId && showProgress) {
@@ -77,7 +70,7 @@ export function TransactionsUploadZone({ children }: Props) {
     }
 
     // Guard against missing teamId to prevent uploads to incorrect paths
-    if (!user?.teamId) {
+    if (!user?.id) {
       toast({
         duration: 2500,
         variant: "error",
@@ -91,7 +84,7 @@ export function TransactionsUploadZone({ children }: Props) {
 
     setShowProgress(true);
 
-    const path = [user.teamId, "inbox"];
+    const path = [user.id, "inbox"];
 
     try {
       // First, create inbox items immediately for instant feedback
@@ -100,62 +93,12 @@ export function TransactionsUploadZone({ children }: Props) {
           // Use the same filename processing as resumableUpload
           const processedFilename = stripSpecialCharacters(file.name);
           const filePath = [...path, processedFilename];
-          return createInboxItemMutation.mutateAsync({
-            filename: processedFilename,
-            mimetype: file.type,
-            size: file.size,
-            filePath,
-          });
         }),
       );
 
-      // Store inbox IDs for tracking via realtime
-      const inboxIds = inboxItems
-        .map((item) => item?.id)
-        .filter((id): id is string => !!id);
-      addPending(inboxIds);
 
-      // Invalidate inbox queries to show new items immediately
-      queryClient.invalidateQueries({
-        queryKey: trpc.inbox.get.queryKey(),
-      });
 
-      queryClient.invalidateQueries({
-        queryKey: trpc.inbox.get.infiniteQueryKey(),
-      });
 
-      const results = (await Promise.all(
-        files.map(async (file: File, idx: number) =>
-          resumableUpload(supabase, {
-            bucket: "vault",
-            path,
-            file,
-            onProgress: (bytesUploaded, bytesTotal) => {
-              uploadProgress.current[idx] = (bytesUploaded / bytesTotal) * 100;
-
-              const _progress = uploadProgress.current.reduce(
-                (acc, currentValue) => {
-                  return acc + currentValue;
-                },
-                0,
-              );
-
-              setProgress(Math.round(_progress / files.length));
-            },
-          }),
-        ),
-      )) as UploadResult[];
-
-      // Trigger the upload jobs through inbox pipeline
-      processAttachmentsMutation.mutate(
-        results.map(
-          (result): ProcessAttachmentInput => ({
-            filePath: [...path, result.filename],
-            mimetype: result.file.type,
-            size: result.file.size,
-          }),
-        ),
-      );
 
       // Reset once done
       uploadProgress.current = [];
@@ -175,10 +118,7 @@ export function TransactionsUploadZone({ children }: Props) {
         duration: Number.POSITIVE_INFINITY, // Persistent until updated
       });
     } catch (error) {
-      // Refresh inbox to show current state after error
-      queryClient.invalidateQueries({
-        queryKey: trpc.inbox.get.queryKey(),
-      });
+
 
       setShowProgress(false);
       setToastId(undefined);
