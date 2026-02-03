@@ -86,16 +86,16 @@ export const createGradeColumns = (
       id: "studentName",
       accessorKey: "name",
       header: "Student Name",
-      size: 250,
-      minSize: 200,
-      maxSize: 400,
+      size: 200,
+      minSize: 150,
+      maxSize: 300,
       enableResizing: true,
       meta: {
         sticky: true,
         skeleton: { type: "avatar-text", width: "w-40" },
         headerLabel: "Student Name",
         className:
-          "w-[250px] min-w-[200px] sticky left-0 bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-20 border-r",
+          "w-[200px] min-w-[150px] sticky left-0 bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-20 border-r",
       },
       cell: ({ row }) => (
         <StudentNameCell
@@ -115,50 +115,72 @@ export const createGradeColumns = (
     columns.push({
       id: "monthly-avg",
       header: () => (
-        <div className="flex flex-col items-center gap-0.5">
-          <span className="font-bold text-sm tracking-tight">محصلة الشهور</span>
-          <span className="text-[10px] uppercase text-muted-foreground font-medium">
+        <div className="flex flex-col items-center gap-0.5 px-2">
+          <span className="font-bold text-xs md:text-sm tracking-tight whitespace-nowrap">
+            Monthly Avg
+          </span>
+          <span className="text-[9px] uppercase text-muted-foreground font-medium">
             Max: 20
           </span>
         </div>
       ),
-      size: 140,
-      meta: { headerLabel: "Average (20)", className: "text-center min-w-[140px] border-r bg-muted/30" },
+      size: 130,
+      minSize: 110,
+      meta: {
+        headerLabel: "Average (20)",
+        className: "text-center border-r bg-muted/30",
+      },
       cell: ({ row, table }) => {
         let totalScore = 0;
         let totalMax = 0;
 
         // Sum up all items from the 3 months
-        items.filter(i => summaryMonths.includes((i as any).month)).forEach(item => {
-          const score = table.options.meta?.getGradeValue?.(row.original.studentId, item.id);
-          if (score) totalScore += parseFloat(score);
-          totalMax += item.maxScore;
-        });
+        items
+          .filter((i) => summaryMonths.includes((i as any).month))
+          .forEach((item) => {
+            const score = table.options.meta?.getGradeValue?.(
+              row.original.studentId,
+              item.id
+            );
+            if (score) totalScore += parseFloat(score);
+            totalMax += item.maxScore;
+          });
 
         // Scale to 20: (Score / Max) * 20
         const scaled = totalMax > 0 ? (totalScore / totalMax) * 20 : 0;
-        return <span className="font-bold text-blue-600 dark:text-blue-400">{scaled.toFixed(2)}</span>;
-      }
+        return (
+          <span className="font-bold text-blue-600 dark:text-blue-400">
+            {scaled.toFixed(2)}
+          </span>
+        );
+      },
     });
 
     // 2. Column for the Exam (30)
-    const examItem = items.find(i => (i as any).month === examMonth);
+    const examItem = items.find((i) => (i as any).month === examMonth);
     if (examItem) {
       columns.push({
         id: `assessment-${examItem.id}`,
         accessorKey: `assessment-${examItem.id}`,
         header: () => (
-          <div className="flex flex-col items-center gap-0.5">
-            <span className="font-bold text-sm tracking-tight">{month === 13 ? "امتحان نصفي" : "امتحان نهائي"}</span>
-            <span className="text-[10px] uppercase text-muted-foreground font-medium">
+          <div className="flex flex-col items-center gap-0.5 px-2">
+            <span className="font-bold text-xs md:text-sm tracking-tight whitespace-nowrap">
+              {month === 13 ? "Mid-term Exam" : "Final Exam"}
+            </span>
+            <span className="text-[9px] uppercase text-muted-foreground font-medium">
               Max: 30
             </span>
           </div>
         ),
-        size: 140,
-        meta: { headerLabel: "Exam (30)", className: "text-center min-w-[140px] border-r" },
+        size: 130,
+        minSize: 110,
+        meta: { headerLabel: "Exam (30)", className: "text-center border-r" },
         cell: ({ row, table }) => {
-          const gradeValue = table.options.meta?.getGradeValue?.(row.original.studentId, examItem.id) ?? null;
+          const gradeValue =
+            table.options.meta?.getGradeValue?.(
+              row.original.studentId,
+              examItem.id
+            ) ?? null;
           return (
             <EditableGradeCell
               studentId={row.original.studentId}
@@ -167,69 +189,141 @@ export const createGradeColumns = (
               maxScore={examItem.maxScore}
             />
           );
-        }
+        },
+      });
+
+      // 3. Status Column
+      columns.push({
+        id: "status",
+        header: "Status",
+        size: 100,
+        minSize: 80,
+        meta: {
+          headerLabel: "Status",
+          sticky: true,
+          className:
+            "text-center border-l bg-primary/5 group-hover:bg-primary/10 z-20",
+        },
+        cell: ({ row, table }) => {
+          let monthlyTotal = 0;
+          let monthlyMax = 0;
+          items
+            .filter((i) => summaryMonths.includes((i as any).month))
+            .forEach((item) => {
+              const score = table.options.meta?.getGradeValue?.(
+                row.original.studentId,
+                item.id
+              );
+              if (score) monthlyTotal += parseFloat(score);
+              monthlyMax += item.maxScore;
+            });
+          const monthlyScaled =
+            monthlyMax > 0 ? (monthlyTotal / monthlyMax) * 20 : 0;
+
+          let examScore = 0;
+          const score = table.options.meta?.getGradeValue?.(
+            row.original.studentId,
+            examItem.id
+          );
+          if (score) examScore = parseFloat(score);
+
+          const totalValue = monthlyScaled + examScore;
+          const isPass = totalValue >= 25; // Assuming 50% of 50 is pass
+
+          return (
+      <div className="flex items-center justify-center h-full">
+              <span
+                className={`text-sm font-bold ${
+                  isPass
+                    ? "text-green-600 font-bold bg-green-50 dark:bg-green-950/20"
+                    : "text-red-600 font-bold bg-red-50 dark:bg-red-950/20"
+                }`}
+              >
+                {isPass ? "Pass" : "Fail"}
+              </span>
+            </div>
+          );
+        },
       });
     }
 
-    // 3. Final Total (50)
+    // 4. Total Column for Summary Mode
     columns.push({
       id: "total",
-      header: "Total (50)",
+      header: "Total",
       size: 120,
+      minSize: 100,
+      maxSize: 150,
+      enableResizing: false,
+      enableSorting: false,
       meta: {
         sticky: true,
+        skeleton: { type: "text", width: "w-16" },
         headerLabel: "Total",
-        className: "text-center sticky right-0 bg-primary/5 group-hover:bg-primary/10 z-20 border-l font-black",
+        className:
+          "text-center bg-primary/5 group-hover:bg-primary/10 z-20 border-l",
       },
       cell: ({ row, table }) => {
         let monthlyTotal = 0;
         let monthlyMax = 0;
-        items.filter(i => summaryMonths.includes((i as any).month)).forEach(item => {
-          const score = table.options.meta?.getGradeValue?.(row.original.studentId, item.id);
-          if (score) monthlyTotal += parseFloat(score);
-          monthlyMax += item.maxScore;
-        });
-        const monthlyScaled = monthlyMax > 0 ? (monthlyTotal / monthlyMax) * 20 : 0;
+        items
+          .filter((i) => summaryMonths.includes((i as any).month))
+          .forEach((item) => {
+            const score = table.options.meta?.getGradeValue?.(
+              row.original.studentId,
+              item.id
+            );
+            if (score) monthlyTotal += parseFloat(score);
+            monthlyMax += item.maxScore;
+          });
+        const monthlyScaled =
+          monthlyMax > 0 ? (monthlyTotal / monthlyMax) * 20 : 0;
 
         let examScore = 0;
         if (examItem) {
-          const score = table.options.meta?.getGradeValue?.(row.original.studentId, examItem.id);
+          const score = table.options.meta?.getGradeValue?.(
+            row.original.studentId,
+            examItem.id
+          );
           if (score) examScore = parseFloat(score);
         }
+        const result = (monthlyScaled + examScore).toFixed(2);
 
-        return <span className="text-lg text-primary">{(monthlyScaled + examScore).toFixed(2)}</span>;
-      }
+        return (
+          <div className="flex items-center justify-center h-full">
+            <span className="text-sm text-primary tabular-nums">{result}</span>
+          </div>
+        );
+      },
     });
-
   } else {
-    // Normal Month Columns
+    // Regular Month Mode: Show all assessments for the month
     items.forEach((item) => {
       columns.push({
         id: `assessment-${item.id}`,
         accessorKey: `assessment-${item.id}`,
         header: () => (
-          <div className="flex flex-col items-center gap-0.5">
-            <span className="font-bold text-sm tracking-tight">{item.title}</span>
-            <span className="text-[10px] uppercase text-muted-foreground font-medium">
+          <div className="flex flex-col items-center gap-0.5 px-2">
+            <span className="font-bold text-xs md:text-sm tracking-tight whitespace-nowrap">
+              {item.title}
+            </span>
+            <span className="text-[9px] uppercase text-muted-foreground font-medium">
               Max: {item.maxScore}
             </span>
           </div>
         ),
-        size: 140,
-        minSize: 120,
-        maxSize: 180,
-        enableResizing: true,
+        size: 120,
+        minSize: 100,
         meta: {
-          skeleton: { type: "text", width: "w-16" },
           headerLabel: item.title,
-          className: "text-center min-w-[140px] border-r",
+          className: "text-center border-r",
         },
         cell: ({ row, table }) => {
-          const gradeValue = table.options.meta?.getGradeValue?.(
-            row.original.studentId,
-            item.id
-          ) ?? null;
-          
+          const gradeValue =
+            table.options.meta?.getGradeValue?.(
+              row.original.studentId,
+              item.id
+            ) ?? null;
           return (
             <EditableGradeCell
               studentId={row.original.studentId}
@@ -242,10 +336,9 @@ export const createGradeColumns = (
       });
     });
 
-    // Add total column
+    // Total Column for Regular Mode
     columns.push({
       id: "total",
-      accessorKey: "total",
       header: "Total",
       size: 120,
       minSize: 100,
@@ -257,26 +350,21 @@ export const createGradeColumns = (
         skeleton: { type: "text", width: "w-16" },
         headerLabel: "Total",
         className:
-          "text-center sticky right-0 bg-primary/5 group-hover:bg-primary/10 z-20 border-l font-bold",
+          "text-center bg-primary/5 group-hover:bg-primary/10 z-20 border-l",
       },
       cell: ({ row, table }) => {
         let total = 0;
-
         items.forEach((item) => {
           const gradeValue = table.options.meta?.getGradeValue?.(
             row.original.studentId,
             item.id
           );
-          if (gradeValue) {
-            total += parseFloat(gradeValue);
-          }
+          if (gradeValue) total += parseFloat(gradeValue);
         });
 
         return (
           <div className="flex items-center justify-center h-full">
-            <span className="text-lg font-black text-primary tabular-nums">
-              {total}
-            </span>
+            <span className="text-sm text-primary tabular-nums">{total}</span>
           </div>
         );
       },

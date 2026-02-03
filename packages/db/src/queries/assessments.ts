@@ -105,7 +105,7 @@ export const initializeStandardMonthlyAssessments = async (params: {
 }) => {
   const itemsToCreate = [
     {
-      title: "Attendance (مواظبة)",
+      title: "Attendance",
       type: "attendance" as const,
       maxScore: "5",
       weight: "1.0",
@@ -116,7 +116,7 @@ export const initializeStandardMonthlyAssessments = async (params: {
       isPublished: true,
     },
     {
-      title: "Participation (مشاركة)",
+      title: "Participation",
       type: "participation" as const,
       maxScore: "10",
       weight: "1.0",
@@ -127,7 +127,7 @@ export const initializeStandardMonthlyAssessments = async (params: {
       isPublished: true,
     },
     {
-      title: "Oral (شفوي)",
+      title: "Oral",
       type: "oral" as const,
       maxScore: "15",
       weight: "1.0",
@@ -138,7 +138,7 @@ export const initializeStandardMonthlyAssessments = async (params: {
       isPublished: true,
     },
     {
-      title: "Written Exam (تحريري)",
+      title: "Written Exam",
       type: "exam" as const,
       maxScore: "20",
       weight: "1.0",
@@ -169,7 +169,7 @@ export const initializeTermExamAssessments = async (params: {
   
   const itemsToCreate = [
     {
-      title: isMidTerm ? "Mid-term Exam (اختبار نصفي)" : "Final Exam (اختبار نهائي)",
+      title: isMidTerm ? "Mid-term Exam" : "Final Exam",
       type: "exam" as const,
       maxScore: "30",
       weight: "1.0",

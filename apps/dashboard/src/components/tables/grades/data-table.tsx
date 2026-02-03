@@ -69,6 +69,27 @@ export function GradeDataTable({
 
   const columns = useMemo(() => createGradeColumns(items, month ?? undefined), [items, month]);
 
+  // Modern React 2026: Derived State - calculate order during render, avoiding useEffect
+  const effectiveColumnOrder = useMemo(() => {
+    const currentColumnIds = columns.map((c) => c.id as string);
+    
+    // If no saved order, use the default order from createGradeColumns
+    if (columnOrder.length === 0) return currentColumnIds;
+
+    // Filter out columns that no longer exist (e.g. after switching months)
+    const activeOrder = columnOrder.filter(
+      (id) => currentColumnIds.includes(id) && id !== "total"
+    );
+
+    // Find new columns that aren't in the saved order yet
+    const newColumns = currentColumnIds.filter(
+      (id) => !columnOrder.includes(id) && id !== "total"
+    );
+
+    // Final construction: Preserved Order + New Columns + Total at the very end
+    return [...activeOrder, ...newColumns, "total"];
+  }, [columns, columnOrder]);
+
   const tableMeta = useMemo(
     () => ({
       items,
@@ -87,11 +108,18 @@ export function GradeDataTable({
     enableColumnResizing: true,
     columnResizeMode: "onChange",
     onColumnSizingChange: setColumnSizing,
-    onColumnOrderChange: setColumnOrder,
+    onColumnOrderChange: (updater) => {
+      const nextOrder = typeof updater === "function" ? updater(columnOrder) : updater;
+      if (nextOrder.includes("total")) {
+        setColumnOrder([...nextOrder.filter(id => id !== "total"), "total"]);
+      } else {
+        setColumnOrder(nextOrder);
+      }
+    },
     state: {
       columnVisibility,
       columnSizing,
-      columnOrder,
+      columnOrder: effectiveColumnOrder,
     },
     meta: tableMeta,
   });

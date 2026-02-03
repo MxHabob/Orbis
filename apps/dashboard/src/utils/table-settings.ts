@@ -84,9 +84,22 @@ export function mergeWithDefaults(
   tableId: TableId,
 ): TableSettings {
   const defaults = getDefaultTableSettings(tableId);
-  return {
+  const settings = {
     columns: saved?.columns ?? defaults.columns,
     sizing: saved?.sizing ?? defaults.sizing,
     order: saved?.order ?? defaults.order,
   };
+
+  // Modern Constraint: Always ensure "total" is at the end for grades table
+  if (tableId === "grades" && settings.order.length > 0) {
+    const hasTotal = settings.order.includes("total");
+    if (hasTotal) {
+      settings.order = [
+        ...settings.order.filter((id) => id !== "total"),
+        "total",
+      ];
+    }
+  }
+
+  return settings;
 }

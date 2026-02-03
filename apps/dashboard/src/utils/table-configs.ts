@@ -22,7 +22,6 @@ export const STICKY_COLUMNS: Record<TableId, StickyColumnConfig[]> = {
   ],
   grades: [
     { id: "studentName", width: 300 },
-    { id: "total", width: 120 },
   ],
 };
 
@@ -69,13 +68,10 @@ export const SORT_FIELD_MAPS: Record<TableId, Record<string, string>> = {
     studentNumber: "studentNumber",
     enrollmentDate: "enrollmentDate",
   },
-  vault: {}, // Vault doesn't have sorting
+  vault: {},
   grades: {},
 };
 
-/**
- * Non-reorderable columns for each table (sticky + actions)
- */
 export const NON_REORDERABLE_COLUMNS: Record<TableId, Set<string>> = {
   transactions: new Set(["select", "date", "description", "actions"]),
   invoices: new Set(["select", "invoiceNumber", "actions"]),
