@@ -10,7 +10,6 @@ import {
   SelectValue,
 } from "@midday/ui/select";
 import { GradesActions } from "./grades-actions";
-import { GradesColumnVisibility } from "./grades-column-visibility";
 import { GradesSearchFilter } from "./grades-search-filter";
 
 interface GradeGridHeaderProps {
@@ -26,11 +25,11 @@ const months = [
   { id: 9, name: "September (9)" },
   { id: 10, name: "October (10)" },
   { id: 11, name: "November (11)" },
-  { id: 13, name: "Mid-term (النصفي)" },
+  { id: 13, name: "Mid-term" },
   { id: 12, name: "December (12)" },
   { id: 1, name: "January (1)" },
   { id: 2, name: "February (2)" },
-  { id: 14, name: "Final Exam (النهائي)" },
+  { id: 14, name: "Final Exam" },
   { id: 3, name: "March (3)" },
   { id: 4, name: "April (4)" },
   { id: 5, name: "May (5)" },
