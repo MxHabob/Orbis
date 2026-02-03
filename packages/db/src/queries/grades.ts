@@ -156,18 +156,14 @@ export const getGradeGridData = async (params: {
   academicYearId: number;
 }) => {
   try {
-    // First, check if this class has children (divisions)
     const childClasses = await db
       .select({ id: classes.id })
       .from(classes)
       .where(eq(classes.parentClassId, params.classId));
 
-    // If there are child classes, use them; otherwise use the selected class
     const targetClassIds = childClasses.length > 0 
-      ? childClasses.map(c => c.id) 
+      ? [params.classId, ...childClasses.map(c => c.id)] 
       : [params.classId];
-
-    // 1. Fetch Assessment Items using standard query builder
     const itemsList = await db
       .select()
       .from(assessmentItems)

@@ -41,6 +41,7 @@ function VirtualRowInner<TData>({
 }: VirtualRowProps<TData>) {
   const cells = row.getVisibleCells();
   const lastCellId = cells[cells.length - 1]?.column.id ?? "";
+  const isLastColumnSticky = lastCellId === "actions" || lastCellId === "total";
 
   return (
     <TableRow
@@ -62,15 +63,15 @@ function VirtualRowInner<TData>({
         const meta = cell.column.columnDef.meta as TableColumnMeta | undefined;
         const isSticky = meta?.sticky ?? false;
         const isActions = columnId === "actions";
-        const isLastBeforeActions =
-          cellIndex === cells.length - 2 && lastCellId === "actions";
+        const isLastBeforeSticky =
+          cellIndex === cells.length - 2 && isLastColumnSticky;
 
         // Build style: dynamic width + sticky positioning
         const cellStyle: CSSProperties = {
           width: cell.column.getSize(),
           ...getStickyStyle(columnId),
-          // Apply flex-1 to last non-sticky column before actions
-          ...(isLastBeforeActions && !isSticky && { flex: 1 }),
+          // Apply flex-1 to last non-sticky column before actions or total
+          ...(isLastBeforeSticky && !isSticky && { flex: 1 }),
         };
 
         // Build className from meta with proper sticky handling

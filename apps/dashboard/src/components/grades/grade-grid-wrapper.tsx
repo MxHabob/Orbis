@@ -12,7 +12,7 @@ import { useGradeFilterParams } from "@/hooks/use-grade-filter-params";
 
 export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) {
   const { filter } = useGradeFilterParams();
-  const { classId, subjectId, termId, month, yearId, q } = filter;
+  const { selectedClassId: classId, selectedSubjectId: subjectId, termId, month, yearId, q } = filter;
 
   const { execute, result, status } = useAction(getGradeGridDataAction);
 
@@ -54,7 +54,6 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
     return <GradesSkeleton />;
   }
 
-  // Handle server errors
   if (result.serverError) {
     return (
       <Alert variant="destructive" className="max-w-2xl mx-auto">
@@ -65,7 +64,6 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
     );
   }
 
-  // Handle validation errors (e.g. schema mismatch)
   if (result.validationErrors) {
     return (
       <Alert variant="destructive" className="max-w-2xl mx-auto">
@@ -83,7 +81,6 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
   if (filteredData) {
     const { items, students } = filteredData;
 
-    // First check: Are there any students?
     if (students.length === 0 && !q) {
       return (
         <div className="flex flex-col items-center justify-center p-20 border border-dashed rounded-xl bg-muted/5 text-muted-foreground">
@@ -101,7 +98,6 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
       );
     }
 
-    // Second check: Are there assessment items?
     if (items.length === 0) {
       return (
         <InitializeAssessmentsButton
@@ -109,14 +105,13 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
           subjectId={subjectId}
           termId={termId}
           month={month}
+          onSuccess={() => execute({ classId, subjectId, termId, month, academicYearId: yearId })}
         />
       );
     }
 
-    // Pass the data to the new data table component
     return <GradeDataTable initialSettings={initialSettings} data={filteredData as any} />;
   }
 
-  // If we are here and not executing/not having data, it might mean nothing found or initial state
   return null;
 }

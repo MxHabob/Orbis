@@ -94,6 +94,7 @@ export const studentsRouter = createTRPCRouter({
   import: protectedProcedure
     .input(z.object({
       classId: z.number(),
+      academicYearId: z.number().optional(),
       students: z.array(z.object({
         studentNumber: z.string(),
         name: z.string(),
@@ -104,7 +105,7 @@ export const studentsRouter = createTRPCRouter({
     }))
     .mutation(async ({ input }) => {
       const { bulkImportStudents } = await import("@midday/db/queries");
-      return bulkImportStudents(input.classId, input.students);
+      return bulkImportStudents(input.classId, input.students, input.academicYearId);
     }),
   upsert: protectedProcedure
     .input(upsertStudentSchema)

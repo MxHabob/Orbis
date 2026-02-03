@@ -3,8 +3,8 @@ import { createLoader } from "nuqs/server";
 
 export const gradeFilterParamsSchema = {
   q: parseAsString,
-  classId: parseAsInteger,
-  subjectId: parseAsInteger,
+  selectedClassId: parseAsInteger,
+  selectedSubjectId: parseAsInteger,
   termId: parseAsInteger,
   yearId: parseAsInteger,
   month: parseAsInteger,

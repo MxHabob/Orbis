@@ -276,39 +276,57 @@ export const deleteStudent = async (userId: string) => {
 
 import { academicYears } from "@db/schema";
 
-export const bulkImportStudents = async (classId: number, studentData: {
-  studentNumber: string;
-  name: string;
-  phone?: string;
-  email?: string;
-  sex?: 'male' | 'female' | 'unspecified';
-}[]) => {
-  // Get current academic year
-  const [currentYear] = await db.select().from(academicYears).where(eq(academicYears.isCurrent, true)).limit(1);
-  if (!currentYear) throw new Error("No current academic year found");
+export const bulkImportStudents = async (
+  classId: number, 
+  studentData: {
+    studentNumber: string;
+    name: string;
+    phone?: string;
+    email?: string;
+    sex?: 'male' | 'female' | 'unspecified';
+  }[],
+  academicYearId?: number
+) => {
+  // 1. Get academic year: Use provided ID or current one from DB
+  let yearId = academicYearId;
+  
+  if (!yearId) {
+    const [currentYear] = await db
+      .select()
+      .from(academicYears)
+      .where(eq(academicYears.isCurrent, true))
+      .limit(1);
+      
+    if (!currentYear) throw new Error("No current academic year found and no yearId provided");
+    yearId = currentYear.id;
+  }
 
   const results = [];
 
   for (const item of studentData) {
     try {
-      // 1. Create or get user
-      // We check by email or phone if provided, otherwise we'll have to create a new user.
-      // For simplicity in this demo/impl, we create a new user for each student if not exists by phone/email.
-      // But usually, students are unique by studentNumber.
-      
-      const [existingStudent] = await db.select().from(students).where(eq(students.studentNumber, item.studentNumber)).limit(1);
+      const [existingStudent] = await db
+        .select()
+        .from(students)
+        .where(eq(students.studentNumber, item.studentNumber))
+        .limit(1);
       
       let userId: string;
 
       if (existingStudent) {
         userId = existingStudent.userId;
-        // Update user info
+        // Update user info and sync current class
         await db.update(users).set({ 
           name: item.name, 
           phone: item.phone, 
           email: item.email,
           sex: item.sex || 'unspecified'
         }).where(eq(users.id, userId));
+
+        // Update student's current class
+        await db.update(students).set({
+          currentClassId: classId,
+        }).where(eq(students.userId, userId));
       } else {
         const [newUser] = await db.insert(users).values({
           name: item.name,
@@ -317,6 +335,7 @@ export const bulkImportStudents = async (classId: number, studentData: {
           role: 'student',
           sex: item.sex || 'unspecified'
         }).returning();
+        
         if (!newUser) throw new Error("Failed to create user");
         userId = newUser.id;
 
@@ -327,12 +346,18 @@ export const bulkImportStudents = async (classId: number, studentData: {
         });
       }
 
-      // 2. Ensure enrollment
+      // 2. Ensure enrollment in the target year
       await db.insert(enrollments).values({
         studentId: userId,
         classId,
-        academicYearId: currentYear.id,
-      }).onConflictDoNothing();
+        academicYearId: yearId,
+      }).onConflictDoUpdate({
+        target: [enrollments.studentId, enrollments.classId, enrollments.academicYearId],
+        set: {
+          status: 'active',
+          enrolledAt: new Date(),
+        }
+      });
 
       results.push({ studentNumber: item.studentNumber, status: 'success' });
     } catch (error) {

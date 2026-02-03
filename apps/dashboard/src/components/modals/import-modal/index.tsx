@@ -196,6 +196,7 @@ export function ImportModal() {
 
                             importStudentsMutation.mutate({
                               classId: data.classId!,
+                              academicYearId: data.academicYearId,
                               students,
                             });
                           } else if (data.type === "grades") {

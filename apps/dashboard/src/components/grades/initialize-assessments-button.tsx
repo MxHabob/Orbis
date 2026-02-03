@@ -11,6 +11,7 @@ interface InitializeAssessmentsButtonProps {
   subjectId: number;
   termId: number;
   month: number;
+  onSuccess?: () => void;
 }
 
 export function InitializeAssessmentsButton({
@@ -18,6 +19,7 @@ export function InitializeAssessmentsButton({
   subjectId,
   termId,
   month,
+  onSuccess,
 }: InitializeAssessmentsButtonProps) {
   const { execute, status } = useAction(initializeMonthlyAssessmentsAction, {
     onSuccess: () => {
@@ -25,6 +27,7 @@ export function InitializeAssessmentsButton({
         title: "Success!",
         description: "Assessment items created successfully for this month.",
       });
+      onSuccess?.();
     },
     onError: () => {
       toast({

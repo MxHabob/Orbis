@@ -26,11 +26,21 @@ const NON_CLICKABLE_COLUMNS = new Set(["total"]);
 type Props = {
   initialSettings?: Partial<TableSettings>;
   initialTab?: string;
-  onGradeChangeAction?: (studentId: string, assessmentItemId: number, value: string | null) => void;
+  onGradeChangeAction?: (
+    studentId: string,
+    assessmentItemId: number,
+    value: string | null,
+  ) => void;
+  data: GradeGridData;
 };
 
-export function GradeDataTable({ initialSettings, onGradeChangeAction }: Props) {
-  const { students, items, grades } = [] as any;
+export function GradeDataTable({
+  initialSettings,
+  onGradeChangeAction,
+  data,
+}: Props) {
+  const { students, items, grades } = data;
+
   const parentRef = useRef<HTMLDivElement>(null);
 
   useScrollHeader(parentRef, { extraOffset: 0 });

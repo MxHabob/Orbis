@@ -75,7 +75,7 @@ const StudentNameCell = memo(
 StudentNameCell.displayName = "StudentNameCell";
 
 export const createGradeColumns = (
-  items: AssessmentItem[]
+  items: AssessmentItem[] = []
 ): ColumnDef<GradeStudent>[] => {
   const columns: ColumnDef<GradeStudent>[] = [
     {
