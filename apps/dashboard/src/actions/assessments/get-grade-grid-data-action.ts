@@ -8,7 +8,7 @@ const schema = z.object({
   classId: z.number(),
   subjectId: z.number(),
   termId: z.number(),
-  month: z.number(),
+  month: z.number().min(1).max(14),
   academicYearId: z.number(),
 });
 

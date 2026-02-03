@@ -39,7 +39,7 @@ export function GradeDataTable({
   onGradeChangeAction,
   data,
 }: Props) {
-  const { students, items, grades } = data;
+  const { students, items, grades, month } = data;
 
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -67,7 +67,7 @@ export function GradeDataTable({
     [grades]
   );
 
-  const columns = useMemo(() => createGradeColumns(items), [items]);
+  const columns = useMemo(() => createGradeColumns(items, month ?? undefined), [items, month]);
 
   const tableMeta = useMemo(
     () => ({

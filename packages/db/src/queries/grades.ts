@@ -164,6 +164,20 @@ export const getGradeGridData = async (params: {
     const targetClassIds = childClasses.length > 0 
       ? [params.classId, ...childClasses.map(c => c.id)] 
       : [params.classId];
+    const isMidTerm = params.month === 13;
+    const isFinal = params.month === 14;
+    
+    let monthsToFetch: number | number[] = params.month;
+    if (isMidTerm) {
+      monthsToFetch = [9, 10, 11, 13];
+    } else if (isFinal) {
+      monthsToFetch = [12, 1, 2, 14];
+    }
+
+    const monthCondition = Array.isArray(monthsToFetch) 
+      ? inArray(assessmentItems.month, monthsToFetch)
+      : eq(assessmentItems.month, monthsToFetch as number);
+
     const itemsList = await db
       .select()
       .from(assessmentItems)
@@ -172,10 +186,10 @@ export const getGradeGridData = async (params: {
           eq(assessmentItems.classId, params.classId),
           eq(assessmentItems.subjectId, params.subjectId),
           eq(assessmentItems.termId, params.termId),
-          eq(assessmentItems.month, params.month)
+          monthCondition
         )
       )
-      .orderBy(asc(assessmentItems.id));
+      .orderBy(asc(assessmentItems.month), asc(assessmentItems.id));
 
     // 2. Fetch Students enrolled in target classes
     const enrolledStudents = await db
@@ -215,6 +229,7 @@ export const getGradeGridData = async (params: {
       items: itemsList,
       students: enrolledStudents,
       grades: gradesList,
+      month: params.month,
     };
   } catch (error) {
     console.error("Error in getGradeGridData:", error);

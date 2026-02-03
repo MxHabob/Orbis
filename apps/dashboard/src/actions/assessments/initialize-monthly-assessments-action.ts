@@ -4,7 +4,8 @@ import { authActionClient } from "@/actions/safe-action";
 import { z } from "zod";
 import { 
   getMonthlyAssessmentItems, 
-  initializeStandardMonthlyAssessments 
+  initializeStandardMonthlyAssessments,
+  initializeTermExamAssessments
 } from "@midday/db/queries/assessments";
 import { revalidatePath } from "next/cache";
 
@@ -12,7 +13,7 @@ const schema = z.object({
   classId: z.number(),
   subjectId: z.number(),
   termId: z.number(),
-  month: z.number().min(1).max(12),
+  month: z.number().min(1).max(14),
 });
 
 export const initializeMonthlyAssessmentsAction = authActionClient
@@ -33,13 +34,11 @@ export const initializeMonthlyAssessmentsAction = authActionClient
       return { created: false, items: existingItems };
     }
 
-    // Initialize standard items using the new query
-    const insertedItems = await initializeStandardMonthlyAssessments({
-      classId,
-      subjectId,
-      termId,
-      month,
-    });
+    // Initialize items based on month type
+    const isTermExam = month === 13 || month === 14;
+    const insertedItems = isTermExam 
+      ? await initializeTermExamAssessments({ classId, subjectId, termId, month })
+      : await initializeStandardMonthlyAssessments({ classId, subjectId, termId, month });
 
     revalidatePath("/grades");
 

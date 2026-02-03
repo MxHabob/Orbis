@@ -1,6 +1,6 @@
 import { db } from "@db/client";
 import { assessmentItems, subjects, classes, academicTerms } from "@db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { RedisCache } from "@midday/cache";
 
 const assessmentCache = new RedisCache("assessments", 60 * 60);
@@ -78,8 +78,12 @@ export const getMonthlyAssessmentItems = async (params: {
   classId: number;
   subjectId: number;
   termId: number;
-  month: number;
+  month: number | number[];
 }) => {
+  const monthCondition = Array.isArray(params.month) 
+    ? inArray(assessmentItems.month, params.month)
+    : eq(assessmentItems.month, params.month);
+
   return db
     .select()
     .from(assessmentItems)
@@ -88,7 +92,7 @@ export const getMonthlyAssessmentItems = async (params: {
         eq(assessmentItems.classId, params.classId),
         eq(assessmentItems.subjectId, params.subjectId),
         eq(assessmentItems.termId, params.termId),
-        eq(assessmentItems.month, params.month)
+        monthCondition
       )
     );
 };
@@ -101,7 +105,7 @@ export const initializeStandardMonthlyAssessments = async (params: {
 }) => {
   const itemsToCreate = [
     {
-      title: "Attendance",
+      title: "Attendance (مواظبة)",
       type: "attendance" as const,
       maxScore: "5",
       weight: "1.0",
@@ -112,7 +116,7 @@ export const initializeStandardMonthlyAssessments = async (params: {
       isPublished: true,
     },
     {
-      title: "Participation",
+      title: "Participation (مشاركة)",
       type: "participation" as const,
       maxScore: "10",
       weight: "1.0",
@@ -123,8 +127,8 @@ export const initializeStandardMonthlyAssessments = async (params: {
       isPublished: true,
     },
     {
-      title: "Homework",
-      type: "homework" as const,
+      title: "Oral (شفوي)",
+      type: "oral" as const,
       maxScore: "15",
       weight: "1.0",
       classId: params.classId,
@@ -134,9 +138,40 @@ export const initializeStandardMonthlyAssessments = async (params: {
       isPublished: true,
     },
     {
-      title: "Written Exam",
+      title: "Written Exam (تحريري)",
       type: "exam" as const,
       maxScore: "20",
+      weight: "1.0",
+      classId: params.classId,
+      subjectId: params.subjectId,
+      termId: params.termId,
+      month: params.month,
+      isPublished: true,
+    },
+  ];
+
+  const results = await db.insert(assessmentItems).values(itemsToCreate).returning();
+  
+  if (results.length > 0) {
+    await assessmentCache.delete(`class:${params.classId}`);
+  }
+  
+  return results;
+};
+
+export const initializeTermExamAssessments = async (params: {
+  classId: number;
+  subjectId: number;
+  termId: number;
+  month: number; // 13 for Mid-term, 14 for Final
+}) => {
+  const isMidTerm = params.month === 13;
+  
+  const itemsToCreate = [
+    {
+      title: isMidTerm ? "Mid-term Exam (اختبار نصفي)" : "Final Exam (اختبار نهائي)",
+      type: "exam" as const,
+      maxScore: "30",
       weight: "1.0",
       classId: params.classId,
       subjectId: params.subjectId,
