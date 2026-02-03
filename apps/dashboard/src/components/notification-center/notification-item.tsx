@@ -13,6 +13,22 @@ import { formatDistanceToNow } from "date-fns";
 import { getNotificationDescription } from "./notification-descriptions";
 import { NotificationLink } from "./notification-link";
 import { authClient } from "@midday/auth/auth-client";
+import { 
+  GraduationCap, 
+  BookOpen, 
+  Calendar, 
+  Megaphone, 
+  MessageSquare,
+  Repeat,
+  FileText,
+  CreditCard,
+  Inbox,
+  Users,
+  Wallet,
+  User,
+  AlertTriangle,
+  Settings
+} from "lucide-react";
 
 interface NotificationItemProps {
   id: number;
@@ -28,85 +44,119 @@ export function NotificationItem({
   markMessageAsRead,
 }: NotificationItemProps) {
   const t = useI18n();
-    const { data: session } = authClient.useSession();
-    const user = session?.user;
+  const { data: session } = authClient.useSession();
+  const user = session?.user;
 
   const recordId = getMetadataProperty(activity, "recordId");
   const metadata = getMetadata(activity);
+  const isUnread = activity.status === "unread";
 
   const getNotificationIcon = (activityType: string) => {
-    if (activityType.startsWith("recurring_"))
-      return <Icons.Repeat className="size-4" />;
-    if (activityType.startsWith("invoice_"))
-      return <Icons.Invoice className="size-4" />;
-    if (activityType.startsWith("transaction"))
-      return <Icons.Transactions className="size-4" />;
-    if (activityType === "inbox_new")
-      return <Icons.Inbox2 className="size-4" />;
-    if (activityType.startsWith("inbox_") && activityType.includes("matched"))
-      return <Icons.Match className="size-4" />;
-    if (activityType === "inbox_needs_review")
-      return <Icons.AlertCircle className="size-4" />;
-    if (activityType === "match") return <Icons.Match className="size-4" />;
-    return <Icons.Notifications className="size-4" />;
+    const iconProps = { className: "size-4 text-muted-foreground" };
+
+    switch (activityType) {
+      case "grade_published":
+        return <GraduationCap {...iconProps} />;
+      case "new_assessment":
+        return <BookOpen {...iconProps} />;
+      case "attendance_alert":
+        return <Calendar {...iconProps} />;
+      case "announcement":
+        return <Megaphone {...iconProps} />;
+      case "message":
+        return <MessageSquare {...iconProps} />;
+      case "parent_meeting":
+        return <Users {...iconProps} />;
+      case "fee_reminder":
+        return <Wallet {...iconProps} />;
+      case "account_action":
+        return <User {...iconProps} />;
+      case "behavior_alert":
+        return <AlertTriangle {...iconProps} />;
+      case "system":
+        return <Settings {...iconProps} />;
+      case "transactions_created":
+        return <CreditCard {...iconProps} />;
+      case "inbox_new":
+        return <Inbox {...iconProps} />;
+      default:
+        if (activityType.startsWith("invoice_")) return <FileText {...iconProps} />;
+        if (activityType.startsWith("recurring_")) return <Repeat {...iconProps} />;
+        return <Icons.Notifications size={16} className="text-muted-foreground" />;
+    }
   };
 
-  const description = getNotificationDescription(
-    activity.type,
-    metadata,
-    user,
-    t,
-  );
+  const description = getNotificationDescription(activity, user, t);
 
   const notificationContent = (
-    <>
-      <div>
-        <div className="h-9 w-9 flex items-center justify-center space-y-0 border rounded-full">
+    <div className="flex gap-3 w-full">
+      <div className="relative shrink-0 mt-0.5">
+        <div className="h-8 w-8 flex items-center justify-center border rounded-full bg-secondary/30">
           {getNotificationIcon(activity.type)}
         </div>
+        {isUnread && (
+          <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#FFD02B]" />
+          </span>
+        )}
       </div>
-      <div>
-        <p
-          className={cn(
-            "text-sm",
-            activity.status === "unread" && "font-medium",
+
+      <div className="flex-1 min-w-0">
+        <div className="flex flex-col">
+          <p className={cn(
+            "text-xs leading-normal break-words transition-colors",
+            isUnread ? "font-medium text-foreground" : "font-normal"
+          )}>
+            {description}
+          </p>
+          
+          {activity.message && activity.message !== description && (
+            <p className="text-[11px] text-[#606060] line-clamp-2 leading-relaxed mt-0.5">
+              {activity.message}
+            </p>
           )}
-        >
-          {description}
-        </p>
-        <span className="text-xs text-[#606060]">
-          {t("notifications.time_ago", {
-            time: formatDistanceToNow(new Date(activity.createdAt)),
-          })}
-        </span>
+
+          <div className="flex items-center gap-2 mt-1 px-0">
+             <span className="text-[10px] text-[#606060]/70 font-medium">
+                {t("notifications.time_ago", {
+                  time: formatDistanceToNow(new Date(activity.createdAt)),
+                })}
+             </span>
+          </div>
+        </div>
       </div>
-    </>
+    </div>
   );
 
   const actionButton = markMessageAsRead && (
-    <div>
+    <div className="shrink-0 self-start mt-0.5">
       <Button
         size="icon"
-        variant="secondary"
-        className="rounded-full bg-transparent dark:hover:bg-[#1A1A1A] hover:bg-[#F6F6F3]"
-        onClick={() => markMessageAsRead(id)}
+        variant="ghost"
+        className="rounded-full h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent"
+        onClick={(e) => {
+          e.stopPropagation();
+          markMessageAsRead(id);
+        }}
         title={t("notifications.archive_button")}
       >
-        <Icons.Inventory2 />
+        <Icons.Inventory2 size={14} />
       </Button>
     </div>
   );
 
   return (
-    <NotificationLink
-      activityType={activity.type}
-      recordId={recordId}
-      metadata={metadata}
-      onNavigate={() => setOpen(false)}
-      className="flex items-between space-x-4 flex-1 text-left"
-      actionButton={actionButton}
-    >
-      {notificationContent}
-    </NotificationLink>
+    <div className="group">
+      <NotificationLink
+        activityType={activity.type}
+        recordId={recordId}
+        metadata={metadata}
+        onNavigate={() => setOpen(false)}
+        className="flex-1 text-left outline-none"
+        actionButton={actionButton}
+      >
+        {notificationContent}
+      </NotificationLink>
+    </div>
   );
 }

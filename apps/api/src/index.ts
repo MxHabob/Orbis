@@ -13,29 +13,12 @@ import { realtimeHandler } from "./services/realtime";
 const app = new OpenAPIHono<HonoEnv>();
 
 app.use(httpLogger());
-app.get("/realtime", (c) => realtimeHandler(c));
-app.use("*", async (c, next) => {
-  const session = await auth.api.getSession({
-    headers: c.req.raw.headers,
-  });
 
-  if (!session) {
-    c.set("user", null);
-    c.set("session", null);
-    await next();
-    return;
-  }
-
-  c.set("user", session.user);
-  c.set("session", session.session);
-  await next();
-});
 app.use(
   secureHeaders({
     crossOriginResourcePolicy: "cross-origin",
   }),
 );
-
 
 app.use(
   "*",
@@ -65,6 +48,25 @@ app.use(
     maxAge: 86400,
   }),
 );
+
+app.use("*", async (c, next) => {
+  const session = await auth.api.getSession({
+    headers: c.req.raw.headers,
+  });
+
+  if (!session) {
+    c.set("user", null);
+    c.set("session", null);
+    await next();
+    return;
+  }
+
+  c.set("user", session.user);
+  c.set("session", session.session);
+  await next();
+});
+
+app.get("/realtime", (c) => realtimeHandler(c));
 
 app.use(
   "/trpc/*",

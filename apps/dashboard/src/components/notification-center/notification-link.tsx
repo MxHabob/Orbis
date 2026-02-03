@@ -24,6 +24,11 @@ const SUPPORTED_NOTIFICATION_TYPES = [
   "recurring_series_completed",
   "recurring_series_paused",
   "recurring_invoice_upcoming",
+  "grade_published",
+  "new_assessment",
+  "attendance_alert",
+  "announcement",
+  "message",
 ];
 
 export function isNotificationClickable(activityType: string): boolean {
@@ -89,41 +94,50 @@ export function NotificationLink({
         case "inbox_needs_review":
         case "inbox_auto_matched":
         case "inbox_cross_currency_matched":
-          // Use the inboxId from metadata to open the inbox details sheet
           if (metadata?.inboxId) {
             setInboxParams({ inboxId: metadata.inboxId, type: "details" });
           } else {
-            // Fallback to inbox page if no inboxId
             router.push("/inbox");
           }
           break;
 
         case "recurring_series_started":
         case "recurring_series_completed":
-          // Open the invoice details for the generated invoice
           if (metadata?.invoiceId) {
             setInvoiceParams({
               invoiceId: metadata.invoiceId,
               type: "details",
             });
           } else if (recordId) {
-            // Fallback: open the edit recurring sheet
             setInvoiceParams({ editRecurringId: recordId });
           }
           break;
 
         case "recurring_series_paused":
-          // Open the edit recurring sheet to let user resume/review the series
+        case "recurring_invoice_upcoming":
           if (recordId) {
             setInvoiceParams({ editRecurringId: recordId });
           }
           break;
 
-        case "recurring_invoice_upcoming":
-          // Open the edit recurring sheet to let user review/modify the series
-          if (recordId) {
-            setInvoiceParams({ editRecurringId: recordId });
-          }
+        case "grade_published":
+          router.push("/grades");
+          break;
+
+        case "new_assessment":
+          router.push("/assessments");
+          break;
+
+        case "attendance_alert":
+          router.push("/attendance");
+          break;
+
+        case "announcement":
+          router.push("/announcements");
+          break;
+
+        case "message":
+          router.push("/messages");
           break;
 
         default:
@@ -136,7 +150,7 @@ export function NotificationLink({
 
   if (isClickable) {
     return (
-      <div className="flex items-between justify-between space-x-4 px-3 py-3 hover:bg-secondary">
+      <div className="flex items-center justify-between space-x-4 px-4 py-3 hover:bg-secondary/50 transition-colors">
         <button className={className} onClick={handleClick} type="button">
           {children}
         </button>
@@ -147,8 +161,8 @@ export function NotificationLink({
 
   // Non-clickable notification
   return (
-    <div className="flex items-between space-x-4 px-3 py-3">
-      <div className="flex items-between justify-between space-x-4 flex-1">
+    <div className="flex items-center justify-between space-x-4 px-4 py-3">
+      <div className="flex-1">
         {children}
       </div>
       {actionButton}

@@ -16,21 +16,28 @@ interface NotificationMetadata {
   [key: string]: any;
 }
 
+interface NotificationActivity {
+  type: string;
+  title: string;
+  message: string;
+  metadata?: NotificationMetadata;
+}
+
 type NotificationDescriptionHandler = (
-  metadata: NotificationMetadata,
+  activity: NotificationActivity,
   user: NotificationUser | undefined,
   t: UseI18nReturn,
 ) => string;
 
 const handleTransactionsCreated: NotificationDescriptionHandler = (
-  metadata,
+  activity,
   user,
   t,
 ) => {
+  const metadata = activity.metadata || {};
   const count = metadata?.count || metadata?.transactionCount || 1;
   const transaction = metadata?.transaction;
 
-  // For single transactions, show rich details
   if (count === 1 && transaction) {
     const formattedAmount =
       formatAmount({
@@ -49,14 +56,14 @@ const handleTransactionsCreated: NotificationDescriptionHandler = (
     });
   }
 
-  // For multiple transactions, use count-based messages
   if (count <= 5) {
     return t("notifications.transactions_created.title", { count });
   }
   return t("notifications.transactions_created.title_many", { count });
 };
 
-const handleInboxNew: NotificationDescriptionHandler = (metadata, user, t) => {
+const handleInboxNew: NotificationDescriptionHandler = (activity, user, t) => {
+  const metadata = activity.metadata || {};
   const count = metadata?.totalCount || 1;
   const type = metadata?.type;
   const provider = metadata?.provider ?? "";
@@ -77,10 +84,11 @@ const handleInboxNew: NotificationDescriptionHandler = (metadata, user, t) => {
 };
 
 const handleInvoicePaid: NotificationDescriptionHandler = (
-  metadata,
+  activity,
   user,
   t,
 ) => {
+  const metadata = activity.metadata || {};
   const invoiceNumber = metadata?.invoiceNumber;
   const customerName = metadata?.customerName;
   const source = metadata?.source;
@@ -121,10 +129,11 @@ const handleInvoicePaid: NotificationDescriptionHandler = (
 };
 
 const handleInvoiceOverdue: NotificationDescriptionHandler = (
-  metadata,
+  activity,
   user,
   t,
 ) => {
+  const metadata = activity.metadata || {};
   const invoiceNumber = metadata?.invoiceNumber;
   return invoiceNumber
     ? t("notifications.invoice_overdue.with_number", { invoiceNumber })
@@ -132,10 +141,11 @@ const handleInvoiceOverdue: NotificationDescriptionHandler = (
 };
 
 const handleInvoiceScheduled: NotificationDescriptionHandler = (
-  metadata,
+  activity,
   user,
   t,
 ) => {
+  const metadata = activity.metadata || {};
   const invoiceNumber = metadata?.invoiceNumber;
   const scheduledAt = metadata?.scheduledAt;
   const customerName = metadata?.customerName;
@@ -167,10 +177,11 @@ const handleInvoiceScheduled: NotificationDescriptionHandler = (
 };
 
 const handleInvoiceSent: NotificationDescriptionHandler = (
-  metadata,
+  activity,
   user,
   t,
 ) => {
+  const metadata = activity.metadata || {};
   const invoiceNumber = metadata?.invoiceNumber;
   const customerName = metadata?.customerName;
   if (invoiceNumber && customerName) {
@@ -188,10 +199,11 @@ const handleInvoiceSent: NotificationDescriptionHandler = (
 };
 
 const handleInvoiceReminderSent: NotificationDescriptionHandler = (
-  metadata,
+  activity,
   user,
   t,
 ) => {
+  const metadata = activity.metadata || {};
   const invoiceNumber = metadata?.invoiceNumber;
   const customerName = metadata?.customerName;
   if (invoiceNumber && customerName) {
@@ -209,10 +221,11 @@ const handleInvoiceReminderSent: NotificationDescriptionHandler = (
 };
 
 const handleInvoiceCancelled: NotificationDescriptionHandler = (
-  metadata,
+  activity,
   user,
   t,
 ) => {
+  const metadata = activity.metadata || {};
   const invoiceNumber = metadata?.invoiceNumber;
   const customerName = metadata?.customerName;
 
@@ -231,10 +244,11 @@ const handleInvoiceCancelled: NotificationDescriptionHandler = (
 };
 
 const handleInvoiceCreated: NotificationDescriptionHandler = (
-  metadata,
+  activity,
   user,
   t,
 ) => {
+  const metadata = activity.metadata || {};
   const invoiceNumber = metadata?.invoiceNumber;
   const customerName = metadata?.customerName;
   const amount = metadata?.amount;
@@ -272,10 +286,11 @@ const handleInvoiceCreated: NotificationDescriptionHandler = (
 };
 
 const handleInvoiceRefunded: NotificationDescriptionHandler = (
-  metadata,
+  activity,
   user,
   t,
 ) => {
+  const metadata = activity.metadata || {};
   const invoiceNumber = metadata?.invoiceNumber;
   const customerName = metadata?.customerName;
 
@@ -294,10 +309,11 @@ const handleInvoiceRefunded: NotificationDescriptionHandler = (
 };
 
 const handleRecurringSeriesStarted: NotificationDescriptionHandler = (
-  metadata,
+  activity,
   user,
   t,
 ) => {
+  const metadata = activity.metadata || {};
   const customerName = metadata?.customerName;
   const rawFrequency = metadata?.frequency;
   const endType = metadata?.endType;
@@ -333,10 +349,11 @@ const handleRecurringSeriesStarted: NotificationDescriptionHandler = (
 };
 
 const handleRecurringSeriesCompleted: NotificationDescriptionHandler = (
-  metadata,
+  activity,
   user,
   t,
 ) => {
+  const metadata = activity.metadata || {};
   const customerName = metadata?.customerName;
   const totalGenerated = metadata?.totalGenerated;
 
@@ -358,10 +375,11 @@ const handleRecurringSeriesCompleted: NotificationDescriptionHandler = (
 };
 
 const handleRecurringSeriesPaused: NotificationDescriptionHandler = (
-  metadata,
+  activity,
   user,
   t,
 ) => {
+  const metadata = activity.metadata || {};
   const customerName = metadata?.customerName;
   const reason = metadata?.reason;
   const failureCount = metadata?.failureCount;
@@ -389,10 +407,11 @@ const handleRecurringSeriesPaused: NotificationDescriptionHandler = (
 };
 
 const handleRecurringInvoiceUpcoming: NotificationDescriptionHandler = (
-  metadata,
+  activity,
   user,
   t,
 ) => {
+  const metadata = activity.metadata || {};
   const count = metadata?.count ?? 1;
   const invoices = metadata?.invoices as
     | Array<{
@@ -437,10 +456,11 @@ const handleRecurringInvoiceUpcoming: NotificationDescriptionHandler = (
 };
 
 const handleInboxAutoMatched: NotificationDescriptionHandler = (
-  metadata,
+  activity,
   user,
   t,
 ) => {
+  const metadata = activity.metadata || {};
   const documentName = metadata?.documentName;
   const transactionName = metadata?.transactionName;
   const documentAmount = metadata?.documentAmount;
@@ -521,10 +541,11 @@ const handleInboxAutoMatched: NotificationDescriptionHandler = (
 };
 
 const handleInboxNeedsReview: NotificationDescriptionHandler = (
-  metadata,
+  activity,
   user,
   t,
 ) => {
+  const metadata = activity.metadata || {};
   const documentName = metadata?.documentName;
   const transactionName = metadata?.transactionName;
   const matchType = metadata?.matchType;
@@ -616,10 +637,11 @@ const handleInboxNeedsReview: NotificationDescriptionHandler = (
 };
 
 const handleInboxCrossCurrencyMatched: NotificationDescriptionHandler = (
-  metadata,
+  activity,
   user,
   t,
 ) => {
+  const metadata = activity.metadata || {};
   const documentName = metadata?.documentName;
   const transactionName = metadata?.transactionName;
   const documentAmount = metadata?.documentAmount;
@@ -697,6 +719,14 @@ const handleInboxCrossCurrencyMatched: NotificationDescriptionHandler = (
   return t("notifications.inbox_cross_currency_matched.title");
 };
 
+const handleSchoolNotification: NotificationDescriptionHandler = (
+  activity,
+  user,
+  t,
+) => {
+  return activity.title || t("notifications.default.title");
+};
+
 const notificationHandlers: Record<string, NotificationDescriptionHandler> = {
   transactions_created: handleTransactionsCreated,
   inbox_new: handleInboxNew,
@@ -715,17 +745,28 @@ const notificationHandlers: Record<string, NotificationDescriptionHandler> = {
   recurring_series_completed: handleRecurringSeriesCompleted,
   recurring_series_paused: handleRecurringSeriesPaused,
   recurring_invoice_upcoming: handleRecurringInvoiceUpcoming,
+  // Educational notification types
+  grade_published: handleSchoolNotification,
+  new_assessment: handleSchoolNotification,
+  attendance_alert: handleSchoolNotification,
+  announcement: handleSchoolNotification,
+  message: handleSchoolNotification,
+  parent_meeting: handleSchoolNotification,
+  fee_reminder: handleSchoolNotification,
+  account_action: handleSchoolNotification,
+  behavior_alert: handleSchoolNotification,
+  system: handleSchoolNotification,
 };
 
 export function getNotificationDescription(
-  activityType: string,
-  metadata: NotificationMetadata,
+  activity: NotificationActivity,
   user: NotificationUser | undefined,
   t: UseI18nReturn,
 ): string {
-  const handler = notificationHandlers[activityType];
+  const handler = notificationHandlers[activity.type];
   if (handler) {
-    return handler(metadata, user, t);
+    return handler(activity, user, t);
   }
-  return t("notifications.default.title");
+
+  return activity.title || t("notifications.default.title");
 }
