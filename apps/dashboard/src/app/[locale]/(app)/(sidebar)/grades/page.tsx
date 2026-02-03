@@ -10,6 +10,7 @@ import { GradesSkeleton } from "@/components/tables/grades/skeleton";
 import { getInitialTableSettings } from "@/utils/columns";
 import { ErrorBoundary } from "next/dist/client/components/error-boundary";
 import { ErrorFallback } from "@/components/error-fallback";
+import { GradesUploadZone } from "@/components/grades/grades-upload-zone";
 
 export const metadata: Metadata = {
   title: "Grade | Entity",
@@ -46,16 +47,16 @@ export default async function GradesPage() {
 
   return (
       <ScrollableContent>
-        <div className="flex flex-col gap-6">
-
-          <GradeGridHeader initialData={initialData} defaults={defaults} />
-
-          <ErrorBoundary errorComponent={ErrorFallback}>
-            <Suspense fallback={<GradesSkeleton />}>
-              <GradeGridWrapper initialSettings={initialSettings} />
-            </Suspense>
-          </ErrorBoundary>
-        </div>
+        <GradesUploadZone>
+          <div className="flex flex-col gap-6">
+            <GradeGridHeader initialData={initialData} defaults={defaults} />
+            <ErrorBoundary errorComponent={ErrorFallback}>
+              <Suspense fallback={<GradesSkeleton />}>
+                <GradeGridWrapper initialSettings={initialSettings} />
+              </Suspense>
+            </ErrorBoundary>
+          </div>
+        </GradesUploadZone>
       </ScrollableContent>
   );
 }

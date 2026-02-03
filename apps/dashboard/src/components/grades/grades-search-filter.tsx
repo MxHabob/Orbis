@@ -224,9 +224,9 @@ export function GradesSearchFilter() {
                     key={c.id}
                     id={c.id}
                     name={`${c.name} ${c.division ? `- ${c.division}` : ""}`}
-                    checked={filter.classId === c.id}
+                    checked={filter.selectedClassId === c.id}
                     onCheckedChange={() =>
-                      setFilter({ classId: filter.classId === c.id ? null : c.id })
+                      setFilter({ selectedClassId: filter.selectedClassId === c.id ? null : c.id })
                     }
                   />
                 ))}
@@ -240,9 +240,9 @@ export function GradesSearchFilter() {
                     key={subject.id}
                     id={subject.id}
                     name={subject.name}
-                    checked={filter.subjectId === subject.id}
+                    checked={filter.selectedSubjectId === subject.id}
                     onCheckedChange={() =>
-                      setFilter({ subjectId: filter.subjectId === subject.id ? null : subject.id })
+                      setFilter({ selectedSubjectId: filter.selectedSubjectId === subject.id ? null : subject.id })
                     }
                   />
                 ))}

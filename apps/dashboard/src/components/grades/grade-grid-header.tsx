@@ -9,7 +9,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@midday/ui/select";
-import { Label } from "@midday/ui/label";
+import { GradesActions } from "./grades-actions";
+import { GradesColumnVisibility } from "./grades-column-visibility";
+import { GradesSearchFilter } from "./grades-search-filter";
 
 interface GradeGridHeaderProps {
   initialData: {
@@ -50,9 +52,9 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
   }, [defaults, yearId, termId, month, setYearId, setTermId, setMonth]);
 
   return (
-    <div className="flex flex-wrap items-center gap-6 p-6 border rounded-xl bg-background/50 backdrop-blur-sm shadow-sm">
-      <div className="flex flex-col gap-2 min-w-[140px]">
-        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Academic Year</Label>
+    <div className="flex flex-wrap items-center py-2 justify-between">
+      <div className="flex gap-6">
+        <GradesSearchFilter/>
         <Select
           value={yearId?.toString()}
           onValueChange={(val) => setYearId(parseInt(val))}
@@ -68,10 +70,7 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
             ))}
           </SelectContent>
         </Select>
-      </div>
 
-      <div className="flex flex-col gap-2 min-w-[160px]">
-        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Class</Label>
         <Select
           value={selectedClassId?.toString()}
           onValueChange={(val) => setSelectedClassId(parseInt(val))}
@@ -87,10 +86,7 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
             ))}
           </SelectContent>
         </Select>
-      </div>
 
-      <div className="flex flex-col gap-2 min-w-[160px]">
-        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Subject</Label>
         <Select
           value={selectedSubjectId?.toString()}
           onValueChange={(val) => setSelectedSubjectId(parseInt(val))}
@@ -106,10 +102,7 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
             ))}
           </SelectContent>
         </Select>
-      </div>
 
-      <div className="flex flex-col gap-2 min-w-[140px]">
-        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Term</Label>
         <Select
           value={termId?.toString()}
           onValueChange={(val) => setTermId(parseInt(val))}
@@ -127,10 +120,7 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
               ))}
           </SelectContent>
         </Select>
-      </div>
 
-      <div className="flex flex-col gap-2 min-w-[130px]">
-        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Month</Label>
         <Select
           value={month?.toString()}
           onValueChange={(val) => setMonth(parseInt(val))}
@@ -146,6 +136,9 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
             ))}
           </SelectContent>
         </Select>
+      </div>
+      <div className="flex gap-2">
+        <GradesActions/>
       </div>
     </div>
   );
