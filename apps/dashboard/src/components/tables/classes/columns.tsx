@@ -24,7 +24,7 @@ export interface ClassesTableMeta {
   setSearchValue?: Dispatch<SetStateAction<string>>;
 }
 
-export type Class = RouterOutputs["classes"]["getAll"];
+export type Class = RouterOutputs["classes"]["getAll"]["data"];
 
 // Flatten classes to include both parents and children with hierarchy info
 export function flattenClasses(classes: any[]): any[] {

@@ -1,15 +1,15 @@
-import { InvoiceSearchFilter } from "@/components/invoice-search-filter";
-import { InvoiceColumnVisibility } from "./invoice-column-visibility";
-import { OpenInvoiceSheet } from "./open-invoice-sheet";
+"use client";
 
-export function InvoiceHeader() {
+import { ReportsSearchFilter } from "./reports-search-filter";
+import { InvoiceColumnVisibility } from "./invoice-column-visibility";
+
+export function ReportsHeader() {
   return (
-    <div className="flex items-center justify-between">
-      <InvoiceSearchFilter />
+    <div className="flex items-center justify-between py-4">
+      <ReportsSearchFilter />
 
       <div className="hidden sm:flex space-x-2">
         <InvoiceColumnVisibility />
-        <OpenInvoiceSheet />
       </div>
     </div>
   );

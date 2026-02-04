@@ -72,14 +72,8 @@ export function ClassEditForm({ data }: Props) {
   };
 
   const form = useZodForm(formSchema, {
-    defaultValues,
+    values: defaultValues,
   });
-
-  useEffect(() => {
-    if (data) {
-      form.reset(defaultValues);
-    }
-  }, [data, form]);
 
   const updateClassMutation = useMutation(
     trpc.classes.update.mutationOptions({

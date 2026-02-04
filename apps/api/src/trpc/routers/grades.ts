@@ -3,7 +3,8 @@ import {
   getStudentGrades, 
   createGradeEntry, 
   updateGradeEntry, 
-  bulkImportGrades 
+  bulkImportGrades,
+  getClassStatistics
 } from "@midday/db/queries";
 import { 
   createGradeEntrySchema, 
@@ -47,5 +48,11 @@ export const gradesRouter = createTRPCRouter({
           input.gradeData, 
           ctx.session.user.id
       );
+    }),
+
+  getClassStatistics: protectedProcedure
+    .input(z.object({ classId: z.string() }))
+    .query(async ({ input }) => {
+      return getClassStatistics(input.classId);
     }),
 });

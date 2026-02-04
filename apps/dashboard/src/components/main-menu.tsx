@@ -8,8 +8,6 @@ import { useEffect, useState } from "react";
 
 const icons = {
   "/": () => <Icons.Overview size={20} />,
-  "/classes": () => <Icons.Transactions size={20} />,
-  "/subjects": () => <Icons.Category size={20} />,
   "/grades": () => <Icons.Bolt size={20} />,
   "/settings": () => <Icons.Settings size={20} />,
   "/reports": () => <Icons.Customers size={20} />,
@@ -19,14 +17,6 @@ const items = [
   {
     path: "/",
     name: "Overview",
-  },
-  {
-    path: "/classes",
-    name: "Classes",
-  },
-  {
-    path: "/subjects",
-    name: "Subjects",
   },
   {
     path: "/grades",
@@ -51,19 +41,15 @@ const items = [
     children: [
       { path: "/settings", name: "General" },
       { path: "/settings/accounts", name: "Bank Connections" },
-      { path: "/settings/users", name: "Users" },
-      { path: "/settings/classes", name: "Classes" },
-      { path: "/settings/holidays", name: "Holidays" },
-      { path: "/settings/academic-years", name: "Academic Years" },
       { path: "/settings/staff", name: "Staff & Teachers" },
+      { path: "/settings/classes", name: "Classes" },
+      { path: "/settings/subjects", name: "Subjects" },
     ],
   },
 ];
 
 // Known menu base paths that should not be treated as chat IDs
 const KNOWN_MENU_PATHS = [
-  "/students",
-  "/subjects",
   "/grades",
   "/exams",
   "/fees",

@@ -62,12 +62,8 @@ export function CategoryEditForm({ data }: Props) {
   };
 
   const form = useZodForm(formSchema, {
-    defaultValues,
+    values: defaultValues,
   });
-
-  useEffect(() => {
-    form.reset(defaultValues);
-  }, [data, form]);
 
   const updateCategoryMutation = useMutation(
     trpc.classes.update.mutationOptions({

@@ -44,14 +44,8 @@ export function SubjectEditForm({ data }: Props) {
   };
 
   const form = useZodForm(formSchema, {
-    defaultValues,
+    values: defaultValues,
   });
-
-  useEffect(() => {
-    if (data) {
-      form.reset(defaultValues);
-    }
-  }, [data, form]);
 
   const updateSubjectMutation = useMutation(
     trpc.subjects.update.mutationOptions({

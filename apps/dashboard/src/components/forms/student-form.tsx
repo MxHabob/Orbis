@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { useStudentParams } from "@/hooks/use-student-params";
 import { useZodForm } from "@/hooks/use-zod-form";
 import { useTRPC } from "@/trpc/client";
@@ -77,19 +78,21 @@ export function StudentForm({ data }: Props) {
     }),
   );
 
+  const defaultValues = React.useMemo(() => ({
+    id: data?.userId,
+    name: data?.name ?? "",
+    email: data?.email ?? "",
+    phone: data?.phone ?? "",
+    sex: (data?.sex as 'male' | 'female' | 'unspecified') ?? "unspecified",
+    studentNumber: data?.studentNumber ?? "",
+    secretNumber: data?.secretNumber ?? "",
+    currentClassId: data?.currentClassId?.toString() ?? classId ?? "",
+    status: (data?.status as any) ?? "active",
+    note: data?.stats?.note ?? "",
+  }), [data, classId]);
+
   const form = useZodForm(formSchema, {
-    defaultValues: {
-      id: data?.userId,
-      name: data?.name ?? "",
-      email: data?.email ?? "",
-      phone: data?.phone ?? "",
-      sex: data?.sex ?? "unspecified",
-      studentNumber: data?.studentNumber ?? "",
-      secretNumber: data?.secretNumber ?? "",
-      currentClassId: data?.currentClassId?.toString() ?? classId ?? "",
-      status: data?.status ?? "active",
-      note: data?.stats?.note ?? "",
-    },
+    values: defaultValues,
   });
 
   const handleSubmit = (values: z.infer<typeof formSchema>) => {
@@ -286,7 +289,7 @@ export function StudentForm({ data }: Props) {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {classes?.map((cls) => (
+                              {classes?.data?.map((cls) => (
                                 <SelectItem key={cls.id} value={cls.id.toString()}>
                                   {cls.name} {cls.division ? `(${cls.division})` : ""}
                                 </SelectItem>

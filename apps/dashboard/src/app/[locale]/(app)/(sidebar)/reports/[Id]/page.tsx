@@ -1,14 +1,14 @@
+import { AverageGrade } from "@/components/average-grade";
 import { CollapsibleSummary } from "@/components/collapsible-summary";
 import { CustomerSummarySkeleton } from "@/components/customer-summary-skeleton";
 import { StudentsHeader } from "@/components/customers-header";
 import { ErrorFallback } from "@/components/error-fallback";
-import { InactiveClients } from "@/components/inactive-clients";
-import { MostActiveClient } from "@/components/most-active-client";
-import { NewStudentsThisMonth } from "@/components/new-customers-this-month";
+import { FailedStudents } from "@/components/failed-students";
+import { PassedStudents } from "@/components/passed-students";
 import { ScrollableContent } from "@/components/scrollable-content";
 import { DataTable } from "@/components/tables/students/data-table";
 import { CustomersSkeleton } from "@/components/tables/students/skeleton";
-import { TopRevenueClient } from "@/components/top-revenue-client";
+import { TotalStudents } from "@/components/total-students";
 import { loadCustomerFilterParams } from "@/hooks/use-customer-filter-params";
 import { loadSortParams } from "@/hooks/use-sort-params";
 import { HydrateClient, batchPrefetch, trpc } from "@/trpc/server";
@@ -19,7 +19,7 @@ import type { SearchParams } from "nuqs";
 import { Suspense } from "react";
 
 export const metadata: Metadata = {
-  title: "Students | Midday",
+  title: "Class Report | Midday",
 };
 
 type Props = {
@@ -34,7 +34,6 @@ export default async function Page(props: Props) {
   const filter = loadCustomerFilterParams(searchParams);
   const { sort } = loadSortParams(searchParams);
 
-  // Get unified table settings from cookie
   const initialSettings = await getInitialTableSettings("students");
 
   if (!Id) return null;
@@ -45,9 +44,11 @@ export default async function Page(props: Props) {
     sort: sort ?? undefined,
   });
 
-  if (infiniteOptions) {
-    batchPrefetch([infiniteOptions]);
-  }
+  // Prefetch class statistics
+  batchPrefetch([
+    infiniteOptions,
+    trpc.grades.getClassStatistics.queryOptions({ classId: Id }),
+  ]);
 
   return (
     <HydrateClient>
@@ -55,18 +56,18 @@ export default async function Page(props: Props) {
         <div className="flex flex-col gap-6">
           <CollapsibleSummary>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 pt-6">
-              {/* <Suspense fallback={<CustomerSummarySkeleton />}>
-                <MostActiveClient />
-              </Suspense> */}
-              {/* <Suspense fallback={<CustomerSummarySkeleton />}>
-                <InactiveClients />
-              </Suspense> */}
-              {/* <Suspense fallback={<CustomerSummarySkeleton />}>
-                <TopRevenueClient />
-              </Suspense> */}
-              {/* <Suspense fallback={<CustomerSummarySkeleton />}>
-                <NewStudentsThisMonth />
-              </Suspense> */}
+              <Suspense fallback={<CustomerSummarySkeleton />}>
+                <TotalStudents />
+              </Suspense>
+              <Suspense fallback={<CustomerSummarySkeleton />}>
+                <PassedStudents />
+              </Suspense>
+              <Suspense fallback={<CustomerSummarySkeleton />}>
+                <FailedStudents />
+              </Suspense>
+              <Suspense fallback={<CustomerSummarySkeleton />}>
+                <AverageGrade />
+              </Suspense>
             </div>
           </CollapsibleSummary>
 

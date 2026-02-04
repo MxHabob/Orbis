@@ -219,7 +219,7 @@ export function GradesSearchFilter() {
 
             <FilterMenuItem icon={Icons.Accounts} label="Class">
               <div className="max-h-[300px] overflow-y-auto">
-                {classes?.map((c) => (
+                {classes?.data?.map((c) => (
                   <FilterCheckboxItem
                     key={c.id}
                     id={c.id}

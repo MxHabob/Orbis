@@ -29,7 +29,7 @@ export function SelectParentClass({
   );
 
   const parentClasses =
-    data
+    data?.data
       ?.filter(
         (cls) => !cls.parentClassId && !excludeIds.includes(cls.id),
       )
@@ -39,7 +39,7 @@ export function SelectParentClass({
       })) ?? [];
 
   const selectedParent = parentId
-    ? data?.find((cls) => cls.id === parentId)
+    ? data?.data?.find((cls) => cls.id === parentId)
     : null;
     
   const selectedValue = selectedParent

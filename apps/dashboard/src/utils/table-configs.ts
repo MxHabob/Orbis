@@ -23,6 +23,14 @@ export const STICKY_COLUMNS: Record<TableId, StickyColumnConfig[]> = {
   grades: [
     { id: "studentName", width: 300 },
   ],
+  classes: [
+    { id: "select", width: 50 },
+    { id: "name", width: 250 },
+  ],
+  reports: [
+    { id: "select", width: 50 },
+    { id: "name", width: 250 },
+  ],
 };
 
 /**
@@ -70,6 +78,14 @@ export const SORT_FIELD_MAPS: Record<TableId, Record<string, string>> = {
   },
   vault: {},
   grades: {},
+  classes: {
+    name: "name",
+    description: "description",
+  },
+  reports: {
+    name: "name",
+    description: "description",
+  },
 };
 
 export const NON_REORDERABLE_COLUMNS: Record<TableId, Set<string>> = {
@@ -79,6 +95,8 @@ export const NON_REORDERABLE_COLUMNS: Record<TableId, Set<string>> = {
   students: new Set(["name", "actions"]),
   vault: new Set(["select", "title", "actions"]),
   grades: new Set(["studentName", "total"]),
+  classes: new Set(["select", "name", "actions"]),
+  reports: new Set(["select", "name", "actions"]),
 };
 
 /**
@@ -91,6 +109,8 @@ export const ROW_HEIGHTS: Record<TableId, number> = {
   students: 45,
   vault: 45,
   grades: 45,
+  classes: 57,
+  reports: 57,
 };
 
 /**
@@ -101,6 +121,8 @@ export const SUMMARY_GRID_HEIGHTS: Partial<Record<TableId, number>> = {
   customers: 180,
   students: 0,
   grades: 0,
+  classes: 0,
+  reports: 0,
 };
 
 /**
@@ -151,6 +173,22 @@ export const TABLE_CONFIGS: Record<TableId, TableConfig> = {
     sortFieldMap: SORT_FIELD_MAPS.grades,
     nonReorderableColumns: NON_REORDERABLE_COLUMNS.grades,
     rowHeight: ROW_HEIGHTS.grades,
+  },
+  classes: {
+    tableId: "classes",
+    stickyColumns: STICKY_COLUMNS.classes,
+    sortFieldMap: SORT_FIELD_MAPS.classes,
+    nonReorderableColumns: NON_REORDERABLE_COLUMNS.classes,
+    rowHeight: ROW_HEIGHTS.classes,
+    summaryGridHeight: SUMMARY_GRID_HEIGHTS.classes,
+  },
+  reports: {
+    tableId: "reports",
+    stickyColumns: STICKY_COLUMNS.reports,
+    sortFieldMap: SORT_FIELD_MAPS.reports,
+    nonReorderableColumns: NON_REORDERABLE_COLUMNS.reports,
+    rowHeight: ROW_HEIGHTS.reports,
+    summaryGridHeight: SUMMARY_GRID_HEIGHTS.reports,
   },
 };
 

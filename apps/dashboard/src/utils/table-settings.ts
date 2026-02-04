@@ -7,7 +7,7 @@ import type {
 /**
  * Table identifiers for all supported tables
  */
-export type TableId = "transactions" | "customers" | "invoices" | "vault" | "students" | "grades";
+export type TableId = "transactions" | "customers" | "invoices" | "vault" | "students" | "grades" | "classes" | "reports";
 
 /**
  * Settings for a single table
@@ -49,13 +49,15 @@ export const defaultHiddenColumns: Record<TableId, string[]> = {
   vault: [], // No hidden columns by default
   students: [],
   grades: [],
+  classes: [],
+  reports: [],
 };
 
 /**
  * Get default column visibility for a table
  */
 export function getDefaultColumnVisibility(tableId: TableId): VisibilityState {
-  const columnsToHide = defaultHiddenColumns[tableId];
+  const columnsToHide = defaultHiddenColumns[tableId] || [];
   return columnsToHide.reduce(
     (acc, col) => {
       acc[col] = false;

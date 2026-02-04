@@ -56,7 +56,7 @@ export function DataTable() {
   );
 
   const flattenedData = React.useMemo(() => {
-    return flattenClasses(data as any ?? []);
+    return flattenClasses(data?.data as any ?? []);
   }, [data]);
 
   // Get search filter value
@@ -170,7 +170,6 @@ export function DataTable() {
             <TableRow
               className="hover:bg-muted/50 cursor-pointer"
               key={row.id}
-              onClick={() => router.push(`/classes/${row.original.id}/students`)}
             >
               {row.getVisibleCells().map((cell, index) => (
                 <TableCell

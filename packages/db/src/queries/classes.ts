@@ -1,17 +1,59 @@
 import { db } from "@db/client";
 import { academicYears, classes } from "@db/schema";
-import { eq, and, isNull, inArray } from "drizzle-orm";
+import { eq, and, isNull, inArray, ilike, sql, desc, asc, or } from "drizzle-orm";
 import { RedisCache } from "@midday/cache";
 
 const classCache = new RedisCache("classes", 60 * 60);
 
-export const getClassesV3 = async (academicYearId?: number) => {
-  const cacheKey = `root_classes_with_children:${academicYearId ?? "all"}`;
-  const cached = await classCache.get<any[]>(cacheKey);
-  if (cached) return cached;
+export const getClassesV3 = async (
+  params?: number | {
+    academicYearId?: number | string | null;
+    q?: string | null;
+    sort?: string[] | null;
+    flat?: boolean;
+    limit?: number;
+    offset?: number;
+  }
+) => {
+  const academicYearId = typeof params === 'number' 
+    ? params 
+    : (params?.academicYearId ? Number(params.academicYearId) : undefined);
+  const q = typeof params === 'object' ? params?.q : undefined;
+  const sort = typeof params === 'object' ? params?.sort : undefined;
+  const flat = typeof params === 'object' ? params?.flat : false;
+  const limit = typeof params === 'object' ? params?.limit : undefined;
+  const offset = typeof params === 'object' ? params?.offset : 0;
 
-  // Fetch root classes + year name directly
-  const roots = await db
+  const cacheKey = `classes_v3:${academicYearId ?? "all"}:${q ?? "none"}:${sort?.join(",") ?? "default"}:${flat}:${limit}:${offset}`;
+  const cached = await classCache.get<any[]>(cacheKey);
+  if (cached && !q && !sort && !limit) return cached; // Only use cache for default view
+
+  const orderBy = [];
+  if (sort?.length) {
+    sort.forEach((s) => {
+      const [column, direction] = s.split(":");
+      const dirFunc = direction === "desc" ? desc : asc;
+      switch (column) {
+        case "name": orderBy.push(dirFunc(classes.name)); break;
+        case "type": orderBy.push(dirFunc(classes.type)); break;
+        case "division": orderBy.push(dirFunc(classes.division)); break;
+        case "yearName": orderBy.push(dirFunc(academicYears.yearName)); break;
+      }
+    });
+  }
+  if (orderBy.length === 0) orderBy.push(asc(classes.name));
+
+  const where = and(
+    isNull(classes.deletedAt),
+    academicYearId ? eq(classes.academicYearId, academicYearId) : undefined,
+    q ? or(
+      ilike(classes.name, `%${q}%`),
+      ilike(classes.division, `%${q}%`)
+    ) : undefined,
+    !flat && !q ? isNull(classes.parentClassId) : undefined
+  );
+
+  const rootsQuery = db
     .select({
       id: classes.id,
       name: classes.name,
@@ -20,26 +62,49 @@ export const getClassesV3 = async (academicYearId?: number) => {
       color: classes.color,
       academicYearId: classes.academicYearId,
       parentClassId: classes.parentClassId,
-      yearName: academicYears.yearName,  // ← flattened
+      yearName: academicYears.yearName,
+      studentCount: sql<number>`(SELECT count(*) FROM enrollments e WHERE e.class_id = ${classes.id} AND e.deleted_at IS NULL)::int`,
+      scheduleCount: sql<number>`(SELECT count(*) FROM scheduled_lessons l WHERE l.class_id = ${classes.id})::int`,
+      parentClassName: sql<string | null>`(SELECT name FROM classes p WHERE p.id = ${classes.parentClassId})`,
     })
     .from(classes)
     .leftJoin(academicYears, eq(classes.academicYearId, academicYears.id))
-    .where(
-      and(
-        isNull(classes.deletedAt),
-        isNull(classes.parentClassId),
-        academicYearId ? eq(classes.academicYearId, academicYearId) : undefined
-      )
-    )
-    .orderBy(classes.id, classes.name);
+    .where(where)
+    .orderBy(...orderBy);
 
-  if (!roots.length) {
-    await classCache.set(cacheKey, [], 3600);
-    return [];
+  if (limit) {
+    rootsQuery.limit(limit);
+  }
+  if (offset) {
+    rootsQuery.offset(offset);
   }
 
-  // Fetch all children in one go
-  const children = await db
+  const rawRoots = await rootsQuery;
+  const roots = rawRoots.map(row => ({
+    id: row.id,
+    name: row.name,
+    type: row.type,
+    division: row.division,
+    color: row.color,
+    academicYearId: row.academicYearId,
+    parentClassId: row.parentClassId,
+    yearName: row.yearName,
+    _count: {
+      students: row.studentCount,
+      schedule: row.scheduleCount,
+    },
+    parentClass: {
+      name: row.parentClassName,
+    }
+  }));
+
+  if (flat || q || !roots.length || limit) {
+    if (!q && !sort && !flat && !limit) await classCache.set(cacheKey, roots, 3600);
+    return roots;
+  }
+
+  // Fetch all children for roots in one go (only for tree view without search)
+  const rawChildren = await db
     .select({
       id: classes.id,
       name: classes.name,
@@ -48,6 +113,8 @@ export const getClassesV3 = async (academicYearId?: number) => {
       color: classes.color,
       academicYearId: classes.academicYearId,
       parentClassId: classes.parentClassId,
+      studentCount: sql<number>`(SELECT count(*) FROM enrollments e WHERE e.class_id = ${classes.id} AND e.deleted_at IS NULL)::int`,
+      scheduleCount: sql<number>`(SELECT count(*) FROM scheduled_lessons l WHERE l.class_id = ${classes.id})::int`,
     })
     .from(classes)
     .where(
@@ -57,8 +124,16 @@ export const getClassesV3 = async (academicYearId?: number) => {
       )
     );
 
+  const children = rawChildren.map(row => ({
+    ...row,
+    _count: {
+      students: row.studentCount,
+      schedule: row.scheduleCount,
+    }
+  }));
+
   // Group children by parentId
-  const childrenMap = new Map<number, typeof children>();
+  const childrenMap = new Map<number, any[]>();
   for (const child of children) {
     const pid = child.parentClassId!;
     if (!childrenMap.has(pid)) childrenMap.set(pid, []);
@@ -72,7 +147,7 @@ export const getClassesV3 = async (academicYearId?: number) => {
     children: childrenMap.get(cls.id) ?? [],
   }));
 
-  await classCache.set(cacheKey, formatted, 3600);
+  if (!q && !sort && !flat) await classCache.set(cacheKey, formatted, 3600);
   return formatted;
 };
 

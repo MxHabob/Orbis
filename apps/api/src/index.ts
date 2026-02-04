@@ -66,7 +66,7 @@ app.use("*", async (c, next) => {
   await next();
 });
 
-app.get("/realtime", (c) => realtimeHandler(c));
+// app.get("/realtime", (c) => realtimeHandler(c));
 
 app.use(
   "/trpc/*",

@@ -1,16 +1,55 @@
-import { HydrateClient } from "@/trpc/server";
+import { ErrorFallback } from "@/components/error-fallback";
+import { ReportsHeader } from "@/components/invoice-header";
+import { ScrollableContent } from "@/components/scrollable-content";
+import { DataTable } from "@/components/tables/reports/data-table";
+import { ReportsSkeleton } from "@/components/tables/reports/skeleton";
+import { loadClassesFilterParams } from "@/hooks/use-classes-filter-params";
+import { loadSortParams } from "@/hooks/use-sort-params";
+import { HydrateClient, batchPrefetch, trpc } from "@/trpc/server";
+import { getInitialTableSettings } from "@/utils/columns";
 import type { Metadata } from "next";
+import { ErrorBoundary } from "next/dist/client/components/error-boundary";
+import type { SearchParams } from "nuqs";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "Reports | Entity",
 };
 
+type Props = {
+  searchParams: Promise<SearchParams>;
+};
 
-export default async function Reports() {
+export default async function Reports(props: Props) {
+  const searchParams = await props.searchParams;
+
+  const filter = loadClassesFilterParams(searchParams);
+  const { sort } = loadSortParams(searchParams);
+
+  // Get unified table settings from cookie
+  const initialSettings = await getInitialTableSettings("reports");
+
+  batchPrefetch([
+    trpc.classes.getAll.infiniteQueryOptions({
+      ...filter,
+      academicYearId: filter.academicYearId ? Number(filter.academicYearId) : undefined,
+      sort,
+    }),
+  ]);
 
   return (
     <HydrateClient>
-      <h2>Reports</h2>
+      <ScrollableContent>
+        <div className="flex flex-col gap-6">
+          <ReportsHeader />
+
+          <ErrorBoundary errorComponent={ErrorFallback}>
+            <Suspense fallback={<ReportsSkeleton />}>
+              <DataTable initialSettings={initialSettings} />
+            </Suspense>
+          </ErrorBoundary>
+        </div>
+      </ScrollableContent>
     </HydrateClient>
   );
 }

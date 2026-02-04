@@ -238,3 +238,100 @@ export const getGradeGridData = async (params: {
   }
 };
 
+export const getClassStatistics = async (classId: string) => {
+  const cacheKey = `class:${classId}:statistics`;
+  const cached = await gradeCache.get<{
+    totalCount: number;
+    passedCount: number;
+    failedCount: number;
+    averageGrade: number;
+  }>(cacheKey);
+
+  if (cached) return cached;
+
+  // Get all enrollments for this class
+  const enrolledStudents = await db
+    .select({
+      studentId: students.userId,
+    })
+    .from(enrollments)
+    .innerJoin(students, eq(enrollments.studentId, students.userId))
+    .where(
+      and(
+        eq(enrollments.classId, Number.parseInt(classId)),
+        eq(enrollments.status, "active")
+      )
+    );
+
+  const totalCount = enrolledStudents.length;
+
+  if (totalCount === 0) {
+    const emptyResult = {
+      totalCount: 0,
+      passedCount: 0,
+      failedCount: 0,
+      averageGrade: 0,
+    };
+    await gradeCache.set(cacheKey, emptyResult);
+    return emptyResult;
+  }
+
+  // Get all grades for students in this class
+  const studentIds = enrolledStudents.map((s) => s.studentId);
+  
+  const studentGrades = await db
+    .select({
+      studentId: gradeEntries.studentId,
+      score: gradeEntries.score,
+      maxScore: assessmentItems.maxScore,
+    })
+    .from(gradeEntries)
+    .innerJoin(assessmentItems, eq(gradeEntries.assessmentItemId, assessmentItems.id))
+    .where(inArray(gradeEntries.studentId, studentIds));
+
+  // Calculate statistics per student
+  const studentStats = new Map<string, { totalScore: number; maxTotalScore: number }>();
+
+  for (const grade of studentGrades) {
+    if (!grade.studentId || !grade.score || grade.score === "null" || grade.score === "") continue;
+    
+    const score = Number.parseFloat(grade.score || "0");
+    if (Number.isNaN(score)) continue;
+
+    const existing = studentStats.get(grade.studentId) || { totalScore: 0, maxTotalScore: 0 };
+    existing.totalScore += score;
+    existing.maxTotalScore += Number.parseFloat(grade.maxScore || "100");
+    studentStats.set(grade.studentId, existing);
+  }
+
+  let passedCount = 0;
+  let failedCount = 0;
+  let totalPercentage = 0;
+  let studentsWithGrades = 0;
+
+  for (const [, stats] of studentStats) {
+    if (stats.maxTotalScore === 0) continue;
+    
+    const percentage = (stats.totalScore / stats.maxTotalScore) * 100;
+    totalPercentage += percentage;
+    studentsWithGrades++;
+
+    if (percentage >= 50) {
+      passedCount++;
+    } else {
+      failedCount++;
+    }
+  }
+
+  const averageGrade = studentsWithGrades > 0 ? totalPercentage / studentsWithGrades : 0;
+
+  const result = {
+    totalCount,
+    passedCount,
+    failedCount,
+    averageGrade,
+  };
+
+  await gradeCache.set(cacheKey, result);
+  return result;
+};
