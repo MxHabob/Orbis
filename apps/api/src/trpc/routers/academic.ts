@@ -8,6 +8,9 @@ import { createTRPCRouter, protectedProcedure } from "@api/trpc/init";
 import {
   createAcademicTerm,
   createAcademicYear,
+  deleteAcademicTerm,
+  deleteAcademicYear,
+  getAcademicYearById,
   getAcademicYears,
   getCurrentAcademicYear,
   getCurrentTerm,
@@ -18,9 +21,28 @@ import {
 import { z } from "zod";
 
 export const academicRouter = createTRPCRouter({
-  getYears: protectedProcedure.query(async () => {
-    return getAcademicYears();
+  getYears: protectedProcedure
+    .input(
+      z.object({
+        cursor: z.string().nullish(),
+        pageSize: z.number().optional(),
+        sort: z.array(z.string()).optional(),
+        activeOnly: z.boolean().optional(),
+      }).optional(),
+    )
+    .query(async () => {
+      return getAcademicYears();
+    }),
+
+  getCurrentYear: protectedProcedure.query(async () => {
+    return getCurrentAcademicYear();
   }),
+
+  getYearById: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      return getAcademicYearById(input.id);
+    }),
 
   getTerms: protectedProcedure
     .input(z.object({ yearId: z.number() }))
@@ -40,6 +62,12 @@ export const academicRouter = createTRPCRouter({
       return updateAcademicYear(input.id, input);
     }),
 
+  deleteYear: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      return deleteAcademicYear(input.id);
+    }),
+
   createTerm: protectedProcedure
     .input(createAcademicTermSchema)
     .mutation(async ({ input }) => {
@@ -50,6 +78,12 @@ export const academicRouter = createTRPCRouter({
     .input(updateAcademicTermSchema)
     .mutation(async ({ input }) => {
       return updateAcademicTerm(input.id, input);
+    }),
+
+  deleteTerm: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      return deleteAcademicTerm(input.id);
     }),
 
   connectionStatus: protectedProcedure.query(async () => {

@@ -19,7 +19,7 @@ interface GetAcademicYearsParams {
  */
 export function useAcademicYearsQuery(params: GetAcademicYearsParams = {}) {
   const trpc = useTRPC();
-  return useSuspenseQuery(trpc.academicYear.get.queryOptions(params));
+  return useSuspenseQuery(trpc.academic.getYears.queryOptions(params));
 }
 
 /**
@@ -27,7 +27,7 @@ export function useAcademicYearsQuery(params: GetAcademicYearsParams = {}) {
  */
 export function useCurrentAcademicYearQuery() {
   const trpc = useTRPC();
-  return useSuspenseQuery(trpc.academicYear.getCurrent.queryOptions());
+  return useSuspenseQuery(trpc.academic.getCurrentYear.queryOptions());
 }
 
 /**
@@ -35,7 +35,7 @@ export function useCurrentAcademicYearQuery() {
  */
 export function useAcademicYearQuery(id: number) {
   const trpc = useTRPC();
-  return useSuspenseQuery(trpc.academicYear.getById.queryOptions({ id }));
+  return useSuspenseQuery(trpc.academic.getYearById.queryOptions({ id }));
 }
 
 /**
@@ -46,13 +46,13 @@ export function useCreateAcademicYearMutation() {
   const queryClient = useQueryClient();
 
   return useMutation(
-    trpc.academicYear.create.mutationOptions({
+    trpc.academic.createYear.mutationOptions({
       onSuccess: () => {
         queryClient.invalidateQueries({
-          queryKey: trpc.academicYear.get.queryKey(),
+          queryKey: trpc.academic.getYears.queryKey(),
         });
         queryClient.invalidateQueries({
-          queryKey: trpc.academicYear.getCurrent.queryKey(),
+          queryKey: trpc.academic.getCurrentYear.queryKey(),
         });
       },
     }),
@@ -67,16 +67,16 @@ export function useUpdateAcademicYearMutation() {
   const queryClient = useQueryClient();
 
   return useMutation(
-    trpc.academicYear.update.mutationOptions({
+    trpc.academic.updateYear.mutationOptions({
       onSuccess: (data, variables) => {
         queryClient.invalidateQueries({
-          queryKey: trpc.academicYear.get.queryKey(),
+          queryKey: trpc.academic.getYears.queryKey(),
         });
         queryClient.invalidateQueries({
-          queryKey: trpc.academicYear.getById.queryKey({ id: variables.id }),
+          queryKey: trpc.academic.getYearById.queryKey({ id: variables.id }),
         });
         queryClient.invalidateQueries({
-          queryKey: trpc.academicYear.getCurrent.queryKey(),
+          queryKey: trpc.academic.getCurrentYear.queryKey(),
         });
       },
     }),
@@ -91,16 +91,16 @@ export function useDeleteAcademicYearMutation() {
   const queryClient = useQueryClient();
 
   return useMutation(
-    trpc.academicYear.delete.mutationOptions({
+    trpc.academic.deleteYear.mutationOptions({
       onSuccess: (data, variables) => {
         queryClient.invalidateQueries({
-          queryKey: trpc.academicYear.get.queryKey(),
+          queryKey: trpc.academic.getYears.queryKey(),
         });
         queryClient.invalidateQueries({
-          queryKey: trpc.academicYear.getById.queryKey({ id: variables.id }),
+          queryKey: trpc.academic.getYearById.queryKey({ id: variables.id }),
         });
         queryClient.invalidateQueries({
-          queryKey: trpc.academicYear.getCurrent.queryKey(),
+          queryKey: trpc.academic.getCurrentYear.queryKey(),
         });
       },
     }),
@@ -112,10 +112,10 @@ export function useDeleteAcademicYearMutation() {
 /**
  * Hook to fetch terms associated with a specific academic year
  */
-export function useAcademicTermsQuery(academicYearId: number) {
+export function useAcademicTermsQuery(yearId: number) {
   const trpc = useTRPC();
   return useSuspenseQuery(
-    trpc.academicYear.getTerms.queryOptions({ academicYearId }),
+    trpc.academic.getTerms.queryOptions({ yearId }),
   );
 }
 
@@ -127,11 +127,11 @@ export function useCreateAcademicTermMutation() {
   const queryClient = useQueryClient();
 
   return useMutation(
-    trpc.academicYear.createTerm.mutationOptions({
+    trpc.academic.createTerm.mutationOptions({
       onSuccess: (data, variables) => {
         queryClient.invalidateQueries({
-          queryKey: trpc.academicYear.getTerms.queryKey({
-            academicYearId: variables.academicYearId,
+          queryKey: trpc.academic.getTerms.queryKey({
+            yearId: variables.academicYearId as number,
           }),
         });
       },
@@ -147,11 +147,11 @@ export function useUpdateAcademicTermMutation() {
   const queryClient = useQueryClient();
 
   return useMutation(
-    trpc.academicYear.updateTerm.mutationOptions({
+    trpc.academic.updateTerm.mutationOptions({
       onSuccess: () => {
-        // Since we don't always have the academicYearId here, we invalidate all terms
+        // Since we don't always have the yearId here, we invalidate all terms
         queryClient.invalidateQueries({
-          queryKey: trpc.academicYear.getTerms.queryKey(),
+          queryKey: trpc.academic.getTerms.queryKey(),
         });
       },
     }),
@@ -166,10 +166,10 @@ export function useDeleteAcademicTermMutation() {
   const queryClient = useQueryClient();
 
   return useMutation(
-    trpc.academicYear.deleteTerm.mutationOptions({
+    trpc.academic.deleteTerm.mutationOptions({
       onSuccess: () => {
         queryClient.invalidateQueries({
-          queryKey: trpc.academicYear.getTerms.queryKey(),
+          queryKey: trpc.academic.getTerms.queryKey(),
         });
       },
     }),

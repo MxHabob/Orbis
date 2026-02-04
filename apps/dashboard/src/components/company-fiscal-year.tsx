@@ -22,7 +22,7 @@ import { z } from "zod";
 import { Input } from "@midday/ui/input";
 
 const formSchema = z.object({
-  year: z.string().min(1).max(20),
+  yearName: z.string().min(1).max(20),
   startDate: z.coerce.date(),
   endDate: z.coerce.date().optional().nullable(),
 });
@@ -33,7 +33,7 @@ export function SchoolAcademicYear() {
 
   const form = useZodForm(formSchema, {
     defaultValues: {
-      year: data?.year ?? "",
+      yearName: data?.yearName ?? "",
       startDate: data?.startDate ? new Date(data.startDate) : new Date(),
       endDate: data?.endDate ? new Date(data.endDate) : null,
     },
@@ -63,7 +63,7 @@ export function SchoolAcademicYear() {
           <CardContent className="space-y-4">
             <FormField
               control={form.control}
-              name="year"
+              name="yearName"
               render={({ field }) => (
                 <FormItem className="max-w-[300px]">
                   <FormControl>

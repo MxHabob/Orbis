@@ -94,6 +94,8 @@ export const verifications = pgTable('verifications', {
 export const academicYears = pgTable('academic_years', {
   id: serial('id').primaryKey(),
   yearName: varchar('year_name', { length: 20 }).unique().notNull(), // مثال: 2025-2026
+  startDate: date('start_date'),
+  endDate: date('end_date'),
   isCurrent: boolean('is_current').default(false).notNull(),
   deletedAt: timestamp('deleted_at'),
 });

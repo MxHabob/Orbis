@@ -23,8 +23,7 @@ import {
 } from "@midday/ui/card";
 import { Input } from "@midday/ui/input";
 import { Label } from "@midday/ui/label";
-import { useMutation } from "@tanstack/react-query";
-import { AlertTriangle, ExternalLink, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 

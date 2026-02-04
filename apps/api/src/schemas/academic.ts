@@ -9,6 +9,14 @@ export const academicYearSchema = z.object({
     description: "Name of the academic year",
     example: "2025-2026",
   }),
+  startDate: z.string().nullable().optional().openapi({
+    description: "Start date of the academic year",
+    example: "2025-09-01",
+  }),
+  endDate: z.string().nullable().optional().openapi({
+    description: "End date of the academic year",
+    example: "2026-06-30",
+  }),
   isCurrent: z.boolean().openapi({
     description: "Whether this is the current academic year",
     example: true,

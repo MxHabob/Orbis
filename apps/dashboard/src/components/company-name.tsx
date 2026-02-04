@@ -1,7 +1,8 @@
 "use client";
 
-import { useUsersMutation, useUsersQuery } from "@/hooks/use-team";
+
 import { useZodForm } from "@/hooks/use-zod-form";
+import { authClient } from "@midday/auth/auth-client";
 import {
   Card,
   CardContent,
@@ -26,17 +27,16 @@ const formSchema = z.object({
 });
 
 export function CompanyName() {
-  const { data } = useUsersQuery();
-  const updateTeamMutation = useUsersMutation();
+  const { data, isPending } = authClient.useSession();
 
   const form = useZodForm(formSchema, {
     defaultValues: {
-      name: data?.[0]?.name ?? "",
+      name: data?.user?.name ?? "",
     },
   });
 
   const onSubmit = form.handleSubmit((data) => {
-    updateTeamMutation.mutate({ fullName: data.name });
+    // updateTeamMutation.mutate({ fullName: data.name });
   });
 
   return (
@@ -77,8 +77,8 @@ export function CompanyName() {
           <CardFooter className="flex justify-between">
             <div>Please use 32 characters at maximum.</div>
             <SubmitButton
-              isSubmitting={updateTeamMutation.isPending}
-              disabled={updateTeamMutation.isPending}
+              isSubmitting={isPending}
+              disabled={isPending}
             >
               Save
             </SubmitButton>

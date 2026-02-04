@@ -1,6 +1,6 @@
 "use client";
 
-import { useUsersMutation, useUsersQuery } from "@/hooks/use-team";
+import { authClient } from "@midday/auth/auth-client";
 import { Avatar, AvatarFallback, AvatarImage } from "@midday/ui/avatar";
 import {
   Card,
@@ -10,26 +10,12 @@ import {
   CardTitle,
 } from "@midday/ui/card";
 import { Spinner } from "@midday/ui/spinner";
-import { stripSpecialCharacters } from "@midday/utils";
 import { useRef } from "react";
 
 export function CompanyLogo() {
   const inputRef = useRef<HTMLInputElement>(null);
-  const { data } = useUsersQuery();
-  const { mutate: updateTeam } = useUsersMutation();
+  const { data, isPending } = authClient.useSession();
 
-  const handleUpload = async (evt: React.ChangeEvent<HTMLInputElement>) => {
-    const { files } = evt.target;
-    const selectedFile = files as FileList;
-
-    const filename = stripSpecialCharacters(selectedFile[0]?.name ?? "");
-
-    const url = ""
-
-    if (url) {
-      updateTeam({ avatarUrl: url });
-    }
-  };
 
   return (
     <Card>
@@ -46,18 +32,18 @@ export function CompanyLogo() {
           className="rounded-none w-16 h-16 flex items-center justify-center bg-accent cursor-pointer"
           onClick={() => inputRef?.current?.click()}
         >
-          {isLoading ? (
+          {isPending ? (
             <Spinner className="h-4 w-4" />
           ) : (
             <>
               <AvatarImage
-                src={data?.[0]?.image ?? undefined}
-                alt={data?.[0]?.name ?? undefined}
+                src={data?.user?.image ?? undefined}
+                alt={data?.user?.name ?? undefined}
                 width={64}
                 height={64}
               />
               <AvatarFallback>
-                <span className="text-md">{data?.[0]?.name?.charAt(0)}</span>
+                <span className="text-md">{data?.user?.name?.charAt(0)}</span>
               </AvatarFallback>
             </>
           )}
@@ -67,7 +53,7 @@ export function CompanyLogo() {
             type="file"
             style={{ display: "none" }}
             multiple={false}
-            onChange={handleUpload}
+            onChange={() => {}}
           />
         </Avatar>
       </div>
