@@ -15,6 +15,13 @@
       "when": 1770233129242,
       "tag": "0001_modern_the_leader",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1770234196438,
+      "tag": "0002_dear_kitty_pryde",
+      "breakpoints": true
     }
   ]
 }
