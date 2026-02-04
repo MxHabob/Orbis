@@ -8,6 +8,13 @@
       "when": 1769692036383,
       "tag": "0000_absurd_dragon_man",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1770233129242,
+      "tag": "0001_modern_the_leader",
+      "breakpoints": true
     }
   ]
 }

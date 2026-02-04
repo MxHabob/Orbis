@@ -164,6 +164,7 @@ export const enrollments = pgTable('enrollments', {
   deletedAt: timestamp('deleted_at'),
 }, (table) => ({
   studentClassYearIdx: unique('student_class_year_unique').on(table.studentId, table.classId, table.academicYearId),
+  classIdx: index('enrollments_class_idx').on(table.classId),
 }));
 
 
