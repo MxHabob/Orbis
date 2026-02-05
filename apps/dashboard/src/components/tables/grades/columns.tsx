@@ -33,11 +33,12 @@ export type GradeGridData = {
 
 export type GradeTableMeta = {
   items: AssessmentItem[];
+  grades: Grade[];
   getGradeValue: (studentId: string, assessmentItemId: number) => string | null;
   onGradeChange?: (
     studentId: string,
     assessmentItemId: number,
-    value: string | null
+    value: number | null
   ) => void;
 };
 
@@ -187,6 +188,7 @@ export const createGradeColumns = (
               assessmentItemId={examItem.id}
               initialValue={gradeValue}
               maxScore={examItem.maxScore}
+              table={table}
             />
           );
         },
@@ -330,6 +332,7 @@ export const createGradeColumns = (
               assessmentItemId={item.id}
               initialValue={gradeValue}
               maxScore={item.maxScore}
+              table={table}
             />
           );
         },

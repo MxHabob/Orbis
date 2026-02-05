@@ -1,44 +1,111 @@
 "use client";
 
-import { useAction } from "next-safe-action/hooks";
-import { getGradeGridDataAction } from "@/actions/assessments/get-grade-grid-data-action";
-import { useEffect, useMemo } from "react";
+import { useTRPC } from "@/trpc/client";
+import { useEffect, useMemo, useState } from "react";
 import { GradeDataTable } from "@/components/tables/grades/data-table";
 import { GradesSkeleton } from "@/components/tables/grades/skeleton";
 import { InitializeAssessmentsButton } from "./initialize-assessments-button";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Save, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@midday/ui/alert";
 import { useGradeFilterParams } from "@/hooks/use-grade-filter-params";
+import { Button } from "@midday/ui/button";
+import { useToast } from "@midday/ui/use-toast";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) {
   const { filter } = useGradeFilterParams();
   const { selectedClassId: classId, selectedSubjectId: subjectId, termId, month, yearId, q } = filter;
+  const trpc = useTRPC();
+  const { toast } = useToast();
+  
+  const [pendingChanges, setPendingChanges] = useState<Record<string, number | null>>({});
 
-  const { execute, result, status } = useAction(getGradeGridDataAction);
+  const { data, isLoading, error, refetch } = useQuery(
+    trpc.grades.getGridData.queryOptions(
+      { 
+        classId: classId!, 
+        subjectId: subjectId!, 
+        termId: termId!, 
+        month: month!, 
+        academicYearId: yearId! 
+      },
+      {
+        enabled: !!(classId && subjectId && termId && month && yearId),
+      }
+    )
+  );
+
+  const batchUpsertMutation = useMutation(
+    trpc.grades.batchUpsert.mutationOptions({
+      onSuccess: () => {
+        toast({
+          title: "Success",
+          description: "Grades saved successfully",
+          variant: "success",
+        });
+        setPendingChanges({});
+        refetch();
+      },
+      onError: (err) => {
+        toast({
+          title: "Error",
+          description: `Failed to save grades: ${err.message}`,
+          variant: "destructive",
+        });
+      },
+    })
+  );
+
+  const handleGradeChange = (studentId: string, assessmentItemId: number, value: number | null) => {
+    const key = `${studentId}:${assessmentItemId}`;
+    setPendingChanges(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
+  const handleSaveAll = () => {
+    const gradesToSave = Object.entries(pendingChanges).map(([key, score]) => {
+      const parts = key.split(":");
+      const studentId = parts[0];
+      const assessmentItemId = parts[1];
+      
+      return {
+        studentId: studentId!,
+        assessmentItemId: parseInt(assessmentItemId!),
+        score,
+      };
+    });
+
+    if (gradesToSave.length === 0) return;
+
+    batchUpsertMutation.mutate({ grades: gradesToSave });
+  };
+
+  const hasChanges = Object.keys(pendingChanges).length > 0;
 
   useEffect(() => {
-    if (classId && subjectId && termId && month && yearId) {
-      execute({ classId, subjectId, termId, month, academicYearId: yearId });
-    }
-  }, [classId, subjectId, termId, month, yearId, execute]);
+    // Clear pending changes when filters change
+    setPendingChanges({});
+  }, [classId, subjectId, termId, month, yearId]);
 
   const filteredData = useMemo(() => {
-    if (!result.data) return null;
+    if (!data) return null;
 
-    if (!q) return result.data;
+    if (!q) return data;
 
     const lowerQ = q.toLowerCase();
-    const filteredStudents = result.data.students.filter(
+    const filteredStudents = data.students.filter(
       (student) =>
         student.name?.toLowerCase().includes(lowerQ) ||
         student.studentNumber?.toLowerCase().includes(lowerQ)
     );
 
     return {
-      ...result.data,
+      ...data,
       students: filteredStudents,
     };
-  }, [result.data, q]);
+  }, [data, q]);
 
   if (!classId || !subjectId || !termId || !month || !yearId) {
     return (
@@ -50,30 +117,16 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
     );
   }
 
-  if (status === "executing") {
+  if (isLoading) {
     return <GradesSkeleton />;
   }
 
-  if (result.serverError) {
+  if (error) {
     return (
       <Alert variant="destructive" className="max-w-2xl mx-auto">
         <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Server Error</AlertTitle>
-        <AlertDescription>{result.serverError}</AlertDescription>
-      </Alert>
-    );
-  }
-
-  if (result.validationErrors) {
-    return (
-      <Alert variant="destructive" className="max-w-2xl mx-auto">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Validation Error</AlertTitle>
-        <AlertDescription>
-          <pre className="text-xs mt-2">
-            {JSON.stringify(result.validationErrors, null, 2)}
-          </pre>
-        </AlertDescription>
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription>{error.message}</AlertDescription>
       </Alert>
     );
   }
@@ -105,12 +158,42 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
           subjectId={subjectId}
           termId={termId}
           month={month}
-          onSuccess={() => execute({ classId, subjectId, termId, month, academicYearId: yearId })}
+          onSuccess={() => refetch()}
         />
       );
     }
 
-    return <GradeDataTable initialSettings={initialSettings} data={filteredData as any} />;
+    return (
+      <div className="space-y-4">
+        {hasChanges && (
+          <div className="flex justify-end sticky top-0 z-30 py-2 bg-background/80 backdrop-blur-sm border-b mb-2">
+            <div className="flex items-center gap-4 px-4">
+              <span className="text-sm font-medium text-muted-foreground">
+                {Object.keys(pendingChanges).length} unsaved changes
+              </span>
+              <Button 
+                onClick={handleSaveAll} 
+                className="gap-2"
+                disabled={batchUpsertMutation.isPending}
+              >
+                {batchUpsertMutation.isPending ? (
+                   <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
+                Save All Grades
+              </Button>
+            </div>
+          </div>
+        )}
+        <GradeDataTable 
+          initialSettings={initialSettings} 
+          data={filteredData as any} 
+          pendingChanges={pendingChanges}
+          onGradeChange={handleGradeChange}
+        />
+      </div>
+    );
   }
 
   return null;

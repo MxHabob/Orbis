@@ -44,10 +44,10 @@ export function CompanyName() {
       <form onSubmit={onSubmit}>
         <Card>
           <CardHeader>
-            <CardTitle>Company name</CardTitle>
+            <CardTitle>User name</CardTitle>
             <CardDescription>
-              This is your company's visible name within Midday. For example,
-              the name of your company or department.
+              This is your user's visible name within Midday. For example,
+              the name of your user or department.
             </CardDescription>
           </CardHeader>
 

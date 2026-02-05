@@ -21,9 +21,9 @@ export function CompanyLogo() {
     <Card>
       <div className="flex justify-between items-center pr-6">
         <CardHeader>
-          <CardTitle>Company logo</CardTitle>
+          <CardTitle>User profile</CardTitle>
           <CardDescription>
-            This is your company's logo. Click on the logo to upload a custom
+            This is your user profile. Click on the profile to upload a custom
             one from your files.
           </CardDescription>
         </CardHeader>

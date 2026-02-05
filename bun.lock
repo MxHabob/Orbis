@@ -23,6 +23,7 @@
         "@hono/zod-validator": "^0.7.5",
         "@midday/auth": "workspace:*",
         "@midday/cache": "workspace:*",
+        "@midday/certificates": "workspace:*",
         "@midday/db": "workspace:*",
         "@midday/encryption": "workspace:*",
         "@midday/location": "workspace:*",
@@ -185,6 +186,18 @@
         "@midday/tsconfig": "workspace:*",
         "@types/bun": "latest",
         "bun-types": "^1.3.8",
+      },
+    },
+    "packages/certificates": {
+      "name": "@midday/certificates",
+      "version": "1.0.0",
+      "dependencies": {
+        "@midday/db": "workspace:*",
+        "drizzle-orm": "^0.45.1",
+      },
+      "devDependencies": {
+        "@midday/tsconfig": "workspace:*",
+        "typescript": "^5.9.3",
       },
     },
     "packages/db": {
@@ -668,6 +681,8 @@
     "@midday/auth": ["@midday/auth@workspace:packages/auth"],
 
     "@midday/cache": ["@midday/cache@workspace:packages/cache"],
+
+    "@midday/certificates": ["@midday/certificates@workspace:packages/certificates"],
 
     "@midday/dashboard": ["@midday/dashboard@workspace:apps/dashboard"],
 

@@ -23,3 +23,19 @@ export const bulkImportGradesSchema = z.object({
         comments: z.string().optional(),
     })),
 });
+
+export const batchUpsertGradesSchema = z.object({
+  grades: z.array(z.object({
+    studentId: z.string().uuid(),
+    assessmentItemId: z.number(),
+    score: z.number().nullable(),
+  })),
+});
+
+export const getGradeGridDataSchema = z.object({
+  classId: z.number(),
+  subjectId: z.number(),
+  termId: z.number(),
+  month: z.number(),
+  academicYearId: z.number(),
+});

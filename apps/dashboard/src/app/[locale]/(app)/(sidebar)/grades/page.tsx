@@ -3,29 +3,57 @@ import type { Metadata } from "next";
 import { GradeGridHeader } from "@/components/grades/grade-grid-header";
 import { GradeGridWrapper } from "@/components/grades/grade-grid-wrapper";
 import { ScrollableContent } from "@/components/scrollable-content";
-import { getClassesV3 } from "@midday/db/queries/classes";
-import { getAllSubjects } from "@midday/db/queries/subjects";
-import { getAcademicYears, getTermsByYear, getCurrentAcademicYear } from "@midday/db/queries/academic-calendar";
 import { GradesSkeleton } from "@/components/tables/grades/skeleton";
 import { getInitialTableSettings } from "@/utils/columns";
 import { ErrorBoundary } from "next/dist/client/components/error-boundary";
 import { ErrorFallback } from "@/components/error-fallback";
 import { GradesUploadZone } from "@/components/grades/grades-upload-zone";
+import { trpc, prefetch, HydrateClient, getQueryClient } from "@/trpc/server";
+import { loadGradeFilterParams } from "@/hooks/use-grade-filter-params";
+import type { SearchParams } from "nuqs";
 
 export const metadata: Metadata = {
   title: "Grade | Entity",
 };
 
-export default async function GradesPage() {
-  const currentYear = await getCurrentAcademicYear();
-  const years = await getAcademicYears();
-  const classes = await getClassesV3(currentYear?.id);
-  const subjects = await getAllSubjects();
-  const terms = currentYear ? await getTermsByYear(currentYear.id) : [];
-  const initialSettings = await getInitialTableSettings("grades");
+type Props = {
+  searchParams: Promise<SearchParams>;
+};
+
+export default async function GradesPage(props: Props) {
+  const searchParams = await props.searchParams;
+  const filter = loadGradeFilterParams(searchParams);
+  const queryClient = getQueryClient();
+
+  const [currentYear, years, subjects, initialSettings] = await Promise.all([
+    queryClient.fetchQuery(trpc.academic.getCurrentYear.queryOptions()),
+    queryClient.fetchQuery(trpc.academic.getYears.queryOptions()),
+    queryClient.fetchQuery(trpc.subjects.getAll.queryOptions()),
+    getInitialTableSettings("grades"),
+  ]);
+
+  const [classesResponse, terms] = await Promise.all([
+    queryClient.fetchQuery(trpc.classes.getAll.queryOptions({ academicYearId: currentYear?.id })),
+    currentYear 
+      ? queryClient.fetchQuery(trpc.academic.getTerms.queryOptions({ yearId: currentYear.id })) 
+      : Promise.resolve([]),
+  ]);
+
+  const { selectedClassId, selectedSubjectId, termId, month, yearId } = filter;
+  if (selectedClassId && selectedSubjectId && termId && month && yearId) {
+    prefetch(
+      trpc.grades.getGridData.queryOptions({ 
+        classId: selectedClassId, 
+        subjectId: selectedSubjectId, 
+        termId, 
+        month, 
+        academicYearId: yearId 
+      })
+    );
+  }
 
   const initialData = {
-    classes: classes.map((c: any) => ({
+    classes: classesResponse.data.map((c: any) => ({
       id: c.id,
       name: c.name,
       division: c.division,
@@ -46,6 +74,7 @@ export default async function GradesPage() {
   };
 
   return (
+    <HydrateClient>
       <ScrollableContent>
         <GradesUploadZone>
           <div className="flex flex-col gap-6">
@@ -58,5 +87,6 @@ export default async function GradesPage() {
           </div>
         </GradesUploadZone>
       </ScrollableContent>
+    </HydrateClient>
   );
 }

@@ -26,18 +26,20 @@ const NON_CLICKABLE_COLUMNS = new Set(["total"]);
 type Props = {
   initialSettings?: Partial<TableSettings>;
   initialTab?: string;
-  onGradeChangeAction?: (
+  onGradeChange?: (
     studentId: string,
     assessmentItemId: number,
-    value: string | null,
+    value: number | null,
   ) => void;
   data: GradeGridData;
+  pendingChanges?: Record<string, number | null>;
 };
 
 export function GradeDataTable({
   initialSettings,
-  onGradeChangeAction,
+  onGradeChange,
   data,
+  pendingChanges,
 }: Props) {
   const { students, items, grades, month } = data;
 
@@ -59,12 +61,17 @@ export function GradeDataTable({
 
   const getGradeValue = useMemo(
     () => (studentId: string, assessmentItemId: number) => {
+      const key = `${studentId}:${assessmentItemId}`;
+      if (pendingChanges && key in pendingChanges) {
+        return pendingChanges[key]?.toString() ?? null;
+      }
+
       const grade = grades.find(
         (g: any) => g.studentId === studentId && g.assessmentItemId === assessmentItemId
       );
       return grade?.score ?? null;
     },
-    [grades]
+    [grades, pendingChanges]
   );
 
   const columns = useMemo(() => createGradeColumns(items, month ?? undefined), [items, month]);
@@ -93,10 +100,11 @@ export function GradeDataTable({
   const tableMeta = useMemo(
     () => ({
       items,
+      grades,
       getGradeValue,
-      onGradeChange: onGradeChangeAction,
+      onGradeChange,
     } as GradeTableMeta),
-    [items, getGradeValue, onGradeChangeAction]
+    [items, grades, getGradeValue, onGradeChange]
   );
 
   const table = useReactTable({

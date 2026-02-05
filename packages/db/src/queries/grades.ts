@@ -145,6 +145,54 @@ export const upsertGrade = async (data: {
   return result;
 };
 
+export const batchUpsertGrades = async (
+  grades: {
+    studentId: string;
+    assessmentItemId: number;
+    score: string | null;
+  }[],
+  gradedById: string
+) => {
+  if (grades.length === 0) return [];
+
+  const results = [];
+  const studentIdsToInvalidate = new Set<string>();
+
+  // Process in chunks if necessary, but for a class size (~50-100) it's fine
+  for (const grade of grades) {
+    const [result] = await db
+      .insert(gradeEntries)
+      .values({
+        studentId: grade.studentId,
+        assessmentItemId: grade.assessmentItemId,
+        score: grade.score,
+        gradedById,
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: [gradeEntries.studentId, gradeEntries.assessmentItemId],
+        set: {
+          score: grade.score,
+          gradedById,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    
+    if (result) {
+      results.push(result);
+      studentIdsToInvalidate.add(grade.studentId);
+    }
+  }
+
+  // Invalidate cache for all affected students
+  for (const studentId of studentIdsToInvalidate) {
+    await gradeCache.delete(`student:${studentId}:all`);
+  }
+
+  return results;
+};
+
 import { enrollments, users } from "@db/schema";
 import { asc, inArray, or } from "drizzle-orm";
 

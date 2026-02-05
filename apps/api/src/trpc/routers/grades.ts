@@ -4,16 +4,26 @@ import {
   createGradeEntry, 
   updateGradeEntry, 
   bulkImportGrades,
+  batchUpsertGrades,
+  getGradeGridData,
   getClassStatistics
 } from "@midday/db/queries";
 import { 
   createGradeEntrySchema, 
   updateGradeEntrySchema, 
-  bulkImportGradesSchema 
+  bulkImportGradesSchema,
+  batchUpsertGradesSchema,
+  getGradeGridDataSchema
 } from "@api/schemas/grades";
 import { z } from "zod";
 
 export const gradesRouter = createTRPCRouter({
+  getGridData: protectedProcedure
+    .input(getGradeGridDataSchema)
+    .query(async ({ input }) => {
+      return getGradeGridData(input);
+    }),
+
   getStudentGrades: protectedProcedure
     .input(z.object({ studentId: z.string().uuid(), termId: z.number().optional() }))
     .query(async ({ input }) => {
@@ -38,6 +48,16 @@ export const gradesRouter = createTRPCRouter({
           gradedById: input.gradedById || ctx.session.user.id
       };
       return updateGradeEntry(input.id, data);
+    }),
+
+  batchUpsert: protectedProcedure
+    .input(batchUpsertGradesSchema)
+    .mutation(async ({ input, ctx }) => {
+      const grades = input.grades.map(g => ({
+        ...g,
+        score: g.score === null ? null : g.score.toString()
+      }));
+      return batchUpsertGrades(grades, ctx.session.user.id);
     }),
 
   bulkImport: protectedProcedure
