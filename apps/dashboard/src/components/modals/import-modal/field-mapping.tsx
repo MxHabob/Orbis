@@ -125,7 +125,7 @@ export function FieldMapping() {
                     <SelectValue placeholder={academicYearId ? "Select Class" : "Select Academic Year first"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {classes?.map((cls) => (
+                    {classes?.data?.map((cls) => (
                       <SelectItem key={cls.id} value={cls.id.toString()}>
                         {cls.name} {cls.division ? `- ${cls.division}` : ""}
                       </SelectItem>
