@@ -44,7 +44,7 @@ export function flattenClasses(classes: any[]): any[] {
         flattened.push({
           ...child,
           isChild: true,
-          parentId: cls.id,
+          parentClassId: cls.id,
           hasChildren: false,
         });
       }
@@ -59,7 +59,6 @@ export const columns: ColumnDef<any>[] = [
     header: "Name",
     accessorKey: "name",
     cell: ({ row, table }) => {
-      // Get expanded state from table meta
       const meta = table.options.meta as unknown as ClassesTableMeta;
       const expandedClasses = meta?.expandedClasses || new Set();
       const setExpandedClasses = meta?.setExpandedClasses;
@@ -81,7 +80,7 @@ export const columns: ColumnDef<any>[] = [
       };
 
       return (
-        <div className={cn("flex space-x-2 items-center", isChild && "ml-10")}>
+        <div className={cn("flex space-x-2 items-center", isChild && "ms-10")}>
           {hasChildren && !isChild && (
             <Button
               variant="ghost"
@@ -104,20 +103,7 @@ export const columns: ColumnDef<any>[] = [
             className="size-3 rounded-sm border"
             style={{ backgroundColor: row.original.color || "#e6e6e6" }}
           />
-          <span
-            className={cn(
-              "font-medium",
-              hasChildren && !isChild ? "cursor-pointer" : "cursor-default",
-            )}
-            onClick={
-              hasChildren && !isChild
-                ? (e) => {
-                    e.stopPropagation();
-                    toggleExpanded();
-                  }
-                : undefined
-            }
-          >
+          <span className="font-medium">
             {row.getValue("name")}
           </span>
         </div>

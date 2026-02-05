@@ -170,6 +170,7 @@ export function DataTable() {
             <TableRow
               className="hover:bg-muted/50 cursor-pointer"
               key={row.id}
+              onClick={() => tableMeta.onEditClass(row.original.id)}
             >
               {row.getVisibleCells().map((cell, index) => (
                 <TableCell
