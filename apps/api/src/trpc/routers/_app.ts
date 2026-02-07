@@ -4,6 +4,7 @@ import { academicRouter } from "./academic";
 import { attendanceRouter } from "./attendance";
 import { assessmentsRouter } from "./assessments";
 import { auditLogsRouter } from "./audit-logs";
+import { certificateTemplateRouter } from "./certificate-templates";
 import { classesRouter } from "./classes";
 import { gradesRouter } from "./grades";
 import { lessonsRouter } from "./lessons";
@@ -17,6 +18,7 @@ export const appRouter = createTRPCRouter({
   attendance: attendanceRouter,
   assessments: assessmentsRouter,
   auditLogs: auditLogsRouter,
+  certificateTemplate: certificateTemplateRouter,
   classes: classesRouter,
   grades: gradesRouter,
   lessons: lessonsRouter,

@@ -278,6 +278,29 @@ export const scheduledLessons = pgTable('scheduled_lessons', {
   classDaySlotIdx: index('sched_class_day_slot_idx').on(t.classId, t.dayOfWeek, t.timeSlotId, t.academicYearId),
 }));
 
+// جدول قوالب الشهادات (مثل invoice_template - مرونة وتخصيص)
+// جدول قوالب الشهادات (نظام مرن بالكامل - 2026)
+export const certificateTemplates = pgTable('certificate_templates', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: varchar('name', { length: 100 }).notNull(),
+  isDefault: boolean('is_default').default(false).notNull(),
+  
+  // Visual & Layout Configuration
+  orientation: varchar('orientation', { length: 20 }).default('portrait').notNull(),
+  size: varchar('size', { length: 20 }).default('a4').notNull(),
+  primaryColor: varchar('primary_color', { length: 20 }).default('#000000'),
+  
+  // Rich Text Content (Tiptap JSON)
+  headerContent: jsonb('header_content'), // بديل للحقول الثابتة
+  footerContent: jsonb('footer_content'),
+  
+  // Structured Configuration
+  tableConfig: jsonb('table_config'), // إعدادات الجدول (الأعمدة، الألوان، الإخفاء/الإظهار)
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
 export const attendanceRecords = pgTable('attendance_records', {
     id: serial('id').primaryKey(),
     studentId: uuid('student_id').notNull().references(() => students.userId, { onDelete: 'cascade' }),

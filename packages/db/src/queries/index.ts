@@ -10,3 +10,5 @@ export * from "./notifications";
 export * from "./audit-logs";
 export * from "./lessons";
 export * from "./attendance";
+export * from "./certificates";
+export * from "./certificate-templates";

@@ -9,6 +9,7 @@ import { httpLogger } from "./utils/logger";
 import { auth } from "@midday/auth";
 import type { HonoEnv } from "./utils/auth";
 import { realtimeHandler } from "./services/realtime";
+import { handleUpload } from "./routes/upload";
 
 const app = new OpenAPIHono<HonoEnv>();
 
@@ -83,6 +84,8 @@ app.on(["POST", "GET"], "/api/auth/*", (c) => {
 app.get("/health", (c) => {
   return c.json({ status: "ok" }, 200);
 });
+
+app.post("/api/upload", (c) => handleUpload(c));
 
 app.doc("/openapi", {
   openapi: "3.1.0",

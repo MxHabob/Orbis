@@ -6,7 +6,8 @@ import {
   bulkImportGrades,
   batchUpsertGrades,
   getGradeGridData,
-  getClassStatistics
+  getClassStatistics,
+  getCertificateData,
 } from "@midday/db/queries";
 import { 
   createGradeEntrySchema, 
@@ -15,6 +16,7 @@ import {
   batchUpsertGradesSchema,
   getGradeGridDataSchema
 } from "@api/schemas/grades";
+import { getCertificateDataSchema } from "@api/schemas/certificates";
 import { z } from "zod";
 
 export const gradesRouter = createTRPCRouter({
@@ -74,5 +76,11 @@ export const gradesRouter = createTRPCRouter({
     .input(z.object({ classId: z.string() }))
     .query(async ({ input }) => {
       return getClassStatistics(input.classId);
+    }),
+
+  getCertificateData: protectedProcedure
+    .input(getCertificateDataSchema)
+    .query(async ({ input }) => {
+      return getCertificateData(input);
     }),
 });
