@@ -32,6 +32,7 @@
     "@trpc/server": "^11.8.1",
     "camelcase-keys": "^10.0.1",
     "date-fns": "^4.1.0",
+    "exceljs": "^4.4.0",
     "hono": "4.11.4",
     "hono-rate-limiter": "0.4.2",
     "jose": "^6.1.3",

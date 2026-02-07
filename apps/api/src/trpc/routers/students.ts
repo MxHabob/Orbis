@@ -16,6 +16,7 @@ import {
   upsertStudent,
   getStudentEnrollments,
 } from "@midday/db/queries";
+import { generateStudentExport, generateExportFilename } from "@api/utils/excel-export";
 import { z } from "zod";
 
 export const studentsRouter = createTRPCRouter({
@@ -119,5 +120,63 @@ export const studentsRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       return upsertStudent(input);
     }),
-});
 
+  exportByClassId: protectedProcedure
+    .input(
+      z.object({
+        classId: z.string(),
+        format: z.enum(["xlsx", "csv"]).default("xlsx"),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const { getClassesV3 } = await import("@midday/db/queries");
+      const { getClassStatistics } = await import("@midday/db/queries");
+      
+      const classIdNumber = Number(input.classId);
+      
+      const allClasses = await getClassesV3({
+        flat: true,
+        limit: 1,
+      });
+      
+      const classData = allClasses.find(c => c.id === classIdNumber);
+      
+      if (!classData) {
+        throw new Error("Class not found");
+      }
+
+      const students = await getStudentsByClassId(classIdNumber, 10000, 0);
+
+      // Get class statistics
+      const statistics = await getClassStatistics(input.classId);
+
+      const exportData = students.map((student) => ({
+        studentNumber: student.studentNumber,
+        name: student.name || "N/A",
+        email: student.email,
+        phone: null,
+        sex: student.sex || null,
+        average: null,
+        status: student.status,
+      }));
+
+      const buffer = await generateStudentExport(exportData, {
+        className: classData.name,
+        academicYear: classData.yearName || undefined,
+        statistics: statistics || null,
+        format: input.format,
+      });
+
+      // Generate filename
+      const filename = generateExportFilename(classData.name, input.format);
+
+      return {
+        data: buffer.toString("base64"),
+        filename,
+        mimeType:
+          input.format === "xlsx"
+            ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            : "text/csv",
+      };
+    }),
+});
