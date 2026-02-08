@@ -9,6 +9,7 @@ export const upsertCertificateTemplateSchema = z.object({
   orientation: z.enum(["portrait", "landscape"]).optional(),
   size: z.enum(["a4", "letter"]).optional(),
   primaryColor: z.string().optional(),
+  backgroundImageUrl: z.string().url().nullable().optional(),
   
   // Content JSON
   headerContent: z.any().nullable().optional(),
@@ -24,6 +25,7 @@ export const createCertificateTemplateSchema = z.object({
   orientation: z.enum(["portrait", "landscape"]).default("portrait"),
   size: z.enum(["a4", "letter"]).default("a4"),
   primaryColor: z.string().default("#000000"),
+  backgroundImageUrl: z.string().url().nullable().optional(),
   
   // Content JSON
   headerContent: z.any().nullable().optional(),

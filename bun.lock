@@ -67,6 +67,7 @@
         "@midday/auth": "workspace:*",
         "@midday/db": "workspace:*",
         "@midday/desktop-client": "workspace:*",
+        "@midday/export": "workspace:*",
         "@midday/import": "workspace:*",
         "@midday/location": "workspace:*",
         "@midday/ui": "workspace:*",
@@ -101,7 +102,6 @@
         "next-safe-action": "^8.0.11",
         "next-themes": "^0.4.6",
         "nuqs": "^2.8.3",
-        "papaparse": "^5.5.3",
         "pdfjs-dist": "4.8.69",
         "qrcode": "^1.5.4",
         "react": "19.2.3",
@@ -131,7 +131,6 @@
         "@types/file-saver": "^2.0.7",
         "@types/html2canvas": "^1.0.0",
         "@types/node": "^24.10.1",
-        "@types/papaparse": "^5.5.1",
         "@types/qrcode": "^1.5.5",
         "@types/react": "19.2.7",
         "@types/react-dom": "19.2.3",
@@ -187,6 +186,20 @@
         "@midday/tsconfig": "workspace:*",
         "@types/bun": "latest",
         "bun-types": "^1.3.8",
+      },
+    },
+    "packages/csv": {
+      "name": "@midday/csv",
+      "version": "1.0.0",
+      "dependencies": {
+        "@types/file-saver": "^2.0.7",
+        "@types/papaparse": "^5.5.2",
+        "file-saver": "^2.0.5",
+        "papaparse": "^5.5.3",
+      },
+      "devDependencies": {
+        "@midday/tsconfig": "workspace:*",
+        "typescript": "^5.9.3",
       },
     },
     "packages/db": {
@@ -248,6 +261,24 @@
       "version": "1.0.0",
       "dependencies": {
         "jose": "^6.1.3",
+      },
+    },
+    "packages/export": {
+      "name": "@midday/export",
+      "version": "1.0.0",
+      "dependencies": {
+        "@midday/ui": "workspace:*",
+        "@types/file-saver": "^2.0.7",
+        "@types/papaparse": "^5.5.1",
+        "file-saver": "^2.0.5",
+        "html2canvas": "^1.4.1",
+        "jspdf": "^3.0.4",
+        "papaparse": "^5.5.3",
+      },
+      "devDependencies": {
+        "@midday/tsconfig": "workspace:*",
+        "@types/html2canvas": "^1.0.0",
+        "typescript": "^5.9.3",
       },
     },
     "packages/import": {
@@ -377,9 +408,13 @@
       "version": "1.0.0",
       "dependencies": {
         "date-fns": "^4.1.0",
+        "file-saver": "^2.0.5",
+        "papaparse": "^5.5.3",
       },
       "devDependencies": {
         "@midday/tsconfig": "workspace:*",
+        "@types/file-saver": "^2.0.7",
+        "@types/papaparse": "^5.5.2",
         "typescript": "^5.9.3",
       },
     },
@@ -757,6 +792,8 @@
 
     "@midday/cache": ["@midday/cache@workspace:packages/cache"],
 
+    "@midday/csv": ["@midday/csv@workspace:packages/csv"],
+
     "@midday/dashboard": ["@midday/dashboard@workspace:apps/dashboard"],
 
     "@midday/db": ["@midday/db@workspace:packages/db"],
@@ -768,6 +805,8 @@
     "@midday/email": ["@midday/email@workspace:packages/email"],
 
     "@midday/encryption": ["@midday/encryption@workspace:packages/encryption"],
+
+    "@midday/export": ["@midday/export@workspace:packages/export"],
 
     "@midday/import": ["@midday/import@workspace:packages/import"],
 

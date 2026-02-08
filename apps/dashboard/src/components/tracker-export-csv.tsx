@@ -12,9 +12,9 @@ import {
 } from "@midday/ui/dropdown-menu";
 import { useQueryClient } from "@tanstack/react-query";
 import { endOfMonth, format, parseISO, startOfMonth } from "date-fns";
-import Papa from "papaparse";
 import React, { useState } from "react";
 import type { DateRange } from "react-day-picker";
+import { exportToCsv } from "@midday/export";
 
 interface TrackerEntry {
   date: string;
@@ -73,18 +73,9 @@ export function TrackerExportCSV({ name, projectId }: Props) {
       },
     ];
 
-    const csv = Papa.unparse(dataWithFooter);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.href = url;
-
-    link.setAttribute("download", `${name}.csv`);
-
-    document.body.appendChild(link);
-    link.click();
-
-    document.body.removeChild(link);
+    exportToCsv(dataWithFooter, {
+      filename: `${name}.csv`,
+    });
   }
 
   return (

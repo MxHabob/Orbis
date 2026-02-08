@@ -190,3 +190,94 @@ export function generateExportFilename(
   const safeName = className.replace(/[^a-zA-Z0-9-_]/g, "_");
   return `${safeName}_students_${timestamp}.${format}`;
 }
+
+export interface GradesExportOptions extends ExportOptions {
+  assessmentItems: { id: number; title: string }[];
+}
+
+export interface StudentGradeRow {
+  studentNumber: string;
+  name: string;
+  grades: Record<number, number | string | null>;
+}
+
+/**
+ * Generate Excel/CSV export for grades
+ */
+export async function generateGradesExport(
+  data: StudentGradeRow[],
+  options: GradesExportOptions,
+): Promise<Buffer> {
+  const { className, academicYear, assessmentItems, format } = options;
+
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet("Grades");
+
+  // Title
+  const titleRow = worksheet.addRow([
+    `Grades Report: ${className}${academicYear ? ` - ${academicYear}` : ""}`,
+  ]);
+  titleRow.font = { size: 16, bold: true };
+  worksheet.addRow([]);
+
+  // Columns definition
+  const columns = [
+    { header: "Student Number", key: "studentNumber", width: 20 },
+    { header: "Name", key: "name", width: 30 },
+    ...assessmentItems.map((item) => ({
+      header: item.title,
+      key: `item_${item.id}`,
+      width: 15,
+    })),
+  ];
+
+  // Header row
+  const headerRow = worksheet.addRow(columns.map((col) => col.header));
+  headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
+  headerRow.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF4A90E2" },
+  };
+  headerRow.alignment = { horizontal: "center" };
+
+  worksheet.columns = columns;
+
+  // Data rows
+  for (const student of data) {
+    const rowData: any = {
+      studentNumber: student.studentNumber,
+      name: student.name,
+    };
+
+    assessmentItems.forEach((item) => {
+      rowData[`item_${item.id}`] = student.grades[item.id] ?? "-";
+    });
+
+    const row = worksheet.addRow(rowData);
+    
+    // Add some alignment
+    row.alignment = { vertical: "middle" };
+  }
+
+  // Generate buffer
+  if (format === "csv") {
+    const csvData = await workbook.csv.writeBuffer();
+    return Buffer.from(csvData);
+  }
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  return Buffer.from(buffer);
+}
+
+export function generateGradesFilename(
+  className: string,
+  format: "xlsx" | "csv",
+): string {
+  const timestamp = new Date()
+    .toISOString()
+    .replace(/[:.]/g, "-")
+    .slice(0, -5);
+  const safeName = className.replace(/[^a-zA-Z0-9-_]/g, "_");
+  return `${safeName}_grades_${timestamp}.${format}`;
+}

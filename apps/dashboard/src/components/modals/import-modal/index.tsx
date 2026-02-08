@@ -14,13 +14,13 @@ import {
 import { SubmitButton } from "@midday/ui/submit-button";
 import { useToast } from "@midday/ui/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import Papa from "papaparse";
 import { parseAsBoolean, parseAsString, useQueryStates } from "nuqs";
 
 import { useEffect, useState } from "react";
 import { ImportCsvContext, importSchema } from "./context";
 import { FieldMapping } from "./field-mapping";
 import { SelectFile } from "./select-file";
+import { parseCsv } from "@midday/export";
 
 const pages = ["select-file", "confirm-import"] as const;
 
@@ -167,71 +167,70 @@ export function ImportModal() {
                       setIsImporting(true);
 
                       // Parse the complete file
-                      Papa.parse(data.file, {
-                        header: true,
-                        skipEmptyLines: true,
-                        complete: async (results) => {
-                          const rows = results.data as Record<string, string>[];
+                      // Parse the complete file
+                      try {
+                        const { data: rows } = await parseCsv<Record<string, string>>(data.file, {
+                          header: true,
+                          skipEmptyLines: true,
+                        });
 
-                          if (data.type === "students") {
-                            const students = rows
-                              .map((row, index) => {
-                                let studentNumber = data.autoGenerateStudentNumber 
-                                  ? `STU-${Date.now()}-${index}`
-                                  : row[data.studentNumber!];
-                                
-                                const name = row[data.name!];
-                                if (!studentNumber || !name) return null;
+                        if (data.type === "students") {
+                          const students = rows
+                            .map((row, index) => {
+                              let studentNumber = data.autoGenerateStudentNumber 
+                                ? `STU-${Date.now()}-${index}`
+                                : row[data.studentNumber!];
+                              
+                              const name = row[data.name!];
+                              if (!studentNumber || !name) return null;
 
-                                return {
-                                  studentNumber,
-                                  name,
-                                  phone: (data.phone && row[data.phone]) ? row[data.phone] : undefined,
-                                  email: (data.email && row[data.email]) ? row[data.email] : undefined,
-                                  sex: (data.sex && row[data.sex]) ? (row[data.sex]!.toLowerCase() as any) : 'unspecified',
-                                };
+                              return {
+                                studentNumber,
+                                name,
+                                phone: (data.phone && row[data.phone]) ? row[data.phone] : undefined,
+                                email: (data.email && row[data.email]) ? row[data.email] : undefined,
+                                sex: (data.sex && row[data.sex]) ? (row[data.sex]!.toLowerCase() as any) : 'unspecified',
+                              };
 
-                              })
-                              .filter((s): s is NonNullable<typeof s> => s !== null);
+                            })
+                            .filter((s): s is NonNullable<typeof s> => s !== null);
 
-                            importStudentsMutation.mutate({
-                              classId: data.classId!,
-                              academicYearId: data.academicYearId,
-                              students,
-                            });
-                          } else if (data.type === "grades") {
-                            const grades = rows
-                              .map((row) => {
-                                const studentNumber = row[data.studentNumber!];
-                                if (!studentNumber) return null;
+                          importStudentsMutation.mutate({
+                            classId: data.classId!,
+                            academicYearId: data.academicYearId,
+                            students,
+                          });
+                        } else if (data.type === "grades") {
+                          const grades = rows
+                            .map((row) => {
+                              const studentNumber = row[data.studentNumber!];
+                              if (!studentNumber) return null;
 
-                                return {
-                                  studentNumber,
-                                  score: (data.score && row[data.score]) ? parseFloat(row[data.score]!) : null,
-                                  isAbsent: (data.isAbsent && row[data.isAbsent]) ? row[data.isAbsent]?.toLowerCase() === 'true' || row[data.isAbsent] === '1' : false,
-                                  comments: (data.comments && row[data.comments]) ? row[data.comments] : undefined,
-                                };
+                              return {
+                                studentNumber,
+                                score: (data.score && row[data.score]) ? parseFloat(row[data.score]!) : null,
+                                isAbsent: (data.isAbsent && row[data.isAbsent]) ? row[data.isAbsent]?.toLowerCase() === 'true' || row[data.isAbsent] === '1' : false,
+                                comments: (data.comments && row[data.comments]) ? row[data.comments] : undefined,
+                              };
 
-                              })
-                              .filter((g): g is NonNullable<typeof g> => g !== null);
+                            })
+                            .filter((g): g is NonNullable<typeof g> => g !== null);
 
-                            importGradesMutation.mutate({
-                              assessmentItemId: data.assessmentItemId!,
-                              grades,
-                            });
+                          importGradesMutation.mutate({
+                            assessmentItemId: data.assessmentItemId!,
+                            grades,
+                          });
 
 
-                          } else {
-                            // Fallback for legacy transaction import if needed
-                            toast({ title: "Transaction import not implemented in this version", variant: "error" });
-                            setIsImporting(false);
-                          }
-                        },
-                        error: (err) => {
+                        } else {
+                          // Fallback for legacy transaction import if needed
+                          toast({ title: "Transaction import not implemented in this version", variant: "error" });
                           setIsImporting(false);
-                          toast({ title: "Error parsing CSV", description: err.message, variant: "error" });
                         }
-                      });
+                      } catch (err: any) {
+                        setIsImporting(false);
+                        toast({ title: "Error parsing CSV", description: err.message, variant: "error" });
+                      }
                     })}
 
                   >

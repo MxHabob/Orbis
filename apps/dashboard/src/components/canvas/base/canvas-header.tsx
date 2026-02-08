@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/canvas/base/skeleton";
 import {
   generateCanvasPdf,
   generateCanvasPdfBlob,
-} from "@/utils/canvas-to-pdf";
+} from "@midday/export";
 import { Button } from "@midday/ui/button";
 import { cn } from "@midday/ui/cn";
 import {

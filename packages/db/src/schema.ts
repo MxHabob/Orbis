@@ -289,6 +289,7 @@ export const certificateTemplates = pgTable('certificate_templates', {
   orientation: varchar('orientation', { length: 20 }).default('portrait').notNull(),
   size: varchar('size', { length: 20 }).default('a4').notNull(),
   primaryColor: varchar('primary_color', { length: 20 }).default('#000000'),
+  backgroundImageUrl: text('background_image_url'), // For Canva/Custom backgrounds
   
   // Rich Text Content (Tiptap JSON)
   headerContent: jsonb('header_content'), // بديل للحقول الثابتة

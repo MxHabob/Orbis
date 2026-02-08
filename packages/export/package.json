@@ -1,0 +1,26 @@
+{
+  "name": "@midday/export",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "private": true,
+  "scripts": {
+    "clean": "rm -rf .turbo node_modules",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@midday/ui": "workspace:*",
+    "@types/file-saver": "^2.0.7",
+    "@types/papaparse": "^5.5.1",
+    "file-saver": "^2.0.5",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^3.0.4",
+    "papaparse": "^5.5.3"
+  },
+  "devDependencies": {
+    "@midday/tsconfig": "workspace:*",
+    "typescript": "^5.9.3",
+    "@types/html2canvas": "^1.0.0"
+  }
+}

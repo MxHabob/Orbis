@@ -83,4 +83,56 @@ export const gradesRouter = createTRPCRouter({
     .query(async ({ input }) => {
       return getCertificateData(input);
     }),
+
+  export: protectedProcedure
+    .input(
+      getGradeGridDataSchema.extend({
+        format: z.enum(["xlsx", "csv"]).default("xlsx"),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const data = await getGradeGridData(input);
+      const { generateGradesExport, generateGradesFilename } = await import("@api/utils/excel-export");
+      const { getClassesV3 } = await import("@midday/db/queries");
+
+      const allClasses = await getClassesV3({
+        flat: true,
+        limit: 1,
+      });
+      const classData = allClasses.find(c => c.id === input.classId);
+
+      const exportData = data.students.map((student) => {
+        const studentGrades: Record<number, number | string | null> = {};
+        data.items.forEach((item) => {
+          const grade = data.grades.find(
+            (g) => g.studentId === student.studentId && g.assessmentItemId === item.id
+          );
+          studentGrades[item.id] = grade?.score ?? null;
+        });
+
+        return {
+          studentNumber: student.studentNumber,
+          name: student.name || "N/A",
+          grades: studentGrades,
+        };
+      });
+
+      const buffer = await generateGradesExport(exportData, {
+        className: classData?.name || "Class",
+        academicYear: classData?.yearName || undefined,
+        assessmentItems: data.items,
+        format: input.format,
+      });
+
+      const filename = generateGradesFilename(classData?.name || "Class", input.format);
+
+      return {
+        data: buffer.toString("base64"),
+        filename,
+        mimeType:
+          input.format === "xlsx"
+            ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            : "text/csv",
+      };
+    }),
 });

@@ -42,6 +42,7 @@ export async function upsertCertificateTemplate(
     orientation: data.orientation ?? "portrait",
     size: data.size ?? "a4",
     primaryColor: data.primaryColor ?? "#000000",
+    backgroundImageUrl: data.backgroundImageUrl ?? null,
     
     // Content
     headerContent: data.headerContent ?? null,

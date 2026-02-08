@@ -578,4 +578,9 @@ export default {
     "hour#other": "hours",
     view_tracker: "View time tracker",
   },
+  certificates: {
+    templates: "Templates",
+    templates_description: "Manage your certificate design templates.",
+    create_template: "Create Template",
+  },
 } as const;
