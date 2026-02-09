@@ -385,38 +385,58 @@ export const getClassStatistics = async (classId: string) => {
 };
 
 export const getStudentReportData = async (studentId: string) => {
-    // 1. Get all grade entries with assessment and subject info
-    const grades = await db
+    // 1. Get student's class to know which subjects and assessments to show
+    const [student] = await db
+        .select({ currentClassId: students.currentClassId })
+        .from(students)
+        .where(eq(students.userId, studentId))
+        .limit(1);
+
+    if (!student?.currentClassId) return { rows: [], columns: [] };
+
+    // 2. Get all assessment items for this class to build columns
+    const assessmentList = await db
         .select({
+            id: assessmentItems.id,
+            title: assessmentItems.title,
+            subjectId: assessmentItems.subjectId,
             subjectName: subjects.name,
-            assessmentTitle: assessmentItems.title,
-            score: gradeEntries.score,
-            maxScore: assessmentItems.maxScore,
-            month: assessmentItems.month,
         })
-        .from(gradeEntries)
-        .innerJoin(assessmentItems, eq(gradeEntries.assessmentItemId, assessmentItems.id))
+        .from(assessmentItems)
         .innerJoin(subjects, eq(assessmentItems.subjectId, subjects.id))
-        .where(eq(gradeEntries.studentId, studentId))
+        .where(eq(assessmentItems.classId, student.currentClassId))
         .orderBy(asc(subjects.name), asc(assessmentItems.month));
 
-    // 2. Group by subject
+    // 3. Get student grades
+    const grades = await db
+        .select({
+            assessmentItemId: gradeEntries.assessmentItemId,
+            score: gradeEntries.score,
+        })
+        .from(gradeEntries)
+        .where(eq(gradeEntries.studentId, studentId));
+
+    // 4. Structure the data
     const reportData: Record<string, any> = {};
     const columns = new Set<string>();
 
-    grades.forEach(g => {
-        if (!reportData[g.subjectName]) {
-            reportData[g.subjectName] = {
-                subject: g.subjectName,
+    assessmentList.forEach(item => {
+        if (!reportData[item.subjectName]) {
+            reportData[item.subjectName] = {
+                subject: item.subjectName,
                 grades: {},
                 total: 0
             };
         }
         
-        const score = parseFloat(g.score || "0");
-        reportData[g.subjectName].grades[g.assessmentTitle] = score;
-        reportData[g.subjectName].total += score;
-        columns.add(g.assessmentTitle);
+        columns.add(item.title);
+        
+        const grade = grades.find(g => g.assessmentItemId === item.id);
+        if (grade) {
+            const score = parseFloat(grade.score || "0");
+            reportData[item.subjectName].grades[item.title] = score;
+            reportData[item.subjectName].total += score;
+        }
     });
 
     return {

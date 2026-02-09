@@ -8,6 +8,7 @@ import {
   getGradeGridData,
   getClassStatistics,
   getCertificateData,
+  getStudentReportData,
 } from "@midday/db/queries";
 import { 
   createGradeEntrySchema, 
@@ -30,6 +31,12 @@ export const gradesRouter = createTRPCRouter({
     .input(z.object({ studentId: z.string().uuid(), termId: z.number().optional() }))
     .query(async ({ input }) => {
       return getStudentGrades(input.studentId, input.termId);
+    }),
+
+  getReportData: protectedProcedure
+    .input(z.object({ studentId: z.string().uuid() }))
+    .query(async ({ input }) => {
+      return getStudentReportData(input.studentId);
     }),
 
   createEntry: protectedProcedure

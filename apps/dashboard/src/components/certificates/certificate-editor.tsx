@@ -22,6 +22,7 @@ import {
 import { useToast } from "@midday/ui/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { GradesTable } from "./grades-table";
 import {
   Type,
   ImageIcon,
@@ -423,7 +424,13 @@ export function CertificateEditor({
                             key={v.value} 
                             variant="ghost"
                             className="w-full justify-start text-xs h-8"
-                            onClick={() => addElement("variable", v.label, v.value)}
+                            onClick={() => {
+                              if (v.isTable) {
+                                addElement("table", "table");
+                              } else {
+                                addElement("variable", v.label, v.value);
+                              }
+                            }}
                           >
                             <Plus className="w-3 h-3 mr-2" />
                             {v.label}
@@ -593,16 +600,12 @@ export function CertificateEditor({
             </TabsContent>
           </ScrollArea>
 
-          <AnimatePresence>
-            {!selectedElement && (
-              <div className="p-6 border-t bg-background">
-                <Button onClick={handleSave} disabled={isSaving} className="w-full">
-                  {isSaving ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <Save className="w-4 h-4 ml-2" />}
-                  {mode === "create" ? "إنشاء القالب" : "حفظ التغييرات"}
-                </Button>
-              </div>
-            )}
-          </AnimatePresence>
+          <div className="p-6 border-t bg-background">
+            <Button onClick={handleSave} disabled={isSaving} className="w-full">
+              {isSaving ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <Save className="w-4 h-4 ml-2" />}
+              {mode === "create" ? "إنشاء القالب" : "حفظ التغييرات"}
+            </Button>
+          </div>
         </Tabs>
       </div>
 
@@ -743,28 +746,12 @@ export function CertificateEditor({
                                     borderColor: el.content === "box" ? el.backgroundColor : "transparent",
                                   }} 
                                 />
-                              ) : el.type === "table" ? (
-                                <div className="w-full bg-white border border-black text-xs" dir="rtl">
-                                  <div className="grid grid-cols-5 bg-gray-100 border-b border-black font-bold py-1 text-center">
-                                    <div className="border-l border-black col-span-2">المادة</div>
-                                    <div className="border-l border-black">الشهر 1</div>
-                                    <div className="border-l border-black">نصف العام</div>
-                                    <div>المجموع</div>
-                                  </div>
-                                  {[1, 2, 3, 4, 5, 6].map((i) => (
-                                    <div key={i} className="grid grid-cols-5 border-b border-gray-200 text-xs py-1 text-center">
-                                      <div className="border-l border-gray-200 col-span-2 text-right pr-2">مادة {i}</div>
-                                      <div className="border-l border-gray-200">20</div>
-                                      <div className="border-l border-gray-200">30</div>
-                                      <div>50</div>
-                                    </div>
-                                  ))}
-                                  <div className="grid grid-cols-5 bg-gray-50 font-bold py-1 text-center border-t border-black">
-                                    <div className="col-span-2 text-right pr-2">المجموع</div>
-                                    <div className="col-span-3">480 / 500</div>
-                                  </div>
-                                </div>
-                              ) : el.type === "image" ? (
+                               ) : (el.type === "table" || (el.type === "variable" && el.variableKey === "table")) ? (
+                                <GradesTable 
+                                  studentId={previewStudentId || students?.[0]?.userId || ""} 
+                                  isPreview={isPreview}
+                                />
+                               ) : el.type === "image" ? (
                                 <img src={content} className="w-full h-auto shadow-sm" draggable={false} alt="asset" />
 
                               ) : (
