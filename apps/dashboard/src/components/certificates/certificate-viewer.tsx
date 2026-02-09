@@ -7,7 +7,7 @@ import { ShieldCheck, Award, BadgeAlert, Check } from "lucide-react";
 
 interface Element {
   id: string;
-  type: "text" | "variable" | "image" | "badge";
+  type: "text" | "variable" | "image" | "badge" | "table" | "grades-table" | "shape";
   content: string;
   variableKey?: string;
   x: number;
@@ -20,12 +20,17 @@ interface Element {
   height?: number;
   opacity?: number;
   rotation?: number;
+  fontFamily?: string;
+  backgroundColor?: string;
+  columns?: Array<{ id: string; header: string; width: number; variableKey?: string }>;
 }
 
 interface CertificateViewerProps {
   template: {
     backgroundImageUrl?: string | null;
     headerContent?: any;
+    mainContent?: any;
+    footerContent?: any;
     size?: string;
     orientation?: string;
   };
@@ -58,7 +63,10 @@ export function CertificateViewer({
   className,
 }: CertificateViewerProps) {
   const elements = useMemo(() => {
-    return (template.headerContent?.elements || []) as Element[];
+    const h = template.headerContent?.elements || [];
+    const m = template.mainContent?.elements || [];
+    const f = template.footerContent?.elements || [];
+    return [...h, ...m, ...f] as Element[];
   }, [template]);
 
   const size = (template.size || "a4") as keyof typeof PAPER_SIZES;
@@ -107,7 +115,8 @@ export function CertificateViewer({
               transform: `translate(-50%, -50%) rotate(${el.rotation || 0}deg)`,
               textAlign: el.align as any,
               opacity: el.opacity ?? 1,
-              width: (el.type === "image" || el.type === "badge") ? `${el.width}%` : "auto",
+              width: (el.type === "image" || el.type === "badge" || el.type === "table" || el.type === "grades-table" || el.type === "shape") ? `${el.width}%` : "auto",
+              height: el.type === "shape" ? `${el.height}px` : "auto",
               zIndex: (el.type === "image" || el.type === "badge") ? 5 : 10,
             }}
          >
@@ -120,12 +129,32 @@ export function CertificateViewer({
                    return <StampIcon className="w-[60%] h-[60%]" style={{ color: el.color }} />;
                  })()}
               </div>
+           ) : el.type === "shape" ? (
+             <div 
+                className="w-full h-full" 
+                style={{ backgroundColor: el.backgroundColor }} 
+             />
+           ) : el.type === "grades-table" ? (
+             <div className="w-full bg-white border-2 border-black text-[10px]" dir="rtl">
+                <div 
+                  className="grid bg-gray-100 border-b-2 border-black font-bold text-center"
+                  style={{ gridTemplateColumns: `repeat(${el.columns?.length || 5}, 1fr)` }}
+                >
+                  {el.columns?.map(col => (
+                    <div key={col.id} className="border-l border-black py-1 px-1">{col.header}</div>
+                  ))}
+                </div>
+                {/* Normally we'd render rows here based on data, for now we show dummy or partial implementation */}
+                {/* This part should be dynamic based on the actual student's results in the future */}
+                <div className="p-2 text-center text-muted-foreground italic">بيانات الدرجات الديناميكية</div>
+             </div>
            ) : (
              <div 
                 style={{
                   fontSize: `${el.fontSize}px`,
                   fontWeight: el.fontWeight,
                   color: el.color,
+                  fontFamily: el.fontFamily,
                   whiteSpace: "nowrap",
                 }}
              >

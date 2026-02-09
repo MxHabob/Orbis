@@ -49,6 +49,7 @@ export async function upsertCertificateTemplate(
     
     // Content
     headerContent: data.headerContent ?? null,
+    mainContent: data.mainContent ?? null,
     footerContent: data.footerContent ?? null,
     
     // Config

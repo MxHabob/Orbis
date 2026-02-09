@@ -383,3 +383,45 @@ export const getClassStatistics = async (classId: string) => {
   await gradeCache.set(cacheKey, result);
   return result;
 };
+
+export const getStudentReportData = async (studentId: string) => {
+    // 1. Get all grade entries with assessment and subject info
+    const grades = await db
+        .select({
+            subjectName: subjects.name,
+            assessmentTitle: assessmentItems.title,
+            score: gradeEntries.score,
+            maxScore: assessmentItems.maxScore,
+            month: assessmentItems.month,
+        })
+        .from(gradeEntries)
+        .innerJoin(assessmentItems, eq(gradeEntries.assessmentItemId, assessmentItems.id))
+        .innerJoin(subjects, eq(assessmentItems.subjectId, subjects.id))
+        .where(eq(gradeEntries.studentId, studentId))
+        .orderBy(asc(subjects.name), asc(assessmentItems.month));
+
+    // 2. Group by subject
+    const reportData: Record<string, any> = {};
+    const columns = new Set<string>();
+
+    grades.forEach(g => {
+        if (!reportData[g.subjectName]) {
+            reportData[g.subjectName] = {
+                subject: g.subjectName,
+                grades: {},
+                total: 0
+            };
+        }
+        
+        const score = parseFloat(g.score || "0");
+        reportData[g.subjectName].grades[g.assessmentTitle] = score;
+        reportData[g.subjectName].total += score;
+        columns.add(g.assessmentTitle);
+    });
+
+    return {
+        rows: Object.values(reportData),
+        columns: Array.from(columns)
+    };
+};
+

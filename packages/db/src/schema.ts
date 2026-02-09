@@ -293,6 +293,7 @@ export const certificateTemplates = pgTable('certificate_templates', {
   
   // Rich Text Content (Tiptap JSON)
   headerContent: jsonb('header_content'), // بديل للحقول الثابتة
+  mainContent: jsonb('main_content'),
   footerContent: jsonb('footer_content'),
   
   // Structured Configuration

@@ -6,19 +6,29 @@ import { RedisCache } from "@midday/cache";
 
 const studentCache = new RedisCache("student", 30 * 60);
 
-export const getAllStudents = async () => {
-    const cacheKey = `all`;
-    const cached = await studentCache.get<any[]>(cacheKey);
-    if (cached) return cached;
-
-    const results = await db
-        .select()
-        .from(students);
-    
-    if (results.length > 0) {
-        await studentCache.set(cacheKey, results);
-    }
-    return results;
+export const getAllStudentss = async () => {
+    return db
+        .select({
+            userId: students.userId,
+            studentNumber: students.studentNumber,
+            secretNumber: students.secretNumber,
+            currentClassId: students.currentClassId,
+            status: students.status,
+            stats: students.stats,
+            name: users.name,
+            image: users.image,
+            email: users.email,
+            sex: users.sex,
+            currentClass: {
+                id: classes.id,
+                name: classes.name,
+            },
+        })
+        .from(students)
+        .innerJoin(users, eq(students.userId, users.id))
+        .leftJoin(classes, eq(students.currentClassId, classes.id))
+        .orderBy(asc(users.name))
+        .limit(200);
 };
 
 export const getStudentsByClassId = async (

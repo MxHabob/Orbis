@@ -12,7 +12,7 @@ import {
   updateStudent,
   getStudentByUserId,
   getStudentsByClassId,
-  getAllStudents,
+  getAllStudentss,
   upsertStudent,
   getStudentEnrollments,
 } from "@midday/db/queries";
@@ -21,7 +21,7 @@ import { z } from "zod";
 
 export const studentsRouter = createTRPCRouter({
   getAll: protectedProcedure.query(async () => {
-    return getAllStudents();
+    return getAllStudentss();
   }),
   getByClassId: protectedProcedure
     .input(

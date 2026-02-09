@@ -21,7 +21,7 @@ import {
 } from "@midday/ui/select";
 import { useToast } from "@midday/ui/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Type,
   ImageIcon,
@@ -115,22 +115,8 @@ const VARIABLES = [
   ]}
 ];
 
-const SAMPLE_DATA = {
-  student_name: "اسماء عبدالاله علي يحيى حسين السراجي",
-  academic_number: "2196583",
-  department: "علمي",
-  section: "ب",
-  class_name: "الأول أساسي",
-  total_grade: "576",
-  total_grade_text: "خمسمائة و ست و سبعون",
-  grade_label: "ممتاز",
-  final_result: "ناجح",
-  rank: "العاشر",
-  org_name: "مدرسة النصر",
-  admin_name: "إدارة المدرسة",
-  vp_name: "وكيل المدرسة",
-  issue_date: "2023/2024",
-};
+// SAMPLE_DATA was removed to use real data from the database.
+
 
 const FONTS = [
   { label: "الخط الافتراضي", value: "inherit" },
@@ -162,24 +148,59 @@ export function CertificateEditor({
   const [elements, setElements] = useState<EditorElement[]>(initialData?.headerContent?.elements || []);
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   const [isPreview, setIsPreview] = useState(false);
+  const [previewStudentId, setPreviewStudentId] = useState<string | null>(null);
+  const { data: students } = useQuery(trpc.students.getAll.queryOptions());
+
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const canvasRef = useRef<HTMLDivElement>(null);
 
+  const selectedPreviewStudent = students?.find(s => s.userId === previewStudentId) || students?.[0];
+
+  const getPreviewData = (student: any) => {
+    if (!student) return {};
+    const stats = (student.stats as any) || {};
+    return {
+      student_name: student.name || "اسم الطالب",
+      name: student.name || "اسم الطالب",
+      academic_number: student.studentNumber || "20240001",
+      national_id: student.secretNumber || "123456789",
+      department: stats.department || "علمي",
+      section: stats.section || "أ",
+      class_name: student.currentClass?.name || "الأول أساسي",
+      total_grade: stats.total_grade || "0",
+      total_grade_text: stats.total_grade_text || "",
+      grade_label: stats.grade_label || "",
+      final_result: stats.final_result || "",
+      rank: stats.rank || "1",
+      org_name: "مدرسة النصر النموذجية",
+      admin_name: "مدير المدرسة",
+      vp_name: "مسجل الطلاب",
+      issue_date: "2024/2023",
+    };
+  };
+
+  const previewData = getPreviewData(selectedPreviewStudent);
+
+
   const createTemplate = useMutation(
     trpc.certificateTemplates.upsert.mutationOptions({
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["certificateTemplates", "list"] });
+        queryClient.invalidateQueries({
+          queryKey: trpc.certificateTemplates.list.queryKey(),
+        });
       },
-    })
+    }),
   );
 
   const updateTemplate = useMutation(
     trpc.certificateTemplates.upsert.mutationOptions({
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["certificateTemplates", "list"] });
+        queryClient.invalidateQueries({
+          queryKey: trpc.certificateTemplates.list.queryKey(),
+        });
       },
-    })
+    }),
   );
 
   const canvasWidth = orientation === "portrait" ? PAPER_SIZES[paperSize].width : PAPER_SIZES[paperSize].height;
@@ -329,8 +350,7 @@ export function CertificateEditor({
   const selectedElement = elements.find(el => el.id === selectedElementId);
 
   const EditorContent = (
-    <div className="relative h-full flex">
-      {/* Left Sidebar - Properties Panel (نفس تصميم invoice) */}
+    <div className="relative h-full flex w-full overflow-hidden">
       <div className="w-[320px] bg-background border-r flex flex-col z-20 shrink-0">
         <div className="p-6 border-b">
           <div className="flex items-center gap-3 mb-4">
@@ -587,14 +607,36 @@ export function CertificateEditor({
       </div>
 
       {/* Main Canvas Area (نفس تصميم invoice) */}
-      <div className="flex-1 flex flex-col bg-[#fcfcfc] dark:bg-[#0f0f0f]">
-        <div className="h-16 border-b flex items-center justify-between px-6 bg-background">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#fcfcfc] dark:bg-[#0f0f0f]">
+        <div className="h-16 border-b flex items-center justify-between px-6 bg-background shrink-0">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Maximize className="w-3 h-3" />
               {paperSize.toUpperCase()} · {orientation === 'portrait' ? 'طولي' : 'عرضي'}
             </div>
+
+            {isPreview && (
+              <div className="flex items-center gap-2 border-r pr-4 mr-4" dir="rtl">
+                <TableIcon className="w-3 h-3 text-muted-foreground" />
+                <Select dir="rtl" value={previewStudentId || students?.[0]?.userId || ""} onValueChange={setPreviewStudentId}>
+                  <SelectTrigger className="h-7 w-[200px] text-[10px] bg-accent/50 border-0 shadow-none focus:ring-0">
+                    <SelectValue placeholder="اختر سجل للمعاينة..." />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[400px]">
+                    {students?.map((s: any) => (
+                      <SelectItem key={s.userId} value={s.userId} className="text-xs">
+                        <div className="flex flex-col items-start gap-0.5" dir="rtl">
+                          <span className="font-bold">{s.name || "بدون اسم"}</span>
+                          <span className="text-[9px] text-muted-foreground opacity-70">{s.studentNumber}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
+
 
           <div className="flex items-center gap-2">
             <Button 
@@ -616,9 +658,10 @@ export function CertificateEditor({
           </div>
         </div>
 
-        <div className="flex-1 overflow-auto p-8 flex items-center justify-center">
+        <div className="flex-1 overflow-hidden p-8 flex items-center justify-center">
           <TransformWrapper
-            initialScale={0.6}
+            key={`${orientation}-${paperSize}`}
+            initialScale={orientation === "landscape" ? 0.45 : 0.6}
             minScale={0.2}
             maxScale={2}
             centerOnInit
@@ -639,10 +682,11 @@ export function CertificateEditor({
 
                 <div className="w-full h-full">
                   <TransformComponent wrapperClass="!w-full !h-full" contentClass="!w-full !h-full flex items-center justify-center">
-                    <div 
+                    <motion.div
                       ref={canvasRef}
+                      layout
                       className={cn(
-                        "relative bg-white shadow-2xl",
+                        "relative bg-white shadow-2xl origin-center",
                         isDragging && "select-none"
                       )}
                       style={{ width: canvasWidth, height: canvasHeight }}
@@ -662,8 +706,9 @@ export function CertificateEditor({
                         {elements.map((el) => {
                           const isSelected = selectedElementId === el.id;
                           const content = isPreview && el.variableKey 
-                            ? SAMPLE_DATA[el.variableKey.replace(/[{}]/g, "") as keyof typeof SAMPLE_DATA] || el.content
+                            ? (previewData[el.variableKey.replace(/[{}]/g, "") as keyof typeof previewData] || el.content)
                             : el.content;
+
 
                           return (
                             <div
@@ -743,7 +788,7 @@ export function CertificateEditor({
                           );
                         })}
                       </motion.div>
-                    </div>
+                    </motion.div>
                   </TransformComponent>
                 </div>
               </>
