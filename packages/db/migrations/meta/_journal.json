@@ -36,6 +36,13 @@
       "when": 1770642533881,
       "tag": "0004_stale_omega_flight",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1770671696784,
+      "tag": "0005_cold_rage",
+      "breakpoints": true
     }
   ]
 }

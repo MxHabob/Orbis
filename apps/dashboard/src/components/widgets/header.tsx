@@ -8,6 +8,7 @@ import { cn } from "@midday/ui/cn";
 import { TabsList, TabsTrigger } from "@midday/ui/tabs";
 import { useEffect, useState } from "react";
 import { useIsCustomizing } from "./widget-provider";
+import { authClient } from "@midday/auth/auth-client";
 
 function getTimeBasedGreeting(timezone?: string): string {
   const userTimezone =
@@ -26,28 +27,27 @@ function getTimeBasedGreeting(timezone?: string): string {
 }
 
 export function WidgetsHeader() {
-  const { data: user } = useUserQuery();
+  const { data: session } = authClient.useSession();
   const isCustomizing = useIsCustomizing();
   const [greeting, setGreeting] = useState(() =>
-    getTimeBasedGreeting(user?.timezone ?? undefined),
+    getTimeBasedGreeting(undefined),
   );
 
   useEffect(() => {
-    // Update greeting immediately when user timezone changes
-    setGreeting(getTimeBasedGreeting(user?.timezone ?? undefined));
+    // Update greeting immediately
+    setGreeting(getTimeBasedGreeting(undefined));
 
     // Set up interval to update greeting every 5 minutes
-    // This ensures the greeting changes naturally as time passes
     const interval = setInterval(
       () => {
-        const newGreeting = getTimeBasedGreeting(user?.timezone ?? undefined);
+        const newGreeting = getTimeBasedGreeting(undefined);
         setGreeting(newGreeting);
       },
       5 * 60 * 1000,
-    ); // 5 minutes
+    ); 
 
     return () => clearInterval(interval);
-  }, [user?.timezone]);
+  }, []);
 
   return (
     <div className="flex justify-between items-end mb-6">
@@ -55,7 +55,7 @@ export function WidgetsHeader() {
         <h1 className="text-[30px] font-serif leading-normal mb-1">
           <span>{greeting} </span>
           <span className="text-[#666666]">
-            {user?.fullName?.split(" ")[0]},
+            {session?.user?.name?.split(" ")[0]},
           </span>
         </h1>
         <p className="text-[#666666] text-[14px]">
@@ -83,14 +83,14 @@ export function WidgetsHeader() {
               Overview
             </TabsTrigger>
             <TabsTrigger
-              value="metrics"
+              value="calendar"
               className={cn(
                 "group relative flex items-center gap-1.5 px-3 py-1.5 text-[14px] transition-all whitespace-nowrap border border-transparent h-9 min-h-9",
                 "text-[#707070] hover:text-black bg-[#f7f7f7] dark:text-[#666666] dark:hover:text-white dark:bg-[#131313] mb-0 relative z-[1]",
                 "data-[state=active]:text-black data-[state=active]:bg-[#e6e6e6] dark:data-[state=active]:text-white dark:data-[state=active]:bg-[#1d1d1d] data-[state=active]:mb-[-1px] data-[state=active]:z-10",
               )}
             >
-              Metrics
+              Calendar
             </TabsTrigger>
           </TabsList>
         </div>

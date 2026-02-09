@@ -1,9 +1,7 @@
 "use client";
 
 import { useMetricsFilter } from "@/hooks/use-metrics-filter";
-import { useTeamQuery } from "@/hooks/use-team";
 import { useUserQuery } from "@/hooks/use-user";
-import { useTRPC } from "@/trpc/client";
 import type { PeriodOption } from "@/utils/metrics-date-utils";
 import { Button } from "@midday/ui/button";
 import { Calendar, CalendarDayButton } from "@midday/ui/calendar";
@@ -24,7 +22,6 @@ import {
 } from "@midday/ui/dropdown-menu";
 import { Icons } from "@midday/ui/icons";
 import { CheckIcon } from "@radix-ui/react-icons";
-import { useQuery } from "@tanstack/react-query";
 import { format, formatISO, parseISO } from "date-fns";
 import { useState } from "react";
 import type { DateRange } from "react-day-picker";
@@ -40,41 +37,17 @@ const PERIOD_OPTIONS: Array<{ value: PeriodOption; label: string }> = [
   { value: "custom", label: "Custom" },
 ];
 
-const REVENUE_TYPE_OPTIONS: Array<{ value: "gross" | "net"; label: string }> = [
-  { value: "gross", label: "Gross Revenue (inc tax)" },
-  { value: "net", label: "Net Revenue (ex tax)" },
-];
+
 
 export function MetricsFilter() {
-  const { data: team } = useTeamQuery();
   const { data: user } = useUserQuery();
-  const trpc = useTRPC();
   const {
     period,
-    revenueType,
-    currency,
-    effectiveCurrency,
     from,
     to,
-    fiscalYearStartMonth,
     updatePeriod,
-    updateRevenueType,
-    updateCurrency,
     updateDateRange,
   } = useMetricsFilter();
-
-  const { data: currencies } = useQuery(
-    trpc.bankAccounts.currencies.queryOptions(),
-  );
-
-  const baseCurrency = team?.baseCurrency;
-
-  // Get unique currencies from bank accounts, excluding base currency
-  const uniqueCurrencies = currencies
-    ? [...new Set(currencies.map((c) => c.currency).filter(Boolean))]
-        .filter((curr) => curr !== baseCurrency)
-        .sort()
-    : [];
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -152,7 +125,7 @@ export function MetricsFilter() {
                   <DropdownMenuSubContent className="w-auto p-0" sideOffset={8}>
                     <Calendar
                       mode="range"
-                      weekStartsOn={user?.weekStartsOnMonday ? 1 : 0}
+                      weekStartsOn={0}
                       selected={dateRange}
                       onSelect={handleCustomDateSelect}
                       disabled={(date) => date > new Date()}
@@ -213,78 +186,7 @@ export function MetricsFilter() {
 
         <DropdownMenuSeparator />
 
-        {/* REVENUE TYPE Section */}
-        <DropdownMenuGroup>
-          <DropdownMenuLabel className="text-[10px] text-muted-foreground font-normal px-2 py-1.5">
-            REVENUE TYPE
-          </DropdownMenuLabel>
-          <DropdownMenuRadioGroup
-            value={revenueType}
-            onValueChange={(value) =>
-              updateRevenueType(value as "gross" | "net")
-            }
-          >
-            {REVENUE_TYPE_OPTIONS.map((option) => (
-              <DropdownMenuRadioItem
-                key={option.value}
-                value={option.value}
-                className={cn(
-                  "text-xs",
-                  revenueType === option.value &&
-                    "dark:bg-[#131313] dark:data-[state=checked]:bg-[#131313]",
-                  "hover:dark:bg-[#131313]",
-                )}
-              >
-                {option.label}
-              </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
-        </DropdownMenuGroup>
-
-        {uniqueCurrencies.length > 0 && (
-          <>
-            <DropdownMenuSeparator />
-
-            {/* CURRENCY Section */}
-            <DropdownMenuGroup>
-              <DropdownMenuLabel className="text-[10px] text-muted-foreground font-normal px-2 py-1.5">
-                CURRENCY
-              </DropdownMenuLabel>
-              <DropdownMenuRadioGroup
-                value={effectiveCurrency ?? "base"}
-                onValueChange={(value) =>
-                  updateCurrency(value === "base" ? null : value)
-                }
-              >
-                <DropdownMenuRadioItem
-                  value="base"
-                  className={cn(
-                    "text-xs",
-                    !effectiveCurrency &&
-                      "dark:bg-[#131313] dark:data-[state=checked]:bg-[#131313]",
-                    "hover:dark:bg-[#131313]",
-                  )}
-                >
-                  Base currency{baseCurrency ? ` (${baseCurrency})` : ""}
-                </DropdownMenuRadioItem>
-                {uniqueCurrencies.map((curr) => (
-                  <DropdownMenuRadioItem
-                    key={curr}
-                    value={curr}
-                    className={cn(
-                      "text-xs",
-                      effectiveCurrency === curr &&
-                        "dark:bg-[#131313] dark:data-[state=checked]:bg-[#131313]",
-                      "hover:dark:bg-[#131313]",
-                    )}
-                  >
-                    {curr}
-                  </DropdownMenuRadioItem>
-                ))}
-              </DropdownMenuRadioGroup>
-            </DropdownMenuGroup>
-          </>
-        )}
+        {/* Info Text */}
 
         <DropdownMenuSeparator />
 

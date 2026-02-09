@@ -4,8 +4,7 @@ import type { ArtifactStage, ArtifactType } from "@/lib/artifact-config";
 import { getSectionFromStage } from "@/lib/artifact-config";
 import { extractBankAccountRequired } from "@/lib/chat-utils";
 import type { AgentStatus } from "@/types/agents";
-import { useArtifacts } from "@ai-sdk-tools/artifacts/client";
-import { useDataPart } from "@ai-sdk-tools/store";
+import { useArtifacts, useDataPart } from "@/hooks/use-chat-actions";
 import type { ChatStatus, ToolUIPart, UIMessage } from "ai";
 import { useMemo } from "react";
 

@@ -1,39 +1,42 @@
+
 "use client";
 
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { useMetricsCustomize } from "@/hooks/use-metrics-customize";
 import { useMetricsFilter } from "@/hooks/use-metrics-filter";
-import { useUserQuery } from "@/hooks/use-user";
 import { useMemo, useRef } from "react";
 import { useOnClickOutside } from "usehooks-ts";
-import { BurnRateCard } from "./cards/burn-rate-card";
-import { CategoryExpensesCard } from "./cards/category-expenses-card";
-import { ExpensesCard } from "./cards/expenses-card";
-import { MonthlyRevenueCard } from "./cards/monthly-revenue-card";
-import { ProfitCard } from "./cards/profit-card";
-import { RevenueForecastCard } from "./cards/revenue-forecast-card";
-import { RunwayCard } from "./cards/runway-card";
+import { AttendanceRateCard } from "./cards/attendance-rate-card";
+import { ClassDistributionCard } from "./cards/class-distribution-card";
+import { GenderDistributionCard } from "./cards/gender-distribution-card";
+import { OverallPerformanceCard } from "./cards/overall-performance-card";
+import { StudentCountCard } from "./cards/student-count-card";
+import { TeacherCountCard } from "./cards/teacher-count-card";
 import { MetricsGrid } from "./components/metrics-grid";
 import { SortableChartCard } from "./components/sortable-chart-card";
 import { type ChartId, DEFAULT_CHART_ORDER } from "./utils/chart-types";
+import { useParams } from "next/navigation";
 
 export function MetricsView() {
-  const { data: user } = useUserQuery();
+  const params = useParams();
+  const locale = params.locale as string;
+  // We keep filter hooks to avoid breaking context or if we want to add date filtering later
   const { from, to, currency, revenueType } = useMetricsFilter();
   const { isCustomizing, setIsCustomizing } = useMetricsCustomize();
   const [chartOrder, setChartOrder] = useLocalStorage<ChartId[]>(
-    "metrics-chart-order",
+    "metrics-chart-order-school", // Changed key to reset order for new charts
     DEFAULT_CHART_ORDER,
   );
   const gridRef = useRef<HTMLDivElement>(null!);
 
-  const locale = user?.locale ?? undefined;
 
   // Ensure all charts are in the order (handle new charts being added)
   const orderedCharts = useMemo(() => {
     const orderSet = new Set(chartOrder);
-    const missing = DEFAULT_CHART_ORDER.filter((id) => !orderSet.has(id));
-    return [...chartOrder, ...missing];
+    // Filter out any old chart types that might be in local storage but not in our new set
+    const validCharts = chartOrder.filter(id => DEFAULT_CHART_ORDER.includes(id));
+    const missing = DEFAULT_CHART_ORDER.filter((id) => !validCharts.includes(id));
+    return [...validCharts, ...missing];
   }, [chartOrder]);
 
   useOnClickOutside(gridRef, (event) => {
@@ -56,31 +59,28 @@ export function MetricsView() {
   const renderChart = (chartId: ChartId, index: number) => {
     const wiggleClass = getWiggleClass(index);
     const commonProps = {
+      isCustomizing,
+      wiggleClass,
       from,
       to,
       currency,
       locale,
-      isCustomizing,
-      wiggleClass,
-      revenueType,
     };
 
     const chartContent = (() => {
       switch (chartId) {
-        case "monthly-revenue":
-          return <MonthlyRevenueCard {...commonProps} />;
-        case "burn-rate":
-          return <BurnRateCard {...commonProps} />;
-        case "expenses":
-          return <ExpensesCard {...commonProps} />;
-        case "profit":
-          return <ProfitCard {...commonProps} />;
-        case "revenue-forecast":
-          return <RevenueForecastCard {...commonProps} />;
-        case "runway":
-          return <RunwayCard {...commonProps} />;
-        case "category-expenses":
-          return <CategoryExpensesCard {...commonProps} />;
+        case "student-count":
+          return <StudentCountCard {...commonProps} />;
+        case "teacher-count":
+          return <TeacherCountCard {...commonProps} />;
+        case "attendance-rate":
+          return <AttendanceRateCard {...commonProps} />;
+        case "gender-distribution":
+          return <GenderDistributionCard {...commonProps} />;
+        case "class-distribution":
+          return <ClassDistributionCard {...commonProps} />;
+        case "overall-performance":
+          return <OverallPerformanceCard {...commonProps} />;
         default:
           return null;
       }
@@ -100,7 +100,7 @@ export function MetricsView() {
       );
     }
 
-    return <div key={chartId}>{chartContent}</div>;
+    return <div key={chartId} className="h-full">{chartContent}</div>;
   };
 
   return (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useTeamQuery } from "@/hooks/use-team";
+import { useCurrentAcademicYearQuery } from "@/hooks/use-academic-year";
 import { useMetricsFilterStore } from "@/store/metrics-filter";
 import {
   type PeriodOption,
@@ -77,8 +77,10 @@ function getEffectiveValue<T extends string>(
 }
 
 export function useMetricsFilter() {
-  const { data: team } = useTeamQuery();
-  const fiscalYearStartMonth = team?.fiscalYearStartMonth;
+  const { data: academicYear } = useCurrentAcademicYearQuery();
+  const fiscalYearStartMonth = academicYear?.startDate
+    ? new Date(academicYear.startDate).getMonth()
+    : 0;
 
   // Get store state and actions
   const store = useMetricsFilterStore();
@@ -103,11 +105,13 @@ export function useMetricsFilter() {
     clearOnDefault: true,
   });
 
-  // Initialize store when team changes
+  // Initialize store when academic year changes (using ID as a proxy for year change)
   useEffect(() => {
-    if (!team?.id) return;
-    initialize(team.id, fiscalYearStartMonth);
-  }, [team?.id, fiscalYearStartMonth, initialize]);
+    if (!academicYear?.id) return;
+    // We use academicYear.id as the "teamId" equivalent for initialization to keep it unique per year
+    const yearId = String(academicYear.id);
+    initialize(yearId, fiscalYearStartMonth);
+  }, [academicYear?.id, fiscalYearStartMonth, initialize]);
 
   // Update fiscal year start month when it changes
   useEffect(() => {
@@ -239,8 +243,8 @@ export function useMetricsFilter() {
     if (effectiveCurrency && typeof effectiveCurrency === "string") {
       return effectiveCurrency;
     }
-    return team?.baseCurrency ?? undefined;
-  }, [effectiveCurrency, team?.baseCurrency]);
+    return undefined; // team?.baseCurrency ?? undefined;
+  }, [effectiveCurrency]);
 
   /**
    * Update functions that sync both store (localStorage) and URL

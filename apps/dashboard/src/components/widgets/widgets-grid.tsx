@@ -46,7 +46,6 @@ import { RecurringExpensesWidget } from "./recurring-expenses";
 import { RevenueForecastWidget } from "./revenue-forecast";
 import { RevenueSummaryWidget } from "./revenue-summary";
 import { RunwayWidget } from "./runway";
-import { TaxSummaryWidget } from "./tax-summary";
 import { TimeTrackerWidget } from "./time-tracker";
 import { TopCustomerWidget } from "./top-customer";
 import { VaultWidget } from "./vault";
@@ -128,7 +127,6 @@ const WIDGET_COMPONENTS: Record<WidgetType, React.ComponentType> = {
   "monthly-spending": MonthlySpendingWidget,
   "invoice-payment-score": InvoicePaymentScoreWidget,
   "recurring-expenses": RecurringExpensesWidget,
-  "tax-summary": TaxSummaryWidget,
   "category-expenses": CategoryExpensesWidget,
   "overdue-invoices-alert": OverdueInvoicesAlertWidget,
   "billable-hours": BillableHoursWidget,
@@ -258,7 +256,9 @@ export function WidgetsGrid() {
     return `wiggle-${wiggleIndex}`;
   };
 
-  const WidgetComponent = WIDGET_COMPONENTS[activeId as WidgetType];
+  const WidgetComponent = activeId
+    ? WIDGET_COMPONENTS[activeId as WidgetType]
+    : null;
 
   return (
     <DndContext
@@ -279,6 +279,7 @@ export function WidgetsGrid() {
               <div className="flex gap-4">
                 {primaryWidgets.map((widgetType, index) => {
                   const WidgetComponent = WIDGET_COMPONENTS[widgetType];
+                  if (!WidgetComponent) return null;
                   const wiggleClass = getWiggleClass(index);
 
                   return (
@@ -306,6 +307,7 @@ export function WidgetsGrid() {
             <div className="hidden lg:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 gap-y-6">
               {primaryWidgets.map((widgetType, index) => {
                 const WidgetComponent = WIDGET_COMPONENTS[widgetType];
+                if (!WidgetComponent) return null;
                 const wiggleClass = getWiggleClass(index);
 
                 return (
@@ -331,6 +333,7 @@ export function WidgetsGrid() {
               <div className="flex gap-4">
                 {primaryWidgets.map((widgetType, index) => {
                   const WidgetComponent = WIDGET_COMPONENTS[widgetType];
+                  if (!WidgetComponent) return null;
                   return (
                     <div
                       key={widgetType}
@@ -349,6 +352,7 @@ export function WidgetsGrid() {
             <div className="hidden lg:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 gap-y-6">
               {primaryWidgets.map((widgetType) => {
                 const WidgetComponent = WIDGET_COMPONENTS[widgetType];
+                if (!WidgetComponent) return null;
                 return (
                   <ErrorBoundary
                     key={widgetType}
@@ -380,6 +384,7 @@ export function WidgetsGrid() {
                 <div className="flex gap-4">
                   {availableWidgets.map((widgetType, index) => {
                     const WidgetComponent = WIDGET_COMPONENTS[widgetType];
+                    if (!WidgetComponent) return null;
                     const wiggleClass = getWiggleClass(
                       primaryWidgets.length + index,
                     );
@@ -409,6 +414,7 @@ export function WidgetsGrid() {
               <div className="hidden lg:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 gap-y-6">
                 {availableWidgets.map((widgetType, index) => {
                   const WidgetComponent = WIDGET_COMPONENTS[widgetType];
+                  if (!WidgetComponent) return null;
                   const wiggleClass = getWiggleClass(
                     primaryWidgets.length + index,
                   );
@@ -437,7 +443,7 @@ export function WidgetsGrid() {
           {activeId ? (
             <div className="shadow-[0_4px_12px_rgba(0,0,0,0.15)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.4)] bg-background cursor-grabbing opacity-90 transform-gpu will-change-transform">
               <ErrorBoundary fallback={<WidgetErrorFallback />}>
-                <WidgetComponent />
+                {WidgetComponent ? <WidgetComponent /> : null}
               </ErrorBoundary>
             </div>
           ) : null}

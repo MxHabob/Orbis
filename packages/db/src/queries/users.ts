@@ -29,6 +29,7 @@ export type UpdateUserParams = {
   email?: string | null;
   image?: string | null;
   phone?: string | null;
+  locale?: string;
   metadata?: any;
   role?: "admin" | "student" | "parent" | "teacher" | "staff";
 };

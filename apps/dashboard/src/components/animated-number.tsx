@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 
 type Props = {
   value: number;
-  currency: string;
+  currency?: string;
   minimumFractionDigits?: number;
   maximumFractionDigits?: number;
   locale?: string;
@@ -30,15 +30,20 @@ export function AnimatedNumber({
   });
   const localeToUse = locale || user?.locale;
 
+  const format: Intl.NumberFormatOptions = {
+    minimumFractionDigits,
+    maximumFractionDigits,
+  };
+
+  if (currency) {
+    format.style = "currency";
+    format.currency = currency;
+  }
+
   return (
     <NumberFlow
       value={value}
-      format={{
-        style: "currency",
-        currency: currency ?? "USD",
-        minimumFractionDigits,
-        maximumFractionDigits,
-      }}
+      format={format}
       willChange
       locales={localeToUse ?? "en"}
     />

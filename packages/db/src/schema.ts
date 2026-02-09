@@ -43,6 +43,7 @@ export const users = pgTable('users', {
   role: roleEnum('role').default('student').notNull(),
   sex: userSexEnum('sex').default('unspecified').notNull(),
   image: varchar('image', { length: 255 }),
+  locale: varchar('locale', { length: 255 }).default('en'),
   metadata: jsonb('metadata'),
   deletedAt: timestamp('deleted_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),

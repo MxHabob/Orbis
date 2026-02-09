@@ -35,6 +35,9 @@ export const userSchema = z.object({
   metadata: z.record(z.string(), z.any()).nullable().openapi({
     example: {},
   }),
+  locale: z.string().openapi({
+    example: "en",
+  }),
 });
 
 export const createUserSchema = userSchema.omit({ 

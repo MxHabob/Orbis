@@ -5,7 +5,7 @@ import { useChatInterface } from "@/hooks/use-chat-interface";
 import { useMetricsFilter } from "@/hooks/use-metrics-filter";
 import { useTRPC } from "@/trpc/client";
 import { getPeriodLabel } from "@/utils/metrics-date-utils";
-import { useChatActions, useChatId } from "@ai-sdk-tools/store";
+import { useChatActions, useChatId } from "@/hooks/use-chat-actions";
 import { Icons } from "@midday/ui/icons";
 import { useQuery } from "@tanstack/react-query";
 import { BaseWidget } from "./base";

@@ -2,7 +2,7 @@
 
 import { useChatInterface } from "@/hooks/use-chat-interface";
 import { useTRPC } from "@/trpc/client";
-import { useChatActions, useChatId } from "@ai-sdk-tools/store";
+import { useChatActions, useChatId } from "@/hooks/use-chat-actions";
 import type { AppRouter } from "@midday/api/trpc/routers/_app";
 import { cn } from "@midday/ui/cn";
 import { Icons } from "@midday/ui/icons";

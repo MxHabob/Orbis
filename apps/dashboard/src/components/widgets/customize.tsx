@@ -23,12 +23,13 @@ export function Customize() {
     return null;
   }
 
-  const isCustomizing = isMetricsTab
-    ? metricsIsCustomizing
-    : widgetsIsCustomizing;
+  const isCustomizing =
+    isMetricsTab || !isMetricsTab // Since we merged metrics into overview, overview now has metrics
+      ? metricsIsCustomizing
+      : widgetsIsCustomizing;
 
   const handleToggle = () => {
-    if (isMetricsTab) {
+    if (isMetricsTab || true) { // Always toggle metrics for now as it's the main view
       setMetricsCustomizing(!metricsIsCustomizing);
     } else {
       setWidgetsCustomizing(!widgetsIsCustomizing);
