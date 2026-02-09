@@ -1,41 +1,39 @@
 
 import { getI18n } from "@/locales/server";
-import { CertificateTemplateList } from "@/components/certificates/template-list";
+import { DataTable } from "@/components/tables/certificates/data-table";
 import { Button } from "@midday/ui/button";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
-import { listCertificateTemplates } from "@midday/db/queries/certificate-templates";
+import { ScrollableContent } from "@/components/scrollable-content";
+import { CertificateSummaryList } from "@/components/certificates/certificate-summary-list";
+import type { Metadata } from "next";
+import { TableToolbar } from "@/components/tables/certificates/table-toolbar";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Certificate Templates | Midday",
 };
 
 export default async function CertificateTemplatesPage() {
   const t = await getI18n();
-  const templates = await listCertificateTemplates();
 
   return (
-    <div className="flex flex-col gap-8 p-8 max-w-[1200px] mx-auto w-full">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
-        <div>
-          <h1 className="text-3xl font-bold font-cal">{t("certificates.templates")}</h1>
-          <p className="text-muted-foreground mt-2">
-            {t("certificates.templates_description")}
-          </p>
-        </div>
-        
-        <Link href="/certificates/create">
-          <Button>
-            <Plus className="mr-2 w-4 h-4" />
-            {t("certificates.create_template")}
-          </Button>
-        </Link>
+    <ScrollableContent>
+      <div className="flex flex-col gap-6 mt-6">
+        <Suspense fallback={
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="h-[120px] bg-muted/20 animate-pulse rounded-lg" />
+            <div className="h-[120px] bg-muted/20 animate-pulse rounded-lg" />
+            <div className="h-[120px] bg-muted/20 animate-pulse rounded-lg" />
+          </div>
+        }>
+          <CertificateSummaryList />
+        </Suspense>
+        <TableToolbar />
+        <Suspense fallback={<div className="h-[400px] w-full bg-muted/20 animate-pulse rounded-lg" />}>
+          <DataTable />
+        </Suspense>
       </div>
-
-      <Suspense fallback={<div>Loading...</div>}>
-        <CertificateTemplateList initialData={templates} />
-      </Suspense>
-    </div>
+    </ScrollableContent>
   );
 }

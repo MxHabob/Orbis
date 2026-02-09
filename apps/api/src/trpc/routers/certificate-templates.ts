@@ -7,6 +7,7 @@ import {
   createCertificateTemplate,
   setDefaultCertificateTemplate,
   deleteCertificateTemplate,
+  getCertificateTemplatesSummary,
 } from "@midday/db/queries";
 import {
   upsertCertificateTemplateSchema,
@@ -15,7 +16,9 @@ import {
 import { z } from "zod";
 
 export const certificateTemplateRouter = createTRPCRouter({
-  list: protectedProcedure.query(() => listCertificateTemplates()),
+  list: protectedProcedure
+    .input(z.object({ q: z.string().optional() }).optional())
+    .query(({ input }) => listCertificateTemplates(input?.q)),
 
   getById: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
@@ -38,4 +41,6 @@ export const certificateTemplateRouter = createTRPCRouter({
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(({ input }) => deleteCertificateTemplate(input.id)),
+
+  summary: protectedProcedure.query(() => getCertificateTemplatesSummary()),
 });

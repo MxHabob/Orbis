@@ -18,7 +18,7 @@ export const appRouter = createTRPCRouter({
   attendance: attendanceRouter,
   assessments: assessmentsRouter,
   auditLogs: auditLogsRouter,
-  certificateTemplate: certificateTemplateRouter,
+  certificateTemplates: certificateTemplateRouter,
   classes: classesRouter,
   grades: gradesRouter,
   lessons: lessonsRouter,

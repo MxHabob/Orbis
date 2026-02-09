@@ -1,14 +1,17 @@
-
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useUpload } from "@/hooks/use-upload";
+import { useTRPC } from "@/trpc/client";
 import { Button } from "@midday/ui/button";
 import { Input } from "@midday/ui/input";
 import { Label } from "@midday/ui/label";
 import { Slider } from "@midday/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@midday/ui/tabs";
+import { SheetContent } from "@midday/ui/sheet";
+import { ScrollArea } from "@midday/ui/scroll-area";
+import { Portal } from "@/components/portal";
+import { useCertificateParams } from "@/hooks/use-certificate-params";
 import {
   Select,
   SelectContent,
@@ -16,96 +19,199 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@midday/ui/select";
-import { useTRPC } from "@/trpc/client";
-import { useMutation } from "@tanstack/react-query";
-import { toast } from "@midday/ui/use-toast";
-import { Plus, Type, Upload, ArrowLeft, Loader2, Image as ImageIcon } from "lucide-react";
+import { useToast } from "@midday/ui/use-toast";
+import { motion, AnimatePresence } from "framer-motion";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  Type,
+  ImageIcon,
+  Layers,
+  Upload,
+  Plus,
+  Trash2,
+  Sparkles,
+  Maximize,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  Eye,
+  EyeOff,
+  ArrowLeft,
+  Loader2,
+  Save,
+  Download,
+  Square,
+  Minus,
+  Table as TableIcon,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  ChevronUp,
+  ChevronDown,
+  X,
+} from "lucide-react";
 
 import { cn } from "@midday/ui/cn";
-import { useHotkeys } from "react-hotkeys-hook";
 import { Icons } from "@midday/ui/icons";
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 
-type ElementType = "text" | "variable";
+type ElementType = "text" | "variable" | "image" | "table" | "shape";
+
+interface TableColumn {
+  id: string;
+  header: string;
+  width: number;
+}
 
 interface EditorElement {
   id: string;
   type: ElementType;
   content: string;
-  variableKey?: string; // For dynamic data like {{student_name}}
-  x: number; // percentage 0-100
-  y: number; // percentage 0-100
-  fontSize: number;
-  fontWeight: string;
-  color: string;
-  align: "left" | "center" | "right";
-  width?: number; // max-width in percent
+  variableKey?: string;
+  x: number; // percentage
+  y: number; // percentage
+  fontSize?: number;
+  fontWeight?: string;
+  color?: string;
+  align?: "left" | "center" | "right";
+  width?: number; // percentage of canvas
+  height?: number; // percentage of canvas
+  opacity?: number;
+  rotation?: number;
+  fontFamily?: string;
+  borderColor?: string;
+  borderWidth?: number;
+  backgroundColor?: string;
+  columns?: TableColumn[]; // For table type
 }
 
+const PAPER_SIZES = {
+  a4: { width: 595, height: 842 },
+  letter: { width: 612, height: 792 },
+};
+
 const VARIABLES = [
-  { label: "اسم الطالب", value: "{{student_name}}" },
-  { label: "اسم المدرسة", value: "{{school_name}}" },
-  { label: "الصف الدراسي", value: "{{class_name}}" },
-  { label: "العام الدراسي", value: "{{academic_year}}" },
-  { label: "المجموع الكلي", value: "{{total_grade}}" },
-  { label: "النسبة المئوية", value: "{{percentage}}" },
-  { label: "تاريخ اليوم", value: "{{date}}" },
-  { label: "التقدير", value: "{{grade_label}}" },
-  { label: "رقم الجلوس", value: "{{student_number}}" },
+  { group: "بيانات الطالب", items: [
+    { label: "اسم الطالب", value: "{{student_name}}" },
+    { label: "الرقم الأكاديمي", value: "{{academic_number}}" },
+    { label: "الرقم القومي", value: "{{national_id}}" },
+    { label: "القسم / التخصص", value: "{{department}}" },
+    { label: "الشعبة", value: "{{section}}" },
+  ]},
+  { group: "النتائج الدراسية", items: [
+    { label: "جدول الدرجات", value: "table", isTable: true },
+    { label: "الصف / المستوى", value: "{{class_name}}" },
+    { label: "المجموع الكلي (رقماً)", value: "{{total_grade}}" },
+    { label: "المجموع الكلي (كتابة)", value: "{{total_grade_text}}" },
+    { label: "التقدير العام", value: "{{grade_label}}" },
+    { label: "النتيجة النهائية", value: "{{final_result}}" },
+    { label: "الترتيب", value: "{{rank}}" },
+  ]},
+  { group: "بيانات المؤسسة", items: [
+    { label: "اسم المنظمة", value: "{{org_name}}" },
+    { label: "إدارة المدرسة", value: "{{admin_name}}" },
+    { label: "وكيل المدرسة", value: "{{vp_name}}" },
+    { label: "تاريخ التقرير", value: "{{issue_date}}" },
+  ]}
+];
+
+const SAMPLE_DATA = {
+  student_name: "اسماء عبدالاله علي يحيى حسين السراجي",
+  academic_number: "2196583",
+  department: "علمي",
+  section: "ب",
+  class_name: "الأول أساسي",
+  total_grade: "576",
+  total_grade_text: "خمسمائة و ست و سبعون",
+  grade_label: "ممتاز",
+  final_result: "ناجح",
+  rank: "العاشر",
+  org_name: "مدرسة النصر",
+  admin_name: "إدارة المدرسة",
+  vp_name: "وكيل المدرسة",
+  issue_date: "2023/2024",
+};
+
+const FONTS = [
+  { label: "الخط الافتراضي", value: "inherit" },
+  { label: "خط كوفي", value: "'Kufam', sans-serif" },
+  { label: "خط أميري (رسمي)", value: "'Amiri', serif" },
+  { label: "خط مروان", value: "'Cairo', sans-serif" },
 ];
 
 export function CertificateEditor({
   initialData,
   mode = "create",
+  isSheet,
 }: {
   initialData?: any;
   mode?: "create" | "edit";
+  isSheet?: boolean;
 }) {
+  const { setParams } = useCertificateParams();
   const router = useRouter();
   const trpc = useTRPC();
   const [isSaving, setIsSaving] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  
-  const createTemplate = useMutation(trpc.certificateTemplate.create.mutationOptions({}));
-  const updateTemplate = useMutation(trpc.certificateTemplate.upsert.mutationOptions({}));
-  
-  // State
-  const [name, setName] = useState(initialData?.name || "New Template");
-  const [backgroundImage, setBackgroundImage] = useState<string | null>(initialData?.backgroundImageUrl || null);
-  const [elements, setElements] = useState<EditorElement[]>(
-    initialData?.headerContent?.elements || []
-  );
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const [name, setName] = useState(initialData?.name || "قالب جديد");
+  const [paperSize, setPaperSize] = useState<"a4" | "letter">(initialData?.size || "a4");
+  const [orientation, setOrientation] = useState<"portrait" | "landscape">(initialData?.orientation || "portrait");
+  const [backgroundImage, setBackgroundImage] = useState(initialData?.backgroundImageUrl || "");
+  const [elements, setElements] = useState<EditorElement[]>(initialData?.headerContent?.elements || []);
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
-  
-  // Tools
-  const { uploadFile, isLoading: isUploading } = useUpload();
-  
-  const handleBackgroundUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    const { url } = await uploadFile({
-      bucket: "apps",
-      path: ["certificates", "backgrounds", `${crypto.randomUUID()}-${file.name}`],
-      file,
-    });
-    
-    if (url) {
-      setBackgroundImage(url);
-    }
-  };
+  const [isPreview, setIsPreview] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const canvasRef = useRef<HTMLDivElement>(null);
+
+  const createTemplate = useMutation(
+    trpc.certificateTemplates.upsert.mutationOptions({
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["certificateTemplates", "list"] });
+      },
+    })
+  );
+
+  const updateTemplate = useMutation(
+    trpc.certificateTemplates.upsert.mutationOptions({
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["certificateTemplates", "list"] });
+      },
+    })
+  );
+
+  const canvasWidth = orientation === "portrait" ? PAPER_SIZES[paperSize].width : PAPER_SIZES[paperSize].height;
+  const canvasHeight = orientation === "portrait" ? PAPER_SIZES[paperSize].height : PAPER_SIZES[paperSize].width;
 
   const addElement = (type: ElementType, content: string, variableKey?: string) => {
     const newElement: EditorElement = {
-      id: crypto.randomUUID(),
+      id: `el-${Date.now()}`,
       type,
       content,
       variableKey,
-      x: 50, // Center
-      y: 50, // Center
-      fontSize: 24,
-      fontWeight: "normal",
-      color: "#000000",
-      align: "center",
+      x: 50,
+      y: 50,
+      opacity: 1,
+      rotation: 0,
+      ...(type === "image" ? { width: 20, height: 20 } : 
+         type === "shape" ? { width: 30, height: 0.5, backgroundColor: "#000000" } :
+         type === "table" ? { 
+            width: 80, 
+            height: 20, 
+            columns: [
+              { id: "1", header: "المادة", width: 40 },
+              { id: "2", header: "المحصلة", width: 30 },
+              { id: "3", header: "المجموع", width: 30 }
+            ] 
+         } : {
+        fontSize: 18,
+        fontWeight: "bold",
+        color: "#000000",
+        align: "right",
+        fontFamily: "inherit"
+      })
     };
     
     setElements([...elements, newElement]);
@@ -115,46 +221,75 @@ export function CertificateEditor({
   const updateElement = (id: string, updates: Partial<EditorElement>) => {
     setElements(elements.map(el => el.id === id ? { ...el, ...updates } : el));
   };
-  
-  const removeElement = (id: string) => {
+
+  const deleteElement = (id: string) => {
     setElements(elements.filter(el => el.id !== id));
-    if (selectedElementId === id) setSelectedElementId(null);
+    setSelectedElementId(null);
   };
 
-  // Drag Logic (Simplified for React State)
-  const handleMouseDown = (e: React.MouseEvent, id: string) => {
+  const handleMouseDown = useCallback((e: React.MouseEvent, elementId: string) => {
+    if (isPreview) return;
+    
     e.stopPropagation();
-    setSelectedElementId(id);
+    setSelectedElementId(elementId);
+    setIsDragging(true);
     
-    const startX = e.clientX;
-    const startY = e.clientY;
-    const element = elements.find(el => el.id === id);
-    if (!element || !containerRef.current) return;
+    const element = elements.find(el => el.id === elementId);
+    if (!element || !canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const elementX = (element.x / 100) * rect.width;
+    const elementY = (element.y / 100) * rect.height;
     
-    const startElX = element.x;
-    const startElY = element.y;
-    const containerRect = containerRef.current.getBoundingClientRect();
+    setDragOffset({
+      x: e.clientX - rect.left - elementX,
+      y: e.clientY - rect.top - elementY,
+    });
+  }, [isPreview, elements]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDragging || !selectedElementId || !canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
     
-    const handleMouseMove = (moveEvent: MouseEvent) => {
-      const deltaX = moveEvent.clientX - startX;
-      const deltaY = moveEvent.clientY - startY;
-      
-      const percentX = (deltaX / containerRect.width) * 100;
-      const percentY = (deltaY / containerRect.height) * 100;
-      
-      updateElement(id, {
-        x: Math.min(100, Math.max(0, startElX + percentX)),
-        y: Math.min(100, Math.max(0, startElY + percentY))
-      });
+    const x = ((e.clientX - rect.left - dragOffset.x) / rect.width) * 100;
+    const y = ((e.clientY - rect.top - dragOffset.y) / rect.height) * 100;
+
+    setElements(prev => prev.map(el => 
+      el.id === selectedElementId 
+        ? { ...el, x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) }
+        : el
+    ));
+  }, [isDragging, selectedElementId, dragOffset]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  useEffect(() => {
+    if (isDragging) {
+      const handleGlobalMouseUp = () => setIsDragging(false);
+      window.addEventListener('mouseup', handleGlobalMouseUp);
+      return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
+    }
+  }, [isDragging]);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, elementType: "background" | "image") => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      if (elementType === "background") {
+        setBackgroundImage(dataUrl);
+      } else {
+        addElement("image", dataUrl);
+      }
     };
-    
-    const handleMouseUp = () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-    };
-    
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
+    reader.readAsDataURL(file);
   };
 
   const handleSave = async () => {
@@ -163,8 +298,9 @@ export function CertificateEditor({
       const payload = {
         name,
         backgroundImageUrl: backgroundImage,
-        headerContent: { elements }, // Store elements in headerContent JSON
-        // Assume default A4/Portrait for now
+        headerContent: { elements },
+        size: paperSize,
+        orientation,
       };
       
       if (mode === "edit" && initialData?.id) {
@@ -172,251 +308,462 @@ export function CertificateEditor({
           id: initialData.id,
           ...payload,
         });
-        toast({ title: "Template updated", variant: "success" });
+        toast({ title: "تم حفظ القالب بنجاح", variant: "success" });
+        if (isSheet) setParams(null);
       } else {
         await createTemplate.mutateAsync(payload);
-        toast({ title: "Template created", variant: "success" });
-        router.push("/certificates");
+        toast({ title: "تم إنشاء القالب بنجاح", variant: "success" });
+        if (isSheet) {
+          setParams(null);
+        } else {
+          router.push("/certificates");
+        }
       }
     } catch (e) {
-      toast({ title: "Failed to save template", variant: "error" });
-      console.error(e);
+      toast({ title: "فشل حفظ القالب", variant: "destructive" });
     } finally {
       setIsSaving(false);
     }
   };
 
-  useHotkeys("delete", () => {
-    if (selectedElementId) removeElement(selectedElementId);
-  }, [selectedElementId]);
-
   const selectedElement = elements.find(el => el.id === selectedElementId);
 
-  return (
-    <div className="flex h-[calc(100vh-80px)] overflow-hidden">
-      {/* Sidebar Controls */}
-      <div className="w-80 bg-background border-r p-4 flex flex-col gap-6 overflow-y-auto z-10 shrink-0">
-        <div className="flex items-center gap-2 mb-4">
-          <Button variant="ghost" size="icon" onClick={() => router.back()}>
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <Input 
-            value={name} 
-            onChange={(e) => setName(e.target.value)} 
-            className="font-bold border-none shadow-none focus-visible:ring-0 px-0 text-lg"
-          />
+  const EditorContent = (
+    <div className="relative h-full flex">
+      {/* Left Sidebar - Properties Panel (نفس تصميم invoice) */}
+      <div className="w-[320px] bg-background border-r flex flex-col z-20 shrink-0">
+        <div className="p-6 border-b">
+          <div className="flex items-center gap-3 mb-4">
+            {!isSheet && (
+              <Button variant="ghost" size="icon" onClick={() => router.back()} className="h-8 w-8">
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+            )}
+            {isSheet && (
+              <Button variant="ghost" size="icon" onClick={() => setParams(null)} className="h-8 w-8">
+                <X className="w-4 h-4" />
+              </Button>
+            )}
+            <div className="flex-1 min-w-0">
+              <Input 
+                value={name} 
+                onChange={(e) => setName(e.target.value)} 
+                className="font-semibold text-sm border-0 shadow-none focus-visible:ring-0 px-0 bg-transparent"
+                placeholder="اسم القالب..."
+                dir="rtl"
+              />
+            </div>
+          </div>
         </div>
 
-        <Tabs defaultValue="add">
-          <TabsList className="w-full">
-            <TabsTrigger value="add" className="flex-1">Add</TabsTrigger>
-            <TabsTrigger value="edit" className="flex-1" disabled={!selectedElement}>Edit</TabsTrigger>
-            <TabsTrigger value="settings" className="flex-1">Settings</TabsTrigger>
+        <Tabs defaultValue="add" className="flex-1 flex flex-col overflow-hidden">
+          <TabsList className="w-full rounded-none bg-transparent border-b px-6">
+            <TabsTrigger value="add" className="text-xs">إضافة</TabsTrigger>
+            <TabsTrigger value="layers" className="text-xs">الطبقات</TabsTrigger>
+            <TabsTrigger value="settings" className="text-xs">الإعدادات</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="add" className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <Label>Background Image</Label>
-              <div className="border border-dashed rounded-lg p-4 text-center hover:bg-muted/50 transition-colors relative">
-                {isUploading ? (
-                  <div className="flex flex-col items-center gap-2">
-                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">Uploading...</span>
+          <ScrollArea className="flex-1 p-6" hideScrollbar>
+            <TabsContent value="add" className="space-y-6 mt-0">
+              <div className="space-y-3">
+                <Label className="text-xs text-muted-foreground">الخلفية والشعارات</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="relative group overflow-hidden rounded-lg border-2 border-dashed aspect-square hover:border-primary/50 transition-colors cursor-pointer bg-accent/50 flex items-center justify-center">
+                    {backgroundImage ? (
+                      <img src={backgroundImage} className="w-full h-full object-cover" alt="BG" />
+                    ) : (
+                      <div className="flex flex-col items-center gap-2">
+                        <ImageIcon className="w-5 h-5 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">الخلفية</span>
+                      </div>
+                    )}
+                    <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleFileUpload(e, "background")} />
                   </div>
-                ) : (
-                  <>
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      className="absolute inset-0 opacity-0 cursor-pointer" 
-                      onChange={handleBackgroundUpload}
-                    />
-                    <div className="flex flex-col items-center gap-2">
-                      <Upload className="w-6 h-6 text-muted-foreground" />
-                      <span className="text-sm font-medium">Upload from Canva/device</span>
-                      <span className="text-xs text-muted-foreground">PNG, JPG (A4 Recommended)</span>
-                    </div>
-                  </>
-                )}
-              </div>
-              <div className="flex justify-center">
-                 <a href="https://www.canva.com/create/certificates/" target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline flex items-center">
-                   Open Canva to Design <Icons.ExternalLink className="w-3 h-3 ml-1" />
-                 </a>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Dynamic Fields</Label>
-              <div className="grid grid-cols-1 gap-2">
-                {VARIABLES.map((v) => (
                   <Button 
-                    key={v.value} 
                     variant="outline" 
-                    className="justify-start text-xs h-9"
-                    onClick={() => addElement("variable", v.label, v.value)}
+                    className="h-auto flex-col py-6 gap-2 border-2 border-dashed rounded-lg"
+                    onClick={() => document.getElementById("add-logo-input")?.click()}
                   >
-                    <Plus className="w-3 h-3 mr-2 text-muted-foreground" />
-                    {v.label}
+                    <Plus className="w-5 h-5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">شعار</span>
+                    <input id="add-logo-input" type="file" className="hidden" onChange={(e) => handleFileUpload(e, "image")} />
                   </Button>
-                ))}
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label>Static Text</Label>
-              <Button onClick={() => addElement("text", "نص ثابت")} className="w-full">
-                <Type className="w-4 h-4 mr-2" /> Add Text
-              </Button>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="edit" className="space-y-4 mt-4">
-            {selectedElement ? (
-              <>
-                 <div className="space-y-2">
-                   <Label>Content</Label>
-                   <Input 
-                     value={selectedElement.content} 
-                     onChange={(e) => updateElement(selectedElement.id, { content: e.target.value })}
-                     disabled={selectedElement.type === "variable"}
-                   />
-                 </div>
-                 
-                 <div className="space-y-2">
-                   <Label>Font Size ({selectedElement.fontSize}px)</Label>
-                   <Slider 
-                     value={[selectedElement.fontSize]} 
-                     min={8} 
-                     max={120} 
-                     step={1}
-                     onValueChange={([val]) => updateElement(selectedElement.id, { fontSize: val })}
-                   />
-                 </div>
-
-                 <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                       <Label>Color</Label>
-                       <div className="flex items-center gap-2">
-                         <div className="w-6 h-6 rounded border shadow-sm" style={{ background: selectedElement.color }} />
-                         <Input 
-                            type="color" 
-                            className="w-full h-8 p-1"
-                            value={selectedElement.color}
-                            onChange={(e) => updateElement(selectedElement.id, { color: e.target.value })}
-                         />
-                       </div>
+              <div className="space-y-3">
+                <Label className="text-xs text-muted-foreground">المتغيرات الديناميكية</Label>
+                <div className="space-y-4">
+                  {VARIABLES.map((group) => (
+                    <div key={group.group} className="space-y-2">
+                      <span className="text-xs font-medium text-muted-foreground/60">{group.group}</span>
+                      <div className="space-y-1">
+                        {group.items.map((v) => (
+                          <Button 
+                            key={v.value} 
+                            variant="ghost"
+                            className="w-full justify-start text-xs h-8"
+                            onClick={() => addElement("variable", v.label, v.value)}
+                          >
+                            <Plus className="w-3 h-3 mr-2" />
+                            {v.label}
+                          </Button>
+                        ))}
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                       <Label>Weight</Label>
-                       <Select 
-                         value={selectedElement.fontWeight} 
-                         onValueChange={(val) => updateElement(selectedElement.id, { fontWeight: val })}
-                        >
-                         <SelectTrigger><SelectValue /></SelectTrigger>
-                         <SelectContent>
-                           <SelectItem value="normal">Normal</SelectItem>
-                           <SelectItem value="bold">Bold</SelectItem>
-                         </SelectContent>
-                       </Select>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-xs text-muted-foreground">النصوص والجداول</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button onClick={() => addElement("text", "نص جديد")} variant="outline" className="text-xs h-9">
+                    <Type className="w-3 h-3 mr-2" /> 
+                    نص ثابت
+                  </Button>
+                  <Button onClick={() => addElement("table", "table")} variant="outline" className="text-xs h-9">
+                    <TableIcon className="w-3 h-3 mr-2" /> 
+                    جدول
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-xs text-muted-foreground">الأشكال والخطوط</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button onClick={() => addElement("shape", "line")} variant="outline" className="text-xs h-9">
+                    <Minus className="w-3 h-3 mr-2" /> 
+                    خط فاصل
+                  </Button>
+                  <Button onClick={() => addElement("shape", "box")} variant="outline" className="text-xs h-9">
+                    <Square className="w-3 h-3 mr-2" /> 
+                    مربع
+                  </Button>
+                </div>
+              </div>
+
+
+            </TabsContent>
+
+            <TabsContent value="layers" className="space-y-2 mt-0">
+              {elements.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground text-sm">
+                  <Layers className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                  <p className="text-xs">لا توجد طبقات</p>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {[...elements].reverse().map((el) => (
+                    <div 
+                      key={el.id}
+                      onClick={() => setSelectedElementId(el.id)}
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors",
+                        selectedElementId === el.id ? "bg-accent" : "hover:bg-accent/50"
+                      )}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium truncate">{el.content}</p>
+                        <p className="text-xs text-muted-foreground">{el.type}</p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 shrink-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteElement(el.id);
+                        }}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
                     </div>
-                 </div>
-                 
-                 <div className="space-y-2">
-                   <Label>Alignment</Label>
-                   <div className="flex border rounded-md overflow-hidden">
-                     {["left", "center", "right"].map((align) => (
-                       <button
-                         key={align}
-                         className={cn(
-                           "flex-1 p-2 text-xs hover:bg-muted capitalize",
-                           selectedElement.align === align && "bg-secondary font-medium"
-                          )}
-                         onClick={() => updateElement(selectedElement.id, { align: align as any })}
-                       >
-                         {align}
-                       </button>
-                     ))}
-                   </div>
-                 </div>
-                 
-                 <Button variant="destructive" onClick={() => removeElement(selectedElement.id)} className="w-full mt-4">
-                   Remove Element
-                 </Button>
-              </>
-            ) : (
-              <div className="text-center py-10 text-muted-foreground">Select an element to edit</div>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="settings" className="space-y-6 mt-0">
+              <div className="space-y-3">
+                <Label className="text-xs text-muted-foreground">حجم الورقة</Label>
+                <Select value={paperSize} onValueChange={(v: any) => setPaperSize(v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="a4">A4 (210×297 mm)</SelectItem>
+                    <SelectItem value="letter">Letter (8.5×11 in)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-xs text-muted-foreground">الاتجاه</Label>
+                <Select value={orientation} onValueChange={(v: any) => setOrientation(v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="portrait">طولي (Portrait)</SelectItem>
+                    <SelectItem value="landscape">عرضي (Landscape)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {selectedElement && (
+                <div className="space-y-4 pt-4 border-t">
+                  <Label className="text-xs text-muted-foreground">خصائص العنصر المحدد</Label>
+                  
+                  {(selectedElement.type === "text" || selectedElement.type === "variable") && (
+                    <>
+                      <div className="space-y-2">
+                        <Label className="text-xs">حجم الخط: {selectedElement.fontSize}px</Label>
+                        <Slider 
+                          value={[selectedElement.fontSize || 18]} 
+                          onValueChange={([v]) => updateElement(selectedElement.id, { fontSize: v })}
+                          min={8} max={120} step={1}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-xs">نوع الخط</Label>
+                        <Select value={selectedElement.fontFamily || "inherit"} onValueChange={(v) => updateElement(selectedElement.id, { fontFamily: v })}>
+                          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {FONTS.map(f => (
+                              <SelectItem key={f.value} value={f.value} style={{ fontFamily: f.value }}>{f.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-xs">المحاذاة</Label>
+                        <div className="flex items-center gap-1 bg-accent p-1 rounded-md">
+                          <Button variant="ghost" size="icon" className={cn("h-7 flex-1", selectedElement.align === "right" && "bg-background")} onClick={() => updateElement(selectedElement.id, { align: "right" })}><AlignRight className="w-3 h-3" /></Button>
+                          <Button variant="ghost" size="icon" className={cn("h-7 flex-1", selectedElement.align === "center" && "bg-background")} onClick={() => updateElement(selectedElement.id, { align: "center" })}><AlignCenter className="w-3 h-3" /></Button>
+                          <Button variant="ghost" size="icon" className={cn("h-7 flex-1", selectedElement.align === "left" && "bg-background")} onClick={() => updateElement(selectedElement.id, { align: "left" })}><AlignLeft className="w-3 h-3" /></Button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {(selectedElement.type === "image" || selectedElement.type === "shape" || selectedElement.type === "table") && (
+                    <div className="space-y-2">
+                      <Label className="text-xs">حجم العنصر: {selectedElement.width}%</Label>
+                      <Slider 
+                        value={[selectedElement.width || 20]} 
+                        onValueChange={([v]) => updateElement(selectedElement.id, { width: v })}
+                        min={5} max={100} step={1}
+                      />
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label className="text-xs">اللون</Label>
+                    <div className="flex items-center gap-2">
+                      <input 
+                        type="color" 
+                        className="w-10 h-10 rounded border cursor-pointer"
+                        value={selectedElement.type === 'shape' ? selectedElement.backgroundColor : selectedElement.color}
+                        onChange={(e) => updateElement(selectedElement.id, selectedElement.type === 'shape' ? { backgroundColor: e.target.value } : { color: e.target.value })}
+                      />
+                      <span className="text-xs font-mono">{(selectedElement.type === 'shape' ? selectedElement.backgroundColor : selectedElement.color)?.toUpperCase()}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </TabsContent>
+          </ScrollArea>
+
+          <AnimatePresence>
+            {!selectedElement && (
+              <div className="p-6 border-t bg-background">
+                <Button onClick={handleSave} disabled={isSaving} className="w-full">
+                  {isSaving ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <Save className="w-4 h-4 ml-2" />}
+                  {mode === "create" ? "إنشاء القالب" : "حفظ التغييرات"}
+                </Button>
+              </div>
             )}
-          </TabsContent>
-          
-          <TabsContent value="settings" className="space-y-4 text-sm text-muted-foreground mt-4">
-            <p>
-              Size: A4 (210mm x 297mm) <br/>
-              Orientation: Portrait
-            </p>
-          </TabsContent>
+          </AnimatePresence>
         </Tabs>
-        
-        <div className="mt-auto pt-4 border-t">
-          <Button onClick={handleSave} disabled={isSaving} className="w-full">
-            {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Save Template
-          </Button>
-        </div>
       </div>
 
-      {/* Main Canvas Area */}
-      <div className="flex-1 bg-grid-slate-100 dark:bg-grid-slate-900/10 bg-secondary/30 p-8 flex items-center justify-center overflow-auto relative">
-         <div 
-           ref={containerRef}
-           className="bg-white shadow-xl relative overflow-hidden transition-all duration-300" 
-           style={{ 
-             width: "595px", // A4 at 72dpi approx, simplified for screen
-             height: "842px",
-             aspectRatio: "210/297",
-             transform: "scale(0.8)", // Initial zoom
-           }}
-           onClick={() => setSelectedElementId(null)}
-         >
-            {/* Background */}
-            {backgroundImage ? (
-              <img 
-                src={backgroundImage} 
-                alt="Certificate Background" 
-                className="w-full h-full object-cover absolute inset-0 pointer-events-none select-none"
-              />
-            ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground/30 border-2 border-dashed border-muted m-4 rounded-xl">
-                <ImageIcon className="w-16 h-16 mb-4" />
-                <p>Upload a background image</p>
-              </div>
-            )}
+      {/* Main Canvas Area (نفس تصميم invoice) */}
+      <div className="flex-1 flex flex-col bg-[#fcfcfc] dark:bg-[#0f0f0f]">
+        <div className="h-16 border-b flex items-center justify-between px-6 bg-background">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Maximize className="w-3 h-3" />
+              {paperSize.toUpperCase()} · {orientation === 'portrait' ? 'طولي' : 'عرضي'}
+            </div>
+          </div>
 
-            {/* Elements */}
-            {elements.map((el) => (
-              <div
-                key={el.id}
-                onMouseDown={(e) => handleMouseDown(e, el.id)}
-                className={cn(
-                  "absolute cursor-move select-none p-1 border border-transparent hover:border-blue-300 transition-colors",
-                  selectedElementId === el.id && "border-primary ring-1 ring-primary"
-                )}
-                style={{
-                  left: `${el.x}%`,
-                  top: `${el.y}%`,
-                  transform: "translate(-50%, -50%)",
-                  fontSize: `${el.fontSize}px`,
-                  fontWeight: el.fontWeight,
-                  color: el.color,
-                  textAlign: el.align,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {el.variableKey ? <span className="opacity-80 font-mono text-sm bg-yellow-100/50 px-1 border border-yellow-200 rounded text-black">{el.content}</span> : el.content}
-              </div>
-            ))}
-         </div>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant={!isPreview ? "secondary" : "ghost"} 
+              size="sm"
+              onClick={() => setIsPreview(false)}
+            >
+              <Type className="w-4 h-4 mr-2" />
+              تحرير
+            </Button>
+            <Button 
+              variant={isPreview ? "secondary" : "ghost"} 
+              size="sm"
+              onClick={() => setIsPreview(true)}
+            >
+              <Eye className="w-4 h-4 mr-2" />
+              معاينة
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-auto p-8 flex items-center justify-center">
+          <TransformWrapper
+            initialScale={0.6}
+            minScale={0.2}
+            maxScale={2}
+            centerOnInit
+          >
+            {({ zoomIn, zoomOut, resetTransform }) => (
+              <>
+                <div className="absolute bottom-6 left-6 z-30 flex items-center gap-2 bg-background border rounded-lg shadow-lg p-1">
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => zoomOut()}>
+                    <ZoomOut className="w-4 h-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => resetTransform()}>
+                    <RotateCcw className="w-4 h-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => zoomIn()}>
+                    <ZoomIn className="w-4 h-4" />
+                  </Button>
+                </div>
+
+                <div className="w-full h-full">
+                  <TransformComponent wrapperClass="!w-full !h-full" contentClass="!w-full !h-full flex items-center justify-center">
+                    <div 
+                      ref={canvasRef}
+                      className={cn(
+                        "relative bg-white shadow-2xl",
+                        isDragging && "select-none"
+                      )}
+                      style={{ width: canvasWidth, height: canvasHeight }}
+                      onMouseMove={handleMouseMove}
+                      onMouseUp={handleMouseUp}
+                      onClick={(e) => {
+                        if (e.target === e.currentTarget && !isPreview) {
+                          setSelectedElementId(null);
+                        }
+                      }}
+                    >
+                      {backgroundImage && (
+                        <img src={backgroundImage} className="absolute inset-0 w-full h-full object-cover" alt="Background" />
+                      )}
+
+                      <motion.div className="absolute inset-0" layout>
+                        {elements.map((el) => {
+                          const isSelected = selectedElementId === el.id;
+                          const content = isPreview && el.variableKey 
+                            ? SAMPLE_DATA[el.variableKey.replace(/[{}]/g, "") as keyof typeof SAMPLE_DATA] || el.content
+                            : el.content;
+
+                          return (
+                            <div
+                              key={el.id}
+                              onMouseDown={(e) => handleMouseDown(e, el.id)}
+                              onClick={() => !isPreview && setSelectedElementId(el.id)}
+                              className={cn(
+                                "absolute transition-all",
+                                isPreview ? "cursor-default select-text" : "cursor-move select-none",
+                                isSelected && "z-50",
+                                isDragging && isSelected && "cursor-grabbing"
+                              )}
+                              style={{
+                                left: `${el.x}%`,
+                                top: `${el.y}%`,
+                                transform: `translate(-50%, -50%) rotate(${el.rotation || 0}deg)`,
+                                textAlign: el.align as any,
+                                opacity: el.opacity,
+                                width: (el.type === "image" || el.type === "shape" || el.type === "table") ? `${el.width}%` : "auto",
+                                height: (el.type === "shape") ? `${el.height}px` : "auto",
+                              }}
+                            >
+                              {isSelected && (
+                                <div className="absolute -inset-1 ring-2 ring-primary rounded" />
+                              )}
+
+                              {el.type === "shape" ? (
+                                <div 
+                                  className={cn("w-full h-full", el.content === "box" && "border-2")} 
+                                  style={{ 
+                                    backgroundColor: el.backgroundColor,
+                                    borderColor: el.content === "box" ? el.backgroundColor : "transparent",
+                                  }} 
+                                />
+                              ) : el.type === "table" ? (
+                                <div className="w-full bg-white border border-black text-xs" dir="rtl">
+                                  <div className="grid grid-cols-5 bg-gray-100 border-b border-black font-bold py-1 text-center">
+                                    <div className="border-l border-black col-span-2">المادة</div>
+                                    <div className="border-l border-black">الشهر 1</div>
+                                    <div className="border-l border-black">نصف العام</div>
+                                    <div>المجموع</div>
+                                  </div>
+                                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                                    <div key={i} className="grid grid-cols-5 border-b border-gray-200 text-xs py-1 text-center">
+                                      <div className="border-l border-gray-200 col-span-2 text-right pr-2">مادة {i}</div>
+                                      <div className="border-l border-gray-200">20</div>
+                                      <div className="border-l border-gray-200">30</div>
+                                      <div>50</div>
+                                    </div>
+                                  ))}
+                                  <div className="grid grid-cols-5 bg-gray-50 font-bold py-1 text-center border-t border-black">
+                                    <div className="col-span-2 text-right pr-2">المجموع</div>
+                                    <div className="col-span-3">480 / 500</div>
+                                  </div>
+                                </div>
+                              ) : el.type === "image" ? (
+                                <img src={content} className="w-full h-auto shadow-sm" draggable={false} alt="asset" />
+
+                              ) : (
+                                <div 
+                                  className={cn(
+                                    "whitespace-nowrap font-bold",
+                                    el.variableKey && !isPreview && "px-3 py-1 bg-primary/10 text-primary border border-primary/20 rounded-lg flex items-center gap-2"
+                                  )}
+                                  style={{
+                                    fontSize: `${el.fontSize}px`,
+                                    fontWeight: el.fontWeight,
+                                    color: el.color,
+                                    fontFamily: el.fontFamily,
+                                  }}
+                                >
+                                  {el.variableKey && !isPreview && <Sparkles className="w-3 h-3" />}
+                                  {content}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </motion.div>
+                    </div>
+                  </TransformComponent>
+                </div>
+              </>
+            )}
+          </TransformWrapper>
+        </div>
       </div>
     </div>
   );
+
+  if (isSheet) {
+    return (
+      <SheetContent
+        style={{ maxWidth: 1400 }}
+        className="bg-white dark:bg-[#080808] p-0 [&>button]:hidden"
+      >
+        {EditorContent}
+      </SheetContent>
+    );
+  }
+
+  return EditorContent;
 }

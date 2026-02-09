@@ -1,15 +1,18 @@
 import { db } from "@db/client";
 import { certificateTemplates } from "@db/schema";
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, ilike, count, desc } from "drizzle-orm";
 
 export type CertificateTemplateInsert = typeof certificateTemplates.$inferInsert;
 export type CertificateTemplate = typeof certificateTemplates.$inferSelect;
 
-export async function listCertificateTemplates() {
-  return db
-    .select()
-    .from(certificateTemplates)
-    .orderBy(asc(certificateTemplates.name));
+export async function listCertificateTemplates(q?: string) {
+  let query = db.select().from(certificateTemplates);
+
+  if (q) {
+    query = query.where(ilike(certificateTemplates.name, `%${q}%`)) as any;
+  }
+
+  return query.orderBy(asc(certificateTemplates.name));
 }
 
 export async function getCertificateTemplateById(id: string) {
@@ -105,4 +108,16 @@ export async function deleteCertificateTemplate(id: string) {
     .where(eq(certificateTemplates.id, id))
     .returning();
   return deleted ?? null;
+}
+
+export async function getCertificateTemplatesSummary() {
+  const allTemplates = await db.select().from(certificateTemplates);
+  
+  return {
+    total: allTemplates.length,
+    defaultCount: allTemplates.filter(t => t.isDefault).length,
+    lastUpdated: allTemplates.length > 0 
+      ? new Date(Math.max(...allTemplates.map(t => new Date(t.updatedAt).getTime())))
+      : null
+  };
 }

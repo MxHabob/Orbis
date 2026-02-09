@@ -1,4 +1,4 @@
-import { ExportStatus } from "@/components/export-status";
+// import { ExportStatus } from "@/components/export-status";
 import { Header } from "@/components/header";
 import { GlobalSheetsProvider } from "@/components/sheets/global-sheets-provider";
 import { Sidebar } from "@/components/sidebar";
@@ -16,13 +16,6 @@ export default async function Layout({
   children: React.ReactNode;
 }) {
 
-  // NOTE: These are used in the global sheets
-  // batchPrefetch([
-  //   trpc.search.global.queryOptions({ searchTerm: "" }),
-  // ]);
-
-  // NOTE: Right now we want to fetch the user and hydrate the client
-  // Next steps would be to prefetch and suspense
   const session = await auth.api.getSession({
     headers: await headers(),
   });

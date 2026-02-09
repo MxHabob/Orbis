@@ -29,6 +29,7 @@ import { ClassCreateSheet } from "@/components/sheets/class-create-sheet";
 import { ClassEditSheet } from "@/components/sheets/class-edit-sheet";
 import { SubjectCreateSheet } from "@/components/sheets/subject-create-sheet";
 import { SubjectEditSheet } from "@/components/sheets/subject-edit-sheet";
+import { CertificateSheet } from "@/components/sheets/certificate-sheet";
 
 export function GlobalSheets() {
   return (
@@ -70,6 +71,7 @@ export function GlobalSheets() {
       {/* <InvoiceDetailsSheet /> */}
       {/* <InvoiceSheet /> */}
       {/* <EditRecurringSheet /> */}
+      <CertificateSheet />
     </>
   );
 }

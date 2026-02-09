@@ -31,6 +31,10 @@ export const STICKY_COLUMNS: Record<TableId, StickyColumnConfig[]> = {
     { id: "select", width: 50 },
     { id: "name", width: 250 },
   ],
+  certificates: [
+    { id: "select", width: 50 },
+    { id: "name", width: 300 },
+  ],
 };
 
 /**
@@ -86,6 +90,9 @@ export const SORT_FIELD_MAPS: Record<TableId, Record<string, string>> = {
     name: "name",
     description: "description",
   },
+  certificates: {
+    name: "name",
+  },
 };
 
 export const NON_REORDERABLE_COLUMNS: Record<TableId, Set<string>> = {
@@ -97,6 +104,7 @@ export const NON_REORDERABLE_COLUMNS: Record<TableId, Set<string>> = {
   grades: new Set(["studentName", "total"]),
   classes: new Set(["select", "name", "actions"]),
   reports: new Set(["select", "name", "actions"]),
+  certificates: new Set(["select", "name", "actions"]),
 };
 
 /**
@@ -111,6 +119,7 @@ export const ROW_HEIGHTS: Record<TableId, number> = {
   grades: 45,
   classes: 57,
   reports: 57,
+  certificates: 57,
 };
 
 /**
@@ -189,6 +198,13 @@ export const TABLE_CONFIGS: Record<TableId, TableConfig> = {
     nonReorderableColumns: NON_REORDERABLE_COLUMNS.reports,
     rowHeight: ROW_HEIGHTS.reports,
     summaryGridHeight: SUMMARY_GRID_HEIGHTS.reports,
+  },
+  certificates: {
+    tableId: "certificates",
+    stickyColumns: STICKY_COLUMNS.certificates,
+    sortFieldMap: SORT_FIELD_MAPS.certificates,
+    nonReorderableColumns: NON_REORDERABLE_COLUMNS.certificates,
+    rowHeight: ROW_HEIGHTS.certificates,
   },
 };
 

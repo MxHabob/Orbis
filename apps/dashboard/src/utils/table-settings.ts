@@ -7,7 +7,7 @@ import type {
 /**
  * Table identifiers for all supported tables
  */
-export type TableId = "transactions" | "customers" | "invoices" | "vault" | "students" | "grades" | "classes" | "reports";
+export type TableId = "transactions" | "customers" | "invoices" | "vault" | "students" | "grades" | "classes" | "reports" | "certificates";
 
 /**
  * Settings for a single table
@@ -51,6 +51,7 @@ export const defaultHiddenColumns: Record<TableId, string[]> = {
   grades: [],
   classes: [],
   reports: [],
+  certificates: [],
 };
 
 /**
