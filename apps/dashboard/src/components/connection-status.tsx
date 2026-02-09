@@ -50,20 +50,20 @@ function IssueRow({ issue }: { issue: ConnectionIssue }) {
     <Link
       href={issue.path}
       className="flex items-center justify-between gap-3 py-2.5 px-4 hover:bg-accent transition-colors"
-      dir="rtl"
+      dir="ltr"
     >
       <div className="flex items-center gap-2.5 min-w-0">
         <div className="shrink-0">
           <IssueLogo issue={issue} />
         </div>
-        <div className="min-w-0 text-right">
+        <div className="min-w-0 text-left">
           <p className="text-xs font-medium truncate">{issue.title}</p>
           <p className="text-[11px] text-muted-foreground">{issue.message}</p>
         </div>
       </div>
       <div className="flex items-center gap-0.5 text-[11px] text-muted-foreground shrink-0">
-        <Icons.ChevronLeft className="size-3" />
         {issue.linkText}
+        <Icons.ChevronRight className="size-3" />
       </div>
     </Link>
   );
@@ -112,7 +112,7 @@ export function ConnectionStatus() {
         </Button>
       </HoverCardTrigger>
       <HoverCardContent className="w-[320px] p-0" align="end" sideOffset={10}>
-        <div className="px-4 py-2.5 border-b text-right">
+        <div className="px-4 py-2.5 border-b text-left">
           <p className="text-[11px] font-medium text-muted-foreground">
             System Alerts
           </p>

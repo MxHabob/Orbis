@@ -1,9 +1,9 @@
-
 "use client";
 
 import { cn } from "@midday/ui/cn";
 import { useMemo } from "react";
 import { ShieldCheck, Award, BadgeAlert, Check } from "lucide-react";
+import { GradesTable } from "./grades-table";
 
 interface Element {
   id: string;
@@ -35,6 +35,8 @@ interface CertificateViewerProps {
     orientation?: string;
   };
   data?: Record<string, string | number>;
+  certificateType?: string;
+  month?: number;
   preview?: boolean;
   className?: string;
 }
@@ -50,15 +52,13 @@ const STAMP_ICONS = {
   Excellent: Award,
   Urgent: BadgeAlert,
   Verified: Check,
-  "Approved / معتمد": ShieldCheck,
-  "Excellent / ممتاز": Award,
-  "Urgent / عاجل": BadgeAlert,
-  "Verified / موثق": Check,
 };
 
 export function CertificateViewer({
   template,
   data = {},
+  certificateType,
+  month,
   preview = false,
   className,
 }: CertificateViewerProps) {
@@ -130,24 +130,17 @@ export function CertificateViewer({
                  })()}
               </div>
            ) : el.type === "shape" ? (
-             <div 
-                className="w-full h-full" 
-                style={{ backgroundColor: el.backgroundColor }} 
-             />
-           ) : el.type === "grades-table" ? (
-             <div className="w-full bg-white border-2 border-black text-[10px]" dir="rtl">
-                <div 
-                  className="grid bg-gray-100 border-b-2 border-black font-bold text-center"
-                  style={{ gridTemplateColumns: `repeat(${el.columns?.length || 5}, 1fr)` }}
-                >
-                  {el.columns?.map(col => (
-                    <div key={col.id} className="border-l border-black py-1 px-1">{col.header}</div>
-                  ))}
-                </div>
-                {/* Normally we'd render rows here based on data, for now we show dummy or partial implementation */}
-                {/* This part should be dynamic based on the actual student's results in the future */}
-                <div className="p-2 text-center text-muted-foreground italic">بيانات الدرجات الديناميكية</div>
-             </div>
+              <div 
+                 className="w-full h-full" 
+                 style={{ backgroundColor: el.backgroundColor }} 
+              />
+           ) : (el.type === "table" || el.type === "grades-table" || (el.type === "variable" && el.variableKey === "table")) ? (
+              <GradesTable 
+                 studentId={(data.studentId || data.userId || data.id) as string} 
+                 type={certificateType}
+                 month={month}
+                 isPreview={preview}
+              />
            ) : (
              <div 
                 style={{

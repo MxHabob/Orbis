@@ -30,6 +30,7 @@ import { ClassEditSheet } from "@/components/sheets/class-edit-sheet";
 import { SubjectCreateSheet } from "@/components/sheets/subject-create-sheet";
 import { SubjectEditSheet } from "@/components/sheets/subject-edit-sheet";
 import { CertificateSheet } from "@/components/sheets/certificate-sheet";
+import { StudentCertificateSheet } from "@/components/sheets/student-certificate-sheet";
 
 export function GlobalSheets() {
   return (
@@ -44,6 +45,7 @@ export function GlobalSheets() {
       <StudentCreateSheet />
       <StudentEditSheet />
       <StudentDetailsSheet />
+      <StudentCertificateSheet />
       <ClassCreateSheet />
       <ClassEditSheet />
       <SubjectCreateSheet />

@@ -1,6 +1,6 @@
 import { db } from "@db/client";
-import { gradeEntries, assessmentItems, subjects, classes } from "@db/schema";
-import { eq, and } from "drizzle-orm";
+import { gradeEntries, assessmentItems, students, subjects, classes, enrollments, users } from "@db/schema";
+import { eq, and, desc, asc, inArray } from "drizzle-orm";
 import { RedisCache } from "@midday/cache";
 
 // Cache for grades - maybe shorter TTL as they change
@@ -36,9 +36,6 @@ export const getStudentGrades = async (studentId: string, termId?: number) => {
     .innerJoin(subjects, eq(assessmentItems.subjectId, subjects.id))
     .where(eq(gradeEntries.studentId, studentId));
     
-    // Note: Drizzle query builder dynamic where
-    // If termId provided, we need to filter assessmentItems.termId ideally
-    // But basic join is fine for now.
 
   const results = await query;
   
@@ -62,7 +59,6 @@ export const updateGradeEntry = async (id: number, data: Partial<CreateGradePara
     return result;
 };
 
-import { students } from "@db/schema";
 
 export const bulkImportGrades = async (assessmentItemId: number, gradeData: {
     studentNumber: string;
@@ -193,8 +189,7 @@ export const batchUpsertGrades = async (
   return results;
 };
 
-import { enrollments, users } from "@db/schema";
-import { asc, inArray, or } from "drizzle-orm";
+
 
 export const getGradeGridData = async (params: {
   classId: number;
@@ -384,7 +379,7 @@ export const getClassStatistics = async (classId: string) => {
   return result;
 };
 
-export const getStudentReportData = async (studentId: string) => {
+export const getStudentReportData = async (studentId: string, type?: string, month?: number) => {
     // 1. Get student's class to know which subjects and assessments to show
     const [student] = await db
         .select({ currentClassId: students.currentClassId })
@@ -394,20 +389,49 @@ export const getStudentReportData = async (studentId: string) => {
 
     if (!student?.currentClassId) return { rows: [], columns: [] };
 
-    // 2. Get all assessment items for this class to build columns
+    // 2. Determine which months to filter by
+    let monthsToFetch: number[] | null = null;
+    
+    if (type === "half-yearly") {
+      monthsToFetch = [9, 10, 11, 13]; // Term 1 months + Mid Exam
+    } else if (type === "final") {
+      monthsToFetch = [12, 1, 2, 14]; // Term 2 months + Final Exam
+    } else if (type === "monthly") {
+      if (month) {
+        monthsToFetch = [month];
+      } else {
+        // Find latest month with grades for this student
+        const [latestGrade] = await db
+          .select({ month: assessmentItems.month })
+          .from(gradeEntries)
+          .innerJoin(assessmentItems, eq(gradeEntries.assessmentItemId, assessmentItems.id))
+          .where(eq(gradeEntries.studentId, studentId))
+          .orderBy(desc(assessmentItems.month))
+          .limit(1);
+        
+        monthsToFetch = latestGrade ? [latestGrade.month] : null;
+      }
+    }
+
+    const conditions = [eq(assessmentItems.classId, student.currentClassId)];
+
+    if (monthsToFetch && monthsToFetch.length > 0) {
+      conditions.push(inArray(assessmentItems.month, monthsToFetch));
+    }
+
     const assessmentList = await db
         .select({
             id: assessmentItems.id,
             title: assessmentItems.title,
             subjectId: assessmentItems.subjectId,
             subjectName: subjects.name,
+            month: assessmentItems.month,
         })
         .from(assessmentItems)
         .innerJoin(subjects, eq(assessmentItems.subjectId, subjects.id))
-        .where(eq(assessmentItems.classId, student.currentClassId))
+        .where(and(...conditions))
         .orderBy(asc(subjects.name), asc(assessmentItems.month));
 
-    // 3. Get student grades
     const grades = await db
         .select({
             assessmentItemId: gradeEntries.assessmentItemId,
@@ -416,7 +440,7 @@ export const getStudentReportData = async (studentId: string) => {
         .from(gradeEntries)
         .where(eq(gradeEntries.studentId, studentId));
 
-    // 4. Structure the data
+    // 5. Structure the data
     const reportData: Record<string, any> = {};
     const columns = new Set<string>();
 

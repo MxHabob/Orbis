@@ -14,16 +14,16 @@ import { eq, and, inArray, asc } from "drizzle-orm";
 
 export type CertificateType = "monthly" | "mid_term" | "year_end";
 
-/** Map assessment type to Arabic column key for monthly certificate */
+/** Map assessment type to English column key for monthly certificate */
 const MONTHLY_TYPE_MAP: Record<string, string> = {
-  behavior: "مواظبة",
-  attendance: "حضور",
-  participation: "مشاركة",
-  oral: "شفوي",
-  exam: "اختبار_تحريري",
-  assignment: "وظيفة",
-  homework: "وظيفة",
-  quiz: "اختبار_تحريري",
+  behavior: "Behavior",
+  attendance: "Attendance",
+  participation: "Participation",
+  oral: "Oral",
+  exam: "Written Exam",
+  assignment: "Assignment",
+  homework: "Assignment",
+  quiz: "Written Exam",
 };
 
 export type CertificateDataParams = {
@@ -40,9 +40,9 @@ export type SubjectGradeRow = {
   subjectId: number;
   subjectName: string;
   subjectCode: string | null;
-  /** For monthly: { مواظبة, حضور, مشاركة, شفوي, اختبار_تحريري, مجموع } */
-  /** For mid_term: { محصلة_شهرية, اختبار_نصفي, مجموع } */
-  /** For year_end: { محصلة_الترم_الأول, محصلة_الترم_الثاني, مجموع } */
+  /** For monthly: { Behavior, Attendance, Participation, Oral, Written Exam, Total } */
+  /** For mid_term: { Monthly Average, Mid-term Exam, Total } */
+  /** For year_end: { Term 1 Average, Term 2 Average, Total } */
   columns: Record<string, number | null>;
   total: number | null;
 };
@@ -59,7 +59,7 @@ export type CertificateDataResult = {
   schoolName: string;
 };
 
-const DEFAULT_SCHOOL_NAME = "مدرسة صنعاء النموذجية";
+const DEFAULT_SCHOOL_NAME = "Sanaa Model School";
 
 export async function getCertificateData(
   params: CertificateDataParams
@@ -244,7 +244,7 @@ export async function getCertificateData(
       }
       if (hasAny) total = sum;
       // Ensure standard column keys exist for header
-      ["مواظبة", "حضور", "مشاركة", "شفوي", "اختبار_تحريري"].forEach((k) => {
+      ["Behavior", "Attendance", "Participation", "Oral", "Written Exam"].forEach((k) => {
         if (columns[k] === undefined) columns[k] = null;
       });
     } else if (certificateType === "mid_term") {
@@ -260,8 +260,8 @@ export async function getCertificateData(
       if (examItem) {
         examScore = parseScore(gradeByItemId.get(examItem.id) ?? null);
       }
-      columns["محصلة_شهرية"] = monthlyTotal > 0 ? monthlyTotal : null;
-      columns["اختبار_نصفي"] = examScore;
+      columns["Monthly Average"] = monthlyTotal > 0 ? monthlyTotal : null;
+      columns["Mid-term Exam"] = examScore;
       total =
         monthlyTotal > 0 && examScore != null
           ? monthlyTotal + examScore
@@ -277,8 +277,8 @@ export async function getCertificateData(
         if (it.termId === term1Id) t1 += s;
         if (term2Id != null && it.termId === term2Id) t2 += s;
       }
-      columns["محصلة_الترم_الأول"] = t1 > 0 ? t1 : null;
-      columns["محصلة_الترم_الثاني"] = t2 > 0 ? t2 : null;
+      columns["Term 1 Average"] = t1 > 0 ? t1 : null;
+      columns["Term 2 Average"] = t2 > 0 ? t2 : null;
       total = t1 > 0 && t2 > 0 ? t1 + t2 : t1 > 0 ? t1 : t2 > 0 ? t2 : null;
     }
 

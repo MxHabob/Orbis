@@ -92,27 +92,27 @@ const PAPER_SIZES = {
 };
 
 const VARIABLES = [
-  { group: "بيانات الطالب", items: [
-    { label: "اسم الطالب", value: "{{student_name}}" },
-    { label: "الرقم الأكاديمي", value: "{{academic_number}}" },
-    { label: "الرقم القومي", value: "{{national_id}}" },
-    { label: "القسم / التخصص", value: "{{department}}" },
-    { label: "الشعبة", value: "{{section}}" },
+  { group: "Student Data", items: [
+    { label: "Student Name", value: "{{student_name}}" },
+    { label: "Academic Number", value: "{{academic_number}}" },
+    { label: "National ID", value: "{{national_id}}" },
+    { label: "Department / Specialization", value: "{{department}}" },
+    { label: "Section", value: "{{section}}" },
   ]},
-  { group: "النتائج الدراسية", items: [
-    { label: "جدول الدرجات", value: "table", isTable: true },
-    { label: "الصف / المستوى", value: "{{class_name}}" },
-    { label: "المجموع الكلي (رقماً)", value: "{{total_grade}}" },
-    { label: "المجموع الكلي (كتابة)", value: "{{total_grade_text}}" },
-    { label: "التقدير العام", value: "{{grade_label}}" },
-    { label: "النتيجة النهائية", value: "{{final_result}}" },
-    { label: "الترتيب", value: "{{rank}}" },
+  { group: "Academic Results", items: [
+    { label: "Grades Table", value: "table", isTable: true },
+    { label: "Grade / Level", value: "{{class_name}}" },
+    { label: "Total Grade (Numeric)", value: "{{total_grade}}" },
+    { label: "Total Grade (Words)", value: "{{total_grade_text}}" },
+    { label: "General Grade", value: "{{grade_label}}" },
+    { label: "Final Result", value: "{{final_result}}" },
+    { label: "Rank", value: "{{rank}}" },
   ]},
-  { group: "بيانات المؤسسة", items: [
-    { label: "اسم المنظمة", value: "{{org_name}}" },
-    { label: "إدارة المدرسة", value: "{{admin_name}}" },
-    { label: "وكيل المدرسة", value: "{{vp_name}}" },
-    { label: "تاريخ التقرير", value: "{{issue_date}}" },
+  { group: "Institution Data", items: [
+    { label: "Organization Name", value: "{{org_name}}" },
+    { label: "School Administration", value: "{{admin_name}}" },
+    { label: "Vice Principal", value: "{{vp_name}}" },
+    { label: "Report Date", value: "{{issue_date}}" },
   ]}
 ];
 
@@ -120,10 +120,10 @@ const VARIABLES = [
 
 
 const FONTS = [
-  { label: "الخط الافتراضي", value: "inherit" },
-  { label: "خط كوفي", value: "'Kufam', sans-serif" },
-  { label: "خط أميري (رسمي)", value: "'Amiri', serif" },
-  { label: "خط مروان", value: "'Cairo', sans-serif" },
+  { label: "Default Font", value: "inherit" },
+  { label: "Kufi Font", value: "'Kufam', sans-serif" },
+  { label: "Amiri Font (Official)", value: "'Amiri', serif" },
+  { label: "Cairo Font", value: "'Cairo', sans-serif" },
 ];
 
 export function CertificateEditor({
@@ -142,7 +142,7 @@ export function CertificateEditor({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const [name, setName] = useState(initialData?.name || "قالب جديد");
+  const [name, setName] = useState(initialData?.name || "New Template");
   const [paperSize, setPaperSize] = useState<"a4" | "letter">(initialData?.size || "a4");
   const [orientation, setOrientation] = useState<"portrait" | "landscape">(initialData?.orientation || "portrait");
   const [backgroundImage, setBackgroundImage] = useState(initialData?.backgroundImageUrl || "");
@@ -162,22 +162,22 @@ export function CertificateEditor({
     if (!student) return {};
     const stats = (student.stats as any) || {};
     return {
-      student_name: student.name || "اسم الطالب",
-      name: student.name || "اسم الطالب",
+      student_name: student.name || "Student Name",
+      name: student.name || "Student Name",
       academic_number: student.studentNumber || "20240001",
       national_id: student.secretNumber || "123456789",
-      department: stats.department || "علمي",
-      section: stats.section || "أ",
-      class_name: student.currentClass?.name || "الأول أساسي",
+      department: stats.department || "Scientific",
+      section: stats.section || "A",
+      class_name: student.currentClass?.name || "First Grade",
       total_grade: stats.total_grade || "0",
       total_grade_text: stats.total_grade_text || "",
       grade_label: stats.grade_label || "",
       final_result: stats.final_result || "",
       rank: stats.rank || "1",
-      org_name: "مدرسة النصر النموذجية",
-      admin_name: "مدير المدرسة",
-      vp_name: "مسجل الطلاب",
-      issue_date: "2024/2023",
+      org_name: "Al-Nasr Model School",
+      admin_name: "School Principal",
+      vp_name: "Registrar",
+      issue_date: "2023/2024",
     };
   };
 
@@ -223,9 +223,9 @@ export function CertificateEditor({
             width: 80, 
             height: 20, 
             columns: [
-              { id: "1", header: "المادة", width: 40 },
-              { id: "2", header: "المحصلة", width: 30 },
-              { id: "3", header: "المجموع", width: 30 }
+              { id: "1", header: "Subject", width: 40 },
+              { id: "2", header: "Assessment", width: 30 },
+              { id: "3", header: "Total", width: 30 }
             ] 
          } : {
         fontSize: 18,
@@ -330,11 +330,11 @@ export function CertificateEditor({
           id: initialData.id,
           ...payload,
         });
-        toast({ title: "تم حفظ القالب بنجاح", variant: "success" });
+        toast({ title: "Template saved successfully", variant: "success" });
         if (isSheet) setParams(null);
       } else {
         await createTemplate.mutateAsync(payload);
-        toast({ title: "تم إنشاء القالب بنجاح", variant: "success" });
+        toast({ title: "Template created successfully", variant: "success" });
         if (isSheet) {
           setParams(null);
         } else {
@@ -342,7 +342,7 @@ export function CertificateEditor({
         }
       }
     } catch (e) {
-      toast({ title: "فشل حفظ القالب", variant: "destructive" });
+      toast({ title: "Failed to save template", variant: "destructive" });
     } finally {
       setIsSaving(false);
     }
@@ -370,8 +370,8 @@ export function CertificateEditor({
                 value={name} 
                 onChange={(e) => setName(e.target.value)} 
                 className="font-semibold text-sm border-0 shadow-none focus-visible:ring-0 px-0 bg-transparent"
-                placeholder="اسم القالب..."
-                dir="rtl"
+                placeholder="Template Name..."
+                dir="ltr"
               />
             </div>
           </div>
@@ -379,15 +379,15 @@ export function CertificateEditor({
 
         <Tabs defaultValue="add" className="flex-1 flex flex-col overflow-hidden">
           <TabsList className="w-full rounded-none bg-transparent border-b px-6">
-            <TabsTrigger value="add" className="text-xs">إضافة</TabsTrigger>
-            <TabsTrigger value="layers" className="text-xs">الطبقات</TabsTrigger>
-            <TabsTrigger value="settings" className="text-xs">الإعدادات</TabsTrigger>
+            <TabsTrigger value="add" className="text-xs">Add</TabsTrigger>
+            <TabsTrigger value="layers" className="text-xs">Layers</TabsTrigger>
+            <TabsTrigger value="settings" className="text-xs">Settings</TabsTrigger>
           </TabsList>
           
           <ScrollArea className="flex-1 p-6" hideScrollbar>
             <TabsContent value="add" className="space-y-6 mt-0">
               <div className="space-y-3">
-                <Label className="text-xs text-muted-foreground">الخلفية والشعارات</Label>
+                <Label className="text-xs text-muted-foreground">Background & Logos</Label>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="relative group overflow-hidden rounded-lg border-2 border-dashed aspect-square hover:border-primary/50 transition-colors cursor-pointer bg-accent/50 flex items-center justify-center">
                     {backgroundImage ? (
@@ -395,7 +395,7 @@ export function CertificateEditor({
                     ) : (
                       <div className="flex flex-col items-center gap-2">
                         <ImageIcon className="w-5 h-5 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">الخلفية</span>
+                        <span className="text-xs text-muted-foreground">Background</span>
                       </div>
                     )}
                     <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleFileUpload(e, "background")} />
@@ -406,14 +406,14 @@ export function CertificateEditor({
                     onClick={() => document.getElementById("add-logo-input")?.click()}
                   >
                     <Plus className="w-5 h-5 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">شعار</span>
+                    <span className="text-xs text-muted-foreground">Logo</span>
                     <input id="add-logo-input" type="file" className="hidden" onChange={(e) => handleFileUpload(e, "image")} />
                   </Button>
                 </div>
               </div>
 
               <div className="space-y-3">
-                <Label className="text-xs text-muted-foreground">المتغيرات الديناميكية</Label>
+                <Label className="text-xs text-muted-foreground">Dynamic Variables</Label>
                 <div className="space-y-4">
                   {VARIABLES.map((group) => (
                     <div key={group.group} className="space-y-2">
@@ -443,29 +443,29 @@ export function CertificateEditor({
               </div>
 
               <div className="space-y-3">
-                <Label className="text-xs text-muted-foreground">النصوص والجداول</Label>
+                <Label className="text-xs text-muted-foreground">Texts & Tables</Label>
                 <div className="grid grid-cols-2 gap-2">
-                  <Button onClick={() => addElement("text", "نص جديد")} variant="outline" className="text-xs h-9">
+                  <Button onClick={() => addElement("text", "New Text")} variant="outline" className="text-xs h-9">
                     <Type className="w-3 h-3 mr-2" /> 
-                    نص ثابت
+                    Fixed Text
                   </Button>
                   <Button onClick={() => addElement("table", "table")} variant="outline" className="text-xs h-9">
                     <TableIcon className="w-3 h-3 mr-2" /> 
-                    جدول
+                    Table
                   </Button>
                 </div>
               </div>
 
               <div className="space-y-3">
-                <Label className="text-xs text-muted-foreground">الأشكال والخطوط</Label>
+                <Label className="text-xs text-muted-foreground">Shapes & Lines</Label>
                 <div className="grid grid-cols-2 gap-2">
                   <Button onClick={() => addElement("shape", "line")} variant="outline" className="text-xs h-9">
                     <Minus className="w-3 h-3 mr-2" /> 
-                    خط فاصل
+                    Divider Line
                   </Button>
                   <Button onClick={() => addElement("shape", "box")} variant="outline" className="text-xs h-9">
                     <Square className="w-3 h-3 mr-2" /> 
-                    مربع
+                    Square
                   </Button>
                 </div>
               </div>
@@ -477,7 +477,7 @@ export function CertificateEditor({
               {elements.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground text-sm">
                   <Layers className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                  <p className="text-xs">لا توجد طبقات</p>
+                  <p className="text-xs">No layers</p>
                 </div>
               ) : (
                 <div className="space-y-1">
@@ -513,7 +513,7 @@ export function CertificateEditor({
 
             <TabsContent value="settings" className="space-y-6 mt-0">
               <div className="space-y-3">
-                <Label className="text-xs text-muted-foreground">حجم الورقة</Label>
+                <Label className="text-xs text-muted-foreground">Paper Size</Label>
                 <Select value={paperSize} onValueChange={(v: any) => setPaperSize(v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -524,24 +524,24 @@ export function CertificateEditor({
               </div>
 
               <div className="space-y-3">
-                <Label className="text-xs text-muted-foreground">الاتجاه</Label>
+                <Label className="text-xs text-muted-foreground">Orientation</Label>
                 <Select value={orientation} onValueChange={(v: any) => setOrientation(v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="portrait">طولي (Portrait)</SelectItem>
-                    <SelectItem value="landscape">عرضي (Landscape)</SelectItem>
+                    <SelectItem value="portrait">Portrait</SelectItem>
+                    <SelectItem value="landscape">Landscape</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               {selectedElement && (
                 <div className="space-y-4 pt-4 border-t">
-                  <Label className="text-xs text-muted-foreground">خصائص العنصر المحدد</Label>
+                  <Label className="text-xs text-muted-foreground">Selected Element Properties</Label>
                   
                   {(selectedElement.type === "text" || selectedElement.type === "variable") && (
                     <>
                       <div className="space-y-2">
-                        <Label className="text-xs">حجم الخط: {selectedElement.fontSize}px</Label>
+                        <Label className="text-xs">Font Size: {selectedElement.fontSize}px</Label>
                         <Slider 
                           value={[selectedElement.fontSize || 18]} 
                           onValueChange={([v]) => updateElement(selectedElement.id, { fontSize: v })}
@@ -550,7 +550,7 @@ export function CertificateEditor({
                       </div>
 
                       <div className="space-y-2">
-                        <Label className="text-xs">نوع الخط</Label>
+                        <Label className="text-xs">Font Family</Label>
                         <Select value={selectedElement.fontFamily || "inherit"} onValueChange={(v) => updateElement(selectedElement.id, { fontFamily: v })}>
                           <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                           <SelectContent>
@@ -562,7 +562,7 @@ export function CertificateEditor({
                       </div>
 
                       <div className="space-y-2">
-                        <Label className="text-xs">المحاذاة</Label>
+                        <Label className="text-xs">Alignment</Label>
                         <div className="flex items-center gap-1 bg-accent p-1 rounded-md">
                           <Button variant="ghost" size="icon" className={cn("h-7 flex-1", selectedElement.align === "right" && "bg-background")} onClick={() => updateElement(selectedElement.id, { align: "right" })}><AlignRight className="w-3 h-3" /></Button>
                           <Button variant="ghost" size="icon" className={cn("h-7 flex-1", selectedElement.align === "center" && "bg-background")} onClick={() => updateElement(selectedElement.id, { align: "center" })}><AlignCenter className="w-3 h-3" /></Button>
@@ -574,7 +574,7 @@ export function CertificateEditor({
 
                   {(selectedElement.type === "image" || selectedElement.type === "shape" || selectedElement.type === "table") && (
                     <div className="space-y-2">
-                      <Label className="text-xs">حجم العنصر: {selectedElement.width}%</Label>
+                      <Label className="text-xs">Element Size: {selectedElement.width}%</Label>
                       <Slider 
                         value={[selectedElement.width || 20]} 
                         onValueChange={([v]) => updateElement(selectedElement.id, { width: v })}
@@ -584,7 +584,7 @@ export function CertificateEditor({
                   )}
 
                   <div className="space-y-2">
-                    <Label className="text-xs">اللون</Label>
+                    <Label className="text-xs">Color</Label>
                     <div className="flex items-center gap-2">
                       <input 
                         type="color" 
@@ -603,33 +603,33 @@ export function CertificateEditor({
           <div className="p-6 border-t bg-background">
             <Button onClick={handleSave} disabled={isSaving} className="w-full">
               {isSaving ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <Save className="w-4 h-4 ml-2" />}
-              {mode === "create" ? "إنشاء القالب" : "حفظ التغييرات"}
+              {mode === "create" ? "Create Template" : "Save Changes"}
             </Button>
           </div>
         </Tabs>
       </div>
 
-      {/* Main Canvas Area (نفس تصميم invoice) */}
+      {/* Main Canvas Area (Same as invoice design) */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#fcfcfc] dark:bg-[#0f0f0f]">
         <div className="h-16 border-b flex items-center justify-between px-6 bg-background shrink-0">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Maximize className="w-3 h-3" />
-              {paperSize.toUpperCase()} · {orientation === 'portrait' ? 'طولي' : 'عرضي'}
+              {paperSize.toUpperCase()} · {orientation === 'portrait' ? 'Portrait' : 'Landscape'}
             </div>
 
             {isPreview && (
-              <div className="flex items-center gap-2 border-r pr-4 mr-4" dir="rtl">
+              <div className="flex items-center gap-2 border-r pr-4 mr-4" dir="ltr">
                 <TableIcon className="w-3 h-3 text-muted-foreground" />
-                <Select dir="rtl" value={previewStudentId || students?.[0]?.userId || ""} onValueChange={setPreviewStudentId}>
+                <Select dir="ltr" value={previewStudentId || students?.[0]?.userId || ""} onValueChange={setPreviewStudentId}>
                   <SelectTrigger className="h-7 w-[200px] text-[10px] bg-accent/50 border-0 shadow-none focus:ring-0">
-                    <SelectValue placeholder="اختر سجل للمعاينة..." />
+                    <SelectValue placeholder="Select a record for preview..." />
                   </SelectTrigger>
                   <SelectContent className="max-h-[400px]">
                     {students?.map((s: any) => (
                       <SelectItem key={s.userId} value={s.userId} className="text-xs">
-                        <div className="flex flex-col items-start gap-0.5" dir="rtl">
-                          <span className="font-bold">{s.name || "بدون اسم"}</span>
+                        <div className="flex flex-col items-start gap-0.5" dir="ltr">
+                          <span className="font-bold">{s.name || "No Name"}</span>
                           <span className="text-[9px] text-muted-foreground opacity-70">{s.studentNumber}</span>
                         </div>
                       </SelectItem>
@@ -648,7 +648,7 @@ export function CertificateEditor({
               onClick={() => setIsPreview(false)}
             >
               <Type className="w-4 h-4 mr-2" />
-              تحرير
+              Edit
             </Button>
             <Button 
               variant={isPreview ? "secondary" : "ghost"} 
@@ -656,7 +656,7 @@ export function CertificateEditor({
               onClick={() => setIsPreview(true)}
             >
               <Eye className="w-4 h-4 mr-2" />
-              معاينة
+              Preview
             </Button>
           </div>
         </div>

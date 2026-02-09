@@ -1,4 +1,4 @@
-import { parseAsBoolean, parseAsString, useQueryStates } from "nuqs";
+import { parseAsBoolean, parseAsString, parseAsStringEnum, parseAsInteger, useQueryStates } from "nuqs";
 import { useParams } from "next/navigation";
 
 export function useStudentParams() {
@@ -11,6 +11,10 @@ export function useStudentParams() {
     name: parseAsString,
     q: parseAsString,
     details: parseAsBoolean,
+    certificate: parseAsBoolean,
+    certificateType: parseAsStringEnum(["monthly", "half-yearly", "final"]),
+    templateId: parseAsString,
+    month: parseAsInteger,
   });
 
   return {

@@ -91,14 +91,14 @@ async function seedAcademicStructure(): Promise<{ yearId: number; termId: number
 
   const terms = [
     {
-      name: "الفصل الدراسي الأول",
+      name: "First Semester",
       academicYearId: currentYear.id,
       startDate: "2025-09-01",
       endDate: "2026-01-20",
       isCurrent: true,
     },
     {
-      name: "الفصل الدراسي الثاني",
+      name: "Second Semester",
       academicYearId: currentYear.id,
       startDate: "2026-02-01",
       endDate: "2026-06-20",
@@ -122,14 +122,14 @@ async function seedAcademicStructure(): Promise<{ yearId: number; termId: number
 // ────────────────────────────────────────────────
 async function seedSubjects() {
   const subjectsData = [
-    { name: "اللغة العربية",       code: "ARA", color: "#FFCDD2" },
-    { name: "اللغة الإنجليزية",    code: "ENG", color: "#BBDEFB" },
-    { name: "الرياضيات",           code: "MAT", color: "#C8E6C9" },
-    { name: "العلوم",              code: "SCI", color: "#FFF9C4" },
-    { name: "الدراسات الاجتماعية", code: "SST", color: "#E1BEE7" },
-    { name: "التربية الإسلامية",   code: "ISL", color: "#D1C4E9" },
-    { name: "القرآن الكريم",       code: "QUR", color: "#C5CAE9" },
-    { name: "التربية البدنية",     code: "PE",  color: "#A5D6A7" },
+    { name: "Arabic Language",       code: "ARA", color: "#FFCDD2" },
+    { name: "English Language",      code: "ENG", color: "#BBDEFB" },
+    { name: "Mathematics",           code: "MAT", color: "#C8E6C9" },
+    { name: "Sciences",              code: "SCI", color: "#FFF9C4" },
+    { name: "Social Studies",        code: "SST", color: "#E1BEE7" },
+    { name: "Islamic Education",     code: "ISL", color: "#D1C4E9" },
+    { name: "Holy Quran",            code: "QUR", color: "#C5CAE9" },
+    { name: "Physical Education",    code: "PE",  color: "#A5D6A7" },
   ];
 
   await db.insert(schema.subjects).values(subjectsData).onConflictDoNothing();
@@ -141,9 +141,9 @@ async function seedSubjects() {
 // ────────────────────────────────────────────────
 async function seedClasses(yearId: number) {
   const grades = [
-    "الصف الأول", "الصف الثاني", "الصف الثالث", "الصف الرابع",
-    "الصف الخامس", "الصف السادس", "الصف السابع", "الصف الثامن",
-    "الصف التاسع", "الصف العاشر", "الصف الحادي عشر", "الصف الثاني عشر"
+    "Grade 1", "Grade 2", "Grade 3", "Grade 4",
+    "Grade 5", "Grade 6", "Grade 7", "Grade 8",
+    "Grade 9", "Grade 10", "Grade 11", "Grade 12"
   ];
 
   const colors = [
@@ -152,7 +152,7 @@ async function seedClasses(yearId: number) {
     "#c5caef", "#500ce1", "#c5caef", "#500ce1"
   ];
 
-  const divisions = ["أ", "ب", "ج"];
+  const divisions = ["A", "B", "C"];
   const classesData: any[] = [];
 
   for (const grade of grades) {
@@ -222,7 +222,7 @@ async function seedUsers() {
     {
       id: randomUUID(),
       username: "admin",
-      name: "مدير النظام",
+      name: "System Admin",
       email: "admin@madrasa.com",
       phone: "+966500000001",
       role: "admin" as const,
@@ -233,7 +233,7 @@ async function seedUsers() {
     ...[1, 2, 3, 4, 5, 6, 7, 8].map((i) => ({
       id: randomUUID(),
       username: `teacher${i}`,
-      name: `أ. ${["محمد", "أحمد", "خالد", "عبدالله", "فاطمة", "نورة", "سارة", "مريم"][i - 1]} السعدي`,
+      name: `Teacher ${["Mohammed", "Ahmed", "Khaled", "Abdullah", "Fatima", "Noura", "Sara", "Maryam"][i - 1]}`,
       email: `teacher${i}@madrasa.com`,
       phone: `+96650111111${i}`,
       role: "teacher" as const,
@@ -243,14 +243,14 @@ async function seedUsers() {
     // Students (60 students - 5 per class division)
     ...[...Array(60)].map((_, i) => {
       const studentNames = [
-        "سارة", "عمر", "نورة", "يوسف", "لين", "زيد", "ريم", "خالد", "مريم", "عبدالرحمن",
-        "فاطمة", "حسن", "علي", "هند", "محمد", "عائشة", "أحمد", "زينب", "عبدالله", "رقية",
-        "إبراهيم", "خديجة", "عثمان", "آمنة", "طارق", "صفية", "سعيد", "حفصة", "ياسر", "جويرية",
-        "وليد", "سمية", "فيصل", "أسماء", "ماجد", "ميمونة", "راشد", "سودة", "بدر", "ليلى",
-        "سلمان", "رباب", "منصور", "دعاء", "جابر", "إيمان", "حمزة", "شيماء", "طلال", "نجلاء",
-        "عادل", "هدى", "كريم", "بشرى", "نايف", "سلمى", "فهد", "منى", "صالح", "وفاء"
+        "Sara", "Omar", "Noura", "Yousef", "Leen", "Zaid", "Reem", "Khaled", "Maryam", "Abdulrahman",
+        "Fatima", "Hassan", "Ali", "Hind", "Mohammed", "Aisha", "Ahmed", "Zainab", "Abdullah", "Ruqayya",
+        "Ibrahim", "Khadija", "Othman", "Amna", "Tariq", "Safiyya", "Said", "Hafsa", "Yasser", "Juwairiya",
+        "Walid", "Sumayya", "Faisal", "Asma", "Majed", "Maymouna", "Rashid", "Sawda", "Badr", "Layla",
+        "Salman", "Rabab", "Mansour", "Duaa", "Jaber", "Iman", "Hamza", "Shaima", "Talal", "Najla",
+        "Adel", "Huda", "Karim", "Bushra", "Nayef", "Salma", "Fahd", "Muna", "Saleh", "Wafa"
       ];
-      const familyNames = ["عبدالله", "محمد", "أحمد", "خالد", "علي", "حسن", "إبراهيم", "عثمان"];
+      const familyNames = ["Abdullah", "Mohammed", "Ahmed", "Khaled", "Ali", "Hassan", "Ibrahim", "Othman"];
       
       return {
         id: randomUUID(),

@@ -38,7 +38,7 @@ export async function upsertCertificateTemplate(
 ) {
   const id = data.id;
   const payload = {
-    name: data.name ?? "الافتراضي",
+    name: data.name ?? "Default",
     isDefault: data.isDefault ?? false,
     
     // Layout

@@ -12,11 +12,11 @@ export function EmptyState() {
           <Icons.Files className="w-8 h-8 opacity-20" />
         </div>
         <div className="space-y-1 text-center">
-          <h3 className="text-lg font-bold">لا توجد قوالب</h3>
-          <p className="text-sm text-muted-foreground">ابدأ بإنشاء أول قالب شهادة لطلابك.</p>
+          <h3 className="text-lg font-bold">No templates</h3>
+          <p className="text-sm text-muted-foreground">Start by creating your first certificate template for your students.</p>
         </div>
         <Link href="/certificates/create">
-          <Button className="mt-4">إنشاء أول قالب</Button>
+          <Button className="mt-4">Create First Template</Button>
         </Link>
       </div>
     </div>
@@ -26,7 +26,7 @@ export function EmptyState() {
 export function NoResults() {
   return (
     <div className="flex flex-col items-center justify-center py-32">
-      <p className="text-sm text-muted-foreground">لم يتم العثور على نتائج للفلترة الحالية.</p>
+      <p className="text-sm text-muted-foreground">No results found for the current filter.</p>
     </div>
   );
 }

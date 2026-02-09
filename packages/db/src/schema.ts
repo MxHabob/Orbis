@@ -18,7 +18,7 @@ import {
 import { relations, sql } from 'drizzle-orm';
 
 // ==========================================
-// 1. Enums (القيم الثابتة)
+// 1. Enums (Static Values)
 // ==========================================
 export const roleEnum = pgEnum('role', ['admin', 'student', 'parent', 'teacher', 'staff']);
 export const userSexEnum = pgEnum('user_sex', ['unspecified','male', 'female']);
@@ -29,10 +29,10 @@ export const notificationTypeEnum = pgEnum('notification_type', ['grade_publishe
 export const attendanceStatusEnum = pgEnum('attendance_status', ['present','absent','late','excused','sick','authorized_leave','field_trip']);
 
 // =========================================
-// 2. Core Tables (الجداول الأساسية)
+// 2. Core Tables (Basic Tables)
 // ==========================================
 
-// جدول المستخدمين الموحد
+// Unified Users Table
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
   username: varchar('username', { length: 255 }).unique(),
@@ -90,17 +90,17 @@ export const verifications = pgTable('verifications', {
   identifierValueUnique: unique('verifications_identifier_value_unique').on(table.identifier, table.value),
 }));
 
-// جدول السنوات الدراسية
+// Academic Years Table
 export const academicYears = pgTable('academic_years', {
   id: serial('id').primaryKey(),
-  yearName: varchar('year_name', { length: 20 }).unique().notNull(), // مثال: 2025-2026
+  yearName: varchar('year_name', { length: 20 }).unique().notNull(), // e.g. 2025-2026
   startDate: date('start_date'),
   endDate: date('end_date'),
   isCurrent: boolean('is_current').default(false).notNull(),
   deletedAt: timestamp('deleted_at'),
 });
 
-// جدول الفترات الدراسية (الترم الأول / الترم الثاني)
+// Academic Terms Table (First Term / Second Term)
 export const academicTerms = pgTable('academic_terms', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 50 }).notNull(),
@@ -111,7 +111,7 @@ export const academicTerms = pgTable('academic_terms', {
   deletedAt: timestamp('deleted_at'),
 });
 
-// جدول المواد الدراسية
+// Subjects Table
 export const subjects = pgTable('subjects', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 255 }).notNull(),
@@ -120,7 +120,7 @@ export const subjects = pgTable('subjects', {
   deletedAt: timestamp('deleted_at'),
 });
 
-// جدول الفصول الدراسية
+// Classes Table
 export const classes = pgTable('classes', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 100 }).notNull(),
@@ -136,10 +136,10 @@ export const classes = pgTable('classes', {
 }));
 
 // ==========================================
-// 3. Optimized Student & Grades (الطلاب والدرجات المطورة)
+// 3. Optimized Student & Grades (Advanced)
 // ==========================================
 
-// جدول الطلاب مع تحسينات المرونة
+// Students Table with flexibility optimizations
 export const students = pgTable('students', {
   userId: uuid('user_id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
   studentNumber: varchar('student_number', { length: 20 }).unique().notNull(),
@@ -153,7 +153,7 @@ export const students = pgTable('students', {
   secretNumIdx: index('secret_num_idx').on(table.secretNumber),
 }));
 
-// جدول تسجيل الطلاب في الفصول
+// Student Enrollments Table
 export const enrollments = pgTable('enrollments', {
   id: serial('id').primaryKey(),
   studentId: uuid('student_id').references(() => students.userId, { onDelete: 'cascade' }),
@@ -168,7 +168,7 @@ export const enrollments = pgTable('enrollments', {
 }));
 
 
-// جدول بنود التقييم (مواظبة، شفوي، حضور، اختبار)
+// Assessment Items Table (Attendance, Oral, Quiz, Exam)
 export const assessmentItems = pgTable('assessment_items', {
   id: serial('id').primaryKey(),
   title: varchar('title', { length: 255 }).notNull(),
@@ -177,7 +177,7 @@ export const assessmentItems = pgTable('assessment_items', {
   weight: numeric('weight', { precision: 5, scale: 2 }).default('1.0'), // الوزن النسبي
   subjectId: integer('subject_id').references(() => subjects.id),
   classId: integer('class_id').references(() => classes.id),
-  month: integer('month').notNull(), // رقم الشهر (1-12)
+  month: integer('month').notNull(), // Month number (1-12)
   termId: integer('term_id').references(() => academicTerms.id),
   isPublished: boolean('is_published').default(false).notNull(),
   deletedAt: timestamp('deleted_at'),
@@ -202,7 +202,7 @@ export const gradeEntries = pgTable('grade_entries', {
 }));
 
 // ==========================================
-// 4. Audit Log (سجل التدقيق لضمان الشفافية)
+// 4. Audit Log (Transparency)
 // ==========================================
 export const auditLogs = pgTable('audit_logs', {
   id: serial('id').primaryKey(),
@@ -217,7 +217,7 @@ export const auditLogs = pgTable('audit_logs', {
 
 
 // ==========================================
-// جدول الإشعارات (Notifications)
+// Notifications Table
 // ==========================================
 
 export const notifications = pgTable('notifications', {
@@ -278,8 +278,7 @@ export const scheduledLessons = pgTable('scheduled_lessons', {
   classDaySlotIdx: index('sched_class_day_slot_idx').on(t.classId, t.dayOfWeek, t.timeSlotId, t.academicYearId),
 }));
 
-// جدول قوالب الشهادات (مثل invoice_template - مرونة وتخصيص)
-// جدول قوالب الشهادات (نظام مرن بالكامل - 2026)
+// Certificate Templates Table (Flexible System - 2026)
 export const certificateTemplates = pgTable('certificate_templates', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: varchar('name', { length: 100 }).notNull(),
@@ -292,12 +291,12 @@ export const certificateTemplates = pgTable('certificate_templates', {
   backgroundImageUrl: text('background_image_url'), // For Canva/Custom backgrounds
   
   // Rich Text Content (Tiptap JSON)
-  headerContent: jsonb('header_content'), // بديل للحقول الثابتة
+  headerContent: jsonb('header_content'), // Flexible fields replacement
   mainContent: jsonb('main_content'),
   footerContent: jsonb('footer_content'),
   
   // Structured Configuration
-  tableConfig: jsonb('table_config'), // إعدادات الجدول (الأعمدة، الألوان، الإخفاء/الإظهار)
+  tableConfig: jsonb('table_config'), // Table settings (columns, colors, hide/show)
   
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
@@ -326,7 +325,7 @@ export const attendanceRecords = pgTable('attendance_records', {
 
 
 // ==========================================
-// 5. Relations (العلاقات البرمجية لسهولة الاستعلام)
+// 5. Relations (Programmatic relations for easy querying)
 // ==========================================
 
 export const usersRelations = relations(users, ({ many, one }) => ({
