@@ -64,6 +64,14 @@ export const getUserWithRoles = async (db: Database, id: string) => {
     employeeRoles: [],
   };
 };
+export const createUsers = async (db: Database, data: (typeof users.$inferInsert)[]) => {
+  return db
+    .insert(users)
+    .values(data)
+    .onConflictDoNothing()
+    .returning();
+};
+
 export const getUserInvites = async (_db: Database, _email: string) => {
   return [];
 };

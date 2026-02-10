@@ -16,12 +16,12 @@ export function InviteTeamMembersModal({
   onOpenChange,
 }: InviteTeamMembersModalProps) {
   return (
-    <DialogContent className="max-w-[455px]">
-      <div className="p-4">
-        <DialogHeader>
-          <DialogTitle>Create User</DialogTitle>
+    <DialogContent className="max-w-[700px]">
+      <div className="p-2">
+        <DialogHeader className="mb-4">
+          <DialogTitle className="text-xl font-semibold">User Creation</DialogTitle>
           <DialogDescription>
-            Create new user.
+            Add new members to your institution by providing their details below.
           </DialogDescription>
         </DialogHeader>
 

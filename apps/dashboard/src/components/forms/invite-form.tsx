@@ -22,8 +22,9 @@ import { z } from "zod/v3";
 const formSchema = z.object({
   invites: z.array(
     z.object({
+      name: z.string().min(2, "Name is required"),
       email: z.string().email(),
-      role: z.enum(["admin", "parent"]),
+      role: z.enum(["admin", "teacher", "staff", "parent", "student"]),
     }),
   ),
 });
@@ -63,8 +64,9 @@ export function InviteForm({ onSuccess, skippable = true }: InviteFormProps) {
     defaultValues: {
       invites: [
         {
+          name: "",
           email: "",
-          role: "parent",
+          role: "teacher",
         },
       ],
     },
@@ -82,17 +84,39 @@ export function InviteForm({ onSuccess, skippable = true }: InviteFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={onSubmit}>
+        {fields.length > 0 && (
+          <div className="grid grid-cols-12 gap-4 mb-2 px-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            <div className="col-span-4">Full Name</div>
+            <div className="col-span-5">Email Address</div>
+            <div className="col-span-3">Role</div>
+          </div>
+        )}
         {fields.map((field, index) => (
           <div
-            className="flex items-center justify-between mt-3 space-x-4"
-            key={index.toString()}
+            className="grid grid-cols-12 gap-4 mt-4 items-start border-b pb-4 last:border-0"
+            key={field.id}
           >
             <FormField
               control={form.control}
-              key={field.id}
+              name={`invites.${index}.name`}
+              render={({ field }) => (
+                <FormItem className="col-span-4">
+                  <FormControl>
+                    <Input
+                      placeholder="Full Name"
+                      autoComplete="off"
+                      {...field}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name={`invites.${index}.email`}
               render={({ field }) => (
-                <FormItem className="flex-1">
+                <FormItem className="col-span-5">
                   <FormControl>
                     <Input
                       placeholder="jane@example.com"
@@ -112,19 +136,22 @@ export function InviteForm({ onSuccess, skippable = true }: InviteFormProps) {
               control={form.control}
               name={`invites.${index}.role`}
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="col-span-3">
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
                   >
                     <FormControl>
-                      <SelectTrigger className="min-w-[120px]">
-                        <SelectValue placeholder="Select role" />
+                      <SelectTrigger>
+                        <SelectValue placeholder="Role" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="admin">Owner</SelectItem>
-                      <SelectItem value="parent">Member</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="teacher">Teacher</SelectItem>
+                      <SelectItem value="staff">Staff</SelectItem>
+                      <SelectItem value="parent">Parent</SelectItem>
+                      <SelectItem value="student">Student</SelectItem>
                     </SelectContent>
                   </Select>
                 </FormItem>
@@ -137,7 +164,7 @@ export function InviteForm({ onSuccess, skippable = true }: InviteFormProps) {
           variant="outline"
           type="button"
           className="mt-4 border-none bg-[#F2F1EF] text-[11px] dark:bg-[#1D1D1D]"
-          onClick={() => append({ email: "", role: "parent" })}
+          onClick={() => append({ name: "", email: "", role: "teacher" })}
         >
           Add more
         </Button>
@@ -170,7 +197,7 @@ export function InviteForm({ onSuccess, skippable = true }: InviteFormProps) {
               isSubmitting={inviteMutation.isPending}
               disabled={inviteMutation.isPending}
             >
-              Send invites
+              Create accounts
             </SubmitButton>
           </div>
         </div>

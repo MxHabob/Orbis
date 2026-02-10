@@ -5,6 +5,7 @@ import { withRetryOnPrimary } from "@api/utils/db-retry";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import {
+  createUsers,
   deleteUser,
   getStaffUsers,
   getUserById,
@@ -17,6 +18,35 @@ export const userRouter = createTRPCRouter({
   getStaff: protectedProcedure.query(async ({ ctx: { db } }) => {
     return getStaffUsers(db);
   }),
+  get: protectedProcedure.query(async ({ ctx: { db } }) => {
+    return getStaffUsers(db);
+  }),
+  create: protectedProcedure
+    .input(
+      z.array(
+        z.object({
+          name: z.string().min(2),
+          email: z.string().email(),
+          role: z.enum(["admin", "parent", "teacher", "staff", "student"]),
+        }),
+      ),
+    )
+    .mutation(async ({ ctx: { db, session }, input }) => {
+      const currentUser = await getUserById(db, session.user.id);
+
+      if (currentUser?.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
+      return createUsers(
+        db,
+        input.map((invite) => ({
+          name: invite.name,
+          email: invite.email,
+          role: invite.role,
+        })),
+      );
+    }),
   me: protectedProcedure.query(async ({ ctx: { db, session } }) => {
     const result = await withRetryOnPrimary(db, async (dbInstance) =>
       getUserById(dbInstance, session.user.id),
