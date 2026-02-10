@@ -15,7 +15,7 @@ export type PeriodOption =
   | "1-year"
   | "2-years"
   | "5-years"
-  | "fiscal-year"
+  | "academic-year"
   | "custom";
 
 /**
@@ -39,8 +39,8 @@ export function getPeriodLabel(
       return "2 years";
     case "5-years":
       return "5 years";
-    case "fiscal-year":
-      return "Fiscal year";
+    case "academic-year":
+      return "Academic year";
     case "custom":
       if (from && to) {
         const fromDate = parseISO(from);
@@ -105,7 +105,7 @@ export function getPeriodDateRange(
         to,
       };
     }
-    case "fiscal-year": {
+    case "academic-year": {
       const { from: fiscalFrom, to: fiscalTo } = getFiscalYearDates(
         fiscalYearStartMonth,
         now,

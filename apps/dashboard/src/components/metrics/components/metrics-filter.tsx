@@ -33,7 +33,7 @@ const PERIOD_OPTIONS: Array<{ value: PeriodOption; label: string }> = [
   { value: "1-year", label: "1 year" },
   { value: "2-years", label: "2 years" },
   { value: "5-years", label: "5 years" },
-  { value: "fiscal-year", label: "Fiscal year" },
+  { value: "academic-year", label: "academic year" },
   { value: "custom", label: "Custom" },
 ];
 

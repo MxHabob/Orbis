@@ -1,6 +1,7 @@
 
 "use client";
 
+import { AnimatedNumber } from "@/components/animated-number";
 import { useSchoolMetrics } from "@/hooks/use-school-metrics";
 import { useLongPress } from "@/hooks/use-long-press";
 import { useMetricsCustomize } from "@/hooks/use-metrics-customize";
@@ -24,7 +25,7 @@ export function ClassDistributionCard({
   locale,
   isCustomizing, 
   wiggleClass 
-}: ClassDistributionCardProps) {
+ }: ClassDistributionCardProps) {
   const { data } = useSchoolMetrics();
   const { isCustomizing: metricsIsCustomizing, setIsCustomizing } = useMetricsCustomize();
   const classStats = data?.classStats ?? [];
@@ -56,49 +57,68 @@ export function ClassDistributionCard({
             />
           </div>
         </div>
-        <p className="text-3xl font-normal mb-3">
-          {classStats.length}
-          <span className="text-sm font-normal text-muted-foreground ml-2">Active Classes</span>
-        </p>
-        <p className="text-xs text-muted-foreground">Student distribution across sections</p>
+        <div className="flex items-baseline gap-2 mb-3 mt-1">
+          <p className="text-3xl font-normal">
+            <AnimatedNumber 
+              value={classStats.length} 
+              maximumFractionDigits={0} 
+              locale={locale}
+            />
+          </p>
+          <span className="text-sm font-normal text-muted-foreground">Active Classes</span>
+        </div>
+        
+        <div className="flex items-center gap-4 mt-4">
+           <div className="flex gap-2 items-center">
+             <div className="w-2 h-2 bg-primary rounded-full" />
+             <span className="text-xs text-muted-foreground">Student Population</span>
+          </div>
+        </div>
       </div>
       
-      <div className="h-80 w-full">
+      <div className="h-80 w-full mt-4">
          {classStats.length === 0 ? (
-           <div className="flex items-center justify-center h-full text-xs text-muted-foreground">
+           <div className="flex items-center justify-center h-full text-xs text-muted-foreground border border-dashed">
              No data available
            </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={classStats} margin={{ top: 20, right: 20, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+            <BarChart 
+              data={classStats} 
+              layout="vertical"
+              margin={{ top: 10, right: 30, left: 40, bottom: 0 }}
+            >
+              <CartesianGrid horizontal={false} stroke="hsl(var(--border))" strokeDasharray="3 3" />
               <XAxis 
-                dataKey="className" 
-                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} 
-                tickLine={false}
-                axisLine={false}
-                interval={0}
-                dy={10}
+                type="number"
+                hide
               />
               <YAxis 
-                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} 
+                type="category"
+                dataKey="className" 
+                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))', fontFamily: "inherit" }} 
                 tickLine={false}
                 axisLine={false}
+                width={80}
               />
               <Tooltip 
-                cursor={{ fill: 'transparent' }}
+                cursor={{ fill: 'hsl(var(--muted) / 0.5)' }}
                 contentStyle={{ 
                   borderRadius: '0px', 
-                  border: '1px solid #1d1d1d',
-                  backgroundColor: '#0c0c0c',
-                  color: '#fff',
-                  fontSize: '10px'
+                  border: '1px solid hsl(var(--border))',
+                  backgroundColor: 'hsl(var(--background))',
+                  color: 'hsl(var(--foreground))',
+                  fontSize: '10px',
+                  fontFamily: 'inherit'
                 }}
-                itemStyle={{ color: '#fff' }}
+                itemStyle={{ color: 'hsl(var(--foreground))' }}
               />
-              <Bar dataKey="studentCount" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} barSize={40}>
+              <Bar dataKey="studentCount" radius={[0, 2, 2, 0]} barSize={20}>
                  {classStats.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={index % 2 === 0 ? "hsl(var(--primary))" : "hsl(var(--primary) / 0.7)"} />
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={`hsl(var(--primary) / ${1 - index * 0.08})`} 
+                    />
                  ))}
               </Bar>
             </BarChart>

@@ -23,7 +23,8 @@ export const getSchoolMetricsAction = authActionClient
       attendanceRate,
       genderStats,
       classStats,
-      recentStudents
+      recentStudents,
+      overallPerformance
     ] = await Promise.all([
       getStudentCount(),
       getTeacherCount(),
