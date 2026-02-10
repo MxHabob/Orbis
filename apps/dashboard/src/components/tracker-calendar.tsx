@@ -3,6 +3,7 @@
 import { getCalendarEventsAction } from "@/actions/get-calendar-events-action";
 import { useCalendarDates } from "@/hooks/use-calendar-dates";
 import { useTrackerParams } from "@/hooks/use-tracker-params";
+import { useLessonParams } from "@/hooks/use-lesson-params";
 import { useUserQuery } from "@/hooks/use-user";
 // import { useTRPC } from "@/trpc/client";
 import { TZDate } from "@date-fns/tz";
@@ -44,6 +45,8 @@ export function TrackerCalendar({ weeklyCalendar }: Props) {
     selectedDate,
     view,
   } = useTrackerParams();
+
+  const { setParams: setLessonParams } = useLessonParams();
 
   const selectedView = view ?? (weeklyCalendar ? "week" : "month");
 
@@ -183,17 +186,24 @@ export function TrackerCalendar({ weeklyCalendar }: Props) {
         eventId: null,
       });
     } else if (localRange[0]) {
-      setParams({ selectedDate: localRange[0], range: null, eventId: null });
+      setLessonParams({ schedule: true });
     }
     setLocalRange([null, null]);
   };
 
   const handleEventClick = (eventId: string, date: TZDate) => {
-    const formattedDate = formatISO(date, { representation: "date" });
-    setParams({
-      selectedDate: formattedDate,
-      eventId: eventId,
-      range: null,
+    const [lessonIdStr] = eventId.split("-");
+    if (!lessonIdStr) return;
+    const lessonId = parseInt(lessonIdStr);
+
+    // Find the lesson in data to get its classId
+    const dateKey = formatISO(date, { representation: "date" });
+    const lesson = data?.[dateKey]?.find((e) => e.id === eventId);
+
+    setLessonParams({
+      lessonId,
+      update: true,
+      classId: lesson?.classId,
     });
   };
 
