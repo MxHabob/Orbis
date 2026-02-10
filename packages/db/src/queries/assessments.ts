@@ -105,19 +105,8 @@ export const initializeStandardMonthlyAssessments = async (params: {
 }) => {
   const itemsToCreate = [
     {
-      title: "Attendance",
+      title: "المواظبة",
       type: "attendance" as const,
-      maxScore: "5",
-      weight: "1.0",
-      classId: params.classId,
-      subjectId: params.subjectId,
-      termId: params.termId,
-      month: params.month,
-      isPublished: true,
-    },
-    {
-      title: "Participation",
-      type: "participation" as const,
       maxScore: "10",
       weight: "1.0",
       classId: params.classId,
@@ -127,9 +116,9 @@ export const initializeStandardMonthlyAssessments = async (params: {
       isPublished: true,
     },
     {
-      title: "Oral",
-      type: "oral" as const,
-      maxScore: "15",
+      title: "السلوك",
+      type: "behavior" as const,
+      maxScore: "10",
       weight: "1.0",
       classId: params.classId,
       subjectId: params.subjectId,
@@ -138,9 +127,31 @@ export const initializeStandardMonthlyAssessments = async (params: {
       isPublished: true,
     },
     {
-      title: "Written Exam",
-      type: "exam" as const,
+      title: "الشفوي",
+      type: "oral" as const,
       maxScore: "20",
+      weight: "1.0",
+      classId: params.classId,
+      subjectId: params.subjectId,
+      termId: params.termId,
+      month: params.month,
+      isPublished: true,
+    },
+    {
+      title: "الواجبات",
+      type: "homework" as const,
+      maxScore: "20",
+      weight: "1.0",
+      classId: params.classId,
+      subjectId: params.subjectId,
+      termId: params.termId,
+      month: params.month,
+      isPublished: true,
+    },
+    {
+      title: "الاختبار التحريري",
+      type: "exam" as const,
+      maxScore: "40",
       weight: "1.0",
       classId: params.classId,
       subjectId: params.subjectId,
@@ -169,7 +180,7 @@ export const initializeTermExamAssessments = async (params: {
   
   const itemsToCreate = [
     {
-      title: isMidTerm ? "Mid-term Exam" : "Final Exam",
+      title: isMidTerm ? "اختبار النصفي" : "الاختبار النهائي",
       type: "exam" as const,
       maxScore: "30",
       weight: "1.0",
