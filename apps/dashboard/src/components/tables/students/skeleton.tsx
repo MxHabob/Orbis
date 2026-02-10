@@ -18,15 +18,22 @@ export function CustomersSkeleton({
   isEmpty = false,
 }: CustomersSkeletonProps) {
   return (
-    <TableSkeleton
-      columns={columns}
-      rowCount={25}
-      columnVisibility={columnVisibility}
-      columnSizing={columnSizing}
-      columnOrder={columnOrder}
-      stickyColumnIds={["name"]}
-      actionsColumnId="actions"
-      isEmpty={isEmpty}
-    />
+    <div
+      className="overflow-hidden border-l border-r border-b border-border"
+      style={{
+        height: "calc(100vh - 380px + var(--header-offset, 0px))",
+      }}
+    >
+      <TableSkeleton
+        columns={columns}
+        rowCount={25}
+        columnVisibility={columnVisibility}
+        columnSizing={columnSizing}
+        columnOrder={columnOrder}
+        stickyColumnIds={["name"]}
+        actionsColumnId="actions"
+        isEmpty={isEmpty}
+      />
+    </div>
   );
 }

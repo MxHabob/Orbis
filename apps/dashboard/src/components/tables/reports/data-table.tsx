@@ -44,7 +44,7 @@ export function DataTable({ initialSettings }: Props) {
   const { setColumns, setRowSelection, rowSelection } = useInvoiceStore();
 
   // Hide header and summary grid on scroll
-  useScrollHeader(parentRef, { extraOffset: SUMMARY_GRID_HEIGHTS.invoices });
+  useScrollHeader(parentRef, { extraOffset: SUMMARY_GRID_HEIGHTS.reports });
 
   // Use unified table settings hook for column state management
   const {
@@ -79,10 +79,10 @@ export function DataTable({ initialSettings }: Props) {
 
   // Memoize table meta
   // const tableMeta = useMemo(
-  //   () => ({
-  //     dateFormat: session?.user?.dateFormat,
-  //     timeFormat: session?.user?.timeFormat,
-  //   }),
+    //   () => ({
+      //     dateFormat: session?.user?.dateFormat,
+      //     timeFormat: session?.user?.timeFormat,
+      //   }),
   //   [session?.user?.dateFormat, session?.user?.timeFormat],
   // );
 
@@ -114,7 +114,7 @@ export function DataTable({ initialSettings }: Props) {
   const { getStickyStyle, getStickyClassName } = useStickyColumns({
     columnVisibility,
     table,
-    stickyColumns: STICKY_COLUMNS.invoices,
+    stickyColumns: STICKY_COLUMNS.reports,
   });
 
   // Use the reusable table scroll hook
@@ -184,7 +184,7 @@ export function DataTable({ initialSettings }: Props) {
           }}
           className="overflow-auto overscroll-contain border-l border-r border-b border-border scrollbar-hide"
           style={{
-            height: "calc(100vh - 350px + var(--header-offset, 0px))",
+            height: "calc(100vh - 200px + var(--header-offset, 0px))",
           }}
         >
           <DndContext

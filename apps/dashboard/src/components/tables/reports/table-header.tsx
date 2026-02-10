@@ -73,7 +73,7 @@ export function DataTableHeader<TData>({
                 | undefined;
               const isSticky = meta?.sticky;
               const canReorder =
-                !NON_REORDERABLE_COLUMNS.invoices.has(columnId);
+                !NON_REORDERABLE_COLUMNS.reports.has(columnId);
 
               if (!isVisible(columnId)) return null;
 
@@ -169,7 +169,7 @@ function renderHeaderContent<TData>(
   table: Table<TData>,
   tableScroll?: TableScrollState,
 ) {
-  const sortField = SORT_FIELD_MAPS.invoices[columnId];
+  const sortField = SORT_FIELD_MAPS.reports[columnId];
   const meta = header.column.columnDef.meta as
     | { headerLabel?: string }
     | undefined;

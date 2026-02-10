@@ -128,7 +128,7 @@ export const ROW_HEIGHTS: Record<TableId, number> = {
 export const SUMMARY_GRID_HEIGHTS: Partial<Record<TableId, number>> = {
   invoices: 180,
   customers: 180,
-  students: 0,
+  students: 180,
   grades: 0,
   classes: 0,
   reports: 0,

@@ -147,7 +147,7 @@ export function DataTable({ initialSettings, id }: Props) {
   const { getStickyStyle, getStickyClassName } = useStickyColumns({
     columnVisibility,
     table,
-    stickyColumns: STICKY_COLUMNS.customers,
+    stickyColumns: STICKY_COLUMNS.students,
   });
 
   // Use the reusable table scroll hook
@@ -207,11 +207,11 @@ export function DataTable({ initialSettings, id }: Props) {
           }}
           className="overflow-auto overscroll-contain border-l border-r border-b border-border scrollbar-hide"
           style={{
-            height: "calc(100vh - 350px + var(--header-offset, 0px))",
+            height: "calc(100vh - 380px + var(--header-offset, 0px))",
           }}
         >
           <DndContext
-            id="customers-table-dnd"
+            id="students-table-dnd"
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}

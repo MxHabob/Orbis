@@ -38,7 +38,7 @@ export function DataTableHeader<TData>({
   const { getStickyStyle, getStickyClassName, isVisible } = useStickyColumns({
     table,
     loading,
-    stickyColumns: STICKY_COLUMNS.customers,
+    stickyColumns: STICKY_COLUMNS.students,
   });
 
   // Get sortable column IDs (excluding sticky columns)
@@ -46,7 +46,7 @@ export function DataTableHeader<TData>({
     if (!table) return [];
     return table
       .getAllLeafColumns()
-      .filter((col) => !NON_REORDERABLE_COLUMNS.customers.has(col.id))
+      .filter((col) => !NON_REORDERABLE_COLUMNS.students.has(col.id))
       .map((col) => col.id);
   }, [table]);
 
@@ -72,7 +72,7 @@ export function DataTableHeader<TData>({
                 | undefined;
               const isSticky = meta?.sticky;
               const canReorder =
-                !NON_REORDERABLE_COLUMNS.customers.has(columnId);
+                !NON_REORDERABLE_COLUMNS.students.has(columnId);
 
               if (!isVisible(columnId)) return null;
 
@@ -161,7 +161,7 @@ function renderHeaderContent<TData>(
   createSortQuery: (name: string) => void,
   tableScroll?: TableScrollState,
 ) {
-  const sortField = SORT_FIELD_MAPS.customers[columnId];
+  const sortField = SORT_FIELD_MAPS.students[columnId];
 
   // Actions column - static text
   if (columnId === "actions") {
