@@ -11,6 +11,7 @@ import {
   getUserById,
   getUserInvites,
   updateUser,
+  linkParentToStudents,
 } from "@midday/db/queries";
 import { generateFileKey } from "@midday/encryption";
 
@@ -28,6 +29,9 @@ export const userRouter = createTRPCRouter({
           name: z.string().min(2),
           email: z.string().email(),
           role: z.enum(["admin", "parent", "teacher", "staff", "student"]),
+          // Optional: link students when creating a parent
+          studentIds: z.array(z.string().uuid()).optional(),
+          relationship: z.enum(["parent", "mother", "father", "guardian"]).optional(),
         }),
       ),
     )
@@ -38,7 +42,7 @@ export const userRouter = createTRPCRouter({
         throw new TRPCError({ code: "FORBIDDEN" });
       }
 
-      return createUsers(
+      const createdUsers = await createUsers(
         db,
         input.map((invite) => ({
           name: invite.name,
@@ -46,7 +50,27 @@ export const userRouter = createTRPCRouter({
           role: invite.role,
         })),
       );
+
+      // Auto-link parents to students if studentIds are provided
+      for (const invite of input) {
+        if (invite.role === "parent" && invite.studentIds?.length) {
+          const createdParent = createdUsers.find((u) => u.email === invite.email);
+          if (createdParent) {
+            await linkParentToStudents(
+              db,
+              createdParent.id,
+              invite.studentIds.map((sid) => ({
+                studentId: sid,
+                relationship: invite.relationship ?? "parent",
+              })),
+            );
+          }
+        }
+      }
+
+      return createdUsers;
     }),
+
   me: protectedProcedure.query(async ({ ctx: { db, session } }) => {
     const result = await withRetryOnPrimary(db, async (dbInstance) =>
       getUserById(dbInstance, session.user.id),

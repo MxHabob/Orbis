@@ -16,7 +16,7 @@ export function InviteTeamMembersModal({
   onOpenChange,
 }: InviteTeamMembersModalProps) {
   return (
-    <DialogContent className="max-w-[700px]">
+    <DialogContent className="max-w-[780px]">
       <div className="p-2">
         <DialogHeader className="mb-4">
           <DialogTitle className="text-xl font-semibold">User Creation</DialogTitle>

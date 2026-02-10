@@ -9,6 +9,7 @@ import { classesRouter } from "./classes";
 import { gradesRouter } from "./grades";
 import { lessonsRouter } from "./lessons";
 import { notificationsRouter } from "./notifications";
+import { parentStudentsRouter } from "./parent-students";
 import { studentsRouter } from "./students";
 import { subjectsRouter } from "./subjects";
 import { userRouter } from "./user";
@@ -25,6 +26,7 @@ export const appRouter = createTRPCRouter({
   grades: gradesRouter,
   lessons: lessonsRouter,
   notifications: notificationsRouter,
+  parentStudents: parentStudentsRouter,
   students: studentsRouter,
   subjects: subjectsRouter,
   user: userRouter,

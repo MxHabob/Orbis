@@ -3,7 +3,7 @@
 import { useZodForm } from "@/hooks/use-zod-form";
 import { useTRPC } from "@/trpc/client";
 import { Button } from "@midday/ui/button";
-import { Form, FormControl, FormField, FormItem } from "@midday/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel } from "@midday/ui/form";
 import { Input } from "@midday/ui/input";
 import {
   Select,
@@ -14,10 +14,12 @@ import {
 } from "@midday/ui/select";
 import { SubmitButton } from "@midday/ui/submit-button";
 import { useToast } from "@midday/ui/use-toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import MultipleSelector, { type Option } from "@midday/ui/multiple-selector";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { useFieldArray } from "react-hook-form";
+import { useFieldArray, useWatch } from "react-hook-form";
 import { z } from "zod/v3";
+import { X } from "lucide-react";
 
 const formSchema = z.object({
   invites: z.array(
@@ -25,6 +27,8 @@ const formSchema = z.object({
       name: z.string().min(2, "Name is required"),
       email: z.string().email(),
       role: z.enum(["admin", "teacher", "staff", "parent", "student"]),
+      studentIds: z.array(z.string()).default([]),
+      relationship: z.enum(["parent", "mother", "father", "guardian"]).default("parent"),
     }),
   ),
 });
@@ -39,6 +43,17 @@ export function InviteForm({ onSuccess, skippable = true }: InviteFormProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  // Fetch all students for the parent-student linking
+  const studentsQuery = useQuery(
+    trpc.students.getAll.queryOptions()
+  );
+
+  const studentOptions: Option[] = (studentsQuery.data ?? []).map((s) => ({
+    value: s.userId,
+    label: `${s.name ?? "Unknown"} — ${s.studentNumber}`,
+    studentNumber: s.studentNumber,
+  }));
+
   const inviteMutation = useMutation(
     trpc.user.create.mutationOptions({
       onSuccess: (data) => {
@@ -46,11 +61,10 @@ export function InviteForm({ onSuccess, skippable = true }: InviteFormProps) {
           queryKey: trpc.user.get.queryKey(),
         });
 
-        // Show appropriate feedback based on results
         if (data && data.length > 0) {
           toast({
             title: "Invites sent",
-            description: `Successfully sent ${data.length} invite(s).`,
+            description: `Successfully created ${data.length} account(s).`,
             variant: "success",
           });
         }
@@ -67,16 +81,26 @@ export function InviteForm({ onSuccess, skippable = true }: InviteFormProps) {
           name: "",
           email: "",
           role: "teacher",
+          studentIds: [],
+          relationship: "parent",
         },
       ],
     },
   });
 
   const onSubmit = form.handleSubmit((data) => {
-    inviteMutation.mutate(data.invites.filter((invite) => invite.email !== ""));
+    inviteMutation.mutate(
+      data.invites
+        .filter((invite) => invite.email !== "")
+        .map((invite) => ({
+          ...invite,
+          studentIds: invite.role === "parent" ? invite.studentIds : undefined,
+          relationship: invite.role === "parent" ? invite.relationship : undefined,
+        })),
+    );
   });
 
-  const { fields, append } = useFieldArray({
+  const { fields, append, remove } = useFieldArray({
     name: "invites",
     control: form.control,
   });
@@ -84,87 +108,32 @@ export function InviteForm({ onSuccess, skippable = true }: InviteFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={onSubmit}>
-        {fields.length > 0 && (
-          <div className="grid grid-cols-12 gap-4 mb-2 px-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            <div className="col-span-4">Full Name</div>
-            <div className="col-span-5">Email Address</div>
-            <div className="col-span-3">Role</div>
-          </div>
-        )}
-        {fields.map((field, index) => (
-          <div
-            className="grid grid-cols-12 gap-4 mt-4 items-start border-b pb-4 last:border-0"
-            key={field.id}
-          >
-            <FormField
+        <div className="space-y-5">
+          {fields.map((field, index) => (
+            <InviteRow
+              key={field.id}
+              index={index}
               control={form.control}
-              name={`invites.${index}.name`}
-              render={({ field }) => (
-                <FormItem className="col-span-4">
-                  <FormControl>
-                    <Input
-                      placeholder="Full Name"
-                      autoComplete="off"
-                      {...field}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
+              studentOptions={studentOptions}
+              isLoadingStudents={studentsQuery.isLoading}
+              onRemove={fields.length > 1 ? () => remove(index) : undefined}
             />
-
-            <FormField
-              control={form.control}
-              name={`invites.${index}.email`}
-              render={({ field }) => (
-                <FormItem className="col-span-5">
-                  <FormControl>
-                    <Input
-                      placeholder="jane@example.com"
-                      type="email"
-                      autoComplete="off"
-                      autoCapitalize="none"
-                      autoCorrect="off"
-                      spellCheck="false"
-                      {...field}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name={`invites.${index}.role`}
-              render={({ field }) => (
-                <FormItem className="col-span-3">
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Role" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="teacher">Teacher</SelectItem>
-                      <SelectItem value="staff">Staff</SelectItem>
-                      <SelectItem value="parent">Parent</SelectItem>
-                      <SelectItem value="student">Student</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </FormItem>
-              )}
-            />
-          </div>
-        ))}
+          ))}
+        </div>
 
         <Button
           variant="outline"
           type="button"
           className="mt-4 border-none bg-[#F2F1EF] text-[11px] dark:bg-[#1D1D1D]"
-          onClick={() => append({ name: "", email: "", role: "teacher" })}
+          onClick={() =>
+            append({
+              name: "",
+              email: "",
+              role: "teacher",
+              studentIds: [],
+              relationship: "parent",
+            })
+          }
         >
           Add more
         </Button>
@@ -203,5 +172,191 @@ export function InviteForm({ onSuccess, skippable = true }: InviteFormProps) {
         </div>
       </form>
     </Form>
+  );
+}
+
+// ==========================================
+// Individual Invite Row Component
+// ==========================================
+function InviteRow({
+  index,
+  control,
+  studentOptions,
+  isLoadingStudents,
+  onRemove,
+}: {
+  index: number;
+  control: any;
+  studentOptions: Option[];
+  isLoadingStudents: boolean;
+  onRemove?: () => void;
+}) {
+  const selectedRole = useWatch({
+    control,
+    name: `invites.${index}.role`,
+  });
+
+  const isParent = selectedRole === "parent";
+
+  return (
+    <div className="relative rounded-lg p-4 transition-all duration-200">
+      {/* Remove button */}
+      {onRemove && (
+        <button
+          type="button"
+          onClick={onRemove}
+          className="absolute -right-2 -top-2 rounded-full bg-background border border-border p-1 text-muted-foreground hover:text-destructive hover:border-destructive transition-colors z-10"
+        >
+          <X className="size-3" />
+        </button>
+      )}
+
+      <div className="grid grid-cols-12 gap-3">
+        <FormField
+          control={control}
+          name={`invites.${index}.name`}
+          render={({ field }) => (
+            <FormItem className="col-span-4">
+              <FormLabel className="text-xs font-medium text-muted-foreground">
+                Full Name
+              </FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="Full Name"
+                  autoComplete="off"
+                  {...field}
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={control}
+          name={`invites.${index}.email`}
+          render={({ field }) => (
+            <FormItem className="col-span-5">
+              <FormLabel className="text-xs font-medium text-muted-foreground">
+                Email Address
+              </FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="jane@example.com"
+                  type="email"
+                  autoComplete="off"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck="false"
+                  {...field}
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={control}
+          name={`invites.${index}.role`}
+          render={({ field }) => (
+            <FormItem className="col-span-3">
+              <FormLabel className="text-xs font-medium text-muted-foreground">
+                Role
+              </FormLabel>
+              <Select
+                onValueChange={field.onChange}
+                defaultValue={field.value}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Role" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="teacher">Teacher</SelectItem>
+                  <SelectItem value="staff">Staff</SelectItem>
+                  <SelectItem value="parent">Parent</SelectItem>
+                  <SelectItem value="student">Student</SelectItem>
+                </SelectContent>
+              </Select>
+            </FormItem>
+          )}
+        />
+      </div>
+
+      {isParent && (
+        <div className="mt-4 pt-4 border-t border-dashed border-border/50 animate-in slide-in-from-top-2 fade-in-0 duration-200">
+          <div className="grid grid-cols-12 gap-3">
+            <FormField
+              control={control}
+              name={`invites.${index}.relationship`}
+              render={({ field }) => (
+                <FormItem className="col-span-3">
+                  <FormLabel className="text-xs font-medium text-muted-foreground">
+                    Relationship
+                  </FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Relationship" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="parent">Parent</SelectItem>
+                      <SelectItem value="mother">Mother</SelectItem>
+                      <SelectItem value="father">Father</SelectItem>
+                      <SelectItem value="guardian">Guardian</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={control}
+              name={`invites.${index}.studentIds`}
+              render={({ field }) => (
+                <FormItem className="col-span-9">
+                  <FormLabel className="text-xs font-medium text-muted-foreground">
+                    Link to Students
+                  </FormLabel>
+                  <FormControl>
+                    <MultipleSelector
+                      value={
+                        field.value?.map((id: string) => {
+                          const opt = studentOptions.find(
+                            (o) => o.value === id,
+                          );
+                          return opt ?? { value: id, label: id };
+                        }) ?? []
+                      }
+                      onChange={(options) =>
+                        field.onChange(options.map((o) => o.value))
+                      }
+                      defaultOptions={studentOptions}
+                      placeholder={
+                        isLoadingStudents
+                          ? "Loading students..."
+                          : "Search students by name or number..."
+                      }
+                      disabled={isLoadingStudents}
+                      emptyIndicator={
+                        <p className="text-center text-sm text-muted-foreground">
+                          No students found.
+                        </p>
+                      }
+                      className="border rounded-md"
+                      hidePlaceholderWhenSelected
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

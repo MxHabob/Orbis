@@ -8,6 +8,13 @@
       "when": 1770730853570,
       "tag": "0000_nebulous_rumiko_fujikawa",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1770734177458,
+      "tag": "0001_add-parent-students",
+      "breakpoints": true
     }
   ]
 }

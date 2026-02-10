@@ -324,6 +324,22 @@ export const attendanceRecords = pgTable('attendance_records', {
     compositeStudentLessonDate: index('attendance_student_lesson_date_idx').on(table.studentId, table.scheduledLessonId, table.date),
 }));
 
+// ==========================================
+// Parent-Student Relationship (Many-to-Many)
+// ==========================================
+export const parentStudents = pgTable('parent_students', {
+  id: serial('id').primaryKey(),
+  parentId: uuid('parent_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  studentId: uuid('student_id').references(() => students.userId, { onDelete: 'cascade' }).notNull(),
+  relationship: varchar('relationship', { length: 50 }).default('parent').notNull(), // parent, mother, father, guardian
+  isPrimary: boolean('is_primary').default(false).notNull(), // Primary contact
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  parentStudentUnique: unique('parent_student_unique').on(table.parentId, table.studentId),
+  parentIdx: index('ps_parent_idx').on(table.parentId),
+  studentIdx: index('ps_student_idx').on(table.studentId),
+}));
+
 
 // ==========================================
 // 5. Relations (Programmatic relations for easy querying)
@@ -337,6 +353,8 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   gradedEntries: many(gradeEntries, { relationName: "gradedByUser" }),
   sentNotifications: many(notifications, { relationName: "sentNotifications" }),
   receivedNotifications: many(notifications, { relationName: "receivedNotifications" }),
+  // Parent → Children (students the parent is linked to)
+  parentChildren: many(parentStudents, { relationName: "parentToStudents" }),
 }));
 
 export const accountsRelations = relations(accounts, ({ one }) => ({
@@ -353,6 +371,8 @@ export const studentsRelations = relations(students, ({ one, many }) => ({
   enrollments: many(enrollments, { relationName: "studentEnrollments" }),
   class: one(classes, { fields: [students.currentClassId], references: [classes.id], relationName: "studentClass" }),
   attendanceRecords: many(attendanceRecords, { relationName: 'studentAttendance' }),
+  // Student → Parents (parents linked to this student)
+  parentLinks: many(parentStudents, { relationName: "studentToParents" }),
 }));
 
 export const enrollmentsRelations = relations(enrollments, ({ one }) => ({
@@ -405,4 +425,9 @@ export const attendanceRecordsRelations = relations(attendanceRecords, ({ one })
   student: one(students, { fields: [attendanceRecords.studentId], references: [students.userId], relationName: 'studentAttendance' }),
   scheduledLesson: one(scheduledLessons, { fields: [attendanceRecords.scheduledLessonId], references: [scheduledLessons.id], relationName: 'lessonAttendance' }),
   markedBy: one(users, { fields: [attendanceRecords.markedById], references: [users.id], relationName: 'markedAttendance' }),
+}));
+
+export const parentStudentsRelations = relations(parentStudents, ({ one }) => ({
+  parent: one(users, { fields: [parentStudents.parentId], references: [users.id], relationName: "parentToStudents" }),
+  student: one(students, { fields: [parentStudents.studentId], references: [students.userId], relationName: "studentToParents" }),
 }));
