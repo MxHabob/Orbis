@@ -120,7 +120,6 @@ export function ImportModal() {
     });
   };
 
-  // Go to second page if file looks good
   useEffect(() => {
     if (file && fileColumns && firstRows && pageNumber === 0) {
       setPageNumber(1);
