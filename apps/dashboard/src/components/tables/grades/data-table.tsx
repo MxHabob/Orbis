@@ -6,7 +6,7 @@ import { useStickyColumns } from "@/hooks/use-sticky-columns";
 import { useTableScroll } from "@/hooks/use-table-scroll";
 import { useTableDnd } from "@/hooks/use-table-dnd";
 import { useTableSettings } from "@/hooks/use-table-settings";
-import { STICKY_COLUMNS } from "@/utils/table-configs";
+import { STICKY_COLUMNS, SUMMARY_GRID_HEIGHTS } from "@/utils/table-configs";
 import type { TableSettings } from "@/utils/table-settings";
 import { DndContext, closestCenter } from "@dnd-kit/core";
 import { Table, TableBody, TableCell, TableRow } from "@midday/ui/table";
@@ -45,7 +45,7 @@ export function GradeDataTable({
 
   const parentRef = useRef<HTMLDivElement>(null);
 
-  useScrollHeader(parentRef, { extraOffset: 0 });
+  useScrollHeader(parentRef, { extraOffset: SUMMARY_GRID_HEIGHTS.grades });
 
   const {
     columnVisibility,
@@ -180,9 +180,9 @@ export function GradeDataTable({
               ).current = el;
             }
           }}
-          className="overflow-auto overscroll-contain border-l border-r border-b border-border scrollbar-hide"
+          className="overflow-auto overscroll-none border-l border-r border-b border-border scrollbar-hide"
           style={{
-            height: "calc(100vh - 350px + var(--header-offset, 0px))",
+            height: "calc(100vh - 200px + var(--header-offset, 0px))",
           }}
         >
           <DndContext

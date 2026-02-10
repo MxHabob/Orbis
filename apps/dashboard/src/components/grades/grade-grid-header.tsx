@@ -51,7 +51,7 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
   }, [defaults, yearId, termId, month, setYearId, setTermId, setMonth]);
 
   return (
-    <div className="flex flex-wrap items-center py-2 justify-between">
+    <div className="flex flex-wrap items-center py-4 justify-between">
       <div className="flex gap-6">
         <GradesSearchFilter/>
         <Select

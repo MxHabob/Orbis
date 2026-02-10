@@ -164,7 +164,7 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
     }
 
     return (
-      <div className="space-y-4" data-canvas-content>
+      <div className="flex flex-col gap-4">
         {hasChanges && (
           <div className="flex justify-end sticky top-0 z-30 py-2 bg-background/80 backdrop-blur-sm border-b mb-2">
             <div className="flex items-center gap-4 px-4">

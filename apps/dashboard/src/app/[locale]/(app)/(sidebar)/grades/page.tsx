@@ -77,7 +77,7 @@ export default async function GradesPage(props: Props) {
     <HydrateClient>
       <ScrollableContent>
         <GradesUploadZone>
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-6" data-canvas-content>
             <GradeGridHeader initialData={initialData} defaults={defaults} />
             <ErrorBoundary errorComponent={ErrorFallback}>
               <Suspense fallback={<GradesSkeleton />}>

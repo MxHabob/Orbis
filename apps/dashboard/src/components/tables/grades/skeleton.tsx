@@ -23,15 +23,22 @@ export function GradesSkeleton({
   const columns = createGradeColumns(items);
 
   return (
-    <TableSkeleton
-      columns={columns}
-      rowCount={15}
-      columnVisibility={columnVisibility}
-      columnSizing={columnSizing}
-      columnOrder={columnOrder}
-      stickyColumnIds={["studentName"]}
-      actionsColumnId="total"
-      isEmpty={isEmpty}
-    />
+    <div
+      className="overflow-hidden border-l border-r border-b border-border"
+      style={{
+        height: "calc(100vh - 200px + var(--header-offset, 0px))",
+      }}
+    >
+      <TableSkeleton
+        columns={columns}
+        rowCount={15}
+        columnVisibility={columnVisibility}
+        columnSizing={columnSizing}
+        columnOrder={columnOrder}
+        stickyColumnIds={["studentName"]}
+        actionsColumnId="total"
+        isEmpty={isEmpty}
+      />
+    </div>
   );
 }
