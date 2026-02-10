@@ -18,6 +18,8 @@ CREATE TABLE "academic_terms" (
 CREATE TABLE "academic_years" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"year_name" varchar(20) NOT NULL,
+	"start_date" date,
+	"end_date" date,
 	"is_current" boolean DEFAULT false NOT NULL,
 	"deleted_at" timestamp,
 	CONSTRAINT "academic_years_year_name_unique" UNIQUE("year_name")
@@ -79,6 +81,22 @@ CREATE TABLE "audit_logs" (
 	"new_data" jsonb,
 	"user_id" uuid,
 	"timestamp" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "certificate_templates" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"name" varchar(100) NOT NULL,
+	"is_default" boolean DEFAULT false NOT NULL,
+	"orientation" varchar(20) DEFAULT 'portrait' NOT NULL,
+	"size" varchar(20) DEFAULT 'a4' NOT NULL,
+	"primary_color" varchar(20) DEFAULT '#000000',
+	"background_image_url" text,
+	"header_content" jsonb,
+	"main_content" jsonb,
+	"footer_content" jsonb,
+	"table_config" jsonb,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "classes" (
@@ -207,6 +225,7 @@ CREATE TABLE "users" (
 	"role" "role" DEFAULT 'student' NOT NULL,
 	"sex" "user_sex" DEFAULT 'unspecified' NOT NULL,
 	"image" varchar(255),
+	"locale" varchar(255) DEFAULT 'en',
 	"metadata" jsonb,
 	"deleted_at" timestamp,
 	"created_at" timestamp DEFAULT now() NOT NULL,
@@ -265,6 +284,7 @@ CREATE INDEX "attendance_status_idx" ON "attendance_records" USING btree ("statu
 CREATE INDEX "attendance_student_lesson_date_idx" ON "attendance_records" USING btree ("student_id","scheduled_lesson_id","date");--> statement-breakpoint
 CREATE INDEX "class_year_idx" ON "classes" USING btree ("academic_year_id","name");--> statement-breakpoint
 CREATE INDEX "classes_parent_idx" ON "classes" USING btree ("parent_class_id");--> statement-breakpoint
+CREATE INDEX "enrollments_class_idx" ON "enrollments" USING btree ("class_id");--> statement-breakpoint
 CREATE INDEX "fast_grade_lookup_idx" ON "grade_entries" USING btree ("assessment_item_id","score");--> statement-breakpoint
 CREATE INDEX "notif_recipient_created_idx" ON "notifications" USING btree ("recipient_id","created_at" DESC NULLS LAST);--> statement-breakpoint
 CREATE INDEX "notif_recipient_unread_idx" ON "notifications" USING btree ("recipient_id") WHERE "notifications"."is_read" = false;--> statement-breakpoint

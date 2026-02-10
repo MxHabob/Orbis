@@ -1,1 +1,0 @@
-ALTER TABLE "certificate_templates" ADD COLUMN "main_content" jsonb;
