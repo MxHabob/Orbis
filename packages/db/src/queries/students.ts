@@ -28,7 +28,7 @@ export const getAllStudentss = async () => {
         .innerJoin(users, eq(students.userId, users.id))
         .leftJoin(classes, eq(students.currentClassId, classes.id))
         .orderBy(asc(users.name))
-        .limit(200);
+        .limit(10);
 };
 
 export const getStudentsByClassId = async (
