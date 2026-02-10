@@ -5,11 +5,15 @@ import {
   getTeacherSchedule, 
   createTimeSlot, 
   createScheduledLesson, 
-  deleteScheduledLesson 
+  updateScheduledLesson,
+  deleteScheduledLesson,
+  getScheduledLessonById
 } from "@midday/db/queries";
+
 import { 
   createTimeSlotSchema, 
-  createScheduledLessonSchema 
+  createScheduledLessonSchema,
+  updateScheduledLessonSchema 
 } from "@api/schemas/lessons";
 import { z } from "zod";
 
@@ -32,21 +36,35 @@ export const lessonsRouter = createTRPCRouter({
       return getTeacherSchedule(input.teacherId, input.yearId);
     }),
 
+  getById: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      return getScheduledLessonById(input.id);
+    }),
+
   createTimeSlot: protectedProcedure
     .input(createTimeSlotSchema)
     .mutation(async ({ input }) => {
       return createTimeSlot(input);
     }),
 
-  createScheduledLesson: protectedProcedure
+  create: protectedProcedure
     .input(createScheduledLessonSchema)
     .mutation(async ({ input }) => {
       return createScheduledLesson(input);
     }),
 
-  deleteScheduledLesson: protectedProcedure
+  update: protectedProcedure
+    .input(updateScheduledLessonSchema)
+    .mutation(async ({ input }) => {
+      const { id, ...data } = input;
+      return updateScheduledLesson(id, data);
+    }),
+
+  delete: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       return deleteScheduledLesson(input.id);
     }),
 });
+

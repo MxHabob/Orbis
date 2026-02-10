@@ -15,6 +15,20 @@
       "when": 1770734177458,
       "tag": "0001_add-parent-students",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1770750896000,
+      "tag": "0002_last_anthem",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1770750954542,
+      "tag": "0003_keen_miss_america",
+      "breakpoints": true
     }
   ]
 }

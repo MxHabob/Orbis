@@ -1,6 +1,6 @@
 "use client";
 
-import { useUserQuery } from "@/hooks/use-user";
+import { authClient } from "@midday/auth/auth-client";
 import {
   Card,
   CardDescription,
@@ -11,7 +11,8 @@ import {
 import { AvatarUpload } from "./avatar-upload";
 
 export function UserAvatar() {
-  const { data: user } = useUserQuery();
+  const { data: session } = authClient.useSession();
+  const user = session?.user;
 
   return (
     <Card>
@@ -24,9 +25,9 @@ export function UserAvatar() {
           </CardDescription>
         </CardHeader>
 
-        <AvatarUpload userId={user?.id!} avatarUrl={user?.avatarUrl} />
+        <AvatarUpload userId={user?.id!} avatarUrl={user?.image} />
       </div>
       <CardFooter>An avatar is optional but strongly recommended.</CardFooter>
-    </Card>
+    </Card> 
   );
 }

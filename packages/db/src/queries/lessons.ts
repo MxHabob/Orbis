@@ -63,7 +63,15 @@ export const getClassSchedule = async (classId: number, yearId: number) => {
         id: users.id,
         name: users.name,
       },
+      notes: scheduledLessons.notes,
+      classId: scheduledLessons.classId,
+      academicYearId: scheduledLessons.academicYearId,
+      timeSlotId: scheduledLessons.timeSlotId,
+      subjectId: scheduledLessons.subjectId,
+      teacherId: scheduledLessons.teacherId,
     })
+
+
     .from(scheduledLessons)
     .innerJoin(timeSlots, eq(scheduledLessons.timeSlotId, timeSlots.id))
     .innerJoin(subjects, eq(scheduledLessons.subjectId, subjects.id))
@@ -105,7 +113,15 @@ export const getTeacherSchedule = async (teacherId: string, yearId: number) => {
           id: subjects.id,
           name: subjects.name,
         },
+        notes: scheduledLessons.notes,
+        classId: scheduledLessons.classId,
+        academicYearId: scheduledLessons.academicYearId,
+        timeSlotId: scheduledLessons.timeSlotId,
+        subjectId: scheduledLessons.subjectId,
+        teacherId: scheduledLessons.teacherId,
       })
+
+
       .from(scheduledLessons)
       .innerJoin(timeSlots, eq(scheduledLessons.timeSlotId, timeSlots.id))
       .innerJoin(classes, eq(scheduledLessons.classId, classes.id))
@@ -134,6 +150,38 @@ export const createScheduledLesson = async (data: CreateScheduledLessonParams) =
   return result;
 };
 
+export const getScheduledLessonById = async (id: number) => {
+  const [result] = await db
+    .select({
+      id: scheduledLessons.id,
+      dayOfWeek: scheduledLessons.dayOfWeek,
+      classId: scheduledLessons.classId,
+      timeSlotId: scheduledLessons.timeSlotId,
+      subjectId: scheduledLessons.subjectId,
+      teacherId: scheduledLessons.teacherId,
+      academicYearId: scheduledLessons.academicYearId,
+      notes: scheduledLessons.notes,
+    })
+    .from(scheduledLessons)
+    .where(eq(scheduledLessons.id, id));
+
+  return result;
+};
+
+export const updateScheduledLesson = async (id: number, data: Partial<CreateScheduledLessonParams>) => {
+  const [result] = await db
+    .update(scheduledLessons)
+    .set({ ...data, updatedAt: new Date() })
+    .where(eq(scheduledLessons.id, id))
+    .returning();
+
+  if (result) {
+    await lessonCache.delete(`schedule:class:${result.classId}:${result.academicYearId}`);
+    await lessonCache.delete(`schedule:teacher:${result.teacherId}:${result.academicYearId}`);
+  }
+  return result;
+};
+
 export const deleteScheduledLesson = async (id: number) => {
     const [existing] = await db.select().from(scheduledLessons).where(eq(scheduledLessons.id, id));
     if (existing) {
@@ -142,3 +190,4 @@ export const deleteScheduledLesson = async (id: number) => {
         await lessonCache.delete(`schedule:teacher:${existing.teacherId}:${existing.academicYearId}`);
     }
 };
+

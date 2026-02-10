@@ -38,6 +38,15 @@ export const userSchema = z.object({
   locale: z.string().openapi({
     example: "en",
   }),
+  timezone: z.string().nullable().openapi({
+    example: "Europe/London",
+  }),
+  timeFormat: z.number().default(24).openapi({
+    example: 24,
+  }),
+  weekStartsOnMonday: z.boolean().default(false).openapi({
+    example: false,
+  }),
 });
 
 export const createUserSchema = userSchema.omit({ 

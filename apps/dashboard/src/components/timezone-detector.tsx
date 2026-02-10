@@ -1,10 +1,12 @@
 "use client";
 
-import { useUserMutation, useUserQuery } from "@/hooks/use-user";
+import { useUserMutation } from "@/hooks/use-user";
+import { authClient } from "@midday/auth/auth-client";
 import { useEffect, useRef } from "react";
 
 export function TimezoneDetector() {
-  const { data: user } = useUserQuery();
+  const { data: session } = authClient.useSession();
+  const user = session?.user;
   const updateUserMutation = useUserMutation();
 
   // Track if we've already attempted detection in this session

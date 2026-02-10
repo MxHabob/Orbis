@@ -27,3 +27,5 @@ export const scheduledLessonSchema = z.object({
 });
 
 export const createScheduledLessonSchema = scheduledLessonSchema.omit({ id: true });
+export const updateScheduledLessonSchema = scheduledLessonSchema.partial().extend({ id: z.number() });
+

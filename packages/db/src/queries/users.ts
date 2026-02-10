@@ -32,6 +32,9 @@ export type UpdateUserParams = {
   locale?: string;
   metadata?: any;
   role?: "admin" | "student" | "parent" | "teacher" | "staff";
+  timezone?: string | null;
+  timeFormat?: number;
+  weekStartsOnMonday?: boolean;
 };
 
 export const updateUser = async (db: Database, data: UpdateUserParams) => {
