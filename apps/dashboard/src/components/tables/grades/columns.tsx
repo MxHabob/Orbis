@@ -15,7 +15,7 @@ export type GradeStudent = {
 export type AssessmentItem = {
   id: number;
   title: string;
-  maxScore: number;
+  maxScore: number | string;
 };
 
 export type Grade = {
@@ -144,7 +144,7 @@ export const createGradeColumns = (
               item.id
             );
             if (score) totalScore += parseFloat(score);
-            totalMax += item.maxScore;
+            totalMax += Number(item.maxScore);
           });
 
         // Scale to 20: (Score / Max) * 20
@@ -187,7 +187,7 @@ export const createGradeColumns = (
               studentId={row.original.studentId}
               assessmentItemId={examItem.id}
               initialValue={gradeValue}
-              maxScore={examItem.maxScore}
+              maxScore={Number(examItem.maxScore)}
               table={table}
             />
           );
@@ -217,7 +217,7 @@ export const createGradeColumns = (
                 item.id
               );
               if (score) monthlyTotal += parseFloat(score);
-              monthlyMax += item.maxScore;
+              monthlyMax += Number(item.maxScore);
             });
           const monthlyScaled =
             monthlyMax > 0 ? (monthlyTotal / monthlyMax) * 20 : 0;
@@ -276,7 +276,7 @@ export const createGradeColumns = (
               item.id
             );
             if (score) monthlyTotal += parseFloat(score);
-            monthlyMax += item.maxScore;
+            monthlyMax += Number(item.maxScore);
           });
         const monthlyScaled =
           monthlyMax > 0 ? (monthlyTotal / monthlyMax) * 20 : 0;
@@ -331,7 +331,7 @@ export const createGradeColumns = (
               studentId={row.original.studentId}
               assessmentItemId={item.id}
               initialValue={gradeValue}
-              maxScore={item.maxScore}
+              maxScore={Number(item.maxScore)}
               table={table}
             />
           );

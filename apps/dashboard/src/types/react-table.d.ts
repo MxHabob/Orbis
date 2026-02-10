@@ -53,7 +53,7 @@ declare module "@tanstack/react-table" {
     getGradeValue?: (studentId: string, assessmentItemId: number) => string | null;
     onGradeChange?: (studentId: string, assessmentItemId: number, value: number | null) => void;
     grades?: { studentId: string; assessmentItemId: number; score: string | null }[];
-    items?: { id: number; title: string; maxScore: number }[];
+    items?: { id: number; title: string; maxScore: number | string }[];
   }
 
   interface ColumnMeta<TData extends RowData, TValue> {
@@ -75,6 +75,6 @@ declare module "@tanstack/react-table" {
     /** Header label for skeleton headers */
     headerLabel?: string;
     assessmentItemId?: number;
-    maxScore?: number;
+    maxScore?: number | string;
   }
 }

@@ -37,7 +37,9 @@ export const EditableGradeCell = memo(function EditableGradeCell({
   const handleBlur = () => {
     if (value !== initialValue) {
       const score = value === "" ? null : parseFloat(value);
-      onGradeChange?.(studentId, assessmentItemId, score);
+      if (score === null || !isNaN(score)) {
+        onGradeChange?.(studentId, assessmentItemId, score);
+      }
     }
   };
 

@@ -11,6 +11,7 @@ import { useGradeFilterParams } from "@/hooks/use-grade-filter-params";
 import { Button } from "@midday/ui/button";
 import { useToast } from "@midday/ui/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { GradesSaveBar } from "./grades-save-bar";
 
 export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) {
   const { filter } = useGradeFilterParams();
@@ -65,17 +66,32 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
   };
 
   const handleSaveAll = () => {
+    const invalidGrades: string[] = [];
     const gradesToSave = Object.entries(pendingChanges).map(([key, score]) => {
       const parts = key.split(":");
       const studentId = parts[0];
-      const assessmentItemId = parts[1];
+      const assessmentItemId = parseInt(parts[1]!);
       
+      const item = data?.items.find(i => i.id === assessmentItemId);
+      if (item && score !== null && score > Number(item.maxScore)) {
+        invalidGrades.push(`${item.title}: ${score} > ${item.maxScore}`);
+      }
+
       return {
         studentId: studentId!,
-        assessmentItemId: parseInt(assessmentItemId!),
+        assessmentItemId,
         score,
       };
     });
+
+    if (invalidGrades.length > 0) {
+      toast({
+        title: "Invalid Grades",
+        description: "Some grades exceed the maximum score. Please correct them before saving.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     if (gradesToSave.length === 0) return;
 
@@ -83,6 +99,16 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
   };
 
   const hasChanges = Object.keys(pendingChanges).length > 0;
+
+  const hasErrors = useMemo(() => {
+    return Object.entries(pendingChanges).some(([key, score]) => {
+      const assessmentItemId = parseInt(key.split(":")[1]!);
+      const item = data?.items.find((i) => i.id === assessmentItemId);
+      const isExceeding = item && score !== null && score > Number(item.maxScore);
+      const isInvalidNumber = score !== null && isNaN(score);
+      return isExceeding || isInvalidNumber;
+    });
+  }, [pendingChanges, data?.items]);
 
   useEffect(() => {
     // Clear pending changes when filters change
@@ -165,32 +191,18 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
 
     return (
       <div className="flex flex-col gap-4">
-        {hasChanges && (
-          <div className="flex justify-end sticky top-0 z-30 py-2 bg-background/80 backdrop-blur-sm border-b mb-2">
-            <div className="flex items-center gap-4 px-4">
-              <span className="text-sm font-medium text-muted-foreground">
-                {Object.keys(pendingChanges).length} unsaved changes
-              </span>
-              <Button 
-                onClick={handleSaveAll} 
-                className="gap-2"
-                disabled={batchUpsertMutation.isPending}
-              >
-                {batchUpsertMutation.isPending ? (
-                   <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="h-4 w-4" />
-                )}
-                Save All Grades
-              </Button>
-            </div>
-          </div>
-        )}
         <GradeDataTable 
           initialSettings={initialSettings} 
           data={filteredData as any} 
           pendingChanges={pendingChanges}
           onGradeChange={handleGradeChange}
+        />
+        <GradesSaveBar
+          count={Object.keys(pendingChanges).length}
+          onSave={handleSaveAll}
+          onCancel={() => setPendingChanges({})}
+          isPending={batchUpsertMutation.isPending}
+          hasErrors={hasErrors}
         />
       </div>
     );
