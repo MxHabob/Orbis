@@ -29,7 +29,6 @@ import {
   ArrowLeft,
   X,
   Loader2,
-  Save,
 } from "lucide-react";
 import { cn } from "@midday/ui/cn";
 import { FONTS, VARIABLES, type EditorElement, type ElementType } from "./types";
@@ -307,7 +306,7 @@ export const Sidebar = memo(({
                   </>
                 )}
 
-                {(selectedElement.type === "image" || selectedElement.type === "shape" || selectedElement.type === "table") && (
+                {(selectedElement.type === "image" || selectedElement.type === "shape" || selectedElement.type === "table" || selectedElement.type === "text" || selectedElement.type === "variable") && (
                   <div className="space-y-2">
                     <Label className="text-xs">Element Size: {selectedElement.width}%</Label>
                     <Slider 

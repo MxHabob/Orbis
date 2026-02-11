@@ -43,43 +43,43 @@ export async function getDefaultCertificateTemplate() {
 export async function upsertCertificateTemplate(
   data: Partial<CertificateTemplateInsert> & { id?: string },
 ) {
-  const id = data.id;
-  const payload = {
-    name: data.name ?? "Default",
-    isDefault: data.isDefault ?? false,
-    
-    // Layout
-    orientation: data.orientation ?? "portrait",
-    size: data.size ?? "a4",
-    primaryColor: data.primaryColor ?? "#000000",
-    backgroundImageUrl: data.backgroundImageUrl ?? null,
-    
-    // Content
-    headerContent: data.headerContent ?? null,
-    mainContent: data.mainContent ?? null,
-    footerContent: data.footerContent ?? null,
-    
-    // Config
-    tableConfig: data.tableConfig ?? null,
-    
-    updatedAt: new Date(),
-  };
+  const { id, ...rest } = data;
 
   if (id) {
+    const updatePayload: any = { updatedAt: new Date() };
+
+    // Explicitly handle fields to ensure we don't accidentally set them to undefined/defaults if not provided
+    if (rest.name !== undefined) updatePayload.name = rest.name;
+    if (rest.isDefault !== undefined) updatePayload.isDefault = rest.isDefault;
+    if (rest.orientation !== undefined) updatePayload.orientation = rest.orientation;
+    if (rest.size !== undefined) updatePayload.size = rest.size;
+    if (rest.primaryColor !== undefined) updatePayload.primaryColor = rest.primaryColor;
+    if (rest.backgroundImageUrl !== undefined) updatePayload.backgroundImageUrl = rest.backgroundImageUrl;
+    if (rest.content !== undefined) updatePayload.content = rest.content;
+
     const [updated] = await db
       .update(certificateTemplates)
-      .set(payload)
+      .set(updatePayload)
       .where(eq(certificateTemplates.id, id))
       .returning();
     return updated ?? null;
   }
 
+  const payload = {
+    name: data.name ?? "Default",
+    isDefault: data.isDefault ?? false,
+    orientation: data.orientation ?? "portrait",
+    size: data.size ?? "a4",
+    primaryColor: data.primaryColor ?? "#000000",
+    backgroundImageUrl: data.backgroundImageUrl ?? null,
+    content: data.content ?? null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
   const [created] = await db
     .insert(certificateTemplates)
-    .values({
-      ...payload,
-      createdAt: new Date(),
-    })
+    .values(payload)
     .returning();
   return created ?? null;
 }

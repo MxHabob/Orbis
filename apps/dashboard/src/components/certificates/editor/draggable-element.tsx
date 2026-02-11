@@ -47,7 +47,7 @@ export const DraggableElement = memo(({
         transform: `rotate(${el.rotation || 0}deg)`,
         textAlign: el.align as any,
         opacity: el.opacity,
-        width: (el.type === "image" || el.type === "shape" || el.type === "table") ? `${el.width}%` : "auto",
+        width: el.width ? `${el.width}%` : "auto",
         height: (el.type === "shape") ? `${el.height}px` : "auto",
       }}
     >

@@ -295,12 +295,8 @@ export const certificateTemplates = pgTable('certificate_templates', {
   backgroundImageUrl: text('background_image_url'), // For Canva/Custom backgrounds
   
   // Rich Text Content (Tiptap JSON)
-  headerContent: jsonb('header_content'), // Flexible fields replacement
-  mainContent: jsonb('main_content'),
-  footerContent: jsonb('footer_content'),
-  
-  // Structured Configuration
-  tableConfig: jsonb('table_config'), // Table settings (columns, colors, hide/show)
+  // Rich Text Content (Tiptap JSON / Canvas Elements)
+  content: jsonb('content'), // Single field for all certificate elements & configuration
   
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),

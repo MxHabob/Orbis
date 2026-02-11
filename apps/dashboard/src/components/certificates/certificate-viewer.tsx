@@ -28,9 +28,7 @@ interface Element {
 interface CertificateViewerProps {
   template: {
     backgroundImageUrl?: string | null;
-    headerContent?: any;
-    mainContent?: any;
-    footerContent?: any;
+    content?: any;
     size?: string;
     orientation?: string;
   };
@@ -63,10 +61,7 @@ export function CertificateViewer({
   className,
 }: CertificateViewerProps) {
   const elements = useMemo(() => {
-    const h = template.headerContent?.elements || [];
-    const m = template.mainContent?.elements || [];
-    const f = template.footerContent?.elements || [];
-    return [...h, ...m, ...f] as Element[];
+    return (template.content?.elements || []) as Element[];
   }, [template]);
 
   const size = (template.size || "a4") as keyof typeof PAPER_SIZES;

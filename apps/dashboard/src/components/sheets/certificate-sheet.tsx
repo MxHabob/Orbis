@@ -2,7 +2,7 @@
 
 import { useCertificateParams } from "@/hooks/use-certificate-params";
 import { useTRPC } from "@/trpc/client";
-import { Sheet } from "@midday/ui/sheet";
+import { Sheet, SheetContent } from "@midday/ui/sheet";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import React from "react";
 import { CertificateEditor } from "../certificates/certificate-editor";
@@ -13,7 +13,7 @@ export function CertificateSheet() {
   const { setParams, type, templateId } = useCertificateParams();
   const isOpen = type === "create" || type === "edit";
 
-  const { data } = useQuery(
+  const { data, isLoading } = useQuery(
     trpc.certificateTemplates.getById.queryOptions(
       {
         id: templateId!,
@@ -36,7 +36,23 @@ export function CertificateSheet() {
 
   return (
     <Sheet open={isOpen} onOpenChange={handleOnOpenChange}>
-      <CertificateEditor key={templateId || "create"} initialData={data} mode={type as "create" | "edit"} isSheet />
+      {type === "edit" && isLoading ? (
+        <SheetContent
+          style={{ maxWidth: 1400 }}
+          className="bg-white dark:bg-[#080808] p-0 [&>button]:hidden"
+        >
+          <div className="flex h-full w-full items-center justify-center">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-900 border-t-transparent dark:border-gray-50" />
+          </div>
+        </SheetContent>
+      ) : (
+        <CertificateEditor
+          key={templateId || "create"}
+          initialData={data}
+          mode={type as "create" | "edit"}
+          isSheet
+        />
+      )}
     </Sheet>
   );
 }

@@ -6,9 +6,7 @@ export type CertificateTemplate = {
   size: string;
   primaryColor: string | null;
   backgroundImageUrl: string | null;
-  headerContent: any;
-  footerContent: any;
-  tableConfig: any;
+  content: any;
   createdAt: string | Date;
   updatedAt: string | Date;
 };

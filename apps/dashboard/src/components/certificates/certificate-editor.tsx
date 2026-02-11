@@ -35,7 +35,7 @@ export function CertificateEditor({
   const [paperSize, setPaperSize] = useState<"a4" | "letter">(initialData?.size || "a4");
   const [orientation, setOrientation] = useState<"portrait" | "landscape">(initialData?.orientation || "portrait");
   const [backgroundImage, setBackgroundImage] = useState(initialData?.backgroundImageUrl || "");
-  const [elements, setElements] = useState<EditorElement[]>(initialData?.headerContent?.elements || []);
+  const [elements, setElements] = useState<EditorElement[]>(initialData?.content?.elements || []);
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   const [isPreview, setIsPreview] = useState(false);
   const [previewStudentId, setPreviewStudentId] = useState<string | null>(null);
@@ -116,6 +116,7 @@ export function CertificateEditor({
         fontSize: 18,
         fontWeight: "bold",
         color: "#000000",
+        width: 30,
         align: "right",
         fontFamily: "inherit"
       })
@@ -171,7 +172,7 @@ export function CertificateEditor({
       const payload = {
         name,
         backgroundImageUrl: backgroundImage,
-        headerContent: { elements },
+        content: { elements },
         size: paperSize,
         orientation,
       };
@@ -182,6 +183,7 @@ export function CertificateEditor({
       });
 
       toast({ title: mode === "edit" ? "Template saved successfully" : "Template created successfully", variant: "success" });
+      router.refresh();
       
       if (isSheet) {
         setParams(null);

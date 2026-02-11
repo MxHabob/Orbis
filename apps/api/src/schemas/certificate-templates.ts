@@ -12,10 +12,7 @@ export const upsertCertificateTemplateSchema = z.object({
   backgroundImageUrl: z.string().nullable().optional(),
   
   // Content JSON
-  headerContent: z.any().nullable().optional(),
-  mainContent: z.any().nullable().optional(),
-  footerContent: z.any().nullable().optional(),
-  tableConfig: z.any().nullable().optional(),
+  content: z.any().nullable().optional(),
 });
 
 export const createCertificateTemplateSchema = z.object({
@@ -29,8 +26,5 @@ export const createCertificateTemplateSchema = z.object({
   backgroundImageUrl: z.string().nullable().optional(),
   
   // Content JSON
-  headerContent: z.any().nullable().optional(),
-  mainContent: z.any().nullable().optional(),
-  footerContent: z.any().nullable().optional(),
-  tableConfig: z.any().nullable().optional(),
+  content: z.any().nullable().optional(),
 });
