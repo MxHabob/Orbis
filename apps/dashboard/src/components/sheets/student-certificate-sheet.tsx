@@ -14,6 +14,7 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@midday/ui/dropdown-menu";
 import { Icons } from "@midday/ui/icons";
@@ -22,6 +23,18 @@ import { ScrollArea } from "@midday/ui/scroll-area";
 import { useToast } from "@midday/ui/use-toast";
 import { generateCanvasPdf } from "@midday/export";
 import { cn } from "@midday/ui/cn";
+
+// ==========================================
+// Month Filtering Logic:
+//   monthly → show only months 1,2,3 (term1) or 5,6,7 (term2) — not exam months
+//   half-yearly → no month selector needed (auto: months 1-4)
+//   final → no month selector needed (auto: months 1-8)
+// ==========================================
+
+// Only allow selecting months that are for grade entry (not exam months)
+const MONTHLY_MONTHS = HIJRI_MONTHS.filter(
+  (m) => !m.isExam && !m.isVacation
+);
 
 export function StudentCertificateSheet() {
   const trpc = useTRPC();
@@ -65,7 +78,8 @@ export function StudentCertificateSheet() {
       studentId: null, 
       certificate: null, 
       certificateType: null,
-      templateId: null 
+      templateId: null,
+      month: null 
     });
   };
 
@@ -73,13 +87,18 @@ export function StudentCertificateSheet() {
     if (!studentData) return;
     setIsExporting(true);
     try {
+      const typeLabel = certificateType === "half-yearly" 
+        ? "نصفي" 
+        : certificateType === "final" 
+          ? "نهائي" 
+          : "شهري";
       await generateCanvasPdf({
-         filename: `Certificate_${studentData.name}_${certificateType || 'General'}.pdf`,
+         filename: `شهادة_${studentData.name}_${typeLabel}.pdf`,
         selector: "[data-canvas-content]"
       });
-      toast({ title: "Certificate exported successfully", variant: "success" });
+      toast({ title: "تم تصدير الشهادة بنجاح", variant: "success" });
     } catch (error) {
-      toast({ title: "Failed to export certificate", variant: "destructive" });
+      toast({ title: "فشل تصدير الشهادة", variant: "destructive" });
     } finally {
       setIsExporting(false);
     }
@@ -109,15 +128,19 @@ export function StudentCertificateSheet() {
   }, [studentData]);
 
   const certificateTypes = [
-    { value: "monthly", label: "Monthly Certificate" },
-    { value: "half-yearly", label: "Mid-Year Certificate" },
-    { value: "final", label: "Final Certificate" },
+    { value: "monthly", label: "الشهادة الشهرية", description: "شهر واحد" },
+    { value: "half-yearly", label: "شهادة نصف العام", description: "3 شهور + اختبار نصفي" },
+    { value: "final", label: "شهادة نهاية العام", description: "الترم الأول + الترم الثاني" },
   ];
 
-  const months = HIJRI_MONTHS.map((m: any) => ({ value: m.id, label: m.label }));
-
+  // For monthly type: show only months that accept grade entry (not exam months)
+  const availableMonths = MONTHLY_MONTHS.map((m) => ({ value: m.id, label: m.label, term: m.term }));
 
   const selectedMonth = month || 1;
+  const selectedType = certificateType || "monthly";
+
+  // Determine if month selector should be visible
+  const showMonthSelector = selectedType === "monthly";
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>
@@ -131,7 +154,7 @@ export function StudentCertificateSheet() {
               {(isStudentLoading || !template) ? (
                 <div className="flex flex-col items-center gap-4 py-20">
                   <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                  <p className="text-sm text-muted-foreground font-medium">Preparing certificate...</p>
+                  <p className="text-sm text-muted-foreground font-medium">جاري تحضير الشهادة...</p>
                 </div>
               ) : (
                 <div className="w-full flex flex-col items-center">
@@ -163,7 +186,7 @@ export function StudentCertificateSheet() {
                           <CertificateViewer 
                             template={template as any} 
                             data={studentDataValues}
-                            certificateType={certificateType || "monthly"}
+                            certificateType={selectedType}
                             month={selectedMonth}
                           />
                         </div>
@@ -178,37 +201,38 @@ export function StudentCertificateSheet() {
           <div className="absolute bottom-4 w-full border-t border-border pt-4 px-6 bg-white dark:bg-[#080808] z-10">
             <div className="flex justify-between items-center">
               <div className="flex gap-2">
-                {/* Type Selector */}
+                {/* Certificate Type Selector */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
                       type="button"
-                      className="h-9 px-3 flex items-center justify-center gap-2 border border-border hover:bg-accent transition-colors text-xs"
+                      className="h-9 px-3 flex items-center justify-center gap-2 border border-border hover:bg-accent transition-colors text-xs rounded-md"
                     >
-                      <span className="max-w-[120px] truncate">
-                        {certificateTypes.find(t => t.value === (certificateType || "monthly"))?.label}
+                      <span className="max-w-[140px] truncate font-medium">
+                        {certificateTypes.find(t => t.value === selectedType)?.label}
                       </span>
                       <Icons.ChevronDown className="size-4 text-[#666]" />
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" sideOffset={10}>
+                  <DropdownMenuContent align="start" sideOffset={10} className="w-64">
                     <DropdownMenuGroup>
                       <DropdownMenuLabel className="text-[10px] text-muted-foreground font-normal px-2 py-1.5 uppercase">
-                        Certificate Type
+                        نوع الشهادة
                       </DropdownMenuLabel>
                       {certificateTypes.map((type) => (
                         <DropdownMenuCheckboxItem
                           key={type.value}
-                          checked={(certificateType || "monthly") === type.value}
+                          checked={selectedType === type.value}
                           onCheckedChange={() => setParams({ certificateType: type.value as any })}
                           className={cn(
-                            "text-xs",
-                            (certificateType || "monthly") === type.value
+                            "text-xs flex flex-col items-start gap-0.5 py-2",
+                            selectedType === type.value
                               ? "dark:bg-[#131313] text-primary"
                               : "text-[#666]"
                           )}
                         >
-                          {type.label}
+                          <span className="font-medium">{type.label}</span>
+                          <span className="text-[10px] text-muted-foreground">{type.description}</span>
                         </DropdownMenuCheckboxItem>
                       ))}
                     </DropdownMenuGroup>
@@ -216,25 +240,44 @@ export function StudentCertificateSheet() {
                 </DropdownMenu>
 
                 {/* Month Selector - Only for monthly certificates */}
-                {(certificateType === "monthly" || !certificateType) && (
+                {showMonthSelector && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button
                         type="button"
-                        className="h-9 px-3 flex items-center justify-center gap-2 border border-border hover:bg-accent transition-colors text-xs"
+                        className="h-9 px-3 flex items-center justify-center gap-2 border border-border hover:bg-accent transition-colors text-xs rounded-md"
                       >
                         <span className="max-w-[120px] truncate">
-                          {months.find(m => m.value === selectedMonth)?.label}
+                          {availableMonths.find(m => m.value === selectedMonth)?.label || `الشهر ${selectedMonth}`}
                         </span>
                         <Icons.ChevronDown className="size-4 text-[#666]" />
                       </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" sideOffset={10}>
+                    <DropdownMenuContent align="start" sideOffset={10} className="w-56">
                       <DropdownMenuGroup>
                         <DropdownMenuLabel className="text-[10px] text-muted-foreground font-normal px-2 py-1.5 uppercase">
-                          Select Month
+                          الترم الأول
                         </DropdownMenuLabel>
-                        {months.map((m) => (
+                        {availableMonths.filter(m => m.term === 1).map((m) => (
+                          <DropdownMenuCheckboxItem
+                            key={m.value}
+                            checked={selectedMonth === m.value}
+                            onCheckedChange={() => setParams({ month: m.value })}
+                            className={cn(
+                              "text-xs",
+                              selectedMonth === m.value
+                                ? "dark:bg-[#131313] text-primary"
+                                : "text-[#666]"
+                            )}
+                          >
+                            {m.label}
+                          </DropdownMenuCheckboxItem>
+                        ))}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuLabel className="text-[10px] text-muted-foreground font-normal px-2 py-1.5 uppercase">
+                          الترم الثاني
+                        </DropdownMenuLabel>
+                        {availableMonths.filter(m => m.term === 2).map((m) => (
                           <DropdownMenuCheckboxItem
                             key={m.value}
                             checked={selectedMonth === m.value}
@@ -259,10 +302,10 @@ export function StudentCertificateSheet() {
                   <DropdownMenuTrigger asChild>
                     <button
                       type="button"
-                      className="h-9 px-3 flex items-center justify-center gap-2 border border-border hover:bg-accent transition-colors text-xs"
+                      className="h-9 px-3 flex items-center justify-center gap-2 border border-border hover:bg-accent transition-colors text-xs rounded-md"
                     >
                       <span className="max-w-[120px] truncate font-medium">
-                        {currentTemplate?.name || "Select Template"}
+                        {currentTemplate?.name || "اختر القالب"}
                       </span>
                       <Icons.ChevronDown className="size-4 text-[#666]" />
                     </button>
@@ -270,7 +313,7 @@ export function StudentCertificateSheet() {
                   <DropdownMenuContent align="start" sideOffset={10} className="w-56">
                     <DropdownMenuGroup>
                       <DropdownMenuLabel className="text-[10px] text-muted-foreground font-normal px-2 py-1.5 uppercase">
-                        Templates
+                        القوالب
                       </DropdownMenuLabel>
                       {(templates as any)?.map((t: any) => (
                         <DropdownMenuCheckboxItem
@@ -288,7 +331,7 @@ export function StudentCertificateSheet() {
                             {t.name}
                             {t.isDefault && (
                               <span className="text-muted-foreground text-[10px]">
-                                (Default)
+                                (افتراضي)
                               </span>
                             )}
                           </span>
@@ -296,7 +339,7 @@ export function StudentCertificateSheet() {
                       ))}
                       {(!templates || (templates as any)?.length === 0) && (
                         <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                          No templates available
+                          لا توجد قوالب متاحة
                         </div>
                       )}
                     </DropdownMenuGroup>
@@ -319,7 +362,7 @@ export function StudentCertificateSheet() {
                   ) : (
                     <Icons.Pdf className="w-4 h-4 ml-2" />
                   )}
-                  Export Certificate
+                  تصدير PDF
                 </Button>
                 
                 <Button 

@@ -1,5 +1,5 @@
 import { db } from "@db/client";
-import { gradeEntries, assessmentItems, students, subjects, classes, enrollments, users } from "@db/schema";
+import { gradeEntries, assessmentItems, students, subjects, classes, enrollments, users, academicTerms } from "@db/schema";
 import { eq, and, desc, asc, inArray } from "drizzle-orm";
 import { RedisCache } from "@midday/cache";
 
@@ -380,94 +380,358 @@ export const getClassStatistics = async (classId: string) => {
   return result;
 };
 
+// ==========================================
+// Helper: Calculate grade label from percentage
+// ==========================================
+function getGradeLabel(total: number, maxTotal: number): string {
+  if (maxTotal <= 0) return "";
+  const percentage = (total / maxTotal) * 100;
+  if (percentage >= 90) return "ممتاز";
+  if (percentage >= 80) return "جيد جداً";
+  if (percentage >= 70) return "جيد";
+  if (percentage >= 50) return "مقبول";
+  return "راسب";
+}
+
+// ==========================================
+// Student Report Data - Complete Rewrite
+// ==========================================
+// Academic Year Structure:
+//   Term 1: Month 1 (محرم), Month 2 (صفر), Month 3 (ربيع أول), Month 4 (ربيع ثاني - اختبار نصفي)
+//   Term 2: Month 5 (جمادى أول), Month 6 (جمادى ثاني), Month 7 (رجب), Month 8 (شعبان - اختبار نهائي)
+//
+// Certificate Types:
+//   1. monthly: Shows assessmentItems for a single month (1,2,3 or 5,6,7) + total + grade
+//   2. half-yearly (نصفي): Shows محصلة 3 شهور + درجة اختبار نصفي + المجموع + التقدير
+//   3. final (نهائي): Shows محصلة الترم1 + اختبار النصفي + محصلة الترم2 + اختبار النهائي + المجموع + التقدير
+// ==========================================
+
 export const getStudentReportData = async (studentId: string, type?: string, month?: number) => {
-    // 1. Get student's class to know which subjects and assessments to show
+    // 1. Get student's class information
     const [student] = await db
         .select({ currentClassId: students.currentClassId })
         .from(students)
         .where(eq(students.userId, studentId))
         .limit(1);
 
-    if (!student?.currentClassId) return { rows: [], columns: [] };
+    if (!student?.currentClassId) return { rows: [], columns: [], type: type || "monthly" };
 
-    // 2. Determine which months to filter by
-    let monthsToFetch: number[] | null = null;
-    
-    if (type === "half-yearly") {
-      monthsToFetch = [1, 2, 3, 4]; // Term 1 months (Hijri)
-    } else if (type === "final") {
-      monthsToFetch = [5, 6, 7, 8]; // Term 2 months (Hijri)
-    }
- else if (type === "monthly") {
-      if (month) {
-        monthsToFetch = [month];
-      } else {
-        // Find latest month with grades for this student
-        const [latestGrade] = await db
-          .select({ month: assessmentItems.month })
-          .from(gradeEntries)
-          .innerJoin(assessmentItems, eq(gradeEntries.assessmentItemId, assessmentItems.id))
-          .where(eq(gradeEntries.studentId, studentId))
-          .orderBy(desc(assessmentItems.month))
-          .limit(1);
-        
-        monthsToFetch = latestGrade ? [latestGrade.month] : null;
-      }
-    }
+    const classId = student.currentClassId;
 
-    const conditions = [eq(assessmentItems.classId, student.currentClassId)];
-
-    if (monthsToFetch && monthsToFetch.length > 0) {
-      conditions.push(inArray(assessmentItems.month, monthsToFetch));
-    }
-
-    const assessmentList = await db
+    // ==========================================
+    // MONTHLY CERTIFICATE (شهادة شهرية)
+    // ==========================================
+    if (type === "monthly" || !type) {
+      const targetMonth = month || 1;
+      
+      // Get assessment items for this specific month
+      const monthItems = await db
         .select({
-            id: assessmentItems.id,
-            title: assessmentItems.title,
-            subjectId: assessmentItems.subjectId,
-            subjectName: subjects.name,
-            month: assessmentItems.month,
+          id: assessmentItems.id,
+          title: assessmentItems.title,
+          type: assessmentItems.type,
+          maxScore: assessmentItems.maxScore,
+          subjectId: assessmentItems.subjectId,
+          subjectName: subjects.name,
         })
         .from(assessmentItems)
         .innerJoin(subjects, eq(assessmentItems.subjectId, subjects.id))
-        .where(and(...conditions))
-        .orderBy(asc(subjects.name), asc(assessmentItems.month));
+        .where(
+          and(
+            eq(assessmentItems.classId, classId),
+            eq(assessmentItems.month, targetMonth),
+          )
+        )
+        .orderBy(asc(subjects.name), asc(assessmentItems.id));
 
-    const grades = await db
+      if (monthItems.length === 0) return { rows: [], columns: [], type: "monthly" };
+
+      // Get grades
+      const itemIds = monthItems.map(i => i.id);
+      const grades = await db
         .select({
-            assessmentItemId: gradeEntries.assessmentItemId,
-            score: gradeEntries.score,
+          assessmentItemId: gradeEntries.assessmentItemId,
+          score: gradeEntries.score,
         })
         .from(gradeEntries)
-        .where(eq(gradeEntries.studentId, studentId));
+        .where(
+          and(
+            eq(gradeEntries.studentId, studentId),
+            inArray(gradeEntries.assessmentItemId, itemIds)
+          )
+        );
 
-    // 5. Structure the data
-    const reportData: Record<string, any> = {};
-    const columns = new Set<string>();
+      const gradeMap = new Map(grades.map(g => [g.assessmentItemId, g.score]));
 
-    assessmentList.forEach(item => {
-        if (!reportData[item.subjectName]) {
-            reportData[item.subjectName] = {
-                subject: item.subjectName,
-                grades: {},
-                total: 0
-            };
+      // Group by subject → show each assessmentItem as a column
+      const subjectMap = new Map<string, { subject: string; grades: Record<string, number | null>; total: number; maxTotal: number }>();
+      const columnsSet = new Set<string>();
+
+      for (const item of monthItems) {
+        if (!subjectMap.has(item.subjectName)) {
+          subjectMap.set(item.subjectName, { subject: item.subjectName, grades: {}, total: 0, maxTotal: 0 });
         }
-        
-        columns.add(item.title);
-        
-        const grade = grades.find(g => g.assessmentItemId === item.id);
-        if (grade) {
-            const score = parseFloat(grade.score || "0");
-            reportData[item.subjectName].grades[item.title] = score;
-            reportData[item.subjectName].total += score;
-        }
-    });
+        const row = subjectMap.get(item.subjectName)!;
+        columnsSet.add(item.title);
 
-    return {
-        rows: Object.values(reportData),
-        columns: Array.from(columns)
-    };
+        const scoreStr = gradeMap.get(item.id);
+        const score = scoreStr ? parseFloat(scoreStr) : null;
+        row.grades[item.title] = score;
+        if (score !== null && !isNaN(score)) {
+          row.total += score;
+        }
+        row.maxTotal += parseFloat(item.maxScore || "0");
+      }
+
+      const rows = Array.from(subjectMap.values()).map(row => ({
+        subject: row.subject,
+        grades: row.grades,
+        total: row.total,
+        maxTotal: row.maxTotal,
+        gradeLabel: getGradeLabel(row.total, row.maxTotal),
+      }));
+
+      return {
+        rows,
+        columns: Array.from(columnsSet),
+        type: "monthly",
+      };
+    }
+
+    // ==========================================
+    // HALF-YEARLY CERTIFICATE (شهادة نصف العام)
+    // Months 1,2,3 → محصلة الشهور | Month 4 → اختبار نصفي | المجموع | التقدير
+    // ==========================================
+    if (type === "half-yearly") {
+      const monthlyMonths = [1, 2, 3]; // الشهور الثلاثة الأولى
+      const examMonth = 4; // شهر الاختبار النصفي
+
+      // Get all assessment items for months 1-4
+      const allItems = await db
+        .select({
+          id: assessmentItems.id,
+          title: assessmentItems.title,
+          type: assessmentItems.type,
+          maxScore: assessmentItems.maxScore,
+          month: assessmentItems.month,
+          subjectId: assessmentItems.subjectId,
+          subjectName: subjects.name,
+        })
+        .from(assessmentItems)
+        .innerJoin(subjects, eq(assessmentItems.subjectId, subjects.id))
+        .where(
+          and(
+            eq(assessmentItems.classId, classId),
+            inArray(assessmentItems.month, [...monthlyMonths, examMonth]),
+          )
+        )
+        .orderBy(asc(subjects.name), asc(assessmentItems.month), asc(assessmentItems.id));
+
+      if (allItems.length === 0) return { rows: [], columns: ["محصلة الشهور", "اختبار نصف العام", "المجموع", "التقدير"], type: "half-yearly" };
+
+      // Get grades
+      const itemIds = allItems.map(i => i.id);
+      const grades = await db
+        .select({
+          assessmentItemId: gradeEntries.assessmentItemId,
+          score: gradeEntries.score,
+        })
+        .from(gradeEntries)
+        .where(
+          and(
+            eq(gradeEntries.studentId, studentId),
+            inArray(gradeEntries.assessmentItemId, itemIds)
+          )
+        );
+
+      const gradeMap = new Map(grades.map(g => [g.assessmentItemId, g.score]));
+
+      // Group by subject
+      const subjectMap = new Map<string, {
+        subject: string;
+        monthlyTotal: number;
+        monthlyMaxTotal: number;
+        examScore: number | null;
+        examMaxScore: number;
+      }>();
+
+      for (const item of allItems) {
+        if (!subjectMap.has(item.subjectName)) {
+          subjectMap.set(item.subjectName, {
+            subject: item.subjectName,
+            monthlyTotal: 0,
+            monthlyMaxTotal: 0,
+            examScore: null,
+            examMaxScore: 0,
+          });
+        }
+        const row = subjectMap.get(item.subjectName)!;
+        const scoreStr = gradeMap.get(item.id);
+        const score = scoreStr ? parseFloat(scoreStr) : null;
+
+        if (monthlyMonths.includes(item.month)) {
+          // Accumulate monthly grades
+          if (score !== null && !isNaN(score)) {
+            row.monthlyTotal += score;
+          }
+          row.monthlyMaxTotal += parseFloat(item.maxScore || "0");
+        } else if (item.month === examMonth) {
+          // Midterm exam score
+          if (score !== null && !isNaN(score)) {
+            row.examScore = (row.examScore || 0) + score;
+          }
+          row.examMaxScore += parseFloat(item.maxScore || "0");
+        }
+      }
+
+      const rows = Array.from(subjectMap.values()).map(row => {
+        const total = row.monthlyTotal + (row.examScore || 0);
+        const maxTotal = row.monthlyMaxTotal + row.examMaxScore;
+        return {
+          subject: row.subject,
+          grades: {
+            "محصلة الشهور": row.monthlyTotal > 0 ? row.monthlyTotal : null,
+            "اختبار نصف العام": row.examScore,
+          } as Record<string, number | null>,
+          total,
+          maxTotal,
+          gradeLabel: getGradeLabel(total, maxTotal),
+        };
+      });
+
+      return {
+        rows,
+        columns: ["محصلة الشهور", "اختبار نصف العام"],
+        type: "half-yearly",
+      };
+    }
+
+    // ==========================================
+    // FINAL CERTIFICATE (شهادة نهاية العام)
+    // محصلة الترم الأول (1,2,3) | اختبار نصف العام (4) | محصلة الترم الثاني (5,6,7) | الاختبار النهائي (8) | المجموع | التقدير
+    // ==========================================
+    if (type === "final") {
+      const term1Months = [1, 2, 3];
+      const midtermMonth = 4;
+      const term2Months = [5, 6, 7];
+      const finalExamMonth = 8;
+
+      // Get ALL assessment items across the entire year (months 1-8)
+      const allItems = await db
+        .select({
+          id: assessmentItems.id,
+          title: assessmentItems.title,
+          type: assessmentItems.type,
+          maxScore: assessmentItems.maxScore,
+          month: assessmentItems.month,
+          subjectId: assessmentItems.subjectId,
+          subjectName: subjects.name,
+        })
+        .from(assessmentItems)
+        .innerJoin(subjects, eq(assessmentItems.subjectId, subjects.id))
+        .where(
+          and(
+            eq(assessmentItems.classId, classId),
+            inArray(assessmentItems.month, [...term1Months, midtermMonth, ...term2Months, finalExamMonth]),
+          )
+        )
+        .orderBy(asc(subjects.name), asc(assessmentItems.month), asc(assessmentItems.id));
+
+      if (allItems.length === 0) {
+        return {
+          rows: [],
+          columns: ["المحصلة الأولى", "اختبار نصف العام", "المحصلة الثانية", "الاختبار النهائي"],
+          type: "final",
+        };
+      }
+
+      // Get grades
+      const itemIds = allItems.map(i => i.id);
+      const grades = await db
+        .select({
+          assessmentItemId: gradeEntries.assessmentItemId,
+          score: gradeEntries.score,
+        })
+        .from(gradeEntries)
+        .where(
+          and(
+            eq(gradeEntries.studentId, studentId),
+            inArray(gradeEntries.assessmentItemId, itemIds)
+          )
+        );
+
+      const gradeMap = new Map(grades.map(g => [g.assessmentItemId, g.score]));
+
+      // Group by subject
+      const subjectMap = new Map<string, {
+        subject: string;
+        term1Total: number;
+        term1MaxTotal: number;
+        midtermScore: number | null;
+        midtermMaxScore: number;
+        term2Total: number;
+        term2MaxTotal: number;
+        finalExamScore: number | null;
+        finalExamMaxScore: number;
+      }>();
+
+      for (const item of allItems) {
+        if (!subjectMap.has(item.subjectName)) {
+          subjectMap.set(item.subjectName, {
+            subject: item.subjectName,
+            term1Total: 0,
+            term1MaxTotal: 0,
+            midtermScore: null,
+            midtermMaxScore: 0,
+            term2Total: 0,
+            term2MaxTotal: 0,
+            finalExamScore: null,
+            finalExamMaxScore: 0,
+          });
+        }
+        const row = subjectMap.get(item.subjectName)!;
+        const scoreStr = gradeMap.get(item.id);
+        const score = scoreStr ? parseFloat(scoreStr) : null;
+
+        if (term1Months.includes(item.month)) {
+          if (score !== null && !isNaN(score)) row.term1Total += score;
+          row.term1MaxTotal += parseFloat(item.maxScore || "0");
+        } else if (item.month === midtermMonth) {
+          if (score !== null && !isNaN(score)) row.midtermScore = (row.midtermScore || 0) + score;
+          row.midtermMaxScore += parseFloat(item.maxScore || "0");
+        } else if (term2Months.includes(item.month)) {
+          if (score !== null && !isNaN(score)) row.term2Total += score;
+          row.term2MaxTotal += parseFloat(item.maxScore || "0");
+        } else if (item.month === finalExamMonth) {
+          if (score !== null && !isNaN(score)) row.finalExamScore = (row.finalExamScore || 0) + score;
+          row.finalExamMaxScore += parseFloat(item.maxScore || "0");
+        }
+      }
+
+      const rows = Array.from(subjectMap.values()).map(row => {
+        const total = row.term1Total + (row.midtermScore || 0) + row.term2Total + (row.finalExamScore || 0);
+        const maxTotal = row.term1MaxTotal + row.midtermMaxScore + row.term2MaxTotal + row.finalExamMaxScore;
+        return {
+          subject: row.subject,
+          grades: {
+            "المحصلة الأولى": row.term1Total > 0 ? row.term1Total : null,
+            "اختبار نصف العام": row.midtermScore,
+            "المحصلة الثانية": row.term2Total > 0 ? row.term2Total : null,
+            "الاختبار النهائي": row.finalExamScore,
+          } as Record<string, number | null>,
+          total,
+          maxTotal,
+          gradeLabel: getGradeLabel(total, maxTotal),
+        };
+      });
+
+      return {
+        rows,
+        columns: ["المحصلة الأولى", "اختبار نصف العام", "المحصلة الثانية", "الاختبار النهائي"],
+        type: "final",
+      };
+    }
+
+    // Fallback
+    return { rows: [], columns: [], type: type || "monthly" };
 };
-
