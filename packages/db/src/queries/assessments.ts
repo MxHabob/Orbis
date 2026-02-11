@@ -174,9 +174,9 @@ export const initializeTermExamAssessments = async (params: {
   classId: number;
   subjectId: number;
   termId: number;
-  month: number; // 13 for Mid-term, 14 for Final
+  month: number; // 4 for Mid-term, 8 for Final
 }) => {
-  const isMidTerm = params.month === 13;
+  const isMidTerm = params.month === 4;
   
   const itemsToCreate = [
     {

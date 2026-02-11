@@ -35,10 +35,12 @@ export const initializeMonthlyAssessmentsAction = authActionClient
     }
 
     // Initialize items based on month type
-    const isTermExam = month === 13 || month === 14;
+    // Month 4 is Mid-term, Month 8 is Final Exam for Hijri calendar
+    const isTermExam = month === 4 || month === 8;
     const insertedItems = isTermExam 
       ? await initializeTermExamAssessments({ classId, subjectId, termId, month })
       : await initializeStandardMonthlyAssessments({ classId, subjectId, termId, month });
+
 
     revalidatePath("/grades");
 

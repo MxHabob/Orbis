@@ -4,6 +4,7 @@ import { useStudentParams } from "@/hooks/use-student-params";
 import { Sheet, SheetContent } from "@midday/ui/sheet";
 import React, { useState } from "react";
 import { useTRPC } from "@/trpc/client";
+import { HIJRI_MONTHS } from "@/utils/academic-calendar";
 import { useQuery } from "@tanstack/react-query";
 import { CertificateViewer } from "../certificates/certificate-viewer";
 import { Button } from "@midday/ui/button";
@@ -38,7 +39,7 @@ export function StudentCertificateSheet() {
 
   const isOpen = Boolean(studentId && certificate);
 
-  const { data: student, isLoading: isStudentLoading } = useQuery({
+  const { data: studentData, isLoading: isStudentLoading } = useQuery({
     ...trpc.students.getById.queryOptions(
       { id: studentId! },
     ),
@@ -69,11 +70,11 @@ export function StudentCertificateSheet() {
   };
 
   const handleDownload = async () => {
-    if (!student) return;
+    if (!studentData) return;
     setIsExporting(true);
     try {
       await generateCanvasPdf({
-        filename: `Certificate_${student.name}_${certificateType || 'General'}.pdf`,
+         filename: `Certificate_${studentData.name}_${certificateType || 'General'}.pdf`,
         selector: "[data-canvas-content]"
       });
       toast({ title: "Certificate exported successfully", variant: "success" });
@@ -84,17 +85,17 @@ export function StudentCertificateSheet() {
     }
   };
 
-  const studentData = React.useMemo(() => {
-    if (!student) return {};
-    const stats = (student.stats as any) || {};
+  const studentDataValues = React.useMemo(() => {
+    if (!studentData) return undefined;
+    const stats = (studentData.stats as any) || {};
     return {
-      studentId: student.userId,
-      student_name: student.name || "",
-      academic_number: student.studentNumber || "",
-      national_id: student.secretNumber || "",
+      studentId: studentData.userId,
+      student_name: studentData.name || "",
+      academic_number: studentData.studentNumber || "",
+      national_id: studentData.secretNumber || "",
       department: stats.department || "",
       section: stats.section || "",
-      class_name: student.currentClass?.name || "",
+      class_name: studentData.currentClass?.name || "",
       total_grade: stats.total_grade || "0",
       total_grade_text: stats.total_grade_text || "",
       grade_label: stats.grade_label || "",
@@ -104,8 +105,8 @@ export function StudentCertificateSheet() {
       admin_name: "School Principal",
       vp_name: "Registrar",
       issue_date: new Date().toLocaleDateString('en-US'),
-    };
-  }, [student]);
+    } as Record<string, string | number>;
+  }, [studentData]);
 
   const certificateTypes = [
     { value: "monthly", label: "Monthly Certificate" },
@@ -113,19 +114,10 @@ export function StudentCertificateSheet() {
     { value: "final", label: "Final Certificate" },
   ];
 
-  const months = [
-    { value: 9, label: "September" },
-    { value: 10, label: "October" },
-    { value: 11, label: "November" },
-    { value: 12, label: "December" },
-    { value: 1, label: "January" },
-    { value: 2, label: "February" },
-    { value: 3, label: "March" },
-    { value: 4, label: "April" },
-    { value: 5, label: "May" },
-  ];
+  const months = HIJRI_MONTHS.map((m: any) => ({ value: m.id, label: m.label }));
 
-  const selectedMonth = month || 9;
+
+  const selectedMonth = month || 1;
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>
@@ -170,7 +162,7 @@ export function StudentCertificateSheet() {
                         >
                           <CertificateViewer 
                             template={template as any} 
-                            data={studentData}
+                            data={studentDataValues}
                             certificateType={certificateType || "monthly"}
                             month={selectedMonth}
                           />

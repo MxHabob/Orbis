@@ -80,7 +80,9 @@ export const createGradeColumns = (
   items: AssessmentItem[] = [],
   month?: number
 ): ColumnDef<GradeStudent>[] => {
-  const isSummaryMode = month === 13 || month === 14;
+  const isSummaryMode = month === 4 || month === 8;
+  const summaryMonths = month === 4 ? [1, 2, 3] : [5, 6, 7];
+  const examMonth = month;
 
   const columns: ColumnDef<GradeStudent>[] = [
     {
@@ -108,27 +110,24 @@ export const createGradeColumns = (
   ];
 
   if (isSummaryMode) {
-    // Summary Mode Columns: Average (20) + Exam (30) = Total (50)
-    const summaryMonths = month === 13 ? [9, 10, 11] : [12, 1, 2];
-    const examMonth = month;
-
     // 1. Column for the 3-month average (scaled to 20)
     columns.push({
       id: "monthly-avg",
+
       header: () => (
         <div className="flex flex-col items-center gap-0.5 px-2">
           <span className="font-bold text-xs md:text-sm tracking-tight whitespace-nowrap">
-            Monthly Avg
+            متوسط الشهور
           </span>
           <span className="text-[9px] uppercase text-muted-foreground font-medium">
-            Max: 20
+            الحد الأقصى: 20
           </span>
         </div>
       ),
       size: 130,
       minSize: 110,
       meta: {
-        headerLabel: "Average (20)",
+        headerLabel: "المتوسط (20)",
         className: "text-center border-r bg-muted/30",
       },
       cell: ({ row, table }) => {
@@ -166,10 +165,10 @@ export const createGradeColumns = (
         header: () => (
           <div className="flex flex-col items-center gap-0.5 px-2">
             <span className="font-bold text-xs md:text-sm tracking-tight whitespace-nowrap">
-              {month === 13 ? "Mid-term Exam" : "Final Exam"}
+              {month === 4 ? "الاختبار النصفي" : "الاختبار النهائي"}
             </span>
             <span className="text-[9px] uppercase text-muted-foreground font-medium">
-              Max: 30
+              الحد الأقصى: 30
             </span>
           </div>
         ),
@@ -241,7 +240,7 @@ export const createGradeColumns = (
                     : "text-red-600 font-bold bg-red-50 dark:bg-red-950/20"
                 }`}
               >
-                {isPass ? "Pass" : "Fail"}
+                {isPass ? "ناجح" : "راسب"}
               </span>
             </div>
           );

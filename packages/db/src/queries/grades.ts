@@ -207,15 +207,16 @@ export const getGradeGridData = async (params: {
     const targetClassIds = childClasses.length > 0 
       ? [params.classId, ...childClasses.map(c => c.id)] 
       : [params.classId];
-    const isMidTerm = params.month === 13;
-    const isFinal = params.month === 14;
+    const isMidTerm = params.month === 4;
+    const isFinal = params.month === 8;
     
     let monthsToFetch: number | number[] = params.month;
     if (isMidTerm) {
-      monthsToFetch = [9, 10, 11, 13];
+      monthsToFetch = [1, 2, 3, 4];
     } else if (isFinal) {
-      monthsToFetch = [12, 1, 2, 14];
+      monthsToFetch = [5, 6, 7, 8];
     }
+
 
     const monthCondition = Array.isArray(monthsToFetch) 
       ? inArray(assessmentItems.month, monthsToFetch)
@@ -393,10 +394,11 @@ export const getStudentReportData = async (studentId: string, type?: string, mon
     let monthsToFetch: number[] | null = null;
     
     if (type === "half-yearly") {
-      monthsToFetch = [9, 10, 11, 13]; // Term 1 months + Mid Exam
+      monthsToFetch = [1, 2, 3, 4]; // Term 1 months (Hijri)
     } else if (type === "final") {
-      monthsToFetch = [12, 1, 2, 14]; // Term 2 months + Final Exam
-    } else if (type === "monthly") {
+      monthsToFetch = [5, 6, 7, 8]; // Term 2 months (Hijri)
+    }
+ else if (type === "monthly") {
       if (month) {
         monthsToFetch = [month];
       } else {

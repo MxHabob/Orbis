@@ -34,17 +34,10 @@ interface FilterCheckboxItemProps {
   onCheckedChange: (checked: boolean) => void;
 }
 
-const months = [
-    { id: 9, name: "September" },
-    { id: 10, name: "October" },
-    { id: 11, name: "November" },
-    { id: 12, name: "December" },
-    { id: 1, name: "January" },
-    { id: 2, name: "February" },
-    { id: 3, name: "March" },
-    { id: 4, name: "April" },
-    { id: 5, name: "May" },
-];
+import { HIJRI_MONTHS } from "@/utils/academic-calendar";
+
+const months = HIJRI_MONTHS.map(m => ({ id: m.id, name: m.label }));
+
 
 function FilterMenuItem({ icon: Icon, label, children }: FilterMenuItemProps) {
   return (

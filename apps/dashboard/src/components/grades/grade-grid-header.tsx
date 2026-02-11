@@ -21,19 +21,10 @@ interface GradeGridHeaderProps {
   };
 }
 
-const months = [
-  { id: 9, name: "September (9)" },
-  { id: 10, name: "October (10)" },
-  { id: 11, name: "November (11)" },
-  { id: 13, name: "Mid-term" },
-  { id: 12, name: "December (12)" },
-  { id: 1, name: "January (1)" },
-  { id: 2, name: "February (2)" },
-  { id: 14, name: "Final Exam" },
-  { id: 3, name: "March (3)" },
-  { id: 4, name: "April (4)" },
-  { id: 5, name: "May (5)" },
-];
+import { HIJRI_MONTHS } from "@/utils/academic-calendar";
+
+const months = HIJRI_MONTHS.map(m => ({ id: m.id, name: m.label }));
+
 
 export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps & { defaults?: { yearId?: number; termId?: number; month?: number } }) {
   const [selectedClassId, setSelectedClassId] = useQueryState("selectedClassId", parseAsInteger);
