@@ -2,42 +2,80 @@
 
 import { useCertificateFilterParams } from "@/hooks/use-certificate-filter-params";
 import { useCertificateParams } from "@/hooks/use-certificate-params";
+import { Icons } from "@midday/ui/icons";
 import { Input } from "@midday/ui/input";
-import { Plus, Search } from "lucide-react";
-import { useDebounceCallback } from "usehooks-ts";
-import { useState } from "react";
-import Link from "next/link";
 import { Button } from "@midday/ui/button";
+import { useRef, useState } from "react";
+import { useHotkeys } from "react-hotkeys-hook";
+import { Plus } from "lucide-react";
 
 export function TableToolbar() {
   const { filter, setFilter } = useCertificateFilterParams();
   const { setParams } = useCertificateParams();
-  const [value, setValue] = useState(filter.q ?? "");
+  const [input, setInput] = useState(filter.q ?? "");
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const debounced = useDebounceCallback((q: string) => {
-    setFilter({ q: q || null });
-  }, 300);
+  useHotkeys(
+    "esc",
+    () => {
+      setInput("");
+      setFilter({ q: null });
+    },
+    {
+      enableOnFormTags: true,
+      enabled: Boolean(input),
+    },
+  );
 
-  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newVal = e.target.value;
-    setValue(newVal);
-    debounced(newVal);
+  useHotkeys("meta+s", (evt) => {
+    evt.preventDefault();
+    inputRef.current?.focus();
+  });
+
+  const handleSearch = (evt: React.ChangeEvent<HTMLInputElement>) => {
+    const value = evt.target.value;
+    if (value) {
+      setInput(value);
+    } else {
+      setFilter({ q: null });
+      setInput("");
+    }
+  };
+
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    setFilter({ q: input.length > 0 ? input : null });
   };
 
   return (
-    <div className="flex items-center justify-between py-4">
-      <div className="flex flex-1 items-center space-x-2">
-        <div className="relative w-[300px]">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search templates..."
-            className="pl-8"
-            value={value}
-            onChange={onChange}
-          />
-        </div>
-      </div>
-      <Button size="sm" onClick={() => setParams({ type: "create" })}>
+    <div className="flex items-center py-4 justify-between">
+      <form
+        className="relative flex-1 sm:flex-initial"
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSubmit();
+        }}
+      >
+        <Icons.Search className="absolute pointer-events-none left-3 top-[11px]" />
+        <Input
+          ref={inputRef}
+          placeholder="Search templates..."
+          className="pl-9 w-full sm:w-[350px] pr-8"
+          value={input}
+          onChange={handleSearch}
+          autoComplete="off"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck="false"
+        />
+      </form>
+
+      <Button
+        size="icon"
+        variant="outline"
+        className="size-[36px] shrink-0"
+        onClick={() => setParams({ type: "create" })}
+      >
         <Plus className="w-4 h-4" />
       </Button>
     </div>

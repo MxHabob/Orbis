@@ -1,24 +1,23 @@
 "use client";
 
 import { VirtualRow } from "@/components/tables/core";
-import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { useScrollHeader } from "@/hooks/use-scroll-header";
 import { useStickyColumns } from "@/hooks/use-sticky-columns";
 import { useTableDnd } from "@/hooks/use-table-dnd";
 import { useTableScroll } from "@/hooks/use-table-scroll";
 import { useTableSettings } from "@/hooks/use-table-settings";
 import { useTRPC } from "@/trpc/client";
-import { STICKY_COLUMNS, SUMMARY_GRID_HEIGHTS } from "@/utils/table-configs";
+import { STICKY_COLUMNS } from "@/utils/table-configs";
 import type { TableSettings } from "@/utils/table-settings";
 import { DndContext, closestCenter } from "@dnd-kit/core";
 import { Table, TableBody, TableCell, TableRow } from "@midday/ui/table";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { type VirtualItem, useVirtualizer } from "@tanstack/react-virtual";
-import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+
+import { useCallback, useEffect, useRef } from "react";
 import { columns } from "./columns";
-import { EmptyState, NoResults } from "./empty-states";
+import { EmptyState } from "./empty-states";
 import { DataTableHeader } from "./table-header";
 
 import { useInvoiceStore } from "@/store/invoice";
@@ -35,15 +34,17 @@ type Props = {
 };
 
 export function DataTable({ initialSettings }: Props) {
-  const router = useRouter();
+
   const trpc = useTRPC();
   const parentRef = useRef<HTMLDivElement>(null);
+
+  // Hide header on scroll
+  useScrollHeader(parentRef);
 
   const { filter } = useCertificateFilterParams();
   const { setParams } = useCertificateParams();
   const { rowSelection, setRowSelection } = useInvoiceStore();
 
-  // Use unified table settings hook for column state management
   const {
     columnVisibility,
     setColumnVisibility,
@@ -117,7 +118,11 @@ export function DataTable({ initialSettings }: Props) {
   const showBottomBar = Object.keys(rowSelection).length > 0;
 
   if (!tableData?.length) {
-    return <EmptyState />;
+    return (
+      <div className="relative h-[calc(100vh-200px)] overflow-hidden">
+        <EmptyState />
+      </div>
+    );
   }
 
   const virtualItems = rowVirtualizer.getVirtualItems();
@@ -134,9 +139,9 @@ export function DataTable({ initialSettings }: Props) {
               (tableScroll.containerRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
             }
           }}
-          className="overflow-auto overscroll-contain border-l border-r border-b border-border scrollbar-hide"
+          className="overflow-auto overscroll-none border-l border-r border-b border-border scrollbar-hide"
           style={{
-            height: "calc(100vh - 450px)",
+            height: "calc(100vh - 180px + var(--header-offset, 0px))",
           }}
         >
           <DndContext
@@ -190,6 +195,11 @@ export function DataTable({ initialSettings }: Props) {
               </TableBody>
             </Table>
           </DndContext>
+          {/* Spacer ensures scrolling works when content barely overflows */}
+          <div
+            style={{ height: "var(--header-offset, 0px)", flexShrink: 0 }}
+            aria-hidden
+          />
         </div>
       </div>
 

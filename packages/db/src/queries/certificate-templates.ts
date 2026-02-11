@@ -6,13 +6,20 @@ export type CertificateTemplateInsert = typeof certificateTemplates.$inferInsert
 export type CertificateTemplate = typeof certificateTemplates.$inferSelect;
 
 export async function listCertificateTemplates(q?: string) {
-  let query = db.select().from(certificateTemplates);
+  let query = db.select({
+    id: certificateTemplates.id,
+    name: certificateTemplates.name,
+    isDefault: certificateTemplates.isDefault,
+    size: certificateTemplates.size,
+    orientation: certificateTemplates.orientation,
+    updatedAt: certificateTemplates.updatedAt,
+  }).from(certificateTemplates);
 
   if (q) {
     query = query.where(ilike(certificateTemplates.name, `%${q}%`)) as any;
   }
 
-  return query.orderBy(asc(certificateTemplates.name));
+  return query.orderBy(desc(certificateTemplates.updatedAt));
 }
 
 export async function getCertificateTemplateById(id: string) {
@@ -112,13 +119,30 @@ export async function deleteCertificateTemplate(id: string) {
 }
 
 export async function getCertificateTemplatesSummary() {
-  const allTemplates = await db.select().from(certificateTemplates);
-  
+  const [counts] = await db
+    .select({
+      total: count(),
+    })
+    .from(certificateTemplates);
+
+  const [defaults] = await db
+    .select({
+      count: count(),
+    })
+    .from(certificateTemplates)
+    .where(eq(certificateTemplates.isDefault, true));
+
+  const [lastUpdate] = await db
+    .select({
+      date: certificateTemplates.updatedAt,
+    })
+    .from(certificateTemplates)
+    .orderBy(desc(certificateTemplates.updatedAt))
+    .limit(1);
+
   return {
-    total: allTemplates.length,
-    defaultCount: allTemplates.filter(t => t.isDefault).length,
-    lastUpdated: allTemplates.length > 0 
-      ? new Date(Math.max(...allTemplates.map(t => new Date(t.updatedAt).getTime())))
-      : null
+    total: counts?.total ?? 0,
+    defaultCount: defaults?.count ?? 0,
+    lastUpdated: lastUpdate?.date ?? null,
   };
 }

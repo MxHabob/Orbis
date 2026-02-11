@@ -92,6 +92,7 @@ export const SORT_FIELD_MAPS: Record<TableId, Record<string, string>> = {
   },
   certificates: {
     name: "name",
+    updatedAt: "updated_at",
   },
 };
 
