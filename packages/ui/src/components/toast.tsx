@@ -29,6 +29,7 @@ const toastVariants = cva(
         default: "",
         error: "",
         success: "",
+        warning: "",
         progress: "",
         spinner: "",
         ai: "",

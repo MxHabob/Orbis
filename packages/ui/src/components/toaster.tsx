@@ -43,6 +43,9 @@ export function Toaster() {
                           {props?.variant === "error" && (
                             <Icons.Error className="text-[#FF3638]" />
                           )}
+                          {props?.variant === "warning" && (
+                            <Icons.AlertCircle className="text-[#F59E0B]" />
+                          )}
                           {props?.variant === "progress" && (
                             <Spinner className="h-4 w-4 animate-spin" />
                           )}
