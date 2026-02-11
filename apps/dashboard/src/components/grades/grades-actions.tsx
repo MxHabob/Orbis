@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@midday/ui/dropdown-menu";
 import { Icons } from "@midday/ui/icons";
-import { parseAsBoolean, parseAsString, useQueryStates } from "nuqs";
+import { parseAsBoolean, parseAsString, parseAsInteger, useQueryStates } from "nuqs";
 import { useGradeFilterParams } from "@/hooks/use-grade-filter-params";
 import { useTRPC } from "@/trpc/client";
 import { useToast } from "@midday/ui/use-toast";
@@ -26,6 +26,12 @@ export function GradesActions() {
   const [_, setParams] = useQueryStates({
     step: parseAsString,
     type: parseAsString,
+    import_classId: parseAsString,
+    import_yearId: parseAsString,
+    import_subjectId: parseAsString,
+    import_termId: parseAsString,
+    import_month: parseAsInteger,
+    import_assessmentId: parseAsString,
     hide: parseAsBoolean,
   });
 
@@ -269,7 +275,16 @@ export function GradesActions() {
       </DropdownMenuTrigger>
       <DropdownMenuContent sideOffset={10} align="end">
         <DropdownMenuItem
-          onClick={() => setParams({ step: "import", type: "grades" })}
+          onClick={() => setParams({ 
+            step: "import", 
+            type: "grades",
+            import_classId: filter.selectedClassId?.toString() ?? null,
+            import_yearId: filter.yearId?.toString() ?? null,
+            import_subjectId: filter.selectedSubjectId?.toString() ?? null,
+            import_termId: filter.termId?.toString() ?? null,
+            import_month: filter.month ?? null,
+            import_assessmentId: null // Reset this as it might be old
+          })}
           className="space-x-2"
         >
           <Icons.Import size={18} />

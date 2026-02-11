@@ -17,9 +17,9 @@ export const createAssessment = async (data: CreateAssessmentParams) => {
   return result;
 };
 
-export const getAssessmentsForClass = async (classId: number, subjectId?: number, termId?: number) => {
+export const getAssessmentsForClass = async (classId: number, subjectId?: number, termId?: number, month?: number) => {
   // Simple caching strategy for list
-  const cacheKey = `class:${classId}:${subjectId || 'all'}:${termId || 'all'}`;
+  const cacheKey = `class:${classId}:${subjectId || 'all'}:${termId || 'all'}:${month || 'all'}`;
   const cached = await assessmentCache.get<any[]>(cacheKey);
   
   if (cached) return cached;
@@ -31,6 +31,9 @@ export const getAssessmentsForClass = async (classId: number, subjectId?: number
   }
   if (termId) {
     conditions.push(eq(assessmentItems.termId, termId));
+  }
+  if (month) {
+    conditions.push(eq(assessmentItems.month, month));
   }
 
   const results = await db

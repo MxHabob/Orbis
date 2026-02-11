@@ -35,18 +35,26 @@ export const importSchema = z.object({
   academicYearId: z.number().optional(),
   subjectId: z.number().optional(),
   termId: z.number().optional(),
-  month: z.number().optional(),
   assessmentItemId: z.number().optional(),
+  month: z.number().optional(),
   
   table: z.array(z.record(z.string(), z.string())).optional(),
   mappings: z.record(z.string(), z.string()).optional(),
 }).refine((data) => {
-  if (data.type === "students") {
-    if (!data.classId) return false;
-    if (!data.autoGenerateStudentNumber && !data.studentNumber) return false;
-    if (!data.name) return false;
-  }
-  return true;
+    if (data.type === "students") {
+      if (!data.classId) return false;
+      if (!data.autoGenerateStudentNumber && !data.studentNumber) return false;
+      if (!data.name) return false;
+    }
+    
+    if (data.type === "grades") {
+      if (!data.classId) return false;
+      if (!data.subjectId) return false;
+      if (!data.month) return false;
+      if (!data.studentNumber) return false;
+    }
+    
+    return true;
 }, {
   message: "Required fields are missing",
   path: ["classId"]

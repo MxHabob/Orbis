@@ -24,123 +24,237 @@ import { mappableFields, useCsvContext } from "./context";
 import { Switch } from "@midday/ui/switch";
 
 export function FieldMapping() {
-  const { fileColumns, setValue, control, watch } = useCsvContext();
+  const { setValue, control, watch } = useCsvContext();
   const type = watch("type") || "students";
-  const fields = mappableFields[type as keyof typeof mappableFields];
   const trpc = useTRPC();
   const autoGenerate = watch("autoGenerateStudentNumber");
 
-  // Hooks must be at the top level
+  // Common Context
   const { data: years } = useQuery(trpc.academic.getYears.queryOptions());
   const academicYearId = watch("academicYearId");
+  
+  // Classes Context (Required for both)
   const { data: classes } = useQuery(trpc.classes.getAll.queryOptions({ 
     academicYearId: academicYearId ?? undefined 
   }, { enabled: !!academicYearId }));
 
+  // Grades Specific Context
+  const { data: subjects } = useQuery(trpc.subjects.getAll.queryOptions(undefined,{
+    enabled: type === "grades"
+  }));
+  
+  const { data: terms } = useQuery(trpc.academic.getTerms.queryOptions({ 
+    yearId: academicYearId! 
+  }, { enabled: type === "grades" && !!academicYearId }));
+
+  const classId = watch("classId");
+  const subjectId = watch("subjectId");
+  const termId = watch("termId");
+  const month = watch("month");
+
+  const { data: assessments } = useQuery(trpc.assessments.getByClass.queryOptions({ 
+    classId: classId!, 
+    subjectId: subjectId, 
+    termId: termId,
+    month: month
+  }, { enabled: type === "grades" && !!classId }));
 
   return (
     <div className="mt-6">
-      <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-        <div className="text-sm">CSV Data column</div>
-        <div className="text-sm">System data column</div>
-        {(Object.keys(fields) as (keyof typeof fields)[])
-          .filter(field => !(field === "studentNumber" && autoGenerate))
-          .map(
-          (field) => (
-            <FieldRow
-              key={field}
-              field={field as any}
-              type={type as any}
-            />
-          ),
+      <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-4">
+        <div className="text-sm font-medium">CSV Data column</div>
+        <div className="text-sm font-medium">System data column</div>
+      </div>
+
+      {/* 1. Shared Context Selectors (Year & Class) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b pb-6 mb-6">
+        <div className="space-y-2">
+          <Label className="text-[#878787] text-xs font-normal">Academic Year</Label>
+          <Controller
+            control={control}
+            name="academicYearId"
+            render={({ field }) => (
+              <Select
+                value={field.value?.toString()}
+                onValueChange={(val) => {
+                  const numVal = val ? Number(val) : undefined;
+                  field.onChange(numVal);
+                  setValue("classId", undefined);
+                  setValue("termId", undefined);
+                }}
+              >
+                <SelectTrigger className="w-full h-9">
+                  <SelectValue placeholder="Select Academic Year" />
+                </SelectTrigger>
+                <SelectContent>
+                  {years?.map((year) => (
+                    <SelectItem key={year.id} value={year.id.toString()}>
+                      {year.yearName} {year.isCurrent ? "(Current)" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-[#878787] text-xs font-normal">Class / Section</Label>
+          <Controller
+            control={control}
+            name="classId"
+            render={({ field }) => (
+              <Select
+                value={field.value?.toString()}
+                onValueChange={(val) => field.onChange(val ? Number(val) : undefined)}
+                disabled={!academicYearId}
+              >
+                <SelectTrigger className="w-full h-9">
+                  <SelectValue placeholder={academicYearId ? "Select Class" : "Select Year first"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {classes?.data?.map((cls) => (
+                    <SelectItem key={cls.id} value={cls.id.toString()}>
+                      {cls.name} {cls.division ? `- ${cls.division}` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+        </div>
+
+        {type === "grades" && (
+          <>
+            <div className="space-y-2">
+              <Label className="text-[#878787] text-xs font-normal">Subject</Label>
+              <Controller
+                control={control}
+                name="subjectId"
+                render={({ field }) => (
+                  <Select
+                    value={field.value?.toString()}
+                    onValueChange={(val) => field.onChange(val ? Number(val) : undefined)}
+                  >
+                    <SelectTrigger className="w-full h-9">
+                      <SelectValue placeholder="Select Subject" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {subjects?.map((s) => (
+                        <SelectItem key={s.id} value={s.id.toString()}>{s.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-[#878787] text-xs font-normal">Term</Label>
+              <Controller
+                control={control}
+                name="termId"
+                render={({ field }) => (
+                  <Select
+                    value={field.value?.toString()}
+                    onValueChange={(val) => field.onChange(val ? Number(val) : undefined)}
+                    disabled={!academicYearId}
+                  >
+                    <SelectTrigger className="w-full h-9">
+                      <SelectValue placeholder={academicYearId ? "Select Term" : "Select Year first"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {terms?.map((t) => (
+                        <SelectItem key={t.id} value={t.id.toString()}>{t.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-[#878787] text-xs font-normal">Import Month</Label>
+              <Controller
+                control={control}
+                name="month"
+                render={({ field }) => (
+                  <Select
+                    value={field.value?.toString()}
+                    onValueChange={(val) => field.onChange(val ? Number(val) : undefined)}
+                  >
+                    <SelectTrigger className="w-full h-9">
+                      <SelectValue placeholder="Select Month" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => (
+                        <SelectItem key={m} value={m.toString()}>Month {m}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+          </>
         )}
       </div>
 
-      {type === "students" && (
-        <div className="mt-8 space-y-4 border-t pt-6">
-           <div className="flex items-center justify-between py-2 border-b mb-2">
-            <div className="space-y-0.5">
-              <Label className="text-sm font-medium">Auto-generate student numbers</Label>
-              <p className="text-[10px] text-muted-foreground">
-                Unique numbers will be created automatically.
-              </p>
-            </div>
-            <Controller
-              control={control}
-              name="autoGenerateStudentNumber"
-              render={({ field: { value, onChange } }) => (
-                <Switch
-                  checked={value}
-                  onCheckedChange={(val) => {
-                    onChange(val);
-                    if (val) setValue("studentNumber", undefined);
-                  }}
+      {/* 2. Mapping Rows */}
+      <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+        {type === "students" && (
+          <>
+            <div className="col-span-2 mb-4">
+              <div className="flex items-center space-x-2">
+                <Controller
+                  control={control}
+                  name="autoGenerateStudentNumber"
+                  render={({ field }) => (
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  )}
                 />
-              )}
-            />
-          </div>
+                <Label className="text-sm font-normal">Auto-generate student numbers</Label>
+              </div>
+            </div>
 
-          <div className="space-y-2">
-            <Label className="text-[#878787] text-xs font-normal">Academic Year</Label>
-            <Controller
-              control={control}
-              name="academicYearId"
-              render={({ field }) => (
-                <Select
-                  value={field.value?.toString()}
-                  onValueChange={(val) => {
-                    const numVal = val ? Number(val) : undefined;
-                    field.onChange(numVal);
-                    // Reset class when year changes
-                    setValue("classId", undefined);
-                  }}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select Academic Year" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {years?.map((year) => (
-                      <SelectItem key={year.id} value={year.id.toString()}>
-                        {year.yearName} {year.isCurrent ? "(Current)" : ""}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </div>
+            {!autoGenerate && (
+              <FieldRow
+                field="studentNumber"
+                type="students"
+                required
+              />
+            )}
+            <FieldRow field="name" type="students" required />
+            <FieldRow field="phone" type="students" />
+            <FieldRow field="email" type="students" />
+            <FieldRow field="sex" type="students" />
+          </>
+        )}
 
-          <div className="space-y-2">
-            <Label className="text-[#878787] text-xs font-normal">Class / Section</Label>
-            <Controller
-              control={control}
-              name="classId"
-              render={({ field }) => (
-                <Select
-                  value={field.value?.toString()}
-                  onValueChange={(val) => field.onChange(val ? Number(val) : undefined)}
-                  disabled={!academicYearId}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder={academicYearId ? "Select Class" : "Select Academic Year first"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {classes?.data?.map((cls) => (
-                      <SelectItem key={cls.id} value={cls.id.toString()}>
-                        {cls.name} {cls.division ? `- ${cls.division}` : ""}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
+        {type === "grades" && classId && month && (
+          <>
+            <FieldRow
+              field="studentNumber"
+              label="Student Number (Identifier)"
+              required
             />
-          </div>
-        </div>
-      )}
+            {assessments?.map((assessment) => (
+              <FieldRow
+                key={assessment.id}
+                field={`mappings.${assessment.id}`}
+                label={assessment.title}
+                required={false}
+              />
+            ))}
+          </>
+        )}
+      </div>
 
-      {type === "grades" && (
-        <div className="mt-6 space-y-4 border-t pt-6">
-           {/* Additional fields for grades if needed */}
+      {type === "grades" && (!classId || !month) && (
+        <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
+          Please select a class and month to proceed with grade mapping.
         </div>
       )}
     </div>
@@ -151,12 +265,20 @@ export function FieldMapping() {
 function FieldRow({
   field,
   type,
+  label: explicitLabel,
+  required: explicitRequired,
 }: {
   field: string;
-  type: keyof typeof mappableFields;
+  type?: keyof typeof mappableFields;
+  label?: string;
+  required?: boolean;
 }) {
-  const fields = mappableFields[type];
-  const { label, required } = (fields as any)[field];
+  const fields = type ? mappableFields[type] : null;
+  const fieldConfig = fields ? (fields as any)[field] : null;
+  
+  const label = explicitLabel ?? fieldConfig?.label ?? field;
+  const required = explicitRequired ?? fieldConfig?.required ?? false;
+
   const { control, fileColumns, firstRows } = useCsvContext();
 
   // Use useWatch for better reactivity when values change

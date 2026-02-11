@@ -24,13 +24,15 @@ export const assessmentsRouter = createTRPCRouter({
         classId: z.number(),
         subjectId: z.number().optional(),
         termId: z.number().optional(),
+        month: z.number().optional(),
       })
     )
     .query(async ({ input }) => {
       return getAssessmentsForClass(
         input.classId,
         input.subjectId,
-        input.termId
+        input.termId,
+        input.month
       );
     }),
 
@@ -102,6 +104,7 @@ export const assessmentsRouter = createTRPCRouter({
   importGrades: protectedProcedure
     .input(z.object({
       assessmentItemId: z.number(),
+      month: z.number().optional(),
       grades: z.array(z.object({
         studentNumber: z.string(),
         score: z.number().nullable(),
