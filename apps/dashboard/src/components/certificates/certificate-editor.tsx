@@ -75,8 +75,15 @@ export function CertificateEditor({
   const upsertTemplate = useMutation(
     trpc.certificateTemplates.upsert.mutationOptions({
       onSuccess: () => {
+        // Invalidate all certificate template queries to ensure fresh data everywhere
         queryClient.invalidateQueries({
           queryKey: trpc.certificateTemplates.list.queryKey(),
+        });
+        queryClient.invalidateQueries({
+          queryKey: trpc.certificateTemplates.getById.queryKey(),
+        });
+        queryClient.invalidateQueries({
+          queryKey: trpc.certificateTemplates.summary.queryKey(),
         });
       },
     }),

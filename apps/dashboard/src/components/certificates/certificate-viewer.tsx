@@ -107,10 +107,10 @@ export function CertificateViewer({
             style={{
               left: `${el.x}%`,
               top: `${el.y}%`,
-              transform: `translate(-50%, -50%) rotate(${el.rotation || 0}deg)`,
+              transform: `rotate(${el.rotation || 0}deg)`,
               textAlign: el.align as any,
               opacity: el.opacity ?? 1,
-              width: (el.type === "image" || el.type === "badge" || el.type === "table" || el.type === "grades-table" || el.type === "shape") ? `${el.width}%` : "auto",
+              width: el.width ? `${el.width}%` : "auto",
               height: el.type === "shape" ? `${el.height}px` : "auto",
               zIndex: (el.type === "image" || el.type === "badge") ? 5 : 10,
             }}
