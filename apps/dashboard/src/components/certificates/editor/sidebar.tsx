@@ -48,6 +48,7 @@ interface SidebarProps {
   setOrientation: (orientation: any) => void;
   backgroundImage: string;
   handleFileUpload: (e: any, type: "background" | "image") => void;
+  handleClearBackground: () => void;
   addElement: (type: ElementType, content: string, variableKey?: string) => void;
   updateElement: (id: string, updates: Partial<EditorElement>) => void;
   deleteElement: (id: string) => void;
@@ -70,6 +71,7 @@ export const Sidebar = memo(({
   setOrientation,
   backgroundImage,
   handleFileUpload,
+  handleClearBackground,
   addElement,
   updateElement,
   deleteElement,
@@ -112,7 +114,21 @@ export const Sidebar = memo(({
               <div className="grid grid-cols-2 gap-3">
                 <div className="relative group overflow-hidden rounded-lg border-2 border-dashed aspect-square hover:border-primary/50 transition-colors cursor-pointer bg-accent/50 flex items-center justify-center">
                   {backgroundImage ? (
-                    <img src={backgroundImage} className="w-full h-full object-cover" alt="BG" />
+                    <>
+                      <img src={backgroundImage} className="w-full h-full object-cover" alt="BG" />
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          handleClearBackground();
+                        }}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </>
                   ) : (
                     <div className="flex flex-col items-center gap-2">
                       <ImageIcon className="w-5 h-5 text-muted-foreground" />
@@ -321,7 +337,7 @@ export const Sidebar = memo(({
 
         <div className="p-6 border-t bg-background">
           <Button onClick={handleSave} disabled={isSaving} className="w-full">
-            {isSaving ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <Save className="w-4 h-4 ml-2" />}
+            {isSaving && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
             {mode === "create" ? "Create Template" : "Save Changes"}
           </Button>
         </div>

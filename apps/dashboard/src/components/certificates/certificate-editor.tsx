@@ -203,6 +203,10 @@ export function CertificateEditor({
     }
   }, [isSheet, router, setParams]);
 
+  const handleClearBackground = useCallback(() => {
+    setBackgroundImage("");
+  }, []);
+
   const EditorContent = (
     <div className="relative h-full flex w-full overflow-hidden">
       <Sidebar 
@@ -219,6 +223,7 @@ export function CertificateEditor({
         setOrientation={setOrientation}
         backgroundImage={backgroundImage}
         handleFileUpload={handleFileUpload}
+        handleClearBackground={handleClearBackground}
         addElement={addElement}
         updateElement={updateElement}
         deleteElement={deleteElement}
