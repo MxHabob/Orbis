@@ -76,6 +76,7 @@
     "react-selecto": "^1.26.3",
     "react-use-draggable-scroll": "^0.4.7",
     "react-zoom-pan-pinch": "^3.7.0",
+    "read-excel-file": "^6.0.3",
     "recharts": "2.15.3",
     "resend": "^6.5.2",
     "selecto": "^1.26.3",

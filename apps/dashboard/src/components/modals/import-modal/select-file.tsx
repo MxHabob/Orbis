@@ -4,8 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Dropzone, { type FileRejection } from "react-dropzone";
 import { Controller } from "react-hook-form";
 import { useCsvContext } from "./context";
-import { readLines } from "./utils";
-import { parseCsv } from "@midday/export";
+import { parseFile } from "@midday/import";
 
 
 export function SelectFile() {
@@ -33,48 +32,41 @@ export function SelectFile() {
       setIsLoading(true);
       setError(null);
 
-      readLines(fileToProcess, 4)
-        .then(async (lines) => {
-          try {
-            const { data, meta } = await parseCsv(lines, {
-              worker: false,
-              skipEmptyLines: true,
-              header: true,
-            });
+      try {
+        const { data, meta } = await parseFile(fileToProcess, {
+          header: true,
+          skipEmptyLines: true,
+        });
 
-            if (!data || data.length < 2) {
-              setError("CSV file must have at least 2 rows.");
-              setFileColumns(null);
-              setFirstRows(null);
-              setIsLoading(false);
-              return;
-            }
-
-            if (!meta || !meta.fields || meta.fields.length <= 1) {
-              setError("Failed to retrieve CSV column data.");
-              setFileColumns(null);
-              setFirstRows(null);
-              setIsLoading(false);
-              return;
-            }
-
-            setFileColumns(meta.fields);
-            // @ts-expect-error
-            setFirstRows(data);
-            setIsLoading(false);
-            processingRef.current = null;
-          } catch (err) {
-             throw err;
-          }
-        })
-        .catch((err) => {
-          console.error("Error processing file:", err);
-          setError("Failed to read CSV file.");
+        if (!data || data.length < 2) {
+          setError("File must have at least 2 rows.");
           setFileColumns(null);
           setFirstRows(null);
           setIsLoading(false);
-          processingRef.current = null;
-        });
+          return;
+        }
+
+        if (!meta || !meta.fields || meta.fields.length <= 1) {
+          setError("Failed to retrieve column data.");
+          setFileColumns(null);
+          setFirstRows(null);
+          setIsLoading(false);
+          return;
+        }
+
+        setFileColumns(meta.fields);
+        // @ts-expect-error
+        setFirstRows(data.slice(0, 5)); // Take first 5 rows for preview
+        setIsLoading(false);
+        processingRef.current = null;
+      } catch (err: any) {
+        console.error("Error processing file:", err);
+        setError(err.message || "Failed to read file.");
+        setFileColumns(null);
+        setFirstRows(null);
+        setIsLoading(false);
+        processingRef.current = null;
+      }
     },
     [setFileColumns, setFirstRows],
   );
@@ -105,7 +97,7 @@ export function SelectFile() {
               if (rejection) {
                 const error = rejection.errors[0];
                 if (error?.code === "file-invalid-type") {
-                  setError("Please select a CSV file.");
+                  setError("Please select a CSV or Excel file.");
                 } else if (error?.code === "file-too-large") {
                   setError("File size exceeds 5MB limit.");
                 } else {
@@ -119,7 +111,8 @@ export function SelectFile() {
               "text/csv": [".csv"],
               "application/csv": [".csv"],
               "text/plain": [".csv"],
-              "application/vnd.ms-excel": [".csv"],
+              "application/vnd.ms-excel": [".csv", ".xls"],
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
             }}
             maxSize={5000000}
           >
@@ -144,7 +137,7 @@ export function SelectFile() {
                     <div>
                       <p>Drop your file here, or click to browse.</p>
                       <span>5MB file limit. </span>
-                      <span className="mt-2 text-[10px]">CSV format</span>
+                      <span className="mt-2 text-[10px]">CSV or Excel format</span>
                     </div>
                   )}
 

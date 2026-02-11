@@ -1,6 +1,5 @@
 "use client";
 
-import { useGradesParams } from "@/hooks/use-grades-params";
 import { Button } from "@midday/ui/button";
 import {
   DropdownMenu,
@@ -26,10 +25,10 @@ import { exportToCsv, parseCsv, generateCanvasPdf, downloadBase64 } from "@midda
 export function GradesActions() {
   const [_, setParams] = useQueryStates({
     step: parseAsString,
+    type: parseAsString,
     hide: parseAsBoolean,
   });
 
-  const { setParams: setGradesParams } = useGradesParams();
   const { filter } = useGradeFilterParams();
   const trpc = useTRPC();
   const queryClient = useQueryClient(); 
@@ -269,28 +268,15 @@ export function GradesActions() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent sideOffset={10} align="end">
-
         <DropdownMenuItem
-          onClick={() => setParams({ step: "connect" })}
-          className="space-x-2"
-        >
-          <Icons.Accounts size={18} />
-          <span>Connect accounts</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => setParams({ step: "import", hide: true })}
+          onClick={() => setParams({ step: "import", type: "grades" })}
           className="space-x-2"
         >
           <Icons.Import size={18} />
-          <span>Backfill</span>
+          <span>Import Grades</span>
         </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={handleImportClick}
-          className="space-x-2"
-        >
-          <Icons.CreateTransaction size={18} />
-          <span>Upload grades (CSV)</span>
-        </DropdownMenuItem>
+        
+        {/* Helper for receipts if needed, keeping generic */}
         <DropdownMenuItem
           onClick={() =>
             document.getElementById("upload-transaction-files")?.click()

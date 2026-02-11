@@ -20,7 +20,7 @@ import { useEffect, useState } from "react";
 import { ImportCsvContext, importSchema } from "./context";
 import { FieldMapping } from "./field-mapping";
 import { SelectFile } from "./select-file";
-import { parseCsv } from "@midday/export";
+import { parseFile } from "@midday/import";
 
 const pages = ["select-file", "confirm-import"] as const;
 
@@ -139,7 +139,7 @@ export function ImportModal() {
             </div>
             <DialogDescription>
               {page === "select-file" &&
-                `Upload a CSV file containing ${params.type === "students" ? "student" : "grade"} data.`}
+                `Upload a CSV or Excel file containing ${params.type === "students" ? "student" : "grade"} data.`}
               {page === "confirm-import" &&
                 "We've automatically mapped the columns, please review the data to ensure correctness."}
             </DialogDescription>
@@ -168,7 +168,7 @@ export function ImportModal() {
                       // Parse the complete file
                       // Parse the complete file
                       try {
-                        const { data: rows } = await parseCsv<Record<string, string>>(data.file, {
+                        const { data: rows } = await parseFile<Record<string, string>>(data.file, {
                           header: true,
                           skipEmptyLines: true,
                         });
@@ -228,7 +228,7 @@ export function ImportModal() {
                         }
                       } catch (err: any) {
                         setIsImporting(false);
-                        toast({ title: "Error parsing CSV", description: err.message, variant: "error" });
+                        toast({ title: "Error parsing file", description: err.message, variant: "error" });
                       }
                     })}
 

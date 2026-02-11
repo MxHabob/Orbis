@@ -11,10 +11,14 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "date-fns": "^4.1.0"
+    "date-fns": "^4.1.0",
+    "papaparse": "^5.5.3",
+    "read-excel-file": "^6.0.3",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@midday/tsconfig": "workspace:*",
+    "@types/papaparse": "^5.5.2",
     "typescript": "^5.9.3"
   },
   "exports": {
