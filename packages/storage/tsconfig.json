@@ -3,14 +3,8 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",
-    
-    // Ensure strict type checking
     "strict": true,
-    
-    // Library support for DOM/Node
     "lib": ["esnext", "dom"],
-    
-    // Declaration files for other packages
     "declaration": true,
     "declarationMap": true
   },
