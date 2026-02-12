@@ -4,7 +4,6 @@
     "outDir": "dist",
     "rootDir": "src",
     "lib": ["esnext", "dom"],
-    "module": "commonjs",
     "declaration": true,
     "declarationMap": true
   },
