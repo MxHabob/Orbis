@@ -49,6 +49,8 @@ export async function handleCertificateExport(job: Job<CertificateExportData>) {
       url: result.url,
       totalItems: students.length,
       fileName,
+      filePath: path,
+      fullPath: path,
     };
   } catch (error) {
     logger.error(`Error in certificate-export handler: ${error instanceof Error ? error.message : "Unknown error"}`);

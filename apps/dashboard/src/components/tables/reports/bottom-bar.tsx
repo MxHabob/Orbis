@@ -29,7 +29,7 @@ const MONTHLY_MONTHS = HIJRI_MONTHS.filter(
 export function BottomBar() {
   const { rowSelection, setRowSelection } = useInvoiceStore();
   const trpc = useTRPC();
-  const { exportCertificates, abort } = useBulkCertificateExport();
+  const { exportCertificates } = useBulkCertificateExport();
 
   const [certificateType, setCertificateType] = useState<CertificateType>("monthly");
   const [selectedMonth, setSelectedMonth] = useState<number>(1);
@@ -66,7 +66,7 @@ export function BottomBar() {
         classIds: selectedIds,
         certificateType,
         selectedMonth,
-        templateId: currentTemplate?.id || null,
+        templateId: currentTemplate?.id,
       });
 
       if (result.success) {

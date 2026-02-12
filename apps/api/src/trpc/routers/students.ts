@@ -28,7 +28,7 @@ export const studentsRouter = createTRPCRouter({
       z.object({
         id: z.string(),
         cursor: z.number().nullish(),
-        limit: z.number().min(1).max(100).default(50),
+        limit: z.number().min(1).max(1000).default(50),
         q: z.string().optional(),
         sort: z.array(z.string()).nullish(),
       })

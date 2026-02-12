@@ -17,7 +17,7 @@ export const jobQueue = new Queue(QUEUE_NAME, {
       type: "exponential",
       delay: 1000,
     },
-    removeOnComplete: true,
+    removeOnComplete: { age: 300, count: 200 },
     removeOnFail: false,
   },
 });
