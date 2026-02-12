@@ -12,6 +12,10 @@ interface BottomBarProps {
   onDeselect: () => void;
   /** Action buttons to render on the right side */
   children: ReactNode;
+  /** Custom label for selection (optional) */
+  selectedLabel?: (count: number) => ReactNode;
+  /** Custom label for deselect button (optional) */
+  deselectLabel?: string;
 }
 
 /**
@@ -22,6 +26,8 @@ export function BottomBar({
   selectedCount,
   onDeselect,
   children,
+  selectedLabel,
+  deselectLabel = "Deselect all",
 }: BottomBarProps) {
   return (
     <Portal>
@@ -42,7 +48,9 @@ export function BottomBar({
             transition={{ duration: 0.15 }}
           />
           <div className="relative h-12 justify-between items-center flex pl-4 pr-2">
-            <span className="text-sm">{selectedCount} selected</span>
+            <span className="text-sm">
+              {selectedLabel ? selectedLabel(selectedCount) : `${selectedCount} selected`}
+            </span>
 
             <div className="flex items-center space-x-2">
               <Button
@@ -50,7 +58,7 @@ export function BottomBar({
                 className="text-muted-foreground"
                 onClick={onDeselect}
               >
-                <span>Deselect all</span>
+                <span>{deselectLabel}</span>
               </Button>
 
               {children}

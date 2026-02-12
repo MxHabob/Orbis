@@ -25,6 +25,7 @@ import { columns } from "./columns";
 import { EmptyState, NoResults } from "./empty-states";
 import { DataTableHeader } from "./table-header";
 import { authClient } from "@midday/auth/auth-client";
+import { BottomBar } from "./bottom-bar";
 
 // Stable reference for non-clickable columns (avoids recreation on each render)
 const NON_CLICKABLE_COLUMNS = new Set(["select", "actions"]);
@@ -245,6 +246,8 @@ export function DataTable({ initialSettings }: Props) {
           />
         </div>
       </div>
+
+      <BottomBar />
     </div>
   );
 }
