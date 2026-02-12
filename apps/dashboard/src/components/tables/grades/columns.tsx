@@ -168,7 +168,7 @@ export const createGradeColumns = (
               {month === 4 ? "الاختبار النصفي" : "الاختبار النهائي"}
             </span>
             <span className="text-[9px] uppercase text-muted-foreground font-medium">
-              الحد الأقصى: 30
+              الحد الأقصى: {examItem.maxScore}
             </span>
           </div>
         ),
@@ -229,15 +229,16 @@ export const createGradeColumns = (
           if (score) examScore = parseFloat(score);
 
           const totalValue = monthlyScaled + examScore;
-          const isPass = totalValue >= 25; // Assuming 50% of 50 is pass
+          const totalMax = 20 + Number(examItem.maxScore);
+          const isPass = totalMax > 0 ? (totalValue / totalMax) >= 0.5 : false;
 
           return (
       <div className="flex items-center justify-center h-full">
               <span
-                className={`text-sm font-bold ${
+                className={`text-sm font-bold px-2 py-0.5 rounded-full ${
                   isPass
-                    ? "text-green-600 font-bold bg-green-50 dark:bg-green-950/20"
-                    : "text-red-600 font-bold bg-red-50 dark:bg-red-950/20"
+                    ? "text-green-600 bg-green-50 dark:bg-green-950/20"
+                    : "text-red-600 bg-red-50 dark:bg-red-950/20"
                 }`}
               >
                 {isPass ? "ناجح" : "راسب"}
@@ -341,7 +342,16 @@ export const createGradeColumns = (
     // Total Column for Regular Mode
     columns.push({
       id: "total",
-      header: "Total",
+      header: () => (
+        <div className="flex flex-col items-center gap-0.5 px-2">
+          <span className="font-bold text-xs md:text-sm tracking-tight whitespace-nowrap">
+            المحصلة
+          </span>
+          <span className="text-[9px] uppercase text-muted-foreground font-medium">
+            الحد الأقصى: 20
+          </span>
+        </div>
+      ),
       size: 120,
       minSize: 100,
       maxSize: 150,
@@ -350,23 +360,29 @@ export const createGradeColumns = (
       meta: {
         sticky: true,
         skeleton: { type: "text", width: "w-16" },
-        headerLabel: "Total",
+        headerLabel: "Total (20)",
         className:
           "text-center bg-primary/5 group-hover:bg-primary/10 z-20 border-l",
       },
       cell: ({ row, table }) => {
         let total = 0;
+        let maxTotal = 0;
         items.forEach((item) => {
           const gradeValue = table.options.meta?.getGradeValue?.(
             row.original.studentId,
             item.id
           );
           if (gradeValue) total += parseFloat(gradeValue);
+          maxTotal += Number(item.maxScore);
         });
+
+        const scaled = maxTotal > 0 ? (total / maxTotal) * 20 : 0;
 
         return (
           <div className="flex items-center justify-center h-full">
-            <span className="text-sm text-primary tabular-nums">{total}</span>
+            <span className="text-sm font-bold text-primary tabular-nums">
+              {scaled.toFixed(2)}
+            </span>
           </div>
         );
       },
