@@ -168,7 +168,7 @@ export const createGradeColumns = (
               {month === 4 ? "الاختبار النصفي" : "الاختبار النهائي"}
             </span>
             <span className="text-[9px] uppercase text-muted-foreground font-medium">
-              الحد الأقصى: {examItem.maxScore}
+              الحد الأقصى: 30
             </span>
           </div>
         ),
@@ -222,15 +222,17 @@ export const createGradeColumns = (
             monthlyMax > 0 ? (monthlyTotal / monthlyMax) * 20 : 0;
 
           let examScore = 0;
+          let examMax = Number(examItem.maxScore);
           const score = table.options.meta?.getGradeValue?.(
             row.original.studentId,
             examItem.id
           );
           if (score) examScore = parseFloat(score);
+          const examScaled = examMax > 0 ? (examScore / examMax) * 30 : 0;
 
-          const totalValue = monthlyScaled + examScore;
-          const totalMax = 20 + Number(examItem.maxScore);
-          const isPass = totalMax > 0 ? (totalValue / totalMax) >= 0.5 : false;
+          const totalValue = monthlyScaled + examScaled;
+          const totalMax = 50;
+          const isPass = totalValue >= 25; // 50% of 50 is 25
 
           return (
       <div className="flex items-center justify-center h-full">
@@ -281,15 +283,19 @@ export const createGradeColumns = (
         const monthlyScaled =
           monthlyMax > 0 ? (monthlyTotal / monthlyMax) * 20 : 0;
 
-        let examScore = 0;
+        let examScaled = 0;
         if (examItem) {
           const score = table.options.meta?.getGradeValue?.(
             row.original.studentId,
             examItem.id
           );
-          if (score) examScore = parseFloat(score);
+          if (score) {
+            const examScore = parseFloat(score);
+            const examMax = Number(examItem.maxScore);
+            examScaled = examMax > 0 ? (examScore / examMax) * 30 : 0;
+          }
         }
-        const result = (monthlyScaled + examScore).toFixed(2);
+        const result = (monthlyScaled + examScaled).toFixed(2);
 
         return (
           <div className="flex items-center justify-center h-full">
@@ -348,7 +354,7 @@ export const createGradeColumns = (
             المحصلة
           </span>
           <span className="text-[9px] uppercase text-muted-foreground font-medium">
-            الحد الأقصى: 20
+            الحد الأقصى: 100
           </span>
         </div>
       ),
@@ -360,7 +366,7 @@ export const createGradeColumns = (
       meta: {
         sticky: true,
         skeleton: { type: "text", width: "w-16" },
-        headerLabel: "Total (20)",
+        headerLabel: "Total (100)",
         className:
           "text-center bg-primary/5 group-hover:bg-primary/10 z-20 border-l",
       },
@@ -376,7 +382,7 @@ export const createGradeColumns = (
           maxTotal += Number(item.maxScore);
         });
 
-        const scaled = maxTotal > 0 ? (total / maxTotal) * 20 : 0;
+        const scaled = maxTotal > 0 ? (total / maxTotal) * 100 : 0;
 
         return (
           <div className="flex items-center justify-center h-full">

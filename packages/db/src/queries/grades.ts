@@ -486,9 +486,9 @@ export const getStudentReportData = async (studentId: string, type?: string, mon
       const rows = Array.from(subjectMap.values()).map(row => ({
         subject: row.subject,
         grades: row.grades,
-        total: row.maxTotal > 0 ? (row.total / row.maxTotal) * 20 : 0,
-        maxTotal: 20,
-        gradeLabel: getGradeLabel(row.maxTotal > 0 ? (row.total / row.maxTotal) * 20 : 0, 20),
+        total: row.maxTotal > 0 ? (row.total / row.maxTotal) * 100 : 0,
+        maxTotal: 100,
+        gradeLabel: getGradeLabel(row.maxTotal > 0 ? (row.total / row.maxTotal) * 100 : 0, 100),
       }));
 
       return {
@@ -586,14 +586,15 @@ export const getStudentReportData = async (studentId: string, type?: string, mon
 
       const rows = Array.from(subjectMap.values()).map(row => {
         const scaledMonthly = row.monthlyMaxTotal > 0 ? (row.monthlyTotal / row.monthlyMaxTotal) * 20 : 0;
-        const total = scaledMonthly + (row.examScore || 0);
-        const maxTotal = 20 + row.examMaxScore;
+        const scaledExam = row.examMaxScore > 0 ? ((row.examScore || 0) / row.examMaxScore) * 30 : 0;
+        const total = scaledMonthly + scaledExam;
+        const maxTotal = 50;
         
         return {
           subject: row.subject,
           grades: {
             "محصلة الشهور": Number(scaledMonthly.toFixed(2)),
-            "اختبار نصف العام": row.examScore,
+            "اختبار نصف العام": Number(scaledExam.toFixed(2)),
           } as Record<string, number | null>,
           total,
           maxTotal,
@@ -712,17 +713,20 @@ export const getStudentReportData = async (studentId: string, type?: string, mon
 
       const rows = Array.from(subjectMap.values()).map(row => {
         const scaledT1 = row.term1MaxTotal > 0 ? (row.term1Total / row.term1MaxTotal) * 20 : 0;
+        const scaledMidterm = row.midtermMaxScore > 0 ? ((row.midtermScore || 0) / row.midtermMaxScore) * 30 : 0;
         const scaledT2 = row.term2MaxTotal > 0 ? (row.term2Total / row.term2MaxTotal) * 20 : 0;
-        const total = scaledT1 + (row.midtermScore || 0) + scaledT2 + (row.finalExamScore || 0);
-        const maxTotal = 20 + row.midtermMaxScore + 20 + row.finalExamMaxScore;
+        const scaledFinal = row.finalExamMaxScore > 0 ? ((row.finalExamScore || 0) / row.finalExamMaxScore) * 30 : 0;
+        
+        const total = scaledT1 + scaledMidterm + scaledT2 + scaledFinal;
+        const maxTotal = 100;
 
         return {
           subject: row.subject,
           grades: {
             "المحصلة الأولى": Number(scaledT1.toFixed(2)),
-            "اختبار نصف العام": row.midtermScore,
+            "اختبار نصف العام": Number(scaledMidterm.toFixed(2)),
             "المحصلة الثانية": Number(scaledT2.toFixed(2)),
-            "الاختبار النهائي": row.finalExamScore,
+            "الاختبار النهائي": Number(scaledFinal.toFixed(2)),
           } as Record<string, number | null>,
           total,
           maxTotal,
