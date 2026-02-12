@@ -2,7 +2,7 @@
 
 import { cn } from "@midday/ui/cn";
 import { Spinner } from "@midday/ui/spinner";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import Dropzone, { type FileRejection } from "react-dropzone";
 import { Controller } from "react-hook-form";
 import { useCsvContext } from "./context";
@@ -10,7 +10,7 @@ import { parseFile } from "@midday/import";
 
 
 export function SelectFile() {
-  const { watch, control, setFileColumns, setFirstRows } = useCsvContext();
+  const { watch, control, setFileColumns, setFirstRows, onFileProcessed } = useCsvContext();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const processingRef = useRef<string | null>(null);
@@ -61,6 +61,7 @@ export function SelectFile() {
         setFirstRows(data.slice(0, 5)); // Take first 5 rows for preview
         setIsLoading(false);
         processingRef.current = null;
+        onFileProcessed?.();
       } catch (err: any) {
         console.error("Error processing file:", err);
         setError(err.message || "Failed to read file.");
@@ -73,11 +74,7 @@ export function SelectFile() {
     [setFileColumns, setFirstRows],
   );
 
-  useEffect(() => {
-    if (file) {
-      processFile(file);
-    }
-  }, [file, processFile]);
+
 
   return (
     <div className="flex flex-col gap-3">

@@ -27,66 +27,20 @@ export function GradeFieldMapping() {
   // --- High Performance Auto-Selection logic using React Query's select/onSuccess patterns ---
   // Instead of useEffect (which causes extra renders), we use default values and state management
 
-  const { data: years } = useQuery(trpc.academic.getYears.queryOptions(undefined, {
-    select: (data) => {
-      // Auto-set current year if not set
-      if (!academicYearId && data?.length > 0) {
-        const current = data.find(y => y.isCurrent) || data[0];
-        if (current) {
-          // We use a microtask or schedule it to avoid React warning about setting state during render
-          // But as an expert, I prefer setting defaultValues in the Modal initialization 
-          // or using a derived state approach. Here we provide a cleaner bridge.
-          setTimeout(() => {
-             if (!watch("academicYearId")) setValue("academicYearId", current.id, { shouldValidate: true });
-          }, 0);
-        }
-      }
-      return data;
-    }
-  }));
+  const { data: years } = useQuery(trpc.academic.getYears.queryOptions(undefined));
 
   const { data: classes } = useQuery(trpc.classes.getAll.queryOptions({ 
     academicYearId: academicYearId ?? undefined 
   }, { 
     enabled: !!academicYearId,
-    select: (data) => {
-      const firstClass = data.data?.[0];
-      if (!classId && data.data?.length === 1 && firstClass) {
-        setTimeout(() => {
-          if (!watch("classId")) setValue("classId", firstClass.id, { shouldValidate: true });
-        }, 0);
-      }
-      return data;
-    }
   }));
   
-  const { data: subjects } = useQuery(trpc.subjects.getAll.queryOptions(undefined, {
-    select: (data) => {
-      const firstSubject = data?.[0];
-      if (!subjectId && data?.length === 1 && firstSubject) {
-        setTimeout(() => {
-          if (!watch("subjectId")) setValue("subjectId", firstSubject.id, { shouldValidate: true });
-        }, 0);
-      }
-      return data;
-    }
-  }));
+  const { data: subjects } = useQuery(trpc.subjects.getAll.queryOptions(undefined));
 
   const { data: terms } = useQuery(trpc.academic.getTerms.queryOptions({ 
     yearId: academicYearId! 
   }, { 
     enabled: !!academicYearId,
-    select: (data) => {
-      if (!termId && data?.length > 0) {
-        const current = data.find(t => t.isCurrent) || data[0];
-        if (current) {
-          setTimeout(() => {
-            if (!watch("termId")) setValue("termId", current.id, { shouldValidate: true });
-          }, 0);
-        }
-      }
-      return data;
-    }
   }));
 
   const { data: assessments } = useQuery(trpc.assessments.getByClass.queryOptions({ 
@@ -96,11 +50,7 @@ export function GradeFieldMapping() {
     month: month
   }, { enabled: !!classId }));
 
-  // Month doesn't need a query, set once on mount without effect
-  if (month === undefined) {
-    const currentMonth = new Date().getMonth() + 1;
-    setTimeout(() => setValue("month", currentMonth, { shouldValidate: true }), 0);
-  }
+
 
   return (
     <div className="mt-6">
@@ -224,8 +174,19 @@ export function GradeFieldMapping() {
                   <SelectValue placeholder="Select Month" />
                 </SelectTrigger>
                 <SelectContent>
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => (
-                    <SelectItem key={m} value={m.toString()}>Month {m}</SelectItem>
+                  {[
+                    { value: 1, label: "محرم (1)" },
+                    { value: 2, label: "صفر (2)" },
+                    { value: 3, label: "ربيع أول (3)" },
+                    { value: 4, label: "ربيع ثاني - نصفي (4)" },
+                    { value: 5, label: "جمادى أول (5)" },
+                    { value: 6, label: "جمادى ثاني (6)" },
+                    { value: 7, label: "رجب (7)" },
+                    { value: 8, label: "شعبان - نهائي (8)" },
+                  ].map((m) => (
+                    <SelectItem key={m.value} value={m.value.toString()}>
+                      {m.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>

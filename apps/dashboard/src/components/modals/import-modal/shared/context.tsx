@@ -28,6 +28,7 @@ export type ImportCsvContextType<T extends ImportCsvFormData = any> = {
   control: Control<T>;
   watch: UseFormWatch<T>;
   setValue: UseFormSetValue<T>;
+  onFileProcessed?: () => void;
 };
 
 export const ImportCsvContext = createContext<ImportCsvContextType<any> | null>(null);
