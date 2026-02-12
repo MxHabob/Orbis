@@ -40,6 +40,8 @@ export type GradeTableMeta = {
     assessmentItemId: number,
     value: number | null
   ) => void;
+  onBulkFill?: (assessmentItemId: number, value: number) => void;
+  onClearColumn?: (assessmentItemId: number) => void;
 };
 
 const StudentNameCell = memo(

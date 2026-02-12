@@ -13,6 +13,22 @@ import { TableHead, TableHeader, TableRow } from "@midday/ui/table";
 import type { Header, Table } from "@tanstack/react-table";
 import { useMemo } from "react";
 import { STICKY_COLUMNS } from "@/utils/table-configs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@midday/ui/dropdown-menu";
+import { MoreHorizontal, Eraser, Zap, Trash2 } from "lucide-react";
+import { Button } from "@midday/ui/button";
+import type { AssessmentItem } from "./columns";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@midday/ui/tooltip";
 
 interface Props<TData> {
   table?: Table<TData>;
@@ -130,11 +146,18 @@ export function DataTableHeader<TData>({
                   id={columnId}
                   style={headerStyle}
                 >
-                  <div className="flex items-center flex-1 min-w-0 overflow-hidden justify-center">
+                  <div className="flex items-center flex-1 min-w-0 overflow-hidden justify-center relative group/header-cell">
                     {renderHeaderContent(
                       header,
                       columnId,
                       tableScroll,
+                    )}
+                    
+                    {/* Bulk Actions Menu (2026 UX: Proactive tools available on hover) */}
+                    {columnId.startsWith("assessment-") && (
+                      <div className="absolute right-0 opacity-0 group-hover/header-cell:opacity-100 transition-opacity">
+                        <AssessmentBulkActions header={header} table={table} />
+                      </div>
                     )}
                   </div>
                   <ResizeHandle header={header} />
@@ -188,5 +211,74 @@ function renderHeaderContent<TData>(
   // Fallback - just render the header text
   return (
     <span className="truncate">{header.column.columnDef.header as string}</span>
+  );
+}
+
+function AssessmentBulkActions<TData>({ 
+  header,
+  table 
+}: { 
+  header: Header<TData, unknown>,
+  table: Table<TData>
+}) {
+  const meta = table.options.meta as any;
+  const columnId = header.column.id;
+  const assessmentId = parseInt(columnId.replace("assessment-", ""));
+  
+  // Find assessment item details from meta
+  const assessmentItem = meta?.items?.find((i: AssessmentItem) => i.id === assessmentId);
+  if (!assessmentItem) return null;
+
+  const maxScore = Number(assessmentItem.maxScore);
+
+  return (
+    <TooltipProvider>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-6 w-6">
+            <MoreHorizontal className="h-3 w-3" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="p-1 flex items-center gap-1 min-w-0">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div 
+                className="p-2 hover:bg-accent rounded-md cursor-pointer transition-colors"
+                onClick={() => meta?.onBulkFill?.(assessmentId, maxScore)}
+              >
+                <Zap className="h-4 w-4 text-amber-500" />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top">Fill with Max Score ({maxScore})</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div 
+                className="p-2 hover:bg-accent rounded-md cursor-pointer transition-colors"
+                onClick={() => meta?.onBulkFill?.(assessmentId, 0)}
+              >
+                <Eraser className="h-4 w-4 text-muted-foreground" />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top">Fill with Zeros (0)</TooltipContent>
+          </Tooltip>
+
+          <div className="w-[1px] h-4 bg-border mx-0.5" />
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div 
+                className="p-2 hover:bg-destructive/10 hover:text-destructive rounded-md cursor-pointer transition-colors text-destructive"
+                onClick={() => meta?.onClearColumn?.(assessmentId)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top">Clear Column</TooltipContent>
+          </Tooltip>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </TooltipProvider>
   );
 }

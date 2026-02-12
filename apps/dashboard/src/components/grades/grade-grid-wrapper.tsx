@@ -65,6 +65,34 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
     }));
   };
 
+  const handleBulkFill = (assessmentItemId: number, value: number) => {
+    if (!data) return;
+    const newChanges = { ...pendingChanges };
+    data.students.forEach(student => {
+      const key = `${student.studentId}:${assessmentItemId}`;
+      newChanges[key] = value;
+    });
+    setPendingChanges(newChanges);
+    toast({
+      title: "Bulk Fill Applied",
+      description: `Set score ${value} for all students in this assessment.`,
+    });
+  };
+
+  const handleClearColumn = (assessmentItemId: number) => {
+    if (!data) return;
+    const newChanges = { ...pendingChanges };
+    data.students.forEach(student => {
+      const key = `${student.studentId}:${assessmentItemId}`;
+      newChanges[key] = null;
+    });
+    setPendingChanges(newChanges);
+    toast({
+      title: "Column Cleared",
+      description: "Cleared all pending scores for this assessment.",
+    });
+  };
+
   const handleSaveAll = () => {
     const invalidGrades: string[] = [];
     const gradesToSave = Object.entries(pendingChanges).map(([key, score]) => {
@@ -196,6 +224,8 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
           data={filteredData as any} 
           pendingChanges={pendingChanges}
           onGradeChange={handleGradeChange}
+          onBulkFill={handleBulkFill}
+          onClearColumn={handleClearColumn}
         />
         <GradesSaveBar
           count={Object.keys(pendingChanges).length}

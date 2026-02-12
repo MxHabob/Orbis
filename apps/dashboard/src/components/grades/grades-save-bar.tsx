@@ -4,6 +4,17 @@ import { Portal } from "@/components/portal";
 import { Button } from "@midday/ui/button";
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, Save } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@midday/ui/alert-dialog";
 import { cn } from "@midday/ui/cn";
 
 interface GradesSaveBarProps {
@@ -57,15 +68,36 @@ export function GradesSaveBar({
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-muted-foreground h-8 hover:bg-transparent"
-                    onClick={onCancel}
-                    disabled={isPending}
-                  >
-                    Discard
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-muted-foreground h-8 hover:bg-transparent"
+                        disabled={isPending}
+                      >
+                        Discard
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Discard unsaved changes?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          You have {count} unsaved {count === 1 ? "change" : "changes"}. 
+                          This action cannot be undone and all your recent edits will be lost.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Keep editing</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={onCancel}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Discard changes
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
 
                   <div className="h-4 w-[1px] bg-border mx-1" />
 

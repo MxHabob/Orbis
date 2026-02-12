@@ -31,6 +31,8 @@ type Props = {
     assessmentItemId: number,
     value: number | null,
   ) => void;
+  onBulkFill?: (assessmentItemId: number, value: number) => void;
+  onClearColumn?: (assessmentItemId: number) => void;
   data: GradeGridData;
   pendingChanges?: Record<string, number | null>;
 };
@@ -38,6 +40,8 @@ type Props = {
 export function GradeDataTable({
   initialSettings,
   onGradeChange,
+  onBulkFill,
+  onClearColumn,
   data,
   pendingChanges,
 }: Props) {
@@ -103,8 +107,10 @@ export function GradeDataTable({
       grades,
       getGradeValue,
       onGradeChange,
+      onBulkFill,
+      onClearColumn,
     } as GradeTableMeta),
-    [items, grades, getGradeValue, onGradeChange]
+    [items, grades, getGradeValue, onGradeChange, onBulkFill, onClearColumn]
   );
 
   const table = useReactTable({
