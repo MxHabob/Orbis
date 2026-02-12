@@ -12,11 +12,11 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { Controller } from "react-hook-form";
 import { Switch } from "@midday/ui/switch";
-import { useCsvContext } from "../shared/context";
+import { useCsvContext, type StudentImportFormData } from "../shared/context";
 import { FieldRow } from "../shared/field-row";
 
 export function StudentFieldMapping() {
-  const { setValue, control, watch } = useCsvContext();
+  const { setValue, control, watch } = useCsvContext<StudentImportFormData>();
   const trpc = useTRPC();
   const autoGenerate = watch("autoGenerateStudentNumber");
 

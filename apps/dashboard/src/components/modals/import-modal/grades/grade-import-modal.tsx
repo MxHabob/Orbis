@@ -16,7 +16,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { parseAsBoolean, parseAsString, parseAsInteger, useQueryStates } from "nuqs";
 import { useEffect, useState } from "react";
 import { parseFile } from "@midday/import";
-import { ImportCsvContext, importSchema } from "../shared/context";
+import { ImportCsvContext, mappableFields, gradeImportSchema, type ImportCsvFormData, type GradeImportFormData } from "../shared/context";
 import { SelectFile } from "../shared/select-file";
 import { GradeFieldMapping } from "./grade-field-mapping";
 
@@ -55,17 +55,21 @@ export function GradeImportModal() {
     setValue,
     handleSubmit,
     reset,
-    formState: { isValid },
-  } = useZodForm(importSchema, {
+    formState,
+  } = useZodForm(gradeImportSchema, {
+    mode: "onChange",
     defaultValues: {
       type: "grades",
       classId: params.import_classId ? parseInt(params.import_classId) : undefined,
       academicYearId: params.import_yearId ? parseInt(params.import_yearId) : undefined,
       subjectId: params.import_subjectId ? parseInt(params.import_subjectId) : undefined,
       termId: params.import_termId ? parseInt(params.import_termId) : undefined,
-      month: params.import_month ?? undefined,
-    },
+      month: params.import_month || undefined,
+      mappings: {},
+    } as GradeImportFormData,
   });
+
+  const { isValid } = formState;
 
   const file = watch("file");
 
@@ -91,6 +95,19 @@ export function GradeImportModal() {
       setPageNumber(1);
     }
   }, [file, fileColumns, firstRows, pageNumber]);
+
+  const renderErrors = (errors: any, prefix = ""): string[] => {
+    return Object.keys(errors).flatMap((key) => {
+      const error = errors[key];
+      if (error?.message) {
+        return [`${prefix}${key}: ${error.message}`];
+      }
+      if (typeof error === "object" && error !== null) {
+        return renderErrors(error, `${prefix}${key}.`);
+      }
+      return [`${prefix}${key}: Required`];
+    });
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onclose}>
@@ -131,12 +148,12 @@ export function GradeImportModal() {
                           skipEmptyLines: true,
                         });
 
-                        const mappings = (data.mappings as Record<string, string>) || {};
+                        const rawMappings = (data.mappings as Record<string, string>) || {};
                         const importPromises: Promise<any>[] = [];
 
-                        for (const [assessmentIdStr, columnName] of Object.entries(mappings)) {
+                        for (const [key, columnName] of Object.entries(rawMappings)) {
                           if (!columnName || columnName === "None") continue;
-                          const assessmentItemId = Number(assessmentIdStr);
+                          const assessmentItemId = Number(key.replace("id_", ""));
                           
                           const grades = rows
                             .map((row) => {
@@ -182,6 +199,11 @@ export function GradeImportModal() {
                     {page === "confirm-import" && (
                       <>
                         <GradeFieldMapping />
+                        {Object.keys(formState.errors).length > 0 && (
+                          <div className="text-xs text-red-500 mt-2">
+                            Please fill all required fields: {renderErrors(formState.errors).join(', ')}
+                          </div>
+                        )}
                         <SubmitButton isSubmitting={isImporting} disabled={!isValid} className="mt-4">
                           Confirm Import
                         </SubmitButton>

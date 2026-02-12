@@ -1,22 +1,38 @@
 import { createContext, useContext } from "react";
 import type { Control, UseFormSetValue, UseFormWatch } from "react-hook-form";
-import { mappableFields, importSchema, type ImportCsvFormData } from "@midday/import";
+import { 
+  mappableFields, 
+  importSchema, 
+  gradeImportSchema, 
+  studentImportSchema, 
+  type ImportCsvFormData,
+  type GradeImportFormData,
+  type StudentImportFormData
+} from "@midday/import";
 
-export { mappableFields, importSchema, type ImportCsvFormData };
+export { 
+  mappableFields, 
+  importSchema, 
+  gradeImportSchema, 
+  studentImportSchema, 
+  type ImportCsvFormData,
+  type GradeImportFormData,
+  type StudentImportFormData
+};
 
-export type ImportCsvContextType = {
+export type ImportCsvContextType<T extends ImportCsvFormData = any> = {
   fileColumns: string[] | null;
   setFileColumns: (columns: string[] | null) => void;
   firstRows: Record<string, string>[] | null;
   setFirstRows: (rows: Record<string, string>[] | null) => void;
-  control: Control<ImportCsvFormData>;
-  watch: UseFormWatch<ImportCsvFormData>;
-  setValue: UseFormSetValue<ImportCsvFormData>;
+  control: Control<T>;
+  watch: UseFormWatch<T>;
+  setValue: UseFormSetValue<T>;
 };
 
-export const ImportCsvContext = createContext<ImportCsvContextType | null>(null);
+export const ImportCsvContext = createContext<ImportCsvContextType<any> | null>(null);
 
-export function useCsvContext() {
+export function useCsvContext<T extends ImportCsvFormData = ImportCsvFormData>() {
   const context = useContext(ImportCsvContext);
 
   if (!context)
@@ -24,5 +40,5 @@ export function useCsvContext() {
       "useCsvContext must be used within an ImportCsvContext.Provider",
     );
 
-  return context;
+  return context as ImportCsvContextType<T>;
 }

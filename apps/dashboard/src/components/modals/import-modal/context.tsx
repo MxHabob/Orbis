@@ -8,17 +8,19 @@ export { mappableFields, importSchema, type ImportCsvFormData };
 
 
 
-export const ImportCsvContext = createContext<{
+export type ImportCsvContextType<T extends ImportCsvFormData = any> = {
   fileColumns: string[] | null;
   setFileColumns: (columns: string[] | null) => void;
   firstRows: Record<string, string>[] | null;
   setFirstRows: (rows: Record<string, string>[] | null) => void;
-  control: Control<ImportCsvFormData>;
-  watch: UseFormWatch<ImportCsvFormData>;
-  setValue: UseFormSetValue<ImportCsvFormData>;
-} | null>(null);
+  control: Control<T>;
+  watch: UseFormWatch<T>;
+  setValue: UseFormSetValue<T>;
+};
 
-export function useCsvContext() {
+export const ImportCsvContext = createContext<ImportCsvContextType<any> | null>(null);
+
+export function useCsvContext<T extends ImportCsvFormData = ImportCsvFormData>() {
   const context = useContext(ImportCsvContext);
 
   if (!context)
@@ -26,5 +28,5 @@ export function useCsvContext() {
       "useCsvContext must be used within an ImportCsvContext.Provider",
     );
 
-  return context;
+  return context as ImportCsvContextType<T>;
 }

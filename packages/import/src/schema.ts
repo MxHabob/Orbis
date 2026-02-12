@@ -16,48 +16,62 @@ export const mappableFields = {
   },
 } as const;
 
-export const importSchema = z.object({
+/**
+ * Common fields shared by all import types
+ */
+const baseImportSchema = z.object({
   file: z.custom<File>(),
-  type: z.enum(["students", "grades"]).default("students"),
-  // Student fields
+  table: z.array(z.record(z.string(), z.string())).optional(),
+  mappings: z.record(z.string(), z.string()).optional(),
+  classId: z.number({ required_error: "Class is required" }).optional(),
+  academicYearId: z.number().optional(),
+});
+
+/**
+ * Schema for Importing Students
+ */
+export const studentImportSchema = baseImportSchema.extend({
+  type: z.literal("students").default("students"),
   studentNumber: z.string().optional(),
   autoGenerateStudentNumber: z.boolean().default(false),
-  name: z.string().optional(),
+  name: z.string({ required_error: "Name mapping is required" }).optional(),
   phone: z.string().optional(),
   email: z.string().optional(),
   sex: z.string().optional(),
-  // Grade fields
+}).refine((data) => {
+  if (!data.autoGenerateStudentNumber && !data.studentNumber) return false;
+  return !!data.name;
+}, (data) => {
+  if (!data.autoGenerateStudentNumber && !data.studentNumber) {
+    return { message: "Student Number mapping is required", path: ["studentNumber"] };
+  }
+  return { message: "Name mapping is required", path: ["name"] };
+});
+
+/**
+ * Schema for Importing Grades
+ */
+export const gradeImportSchema = baseImportSchema.extend({
+  type: z.literal("grades").default("grades"),
+  subjectId: z.number({ required_error: "Subject is required" }).optional(),
+  termId: z.number().optional(),
+  assessmentItemId: z.number().optional(),
+  month: z.number({ required_error: "Month is required" }).optional(),
+  // Usually mapping fields are strings (column names)
+  studentNumber: z.string({ required_error: "Student Number mapping is required" }),
   score: z.string().optional(),
   isAbsent: z.string().optional(),
   comments: z.string().optional(),
-  // School context
-  classId: z.number().optional(),
-  academicYearId: z.number().optional(),
-  subjectId: z.number().optional(),
-  termId: z.number().optional(),
-  assessmentItemId: z.number().optional(),
-  month: z.number().optional(),
-  
-  table: z.array(z.record(z.string(), z.string())).optional(),
-  mappings: z.record(z.string(), z.string()).optional(),
-}).refine((data) => {
-    if (data.type === "students") {
-      if (!data.classId) return false;
-      if (!data.autoGenerateStudentNumber && !data.studentNumber) return false;
-      if (!data.name) return false;
-    }
-    
-    if (data.type === "grades") {
-      if (!data.classId) return false;
-      if (!data.subjectId) return false;
-      if (!data.month) return false;
-      if (!data.studentNumber) return false;
-    }
-    
-    return true;
-}, {
-  message: "Required fields are missing",
-  path: ["classId"]
 });
 
-export type ImportCsvFormData = z.infer<typeof importSchema>;
+/**
+ * Discriminated union for type-safe handling of all import types
+ */
+export const importSchema = z.union([
+  studentImportSchema,
+  gradeImportSchema,
+]);
+
+export type StudentImportFormData = z.infer<typeof studentImportSchema>;
+export type GradeImportFormData = z.infer<typeof gradeImportSchema>;
+export type ImportCsvFormData = StudentImportFormData | GradeImportFormData;

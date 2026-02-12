@@ -16,7 +16,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { parseAsBoolean, parseAsString, useQueryStates } from "nuqs";
 import { useEffect, useState } from "react";
 import { parseFile } from "@midday/import";
-import { ImportCsvContext, importSchema } from "../shared/context";
+import { ImportCsvContext, studentImportSchema, type StudentImportFormData } from "../shared/context";
 import { SelectFile } from "../shared/select-file";
 import { StudentFieldMapping } from "./student-field-mapping";
 
@@ -52,15 +52,18 @@ export function StudentImportModal() {
     setValue,
     handleSubmit,
     reset,
-    formState: { isValid },
-  } = useZodForm(importSchema, {
+    formState,
+  } = useZodForm(studentImportSchema, {
+    mode: "onChange",
     defaultValues: {
       type: "students",
       classId: params.import_classId ? parseInt(params.import_classId) : undefined,
       academicYearId: params.import_yearId ? parseInt(params.import_yearId) : undefined,
       autoGenerateStudentNumber: false,
-    },
+    } as StudentImportFormData,
   });
+
+  const { isValid } = formState;
 
   const file = watch("file");
 
@@ -73,11 +76,18 @@ export function StudentImportModal() {
     setParams({ step: null, type: null, import_classId: null, import_yearId: null });
   };
 
-  useEffect(() => {
-    if (file && fileColumns && firstRows && pageNumber === 0) {
-      setPageNumber(1);
-    }
-  }, [file, fileColumns, firstRows, pageNumber]);
+  const renderErrors = (errors: any, prefix = ""): string[] => {
+    return Object.keys(errors).flatMap((key) => {
+      const error = errors[key];
+      if (error?.message) {
+        return [`${prefix}${key}: ${error.message}`];
+      }
+      if (typeof error === "object" && error !== null) {
+        return renderErrors(error, `${prefix}${key}.`);
+      }
+      return [`${prefix}${key}: Required`];
+    });
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onclose}>
@@ -157,6 +167,11 @@ export function StudentImportModal() {
                     {page === "confirm-import" && (
                       <>
                         <StudentFieldMapping />
+                        {Object.keys(formState.errors).length > 0 && (
+                          <div className="text-xs text-red-500 mt-2">
+                            Please fill all required fields: {renderErrors(formState.errors).join(', ')}
+                          </div>
+                        )}
                         <SubmitButton isSubmitting={isImporting} disabled={!isValid} className="mt-4">
                           Confirm Import
                         </SubmitButton>

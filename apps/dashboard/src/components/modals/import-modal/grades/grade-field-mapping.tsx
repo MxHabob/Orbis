@@ -11,11 +11,11 @@ import {
 } from "@midday/ui/select";
 import { useQuery } from "@tanstack/react-query";
 import { Controller } from "react-hook-form";
-import { useCsvContext } from "../shared/context";
+import { useCsvContext, type GradeImportFormData } from "../shared/context";
 import { FieldRow } from "../shared/field-row";
 
 export function GradeFieldMapping() {
-  const { setValue, control, watch } = useCsvContext();
+  const { setValue, control, watch } = useCsvContext<GradeImportFormData>();
   const trpc = useTRPC();
   
   const academicYearId = watch("academicYearId");
@@ -37,7 +37,7 @@ export function GradeFieldMapping() {
           // But as an expert, I prefer setting defaultValues in the Modal initialization 
           // or using a derived state approach. Here we provide a cleaner bridge.
           setTimeout(() => {
-             if (!watch("academicYearId")) setValue("academicYearId", current.id);
+             if (!watch("academicYearId")) setValue("academicYearId", current.id, { shouldValidate: true });
           }, 0);
         }
       }
@@ -53,7 +53,7 @@ export function GradeFieldMapping() {
       const firstClass = data.data?.[0];
       if (!classId && data.data?.length === 1 && firstClass) {
         setTimeout(() => {
-          if (!watch("classId")) setValue("classId", firstClass.id);
+          if (!watch("classId")) setValue("classId", firstClass.id, { shouldValidate: true });
         }, 0);
       }
       return data;
@@ -65,7 +65,7 @@ export function GradeFieldMapping() {
       const firstSubject = data?.[0];
       if (!subjectId && data?.length === 1 && firstSubject) {
         setTimeout(() => {
-          if (!watch("subjectId")) setValue("subjectId", firstSubject.id);
+          if (!watch("subjectId")) setValue("subjectId", firstSubject.id, { shouldValidate: true });
         }, 0);
       }
       return data;
@@ -81,7 +81,7 @@ export function GradeFieldMapping() {
         const current = data.find(t => t.isCurrent) || data[0];
         if (current) {
           setTimeout(() => {
-            if (!watch("termId")) setValue("termId", current.id);
+            if (!watch("termId")) setValue("termId", current.id, { shouldValidate: true });
           }, 0);
         }
       }
@@ -99,7 +99,7 @@ export function GradeFieldMapping() {
   // Month doesn't need a query, set once on mount without effect
   if (month === undefined) {
     const currentMonth = new Date().getMonth() + 1;
-    setTimeout(() => setValue("month", currentMonth), 0);
+    setTimeout(() => setValue("month", currentMonth, { shouldValidate: true }), 0);
   }
 
   return (
@@ -234,7 +234,7 @@ export function GradeFieldMapping() {
         </div>
       </div>
 
-      {classId && month ? (
+      {classId && subjectId && month ? (
         <div className="grid grid-cols-2 gap-x-4 gap-y-2">
           <div className="col-span-2 mb-2">
             <div className="text-sm font-medium">Map Columns</div>
@@ -247,7 +247,7 @@ export function GradeFieldMapping() {
           {assessments?.map((assessment) => (
             <FieldRow
               key={assessment.id}
-              field={`mappings.${assessment.id}`}
+              field={`mappings.id_${assessment.id}`}
               label={assessment.title}
               required={false}
             />
@@ -255,7 +255,7 @@ export function GradeFieldMapping() {
         </div>
       ) : (
         <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
-          Please select a class and month to proceed with grade mapping.
+          Please select a class, subject and month to proceed with grade mapping.
         </div>
       )}
     </div>
