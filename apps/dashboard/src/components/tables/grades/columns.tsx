@@ -78,6 +78,8 @@ const StudentNameCell = memo(
 
 StudentNameCell.displayName = "StudentNameCell";
 
+const roundGrade = (value: number) => Math.round(value * 2) / 2;
+
 export const createGradeColumns = (
   items: AssessmentItem[] = [],
   month?: number
@@ -149,10 +151,10 @@ export const createGradeColumns = (
           });
 
         // Scale to 20: (Score / Max) * 20
-        const scaled = totalMax > 0 ? (totalScore / totalMax) * 20 : 0;
+        const scaled = totalMax > 0 ? roundGrade((totalScore / totalMax) * 20) : 0;
         return (
           <span className="font-bold text-blue-600 dark:text-blue-400">
-            {scaled.toFixed(2)}
+            {scaled}
           </span>
         );
       },
@@ -221,7 +223,7 @@ export const createGradeColumns = (
               monthlyMax += Number(item.maxScore);
             });
           const monthlyScaled =
-            monthlyMax > 0 ? (monthlyTotal / monthlyMax) * 20 : 0;
+            monthlyMax > 0 ? roundGrade((monthlyTotal / monthlyMax) * 20) : 0;
 
           let examScore = 0;
           let examMax = Number(examItem.maxScore);
@@ -230,9 +232,9 @@ export const createGradeColumns = (
             examItem.id
           );
           if (score) examScore = parseFloat(score);
-          const examScaled = examMax > 0 ? (examScore / examMax) * 30 : 0;
+          const examScaled = examMax > 0 ? roundGrade((examScore / examMax) * 30) : 0;
 
-          const totalValue = monthlyScaled + examScaled;
+          const totalValue = roundGrade(monthlyScaled + examScaled);
           const totalMax = 50;
           const isPass = totalValue >= 25; // 50% of 50 is 25
 
@@ -283,7 +285,7 @@ export const createGradeColumns = (
             monthlyMax += Number(item.maxScore);
           });
         const monthlyScaled =
-          monthlyMax > 0 ? (monthlyTotal / monthlyMax) * 20 : 0;
+          monthlyMax > 0 ? roundGrade((monthlyTotal / monthlyMax) * 20) : 0;
 
         let examScaled = 0;
         if (examItem) {
@@ -294,10 +296,10 @@ export const createGradeColumns = (
           if (score) {
             const examScore = parseFloat(score);
             const examMax = Number(examItem.maxScore);
-            examScaled = examMax > 0 ? (examScore / examMax) * 30 : 0;
+            examScaled = examMax > 0 ? roundGrade((examScore / examMax) * 30) : 0;
           }
         }
-        const result = (monthlyScaled + examScaled).toFixed(2);
+        const result = roundGrade(monthlyScaled + examScaled);
 
         return (
           <div className="flex items-center justify-center h-full">
@@ -384,12 +386,12 @@ export const createGradeColumns = (
           maxTotal += Number(item.maxScore);
         });
 
-        const scaled = maxTotal > 0 ? (total / maxTotal) * 100 : 0;
+        const scaled = maxTotal > 0 ? roundGrade((total / maxTotal) * 100) : 0;
 
         return (
           <div className="flex items-center justify-center h-full">
             <span className="text-sm font-bold text-primary tabular-nums">
-              {scaled.toFixed(2)}
+              {scaled}
             </span>
           </div>
         );
