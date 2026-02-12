@@ -1,23 +1,16 @@
 "use client";
 
-import {
-  vaultFilterOutputSchema,
-  vaultFilterSchema,
-} from "@/app/api/ai/filters/vault/schema";
-import type { VaultFilterSchema } from "@/app/api/ai/filters/vault/schema";
+
 import { FilterList } from "@/components/filter-list";
-import { normalizeString, useAIFilter } from "@/hooks/use-ai-filter";
 import { useDocumentFilterParams } from "@/hooks/use-document-filter-params";
-import { useUserQuery } from "@/hooks/use-user";
 import { useTRPC } from "@/trpc/client";
+import { authClient } from "@midday/auth/auth-client";
 import { Calendar } from "@midday/ui/calendar";
 import { cn } from "@midday/ui/cn";
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuGroup,
-  DropdownMenuItem,
   DropdownMenuPortal,
   DropdownMenuSub,
   DropdownMenuSubContent,
@@ -26,9 +19,8 @@ import {
 } from "@midday/ui/dropdown-menu";
 import { Icons } from "@midday/ui/icons";
 import { Input } from "@midday/ui/input";
-import { useQuery } from "@tanstack/react-query";
 import { formatISO, parseISO } from "date-fns";
-import { useCallback, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 
 export function VaultSearchFilter() {
@@ -36,34 +28,11 @@ export function VaultSearchFilter() {
   const [isOpen, setIsOpen] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const trpc = useTRPC();
-  const { data: user } = useUserQuery();
+  const { data: session } = authClient.useSession();
+  const user = session?.user;
 
   const { filter, setFilter } = useDocumentFilterParams();
   const [input, setInput] = useState(filter.q ?? "");
-
-  const shouldFetch = isOpen;
-
-  const { data: tagsData } = useQuery({
-    ...trpc.documentTags.get.queryOptions(),
-    enabled: shouldFetch || Boolean(filter.tags?.length),
-  });
-
-  const mapVaultFilters = useCallback((object: VaultFilterSchema) => {
-    return {
-      q: normalizeString(object.name),
-      tags: null,
-      start: normalizeString(object.start),
-      end: normalizeString(object.end),
-    };
-  }, []);
-
-  const { submit, isLoading } = useAIFilter({
-    api: "/api/ai/filters/vault",
-    inputSchema: vaultFilterSchema,
-    outputSchema: vaultFilterOutputSchema,
-    mapper: mapVaultFilters,
-    onFilterApplied: setFilter,
-  });
 
   useHotkeys(
     "esc",
@@ -96,16 +65,7 @@ export function VaultSearchFilter() {
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
-
-    if (input.split(" ").length > 1) {
-      submit({
-        input,
-        currentDate: formatISO(new Date(), { representation: "date" }),
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      });
-    } else {
-      setFilter({ q: input.length > 0 ? input : null });
-    }
+    setFilter({ q: input.length > 0 ? input : null });
   };
 
   const validFilters = Object.fromEntries(
@@ -121,15 +81,12 @@ export function VaultSearchFilter() {
       <div className="flex space-x-4 items-center">
         <form
           className="relative"
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSubmit();
-          }}
+          onSubmit={handleSubmit}
         >
           <Icons.Search className="absolute pointer-events-none left-3 top-[11px]" />
           <Input
             ref={inputRef}
-            placeholder="Search or type filter"
+            placeholder="البحث في الملفات..."
             className="pl-9 w-full md:w-[350px] pr-8"
             value={input}
             onChange={handleSearch}
@@ -158,9 +115,8 @@ export function VaultSearchFilter() {
 
         <FilterList
           filters={validFilters}
-          loading={isLoading}
+          loading={false}
           onRemove={setFilter}
-          tags={tagsData}
         />
       </div>
 
@@ -175,7 +131,7 @@ export function VaultSearchFilter() {
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>
               <Icons.CalendarMonth className="mr-2 h-4 w-4" />
-              <span>Date</span>
+              <span>التاريخ</span>
             </DropdownMenuSubTrigger>
             <DropdownMenuPortal>
               <DropdownMenuSubContent
@@ -186,7 +142,7 @@ export function VaultSearchFilter() {
                 <Calendar
                   mode="range"
                   initialFocus
-                  weekStartsOn={user?.weekStartsOnMonday ? 1 : 0}
+                  weekStartsOn={session?.user?.weekStartsOnMonday ? 1 : 0}
                   toDate={new Date()}
                   selected={
                     filter.start || filter.end
@@ -213,41 +169,6 @@ export function VaultSearchFilter() {
                     setFilter(newRange);
                   }}
                 />
-              </DropdownMenuSubContent>
-            </DropdownMenuPortal>
-          </DropdownMenuSub>
-        </DropdownMenuGroup>
-
-        <DropdownMenuGroup>
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger>
-              <Icons.Status className="mr-2 h-4 w-4" />
-              <span>Tags</span>
-            </DropdownMenuSubTrigger>
-            <DropdownMenuPortal>
-              <DropdownMenuSubContent
-                sideOffset={14}
-                alignOffset={-4}
-                className="p-0 max-h-[300px] overflow-y-auto"
-              >
-                {tagsData?.map((tag) => (
-                  <DropdownMenuCheckboxItem
-                    key={tag.id}
-                    onCheckedChange={() => {
-                      setFilter({
-                        tags: filter?.tags?.includes(tag.id)
-                          ? filter.tags.filter((s) => s !== tag.id)
-                          : [...(filter?.tags ?? []), tag.id],
-                      });
-                    }}
-                  >
-                    {tag.name}
-                  </DropdownMenuCheckboxItem>
-                ))}
-
-                {!tagsData?.length && (
-                  <DropdownMenuItem disabled>No tags found</DropdownMenuItem>
-                )}
               </DropdownMenuSubContent>
             </DropdownMenuPortal>
           </DropdownMenuSub>

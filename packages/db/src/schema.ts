@@ -341,6 +341,34 @@ export const parentStudents = pgTable('parent_students', {
 
 
 // ==========================================
+// Vault / Documents Tables
+// ==========================================
+export const documentTypeEnum = pgEnum('document_type', ['file', 'folder']);
+
+export const documents = pgTable('documents', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: varchar('name', { length: 255 }).notNull(),
+  title: varchar('title', { length: 255 }),
+  size: integer('size'),
+  type: documentTypeEnum('type').default('file').notNull(),
+  mimetype: varchar('mimetype', { length: 100 }),
+  extension: varchar('extension', { length: 20 }),
+  key: text('key'), // S3 Key
+  pathTokens: jsonb('path_tokens'),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  parentFolderId: uuid('parent_folder_id').references((): any => documents.id, { onDelete: 'cascade' }),
+  metadata: jsonb('metadata'),
+  processingStatus: varchar('processing_status', { length: 20 }).default('completed'),
+  isPinned: boolean('is_pinned').default(false).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  deletedAt: timestamp('deleted_at'),
+}, (table) => ({
+  userDocumentIdx: index('user_document_idx').on(table.userId, table.createdAt.desc()),
+}));
+
+
+// ==========================================
 // 5. Relations (Programmatic relations for easy querying)
 // ==========================================
 
@@ -352,8 +380,8 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   gradedEntries: many(gradeEntries, { relationName: "gradedByUser" }),
   sentNotifications: many(notifications, { relationName: "sentNotifications" }),
   receivedNotifications: many(notifications, { relationName: "receivedNotifications" }),
-  // Parent → Children (students the parent is linked to)
   parentChildren: many(parentStudents, { relationName: "parentToStudents" }),
+  docs: many(documents),
 }));
 
 export const accountsRelations = relations(accounts, ({ one }) => ({
@@ -429,4 +457,10 @@ export const attendanceRecordsRelations = relations(attendanceRecords, ({ one })
 export const parentStudentsRelations = relations(parentStudents, ({ one }) => ({
   parent: one(users, { fields: [parentStudents.parentId], references: [users.id], relationName: "parentToStudents" }),
   student: one(students, { fields: [parentStudents.studentId], references: [students.userId], relationName: "studentToParents" }),
+}));
+
+export const documentsRelations = relations(documents, ({ one, many }) => ({
+  user: one(users, { fields: [documents.userId], references: [users.id] }),
+  parentFolder: one(documents, { fields: [documents.parentFolderId], references: [documents.id], relationName: "folderChildren" }),
+  children: many(documents, { relationName: "folderChildren" }),
 }));

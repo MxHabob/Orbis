@@ -134,9 +134,16 @@ export const getStudentByUserId = async (userId: string) => {
             phone: users.phone,
             sex: users.sex,
             image: users.image,
+            currentClass: {
+                id: classes.id,
+                name: classes.name,
+            },
+            yearName: academicYears.yearName,
         })
         .from(students)
         .innerJoin(users, eq(students.userId, users.id))
+        .leftJoin(classes, eq(students.currentClassId, classes.id))
+        .leftJoin(academicYears, eq(classes.academicYearId, academicYears.id))
         .where(eq(students.userId, userId));
     
     if (student) {

@@ -4,7 +4,6 @@ import { VaultItem } from "@/components/vault/vault-item";
 import { useDocumentFilterParams } from "@/hooks/use-document-filter-params";
 import { useDocumentParams } from "@/hooks/use-document-params";
 import { useRealtime } from "@/hooks/use-realtime";
-import { useUserQuery } from "@/hooks/use-user";
 import { useTRPC } from "@/trpc/client";
 import {
   useQueryClient,
@@ -16,11 +15,12 @@ import { useDebounceCallback } from "usehooks-ts";
 import { LoadMore } from "../load-more";
 import { NoResults } from "./empty-states";
 import { VaultGetStarted } from "./vault-get-started";
+import { authClient } from "@midday/auth/auth-client";
 
 export function VaultGrid() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const { data: user } = useUserQuery();
+  const { data: session } = authClient.useSession();
   const { ref, inView } = useInView();
 
   const { filter, hasFilters } = useDocumentFilterParams();
@@ -60,16 +60,15 @@ export function VaultGrid() {
       queryKey: trpc.documents.get.infiniteQueryKey(),
     });
 
-    // Invalidate global search
     queryClient.invalidateQueries({
-      queryKey: trpc.search.global.queryKey(),
+      queryKey: trpc.documents.get.infiniteQueryKey(),
     });
   }, 50);
 
   useRealtime({
     channelName: "realtime_documents",
     table: "documents",
-    filter: `team_id=eq.${user?.teamId}`,
+    filter: session?.user.id ? `user_id=eq.${session.user.id}` : undefined,
     onEvent: (payload) => {
       if (
         payload.eventType === "INSERT" ||

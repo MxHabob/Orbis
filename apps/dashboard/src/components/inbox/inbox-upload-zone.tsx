@@ -1,26 +1,12 @@
 "use client";
 
-import { useUserQuery } from "@/hooks/use-user";
 import { useTRPC } from "@/trpc/client";
-import { resumableUpload } from "@/utils/upload";
-import { createClient } from "@midday/supabase/client";
 import { cn } from "@midday/ui/cn";
 import { useToast } from "@midday/ui/use-toast";
-import { stripSpecialCharacters } from "@midday/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
-
-type UploadResult = {
-  filename: string;
-  file: File;
-};
-
-type ProcessAttachmentInput = {
-  filePath: string[];
-  mimetype: string;
-  size: number;
-};
+import { authClient } from "@midday/auth/auth-client";
 
 type Props = {
   children: ReactNode;
@@ -29,28 +15,21 @@ type Props = {
 
 export function UploadZone({ children, onUploadComplete }: Props) {
   const trpc = useTRPC();
-  const { data: user } = useUserQuery();
-  const supabase = createClient();
+  const { data: session } = authClient.useSession();
+  const user = session?.user;
   const queryClient = useQueryClient();
   const [progress, setProgress] = useState(0);
   const [showProgress, setShowProgress] = useState(false);
   const [toastId, setToastId] = useState<string | undefined>(undefined);
-  const uploadProgress = useRef<number[]>([]);
   const { toast, dismiss, update } = useToast();
-  const processAttachmentsMutation = useMutation(
-    trpc.inbox.processAttachments.mutationOptions(),
-  );
-  const createInboxItemMutation = useMutation(
-    trpc.inbox.create.mutationOptions(),
-  );
-
+  
   useEffect(() => {
     if (!toastId && showProgress) {
       const { id } = toast({
-        title: `Uploading ${uploadProgress.current.length} files`,
+        title: "جاري رفع الملفات...",
         progress,
         variant: "progress",
-        description: "Please do not close browser until completed",
+        description: "يرجى عدم إغلاق المتصفح حتى اكتمال الرفع",
         duration: Number.POSITIVE_INFINITY,
       });
 
@@ -61,134 +40,73 @@ export function UploadZone({ children, onUploadComplete }: Props) {
       update(toastId, {
         id: toastId,
         progress,
-        title: `Uploading ${uploadProgress.current.length} files`,
+        title: "جاري رفع الملفات...",
       });
     }
   }, [showProgress, progress, toastId]);
 
   const onDrop = async (files: File[]) => {
-    // NOTE: If onDropRejected
-    if (!files.length) {
-      return;
-    }
-
-    // Set default progress
-    uploadProgress.current = files.map(() => 0);
+    if (!files.length) return;
 
     setShowProgress(true);
-
-    const path = [user?.teamId, "inbox"] as string[];
+    setProgress(10);
 
     try {
-      // First, create inbox items immediately for instant feedback
-      const inboxItems = await Promise.all(
+      const results = await Promise.all(
         files.map(async (file: File) => {
-          // Use the same filename processing as resumableUpload
-          const processedFilename = stripSpecialCharacters(file.name);
-          const filePath = [...path, processedFilename];
-          return createInboxItemMutation.mutateAsync({
-            filename: processedFilename,
-            mimetype: file.type,
-            size: file.size,
-            filePath,
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("bucket", "vault"); // Using vault bucket for inbox too for now, or unified storage
+          formData.append("path", `inbox/${user?.id || "anonymous"}/${file.name}`);
+
+          const response = await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
           });
+
+          if (!response.ok) throw new Error("Upload failed");
+
+          const data = await response.json();
+          return {
+            filename: file.name,
+            file,
+            path: data.path,
+          };
         }),
       );
 
-      // Invalidate inbox queries to show new items immediately
-      queryClient.invalidateQueries({
-        queryKey: trpc.inbox.get.queryKey(),
-      });
+      setProgress(80);
 
-      queryClient.invalidateQueries({
-        queryKey: trpc.inbox.get.infiniteQueryKey(),
-      });
 
-      const results = (await Promise.all(
-        files.map(async (file: File, idx: number) =>
-          resumableUpload(supabase, {
-            bucket: "vault",
-            path,
-            file,
-            onProgress: (bytesUploaded, bytesTotal) => {
-              uploadProgress.current[idx] = (bytesUploaded / bytesTotal) * 100;
 
-              const _progress = uploadProgress.current.reduce(
-                (acc, currentValue) => {
-                  return acc + currentValue;
-                },
-                0,
-              );
-
-              setProgress(Math.round(_progress / files.length));
-            },
-          }),
-        ),
-      )) as UploadResult[];
-
-      // Trigger the upload jobs
-      processAttachmentsMutation.mutate(
-        results.map(
-          (result): ProcessAttachmentInput => ({
-            filePath: [...path, result.filename],
-            mimetype: result.file.type,
-            size: result.file.size,
-          }),
-        ),
-      );
-
-      // Reset once done
-      uploadProgress.current = [];
-
-      setProgress(0);
+      setProgress(100);
       toast({
-        title: "Upload successful.",
+        title: "تم الرفع بنجاح",
         variant: "success",
         duration: 2000,
       });
 
       setShowProgress(false);
       setToastId(undefined);
-      dismiss(toastId);
-      onUploadComplete?.(inboxItems[0]?.id);
+      if (toastId) dismiss(toastId);
+      onUploadComplete?.();
     } catch (error) {
-      // Refresh inbox to show current state after error
-      queryClient.invalidateQueries({
-        queryKey: trpc.inbox.get.queryKey(),
-      });
 
       setShowProgress(false);
       setToastId(undefined);
-      dismiss(toastId);
+      if (toastId) dismiss(toastId);
 
       toast({
         duration: 2500,
         variant: "error",
-        title: "Something went wrong please try again.",
+        title: "حدث خطأ أثناء الرفع، يرجى المحاولة مرة أخرى",
       });
     }
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    onDropRejected: ([reject]) => {
-      if (reject?.errors.find(({ code }) => code === "file-too-large")) {
-        toast({
-          duration: 2500,
-          variant: "error",
-          title: "File size to large.",
-        });
-      }
-
-      if (reject?.errors.find(({ code }) => code === "file-invalid-type")) {
-        toast({
-          duration: 2500,
-          variant: "error",
-          title: "File type not supported.",
-        });
-      }
-    },
-    maxSize: 5000000, // 5MB
+    maxSize: 5000000,
     maxFiles: 25,
     accept: {
       "image/*": [".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif", ".avif"],
@@ -209,10 +127,12 @@ export function UploadZone({ children, onUploadComplete }: Props) {
           )}
         >
           <input {...getInputProps()} id="upload-files" />
-          <p className="text-xs">
-            Drop your receipts here. <br />
-            Maximum of 25 files at a time.
-          </p>
+          <div className="flex flex-col items-center justify-center gap-2">
+            <p className="text-xs">
+              أسقط الملفات هنا للرفع <br />
+              بحد أقصى 25 ملفاً في المرة الواحدة
+            </p>
+          </div>
         </div>
       </div>
 

@@ -1,4 +1,5 @@
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { PutObjectCommand, GetObjectCommand, DeleteObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const endpoint = process.env.S3_ENDPOINT_URL ?? "http://localhost:9000";
 const accessKey = process.env.MINIO_ROOT_USER || process.env.S3_ACCESS_KEY || "";
@@ -34,4 +35,31 @@ export async function uploadFile(params: {
   const url = `${baseUrl}/${params.bucket}/${params.key}`;
 
   return { url, path: params.key };
+}
+
+export async function getDownloadUrl(params: {
+  bucket: string;
+  key: string;
+  expiresIn?: number;
+}): Promise<string> {
+  const command = new GetObjectCommand({
+    Bucket: params.bucket,
+    Key: params.key,
+  });
+
+  return getSignedUrl(s3Client, command, { 
+    expiresIn: params.expiresIn ?? 3600 
+  });
+}
+
+export async function deleteFile(params: {
+  bucket: string;
+  key: string;
+}): Promise<void> {
+  await s3Client.send(
+    new DeleteObjectCommand({
+      Bucket: params.bucket,
+      Key: params.key,
+    }),
+  );
 }

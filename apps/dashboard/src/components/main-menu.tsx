@@ -10,6 +10,7 @@ const icons = {
   "/": () => <Icons.Overview size={20} />,
   "/grades": () => <Icons.Bolt size={20} />,
   "/settings": () => <Icons.Settings size={20} />,
+  "/vault": () => <Icons.Vault size={20} />,
   "/reports": () => <Icons.Customers size={20} />,
   "/certificates": () => <Icons.Files size={20} />,
 } as const;
@@ -41,6 +42,10 @@ const items = [
     name: "Certificates",
   },
   {
+    path: "/vault",
+    name: "Vault",
+  },
+  {
     path: "/settings",
     name: "Settings",
     children: [
@@ -60,6 +65,7 @@ const KNOWN_MENU_PATHS = [
   "/fees",
   "/settings",
   "/reports",
+  "/vault",
   "/certificates",
 ];
 

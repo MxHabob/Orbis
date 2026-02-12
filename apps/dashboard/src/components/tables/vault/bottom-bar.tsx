@@ -39,7 +39,7 @@ export function BottomBar({ data }: Props) {
           />
           <div className="relative h-12 justify-between items-center flex pl-4 pr-2">
             <span className="text-sm">
-              {Object.keys(rowSelection).length} selected
+              تم تحديد {Object.keys(rowSelection).length}
             </span>
 
             <div className="flex items-center space-x-2">
@@ -48,7 +48,7 @@ export function BottomBar({ data }: Props) {
                 className="text-muted-foreground"
                 onClick={() => setRowSelection({})}
               >
-                <span>Deselect all</span>
+                <span>إلغاء تحديد الكل</span>
               </Button>
 
               <SubmitButton
@@ -56,7 +56,7 @@ export function BottomBar({ data }: Props) {
                 onClick={() => handleDownloadZip(selectedFiles)}
               >
                 <div className="flex items-center space-x-2">
-                  <span>Download</span>
+                  <span>تحميل</span>
                   <Icons.ArrowCoolDown className="size-4" />
                 </div>
               </SubmitButton>

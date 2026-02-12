@@ -1,14 +1,12 @@
 "use client";
 
-import { useUserQuery } from "@/hooks/use-user";
 import { useTRPC } from "@/trpc/client";
-import { resumableUpload } from "@/utils/upload";
-import { createClient } from "@midday/supabase/client";
 import { cn } from "@midday/ui/cn";
 import { useToast } from "@midday/ui/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { type FileRejection, useDropzone } from "react-dropzone";
+import { authClient } from "@midday/auth/auth-client";
 
 type UploadResult = {
   filename: string;
@@ -28,8 +26,7 @@ type Props = {
 
 export function VaultUploadZone({ onUpload, children }: Props) {
   const trpc = useTRPC();
-  const { data: user } = useUserQuery();
-  const supabase = createClient();
+  const { data: user } = authClient.useSession();
   const [progress, setProgress] = useState(0);
   const [showProgress, setShowProgress] = useState(false);
   const [toastId, setToastId] = useState<string | null>(null);
@@ -43,10 +40,10 @@ export function VaultUploadZone({ onUpload, children }: Props) {
   useEffect(() => {
     if (!toastId && showProgress) {
       const { id } = toast({
-        title: `Uploading ${uploadProgress.current.length} files`,
+        title: `جاري رفع الملفات...`,
         progress,
         variant: "progress",
-        description: "Please do not close browser until completed",
+        description: "يرجى عدم إغلاق المتصفح حتى اكتمال الرفع",
         duration: Number.POSITIVE_INFINITY,
       });
 
@@ -54,7 +51,7 @@ export function VaultUploadZone({ onUpload, children }: Props) {
     } else if (toastId) {
       update(toastId, {
         id: toastId,
-        title: `Uploading ${uploadProgress.current.length} files`,
+        title: `جاري رفع الملفات...`,
         progress,
         variant: "progress",
       });
@@ -62,81 +59,64 @@ export function VaultUploadZone({ onUpload, children }: Props) {
   }, [showProgress, progress, toastId]);
 
   const onDrop = async (files: File[]) => {
-    // NOTE: If onDropRejected
-    if (!files.length) {
-      return;
-    }
-
-    // Set default progress
-    uploadProgress.current = files.map(() => 0);
+    if (!files.length) return;
 
     setShowProgress(true);
-
-    // Add uploaded (team_id)
-    const path = [user?.teamId] as string[];
+    setProgress(10); // Start progress
 
     try {
-      const results = (await Promise.all(
-        files.map(async (file: File, idx: number) =>
-          resumableUpload(supabase, {
-            bucket: "vault",
-            path,
+      const results = await Promise.all(
+        files.map(async (file: File) => {
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("bucket", "vault");
+          formData.append("path", `${user?.id || "anonymous"}/${file.name}`);
+
+          const response = await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!response.ok) throw new Error("Upload failed");
+
+          const data = await response.json();
+          return {
+            filename: file.name,
             file,
-            onProgress: (bytesUploaded: number, bytesTotal: number) => {
-              uploadProgress.current[idx] = (bytesUploaded / bytesTotal) * 100;
-
-              const _progress = uploadProgress.current.reduce(
-                (acc, currentValue) => {
-                  return acc + currentValue;
-                },
-                0,
-              );
-
-              setProgress(Math.round(_progress / files.length));
-            },
-          }),
-        ),
-      )) as UploadResult[];
-
-      // Trigger the upload jobs
-      processDocumentMutation.mutate(
-        results.map((result) => ({
-          filePath: [...path, result.filename],
-          mimetype: result.file.type,
-          size: result.file.size,
-        })),
+            path: data.path, // The key returned by storage
+          };
+        })
       );
 
-      // Reset once done
-      uploadProgress.current = [];
+      setProgress(80);
 
-      setProgress(0);
+      // Trigger the metadata processing in DB
+      await processDocumentMutation.mutateAsync(
+        results.map((result) => ({
+          filePath: result.path.split("/"),
+          mimetype: result.file.type,
+          size: result.file.size,
+        }))
+      );
+
+      setProgress(100);
       toast({
-        title: "Upload successful.",
+        title: "تم رفع الملفات بنجاح",
         variant: "success",
         duration: 2000,
       });
 
       setShowProgress(false);
       setToastId(null);
-      if (toastId) {
-        dismiss(toastId);
-      }
-
-      // Type the results properly for onUpload callback
-      const typedResults = results.map((result) => ({
-        file_path: [...path, result.filename],
-        mimetype: result.file.type,
-        size: result.file.size,
-      }));
-
-      onUpload?.(typedResults);
-    } catch {
+      if (toastId) dismiss(toastId);
+    } catch (error) {
       toast({
         duration: 2500,
         variant: "error",
-        title: "Something went wrong please try again.",
+        title: "حدث خطأ أثناء الرفع، يرجى المحاولة مرة أخرى",
       });
+      setShowProgress(false);
+      setToastId(null);
     }
   };
 
@@ -200,12 +180,12 @@ export function VaultUploadZone({ onUpload, children }: Props) {
           <input {...getInputProps()} id="upload-files" />
 
           <div className="flex flex-col items-center justify-center gap-2">
-            <p className="text-xs">
-              Drop your documents and files here. <br />
-              Maximum of 25 files at a time.
+            <p className="text-sm">
+              قم بسحب وإفلات الملفات هنا. <br />
+              بحد أقصى 25 ملفاً في المرة الواحدة.
             </p>
 
-            <span className="text-xs text-[#878787]">Max file size 5MB</span>
+            <span className="text-xs text-[#878787]">الحد الأقصى لحجم الملف 5 ميجابايت</span>
           </div>
         </div>
       </div>

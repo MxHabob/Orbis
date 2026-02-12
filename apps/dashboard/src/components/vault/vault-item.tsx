@@ -1,12 +1,20 @@
 "use client";
 
 import { FilePreview } from "@/components/file-preview";
-import { VaultItemTags } from "@/components/vault/vault-item-tags";
 import { useDocumentParams } from "@/hooks/use-document-params";
 import { useTRPC } from "@/trpc/client";
 import { isStaleProcessing } from "@/utils/document";
 import type { RouterOutputs } from "@api/trpc/routers/_app";
-import { isMimeTypeSupportedForProcessing } from "@midday/documents/utils";
+
+const isMimeTypeSupportedForProcessing = (mimetype: string) => {
+  return [
+    "application/pdf",
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+  ].includes(mimetype);
+};
+
 import { Button } from "@midday/ui/button";
 import { cn } from "@midday/ui/cn";
 import { Icons } from "@midday/ui/icons";
@@ -24,9 +32,6 @@ type Props = {
     title: string;
     summary: string;
     createdAt?: string | Date | null;
-    documentTagAssignments?: Array<{
-      documentTag: { id: string; name: string; slug: string };
-    }>;
   };
   small?: boolean;
 };
@@ -99,7 +104,7 @@ export function VaultItem({ data, small }: Props) {
   const displayName =
     data?.title || data?.name?.split("/").at(-1) || "Document";
 
-  const reprocessMutation = useMutation(
+  /* const reprocessMutation = useMutation(
     trpc.documents.reprocessDocument.mutationOptions({
       onSuccess: () => {
         queryClient.invalidateQueries({
@@ -115,12 +120,13 @@ export function VaultItem({ data, small }: Props) {
         setIsReprocessing(false);
       },
     }),
-  );
+  ); */
 
   const handleReprocess = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsReprocessing(true);
-    reprocessMutation.mutate({ id: data.id });
+    // reprocessMutation.mutate({ id: data.id });
+    setTimeout(() => setIsReprocessing(false), 1000);
   };
 
   // Show skeleton when processing OR waiting for props to update
@@ -140,7 +146,7 @@ export function VaultItem({ data, small }: Props) {
       {showRetry && !showSkeleton && (
         <div className="absolute top-4 right-4 z-10">
           <span className="px-2 py-0.5 rounded-full text-[11px] bg-[#FFD02B]/10 text-[#FFD02B] dark:bg-[#FFD02B]/10 dark:text-[#FFD02B]">
-            Processing incomplete
+            المعالجة غير مكتملة
           </span>
         </div>
       )}
@@ -174,6 +180,7 @@ export function VaultItem({ data, small }: Props) {
           <Skeleton className="absolute inset-0 w-full h-full" />
         ) : (
           <FilePreview
+            documentId={data.id}
             filePath={data?.pathTokens?.join("/") ?? ""}
             mimeType={mimetype ?? ""}
             lazy
@@ -209,18 +216,12 @@ export function VaultItem({ data, small }: Props) {
               variant="outline"
               size="sm"
               onClick={handleReprocess}
-              disabled={reprocessMutation.isPending}
               className="gap-2 w-full text-primary"
             >
               <Icons.Refresh className="size-3" />
-              Re-analyze document
+              إعادة تحليل الملف
             </Button>
           )
-        ) : !small ? (
-          <VaultItemTags
-            tags={data?.documentTagAssignments ?? []}
-            isLoading={showSkeleton}
-          />
         ) : null}
       </div>
     </div>

@@ -24,27 +24,16 @@ export function VaultItemActions({ id, filePath, hideDelete }: Props) {
 
   const fileName = filePath.at(-1);
   const { url: downloadUrl } = useFileUrl({
-    type: "download",
-    filePath: filePath.join("/"),
-    filename: fileName,
+    documentId: id,
   });
 
-  const shortLinkMutation = useMutation(
-    trpc.shortLinks.createForDocument.mutationOptions({
-      onMutate: () => {
-        setIsCopied(true);
-      },
-      onSuccess: (data) => {
-        if (data?.shortUrl) {
-          copy(data.shortUrl);
-
-          setTimeout(() => {
-            setIsCopied(false);
-          }, 3000);
-        }
-      },
-    }),
-  );
+  const handleShare = () => {
+    if (downloadUrl) {
+      copy(downloadUrl);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    }
+  };
 
   return (
     <div className="flex flex-row gap-2">
@@ -66,12 +55,7 @@ export function VaultItemActions({ id, filePath, hideDelete }: Props) {
         variant="outline"
         size="icon"
         type="button"
-        onClick={() =>
-          shortLinkMutation.mutate({
-            filePath: filePath.join("/"),
-            expireIn: 60 * 60 * 24 * 30, // 30 days
-          })
-        }
+        onClick={handleShare}
         className="rounded-full size-7 bg-background"
       >
         {isCopied ? (

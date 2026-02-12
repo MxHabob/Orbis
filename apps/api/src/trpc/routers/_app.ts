@@ -16,6 +16,7 @@ import { userRouter } from "./user";
 import { widgetsRouter } from "./widgets";
 import { reportsRouter } from "./reports";
 import { jobsRouter } from "./jobs";
+import { documentsRouter } from "./documents";
 
 export const appRouter = createTRPCRouter({
   academic: academicRouter,
@@ -34,6 +35,7 @@ export const appRouter = createTRPCRouter({
   widgets: widgetsRouter,
   reports: reportsRouter,
   jobs: jobsRouter,
+  documents: documentsRouter,
 });
 
 // export type definition of API

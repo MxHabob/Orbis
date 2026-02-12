@@ -3,7 +3,6 @@ import { createLoader, parseAsArrayOf, parseAsString } from "nuqs/server";
 
 export const documentFilterParamsSchema = {
   q: parseAsString,
-  tags: parseAsArrayOf(parseAsString),
   start: parseAsString,
   end: parseAsString,
 };

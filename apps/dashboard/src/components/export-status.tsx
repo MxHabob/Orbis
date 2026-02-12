@@ -1,41 +1,109 @@
 "use client";
 
+import { useFileUrl } from "@/hooks/use-file-url";
 import { useJobStatus } from "@/hooks/use-job-status";
 import { useSuccessSound } from "@/hooks/use-success-sound";
+import { downloadFile } from "@/lib/download";
 import { useExportStore } from "@/store/export";
+import { Button } from "@midday/ui/button";
 import { useToast } from "@midday/ui/use-toast";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+type ExportResult = {
+  filePath: string;
+  fullPath: string;
+  fileName: string;
+  totalItems: number;
+};
+
+function DownloadButton({
+  fullPath,
+  fileName,
+  onDownload,
+}: {
+  fullPath: string;
+  fileName: string;
+  onDownload: () => void;
+}) {
+  const { url: authenticatedUrl } = useFileUrl({
+    type: "download",
+    filePath: fullPath,
+    filename: fileName,
+  });
+
+  return (
+    <Button
+      size="sm"
+      onClick={() => {
+        if (authenticatedUrl && fileName) {
+          downloadFile(authenticatedUrl, fileName);
+        }
+        onDownload();
+      }}
+      disabled={!authenticatedUrl}
+    >
+      تحميل الملف
+    </Button>
+  );
+}
 
 /**
  * Global Export Status Monitor
  * 
- * Handles both Background Jobs (via jobId) and Client-Side Exports (via store status/progress).
+ * Tracks the background Puppeteer PDF generation and provides the download link.
  */
 export function ExportStatus() {
   const { toast, dismiss, update } = useToast();
   const { play: playSuccessSound } = useSuccessSound();
   const [toastId, setToastId] = useState<string | null>(null);
-  const { exportData, setExportData, setIsExporting, progress: clientProgress, status: clientStatus, setStatus: setClientStatus } = useExportStore();
+  const { exportData, setExportData, setIsExporting } = useExportStore();
   
-  const { status: jobStatus, progress: jobProgress, queryError } = useJobStatus({
+  const { status, progress, result, isLoading, queryError } = useJobStatus({
     jobId: exportData?.runId,
     enabled: !!exportData?.runId,
   });
 
-  // Track last progress to avoid unnecessary updates
+  // Type guard for export result
+  const exportResult: ExportResult | undefined =
+    result && typeof result === "object" && "fullPath" in result
+      ? (result as ExportResult)
+      : undefined;
+
+  const handleOnDownload = useCallback(() => {
+    if (toastId) {
+      dismiss(toastId);
+      setToastId(null);
+    }
+  }, [toastId, dismiss]);
+
   const lastProgressRef = useRef<number | undefined>(undefined);
   const completionHandledRef = useRef(false);
 
-  // 1. Handle Export Start (Create Toast)
+  // Handle failure
   useEffect(() => {
-    const isExportingBackground = !!exportData?.runId;
-    const isExportingLocal = clientStatus === "processing";
+    if (status === "failed" || queryError) {
+      if (toastId) dismiss(toastId);
 
-    if ((isExportingBackground || isExportingLocal) && !toastId) {
+      toast({
+        duration: 4000,
+        variant: "error",
+        title: "فشل استخراج الشهادات",
+        description: "حدث خطأ غير متوقع في محرك التصدير الخلفي.",
+      });
+
+      setToastId(null);
+      setExportData(undefined);
+      setIsExporting(false);
+    }
+  }, [status, queryError, toast, setExportData, setIsExporting, toastId, dismiss]);
+
+  // Create toast when export starts
+  useEffect(() => {
+    if (exportData?.runId && !toastId && status !== "completed") {
       const { id } = toast({
-        title: isExportingLocal ? "جاري استخراج الشهادات..." : "جاري التصدير...",
+        title: "جاري تجهيز الشهادات (في الخلفية)",
         variant: "progress",
-        description: "يرجى عدم إغلاق المتصفح حتى الاكتمال",
+        description: "يمكنك إغلاق هذه الرسالة ومواصلة العمل، سنخطرك عند الاكتمال.",
         duration: Number.POSITIVE_INFINITY,
         progress: 0,
       });
@@ -44,28 +112,18 @@ export function ExportStatus() {
       lastProgressRef.current = 0;
       completionHandledRef.current = false;
     }
-  }, [exportData?.runId, clientStatus, toastId, toast]);
+  }, [exportData?.runId, toastId, toast, status]);
 
-  // 2. Handle Progress Updates
+  // Update progress
   useEffect(() => {
-    if (!toastId) return;
+    if (!toastId || !status) return;
 
-    let currentProgress: number | undefined;
-    let currentStatus: string | undefined;
-
-    // Direct client-side progress takes precedence if clientStatus is processing
-    if (clientStatus === "processing") {
-      currentProgress = clientProgress;
-      currentStatus = "active";
-    } else if (exportData?.runId) {
-      currentProgress = jobStatus === "completed" ? 100 : jobProgress;
-      currentStatus = jobStatus;
-    }
+    const currentProgress = status === "completed" ? 100 : progress !== undefined ? Number(progress) : undefined;
 
     if (
       currentProgress !== undefined &&
       currentProgress !== lastProgressRef.current &&
-      (currentStatus === "active" || currentStatus === "waiting" || currentStatus === "completed")
+      (status === "active" || status === "waiting" || status === "completed")
     ) {
       lastProgressRef.current = currentProgress;
       update(toastId, {
@@ -73,54 +131,47 @@ export function ExportStatus() {
         progress: currentProgress,
       });
     }
-  }, [toastId, jobStatus, jobProgress, clientProgress, clientStatus, update, exportData?.runId]);
+  }, [toastId, status, progress, update]);
 
-  // 3. Handle Completion
+  // Handle completion
   useEffect(() => {
-    const isCompleted = jobStatus === "completed" || clientStatus === "completed";
-    
-    if (isCompleted && toastId && !completionHandledRef.current) {
+    if (status === "completed" && toastId && !completionHandledRef.current) {
       completionHandledRef.current = true;
       playSuccessSound();
 
-      update(toastId, {
-        id: toastId,
-        title: "اكتمل التصدير",
-        description: "تم تحميل الملف بنجاح.",
-        variant: "success",
-      });
+      if (exportResult) {
+        update(toastId, {
+          id: toastId,
+          title: "اكتمل استخراج الشهادات",
+          description: `تم استخراج ${exportResult.totalItems} شهادة بنجاح.`,
+          variant: "success",
+          footer: (
+            <div className="mt-4 flex gap-3">
+              <DownloadButton
+                fullPath={exportResult.fullPath}
+                fileName={exportResult.fileName}
+                onDownload={handleOnDownload}
+              />
+            </div>
+          ),
+        });
+      } else {
+        update(toastId, {
+          id: toastId,
+          title: "اكتمل التصدير",
+          description: "تم تجهيز الملف بنجاح.",
+          variant: "success",
+        });
+      }
 
-      // Clear after showing completion
+      // Automatically clear after a while if not dismissed manually
       setTimeout(() => {
-        setToastId(null);
         setExportData(undefined);
         setIsExporting(false);
-        setClientStatus("idle");
         completionHandledRef.current = false;
-      }, 3000);
+      }, 100);
     }
-  }, [jobStatus, clientStatus, toastId, update, setExportData, setIsExporting, setClientStatus, playSuccessSound]);
-
-  // 4. Handle Failure
-  useEffect(() => {
-    const isFailed = jobStatus === "failed" || clientStatus === "failed" || queryError;
-
-    if (isFailed && toastId) {
-      dismiss(toastId);
-      
-      toast({
-        duration: 4000,
-        variant: "error",
-        title: "فشل التصدير",
-        description: "حدث خطأ أثناء التصدير. يرجى المحاولة مرة أخرى.",
-      });
-
-      setToastId(null);
-      setExportData(undefined);
-      setIsExporting(false);
-      setClientStatus("idle");
-    }
-  }, [jobStatus, clientStatus, queryError, toast, setExportData, setIsExporting, setClientStatus, toastId, dismiss]);
+  }, [status, exportResult, toastId, update, setExportData, setIsExporting, handleOnDownload, playSuccessSound]);
 
   return null;
 }

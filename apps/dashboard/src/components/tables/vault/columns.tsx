@@ -7,7 +7,15 @@ import { downloadFile } from "@/lib/download";
 import { isStaleProcessing } from "@/utils/document";
 import { formatSize } from "@/utils/format";
 import type { RouterOutputs } from "@api/trpc/routers/_app";
-import { isMimeTypeSupportedForProcessing } from "@midday/documents/utils";
+const isMimeTypeSupportedForProcessing = (mimetype: string) => {
+  return [
+    "application/pdf",
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+  ].includes(mimetype);
+};
+
 import { Badge } from "@midday/ui/badge";
 import { Button } from "@midday/ui/button";
 import { Checkbox } from "@midday/ui/checkbox";
@@ -97,18 +105,18 @@ export const columns: ColumnDef<Document>[] = [
   },
   {
     id: "title",
-    header: "Name",
+    header: "الاسم",
     accessorKey: "title",
-    size: 250,
+    size: 450,
     minSize: 180,
-    maxSize: 400,
+    maxSize: 600,
     enableResizing: true,
     meta: {
       sticky: true,
       skeleton: { type: "text", width: "w-52" },
-      headerLabel: "Name",
+      headerLabel: "الاسم",
       className:
-        "w-[250px] min-w-[180px] md:sticky md:left-[50px] bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-20",
+        "w-[450px] min-w-[180px] md:sticky md:left-[50px] bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-20",
     },
     cell: ({ row }) => {
       // @ts-expect-error - mimetype is not typed (JSONB)
@@ -155,64 +163,8 @@ export const columns: ColumnDef<Document>[] = [
     },
   },
   {
-    id: "tags",
-    header: "Tags",
-    accessorKey: "tags",
-    size: 280,
-    minSize: 200,
-    maxSize: 400,
-    enableResizing: true,
-    meta: {
-      skeleton: { type: "badge", width: "w-20" },
-      headerLabel: "Tags",
-      className: "w-[280px] min-w-[200px]",
-    },
-    cell: ({ row }) => {
-      const { setFilter } = useDocumentFilterParams();
-
-      // Check if document is stuck in processing (pending for >10 minutes since creation)
-      const staleProcessing = isStaleProcessing(
-        row.original.processingStatus,
-        row.original.createdAt,
-      );
-
-      // Show skeleton only for recently pending documents (not stale ones)
-      const isLoading =
-        row.original.processingStatus === "pending" && !staleProcessing;
-
-      if (isLoading) {
-        return (
-          <div className="flex items-center space-x-2">
-            <Skeleton className="h-5 w-16 rounded-full" />
-            <Skeleton className="h-5 w-20 rounded-full" />
-          </div>
-        );
-      }
-
-      return (
-        <div className="relative w-full">
-          <div className="flex items-center space-x-2 overflow-x-auto scrollbar-hide">
-            {row.original.documentTagAssignments?.map(({ documentTag }) => (
-              <Badge
-                key={documentTag.id}
-                variant="tag-rounded"
-                className="whitespace-nowrap flex-shrink-0"
-                onClick={() => {
-                  setFilter({ tags: [documentTag.id] });
-                }}
-              >
-                {documentTag.name}
-              </Badge>
-            ))}
-          </div>
-          <div className="absolute group-hover:hidden right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none z-10" />
-        </div>
-      );
-    },
-  },
-  {
     id: "size",
-    header: "Size",
+    header: "الحجم",
     accessorKey: "size",
     size: 100,
     minSize: 80,
@@ -220,7 +172,7 @@ export const columns: ColumnDef<Document>[] = [
     enableResizing: true,
     meta: {
       skeleton: { type: "text", width: "w-12" },
-      headerLabel: "Size",
+      headerLabel: "الحجم",
       className: "w-[100px] min-w-[80px]",
     },
     cell: ({ row }) => {
@@ -230,7 +182,7 @@ export const columns: ColumnDef<Document>[] = [
   },
   {
     id: "actions",
-    header: "Actions",
+    header: "إجراءات",
     size: 100,
     minSize: 80,
     maxSize: 100,
@@ -239,7 +191,7 @@ export const columns: ColumnDef<Document>[] = [
     meta: {
       sticky: true,
       skeleton: { type: "icon" },
-      headerLabel: "Actions",
+      headerLabel: "إجراءات",
       className:
         "w-[100px] min-w-[80px] md:sticky md:right-0 bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-30 justify-center !border-l !border-border",
     },
@@ -280,13 +232,13 @@ export const columns: ColumnDef<Document>[] = [
               </Button>
             </DropdownMenuTrigger>
 
-            <DropdownMenuContent>
+            <DropdownMenuContent align="end">
               <DropdownMenuItem
                 onClick={() => {
                   setParams({ documentId: row.original.id });
                 }}
               >
-                View details
+                عرض التفاصيل
               </DropdownMenuItem>
               <DownloadFileMenuItem
                 pathTokens={row.original.pathTokens}
@@ -300,7 +252,7 @@ export const columns: ColumnDef<Document>[] = [
                 }}
                 disabled={!row.original.pathTokens}
               >
-                Copy link
+                نسخ الرابط
               </DropdownMenuItem>
 
               {showRetry && (
@@ -311,18 +263,19 @@ export const columns: ColumnDef<Document>[] = [
                       handleReprocess?.(row.original.id);
                     }}
                   >
-                    Re-analyze document
+                    إعادة معالجة الملف
                   </DropdownMenuItem>
                 </>
               )}
 
               <DropdownMenuSeparator />
               <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
                 onClick={() => {
                   handleDelete?.(row.original.id);
                 }}
               >
-                Delete
+                حذف
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

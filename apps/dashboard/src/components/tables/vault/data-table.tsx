@@ -29,13 +29,13 @@ import { getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { type VirtualItem, useVirtualizer } from "@tanstack/react-virtual";
 import { AnimatePresence } from "framer-motion";
 import { useCallback, useMemo, useRef } from "react";
-import { useCopyToClipboard, useDebounceCallback } from "usehooks-ts";
+import { useDebounceCallback } from "usehooks-ts";
 import { BottomBar } from "./bottom-bar";
 import { columns } from "./columns";
 import { DataTableHeader } from "./data-table-header";
 
 // Stable reference for non-clickable columns (avoids recreation on each render)
-const NON_CLICKABLE_COLUMNS = new Set(["select", "tags", "actions"]);
+const NON_CLICKABLE_COLUMNS = new Set(["select", "actions"]);
 
 type Props = {
   initialSettings?: Partial<TableSettings>;
@@ -48,7 +48,6 @@ export function DataTable({ initialSettings }: Props) {
   const { filter, hasFilters } = useDocumentFilterParams();
   const { setRowSelection, rowSelection } = useDocumentsStore();
   const { setParams, params } = useDocumentParams();
-  const [, copy] = useCopyToClipboard();
   const parentRef = useRef<HTMLDivElement>(null);
 
   // Hide header on scroll
@@ -107,7 +106,7 @@ export function DataTable({ initialSettings }: Props) {
   useRealtime({
     channelName: "realtime_documents",
     table: "documents",
-    filter: `team_id=eq.${user?.teamId}`,
+    // filter: `userId=eq.${user?.id}`, // Adjusted for school system
     onEvent: (payload) => {
       if (
         payload.eventType === "INSERT" ||
@@ -128,21 +127,6 @@ export function DataTable({ initialSettings }: Props) {
         queryClient.invalidateQueries({
           queryKey: trpc.documents.get.queryKey(),
         });
-
-        // Invalidate global search
-        queryClient.invalidateQueries({
-          queryKey: trpc.search.global.queryKey(),
-        });
-      },
-    }),
-  );
-
-  const shortLinkMutation = useMutation(
-    trpc.shortLinks.createForDocument.mutationOptions({
-      onSuccess: (data) => {
-        if (data?.shortUrl) {
-          copy(data.shortUrl);
-        }
       },
     }),
   );
@@ -174,19 +158,17 @@ export function DataTable({ initialSettings }: Props) {
 
   const handleShare = useCallback(
     (filePath: string[]) => {
-      shortLinkMutation.mutate({
-        filePath: filePath?.join("/") ?? "",
-        expireIn: 60 * 60 * 24 * 30, // 30 days
-      });
+      // Placeholder for share functionality
+      console.log("Share", filePath);
     },
-    [shortLinkMutation],
+    [],
   );
 
   const handleReprocess = useCallback(
     (id: string) => {
       toast({
-        title: "Analyzing document",
-        description: "The document is being analyzed. This may take a moment.",
+        title: "جاري تحليل الملف",
+        description: "يتم تحليل الملف حالياً، قد يستغرق ذلك لحظات.",
         duration: 3000,
       });
       reprocessMutation.mutate({ id });
