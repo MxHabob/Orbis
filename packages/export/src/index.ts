@@ -294,3 +294,141 @@ export async function generateCanvasPdfBlob(
   }
 }
 
+// ============================================================
+// BULK PDF GENERATION — Multiple pages in a single PDF
+// ============================================================
+
+export type BulkPdfOptions = {
+  filename?: string;
+  quality?: number;
+  scale?: number;
+  padding?: number;
+  orientation?: "portrait" | "landscape";
+  /** Called with (completedCount, totalCount) for progress tracking */
+  onProgress?: (completed: number, total: number) => void;
+};
+
+/**
+ * Captures an array of HTMLElements (e.g. certificate containers),
+ * renders each to a canvas, and combines them into a single multi-page PDF.
+ * Returns a Blob for download.
+ */
+export async function generateBulkPdfFromElements(
+  elements: HTMLElement[],
+  options: BulkPdfOptions = {},
+): Promise<Blob> {
+  const {
+    quality = 0.92,
+    scale = 2,
+    padding = 0,
+    orientation = "portrait",
+    onProgress,
+  } = options;
+
+  if (elements.length === 0) {
+    throw new Error("No elements to export");
+  }
+
+  const { jsPDF } = await import("jspdf");
+
+  // A4 dimensions in mm
+  const a4Width = orientation === "portrait" ? 210 : 297;
+  const a4Height = orientation === "portrait" ? 297 : 210;
+
+  let pdf: InstanceType<typeof jsPDF> | null = null;
+
+  for (let i = 0; i < elements.length; i++) {
+    const el = elements[i];
+    if (!el) continue;
+
+    // Render element to canvas
+    const canvas = await html2canvas(el, {
+      scale,
+      backgroundColor: "#ffffff",
+      useCORS: true,
+      allowTaint: true,
+      logging: false,
+      removeContainer: false,
+      imageTimeout: 0,
+      foreignObjectRendering: false,
+    });
+
+    const imgData = canvas.toDataURL("image/jpeg", quality);
+    const imgWidth = canvas.width;
+    const imgHeight = canvas.height;
+
+    const pdfScale = (a4Width - padding * 2) / imgWidth;
+    const scaledWidth = imgWidth * pdfScale;
+    const scaledHeight = imgHeight * pdfScale;
+
+    const pageHeight = Math.max(scaledHeight + padding * 2, a4Height);
+
+    if (i === 0) {
+      // Create PDF with first page
+      pdf = new jsPDF({
+        orientation,
+        unit: "mm",
+        format: [a4Width, pageHeight],
+      });
+    } else if (pdf) {
+      // Add new page for subsequent elements
+      pdf.addPage([a4Width, pageHeight], orientation);
+    }
+
+    if (pdf) {
+      // White background
+      pdf.setFillColor(255, 255, 255);
+      pdf.rect(0, 0, a4Width, pageHeight, "F");
+
+      pdf.addImage(
+        imgData,
+        "JPEG",
+        padding,
+        padding,
+        scaledWidth,
+        scaledHeight,
+      );
+    }
+
+    // Report progress
+    onProgress?.(i + 1, elements.length);
+  }
+
+  if (!pdf) {
+    throw new Error("Failed to generate PDF");
+  }
+
+  return pdf.output("blob");
+}
+
+/**
+ * Creates a hidden off-screen container for rendering certificate elements.
+ * Returns the container element and a cleanup function.
+ */
+export function createOffscreenContainer(): {
+  container: HTMLDivElement;
+  cleanup: () => void;
+} {
+  const container = document.createElement("div");
+  container.style.cssText = `
+    position: fixed;
+    left: -99999px;
+    top: 0;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    pointer-events: none;
+    z-index: -1;
+  `;
+  document.body.appendChild(container);
+
+  return {
+    container,
+    cleanup: () => {
+      if (container.parentNode) {
+        container.parentNode.removeChild(container);
+      }
+    },
+  };
+}
+

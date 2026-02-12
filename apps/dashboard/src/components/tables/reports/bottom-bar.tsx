@@ -18,7 +18,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@midday/ui/dropdown-menu";
-import { useToast } from "@midday/ui/use-toast";
+import { useBulkCertificateExport } from "@/hooks/use-bulk-certificate-export";
+
 type CertificateType = "monthly" | "half-yearly" | "final";
 
 const MONTHLY_MONTHS = HIJRI_MONTHS.filter(
@@ -28,7 +29,7 @@ const MONTHLY_MONTHS = HIJRI_MONTHS.filter(
 export function BottomBar() {
   const { rowSelection, setRowSelection } = useInvoiceStore();
   const trpc = useTRPC();
-  const { toast } = useToast();
+  const { exportCertificates, abort } = useBulkCertificateExport();
 
   const [certificateType, setCertificateType] = useState<CertificateType>("monthly");
   const [selectedMonth, setSelectedMonth] = useState<number>(1);
@@ -57,31 +58,26 @@ export function BottomBar() {
   const availableMonths = MONTHLY_MONTHS.map((m) => ({ value: m.id, label: m.label, term: m.term }));
 
   const handleExport = async () => {
+    if (isExporting || selectedIds.length === 0) return;
+
     setIsExporting(true);
     try {
-      toast({
-        title: "جاري تحضير الشهادات...",
-        description: `يتم الآن استخراج الشهادات لـ ${count} فصول بصيغة PDF.`,
+      const result = await exportCertificates({
+        classIds: selectedIds,
+        certificateType,
+        selectedMonth,
+        templateId: currentTemplate?.id || null,
       });
-      
-      // Simulate bulk export logic
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      toast({
-        title: "تم الاستخراج بنجاح",
-        description: "تم تحميل ملف الشهادات الموحد لكل الطلاب.",
-        variant: "success",
-      });
-    } catch (error) {
-      toast({
-        title: "خطأ في الاستخراج",
-        description: "حدث خطأ أثناء محاولة توليد الشهادات المجمعة.",
-        variant: "destructive",
-      });
+
+      if (result.success) {
+        // Clear selection after successful export
+        setRowSelection({});
+      }
     } finally {
       setIsExporting(false);
     }
   };
+
 
   if (count === 0) return null;
 

@@ -1,5 +1,5 @@
 import { auth } from "@midday/auth";
-import { uploadToMinIO } from "../services/minio";
+import { uploadFile } from "@midday/storage";
 import { stripSpecialCharacters } from "@midday/utils";
 import { nanoid } from "nanoid";
 import type { Context } from "hono";
@@ -26,15 +26,18 @@ export async function handleUpload(c: Context) {
   const pathParts: string[] = pathInput
     ? pathInput.split("/").filter(Boolean)
     : [nanoid(), filename];
-  const path = pathParts.length > 0 ? pathParts : [nanoid(), filename];
+  
+  const key = pathParts.join("/");
+  const body = Buffer.from(await file.arrayBuffer());
 
   try {
-    const result = await uploadToMinIO({
+    const result = await uploadFile({
       bucket,
-      path,
-      file,
+      key,
+      file: body,
       contentType: file.type,
     });
+
     return c.json(result, 200);
   } catch (err) {
     console.error("Upload error:", err);

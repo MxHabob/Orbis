@@ -1,0 +1,33 @@
+{
+  "name": "@midday/jobs",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "private": true,
+  "scripts": {
+    "clean": "rm -rf .turbo node_modules",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "typecheck": "tsc --noEmit"
+  },
+  "exports": {
+    "./queue": "./src/queue.ts",
+    "./service": "./src/service.ts",
+    "./worker": "./src/worker.ts"
+  },
+  "dependencies": {
+    "bullmq": "^5.41.6",
+    "ioredis": "5.9.3",
+    "puppeteer": "^24.2.0",
+    "nanoid": "^5.0.9",
+    "jszip": "^3.10.1",
+    "archiver": "^7.0.1",
+    "@midday/db": "workspace:*",
+    "@midday/logger": "workspace:*",
+    "@midday/storage": "workspace:*",
+    "@midday/utils": "workspace:*"
+  },
+  "devDependencies": {
+    "@midday/tsconfig": "workspace:*",
+    "typescript": "^5.7.3"
+  }
+}

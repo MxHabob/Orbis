@@ -25,6 +25,8 @@
     "@midday/encryption": "workspace:*",
     "@midday/location": "workspace:*",
     "@midday/logger": "workspace:*",
+    "@midday/storage": "workspace:*",
+    "@midday/jobs": "workspace:*",
     "@midday/utils": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.0.0",
     "@scalar/hono-api-reference": "^0.9.26",

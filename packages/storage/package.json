@@ -1,0 +1,13 @@
+{
+  "name": "@midday/storage",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "private": true,
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.744.0"
+  },
+  "devDependencies": {
+    "@midday/tsconfig": "workspace:*",
+    "typescript": "^5.7.3"
+  }
+}

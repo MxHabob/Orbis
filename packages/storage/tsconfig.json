@@ -1,0 +1,20 @@
+{
+  "extends": "@midday/tsconfig/base.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "outDir": "dist",
+    "rootDir": "src",
+    
+    // Ensure strict type checking
+    "strict": true,
+    
+    // Library support for DOM/Node
+    "lib": ["esnext", "dom"],
+    
+    // Declaration files for other packages
+    "declaration": true,
+    "declarationMap": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

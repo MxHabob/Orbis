@@ -43,4 +43,23 @@ export const certificateTemplateRouter = createTRPCRouter({
     .mutation(({ input }) => deleteCertificateTemplate(input.id)),
 
   summary: protectedProcedure.query(() => getCertificateTemplatesSummary()),
+
+  startExport: protectedProcedure
+    .input(z.object({
+      classIds: z.array(z.string()),
+      templateId: z.string().optional(),
+      certificateType: z.string(),
+      selectedMonth: z.number(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const { JobService } = await import("@midday/jobs/service");
+      const result = await JobService.triggerCertificateExport({
+        ...input,
+        userId: ctx.session.user.id,
+      });
+
+      return {
+        id: result.jobId,
+      };
+    }),
 });

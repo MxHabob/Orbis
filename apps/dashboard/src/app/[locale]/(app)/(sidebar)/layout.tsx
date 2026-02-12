@@ -1,4 +1,4 @@
-// import { ExportStatus } from "@/components/export-status";
+import { ExportStatus } from "@/components/export-status";
 import { Header } from "@/components/header";
 import { GlobalSheetsProvider } from "@/components/sheets/global-sheets-provider";
 import { Sidebar } from "@/components/sidebar";
@@ -42,7 +42,7 @@ export default async function Layout({
           <div className="px-4 md:px-8">{children}</div>
         </div>
 
-        {/* <ExportStatus /> */}
+        <ExportStatus />
         <GlobalSheetsProvider />
       </div>
     </HydrateClient>
