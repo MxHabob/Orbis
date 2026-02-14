@@ -5,6 +5,7 @@ import { useTRPC } from "@/trpc/client";
 import { CertificateViewer } from "@/components/certificates/certificate-viewer";
 import { Spinner } from "@midday/ui/spinner";
 import { useEffect, useState, useMemo, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 /**
  * Bulk Export Page for Puppeteer (2026 - Production Grade)
@@ -42,34 +43,38 @@ export default function BulkExportCertificatePage() {
   const trpc = useTRPC();
 
   // Fetch all students in one batch query
-  const { data: students, isLoading: loadingStudents } =
-    trpc.students.getByUserIds.useQuery(
+  const { data: students, isLoading: loadingStudents } = useQuery(
+    trpc.students.getByUserIds.queryOptions(
       { userIds: studentIds },
       { enabled: studentIds.length > 0 }
-    );
+    ));
 
-  const { data: template, isLoading: loadingTemplate } =
-    trpc.certificateTemplates.getById.useQuery(
+  const { data: template, isLoading: loadingTemplate } = useQuery(
+    trpc.certificateTemplates.getById.queryOptions(
       { id: templateId! },
       { enabled: !!templateId }
-    );
+    ));
 
   const [loadedCount, setLoadedCount] = useState(0);
 
   // Signal Puppeteer when all certificates are rendered
   useEffect(() => {
+    console.log(`[ExportPage] loadedCount: ${loadedCount}, total: ${students?.length}`);
     if (students && students.length > 0 && loadedCount >= students.length) {
+      console.log(`[ExportPage] All certificates loaded. Signaling readiness...`);
       // Wait for browser to finish painting
       const timer = setTimeout(() => {
         // Force layout recalculation
         document.body.offsetHeight;
         (window as any).isReadyToCapture = true;
-      }, 500);
+        console.log(`[ExportPage] window.isReadyToCapture set to true`);
+      }, 1000);
       return () => clearTimeout(timer);
     }
   }, [loadedCount, students]);
 
   const handleCertificateLoad = useCallback(() => {
+    console.log(`[ExportPage] Certificate Loaded Event received`);
     setLoadedCount((prev) => prev + 1);
   }, []);
 

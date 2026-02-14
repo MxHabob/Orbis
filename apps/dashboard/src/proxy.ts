@@ -42,7 +42,9 @@ export async function proxy(request: NextRequest) {
     !newUrl.pathname.includes("/r/") &&
     !newUrl.pathname.includes("/verify") &&
     !newUrl.pathname.includes("/all-done") &&
-    !newUrl.pathname.includes("/desktop/search")
+    !newUrl.pathname.includes("/desktop/search") &&
+    // Allow Puppeteer to access without redirect - check both raw and transformed path
+    !request.nextUrl.pathname.includes("/export/certificate/bulk")
   ) {
     const url = new URL("/login", request.url);
 
@@ -51,6 +53,10 @@ export async function proxy(request: NextRequest) {
     }
 
     return NextResponse.redirect(url);
+  }
+
+  if (newUrl.pathname.includes("/export/certificate/bulk")) {
+    console.log(`[Middleware] Export page hit, session present: ${!!session}`);
   }
 
   // If authenticated, proceed with other checks

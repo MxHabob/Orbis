@@ -12,7 +12,7 @@ import puppeteer, { type Browser, type Page } from "puppeteer";
 // ============================================================
 // Configuration Constants
 // ============================================================
-const MAX_STUDENTS_PER_BATCH = 25; // Prevent memory issues
+const MAX_STUDENTS_PER_BATCH = 100; // Increased to handle typical classes in one go
 const PAGE_NAVIGATION_TIMEOUT = 180_000; // 3 minutes
 const READY_SIGNAL_TIMEOUT = 180_000;
 const BROWSER_ARGS = [
@@ -90,11 +90,13 @@ export async function handleCertificateExport(
     // Phase 2: Create authenticated session (Manual Bypass)
     // ──────────────────────────────────────────
     const sessionToken = nanoid(64);
+    const sessionId = crypto.randomUUID(); // Explicit ID for better compatibility
     const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 2); // 2 hours
     
     const [session] = await db
       .insert(sessions)
       .values({
+        id: sessionId,
         token: sessionToken,
         userId: userId,
         expiresAt: expiresAt,
@@ -121,7 +123,7 @@ export async function handleCertificateExport(
     // ──────────────────────────────────────────
     // Phase 4: Batch processing
     // ──────────────────────────────────────────
-    const allStudentIds = students.map((s) => s.userId);
+    const allStudentIds = students.map((s: any) => s.userId);
     const batches = splitIntoBatches(allStudentIds, MAX_STUDENTS_PER_BATCH);
     const totalBatches = batches.length;
     const pdfBuffers: Buffer[] = [];
@@ -147,19 +149,53 @@ export async function handleCertificateExport(
         // Set viewport for consistent rendering
         await page.setViewport({ width: 1200, height: 1600 });
 
+        // Forward console logs from Puppeteer
+        page.on("console", (msg) => {
+          const text = msg.text();
+          if (
+            text.includes("[tRPC]") || 
+            text.includes("Loaded:") || 
+            text.includes("[ExportPage]") || 
+            text.includes("[GradesTable]")
+          ) {
+            logger.info(`[Puppeteer Console] ${text}`);
+          } else if (msg.type() === "error") {
+            logger.error(`[Puppeteer Error] ${text}`);
+          }
+        });
+
+        page.on("error", (err) => {
+          logger.error(`[Puppeteer Page Error] ${err.message}`);
+        });
+
+        page.on("requestfailed", (request) => {
+          const failure = request.failure();
+          logger.warn(
+            `[Puppeteer Request Failed] ${request.url()} - ${failure?.errorText || "unknown"}`
+          );
+        });
+
         // Set session cookies (Better Auth uses hyphen or underscore depending on version/config)
+        // Note: On localhost, explicitly setting the domain can sometimes cause cookies to be ignored.
         const cookieOptions = {
           value: sessionToken,
-          domain: new URL(dashboardUrl).hostname,
           path: "/",
           httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
+          secure: false, // Localhost is usually not secure (http)
           sameSite: "Lax" as const,
         };
 
         await page.setCookie(
-          { ...cookieOptions, name: "better-auth.session-token" },
-          { ...cookieOptions, name: "better-auth.session_token" }
+          { 
+            ...cookieOptions, 
+            name: "better-auth.session-token",
+            url: dashboardUrl // Explicitly set URL for cookie
+          },
+          { 
+            ...cookieOptions, 
+            name: "better-auth.session_token",
+            url: dashboardUrl // Explicitly set URL for cookie
+          }
         );
 
         // Build export URL with batch student IDs
@@ -172,14 +208,16 @@ export async function handleCertificateExport(
         });
 
         logger.info(
-          `[CertExport] Navigating to batch ${batchIdx + 1} export page (${studentIds.length} chars in URL)`
+          `[CertExport] Navigating to batch ${batchIdx + 1}. URL: ${exportUrl}`
         );
 
         // Navigate and wait for content
-        await page.goto(exportUrl, {
-          waitUntil: "networkidle0",
+        const response = await page.goto(exportUrl, {
+          waitUntil: "networkidle2", // Use networkidle2 to ensure Next.js hydration completes
           timeout: PAGE_NAVIGATION_TIMEOUT,
         });
+
+        logger.info(`[CertExport] Navigation result: ${response?.status()} ${response?.url()}`);
 
         await job.updateProgress(Math.round(batchProgress + progressPerBatch * 0.3));
 
@@ -381,9 +419,9 @@ async function captureErrorScreenshot(
 ): Promise<void> {
   try {
     const buffer = await page.screenshot({ fullPage: true });
-    const errorPath = `errors/${job.id}-batch${batchIdx}-${Date.now()}.png`;
+    const errorPath = `errors/cert-job-${job.id}-batch${batchIdx}-${Date.now()}.png`;
     await uploadFile({
-      bucket: "exports",
+      bucket: "vault", // Changed from 'exports' to 'vault'
       key: errorPath,
       file: buffer as Buffer,
       contentType: "image/png",

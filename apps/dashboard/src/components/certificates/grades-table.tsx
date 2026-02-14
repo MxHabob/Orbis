@@ -38,10 +38,18 @@ export function GradesTable({ studentId, type, month, className, isPreview, onLo
   );
 
   useEffect(() => {
+    if (isLoading) {
+      console.log(`[GradesTable] Loading grades for student: ${studentId}`);
+    }
     if (!isLoading && data) {
+      console.log(`[GradesTable] Successfully loaded grades for student: ${studentId}`);
       onLoad?.();
     }
-  }, [isLoading, data, onLoad]);
+    if (!isLoading && !data) {
+      console.log(`[GradesTable] No data returned for student: ${studentId}`);
+      onLoad?.();
+    }
+  }, [isLoading, data, onLoad, studentId]);
 
   if (isLoading) {
     return (
