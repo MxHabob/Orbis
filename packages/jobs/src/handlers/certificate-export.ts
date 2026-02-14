@@ -3,10 +3,9 @@ import type { CertificateExportData } from "../queue";
 import { getStudentsByClassId } from "@midday/db/queries";
 import { createDocument } from "@midday/db/queries/documents";
 import { db } from "@midday/db/client";
-import { sessions } from "@midday/db/schema";
 import { uploadFile } from "@midday/storage";
 import { logger } from "@midday/logger";
-import { nanoid } from "nanoid";
+import { auth } from "@midday/auth";
 import puppeteer, { type Browser, type Page } from "puppeteer";
 
 // ============================================================
@@ -87,26 +86,18 @@ export async function handleCertificateExport(
     await job.updateProgress(5);
 
     // ──────────────────────────────────────────
-    // Phase 2: Create authenticated session (Manual Bypass)
+    // Phase 2: Create authenticated session (Official API)
     // ──────────────────────────────────────────
-    const sessionToken = nanoid(64);
-    const sessionId = crypto.randomUUID(); // Explicit ID for better compatibility
-    const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 2); // 2 hours
-    
-    const [session] = await db
-      .insert(sessions)
-      .values({
-        id: sessionId,
-        token: sessionToken,
-        userId: userId,
-        expiresAt: expiresAt,
-        userAgent: "Puppeteer (Midday Certificate Engine)",
-      })
-      .returning();
+    const session = await (auth.api as any).createSession({
+      userId: userId,
+      userAgent: "Puppeteer (Midday Certificate Engine)",
+    });
 
     if (!session) {
       throw new Error("فشل في إنشاء جلسة عمل للمحرك");
     }
+
+    const sessionToken = session.token;
     await job.updateProgress(8);
 
     // ──────────────────────────────────────────
@@ -176,7 +167,7 @@ export async function handleCertificateExport(
         });
 
         // Set session cookies (Better Auth uses hyphen or underscore depending on version/config)
-        // Note: On localhost, explicitly setting the domain can sometimes cause cookies to be ignored.
+        // Set for both dashboard and API URLs to ensure cross-origin requests include it
         const cookieOptions = {
           value: sessionToken,
           path: "/",
@@ -185,16 +176,28 @@ export async function handleCertificateExport(
           sameSite: "Lax" as const,
         };
 
+        const apiUrl = "http://localhost:3002"; // API port from package.json/dev logs
+
         await page.setCookie(
           { 
             ...cookieOptions, 
             name: "better-auth.session-token",
-            url: dashboardUrl // Explicitly set URL for cookie
+            url: dashboardUrl // Dashboard URL
           },
           { 
             ...cookieOptions, 
             name: "better-auth.session_token",
-            url: dashboardUrl // Explicitly set URL for cookie
+            url: dashboardUrl // Dashboard URL alternate
+          },
+          { 
+            ...cookieOptions, 
+            name: "better-auth.session-token",
+            url: apiUrl // API URL
+          },
+          { 
+            ...cookieOptions, 
+            name: "better-auth.session_token",
+            url: apiUrl // API URL alternate
           }
         );
 
