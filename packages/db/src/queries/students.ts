@@ -1,5 +1,5 @@
 import { db } from "@db/client";
-import { students, classes, users, enrollments } from "@db/schema";
+import { students, classes, users, enrollments, academicYears } from "@db/schema";
 import { eq, asc, desc, and, or, ilike, inArray } from "drizzle-orm";
 
 import { RedisCache } from "@midday/cache";
@@ -152,6 +152,35 @@ export const getStudentByUserId = async (userId: string) => {
     return student;
 };
 
+export const getStudentsByUserIds = async (userIds: string[]) => {
+    if (userIds.length === 0) return [];
+    
+    return db
+        .select({
+            userId: students.userId,
+            studentNumber: students.studentNumber,
+            secretNumber: students.secretNumber,
+            currentClassId: students.currentClassId,
+            status: students.status,
+            stats: students.stats,
+            name: users.name,
+            email: users.email,
+            phone: users.phone,
+            sex: users.sex,
+            image: users.image,
+            currentClass: {
+                id: classes.id,
+                name: classes.name,
+            },
+            yearName: academicYears.yearName,
+        })
+        .from(students)
+        .innerJoin(users, eq(students.userId, users.id))
+        .leftJoin(classes, eq(students.currentClassId, classes.id))
+        .leftJoin(academicYears, eq(classes.academicYearId, academicYears.id))
+        .where(inArray(students.userId, userIds));
+};
+
 export const getStudentById = async (id: string) => {
     const cacheKey = `user:${id}`;
     const cached = await studentCache.get<any>(cacheKey);
@@ -290,8 +319,6 @@ export const deleteStudent = async (userId: string) => {
     await db.delete(students).where(eq(students.userId, userId));
     await studentCache.delete(`user:${userId}`);
 }
-
-import { academicYears } from "@db/schema";
 
 export const bulkImportStudents = async (
   classId: number, 

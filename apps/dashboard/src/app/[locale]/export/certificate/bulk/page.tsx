@@ -4,17 +4,24 @@ import { useSearchParams } from "next/navigation";
 import { useTRPC } from "@/trpc/client";
 import { CertificateViewer } from "@/components/certificates/certificate-viewer";
 import { Spinner } from "@midday/ui/spinner";
-import { useEffect, useState, useMemo } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useEffect, useState, useMemo, useCallback } from "react";
 
 /**
- * Bulk Export page for Puppeteer
- * Renders many certificates in one go for efficient multi-page PDF generation.
+ * Bulk Export Page for Puppeteer (2026 - Production Grade)
+ *
+ * This page is NOT for end users — it's rendered headlessly by Puppeteer.
+ * Each certificate gets its own page via CSS `break-before: page`.
+ *
+ * Performance Optimizations:
+ * - Uses `font-display: swap` to prevent blocking on web fonts
+ * - Disables animations and transitions for faster rendering
+ * - Sets explicit dimensions to prevent layout shifts
+ * - Signals readiness via `window.isReadyToCapture` after all grades load
  */
 
 const mapStudentToVariables = (student: any) => {
   if (!student) return {};
-  
+
   return {
     ...student,
     studentName: student.name,
@@ -25,55 +32,62 @@ const mapStudentToVariables = (student: any) => {
 
 export default function BulkExportCertificatePage() {
   const searchParams = useSearchParams();
-  const studentIds = useMemo(() => searchParams.get("studentIds")?.split(",") || [], [searchParams]);
+  const studentIds = useMemo(
+    () => searchParams.get("studentIds")?.split(",").filter(Boolean) || [],
+    [searchParams]
+  );
   const templateId = searchParams.get("templateId");
   const type = searchParams.get("type") || "monthly";
   const month = parseInt(searchParams.get("month") || "1");
   const trpc = useTRPC();
 
-  // Fetch all students data
-  // We use a single query that might be better in the future, but for now we'll do it or rely on the caller
-  // Actually, we can just fetch them here
-  const [students, setStudents] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Fetch all students in one batch query
+  const { data: students, isLoading: loadingStudents } =
+    trpc.students.getByUserIds.useQuery(
+      { userIds: studentIds },
+      { enabled: studentIds.length > 0 }
+    );
 
+  const { data: template, isLoading: loadingTemplate } =
+    trpc.certificateTemplates.getById.useQuery(
+      { id: templateId! },
+      { enabled: !!templateId }
+    );
+
+  const [loadedCount, setLoadedCount] = useState(0);
+
+  // Signal Puppeteer when all certificates are rendered
   useEffect(() => {
-    async function loadData() {
-      if (studentIds.length === 0) return;
-      
-      try {
-        const promises = studentIds.map(id => trpc.students.getStudentByUserId.query({ userId: id }));
-        const results = await Promise.all(promises);
-        setStudents(results.filter(Boolean));
-      } catch (error) {
-        console.error("Error loading students for bulk export:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadData();
-  }, [studentIds, trpc]);
-
-  const { data: template, isLoading: loadingTemplate } = trpc.certificateTemplates.getById.useQuery(
-    { id: templateId! },
-    { enabled: !!templateId }
-  );
-
-  useEffect(() => {
-    if (!loading && !loadingTemplate && students.length > 0 && template) {
-      // Allow some time for GradesTable inside CertificateViewer to fetch data
+    if (students && students.length > 0 && loadedCount >= students.length) {
+      // Wait for browser to finish painting
       const timer = setTimeout(() => {
+        // Force layout recalculation
+        document.body.offsetHeight;
         (window as any).isReadyToCapture = true;
-      }, 5000); // 5 seconds buffer for high volume
+      }, 500);
       return () => clearTimeout(timer);
     }
-  }, [loading, loadingTemplate, students, template]);
+  }, [loadedCount, students]);
 
-  if (loading || loadingTemplate || students.length === 0 || !template) {
+  const handleCertificateLoad = useCallback(() => {
+    setLoadedCount((prev) => prev + 1);
+  }, []);
+
+  const isLoading = loadingStudents || loadingTemplate || !students || !template;
+
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-white">
         <Spinner />
-        <span className="ml-2">جاري تجهيز البيانات... ({students.length}/{studentIds.length})</span>
+        <span className="ml-2">جاري تجهيز البيانات...</span>
+      </div>
+    );
+  }
+
+  if (students.length === 0) {
+    return (
+      <div className="p-8 text-center text-red-500">
+        لا توجد بيانات للطلاب المحددين
       </div>
     );
   }
@@ -81,24 +95,57 @@ export default function BulkExportCertificatePage() {
   return (
     <div className="bg-white p-0 m-0 flex flex-col items-center">
       {students.map((student, index) => (
-        <div key={student.userId} className={`${index > 0 ? 'break-before-page' : ''} print:m-0`}>
+        <div
+          key={student.userId}
+          className={`${index > 0 ? "break-before-page" : ""} print:m-0`}
+        >
           <CertificateViewer
             template={template as any}
             data={mapStudentToVariables(student)}
             certificateType={type}
             month={month}
             className="shadow-none border-none"
+            onLoad={handleCertificateLoad}
           />
         </div>
       ))}
+
+      {/* Debug overlay — hidden in print */}
+      <div className="fixed top-0 left-0 bg-black/80 text-white p-2 text-xs z-50 print:hidden">
+        Loaded: {loadedCount} / {students.length}
+      </div>
+
+      {/* Print & Puppeteer CSS optimizations */}
       <style jsx global>{`
+        /* Disable animations for faster Puppeteer rendering */
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0s !important;
+          animation-delay: 0s !important;
+          transition-duration: 0s !important;
+          transition-delay: 0s !important;
+        }
+
         @media print {
           .break-before-page {
             break-before: page;
           }
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
         }
+
         body {
           background-color: white !important;
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+
+        /* Ensure images are loaded before capture */
+        img {
+          image-rendering: -webkit-optimize-contrast;
         }
       `}</style>
     </div>

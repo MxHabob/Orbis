@@ -2,17 +2,17 @@ import { PutObjectCommand, GetObjectCommand, DeleteObjectCommand, S3Client } fro
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const endpoint = process.env.S3_ENDPOINT_URL ?? "http://localhost:9000";
-const accessKey = process.env.MINIO_ROOT_USER || process.env.S3_ACCESS_KEY || "";
-const secretKey = process.env.MINIO_ROOT_PASSWORD || process.env.S3_SECRET_KEY || "";
+const accessKeyId = process.env.S3_ACCESS_KEY_ID || process.env.MINIO_ROOT_USER || "minioadmin";
+const secretAccessKey = process.env.S3_SECRET_ACCESS_KEY || process.env.MINIO_ROOT_PASSWORD || "zsftjlvfneswwb0h";
 const region = process.env.S3_REGION ?? "us-east-1";
 
 export const s3Client = new S3Client({
   endpoint,
-  credentials: {
-    accessKeyId: accessKey,
-    secretAccessKey: secretKey,
-  },
   region,
+  credentials: {
+    accessKeyId,
+    secretAccessKey,
+  },
   forcePathStyle: true,
 });
 

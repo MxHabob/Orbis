@@ -7,9 +7,16 @@ import { useExportStore } from "@/store/export";
 import { useMutation } from "@tanstack/react-query";
 
 /**
- * Modern Hook for Bulk Certificate Export
- * 
- * Uses Server-Side Background Jobs via Puppeteer for high performance.
+ * Hook for Bulk Certificate Export (2026 - Production Grade)
+ *
+ * Uses Server-Side Background Jobs via Puppeteer for
+ * pixel-perfect template rendering with batch processing.
+ *
+ * Flow:
+ * 1. Client triggers tRPC mutation → BullMQ job created
+ * 2. ExportStatus component polls job progress
+ * 3. Worker processes batches of students via Puppeteer
+ * 4. PDF uploaded to S3 → download link provided
  */
 
 interface ExportConfig {
@@ -27,17 +34,26 @@ export function useBulkCertificateExport() {
   const startExportMutation = useMutation(
     trpc.certificateTemplates.startExport.mutationOptions({
       onSuccess: (data) => {
-        // Trigger the global Background Job monitor (ExportStatus.tsx)
         setExportData({
           runId: data.id,
           exportType: "file",
         });
         setIsExporting(true);
+
+        toast({
+          title: "تم بدء التصدير",
+          description: "سيتم تجهيز الشهادات في الخلفية. يمكنك متابعة عملك.",
+          variant: "default",
+          duration: 3000,
+        });
       },
       onError: (error) => {
         toast({
           title: "فشل بدء التصدير",
-          description: error instanceof Error ? error.message : "حدث خطأ غير متوقع",
+          description:
+            error instanceof Error
+              ? error.message
+              : "حدث خطأ غير متوقع",
           variant: "error",
         });
         setIsExporting(false);
@@ -47,9 +63,18 @@ export function useBulkCertificateExport() {
 
   const exportCertificates = useCallback(
     async (config: ExportConfig) => {
+      // Client-side validation
+      if (!config.classIds || config.classIds.length === 0) {
+        toast({
+          title: "خطأ",
+          description: "يجب تحديد فصل واحد على الأقل",
+          variant: "error",
+        });
+        return { success: false };
+      }
+
       try {
         setIsExporting(true);
-        // Trigger the mutation to start background job
         await startExportMutation.mutateAsync({
           classIds: config.classIds,
           templateId: config.templateId,
@@ -63,11 +88,11 @@ export function useBulkCertificateExport() {
         return { success: false };
       }
     },
-    [startExportMutation, setIsExporting]
+    [startExportMutation, setIsExporting, toast]
   );
 
-  return { 
-    exportCertificates, 
-    isLoading: startExportMutation.isPending 
+  return {
+    exportCertificates,
+    isLoading: startExportMutation.isPending,
   };
 }

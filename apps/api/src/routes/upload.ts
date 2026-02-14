@@ -41,6 +41,9 @@ export async function handleUpload(c: Context) {
     return c.json(result, 200);
   } catch (err) {
     console.error("Upload error:", err);
-    return c.json({ error: "Upload failed" }, 500);
+    return c.json({ 
+      error: "Upload failed", 
+      details: err instanceof Error ? err.message : String(err) 
+    }, 500);
   }
 }

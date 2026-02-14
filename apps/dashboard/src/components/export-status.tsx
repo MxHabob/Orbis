@@ -1,63 +1,64 @@
 "use client";
 
-import { useFileUrl } from "@/hooks/use-file-url";
 import { useJobStatus } from "@/hooks/use-job-status";
 import { useSuccessSound } from "@/hooks/use-success-sound";
-import { downloadFile } from "@/lib/download";
 import { useExportStore } from "@/store/export";
 import { Button } from "@midday/ui/button";
 import { useToast } from "@midday/ui/use-toast";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 type ExportResult = {
+  url: string; // Direct S3 URL from uploadFile result
   filePath: string;
   fullPath: string;
   fileName: string;
   totalItems: number;
 };
 
+/**
+ * Download button that uses the direct S3 URL from the job result.
+ * No need for signed URL since the file is in the exports bucket.
+ */
 function DownloadButton({
-  fullPath,
+  url,
   fileName,
   onDownload,
 }: {
-  fullPath: string;
+  url: string;
   fileName: string;
   onDownload: () => void;
 }) {
-  const { url: authenticatedUrl } = useFileUrl({
-    type: "download",
-    filePath: fullPath,
-    filename: fileName,
-  });
+  const handleClick = useCallback(() => {
+    // Trigger download via a hidden anchor element
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    link.target = "_blank";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    onDownload();
+  }, [url, fileName, onDownload]);
 
   return (
-    <Button
-      size="sm"
-      onClick={() => {
-        if (authenticatedUrl && fileName) {
-          downloadFile(authenticatedUrl, fileName);
-        }
-        onDownload();
-      }}
-      disabled={!authenticatedUrl}
-    >
+    <Button size="sm" onClick={handleClick} disabled={!url}>
       تحميل الملف
     </Button>
   );
 }
 
 /**
- * Global Export Status Monitor
- * 
- * Tracks the background Puppeteer PDF generation and provides the download link.
+ * Global Export Status Monitor (2026)
+ *
+ * Tracks background PDF generation jobs and provides the download link.
+ * Shows granular progress with phase descriptions.
  */
 export function ExportStatus() {
   const { toast, dismiss, update } = useToast();
   const { play: playSuccessSound } = useSuccessSound();
   const [toastId, setToastId] = useState<string | null>(null);
   const { exportData, setExportData, setIsExporting } = useExportStore();
-  
+
   const { status, progress, result, isLoading, queryError } = useJobStatus({
     jobId: exportData?.runId,
     enabled: !!exportData?.runId,
@@ -65,7 +66,7 @@ export function ExportStatus() {
 
   // Type guard for export result
   const exportResult: ExportResult | undefined =
-    result && typeof result === "object" && "fullPath" in result
+    result && typeof result === "object" && "url" in result
       ? (result as ExportResult)
       : undefined;
 
@@ -79,23 +80,49 @@ export function ExportStatus() {
   const lastProgressRef = useRef<number | undefined>(undefined);
   const completionHandledRef = useRef(false);
 
+  /**
+   * Get a human-readable description based on progress and job status.
+   */
+  const getProgressDescription = (progressValue: number | undefined, jobStatus: string | undefined): string => {
+    if (jobStatus === "waiting") return "في الانتظار (سيتم البدء قريباً)...";
+    if (progressValue === undefined) return "جاري التحضير...";
+    
+    const val = progressValue;
+    if (val < 5) return "جاري تحضير البيانات...";
+    if (val < 10) return "جاري إنشاء جلسة المحرك...";
+    if (val < 15) return "جاري تشغيل محرك التصدير...";
+    if (val < 85) return "جاري توليد الشهادات (قد يستغرق وقتاً)...";
+    if (val < 90) return "جاري دمج ملفات PDF...";
+    if (val < 95) return "جاري رفع الملف النهائي...";
+    return "جاري الإنهاء...";
+  };
+
   // Handle failure
   useEffect(() => {
     if (status === "failed" || queryError) {
       if (toastId) dismiss(toastId);
 
       toast({
-        duration: 4000,
+        duration: 6000,
         variant: "error",
         title: "فشل استخراج الشهادات",
-        description: "حدث خطأ غير متوقع في محرك التصدير الخلفي.",
+        description:
+          "حدث خطأ غير متوقع في محرك التصدير. يرجى المحاولة مرة أخرى.",
       });
 
       setToastId(null);
       setExportData(undefined);
       setIsExporting(false);
     }
-  }, [status, queryError, toast, setExportData, setIsExporting, toastId, dismiss]);
+  }, [
+    status,
+    queryError,
+    toast,
+    setExportData,
+    setIsExporting,
+    toastId,
+    dismiss,
+  ]);
 
   // Create toast when export starts
   useEffect(() => {
@@ -103,7 +130,8 @@ export function ExportStatus() {
       const { id } = toast({
         title: "جاري تجهيز الشهادات (في الخلفية)",
         variant: "progress",
-        description: "يمكنك إغلاق هذه الرسالة ومواصلة العمل، سنخطرك عند الاكتمال.",
+        description:
+          "يمكنك إغلاق هذه الرسالة ومواصلة العمل، سنخطرك عند الاكتمال.",
         duration: Number.POSITIVE_INFINITY,
         progress: 0,
       });
@@ -114,41 +142,50 @@ export function ExportStatus() {
     }
   }, [exportData?.runId, toastId, toast, status]);
 
-  // Update progress
+  // Update progress with phase description
   useEffect(() => {
     if (!toastId || !status) return;
 
-    const currentProgress = status === "completed" ? 100 : progress !== undefined ? Number(progress) : undefined;
+    const currentProgress =
+      status === "completed"
+        ? 100
+        : progress !== undefined
+          ? Number(progress)
+          : undefined;
 
     if (
-      currentProgress !== undefined &&
-      currentProgress !== lastProgressRef.current &&
-      (status === "active" || status === "waiting" || status === "completed")
+      (currentProgress !== undefined && currentProgress !== lastProgressRef.current) ||
+      status === "waiting"
     ) {
       lastProgressRef.current = currentProgress;
       update(toastId, {
         id: toastId,
         progress: currentProgress,
+        description: getProgressDescription(currentProgress, status),
       });
     }
   }, [toastId, status, progress, update]);
 
   // Handle completion
   useEffect(() => {
-    if (status === "completed" && toastId && !completionHandledRef.current) {
+    if (
+      status === "completed" &&
+      toastId &&
+      !completionHandledRef.current
+    ) {
       completionHandledRef.current = true;
       playSuccessSound();
 
       if (exportResult) {
         update(toastId, {
           id: toastId,
-          title: "اكتمل استخراج الشهادات",
+          title: "اكتمل استخراج الشهادات ✅",
           description: `تم استخراج ${exportResult.totalItems} شهادة بنجاح.`,
           variant: "success",
           footer: (
             <div className="mt-4 flex gap-3">
               <DownloadButton
-                fullPath={exportResult.fullPath}
+                url={exportResult.url}
                 fileName={exportResult.fileName}
                 onDownload={handleOnDownload}
               />
@@ -164,14 +201,23 @@ export function ExportStatus() {
         });
       }
 
-      // Automatically clear after a while if not dismissed manually
+      // Clear state after a short delay
       setTimeout(() => {
         setExportData(undefined);
         setIsExporting(false);
         completionHandledRef.current = false;
       }, 100);
     }
-  }, [status, exportResult, toastId, update, setExportData, setIsExporting, handleOnDownload, playSuccessSound]);
+  }, [
+    status,
+    exportResult,
+    toastId,
+    update,
+    setExportData,
+    setIsExporting,
+    handleOnDownload,
+    playSuccessSound,
+  ]);
 
   return null;
 }

@@ -5,6 +5,9 @@ const config = {
   poweredByHeader: false,
   reactStrictMode: true,
   experimental: {
+    serverActions: {
+      bodySizeLimit: "50mb",
+    },
     optimizePackageImports: [
       "lucide-react",
       "react-icons",

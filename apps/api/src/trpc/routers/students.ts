@@ -12,6 +12,7 @@ import {
   updateStudent,
   getStudentByUserId,
   getStudentsByClassId,
+  getStudentsByUserIds,
   getAllStudentss,
   upsertStudent,
   getStudentEnrollments,
@@ -23,6 +24,11 @@ export const studentsRouter = createTRPCRouter({
   getAll: protectedProcedure.query(async () => {
     return getAllStudentss();
   }),
+  getByUserIds: protectedProcedure
+    .input(z.object({ userIds: z.array(z.string()) }))
+    .query(async ({ input }) => {
+      return getStudentsByUserIds(input.userIds);
+    }),
   getByClassId: protectedProcedure
     .input(
       z.object({

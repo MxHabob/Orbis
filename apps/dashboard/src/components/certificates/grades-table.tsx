@@ -4,6 +4,7 @@ import { useTRPC } from "@/trpc/client";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { cn } from "@midday/ui/cn";
+import { useEffect } from "react";
 
 interface GradesTableProps {
   studentId: string;
@@ -11,6 +12,7 @@ interface GradesTableProps {
   month?: number;
   className?: string;
   isPreview?: boolean;
+  onLoad?: () => void;
 }
 
 // Grade label colors for visual distinction
@@ -22,7 +24,7 @@ const GRADE_COLORS: Record<string, string> = {
   "راسب": "text-red-700 bg-red-50",
 };
 
-export function GradesTable({ studentId, type, month, className, isPreview }: GradesTableProps) {
+export function GradesTable({ studentId, type, month, className, isPreview, onLoad }: GradesTableProps) {
   const trpc = useTRPC();
 
   const { data, isLoading } = useQuery(
@@ -34,6 +36,12 @@ export function GradesTable({ studentId, type, month, className, isPreview }: Gr
       }
     )
   );
+
+  useEffect(() => {
+    if (!isLoading && data) {
+      onLoad?.();
+    }
+  }, [isLoading, data, onLoad]);
 
   if (isLoading) {
     return (

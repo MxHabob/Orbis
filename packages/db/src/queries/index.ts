@@ -13,3 +13,5 @@ export * from "./attendance";
 export * from "./certificates";
 export * from "./certificate-templates";
 export * from "./parent-students";
+export * from "./documents";
+

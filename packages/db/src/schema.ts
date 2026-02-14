@@ -27,6 +27,7 @@ export const classTypeEnum = pgEnum('class_type', ['classroom','laboratory','lib
 export const studentStatusEnum = pgEnum('student_status', ['active', 'graduated', 'transferred', 'suspended']);
 export const notificationTypeEnum = pgEnum('notification_type', ['grade_published', 'new_assessment', 'attendance_alert', 'announcement', 'message', 'parent_meeting', 'fee_reminder', 'account_action', 'behavior_alert', 'system']);
 export const attendanceStatusEnum = pgEnum('attendance_status', ['present','absent','late','excused','sick','authorized_leave','field_trip']);
+export const documentTypeEnum = pgEnum('document_type', ['file', 'folder']);
 
 // =========================================
 // 2. Core Tables (Basic Tables)
@@ -343,7 +344,6 @@ export const parentStudents = pgTable('parent_students', {
 // ==========================================
 // Vault / Documents Tables
 // ==========================================
-export const documentTypeEnum = pgEnum('document_type', ['file', 'folder']);
 
 export const documents = pgTable('documents', {
   id: uuid('id').defaultRandom().primaryKey(),

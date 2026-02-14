@@ -2,6 +2,7 @@
   "name": "@midday/api",
   "scripts": {
     "dev": "TZ=UTC PORT=3002 bun run --hot src/index.ts",
+    "jobs": "bun run --hot src/worker.ts",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",

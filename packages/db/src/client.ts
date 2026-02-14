@@ -65,22 +65,23 @@ const replicaIndex = getReplicaIndexForRegion();
 
 export const db = withReplicas(
   primaryDb,
-  [
-    // Order of replicas is important
-    drizzle(fraPool, {
-      schema,
-      casing: "snake_case",
-    }),
-    drizzle(iadPool, {
-      schema,
-      casing: "snake_case",
-    }),
-    drizzle(sjcPool, {
-      schema,
-      casing: "snake_case",
-    }),
-  ],
-  (replicas) => replicas[replicaIndex]!,
+  hasReplicas
+    ? [
+        drizzle(fraPool, {
+          schema,
+          casing: "snake_case",
+        }),
+        drizzle(iadPool, {
+          schema,
+          casing: "snake_case",
+        }),
+        drizzle(sjcPool, {
+          schema,
+          casing: "snake_case",
+        }),
+      ]
+    : [primaryDb],
+  (replicas) => replicas[replicaIndex] || replicas[0]!,
 );
 
 // Keep connectDb for backward compatibility, but just return the singleton

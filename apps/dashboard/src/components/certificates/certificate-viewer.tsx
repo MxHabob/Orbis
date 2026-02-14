@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@midday/ui/cn";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { ShieldCheck, Award, BadgeAlert, Check } from "lucide-react";
 import { GradesTable } from "./grades-table";
 
@@ -37,6 +37,7 @@ interface CertificateViewerProps {
   month?: number;
   preview?: boolean;
   className?: string;
+  onLoad?: () => void;
 }
 
 const PAPER_SIZES = {
@@ -59,10 +60,28 @@ export function CertificateViewer({
   month,
   preview = false,
   className,
+  onLoad,
 }: CertificateViewerProps) {
   const elements = useMemo(() => {
     return (template.content?.elements || []) as Element[];
   }, [template]);
+
+  useEffect(() => {
+    const hasTable = elements.some(
+      (el) =>
+        el.type === "table" ||
+        el.type === "grades-table" ||
+        (el.type === "variable" && el.variableKey === "table")
+    );
+
+    if (!hasTable && onLoad) {
+      // Simulate load delay for consistency or just call it
+      const timer = setTimeout(() => {
+        onLoad();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [elements, onLoad]);
 
   const size = (template.size || "a4") as keyof typeof PAPER_SIZES;
   const orientation = template.orientation || "portrait";
@@ -135,6 +154,7 @@ export function CertificateViewer({
                  type={certificateType}
                  month={month}
                  isPreview={preview}
+                 onLoad={onLoad}
               />
            ) : (
              <div 

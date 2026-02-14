@@ -1,6 +1,8 @@
 import { useTRPC } from "@/trpc/client";
+import { useQuery } from "@tanstack/react-query";
 
 type FileUrlOptions = {
+  type: "download" | "preview";
   documentId?: string;
   url?: string;
 };
@@ -8,13 +10,13 @@ type FileUrlOptions = {
 export function useFileUrl(options: FileUrlOptions | null) {
   const trpc = useTRPC();
 
-  const signedUrlQuery = trpc.documents.getSignedUrl.useQuery(
-    { id: options?.documentId! },
-    {
-      enabled: !!options?.documentId,
-      staleTime: 3600 * 1000, // 1 hour
-    }
-  );
+  const signedUrlQuery = useQuery({
+    ...trpc.documents.getSignedUrl.queryOptions(
+      { id: options?.documentId! },
+    ),
+    enabled: !!options?.documentId,
+    staleTime: 3600 * 1000, // 1 hour
+  });
 
   if (!options) {
     return {

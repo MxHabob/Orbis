@@ -26,7 +26,7 @@ type Props = {
 
 export function VaultUploadZone({ onUpload, children }: Props) {
   const trpc = useTRPC();
-  const { data: user } = authClient.useSession();
+  const { data: session } = authClient.useSession();
   const [progress, setProgress] = useState(0);
   const [showProgress, setShowProgress] = useState(false);
   const [toastId, setToastId] = useState<string | null>(null);
@@ -70,11 +70,12 @@ export function VaultUploadZone({ onUpload, children }: Props) {
           const formData = new FormData();
           formData.append("file", file);
           formData.append("bucket", "vault");
-          formData.append("path", `${user?.id || "anonymous"}/${file.name}`);
+          formData.append("path", `${session?.user.id || "anonymous"}/${file.name}`);
 
-          const response = await fetch("/api/upload", {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/upload`, {
             method: "POST",
             body: formData,
+            credentials: "include",
           });
 
           if (!response.ok) throw new Error("Upload failed");
@@ -139,7 +140,7 @@ export function VaultUploadZone({ onUpload, children }: Props) {
         });
       }
     },
-    maxSize: 5000000, // 5MB
+    maxSize: 50000000, // 50MB
     maxFiles: 25,
     accept: {
       "image/*": [".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif", ".avif"],

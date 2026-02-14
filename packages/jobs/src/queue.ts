@@ -1,10 +1,17 @@
-import { Queue, Worker, type Job, type QueueOptions } from "bullmq";
+import { Queue, type QueueOptions } from "bullmq";
 import IORedis from "ioredis";
 
 const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
 
 export const connection = new IORedis(redisUrl, {
   maxRetriesPerRequest: null,
+  // Enable lazy connect to avoid blocking startup
+  lazyConnect: false,
+  // Reconnection strategy
+  retryStrategy: (times: number) => {
+    if (times > 10) return null; // Stop retrying after 10 attempts
+    return Math.min(times * 200, 3000);
+  },
 });
 
 export const QUEUE_NAME = "midday-jobs";
@@ -15,12 +22,17 @@ export const jobQueue = new Queue(QUEUE_NAME, {
     attempts: 3,
     backoff: {
       type: "exponential",
-      delay: 1000,
+      delay: 2000,
     },
-    removeOnComplete: { age: 300, count: 200 },
-    removeOnFail: false,
+    // Keep completed jobs for 10 minutes, max 200
+    removeOnComplete: { age: 600, count: 200 },
+    removeOnFail: { age: 86400, count: 500 }, // Keep failed for 24h for debugging
   },
 });
+
+// ============================================================
+// Job Type Definitions
+// ============================================================
 
 export type JobType = "certificate-export" | "student-import" | "report-generation";
 
