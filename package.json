@@ -23,7 +23,7 @@
     "@manypkg/cli": "^0.25.1",
     "@midday/tsconfig": "workspace:*",
     "drizzle-orm": "^0.45.1",
-    "turbo": "^2.8.8",
+    "turbo": "^2.8.10",
     "typescript": "^5.9.3"
   },
   "packageManager": "bun@1.2.22"
