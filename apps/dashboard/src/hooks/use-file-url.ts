@@ -2,7 +2,7 @@ import { useTRPC } from "@/trpc/client";
 import { useQuery } from "@tanstack/react-query";
 
 type FileUrlOptions = {
-  type: "download" | "preview";
+  type?: "download" | "preview" | "url";
   documentId?: string;
   url?: string;
 };
@@ -22,6 +22,7 @@ export function useFileUrl(options: FileUrlOptions | null) {
     return {
       url: null,
       isLoading: false,
+      hasFileKey: false,
     };
   }
 
@@ -29,11 +30,13 @@ export function useFileUrl(options: FileUrlOptions | null) {
     return {
       url: options.url,
       isLoading: false,
+      hasFileKey: true,
     };
   }
 
   return {
     url: signedUrlQuery.data?.url ?? null,
     isLoading: signedUrlQuery.isLoading,
+    hasFileKey: !!signedUrlQuery.data?.url,
   };
 }

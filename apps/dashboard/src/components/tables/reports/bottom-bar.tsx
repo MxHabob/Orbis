@@ -1,6 +1,6 @@
 "use client";
 
-import { useInvoiceStore } from "@/store/invoice";
+import { useReportStore } from "@/store/report";
 import { useTRPC } from "@/trpc/client";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@midday/ui/button";
@@ -27,7 +27,7 @@ const MONTHLY_MONTHS = HIJRI_MONTHS.filter(
 );
 
 export function BottomBar() {
-  const { rowSelection, setRowSelection } = useInvoiceStore();
+  const { rowSelection, setRowSelection } = useReportStore();
   const trpc = useTRPC();
   const { exportCertificates } = useBulkCertificateExport();
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { OpenInvoiceSheet } from "@/components/open-invoice-sheet";
+import { OpenReportsSheet } from "@/components/open-report-sheet";
 import { Button } from "@midday/ui/button";
 import { FileQuestion } from "lucide-react";
 
@@ -12,7 +12,7 @@ export function EmptyState() {
         <p className="text-sm text-muted-foreground mb-6 max-w-[240px] text-center">
           No classes found. Create your first class to start viewing reports.
         </p>
-        <OpenInvoiceSheet />
+        <OpenReportsSheet />
       </div>
     </div>
   );

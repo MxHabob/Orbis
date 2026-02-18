@@ -20,7 +20,7 @@ import { columns } from "./columns";
 import { EmptyState } from "./empty-states";
 import { DataTableHeader } from "./table-header";
 
-import { useInvoiceStore } from "@/store/invoice";
+import { useReportStore } from "@/store/report";
 import { BottomBar } from "./bottom-bar";
 import { AnimatePresence } from "framer-motion";
 
@@ -43,7 +43,7 @@ export function DataTable({ initialSettings }: Props) {
 
   const { filter } = useCertificateFilterParams();
   const { setParams } = useCertificateParams();
-  const { rowSelection, setRowSelection } = useInvoiceStore();
+  const { rowSelection, setRowSelection } = useReportStore();
 
   const {
     columnVisibility,

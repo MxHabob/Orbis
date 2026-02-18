@@ -1,9 +1,3 @@
-import { OpenTrackerSheet } from "@/components/open-tracker-sheet";
-import { ScrollableContent } from "@/components/scrollable-content";
-import { DataTable } from "@/components/tables/tracker";
-import { Loading } from "@/components/tables/tracker/loading";
-import { TrackerCalendar } from "@/components/tracker-calendar";
-import { TrackerSearchFilter } from "@/components/tracker-search-filter";
 import { Widgets } from "@/components/widgets";
 import { loadSortParams } from "@/hooks/use-sort-params";
 import { loadTrackerFilterParams } from "@/hooks/use-tracker-filter-params";
@@ -12,7 +6,6 @@ import { Cookies } from "@/utils/constants";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import type { SearchParams } from "nuqs";
-import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "Overview | Entity",

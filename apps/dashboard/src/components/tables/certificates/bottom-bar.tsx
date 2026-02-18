@@ -1,6 +1,6 @@
 "use client";
 
-import { useInvoiceStore } from "@/store/invoice";
+import { useReportStore } from "@/store/report";
 import { useTRPC } from "@/trpc/client";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { useToast } from "@midday/ui/use-toast";
@@ -13,7 +13,7 @@ type Props = {
 };
 
 export function BottomBar({ data }: Props) {
-  const { rowSelection, setRowSelection } = useInvoiceStore();
+  const { rowSelection, setRowSelection } = useReportStore();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const { toast } = useToast();

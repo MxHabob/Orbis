@@ -15,49 +15,25 @@ const schema = z.object({
   types: z
     .array(
       z.enum([
-        "transactions",
-        "invoices",
-        "tracker_projects",
-        "customers",
+        "students",
+        "classes",
+        "staff",
+        "subjects",
         "documents",
+        "tracker_projects",
       ]),
     )
     .describe("The type of the items to search for"),
-  amount: z
-    .number()
-    .optional()
-    .describe(
-      "The exact amount to search for if the type is transactions or invoices.",
-    ),
-  amountMin: z
-    .number()
-    .optional()
-    .describe("Minimum amount filter for transactions or invoices."),
-  amountMax: z
-    .number()
-    .optional()
-    .describe("Maximum amount filter for transactions or invoices."),
   status: z
-    .enum(["paid", "unpaid", "overdue", "draft"])
+    .enum(["active", "graduated", "transferred", "suspended"])
     .optional()
     .describe(
-      "The status filter (e.g. 'paid', 'unpaid', 'overdue', 'draft') for invoices or projects.",
+      "The status filter (e.g. 'active', 'graduated') for students or other entities.",
     ),
-  currency: z
-    .string()
-    .optional()
-    .describe("The currency code to filter by (e.g., 'USD', 'EUR')."),
   language: z
     .string()
+    .default("english")
     .describe(
-      "The language to search in based on the query. Return in PostgreSQL text search configuration name (e.g., 'english', 'swedish', 'german', 'french').",
+      "The language to search in based on the query. Return in PostgreSQL text search configuration name (e.g., 'english', 'arabic').",
     ),
-  dueDateStart: z
-    .string()
-    .optional()
-    .describe("Start date for invoice due dates (ISO-8601)."),
-  dueDateEnd: z
-    .string()
-    .optional()
-    .describe("End date for invoice due dates (ISO-8601)."),
 });

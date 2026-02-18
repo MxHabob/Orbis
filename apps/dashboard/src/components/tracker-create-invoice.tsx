@@ -1,6 +1,6 @@
 "use client";
 
-import { useInvoiceParams } from "@/hooks/use-invoice-params";
+import { useInvoiceParams } from "@/hooks/use-report-params";
 import { useUserQuery } from "@/hooks/use-user";
 import { useTRPC } from "@/trpc/client";
 import { TZDate } from "@date-fns/tz";

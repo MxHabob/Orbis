@@ -1,7 +1,7 @@
 import { AverageGrade } from "@/components/average-grade";
 import { CollapsibleSummary } from "@/components/collapsible-summary";
-import { CustomerSummarySkeleton } from "@/components/customer-summary-skeleton";
-import { StudentsHeader } from "@/components/customers-header";
+import { StudentSummarySkeleton } from "@/components/student-summary-skeleton";
+import { StudentHeader } from "@/components/student-header";
 import { ErrorFallback } from "@/components/error-fallback";
 import { FailedStudents } from "@/components/failed-students";
 import { PassedStudents } from "@/components/passed-students";
@@ -56,22 +56,22 @@ export default async function Page(props: Props) {
         <div className="flex flex-col gap-6" data-canvas-content>
           <CollapsibleSummary>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 pt-6">
-              <Suspense fallback={<CustomerSummarySkeleton />}>
+              <Suspense fallback={<StudentSummarySkeleton />}>
                 <TotalStudents />
               </Suspense>
-              <Suspense fallback={<CustomerSummarySkeleton />}>
+              <Suspense fallback={<StudentSummarySkeleton />}>
                 <PassedStudents />
               </Suspense>
-              <Suspense fallback={<CustomerSummarySkeleton />}>
+              <Suspense fallback={<StudentSummarySkeleton />}>
                 <FailedStudents />
               </Suspense>
-              <Suspense fallback={<CustomerSummarySkeleton />}>
+              <Suspense fallback={<StudentSummarySkeleton />}>
                 <AverageGrade />
               </Suspense>
             </div>
           </CollapsibleSummary>
 
-          <StudentsHeader id={Id} />
+          {/* <StudentHeader /> */}
 
           <ErrorBoundary errorComponent={ErrorFallback}>
             <Suspense fallback={<CustomersSkeleton />}>

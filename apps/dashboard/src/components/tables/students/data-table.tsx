@@ -10,7 +10,7 @@ import { useStickyColumns } from "@/hooks/use-sticky-columns";
 import { useTableDnd } from "@/hooks/use-table-dnd";
 import { useTableScroll } from "@/hooks/use-table-scroll";
 import { useTableSettings } from "@/hooks/use-table-settings";
-import { useCustomersStore } from "@/store/customers";
+import { useStudentsStore } from "@/store/students";
 import { useTRPC } from "@/trpc/client";
 import { STICKY_COLUMNS, SUMMARY_GRID_HEIGHTS } from "@/utils/table-configs";
 import type { TableSettings } from "@/utils/table-settings";
@@ -43,7 +43,7 @@ export function DataTable({ initialSettings, id }: Props) {
   const { filter, hasFilters } = useCustomerFilterParams();
   const { params } = useSortParams();
   const parentRef = useRef<HTMLDivElement>(null);
-  const { setColumns } = useCustomersStore();
+  const { setColumns } = useStudentsStore();
 
   const deferredSearch = useDeferredValue(filter.q);
 

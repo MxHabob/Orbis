@@ -1,19 +1,19 @@
 "use client";
 
 import { FormatAmount } from "@/components/format-amount";
-import { InvoiceStatus } from "@/components/invoice-status";
-import { useCustomerParams } from "@/hooks/use-customer-params";
+import { useClassParams } from "@/hooks/use-class-params";
 import { useDocumentParams } from "@/hooks/use-document-params";
 import { useFileUrl } from "@/hooks/use-file-url";
-import { useInvoiceParams } from "@/hooks/use-invoice-params";
+import { useStudentParams } from "@/hooks/use-student-params";
+import { useSubjectParams } from "@/hooks/use-subject-params";
 import { useTrackerParams } from "@/hooks/use-tracker-params";
-import { useTransactionParams } from "@/hooks/use-transaction-params";
 import { useUserQuery } from "@/hooks/use-user";
 import { downloadFile } from "@/lib/download";
 import { useSearchStore } from "@/store/search";
 import { useTRPC } from "@/trpc/client";
 import { Window, emit, invoke, listen } from "@midday/desktop-client/core";
 import { isDesktopApp } from "@midday/desktop-client/platform";
+import { Badge } from "@midday/ui/badge";
 import {
   Command,
   CommandEmpty,
@@ -38,15 +38,22 @@ import { TrackerTimer } from "../tracker-timer";
 
 interface SearchItem {
   id: string;
-  type: string;
+  type:
+    | "student"
+    | "class"
+    | "staff"
+    | "subject"
+    | "vault"
+    | "tracker_project"
+    | "inbox"
+    | "shortcut"
+    | string;
   title: string;
   data?: {
     name?: string;
     email?: string;
-    invoice_number?: string;
+    student_number?: string;
     status?: string;
-    amount?: number;
-    currency?: string;
     date?: string;
     display_name?: string;
     file_name?: string;
@@ -55,9 +62,6 @@ interface SearchItem {
     title?: string;
     metadata?: {
       mimetype?: string;
-    };
-    template?: {
-      size?: string;
     };
     url?: string;
   };
@@ -111,9 +115,7 @@ function DownloadButton({
 
   const { url: authenticatedUrl, isLoading } = useFileUrl(
     needsAuth
-      ? isInvoiceDownload && invoiceId
-        ? { type: "invoice", invoiceId }
-        : { type: "url", url: href }
+      ? { type: "url", url: href }
       : null,
   );
 
@@ -154,16 +156,18 @@ const formatGroupName = (name: string): string | null => {
   switch (name) {
     case "shortcut":
       return "Shortcuts";
-    case "customer":
-      return "Customers";
+    case "student":
+      return "Students";
+    case "class":
+      return "Classes";
+    case "staff":
+      return "Staff";
+    case "subject":
+      return "Subjects";
     case "vault":
       return "Vault";
-    case "invoice":
-      return "Invoices";
     case "tracker_project":
       return "Tracker";
-    case "transaction":
-      return "Transactions";
     case "inbox":
       return "Inbox";
 
@@ -217,10 +221,10 @@ const handleDesktopNavigation = async (
 const useSearchNavigation = () => {
   const router = useRouter();
   const { setOpen } = useSearchStore();
-  const { setParams: setInvoiceParams } = useInvoiceParams();
-  const { setParams: setCustomerParams } = useCustomerParams();
+  const { setParams: setStudentParams } = useStudentParams();
+  const { setParams: setClassParams } = useClassParams();
+  const { setParams: setSubjectParams } = useSubjectParams();
   const { setParams: setTrackerParams } = useTrackerParams();
-  const { setParams: setTransactionParams } = useTransactionParams();
   const { setParams: setDocumentParams } = useDocumentParams();
 
   const shouldUseWebNavigation = async () => {
@@ -273,14 +277,14 @@ const useSearchNavigation = () => {
     navigateToDocument: (params: { documentId: string }) => {
       return navigateWithParams(params, setDocumentParams);
     },
-    navigateToCustomer: (params: { customerId: string }) => {
-      return navigateWithParams(params, setCustomerParams);
+    navigateToStudent: (params: { studentId: string; details?: boolean }) => {
+      return navigateWithParams({ ...params, details: true }, setStudentParams);
     },
-    navigateToInvoice: (params: {
-      invoiceId: string;
-      type: "details" | "create" | "edit" | "success";
-    }) => {
-      return navigateWithParams(params, setInvoiceParams);
+    navigateToClass: (params: { classId: string }) => {
+      return navigateWithParams(params, setClassParams);
+    },
+    navigateToSubject: (params: { subjectId: string }) => {
+      return navigateWithParams(params, setSubjectParams);
     },
     navigateToTracker: (params: {
       projectId?: string;
@@ -290,27 +294,18 @@ const useSearchNavigation = () => {
     }) => {
       return navigateWithParams(params, setTrackerParams);
     },
-    navigateToTransaction: (params: {
-      transactionId?: string;
-      createTransaction?: boolean;
-    }) => {
-      return navigateWithParams(params, setTransactionParams);
-    },
     navigateToPath: (path: string) => {
       return navigateToPath(path);
     },
     // Action helpers
-    createInvoice: () => {
-      return navigateWithParams({ type: "create" as const }, setInvoiceParams);
+    createStudent: () => {
+      return navigateWithParams({ createStudent: true }, setStudentParams);
     },
-    createCustomer: (params = { createCustomer: true }) => {
-      return navigateWithParams(params, setCustomerParams);
+    createClass: () => {
+      return navigateWithParams({ createClass: true }, setClassParams);
     },
-    createTransaction: () => {
-      return navigateWithParams(
-        { createTransaction: true },
-        setTransactionParams,
-      );
+    createSubject: () => {
+      return navigateWithParams({ createSubject: true }, setSubjectParams);
     },
     createProject: () => {
       return navigateWithParams({ create: true }, setTrackerParams);
@@ -382,22 +377,20 @@ const SearchResultItemDisplay = ({
         );
         break;
       }
-      case "customer": {
-        onSelect = () => nav.navigateToCustomer({ customerId: item.id });
+      case "student": {
+        onSelect = () => nav.navigateToStudent({ studentId: item.id });
 
-        icon = (
-          <Icons.Customers className="size-4 dark:text-[#666] text-primary" />
-        );
+        icon = <Icons.Customers className="size-4 dark:text-[#666] text-primary" />;
         resultDisplay = (
           <div className="flex items-center w-full">
             <div className="flex-grow truncate flex gap-2 items-center">
               <span>{item.data.name as string}</span>
-              <span className="text-xs text-muted-foreground">
-                {item.data.email as string}
+              <span className="text-xs text-muted-foreground font-mono">
+                {item.data.student_number as string}
               </span>
             </div>
             <div className="flex items-center gap-2 invisible group-hover/item:visible group-focus/item:visible group-aria-selected/item:visible">
-              <CopyButton path={`?customerId=${item.id}`} />
+              <CopyButton path={`?studentId=${item.id}&details=true`} />
               <Icons.ArrowOutward className="size-4 dark:text-[#666] text-primary hover:!text-primary cursor-pointer" />
             </div>
           </div>
@@ -405,26 +398,56 @@ const SearchResultItemDisplay = ({
 
         break;
       }
-      case "invoice": {
-        onSelect = () =>
-          nav.navigateToInvoice({ invoiceId: item.id, type: "details" });
+      case "class": {
+        onSelect = () => nav.navigateToClass({ classId: item.id });
 
-        icon = (
-          <Icons.Invoice className="size-4 dark:text-[#666] text-primary" />
-        );
+        icon = <Icons.Check className="size-4 dark:text-[#666] text-primary" />;
         resultDisplay = (
           <div className="flex items-center w-full">
             <div className="flex-grow truncate flex gap-2 items-center">
-              <span>{item.data.invoice_number as string}</span>
-              {/* @ts-expect-error - Unstructured data */}
-              <InvoiceStatus status={item.data?.status} />
+              <span>{item.data.name as string}</span>
             </div>
             <div className="flex items-center gap-2 invisible group-hover/item:visible group-focus/item:visible group-aria-selected/item:visible">
-              <CopyButton path={`?invoiceId=${item.id}&type=details`} />
-              <DownloadButton
-                href={`${process.env.NEXT_PUBLIC_API_URL}/files/download/invoice?id=${item.id}&size=${item?.data?.template?.size}`}
-                filename={`${item.data.invoice_number || "invoice"}.pdf`}
-              />
+              <Icons.ArrowOutward className="size-4 dark:text-[#666] text-primary hover:!text-primary cursor-pointer" />
+            </div>
+          </div>
+        );
+        break;
+      }
+      case "staff": {
+        onSelect = () => nav.navigateToPath(`/staff?userId=${item.id}`);
+
+        icon = <Icons.Customers className="size-4 dark:text-[#666] text-primary" />;
+        resultDisplay = (
+          <div className="flex items-center w-full">
+            <div className="flex-grow truncate flex gap-2 items-center">
+              <span>{item.data.name as string}</span>
+              <span className="text-xs text-muted-foreground">
+                {item.data.email as string}
+              </span>
+              {item.data.status && (
+                <Badge variant="outline" className="text-[10px] h-4">
+                  {item.data.status as string}
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-2 invisible group-hover/item:visible group-focus/item:visible group-aria-selected/item:visible">
+              <Icons.ArrowOutward className="size-4 dark:text-[#666] text-primary hover:!text-primary cursor-pointer" />
+            </div>
+          </div>
+        );
+        break;
+      }
+      case "subject": {
+        onSelect = () => nav.navigateToSubject({ subjectId: item.id });
+
+        icon = <Icons.AI className="size-4 dark:text-[#666] text-primary" />;
+        resultDisplay = (
+          <div className="flex items-center w-full">
+            <div className="flex-grow truncate flex gap-2 items-center">
+              <span>{item.data.name as string}</span>
+            </div>
+            <div className="flex items-center gap-2 invisible group-hover/item:visible group-focus/item:visible group-aria-selected/item:visible">
               <Icons.ArrowOutward className="size-4 dark:text-[#666] text-primary hover:!text-primary cursor-pointer" />
             </div>
           </div>
@@ -447,14 +470,6 @@ const SearchResultItemDisplay = ({
                     "") as string
                 }
               </span>
-              {item.data?.amount && item.data?.currency && (
-                <span className="text-xs text-muted-foreground">
-                  <FormatAmount
-                    currency={item.data.currency}
-                    amount={item.data.amount}
-                  />
-                </span>
-              )}
               <span className="text-xs text-muted-foreground">
                 {item.data?.date && formatDate(item.data.date, dateFormat)}
               </span>
@@ -487,36 +502,6 @@ const SearchResultItemDisplay = ({
                 }
                 alwaysShowButton={true}
               />
-            </div>
-          </div>
-        );
-        break;
-      }
-      case "transaction": {
-        onSelect = () => nav.navigateToTransaction({ transactionId: item.id });
-
-        icon = (
-          <Icons.Transactions className="size-4 dark:text-[#666] text-primary" />
-        );
-        resultDisplay = (
-          <div className="flex items-center justify-between w-full">
-            <div className="flex-grow truncate flex gap-2 items-center">
-              <span>{(item.data?.name || "") as string}</span>
-              <span className="text-xs text-muted-foreground">
-                <FormatAmount
-                  currency={item.data?.currency as string}
-                  amount={item.data?.amount as number}
-                />
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {item.data?.date
-                  ? formatDate(item.data.date, dateFormat)
-                  : null}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 invisible group-hover/item:visible group-focus/item:visible group-aria-selected/item:visible">
-              <CopyButton path={item.data?.url as string} />
-              <Icons.ArrowOutward className="size-4 dark:text-[#666] text-primary hover:!text-primary cursor-pointer" />
             </div>
           </div>
         );
@@ -559,13 +544,6 @@ export function Search() {
   const nav = useSearchNavigation();
   const trpc = useTRPC();
 
-  // Get current timer status to prioritize tracker section
-  const { data: timerStatus, refetch: refetchTimerStatus } = useQuery({
-    ...trpc.trackerEntries.getTimerStatus.queryOptions(),
-    refetchInterval: false,
-    staleTime: 5 * 60 * 1000,
-  });
-
   useHotkeys(
     "esc",
     () => {
@@ -584,27 +562,16 @@ export function Search() {
 
     const unlistenPromise = listen("search-window-open", (event) => {
       const isOpen = event.payload as boolean;
-      if (isOpen) {
-        // Refetch timer status to get the most up-to-date information
-        refetchTimerStatus();
 
-        // Focus the search input field when window opens
-        setTimeout(() => {
-          searchInputRef.current?.focus();
-        }, 100); // Small delay to ensure window is fully rendered
-      }
     });
 
     // Cleanup function
     return () => {
       unlistenPromise.then((unlisten) => unlisten());
     };
-  }, [refetchTimerStatus]);
+  });
 
-  // Refetch timer status when search component mounts (for both desktop and web)
-  useEffect(() => {
-    refetchTimerStatus();
-  }, [refetchTimerStatus]);
+
 
   const [debouncedSearch, setDebouncedSearch] = useDebounceValue(
     "",
@@ -613,34 +580,46 @@ export function Search() {
 
   const sectionActions: SearchItem[] = [
     {
-      id: "sc-create-invoice",
-      type: "invoice",
-      title: "Create invoice",
-      action: nav.createInvoice,
+      id: "sc-create-student",
+      type: "student",
+      title: "Add student",
+      action: nav.createStudent,
     },
     {
-      id: "sc-create-customer",
-      type: "customer",
-      title: "Create customer",
-      action: nav.createCustomer,
+      id: "sc-create-class",
+      type: "class",
+      title: "Create class",
+      action: nav.createClass,
     },
     {
-      id: "sc-create-transaction",
-      type: "transaction",
-      title: "Create transaction",
-      action: nav.createTransaction,
+      id: "sc-create-subject",
+      type: "subject",
+      title: "Add subject",
+      action: nav.createSubject,
     },
     {
-      id: "sc-create-project",
-      type: "tracker_project",
-      title: "Create project",
-      action: nav.createProject,
+      id: "sc-view-students",
+      type: "student",
+      title: "View students",
+      action: () => nav.navigateToPath("/students"),
     },
     {
-      id: "sc-track-time",
-      type: "tracker_project",
-      title: "Track time",
-      action: nav.trackTime,
+      id: "sc-view-classes",
+      type: "class",
+      title: "View classes",
+      action: () => nav.navigateToPath("/classes"),
+    },
+    {
+      id: "sc-view-staff",
+      type: "staff",
+      title: "View staff",
+      action: () => nav.navigateToPath("/staff"),
+    },
+    {
+      id: "sc-view-grades",
+      type: "student",
+      title: "View grades",
+      action: () => nav.navigateToPath("/grades"),
     },
     {
       id: "sc-view-documents",
@@ -649,28 +628,10 @@ export function Search() {
       action: () => nav.navigateToPath("/vault"),
     },
     {
-      id: "sc-view-customers",
-      type: "customer",
-      title: "View customers",
-      action: () => nav.navigateToPath("/customers"),
-    },
-    {
-      id: "sc-view-transactions",
-      type: "transaction",
-      title: "View transactions",
-      action: () => nav.navigateToPath("/transactions"),
-    },
-    {
       id: "sc-view-inbox",
       type: "inbox",
       title: "View inbox",
       action: () => nav.navigateToPath("/inbox"),
-    },
-    {
-      id: "sc-view-invoices",
-      type: "invoice",
-      title: "View invoices",
-      action: () => nav.navigateToPath("/invoices"),
     },
     {
       id: "sc-view-tracker",
@@ -690,6 +651,7 @@ export function Search() {
       searchTerm: debouncedSearch,
     }),
     placeholderData: (previousData) => previousData,
+    enabled: debouncedSearch.length >= 2,
   });
 
   // Extract search results array from queryResult
@@ -732,47 +694,11 @@ export function Search() {
       groups[groupKey].push(actionItem);
     }
 
-    // Sort tracker projects to put the running project first
-    const trackerProjectKey = "tracker_project";
-    if (groups[trackerProjectKey] && timerStatus?.currentEntry?.projectId) {
-      const runningProjectId = timerStatus.currentEntry.projectId;
-      groups[trackerProjectKey] = groups[trackerProjectKey].sort((a, b) => {
-        // Put the running project first
-        if (a.id === runningProjectId && b.id !== runningProjectId) return -1;
-        if (b.id === runningProjectId && a.id !== runningProjectId) return 1;
-        return 0; // Keep original order for non-running projects
-      });
-    }
 
-    // Prioritize tracker projects when timer is running
-    const definedGroupOrder = timerStatus?.isRunning
-      ? [
-          "tracker_project",
-          "vault",
-          "customer",
-          "invoice",
-          "transaction",
-          "inbox",
-        ]
-      : [
-          "vault",
-          "customer",
-          "invoice",
-          "transaction",
-          "tracker_project",
-          "inbox",
-        ];
 
     const allGroupKeysInOrder: string[] = [];
     const addedKeys = new Set<string>();
 
-    // Add groups based on defined order if they exist
-    for (const key of definedGroupOrder) {
-      if (groups[key]) {
-        allGroupKeysInOrder.push(key);
-        addedKeys.add(key);
-      }
-    }
     // Add any remaining groups that weren't in the defined order
     for (const key in groups) {
       if (groups[key] && groups[key].length > 0 && !addedKeys.has(key)) {
@@ -791,9 +717,7 @@ export function Search() {
     return orderedGroups;
   }, [
     combinedData,
-    debouncedSearch,
-    timerStatus?.isRunning,
-    timerStatus?.currentEntry?.projectId,
+    debouncedSearch
   ]);
 
   useEffect(() => {
@@ -860,7 +784,6 @@ export function Search() {
                   <SearchResultItemDisplay
                     key={item.id}
                     item={item}
-                    dateFormat={user?.dateFormat ?? undefined}
                   />
                 ))}
               </CommandGroup>

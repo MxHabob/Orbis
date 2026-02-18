@@ -1,5 +1,3 @@
-import { ConnectedAccounts } from "@/components/connected-accounts";
-import { prefetch, trpc } from "@/trpc/server";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -7,12 +5,9 @@ export const metadata: Metadata = {
 };
 
 export default async function Page() {
-  prefetch(trpc.bankConnections.get.queryOptions());
-  prefetch(trpc.bankAccounts.get.queryOptions({ manual: true }));
 
   return (
     <div className="space-y-12">
-      <ConnectedAccounts />
     </div>
   );
 }

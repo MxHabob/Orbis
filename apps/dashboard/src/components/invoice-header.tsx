@@ -1,7 +1,7 @@
 "use client";
 
 import { ReportsSearchFilter } from "./reports-search-filter";
-import { InvoiceColumnVisibility } from "./invoice-column-visibility";
+import { ReportColumnVisibility } from "./report-column-visibility";
 
 export function ReportsHeader() {
   return (
@@ -9,7 +9,7 @@ export function ReportsHeader() {
       <ReportsSearchFilter />
 
       <div className="hidden sm:flex space-x-2">
-        <InvoiceColumnVisibility />
+        <ReportColumnVisibility />
       </div>
     </div>
   );

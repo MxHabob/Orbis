@@ -9,8 +9,7 @@ import { useStickyColumns } from "@/hooks/use-sticky-columns";
 import { useTableDnd } from "@/hooks/use-table-dnd";
 import { useTableScroll } from "@/hooks/use-table-scroll";
 import { useTableSettings } from "@/hooks/use-table-settings";
-import { useUserQuery } from "@/hooks/use-user";
-import { useInvoiceStore } from "@/store/invoice";
+import { useReportStore } from "@/store/report";
 import { useTRPC } from "@/trpc/client";
 import { STICKY_COLUMNS, SUMMARY_GRID_HEIGHTS } from "@/utils/table-configs";
 import type { TableSettings } from "@/utils/table-settings";
@@ -42,7 +41,7 @@ export function DataTable({ initialSettings }: Props) {
   const { data: session } = authClient.useSession();
   const parentRef = useRef<HTMLDivElement>(null);
 
-  const { setColumns, setRowSelection, rowSelection } = useInvoiceStore();
+  const { setColumns, setRowSelection, rowSelection } = useReportStore();
 
   // Hide header and summary grid on scroll
   useScrollHeader(parentRef, { extraOffset: SUMMARY_GRID_HEIGHTS.reports });

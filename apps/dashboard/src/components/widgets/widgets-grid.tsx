@@ -27,27 +27,7 @@ import { useMutation } from "@tanstack/react-query";
 import type { inferRouterOutputs } from "@trpc/server";
 import { useRef, useState } from "react";
 import { useOnClickOutside } from "usehooks-ts";
-import { AccountBalancesWidget } from "./account-balances";
-import { BillableHoursWidget } from "./billable-hours";
-import { CashFlowWidget } from "./cash-flow";
-import { CategoryExpensesWidget } from "./category-expenses";
-import { CustomerLifetimeValueWidget } from "./customer-lifetime-value";
 import { GrowthRateWidget } from "./growth-rate";
-import { InboxWidget } from "./inbox";
-// import { Insights } from "./insights";
-import { InvoicePaymentScoreWidget } from "./invoice-payment-score";
-import { MonthlySpendingWidget } from "./monthly-spending";
-import { NetPositionWidget } from "./net-position";
-import { OutstandingInvoicesWidget } from "./outstanding-invoices";
-import { OverdueInvoicesAlertWidget } from "./overdue-invoices-alert";
-import { ProfitAnalysisWidget } from "./profit-analysis";
-import { ProfitMarginWidget } from "./profit-margin";
-import { RecurringExpensesWidget } from "./recurring-expenses";
-import { RevenueForecastWidget } from "./revenue-forecast";
-import { RevenueSummaryWidget } from "./revenue-summary";
-import { RunwayWidget } from "./runway";
-import { TimeTrackerWidget } from "./time-tracker";
-import { TopCustomerWidget } from "./top-customer";
 import { VaultWidget } from "./vault";
 import { WidgetErrorFallback } from "./widget-error-fallback";
 import {
@@ -110,27 +90,7 @@ function SortableCard({
 
 // Widget mapping to components
 const WIDGET_COMPONENTS: Record<WidgetType, React.ComponentType> = {
-  runway: RunwayWidget,
-  "top-customer": TopCustomerWidget,
-  "revenue-summary": RevenueSummaryWidget,
-  "revenue-forecast": RevenueForecastWidget,
-  "growth-rate": GrowthRateWidget,
-  "profit-margin": ProfitMarginWidget,
-  "profit-analysis": ProfitAnalysisWidget,
-  "cash-flow": CashFlowWidget,
-  "outstanding-invoices": OutstandingInvoicesWidget,
-  inbox: InboxWidget,
-  "time-tracker": TimeTrackerWidget,
-  vault: VaultWidget,
-  "account-balances": AccountBalancesWidget,
-  "net-position": NetPositionWidget,
-  "monthly-spending": MonthlySpendingWidget,
-  "invoice-payment-score": InvoicePaymentScoreWidget,
-  "recurring-expenses": RecurringExpensesWidget,
-  "category-expenses": CategoryExpensesWidget,
-  "overdue-invoices-alert": OverdueInvoicesAlertWidget,
-  "billable-hours": BillableHoursWidget,
-  "customer-lifetime-value": CustomerLifetimeValueWidget,
+
 };
 
 export function WidgetsGrid() {

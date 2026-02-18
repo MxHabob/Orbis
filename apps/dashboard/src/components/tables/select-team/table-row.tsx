@@ -65,7 +65,7 @@ export function TableRow({ row }: Props) {
               variant="outline"
               onClick={() => {
                 changeTeamMutation.mutate({
-                  teamId: row.id!,
+                  id: row.id!,
                 });
               }}
             >

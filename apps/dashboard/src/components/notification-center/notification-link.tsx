@@ -1,8 +1,6 @@
 "use client";
 
 import { useInboxParams } from "@/hooks/use-inbox-params";
-import { useInvoiceParams } from "@/hooks/use-invoice-params";
-import { useTransactionParams } from "@/hooks/use-transaction-params";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 
@@ -54,8 +52,6 @@ export function NotificationLink({
   className,
   actionButton,
 }: NotificationLinkProps) {
-  const { setParams: setInvoiceParams } = useInvoiceParams();
-  const { setParams: setTransactionParams } = useTransactionParams();
   const { setParams: setInboxParams } = useInboxParams();
   const router = useRouter();
 
@@ -66,26 +62,6 @@ export function NotificationLink({
 
     try {
       switch (activityType) {
-        case "invoice_paid":
-        case "invoice_overdue":
-        case "invoice_created":
-        case "invoice_sent":
-        case "invoice_scheduled":
-        case "invoice_reminder_sent":
-        case "invoice_cancelled":
-        case "invoice_refunded":
-          setInvoiceParams({ invoiceId: recordId!, type: "details" });
-          break;
-
-        case "transactions_created":
-          if (metadata?.recordId) {
-            setTransactionParams({ transactionId: recordId! });
-          } else if (metadata?.dateRange) {
-            router.push(
-              `/transactions?start=${metadata.dateRange.from}&end=${metadata.dateRange.to}`,
-            );
-          }
-          break;
 
         case "inbox_new":
           router.push("/inbox");
@@ -98,25 +74,6 @@ export function NotificationLink({
             setInboxParams({ inboxId: metadata.inboxId, type: "details" });
           } else {
             router.push("/inbox");
-          }
-          break;
-
-        case "recurring_series_started":
-        case "recurring_series_completed":
-          if (metadata?.invoiceId) {
-            setInvoiceParams({
-              invoiceId: metadata.invoiceId,
-              type: "details",
-            });
-          } else if (recordId) {
-            setInvoiceParams({ editRecurringId: recordId });
-          }
-          break;
-
-        case "recurring_series_paused":
-        case "recurring_invoice_upcoming":
-          if (recordId) {
-            setInvoiceParams({ editRecurringId: recordId });
           }
           break;
 
