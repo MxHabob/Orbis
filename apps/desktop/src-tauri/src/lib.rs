@@ -2,9 +2,11 @@ use serde_json;
 use std::env;
 use std::sync::{Arc, Mutex};
 use tauri::{
-    Emitter, Listener, Manager, PhysicalPosition, Position, TitleBarStyle, WebviewUrl,
+    Emitter, Listener, Manager, PhysicalPosition, Position, WebviewUrl,
     WebviewWindowBuilder,
 };
+#[cfg(target_os = "macos")]
+use tauri::TitleBarStyle;
 use tauri_plugin_deep_link::DeepLinkExt;
 use tauri_plugin_updater;
 use tauri_plugin_dialog;
@@ -250,7 +252,7 @@ async fn create_preloaded_search_window(
     let search_window_label = "search";
     let search_url = format!("{}/desktop/search", app_url);
 
-    let mut search_builder = WebviewWindowBuilder::new(
+    let search_builder = WebviewWindowBuilder::new(
         app,
         search_window_label,
         WebviewUrl::External(tauri::Url::parse(&search_url)?),
@@ -270,7 +272,8 @@ async fn create_preloaded_search_window(
     });
 
     // Platform-specific styling
-    search_builder = search_builder
+    #[cfg(target_os = "macos")]
+    let search_builder = search_builder
         .hidden_title(true)
         .title_bar_style(TitleBarStyle::Overlay);
 
@@ -474,44 +477,49 @@ pub fn run() {
             .decorations(false)
             .visible(false)
             .transparent(true)
-            .shadow(true)
-            .hidden_title(true)
-            .title_bar_style(TitleBarStyle::Overlay)
-            .disable_drag_drop_handler()
-            .on_download(|_window, _event| {
-                println!("Download triggered!");
-                // Allow all downloads - they will go to default Downloads folder
-                true
-            })
-            .on_navigation(move |url| {
-                let url_str = url.as_str();
+            .shadow(true);
 
-                // Check if this is an external URL
-                if is_external_url(url_str, &app_url_clone) {
-                    // Clone the URL string to avoid lifetime issues
-                    let url_string = url_str.to_string();
-                    let app_handle_clone = app_handle_for_navigation.clone();
+            #[cfg(target_os = "macos")]
+            let win_builder = win_builder
+                .hidden_title(true)
+                .title_bar_style(tauri::TitleBarStyle::Overlay);
 
-                    // Open in system browser using the opener plugin
-                    tauri::async_runtime::spawn(async move {
-                        let _ = tauri_plugin_opener::OpenerExt::opener(&app_handle_clone)
-                                .open_url(url_string, None::<String>);
-                    });
+            let window = win_builder
+                .disable_drag_drop_handler()
+                .on_download(|_window, _event| {
+                    println!("Download triggered!");
+                    // Allow all downloads - they will go to default Downloads folder
+                    true
+                })
+                .on_navigation(move |url: &tauri::Url| {
+                    let url_str = url.as_str();
 
-                    // Prevent navigation in webview
-                    return false;
-                }
+                    // Check if this is an external URL
+                    if is_external_url(url_str, &app_url_clone) {
+                        // Clone the URL string to avoid lifetime issues
+                        let url_string = url_str.to_string();
+                        let app_handle_clone = app_handle_for_navigation.clone();
 
-                // Allow internal navigation
-                true
-            });
+                        // Open in system browser using the opener plugin
+                        tauri::async_runtime::spawn(async move {
+                            let _ = tauri_plugin_opener::OpenerExt::opener(&app_handle_clone)
+                                    .open_url(url_string, None::<String>);
+                        });
 
-            let window = win_builder.build().unwrap();
+                        // Prevent navigation in webview
+                        return false;
+                    }
+
+                    // Allow internal navigation
+                    true
+                })
+                .build()
+                .unwrap();
 
             // Listen for search window state events from the frontend
             let search_state_for_events = search_state.clone();
             let app_handle_for_events = app_handle.clone();
-            window.listen("search-window-enabled", move |event| {
+            window.listen("search-window-enabled", move |event: tauri::Event| {
                 if let Ok(enabled) = serde_json::from_str::<bool>(&event.payload()) {
                     println!("🔍 Event received: search-window-enabled = {}", enabled);
                     *search_state_for_events.lock().unwrap() = enabled;
@@ -612,6 +620,7 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while building tauri app")
         .run(|app_handle, event| match event {
+            #[cfg(target_os = "macos")]
             tauri::RunEvent::Reopen { .. } => {
                 if let Some(main_window) = app_handle.get_webview_window("main") {
                     let _ = main_window.show();
