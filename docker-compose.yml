@@ -70,24 +70,15 @@ services:
       dockerfile: apps/api/Dockerfile
     container_name: mulboi-api
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
+      # Overrides or additional config
       NODE_ENV: production
       DATABASE_URL: postgresql://${POSTGRES_USER:-entity_user}:${POSTGRES_PASSWORD:-yMEaelHrta0KFcr5luQ5}@db:5432/${POSTGRES_DB:-entity_database}
       REDIS_URL: redis://default:${REDIS_PASSWORD:-X3amyMOleJLP0BNXFzXQ}@redis:6379
-      # Storage Config
       S3_ENDPOINT_URL: ${S3_ENDPOINT_URL:-http://minio:9000}
-      S3_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minioadmin}
-      S3_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-zsftjlvfneswwb0h}
-      S3_REGION: us-east-1
-      S3_BUCKET: ${S3_BUCKET:-vault}
-      S3_FORCE_PATH_STYLE: "true"
-      # App Config
-      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
-      BETTER_AUTH_URL: ${API_PUBLIC_URL}
-      ALLOWED_API_ORIGINS: ${DASHBOARD_PUBLIC_URL}
       PORT: 3000
-    ports:
-      - "3002:3000"
     depends_on:
       db:
         condition: service_healthy
@@ -95,6 +86,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
+    ports:
+      - "3002:3000"
     networks:
       - internal_network
 
@@ -112,11 +105,10 @@ services:
         NEXT_PUBLIC_S3_PUBLIC_URL: ${S3_PUBLIC_URL}
     container_name: mulboi-dashboard
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       NODE_ENV: production
-      NEXT_PUBLIC_API_URL: ${API_PUBLIC_URL}
-      NEXT_PUBLIC_URL: ${DASHBOARD_PUBLIC_URL}
-      NEXT_PUBLIC_S3_PUBLIC_URL: ${S3_PUBLIC_URL}
       PORT: 3000
     depends_on:
       - api
