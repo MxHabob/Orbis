@@ -1,5 +1,6 @@
 {
   "name": "@midday/api",
+  "packageManager": "bun@1.2.22",
   "scripts": {
     "dev": "TZ=UTC PORT=3002 bun run --hot src/index.ts",
     "jobs": "bun run --hot src/worker.ts",
