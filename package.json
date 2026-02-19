@@ -26,5 +26,8 @@
     "drizzle-orm": "^0.45.1",
     "turbo": "^2.8.10",
     "typescript": "^5.9.3"
+  },
+  "overrides": {
+    "tailwindcss": "3.4.17"
   }
 }
