@@ -86,6 +86,8 @@ services:
       BETTER_AUTH_URL: ${API_PUBLIC_URL}
       ALLOWED_API_ORIGINS: ${DASHBOARD_PUBLIC_URL}
       PORT: 3000
+    ports:
+      - "3002:3000"
     depends_on:
       db:
         condition: service_healthy
@@ -118,6 +120,8 @@ services:
       PORT: 3000
     depends_on:
       - api
+    ports:
+      - "3001:3000"
     networks:
       - internal_network
 
