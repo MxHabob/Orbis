@@ -52,8 +52,8 @@ COPY --from=installer --chown=nextjs:nodejs /app/apps/dashboard/.next/standalone
 COPY --from=installer --chown=nextjs:nodejs /app/apps/dashboard/.next/static ./apps/dashboard/.next/static
 COPY --from=installer --chown=nextjs:nodejs /app/apps/dashboard/public ./apps/dashboard/public
 
-EXPOSE 3000
-ENV PORT=3000
+EXPOSE 3001
+ENV PORT=3001
 ENV HOSTNAME="0.0.0.0"
 
 CMD ["node", "apps/dashboard/server.js"]
