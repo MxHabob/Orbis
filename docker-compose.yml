@@ -1,90 +1,133 @@
 services:
+  # -----------------------------------------------------------------------------
+  # DATABASE (PostgreSQL)
+  # -----------------------------------------------------------------------------
   db:
     image: postgres:16-alpine
     container_name: mulboi-db
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: entity_user
-      POSTGRES_PASSWORD: yMEaelHrta0KFcr5luQ5
-      POSTGRES_DB: entity_database
+      POSTGRES_USER: ${POSTGRES_USER:-entity_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-yMEaelHrta0KFcr5luQ5}
+      POSTGRES_DB: ${POSTGRES_DB:-entity_database}
     ports:
-      - "5444:5432"
+      - "${DB_PORT:-5444}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - internal_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U entity_user -d entity_database"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-entity_user} -d ${POSTGRES_DB:-entity_database}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+  # -----------------------------------------------------------------------------
+  # CACHE (Redis)
+  # -----------------------------------------------------------------------------
   redis:
     image: redis:7-alpine
     container_name: mulboi-redis
-    command: redis-server --requirepass X3amyMOleJLP0BNXFzXQ
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD:-X3amyMOleJLP0BNXFzXQ}
     ports:
-      - "6382:6379"
+      - "${REDIS_PORT:-6382}:6379"
+    networks:
+      - internal_network
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "X3amyMOleJLP0BNXFzXQ", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-X3amyMOleJLP0BNXFzXQ}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+  # -----------------------------------------------------------------------------
+  # OBJECT STORAGE (MinIO)
+  # -----------------------------------------------------------------------------
   minio:
     image: minio/minio
     container_name: mulboi-minio
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: zsftjlvfneswwb0h
-    ports:
-      - "9088:9000"
-      - "9001:9001"
+    restart: unless-stopped
     command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-zsftjlvfneswwb0h}
+    ports:
+      - "${MINIO_API_PORT:-9088}:9000"
+      - "${MINIO_CONSOLE_PORT:-9089}:9001"
     volumes:
       - minio_data:/data
+    networks:
+      - internal_network
+    # Dokploy will require mapping specific domains to these ports in the UI if you want public access
+    # Internal access via 'minio:9000' is preferred for the API.
 
+  # -----------------------------------------------------------------------------
+  # API SERVICE (Backend)
+  # -----------------------------------------------------------------------------
   api:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
     container_name: mulboi-api
+    restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://entity_user:yMEaelHrta0KFcr5luQ5@db:5432/entity_database
-      REDIS_URL: redis://default:X3amyMOleJLP0BNXFzXQ@redis:6379
-      PORT: 3000
-      BETTER_AUTH_SECRET: cX7SpFkTPkBzYW2vv5iJmNDqcQG0tpws
-      BETTER_AUTH_URL: http://localhost:3002
-      ALLOWED_API_ORIGINS: http://localhost:3001
-      S3_ENDPOINT_URL: http://minio:9000
-      S3_ACCESS_KEY_ID: minioadmin
-      S3_SECRET_ACCESS_KEY: zsftjlvfneswwb0h
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-entity_user}:${POSTGRES_PASSWORD:-yMEaelHrta0KFcr5luQ5}@db:5432/${POSTGRES_DB:-entity_database}
+      REDIS_URL: redis://default:${REDIS_PASSWORD:-X3amyMOleJLP0BNXFzXQ}@redis:6379
+      # Storage Config
+      S3_ENDPOINT_URL: ${S3_ENDPOINT_URL:-http://minio:9000}
+      S3_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minioadmin}
+      S3_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-zsftjlvfneswwb0h}
       S3_REGION: us-east-1
-      S3_BUCKET: vault
+      S3_BUCKET: ${S3_BUCKET:-vault}
       S3_FORCE_PATH_STYLE: "true"
+      # App Config
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      BETTER_AUTH_URL: ${API_PUBLIC_URL}
+      ALLOWED_API_ORIGINS: ${DASHBOARD_PUBLIC_URL}
+      PORT: 3000
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
-    ports:
-      - "3002:3000"
+      minio:
+        condition: service_started
+    networks:
+      - internal_network
 
+  # -----------------------------------------------------------------------------
+  # DASHBOARD SERVICE (Frontend)
+  # -----------------------------------------------------------------------------
   dashboard:
     build:
       context: .
       dockerfile: apps/dashboard/Dockerfile
+      # Pass build arguments for static generation if necessary
       args:
-        NEXT_PUBLIC_API_URL: http://localhost:3002
-        NEXT_PUBLIC_URL: http://localhost:3001
-        NEXT_PUBLIC_S3_PUBLIC_URL: http://localhost:9088/vault
+        NEXT_PUBLIC_API_URL: ${API_PUBLIC_URL}
+        NEXT_PUBLIC_URL: ${DASHBOARD_PUBLIC_URL}
+        NEXT_PUBLIC_S3_PUBLIC_URL: ${S3_PUBLIC_URL}
     container_name: mulboi-dashboard
+    restart: unless-stopped
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:3002
-      NEXT_PUBLIC_URL: http://localhost:3001
-      NEXT_PUBLIC_S3_PUBLIC_URL: http://localhost:9088/vault
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${API_PUBLIC_URL}
+      NEXT_PUBLIC_URL: ${DASHBOARD_PUBLIC_URL}
+      NEXT_PUBLIC_S3_PUBLIC_URL: ${S3_PUBLIC_URL}
+      PORT: 3000
     depends_on:
       - api
-    ports:
-      - "3001:3000"
+    networks:
+      - internal_network
 
+# -----------------------------------------------------------------------------
+# VOLUMES & NETWORKS
+# -----------------------------------------------------------------------------
 volumes:
   postgres_data:
   minio_data:
+
+networks:
+  internal_network:
+    driver: bridge
