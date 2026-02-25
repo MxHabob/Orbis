@@ -1,67 +1,5 @@
 services:
   # -----------------------------------------------------------------------------
-  # DATABASE (PostgreSQL)
-  # -----------------------------------------------------------------------------
-  db:
-    image: postgres:16-alpine
-    container_name: mulboi-db
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-entity_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-yMEaelHrta0KFcr5luQ5}
-      POSTGRES_DB: ${POSTGRES_DB:-entity_database}
-    ports:
-      - "${DB_PORT:-5444}:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - internal_network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-entity_user} -d ${POSTGRES_DB:-entity_database}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # -----------------------------------------------------------------------------
-  # CACHE (Redis)
-  # -----------------------------------------------------------------------------
-  redis:
-    image: redis:7-alpine
-    container_name: mulboi-redis
-    restart: unless-stopped
-    command: redis-server --requirepass ${REDIS_PASSWORD:-X3amyMOleJLP0BNXFzXQ}
-    ports:
-      - "${REDIS_PORT:-6382}:6379"
-    networks:
-      - internal_network
-    healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-X3amyMOleJLP0BNXFzXQ}", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # -----------------------------------------------------------------------------
-  # OBJECT STORAGE (MinIO)
-  # -----------------------------------------------------------------------------
-  minio:
-    image: minio/minio
-    container_name: mulboi-minio
-    restart: unless-stopped
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-zsftjlvfneswwb0h}
-    ports:
-      - "${MINIO_API_PORT:-9088}:9000"
-      - "${MINIO_CONSOLE_PORT:-9089}:9001"
-    volumes:
-      - minio_data:/data
-    networks:
-      - internal_network
-    # Dokploy will require mapping specific domains to these ports in the UI if you want public access
-    # Internal access via 'minio:9000' is preferred for the API.
-
-  # -----------------------------------------------------------------------------
   # API SERVICE (Backend)
   # -----------------------------------------------------------------------------
   api:
@@ -79,13 +17,6 @@ services:
       REDIS_URL: redis://default:${REDIS_PASSWORD:-X3amyMOleJLP0BNXFzXQ}@redis:6379
       S3_ENDPOINT_URL: ${S3_ENDPOINT_URL:-http://minio:9000}
       PORT: 3000
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      minio:
-        condition: service_started
     ports:
       - "3002:3000"
     networks:
@@ -116,13 +47,6 @@ services:
       - "3001:3000"
     networks:
       - internal_network
-
-# -----------------------------------------------------------------------------
-# VOLUMES & NETWORKS
-# -----------------------------------------------------------------------------
-volumes:
-  postgres_data:
-  minio_data:
 
 networks:
   internal_network:
