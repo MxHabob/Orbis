@@ -34,6 +34,11 @@ function getTrustedOrigins(): string[] {
     origins.push(process.env.DASHBOARD_URL);
   }
   
+  // Add NEXT_PUBLIC_URL if set (for dashboard)
+  if (process.env.NEXT_PUBLIC_URL) {
+    origins.push(process.env.NEXT_PUBLIC_URL);
+  }
+  
   // Add NEXT_PUBLIC_APP_URL if set (for dashboard)
   if (process.env.NEXT_PUBLIC_APP_URL) {
     origins.push(process.env.NEXT_PUBLIC_APP_URL);

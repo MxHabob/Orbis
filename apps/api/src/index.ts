@@ -23,7 +23,11 @@ app.use(
 app.use(
   "*",
   cors({
-    origin: "http://localhost:3001",
+    origin: [
+      "http://localhost:3001",
+      ...(process.env.ALLOWED_API_ORIGINS?.split(",") || []),
+      ...(process.env.NEXT_PUBLIC_URL ? [process.env.NEXT_PUBLIC_URL] : []),
+    ],
     allowMethods: ["POST", "GET", "OPTIONS"],
     allowHeaders: [
       "Authorization",
@@ -36,6 +40,8 @@ app.use(
       "x-user-country",
       "x-force-primary",
       "x-school-id",
+      "x-better-auth-session",
+      "x-better-auth-id",
     ],
     exposeHeaders: [
       "Content-Length",
