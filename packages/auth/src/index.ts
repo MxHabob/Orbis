@@ -7,7 +7,6 @@ import {
   accounts, 
   verifications 
 } from "@midday/db/schema";
-import { sessionCache, userCache } from "@midday/cache";
 
 function getApiUrl(): string {
   if (process.env.BETTER_AUTH_URL) {
@@ -17,7 +16,7 @@ function getApiUrl(): string {
     return process.env.API_URL;
   }
   return process.env.NODE_ENV === "production"
-    ? "https://api.midday.ai"
+    ? "https://mommy-api.mulverse.com"
     : "http://localhost:3002";
 }
 
