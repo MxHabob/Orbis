@@ -11,16 +11,12 @@ services:
     env_file:
       - .env
     environment:
-      # Overrides or additional config
       NODE_ENV: production
-      DATABASE_URL: postgresql://${POSTGRES_USER:-entity_user}:${POSTGRES_PASSWORD:-yMEaelHrta0KFcr5luQ5}@db:5432/${POSTGRES_DB:-entity_database}
-      REDIS_URL: redis://default:${REDIS_PASSWORD:-X3amyMOleJLP0BNXFzXQ}@redis:6379
-      S3_ENDPOINT_URL: ${S3_ENDPOINT_URL:-http://minio:9000}
       PORT: 3000
     ports:
       - "3002:3000"
     networks:
-      - internal_network
+      - dokploy-network
 
   # -----------------------------------------------------------------------------
   # DASHBOARD SERVICE (Frontend)
@@ -29,11 +25,10 @@ services:
     build:
       context: .
       dockerfile: apps/dashboard/Dockerfile
-      # Pass build arguments for static generation if necessary
       args:
-        NEXT_PUBLIC_API_URL: ${API_PUBLIC_URL}
-        NEXT_PUBLIC_URL: ${DASHBOARD_PUBLIC_URL}
-        NEXT_PUBLIC_S3_PUBLIC_URL: ${S3_PUBLIC_URL}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_URL: ${NEXT_PUBLIC_URL}
+        NEXT_PUBLIC_S3_PUBLIC_URL: ${NEXT_PUBLIC_S3_PUBLIC_URL}
     container_name: mulboi-dashboard
     restart: unless-stopped
     env_file:
@@ -46,8 +41,8 @@ services:
     ports:
       - "3001:3000"
     networks:
-      - internal_network
+      - dokploy-network
 
 networks:
-  internal_network:
-    driver: bridge
+  dokploy-network:
+    external: true
