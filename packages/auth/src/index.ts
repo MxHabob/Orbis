@@ -69,12 +69,25 @@ export const auth = betterAuth({
   advanced: {
     crossSubDomainCookies: {
       enabled: true,
+      domain: process.env.NODE_ENV === "production" ? ".mulverse.com" : undefined,
     },
     database: {
       generateId: false,
     },
+    trustProxy: true,
   },
   emailAndPassword: {
     enabled: true,
+  },
+  onSessionConfig: () => {
+    return {
+      cookieOptions: {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        domain: process.env.NODE_ENV === "production" ? ".mulverse.com" : undefined,
+      },
+    };
   },
 });

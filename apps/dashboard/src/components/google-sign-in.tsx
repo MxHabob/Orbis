@@ -22,7 +22,7 @@ export function GoogleSignIn({ showLastUsed = false }: Props) {
     setLoading(true);
 
     if (isDesktopApp()) {
-      const redirectTo = new URL("/api/auth/callback", getUrl());
+      const redirectTo = new URL("/", getUrl());
 
       redirectTo.searchParams.append("provider", "google");
       redirectTo.searchParams.append("client", "desktop");
@@ -32,7 +32,7 @@ export function GoogleSignIn({ showLastUsed = false }: Props) {
         callbackURL: redirectTo.toString(),
       });
     } else {
-      const redirectTo = new URL("/api/auth/callback", getUrl());
+      const redirectTo = new URL("/", getUrl());
 
       if (returnTo) {
         redirectTo.searchParams.append("return_to", returnTo);

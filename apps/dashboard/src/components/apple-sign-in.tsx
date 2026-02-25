@@ -19,7 +19,7 @@ export function AppleSignIn({ showLastUsed = false }: Props) {
     setLoading(true);
 
     if (isDesktopApp()) {
-      const redirectTo = new URL("/api/auth/callback", getUrl());
+      const redirectTo = new URL("/", getUrl());
 
       redirectTo.searchParams.append("provider", "apple");
       redirectTo.searchParams.append("client", "desktop");
@@ -31,7 +31,7 @@ export function AppleSignIn({ showLastUsed = false }: Props) {
     } else {
       await authClient.signIn.social({
         provider: "apple",
-        callbackURL: `${getUrl()}/api/auth/callback?provider=apple`,
+        callbackURL: `${getUrl()}/`,
       });
     }
 

@@ -96,16 +96,16 @@ app.doc("/openapi", {
   openapi: "3.1.0",
   info: {
     version: "0.0.1",
-    title: "Entity API",
+    title: "Mommy School API",
     description: "School Management System API Platform",
     contact: {
-      name: "Entity Support",
-      email: "engineer@entity.com",
-      url: "https://entity.com",
+      name: "Mommy School Support",
+      email: "engineer@mommyschool.com",
+      url: "https://mommyschool.com",
     },
     license: {
       name: "Proprietary",
-      url: "https://entity.com/terms",
+      url: "https://mommyschool.com/terms",
     },
   },
   servers: [
@@ -126,7 +126,7 @@ app.openAPIRegistry.registerComponent("securitySchemes", "token", {
 
 app.get(
   "/",
-  Scalar({ url: "/openapi", pageTitle: "Entity API Docs", theme: "saturn" }),
+  Scalar({ url: "/openapi", pageTitle: "Mommy School API Docs", theme: "saturn" }),
 );
 
 export default {
