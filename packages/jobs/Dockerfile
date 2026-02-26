@@ -30,7 +30,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install turbo CLI globally
-RUN bun add -g turbo
+RUN bun add -g turbo && ln -s /root/.bun/bin/turbo /usr/local/bin/turbo
 
 # Builder stage
 FROM base AS builder
