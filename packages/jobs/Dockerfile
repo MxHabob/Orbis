@@ -1,23 +1,7 @@
-# Start from a clean Debian image for maximum stability
-FROM debian:bookworm-slim AS base
+# Base image with Bun
+FROM oven/bun:1.2.22 AS base
 
-# Set shell
-SHELL ["/bin/bash", "-c"]
-
-# Install basic tools and Bun
-RUN apt-get update && apt-get install -y \
-    curl \
-    unzip \
-    ca-certificates \
-    && curl -fsSL https://bun.sh/install | bash \
-    && ln -s /root/.bun/bin/bun /usr/local/bin/bun \
-    && rm -rf /var/lib/apt/lists/*
-
-# Add Bun to PATH
-ENV PATH="/root/.bun/bin:${PATH}"
-
-# Install Chromium and Arabic Fonts
-# Using --no-install-recommends and minimal libs to avoid Exit 100
+# Install Chromium and required fonts/libs for Puppeteer
 RUN apt-get update && apt-get install -y \
     chromium \
     fonts-noto-core \
@@ -29,30 +13,40 @@ RUN apt-get update && apt-get install -y \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
-# Install turbo CLI globally
+# Turbo CLI stage
+FROM base AS turbo-cli
 RUN bun add -g turbo
 
 # Builder stage
-FROM base AS builder
+FROM turbo-cli AS builder
 WORKDIR /app
+# Copy all files
 COPY . .
+# Use turbo CLI from Bun global install to prune workspaces
 RUN turbo prune @midday/jobs --docker
 
 # Installer stage
 FROM base AS installer
 WORKDIR /app
+
+# First install the dependencies (as they change less often)
 COPY --from=builder /app/out/json/ .
+# Install dependencies with Bun
 RUN bun install
 
-# Final stage
-FROM base AS runner
-WORKDIR /app
+# Copy the full source code
 COPY --from=builder /app/out/full/ .
 
-# Environment
+# Runner stage (same as installer to avoid another copy)
+FROM installer AS runner
+
+# Set working directory to the app root
+WORKDIR /app
+
+# Set environment variables for Production and Puppeteer optimizations
 ENV NODE_ENV=production
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
-# Run worker
+# Run the worker directly with Bun
 CMD ["bun", "run", "packages/jobs/src/worker.ts"]
