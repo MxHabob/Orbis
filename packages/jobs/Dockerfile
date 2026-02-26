@@ -2,6 +2,9 @@
 FROM oven/bun:1.2.22 AS base
 
 # Install Puppeteer dependencies and Chromium
+# Use USER root to ensure we have permissions
+USER root
+
 RUN apt-get update && apt-get install -y \
     chromium \
     fonts-noto-arabic \
