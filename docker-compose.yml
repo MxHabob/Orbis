@@ -43,6 +43,26 @@ services:
     networks:
       - dokploy-network
 
+  # -----------------------------------------------------------------------------
+  # WORKER SERVICE (Background Jobs)
+  # -----------------------------------------------------------------------------
+  worker:
+    build:
+      context: .
+      dockerfile: packages/jobs/Dockerfile
+    container_name: mulboi-worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium
+      PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: "true"
+    depends_on:
+      - api
+    networks:
+      - dokploy-network
+
 networks:
   dokploy-network:
     external: true
