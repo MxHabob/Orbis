@@ -6,7 +6,7 @@ import { LoginVideoBackground } from "@/components/login-video-background";
 import { UserAuthForm } from "@/components/user-auth-form";
 import { Cookies } from "@/utils/constants";
 import { auth } from "@midday/auth";
-import { Icons } from "@midday/ui/icons";
+import { Zap } from "lucide-react";
 import type { Metadata } from "next";
 import { cookies, headers } from "next/headers";
 import Link from "next/link";
@@ -14,7 +14,7 @@ import { redirect } from "next/navigation";
 import { userAgent } from "next/server";
 
 export const metadata: Metadata = {
-  title: "Login | Entity",
+  title: "Login | Mommy",
 };
 
 export default async function Page() {
@@ -117,7 +117,7 @@ export default async function Page() {
             className="flex items-center gap-2 hover:opacity-80 active:opacity-80 transition-opacity duration-200 pointer-events-auto"
           >
             <div className="w-6 h-6">
-              <Icons.LogoSmall className="w-full h-full text-foreground" />
+              <Zap className="w-full h-full text-foreground" />
             </div>
           </Link>
         </div>
@@ -132,7 +132,7 @@ export default async function Page() {
           <div className="space-y-8 flex-1 flex flex-col justify-center">
             {/* Header */}
             <div className="text-center space-y-2">
-              <h1 className="text-lg mb-4 font-serif">Welcome to Entity</h1>
+              <h1 className="text-lg mb-4 font-serif">Welcome to Mommy School</h1>
               <p className="font-sans text-sm text-[#878787]">
                 Sign in or create an account
               </p>
