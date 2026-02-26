@@ -5,7 +5,7 @@ type Options = {
   locale?: string;
 };
 
-const supportedLocales = ["en", "sv"];
+const supportedLocales = ["en", "sv", "ar"];
 
 export function getI18n({ locale = "en" }: Options) {
   // Ensure locale is supported, fallback to English if not

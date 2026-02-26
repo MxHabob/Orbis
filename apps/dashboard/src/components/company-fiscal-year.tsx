@@ -2,6 +2,7 @@
 
 import { useCurrentAcademicYearQuery, useUpdateAcademicYearMutation } from "@/hooks/use-academic-year";
 import { useZodForm } from "@/hooks/use-zod-form";
+import { useI18n } from "@/locales/client";
 import {
   Card,
   CardContent,
@@ -30,6 +31,7 @@ const formSchema = z.object({
 export function SchoolAcademicYear() {
   const { data } = useCurrentAcademicYearQuery();
   const updateAcademicYearMutation = useUpdateAcademicYearMutation();
+  const t = useI18n();
 
   const form = useZodForm(formSchema, {
     defaultValues: {
@@ -53,10 +55,9 @@ export function SchoolAcademicYear() {
       <form onSubmit={onSubmit}>
         <Card>
           <CardHeader>
-            <CardTitle>Academic Year</CardTitle>
+            <CardTitle>{t("settings.academic_year_title")}</CardTitle>
             <CardDescription>
-              Set the current academic year and its duration. This will be used
-              for student enrollments, grading, and reporting.
+              {t("settings.academic_year_description")}
             </CardDescription>
           </CardHeader>
 
@@ -67,7 +68,7 @@ export function SchoolAcademicYear() {
               render={({ field }) => (
                 <FormItem className="max-w-[300px]">
                   <FormControl>
-                    <Input {...field} placeholder="Academic Year (e.g. 2024/2025)" />
+                    <Input {...field} placeholder={t("settings.academic_year_placeholder")} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -116,7 +117,7 @@ export function SchoolAcademicYear() {
               disabled={updateAcademicYearMutation.isPending || !form.formState.isDirty}
               isSubmitting={updateAcademicYearMutation.isPending}
             >
-              Save
+              {t("common.save")}
             </SubmitButton>
           </CardFooter>
         </Card>

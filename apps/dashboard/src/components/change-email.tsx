@@ -2,6 +2,7 @@
 
 import { useUserMutation, useUserQuery } from "@/hooks/use-user";
 import { useZodForm } from "@/hooks/use-zod-form";
+import { useI18n } from "@/locales/client";
 import {
   Card,
   CardContent,
@@ -28,6 +29,7 @@ const formSchema = z.object({
 export function ChangeEmail() {
   const { data: user } = useUserQuery();
   const updateUserMutation = useUserMutation();
+  const t = useI18n();
 
   const form = useZodForm(formSchema, {
     defaultValues: {
@@ -46,8 +48,8 @@ export function ChangeEmail() {
       <form onSubmit={onSubmit}>
         <Card>
           <CardHeader>
-            <CardTitle>Email</CardTitle>
-            <CardDescription>Change your email address.</CardDescription>
+            <CardTitle>{t("account.email_title")}</CardTitle>
+            <CardDescription>{t("account.email_description")}</CardDescription>
           </CardHeader>
 
           <CardContent>
@@ -75,13 +77,13 @@ export function ChangeEmail() {
 
           <CardFooter className="flex justify-between">
             <div>
-              This is your primary email address for notifications and more.
+              {t("account.email_primary_notice")}
             </div>
             <SubmitButton
               type="submit"
               isSubmitting={updateUserMutation.isPending}
             >
-              Save
+              {t("common.save")}
             </SubmitButton>
           </CardFooter>
         </Card>

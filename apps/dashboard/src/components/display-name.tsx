@@ -2,6 +2,8 @@
 
 import { useUserMutation, useUserQuery } from "@/hooks/use-user";
 import { useZodForm } from "@/hooks/use-zod-form";
+import { authClient } from "@midday/auth/auth-client";
+import { useI18n } from "@/locales/client";
 import {
   Card,
   CardContent,
@@ -22,22 +24,23 @@ import { SubmitButton } from "@midday/ui/submit-button";
 import { z } from "zod/v3";
 
 const formSchema = z.object({
-  fullName: z.string().min(1).max(32).optional(),
+  name: z.string().min(1).max(32).optional(),
 });
 
 export function DisplayName() {
-  const { data: user } = useUserQuery();
+  const { data: session } = authClient.useSession();
   const updateUserMutation = useUserMutation();
-
+  const t = useI18n();
+  
   const form = useZodForm(formSchema, {
     defaultValues: {
-      fullName: user?.fullName ?? undefined,
+      name: session?.user.name ?? session?.user.email ?? undefined,
     },
   });
 
   const onSubmit = form.handleSubmit((data) => {
     updateUserMutation.mutate({
-      fullName: data?.fullName,
+      name: data?.name,
     });
   });
 
@@ -46,17 +49,16 @@ export function DisplayName() {
       <form onSubmit={onSubmit}>
         <Card>
           <CardHeader>
-            <CardTitle>Display Name</CardTitle>
+            <CardTitle>{t("account.display_name_title")}</CardTitle>
             <CardDescription>
-              Please enter your full name, or a display name you are comfortable
-              with.
+              {t("account.display_name_description")}
             </CardDescription>
           </CardHeader>
 
           <CardContent>
             <FormField
               control={form.control}
-              name="fullName"
+              name="name"
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
@@ -77,13 +79,13 @@ export function DisplayName() {
           </CardContent>
 
           <CardFooter className="flex justify-between">
-            <div>Please use 32 characters at maximum.</div>
+            <div>{t("account.characters_limit", { count: 32 })}</div>
             <SubmitButton
               type="submit"
               disabled={updateUserMutation.isPending}
               isSubmitting={updateUserMutation.isPending}
             >
-              Save
+              {t("common.save")}
             </SubmitButton>
           </CardFooter>
         </Card>

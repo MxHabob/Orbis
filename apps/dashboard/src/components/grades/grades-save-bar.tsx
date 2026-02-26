@@ -1,6 +1,7 @@
 "use client";
 
 import { Portal } from "@/components/portal";
+import { useI18n } from "@/locales/client";
 import { Button } from "@midday/ui/button";
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, Save } from "lucide-react";
@@ -33,6 +34,7 @@ export function GradesSaveBar({
   hasErrors,
 }: GradesSaveBarProps) {
   const isOpen = count > 0;
+  const t = useI18n();
 
   return (
     <Portal>
@@ -55,19 +57,19 @@ export function GradesSaveBar({
                 transition={{ duration: 0.15 }}
               />
               <div className="relative h-12 justify-between items-center flex pl-4 pr-2">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 px-4">
                   <span 
                     className={cn(
                       "text-sm font-medium transition-colors duration-200",
                       hasErrors ? "text-destructive font-bold" : "text-foreground"
                     )}
                   >
-                    {count} {count === 1 ? "unsaved change" : "unsaved changes"}
-                    {hasErrors && " (invalid)"}
+                    {t("grades.unsaved_changes", { count })}
+                    {hasErrors && ` ${t("grades.invalid")}`}
                   </span>
                 </div>
 
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 gap-2">
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button
@@ -76,24 +78,23 @@ export function GradesSaveBar({
                         className="text-muted-foreground h-8 hover:bg-transparent"
                         disabled={isPending}
                       >
-                        Discard
+                        {t("grades.discard")}
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Discard unsaved changes?</AlertDialogTitle>
+                        <AlertDialogTitle>{t("grades.discard_title")}</AlertDialogTitle>
                         <AlertDialogDescription>
-                          You have {count} unsaved {count === 1 ? "change" : "changes"}. 
-                          This action cannot be undone and all your recent edits will be lost.
+                          {t("grades.discard_description", { count })}
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Keep editing</AlertDialogCancel>
+                        <AlertDialogCancel>{t("grades.keep_editing")}</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={onCancel}
                           className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
-                          Discard changes
+                          {t("grades.discard_changes")}
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
@@ -113,7 +114,7 @@ export function GradesSaveBar({
                     ) : (
                       <Save size={16} />
                     )}
-                    <span>Save All</span>
+                    <span>{t("grades.save_all")}</span>
                   </Button>
                 </div>
               </div>

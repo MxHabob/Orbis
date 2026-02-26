@@ -36,7 +36,7 @@ export default async function Layout({
     <HydrateClient>
       <div className="relative">
         <Sidebar />
-        <div className="md:ml-[70px] pb-4">
+        <div className="md:ms-[70px] pb-4">
           <Header />
           <div className="px-4 md:px-8">{children}</div>
         </div>

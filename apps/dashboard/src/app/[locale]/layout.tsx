@@ -93,6 +93,7 @@ export default async function Layout({
   return (
     <html
       lang={locale}
+      dir={locale === "ar" ? "rtl" : "ltr"}
       suppressHydrationWarning
       className={cn(isDesktop && "desktop")}
     >

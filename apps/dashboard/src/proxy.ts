@@ -3,8 +3,8 @@ import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@midday/auth";
 
 const I18nMiddleware = createI18nMiddleware({
-  locales: ["en"],
-  defaultLocale: "en",
+  locales: ["ar", "sv", "en"],
+  defaultLocale: "ar",
   urlMappingStrategy: "rewrite",
 });
 

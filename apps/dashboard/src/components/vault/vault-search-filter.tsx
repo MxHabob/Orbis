@@ -22,6 +22,7 @@ import { Input } from "@midday/ui/input";
 import { formatISO, parseISO } from "date-fns";
 import { useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
+import { useI18n } from "@/locales/client";
 
 export function VaultSearchFilter() {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -30,6 +31,7 @@ export function VaultSearchFilter() {
   const trpc = useTRPC();
   const { data: session } = authClient.useSession();
   const user = session?.user;
+  const t = useI18n();
 
   const { filter, setFilter } = useDocumentFilterParams();
   const [input, setInput] = useState(filter.q ?? "");
@@ -78,16 +80,16 @@ export function VaultSearchFilter() {
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
-      <div className="flex space-x-4 items-center">
+      <div className="flex gap-4 items-center">
         <form
           className="relative"
           onSubmit={handleSubmit}
         >
-          <Icons.Search className="absolute pointer-events-none left-3 top-[11px]" />
+          <Icons.Search className="absolute pointer-events-none start-3 top-[11px]" />
           <Input
             ref={inputRef}
-            placeholder="البحث في الملفات..."
-            className="pl-9 w-full md:w-[350px] pr-8"
+            placeholder={t("vault.search_placeholder")}
+            className="ps-9 w-full md:w-[350px] pe-8"
             value={input}
             onChange={handleSearch}
             autoComplete="off"
@@ -103,7 +105,7 @@ export function VaultSearchFilter() {
               onClick={() => setIsOpen((prev) => !prev)}
               type="button"
               className={cn(
-                "absolute z-10 right-3 top-[10px] opacity-50 transition-opacity duration-300 hover:opacity-100",
+                "absolute z-10 end-3 top-[10px] opacity-50 transition-opacity duration-300 hover:opacity-100",
                 hasValidFilters && "opacity-100",
                 isOpen && "opacity-100",
               )}
@@ -130,8 +132,8 @@ export function VaultSearchFilter() {
         <DropdownMenuGroup>
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>
-              <Icons.CalendarMonth className="mr-2 h-4 w-4" />
-              <span>التاريخ</span>
+              <Icons.CalendarMonth className="me-2 h-4 w-4" />
+              <span>{t("vault.date")}</span>
             </DropdownMenuSubTrigger>
             <DropdownMenuPortal>
               <DropdownMenuSubContent

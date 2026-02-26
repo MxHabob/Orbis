@@ -5,6 +5,7 @@ import { Icons } from "@midday/ui/icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useI18n } from "@/locales/client";
 
 const icons = {
   "/": () => <Icons.Overview size={20} />,
@@ -14,49 +15,6 @@ const icons = {
   "/reports": () => <Icons.Customers size={20} />,
   "/certificates": () => <Icons.Files size={20} />,
 } as const;
-
-const items = [
-  {
-    path: "/",
-    name: "Overview",
-  },
-  {
-    path: "/grades",
-    name: "Grades",
-    children: [
-      { path: "/grades/reports", name: "Reports" },
-    ],
-  },
-  {
-    path: "/reports",
-    name: "Reports",
-    children: [
-      { path: "/reports/academic",      name: "Academic Reports" },
-      { path: "/reports/financial",     name: "Financial Reports" },
-      { path: "/reports/attendance",    name: "Attendance Reports" },
-      { path: "/reports/ministerial",   name: "Ministerial Reports" },
-    ]
-  },
-  {
-    path: "/certificates",
-    name: "Certificates",
-  },
-  {
-    path: "/vault",
-    name: "Vault",
-  },
-  {
-    path: "/settings",
-    name: "Settings",
-    children: [
-      { path: "/settings", name: "General" },
-      { path: "/settings/accounts", name: "Bank Connections" },
-      { path: "/settings/staff", name: "Staff & Teachers" },
-      { path: "/settings/classes", name: "Classes" },
-      { path: "/settings/subjects", name: "Subjects" },
-    ],
-  },
-];
 
 // Known menu base paths that should not be treated as chat IDs
 const KNOWN_MENU_PATHS = [
@@ -110,12 +68,12 @@ const ChildItem = ({
         {/* Child item text */}
         <div
           className={cn(
-            "ml-[35px] mr-[15px] h-[32px] flex items-center",
-            "border-l border-[#e6e6e6] dark:border-[#1d1d1d] pl-3",
+            "ms-[35px] me-[15px] h-[32px] flex items-center",
+            "border-s border-[#e6e6e6] dark:border-[#1d1d1d] ps-3",
             "transition-all duration-200 ease-out",
             showChild
               ? "opacity-100 translate-x-0"
-              : "opacity-0 -translate-x-2",
+              : "opacity-0 -translate-x-2 rtl:translate-x-2",
           )}
           style={{
             transitionDelay: showChild
@@ -172,7 +130,7 @@ const Item = ({
           {/* Background that expands */}
           <div
             className={cn(
-              "border border-transparent h-[40px] transition-all duration-200 ease-&lsqb;cubic-bezier(0.4,0,0.2,1)&rsqb; ml-[15px] mr-[15px]",
+              "border border-transparent h-[40px] transition-all duration-200 ease-&lsqb;cubic-bezier(0.4,0,0.2,1)&rsqb; ms-[15px] me-[15px]",
               isActive &&
                 "bg-[#f7f7f7] dark:bg-[#131313] border-[#e6e6e6] dark:border-[#1d1d1d]",
               isExpanded ? "w-[calc(100%-30px)]" : "w-[40px]",
@@ -180,19 +138,19 @@ const Item = ({
           />
 
           {/* Icon - always in same position from sidebar edge */}
-          <div className="absolute top-0 left-[15px] w-[40px] h-[40px] flex items-center justify-center dark:text-[#666666] text-black group-hover:!text-primary pointer-events-none">
+          <div className="absolute top-0 start-[15px] w-[40px] h-[40px] flex items-center justify-center dark:text-[#666666] text-black group-hover:!text-primary pointer-events-none">
             <div className={cn(isActive && "dark:!text-white")}>
               <Icon />
             </div>
           </div>
 
           {isExpanded && (
-            <div className="absolute top-0 left-[55px] right-[4px] h-[40px] flex items-center pointer-events-none">
+            <div className="absolute top-0 start-[55px] end-[4px] h-[40px] flex items-center pointer-events-none">
               <span
                 className={cn(
                   "text-sm font-medium transition-opacity duration-200 ease-in-out text-[#666] group-hover:text-primary",
                   "whitespace-nowrap overflow-hidden",
-                  hasChildren ? "pr-2" : "",
+                  hasChildren ? "pe-2" : "",
                   isActive && "text-primary",
                 )}
               >
@@ -203,7 +161,7 @@ const Item = ({
                   type="button"
                   onClick={handleChevronClick}
                   className={cn(
-                    "w-8 h-8 flex items-center justify-center transition-all duration-200 ml-auto mr-3",
+                    "w-8 h-8 flex items-center justify-center transition-all duration-200 ms-auto me-3",
                     "text-[#888] hover:text-primary pointer-events-auto",
                     isActive && "text-primary/60",
                     shouldShowChildren && "rotate-180",
@@ -251,9 +209,51 @@ type Props = {
 };
 
 export function MainMenu({ onSelect, isExpanded = false }: Props) {
+  const t = useI18n();
   const pathname = usePathname();
   const part = pathname?.split("/")[1];
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
+
+  const items = [
+    {
+      path: "/",
+      name: t("menu.overview"),
+    },
+    {
+      path: "/grades",
+      name: t("menu.grades"),
+      children: [{ path: "/grades/reports", name: t("menu.reports") }],
+    },
+    {
+      path: "/reports",
+      name: t("menu.reports"),
+      children: [
+        { path: "/reports/academic", name: t("menu.academic_reports") },
+        { path: "/reports/financial", name: t("menu.financial_reports") },
+        { path: "/reports/attendance", name: t("menu.attendance_reports") },
+        { path: "/reports/ministerial", name: t("menu.ministerial_reports") },
+      ],
+    },
+    {
+      path: "/certificates",
+      name: t("menu.certificates"),
+    },
+    {
+      path: "/vault",
+      name: t("menu.vault"),
+    },
+    {
+      path: "/settings",
+      name: t("menu.settings"),
+      children: [
+        { path: "/settings", name: t("menu.general") },
+        { path: "/settings/accounts", name: t("menu.bank_connections") },
+        { path: "/settings/staff", name: t("menu.staff_teachers") },
+        { path: "/settings/classes", name: t("menu.classes") },
+        { path: "/settings/subjects", name: t("menu.subjects") },
+      ],
+    },
+  ];
 
   // Check if current pathname is a known menu path (including sub-paths)
   const pathnameWithoutQuery = pathname?.split("?")[0] || "";

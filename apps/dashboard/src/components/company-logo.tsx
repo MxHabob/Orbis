@@ -1,6 +1,7 @@
 "use client";
 
 import { authClient } from "@midday/auth/auth-client";
+import { useI18n } from "@/locales/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@midday/ui/avatar";
 import {
   Card,
@@ -15,16 +16,15 @@ import { useRef } from "react";
 export function CompanyLogo() {
   const inputRef = useRef<HTMLInputElement>(null);
   const { data, isPending } = authClient.useSession();
-
+  const t = useI18n();
 
   return (
     <Card>
-      <div className="flex justify-between items-center pr-6">
+      <div className="flex justify-between items-center pr-6 rtl:ps-6 rtl:pr-0">
         <CardHeader>
-          <CardTitle>User profile</CardTitle>
+          <CardTitle>{t("settings.entity_name_title")}</CardTitle>
           <CardDescription>
-            This is your user profile. Click on the profile to upload a custom
-            one from your files.
+            {t("settings.entity_name_description")}
           </CardDescription>
         </CardHeader>
 
@@ -57,7 +57,7 @@ export function CompanyLogo() {
           />
         </Avatar>
       </div>
-      <CardFooter>An avatar is optional but strongly recommended.</CardFooter>
+      <CardFooter>{t("account.avatar_optional")}</CardFooter>
     </Card>
   );
 }

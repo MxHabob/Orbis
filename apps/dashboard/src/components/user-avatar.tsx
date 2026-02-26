@@ -1,6 +1,7 @@
 "use client";
 
 import { authClient } from "@midday/auth/auth-client";
+import { useI18n } from "@/locales/client";
 import {
   Card,
   CardDescription,
@@ -13,21 +14,21 @@ import { AvatarUpload } from "./avatar-upload";
 export function UserAvatar() {
   const { data: session } = authClient.useSession();
   const user = session?.user;
-
+  const t = useI18n();
+  
   return (
     <Card>
-      <div className="flex justify-between items-center pr-6">
+      <div className="flex justify-between items-center pr-6 rtl:ps-6 rtl:pr-0">
         <CardHeader>
-          <CardTitle>Avatar</CardTitle>
+          <CardTitle>{t("account.avatar_title")}</CardTitle>
           <CardDescription>
-            This is your avatar. Click on the avatar to upload a custom one from
-            your files.
+            {t("account.avatar_description")}
           </CardDescription>
         </CardHeader>
 
         <AvatarUpload userId={user?.id!} avatarUrl={user?.image} />
       </div>
-      <CardFooter>An avatar is optional but strongly recommended.</CardFooter>
+      <CardFooter>{t("account.avatar_optional")}</CardFooter>
     </Card> 
   );
 }

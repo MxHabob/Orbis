@@ -1,6 +1,6 @@
 "use client";
 
-import { useUserMutation, useUserQuery } from "@/hooks/use-user";
+import { useUserMutation } from "@/hooks/use-user";
 import { useI18n } from "@/locales/client";
 import { countries } from "@midday/location/countries-intl";
 import {
@@ -11,10 +11,11 @@ import {
   CardTitle,
 } from "@midday/ui/card";
 import { ComboboxDropdown } from "@midday/ui/combobox-dropdown";
+import { authClient } from "@midday/auth/auth-client";
 
 export function LocaleSettings() {
   const t = useI18n();
-  const { data: user } = useUserQuery();
+  const { data: session } = authClient.useSession();
   const updateUserMutation = useUserMutation();
 
   const localeItems = Object.values(countries).map((c, index) => ({
@@ -35,7 +36,7 @@ export function LocaleSettings() {
           <ComboboxDropdown
             placeholder={t("locale.placeholder")}
             selectedItem={localeItems.find(
-              (item) => item.value === user?.locale,
+              (item) => item.value === session?.user.locale,
             )}
             searchPlaceholder={t("locale.searchPlaceholder")}
             items={localeItems}

@@ -3,6 +3,7 @@
 import { InputColor } from "@/components/input-color";
 import { SelectParentClass } from "@/components/select-parent-class";
 import { useClassParams } from "@/hooks/use-class-params";
+import { useI18n } from "@/locales/client";
 import { useZodForm } from "@/hooks/use-zod-form";
 import { useTRPC } from "@/trpc/client";
 import {
@@ -56,6 +57,7 @@ export function ClassForm({ data }: Props) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const { setParams } = useClassParams();
+  const t = useI18n();
 
   // Fetch academic years for the dropdown
   const { data: academicYears } = useQuery(trpc.academic.getYears.queryOptions());
@@ -113,7 +115,7 @@ export function ClassForm({ data }: Props) {
               render={({ field }) => (
                 <FormItem className="space-y-1">
                   <FormLabel className="text-xs text-[#878787] font-normal">
-                    Class Name
+                    {t("education.class_name")}
                   </FormLabel>
                   <FormControl>
                     <InputColor
@@ -138,7 +140,7 @@ export function ClassForm({ data }: Props) {
               render={({ field }) => (
                 <FormItem className="space-y-1">
                   <FormLabel className="text-xs text-[#878787] font-normal">
-                    Parent Class (Optional)
+                    {t("education.parent_class")}
                   </FormLabel>
                   <FormControl>
                     <SelectParentClass
@@ -160,18 +162,18 @@ export function ClassForm({ data }: Props) {
                 render={({ field }) => (
                   <FormItem className="space-y-1">
                     <FormLabel className="text-xs text-[#878787] font-normal">
-                      Type
+                      {t("education.type")}
                     </FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select type" />
+                          <SelectValue placeholder={t("education.select_type")} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         {classTypes.map((type) => (
                           <SelectItem key={type} value={type}>
-                            {type.charAt(0).toUpperCase() + type.slice(1).replace('_', ' ')}
+                            {t(`education.${type}` as any)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -186,7 +188,7 @@ export function ClassForm({ data }: Props) {
                 render={({ field }) => (
                   <FormItem className="space-y-1">
                     <FormLabel className="text-xs text-[#878787] font-normal">
-                      Division / Section
+                      {t("education.division")}
                     </FormLabel>
                     <FormControl>
                       <Input
@@ -206,7 +208,7 @@ export function ClassForm({ data }: Props) {
               render={({ field }) => (
                 <FormItem className="space-y-1">
                   <FormLabel className="text-xs text-[#878787] font-normal">
-                    Academic Year
+                    {t("education.academic_year")}
                   </FormLabel>
                   <Select 
                     onValueChange={(val) => field.onChange(val ? Number(val) : undefined)} 
@@ -214,13 +216,13 @@ export function ClassForm({ data }: Props) {
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select year" />
+                        <SelectValue placeholder={t("education.select_year")} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
                       {academicYears?.map((year) => (
                         <SelectItem key={year.id} value={year.id.toString()}>
-                          {year.yearName} {year.isCurrent ? "(Current)" : ""}
+                          {year.yearName} {year.isCurrent ? `(${t("education.current")})` : ""}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -232,12 +234,12 @@ export function ClassForm({ data }: Props) {
         </div>
 
         <div className="flex-1" />
-        <div className="pt-6 border-t mt-auto">
+        <div className="pt-6 border-t mt-auto text-right rtl:text-left">
           <SubmitButton
             isSubmitting={classMutation.isPending}
             className="w-full"
           >
-            {data ? "Update Class" : "Create Class"}
+            {data ? t("education.update_class") : t("education.create_class")}
           </SubmitButton>
         </div>
       </form>

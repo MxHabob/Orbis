@@ -9,45 +9,47 @@ import { TabsList, TabsTrigger } from "@midday/ui/tabs";
 import { useEffect, useState } from "react";
 import { useIsCustomizing } from "./widget-provider";
 import { authClient } from "@midday/auth/auth-client";
+import { useI18n } from "@/locales/client";
 
-function getTimeBasedGreeting(timezone?: string): string {
+function getTimeBasedGreeting(t: any, timezone?: string): string {
   const userTimezone =
     timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
   const now = new TZDate(new Date(), userTimezone);
   const hour = now.getHours();
 
   if (hour >= 5 && hour < 12) {
-    return "Morning";
+    return t("widgets.morning");
   }
   if (hour >= 12 && hour < 17) {
-    return "Afternoon";
+    return t("widgets.afternoon");
   }
 
-  return "Evening";
+  return t("widgets.evening");
 }
 
 export function WidgetsHeader() {
   const { data: session } = authClient.useSession();
   const isCustomizing = useIsCustomizing();
+  const t = useI18n();
   const [greeting, setGreeting] = useState(() =>
-    getTimeBasedGreeting(undefined),
+    getTimeBasedGreeting(t, undefined),
   );
 
   useEffect(() => {
     // Update greeting immediately
-    setGreeting(getTimeBasedGreeting(undefined));
+    setGreeting(getTimeBasedGreeting(t, undefined));
 
     // Set up interval to update greeting every 5 minutes
     const interval = setInterval(
       () => {
-        const newGreeting = getTimeBasedGreeting(undefined);
+        const newGreeting = getTimeBasedGreeting(t, undefined);
         setGreeting(newGreeting);
       },
       5 * 60 * 1000,
     ); 
 
     return () => clearInterval(interval);
-  }, []);
+  }, [t]);
 
   return (
     <div className="flex justify-between items-end mb-6">
@@ -60,8 +62,8 @@ export function WidgetsHeader() {
         </h1>
         <p className="text-[#666666] text-[14px]">
           {isCustomizing
-            ? "drag and drop to arrange your perfect dashboard."
-            : "here's a quick look at how things are going."}
+            ? t("widgets.customizing_description")
+            : t("widgets.normal_description")}
         </p>
       </div>
 
@@ -70,7 +72,7 @@ export function WidgetsHeader() {
           <Customize />
         </div>
         <MetricsFilter />
-        <div className="ml-2 relative flex items-stretch bg-[#f7f7f7] dark:bg-[#131313] w-fit">
+        <div className="ms-2 relative flex items-stretch bg-[#f7f7f7] dark:bg-[#131313] w-fit">
           <TabsList className="flex items-stretch h-auto p-0 bg-transparent">
             <TabsTrigger
               value="overview"
@@ -80,7 +82,7 @@ export function WidgetsHeader() {
                 "data-[state=active]:text-black data-[state=active]:bg-[#e6e6e6] dark:data-[state=active]:text-white dark:data-[state=active]:bg-[#1d1d1d] data-[state=active]:mb-[-1px] data-[state=active]:z-10",
               )}
             >
-              Overview
+              {t("widgets.overview")}
             </TabsTrigger>
             <TabsTrigger
               value="calendar"
@@ -90,7 +92,7 @@ export function WidgetsHeader() {
                 "data-[state=active]:text-black data-[state=active]:bg-[#e6e6e6] dark:data-[state=active]:text-white dark:data-[state=active]:bg-[#1d1d1d] data-[state=active]:mb-[-1px] data-[state=active]:z-10",
               )}
             >
-              Calendar
+              {t("widgets.calendar")}
             </TabsTrigger>
           </TabsList>
         </div>

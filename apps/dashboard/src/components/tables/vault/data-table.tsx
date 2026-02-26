@@ -33,6 +33,7 @@ import { useDebounceCallback } from "usehooks-ts";
 import { BottomBar } from "./bottom-bar";
 import { columns } from "./columns";
 import { DataTableHeader } from "./data-table-header";
+import { useI18n } from "@/locales/client";
 
 // Stable reference for non-clickable columns (avoids recreation on each render)
 const NON_CLICKABLE_COLUMNS = new Set(["select", "actions"]);
@@ -46,6 +47,7 @@ export function DataTable({ initialSettings }: Props) {
   const queryClient = useQueryClient();
   const { data: user } = useUserQuery();
   const { filter, hasFilters } = useDocumentFilterParams();
+  const t = useI18n();
   const { setRowSelection, rowSelection } = useDocumentsStore();
   const { setParams, params } = useDocumentParams();
   const parentRef = useRef<HTMLDivElement>(null);
@@ -167,13 +169,13 @@ export function DataTable({ initialSettings }: Props) {
   const handleReprocess = useCallback(
     (id: string) => {
       toast({
-        title: "جاري تحليل الملف",
-        description: "يتم تحليل الملف حالياً، قد يستغرق ذلك لحظات.",
+        title: t("vault.processing_title"),
+        description: t("vault.processing_description"),
         duration: 3000,
       });
       reprocessMutation.mutate({ id });
     },
-    [reprocessMutation],
+    [reprocessMutation, t],
   );
 
   const files = useMemo(() => {
@@ -278,7 +280,7 @@ export function DataTable({ initialSettings }: Props) {
               ).current = el;
             }
           }}
-          className="overflow-auto overscroll-contain border-l border-r border-b border-border scrollbar-hide"
+          className="overflow-auto overscroll-contain border-s border-e border-b border-border scrollbar-hide"
           style={{
             height: "calc(100vh - 180px + var(--header-offset, 0px))",
           }}
@@ -293,7 +295,7 @@ export function DataTable({ initialSettings }: Props) {
               <DataTableHeader table={table} tableScroll={tableScroll} />
 
               <TableBody
-                className="border-l-0 border-r-0 block"
+                className="border-s-0 border-e-0 block"
                 style={{
                   height: `${rowVirtualizer.getTotalSize()}px`,
                   position: "relative",
@@ -327,7 +329,7 @@ export function DataTable({ initialSettings }: Props) {
                       colSpan={columns.length}
                       className="h-24 text-center"
                     >
-                      No results.
+                      {t("vault.no_results_title")}
                     </TableCell>
                   </TableRow>
                 )}

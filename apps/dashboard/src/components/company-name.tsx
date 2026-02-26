@@ -3,6 +3,7 @@
 
 import { useZodForm } from "@/hooks/use-zod-form";
 import { authClient } from "@midday/auth/auth-client";
+import { useI18n } from "@/locales/client";
 import {
   Card,
   CardContent,
@@ -28,6 +29,7 @@ const formSchema = z.object({
 
 export function CompanyName() {
   const { data, isPending } = authClient.useSession();
+  const t = useI18n();
 
   const form = useZodForm(formSchema, {
     defaultValues: {
@@ -44,10 +46,9 @@ export function CompanyName() {
       <form onSubmit={onSubmit}>
         <Card>
           <CardHeader>
-            <CardTitle>User name</CardTitle>
+            <CardTitle>{t("settings.entity_name_title")}</CardTitle>
             <CardDescription>
-              This is your user's visible name within Midday. For example,
-              the name of your user or department.
+              {t("settings.entity_name_description")}
             </CardDescription>
           </CardHeader>
 
@@ -75,12 +76,12 @@ export function CompanyName() {
           </CardContent>
 
           <CardFooter className="flex justify-between">
-            <div>Please use 32 characters at maximum.</div>
+            <div>{t("account.characters_limit", { count: 32 })}</div>
             <SubmitButton
               isSubmitting={isPending}
               disabled={isPending}
             >
-              Save
+              {t("common.save")}
             </SubmitButton>
           </CardFooter>
         </Card>

@@ -126,6 +126,65 @@ export function translations(locale: string, params?: TranslationParams) {
             ? "Du har 1 faktura schemalagd för imorgon"
             : `Du har ${params?.count} fakturor schemalagda för imorgon`,
       };
+    case "ar":
+      return {
+        "notifications.match": `تمت مطابقة المعاملة "${params?.transactionName}" مع "${params?.fileName}"`,
+        "notifications.transactions":
+          params?.numberOfTransactions &&
+          typeof params?.numberOfTransactions === "number" &&
+          params?.numberOfTransactions > 1
+            ? `لديك ${params?.numberOfTransactions} معاملات جديدة`
+            : `لديك معاملة جديدة بقيمة ${params?.amount} من ${params?.name}`,
+        "notifications.invoicePaid": `تم دفع الفاتورة ${params?.invoiceNumber}`,
+        "notifications.invoiceOverdue": `الفاتورة ${params?.invoiceNumber} متأخرة`,
+        "transactions.subject": "معاملات جديدة",
+        "transactions.preview": `${params?.firstName ? `مرحباً ${params?.firstName}، ` : ""}لديك ${
+          params?.numberOfTransactions
+        } ${
+          params?.numberOfTransactions > 1
+            ? "معاملات جديدة"
+            : "معاملة جديدة"
+        }`,
+        "transactions.title1": "لديك ",
+        "transactions.title2": `${params?.numberOfTransactions} ${
+          params?.numberOfTransactions > 1
+            ? "معاملات جديدة"
+            : "معاملة جديدة"
+        }`,
+        "transactions.description1": `${params?.firstName ? `مرحباً ${params?.firstName}` : "مرحباً"}`,
+        "transactions.description2": "وجدنا",
+        "transactions.description3": `${params?.numberOfTransactions} ${
+          params?.numberOfTransactions > 1
+            ? "معاملات جديدة"
+            : "معاملة جديدة"
+        }`,
+        "transactions.description4": `${params?.teamName ? `لفريقك ${params?.teamName}` : "لحسابك"}. سنقوم بمطابقتها تلقائياً مع الإيصالات في صندوق الوارد، أو يمكنك ببساطة الرد على هذا البريد الإلكتروني بالإيصالات.`,
+        "transactions.button": "عرض المعاملات",
+        "transactions.settings": "إعدادات الإشعارات",
+        "transactions.amount": "المبلغ",
+        "transactions.date": "التاريخ",
+        "transactions.description": "الوصف",
+        "invite.subject": `${params?.invitedByName} دعاك للانضمام إلى فريق ${params?.teamName} على منصتنا`,
+        "invite.preview": `انضم إلى ${params?.teamName}`,
+        "invite.title1": "انضم إلى",
+        "invite.title2": "على",
+        "invite.link1": "دعاك للانضمام إلى فريق",
+        "invite.link2": "على",
+        "invite.join": "الانضمام للفريق",
+        "invite.link3": "أو انسخ والصق هذا الرابط في متصفحك",
+        "invite.footer1": "هذه الدعوة مخصصة لـ",
+        "invite.footer2": "تم إرسال هذه الدعوة من",
+        "invite.footer4":
+          "إذا لم تكن تتوقع هذه الدعوة، يمكنك تجاهل هذا البريد الإلكتروني. إذا كنت قلقاً بشأن أمان حسابك، يرجى الرد على هذا البريد للتواصل معنا.",
+        "invoice.overdue.subject": `الفاتورة #${params?.invoiceNumber} متأخرة`,
+        "invoice.paid.subject": `تم دفع الفاتورة #${params?.invoiceNumber}`,
+        "invoice.sent.subject": `${params?.teamName} أرسل لك فاتورة`,
+        "invoice.reminder.subject": `تذكير: دفعة الفاتورة ${params?.invoiceNumber}`,
+        "invoice.upcoming.subject":
+          params?.count === 1
+            ? "لديك فاتورة واحدة مجدولة للغد"
+            : `لديك ${params?.count} فواتير مجدولة للغد`,
+      };
 
     default:
       return;

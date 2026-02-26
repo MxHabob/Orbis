@@ -26,22 +26,22 @@ import { Label } from "@midday/ui/label";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useI18n } from "@/locales/client";
 
 export function DeleteTeam() {
   const [value, setValue] = useState("");
   const trpc = useTRPC();
   const { data: user } = useUserQuery();
   const router = useRouter();
+  const t = useI18n();
 
 
   return (
     <Card className="border-destructive">
       <CardHeader>
-        <CardTitle>Delete team</CardTitle>
+        <CardTitle>{t("settings.delete_team_title")}</CardTitle>
         <CardDescription>
-          Permanently remove your Team and all of its contents from the Midday
-          platform. This action is not reversible — please continue with
-          caution.
+          {t("settings.delete_team_description")}
         </CardDescription>
       </CardHeader>
       <CardFooter className="flex justify-between">
@@ -53,17 +53,16 @@ export function DeleteTeam() {
               variant="destructive"
               className="hover:bg-destructive text-muted"
             >
-              Delete
+              {t("common.delete")}
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogTitle>{t("settings.delete_team_confirm_title")}</AlertDialogTitle>
               <AlertDialogDescription asChild>
                 <div>
                   <p>
-                    This action cannot be undone. This will permanently delete
-                    your team and remove your data from our servers.
+                    {t("settings.delete_team_confirm_description")}
                   </p>
                 </div>
               </AlertDialogDescription>
@@ -71,7 +70,7 @@ export function DeleteTeam() {
 
             <div className="flex flex-col gap-2 mt-2">
               <Label htmlFor="confirm-delete">
-                Type <span className="font-medium">DELETE</span> to confirm.
+                <span dangerouslySetInnerHTML={{ __html: t("settings.delete_team_input_label", { delete: `<span class="font-medium">DELETE</span>` }) }} />
               </Label>
               <Input
                 id="confirm-delete"
@@ -81,14 +80,14 @@ export function DeleteTeam() {
             </div>
 
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
               <AlertDialogAction
                 disabled={value !== "DELETE"}
               >
                 {value !== "DELETE" ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  "Confirm"
+                  t("common.confirm")
                 )}
               </AlertDialogAction>
             </AlertDialogFooter>

@@ -3,6 +3,7 @@
 import { ChangeEmail } from "@/components/change-email";
 import { ChangeTheme } from "@/components/change-theme";
 import { DisplayName } from "@/components/display-name";
+import { LocaleSettings } from "@/components/locale-settings";
 import { UserAvatar } from "@/components/user-avatar";
 
 export function AccountSettings() {
@@ -11,6 +12,7 @@ export function AccountSettings() {
       <UserAvatar />
       <DisplayName />
       <ChangeEmail />
+      <LocaleSettings />
       <ChangeTheme />
     </div>
   );

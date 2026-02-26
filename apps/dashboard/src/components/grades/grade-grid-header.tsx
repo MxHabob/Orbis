@@ -11,6 +11,7 @@ import {
 } from "@midday/ui/select";
 import { GradesActions } from "./grades-actions";
 import { GradesSearchFilter } from "./grades-search-filter";
+import { useI18n } from "@/locales/client";
 
 interface GradeGridHeaderProps {
   initialData: {
@@ -32,6 +33,7 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
   const [termId, setTermId] = useQueryState("termId", parseAsInteger);
   const [month, setMonth] = useQueryState("month", parseAsInteger);
   const [yearId, setYearId] = useQueryState("yearId", parseAsInteger);
+  const t = useI18n();
 
   useEffect(() => {
     if (defaults) {
@@ -50,7 +52,7 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
           onValueChange={(val) => setYearId(parseInt(val))}
         >
           <SelectTrigger className="h-9 bg-background">
-            <SelectValue placeholder="Select year" />
+            <SelectValue placeholder={t("grades.select_year")} />
           </SelectTrigger>
           <SelectContent>
             {initialData.years.map((y) => (
@@ -66,7 +68,7 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
           onValueChange={(val) => setSelectedClassId(parseInt(val))}
         >
           <SelectTrigger className="h-9 bg-background">
-            <SelectValue placeholder="Select class" />
+            <SelectValue placeholder={t("grades.select_class")} />
           </SelectTrigger>
           <SelectContent>
             {initialData.classes.map((c) => (
@@ -82,7 +84,7 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
           onValueChange={(val) => setSelectedSubjectId(parseInt(val))}
         >
           <SelectTrigger className="h-9 bg-background">
-            <SelectValue placeholder="Select subject" />
+            <SelectValue placeholder={t("grades.select_subject")} />
           </SelectTrigger>
           <SelectContent>
             {initialData.subjects.map((s) => (
@@ -98,7 +100,7 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
           onValueChange={(val) => setTermId(parseInt(val))}
         >
           <SelectTrigger className="h-9 bg-background">
-            <SelectValue placeholder="Select term" />
+            <SelectValue placeholder={t("grades.select_term")} />
           </SelectTrigger>
           <SelectContent>
             {initialData.terms
@@ -116,7 +118,7 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
           onValueChange={(val) => setMonth(parseInt(val))}
         >
           <SelectTrigger className="h-9 bg-background">
-            <SelectValue placeholder="Select month" />
+            <SelectValue placeholder={t("grades.select_month")} />
           </SelectTrigger>
           <SelectContent>
             {months.map((m) => (

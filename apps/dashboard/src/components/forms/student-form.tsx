@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useStudentParams } from "@/hooks/use-student-params";
+import { useI18n } from "@/locales/client";
 import { useZodForm } from "@/hooks/use-zod-form";
 import { useTRPC } from "@/trpc/client";
 import type { RouterOutputs } from "@api/trpc/routers/_app";
@@ -60,6 +61,7 @@ export function StudentForm({ data }: Props) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const isEdit = !!data;
+  const t = useI18n();
 
   const { setParams: setStudentParams, classId } = useStudentParams();
 
@@ -125,7 +127,7 @@ export function StudentForm({ data }: Props) {
               className="space-y-6"
             >
               <AccordionItem value="general">
-                <AccordionTrigger>General Information</AccordionTrigger>
+                <AccordionTrigger>{t("students.general_info")}</AccordionTrigger>
                 <AccordionContent>
                   <div className="space-y-4">
                     <FormField
@@ -134,7 +136,7 @@ export function StudentForm({ data }: Props) {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-xs text-[#878787] font-normal">
-                            Full Name
+                            {t("students.full_name")}
                           </FormLabel>
                           <FormControl>
                             <Input
@@ -156,7 +158,7 @@ export function StudentForm({ data }: Props) {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="text-xs text-[#878787] font-normal">
-                              Email
+                              {t("students.email")}
                             </FormLabel>
                             <FormControl>
                               <Input
@@ -178,7 +180,7 @@ export function StudentForm({ data }: Props) {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="text-xs text-[#878787] font-normal">
-                              Phone
+                              {t("students.phone")}
                             </FormLabel>
                             <FormControl>
                               <Input
@@ -201,18 +203,18 @@ export function StudentForm({ data }: Props) {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-xs text-[#878787] font-normal">
-                            Sex
+                            {t("students.sex")}
                           </FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select sex" />
+                                <SelectValue placeholder={t("students.select_sex")} />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="unspecified">Unspecified</SelectItem>
-                              <SelectItem value="male">Male</SelectItem>
-                              <SelectItem value="female">Female</SelectItem>
+                              <SelectItem value="unspecified">{t("students.unspecified")}</SelectItem>
+                              <SelectItem value="male">{t("students.male")}</SelectItem>
+                              <SelectItem value="female">{t("students.female")}</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -224,7 +226,7 @@ export function StudentForm({ data }: Props) {
               </AccordionItem>
 
               <AccordionItem value="academic">
-                <AccordionTrigger>Academic Details</AccordionTrigger>
+                <AccordionTrigger>{t("students.academic_details")}</AccordionTrigger>
                 <AccordionContent>
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
@@ -234,7 +236,7 @@ export function StudentForm({ data }: Props) {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="text-xs text-[#878787] font-normal">
-                              Student Number
+                              {t("students.student_number")}
                             </FormLabel>
                             <FormControl>
                               <Input
@@ -255,7 +257,7 @@ export function StudentForm({ data }: Props) {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="text-xs text-[#878787] font-normal">
-                              Secret Number
+                              {t("students.secret_number")}
                             </FormLabel>
                             <FormControl>
                               <Input
@@ -266,7 +268,7 @@ export function StudentForm({ data }: Props) {
                               />
                             </FormControl>
                             <FormDescription>
-                              Used for anonymous grading.
+                              {t("students.anonymous_grading_desc")}
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -280,12 +282,12 @@ export function StudentForm({ data }: Props) {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-xs text-[#878787] font-normal">
-                            Class
+                            {t("students.class")}
                           </FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value ?? ""}>
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select a class" />
+                                <SelectValue placeholder={t("students.select_class")} />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -307,19 +309,19 @@ export function StudentForm({ data }: Props) {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-xs text-[#878787] font-normal">
-                            Status
+                            {t("students.status")}
                           </FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select status" />
+                                <SelectValue placeholder={t("students.select_status")} />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="active">Active</SelectItem>
-                              <SelectItem value="graduated">Graduated</SelectItem>
-                              <SelectItem value="transferred">Transferred</SelectItem>
-                              <SelectItem value="suspended">Suspended</SelectItem>
+                              <SelectItem value="active">{t("students.active")}</SelectItem>
+                              <SelectItem value="graduated">{t("students.graduated")}</SelectItem>
+                              <SelectItem value="transferred">{t("students.transferred")}</SelectItem>
+                              <SelectItem value="suspended">{t("students.suspended")}</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -333,14 +335,14 @@ export function StudentForm({ data }: Props) {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-xs text-[#878787] font-normal">
-                            Note
+                            {t("students.note")}
                           </FormLabel>
                           <FormControl>
                             <Textarea
                               {...field}
                               value={field.value ?? ""}
                               className="flex min-h-[80px] resize-none"
-                              placeholder="Additional information..."
+                              placeholder={t("students.additional_info")}
                               autoComplete="off"
                             />
                           </FormControl>
@@ -362,7 +364,7 @@ export function StudentForm({ data }: Props) {
               onClick={() => setStudentParams(null)}
               type="button"
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
 
             <SubmitButton
@@ -371,7 +373,7 @@ export function StudentForm({ data }: Props) {
                 upsertStudentMutation.isPending || !form.formState.isDirty
               }
             >
-              {isEdit ? "Update" : "Create"}
+              {isEdit ? t("students.update") : t("students.create")}
             </SubmitButton>
           </div>
         </div>
