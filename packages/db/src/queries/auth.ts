@@ -1,7 +1,7 @@
 import { db } from "@db/client";
 import { sessions, users } from "@db/schema";
 import { sessionCache, userCache } from "@midday/cache";
-import { eq } from "drizzle-orm";
+import { eq, and, gte, desc } from "drizzle-orm";
 
 export const getSession = async (token: string) => {
   const cachedSession = await sessionCache.getByToken(token);
@@ -37,4 +37,20 @@ export const getSession = async (token: string) => {
   }
 
   return null;
+};
+
+export const getValidSessionByUserId = async (userId: string) => {
+  const result = await db
+    .select()
+    .from(sessions)
+    .where(
+      and(
+        eq(sessions.userId, userId),
+        gte(sessions.expiresAt, new Date())
+      )
+    )
+    .orderBy(desc(sessions.createdAt))
+    .limit(1);
+
+  return result[0];
 };

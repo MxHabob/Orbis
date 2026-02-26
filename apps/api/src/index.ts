@@ -56,9 +56,28 @@ app.use(
 );
 
 app.use("*", async (c, next) => {
-  const session = await auth.api.getSession({
+  let session = await auth.api.getSession({
     headers: c.req.raw.headers,
   });
+
+  // Fallback for background jobs/Puppeteer using Authorization header or custom header
+  if (!session) {
+    const authHeader = c.req.header("Authorization");
+    const sessionToken = authHeader?.startsWith("Bearer ") 
+      ? authHeader.substring(7) 
+      : c.req.header("x-better-auth-session");
+
+    if (sessionToken) {
+      const { getSession: getDbSession } = await import("@midday/db/queries");
+      const dbResult = await getDbSession(sessionToken);
+      if (dbResult) {
+        session = {
+          user: dbResult.user,
+          session: dbResult.session,
+        };
+      }
+    }
+  }
 
   if (!session) {
     c.set("user", null);

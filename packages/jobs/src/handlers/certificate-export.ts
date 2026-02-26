@@ -1,6 +1,6 @@
 import type { Job } from "bullmq";
 import type { CertificateExportData } from "../queue";
-import { getStudentsByClassId } from "@midday/db/queries";
+import { getStudentsByClassId, getValidSessionByUserId } from "@midday/db/queries";
 import { createDocument } from "@midday/db/queries/documents";
 import { db } from "@midday/db/client";
 import { uploadFile } from "@midday/storage";
@@ -86,15 +86,13 @@ export async function handleCertificateExport(
     await job.updateProgress(5);
 
     // ──────────────────────────────────────────
-    // Phase 2: Create authenticated session (Official API)
+    // Phase 2: Get authenticated session
     // ──────────────────────────────────────────
-    const session = await (auth.api as any).createSession({
-      userId: userId,
-      userAgent: "Puppeteer (Midday Certificate Engine)",
-    });
+    // We get an existing valid session for the user to bypass authentication in Puppeteer
+    const session = await getValidSessionByUserId(userId);
 
     if (!session) {
-      throw new Error("فشل في إنشاء جلسة عمل للمحرك");
+      throw new Error("لا توجد جلسة عمل صالحة للمستخدم. يرجى تسجيل الدخول والمحاولة مرة أخرى.");
     }
 
     const sessionToken = session.token;
@@ -168,38 +166,36 @@ export async function handleCertificateExport(
 
         // Set session cookies (Better Auth uses hyphen or underscore depending on version/config)
         // Set for both dashboard and API URLs to ensure cross-origin requests include it
-        const cookieOptions = {
-          value: sessionToken,
-          path: "/",
-          httpOnly: true,
-          secure: false, // Localhost is usually not secure (http)
-          sameSite: "Lax" as const,
-        };
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002";
+        const apiDomain = new URL(apiUrl).hostname;
+        const dashboardDomain = new URL(dashboardUrl).hostname;
 
-        const apiUrl = "http://localhost:3002"; // API port from package.json/dev logs
+        // Set session cookies for BOTH dashboard and API domains
+        // Better Auth uses both names depending on configuration
+        const cookieNames = ["better-auth.session-token", "better-auth.session_token"];
+        const domains = [dashboardDomain, apiDomain];
 
-        await page.setCookie(
-          { 
-            ...cookieOptions, 
-            name: "better-auth.session-token",
-            url: dashboardUrl // Dashboard URL
-          },
-          { 
-            ...cookieOptions, 
-            name: "better-auth.session_token",
-            url: dashboardUrl // Dashboard URL alternate
-          },
-          { 
-            ...cookieOptions, 
-            name: "better-auth.session-token",
-            url: apiUrl // API URL
-          },
-          { 
-            ...cookieOptions, 
-            name: "better-auth.session_token",
-            url: apiUrl // API URL alternate
+        for (const domain of domains) {
+          for (const name of cookieNames) {
+            await page.setCookie({
+              name,
+              value: sessionToken,
+              domain: domain === "localhost" ? undefined : domain,
+              path: "/",
+              httpOnly: true,
+              secure: false, 
+              sameSite: "Lax",
+              url: domain === "localhost" ? `http://${domain}` : `https://${domain}`
+            });
           }
-        );
+        }
+
+        // Add Authorization header as a fallback for cross-origin requests (e.g. from Dashboard to API)
+        // This ensures tRPC requests are authenticated even if cookies are blocked/missing
+        await page.setExtraHTTPHeaders({
+          "Authorization": `Bearer ${sessionToken}`,
+          "x-better-auth-session": sessionToken,
+        });
 
         // Build export URL with batch student IDs
         const studentIds = batch.join(",");
