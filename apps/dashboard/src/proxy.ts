@@ -4,7 +4,7 @@ import { auth } from "@midday/auth";
 
 const I18nMiddleware = createI18nMiddleware({
   locales: ["ar", "sv", "en"],
-  defaultLocale: "ar",
+  defaultLocale: "en",
   urlMappingStrategy: "rewrite",
 });
 

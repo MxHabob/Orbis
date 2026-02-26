@@ -4,6 +4,7 @@ import { useDocumentFilterParams } from "@/hooks/use-document-filter-params";
 import { useDocumentParams } from "@/hooks/use-document-params";
 import { useFileUrl } from "@/hooks/use-file-url";
 import { downloadFile } from "@/lib/download";
+import { useI18n } from "@/locales/client";
 import { isStaleProcessing } from "@/utils/document";
 import { formatSize } from "@/utils/format";
 import type { RouterOutputs } from "@api/trpc/routers/_app";
@@ -33,6 +34,11 @@ import { MoreHorizontal } from "lucide-react";
 import { useState } from "react";
 
 export type Document = RouterOutputs["documents"]["get"]["data"][number];
+ 
+const Header = ({ id }: { id: string }) => {
+  const t = useI18n();
+  return <span>{t(id as any)}</span>;
+};
 
 function DownloadFileMenuItem({
   pathTokens,
@@ -51,10 +57,11 @@ function DownloadFileMenuItem({
       : null,
   );
   const [isDownloading, setIsDownloading] = useState(false);
-
+  const t = useI18n();
+ 
   const handleDownload = async () => {
     if (!downloadUrl) return;
-
+ 
     try {
       setIsDownloading(true);
       await downloadFile(downloadUrl, filename);
@@ -64,13 +71,13 @@ function DownloadFileMenuItem({
       setIsDownloading(false);
     }
   };
-
+ 
   return (
     <DropdownMenuItem
       onClick={handleDownload}
       disabled={!downloadUrl || isDownloading}
     >
-      Download
+      {t("common.download")}
     </DropdownMenuItem>
   );
 }
@@ -105,7 +112,7 @@ export const columns: ColumnDef<Document>[] = [
   },
   {
     id: "title",
-    header: "الاسم",
+    header: () => <Header id="vault.filename" />,
     accessorKey: "title",
     size: 450,
     minSize: 180,
@@ -114,7 +121,7 @@ export const columns: ColumnDef<Document>[] = [
     meta: {
       sticky: true,
       skeleton: { type: "text", width: "w-52" },
-      headerLabel: "الاسم",
+      headerLabel: "vault.filename",
       className:
         "w-[450px] min-w-[180px] md:sticky md:left-[50px] bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-20",
     },
@@ -164,7 +171,7 @@ export const columns: ColumnDef<Document>[] = [
   },
   {
     id: "size",
-    header: "الحجم",
+    header: () => <Header id="vault.size" />,
     accessorKey: "size",
     size: 100,
     minSize: 80,
@@ -172,7 +179,7 @@ export const columns: ColumnDef<Document>[] = [
     enableResizing: true,
     meta: {
       skeleton: { type: "text", width: "w-12" },
-      headerLabel: "الحجم",
+      headerLabel: "vault.size",
       className: "w-[100px] min-w-[80px]",
     },
     cell: ({ row }) => {
@@ -182,7 +189,7 @@ export const columns: ColumnDef<Document>[] = [
   },
   {
     id: "actions",
-    header: "إجراءات",
+    header: () => <Header id="vault.actions" />,
     size: 100,
     minSize: 80,
     maxSize: 100,
@@ -191,7 +198,7 @@ export const columns: ColumnDef<Document>[] = [
     meta: {
       sticky: true,
       skeleton: { type: "icon" },
-      headerLabel: "إجراءات",
+      headerLabel: "vault.actions",
       className:
         "w-[100px] min-w-[80px] md:sticky md:right-0 bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-30 justify-center !border-l !border-border",
     },
@@ -238,7 +245,7 @@ export const columns: ColumnDef<Document>[] = [
                   setParams({ documentId: row.original.id });
                 }}
               >
-                عرض التفاصيل
+                {t("vault.view_details")}
               </DropdownMenuItem>
               <DownloadFileMenuItem
                 pathTokens={row.original.pathTokens}
@@ -252,7 +259,7 @@ export const columns: ColumnDef<Document>[] = [
                 }}
                 disabled={!row.original.pathTokens}
               >
-                نسخ الرابط
+                {t("vault.copy_link")}
               </DropdownMenuItem>
 
               {showRetry && (
@@ -263,7 +270,7 @@ export const columns: ColumnDef<Document>[] = [
                       handleReprocess?.(row.original.id);
                     }}
                   >
-                    إعادة معالجة الملف
+                    {t("vault.reprocess")}
                   </DropdownMenuItem>
                 </>
               )}
@@ -275,7 +282,7 @@ export const columns: ColumnDef<Document>[] = [
                   handleDelete?.(row.original.id);
                 }}
               >
-                حذف
+                {t("common.delete")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

@@ -2,6 +2,7 @@
 
 import { useStudentParams } from "@/hooks/use-student-params";
 import { Sheet, SheetContent } from "@midday/ui/sheet";
+import { useI18n } from "@/locales/client";
 import React, { useState } from "react";
 import { useTRPC } from "@/trpc/client";
 import { HIJRI_MONTHS } from "@/utils/academic-calendar";
@@ -47,6 +48,7 @@ export function StudentCertificateSheet() {
     month,
     setParams 
   } = useStudentParams();
+  const t = useI18n();
 
   const [isExporting, setIsExporting] = useState(false);
 
@@ -88,17 +90,17 @@ export function StudentCertificateSheet() {
     setIsExporting(true);
     try {
       const typeLabel = certificateType === "half-yearly" 
-        ? "نصفي" 
+        ? t("reports.half_yearly")
         : certificateType === "final" 
-          ? "نهائي" 
-          : "شهري";
+          ? t("reports.final")
+          : t("reports.monthly");
       await generateCanvasPdf({
-         filename: `شهادة_${studentData.name}_${typeLabel}.pdf`,
+         filename: `${t("reports.certificate")}_${studentData.name}_${typeLabel}.pdf`,
         selector: "[data-canvas-content]"
       });
-      toast({ title: "تم تصدير الشهادة بنجاح", variant: "success" });
+      toast({ title: t("reports.export_success"), variant: "success" });
     } catch (error) {
-      toast({ title: "فشل تصدير الشهادة", variant: "destructive" });
+      toast({ title: t("reports.export_failed"), variant: "destructive" });
     } finally {
       setIsExporting(false);
     }
@@ -128,9 +130,9 @@ export function StudentCertificateSheet() {
   }, [studentData]);
 
   const certificateTypes = [
-    { value: "monthly", label: "الشهادة الشهرية", description: "شهر واحد" },
-    { value: "half-yearly", label: "شهادة نصف العام", description: "3 شهور + اختبار نصفي" },
-    { value: "final", label: "شهادة نهاية العام", description: "الترم الأول + الترم الثاني" },
+    { value: "monthly", label: t("reports.monthly_full"), description: t("reports.one_month") },
+    { value: "half-yearly", label: t("reports.half_yearly_full"), description: t("reports.half_yearly_description") },
+    { value: "final", label: t("reports.final_full"), description: t("reports.final_description") },
   ];
 
   // For monthly type: show only months that accept grade entry (not exam months)
@@ -154,7 +156,7 @@ export function StudentCertificateSheet() {
               {(isStudentLoading || !template) ? (
                 <div className="flex flex-col items-center gap-4 py-20">
                   <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                  <p className="text-sm text-muted-foreground font-medium">جاري تحضير الشهادة...</p>
+                  <p className="text-sm text-muted-foreground font-medium">{t("reports.preparing")}</p>
                 </div>
               ) : (
                 <div className="w-full flex flex-col items-center">
@@ -217,7 +219,7 @@ export function StudentCertificateSheet() {
                   <DropdownMenuContent align="start" sideOffset={10} className="w-64">
                     <DropdownMenuGroup>
                       <DropdownMenuLabel className="text-[10px] text-muted-foreground font-normal px-2 py-1.5 uppercase">
-                        نوع الشهادة
+                        {t("reports.type")}
                       </DropdownMenuLabel>
                       {certificateTypes.map((type) => (
                         <DropdownMenuCheckboxItem
@@ -248,15 +250,15 @@ export function StudentCertificateSheet() {
                         className="h-9 px-3 flex items-center justify-center gap-2 border border-border hover:bg-accent transition-colors text-xs rounded-md"
                       >
                         <span className="max-w-[120px] truncate">
-                          {availableMonths.find(m => m.value === selectedMonth)?.label || `الشهر ${selectedMonth}`}
+                          {availableMonths.find(m => m.value === selectedMonth)?.label || t("reports.month_label", { month: selectedMonth })}
                         </span>
                         <Icons.ChevronDown className="size-4 text-[#666]" />
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start" sideOffset={10} className="w-56">
-                      <DropdownMenuGroup>
+                       <DropdownMenuGroup>
                         <DropdownMenuLabel className="text-[10px] text-muted-foreground font-normal px-2 py-1.5 uppercase">
-                          الترم الأول
+                          {t("reports.first_term")}
                         </DropdownMenuLabel>
                         {availableMonths.filter(m => m.term === 1).map((m) => (
                           <DropdownMenuCheckboxItem
@@ -273,9 +275,9 @@ export function StudentCertificateSheet() {
                             {m.label}
                           </DropdownMenuCheckboxItem>
                         ))}
-                        <DropdownMenuSeparator />
+                         <DropdownMenuSeparator />
                         <DropdownMenuLabel className="text-[10px] text-muted-foreground font-normal px-2 py-1.5 uppercase">
-                          الترم الثاني
+                          {t("reports.second_term")}
                         </DropdownMenuLabel>
                         {availableMonths.filter(m => m.term === 2).map((m) => (
                           <DropdownMenuCheckboxItem
@@ -303,17 +305,17 @@ export function StudentCertificateSheet() {
                     <button
                       type="button"
                       className="h-9 px-3 flex items-center justify-center gap-2 border border-border hover:bg-accent transition-colors text-xs rounded-md"
-                    >
+                     >
                       <span className="max-w-[120px] truncate font-medium">
-                        {currentTemplate?.name || "اختر القالب"}
+                        {currentTemplate?.name || t("reports.select_template_prompt")}
                       </span>
                       <Icons.ChevronDown className="size-4 text-[#666]" />
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" sideOffset={10} className="w-56">
-                    <DropdownMenuGroup>
+                     <DropdownMenuGroup>
                       <DropdownMenuLabel className="text-[10px] text-muted-foreground font-normal px-2 py-1.5 uppercase">
-                        القوالب
+                        {t("reports.templates")}
                       </DropdownMenuLabel>
                       {(templates as any)?.map((t: any) => (
                         <DropdownMenuCheckboxItem
@@ -328,18 +330,18 @@ export function StudentCertificateSheet() {
                           )}
                         >
                           <span className="flex items-center gap-1">
-                            {t.name}
+                             {t.name}
                             {t.isDefault && (
                               <span className="text-muted-foreground text-[10px]">
-                                (افتراضي)
+                                ({t("reports.default")})
                               </span>
                             )}
                           </span>
                         </DropdownMenuCheckboxItem>
                       ))}
-                      {(!templates || (templates as any)?.length === 0) && (
+                       {(!templates || (templates as any)?.length === 0) && (
                         <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                          لا توجد قوالب متاحة
+                          {t("reports.no_templates")}
                         </div>
                       )}
                     </DropdownMenuGroup>
@@ -360,9 +362,9 @@ export function StudentCertificateSheet() {
                   {isExporting ? (
                     <Loader2 className="w-4 h-4 ml-2 animate-spin" />
                   ) : (
-                    <Icons.Pdf className="w-4 h-4 ml-2" />
+                    <Icons.Pdf className="w-4 h-4 ml-2 rtl:mr-2 rtl:ml-0" />
                   )}
-                  تصدير PDF
+                  {t("reports.export_pdf")}
                 </Button>
                 
                 <Button 

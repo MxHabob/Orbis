@@ -82,7 +82,8 @@ const roundGrade = (value: number) => Math.round(value * 2) / 2;
 
 export const createGradeColumns = (
   items: AssessmentItem[] = [],
-  month?: number
+  month?: number,
+  t?: any
 ): ColumnDef<GradeStudent>[] => {
   const isSummaryMode = month === 4 || month === 8;
   const summaryMonths = month === 4 ? [1, 2, 3] : [5, 6, 7];
@@ -92,7 +93,7 @@ export const createGradeColumns = (
     {
       id: "studentName",
       accessorKey: "name",
-      header: "Student Name",
+      header: t?.("grades.student_name") || "Student Name",
       size: 200,
       minSize: 150,
       maxSize: 300,
@@ -100,7 +101,7 @@ export const createGradeColumns = (
       meta: {
         sticky: true,
         skeleton: { type: "avatar-text", width: "w-40" },
-        headerLabel: "Student Name",
+        headerLabel: "grades.student_name",
         className:
           "w-[200px] min-w-[150px] sticky left-0 bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-20 border-r",
       },
@@ -121,17 +122,17 @@ export const createGradeColumns = (
       header: () => (
         <div className="flex flex-col items-center gap-0.5 px-2">
           <span className="font-bold text-xs md:text-sm tracking-tight whitespace-nowrap">
-            متوسط الشهور
+            {t?.("grades.average_months") || "متوسط الشهور"}
           </span>
           <span className="text-[9px] uppercase text-muted-foreground font-medium">
-            الحد الأقصى: 20
+            {t?.("grades.max") || "الحد الأقصى"}: 20
           </span>
         </div>
       ),
       size: 130,
       minSize: 110,
       meta: {
-        headerLabel: "المتوسط (20)",
+        headerLabel: "grades.average_months",
         className: "text-center border-r bg-muted/30",
       },
       cell: ({ row, table }) => {
@@ -169,16 +170,21 @@ export const createGradeColumns = (
         header: () => (
           <div className="flex flex-col items-center gap-0.5 px-2">
             <span className="font-bold text-xs md:text-sm tracking-tight whitespace-nowrap">
-              {month === 4 ? "الاختبار النصفي" : "الاختبار النهائي"}
+              {month === 4 
+                ? (t?.("grades.midterm_exam") || "الاختبار النصفي")
+                : (t?.("grades.final_exam") || "الاختبار النهائي")}
             </span>
             <span className="text-[9px] uppercase text-muted-foreground font-medium">
-              الحد الأقصى: 30
+              {t?.("grades.max") || "الحد الأقصى"}: 30
             </span>
           </div>
         ),
         size: 130,
         minSize: 110,
-        meta: { headerLabel: "Exam (30)", className: "text-center border-r" },
+        meta: { 
+          headerLabel: month === 4 ? "grades.midterm_exam" : "grades.final_exam", 
+          className: "text-center border-r" 
+        },
         cell: ({ row, table }) => {
           const gradeValue =
             table.options.meta?.getGradeValue?.(
@@ -200,11 +206,11 @@ export const createGradeColumns = (
       // 3. Status Column
       columns.push({
         id: "status",
-        header: "Status",
+        header: t?.("grades.status") || "Status",
         size: 100,
         minSize: 80,
         meta: {
-          headerLabel: "Status",
+          headerLabel: "grades.status",
           sticky: true,
           className:
             "text-center border-l bg-primary/5 group-hover:bg-primary/10 z-20",
@@ -247,7 +253,7 @@ export const createGradeColumns = (
                     : "text-red-600 bg-red-50 dark:bg-red-950/20"
                 }`}
               >
-                {isPass ? "ناجح" : "راسب"}
+                {isPass ? (t?.("grades.pass") || "ناجح") : (t?.("grades.fail") || "راسب")}
               </span>
             </div>
           );
@@ -258,7 +264,7 @@ export const createGradeColumns = (
     // 4. Total Column for Summary Mode
     columns.push({
       id: "total",
-      header: "Total",
+      header: t?.("grades.total") || "Total",
       size: 120,
       minSize: 100,
       maxSize: 150,
@@ -267,7 +273,7 @@ export const createGradeColumns = (
       meta: {
         sticky: true,
         skeleton: { type: "text", width: "w-16" },
-        headerLabel: "Total",
+        headerLabel: "grades.total",
         className:
           "text-center bg-primary/5 group-hover:bg-primary/10 z-20 border-l",
       },
@@ -320,7 +326,7 @@ export const createGradeColumns = (
               {item.title}
             </span>
             <span className="text-[9px] uppercase text-muted-foreground font-medium">
-              Max: {item.maxScore}
+              {t?.("grades.max") || "Max"}: {item.maxScore}
             </span>
           </div>
         ),
@@ -355,10 +361,10 @@ export const createGradeColumns = (
       header: () => (
         <div className="flex flex-col items-center gap-0.5 px-2">
           <span className="font-bold text-xs md:text-sm tracking-tight whitespace-nowrap">
-            المحصلة
+            {t?.("grades.total") || "المحصلة"}
           </span>
           <span className="text-[9px] uppercase text-muted-foreground font-medium">
-            الحد الأقصى: 100
+            {t?.("grades.max") || "الحد الأقصى"}: 100
           </span>
         </div>
       ),
@@ -370,7 +376,7 @@ export const createGradeColumns = (
       meta: {
         sticky: true,
         skeleton: { type: "text", width: "w-16" },
-        headerLabel: "Total (100)",
+        headerLabel: "grades.total",
         className:
           "text-center bg-primary/5 group-hover:bg-primary/10 z-20 border-l",
       },

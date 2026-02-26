@@ -1,6 +1,7 @@
 "use client";
 
 import { useTRPC } from "@/trpc/client";
+import { useI18n } from "@/locales/client";
 import { cn } from "@midday/ui/cn";
 import { useToast } from "@midday/ui/use-toast";
 import { useMutation } from "@tanstack/react-query";
@@ -32,6 +33,7 @@ export function VaultUploadZone({ onUpload, children }: Props) {
   const [toastId, setToastId] = useState<string | null>(null);
   const uploadProgress = useRef<number[]>([]);
   const { toast, dismiss, update } = useToast();
+  const t = useI18n();
 
   const processDocumentMutation = useMutation(
     trpc.documents.processDocument.mutationOptions(),
@@ -40,10 +42,10 @@ export function VaultUploadZone({ onUpload, children }: Props) {
   useEffect(() => {
     if (!toastId && showProgress) {
       const { id } = toast({
-        title: `جاري رفع الملفات...`,
+        title: t("vault.uploading"),
         progress,
         variant: "progress",
-        description: "يرجى عدم إغلاق المتصفح حتى اكتمال الرفع",
+        description: t("vault.dont_close"),
         duration: Number.POSITIVE_INFINITY,
       });
 
@@ -51,7 +53,7 @@ export function VaultUploadZone({ onUpload, children }: Props) {
     } else if (toastId) {
       update(toastId, {
         id: toastId,
-        title: `جاري رفع الملفات...`,
+        title: t("vault.uploading"),
         progress,
         variant: "progress",
       });
@@ -102,7 +104,7 @@ export function VaultUploadZone({ onUpload, children }: Props) {
 
       setProgress(100);
       toast({
-        title: "تم رفع الملفات بنجاح",
+        title: t("vault.upload_success"),
         variant: "success",
         duration: 2000,
       });
@@ -114,7 +116,7 @@ export function VaultUploadZone({ onUpload, children }: Props) {
       toast({
         duration: 2500,
         variant: "error",
-        title: "حدث خطأ أثناء الرفع، يرجى المحاولة مرة أخرى",
+        title: t("vault.upload_error"),
       });
       setShowProgress(false);
       setToastId(null);
@@ -128,7 +130,7 @@ export function VaultUploadZone({ onUpload, children }: Props) {
         toast({
           duration: 2500,
           variant: "error",
-          title: "File size to large.",
+          title: t("vault.file_too_large"),
         });
       }
 
@@ -136,7 +138,7 @@ export function VaultUploadZone({ onUpload, children }: Props) {
         toast({
           duration: 2500,
           variant: "error",
-          title: "File type not supported.",
+          title: t("vault.file_type_not_supported"),
         });
       }
     },
@@ -182,11 +184,10 @@ export function VaultUploadZone({ onUpload, children }: Props) {
 
           <div className="flex flex-col items-center justify-center gap-2">
             <p className="text-sm">
-              قم بسحب وإفلات الملفات هنا. <br />
-              بحد أقصى 25 ملفاً في المرة الواحدة.
+              {t("vault.drag_drop")}
             </p>
 
-            <span className="text-xs text-[#878787]">الحد الأقصى لحجم الملف 5 ميجابايت</span>
+            <span className="text-xs text-[#878787]">{t("vault.max_size")}</span>
           </div>
         </div>
       </div>

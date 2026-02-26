@@ -98,7 +98,7 @@ export function DeleteVaultFileDialog({
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {t("delete_team_confirm_title")}
+                  {t("vault.delete_confirm_title")}
                 </p>
               </div>
             ) : (

@@ -3,7 +3,7 @@
 import { InputColor } from "@/components/input-color";
 import { SelectParentClass } from "@/components/select-parent-class";
 import { useClassParams } from "@/hooks/use-class-params";
-import { useI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import { useZodForm } from "@/hooks/use-zod-form";
 import { useTRPC } from "@/trpc/client";
 import {
@@ -39,7 +39,7 @@ const classTypes = [
 ] as const;
 
 const formSchema = z.object({
-  name: z.string().min(1, "Name is required"),
+  name: z.string().min(1, "name_required"),
   type: z.enum(classTypes).default('classroom'),
   division: z.string().optional().nullable(),
   parentClassId: z.number().optional().nullable(),
@@ -58,6 +58,7 @@ export function ClassForm({ data }: Props) {
   const queryClient = useQueryClient();
   const { setParams } = useClassParams();
   const t = useI18n();
+  const tEducation = useScopedI18n("education");
 
   // Fetch academic years for the dropdown
   const { data: academicYears } = useQuery(trpc.academic.getYears.queryOptions());
@@ -120,7 +121,7 @@ export function ClassForm({ data }: Props) {
                   <FormControl>
                     <InputColor
                       autoFocus
-                      placeholder="e.g. Grade 10"
+                      placeholder={t("education.class_name_placeholder")}
                       onChange={({ name, color }) => {
                         field.onChange(name);
                         form.setValue("color", color);
@@ -129,7 +130,9 @@ export function ClassForm({ data }: Props) {
                       defaultColor={form.watch("color")}
                     />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage>
+                    {form.formState.errors.name?.message && tEducation(form.formState.errors.name.message as any)}
+                  </FormMessage>
                 </FormItem>
               )}
             />
@@ -173,7 +176,7 @@ export function ClassForm({ data }: Props) {
                       <SelectContent>
                         {classTypes.map((type) => (
                           <SelectItem key={type} value={type}>
-                            {t(`education.${type}` as any)}
+                            {tEducation(type)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -194,7 +197,7 @@ export function ClassForm({ data }: Props) {
                       <Input
                         {...field}
                         value={field.value ?? ""}
-                        placeholder="e.g. A"
+                        placeholder={t("education.division_placeholder")}
                       />
                     </FormControl>
                   </FormItem>

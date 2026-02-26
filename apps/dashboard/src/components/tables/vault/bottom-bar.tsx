@@ -2,6 +2,7 @@
 
 import { Portal } from "@/components/portal";
 import { useDownloadZip } from "@/hooks/use-download-zip";
+import { useI18n } from "@/locales/client";
 import { useDocumentsStore } from "@/store/vault";
 import { Button } from "@midday/ui/button";
 import { Icons } from "@midday/ui/icons";
@@ -15,6 +16,7 @@ type Props = {
 export function BottomBar({ data }: Props) {
   const { rowSelection, setRowSelection } = useDocumentsStore();
   const { handleDownloadZip, isPending } = useDownloadZip();
+  const t = useI18n();
 
   // Filter the data array based on the selected row indices (keys in rowSelection)
   const selectedFiles = data.filter((_, index) => rowSelection[index]);
@@ -39,7 +41,9 @@ export function BottomBar({ data }: Props) {
           />
           <div className="relative h-12 justify-between items-center flex pl-4 pr-2">
             <span className="text-sm">
-              تم تحديد {Object.keys(rowSelection).length}
+              {t("common.selected", {
+                count: Object.keys(rowSelection).length,
+              })}
             </span>
 
             <div className="flex items-center space-x-2">
@@ -48,15 +52,15 @@ export function BottomBar({ data }: Props) {
                 className="text-muted-foreground"
                 onClick={() => setRowSelection({})}
               >
-                <span>إلغاء تحديد الكل</span>
+                <span>{t("common.deselect_all")}</span>
               </Button>
 
               <SubmitButton
                 isSubmitting={isPending}
                 onClick={() => handleDownloadZip(selectedFiles)}
               >
-                <div className="flex items-center space-x-2">
-                  <span>تحميل</span>
+                <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                  <span>{t("common.download")}</span>
                   <Icons.ArrowCoolDown className="size-4" />
                 </div>
               </SubmitButton>

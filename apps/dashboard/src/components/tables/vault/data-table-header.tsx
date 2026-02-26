@@ -1,6 +1,7 @@
 "use client";
 
 import { HorizontalPagination } from "@/components/horizontal-pagination";
+import { useI18n } from "@/locales/client";
 import type { TableScrollState } from "@/components/tables/core";
 import { DraggableHeader } from "@/components/tables/draggable-header";
 import { ResizeHandle } from "@/components/tables/resize-handle";
@@ -140,6 +141,7 @@ function renderHeaderContent<TData>(
   table: Table<TData>,
   tableScroll?: TableScrollState,
 ) {
+  const t = useI18n();
   const meta = header.column.columnDef.meta as
     | { headerLabel?: string }
     | undefined;
@@ -160,7 +162,9 @@ function renderHeaderContent<TData>(
   // Actions column - static text
   if (columnId === "actions") {
     return (
-      <span className="text-muted-foreground w-full text-center">Actions</span>
+      <span className="text-muted-foreground w-full text-center">
+        {t("vault.actions")}
+      </span>
     );
   }
 
@@ -168,7 +172,7 @@ function renderHeaderContent<TData>(
   if (columnId === "title") {
     return (
       <div className="flex items-center justify-between w-full overflow-hidden">
-        <span className="truncate">Name</span>
+        <span className="truncate">{t("vault.filename")}</span>
         {tableScroll?.isScrollable && (
           <HorizontalPagination
             canScrollLeft={tableScroll.canScrollLeft}
@@ -184,16 +188,21 @@ function renderHeaderContent<TData>(
 
   // Non-sortable headers - just render the label
   const headerLabel = meta?.headerLabel || getHeaderLabel(columnId);
-  return <span className="truncate">{headerLabel}</span>;
+  return (
+    <span className="truncate">
+      {/* @ts-ignore */}
+      {t(headerLabel as any)}
+    </span>
+  );
 }
 
 function getHeaderLabel(columnId: string): string {
   const labels: Record<string, string> = {
     select: "",
-    title: "Name",
-    tags: "Tags",
-    size: "Size",
-    actions: "Actions",
+    title: "vault.filename",
+    tags: "vault.tags", // Assuming tags key might exist or be added
+    size: "vault.size",
+    actions: "vault.actions",
   };
   return labels[columnId] || columnId;
 }

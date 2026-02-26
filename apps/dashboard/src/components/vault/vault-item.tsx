@@ -3,6 +3,7 @@
 import { FilePreview } from "@/components/file-preview";
 import { useDocumentParams } from "@/hooks/use-document-params";
 import { useTRPC } from "@/trpc/client";
+import { useI18n } from "@/locales/client";
 import { isStaleProcessing } from "@/utils/document";
 import type { RouterOutputs } from "@api/trpc/routers/_app";
 
@@ -40,6 +41,7 @@ export function VaultItem({ data, small }: Props) {
   const { setParams } = useDocumentParams();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  const t = useI18n();
 
   // Local state to bridge gap until props update from parent
   const [isReprocessing, setIsReprocessing] = useState(false);
@@ -102,7 +104,7 @@ export function VaultItem({ data, small }: Props) {
 
   // Get display name - fallback to filename from path if no title
   const displayName =
-    data?.title || data?.name?.split("/").at(-1) || "Document";
+    data?.title || data?.name?.split("/").at(-1) || t("vault.document_fallback");
 
   /* const reprocessMutation = useMutation(
     trpc.documents.reprocessDocument.mutationOptions({
@@ -144,9 +146,9 @@ export function VaultItem({ data, small }: Props) {
     >
       {/* Status badge - top right */}
       {showRetry && !showSkeleton && (
-        <div className="absolute top-4 right-4 z-10">
+        <div className="absolute top-4 end-4 z-10">
           <span className="px-2 py-0.5 rounded-full text-[11px] bg-[#FFD02B]/10 text-[#FFD02B] dark:bg-[#FFD02B]/10 dark:text-[#FFD02B]">
-            المعالجة غير مكتملة
+            {t("vault.processing_incomplete")}
           </span>
         </div>
       )}
@@ -154,7 +156,7 @@ export function VaultItem({ data, small }: Props) {
       {/* Actions menu - top right (hidden when badge is showing) */}
       {!(showRetry && !showSkeleton) && (
         <div
-          className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
+          className="absolute top-4 end-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
           onClick={(e) => {
             e.stopPropagation();
           }}
@@ -191,7 +193,7 @@ export function VaultItem({ data, small }: Props) {
         )}
       </div>
 
-      <div className="flex flex-col text-left flex-1">
+      <div className="flex flex-col text-start flex-1">
         <h2 className="text-sm text-primary line-clamp-1 mb-2 mt-3">
           {showSkeleton ? <Skeleton className="w-[80%] h-4" /> : displayName}
         </h2>
@@ -219,7 +221,7 @@ export function VaultItem({ data, small }: Props) {
               className="gap-2 w-full text-primary"
             >
               <Icons.Refresh className="size-3" />
-              إعادة تحليل الملف
+              {t("vault.reanalyze")}
             </Button>
           )
         ) : null}

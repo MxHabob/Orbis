@@ -5,6 +5,7 @@ import { useScrollHeader } from "@/hooks/use-scroll-header";
 import { useStickyColumns } from "@/hooks/use-sticky-columns";
 import { useTableScroll } from "@/hooks/use-table-scroll";
 import { useTableDnd } from "@/hooks/use-table-dnd";
+import { useI18n } from "@/locales/client";
 import { useTableSettings } from "@/hooks/use-table-settings";
 import { STICKY_COLUMNS, SUMMARY_GRID_HEIGHTS } from "@/utils/table-configs";
 import type { TableSettings } from "@/utils/table-settings";
@@ -46,6 +47,7 @@ export function GradeDataTable({
   pendingChanges,
 }: Props) {
   const { students, items, grades, month } = data;
+  const t = useI18n();
 
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -78,7 +80,7 @@ export function GradeDataTable({
     [grades, pendingChanges]
   );
 
-  const columns = useMemo(() => createGradeColumns(items, month ?? undefined), [items, month]);
+  const columns = useMemo(() => createGradeColumns(items, month ?? undefined, t), [items, month, t]);
 
   // Modern React 2026: Derived State - calculate order during render, avoiding useEffect
   const effectiveColumnOrder = useMemo(() => {
@@ -233,7 +235,7 @@ export function GradeDataTable({
                       colSpan={columns.length}
                       className="h-24 text-center"
                     >
-                      No results.
+                      {t("vault.no_results_title")}
                     </TableCell>
                   </TableRow>
                 )}

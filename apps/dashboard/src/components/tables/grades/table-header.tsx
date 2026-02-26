@@ -1,6 +1,7 @@
 "use client";
 
 import { HorizontalPagination } from "@/components/horizontal-pagination";
+import { useI18n } from "@/locales/client";
 import type { TableScrollState } from "@/components/tables/core";
 import { DraggableHeader } from "@/components/tables/draggable-header";
 import { ResizeHandle } from "@/components/tables/resize-handle";
@@ -176,10 +177,11 @@ function renderHeaderContent<TData>(
   columnId: string,
   tableScroll?: TableScrollState,
 ) {
+  const t = useI18n();
   // Total column
   if (columnId === "total") {
     return (
-      <span className="text-primary w-full text-center font-bold">Total</span>
+      <span className="text-primary w-full text-center font-bold">{t("grades.total")}</span>
     );
   }
 
@@ -188,7 +190,7 @@ function renderHeaderContent<TData>(
     return (
       <div className="flex items-center justify-between w-full overflow-hidden">
         <div className="min-w-0 overflow-hidden">
-          <span className="font-semibold">Student Name</span>
+          <span className="font-semibold">{t("grades.student_name")}</span>
         </div>
         {tableScroll?.isScrollable && (
           <HorizontalPagination
@@ -221,6 +223,7 @@ function AssessmentBulkActions<TData>({
   header: Header<TData, unknown>,
   table: Table<TData>
 }) {
+  const t = useI18n();
   const meta = table.options.meta as any;
   const columnId = header.column.id;
   const assessmentId = parseInt(columnId.replace("assessment-", ""));
@@ -249,7 +252,7 @@ function AssessmentBulkActions<TData>({
                 <Zap className="h-4 w-4 text-amber-500" />
               </div>
             </TooltipTrigger>
-            <TooltipContent side="top">Fill with Max Score ({maxScore})</TooltipContent>
+            <TooltipContent side="top">{t("grades.fill_max", { maxScore })}</TooltipContent>
           </Tooltip>
 
           <Tooltip>
@@ -261,7 +264,7 @@ function AssessmentBulkActions<TData>({
                 <Eraser className="h-4 w-4 text-muted-foreground" />
               </div>
             </TooltipTrigger>
-            <TooltipContent side="top">Fill with Zeros (0)</TooltipContent>
+            <TooltipContent side="top">{t("grades.fill_zero")}</TooltipContent>
           </Tooltip>
 
           <div className="w-[1px] h-4 bg-border mx-0.5" />
@@ -275,7 +278,7 @@ function AssessmentBulkActions<TData>({
                 <Trash2 className="h-4 w-4" />
               </div>
             </TooltipTrigger>
-            <TooltipContent side="top">Clear Column</TooltipContent>
+            <TooltipContent side="top">{t("grades.clear_column")}</TooltipContent>
           </Tooltip>
         </DropdownMenuContent>
       </DropdownMenu>

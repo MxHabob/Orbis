@@ -7,6 +7,7 @@ import { Button } from "@midday/ui/button";
 import { Icons } from "@midday/ui/icons";
 import { SubmitButton } from "@midday/ui/submit-button";
 import { BottomBar as CoreBottomBar } from "../core/bottom-bar";
+import { useI18n } from "@/locales/client";
 import { useState, useMemo } from "react";
 import { HIJRI_MONTHS } from "@/utils/academic-calendar";
 import {
@@ -25,11 +26,11 @@ type CertificateType = "monthly" | "half-yearly" | "final";
 const MONTHLY_MONTHS = HIJRI_MONTHS.filter(
   (m) => !m.isExam && !m.isVacation
 );
-
 export function BottomBar() {
   const { rowSelection, setRowSelection } = useReportStore();
   const trpc = useTRPC();
   const { exportCertificates } = useBulkCertificateExport();
+  const t = useI18n();
 
   const [certificateType, setCertificateType] = useState<CertificateType>("monthly");
   const [selectedMonth, setSelectedMonth] = useState<number>(1);
@@ -50,9 +51,9 @@ export function BottomBar() {
   }, [templates, templateId]);
 
   const certificateTypes = [
-    { value: "monthly", label: "شهري", fullLabel: "الشهادة الشهرية", description: "شهادة لشهر محدد" },
-    { value: "half-yearly", label: "نصفي", fullLabel: "شهادة نصف العام", description: "3 أشهر + اختبار نصفي" },
-    { value: "final", label: "نهائي", fullLabel: "شهادة نهاية العام", description: "الترم الأول + الترم الثاني" },
+    { value: "monthly", label: t("reports.monthly"), fullLabel: t("reports.monthly_full"), description: t("reports.monthly_description") },
+    { value: "half-yearly", label: t("reports.half_yearly"), fullLabel: t("reports.half_yearly_full"), description: t("reports.half_yearly_description") },
+    { value: "final", label: t("reports.final"), fullLabel: t("reports.final_full"), description: t("reports.final_description") },
   ];
 
   const availableMonths = MONTHLY_MONTHS.map((m) => ({ value: m.id, label: m.label, term: m.term }));
@@ -87,10 +88,10 @@ export function BottomBar() {
       onDeselect={() => setRowSelection({})}
       selectedLabel={(count) => (
         <span className="font-medium">
-          تم تحديد <span className="text-primary">{count}</span> فصول
+          {t("reports.selected_classes", { count })}
         </span>
       )}
-      deselectLabel="إلغاء التحديد"
+      deselectLabel={t("common.deselect_all")}
     >
       <div className="flex items-center gap-1 bg-accent/50 dark:bg-accent/20 rounded-lg p-1 mr-4">
         {/* Type Selector */}
@@ -108,7 +109,7 @@ export function BottomBar() {
           <DropdownMenuContent align="start" className="w-56" sideOffset={8}>
              <DropdownMenuGroup>
               <DropdownMenuLabel className="text-[10px] text-muted-foreground font-normal px-2 py-1.5 uppercase tracking-wider">
-                نوع الشهادة
+                {t("reports.type")}
               </DropdownMenuLabel>
               {certificateTypes.map((type) => (
                 <DropdownMenuCheckboxItem
@@ -143,7 +144,7 @@ export function BottomBar() {
               <DropdownMenuContent align="start" className="w-48" sideOffset={8}>
                 <DropdownMenuGroup>
                   <DropdownMenuLabel className="text-[10px] text-muted-foreground font-normal px-2 py-1.5 uppercase tracking-wider">
-                    الترم الأول
+                    {t("reports.first_term")}
                   </DropdownMenuLabel>
                   {availableMonths.filter(m => m.term === 1).map((m) => (
                     <DropdownMenuCheckboxItem
@@ -155,9 +156,9 @@ export function BottomBar() {
                       {m.label}
                     </DropdownMenuCheckboxItem>
                   ))}
-                  <DropdownMenuSeparator />
+                   <DropdownMenuSeparator />
                   <DropdownMenuLabel className="text-[10px] text-muted-foreground font-normal px-2 py-1.5 uppercase tracking-wider">
-                    الترم الثاني
+                    {t("reports.second_term")}
                   </DropdownMenuLabel>
                   {availableMonths.filter(m => m.term === 2).map((m) => (
                     <DropdownMenuCheckboxItem
@@ -182,16 +183,16 @@ export function BottomBar() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 px-2 gap-1.5 text-[11px] font-medium hover:bg-background/80"
+               className="h-7 px-2 gap-1.5 text-[11px] font-medium hover:bg-background/80"
             >
-              <span className="max-w-[80px] truncate">{currentTemplate?.name || "القالب"}</span>
+              <span className="max-w-[80px] truncate">{currentTemplate?.name || t("reports.template")}</span>
               <Icons.ChevronDown className="size-3 text-muted-foreground opacity-50" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-56" sideOffset={8}>
-            <DropdownMenuGroup>
+             <DropdownMenuGroup>
               <DropdownMenuLabel className="text-[10px] text-muted-foreground font-normal px-2 py-1.5 uppercase tracking-wider">
-                اختر قالب الشهادة
+                {t("reports.select_template")}
               </DropdownMenuLabel>
               {(templates as any)?.map((t: any) => (
                 <DropdownMenuCheckboxItem
@@ -200,9 +201,9 @@ export function BottomBar() {
                   onCheckedChange={() => setTemplateId(t.id)}
                   className="text-xs cursor-pointer"
                 >
-                  <span className="flex items-center gap-1">
+                   <span className="flex items-center gap-1">
                     {t.name}
-                    {t.isDefault && <span className="text-[9px] opacity-60 bg-accent px-1 rounded">(الافتراضي)</span>}
+                    {t.isDefault && <span className="text-[9px] opacity-60 bg-accent px-1 rounded">({t("reports.default")})</span>}
                   </span>
                 </DropdownMenuCheckboxItem>
               ))}
@@ -214,9 +215,9 @@ export function BottomBar() {
       <SubmitButton
         isSubmitting={isExporting}
         onClick={handleExport}
-        className="h-8 gap-2 px-4 shadow-sm"
+         className="h-8 gap-2 px-4 shadow-sm"
       >
-        <span className="text-xs">استخراج</span>
+        <span className="text-xs">{t("reports.export")}</span>
       </SubmitButton>
     </CoreBottomBar>
   );
