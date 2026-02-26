@@ -13,6 +13,9 @@ RUN apt-get update && apt-get install -y \
     && ln -s /root/.bun/bin/bun /usr/local/bin/bun \
     && rm -rf /var/lib/apt/lists/*
 
+# Add Bun to PATH
+ENV PATH="/root/.bun/bin:${PATH}"
+
 # Install Chromium and Arabic Fonts
 # Using --no-install-recommends and minimal libs to avoid Exit 100
 RUN apt-get update && apt-get install -y \
