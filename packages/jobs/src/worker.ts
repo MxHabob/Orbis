@@ -82,3 +82,8 @@ export const startWorker = () => {
 
   return worker;
 };
+
+// Start the worker if run directly
+if (import.meta.main || process.argv[1]?.includes("worker.ts")) {
+  startWorker();
+}

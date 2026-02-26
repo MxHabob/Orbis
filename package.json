@@ -17,7 +17,8 @@
     "dev:desktop": "turbo dev --filter=@midday/desktop",
     "format": "biome format --write .",
     "lint": "turbo lint && manypkg check",
-    "typecheck": "turbo typecheck"
+    "typecheck": "turbo typecheck",
+    "worker": "bun run packages/jobs/src/worker.ts"
   },
   "dependencies": {
     "@biomejs/biome": "2.3.13",
