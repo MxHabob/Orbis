@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y \
 # Using --no-install-recommends and minimal libs to avoid Exit 100
 RUN apt-get update && apt-get install -y \
     chromium \
-    fonts-noto-arabic \
+    fonts-noto-core \
     libnss3 \
     libxss1 \
     libasound2 \
