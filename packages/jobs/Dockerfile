@@ -1,26 +1,29 @@
-# Base image with Bun
-FROM oven/bun:1.2.22 AS base
+# Start from a clean Debian image for maximum stability
+FROM debian:bookworm-slim AS base
 
-# Install Puppeteer dependencies and Chromium
-# Use USER root to ensure we have permissions
-USER root
+# Set shell
+SHELL ["/bin/bash", "-c"]
 
+# Install basic tools and Bun
+RUN apt-get update && apt-get install -y \
+    curl \
+    unzip \
+    ca-certificates \
+    && curl -fsSL https://bun.sh/install | bash \
+    && ln -s /root/.bun/bin/bun /usr/local/bin/bun \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Chromium and Arabic Fonts
+# Using --no-install-recommends and minimal libs to avoid Exit 100
 RUN apt-get update && apt-get install -y \
     chromium \
     fonts-noto-arabic \
-    fonts-liberation \
     libnss3 \
-    libatk1.0-0 \
-    libatk-bridge2.0-0 \
-    libcups2 \
-    libdrm2 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxrandr2 \
-    libgbm1 \
+    libxss1 \
     libasound2 \
-    libpangocairo-1.0-0 \
-    libxshmfence1 \
+    libatk-bridge2.0-0 \
+    libgtk-3-0 \
+    --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install turbo CLI globally
@@ -38,7 +41,9 @@ WORKDIR /app
 COPY --from=builder /app/out/json/ .
 RUN bun install
 
-# Final source
+# Final stage
+FROM base AS runner
+WORKDIR /app
 COPY --from=builder /app/out/full/ .
 
 # Environment
