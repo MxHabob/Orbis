@@ -34,8 +34,8 @@ ENV NODE_ENV=production
 
 RUN bun run build --filter=@midday/dashboard
 
-# Runner stage
-FROM node:20-slim AS runner
+# Runner stage - using Bun for compatibility with Bun-specific APIs (e.g. RedisClient)
+FROM oven/bun:1.2.22-slim AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -56,4 +56,4 @@ EXPOSE 3001
 ENV PORT=3001
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["node", "apps/dashboard/server.js"]
+CMD ["bun", "run", "apps/dashboard/server.js"]
