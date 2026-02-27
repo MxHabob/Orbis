@@ -2,6 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { useTRPC } from "@/trpc/client";
+import { useQuery } from "@tanstack/react-query";
 import { CertificateViewer } from "@/components/certificates/certificate-viewer";
 import { Spinner } from "@midday/ui/spinner";
 import { useEffect, useState } from "react";
@@ -30,14 +31,18 @@ export default function ExportCertificatePage() {
   const month = parseInt(searchParams.get("month") || "1");
   const trpc = useTRPC();
 
-  const { data: student, isLoading: loadingStudent } = trpc.students.getStudentByUserId.useQuery(
-    { userId: studentId! },
-    { enabled: !!studentId }
+  const { data: student, isLoading: loadingStudent } = useQuery(
+    trpc.students.getStudentByUserId.queryOptions(
+      { userId: studentId! },
+      { enabled: !!studentId }
+    )
   );
 
-  const { data: template, isLoading: loadingTemplate } = trpc.certificateTemplates.getById.useQuery(
-    { id: templateId! },
-    { enabled: !!templateId }
+  const { data: template, isLoading: loadingTemplate } = useQuery(
+    trpc.certificateTemplates.getById.queryOptions(
+      { id: templateId! },
+      { enabled: !!templateId }
+    )
   );
 
   const [isReady, setIsReady] = useState(false);

@@ -19,10 +19,10 @@ import {
 import { Button } from "@midday/ui/button";
 import { Label } from "@midday/ui/label";
 import { useTRPC } from "@/trpc/client";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Progress } from "@midday/ui/progress";
 import { Check, Download, Loader2, FileText, AlertCircle } from "lucide-react";
 import { toast } from "@midday/ui/use-toast";
-import { cn } from "@midday/utils";
 
 interface BulkExportDialogProps {
   open: boolean;
@@ -66,12 +66,13 @@ export function BulkExportDialog({ open, onOpenChange }: BulkExportDialogProps) 
   const [result, setResult] = useState<any>(null);
 
   // Queries
-  const { data: classesResponse } = trpc.classes.getAll.useQuery();
+  const { data: classesResponse } = useQuery(trpc.classes.getAll.queryOptions());
   const classes = classesResponse?.data;
-  const { data: templates } = trpc.certificateTemplates.list.useQuery();
+  const { data: templates } = useQuery(trpc.certificateTemplates.list.queryOptions());
   
   // Mutations
-  const startExport = trpc.certificateTemplates.startExport.useMutation({
+  const startExport = useMutation(
+    trpc.certificateTemplates.startExport.mutationOptions({
     onSuccess: (data) => {
       setJobId(data.id);
       setStatus("processing");
@@ -84,21 +85,23 @@ export function BulkExportDialog({ open, onOpenChange }: BulkExportDialogProps) 
       });
       setStatus("idle");
     },
-  });
+  }));
 
   // Polling for job status
-  const jobStatus = trpc.jobs.getStatus.useQuery(
-    { jobId: jobId! },
-    {
-      enabled: !!jobId && status === "processing",
-      refetchInterval: (query) => {
-        const data = query.state.data;
-        if (data?.status === "completed" || data?.status === "failed") {
-          return false;
-        }
-        return 2000;
-      },
-    }
+  const jobStatus = useQuery(
+    trpc.jobs.getStatus.queryOptions(
+      { jobId: jobId! },
+      {
+        enabled: !!jobId && status === "processing",
+        refetchInterval: (query) => {
+          const data = query.state.data;
+          if (data?.status === "completed" || data?.status === "failed") {
+            return false;
+          }
+          return 2000;
+        },
+      }
+    )
   );
 
   useEffect(() => {
