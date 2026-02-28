@@ -36,7 +36,7 @@ export const startWorker = () => {
       }
     },
     {
-      connection,
+      connection: connection as any,
       // Limit concurrency: each Puppeteer job uses ~200-400MB RAM
       concurrency: 2,
       // Extend lock duration for long-running PDF jobs (5 minutes)

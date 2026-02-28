@@ -23,7 +23,7 @@ export function getSharedRedisClient(): RedisClient {
     connectionTimeout: isProduction ? 10000 : 5000,
     idleTimeout: 0,
     autoReconnect: true,
-    maxRetries: 10,
+    maxRetries: 50, // Increase retries to handle temporary outages (~2-3 minutes)
   });
 
 

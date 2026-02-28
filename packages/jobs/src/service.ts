@@ -31,10 +31,15 @@ export const JobService = {
       `[JobService] Queuing certificate export: ${data.classIds.length} class(es), type=${data.certificateType}, month=${data.selectedMonth}`
     );
 
-    await jobQueue.add("certificate-export", data, {
-      jobId,
-      priority: 1,
-    });
+    try {
+      await jobQueue.add("certificate-export", data, {
+        jobId,
+        priority: 1,
+      });
+    } catch (error) {
+      logger.error(`[JobService] Failed to queue certificate export: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error("فشل في إضافة الطلب إلى قائمة الانتظار. يرجى التحقق من اتصال Redis.");
+    }
 
     return { jobId };
   },
@@ -44,7 +49,12 @@ export const JobService = {
    */
   async triggerStudentImport(data: any) {
     const jobId = `student-import-${nanoid(10)}`;
-    await jobQueue.add("student-import", data, { jobId });
+    try {
+      await jobQueue.add("student-import", data, { jobId });
+    } catch (error) {
+      logger.error(`[JobService] Failed to queue student import: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error("فشل في إضافة الطلب إلى قائمة الانتظار. يرجى التحقق من اتصال Redis.");
+    }
     return { jobId };
   },
 };

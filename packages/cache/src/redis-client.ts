@@ -29,8 +29,10 @@ export class RedisCache {
         // fallback to raw string (backward compatibility)
         return value as unknown as T;
       }
-    } catch (error) {
-      console.error(`Redis get error for ${this.prefix} cache, key "${key}":`, error);
+    } catch (error: any) {
+      if (error?.code !== "ERR_REDIS_CONNECTION_CLOSED") {
+        console.error(`Redis get error [${error?.code || 'unknown'}] for ${this.prefix} cache, key "${key}":`, error?.message || error);
+      }
       return undefined;
     }
   }
@@ -49,16 +51,20 @@ export class RedisCache {
       } else {
         await this.redis.set(redisKey, serializedValue);
       }
-    } catch (error) {
-      console.error(`Redis set error for ${this.prefix} cache, key "${key}":`, error);
+    } catch (error: any) {
+      if (error?.code !== "ERR_REDIS_CONNECTION_CLOSED") {
+        console.error(`Redis set error [${error?.code || 'unknown'}] for ${this.prefix} cache, key "${key}":`, error?.message || error);
+      }
     }
   }
 
   async delete(key: string): Promise<void> {
     try {
       await this.redis.del(this.getKey(key));
-    } catch (error) {
-      console.error(`Redis delete error for ${this.prefix} cache, key "${key}":`, error);
+    } catch (error: any) {
+      if (error?.code !== "ERR_REDIS_CONNECTION_CLOSED") {
+        console.error(`Redis delete error [${error?.code || 'unknown'}] for ${this.prefix} cache, key "${key}":`, error?.message || error);
+      }
     }
   }
 
@@ -67,8 +73,10 @@ export class RedisCache {
       const serializedData =
         typeof data === "string" ? data : JSON.stringify(data);
       await this.redis.publish(channel, serializedData);
-    } catch (error) {
-      console.error(`Redis publish error on channel ${channel}:`, error);
+    } catch (error: any) {
+      if (error?.code !== "ERR_REDIS_CONNECTION_CLOSED") {
+        console.error(`Redis publish error on channel ${channel} [${error?.code || 'unknown'}]:`, error?.message || error);
+      }
     }
   }
 

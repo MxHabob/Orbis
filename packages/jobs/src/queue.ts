@@ -9,7 +9,7 @@ export const connection = new IORedis(redisUrl, {
   lazyConnect: false,
   // Reconnection strategy
   retryStrategy: (times: number) => {
-    if (times > 10) return null; // Stop retrying after 10 attempts
+    if (times > 50) return null; // Stop retrying after 50 attempts (~2.5 minutes)
     return Math.min(times * 200, 3000);
   },
 });
@@ -17,7 +17,7 @@ export const connection = new IORedis(redisUrl, {
 export const QUEUE_NAME = "midday-jobs";
 
 export const jobQueue = new Queue(QUEUE_NAME, {
-  connection,
+  connection: connection as any,
   defaultJobOptions: {
     attempts: 3,
     backoff: {
