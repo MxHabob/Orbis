@@ -441,6 +441,7 @@ export default {
     behavior: "Behavior",
     no_items: "No assessment items found for this period.",
     standard_items_help: "This will create: Participation, Attendance, Behavior, Oral, Homework, and Exam.",
+    export_success: "Items created successfully",
   },
   reports: {
     monthly: "Monthly",

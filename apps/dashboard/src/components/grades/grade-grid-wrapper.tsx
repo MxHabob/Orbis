@@ -35,7 +35,15 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
   const { execute: executeInitialize, status: initializeStatus } = useAction(initializeMonthlyAssessmentsAction, {
     onSuccess: () => {
       toast({ title: t("grades.export_success"), description: "Standard items created.", variant: "success" });
-      queryClient.invalidateQueries({ queryKey: trpc.grades.getGridData.queryKey() });
+      queryClient.invalidateQueries({ 
+        queryKey: trpc.grades.getGridData.queryKey({ 
+          classId: classId!, 
+          subjectId: subjectId!, 
+          termId: termId!, 
+          month: month!, 
+          academicYearId: yearId! 
+        }) 
+      });
     },
     onError: () => {
       toast({ title: "Error", description: "Failed to create standard items.", variant: "destructive" });
