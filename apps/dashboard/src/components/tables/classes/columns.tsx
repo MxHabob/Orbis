@@ -135,6 +135,13 @@ export const columns: ColumnDef<any>[] = [
     ),
   },
   {
+    header: "Sort Order",
+    accessorKey: "sortOrder",
+    cell: ({ row }) => (
+       <span className="text-muted-foreground">{row.original.sortOrder ?? "0"}</span>
+    ),
+  },
+  {
     id: "actions",
     cell: ({ row, table }) => {
       const meta = table.options.meta as unknown as ClassesTableMeta;

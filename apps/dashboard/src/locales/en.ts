@@ -786,6 +786,8 @@ export default {
     name_required: "Name is required",
     class_name_placeholder: "e.g. Grade 10",
     division_placeholder: "e.g. A",
+    sort_order: "Sort Order",
+    sort_order_placeholder: "e.g. 1",
   },
   students: {
     general_info: "General Information",

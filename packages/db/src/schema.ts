@@ -134,10 +134,12 @@ export const classes = pgTable('classes', {
   parentClassId: integer('parent_class_id').references((): any => classes.id, { onDelete: 'set null' }),
   academicYearId: integer('academic_year_id').references(() => academicYears.id),
   color: text('color').default("#e6e6e6").notNull(),
+  sortOrder: integer('sort_order').default(0).notNull(),
   deletedAt: timestamp('deleted_at'),
 }, (table) => ({
   classYearIdx: index('class_year_idx').on(table.academicYearId, table.name),
   parentIdx: index('classes_parent_idx').on(table.parentClassId),
+  sortOrderIdx: index('classes_sort_order_idx').on(table.sortOrder),
 }));
 
 // ==========================================

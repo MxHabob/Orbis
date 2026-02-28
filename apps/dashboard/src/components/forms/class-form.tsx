@@ -45,6 +45,7 @@ const formSchema = z.object({
   parentClassId: z.number().optional().nullable(),
   academicYearId: z.number().optional().nullable(),
   color: z.string().default("#e6e6e6"),
+  sortOrder: z.number().default(0),
 });
 
 type ClassFormValues = z.infer<typeof formSchema>;
@@ -81,6 +82,7 @@ export function ClassForm({ data }: Props) {
     parentClassId: data?.parentClassId || undefined,
     academicYearId: data?.academicYearId || undefined,
     color: data?.color || "#e6e6e6",
+    sortOrder: data?.sortOrder || 0,
   };
 
   const form = useZodForm(formSchema, {
@@ -230,6 +232,27 @@ export function ClassForm({ data }: Props) {
                       ))}
                     </SelectContent>
                   </Select>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="sortOrder"
+              render={({ field }) => (
+                <FormItem className="space-y-1">
+                  <FormLabel className="text-xs text-[#878787] font-normal">
+                    {t("education.sort_order")}
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      {...field}
+                      onChange={(e) => field.onChange(Number(e.target.value))}
+                      placeholder={t("education.sort_order_placeholder")}
+                    />
+                  </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />

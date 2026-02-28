@@ -41,7 +41,11 @@ export const getClassesV3 = async (
       }
     });
   }
-  if (orderBy.length === 0) orderBy.push(asc(classes.name));
+  if (orderBy.length === 0) {
+    orderBy.push(asc(classes.sortOrder));
+    orderBy.push(asc(classes.name));
+    orderBy.push(asc(classes.division));
+  }
 
   const where = and(
     isNull(classes.deletedAt),
@@ -63,6 +67,7 @@ export const getClassesV3 = async (
       academicYearId: classes.academicYearId,
       parentClassId: classes.parentClassId,
       yearName: academicYears.yearName,
+      sortOrder: classes.sortOrder,
       studentCount: sql<number>`(SELECT count(*) FROM enrollments e WHERE e.class_id = ${classes.id} AND e.deleted_at IS NULL)::int`,
       scheduleCount: sql<number>`(SELECT count(*) FROM scheduled_lessons l WHERE l.class_id = ${classes.id})::int`,
       parentClassName: sql<string | null>`(SELECT name FROM classes p WHERE p.id = ${classes.parentClassId})`,
@@ -89,6 +94,7 @@ export const getClassesV3 = async (
     academicYearId: row.academicYearId,
     parentClassId: row.parentClassId,
     yearName: row.yearName,
+    sortOrder: row.sortOrder,
     _count: {
       students: row.studentCount,
       schedule: row.scheduleCount,
@@ -113,6 +119,7 @@ export const getClassesV3 = async (
       color: classes.color,
       academicYearId: classes.academicYearId,
       parentClassId: classes.parentClassId,
+      sortOrder: classes.sortOrder,
       studentCount: sql<number>`(SELECT count(*) FROM enrollments e WHERE e.class_id = ${classes.id} AND e.deleted_at IS NULL)::int`,
       scheduleCount: sql<number>`(SELECT count(*) FROM scheduled_lessons l WHERE l.class_id = ${classes.id})::int`,
     })
@@ -122,7 +129,8 @@ export const getClassesV3 = async (
         isNull(classes.deletedAt),
         inArray(classes.parentClassId, roots.map(r => r.id))
       )
-    );
+    )
+    .orderBy(asc(classes.sortOrder), asc(classes.name));
 
   const children = rawChildren.map(row => ({
     ...row,

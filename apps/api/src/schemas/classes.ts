@@ -29,6 +29,10 @@ export const classSchema = z.object({
     description: "Color for the class UI",
     example: "#e6e6e6",
   }),
+  sortOrder: z.number().default(0).openapi({
+    description: "Sorting order of the class",
+    example: 1,
+  }),
 });
 
 export const createClassSchema = classSchema.omit({ id: true });

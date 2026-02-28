@@ -493,6 +493,8 @@ export default {
     name_required: "الاسم مطلوب",
     class_name_placeholder: "مثال: الصف العاشر",
     division_placeholder: "مثال: أ",
+    sort_order: "ترتيب العرض",
+    sort_order_placeholder: "مثال: 1",
   },
   students: {
     general_info: "معلومات عامة",
