@@ -21,6 +21,7 @@ import { useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { exportToCsv, parseCsv, generateCanvasPdf, downloadBase64 } from "@midday/export";
+import { useI18n } from "@/locales/client";
 
 export function GradesActions() {
   const [_, setParams] = useQueryStates({
@@ -32,8 +33,14 @@ export function GradesActions() {
     import_termId: parseAsString,
     import_month: parseAsInteger,
     import_assessmentId: parseAsString,
+    initialize_classId: parseAsInteger,
+    initialize_subjectId: parseAsInteger,
+    initialize_termId: parseAsInteger,
+    initialize_month: parseAsInteger,
     hide: parseAsBoolean,
   });
+  
+  const t = useI18n();
 
   const { filter } = useGradeFilterParams();
   const trpc = useTRPC();
@@ -289,6 +296,20 @@ export function GradesActions() {
         >
           <Icons.Import size={18} />
           <span>Import Grades</span>
+        </DropdownMenuItem>
+
+        <DropdownMenuItem
+          onClick={() => setParams({ 
+            step: "initialize_assessments", 
+            initialize_classId: filter.selectedClassId,
+            initialize_subjectId: filter.selectedSubjectId,
+            initialize_termId: filter.termId,
+            initialize_month: filter.month,
+          })}
+          className="space-x-2 text-primary"
+        >
+          <Icons.Add size={18} />
+          <span>{t("grades.initialize_assessments")}</span>
         </DropdownMenuItem>
         
         {/* Helper for receipts if needed, keeping generic */}
