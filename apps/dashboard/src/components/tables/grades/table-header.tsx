@@ -51,6 +51,8 @@ export function DataTableHeader<TData>({
     stickyColumns: STICKY_COLUMNS.grades,
   });
 
+  const t = useI18n();
+
   // Get sortable column IDs (excluding sticky columns)
   const sortableColumnIds = useMemo(() => {
     if (!table) return [];
@@ -133,6 +135,7 @@ export function DataTableHeader<TData>({
                     {renderHeaderContent(
                       header,
                       columnId,
+                      t,
                       tableScroll,
                     )}
                     <ResizeHandle header={header} />
@@ -151,6 +154,7 @@ export function DataTableHeader<TData>({
                     {renderHeaderContent(
                       header,
                       columnId,
+                      t,
                       tableScroll,
                     )}
                     
@@ -175,9 +179,9 @@ export function DataTableHeader<TData>({
 function renderHeaderContent<TData>(
   header: Header<TData, unknown>,
   columnId: string,
+  t: (key: any, options?: any) => string,
   tableScroll?: TableScrollState,
 ) {
-  const t = useI18n();
   // Total column
   if (columnId === "total") {
     return (

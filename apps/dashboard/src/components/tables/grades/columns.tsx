@@ -94,16 +94,16 @@ export const createGradeColumns = (
       id: "studentName",
       accessorKey: "name",
       header: t?.("grades.student_name") || "Student Name",
-      size: 200,
-      minSize: 150,
-      maxSize: 300,
+      size: 250,
+      minSize: 200,
+      maxSize: 400,
       enableResizing: true,
       meta: {
         sticky: true,
         skeleton: { type: "avatar-text", width: "w-40" },
         headerLabel: "grades.student_name",
         className:
-          "w-[200px] min-w-[150px] sticky left-0 bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-20 border-r",
+          "w-[250px] min-w-[200px] sticky left-0 bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-20 border-r",
       },
       cell: ({ row }) => (
         <StudentNameCell
@@ -129,8 +129,8 @@ export const createGradeColumns = (
           </span>
         </div>
       ),
-      size: 130,
-      minSize: 110,
+      size: 160,
+      minSize: 140,
       meta: {
         headerLabel: "grades.average_months",
         className: "text-center border-r bg-muted/30",
@@ -179,8 +179,8 @@ export const createGradeColumns = (
             </span>
           </div>
         ),
-        size: 130,
-        minSize: 110,
+        size: 560,
+        minSize: 250,
         meta: { 
           headerLabel: month === 4 ? "grades.midterm_exam" : "grades.final_exam", 
           className: "text-center border-r" 
