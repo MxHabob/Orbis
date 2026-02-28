@@ -190,7 +190,7 @@ export function PdfViewer({ url, maxWidth }: PdfViewerProps) {
             wrapperStyle={{
               width: "100%",
               height: "100%",
-              overflow: "auto",
+              overflow: "hidden",
             }}
             contentStyle={{
               cursor: "grab",
@@ -200,7 +200,7 @@ export function PdfViewer({ url, maxWidth }: PdfViewerProps) {
             <div className="pb-24">
               <Document
                 key={`${url}_${isPasswordProtected}`}
-                file={url}
+                file={{ url, withCredentials: true } as any}
                 onLoadSuccess={onDocumentLoadSuccess}
                 onLoadError={onDocumentLoadError}
                 onPassword={onPassword}
@@ -217,11 +217,12 @@ export function PdfViewer({ url, maxWidth }: PdfViewerProps) {
                 {numPages &&
                   Array.from(new Array(numPages), (_, index) => (
                     <Page
-                      width={maxWidth}
+                      width={maxWidth || 800}
                       key={`${url}_${index + 1}`}
                       pageNumber={index + 1}
                       renderAnnotationLayer={false}
                       renderTextLayer={true}
+                      className="max-w-full h-auto"
                     />
                   ))}
               </Document>

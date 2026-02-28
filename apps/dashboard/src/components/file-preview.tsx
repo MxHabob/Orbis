@@ -45,7 +45,7 @@ export function FilePreview({
       : { url: `/api/files/preview?filePath=vault/${filePath}` }
   );
 
-  const isPreviewSupported = mimeType.startsWith("image/") || mimeType === "application/pdf";
+  const isPreviewSupported = mimeType.startsWith("image/");
 
   if (!isPreviewSupported) {
     return <FilePreviewIcon mimetype={mimeType} />;

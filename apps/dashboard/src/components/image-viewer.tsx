@@ -61,6 +61,7 @@ export function ImageViewer({ url }: { url: string }) {
               ref={imgRef}
               src={url}
               alt="Viewer content"
+              crossOrigin="use-credentials"
               className={cn(
                 "max-h-full max-w-full object-contain",
                 isLoading ? "opacity-0" : "opacity-100",
