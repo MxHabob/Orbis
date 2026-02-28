@@ -368,6 +368,18 @@ export const documents = pgTable('documents', {
 }));
 
 
+export const shortLinks = pgTable('short_links', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  code: varchar('code', { length: 255 }).unique().notNull(),
+  url: text('url').notNull(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  expiresAt: timestamp('expires_at'),
+}, (table) => ({
+  codeIdx: index('short_links_code_idx').on(table.code),
+}));
+
+
 // ==========================================
 // 5. Relations (Programmatic relations for easy querying)
 // ==========================================
@@ -382,6 +394,7 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   receivedNotifications: many(notifications, { relationName: "receivedNotifications" }),
   parentChildren: many(parentStudents, { relationName: "parentToStudents" }),
   docs: many(documents),
+  shortLinks: many(shortLinks),
 }));
 
 export const accountsRelations = relations(accounts, ({ one }) => ({
@@ -463,4 +476,8 @@ export const documentsRelations = relations(documents, ({ one, many }) => ({
   user: one(users, { fields: [documents.userId], references: [users.id] }),
   parentFolder: one(documents, { fields: [documents.parentFolderId], references: [documents.id], relationName: "folderChildren" }),
   children: many(documents, { relationName: "folderChildren" }),
+}));
+
+export const shortLinksRelations = relations(shortLinks, ({ one }) => ({
+  user: one(users, { fields: [shortLinks.userId], references: [users.id] }),
 }));

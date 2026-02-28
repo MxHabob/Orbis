@@ -113,6 +113,52 @@ app.get("/health", (c) => {
 app.post("/api/upload", (c) => handleUpload(c));
 app.get("/files/proxy", (c) => handleFileProxy(c));
 
+app.get("/s/:code", async (c) => {
+  const code = c.req.param("code");
+  const { db } = await import("@midday/db/client");
+  const { shortLinks } = await import("@midday/db/schema");
+  const { eq, and, gt } = await import("drizzle-orm");
+
+  const [link] = await db
+    .select()
+    .from(shortLinks)
+    .where(
+      and(
+        eq(shortLinks.code, code),
+        gt(shortLinks.expiresAt, new Date()),
+      ),
+    );
+
+  if (!link) {
+    return c.redirect(`${process.env.NEXT_PUBLIC_URL}/404`);
+  }
+
+  // If the link points to our internal vault, generate a public signed URL
+  if (link.url.includes("/files/proxy?filePath=")) {
+    try {
+      const url = new URL(link.url);
+      const filePath = url.searchParams.get("filePath");
+
+      if (filePath?.startsWith("vault/")) {
+        const key = filePath.replace("vault/", "");
+        const { getDownloadUrl } = await import("@midday/storage");
+
+        const signedUrl = await getDownloadUrl({
+          bucket: "vault",
+          key,
+          expiresIn: 3600, // Link itself expires based on short_links table, but S3 gets 1h
+        });
+
+        return c.redirect(signedUrl);
+      }
+    } catch (e) {
+      console.error("Failed to parse link URL", e);
+    }
+  }
+
+  return c.redirect(link.url);
+});
+
 app.doc("/openapi", {
   openapi: "3.1.0",
   info: {

@@ -36,12 +36,10 @@ export function DocumentActions({ showDelete = false, filePath, id }: Props) {
 
   const shortLinkMutation = useMutation(
     trpc.shortLinks.createForDocument.mutationOptions({
-      onMutate: () => {
-        setIsCopied(true);
-      },
       onSuccess: (data) => {
         if (data?.shortUrl) {
           copy(data.shortUrl);
+          setIsCopied(true);
 
           setTimeout(() => {
             setIsCopied(false);
