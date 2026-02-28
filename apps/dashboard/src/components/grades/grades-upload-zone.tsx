@@ -161,7 +161,7 @@ export function GradesUploadZone({ children }: Props) {
   });
 
   return (
-    <div {...getRootProps()} className="relative h-full">
+    <div {...getRootProps()} className="relative">
       <div className="absolute top-0 bottom-0 right-0 left-0 z-[51] pointer-events-none">
         <div
           className={cn(

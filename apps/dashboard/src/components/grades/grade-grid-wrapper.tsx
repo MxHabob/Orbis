@@ -14,7 +14,7 @@ import { GradesSaveBar } from "./grades-save-bar";
 import { useI18n } from "@/locales/client";
 import { useQueryStates, parseAsInteger, parseAsString } from "nuqs";
 import { useAction } from "next-safe-action/hooks";
-import { initializeMonthlyAssessmentsAction } from "@/actions/assessments/initialize-monthly-assessments-action";
+import { initializeAssessmentsAction } from "@/actions/assessments/initialize-assessments";
 import { useQueryClient } from "@tanstack/react-query";
 
 export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) {
@@ -32,7 +32,7 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
     initialize_month: parseAsInteger,
   });
   
-  const { execute: executeInitialize, status: initializeStatus } = useAction(initializeMonthlyAssessmentsAction, {
+  const { execute: executeInitialize, status: initializeStatus } = useAction(initializeAssessmentsAction, {
     onSuccess: () => {
       toast({ title: t("grades.export_success"), description: "Standard items created.", variant: "success" });
       queryClient.invalidateQueries({ 
@@ -194,7 +194,7 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
 
   if (!classId || !subjectId || !termId || !month || !yearId) {
     return (
-      <div className="flex flex-col items-center justify-center p-20 border border-dashed rounded-xl bg-muted/2 text-muted-foreground animate-in fade-in duration-500">
+      <div className="flex flex-col items-center justify-center py-10 px-6 border border-dashed rounded-xl bg-muted/2 text-muted-foreground animate-in fade-in duration-500">
         <div className="h-16 w-16 rounded-full bg-muted/10 flex items-center justify-center mb-6 text-3xl">🔍</div>
         <h2 className="font-medium text-lg text-foreground mb-2">Waiting for selection</h2>
         <p className="text-sm text-[#606060] text-center max-w-md">Please select class, subject, and term from the filters above to display the grade sheet.</p>
@@ -221,7 +221,7 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
 
     if (students.length === 0 && !q) {
       return (
-        <div className="flex flex-col items-center justify-center p-20 border border-dashed rounded-xl bg-muted/5 text-muted-foreground animate-in fade-in duration-500">
+        <div className="flex flex-col items-center justify-center py-10 px-6 border border-dashed rounded-xl bg-muted/5 text-muted-foreground animate-in fade-in duration-500">
            <div className="h-16 w-16 rounded-full bg-muted/10 flex items-center justify-center mb-6 text-3xl">
             👥
           </div>
@@ -235,7 +235,7 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
 
     if (students.length === 0 && q) {
        return (
-        <div className="flex flex-col items-center justify-center p-20 border border-dashed rounded-xl bg-muted/5 text-muted-foreground animate-in fade-in duration-300">
+        <div className="flex flex-col items-center justify-center py-10 px-6 border border-dashed rounded-xl bg-muted/5 text-muted-foreground animate-in fade-in duration-300">
           <div className="h-12 w-12 rounded-full bg-muted/10 flex items-center justify-center mb-4 text-2xl">
             🔍
           </div>
@@ -249,7 +249,7 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
 
     if (items.length === 0) {
       return (
-        <div className="flex flex-col items-center justify-center p-20 border border-dashed rounded-xl bg-muted/2 text-muted-foreground animate-in fade-in duration-500">
+        <div className="flex flex-col items-center justify-center py-10 px-6 border border-dashed rounded-xl bg-muted/2 text-muted-foreground animate-in fade-in duration-500">
           <div className="h-16 w-16 rounded-full bg-muted/10 flex items-center justify-center mb-6">
              <Settings2 className="h-8 w-8 text-foreground/60" />
           </div>

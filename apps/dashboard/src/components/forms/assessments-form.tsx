@@ -21,7 +21,7 @@ import { X, Sparkles, Loader2 } from "lucide-react";
 import { useI18n } from "@/locales/client";
 import { useState, useMemo } from "react";
 import { useAction } from "next-safe-action/hooks";
-import { initializeMonthlyAssessmentsAction } from "@/actions/assessments/initialize-monthly-assessments-action";
+import { initializeAssessmentsAction } from "@/actions/assessments/initialize-assessments";
 
 const formSchema = z.object({
   assessments: z.array(
@@ -95,7 +95,7 @@ export function AssessmentsForm({ classId, subjectId, termId, month, onSuccess }
   const updateMutation = useMutation(trpc.assessments.update.mutationOptions());
   const deleteMutation = useMutation(trpc.assessments.delete.mutationOptions());
 
-  const { execute: executeInitialize, status: initializeStatus } = useAction(initializeMonthlyAssessmentsAction, {
+  const { execute: executeInitialize, status: initializeStatus } = useAction(initializeAssessmentsAction, {
     onSuccess: () => {
       toast({ title: "Success!", description: "Standard items created.", variant: "success" });
       refetch();

@@ -1,7 +1,7 @@
 "use client";
 
 import { useAction } from "next-safe-action/hooks";
-import { initializeMonthlyAssessmentsAction } from "@/actions/assessments/initialize-monthly-assessments-action";
+import { initializeAssessmentsAction } from "@/actions/assessments/initialize-assessments";
 import { Button } from "@midday/ui/button";
 import { Plus, Loader2 } from "lucide-react";
 import { toast } from "@midday/ui/use-toast";
@@ -21,7 +21,7 @@ export function InitializeAssessmentsButton({
   month,
   onSuccess,
 }: InitializeAssessmentsButtonProps) {
-  const { execute, status } = useAction(initializeMonthlyAssessmentsAction, {
+  const { execute, status } = useAction(initializeAssessmentsAction, {
     onSuccess: () => {
       toast({
         title: "Success!",

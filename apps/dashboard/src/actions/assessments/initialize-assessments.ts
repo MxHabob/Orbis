@@ -16,12 +16,13 @@ const schema = z.object({
   month: z.number().min(1).max(14),
 });
 
-export const initializeMonthlyAssessmentsAction = authActionClient
+export const initializeAssessmentsAction = authActionClient
   .schema(schema)
   .metadata({
-    name: "initialize-monthly-assessments",
+    name: "initialize-assessments",
   })
   .action(async ({ parsedInput: { classId, subjectId, termId, month } }) => {
+    console.log("[Action] initializeAssessmentsAction called with:", { classId, subjectId, termId, month });
     try {
       // Check if items already exist for this combination using the new query
       const existingItems = await getMonthlyAssessmentItems({
@@ -44,17 +45,16 @@ export const initializeMonthlyAssessmentsAction = authActionClient
         ? await initializeTermExamAssessments({ classId, subjectId, termId, month })
         : await initializeStandardMonthlyAssessments({ classId, subjectId, termId, month });
 
-      // Use a more aggressive revalidation to ensure the grades page is refreshed
-      // Specifically target both the generic and possible localized paths
-      revalidatePath("/grades");
-      revalidatePath("/[locale]/(app)/(sidebar)/grades", "page");
+      // Use a more standard revalidation approach
+      revalidatePath("/grades", "page");
+      revalidatePath("/(sidebar)/grades", "layout");
 
       return { 
         created: true, 
         count: insertedItems.length 
       };
     } catch (error) {
-      console.error("Error in initializeMonthlyAssessmentsAction:", error);
+      console.error("Error in initializeAssessmentsAction:", error);
       throw new Error(error instanceof Error ? error.message : "Failed to initialize assessments");
     }
   });
