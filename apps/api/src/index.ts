@@ -9,6 +9,7 @@ import { httpLogger } from "./utils/logger";
 import { auth } from "@midday/auth";
 import type { HonoEnv } from "./utils/auth";
 import { handleUpload } from "./routes/upload";
+import { handleFileProxy } from "./routes/files";
 
 const app = new OpenAPIHono<HonoEnv>();
 
@@ -110,6 +111,7 @@ app.get("/health", (c) => {
 });
 
 app.post("/api/upload", (c) => handleUpload(c));
+app.get("/files/proxy", (c) => handleFileProxy(c));
 
 app.doc("/openapi", {
   openapi: "3.1.0",

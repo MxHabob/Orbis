@@ -28,11 +28,11 @@ export function formatAmount({
 }
 
 export function formatDate(
-  date: string,
+  date: string | Date,
   dateFormat?: string | null,
   checkYear = true,
 ) {
-  const parsedDate = parseISO(date);
+  const parsedDate = typeof date === "string" ? parseISO(date) : date;
   if (checkYear && isSameYear(new Date(), parsedDate)) {
     return format(parsedDate, "MMM d");
   }

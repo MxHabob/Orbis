@@ -147,10 +147,7 @@ export const documentsRouter = createTRPCRouter({
         throw new TRPCError({ code: "NOT_FOUND" });
       }
 
-      const url = await getDownloadUrl({
-        bucket: "vault",
-        key: doc.key,
-      });
+      const url = `${process.env.NEXT_PUBLIC_API_URL}/files/proxy?filePath=vault/${doc.key}`;
 
       return { url };
     }),

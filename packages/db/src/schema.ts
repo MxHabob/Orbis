@@ -354,10 +354,10 @@ export const documents = pgTable('documents', {
   mimetype: varchar('mimetype', { length: 100 }),
   extension: varchar('extension', { length: 20 }),
   key: text('key'), // S3 Key
-  pathTokens: jsonb('path_tokens'),
+  pathTokens: jsonb('path_tokens').$type<string[]>(),
   userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
   parentFolderId: uuid('parent_folder_id').references((): any => documents.id, { onDelete: 'cascade' }),
-  metadata: jsonb('metadata'),
+  metadata: jsonb('metadata').$type<Record<string, any>>(),
   processingStatus: varchar('processing_status', { length: 20 }).default('completed'),
   isPinned: boolean('is_pinned').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),

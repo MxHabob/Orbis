@@ -7,6 +7,7 @@ import { VaultRelatedFiles } from "@/components/vault/vault-related-files";
 import { useDocumentParams } from "@/hooks/use-document-params";
 import { useTRPC } from "@/trpc/client";
 import { formatSize } from "@/utils/format";
+import { formatDate } from "@midday/utils/format";
 import { SheetHeader } from "@midday/ui/sheet";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -24,7 +25,7 @@ export function DocumentDetails() {
       id: params.documentId!,
     }),
     enabled: isOpen,
-    staleTime: 0, // Always consider data stale so it always refetches
+    staleTime: 0, 
     initialData: () => {
       const pages = queryClient
         .getQueriesData({ queryKey: trpc.documents.get.infiniteQueryKey() })
@@ -56,7 +57,7 @@ export function DocumentDetails() {
           </span>
         </div>
 
-        <DocumentActions showDelete={fullView} filePath={data?.pathTokens as string[]} />
+        <DocumentActions showDelete={fullView} filePath={data?.pathTokens as string[]} id={data?.id} />
       </SheetHeader>
 
       <div className="h-full max-h-[763px] p-0 pb-4 overflow-x-auto scrollbar-hide">
@@ -70,9 +71,9 @@ export function DocumentDetails() {
       </div>
 
       <div>
-        {data?.summary && (
+        {data?.createdAt && (
           <p className="text-sm text-[#878787] mb-4 line-clamp-2">
-            {data?.summary}
+            {formatDate(data.createdAt)}
           </p>
         )}
 

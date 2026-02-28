@@ -52,6 +52,22 @@ export async function getDownloadUrl(params: {
   });
 }
 
+export async function getFile(params: {
+  bucket: string;
+  key: string;
+  range?: string | null;
+}) {
+  const result = await s3Client.send(
+    new GetObjectCommand({
+      Bucket: params.bucket,
+      Key: params.key,
+      Range: params.range ?? undefined,
+    }),
+  );
+
+  return result;
+}
+
 export async function deleteFile(params: {
   bucket: string;
   key: string;

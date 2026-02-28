@@ -13,9 +13,10 @@ import { useCopyToClipboard } from "usehooks-ts";
 type Props = {
   showDelete?: boolean;
   filePath?: string[] | null;
+  id?: string | null;
 };
 
-export function DocumentActions({ showDelete = false, filePath }: Props) {
+export function DocumentActions({ showDelete = false, filePath, id }: Props) {
   const [, copy] = useCopyToClipboard();
   const [isCopied, setIsCopied] = useState(false);
   const trpc = useTRPC();
@@ -24,11 +25,11 @@ export function DocumentActions({ showDelete = false, filePath }: Props) {
 
   const filename = filePath?.at(-1);
   const { url: downloadUrl } = useFileUrl(
-    filePath
+    id || params.documentId || filePath
       ? {
           type: "download",
-          filePath: filePath.join("/"),
-          filename,
+          documentId: (id || params.documentId) as string,
+          url: !id && !params.documentId && filePath ? `${process.env.NEXT_PUBLIC_API_URL}/files/proxy?filePath=vault/${filePath.join("/")}` : undefined,
         }
       : null,
   );
@@ -77,7 +78,9 @@ export function DocumentActions({ showDelete = false, filePath }: Props) {
         size="icon"
         onClick={() => {
           if (downloadUrl && filename) {
-            downloadFile(downloadUrl, filename);
+            const url = new URL(downloadUrl, window.location.origin);
+            url.searchParams.set("download", "true");
+            downloadFile(url.toString(), filename);
           }
         }}
         disabled={!downloadUrl}
