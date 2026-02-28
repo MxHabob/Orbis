@@ -2,7 +2,7 @@ import { createTRPCRouter, protectedProcedure } from "@api/trpc/init";
 import { z } from "zod";
 import { getD, createDocument, deleteDocument, updateDocument } from "@midday/db/queries/documents";
 import { TRPCError } from "@trpc/server";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { documents } from "@midday/db/schema";
 import { getDownloadUrl } from "@midday/storage";
 
@@ -153,5 +153,51 @@ export const documentsRouter = createTRPCRouter({
       });
 
       return { url };
+    }),
+
+  getById: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().uuid().optional().nullable(),
+        filePath: z.string().optional().nullable(),
+      })
+    )
+    .query(async ({ ctx: { session, db }, input }) => {
+      let filter;
+
+      if (input.id) {
+        filter = eq(documents.id, input.id);
+      } else if (input.filePath) {
+        filter = eq(documents.key, input.filePath);
+      } else {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Either id or filePath must be provided",
+        });
+      }
+
+      const [doc] = await db
+        .select()
+        .from(documents)
+        .where(and(filter, eq(documents.userId, session.user.id)));
+
+      if (!doc) throw new TRPCError({ code: "NOT_FOUND" });
+
+      return doc;
+    }),
+
+  getRelatedDocuments: protectedProcedure
+    .input(z.object({ id: z.string().uuid(), pageSize: z.number().default(12) }))
+    .query(async ({ ctx: { session, db }, input }) => {
+      return db
+        .select()
+        .from(documents)
+        .where(
+          and(
+            eq(documents.userId, session.user.id),
+            sql`id != ${input.id}::uuid`
+          )
+        )
+        .limit(input.pageSize);
     }),
 });

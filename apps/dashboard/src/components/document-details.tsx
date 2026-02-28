@@ -2,7 +2,6 @@
 
 import { DocumentActions } from "@/components/document-actions";
 import { DocumentDetailsSkeleton } from "@/components/document-details-skeleton";
-import { DocumentTags } from "@/components/document-tags";
 import { FileViewer } from "@/components/file-viewer";
 import { VaultRelatedFiles } from "@/components/vault/vault-related-files";
 import { useDocumentParams } from "@/hooks/use-document-params";
@@ -53,20 +52,18 @@ export function DocumentDetails() {
             {data?.title ?? data?.name?.split("/").at(-1)}
           </h2>
           <span className="text-sm text-muted-foreground whitespace-nowrap">
-            {/* @ts-expect-error - size is not typed (JSONB) */}
-            {data?.metadata?.size && formatSize(data?.metadata?.size)}
+            {data?.size && formatSize(data?.size)}
           </span>
         </div>
 
-        <DocumentActions showDelete={fullView} filePath={data?.pathTokens} />
+        <DocumentActions showDelete={fullView} filePath={data?.pathTokens as string[]} />
       </SheetHeader>
 
       <div className="h-full max-h-[763px] p-0 pb-4 overflow-x-auto scrollbar-hide">
         <div className="flex flex-col flex-grow min-h-0 relative h-full w-full items-center justify-center">
           <FileViewer
-            url={`${process.env.NEXT_PUBLIC_API_URL}/files/proxy?filePath=vault/${data?.pathTokens?.join("/")}`}
-            // @ts-expect-error - mimetype is not typed (JSONB)
-            mimeType={data?.metadata?.mimetype}
+            url={`${process.env.NEXT_PUBLIC_API_URL}/files/proxy?filePath=vault/${(data?.pathTokens as string[])?.join("/")}`}
+            mimeType={data?.mimetype!}
             maxWidth={565}
           />
         </div>
@@ -78,8 +75,6 @@ export function DocumentDetails() {
             {data?.summary}
           </p>
         )}
-
-        <DocumentTags tags={data?.documentTagAssignments} id={data?.id!} />
 
         {fullView && <VaultRelatedFiles />}
       </div>

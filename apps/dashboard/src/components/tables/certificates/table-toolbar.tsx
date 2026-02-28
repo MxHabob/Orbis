@@ -7,8 +7,7 @@ import { Input } from "@midday/ui/input";
 import { Button } from "@midday/ui/button";
 import { useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
-import { Plus, FileDown } from "lucide-react";
-import { BulkExportDialog } from "@/components/certificates/bulk-export-dialog";
+import { Plus } from "lucide-react";
 
 export function TableToolbar() {
   const { filter, setFilter } = useCertificateFilterParams();
@@ -74,15 +73,6 @@ export function TableToolbar() {
 
       <div className="flex items-center gap-2">
         <Button
-          variant="outline"
-          className="flex items-center gap-2"
-          onClick={() => setExportOpen(true)}
-        >
-          <FileDown className="w-4 h-4" />
-          <span className="hidden sm:inline">توليد الشهائد</span>
-        </Button>
-
-        <Button
           size="icon"
           variant="outline"
           className="size-[36px] shrink-0"
@@ -91,8 +81,6 @@ export function TableToolbar() {
           <Plus className="w-4 h-4" />
         </Button>
       </div>
-
-      <BulkExportDialog open={exportOpen} onOpenChange={setExportOpen} />
     </div>
   );
 }

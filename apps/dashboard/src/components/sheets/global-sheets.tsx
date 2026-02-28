@@ -52,7 +52,7 @@ export function GlobalSheets() {
 
       {/* <SearchModal /> */}
 
-      {/* <DocumentSheet /> */}
+      <DocumentSheet />
       {/* <InboxDetailsSheet /> */}
 
       <ImportModal />
