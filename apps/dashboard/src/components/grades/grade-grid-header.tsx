@@ -12,6 +12,7 @@ import {
 import { GradesActions } from "./grades-actions";
 import { GradesSearchFilter } from "./grades-search-filter";
 import { useI18n } from "@/locales/client";
+import { useGradingStore } from "@/store/use-grading-store";
 
 interface GradeGridHeaderProps {
   initialData: {
@@ -34,14 +35,31 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
   const [month, setMonth] = useQueryState("month", parseAsInteger);
   const [yearId, setYearId] = useQueryState("yearId", parseAsInteger);
   const t = useI18n();
+  const { 
+    yearId: stYear, 
+    termId: stTerm, 
+    month: stMonth, 
+    classId: stClass, 
+    subjectId: stSubject, 
+    setFilters 
+  } = useGradingStore();
 
+  // Initialization: If URL is empty, load from Zustand (One-time sync)
   useEffect(() => {
-    if (defaults) {
-      if (!yearId && defaults.yearId) setYearId(defaults.yearId);
-      if (!termId && defaults.termId) setTermId(defaults.termId);
-      if (!month && defaults.month) setMonth(defaults.month);
-    }
-  }, [defaults, yearId, termId, month, setYearId, setTermId, setMonth]);
+    if (yearId === null && stYear) setYearId(stYear);
+    if (termId === null && stTerm) setTermId(stTerm);
+    if (month === null && stMonth) setMonth(stMonth);
+    if (selectedClassId === null && stClass) setSelectedClassId(stClass);
+    if (selectedSubjectId === null && stSubject) setSelectedSubjectId(stSubject);
+    
+    // If everything is empty, use provided defaults
+    if (yearId === null && !stYear && defaults?.yearId) setYearId(defaults.yearId);
+  }, []);
+
+  // Sync Store with URL changes (Declarative & Centralized)
+  const updateFilter = (updates: any) => {
+    setFilters(updates);
+  };
 
   return (
     <div className="flex flex-wrap items-center py-4 justify-between">
@@ -49,7 +67,11 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
         <GradesSearchFilter/>
         <Select
           value={yearId?.toString()}
-          onValueChange={(val) => setYearId(parseInt(val))}
+          onValueChange={(val) => {
+            const id = parseInt(val);
+            setYearId(id);
+            updateFilter({ yearId: id });
+          }}
         >
           <SelectTrigger className="h-9 bg-background">
             <SelectValue placeholder={t("grades.select_year")} />
@@ -65,7 +87,11 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
 
         <Select
           value={selectedClassId?.toString()}
-          onValueChange={(val) => setSelectedClassId(parseInt(val))}
+          onValueChange={(val) => {
+            const id = parseInt(val);
+            setSelectedClassId(id);
+            updateFilter({ classId: id });
+          }}
         >
           <SelectTrigger className="h-9 bg-background">
             <SelectValue placeholder={t("grades.select_class")} />
@@ -81,7 +107,11 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
 
         <Select
           value={selectedSubjectId?.toString()}
-          onValueChange={(val) => setSelectedSubjectId(parseInt(val))}
+          onValueChange={(val) => {
+            const id = parseInt(val);
+            setSelectedSubjectId(id);
+            updateFilter({ subjectId: id });
+          }}
         >
           <SelectTrigger className="h-9 bg-background">
             <SelectValue placeholder={t("grades.select_subject")} />
@@ -97,7 +127,17 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
 
         <Select
           value={termId?.toString()}
-          onValueChange={(val) => setTermId(parseInt(val))}
+          onValueChange={(val) => {
+            const newTermId = parseInt(val);
+            setTermId(newTermId);
+            
+            // Auto-select first month of the new term
+            const activeTerm = initialData.terms.find(t => t.id === newTermId);
+            const newMonth = activeTerm?.name.includes("الاول") ? 1 : 5;
+            
+            setMonth(newMonth);
+            updateFilter({ termId: newTermId, month: newMonth });
+          }}
         >
           <SelectTrigger className="h-9 bg-background">
             <SelectValue placeholder={t("grades.select_term")} />
@@ -115,17 +155,37 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
 
         <Select
           value={month?.toString()}
-          onValueChange={(val) => setMonth(parseInt(val))}
+          onValueChange={(val) => {
+            const id = parseInt(val);
+            setMonth(id);
+            updateFilter({ month: id });
+          }}
         >
           <SelectTrigger className="h-9 bg-background">
             <SelectValue placeholder={t("grades.select_month")} />
           </SelectTrigger>
           <SelectContent>
-            {months.map((m) => (
-              <SelectItem key={m.id} value={m.id.toString()}>
-                {m.name}
-              </SelectItem>
-            ))}
+            {months
+              .filter(m => {
+                if (!termId) return true;
+                const activeTerm = initialData.terms.find(t => t.id === termId);
+                const isFirstTerm = activeTerm?.name.includes("الاول");
+                
+                const monthData = HIJRI_MONTHS.find(hm => hm.id === m.id);
+                return isFirstTerm ? monthData?.term === 1 : monthData?.term === 2;
+              })
+              .map((m) => (
+                <SelectItem key={m.id} value={m.id.toString()}>
+                  <div className="flex items-center justify-between w-full gap-2">
+                    <span>{m.name}</span>
+                    {HIJRI_MONTHS.find(hm => hm.id === m.id)?.isExam && (
+                      <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-medium">
+                        {m.id === 4 ? t("grades.midterm_exam") : t("grades.final_exam")}
+                      </span>
+                    )}
+                  </div>
+                </SelectItem>
+              ))}
           </SelectContent>
         </Select>
       </div>
