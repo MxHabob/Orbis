@@ -26,7 +26,7 @@ export const getClassesV3 = async (
 
   const cacheKey = `classes_v3:${academicYearId ?? "all"}:${q ?? "none"}:${sort?.join(",") ?? "default"}:${flat}:${limit}:${offset}`;
   const cached = await classCache.get<any[]>(cacheKey);
-  if (cached && !q && !sort && !limit) return cached; // Only use cache for default view
+  if (cached && !q && !sort) return cached; // Only use cache for default view
 
   const orderBy = [];
   if (sort?.length) {
@@ -104,8 +104,8 @@ export const getClassesV3 = async (
     }
   }));
 
-  if (flat || q || !roots.length || limit) {
-    if (!q && !sort && !flat && !limit) await classCache.set(cacheKey, roots, 3600);
+  if (flat || q || !roots.length) {
+    if (!q && !sort && !flat) await classCache.set(cacheKey, roots, 3600);
     return roots;
   }
 

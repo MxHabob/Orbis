@@ -56,13 +56,18 @@ export const columns: ColumnDef<ClassReport>[] = [
         "w-[250px] min-w-[180px] md:sticky md:left-[50px] bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-20",
     },
     cell: ({ row }) => {
-      const name = row.original.name;
+      const data = row.original;
+      const name = data.name || "";
+      const color = (data as any).color;
       
       return (
         <div className="flex items-center space-x-2 min-w-0">
           <Avatar className="size-5 flex-shrink-0">
-            <AvatarFallback className="text-[9px] font-medium">
-              {name?.[0]?.toUpperCase()}
+            <AvatarFallback 
+              className="text-[9px] font-medium"
+              style={{ backgroundColor: color || "#e6e6e6" }}
+            >
+              {name.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <span className="truncate font-medium">{name}</span>
