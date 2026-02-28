@@ -203,7 +203,9 @@ export const columns: ColumnDef<Document>[] = [
         "w-[100px] min-w-[80px] md:sticky md:right-0 bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-30 justify-center !border-l !border-border",
     },
     cell: ({ row, table }) => {
+      const t = useI18n();
       const { setParams } = useDocumentParams();
+
 
       // @ts-expect-error - mimetype is not typed (JSONB)
       const mimetype = row.original.metadata?.mimetype as string | undefined;

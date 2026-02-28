@@ -7,18 +7,59 @@ import {
 } from "date-fns";
 import { normalizeCurrencyCode } from "./currency";
 
-export function formatSize(bytes: number): string {
-  const units = ["byte", "kilobyte", "megabyte", "gigabyte", "terabyte"];
+const SIZE_UNITS = [
+  "byte",
+  "kilobyte",
+  "megabyte",
+  "gigabyte",
+  "terabyte",
+  "petabyte",
+] as const;
 
-  const unitIndex = Math.max(
-    0,
-    Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1),
-  );
+type SizeUnit = (typeof SIZE_UNITS)[number];
 
-  return Intl.NumberFormat("en-US", {
-    style: "unit",
-    unit: units[unitIndex],
-  }).format(+Math.round(bytes / 1024 ** unitIndex));
+const formatterCache = new Map<string, Intl.NumberFormat>();
+
+function getFormatter(unit: SizeUnit, locale = "en-US"): Intl.NumberFormat {
+  const key = `${locale}-${unit}`;
+  if (!formatterCache.has(key)) {
+    formatterCache.set(
+      key,
+      new Intl.NumberFormat(locale, {
+        style: "unit",
+        unit,
+        unitDisplay: "short",
+        maximumFractionDigits: 1,
+      }),
+    );
+  }
+  return formatterCache.get(key)!;
+}
+
+/**
+ * Formats a number of bytes into a human-readable string using Intl.NumberFormat.
+ * Follows 2026 performance and reliability standards.
+ */
+export function formatSize(bytes: number | bigint | undefined | null): string {
+  // Handle falsy or non-numeric values early
+  if (!bytes || Number.isNaN(Number(bytes)) || bytes < 0) {
+    return getFormatter("byte").format(0);
+  }
+
+  const b = Number(bytes);
+  const exponent = Math.floor(Math.log(b) / Math.log(1024));
+  const unitIndex = Math.max(0, Math.min(exponent, SIZE_UNITS.length - 1));
+  const unit: SizeUnit = SIZE_UNITS[unitIndex] ?? "byte";
+  const value = b / 1024 ** unitIndex;
+
+
+  try {
+    return getFormatter(unit).format(value);
+  } catch (error) {
+    // Robust fallback for environments with partial Intl support
+    const fallbackUnits = ["B", "KB", "MB", "GB", "TB", "PB"];
+    return `${value.toFixed(1)} ${fallbackUnits[unitIndex]}`;
+  }
 }
 
 type FormatAmountParams = {
