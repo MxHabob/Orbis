@@ -54,276 +54,262 @@ const BROWSER_ARGS = [
  * - Automatic cleanup on failure
  * - Debug screenshots on timeout errors
  */
+// ============================================================
+// Arabic Constants for Professional Naming
+// ============================================================
+const MONTHS_AR: Record<number, string> = {
+  1: "محرم", 2: "صفر", 3: "ربيع أول", 4: "ربيع ثاني",
+  5: "جمادى أول", 6: "جمادى ثاني", 7: "رجب", 8: "شعبان",
+  9: "رمضان", 10: "شوال", 11: "ذو القعدة", 12: "ذو الحجة",
+};
+
+const TYPES_AR: Record<string, string> = {
+  "monthly": "شهري",
+  "half-yearly": "نصفي",
+  "final": "نهائي",
+};
+
 export async function handleCertificateExport(
   job: Job<CertificateExportData>
 ) {
   const startTime = Date.now();
-  logger.info(
-    `[CertExport] Starting job ${job.id} for user ${job.data.userId}`
-  );
-
-  const { classIds, userId, templateId, certificateType, selectedMonth } =
-    job.data;
-  const dashboardUrl =
-    process.env.NEXT_PUBLIC_URL || "http://localhost:3001";
+  const { classIds, userId, templateId, certificateType, selectedMonth } = job.data;
+  
+  logger.info(`[CertExport] Job ${job.id} started. Classes: ${classIds.length}`);
 
   let browser: Browser | undefined;
-
+  
   try {
     // ──────────────────────────────────────────
-    // Phase 1: Fetch all students
+    // Phase 1: Fetch metadata & Session
     // ──────────────────────────────────────────
-    await job.updateProgress(2);
-    const students = await fetchAllStudents(classIds);
+    const { classes, academicYears } = await import("@midday/db/schema");
+    const { eq, inArray } = await import("drizzle-orm");
 
-    if (students.length === 0) {
-      throw new Error("لم يتم العثور على طلاب للتصدير");
+    const classMetadata = await db
+      .select({
+        id: classes.id,
+        name: classes.name,
+        yearName: academicYears.yearName,
+      })
+      .from(classes)
+      .leftJoin(academicYears, eq(classes.academicYearId, academicYears.id))
+      .where(inArray(classes.id, classIds.map(Number)));
+
+    if (classMetadata.length === 0) {
+      throw new Error("لم يتم العثور على الفصول المحددة");
     }
 
-    logger.info(
-      `[CertExport] Found ${students.length} students across ${classIds.length} class(es)`
-    );
+    const session = await getValidSessionByUserId(userId);
+    if (!session) throw new Error("جلسة عمل غير صالحة. يرجى تسجيل الدخول.");
+
+    const dashboardUrl = process.env.NEXT_PUBLIC_URL || "http://localhost:3001";
     await job.updateProgress(5);
 
     // ──────────────────────────────────────────
-    // Phase 2: Get authenticated session
-    // ──────────────────────────────────────────
-    // We get an existing valid session for the user to bypass authentication in Puppeteer
-    const session = await getValidSessionByUserId(userId);
-
-    if (!session) {
-      throw new Error("لا توجد جلسة عمل صالحة للمستخدم. يرجى تسجيل الدخول والمحاولة مرة أخرى.");
-    }
-
-    const sessionToken = session.token;
-    await job.updateProgress(8);
-
-    // ──────────────────────────────────────────
-    // Phase 3: Launch optimized Puppeteer
+    // Phase 2: Launch Browser
     // ──────────────────────────────────────────
     browser = await puppeteer.launch({
       headless: true,
       args: BROWSER_ARGS,
       protocolTimeout: PAGE_NAVIGATION_TIMEOUT,
     });
-
-    await job.updateProgress(10);
+    
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1200, height: 1600 });
+    await setupLogging(page);
+    await setupAuth(page, session.token, dashboardUrl);
 
     // ──────────────────────────────────────────
-    // Phase 4: Batch processing
+    // Phase 3: Loop Classes & Generate PDFs
     // ──────────────────────────────────────────
-    const allStudentIds = students.map((s: any) => s.userId);
-    const batches = splitIntoBatches(allStudentIds, MAX_STUDENTS_PER_BATCH);
-    const totalBatches = batches.length;
-    const pdfBuffers: Buffer[] = [];
+    const generatedFiles: { name: string; buffer: Buffer; classId: number; title: string }[] = [];
+    const isMonthly = certificateType === "monthly";
+    const typeLabel = TYPES_AR[certificateType] || certificateType;
+    const monthLabel = isMonthly ? MONTHS_AR[selectedMonth] : "";
 
-    logger.info(
-      `[CertExport] Processing ${totalBatches} batch(es) of max ${MAX_STUDENTS_PER_BATCH} students`
-    );
+    for (let i = 0; i < classMetadata.length; i++) {
+      const cls = classMetadata[i]!;
+      const classProgress = 10 + (i / classMetadata.length) * 80;
+      await job.updateProgress(Math.round(classProgress));
 
-    // Progress allocation: 10-85% for batch processing
-    const progressPerBatch = 75 / totalBatches;
+      logger.info(`[CertExport] Processing class: ${cls.name} (${i + 1}/${classMetadata.length})`);
 
-    for (let batchIdx = 0; batchIdx < totalBatches; batchIdx++) {
-      const batch = batches[batchIdx]!;
-      const batchProgress = 10 + batchIdx * progressPerBatch;
-
-      logger.info(
-        `[CertExport] Processing batch ${batchIdx + 1}/${totalBatches} (${batch.length} students)`
-      );
-
-      const page = await browser.newPage();
-
-      try {
-        // Set viewport for consistent rendering
-        await page.setViewport({ width: 1200, height: 1600 });
-
-        // Forward console logs from Puppeteer
-        page.on("console", (msg) => {
-          const text = msg.text();
-          if (
-            text.includes("[tRPC]") || 
-            text.includes("Loaded:") || 
-            text.includes("[ExportPage]") || 
-            text.includes("[GradesTable]")
-          ) {
-            logger.info(`[Puppeteer Console] ${text}`);
-          } else if (msg.type() === "error") {
-            logger.error(`[Puppeteer Error] ${text}`);
-          }
-        });
-
-        page.on("error", (err) => {
-          logger.error(`[Puppeteer Page Error] ${err.message}`);
-        });
-
-        page.on("requestfailed", (request) => {
-          const failure = request.failure();
-          logger.warn(
-            `[Puppeteer Request Failed] ${request.url()} - ${failure?.errorText || "unknown"}`
-          );
-        });
-
-        // Set session cookies (Better Auth uses hyphen or underscore depending on version/config)
-        // Set for both dashboard and API URLs to ensure cross-origin requests include it
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002";
-        const apiDomain = new URL(apiUrl).hostname;
-        const dashboardDomain = new URL(dashboardUrl).hostname;
-
-        // Set session cookies for BOTH dashboard and API domains
-        // Better Auth uses both names depending on configuration
-        const cookieNames = ["better-auth.session-token", "better-auth.session_token"];
-        const domains = [dashboardDomain, apiDomain];
-
-        for (const domain of domains) {
-          for (const name of cookieNames) {
-            await page.setCookie({
-              name,
-              value: sessionToken,
-              domain: domain === "localhost" ? undefined : domain,
-              path: "/",
-              httpOnly: true,
-              secure: false, 
-              sameSite: "Lax",
-              url: domain === "localhost" ? `http://${domain}` : `https://${domain}`
-            });
-          }
-        }
-
-        // Add Authorization header as a fallback for cross-origin requests (e.g. from Dashboard to API)
-        // This ensures tRPC requests are authenticated even if cookies are blocked/missing
-        await page.setExtraHTTPHeaders({
-          "Authorization": `Bearer ${sessionToken}`,
-          "x-better-auth-session": sessionToken,
-        });
-
-        // Build export URL with batch student IDs
-        const studentIds = batch.join(",");
-        const exportUrl = buildExportUrl(dashboardUrl, {
-          studentIds,
-          templateId,
-          certificateType,
-          selectedMonth,
-        });
-
-        logger.info(
-          `[CertExport] Navigating to batch ${batchIdx + 1}. URL: ${exportUrl}`
-        );
-
-        // Navigate and wait for content
-        const response = await page.goto(exportUrl, {
-          waitUntil: "networkidle2", // Use networkidle2 to ensure Next.js hydration completes
-          timeout: PAGE_NAVIGATION_TIMEOUT,
-        });
-
-        logger.info(`[CertExport] Navigation result: ${response?.status()} ${response?.url()}`);
-
-        await job.updateProgress(Math.round(batchProgress + progressPerBatch * 0.3));
-
-        // Wait for render completion signal
-        await page.waitForFunction(
-          () => (window as any).isReadyToCapture === true,
-          { timeout: READY_SIGNAL_TIMEOUT }
-        );
-
-        await job.updateProgress(Math.round(batchProgress + progressPerBatch * 0.6));
-
-        // Generate PDF for this batch
-        const pdfBuffer = await page.pdf({
-          format: "A4",
-          printBackground: true,
-          margin: { top: "0px", right: "0px", bottom: "0px", left: "0px" },
-          preferCSSPageSize: true,
-          timeout: 60_000,
-        });
-
-        pdfBuffers.push(pdfBuffer as Buffer);
-
-        await job.updateProgress(Math.round(batchProgress + progressPerBatch));
-
-        logger.info(
-          `[CertExport] Batch ${batchIdx + 1} complete (${(pdfBuffer.length / 1024).toFixed(0)}KB)`
-        );
-      } catch (batchError) {
-        // Capture debug screenshot for failed batch
-        await captureErrorScreenshot(page, job, batchIdx);
-        throw batchError;
-      } finally {
-        await page.close();
+      // Fetch students for this class
+      const students = await getStudentsByClassId(cls.id, 1000, 0);
+      if (!students || students.length === 0) {
+        logger.warn(`[CertExport] Skipping empty class: ${cls.name}`);
+        continue;
       }
+
+      // Generate filename: اسم الفصل_السنة الدراسية_الشهر_نوع الشهادة
+      const academicYear = cls.yearName?.replace("/", "-") || "عام_دراسي";
+      const namePart = cls.name.replace(/\s+/g, "_");
+      const monthPart = isMonthly ? `_${monthLabel}` : "";
+      const pdfName = `${namePart}_${academicYear}${monthPart}_${typeLabel}.pdf`;
+      const pdfTitle = `شهادات ${typeLabel} - ${cls.name}${isMonthly ? ` - شهر ${monthLabel}` : ""}`;
+
+      // Build Export URL for this class
+      const studentIds = students.map(s => s.userId).join(",");
+      const exportUrl = buildExportUrl(dashboardUrl, {
+        studentIds,
+        templateId,
+        certificateType,
+        selectedMonth,
+      });
+
+      // Render & Capture
+      await page.goto(exportUrl, { waitUntil: "networkidle2", timeout: PAGE_NAVIGATION_TIMEOUT });
+      await page.waitForFunction(() => (window as any).isReadyToCapture === true, { timeout: READY_SIGNAL_TIMEOUT });
+
+      const pdfBuffer = await page.pdf({
+        format: "A4",
+        printBackground: true,
+        margin: { top: "0px", right: "0px", bottom: "0px", left: "0px" },
+        preferCSSPageSize: true,
+      });
+
+      generatedFiles.push({
+        name: pdfName,
+        buffer: pdfBuffer as Buffer,
+        classId: cls.id,
+        title: pdfTitle,
+      });
+
+      // Progress within class loop
+      await job.updateProgress(Math.round(classProgress + (1 / classMetadata.length) * 0.5));
     }
 
-    await job.updateProgress(85);
-
-    // ──────────────────────────────────────────
-    // Phase 5: Merge PDFs if multiple batches
-    // ──────────────────────────────────────────
-    let finalPdf: Buffer;
-
-    if (pdfBuffers.length === 1) {
-      finalPdf = pdfBuffers[0]!;
-    } else {
-      logger.info(
-        `[CertExport] Merging ${pdfBuffers.length} batch PDFs...`
-      );
-      finalPdf = await mergePdfBuffers(pdfBuffers);
+    if (generatedFiles.length === 0) {
+      throw new Error("لم يتم إنشاء أي شهادات. قد تكون الفصول فارغة.");
     }
 
+    // ──────────────────────────────────────────
+    // Phase 4: Individual Uploads & ZIP Creation
+    // ──────────────────────────────────────────
     await job.updateProgress(90);
+    logger.info(`[CertExport] Uploading ${generatedFiles.length} files and preparing final result...`);
 
-    // ──────────────────────────────────────────
-    // Phase 6: Upload to S3 and Save to DB
-    // ──────────────────────────────────────────
-    const timestamp = Date.now();
-    const fileName = `شهادات_${certificateType}_${selectedMonth}_${timestamp}.pdf`;
-    const path = `exports/${userId}/${fileName}`;
+    // Upload each PDF to S3 & DB for the Vault
+    for (const f of generatedFiles) {
+      const path = `exports/${userId}/${Date.now()}_${f.name}`;
+      await uploadFile({ bucket: "vault", key: path, file: f.buffer, contentType: "application/pdf" });
+      await createDocument({
+        name: f.name,
+        title: f.title,
+        size: f.buffer.length,
+        mimetype: "application/pdf",
+        extension: "pdf",
+        key: path,
+        userId: userId,
+        type: "file",
+        pathTokens: ["exports", userId, f.name],
+      });
+    }
 
-    const result = await uploadFile({
+    // Final result: Single PDF or ZIP
+    let finalBuffer: Buffer;
+    let finalName: string;
+    let finalType: string;
+
+    if (generatedFiles.length === 1) {
+      finalBuffer = generatedFiles[0]!.buffer;
+      finalName = generatedFiles[0]!.name;
+      finalType = "application/pdf";
+    } else {
+      logger.info("[CertExport] Bundling multiple classes into ZIP...");
+      finalBuffer = await createZipBuffer(generatedFiles);
+      const timestamp = Date.now();
+      finalName = `حزمة_شهادات_${typeLabel}${isMonthly ? `_${monthLabel}` : ""}_${timestamp}.zip`;
+      finalType = "application/zip";
+    }
+
+    // Upload Final Package
+    const finalPath = `exports/${userId}/${finalName}`;
+    const uploadResult = await uploadFile({
       bucket: "vault",
-      key: path,
-      file: finalPdf,
-      contentType: "application/pdf",
-    });
-
-    // Create DB record so it shows up in Documents/Vault
-    await createDocument({
-      name: fileName,
-      title: `شهادات ${certificateType} - شهر ${selectedMonth}`,
-      size: finalPdf.length,
-      mimetype: "application/pdf",
-      extension: "pdf",
-      key: path,
-      userId: userId,
-      type: "file",
-      pathTokens: ["exports", userId, fileName],
+      key: finalPath,
+      file: finalBuffer,
+      contentType: finalType,
     });
 
     await job.updateProgress(100);
-
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-    logger.info(
-      `[CertExport] ✅ Job ${job.id} completed in ${duration}s — ${students.length} certificates, ${(finalPdf.length / 1024 / 1024).toFixed(2)}MB`
-    );
+    logger.info(`[CertExport] ✅ Job ${job.id} completed in ${duration}s. Size: ${(finalBuffer.length / 1024).toFixed(0)}KB`);
 
     return {
       success: true,
-      url: result.url,
-      totalItems: students.length,
-      fileName,
-      filePath: path,
-      fullPath: path,
+      url: uploadResult.url,
+      totalItems: generatedFiles.length,
+      fileName: finalName,
+      fullPath: finalPath,
     };
-  } catch (error) {
-    const errMsg =
-      error instanceof Error ? error.message : "Unknown error";
-    logger.error(`[CertExport] ❌ Job ${job.id} failed: ${errMsg}`);
 
+  } catch (error) {
+    const errMsg = error instanceof Error ? error.message : "Unknown error";
+    logger.error(`[CertExport] ❌ Job ${job.id} failed: ${errMsg}`);
     throw error;
   } finally {
-    if (browser) {
-      await browser.close().catch(() => {});
+    if (browser) await browser.close().catch(() => {});
+  }
+}
+
+/**
+ * Configure logging for the Puppeteer page
+ */
+async function setupLogging(page: Page) {
+  page.on("console", (msg) => {
+    const text = msg.text();
+    if (text.includes("[ExportPage]") || text.includes("[tRPC]")) {
+      logger.info(`[Puppeteer] ${text}`);
+    } else if (msg.type() === "error") {
+      logger.error(`[Puppeteer Error] ${text}`);
+    }
+  });
+}
+
+/**
+ * Configure cookies and extra headers for authentication inside Puppeteer
+ */
+async function setupAuth(page: Page, token: string, dashboardUrl: string) {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002";
+  const domains = [new URL(dashboardUrl).hostname, new URL(apiUrl).hostname];
+  const cookieNames = ["better-auth.session-token", "better-auth.session_token"];
+
+  for (const domain of domains) {
+    for (const name of cookieNames) {
+      await page.setCookie({
+        name,
+        value: token,
+        domain: domain === "localhost" ? undefined : domain,
+        path: "/",
+        httpOnly: true,
+        secure: false,
+        sameSite: "Lax",
+        url: domain === "localhost" ? `http://${domain}` : `https://${domain}`
+      });
     }
   }
+
+  await page.setExtraHTTPHeaders({
+    "Authorization": `Bearer ${token}`,
+    "x-better-auth-session": token,
+  });
+}
+
+/**
+ * Create a ZIP buffer from generated files using JSZip
+ */
+async function createZipBuffer(files: { name: string; buffer: Buffer }[]): Promise<Buffer> {
+  const JSZip = (await import("jszip")).default;
+  const zip = new JSZip();
+  
+  for (const f of files) {
+    zip.file(f.name, f.buffer);
+  }
+  
+  const content = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });
+  return content;
 }
 
 // ============================================================
