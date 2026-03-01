@@ -35,24 +35,23 @@ import { useState } from "react";
 
 export type Document = RouterOutputs["documents"]["get"]["data"][number];
  
-const Header = ({ id }: { id: string }) => {
+const Header = ({ id }: { id: "vault.filename" | "vault.size" | "vault.actions" }) => {
   const t = useI18n();
-  return <span>{t(id as any)}</span>;
+  return <span>{t(id)}</span>;
 };
 
 function DownloadFileMenuItem({
-  pathTokens,
+  documentId,
   filename,
 }: {
-  pathTokens?: string[] | null;
+  documentId: string;
   filename: string;
 }) {
   const { url: downloadUrl } = useFileUrl(
-    pathTokens
+    documentId
       ? {
           type: "download",
-          filePath: pathTokens.join("/"),
-          filename,
+          documentId,
         }
       : null,
   );
@@ -126,7 +125,6 @@ export const columns: ColumnDef<Document>[] = [
         "w-[450px] min-w-[180px] md:sticky md:left-[50px] bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-20",
     },
     cell: ({ row }) => {
-      // @ts-expect-error - mimetype is not typed (JSONB)
       const mimetype = row.original.metadata?.mimetype as string | undefined;
       const isSupported = mimetype
         ? isMimeTypeSupportedForProcessing(mimetype)
@@ -183,7 +181,6 @@ export const columns: ColumnDef<Document>[] = [
       className: "w-[100px] min-w-[80px]",
     },
     cell: ({ row }) => {
-      // @ts-expect-error - size is not typed (JSONB)
       return <span>{formatSize(row.original.metadata?.size)}</span>;
     },
   },
@@ -207,7 +204,6 @@ export const columns: ColumnDef<Document>[] = [
       const { setParams } = useDocumentParams();
 
 
-      // @ts-expect-error - mimetype is not typed (JSONB)
       const mimetype = row.original.metadata?.mimetype as string | undefined;
       const isSupported = mimetype
         ? isMimeTypeSupportedForProcessing(mimetype)
@@ -250,7 +246,7 @@ export const columns: ColumnDef<Document>[] = [
                 {t("vault.view_details")}
               </DropdownMenuItem>
               <DownloadFileMenuItem
-                pathTokens={row.original.pathTokens}
+                documentId={row.original.id}
                 filename={row.original.name?.split("/").at(-1) || "download"}
               />
               <DropdownMenuItem

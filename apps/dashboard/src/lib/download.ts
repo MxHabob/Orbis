@@ -3,13 +3,27 @@ import { isDesktopApp } from "@midday/desktop-client/platform";
 
 export async function downloadFile(url: string, filename: string) {
   if (!isDesktopApp()) {
-    // Web mode - normal download
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Web mode - check if URL is cross-origin
+    try {
+      const urlObj = new URL(url, window.location.origin);
+      const isCrossOrigin = urlObj.origin !== window.location.origin;
+
+      if (isCrossOrigin) {
+        // Cross-origin: open in new tab (download attribute doesn't work cross-origin)
+        window.open(url, "_blank", "noopener,noreferrer");
+      } else {
+        // Same-origin: use download attribute
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } catch {
+      // Fallback: open in new tab
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
     return;
   }
 
