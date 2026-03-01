@@ -1,6 +1,5 @@
 "use client";
 
-import { useQueryState, parseAsInteger } from "nuqs";
 import { useEffect } from "react";
 import {
   Select,
@@ -13,6 +12,7 @@ import { GradesActions } from "./grades-actions";
 import { GradesSearchFilter } from "./grades-search-filter";
 import { useI18n } from "@/locales/client";
 import { useGradingStore } from "@/store/use-grading-store";
+import { useGradeFilterParams } from "@/hooks/use-grade-filter-params";
 
 interface GradeGridHeaderProps {
   initialData: {
@@ -29,11 +29,9 @@ const months = HIJRI_MONTHS.map(m => ({ id: m.id, name: m.label }));
 
 
 export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps & { defaults?: { yearId?: number; termId?: number; month?: number } }) {
-  const [selectedClassId, setSelectedClassId] = useQueryState("selectedClassId", parseAsInteger);
-  const [selectedSubjectId, setSelectedSubjectId] = useQueryState("selectedSubjectId", parseAsInteger);
-  const [termId, setTermId] = useQueryState("termId", parseAsInteger);
-  const [month, setMonth] = useQueryState("month", parseAsInteger);
-  const [yearId, setYearId] = useQueryState("yearId", parseAsInteger);
+  const { filter, setFilter } = useGradeFilterParams();
+  const { selectedClassId, selectedSubjectId, termId, month, yearId } = filter;
+
   const t = useI18n();
   const { 
     yearId: stYear, 
@@ -46,14 +44,21 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
 
   // Initialization: If URL is empty, load from Zustand (One-time sync)
   useEffect(() => {
-    if (yearId === null && stYear) setYearId(stYear);
-    if (termId === null && stTerm) setTermId(stTerm);
-    if (month === null && stMonth) setMonth(stMonth);
-    if (selectedClassId === null && stClass) setSelectedClassId(stClass);
-    if (selectedSubjectId === null && stSubject) setSelectedSubjectId(stSubject);
+    const updates: any = {};
+    if (yearId === null && stYear) updates.yearId = stYear;
+    if (termId === null && stTerm) updates.termId = stTerm;
+    if (month === null && stMonth) updates.month = stMonth;
+    if (selectedClassId === null && stClass) updates.selectedClassId = stClass;
+    if (selectedSubjectId === null && stSubject) updates.selectedSubjectId = stSubject;
     
     // If everything is empty, use provided defaults
-    if (yearId === null && !stYear && defaults?.yearId) setYearId(defaults.yearId);
+    if (yearId === null && !stYear && defaults?.yearId && updates.yearId === undefined) {
+      updates.yearId = defaults.yearId;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      setFilter(updates);
+    }
   }, []);
 
   // Sync Store with URL changes (Declarative & Centralized)
@@ -66,10 +71,10 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
       <div className="flex gap-6">
         <GradesSearchFilter/>
         <Select
-          value={yearId?.toString()}
+          value={yearId?.toString() || ""}
           onValueChange={(val) => {
             const id = parseInt(val);
-            setYearId(id);
+            setFilter({ yearId: id });
             updateFilter({ yearId: id });
           }}
         >
@@ -86,10 +91,10 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
         </Select>
 
         <Select
-          value={selectedClassId?.toString()}
+          value={selectedClassId?.toString() || ""}
           onValueChange={(val) => {
             const id = parseInt(val);
-            setSelectedClassId(id);
+            setFilter({ selectedClassId: id });
             updateFilter({ classId: id });
           }}
         >
@@ -106,10 +111,10 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
         </Select>
 
         <Select
-          value={selectedSubjectId?.toString()}
+          value={selectedSubjectId?.toString() || ""}
           onValueChange={(val) => {
             const id = parseInt(val);
-            setSelectedSubjectId(id);
+            setFilter({ selectedSubjectId: id });
             updateFilter({ subjectId: id });
           }}
         >
@@ -126,16 +131,15 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
         </Select>
 
         <Select
-          value={termId?.toString()}
+          value={termId?.toString() || ""}
           onValueChange={(val) => {
             const newTermId = parseInt(val);
-            setTermId(newTermId);
             
             // Auto-select first month of the new term
             const activeTerm = initialData.terms.find(t => t.id === newTermId);
             const newMonth = activeTerm?.name.includes("الاول") ? 1 : 5;
             
-            setMonth(newMonth);
+            setFilter({ termId: newTermId, month: newMonth });
             updateFilter({ termId: newTermId, month: newMonth });
           }}
         >
@@ -154,10 +158,10 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
         </Select>
 
         <Select
-          value={month?.toString()}
+          value={month?.toString() || ""}
           onValueChange={(val) => {
             const id = parseInt(val);
-            setMonth(id);
+            setFilter({ month: id });
             updateFilter({ month: id });
           }}
         >
