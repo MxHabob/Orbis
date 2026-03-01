@@ -15,11 +15,35 @@ import { useEffect, useState } from "react";
 const mapStudentToVariables = (student: any) => {
   if (!student) return {};
   
+  const stats = (student.stats as any) || {};
   return {
+    // Spread raw student data so any direct key also works
     ...student,
-    studentName: student.name,
-    className: student.class?.name || "",
-    academicYear: student.academicYear?.name || "",
+    // Keys matching the certificate template editor variables
+    student_name: student.name || "",
+    name: student.name || "",
+    academic_number: student.studentNumber || "",
+    national_id: student.secretNumber || "",
+    department: stats.department || "",
+    section: stats.section || "",
+    class_name: student.currentClass?.name || "",
+    total_grade: stats.total_grade || "",
+    total_grade_text: stats.total_grade_text || "",
+    grade_label: stats.grade_label || "",
+    final_result: stats.final_result || "",
+    rank: stats.rank || "",
+    org_name: stats.org_name || "",
+    admin_name: stats.admin_name || "",
+    vp_name: stats.vp_name || "",
+    issue_date: student.yearName || "",
+    // Keep camelCase aliases for backwards compatibility
+    studentName: student.name || "",
+    className: student.currentClass?.name || "",
+    academicYear: student.yearName || "",
+    // Include IDs for grades table lookup
+    studentId: student.userId,
+    userId: student.userId,
+    id: student.userId,
   };
 };
 
