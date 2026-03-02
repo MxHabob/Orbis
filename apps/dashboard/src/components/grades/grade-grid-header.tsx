@@ -13,6 +13,8 @@ import { GradesSearchFilter } from "./grades-search-filter";
 import { useI18n } from "@/locales/client";
 import { useGradingStore } from "@/store/use-grading-store";
 import { useGradeFilterParams } from "@/hooks/use-grade-filter-params";
+import { HIJRI_MONTHS } from "@/utils/academic-calendar";
+import { Badge } from "@midday/ui/badge";
 
 interface GradeGridHeaderProps {
   initialData: {
@@ -23,10 +25,7 @@ interface GradeGridHeaderProps {
   };
 }
 
-import { HIJRI_MONTHS } from "@/utils/academic-calendar";
-
 const months = HIJRI_MONTHS.map(m => ({ id: m.id, name: m.label }));
-
 
 export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps & { defaults?: { yearId?: number; termId?: number; month?: number } }) {
   const { filter, setFilter } = useGradeFilterParams();
@@ -84,7 +83,8 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
           <SelectContent>
             {initialData.years.map((y) => (
               <SelectItem key={y.id} value={y.id.toString()}>
-                {y.yearName}
+                {y.yearName} 
+                <Badge variant="secondary">{y.isCurrent ? "Current" : ""}</Badge>
               </SelectItem>
             ))}
           </SelectContent>
