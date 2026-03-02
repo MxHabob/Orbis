@@ -61,23 +61,25 @@ export function AcademicTermForm({ initialData, yearId, termId, onSuccess }: Aca
 
   const isEdit = !!(initialData?.id || termId);
 
-  const mutation = useMutation(
-    isEdit 
-      ? trpc.academic.updateTerm.mutationOptions({
-          onSuccess: () => {
-            toast({ title: t("process_success") });
-            queryClient.invalidateQueries({ queryKey: trpc.academic.getYears.queryKey() });
-            onSuccess?.();
-          }
-        })
-      : trpc.academic.createTerm.mutationOptions({
-          onSuccess: () => {
-            toast({ title: t("process_success") });
-            queryClient.invalidateQueries({ queryKey: trpc.academic.getYears.queryKey() });
-            onSuccess?.();
-          }
-        })
-  );
+  const mutation = useMutation({
+    mutationFn: (data: any) => {
+      const id = initialData?.id || termId;
+      if (id) {
+        return trpc.academic.updateTerm.mutate({
+          ...data,
+          id,
+        });
+      }
+      return trpc.academic.createTerm.mutate(data);
+    },
+    onSuccess: () => {
+      toast({ title: t("promotions.process_success") });
+      queryClient.invalidateQueries({
+        queryKey: trpc.academic.getYears.queryKey(),
+      });
+      onSuccess?.();
+    },
+  });
 
   return (
     <Form {...form}>

@@ -9,6 +9,9 @@ export default {
     download: "Download",
     selected: "{count} selected",
     deselect_all: "Deselect all",
+    start_date: "Start Date",
+    end_date: "End Date",
+    loading: "Loading...",
   },
   transaction_methods: {
     card_purchase: "Card Purchase",

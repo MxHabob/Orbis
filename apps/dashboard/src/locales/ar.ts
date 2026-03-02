@@ -9,6 +9,9 @@ export default {
     download: "تنزيل",
     selected: "تم تحديد {count}",
     deselect_all: "إلغاء تحديد الكل",
+    start_date: "تاريخ البدء",
+    end_date: "تاريخ الانتهاء",
+    loading: "جاري التحميل...",
   },
   transaction_methods: {
     card_purchase: "شراء بالبطاقة",

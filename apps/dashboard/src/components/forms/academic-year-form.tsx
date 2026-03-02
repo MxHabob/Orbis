@@ -33,23 +33,24 @@ export function AcademicYearForm({ initialData, onSuccess }: AcademicYearFormPro
     },
   });
 
-  const mutation = useMutation(
-    initialData?.id 
-      ? trpc.academic.updateYear.mutationOptions({
-          onSuccess: () => {
-            toast({ title: t("process_success") });
-            queryClient.invalidateQueries({ queryKey: trpc.academic.getYears.queryKey() });
-            onSuccess?.();
-          }
-        })
-      : trpc.academic.createYear.mutationOptions({
-          onSuccess: () => {
-            toast({ title: t("process_success") });
-            queryClient.invalidateQueries({ queryKey: trpc.academic.getYears.queryKey() });
-            onSuccess?.();
-          }
-        })
-  );
+  const mutation = useMutation({
+    mutationFn: (data: any) => {
+      if (initialData?.id) {
+        return trpc.academic.updateYear.mutate({
+          ...data,
+          id: initialData.id,
+        });
+      }
+      return trpc.academic.createYear.mutate(data);
+    },
+    onSuccess: () => {
+      toast({ title: t("promotions.process_success") });
+      queryClient.invalidateQueries({
+        queryKey: trpc.academic.getYears.queryKey(),
+      });
+      onSuccess?.();
+    },
+  });
 
   return (
     <Form {...form}>
@@ -59,7 +60,7 @@ export function AcademicYearForm({ initialData, onSuccess }: AcademicYearFormPro
           name="yearName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{t("students.academic_year")}</FormLabel>
+              <FormLabel>{t("education.academic_year")}</FormLabel>
               <FormControl>
                 <Input placeholder="2025-2026" {...field} />
               </FormControl>
