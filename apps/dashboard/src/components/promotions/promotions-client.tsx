@@ -7,6 +7,18 @@ import { usePromotionsParams } from "@/hooks/use-promotions-params";
 import { useToast } from "@midday/ui/use-toast";
 import { PromotionsHeader } from "./promotions-header";
 import { PromotionsPreviewTable } from "./promotions-preview-table";
+import { useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@midday/ui/alert-dialog";
+import { Loader2, TrendingUp } from "lucide-react";
 
 interface PromotionsClientProps {
   initialData: {
@@ -22,6 +34,7 @@ export function PromotionsClient({ initialData, currentYearId }: PromotionsClien
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { promotionClassId, sourceYearId, targetYearId } = usePromotionsParams();
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
   const previewQuery = useQuery(
     trpc.promotions.preview.queryOptions(
@@ -57,25 +70,32 @@ export function PromotionsClient({ initialData, currentYearId }: PromotionsClien
     })
   );
 
+  const onConfirmExecute = () => {
+    const data = previewQuery.data as any;
+    if (!promotionClassId || !sourceYearId || !targetYearId || !data?.students) return;
+
+    executeMutation.mutate({
+      fromAcademicYearId: sourceYearId,
+      toAcademicYearId: targetYearId,
+      classId: promotionClassId,
+      decisions: data.students
+        .filter((p: any) => p.suggestedStatus === "promoted" || p.suggestedStatus === "graduated")
+        .map((p: any) => ({
+          studentId: p.studentId,
+          status: p.suggestedStatus as any,
+          toClassId: p.targetClassId || undefined,
+          notes: "Bulk Promotion",
+        }))
+    });
+    
+    setIsConfirmOpen(false);
+  };
+
   const handleExecute = () => {
     const data = previewQuery.data as any;
     if (!promotionClassId || !sourceYearId || !targetYearId || !data?.students) return;
 
-    if (confirm(t("promotions.confirm_execute", { count: data.students.length }))) {
-      executeMutation.mutate({
-        fromAcademicYearId: sourceYearId,
-        toAcademicYearId: targetYearId,
-        classId: promotionClassId,
-        decisions: data.students
-          .filter((p: any) => p.suggestedStatus === "promoted" || p.suggestedStatus === "graduated")
-          .map((p: any) => ({
-            studentId: p.studentId,
-            status: p.suggestedStatus as any,
-            toClassId: p.targetClassId || undefined,
-            notes: "Bulk Promotion",
-          }))
-      });
-    }
+    setIsConfirmOpen(true);
   };
 
   const previewData = previewQuery.data as any;
@@ -101,6 +121,47 @@ export function PromotionsClient({ initialData, currentYearId }: PromotionsClien
           isLoading={previewQuery.isLoading} 
         />
       </div>
+
+      <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-sm">
+              <TrendingUp className="size-4" />
+              {t("promotions.execute")}
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>{t("promotions.confirm_execute", { count: previewData?.students?.length || 0 })}</p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  {t("vault.delete_undo_warning")}
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={executeMutation.isPending}>
+              {t("common.cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={onConfirmExecute} 
+              disabled={executeMutation.isPending}
+            >
+              {executeMutation.isPending ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="size-4 animate-spin" />
+                  {t("common.loading")}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="size-4" />
+                  {t("promotions.execute")}
+                </div>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
