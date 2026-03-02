@@ -18,6 +18,7 @@ import { reportsRouter } from "./reports";
 import { jobsRouter } from "./jobs";
 import { documentsRouter } from "./documents";
 import { shortLinksRouter } from "./short-links";
+import { promotionsRouter } from "./promotions";
 
 import { searchRouter } from "./search";
 
@@ -41,6 +42,7 @@ export const appRouter = createTRPCRouter({
   documents: documentsRouter,
   shortLinks: shortLinksRouter,
   search: searchRouter,
+  promotions: promotionsRouter,
 });
 
 // export type definition of API

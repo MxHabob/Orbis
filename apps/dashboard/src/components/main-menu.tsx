@@ -14,6 +14,7 @@ const icons = {
   "/vault": () => <Icons.Vault size={20} />,
   "/reports": () => <Icons.Customers size={20} />,
   "/certificates": () => <Icons.Files size={20} />,
+  "/promotions": () => <Icons.TrendingUp size={20} />,
 } as const;
 
 // Known menu base paths that should not be treated as chat IDs
@@ -25,6 +26,7 @@ const KNOWN_MENU_PATHS = [
   "/reports",
   "/vault",
   "/certificates",
+  "/promotions",
 ];
 
 interface ItemProps {
@@ -249,8 +251,10 @@ export function MainMenu({ onSelect, isExpanded = false }: Props) {
         { path: "/settings", name: t("menu.general") },
         { path: "/settings/accounts", name: t("menu.bank_connections") },
         { path: "/settings/staff", name: t("menu.staff_teachers") },
+        { path: "/settings/academic", name: t("settings.academic") },
         { path: "/settings/classes", name: t("menu.classes") },
         { path: "/settings/subjects", name: t("menu.subjects") },
+        { path: "/settings/promotions", name: t("menu.promotions") },
       ],
     },
   ];

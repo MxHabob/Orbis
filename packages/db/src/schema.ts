@@ -28,6 +28,8 @@ export const studentStatusEnum = pgEnum('student_status', ['active', 'graduated'
 export const notificationTypeEnum = pgEnum('notification_type', ['grade_published', 'new_assessment', 'attendance_alert', 'announcement', 'message', 'parent_meeting', 'fee_reminder', 'account_action', 'behavior_alert', 'system']);
 export const attendanceStatusEnum = pgEnum('attendance_status', ['present','absent','late','excused','sick','authorized_leave','field_trip']);
 export const documentTypeEnum = pgEnum('document_type', ['file', 'folder']);
+export const promotionStatusEnum = pgEnum('promotion_status', ['promoted', 'retained', 'transferred', 'graduated', 'conditional']);
+export const promotionDecisionEnum = pgEnum('promotion_decision', ['auto', 'manual', 'override']);
 
 // =========================================
 // 2. Core Tables (Basic Tables)
@@ -381,6 +383,30 @@ export const shortLinks = pgTable('short_links', {
   codeIdx: index('short_links_code_idx').on(table.code),
 }));
 
+// ==========================================
+// Student Promotions Table (Promotion System)
+// ==========================================
+export const studentPromotions = pgTable('student_promotions', {
+  id: serial('id').primaryKey(),
+  studentId: uuid('student_id').references(() => students.userId, { onDelete: 'cascade' }).notNull(),
+  fromClassId: integer('from_class_id').references(() => classes.id).notNull(),
+  toClassId: integer('to_class_id').references(() => classes.id),
+  fromAcademicYearId: integer('from_academic_year_id').references(() => academicYears.id).notNull(),
+  toAcademicYearId: integer('to_academic_year_id').references(() => academicYears.id).notNull(),
+  finalScore: numeric('final_score', { precision: 6, scale: 2 }),
+  status: promotionStatusEnum('status').notNull(),
+  decision: promotionDecisionEnum('decision').default('auto').notNull(),
+  decisionById: uuid('decision_by_id').references(() => users.id, { onDelete: 'set null' }),
+  notes: text('notes'),
+  promotedAt: timestamp('promoted_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  studentYearIdx: index('promo_student_year_idx').on(table.studentId, table.fromAcademicYearId),
+  fromClassIdx: index('promo_from_class_idx').on(table.fromClassId, table.fromAcademicYearId),
+  statusIdx: index('promo_status_idx').on(table.status),
+  uniqueStudentPromotion: unique('unique_student_promotion_per_year').on(table.studentId, table.fromAcademicYearId),
+}));
+
 
 // ==========================================
 // 5. Relations (Programmatic relations for easy querying)
@@ -415,6 +441,7 @@ export const studentsRelations = relations(students, ({ one, many }) => ({
   attendanceRecords: many(attendanceRecords, { relationName: 'studentAttendance' }),
   // Student → Parents (parents linked to this student)
   parentLinks: many(parentStudents, { relationName: "studentToParents" }),
+  promotions: many(studentPromotions, { relationName: "studentPromotions" }),
 }));
 
 export const enrollmentsRelations = relations(enrollments, ({ one }) => ({
@@ -482,4 +509,13 @@ export const documentsRelations = relations(documents, ({ one, many }) => ({
 
 export const shortLinksRelations = relations(shortLinks, ({ one }) => ({
   user: one(users, { fields: [shortLinks.userId], references: [users.id] }),
+}));
+
+export const studentPromotionsRelations = relations(studentPromotions, ({ one }) => ({
+  student: one(students, { fields: [studentPromotions.studentId], references: [students.userId], relationName: "studentPromotions" }),
+  fromClass: one(classes, { fields: [studentPromotions.fromClassId], references: [classes.id], relationName: "promotionsFrom" }),
+  toClass: one(classes, { fields: [studentPromotions.toClassId], references: [classes.id], relationName: "promotionsTo" }),
+  fromYear: one(academicYears, { fields: [studentPromotions.fromAcademicYearId], references: [academicYears.id], relationName: "promotionsFromYear" }),
+  toYear: one(academicYears, { fields: [studentPromotions.toAcademicYearId], references: [academicYears.id], relationName: "promotionsToYear" }),
+  decisionBy: one(users, { fields: [studentPromotions.decisionById], references: [users.id], relationName: "promotionDecisions" }),
 }));
