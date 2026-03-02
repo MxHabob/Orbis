@@ -57,6 +57,7 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
 
     if (Object.keys(updates).length > 0) {
       setFilter(updates);
+      updateFilter(updates);
     }
   }, []);
 
@@ -84,7 +85,7 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
             {initialData.years.map((y) => (
               <SelectItem key={y.id} value={y.id.toString()}>
                 {y.yearName} 
-                <Badge className="ml-2" variant="secondary">{y.isCurrent ? "Current" : ""}</Badge>
+                {y.isCurrent && <Badge className="ml-2">{t("education.current")}</Badge>}
               </SelectItem>
             ))}
           </SelectContent>

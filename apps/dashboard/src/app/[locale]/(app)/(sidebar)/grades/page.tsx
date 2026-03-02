@@ -64,7 +64,11 @@ export default async function GradesPage(props: Props) {
       name: t.name,
       academicYearId: t.academicYearId,
     })),
-    years: years.map((y: any) => ({ id: y.id, yearName: y.yearName })),
+    years: years.map((y: any) => ({ 
+      id: y.id, 
+      yearName: y.yearName,
+      isCurrent: y.isCurrent
+    })),
   };
 
   const defaults = {
