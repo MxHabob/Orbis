@@ -44,20 +44,35 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
   // Initialization: If URL is empty, load from Zustand (One-time sync)
   useEffect(() => {
     const updates: any = {};
-    if (yearId === null && stYear) updates.yearId = stYear;
-    if (termId === null && stTerm) updates.termId = stTerm;
-    if (month === null && stMonth) updates.month = stMonth;
-    if (selectedClassId === null && stClass) updates.selectedClassId = stClass;
-    if (selectedSubjectId === null && stSubject) updates.selectedSubjectId = stSubject;
+    const state = useGradingStore.getState();
+
+    // Map store state to url params
+    if (yearId === null && state.yearId) updates.yearId = state.yearId;
+    if (termId === null && state.termId) updates.termId = state.termId;
+    if (month === null && state.month) updates.month = state.month;
+    if (selectedClassId === null && state.classId) updates.selectedClassId = state.classId;
+    if (selectedSubjectId === null && state.subjectId) updates.selectedSubjectId = state.subjectId;
     
     // If everything is empty, use provided defaults
-    if (yearId === null && !stYear && defaults?.yearId && updates.yearId === undefined) {
+    if (yearId === null && !state.yearId && defaults?.yearId && updates.yearId === undefined) {
       updates.yearId = defaults.yearId;
     }
 
     if (Object.keys(updates).length > 0) {
-      setFilter(updates);
-      updateFilter(updates);
+      // Create clean updates for the store
+      const storeUpdates: any = {};
+      if (updates.yearId) storeUpdates.yearId = updates.yearId;
+      if (updates.termId) storeUpdates.termId = updates.termId;
+      if (updates.month) storeUpdates.month = updates.month;
+      if (updates.selectedClassId) storeUpdates.classId = updates.selectedClassId;
+      if (updates.selectedSubjectId) storeUpdates.subjectId = updates.selectedSubjectId;
+
+      updateFilter(storeUpdates);
+
+      // Async wrapper to avoid Next.js Router mount conflicts
+      setTimeout(() => {
+        setFilter(updates);
+      }, 10);
     }
   }, []);
 
