@@ -27,7 +27,7 @@ export function MobileMenu() {
         </div>
 
         <div className="-ml-2">
-          <MainMenu onSelect={() => setOpen(false)} isExpanded={true} />
+          <MainMenu onSelectAction={() => setOpen(false)} isExpanded={true} />
         </div>
       </SheetContent>
     </Sheet>

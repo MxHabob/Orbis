@@ -206,11 +206,11 @@ const Item = ({
 };
 
 type Props = {
-  onSelect?: () => void;
+  onSelectAction?: () => void;
   isExpanded?: boolean;
 };
 
-export function MainMenu({ onSelect, isExpanded = false }: Props) {
+export function MainMenu({ onSelectAction, isExpanded = false }: Props) {
   const t = useI18n();
   const pathname = usePathname();
   const part = pathname?.split("/")[1];
@@ -291,7 +291,7 @@ export function MainMenu({ onSelect, isExpanded = false }: Props) {
                 onToggle={(path) => {
                   setExpandedItem(expandedItem === path ? null : path);
                 }}
-                onSelect={onSelect}
+                onSelect={onSelectAction}
               />
             );
           })}
