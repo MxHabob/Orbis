@@ -1,7 +1,7 @@
 "use client";
 
 import { useUserMutation } from "@/hooks/use-user";
-import { useI18n } from "@/locales/client";
+import { useI18n, useChangeLocale, languages } from "@/locales/client";
 import { countries } from "@midday/location/countries-intl";
 import {
   Card,
@@ -15,6 +15,7 @@ import { authClient } from "@midday/auth/auth-client";
 
 export function LocaleSettings() {
   const t = useI18n();
+  const changeLocale = useChangeLocale();
   const { data: session } = authClient.useSession();
   const updateUserMutation = useUserMutation();
 
@@ -43,6 +44,11 @@ export function LocaleSettings() {
             className="text-xs py-1"
             onSelect={(item) => {
               updateUserMutation.mutate({ locale: item.value });
+              
+              const langPart = item.value?.split('-')[0];
+              if (langPart && languages.includes(langPart)) {
+                changeLocale(langPart as any);
+              }
             }}
           />
         </div>

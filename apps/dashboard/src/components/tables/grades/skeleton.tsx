@@ -26,7 +26,7 @@ export function GradesSkeleton({
     <div
       className="overflow-hidden border-l border-r border-b border-border"
       style={{
-        height: "calc(100vh - 200px + var(--header-offset, 0px))",
+        height: "calc(100vh - 260px + var(--header-offset, 0px))",
       }}
     >
       <TableSkeleton

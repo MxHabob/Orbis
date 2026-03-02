@@ -190,7 +190,7 @@ export function GradeDataTable({
           }}
           className="overflow-auto overscroll-none border-l border-r border-b border-border scrollbar-hide"
           style={{
-            height: "calc(100vh - 200px + var(--header-offset, 0px))",
+            height: "calc(100vh - 260px + var(--header-offset, 0px))",
           }}
         >
           <DndContext
