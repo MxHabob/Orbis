@@ -90,13 +90,13 @@ export function DataTable() {
       if (confirm(t("common.delete") + "?")) deleteTermMutation.mutate({ id });
     },
     onEditYear: (id: number) => {
-      setParams({ yearId: id.toString() });
+      setParams({ editYearId: id.toString() });
     },
     onEditTerm: (id: number) => {
-      setParams({ termId: id.toString() });
+      setParams({ editTermId: id.toString() });
     },
     onCreateTerm: (yearId: number) => {
-       setParams({ createTerm: true, yearId: yearId.toString() });
+       setParams({ createTerm: true, parentYearId: yearId.toString() });
     },
     expandedYears,
     setExpandedYears,

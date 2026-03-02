@@ -11,43 +11,43 @@ import { useQuery } from "@tanstack/react-query";
 export function AcademicSheets() {
   const t = useI18n();
   const trpc = useTRPC();
-  const { yearId, termId, createYear, createTerm, setParams } = useAcademicParams();
+  const { editYearId, editTermId, parentYearId, createYear, createTerm, setParams } = useAcademicParams();
 
   const { data: yearData } = useQuery({
-    ...trpc.academic.getYearById.queryOptions({ id: parseInt(yearId!) }),
-    enabled: !!yearId && !createTerm,
+    ...trpc.academic.getYearById.queryOptions({ id: parseInt(editYearId!) }),
+    enabled: !!editYearId && !createTerm,
   });
 
-  const isYearOpen = !!createYear || (!!yearId && !createTerm);
-  const isTermOpen = !!createTerm || !!termId;
+  const isYearOpen = !!createYear || !!editYearId;
+  const isTermOpen = !!createTerm || !!editTermId;
 
   return (
     <>
-      <Sheet open={isYearOpen} onOpenChange={() => setParams({ createYear: null, yearId: null })}>
+      <Sheet open={isYearOpen} onOpenChange={() => setParams({ createYear: null, editYearId: null })}>
         <SheetContent>
           <SheetHeader className="pb-6">
             <SheetTitle>
-              {yearId ? t("settings.academic_year_title") : t("settings.academic_year_title")}
+              {editYearId ? t("settings.academic_year_title") : t("settings.academic_year_title")}
             </SheetTitle>
           </SheetHeader>
           <AcademicYearForm 
             initialData={yearData} 
-            onSuccess={() => setParams({ createYear: null, yearId: null })} 
+            onSuccess={() => setParams({ createYear: null, editYearId: null })} 
           />
         </SheetContent>
       </Sheet>
 
-      <Sheet open={isTermOpen} onOpenChange={() => setParams({ createTerm: null, termId: null, yearId: null })}>
+      <Sheet open={isTermOpen} onOpenChange={() => setParams({ createTerm: null, editTermId: null, parentYearId: null })}>
         <SheetContent>
           <SheetHeader className="pb-6">
             <SheetTitle>
-              {termId ? t("reports.half_yearly") : t("reports.half_yearly")}
+              {editTermId ? t("reports.half_yearly") : t("reports.half_yearly")}
             </SheetTitle>
           </SheetHeader>
           <AcademicTermForm 
-            yearId={parseInt(yearId!)}
-            termId={parseInt(termId!)}
-            onSuccess={() => setParams({ createTerm: null, termId: null, yearId: null })} 
+            yearId={parentYearId ? parseInt(parentYearId) : undefined}
+            termId={editTermId ? parseInt(editTermId) : undefined}
+            onSuccess={() => setParams({ createTerm: null, editTermId: null, parentYearId: null })} 
           />
         </SheetContent>
       </Sheet>

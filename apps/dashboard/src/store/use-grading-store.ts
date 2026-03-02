@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { persist } from "zustand/middleware";
 
 interface GradingState {
   yearId: number | null;
@@ -33,7 +33,6 @@ export const useGradingStore = create<GradingState>()(
     }),
     {
       name: "grading-storage-2026", // Key in localStorage
-      storage: createJSONStorage(() => localStorage),
     }
   )
 );
