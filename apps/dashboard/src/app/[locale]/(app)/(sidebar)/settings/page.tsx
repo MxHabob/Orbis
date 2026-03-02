@@ -1,24 +1,23 @@
-import { SchoolAcademicYear } from "@/components/company-fiscal-year";
-import { CompanyLogo } from "@/components/company-logo";
-import { CompanyName } from "@/components/company-name";
-import { DeleteTeam } from "@/components/delete-team";
-import { HydrateClient } from "@/trpc/server";
+import { Suspense } from "react";
 import type { Metadata } from "next";
+import { AcademicSkeleton } from "@/components/tables/academic/skeleton";
+import { DataTable } from "@/components/tables/academic/table";
+import { HydrateClient, prefetch, trpc } from "@/trpc/server";
 
 export const metadata: Metadata = {
   title: "Settings | Entity",
 };
 
-export default async function Account() {
+export default async function AcademicSettingsPage() {
+  prefetch(trpc.academic.getYears.queryOptions());
 
   return (
-    <HydrateClient>
-      <div className="space-y-12">
-        <CompanyLogo />
-        <CompanyName />
-        <SchoolAcademicYear />
-        <DeleteTeam />
-      </div>
-    </HydrateClient>
+    <div className="max-w-screen-lg">
+      <HydrateClient>
+        <Suspense fallback={<AcademicSkeleton />}>
+          <DataTable />
+        </Suspense>
+      </HydrateClient>
+    </div>
   );
 }
