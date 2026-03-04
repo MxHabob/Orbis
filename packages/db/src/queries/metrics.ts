@@ -68,6 +68,13 @@ export async function getGenderDistribution(filters?: MetricFilters) {
 }
 
 export async function getClassDistribution(filters?: MetricFilters) {
+  // Get current year
+  const [currentYear] = await db
+    .select({ id: academicYears.id })
+    .from(academicYears)
+    .where(eq(academicYears.isCurrent, true))
+    .limit(1);
+
   return db
     .select({
       className: classes.name,
@@ -76,7 +83,8 @@ export async function getClassDistribution(filters?: MetricFilters) {
     .from(classes)
     .leftJoin(enrollments, and(
       eq(classes.id, enrollments.classId),
-      eq(enrollments.status, 'active')
+      eq(enrollments.status, 'active'),
+      currentYear ? eq(enrollments.academicYearId, currentYear.id) : undefined
     ))
     .where(sql`${classes.deletedAt} IS NULL`)
     .groupBy(classes.name)

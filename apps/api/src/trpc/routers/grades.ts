@@ -85,9 +85,9 @@ export const gradesRouter = createTRPCRouter({
     }),
 
   getClassStatistics: protectedProcedure
-    .input(z.object({ classId: z.string() }))
+    .input(z.object({ classId: z.string(), academicYearId: z.number().optional() }))
     .query(async ({ input }) => {
-      return getClassStatistics(input.classId);
+      return getClassStatistics(input.classId, input.academicYearId);
     }),
 
   getCertificateData: protectedProcedure

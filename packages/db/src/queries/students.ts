@@ -36,7 +36,8 @@ export const getStudentsByClassId = async (
   limit = 50, 
   offset = 0, 
   q?: string, 
-  sort?: string[] | null
+  sort?: string[] | null,
+  academicYearId?: number
 ) => {
     const orderBy = [];
 
@@ -65,6 +66,18 @@ export const getStudentsByClassId = async (
         orderBy.push(asc(users.name));
     }
 
+    // Get the current academic year if not provided
+    let yearId = academicYearId;
+    if (!yearId) {
+        const [currentYear] = await db
+            .select({ id: academicYears.id })
+            .from(academicYears)
+            .where(eq(academicYears.isCurrent, true))
+            .limit(1);
+        
+        yearId = currentYear?.id;
+    }
+
     // Get the class IDs for the selected class and its children (sections)
     const childClasses = await db
         .select({ id: classes.id })
@@ -75,8 +88,8 @@ export const getStudentsByClassId = async (
         ? [classId, ...childClasses.map(c => c.id)]
         : [classId];
 
-    // Use enrollment-based lookup — NOT currentClassId
-    // This ensures promoted students still appear in their old class reports
+    // Use enrollment-based lookup — MUST filter by academic year
+    // This ensures reports show students who ARE in this class for the targeted year
     return db
         .select({
             userId: students.userId,
@@ -104,6 +117,7 @@ export const getStudentsByClassId = async (
                 targetClassIds.length === 1
                     ? eq(enrollments.classId, targetClassIds[0]!)
                     : inArray(enrollments.classId, targetClassIds),
+                yearId ? eq(enrollments.academicYearId, yearId) : undefined,
                 q ? or(
                     ilike(users.name, `%${q}%`),
                     ilike(students.studentNumber, `%${q}%`)

@@ -37,6 +37,7 @@ export const studentsRouter = createTRPCRouter({
         limit: z.number().min(1).max(1000).default(50),
         q: z.string().optional(),
         sort: z.array(z.string()).nullish(),
+        academicYearId: z.number().optional(),
       })
     )
     .query(async ({ input }) => {
@@ -48,7 +49,8 @@ export const studentsRouter = createTRPCRouter({
         limit + 1,
         cursor,
         input.q,
-        input.sort
+        input.sort,
+        input.academicYearId
       );
 
       let nextCursor: typeof cursor | null = null;
@@ -132,11 +134,12 @@ export const studentsRouter = createTRPCRouter({
       z.object({
         classId: z.string(),
         format: z.enum(["xlsx", "csv"]).default("xlsx"),
+        academicYearId: z.number().optional(),
       })
     )
     .mutation(async ({ input }) => {
       const { getClassesV3 } = await import("@midday/db/queries");
-      const { getClassStatistics } = await import("@midday/db/queries");
+      const { getClassStatistics, getStudentsByClassId } = await import("@midday/db/queries");
       
       const classIdNumber = Number(input.classId);
       
@@ -151,10 +154,17 @@ export const studentsRouter = createTRPCRouter({
         throw new Error("Class not found");
       }
 
-      const students = await getStudentsByClassId(classIdNumber, 10000, 0);
+      const students = await getStudentsByClassId(
+        classIdNumber, 
+        10000, 
+        0, 
+        undefined, 
+        null, 
+        input.academicYearId
+      );
 
       // Get class statistics
-      const statistics = await getClassStatistics(input.classId);
+      const statistics = await getClassStatistics(input.classId, input.academicYearId);
 
       const exportData = students.map((student) => ({
         studentNumber: student.studentNumber,

@@ -1,5 +1,5 @@
 import { db } from "@db/client";
-import { gradeEntries, assessmentItems, students, subjects, classes, enrollments, users, academicTerms } from "@db/schema";
+import { gradeEntries, assessmentItems, students, subjects, classes, enrollments, users, academicTerms, academicYears } from "@db/schema";
 import { eq, and, desc, asc, inArray } from "drizzle-orm";
 import { RedisCache } from "@midday/cache";
 
@@ -282,8 +282,8 @@ export const getGradeGridData = async (params: {
   }
 };
 
-export const getClassStatistics = async (classId: string) => {
-  const cacheKey = `class:${classId}:statistics`;
+export const getClassStatistics = async (classId: string, academicYearId?: number) => {
+  const cacheKey = `class:${classId}:statistics:${academicYearId || 'current'}`;
   const cached = await gradeCache.get<{
     totalCount: number;
     passedCount: number;
@@ -295,6 +295,18 @@ export const getClassStatistics = async (classId: string) => {
 
   const classIdNum = Number.parseInt(classId);
 
+  // Get the current academic year if not provided
+  let yearId = academicYearId;
+  if (!yearId) {
+      const [currentYear] = await db
+          .select({ id: academicYears.id })
+          .from(academicYears)
+          .where(eq(academicYears.isCurrent, true))
+          .limit(1);
+      
+      yearId = currentYear?.id;
+  }
+
   // Get child classes (sections) if any
   const childClasses = await db
     .select({ id: classes.id })
@@ -305,7 +317,7 @@ export const getClassStatistics = async (classId: string) => {
     ? [classIdNum, ...childClasses.map(c => c.id)]
     : [classIdNum];
 
-  // Get all enrollments for this class (any status - for historical accuracy)
+  // Get all enrollments for this class for the targeted year
   const enrolledStudents = await db
     .select({
       studentId: students.userId,
@@ -317,6 +329,7 @@ export const getClassStatistics = async (classId: string) => {
         targetClassIds.length === 1
           ? eq(enrollments.classId, targetClassIds[0]!)
           : inArray(enrollments.classId, targetClassIds),
+        yearId ? eq(enrollments.academicYearId, yearId) : undefined,
       )
     );
 
@@ -333,11 +346,17 @@ export const getClassStatistics = async (classId: string) => {
     return emptyResult;
   }
 
-  // Get assessment items for THIS class only
+  // Get assessment items for THIS class and THIS year only
   const classAssessmentItems = await db
     .select({ id: assessmentItems.id })
     .from(assessmentItems)
-    .where(eq(assessmentItems.classId, classIdNum));
+    .innerJoin(academicTerms, eq(assessmentItems.termId, academicTerms.id))
+    .where(
+      and(
+        eq(assessmentItems.classId, classIdNum),
+        yearId ? eq(academicTerms.academicYearId, yearId) : undefined
+      )
+    );
 
   if (classAssessmentItems.length === 0) {
     const emptyResult = {
