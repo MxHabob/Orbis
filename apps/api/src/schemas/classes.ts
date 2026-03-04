@@ -21,10 +21,6 @@ export const classSchema = z.object({
     description: "ID of the parent class (for sub-sections)",
     example: 1,
   }),
-  academicYearId: z.number().nullable().openapi({
-    description: "ID of the academic year",
-    example: 1,
-  }),
   color: z.string().max(7).default("#e6e6e6").openapi({
     description: "Color for the class UI",
     example: "#e6e6e6",

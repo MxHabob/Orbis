@@ -125,7 +125,6 @@ export const createAcademicYear = async (data: CreateAcademicYearParams) => {
     await tx.insert(classes).values(
       grades.map((name, index) => ({
         name,
-        academicYearId: yearId,
         color: colors[index] || "#e6e6e6",
         sortOrder: index,
         type: "classroom" as const,

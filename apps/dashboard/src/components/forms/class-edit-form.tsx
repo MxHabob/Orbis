@@ -43,7 +43,6 @@ const formSchema = z.object({
   type: z.enum(classTypes).default('classroom'),
   division: z.string().optional().nullable(),
   parentClassId: z.number().optional().nullable(),
-  academicYearId: z.number().optional().nullable(),
   color: z.string().default("#e6e6e6"),
   sortOrder: z.number().default(0),
 });
@@ -59,8 +58,7 @@ export function ClassEditForm({ data }: Props) {
   const queryClient = useQueryClient();
   const { setParams } = useClassParams();
 
-  // Fetch academic years for the dropdown
-  const { data: academicYears } = useQuery(trpc.academic.getYears.queryOptions());
+
 
   const defaultValues = {
     id: data?.id,
@@ -68,7 +66,6 @@ export function ClassEditForm({ data }: Props) {
     type: data?.type || "classroom",
     division: data?.division || "",
     parentClassId: data?.parentClassId || undefined,
-    academicYearId: data?.academicYearId || undefined,
     color: data?.color || "#e6e6e6",
     sortOrder: data?.sortOrder || 0,
   };
@@ -96,7 +93,6 @@ export function ClassEditForm({ data }: Props) {
         ...formData,
         division: formData.division || null,
         parentClassId: formData.parentClassId || null,
-        academicYearId: formData.academicYearId || null,
     });
   };
 
@@ -213,34 +209,7 @@ export function ClassEditForm({ data }: Props) {
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="academicYearId"
-              render={({ field }) => (
-                <FormItem className="space-y-1">
-                  <FormLabel className="text-xs text-[#878787] font-normal">
-                    Academic Year
-                  </FormLabel>
-                  <Select 
-                    onValueChange={(val) => field.onChange(val ? Number(val) : undefined)} 
-                    defaultValue={field.value?.toString()}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select year" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {academicYears?.map((year) => (
-                        <SelectItem key={year.id} value={year.id.toString()}>
-                          {year.yearName} {year.isCurrent ? "(Current)" : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormItem>
-              )}
-            />
+
 
             <FormField
               control={form.control}

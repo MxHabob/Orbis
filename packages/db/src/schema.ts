@@ -127,19 +127,18 @@ export const subjects = pgTable('subjects', {
   deletedAt: timestamp('deleted_at'),
 });
 
-// Classes Table
+// Classes Table (Year-Independent — classes are permanent entities)
 export const classes = pgTable('classes', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 100 }).notNull(),
   type: classTypeEnum('type').default('classroom').notNull(),
   division: varchar('division', { length: 10 }),
   parentClassId: integer('parent_class_id').references((): any => classes.id, { onDelete: 'set null' }),
-  academicYearId: integer('academic_year_id').references(() => academicYears.id),
   color: text('color').default("#e6e6e6").notNull(),
   sortOrder: integer('sort_order').default(0).notNull(),
   deletedAt: timestamp('deleted_at'),
 }, (table) => ({
-  classYearIdx: index('class_year_idx').on(table.academicYearId, table.name),
+  classNameIdx: index('class_name_idx').on(table.name),
   parentIdx: index('classes_parent_idx').on(table.parentClassId),
   sortOrderIdx: index('classes_sort_order_idx').on(table.sortOrder),
 }));
@@ -412,6 +411,32 @@ export const studentPromotions = pgTable('student_promotions', {
 // 5. Relations (Programmatic relations for easy querying)
 // ==========================================
 
+export const academicYearsRelations = relations(academicYears, ({ many }) => ({
+  terms: many(academicTerms, { relationName: "yearTerms" }),
+  enrollments: many(enrollments, { relationName: "enrollmentYear" }),
+  promotionsFrom: many(studentPromotions, { relationName: "promotionsFromYear" }),
+  promotionsTo: many(studentPromotions, { relationName: "promotionsToYear" }),
+  lessons: many(scheduledLessons, { relationName: "yearLessons" }),
+  timeSlots: many(timeSlots, { relationName: "yearTimeSlots" }),
+}));
+
+export const academicTermsRelations = relations(academicTerms, ({ one, many }) => ({
+  year: one(academicYears, { fields: [academicTerms.academicYearId], references: [academicYears.id], relationName: "yearTerms" }),
+  assessments: many(assessmentItems, { relationName: "termAssessments" }),
+  notifications: many(notifications, { relationName: "termNotifications" }),
+  lessons: many(scheduledLessons, { relationName: "termLessons" }),
+}));
+
+export const subjectsRelations = relations(subjects, ({ many }) => ({
+  assessments: many(assessmentItems, { relationName: "subjectAssessments" }),
+  lessons: many(scheduledLessons, { relationName: "subjectLessons" }),
+}));
+
+export const timeSlotsRelations = relations(timeSlots, ({ one, many }) => ({
+  year: one(academicYears, { fields: [timeSlots.academicYearId], references: [academicYears.id], relationName: "yearTimeSlots" }),
+  lessons: many(scheduledLessons, { relationName: "slotLessons" }),
+}));
+
 export const usersRelations = relations(users, ({ many, one }) => ({
   studentProfile: one(students, { fields: [users.id], references: [students.userId], relationName: "studentProfile" }),
   accounts: many(accounts, { relationName: "userAccounts" }),
@@ -423,6 +448,9 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   parentChildren: many(parentStudents, { relationName: "parentToStudents" }),
   docs: many(documents),
   shortLinks: many(shortLinks),
+  lessons: many(scheduledLessons, { relationName: "teacherLessons" }),
+  promotionDecisions: many(studentPromotions, { relationName: "promotionDecisions" }),
+  attendanceRecords: many(attendanceRecords, { relationName: "markedAttendance" }),
 }));
 
 export const accountsRelations = relations(accounts, ({ one }) => ({
@@ -457,8 +485,8 @@ export const gradeEntriesRelations = relations(gradeEntries, ({ one }) => ({
 }));
 
 export const assessmentItemsRelations = relations(assessmentItems, ({ one, many }) => ({
-  subject: one(subjects, { fields: [assessmentItems.subjectId], references: [subjects.id], relationName: "assessmentItems" }),
-  class: one(classes, { fields: [assessmentItems.classId], references: [classes.id], relationName: "assessmentItems" }),
+  subject: one(subjects, { fields: [assessmentItems.subjectId], references: [subjects.id], relationName: "subjectAssessments" }),
+  class: one(classes, { fields: [assessmentItems.classId], references: [classes.id], relationName: "classAssessments" }),
   grades: many(gradeEntries, { relationName: "assessmentGrades" }),
   term: one(academicTerms, { fields: [assessmentItems.termId], references: [academicTerms.id], relationName: "termAssessments" }),
 }));
@@ -470,23 +498,29 @@ export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
 export const notificationsRelations = relations(notifications, ({ one }) => ({
   recipient: one(users, { fields: [notifications.recipientId], references: [users.id], relationName: "receivedNotifications" }),
   sender: one(users, { fields: [notifications.senderId], references: [users.id], relationName: "sentNotifications" }),
-  class: one(classes, { fields: [notifications.classId], references: [classes.id], relationName: "notifications" }),
-  term: one(academicTerms, { fields: [notifications.academicTermId], references: [academicTerms.id], relationName: "notifications" }),
+  class: one(classes, { fields: [notifications.classId], references: [classes.id], relationName: "classNotifications" }),
+  term: one(academicTerms, { fields: [notifications.academicTermId], references: [academicTerms.id], relationName: "termNotifications" }),
 }));
 
 export const classesRelations = relations(classes, ({ one, many }) => ({
-  year: one(academicYears, { fields: [classes.academicYearId], references: [academicYears.id] }),
   parent: one(classes, { fields: [classes.parentClassId], references: [classes.id], relationName: "classChildren" }),
   children: many(classes, { relationName: "classChildren" }),
+  enrollments: many(enrollments, { relationName: "enrollmentClass" }),
+  students: many(students, { relationName: "studentClass" }),
+  assessments: many(assessmentItems, { relationName: "classAssessments" }),
+  lessons: many(scheduledLessons, { relationName: "classLessons" }),
+  notifications: many(notifications, { relationName: "classNotifications" }),
+  promotionsFrom: many(studentPromotions, { relationName: "promotionsFrom" }),
+  promotionsTo: many(studentPromotions, { relationName: "promotionsTo" }),
 }));
 
 export const scheduledLessonsRelations = relations(scheduledLessons, ({ one, many }) => ({
-  class: one(classes, { fields: [scheduledLessons.classId], references: [classes.id] }),
-  subject: one(subjects, { fields: [scheduledLessons.subjectId], references: [subjects.id] }),
-  teacher: one(users, { fields: [scheduledLessons.teacherId], references: [users.id] }),
-  timeSlot: one(timeSlots, { fields: [scheduledLessons.timeSlotId], references: [timeSlots.id] }),
-  academicYear: one(academicYears, { fields: [scheduledLessons.academicYearId], references: [academicYears.id] }),
-  term: one(academicTerms, { fields: [scheduledLessons.academicTermId], references: [academicTerms.id] }),
+  class: one(classes, { fields: [scheduledLessons.classId], references: [classes.id], relationName: "classLessons" }),
+  subject: one(subjects, { fields: [scheduledLessons.subjectId], references: [subjects.id], relationName: "subjectLessons" }),
+  teacher: one(users, { fields: [scheduledLessons.teacherId], references: [users.id], relationName: "teacherLessons" }),
+  timeSlot: one(timeSlots, { fields: [scheduledLessons.timeSlotId], references: [timeSlots.id], relationName: "slotLessons" }),
+  academicYear: one(academicYears, { fields: [scheduledLessons.academicYearId], references: [academicYears.id], relationName: "yearLessons" }),
+  term: one(academicTerms, { fields: [scheduledLessons.academicTermId], references: [academicTerms.id], relationName: "termLessons" }),
   attendanceRecords: many(attendanceRecords, { relationName: 'lessonAttendance' }),
 }));
 

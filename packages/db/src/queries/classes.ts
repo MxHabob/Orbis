@@ -1,5 +1,5 @@
 import { db } from "@db/client";
-import { academicYears, classes } from "@db/schema";
+import { classes, enrollments, academicYears } from "@db/schema";
 import { eq, and, isNull, inArray, ilike, sql, desc, asc, or } from "drizzle-orm";
 import { RedisCache } from "@midday/cache";
 
@@ -15,6 +15,7 @@ export const getClassesV3 = async (
     offset?: number;
   }
 ) => {
+  // academicYearId is now used only for filtering student counts via enrollments
   const academicYearId = typeof params === 'number' 
     ? params 
     : (params?.academicYearId ? Number(params.academicYearId) : undefined);
@@ -37,7 +38,6 @@ export const getClassesV3 = async (
         case "name": orderBy.push(dirFunc(classes.name)); break;
         case "type": orderBy.push(dirFunc(classes.type)); break;
         case "division": orderBy.push(dirFunc(classes.division)); break;
-        case "yearName": orderBy.push(dirFunc(academicYears.yearName)); break;
       }
     });
   }
@@ -47,9 +47,13 @@ export const getClassesV3 = async (
     orderBy.push(asc(classes.division));
   }
 
+  // Build student count subquery — scoped by academicYearId if provided
+  const studentCountSql = academicYearId
+    ? sql<number>`(SELECT count(*) FROM enrollments e WHERE e.class_id = ${classes.id} AND e.deleted_at IS NULL AND e.status = 'active' AND e.academic_year_id = ${academicYearId})::int`
+    : sql<number>`(SELECT count(*) FROM enrollments e WHERE e.class_id = ${classes.id} AND e.deleted_at IS NULL AND e.status = 'active')::int`;
+
   const where = and(
     isNull(classes.deletedAt),
-    academicYearId ? eq(classes.academicYearId, academicYearId) : undefined,
     q ? or(
       ilike(classes.name, `%${q}%`),
       ilike(classes.division, `%${q}%`)
@@ -64,16 +68,13 @@ export const getClassesV3 = async (
       type: classes.type,
       division: classes.division,
       color: classes.color,
-      academicYearId: classes.academicYearId,
       parentClassId: classes.parentClassId,
-      yearName: academicYears.yearName,
       sortOrder: classes.sortOrder,
-      studentCount: sql<number>`(SELECT count(*) FROM enrollments e WHERE e.class_id = ${classes.id} AND e.deleted_at IS NULL AND e.status = 'active')::int`,
+      studentCount: studentCountSql,
       scheduleCount: sql<number>`(SELECT count(*) FROM scheduled_lessons l WHERE l.class_id = ${classes.id})::int`,
       parentClassName: sql<string | null>`(SELECT name FROM classes p WHERE p.id = ${classes.parentClassId})`,
     })
     .from(classes)
-    .leftJoin(academicYears, eq(classes.academicYearId, academicYears.id))
     .where(where)
     .orderBy(...orderBy);
 
@@ -91,9 +92,7 @@ export const getClassesV3 = async (
     type: row.type,
     division: row.division,
     color: row.color,
-    academicYearId: row.academicYearId,
     parentClassId: row.parentClassId,
-    yearName: row.yearName,
     sortOrder: row.sortOrder,
     _count: {
       students: row.studentCount,
@@ -110,6 +109,10 @@ export const getClassesV3 = async (
   }
 
   // Fetch all children for roots in one go (only for tree view without search)
+  const childStudentCountSql = academicYearId
+    ? sql<number>`(SELECT count(*) FROM enrollments e WHERE e.class_id = ${classes.id} AND e.deleted_at IS NULL AND e.status = 'active' AND e.academic_year_id = ${academicYearId})::int`
+    : sql<number>`(SELECT count(*) FROM enrollments e WHERE e.class_id = ${classes.id} AND e.deleted_at IS NULL AND e.status = 'active')::int`;
+
   const rawChildren = await db
     .select({
       id: classes.id,
@@ -117,10 +120,9 @@ export const getClassesV3 = async (
       type: classes.type,
       division: classes.division,
       color: classes.color,
-      academicYearId: classes.academicYearId,
       parentClassId: classes.parentClassId,
       sortOrder: classes.sortOrder,
-      studentCount: sql<number>`(SELECT count(*) FROM enrollments e WHERE e.class_id = ${classes.id} AND e.deleted_at IS NULL AND e.status = 'active')::int`,
+      studentCount: childStudentCountSql,
       scheduleCount: sql<number>`(SELECT count(*) FROM scheduled_lessons l WHERE l.class_id = ${classes.id})::int`,
     })
     .from(classes)
@@ -151,7 +153,6 @@ export const getClassesV3 = async (
   // Combine
   const formatted = roots.map(cls => ({
     ...cls,
-    yearName: cls.yearName ?? null,
     children: childrenMap.get(cls.id) ?? [],
   }));
 
@@ -196,7 +197,8 @@ export type CreateClassParams = typeof classes.$inferInsert;
 export const createClass = async (data: CreateClassParams) => {
   const [result] = await db.insert(classes).values(data).returning();
   if (result) {
-    await classCache.delete(`year:${result.academicYearId}`);
+    // Clear all class caches since tree structure may have changed
+    await classCache.delete(`classes_v3:all:none:default:false:undefined:0`).catch(() => {});
     if (result.parentClassId) {
         await classCache.delete(`parent:${result.parentClassId}`);
     }
@@ -208,7 +210,7 @@ export const updateClass = async (id: number, data: Partial<CreateClassParams>) 
   const [result] = await db.update(classes).set(data).where(eq(classes.id, id)).returning();
   if (result) {
     await classCache.delete(`id:${id}`);
-    await classCache.delete(`year:${result.academicYearId}`);
+    await classCache.delete(`classes_v3:all:none:default:false:undefined:0`).catch(() => {});
     if (result.parentClassId) {
         await classCache.delete(`parent:${result.parentClassId}`);
     }
@@ -220,7 +222,7 @@ export const deleteClass = async (id: number) => {
   const [result] = await db.update(classes).set({ deletedAt: new Date() }).where(eq(classes.id, id)).returning();
   if (result) {
     await classCache.delete(`id:${id}`);
-    await classCache.delete(`year:${result.academicYearId}`);
+    await classCache.delete(`classes_v3:all:none:default:false:undefined:0`).catch(() => {});
     if (result.parentClassId) {
         await classCache.delete(`parent:${result.parentClassId}`);
     }

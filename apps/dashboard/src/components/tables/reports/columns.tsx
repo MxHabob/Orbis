@@ -177,23 +177,6 @@ export const columns: ColumnDef<ClassReport>[] = [
     },
   },
   {
-    id: "academicYear",
-    header: "Academic Year",
-    accessorKey: "yearName",
-    size: 150,
-    minSize: 120,
-    maxSize: 200,
-    enableResizing: true,
-    meta: {
-      skeleton: { type: "text", width: "w-24" },
-      headerLabel: "Academic Year",
-      className: "w-[150px] min-w-[120px]",
-    },
-    cell: ({ row }) => {
-      return <span>{row.original.yearName || "-"}</span>;
-    },
-  },
-  {
     id: "actions",
     header: "Actions",
     size: 100,

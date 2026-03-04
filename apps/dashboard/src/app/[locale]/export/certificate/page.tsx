@@ -35,11 +35,11 @@ const mapStudentToVariables = (student: any) => {
     org_name: stats.org_name || "",
     admin_name: stats.admin_name || "",
     vp_name: stats.vp_name || "",
-    issue_date: student.yearName || "",
+    issue_date: "",
     // Keep camelCase aliases for backwards compatibility
     studentName: student.name || "",
     className: student.currentClass?.name || "",
-    academicYear: student.yearName || "",
+    academicYear: "",
     // Include IDs for grades table lookup
     studentId: student.userId,
     userId: student.userId,

@@ -118,12 +118,11 @@ export function DataTable() {
     onEditClass: (id: number) => {
       setParams({ classId: id.toString() });
     },
-    onImportStudents: (classId: number, academicYearId?: number) => {
+    onImportStudents: (classId: number) => {
       setParams({
         step: "import",
         type: "students",
         classId: classId.toString(),
-        academicYearId: academicYearId?.toString(),
       });
     },
     expandedClasses,

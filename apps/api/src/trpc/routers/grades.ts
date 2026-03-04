@@ -131,7 +131,7 @@ export const gradesRouter = createTRPCRouter({
 
       const buffer = await generateGradesExport(exportData, {
         className: classData?.name || "Class",
-        academicYear: classData?.yearName || undefined,
+        academicYear: undefined,
         assessmentItems: data.items,
         format: input.format,
       });

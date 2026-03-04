@@ -90,10 +90,8 @@ export async function handleCertificateExport(
       .select({
         id: classes.id,
         name: classes.name,
-        yearName: academicYears.yearName,
       })
       .from(classes)
-      .leftJoin(academicYears, eq(classes.academicYearId, academicYears.id))
       .where(inArray(classes.id, classIds.map(Number)));
 
     if (classMetadata.length === 0) {
@@ -142,11 +140,10 @@ export async function handleCertificateExport(
         continue;
       }
 
-      // Generate filename: اسم الفصل_السنة الدراسية_الشهر_نوع الشهادة
-      const academicYear = cls.yearName?.replace("/", "-") || "عام_دراسي";
+      // Generate filename: اسم الفصل_الشهر_نوع الشهادة
       const namePart = cls.name.replace(/\s+/g, "_");
       const monthPart = isMonthly ? `_${monthLabel}` : "";
-      const pdfName = `${namePart}_${academicYear}${monthPart}_${typeLabel}.pdf`;
+      const pdfName = `${namePart}${monthPart}_${typeLabel}.pdf`;
       const pdfTitle = `شهادات ${typeLabel} - ${cls.name}${isMonthly ? ` - شهر ${monthLabel}` : ""}`;
 
       // Build Export URL for this class

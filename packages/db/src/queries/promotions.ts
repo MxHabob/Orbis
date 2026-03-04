@@ -249,7 +249,6 @@ export const previewClassPromotion = async (params: {
       id: classes.id,
       name: classes.name,
       sortOrder: classes.sortOrder,
-      academicYearId: classes.academicYearId,
     })
     .from(classes)
     .where(eq(classes.id, classId))
@@ -257,7 +256,7 @@ export const previewClassPromotion = async (params: {
 
   if (!classInfo) throw new Error("الصف غير موجود");
 
-  // Find the next class by sortOrder
+  // Find the next class by sortOrder (classes are now permanent, no year filter needed)
   const [nextClass] = await db
     .select({
       id: classes.id,
@@ -267,7 +266,6 @@ export const previewClassPromotion = async (params: {
     .from(classes)
     .where(
       and(
-        eq(classes.academicYearId, academicYearId),
         isNull(classes.parentClassId),
         isNull(classes.deletedAt),
         sql`${classes.sortOrder} > ${classInfo.sortOrder}`
@@ -431,37 +429,23 @@ export const executeBulkPromotion = async (params: {
 
   if (!classInfo) throw new Error("الصف غير موجود");
 
-  // Build a mapping of class names to new-year class IDs
-  const newYearClasses = await db
+  // Classes are now permanent — find next class by sortOrder (no year-based lookup needed!)
+  const [nextClass] = await db
     .select({
       id: classes.id,
       name: classes.name,
       sortOrder: classes.sortOrder,
-      parentClassId: classes.parentClassId,
     })
     .from(classes)
     .where(
       and(
-        eq(classes.academicYearId, toAcademicYearId),
+        isNull(classes.parentClassId),
         isNull(classes.deletedAt),
-        isNull(classes.parentClassId)
+        sql`${classes.sortOrder} > ${classInfo.sortOrder}`
       )
     )
-    .orderBy(asc(classes.sortOrder));
-
-  // Find same-name class in new year (for retained students)
-  const sameClassInNewYear = newYearClasses.find(
-    (c) => c.name === classInfo.name
-  );
-
-  // Find next class in new year by sort order position
-  const currentClassIndex = newYearClasses.findIndex(
-    (c) => c.name === classInfo.name
-  );
-  const nextClassInNewYear =
-    currentClassIndex >= 0 && currentClassIndex + 1 < newYearClasses.length
-      ? newYearClasses[currentClassIndex + 1]
-      : null;
+    .orderBy(asc(classes.sortOrder))
+    .limit(1);
 
   const results: {
     studentId: string;
@@ -481,24 +465,21 @@ export const executeBulkPromotion = async (params: {
       let targetClassId: number | null = null;
 
       if (decision.status === "promoted" || decision.status === "conditional") {
-        // Use provided toClassId or auto-detect next class
-        targetClassId =
-          decision.toClassId ||
-          nextClassInNewYear?.id ||
-          null;
+        // Promoted: move to next class (by sortOrder)
+        targetClassId = decision.toClassId || nextClass?.id || null;
 
         if (!targetClassId) {
           results.push({
             studentId: decision.studentId,
             status: "error",
             success: false,
-            error: "لم يتم العثور على الصف التالي في السنة الجديدة",
+            error: "لم يتم العثور على الصف التالي",
           });
           continue;
         }
       } else if (decision.status === "retained") {
-        // Stay in same class but in new year
-        targetClassId = sameClassInNewYear?.id || null;
+        // Retained: stay in SAME class (which is permanent), just new enrollment year
+        targetClassId = classId;
       }
       // For graduated: targetClassId remains null
 

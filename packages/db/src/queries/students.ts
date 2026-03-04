@@ -138,12 +138,10 @@ export const getStudentByUserId = async (userId: string) => {
                 id: classes.id,
                 name: classes.name,
             },
-            yearName: academicYears.yearName,
         })
         .from(students)
         .innerJoin(users, eq(students.userId, users.id))
         .leftJoin(classes, eq(students.currentClassId, classes.id))
-        .leftJoin(academicYears, eq(classes.academicYearId, academicYears.id))
         .where(eq(students.userId, userId));
     
     if (student) {
@@ -172,12 +170,10 @@ export const getStudentsByUserIds = async (userIds: string[]) => {
                 id: classes.id,
                 name: classes.name,
             },
-            yearName: academicYears.yearName,
         })
         .from(students)
         .innerJoin(users, eq(students.userId, users.id))
         .leftJoin(classes, eq(students.currentClassId, classes.id))
-        .leftJoin(academicYears, eq(classes.academicYearId, academicYears.id))
         .where(inArray(students.userId, userIds));
 };
 

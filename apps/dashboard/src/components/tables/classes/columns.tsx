@@ -17,7 +17,7 @@ import type { Dispatch, SetStateAction } from "react";
 export interface ClassesTableMeta {
   deleteClass: (id: number) => void;
   onEditClass: (id: number) => void;
-  onImportStudents: (classId: number, academicYearId?: number) => void;
+  onImportStudents: (classId: number) => void;
   expandedClasses: Set<number>;
   setExpandedClasses: Dispatch<SetStateAction<Set<number>>>;
   searchValue?: string;
@@ -128,13 +128,6 @@ export const columns: ColumnDef<any>[] = [
     },
   },
   {
-    header: "Year",
-    accessorKey: "yearName",
-    cell: ({ row }) => (
-       <span className="text-muted-foreground">{row.original.yearName || "-"}</span>
-    ),
-  },
-  {
     header: "Sort Order",
     accessorKey: "sortOrder",
     cell: ({ row }) => (
@@ -165,7 +158,7 @@ export const columns: ColumnDef<any>[] = [
               <DropdownMenuItem onClick={() => meta?.onEditClass?.(row.original.id)}>
                 Edit
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => meta?.onImportStudents?.(row.original.id, row.original.academicYearId)}>
+              <DropdownMenuItem onClick={() => meta?.onImportStudents?.(row.original.id)}>
                 Import Students
               </DropdownMenuItem>
               <DropdownMenuItem

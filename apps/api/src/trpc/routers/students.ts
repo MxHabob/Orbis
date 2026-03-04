@@ -168,7 +168,7 @@ export const studentsRouter = createTRPCRouter({
 
       const buffer = await generateStudentExport(exportData, {
         className: classData.name,
-        academicYear: classData.yearName || undefined,
+        academicYear: undefined,
         statistics: statistics || null,
         format: input.format,
       });
