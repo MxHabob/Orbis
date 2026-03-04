@@ -12,6 +12,12 @@ import {
   auditLogs,
 } from "@db/schema";
 import { eq, and, asc, inArray, isNull, desc, sql } from "drizzle-orm";
+import { RedisCache } from "@midday/cache";
+
+// Cache instances to invalidate after promotion
+const classCache = new RedisCache("classes", 60 * 60);
+const studentCache = new RedisCache("student", 30 * 60);
+const gradeCache = new RedisCache("grades", 5 * 60);
 
 // ==========================================
 // Helper: Grade calculation (same as grades.ts)
@@ -538,7 +544,20 @@ export const executeBulkPromotion = async (params: {
           },
         });
 
-      // 2. Update student's current class (if not graduated)
+      // 2. Mark OLD enrollment as 'transferred' (preserves history, fixes student counts)
+      await db
+        .update(enrollments)
+        .set({ status: "transferred" })
+        .where(
+          and(
+            eq(enrollments.studentId, decision.studentId),
+            eq(enrollments.classId, classId),
+            eq(enrollments.academicYearId, fromAcademicYearId),
+            eq(enrollments.status, "active")
+          )
+        );
+
+      // 3. Update student's current class (if not graduated)
       if (decision.status === "graduated") {
         await db
           .update(students)
@@ -550,7 +569,7 @@ export const executeBulkPromotion = async (params: {
           .set({ currentClassId: targetClassId })
           .where(eq(students.userId, decision.studentId));
 
-        // 3. Create enrollment in new year
+        // 4. Create enrollment in new year
         await db
           .insert(enrollments)
           .values({
@@ -582,6 +601,10 @@ export const executeBulkPromotion = async (params: {
         status: decision.status,
         success: true,
       });
+      // Invalidate caches for this student
+      await studentCache.delete(`user:${decision.studentId}`).catch(() => {});
+      await gradeCache.delete(`student:${decision.studentId}:all`).catch(() => {});
+
     } catch (error) {
       results.push({
         studentId: decision.studentId,
@@ -591,6 +614,11 @@ export const executeBulkPromotion = async (params: {
       });
     }
   }
+
+  // Invalidate class caches globally after bulk promotion
+  await classCache.delete(`classes_v3:${fromAcademicYearId}:none:default:false:undefined:0`).catch(() => {});
+  await classCache.delete(`classes_v3:${toAcademicYearId}:none:default:false:undefined:0`).catch(() => {});
+  await classCache.delete(`classes_v3:all:none:default:false:undefined:0`).catch(() => {});
 
   return {
     total: results.length,
@@ -647,7 +675,19 @@ export const rollbackPromotion = async (params: {
         })
         .where(eq(students.userId, promo.studentId));
 
-      // 2. Delete new enrollment (if exists)
+      // 2. Restore old enrollment back to active
+      await db
+        .update(enrollments)
+        .set({ status: "active" })
+        .where(
+          and(
+            eq(enrollments.studentId, promo.studentId),
+            eq(enrollments.classId, promo.fromClassId),
+            eq(enrollments.academicYearId, promo.fromAcademicYearId)
+          )
+        );
+
+      // 3. Delete new enrollment (if exists)
       if (promo.toClassId) {
         await db
           .delete(enrollments)
@@ -660,12 +700,12 @@ export const rollbackPromotion = async (params: {
           );
       }
 
-      // 3. Delete promotion record
+      // 4. Delete promotion record
       await db
         .delete(studentPromotions)
         .where(eq(studentPromotions.id, promo.id));
 
-      // 4. Audit log
+      // 5. Audit log
       await db.insert(auditLogs).values({
         action: "rollback_promote",
         tableName: "student_promotions",
@@ -679,6 +719,10 @@ export const rollbackPromotion = async (params: {
         },
         userId: rollbackById,
       });
+
+      // 6. Invalidate caches
+      await studentCache.delete(`user:${promo.studentId}`).catch(() => {});
+      await gradeCache.delete(`student:${promo.studentId}:all`).catch(() => {});
 
       results.push({ studentId: promo.studentId, success: true });
     } catch (error) {

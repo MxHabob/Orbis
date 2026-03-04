@@ -66,16 +66,17 @@ export const getStudentsByClassId = async (
     }
 
     // Get the class IDs for the selected class and its children (sections)
-    const classIds = db
+    const childClasses = await db
         .select({ id: classes.id })
         .from(classes)
-        .where(
-            or(
-                eq(classes.id, classId),
-                eq(classes.parentClassId, classId)
-            )
-        );
+        .where(eq(classes.parentClassId, classId));
 
+    const targetClassIds = childClasses.length > 0
+        ? [classId, ...childClasses.map(c => c.id)]
+        : [classId];
+
+    // Use enrollment-based lookup — NOT currentClassId
+    // This ensures promoted students still appear in their old class reports
     return db
         .select({
             userId: students.userId,
@@ -94,16 +95,15 @@ export const getStudentsByClassId = async (
             },
             enrollmentDate: enrollments.enrolledAt,
         })
-        .from(students)
+        .from(enrollments)
+        .innerJoin(students, eq(enrollments.studentId, students.userId))
         .innerJoin(users, eq(students.userId, users.id))
         .leftJoin(classes, eq(students.currentClassId, classes.id))
-        .leftJoin(enrollments, and(
-            eq(enrollments.studentId, students.userId),
-            inArray(enrollments.classId, classIds) // Get enrollment for any relevant class
-        ))
         .where(
             and(
-                inArray(students.currentClassId, classIds),
+                targetClassIds.length === 1
+                    ? eq(enrollments.classId, targetClassIds[0]!)
+                    : inArray(enrollments.classId, targetClassIds),
                 q ? or(
                     ilike(users.name, `%${q}%`),
                     ilike(students.studentNumber, `%${q}%`)

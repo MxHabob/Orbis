@@ -293,7 +293,19 @@ export const getClassStatistics = async (classId: string) => {
 
   if (cached) return cached;
 
-  // Get all enrollments for this class
+  const classIdNum = Number.parseInt(classId);
+
+  // Get child classes (sections) if any
+  const childClasses = await db
+    .select({ id: classes.id })
+    .from(classes)
+    .where(eq(classes.parentClassId, classIdNum));
+
+  const targetClassIds = childClasses.length > 0
+    ? [classIdNum, ...childClasses.map(c => c.id)]
+    : [classIdNum];
+
+  // Get all enrollments for this class (any status - for historical accuracy)
   const enrolledStudents = await db
     .select({
       studentId: students.userId,
@@ -302,8 +314,9 @@ export const getClassStatistics = async (classId: string) => {
     .innerJoin(students, eq(enrollments.studentId, students.userId))
     .where(
       and(
-        eq(enrollments.classId, Number.parseInt(classId)),
-        eq(enrollments.status, "active")
+        targetClassIds.length === 1
+          ? eq(enrollments.classId, targetClassIds[0]!)
+          : inArray(enrollments.classId, targetClassIds),
       )
     );
 
@@ -320,8 +333,26 @@ export const getClassStatistics = async (classId: string) => {
     return emptyResult;
   }
 
-  // Get all grades for students in this class
+  // Get assessment items for THIS class only
+  const classAssessmentItems = await db
+    .select({ id: assessmentItems.id })
+    .from(assessmentItems)
+    .where(eq(assessmentItems.classId, classIdNum));
+
+  if (classAssessmentItems.length === 0) {
+    const emptyResult = {
+      totalCount,
+      passedCount: 0,
+      failedCount: 0,
+      averageGrade: 0,
+    };
+    await gradeCache.set(cacheKey, emptyResult);
+    return emptyResult;
+  }
+
+  // Get grades scoped to THIS class's assessment items
   const studentIds = enrolledStudents.map((s) => s.studentId);
+  const assessmentItemIds = classAssessmentItems.map(a => a.id);
   
   const studentGrades = await db
     .select({
@@ -331,7 +362,12 @@ export const getClassStatistics = async (classId: string) => {
     })
     .from(gradeEntries)
     .innerJoin(assessmentItems, eq(gradeEntries.assessmentItemId, assessmentItems.id))
-    .where(inArray(gradeEntries.studentId, studentIds));
+    .where(
+      and(
+        inArray(gradeEntries.studentId, studentIds),
+        inArray(gradeEntries.assessmentItemId, assessmentItemIds)
+      )
+    );
 
   // Calculate statistics per student
   const studentStats = new Map<string, { totalScore: number; maxTotalScore: number }>();
@@ -410,17 +446,20 @@ function getGradeLabel(total: number, maxTotal: number): string {
 //   3. final (نهائي): Shows محصلة الترم1 + اختبار النصفي + محصلة الترم2 + اختبار النهائي + المجموع + التقدير
 // ==========================================
 
-export const getStudentReportData = async (studentId: string, type?: string, month?: number) => {
-    // 1. Get student's class information
-    const [student] = await db
+export const getStudentReportData = async (studentId: string, type?: string, month?: number, targetClassId?: number) => {
+    // 1. Resolve classId: use provided classId (for historical reports) or fall back to currentClassId
+    let classId = targetClassId;
+
+    if (!classId) {
+      const [student] = await db
         .select({ currentClassId: students.currentClassId })
         .from(students)
         .where(eq(students.userId, studentId))
         .limit(1);
 
-    if (!student?.currentClassId) return { rows: [], columns: [], type: type || "monthly" };
-
-    const classId = student.currentClassId;
+      if (!student?.currentClassId) return { rows: [], columns: [], type: type || "monthly" };
+      classId = student.currentClassId;
+    }
 
     // ==========================================
     // MONTHLY CERTIFICATE (شهادة شهرية)

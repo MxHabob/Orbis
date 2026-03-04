@@ -68,7 +68,7 @@ export const getClassesV3 = async (
       parentClassId: classes.parentClassId,
       yearName: academicYears.yearName,
       sortOrder: classes.sortOrder,
-      studentCount: sql<number>`(SELECT count(*) FROM enrollments e WHERE e.class_id = ${classes.id} AND e.deleted_at IS NULL)::int`,
+      studentCount: sql<number>`(SELECT count(*) FROM enrollments e WHERE e.class_id = ${classes.id} AND e.deleted_at IS NULL AND e.status = 'active')::int`,
       scheduleCount: sql<number>`(SELECT count(*) FROM scheduled_lessons l WHERE l.class_id = ${classes.id})::int`,
       parentClassName: sql<string | null>`(SELECT name FROM classes p WHERE p.id = ${classes.parentClassId})`,
     })
@@ -120,7 +120,7 @@ export const getClassesV3 = async (
       academicYearId: classes.academicYearId,
       parentClassId: classes.parentClassId,
       sortOrder: classes.sortOrder,
-      studentCount: sql<number>`(SELECT count(*) FROM enrollments e WHERE e.class_id = ${classes.id} AND e.deleted_at IS NULL)::int`,
+      studentCount: sql<number>`(SELECT count(*) FROM enrollments e WHERE e.class_id = ${classes.id} AND e.deleted_at IS NULL AND e.status = 'active')::int`,
       scheduleCount: sql<number>`(SELECT count(*) FROM scheduled_lessons l WHERE l.class_id = ${classes.id})::int`,
     })
     .from(classes)

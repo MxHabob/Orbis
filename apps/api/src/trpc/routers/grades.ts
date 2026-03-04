@@ -37,10 +37,11 @@ export const gradesRouter = createTRPCRouter({
     .input(z.object({ 
       studentId: z.string().uuid(),
       type: z.string().optional(),
-      month: z.number().optional()
+      month: z.number().optional(),
+      classId: z.number().optional(),
     }))
     .query(async ({ input }) => {
-      return getStudentReportData(input.studentId, input.type, input.month);
+      return getStudentReportData(input.studentId, input.type, input.month, input.classId);
     }),
 
   createEntry: protectedProcedure

@@ -71,13 +71,16 @@ export async function getClassDistribution(filters?: MetricFilters) {
   return db
     .select({
       className: classes.name,
-      studentCount: count(students.userId)
+      studentCount: count(enrollments.id)
     })
     .from(classes)
-    .leftJoin(students, eq(classes.id, students.currentClassId))
-    .where(eq(students.status, 'active'))
+    .leftJoin(enrollments, and(
+      eq(classes.id, enrollments.classId),
+      eq(enrollments.status, 'active')
+    ))
+    .where(sql`${classes.deletedAt} IS NULL`)
     .groupBy(classes.name)
-    .orderBy(desc(count(students.userId)))
+    .orderBy(desc(count(enrollments.id)))
     .limit(10);
 }
 
