@@ -4,6 +4,7 @@ export default {
     confirm: "Confirm",
     cancel: "Cancel",
     delete: "Delete",
+    error: "Error",
     upload: "Upload",
     search: "Search...",
     download: "Download",
@@ -12,6 +13,8 @@ export default {
     start_date: "Start Date",
     end_date: "End Date",
     loading: "Loading...",
+    no_data: "No data available",
+    actions: "Actions",
   },
   transaction_methods: {
     card_purchase: "Card Purchase",
@@ -800,6 +803,10 @@ export default {
     confirm_rollback: "Are you sure you want to rollback promotion for this class? This will delete promotion records and revert students to their previous class.",
     process_success: "Process completed successfully",
     process_error: "An error occurred during processing",
+    promoted_at: "Promoted At",
+    rollback_all: "Bulk Rollback",
+    confirm_rollback_bulk: "Are you sure you want to rollback promotion for {count} students?",
+    no_students_to_promote: "No students to promote",
   },
   education: {
     class_name: "Class Name",

@@ -1,5 +1,5 @@
 import { db } from "@db/client";
-import { academicYears, academicTerms } from "@db/schema";
+import { academicYears, academicTerms, classes, timeSlots } from "@db/schema";
 import { eq, desc } from "drizzle-orm";
 import { RedisCache } from "@midday/cache";
 
@@ -24,13 +24,15 @@ export const getCurrentAcademicYear = async () => {
 
 export const getAcademicYears = async () => {
   const cacheKey = "years:all";
-  const cached = await calendarCache.get<Array<typeof academicYears.$inferSelect>>(cacheKey);
+  const cached = await calendarCache.get<any[]>(cacheKey);
   if (cached) return cached;
 
-  const results = await db
-    .select()
-    .from(academicYears)
-    .orderBy(desc(academicYears.yearName));
+  const results = await db.query.academicYears.findMany({
+    orderBy: (years, { desc }) => [desc(years.yearName)],
+    with: {
+      terms: true,
+    },
+  });
 
   if (results) {
     await calendarCache.set(cacheKey, results);
@@ -82,9 +84,57 @@ export const getTermsByYear = async (yearId: number) => {
 
 export type CreateAcademicYearParams = typeof academicYears.$inferInsert;
 export const createAcademicYear = async (data: CreateAcademicYearParams) => {
-  const [result] = await db.insert(academicYears).values(data).returning();
-  await calendarCache.delete("years:all");
-  return result;
+  return await db.transaction(async (tx) => {
+    const [result] = await tx.insert(academicYears).values(data).returning();
+
+    if (!result) throw new Error("Failed to create academic year");
+
+    const yearId = result.id;
+    const yearName = result.yearName;
+
+    // 1. Create Terms (Default structure)
+    const startYearMatch = yearName.match(/\d{4}/);
+    const startYear = startYearMatch ? parseInt(startYearMatch[0]) : new Date().getFullYear();
+    const endYear = startYear + 1;
+
+    await tx.insert(academicTerms).values([
+      {
+        name: "الترم الاول",
+        academicYearId: yearId,
+        startDate: `${startYear}-09-01`,
+        endDate: `${startYear}-12-30`,
+        isCurrent: true,
+      },
+      {
+        name: "الترم الثاني",
+        academicYearId: yearId,
+        startDate: `${endYear}-02-01`,
+        endDate: `${endYear}-06-20`,
+        isCurrent: false,
+      },
+    ]);
+
+    // 2. Create Classes (Default Grades 1-9)
+    const grades = [
+      "الصف الأول", "الصف الثاني", "الصف الثالث", 
+      "الصف الرابع", "الصف الخامس", "الصف السادس",
+      "الصف السابع", "الصف الثامن", "الصف التاسع"
+    ];
+    const colors = ["#f44336", "#e91e63", "#9c27b0", "#673ab7", "#3f51b5", "#2196f3", "#00bcd4", "#009688", "#4caf50"];
+
+    await tx.insert(classes).values(
+      grades.map((name, index) => ({
+        name,
+        academicYearId: yearId,
+        color: colors[index] || "#e6e6e6",
+        sortOrder: index,
+        type: "classroom" as const,
+      }))
+    );
+
+    await calendarCache.delete("years:all");
+    return result;
+  });
 };
 
 export const updateAcademicYear = async (id: number, data: Partial<CreateAcademicYearParams>) => {

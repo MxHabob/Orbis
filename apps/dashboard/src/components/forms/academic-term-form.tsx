@@ -10,6 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@midday/ui/input";
 import { Button } from "@midday/ui/button";
 import { useToast } from "@midday/ui/use-toast";
+import { Switch } from "@midday/ui/switch";
 import { useEffect } from "react";
 
 interface AcademicTermFormProps {
@@ -35,11 +36,15 @@ export function AcademicTermForm({ initialData, yearId, termId, onSuccess }: Aca
       academicYearId: yearId,
       startDate: new Date().toISOString(),
       endDate: new Date().toISOString(),
+      isCurrent: false,
     },
   });
 
   // Fetch all years to find the specific term if it's an edit by ID
-  const { data: years } = useQuery(trpc.academic.getYears.queryOptions({ enabled: !!termId && !initialData }));
+  const { data: years } = useQuery({
+    ...trpc.academic.getYears.queryOptions(),
+    enabled: !!termId && !initialData
+  });
 
   useEffect(() => {
     if (termId && years) {
@@ -61,29 +66,61 @@ export function AcademicTermForm({ initialData, yearId, termId, onSuccess }: Aca
 
   const isEdit = !!(initialData?.id || termId);
 
-  const mutation = useMutation({
-    mutationFn: (data: any) => {
-      const id = initialData?.id || termId;
-      if (id) {
-        return trpc.academic.updateTerm.mutate({
-          ...data,
-          id,
+  const createMutation = useMutation(
+    trpc.academic.createTerm.mutationOptions({
+      onSuccess: () => {
+        toast({ title: t("promotions.process_success") });
+        queryClient.invalidateQueries({
+          queryKey: trpc.academic.getYears.queryKey(),
         });
-      }
-      return trpc.academic.createTerm.mutate(data);
-    },
-    onSuccess: () => {
-      toast({ title: t("promotions.process_success") });
-      queryClient.invalidateQueries({
-        queryKey: trpc.academic.getYears.queryKey(),
+        onSuccess?.();
+      },
+      onError: (error) => {
+        toast({ 
+          title: t("common.error"), 
+          description: error.message,
+          variant: "destructive" 
+        });
+      },
+    })
+  );
+
+  const updateMutation = useMutation(
+    trpc.academic.updateTerm.mutationOptions({
+      onSuccess: () => {
+        toast({ title: t("promotions.process_success") });
+        queryClient.invalidateQueries({
+          queryKey: trpc.academic.getYears.queryKey(),
+        });
+        onSuccess?.();
+      },
+      onError: (error) => {
+        toast({ 
+          title: t("common.error"), 
+          description: error.message,
+          variant: "destructive" 
+        });
+      },
+    })
+  );
+
+  const isPending = createMutation.isPending || updateMutation.isPending;
+
+  const onSubmit = (data: any) => {
+    const id = initialData?.id || termId;
+    if (id) {
+      updateMutation.mutate({
+        ...data,
+        id,
       });
-      onSuccess?.();
-    },
-  });
+    } else {
+      createMutation.mutate(data);
+    }
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit((data: any) => mutation.mutate(data))} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
           control={form.control}
           name="name"
@@ -127,8 +164,8 @@ export function AcademicTermForm({ initialData, yearId, termId, onSuccess }: Aca
           />
         </div>
 
-        <Button type="submit" className="w-full" disabled={mutation.isPending}>
-          {mutation.isPending ? t("common.loading") : t("common.save")}
+        <Button type="submit" className="w-full" disabled={isPending}>
+          {isPending ? t("common.loading") : t("common.save")}
         </Button>
       </form>
     </Form>

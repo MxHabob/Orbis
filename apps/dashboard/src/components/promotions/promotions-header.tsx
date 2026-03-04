@@ -54,17 +54,17 @@ export function PromotionsHeader({
   }, [sourceYearId, currentYearId, targetYearId, setParams, initialData.years]);
 
   return (
-    <div className="flex flex-col gap-4 py-4">
-      <div className="flex flex-wrap items-end gap-4">
-        <div className="flex flex-col gap-1.5">
-          <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold px-1">
+    <div className="flex flex-col gap-4 py-4 border-b">
+      <div className="flex flex-wrap items-end gap-6">
+        <div className="flex flex-col gap-2">
+          <label className="text-[11px] text-[#606060] font-medium">
             {t("promotions.current_year")}
           </label>
           <Select
             value={sourceYearId?.toString() || ""}
             onValueChange={(val) => setParams({ sourceYearId: parseInt(val) })}
           >
-            <SelectTrigger className="h-9 bg-background min-w-[140px] text-xs">
+            <SelectTrigger className="h-8 bg-transparent min-w-[140px] text-xs border-border rounded-none shadow-none">
               <SelectValue placeholder={t("promotions.current_year")} />
             </SelectTrigger>
             <SelectContent>
@@ -77,15 +77,15 @@ export function PromotionsHeader({
           </Select>
         </div>
 
-        <div className="flex flex-col gap-1.5">
-           <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold px-1">
+        <div className="flex flex-col gap-2">
+           <label className="text-[11px] text-[#606060] font-medium">
             {t("promotions.target_year")}
           </label>
           <Select
             value={targetYearId?.toString() || ""}
             onValueChange={(val) => setParams({ targetYearId: parseInt(val) })}
           >
-            <SelectTrigger className="h-9 bg-background min-w-[140px] text-xs">
+            <SelectTrigger className="h-8 bg-transparent min-w-[140px] text-xs border-border rounded-none shadow-none">
               <SelectValue placeholder={t("promotions.target_year")} />
             </SelectTrigger>
             <SelectContent>
@@ -98,15 +98,15 @@ export function PromotionsHeader({
           </Select>
         </div>
 
-        <div className="flex flex-col gap-1.5">
-           <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold px-1">
+        <div className="flex flex-col gap-2">
+           <label className="text-[11px] text-[#606060] font-medium">
             {t("students.class")}
           </label>
           <Select
             value={promotionClassId?.toString() || ""}
             onValueChange={(val) => setParams({ promotionClassId: parseInt(val) })}
           >
-            <SelectTrigger className="h-9 bg-background min-w-[180px] text-xs">
+            <SelectTrigger className="h-8 bg-transparent min-w-[180px] text-xs border-border rounded-none shadow-none">
               <SelectValue placeholder={t("students.class")} />
             </SelectTrigger>
             <SelectContent>
@@ -119,21 +119,22 @@ export function PromotionsHeader({
           </Select>
         </div>
 
-        <div className="flex items-center gap-2 ms-auto">
+        <div className="flex items-center gap-3 ms-auto mb-0.5">
           <Button 
-            variant="outline" 
+            variant="ghost" 
             size="icon" 
-            className="h-9 w-9"
+            className="h-8 w-8 hover:bg-accent rounded-none"
             onClick={onRefresh}
             disabled={isRefreshing || !promotionClassId}
           >
-            <Icons.RefreshOutline className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+            <Icons.RefreshOutline className={cn("h-4 w-4 text-[#606060]", isRefreshing && "animate-spin")} />
           </Button>
 
           <Button 
             onClick={onExecute}
             disabled={isExecuting || !canExecute}
-            className="h-9 px-4 text-xs font-semibold"
+            variant="default"
+            className="h-8 px-4 text-xs rounded-none"
           >
             {isExecuting ? <Icons.RefreshOutline className="w-3.5 h-3.5 mr-2 animate-spin" /> : <Icons.TrendingUp size={14} className="mr-2" />}
             {t("promotions.execute")}

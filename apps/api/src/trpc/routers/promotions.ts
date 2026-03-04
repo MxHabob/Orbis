@@ -65,7 +65,7 @@ export const promotionsRouter = createTRPCRouter({
    * سجل الترفيعات
    * Get promotion history with filters
    */
-  history: protectedProcedure
+  historyRecords: protectedProcedure
     .input(promotionHistorySchema)
     .query(async ({ input }) => {
       return getPromotionHistory({

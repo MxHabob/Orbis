@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 import { useI18n } from "@/locales/client";
 import { useTRPC } from "@/trpc/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -33,28 +35,66 @@ export function AcademicYearForm({ initialData, onSuccess }: AcademicYearFormPro
     },
   });
 
-  const mutation = useMutation({
-    mutationFn: (data: any) => {
-      if (initialData?.id) {
-        return trpc.academic.updateYear.mutate({
-          ...data,
-          id: initialData.id,
+  useEffect(() => {
+    if (initialData) {
+      form.reset(initialData);
+    }
+  }, [initialData, form]);
+
+  const createMutation = useMutation(
+    trpc.academic.createYear.mutationOptions({
+      onSuccess: () => {
+        toast({ title: t("promotions.process_success") });
+        queryClient.invalidateQueries({
+          queryKey: trpc.academic.getYears.queryKey(),
         });
-      }
-      return trpc.academic.createYear.mutate(data);
-    },
-    onSuccess: () => {
-      toast({ title: t("promotions.process_success") });
-      queryClient.invalidateQueries({
-        queryKey: trpc.academic.getYears.queryKey(),
+        onSuccess?.();
+      },
+      onError: (error) => {
+        toast({ 
+          title: t("common.error"), 
+          description: error.message,
+          variant: "destructive" 
+        });
+      },
+    })
+  );
+
+  const updateMutation = useMutation(
+    trpc.academic.updateYear.mutationOptions({
+      onSuccess: () => {
+        toast({ title: t("promotions.process_success") });
+        queryClient.invalidateQueries({
+          queryKey: trpc.academic.getYears.queryKey(),
+        });
+        onSuccess?.();
+      },
+      onError: (error) => {
+        toast({ 
+          title: t("common.error"), 
+          description: error.message,
+          variant: "destructive" 
+        });
+      },
+    })
+  );
+
+  const isPending = createMutation.isPending || updateMutation.isPending;
+
+  const onSubmit = (data: any) => {
+    if (initialData?.id) {
+      updateMutation.mutate({
+        ...data,
+        id: initialData.id,
       });
-      onSuccess?.();
-    },
-  });
+    } else {
+      createMutation.mutate(data);
+    }
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit((data: any) => mutation.mutate(data))} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
           control={form.control}
           name="yearName"
@@ -116,8 +156,8 @@ export function AcademicYearForm({ initialData, onSuccess }: AcademicYearFormPro
           )}
         />
 
-        <Button type="submit" className="w-full" disabled={mutation.isPending}>
-          {mutation.isPending ? t("common.loading") : t("common.save")}
+        <Button type="submit" className="w-full" disabled={isPending}>
+          {isPending ? t("common.loading") : t("common.save")}
         </Button>
       </form>
     </Form>

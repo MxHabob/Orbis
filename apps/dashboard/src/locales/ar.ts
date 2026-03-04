@@ -4,6 +4,7 @@ export default {
     confirm: "تأكيد",
     cancel: "إلغاء",
     delete: "حذف",
+    error: "خطأ",
     upload: "رفع",
     search: "بحث...",
     download: "تنزيل",
@@ -12,6 +13,8 @@ export default {
     start_date: "تاريخ البدء",
     end_date: "تاريخ الانتهاء",
     loading: "جاري التحميل...",
+    no_data: "لا توجد بيانات متاحة",
+    actions: "الإجراءات",
   },
   transaction_methods: {
     card_purchase: "شراء بالبطاقة",
@@ -851,5 +854,9 @@ export default {
     confirm_rollback: "هل أنت متأكد من التراجع عن ترفيع هذا الصف؟ سيتم حذف بيانات الترفيع وإعادة الطلاب لصفهم السابق.",
     process_success: "تمت العملية بنجاح",
     process_error: "حدث خطأ أثناء المعالجة",
+    promoted_at: "تاريخ الترفيع",
+    rollback_all: "تراجع جماعي",
+    confirm_rollback_bulk: "هل أنت متأكد من التراجع عن ترفيع {count} طلاب؟",
+    no_students_to_promote: "لا يوجد طلاب للترفيع",
   },
 } as const;
