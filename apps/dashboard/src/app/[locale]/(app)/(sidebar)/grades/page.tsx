@@ -32,10 +32,12 @@ export default async function GradesPage(props: Props) {
     getInitialTableSettings("grades"),
   ]);
 
+  const activeYearId = filter.yearId || currentYear?.id;
+
   const [classesResponse, terms] = await Promise.all([
-    queryClient.fetchQuery(trpc.classes.getAll.queryOptions({ academicYearId: currentYear?.id })),
-    currentYear 
-      ? queryClient.fetchQuery(trpc.academic.getTerms.queryOptions({ yearId: currentYear.id })) 
+    queryClient.fetchQuery(trpc.classes.getAll.queryOptions({ academicYearId: activeYearId })),
+    activeYearId 
+      ? queryClient.fetchQuery(trpc.academic.getTerms.queryOptions({ yearId: activeYearId })) 
       : Promise.resolve([]),
   ]);
 
