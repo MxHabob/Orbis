@@ -8,11 +8,11 @@ export function EmptyState() {
 
   return (
     <div className="flex items-center justify-center ">
-      <div className="flex flex-col items-center mt-40">
+      <div className="flex flex-col items-center">
         <div className="text-center mb-6 space-y-2">
-          <h2 className="font-medium text-lg">No customers</h2>
+          <h2 className="font-medium text-lg">No students</h2>
           <p className="text-[#606060] text-sm">
-            You haven't created any customers yet. <br />
+            You haven't created any students yet. <br />
             Go ahead and create your first one.
           </p>
         </div>
@@ -21,11 +21,11 @@ export function EmptyState() {
           variant="outline"
           onClick={() =>
             setParams({
-              createCustomer: true,
+              createStudent: true,
             })
           }
         >
-          Create customer
+          Create student
         </Button>
       </div>
     </div>
@@ -37,7 +37,7 @@ export function NoResults() {
 
   return (
     <div className="flex items-center justify-center ">
-      <div className="flex flex-col items-center mt-40">
+      <div className="flex flex-col items-center">
         <div className="text-center mb-6 space-y-2">
           <h2 className="font-medium text-lg">No results</h2>
           <p className="text-[#606060] text-sm">

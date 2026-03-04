@@ -7,7 +7,7 @@ import type {
 /**
  * Table identifiers for all supported tables
  */
-export type TableId = "transactions" | "customers" | "invoices" | "vault" | "students" | "grades" | "classes" | "reports" | "certificates";
+export type TableId = "transactions" | "invoices" | "vault" | "students" | "grades" | "classes" | "reports" | "certificates";
 
 /**
  * Settings for a single table
@@ -35,7 +35,6 @@ export const TABLE_SETTINGS_COOKIE = "table-settings";
  */
 export const defaultHiddenColumns: Record<TableId, string[]> = {
   transactions: ["assigned", "tags", "method", "counterparty", "taxAmount"],
-  customers: ["tags", "website", "financeEmail", "language"],
   invoices: [
     "sentAt",
     "exclVat",

@@ -6,13 +6,20 @@ import NumberFlow from "@number-flow/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 
+import { useCustomerFilterParams } from "@/hooks/use-customer-filter-params";
+
 export function PassedStudents() {
   const params = useParams();
   const classId = params.Id as string;
   const trpc = useTRPC();
+  const { filter } = useCustomerFilterParams();
+  const academicYearId = filter.academicYearId ? Number(filter.academicYearId) : undefined;
   
   const { data } = useSuspenseQuery(
-    trpc.grades.getClassStatistics.queryOptions({ classId }),
+    trpc.grades.getClassStatistics.queryOptions({ 
+      classId,
+      academicYearId
+    }),
   );
 
   const passedCount = data?.passedCount ?? 0;

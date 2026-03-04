@@ -14,7 +14,6 @@ export const STICKY_COLUMNS: Record<TableId, StickyColumnConfig[]> = {
     { id: "select", width: 50 },
     { id: "invoiceNumber", width: 180 },
   ],
-  customers: [{ id: "name", width: 320 }],
   students: [{ id: "name", width: 250 }],
   vault: [
     { id: "select", width: 50 },
@@ -62,19 +61,6 @@ export const SORT_FIELD_MAPS: Record<TableId, Record<string, string>> = {
     amount: "amount",
     issueDate: "issue_date",
   },
-  customers: {
-    name: "name",
-    contact: "contact",
-    email: "email",
-    invoices: "invoices",
-    projects: "projects",
-    industry: "industry",
-    country: "country",
-    totalRevenue: "total_revenue",
-    outstanding: "outstanding",
-    lastInvoice: "last_invoice",
-    tags: "tags",
-  },
   students: {
     name: "name",
     studentNumber: "studentNumber",
@@ -99,7 +85,6 @@ export const SORT_FIELD_MAPS: Record<TableId, Record<string, string>> = {
 export const NON_REORDERABLE_COLUMNS: Record<TableId, Set<string>> = {
   transactions: new Set(["select", "date", "description", "actions"]),
   invoices: new Set(["select", "invoiceNumber", "actions"]),
-  customers: new Set(["name", "actions"]),
   students: new Set(["name", "actions"]),
   vault: new Set(["select", "title", "actions"]),
   grades: new Set(["studentName", "total"]),
@@ -114,7 +99,6 @@ export const NON_REORDERABLE_COLUMNS: Record<TableId, Set<string>> = {
 export const ROW_HEIGHTS: Record<TableId, number> = {
   transactions: 45,
   invoices: 57,
-  customers: 45,
   students: 45,
   vault: 45,
   grades: 45,
@@ -128,7 +112,6 @@ export const ROW_HEIGHTS: Record<TableId, number> = {
  */
 export const SUMMARY_GRID_HEIGHTS: Partial<Record<TableId, number>> = {
   invoices: 180,
-  customers: 180,
   students: 180,
   grades: 0,
   classes: 0,
@@ -153,14 +136,6 @@ export const TABLE_CONFIGS: Record<TableId, TableConfig> = {
     nonReorderableColumns: NON_REORDERABLE_COLUMNS.invoices,
     rowHeight: ROW_HEIGHTS.invoices,
     summaryGridHeight: SUMMARY_GRID_HEIGHTS.invoices,
-  },
-  customers: {
-    tableId: "customers",
-    stickyColumns: STICKY_COLUMNS.customers,
-    sortFieldMap: SORT_FIELD_MAPS.customers,
-    nonReorderableColumns: NON_REORDERABLE_COLUMNS.customers,
-    rowHeight: ROW_HEIGHTS.customers,
-    summaryGridHeight: SUMMARY_GRID_HEIGHTS.customers,
   },
   students: {
     tableId: "students",

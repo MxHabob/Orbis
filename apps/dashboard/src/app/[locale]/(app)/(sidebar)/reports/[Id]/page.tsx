@@ -11,7 +11,7 @@ import { CustomersSkeleton } from "@/components/tables/students/skeleton";
 import { TotalStudents } from "@/components/total-students";
 import { loadCustomerFilterParams } from "@/hooks/use-customer-filter-params";
 import { loadSortParams } from "@/hooks/use-sort-params";
-import { HydrateClient, batchPrefetch, trpc } from "@/trpc/server";
+import { HydrateClient, batchPrefetch, trpc, getQueryClient } from "@/trpc/server";
 import { getInitialTableSettings } from "@/utils/columns";
 import type { Metadata } from "next";
 import { ErrorBoundary } from "next/dist/client/components/error-boundary";
@@ -38,24 +38,33 @@ export default async function Page(props: Props) {
 
   if (!Id) return null;
 
-  const infiniteOptions = trpc.students.getByClassId.infiniteQueryOptions?.({
+  const academicYearId = filter.academicYearId ? Number(filter.academicYearId) : undefined;
+
+  const infiniteOptions = trpc.students.getByClassId.infiniteQueryOptions({
     id: Id,
     q: filter.q ?? undefined,
     sort: sort ?? undefined,
+    academicYearId,
   });
 
-  // Prefetch class statistics
-  batchPrefetch([
-    infiniteOptions,
-    trpc.grades.getClassStatistics.queryOptions({ classId: Id }),
-  ]);
+  const statisticsOptions = trpc.grades.getClassStatistics.queryOptions({ 
+    classId: Id,
+    academicYearId
+  });
+
+  // Prefetch class statistics and student list
+  batchPrefetch([infiniteOptions, statisticsOptions].filter(Boolean) as any);
+
+  const classData = await getQueryClient().fetchQuery(
+    trpc.classes.getById.queryOptions({ id: Number(Id) })
+  );
 
   return (
     <HydrateClient>
       <ScrollableContent>
         <div className="flex flex-col gap-6" data-canvas-content>
           <CollapsibleSummary>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 pt-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               <Suspense fallback={<StudentSummarySkeleton />}>
                 <TotalStudents />
               </Suspense>
@@ -71,8 +80,11 @@ export default async function Page(props: Props) {
             </div>
           </CollapsibleSummary>
 
-          {/* <StudentHeader /> */}
-
+            <StudentHeader 
+              name={classData?.name ?? "Class Report"} 
+              color={classData?.color}
+            />
+            
           <ErrorBoundary errorComponent={ErrorFallback}>
             <Suspense fallback={<CustomersSkeleton />}>
               <DataTable initialSettings={initialSettings} id={Id} />

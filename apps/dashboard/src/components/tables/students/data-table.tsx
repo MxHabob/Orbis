@@ -66,6 +66,7 @@ export function DataTable({ initialSettings, id }: Props) {
       id,
       q: deferredSearch ?? undefined,
       sort: params.sort ?? undefined,
+      academicYearId: filter.academicYearId ? Number(filter.academicYearId) : undefined,
     },
     {
       getNextPageParam: (lastPage) => lastPage.meta.cursor,
@@ -178,12 +179,15 @@ export function DataTable({ initialSettings, id }: Props) {
   });
 
 
-  if (!tableData.length && hasFilters) {
-    return <NoResults />;
-  }
-
   if (!tableData.length) {
-    return <EmptyState />;
+    return (
+      <div 
+        className="flex items-center justify-center border border-border bg-background"
+        style={{ height: "calc(100vh - 420px + var(--header-offset, 0px))" }}
+      >
+        {hasFilters ? <NoResults /> : <EmptyState />}
+      </div>
+    );
   }
 
   const virtualItems = rowVirtualizer.getVirtualItems();
@@ -207,7 +211,7 @@ export function DataTable({ initialSettings, id }: Props) {
           }}
           className="overflow-auto overscroll-contain border-l border-r border-b border-border scrollbar-hide"
           style={{
-            height: "calc(100vh - 380px + var(--header-offset, 0px))",
+            height: "calc(100vh - 420px + var(--header-offset, 0px))",
           }}
         >
           <DndContext
