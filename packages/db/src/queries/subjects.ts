@@ -21,14 +21,14 @@ export const getAllSubjects = async () => {
 
 export const getSubjectById = async (id: number) => {
     const cached = await subjectCache.get<typeof subjects.$inferSelect>(`id:${id}`);
-    if (cached) return cached;
+    if (cached !== undefined) return cached;
 
     const [result] = await db.select().from(subjects).where(eq(subjects.id, id));
 
     if (result) {
         await subjectCache.set(`id:${id}`, result);
     }
-    return result;
+    return result ?? null;
 }
 
 export type CreateSubjectParams = typeof subjects.$inferInsert;

@@ -163,7 +163,7 @@ export const getClassesV3 = async (
 export const getClassById = async (id: number) => {
   const cacheKey = `id:${id}`;
   const cached = await classCache.get<typeof classes.$inferSelect>(cacheKey);
-  if (cached) return cached;
+  if (cached !== undefined) return cached;
 
   const [result] = await db
     .select()
@@ -174,7 +174,7 @@ export const getClassById = async (id: number) => {
   if (result) {
     await classCache.set(cacheKey, result);
   }
-  return result;
+  return result ?? null;
 };
 
 export const getSubClasses = async (parentId: number) => {
