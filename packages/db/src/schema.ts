@@ -154,6 +154,7 @@ export const students = pgTable('students', {
   secretNumber: varchar('secret_number', { length: 20 }),
   currentClassId: integer('current_class_id').references(() => classes.id),
   status: studentStatusEnum('status').default('active'),
+  notes: text('notes'),
   stats: jsonb('stats'),
   deletedAt: timestamp('deleted_at'),
 }, (table) => ({

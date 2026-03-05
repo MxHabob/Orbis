@@ -90,7 +90,7 @@ export function StudentForm({ data }: Props) {
     secretNumber: data?.secretNumber ?? "",
     currentClassId: data?.currentClassId?.toString() ?? classId ?? "",
     status: (data?.status as any) ?? "active",
-    note: data?.stats?.note ?? "",
+    note: data?.notes ?? "",
   }), [data, classId]);
 
   const form = useZodForm(formSchema, {
@@ -108,7 +108,7 @@ export function StudentForm({ data }: Props) {
       secretNumber: values.secretNumber || null,
       currentClassId: values.currentClassId ? Number(values.currentClassId) : null,
       status: values.status,
-      stats: values.note ? { note: values.note } : null,
+      notes: values.note || null,
     });
   };
 

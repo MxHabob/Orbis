@@ -14,6 +14,7 @@ export const getAllStudentss = async () => {
             secretNumber: students.secretNumber,
             currentClassId: students.currentClassId,
             status: students.status,
+            notes: students.notes,
             stats: students.stats,
             name: users.name,
             image: users.image,
@@ -97,6 +98,7 @@ export const getStudentsByClassId = async (
             secretNumber: students.secretNumber,
             currentClassId: students.currentClassId,
             status: students.status,
+            notes: students.notes,
             stats: students.stats,
             name: users.name,
             image: users.image,
@@ -142,6 +144,7 @@ export const getStudentByUserId = async (userId: string) => {
             secretNumber: students.secretNumber,
             currentClassId: students.currentClassId,
             status: students.status,
+            notes: students.notes,
             stats: students.stats,
             name: users.name,
             email: users.email,
@@ -174,6 +177,7 @@ export const getStudentsByUserIds = async (userIds: string[]) => {
             secretNumber: students.secretNumber,
             currentClassId: students.currentClassId,
             status: students.status,
+            notes: students.notes,
             stats: students.stats,
             name: users.name,
             email: users.email,
@@ -203,6 +207,7 @@ export const getStudentById = async (id: string) => {
             secretNumber: students.secretNumber,
             currentClassId: students.currentClassId,
             status: students.status,
+            notes: students.notes,
             stats: students.stats,
             name: users.name,
             email: users.email,
@@ -232,6 +237,7 @@ export const getStudentByNumber = async (studentNumber: string) => {
             secretNumber: students.secretNumber,
             currentClassId: students.currentClassId,
             status: students.status,
+            notes: students.notes,
             stats: students.stats,
             name: users.name,
             email: users.email,
@@ -302,7 +308,7 @@ export const updateStudent = async (userId: string, data: Partial<CreateStudentP
 };
 
 export const upsertStudent = async (data: any) => {
-    const { userId, name, email, phone, sex, studentNumber, secretNumber, currentClassId, status, stats } = data;
+    const { userId, name, email, phone, sex, studentNumber, secretNumber, currentClassId, status, notes, stats } = data;
 
     let targetUserId = userId;
 
@@ -321,6 +327,7 @@ export const upsertStudent = async (data: any) => {
             secretNumber,
             currentClassId,
             status,
+            notes,
             stats,
         }).where(eq(students.userId, targetUserId));
     } else {
@@ -347,6 +354,7 @@ export const upsertStudent = async (data: any) => {
                 secretNumber: finalSecretNumber,
                 currentClassId,
                 status,
+                notes,
                 stats,
             });
 
@@ -404,7 +412,7 @@ export const bulkImportStudents = async (
     yearId = currentYear.id;
   }
 
-  const results = [];
+  const results: { studentNumber: string | undefined; status: string; error?: string }[] = [];
 
   // Use transaction for bulk import to ensure numbers are consistent if generated
   return db.transaction(async (tx) => {

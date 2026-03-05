@@ -23,6 +23,9 @@ export const studentSchema = z.object({
     description: "Status of the student",
     example: "active",
   }),
+  notes: z.string().nullable().optional().openapi({
+    description: "Additional notes about the student",
+  }),
   stats: z.record(z.string(), z.any()).nullable().openapi({
     description: "Additional statistics or metadata",
   }),
@@ -41,6 +44,7 @@ export const upsertStudentSchema = z.object({
   secretNumber: z.string().max(20).optional().nullable(),
   currentClassId: z.number().optional().nullable(),
   status: studentStatusEnum.default('active'),
+  notes: z.string().optional().nullable(),
   stats: z.record(z.string(), z.any()).optional().nullable(),
 });
 
