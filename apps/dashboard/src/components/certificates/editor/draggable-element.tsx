@@ -16,6 +16,8 @@ interface DraggableElementProps {
   onDelete: (id: string) => void;
   students: any;
   previewStudentId: string | null;
+  certificateType: string;
+  month: number;
 }
 
 export const DraggableElement = memo(({ 
@@ -27,6 +29,8 @@ export const DraggableElement = memo(({
   onDelete,
   students,
   previewStudentId,
+  certificateType,
+  month,
 }: DraggableElementProps) => {
   return (
     <div
@@ -83,6 +87,8 @@ export const DraggableElement = memo(({
         <GradesTable 
           studentId={previewStudentId || students?.[0]?.userId || ""} 
           isPreview={isPreview}
+          type={certificateType}
+          month={month}
         />
        ) : el.type === "image" ? (
         <img src={content} className="w-full h-auto shadow-sm" draggable={false} alt="asset" />

@@ -31,6 +31,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { cn } from "@midday/ui/cn";
+import { useI18n } from "@/locales/client";
 import { FONTS, VARIABLES, type EditorElement, type ElementType } from "./types";
 
 interface SidebarProps {
@@ -78,6 +79,7 @@ export const Sidebar = memo(({
   isSaving,
   mode,
 }: SidebarProps) => {
+  const t = useI18n();
   const selectedElement = elements.find(el => el.id === selectedElementId);
 
   return (
@@ -92,8 +94,7 @@ export const Sidebar = memo(({
               value={name} 
               onChange={(e) => setName(e.target.value)} 
               className="font-semibold text-sm border-0 shadow-none focus-visible:ring-0 px-0 bg-transparent"
-              placeholder="Template Name..."
-              dir="ltr"
+              placeholder={t("reports.editor.template_name")}
             />
           </div>
         </div>
@@ -101,15 +102,15 @@ export const Sidebar = memo(({
 
       <Tabs defaultValue="add" className="flex-1 flex flex-col overflow-hidden">
         <TabsList className="w-full rounded-none bg-transparent border-b px-6">
-          <TabsTrigger value="add" className="text-xs">Add</TabsTrigger>
-          <TabsTrigger value="layers" className="text-xs">Layers</TabsTrigger>
-          <TabsTrigger value="settings" className="text-xs">Settings</TabsTrigger>
+          <TabsTrigger value="add" className="text-xs">{t("reports.editor.add")}</TabsTrigger>
+          <TabsTrigger value="layers" className="text-xs">{t("reports.editor.layers")}</TabsTrigger>
+          <TabsTrigger value="settings" className="text-xs">{t("reports.editor.settings")}</TabsTrigger>
         </TabsList>
         
         <ScrollArea className="flex-1 p-6" hideScrollbar>
           <TabsContent value="add" className="space-y-6 mt-0">
             <div className="space-y-3">
-              <Label className="text-xs text-muted-foreground">Background & Logos</Label>
+              <Label className="text-xs text-muted-foreground">{t("reports.editor.background_logos")}</Label>
               <div className="grid grid-cols-2 gap-3">
                 <div className="relative group overflow-hidden rounded-lg border-2 border-dashed aspect-square hover:border-primary/50 transition-colors cursor-pointer bg-accent/50 flex items-center justify-center">
                   {backgroundImage ? (
@@ -131,7 +132,7 @@ export const Sidebar = memo(({
                   ) : (
                     <div className="flex flex-col items-center gap-2">
                       <ImageIcon className="w-5 h-5 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">Background</span>
+                      <span className="text-xs text-muted-foreground">{t("reports.editor.background")}</span>
                     </div>
                   )}
                   <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleFileUpload(e, "background")} />
@@ -142,18 +143,20 @@ export const Sidebar = memo(({
                   onClick={() => document.getElementById("add-logo-input")?.click()}
                 >
                   <Plus className="w-5 h-5 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Logo</span>
+                  <span className="text-xs text-muted-foreground">{t("reports.editor.logo")}</span>
                   <input id="add-logo-input" type="file" className="hidden" onChange={(e) => handleFileUpload(e, "image")} />
                 </Button>
               </div>
             </div>
 
             <div className="space-y-3">
-              <Label className="text-xs text-muted-foreground">Dynamic Variables</Label>
+              <Label className="text-xs text-muted-foreground">{t("reports.editor.dynamic_variables")}</Label>
               <div className="space-y-4">
                 {VARIABLES.map((group) => (
                   <div key={group.group} className="space-y-2">
-                    <span className="text-xs font-medium text-muted-foreground/60">{group.group}</span>
+                    <span className="text-xs font-medium text-muted-foreground/60">
+                      {t(`reports.editor.groups.${group.group.toLowerCase().replace(/\s+/g, '_')}` as any)}
+                    </span>
                     <div className="space-y-1">
                       {group.items.map((v) => (
                         <Button 
@@ -169,7 +172,7 @@ export const Sidebar = memo(({
                           }}
                         >
                           <Plus className="w-3 h-3 mr-2" />
-                          {v.label}
+                          {t(`reports.editor.variables.${v.value.replace(/[{}]/g, "")}` as any)}
                         </Button>
                       ))}
                     </div>
@@ -179,15 +182,15 @@ export const Sidebar = memo(({
             </div>
 
             <div className="space-y-3">
-              <Label className="text-xs text-muted-foreground">Texts & Tables</Label>
+              <Label className="text-xs text-muted-foreground">{t("reports.editor.fixed_text")} & {t("reports.editor.table")}</Label>
               <div className="grid grid-cols-2 gap-2">
                 <Button onClick={() => addElement("text", "New Text")} variant="outline" className="text-xs h-9">
                   <Type className="w-3 h-3 mr-2" /> 
-                  Fixed Text
+                  {t("reports.editor.fixed_text")}
                 </Button>
                 <Button onClick={() => addElement("table", "table")} variant="outline" className="text-xs h-9">
                   <TableIcon className="w-3 h-3 mr-2" /> 
-                  Table
+                  {t("reports.editor.table")}
                 </Button>
               </div>
             </div>
@@ -197,11 +200,11 @@ export const Sidebar = memo(({
               <div className="grid grid-cols-2 gap-2">
                 <Button onClick={() => addElement("shape", "line")} variant="outline" className="text-xs h-9">
                   <Minus className="w-3 h-3 mr-2" /> 
-                  Divider Line
+                  {t("reports.editor.divider_line")}
                 </Button>
                 <Button onClick={() => addElement("shape", "box")} variant="outline" className="text-xs h-9">
                   <Square className="w-3 h-3 mr-2" /> 
-                  Square
+                  {t("reports.editor.square")}
                 </Button>
               </div>
             </div>
@@ -211,7 +214,7 @@ export const Sidebar = memo(({
             {elements.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground text-sm">
                 <Layers className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                <p className="text-xs">No layers</p>
+                <p className="text-xs">{t("reports.editor.no_layers")}</p>
               </div>
             ) : (
               <div className="space-y-1">
@@ -247,7 +250,7 @@ export const Sidebar = memo(({
 
           <TabsContent value="settings" className="space-y-6 mt-0">
             <div className="space-y-3">
-              <Label className="text-xs text-muted-foreground">Paper Size</Label>
+              <Label className="text-xs text-muted-foreground">{t("reports.editor.paper_size")}</Label>
               <Select value={paperSize} onValueChange={setPaperSize}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -258,24 +261,24 @@ export const Sidebar = memo(({
             </div>
 
             <div className="space-y-3">
-              <Label className="text-xs text-muted-foreground">Orientation</Label>
+              <Label className="text-xs text-muted-foreground">{t("reports.editor.orientation")}</Label>
               <Select value={orientation} onValueChange={setOrientation}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="portrait">Portrait</SelectItem>
-                  <SelectItem value="landscape">Landscape</SelectItem>
+                  <SelectItem value="portrait">{t("reports.editor.portrait")}</SelectItem>
+                  <SelectItem value="landscape">{t("reports.editor.landscape")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {selectedElement && (
               <div className="space-y-4 pt-4 border-t">
-                <Label className="text-xs text-muted-foreground">Selected Element Properties</Label>
+                <Label className="text-xs text-muted-foreground">{t("reports.editor.selected_element")}</Label>
                 
                 {(selectedElement.type === "text" || selectedElement.type === "variable") && (
                   <>
                     <div className="space-y-2">
-                      <Label className="text-xs">Font Size: {selectedElement.fontSize}px</Label>
+                      <Label className="text-xs">{t("reports.editor.font_size")}: {selectedElement.fontSize}px</Label>
                       <Slider 
                         value={[selectedElement.fontSize || 18]} 
                         onValueChange={([v]) => updateElement(selectedElement.id, { fontSize: v })}
@@ -284,7 +287,7 @@ export const Sidebar = memo(({
                     </div>
 
                     <div className="space-y-2">
-                    <Label className="text-xs">Font Family</Label>
+                    <Label className="text-xs">{t("reports.editor.font_family")}</Label>
                     <Select value={selectedElement.fontFamily || "inherit"} onValueChange={(v) => updateElement(selectedElement.id, { fontFamily: v })}>
                       <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -296,7 +299,7 @@ export const Sidebar = memo(({
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-xs">Alignment</Label>
+                    <Label className="text-xs">{t("reports.editor.alignment")}</Label>
                     <div className="flex items-center gap-1 bg-accent p-1 rounded-md">
                       <Button variant="ghost" size="icon" className={cn("h-7 flex-1", selectedElement.align === "right" && "bg-background")} onClick={() => updateElement(selectedElement.id, { align: "right" })}><AlignRight className="w-3 h-3" /></Button>
                       <Button variant="ghost" size="icon" className={cn("h-7 flex-1", selectedElement.align === "center" && "bg-background")} onClick={() => updateElement(selectedElement.id, { align: "center" })}><AlignCenter className="w-3 h-3" /></Button>
@@ -308,7 +311,7 @@ export const Sidebar = memo(({
 
                 {(selectedElement.type === "image" || selectedElement.type === "shape" || selectedElement.type === "table" || selectedElement.type === "text" || selectedElement.type === "variable") && (
                   <div className="space-y-2">
-                    <Label className="text-xs">Element Size: {selectedElement.width}%</Label>
+                    <Label className="text-xs">{t("reports.editor.element_size")}: {selectedElement.width}%</Label>
                     <Slider 
                       value={[selectedElement.width || 20]} 
                       onValueChange={([v]) => updateElement(selectedElement.id, { width: v })}
@@ -318,7 +321,7 @@ export const Sidebar = memo(({
                 )}
 
                 <div className="space-y-2">
-                  <Label className="text-xs">Color</Label>
+                  <Label className="text-xs">{t("reports.editor.color")}</Label>
                   <div className="flex items-center gap-2">
                     <input 
                       type="color" 
@@ -337,7 +340,7 @@ export const Sidebar = memo(({
         <div className="p-6 border-t bg-background">
           <Button onClick={handleSave} disabled={isSaving} className="w-full">
             {isSaving && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
-            {mode === "create" ? "Create Template" : "Save Changes"}
+            {mode === "create" ? t("reports.editor.create_template") : t("reports.editor.save_changes")}
           </Button>
         </div>
       </Tabs>

@@ -2,7 +2,7 @@
 
 import { useStudentParams } from "@/hooks/use-student-params";
 import { Sheet, SheetContent } from "@midday/ui/sheet";
-import { useI18n } from "@/locales/client";
+import { useI18n, useCurrentLocale } from "@/locales/client";
 import React, { useState } from "react";
 import { useTRPC } from "@/trpc/client";
 import { HIJRI_MONTHS } from "@/utils/academic-calendar";
@@ -49,6 +49,10 @@ export function StudentCertificateSheet() {
     setParams 
   } = useStudentParams();
   const t = useI18n();
+  const locale = useCurrentLocale();
+
+  const selectedMonth = month || 1;
+  const selectedType = certificateType || "monthly";
 
   const [isExporting, setIsExporting] = useState(false);
 
@@ -122,12 +126,15 @@ export function StudentCertificateSheet() {
       grade_label: stats.grade_label || "",
       final_result: stats.final_result || "",
       rank: stats.rank || "1",
-      org_name: "Sanaa Model School",
-      admin_name: "School Principal",
-      vp_name: "Registrar",
-      issue_date: new Date().toLocaleDateString('en-US'),
+      org_name: "مدرسة صنعاء النموذجية",
+      admin_name: t("reports.preview.admin_name"),
+      vp_name: t("reports.preview.vp_name"),
+      issue_date: new Date().toLocaleDateString(locale === 'ar' ? 'ar-YE' : 'en-US'),
+      report_type: selectedType === "half-yearly" ? "نصفي" : (selectedType === "final" ? "نهائي" : "شهري"),
+      month_name: selectedMonth ? (HIJRI_MONTHS.find(m => m.id === selectedMonth)?.name || t("reports.month_label", { month: selectedMonth })) : "",
+      academic_year: studentData.currentClass?.yearName || "2024/2025",
     } as Record<string, string | number>;
-  }, [studentData]);
+  }, [studentData, selectedType, selectedMonth, t, locale]);
 
   const certificateTypes = [
     { value: "monthly", label: t("reports.monthly_full"), description: t("reports.one_month") },
@@ -137,9 +144,6 @@ export function StudentCertificateSheet() {
 
   // For monthly type: show only months that accept grade entry (not exam months)
   const availableMonths = MONTHLY_MONTHS.map((m) => ({ value: m.id, label: m.label, term: m.term }));
-
-  const selectedMonth = month || 1;
-  const selectedType = certificateType || "monthly";
 
   // Determine if month selector should be visible
   const showMonthSelector = selectedType === "monthly";

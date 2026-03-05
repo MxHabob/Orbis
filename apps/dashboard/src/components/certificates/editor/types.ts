@@ -55,6 +55,9 @@ export const VARIABLES = [
     { label: "School Administration", value: "{{admin_name}}" },
     { label: "Vice Principal", value: "{{vp_name}}" },
     { label: "Report Date", value: "{{issue_date}}" },
+    { label: "Report Type", value: "{{report_type}}" },
+    { label: "Month Name", value: "{{month_name}}" },
+    { label: "Academic Year", value: "{{academic_year}}" },
   ]}
 ];
 

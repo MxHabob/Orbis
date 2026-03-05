@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useCallback, useRef, useMemo } from "react";
+import { HIJRI_MONTHS } from "@/utils/academic-calendar";
 import { useRouter } from "next/navigation";
 import { useTRPC } from "@/trpc/client";
 import { SheetContent } from "@midday/ui/sheet";
 import { useCertificateParams } from "@/hooks/use-certificate-params";
 import { useToast } from "@midday/ui/use-toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useI18n, useCurrentLocale } from "@/locales/client";
 
 import { Sidebar } from "./editor/sidebar";
 import { Toolbar } from "./editor/toolbar";
@@ -22,6 +24,8 @@ export function CertificateEditor({
   mode?: "create" | "edit";
   isSheet?: boolean;
 }) {
+  const t = useI18n();
+  const locale = useCurrentLocale();
   const { setParams } = useCertificateParams();
   const router = useRouter();
   const trpc = useTRPC();
@@ -38,6 +42,9 @@ export function CertificateEditor({
   const [elements, setElements] = useState<EditorElement[]>(initialData?.content?.elements || []);
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   const [isPreview, setIsPreview] = useState(false);
+  const [selectedType, setSelectedType] = useState<"monthly" | "half-yearly" | "final">("monthly");
+  const [selectedMonth, setSelectedMonth] = useState<number>(1);
+  const [selectedYear, setSelectedYear] = useState<string>("2023/2024");
   const [previewStudentId, setPreviewStudentId] = useState<string | null>(null);
   
   const { data: students } = useQuery(trpc.students.getAll.queryOptions());
@@ -47,30 +54,42 @@ export function CertificateEditor({
     [students, previewStudentId]
   );
 
-  const getPreviewData = useCallback((student: any) => {
+  const getPreviewData = useCallback((student: any, type: string, month: number, year: string) => {
     if (!student) return {};
     const stats = (student.stats as any) || {};
+
+    const typeLabel = type === "half-yearly" ? t("reports.preview.type_half_yearly") : 
+                     type === "final" ? t("reports.preview.type_final") : t("reports.preview.type_monthly");
+    
+    const monthName = month ? (HIJRI_MONTHS.find(m => m.id === month)?.name || t("reports.month_label", { month })) : "";
+
     return {
-      student_name: student.name || "Student Name",
-      name: student.name || "Student Name",
+      student_name: student.name || t("reports.preview.student_name"),
+      name: student.name || t("reports.preview.student_name"),
       academic_number: student.studentNumber || "20240001",
       national_id: student.secretNumber || "123456789",
-      department: stats.department || "Scientific",
-      section: stats.section || "A",
-      class_name: student.currentClass?.name || "First Grade",
+      department: stats.department || t("reports.preview.department"),
+      section: stats.section || t("reports.preview.section"),
+      class_name: student.currentClass?.name || t("reports.preview.class_name"),
       total_grade: stats.total_grade || "0",
       total_grade_text: stats.total_grade_text || "",
       grade_label: stats.grade_label || "",
       final_result: stats.final_result || "",
       rank: stats.rank || "1",
-      org_name: "Al-Nasr Model School",
-      admin_name: "School Principal",
-      vp_name: "Registrar",
-      issue_date: "2023/2024",
+      org_name: t("reports.preview.org_name"),
+      admin_name: t("reports.preview.admin_name"),
+      vp_name: t("reports.preview.vp_name"),
+      issue_date: new Date().toLocaleDateString(locale === 'ar' ? 'ar-YE' : 'en-US'),
+      report_type: typeLabel,
+      month_name: monthName,
+      academic_year: year,
     };
-  }, []);
+  }, [t, locale]);
 
-  const previewData = useMemo(() => getPreviewData(selectedPreviewStudent), [selectedPreviewStudent, getPreviewData]);
+  const previewData = useMemo(() => 
+    getPreviewData(selectedPreviewStudent, selectedType, selectedMonth, selectedYear), 
+    [selectedPreviewStudent, selectedType, selectedMonth, selectedYear, getPreviewData]
+  );
 
   const upsertTemplate = useMutation(
     trpc.certificateTemplates.upsert.mutationOptions({
@@ -250,25 +269,33 @@ export function CertificateEditor({
           previewStudentId={previewStudentId}
           setPreviewStudentId={setPreviewStudentId}
           students={students}
+          selectedType={selectedType}
+          setSelectedType={setSelectedType}
+          selectedMonth={selectedMonth}
+          setSelectedMonth={setSelectedMonth}
+          selectedYear={selectedYear}
+          setSelectedYear={setSelectedYear}
         />
 
-        <Canvas 
-          canvasRef={canvasRef}
-          orientation={orientation}
-          paperSize={paperSize}
-          canvasWidth={canvasWidth}
-          canvasHeight={canvasHeight}
-          isPreview={isPreview}
-          backgroundImage={backgroundImage}
-          elements={elements}
-          selectedElementId={selectedElementId}
-          setSelectedElementId={setSelectedElementId}
-          previewData={previewData}
-          students={students}
-          previewStudentId={previewStudentId}
-          updateElement={updateElement}
-          onDelete={deleteElement}
-        />
+          <Canvas 
+            canvasRef={canvasRef}
+            orientation={orientation}
+            paperSize={paperSize}
+            canvasWidth={canvasWidth}
+            canvasHeight={canvasHeight}
+            isPreview={isPreview}
+            backgroundImage={backgroundImage}
+            elements={elements}
+            selectedElementId={selectedElementId}
+            setSelectedElementId={setSelectedElementId}
+            previewData={previewData}
+            students={students}
+            previewStudentId={previewStudentId}
+            updateElement={updateElement}
+            onDelete={deleteElement}
+            certificateType={selectedType}
+            month={selectedMonth}
+          />
       </div>
     </div>
   );

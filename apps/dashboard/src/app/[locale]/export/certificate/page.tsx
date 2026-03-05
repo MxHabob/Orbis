@@ -12,14 +12,20 @@ import { useEffect, useState } from "react";
  * Used by the background worker to render high-quality certificates.
  */
 
-const mapStudentToVariables = (student: any) => {
+const HIJRI_MONTHS_NAMES: Record<number, string> = {
+  1: "محرم", 2: "صفر", 3: "ربيع أول", 4: "ربيع ثاني",
+  5: "جمادى أول", 6: "جمادى ثاني", 7: "رجب", 8: "شعبان",
+  9: "رمضان", 10: "شوال", 11: "ذو القعدة", 12: "ذو الحجة",
+};
+
+const mapStudentToVariables = (student: any, type?: string, month?: number) => {
   if (!student) return {};
   
   const stats = (student.stats as any) || {};
+  const currentYear = student.currentClass?.yearName || "2024-2025";
+
   return {
-    // Spread raw student data so any direct key also works
     ...student,
-    // Keys matching the certificate template editor variables
     student_name: student.name || "",
     name: student.name || "",
     academic_number: student.studentNumber || "",
@@ -31,16 +37,18 @@ const mapStudentToVariables = (student: any) => {
     total_grade_text: stats.total_grade_text || "",
     grade_label: stats.grade_label || "",
     final_result: stats.final_result || "",
-    rank: stats.rank || "",
-    org_name: stats.org_name || "",
+    rank: stats.rank || "1",
+    org_name: "مدرسة صنعاء النموذجية",
     admin_name: stats.admin_name || "",
     vp_name: stats.vp_name || "",
-    issue_date: "",
-    // Keep camelCase aliases for backwards compatibility
-    studentName: student.name || "",
-    className: student.currentClass?.name || "",
-    academicYear: "",
-    // Include IDs for grades table lookup
+    issue_date: new Date().toLocaleDateString('ar-YE', { year: 'numeric', month: 'long', day: 'numeric' }),
+    report_type: type === "half-yearly" ? "نصفي" : (type === "final" ? "نهائي" : "شهري"),
+    reportType: type === "half-yearly" ? "نصفي" : (type === "final" ? "نهائي" : "شهري"),
+    month_name: month ? (HIJRI_MONTHS_NAMES[month] || `شهر ${month}`) : "",
+    academic_year: currentYear,
+    academicYear: currentYear,
+    year_name: currentYear,
+    yearName: currentYear,
     studentId: student.userId,
     userId: student.userId,
     id: student.userId,
@@ -91,7 +99,7 @@ export default function ExportCertificatePage() {
     );
   }
 
-  const studentVariables = mapStudentToVariables(student as any);
+  const studentVariables = mapStudentToVariables(student as any, type, month);
 
   return (
     <div className="inline-block bg-white p-0 m-0">

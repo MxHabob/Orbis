@@ -23,11 +23,19 @@ export const getAllStudentss = async () => {
             currentClass: {
                 id: classes.id,
                 name: classes.name,
+                yearName: academicYears.yearName,
             },
         })
         .from(students)
         .innerJoin(users, eq(students.userId, users.id))
         .leftJoin(classes, eq(students.currentClassId, classes.id))
+        .leftJoin(academicYears, eq(
+            db.select({ id: academicYears.id })
+              .from(academicYears)
+              .where(eq(academicYears.isCurrent, true))
+              .limit(1),
+            academicYears.id
+        )) // Fallback to current year if enrollment missing or complex
         .orderBy(asc(users.name))
         .limit(10);
 };
@@ -107,6 +115,7 @@ export const getStudentsByClassId = async (
             currentClass: {
                 id: classes.id,
                 name: classes.name,
+                yearName: academicYears.yearName,
             },
             enrollmentDate: enrollments.enrolledAt,
         })
@@ -114,6 +123,7 @@ export const getStudentsByClassId = async (
         .innerJoin(students, eq(enrollments.studentId, students.userId))
         .innerJoin(users, eq(students.userId, users.id))
         .leftJoin(classes, eq(students.currentClassId, classes.id))
+        .leftJoin(academicYears, eq(enrollments.academicYearId, academicYears.id))
         .where(
             and(
                 targetClassIds.length === 1
@@ -154,12 +164,17 @@ export const getStudentByUserId = async (userId: string) => {
             currentClass: {
                 id: classes.id,
                 name: classes.name,
+                yearName: academicYears.yearName,
             },
         })
         .from(students)
         .innerJoin(users, eq(students.userId, users.id))
         .leftJoin(classes, eq(students.currentClassId, classes.id))
-        .where(eq(students.userId, userId));
+        .leftJoin(enrollments, and(eq(enrollments.studentId, students.userId), eq(enrollments.classId, students.currentClassId)))
+        .leftJoin(academicYears, eq(enrollments.academicYearId, academicYears.id))
+        .where(eq(students.userId, userId))
+        .orderBy(desc(academicYears.yearName))
+        .limit(1);
     
     if (student) {
         await studentCache.set(cacheKey, student);
@@ -187,11 +202,14 @@ export const getStudentsByUserIds = async (userIds: string[]) => {
             currentClass: {
                 id: classes.id,
                 name: classes.name,
+                yearName: academicYears.yearName,
             },
         })
         .from(students)
         .innerJoin(users, eq(students.userId, users.id))
         .leftJoin(classes, eq(students.currentClassId, classes.id))
+        .leftJoin(enrollments, and(eq(enrollments.studentId, students.userId), eq(enrollments.classId, students.currentClassId)))
+        .leftJoin(academicYears, eq(enrollments.academicYearId, academicYears.id))
         .where(inArray(students.userId, userIds));
 };
 
@@ -214,10 +232,20 @@ export const getStudentById = async (id: string) => {
             phone: users.phone,
             sex: users.sex,
             image: users.image,
+            currentClass: {
+                id: classes.id,
+                name: classes.name,
+                yearName: academicYears.yearName,
+            },
         })
         .from(students)
         .innerJoin(users, eq(students.userId, users.id))
-        .where(eq(students.userId, id));
+        .leftJoin(classes, eq(students.currentClassId, classes.id))
+        .leftJoin(enrollments, and(eq(enrollments.studentId, students.userId), eq(enrollments.classId, students.currentClassId)))
+        .leftJoin(academicYears, eq(enrollments.academicYearId, academicYears.id))
+        .where(eq(students.userId, id))
+        .orderBy(desc(academicYears.yearName))
+        .limit(1);
     
     if (student) {
         await studentCache.set(cacheKey, student);
@@ -244,10 +272,20 @@ export const getStudentByNumber = async (studentNumber: string) => {
             phone: users.phone,
             sex: users.sex,
             image: users.image,
+            currentClass: {
+                id: classes.id,
+                name: classes.name,
+                yearName: academicYears.yearName,
+            },
         })
         .from(students)
         .innerJoin(users, eq(students.userId, users.id))
-        .where(eq(students.studentNumber, studentNumber));
+        .leftJoin(classes, eq(students.currentClassId, classes.id))
+        .leftJoin(enrollments, and(eq(enrollments.studentId, students.userId), eq(enrollments.classId, students.currentClassId)))
+        .leftJoin(academicYears, eq(enrollments.academicYearId, academicYears.id))
+        .where(eq(students.studentNumber, studentNumber))
+        .orderBy(desc(academicYears.yearName))
+        .limit(1);
     
     if (student) {
         await studentCache.set(cacheKey, student);

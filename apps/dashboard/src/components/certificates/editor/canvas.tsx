@@ -26,6 +26,8 @@ interface CanvasProps {
   previewStudentId: string | null;
   updateElement: (id: string, updates: Partial<EditorElement>) => void;
   onDelete: (id: string) => void;
+  certificateType: string;
+  month: number;
 }
 
 export const Canvas = memo(({
@@ -44,6 +46,8 @@ export const Canvas = memo(({
   previewStudentId,
   updateElement,
   onDelete,
+  certificateType,
+  month,
 }: CanvasProps) => {
   const [scale, setScale] = useState(1);
   const moveableRef = useRef<Moveable>(null);
@@ -246,6 +250,8 @@ export const Canvas = memo(({
                             onDelete={onDelete}
                             students={students}
                             previewStudentId={previewStudentId}
+                            certificateType={certificateType}
+                            month={month}
                           />
                         ))}
                   </div>
