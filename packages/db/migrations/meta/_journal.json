@@ -5,50 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1770730853570,
-      "tag": "0000_nebulous_rumiko_fujikawa",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1770734177458,
-      "tag": "0001_add-parent-students",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1770750896000,
-      "tag": "0002_last_anthem",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1770750954542,
-      "tag": "0003_keen_miss_america",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1770930550542,
-      "tag": "0004_wooden_adam_warlock",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1772272869950,
-      "tag": "0005_melodic_chimera",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1772659530511,
-      "tag": "0006_demonic_ogun",
+      "when": 1772721978712,
+      "tag": "0000_pink_millenium_guard",
       "breakpoints": true
     }
   ]
