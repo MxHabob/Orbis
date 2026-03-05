@@ -133,6 +133,7 @@ export function CertificateEditor({
          type === "table" ? { 
             width: 80, 
             height: 20, 
+            fontSize: 10,
             columns: [
               { id: "1", header: "Subject", width: 40 },
               { id: "2", header: "Assessment", width: 30 },

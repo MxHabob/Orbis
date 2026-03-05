@@ -155,6 +155,7 @@ export function CertificateViewer({
                  month={month}
                  isPreview={preview}
                  onLoad={onLoad}
+                 fontSize={el.fontSize}
               />
            ) : (
              <div 

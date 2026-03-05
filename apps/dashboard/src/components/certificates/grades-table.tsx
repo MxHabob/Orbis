@@ -13,6 +13,7 @@ interface GradesTableProps {
   className?: string;
   isPreview?: boolean;
   onLoad?: () => void;
+  fontSize?: number;
 }
 
 // Grade label colors for visual distinction
@@ -24,7 +25,15 @@ const GRADE_COLORS: Record<string, string> = {
   "راسب": "text-red-700 bg-red-50",
 };
 
-export function GradesTable({ studentId, type, month, className, isPreview, onLoad }: GradesTableProps) {
+export function GradesTable({ 
+  studentId, 
+  type, 
+  month, 
+  className, 
+  isPreview, 
+  onLoad,
+  fontSize = 10
+}: GradesTableProps) {
   const trpc = useTRPC();
 
   const { data, isLoading } = useQuery(
@@ -38,18 +47,10 @@ export function GradesTable({ studentId, type, month, className, isPreview, onLo
   );
 
   useEffect(() => {
-    if (isLoading) {
-      console.log(`[GradesTable] Loading grades for student: ${studentId}`);
-    }
-    if (!isLoading && data) {
-      console.log(`[GradesTable] Successfully loaded grades for student: ${studentId}`);
+    if (!isLoading) {
       onLoad?.();
     }
-    if (!isLoading && !data) {
-      console.log(`[GradesTable] No data returned for student: ${studentId}`);
-      onLoad?.();
-    }
-  }, [isLoading, data, onLoad, studentId]);
+  }, [isLoading, data, onLoad]);
 
   if (isLoading) {
     return (
@@ -74,39 +75,38 @@ export function GradesTable({ studentId, type, month, className, isPreview, onLo
 
   // Columns: assessmentItems (or aggregated columns) + المجموع + التقدير
   const hasGradeLabel = rows.some((row: any) => row.gradeLabel);
-  const totalColumns = columns.length + (hasGradeLabel ? 2 : 1); // +1 for المجموع, +1 for التقدير
+  const totalColumns = columns.length + (hasGradeLabel ? 2 : 1); 
   const gridTemplateColumns = `minmax(100px, 2fr) repeat(${columns.length}, 1fr) minmax(50px, 1fr)${hasGradeLabel ? ' minmax(60px, 1fr)' : ''}`;
   
   const totalFinalScore = rows.reduce((acc: number, curr: any) => acc + (curr.total || 0), 0);
   const totalMaxScore = rows.reduce((acc: number, curr: any) => acc + (curr.maxTotal || 0), 0);
 
-  // Certificate type title
-  const typeTitle = certificateType === "monthly" 
-    ? "الشهادة الشهرية" 
-    : certificateType === "half-yearly" 
-      ? "شهادة نصف العام" 
-      : "شهادة نهاية العام";
+  // Dynamic font sizes based on the base fontSize prop
+  const headerSize = `${Math.max(6, fontSize - 1)}px`;
+  const bodySize = `${fontSize}px`;
+  const badgeSize = `${Math.max(6, fontSize - 2)}px`;
+  const footerLabelSize = `${fontSize}px`;
+  const footerValueSize = `${Math.max(10, fontSize + 2)}px`;
 
   return (
     <div className={cn("w-full text-zinc-900 flex flex-col gap-2", className)} dir="rtl">
-      {/* Modern Table Container */}
       <div className="w-full bg-white rounded-lg border border-zinc-200 shadow-sm overflow-hidden">
         {/* Header Row  */}
         <div 
-          className="grid border-b-2 border-zinc-300 font-bold text-[9px] uppercase tracking-wider text-center bg-zinc-100"
-          style={{ gridTemplateColumns }}
+          className="grid border-b-2 border-zinc-300 font-bold uppercase tracking-wider text-center bg-zinc-100"
+          style={{ gridTemplateColumns, fontSize: headerSize }}
         >
-          <div className="py-2.5 px-3 text-right text-zinc-600 font-bold border-l border-zinc-200">المادة</div>
+          <div className="py-2 px-3 text-right text-zinc-600 font-bold border-l border-zinc-200">المادة</div>
           {columns.map((col: string) => (
-            <div key={col} className="py-2.5 px-1 flex items-center justify-center border-l border-zinc-200 text-zinc-600 font-semibold">
+            <div key={col} className="py-2 px-1 flex items-center justify-center border-l border-zinc-200 text-zinc-600 font-semibold">
               {col}
             </div>
           ))}
-          <div className="py-2.5 px-1 flex items-center justify-center font-bold text-zinc-900 bg-zinc-200/60 border-l border-zinc-200">
+          <div className="py-2 px-1 flex items-center justify-center font-bold text-zinc-900 bg-zinc-200/60 border-l border-zinc-200">
             المجموع
           </div>
           {hasGradeLabel && (
-            <div className="py-2.5 px-1 flex items-center justify-center font-bold text-zinc-900 bg-zinc-200/60">
+            <div className="py-2 px-1 flex items-center justify-center font-bold text-zinc-900 bg-zinc-200/60">
               التقدير
             </div>
           )}
@@ -117,17 +117,15 @@ export function GradesTable({ studentId, type, month, className, isPreview, onLo
           {rows.map((row: any, i: number) => (
             <div 
               key={i} 
-              className="grid text-center text-[10px] items-center hover:bg-zinc-50/50 transition-colors group"
-              style={{ gridTemplateColumns }}
+              className="grid text-center items-center hover:bg-zinc-50/50 transition-colors group"
+              style={{ gridTemplateColumns, fontSize: bodySize }}
             >
-              {/* Subject Name */}
-              <div className="py-2 px-3 text-right font-bold text-zinc-800 border-l border-zinc-100">
+              <div className="py-1.5 px-3 text-right font-bold text-zinc-800 border-l border-zinc-100">
                 {row.subject}
               </div>
               
-              {/* Grade Values (assessmentItems or aggregated columns) */}
               {columns.map((col: string) => (
-                <div key={col} className="py-2 px-1 flex items-center justify-center border-l border-zinc-100 text-zinc-600">
+                <div key={col} className="py-1.5 px-1 flex items-center justify-center border-l border-zinc-100 text-zinc-600">
                   {row.grades[col] != null ? (
                     <span className="font-medium">{row.grades[col]}</span>
                   ) : (
@@ -136,19 +134,17 @@ export function GradesTable({ studentId, type, month, className, isPreview, onLo
                 </div>
               ))}
               
-              {/* Total */}
-              <div className="py-2 px-1 flex items-center justify-center font-bold text-zinc-900 bg-zinc-50/50 group-hover:bg-zinc-100/50 transition-colors border-l border-zinc-100">
+              <div className="py-1.5 px-1 flex items-center justify-center font-bold text-zinc-900 bg-zinc-50/50 group-hover:bg-zinc-100/50 transition-colors border-l border-zinc-100">
                 {row.total || 0}
               </div>
               
-              {/* Grade Label (التقدير) */}
               {hasGradeLabel && (
-                <div className="py-2 px-1 flex items-center justify-center">
+                <div className="py-1.5 px-1 flex items-center justify-center">
                   {row.gradeLabel ? (
                     <span className={cn(
-                      "px-1.5 py-0.5 rounded text-[8px] font-bold whitespace-nowrap",
+                      "px-1.5 py-0.5 rounded font-bold whitespace-nowrap",
                       GRADE_COLORS[row.gradeLabel] || "text-zinc-600 bg-zinc-100"
-                    )}>
+                    )} style={{ fontSize: badgeSize }}>
                       {row.gradeLabel}
                     </span>
                   ) : (
@@ -162,17 +158,20 @@ export function GradesTable({ studentId, type, month, className, isPreview, onLo
 
         {/* Grand Total Footer */}
         <div 
-          className="grid border-t-2 border-zinc-800 font-bold text-[10px] items-center bg-zinc-800 text-white"
+          className="grid border-t-2 border-zinc-800 font-bold items-center bg-zinc-800 text-white"
           style={{ gridTemplateColumns }}
         >
-          <div className="py-2.5 px-3 text-right font-bold">المجموع الكلي</div>
+          <div className="py-2 px-3 text-right font-bold" style={{ fontSize: footerLabelSize }}>المجموع الكلي</div>
           <div 
-            className="py-2.5 px-3 text-center text-sm tracking-tight font-bold"
-            style={{ gridColumn: `span ${totalColumns - 1}` }}
+            className="py-1.5 px-3 text-center tracking-tight font-bold"
+            style={{ 
+              gridColumn: `span ${totalColumns - 1}`,
+              fontSize: footerValueSize
+            }}
           >
             {totalFinalScore}
             {totalMaxScore > 0 && (
-              <span className="text-zinc-400 text-[9px] mr-1">/ {totalMaxScore}</span>
+              <span className="text-zinc-400 mr-1" style={{ fontSize: headerSize }}>/ {totalMaxScore}</span>
             )}
           </div>
         </div>

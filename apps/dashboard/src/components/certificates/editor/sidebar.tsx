@@ -303,7 +303,7 @@ export const Sidebar = memo(({
               <div className="space-y-4 pt-4 border-t">
                 <Label className="text-xs text-muted-foreground">{t("reports.editor.selected_element")}</Label>
                 
-                {(selectedElement.type === "text" || selectedElement.type === "variable") && (
+                {(selectedElement.type === "text" || selectedElement.type === "variable" || selectedElement.type === "table") && (
                   <>
                     <div className="space-y-2">
                       <Label className="text-xs">{t("reports.editor.font_size")}: {selectedElement.fontSize}px</Label>

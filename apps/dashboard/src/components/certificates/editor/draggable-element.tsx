@@ -89,6 +89,7 @@ export const DraggableElement = memo(({
           isPreview={isPreview}
           type={certificateType}
           month={month}
+          fontSize={el.fontSize}
         />
        ) : el.type === "image" ? (
         <img src={content} className="w-full h-auto shadow-sm" draggable={false} alt="asset" />
