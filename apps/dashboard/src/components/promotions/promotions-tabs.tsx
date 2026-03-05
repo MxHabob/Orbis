@@ -10,7 +10,7 @@ import { PromotionsStatistics } from "./promotions-statistics";
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const TAB_TRIGGER_CLASS =
-  "rounded-none h-full px-6 text-[10px] font-bold uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:border-x data-[state=active]:border-t data-[state=active]:border-b-0 data-[state=active]:-mb-[1px] border-transparent";
+  "rounded-none h-full px-6 text-[10px] font-bold tracking-tight data-[state=active]:bg-background data-[state=active]:border-x data-[state=active]:border-t data-[state=active]:border-b-0 data-[state=active]:-mb-[1px] border-transparent";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
