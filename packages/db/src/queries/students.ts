@@ -250,6 +250,45 @@ export const getStudentByNumber = async (studentNumber: string) => {
 };
 
 export type CreateStudentParams = typeof students.$inferInsert;
+
+export const generateSecretNumber = () => {
+    // Generate 6 characters alphanumeric (e.g., 24A7F9)
+    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let result = '';
+    for (let i = 0; i < 6; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+}
+
+export const generateNextStudentNumber = async (transaction?: any) => {
+    const currentYear = new Date().getFullYear();
+    const prefix = `STU-${currentYear}-`;
+    
+    const client = transaction || db;
+
+    const [lastStudent] = await client
+        .select({ studentNumber: students.studentNumber })
+        .from(students)
+        .where(ilike(students.studentNumber, `${prefix}%`))
+        .orderBy(desc(students.studentNumber))
+        .limit(1);
+    
+    let nextSeq = 1;
+    if (lastStudent) {
+        // Expected format: STU-2025-001
+        const parts = lastStudent.studentNumber.split('-');
+        if (parts.length >= 3) {
+            const lastSeq = parseInt(parts[2]);
+            if (!isNaN(lastSeq)) {
+                nextSeq = lastSeq + 1;
+            }
+        }
+    }
+    
+    return `${prefix}${nextSeq.toString().padStart(3, '0')}`;
+}
+
 export const createStudent = async (data: CreateStudentParams) => {
     const [result] = await db.insert(students).values(data).returning();
     return result;
@@ -286,37 +325,46 @@ export const upsertStudent = async (data: any) => {
         }).where(eq(students.userId, targetUserId));
     } else {
         // Create
-        const [newUser] = await db.insert(users).values({
-            name,
-            email,
-            phone,
-            sex,
-            role: 'student',
-        }).returning();
+        return db.transaction(async (tx) => {
+            const [newUser] = await tx.insert(users).values({
+                name,
+                email,
+                phone,
+                sex,
+                role: 'student',
+            }).returning();
 
-        if (!newUser) throw new Error("Failed to create user");
-        targetUserId = newUser.id;
+            if (!newUser) throw new Error("Failed to create user");
+            targetUserId = newUser.id;
 
-        await db.insert(students).values({
-            userId: targetUserId,
-            studentNumber,
-            secretNumber,
-            currentClassId,
-            status,
-            stats,
-        });
+            // Generate numbers if not provided
+            const finalStudentNumber = studentNumber || await generateNextStudentNumber(tx);
+            const finalSecretNumber = secretNumber || generateSecretNumber();
 
-        // Ensure enrollment if class is provided
-        if (currentClassId) {
-            const [currentYear] = await db.select().from(academicYears).where(eq(academicYears.isCurrent, true)).limit(1);
-            if (currentYear) {
-                await db.insert(enrollments).values({
-                    studentId: targetUserId,
-                    classId: currentClassId,
-                    academicYearId: currentYear.id,
-                }).onConflictDoNothing();
+            await tx.insert(students).values({
+                userId: targetUserId,
+                studentNumber: finalStudentNumber,
+                secretNumber: finalSecretNumber,
+                currentClassId,
+                status,
+                stats,
+            });
+
+            // Ensure enrollment if class is provided
+            if (currentClassId) {
+                const [currentYear] = await tx.select().from(academicYears).where(eq(academicYears.isCurrent, true)).limit(1);
+                if (currentYear) {
+                    await tx.insert(enrollments).values({
+                        studentId: targetUserId,
+                        classId: currentClassId,
+                        academicYearId: currentYear.id,
+                    }).onConflictDoNothing();
+                }
             }
-        }
+
+            await studentCache.delete(`user:${targetUserId}`);
+            return { id: targetUserId };
+        });
     }
 
     await studentCache.delete(`user:${targetUserId}`);
@@ -333,7 +381,8 @@ export const deleteStudent = async (userId: string) => {
 export const bulkImportStudents = async (
   classId: number, 
   studentData: {
-    studentNumber: string;
+    studentNumber?: string;
+    secretNumber?: string;
     name: string;
     phone?: string;
     email?: string;
@@ -357,69 +406,87 @@ export const bulkImportStudents = async (
 
   const results = [];
 
-  for (const item of studentData) {
-    try {
-      const [existingStudent] = await db
-        .select()
-        .from(students)
-        .where(eq(students.studentNumber, item.studentNumber))
-        .limit(1);
-      
-      let userId: string;
+  // Use transaction for bulk import to ensure numbers are consistent if generated
+  return db.transaction(async (tx) => {
+    for (const item of studentData) {
+      try {
+        let userId: string;
+        let finalStudentNumber = item.studentNumber;
+        let finalSecretNumber = item.secretNumber;
 
-      if (existingStudent) {
-        userId = existingStudent.userId;
-        // Update user info and sync current class
-        await db.update(users).set({ 
-          name: item.name, 
-          phone: item.phone, 
-          email: item.email,
-          sex: item.sex || 'unspecified'
-        }).where(eq(users.id, userId));
-
-        // Update student's current class
-        await db.update(students).set({
-          currentClassId: classId,
-        }).where(eq(students.userId, userId));
-      } else {
-        const [newUser] = await db.insert(users).values({
-          name: item.name,
-          phone: item.phone,
-          email: item.email,
-          role: 'student',
-          sex: item.sex || 'unspecified'
-        }).returning();
-        
-        if (!newUser) throw new Error("Failed to create user");
-        userId = newUser.id;
-
-        await db.insert(students).values({
-          userId,
-          studentNumber: item.studentNumber,
-          currentClassId: classId,
-        });
-      }
-
-      // 2. Ensure enrollment in the target year
-      await db.insert(enrollments).values({
-        studentId: userId,
-        classId,
-        academicYearId: yearId,
-      }).onConflictDoUpdate({
-        target: [enrollments.studentId, enrollments.classId, enrollments.academicYearId],
-        set: {
-          status: 'active',
-          enrolledAt: new Date(),
+        // Check if student exists by number (if provided)
+        let existingStudent = null;
+        if (finalStudentNumber) {
+           [existingStudent] = await tx
+            .select()
+            .from(students)
+            .where(eq(students.studentNumber, finalStudentNumber))
+            .limit(1);
         }
-      });
+        
+        if (existingStudent) {
+          userId = existingStudent.userId;
+          // Update user info and sync current class
+          await tx.update(users).set({ 
+            name: item.name, 
+            phone: item.phone, 
+            email: item.email,
+            sex: item.sex || 'unspecified'
+          }).where(eq(users.id, userId));
 
-      results.push({ studentNumber: item.studentNumber, status: 'success' });
-    } catch (error) {
-      results.push({ studentNumber: item.studentNumber, status: 'error', error: (error as Error).message });
+          // Update student's current class
+          await tx.update(students).set({
+            currentClassId: classId,
+            secretNumber: finalSecretNumber || existingStudent.secretNumber, // Keep existing if not provided
+          }).where(eq(students.userId, userId));
+        } else {
+          const [newUser] = await tx.insert(users).values({
+            name: item.name,
+            phone: item.phone,
+            email: item.email,
+            role: 'student',
+            sex: item.sex || 'unspecified'
+          }).returning();
+          
+          if (!newUser) throw new Error("Failed to create user");
+          userId = newUser.id;
+
+          // Generate numbers if not provided
+          if (!finalStudentNumber) {
+              finalStudentNumber = await generateNextStudentNumber(tx);
+          }
+          if (!finalSecretNumber) {
+              finalSecretNumber = generateSecretNumber();
+          }
+
+          await tx.insert(students).values({
+            userId,
+            studentNumber: finalStudentNumber,
+            secretNumber: finalSecretNumber,
+            currentClassId: classId,
+          });
+        }
+
+        // 2. Ensure enrollment in the target year
+        await tx.insert(enrollments).values({
+          studentId: userId,
+          classId,
+          academicYearId: yearId,
+        }).onConflictDoUpdate({
+          target: [enrollments.studentId, enrollments.classId, enrollments.academicYearId],
+          set: {
+            status: 'active',
+            enrolledAt: new Date(),
+          }
+        });
+
+        results.push({ studentNumber: finalStudentNumber, status: 'success' });
+      } catch (error) {
+        results.push({ studentNumber: item.studentNumber || 'unknown', status: 'error', error: (error as Error).message });
+      }
     }
-  }
-
-  return results;
+    return results;
+  });
 };
 
 export const getStudentEnrollments = async (studentId: string) => {

@@ -37,7 +37,7 @@ export const upsertStudentSchema = z.object({
   email: z.string().email().optional().nullable(),
   phone: z.string().optional().nullable(),
   sex: z.enum(['male', 'female', 'unspecified']).default('unspecified'),
-  studentNumber: z.string().max(20),
+  studentNumber: z.string().max(20).optional().nullable(),
   secretNumber: z.string().max(20).optional().nullable(),
   currentClassId: z.number().optional().nullable(),
   status: studentStatusEnum.default('active'),
@@ -47,11 +47,13 @@ export const upsertStudentSchema = z.object({
 export const importStudentsSchema = z.object({
   classId: z.number(),
   students: z.array(z.object({
-    studentNumber: z.string(),
+    studentNumber: z.string().optional(),
+    secretNumber: z.string().optional(),
     name: z.string(),
     phone: z.string().optional(),
     email: z.string().optional(),
     sex: z.enum(['male', 'female', 'unspecified']).default('unspecified'),
   })),
 });
+
 

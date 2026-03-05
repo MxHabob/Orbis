@@ -98,18 +98,14 @@ export function StudentForm({ data }: Props) {
   });
 
   const handleSubmit = (values: z.infer<typeof formSchema>) => {
-    // Auto-generate numbers if empty
-    const generatedStudentNumber = values.studentNumber || `ST-${Math.floor(100000 + Math.random() * 900000)}`;
-    const generatedSecretNumber = values.secretNumber || `SEC-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-
     upsertStudentMutation.mutate({
       userId: values.id,
       name: values.name,
       email: values.email || null,
       phone: values.phone || null,
       sex: values.sex,
-      studentNumber: generatedStudentNumber,
-      secretNumber: generatedSecretNumber,
+      studentNumber: values.studentNumber || null,
+      secretNumber: values.secretNumber || null,
       currentClassId: values.currentClassId ? Number(values.currentClassId) : null,
       status: values.status,
       stats: values.note ? { note: values.note } : null,

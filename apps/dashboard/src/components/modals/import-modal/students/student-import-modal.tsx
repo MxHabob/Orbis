@@ -129,13 +129,14 @@ export function StudentImportModal() {
                         });
 
                         const students = rows
-                          .map((row, index) => {
-                            let studentNumber = data.autoGenerateStudentNumber 
-                              ? `STU-${Date.now()}-${index}`
+                          .map((row) => {
+                            const studentNumber = data.autoGenerateStudentNumber 
+                              ? undefined
                               : row[data.studentNumber!];
                             
                             const name = row[data.name!];
-                            if (!studentNumber || !name) return null;
+                            if (!data.autoGenerateStudentNumber && !studentNumber) return null;
+                            if (!name) return null;
 
                             return {
                               studentNumber,
