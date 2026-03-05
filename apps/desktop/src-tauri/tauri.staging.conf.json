@@ -1,7 +1,7 @@
 {
-  "productName": "Midday Staging",
-  "version": "0.1.0",
-  "identifier": "ai.midday.app.staging",
+  "productName": "Mommy Staging",
+  "version": "0.3.0",
+  "identifier": "com.mulverse.mommy.staging",
   "bundle": {
     "icon": [
       "icons/staging/32x32.png",

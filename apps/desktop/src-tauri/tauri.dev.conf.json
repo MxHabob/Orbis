@@ -1,6 +1,6 @@
 {
-  "productName": "Midday Dev",
-  "identifier": "ai.midday.app.dev",
+  "productName": "Mommy Dev",
+  "identifier": "com.mulverse.mommy.dev",
   "bundle": {
     "icon": [
       "icons/dev/32x32.png",

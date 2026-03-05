@@ -76,7 +76,7 @@ async fn check_for_updates(app: tauri::AppHandle) -> Result<(), String> {
                     // No update available - show current version info
                     let version = app.package_info().version.to_string();
                     app.dialog()
-                        .message(format!("Midday\nversion {}\n\nYou're up to date!", version))
+                        .message(format!("Mommy\nversion {}\n\nYou're up to date!", version))
                         .title("No Updates Available")
                         .kind(MessageDialogKind::Info)
                         .buttons(MessageDialogButtons::Ok)
@@ -257,11 +257,11 @@ async fn create_preloaded_search_window(
         search_window_label,
         WebviewUrl::External(tauri::Url::parse(&search_url)?),
     )
-    .title("Midday Search")
+    .title("Mommy Search")
     .inner_size(720.0, 450.0)
     .min_inner_size(720.0, 450.0)
     .resizable(false)
-    .user_agent("Mozilla/5.0 (compatible; Midday Desktop App)")
+    .user_agent("Mozilla/5.0 (compatible; Mommy Desktop App)")
     .transparent(true)
     .decorations(false)
     .visible(false) // Start hidden for preloading
@@ -330,12 +330,12 @@ fn get_app_url() -> String {
             url
         },
         "staging" => {
-            let url = "https://beta.midday.ai".to_string();
+            let url = "https://beta.mommy.mulverse.com".to_string();
             println!("🌍 Using staging URL: {}", url);
             url
         },
         "production" | "prod" => {
-            let url = "https://app.midday.ai".to_string();
+            let url = "https://mommy.mulverse.com".to_string();
             println!("🌍 Using production URL: {}", url);
             url
         },
@@ -364,9 +364,9 @@ fn is_external_url(url: &str, app_url: &str) -> bool {
 
 fn handle_deep_link_event(app_handle: &tauri::AppHandle, urls: Vec<String>) {
     for url in &urls {
-        if url.starts_with("midday://") {
+        if url.starts_with("mommy://") {
             // Extract the path from the deep link
-            let path = url.strip_prefix("midday://").unwrap_or("");
+            let path = url.strip_prefix("mommy://").unwrap_or("");
 
             // Remove any leading slashes
             let clean_path = path.trim_start_matches('/');
@@ -470,10 +470,10 @@ pub fn run() {
                 "main",
                 WebviewUrl::External(tauri::Url::parse(&app_url).unwrap()),
             )
-            .title("Midday")
+            .title("Mommy")
             .inner_size(1450.0, 910.0)
             .min_inner_size(1450.0, 910.0)
-            .user_agent("Mozilla/5.0 (compatible; Midday Desktop App)")
+            .user_agent("Mozilla/5.0 (compatible; Mommy Desktop App)")
             .decorations(false)
             .visible(false)
             .transparent(true)

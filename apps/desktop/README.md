@@ -1,6 +1,6 @@
-# Midday Desktop App
+# Mommy Desktop App
 
-A Tauri-based desktop application for Midday that supports multiple environments with a native transparent titlebar on macOS.
+A Tauri-based desktop application for Mommy that supports multiple environments with a native transparent titlebar on macOS.
 
 ## Features
 
@@ -13,8 +13,8 @@ A Tauri-based desktop application for Midday that supports multiple environments
 The desktop app supports three environments, each loading a different URL:
 
 - **Development**: `http://localhost:3001`
-- **Staging**: `https://beta.midday.ai`
-- **Production**: `https://app.midday.ai`
+- **Staging**: `https://beta.mommy.mulverse.com`
+- **Production**: `https://mommy.mulverse.com`
 
 ## Running the App
 
@@ -32,7 +32,7 @@ bun run tauri:staging
 
 ### Production Mode
 ```bash
-# Run in production environment (loads app.midday.ai)
+# Run in production environment (loads mommy.mulverse.com)
 bun run tauri:prod
 ```
 
@@ -58,8 +58,8 @@ bun run tauri:build:prod
 The environment is controlled by the `MIDDAY_ENV` environment variable:
 
 - `development` or `dev` → `http://localhost:3001`
-- `staging` → `https://beta.midday.ai`
-- `production` or `prod` → `https://app.midday.ai`
+- `staging` → `https://beta.mommy.mulverse.com`
+- `production` or `prod` → `https://mommy.mulverse.com`
 
 If no environment is specified, it defaults to development mode.
 

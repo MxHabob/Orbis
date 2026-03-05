@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Default capabilities for Midday desktop app including download support",
+  "description": "Default capabilities for Mommy desktop app including download support",
   "windows": ["main", "search"],
   "permissions": [
     "core:default",
@@ -32,8 +32,8 @@
   "remote": {
     "urls": [
       "http://localhost:3001/**",
-      "https://beta.midday.ai/**",
-      "https://app.midday.ai/**"
+      "https://beta.mommy.mulverse.com/**",
+      "https://mommy.mulverse.com/**"
     ]
   },
   "platforms": ["macOS"]
