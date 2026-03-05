@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import { cn } from "@midday/ui/cn";
 import { useI18n } from "@/locales/client";
-import { FONTS, VARIABLES, PAPER_SIZES, type EditorElement, type ElementType } from "./types";
+import { FONTS, VARIABLES, PAPER_SIZES, type EditorElement, type ElementType, type PaperSize } from "./types";
 
 interface SidebarProps {
   name: string;
@@ -42,10 +42,10 @@ interface SidebarProps {
   elements: EditorElement[];
   selectedElementId: string | null;
   setSelectedElementId: (id: string | null) => void;
-  paperSize: string;
-  setPaperSize: (size: any) => void;
-  orientation: string;
-  setOrientation: (orientation: any) => void;
+  paperSize: PaperSize;
+  setPaperSize: (size: PaperSize) => void;
+  orientation: "portrait" | "landscape";
+  setOrientation: (orientation: "portrait" | "landscape") => void;
   backgroundImage: string;
   handleFileUpload: (e: any, type: "background" | "image") => void;
   handleClearBackground: () => void;
@@ -155,7 +155,7 @@ export const Sidebar = memo(({
                 {VARIABLES.map((group) => (
                   <div key={group.group} className="space-y-2">
                     <span className="text-xs font-medium text-muted-foreground/60">
-                      {t(`reports.editor.groups.${group.group.toLowerCase().replace(/\s+/g, '_')}` as any)}
+                      {t(`reports.editor.groups.${group.group.toLowerCase().replace(/\s+/g, '_')}` as any, {} as any)}
                     </span>
                     <div className="space-y-1">
                       {group.items.map((v) => (
@@ -172,7 +172,7 @@ export const Sidebar = memo(({
                           }}
                         >
                           <Plus className="w-3 h-3 mr-2" />
-                          {t(`reports.editor.variables.${v.value.replace(/[{}]/g, "")}` as any)}
+                          {t(`reports.editor.variables.${v.value.replace(/[{}]/g, "")}` as any, {} as any)}
                         </Button>
                       ))}
                     </div>
@@ -251,7 +251,7 @@ export const Sidebar = memo(({
           <TabsContent value="settings" className="space-y-6 mt-0">
             <div className="space-y-3">
               <Label className="text-xs text-muted-foreground">{t("reports.editor.paper_size")}</Label>
-              <Select value={paperSize} onValueChange={setPaperSize}>
+              <Select value={paperSize} onValueChange={(v: PaperSize) => setPaperSize(v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {Object.entries(PAPER_SIZES).map(([key, size]) => (
@@ -263,7 +263,7 @@ export const Sidebar = memo(({
 
             <div className="space-y-3">
               <Label className="text-xs text-muted-foreground">{t("reports.editor.orientation")}</Label>
-              <Select value={orientation} onValueChange={setOrientation}>
+              <Select value={orientation} onValueChange={(v: "portrait" | "landscape") => setOrientation(v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="portrait">{t("reports.editor.portrait")}</SelectItem>

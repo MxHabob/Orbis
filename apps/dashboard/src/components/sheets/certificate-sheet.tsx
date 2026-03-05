@@ -6,6 +6,7 @@ import { Sheet, SheetContent } from "@midday/ui/sheet";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import React from "react";
 import { CertificateEditor } from "../certificates/certificate-editor";
+import type { PaperSize, EditorElement } from "../certificates/editor/types";
 
 export function CertificateSheet() {
   const trpc = useTRPC();
@@ -34,6 +35,15 @@ export function CertificateSheet() {
     setParams(null);
   };
 
+  const initialData = data ? {
+    id: data.id,
+    name: data.name,
+    size: data.size as PaperSize,
+    orientation: data.orientation as "portrait" | "landscape",
+    backgroundImageUrl: data.backgroundImageUrl ?? undefined,
+    content: (data.content as any) || undefined,
+  } : undefined;
+
   return (
     <Sheet open={isOpen} onOpenChange={handleOnOpenChange}>
       {type === "edit" && isLoading ? (
@@ -48,7 +58,7 @@ export function CertificateSheet() {
       ) : (
         <CertificateEditor
           key={templateId || "create"}
-          initialData={data}
+          initialData={initialData}
           mode={type as "create" | "edit"}
           isSheet
         />

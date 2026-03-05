@@ -6,6 +6,8 @@ export interface TableColumn {
   width: number;
 }
 
+export type PaperSize = "a4" | "a5" | "letter";
+
 export interface EditorElement {
   id: string;
   type: ElementType;
@@ -28,11 +30,11 @@ export interface EditorElement {
   columns?: TableColumn[]; // For table type
 }
 
-export const PAPER_SIZES: Record<string, { width: number; height: number; mmWidth: number; mmHeight: number; label: string }> = {
+export const PAPER_SIZES = {
   a4: { width: 595, height: 842, mmWidth: 210, mmHeight: 297, label: "A4 (210×297 mm)" },
   a5: { width: 420, height: 595, mmWidth: 148, mmHeight: 210, label: "A5 (148×210 mm)" },
   letter: { width: 612, height: 792, mmWidth: 216, mmHeight: 279, label: "Letter (8.5×11 in)" },
-};
+} as const;
 
 export const VARIABLES = [
   { group: "Student Data", items: [

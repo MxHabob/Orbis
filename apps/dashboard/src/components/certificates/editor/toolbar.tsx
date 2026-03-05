@@ -19,10 +19,11 @@ import {
 import { useI18n } from "@/locales/client";
 
 import { HIJRI_MONTHS } from "@/utils/academic-calendar";
+import type { PaperSize } from "./types";
 
 interface ToolbarProps {
-  paperSize: string;
-  orientation: string;
+  paperSize: PaperSize;
+  orientation: "portrait" | "landscape";
   isPreview: boolean;
   setIsPreview: (isPreview: boolean) => void;
   previewStudentId: string | null;

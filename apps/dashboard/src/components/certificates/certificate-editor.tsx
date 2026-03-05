@@ -13,14 +13,21 @@ import { useI18n, useCurrentLocale } from "@/locales/client";
 import { Sidebar } from "./editor/sidebar";
 import { Toolbar } from "./editor/toolbar";
 import { Canvas } from "./editor/canvas";
-import { PAPER_SIZES, type EditorElement, type ElementType } from "./editor/types";
+import { PAPER_SIZES, type EditorElement, type ElementType, type PaperSize } from "./editor/types";
 
 export function CertificateEditor({
   initialData,
   mode = "create",
   isSheet,
 }: {
-  initialData?: any;
+  initialData?: {
+    id?: string;
+    name?: string;
+    size?: PaperSize;
+    orientation?: "portrait" | "landscape";
+    backgroundImageUrl?: string;
+    content?: { elements: EditorElement[] };
+  };
   mode?: "create" | "edit";
   isSheet?: boolean;
 }) {
@@ -36,7 +43,7 @@ export function CertificateEditor({
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const [name, setName] = useState(initialData?.name || "New Template");
-  const [paperSize, setPaperSize] = useState<string>(initialData?.size || "a4");
+  const [paperSize, setPaperSize] = useState<PaperSize>(initialData?.size || "a4");
   const [orientation, setOrientation] = useState<"portrait" | "landscape">(initialData?.orientation || "portrait");
   const [backgroundImage, setBackgroundImage] = useState(initialData?.backgroundImageUrl || "");
   const [elements, setElements] = useState<EditorElement[]>(initialData?.content?.elements || []);
@@ -109,13 +116,15 @@ export function CertificateEditor({
   );
 
   const canvasWidth = useMemo(() => {
-    const size = PAPER_SIZES[paperSize] ?? PAPER_SIZES.a4!;
-    return orientation === "portrait" ? size!.width : size!.height;
+    const size = (paperSize && PAPER_SIZES[paperSize]) || PAPER_SIZES.a4 || PAPER_SIZES.letter;
+    if (!size) return 595; // Absolute fallback for A4 width
+    return orientation === "portrait" ? size.width : size.height;
   }, [orientation, paperSize]);
   
   const canvasHeight = useMemo(() => {
-    const size = PAPER_SIZES[paperSize] ?? PAPER_SIZES.a4!;
-    return orientation === "portrait" ? size!.height : size!.width;
+    const size = (paperSize && PAPER_SIZES[paperSize]) || PAPER_SIZES.a4 || PAPER_SIZES.letter;
+    if (!size) return 842; // Absolute fallback for A4 height
+    return orientation === "portrait" ? size.height : size.width;
   }, [orientation, paperSize]);
 
   const addElement = useCallback((type: ElementType, content: string, variableKey?: string) => {

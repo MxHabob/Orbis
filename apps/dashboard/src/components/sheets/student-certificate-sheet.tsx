@@ -38,11 +38,13 @@ const MONTHLY_MONTHS = HIJRI_MONTHS.filter(
 );
 
 // Paper dimensions for rendering and print CSS
-const PAPER_DIMS: Record<string, { width: number; height: number; mmWidth: number; mmHeight: number }> = {
+const PAPER_DIMS = {
   a4: { width: 595, height: 842, mmWidth: 210, mmHeight: 297 },
   a5: { width: 420, height: 595, mmWidth: 148, mmHeight: 210 },
   letter: { width: 612, height: 792, mmWidth: 216, mmHeight: 279 },
-};
+} as const;
+
+type PaperSizeKey = keyof typeof PAPER_DIMS;
 
 export function StudentCertificateSheet() {
   const trpc = useTRPC();
@@ -158,11 +160,11 @@ export function StudentCertificateSheet() {
   const showMonthSelector = selectedType === "monthly";
 
   // Get paper dimensions for the current template
-  const templateSize = ((template as any)?.size || 'a4') as string;
+  const templateSize = ((template as any)?.size || 'a4') as PaperSizeKey;
   const templateOrientation = ((template as any)?.orientation || 'portrait') as string;
-  const paperConfig = PAPER_DIMS[templateSize] ?? PAPER_DIMS.a4!;
-  const printWidthMm = templateOrientation === 'landscape' ? paperConfig!.mmHeight : paperConfig!.mmWidth;
-  const printHeightMm = templateOrientation === 'landscape' ? paperConfig!.mmWidth : paperConfig!.mmHeight;
+  const paperConfig = PAPER_DIMS[templateSize] || PAPER_DIMS.a4;
+  const printWidthMm = templateOrientation === 'landscape' ? paperConfig.mmHeight : paperConfig.mmWidth;
+  const printHeightMm = templateOrientation === 'landscape' ? paperConfig.mmWidth : paperConfig.mmHeight;
 
   // Print handler with dynamic page size
   const handlePrint = React.useCallback(() => {
@@ -231,8 +233,8 @@ export function StudentCertificateSheet() {
               ) : (
                 <div className="w-full flex flex-col items-center">
                   {(() => {
-                    const canvasWidth = templateOrientation === 'landscape' ? paperConfig!.height : paperConfig!.width;
-                    const canvasHeight = templateOrientation === 'landscape' ? paperConfig!.width : paperConfig!.height;
+                    const canvasWidth = templateOrientation === 'landscape' ? paperConfig.height : paperConfig.width;
+                    const canvasHeight = templateOrientation === 'landscape' ? paperConfig.width : paperConfig.height;
                     const targetWidth = 600;
                     const scale = Math.min(1, targetWidth / canvasWidth);
                     

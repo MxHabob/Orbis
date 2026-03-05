@@ -6,14 +6,14 @@ import { Button } from "@midday/ui/button";
 import { ZoomIn, ZoomOut } from "lucide-react";
 import { cn } from "@midday/ui/cn";
 import { DraggableElement } from "./draggable-element";
-import type { EditorElement } from "./types";
+import type { EditorElement, PaperSize } from "./types";
 import Moveable from "react-moveable";
 import Selecto from "react-selecto";
 
 interface CanvasProps {
   canvasRef: any;
-  orientation: string;
-  paperSize: string;
+  orientation: "portrait" | "landscape";
+  paperSize: PaperSize;
   canvasWidth: number;
   canvasHeight: number;
   isPreview: boolean;
