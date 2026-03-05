@@ -127,6 +127,7 @@ async function seedClasses(yearId: number) {
     parentClassId: null,
     academicYearId: yearId,
     color: colors[index] || "#e6e6e6",
+    sortOrder: index + 1,
   }));
 
   await db.insert(schema.classes).values(classesData).onConflictDoNothing();
