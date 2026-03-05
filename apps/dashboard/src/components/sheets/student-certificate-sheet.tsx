@@ -37,6 +37,13 @@ const MONTHLY_MONTHS = HIJRI_MONTHS.filter(
   (m) => !m.isExam && !m.isVacation
 );
 
+// Paper dimensions for rendering and print CSS
+const PAPER_DIMS: Record<string, { width: number; height: number; mmWidth: number; mmHeight: number }> = {
+  a4: { width: 595, height: 842, mmWidth: 210, mmHeight: 297 },
+  a5: { width: 420, height: 595, mmWidth: 148, mmHeight: 210 },
+  letter: { width: 612, height: 792, mmWidth: 216, mmHeight: 279 },
+};
+
 export function StudentCertificateSheet() {
   const trpc = useTRPC();
   const { toast } = useToast();
@@ -90,7 +97,7 @@ export function StudentCertificateSheet() {
   };
 
   const handleDownload = async () => {
-    if (!studentData) return;
+    if (!studentData || !template) return;
     setIsExporting(true);
     try {
       const typeLabel = certificateType === "half-yearly" 
@@ -100,7 +107,9 @@ export function StudentCertificateSheet() {
           : t("reports.monthly");
       await generateCanvasPdf({
          filename: `${t("reports.certificate")}_${studentData.name}_${typeLabel}.pdf`,
-        selector: "[data-canvas-content]"
+        selector: "[data-canvas-content]",
+        paperSize: (template as any).size || "a4",
+        orientation: (template as any).orientation || "portrait",
       });
       toast({ title: t("reports.export_success"), variant: "success" });
     } catch (error) {
@@ -148,13 +157,70 @@ export function StudentCertificateSheet() {
   // Determine if month selector should be visible
   const showMonthSelector = selectedType === "monthly";
 
+  // Get paper dimensions for the current template
+  const templateSize = ((template as any)?.size || 'a4') as string;
+  const templateOrientation = ((template as any)?.orientation || 'portrait') as string;
+  const paperConfig = PAPER_DIMS[templateSize] ?? PAPER_DIMS.a4!;
+  const printWidthMm = templateOrientation === 'landscape' ? paperConfig!.mmHeight : paperConfig!.mmWidth;
+  const printHeightMm = templateOrientation === 'landscape' ? paperConfig!.mmWidth : paperConfig!.mmHeight;
+
+  // Print handler with dynamic page size
+  const handlePrint = React.useCallback(() => {
+    // Inject a temporary style tag with the correct @page size
+    const styleEl = document.createElement('style');
+    styleEl.id = 'cert-print-style';
+    styleEl.textContent = `
+      @page {
+        size: ${printWidthMm}mm ${printHeightMm}mm !important;
+        margin: 0 !important;
+      }
+      @media print {
+        body > * { display: none !important; }
+        body > [data-radix-portal] { display: block !important; }
+        [data-radix-portal] > * { display: block !important; }
+        [data-cert-print-container] {
+          display: block !important;
+          position: fixed !important;
+          inset: 0 !important;
+          z-index: 99999 !important;
+          background: white !important;
+          overflow: visible !important;
+        }
+        [data-cert-print-container] [data-canvas-content] {
+          width: ${printWidthMm}mm !important;
+          height: ${printHeightMm}mm !important;
+          box-shadow: none !important;
+          margin: 0 !important;
+          transform: none !important;
+        }
+        [data-cert-print-container] [data-canvas-content] img {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+      }
+    `;
+    document.head.appendChild(styleEl);
+    
+    window.print();
+    
+    // Clean up after print dialog closes
+    setTimeout(() => {
+      const el = document.getElementById('cert-print-style');
+      if (el) el.remove();
+    }, 1000);
+  }, [printWidthMm, printHeightMm]);
+
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <SheetContent 
         style={{ maxWidth: 740 }} 
         className="p-0 bg-white dark:bg-[#080808] transition-[max-width] duration-300 ease-in-out [&>button]:hidden border-none"
       >
-        <div className="relative h-full flex flex-col">
+        <div className="relative h-full flex flex-col" data-cert-print-container>
           <ScrollArea className="flex-1 p-6" hideScrollbar>
             <div className="p-8 pb-32 min-h-full flex flex-col items-center justify-center bg-[#fcfcfc] dark:bg-[#0f0f0f]">
               {(isStudentLoading || !template) ? (
@@ -165,9 +231,9 @@ export function StudentCertificateSheet() {
               ) : (
                 <div className="w-full flex flex-col items-center">
                   {(() => {
-                    const canvasWidth = template?.orientation === 'landscape' ? 1123 : 794;
-                    const canvasHeight = template?.orientation === 'landscape' ? 794 : 1123;
-                    const targetWidth = 600; // Fitting safely within the sheet padding
+                    const canvasWidth = templateOrientation === 'landscape' ? paperConfig!.height : paperConfig!.width;
+                    const canvasHeight = templateOrientation === 'landscape' ? paperConfig!.width : paperConfig!.height;
+                    const targetWidth = 600;
                     const scale = Math.min(1, targetWidth / canvasWidth);
                     
                     return (
@@ -354,7 +420,7 @@ export function StudentCertificateSheet() {
               </div>
 
               <div className="flex gap-2">
-                <Button variant="outline" size="icon" onClick={() => window.print()} className="h-9 w-9">
+                <Button variant="outline" size="icon" onClick={handlePrint} className="h-9 w-9">
                   <Printer className="size-4" />
                 </Button>
 

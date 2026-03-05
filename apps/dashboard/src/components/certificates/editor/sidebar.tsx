@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import { cn } from "@midday/ui/cn";
 import { useI18n } from "@/locales/client";
-import { FONTS, VARIABLES, type EditorElement, type ElementType } from "./types";
+import { FONTS, VARIABLES, PAPER_SIZES, type EditorElement, type ElementType } from "./types";
 
 interface SidebarProps {
   name: string;
@@ -254,8 +254,9 @@ export const Sidebar = memo(({
               <Select value={paperSize} onValueChange={setPaperSize}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="a4">A4 (210×297 mm)</SelectItem>
-                  <SelectItem value="letter">Letter (8.5×11 in)</SelectItem>
+                  {Object.entries(PAPER_SIZES).map(([key, size]) => (
+                    <SelectItem key={key} value={key}>{size.label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -270,6 +271,33 @@ export const Sidebar = memo(({
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Recommended Canva Dimensions */}
+            {(() => {
+              const currentPaper = PAPER_SIZES[paperSize] ?? PAPER_SIZES.a4!;
+              const dpi = 300;
+              const mmToInch = 25.4;
+              const w = orientation === 'portrait' ? currentPaper!.mmWidth : currentPaper!.mmHeight;
+              const h = orientation === 'portrait' ? currentPaper!.mmHeight : currentPaper!.mmWidth;
+              const pxW = Math.round((w / mmToInch) * dpi);
+              const pxH = Math.round((h / mmToInch) * dpi);
+              return (
+                <div className="rounded-lg border border-dashed border-blue-500/30 bg-blue-500/5 p-3 space-y-1.5">
+                  <p className="text-[10px] font-semibold text-blue-500 uppercase tracking-wider">أبعاد كانفا الموصى بها</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">الأبعاد (بكسل)</span>
+                    <span className="text-xs font-mono font-semibold text-foreground">{pxW} × {pxH} px</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">الأبعاد (مم)</span>
+                    <span className="text-xs font-mono text-foreground">{w} × {h} mm</span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground/70 leading-relaxed">
+                    استخدم هذه الأبعاد في كانفا لإنشاء خلفية تملأ الصفحة بدون هوامش (300 DPI)
+                  </p>
+                </div>
+              );
+            })()}
 
             {selectedElement && (
               <div className="space-y-4 pt-4 border-t">

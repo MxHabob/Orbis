@@ -40,10 +40,10 @@ interface CertificateViewerProps {
   onLoad?: () => void;
 }
 
-const PAPER_SIZES = {
-  a4: { pxWidth: 794, pxHeight: 1123 },
-  a5: { pxWidth: 559, pxHeight: 794 },
-  letter: { pxWidth: 816, pxHeight: 1056 },
+const PAPER_SIZES: Record<string, { pxWidth: number; pxHeight: number; mmWidth: number; mmHeight: number }> = {
+  a4: { pxWidth: 595, pxHeight: 842, mmWidth: 210, mmHeight: 297 },
+  a5: { pxWidth: 420, pxHeight: 595, mmWidth: 148, mmHeight: 210 },
+  letter: { pxWidth: 612, pxHeight: 792, mmWidth: 216, mmHeight: 279 },
 };
 
 const STAMP_ICONS = {
@@ -86,9 +86,9 @@ export function CertificateViewer({
   const size = (template.size || "a4") as keyof typeof PAPER_SIZES;
   const orientation = template.orientation || "portrait";
   
-  const currentSize = PAPER_SIZES[size] || PAPER_SIZES.a4;
-  const canvasWidth = orientation === "portrait" ? currentSize.pxWidth : currentSize.pxHeight;
-  const canvasHeight = orientation === "portrait" ? currentSize.pxHeight : currentSize.pxWidth;
+  const currentSize = PAPER_SIZES[size] ?? PAPER_SIZES.a4!;
+  const canvasWidth = orientation === "portrait" ? currentSize!.pxWidth : currentSize!.pxHeight;
+  const canvasHeight = orientation === "portrait" ? currentSize!.pxHeight : currentSize!.pxWidth;
 
   const replaceVariables = (text: string) => {
     if (!text) return "";
@@ -114,7 +114,7 @@ export function CertificateViewer({
          <img 
             src={template.backgroundImageUrl} 
             alt="Background" 
-            className="w-full h-full object-cover absolute inset-0 pointer-events-none"
+            className="w-full h-full object-fill absolute inset-0 pointer-events-none"
          />
        )}
 

@@ -36,7 +36,7 @@ export function CertificateEditor({
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const [name, setName] = useState(initialData?.name || "New Template");
-  const [paperSize, setPaperSize] = useState<"a4" | "letter">(initialData?.size || "a4");
+  const [paperSize, setPaperSize] = useState<string>(initialData?.size || "a4");
   const [orientation, setOrientation] = useState<"portrait" | "landscape">(initialData?.orientation || "portrait");
   const [backgroundImage, setBackgroundImage] = useState(initialData?.backgroundImageUrl || "");
   const [elements, setElements] = useState<EditorElement[]>(initialData?.content?.elements || []);
@@ -108,15 +108,15 @@ export function CertificateEditor({
     }),
   );
 
-  const canvasWidth = useMemo(() => 
-    orientation === "portrait" ? PAPER_SIZES[paperSize].width : PAPER_SIZES[paperSize].height,
-    [orientation, paperSize]
-  );
+  const canvasWidth = useMemo(() => {
+    const size = PAPER_SIZES[paperSize] ?? PAPER_SIZES.a4!;
+    return orientation === "portrait" ? size!.width : size!.height;
+  }, [orientation, paperSize]);
   
-  const canvasHeight = useMemo(() => 
-    orientation === "portrait" ? PAPER_SIZES[paperSize].height : PAPER_SIZES[paperSize].width,
-    [orientation, paperSize]
-  );
+  const canvasHeight = useMemo(() => {
+    const size = PAPER_SIZES[paperSize] ?? PAPER_SIZES.a4!;
+    return orientation === "portrait" ? size!.height : size!.width;
+  }, [orientation, paperSize]);
 
   const addElement = useCallback((type: ElementType, content: string, variableKey?: string) => {
     const newElement: EditorElement = {

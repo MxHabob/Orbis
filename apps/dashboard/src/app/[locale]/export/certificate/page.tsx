@@ -102,14 +102,28 @@ export default function ExportCertificatePage() {
   const studentVariables = mapStudentToVariables(student as any, type, month);
 
   return (
-    <div className="inline-block bg-white p-0 m-0">
-      <CertificateViewer
-        template={template as any}
-        data={studentVariables}
-        certificateType={type}
-        month={month}
-        className="shadow-none border-none"
-      />
-    </div>
+    <>
+      <style jsx global>{`
+        @page {
+          margin: 0 !important;
+          padding: 0 !important;
+          size: auto;
+        }
+        html, body {
+          margin: 0 !important;
+          padding: 0 !important;
+          background: white !important;
+        }
+      `}</style>
+      <div className="inline-block bg-white p-0 m-0">
+        <CertificateViewer
+          template={template as any}
+          data={studentVariables}
+          certificateType={type}
+          month={month}
+          className="shadow-none border-none"
+        />
+      </div>
+    </>
   );
 }

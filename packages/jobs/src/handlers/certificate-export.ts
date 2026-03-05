@@ -1,12 +1,13 @@
 import type { Job } from "bullmq";
 import type { CertificateExportData } from "../queue";
 import { getStudentsByClassId, getValidSessionByUserId } from "@midday/db/queries";
+import { getCertificateTemplateById } from "@midday/db/queries/certificate-templates";
 import { createDocument } from "@midday/db/queries/documents";
 import { db } from "@midday/db/client";
 import { uploadFile } from "@midday/storage";
 import { logger } from "@midday/logger";
 import { auth } from "@midday/auth";
-import puppeteer, { type Browser, type Page } from "puppeteer";
+import puppeteer, { type Browser, type Page, type PaperFormat } from "puppeteer";
 
 // ============================================================
 // Configuration Constants
@@ -69,6 +70,19 @@ const TYPES_AR: Record<string, string> = {
   "final": "نهائي",
 };
 
+// Map template paper size to Puppeteer paper format
+const PAPER_FORMAT_MAP: Record<string, PaperFormat> = {
+  a4: "a4",
+  a5: "a5",
+  letter: "letter",
+};
+
+const PAPER_DIMENSIONS_MM: Record<string, { width: number; height: number }> = {
+  a4: { width: 210, height: 297 },
+  a5: { width: 148, height: 210 },
+  letter: { width: 216, height: 279 },
+};
+
 export async function handleCertificateExport(
   job: Job<CertificateExportData>
 ) {
@@ -100,6 +114,21 @@ export async function handleCertificateExport(
 
     const session = await getValidSessionByUserId(userId);
     if (!session) throw new Error("جلسة عمل غير صالحة. يرجى تسجيل الدخول.");
+
+    // Fetch template to get paper size and orientation
+    let templateSize = "a4";
+    let templateOrientation: "portrait" | "landscape" = "portrait";
+    if (templateId) {
+      const templateData = await getCertificateTemplateById(templateId);
+      if (templateData) {
+        templateSize = (templateData as any).size || "a4";
+        templateOrientation = ((templateData as any).orientation || "portrait") as "portrait" | "landscape";
+      }
+    }
+    
+    const paperFormat = PAPER_FORMAT_MAP[templateSize] || "a4";
+    const paperDims = PAPER_DIMENSIONS_MM[templateSize] || PAPER_DIMENSIONS_MM.a4!;
+    logger.info(`[CertExport] Paper: ${templateSize} (${templateOrientation})`);
 
     const dashboardUrl = process.env.NEXT_PUBLIC_URL || "http://localhost:3001";
     await job.updateProgress(5);
@@ -160,10 +189,12 @@ export async function handleCertificateExport(
       await page.waitForFunction(() => (window as any).isReadyToCapture === true, { timeout: READY_SIGNAL_TIMEOUT });
 
       const pdfBuffer = await page.pdf({
-        format: "A4",
+        width: `${templateOrientation === 'portrait' ? paperDims!.width : paperDims!.height}mm`,
+        height: `${templateOrientation === 'portrait' ? paperDims!.height : paperDims!.width}mm`,
         printBackground: true,
-        margin: { top: "0px", right: "0px", bottom: "0px", left: "0px" },
+        margin: { top: "0mm", right: "0mm", bottom: "0mm", left: "0mm" },
         preferCSSPageSize: true,
+        landscape: templateOrientation === 'landscape',
       });
 
       generatedFiles.push({

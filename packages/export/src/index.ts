@@ -68,13 +68,22 @@ export function parseCsv<T>(
 
 // PDF EXPORT LOGIC FROM DASHBOARD
 
+// Paper sizes in mm for PDF generation
+const PDF_PAPER_SIZES: Record<string, { width: number; height: number }> = {
+  a4: { width: 210, height: 297 },
+  a5: { width: 148, height: 210 },
+  letter: { width: 216, height: 279 },
+};
+
 export interface CanvasPdfOptions {
   filename?: string;
   quality?: number;
   scale?: number;
   padding?: number;
   theme?: string;
-  selector?: string; // Optional custom selector to override the default attribute search
+  selector?: string;
+  paperSize?: string;
+  orientation?: "portrait" | "landscape";
 }
 
 function getCanvasContent(selector?: string): HTMLElement | null {
@@ -100,9 +109,11 @@ export async function generateCanvasPdf(
     filename = "report.pdf",
     quality = 0.95,
     scale = 2,
-    padding = 10,
+    padding = 0,
     theme,
     selector,
+    paperSize = "a4",
+    orientation = "portrait",
   } = options;
 
   // Resolve theme
@@ -125,29 +136,25 @@ export async function generateCanvasPdf(
       throw new Error("Content to export not found");
     }
 
-    const elementHeight = canvasContent.scrollHeight || canvasContent.offsetHeight;
-    const extraHeight = 100;
-
     const canvas = await html2canvas(canvasContent, {
       scale,
       backgroundColor,
       useCORS: true,
       allowTaint: true,
       logging: false,
-      removeContainer: true, // Clean up clone
+      removeContainer: true,
       imageTimeout: 0,
-      height: elementHeight + extraHeight,
-      windowWidth: canvasContent.scrollWidth, // Ensure we capture horizontal scroll content if any
-      foreignObjectRendering: false, // More stable across browsers
+      width: canvasContent.scrollWidth || canvasContent.offsetWidth,
+      height: canvasContent.scrollHeight || canvasContent.offsetHeight,
+      windowWidth: canvasContent.scrollWidth,
+      foreignObjectRendering: false,
       onclone: (clonedDoc) => {
         const element = clonedDoc.body.querySelector(selector || "[data-canvas-content]") as HTMLElement;
         if (element) {
-           element.style.height = "auto";
            element.style.overflow = "visible";
            element.style.maxHeight = "none";
         }
         
-        // Hide elements marked to hide
         const hideElements = clonedDoc.querySelectorAll('[data-hide-in-pdf="true"]');
         hideElements.forEach((el) => {
           (el as HTMLElement).style.display = "none";
@@ -155,41 +162,33 @@ export async function generateCanvasPdf(
       },
     });
 
-    // Create PDF
     const { jsPDF } = await import("jspdf");
     
     const imgData = canvas.toDataURL("image/jpeg", quality);
-    const imgWidth = canvas.width;
-    const imgHeight = canvas.height;
 
-    // A4
-    const a4Width = 210;
-    const a4Height = 297;
-
-    const pdfScale = (a4Width - padding * 2) / imgWidth;
-    const scaledWidth = imgWidth * pdfScale;
-    const scaledHeight = imgHeight * pdfScale;
-    
-    // Determine PDF height based on content
-    const finalPdfHeight = Math.max(scaledHeight + padding * 2, a4Height);
+    // Get paper dimensions in mm
+    const paper = PDF_PAPER_SIZES[paperSize] || PDF_PAPER_SIZES.a4!;
+    const pageWidth = orientation === "portrait" ? paper!.width : paper!.height;
+    const pageHeight = orientation === "portrait" ? paper!.height : paper!.width;
 
     const pdf = new jsPDF({
-      orientation: "portrait",
+      orientation,
       unit: "mm",
-      format: [a4Width, finalPdfHeight],
+      format: [pageWidth, pageHeight],
     });
 
     // Set background
     pdf.setFillColor(backgroundRgb.r, backgroundRgb.g, backgroundRgb.b);
-    pdf.rect(0, 0, a4Width, finalPdfHeight, "F");
+    pdf.rect(0, 0, pageWidth, pageHeight, "F");
 
+    // Fill entire page edge-to-edge (no margins)
     pdf.addImage(
       imgData,
       "JPEG",
       padding,
       padding,
-      scaledWidth,
-      scaledHeight
+      pageWidth - padding * 2,
+      pageHeight - padding * 2
     );
 
     pdf.save(filename);
@@ -206,12 +205,13 @@ export async function generateCanvasPdfBlob(
   const {
     quality = 0.95,
     scale = 2,
-    padding = 10,
+    padding = 0,
     theme,
     selector,
+    paperSize = "a4",
+    orientation = "portrait",
   } = options;
 
-   // Resolve theme
   const resolvedTheme =
     theme === "system" || !theme
       ? window.matchMedia("(prefers-color-scheme: dark)").matches
@@ -226,13 +226,10 @@ export async function generateCanvasPdfBlob(
       : { r: 255, g: 255, b: 255 };
 
   try {
-     const canvasContent = getCanvasContent(selector);
+    const canvasContent = getCanvasContent(selector);
     if (!canvasContent) {
       throw new Error("Content to export not found");
     }
-
-    const elementHeight = canvasContent.scrollHeight || canvasContent.offsetHeight;
-    const extraHeight = 100;
 
     const canvas = await html2canvas(canvasContent, {
       scale,
@@ -242,13 +239,13 @@ export async function generateCanvasPdfBlob(
       logging: false,
       removeContainer: true,
       imageTimeout: 0,
-      height: elementHeight + extraHeight,
+      width: canvasContent.scrollWidth || canvasContent.offsetWidth,
+      height: canvasContent.scrollHeight || canvasContent.offsetHeight,
       windowWidth: canvasContent.scrollWidth,
       foreignObjectRendering: false,
-       onclone: (clonedDoc) => {
+      onclone: (clonedDoc) => {
         const element = clonedDoc.body.querySelector(selector || "[data-canvas-content]") as HTMLElement;
         if (element) {
-           element.style.height = "auto";
            element.style.overflow = "visible";
            element.style.maxHeight = "none";
         }
@@ -263,28 +260,21 @@ export async function generateCanvasPdfBlob(
     const { jsPDF } = await import("jspdf");
     
     const imgData = canvas.toDataURL("image/jpeg", quality);
-    const imgWidth = canvas.width;
-    const imgHeight = canvas.height;
 
-    const a4Width = 210;
-    const a4Height = 297;
-
-    const pdfScale = (a4Width - padding * 2) / imgWidth;
-    const scaledWidth = imgWidth * pdfScale;
-    const scaledHeight = imgHeight * pdfScale;
-    
-    const finalPdfHeight = Math.max(scaledHeight + padding * 2, a4Height);
+    const paper = PDF_PAPER_SIZES[paperSize] || PDF_PAPER_SIZES.a4!;
+    const pageWidth = orientation === "portrait" ? paper!.width : paper!.height;
+    const pageHeight = orientation === "portrait" ? paper!.height : paper!.width;
 
     const pdf = new jsPDF({
-      orientation: "portrait",
+      orientation,
       unit: "mm",
-      format: [a4Width, finalPdfHeight],
+      format: [pageWidth, pageHeight],
     });
 
     pdf.setFillColor(backgroundRgb.r, backgroundRgb.g, backgroundRgb.b);
-    pdf.rect(0, 0, a4Width, finalPdfHeight, "F");
+    pdf.rect(0, 0, pageWidth, pageHeight, "F");
 
-    pdf.addImage(imgData, "JPEG", padding, padding, scaledWidth, scaledHeight);
+    pdf.addImage(imgData, "JPEG", padding, padding, pageWidth - padding * 2, pageHeight - padding * 2);
 
     return pdf.output("blob");
 
@@ -304,6 +294,7 @@ export type BulkPdfOptions = {
   scale?: number;
   padding?: number;
   orientation?: "portrait" | "landscape";
+  paperSize?: string;
   /** Called with (completedCount, totalCount) for progress tracking */
   onProgress?: (completed: number, total: number) => void;
 };
@@ -322,6 +313,7 @@ export async function generateBulkPdfFromElements(
     scale = 2,
     padding = 0,
     orientation = "portrait",
+    paperSize = "a4",
     onProgress,
   } = options;
 
@@ -331,9 +323,9 @@ export async function generateBulkPdfFromElements(
 
   const { jsPDF } = await import("jspdf");
 
-  // A4 dimensions in mm
-  const a4Width = orientation === "portrait" ? 210 : 297;
-  const a4Height = orientation === "portrait" ? 297 : 210;
+  const paper = PDF_PAPER_SIZES[paperSize] || PDF_PAPER_SIZES.a4!;
+  const pageWidth = orientation === "portrait" ? paper!.width : paper!.height;
+  const pageHeight = orientation === "portrait" ? paper!.height : paper!.width;
 
   let pdf: InstanceType<typeof jsPDF> | null = null;
 
@@ -341,7 +333,6 @@ export async function generateBulkPdfFromElements(
     const el = elements[i];
     if (!el) continue;
 
-    // Render element to canvas
     const canvas = await html2canvas(el, {
       scale,
       backgroundColor: "#ffffff",
@@ -354,43 +345,32 @@ export async function generateBulkPdfFromElements(
     });
 
     const imgData = canvas.toDataURL("image/jpeg", quality);
-    const imgWidth = canvas.width;
-    const imgHeight = canvas.height;
-
-    const pdfScale = (a4Width - padding * 2) / imgWidth;
-    const scaledWidth = imgWidth * pdfScale;
-    const scaledHeight = imgHeight * pdfScale;
-
-    const pageHeight = Math.max(scaledHeight + padding * 2, a4Height);
 
     if (i === 0) {
-      // Create PDF with first page
       pdf = new jsPDF({
         orientation,
         unit: "mm",
-        format: [a4Width, pageHeight],
+        format: [pageWidth, pageHeight],
       });
     } else if (pdf) {
-      // Add new page for subsequent elements
-      pdf.addPage([a4Width, pageHeight], orientation);
+      pdf.addPage([pageWidth, pageHeight], orientation);
     }
 
     if (pdf) {
-      // White background
       pdf.setFillColor(255, 255, 255);
-      pdf.rect(0, 0, a4Width, pageHeight, "F");
+      pdf.rect(0, 0, pageWidth, pageHeight, "F");
 
+      // Fill entire page edge-to-edge
       pdf.addImage(
         imgData,
         "JPEG",
         padding,
         padding,
-        scaledWidth,
-        scaledHeight,
+        pageWidth - padding * 2,
+        pageHeight - padding * 2,
       );
     }
 
-    // Report progress
     onProgress?.(i + 1, elements.length);
   }
 

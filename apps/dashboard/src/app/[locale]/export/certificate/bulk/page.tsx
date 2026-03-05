@@ -164,6 +164,12 @@ export default function BulkExportCertificatePage() {
           transition-delay: 0s !important;
         }
 
+        @page {
+          margin: 0 !important;
+          padding: 0 !important;
+          size: auto;
+        }
+
         @media print {
           .break-before-page {
             break-before: page;
@@ -174,7 +180,7 @@ export default function BulkExportCertificatePage() {
           }
         }
 
-        body {
+        html, body {
           background-color: white !important;
           margin: 0 !important;
           padding: 0 !important;
