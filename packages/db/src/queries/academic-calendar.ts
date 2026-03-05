@@ -8,7 +8,9 @@ const calendarCache = new RedisCache("calendar", 60 * 60 * 24); // 24 hours
 export const getCurrentAcademicYear = async () => {
   const cacheKey = "year:current";
   const cached = await calendarCache.get<typeof academicYears.$inferSelect>(cacheKey);
-  if (cached) return cached;
+  
+  // Explicitly check for undefined to allow null to be returned from cache if we decide to cache misses
+  if (cached !== undefined) return cached;
 
   const [currentYear] = await db
     .select()
@@ -19,13 +21,14 @@ export const getCurrentAcademicYear = async () => {
   if (currentYear) {
     await calendarCache.set(cacheKey, currentYear);
   }
-  return currentYear;
+  
+  return currentYear ?? null;
 };
 
 export const getAcademicYears = async () => {
   const cacheKey = "years:all";
   const cached = await calendarCache.get<any[]>(cacheKey);
-  if (cached) return cached;
+  if (cached !== undefined) return cached;
 
   const results = await db.query.academicYears.findMany({
     orderBy: (years, { desc }) => [desc(years.yearName)],
@@ -46,13 +49,13 @@ export const getAcademicYearById = async (id: number) => {
     .from(academicYears)
     .where(eq(academicYears.id, id))
     .limit(1);
-  return result;
+  return result ?? null;
 };
 
 export const getCurrentTerm = async () => {
     const cacheKey = "term:current";
     const cached = await calendarCache.get<typeof academicTerms.$inferSelect>(cacheKey);
-    if (cached) return cached;
+    if (cached !== undefined) return cached;
 
     const [currentTerm] = await db
         .select()
@@ -63,7 +66,7 @@ export const getCurrentTerm = async () => {
     if (currentTerm) {
         await calendarCache.set(cacheKey, currentTerm);
     }
-    return currentTerm;
+    return currentTerm ?? null;
 }
 
 export const getTermsByYear = async (yearId: number) => {
