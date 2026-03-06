@@ -15,17 +15,28 @@ export const getClassesV3 = async (
     offset?: number;
   }
 ) => {
-  // academicYearId is now used only for filtering student counts via enrollments
-  const academicYearId = typeof params === 'number' 
+  // academicYearId fallback to current if not provided
+  let yearId = typeof params === 'number' 
     ? params 
     : (params?.academicYearId ? Number(params.academicYearId) : undefined);
+
+  if (!yearId && typeof params === 'object') {
+    const [currentYear] = await db
+      .select({ id: academicYears.id })
+      .from(academicYears)
+      .where(eq(academicYears.isCurrent, true))
+      .limit(1);
+    
+    yearId = currentYear?.id;
+  }
+
   const q = typeof params === 'object' ? params?.q : undefined;
   const sort = typeof params === 'object' ? params?.sort : undefined;
   const flat = typeof params === 'object' ? params?.flat : false;
   const limit = typeof params === 'object' ? params?.limit : undefined;
   const offset = typeof params === 'object' ? params?.offset : 0;
 
-  const cacheKey = `classes_v3:${academicYearId ?? "all"}:${q ?? "none"}:${sort?.join(",") ?? "default"}:${flat}:${limit}:${offset}`;
+  const cacheKey = `classes_v3:${yearId ?? "all"}:${q ?? "none"}:${sort?.join(",") ?? "default"}:${flat}:${limit}:${offset}`;
   const cached = await classCache.get<any[]>(cacheKey);
   if (cached && !q && !sort) return cached; // Only use cache for default view
 
@@ -47,10 +58,11 @@ export const getClassesV3 = async (
     orderBy.push(asc(classes.division));
   }
 
-  // Build student count subquery — scoped by academicYearId if provided
-  const studentCountSql = academicYearId
-    ? sql<number>`(SELECT count(*) FROM enrollments e WHERE e.class_id = ${classes.id} AND e.deleted_at IS NULL AND e.status = 'active' AND e.academic_year_id = ${academicYearId})::int`
-    : sql<number>`(SELECT count(*) FROM enrollments e WHERE e.class_id = ${classes.id} AND e.deleted_at IS NULL AND e.status = 'active')::int`;
+  // Build student count subquery — MUST be scoped by academic year to avoid double counting across years
+  // Using DISTINCT for double safety, though enrollments should be unique
+  const studentCountSql = yearId
+    ? sql<number>`(SELECT count(DISTINCT e.student_id) FROM enrollments e WHERE e.class_id = ${classes.id} AND e.deleted_at IS NULL AND e.status = 'active' AND e.academic_year_id = ${yearId})::int`
+    : sql<number>`(SELECT count(DISTINCT e.student_id) FROM enrollments e WHERE e.class_id = ${classes.id} AND e.deleted_at IS NULL AND e.status = 'active')::int`;
 
   const where = and(
     isNull(classes.deletedAt),
@@ -109,9 +121,9 @@ export const getClassesV3 = async (
   }
 
   // Fetch all children for roots in one go (only for tree view without search)
-  const childStudentCountSql = academicYearId
-    ? sql<number>`(SELECT count(*) FROM enrollments e WHERE e.class_id = ${classes.id} AND e.deleted_at IS NULL AND e.status = 'active' AND e.academic_year_id = ${academicYearId})::int`
-    : sql<number>`(SELECT count(*) FROM enrollments e WHERE e.class_id = ${classes.id} AND e.deleted_at IS NULL AND e.status = 'active')::int`;
+  const childStudentCountSql = yearId
+    ? sql<number>`(SELECT count(DISTINCT e.student_id) FROM enrollments e WHERE e.class_id = ${classes.id} AND e.deleted_at IS NULL AND e.status = 'active' AND e.academic_year_id = ${yearId})::int`
+    : sql<number>`(SELECT count(DISTINCT e.student_id) FROM enrollments e WHERE e.class_id = ${classes.id} AND e.deleted_at IS NULL AND e.status = 'active')::int`;
 
   const rawChildren = await db
     .select({

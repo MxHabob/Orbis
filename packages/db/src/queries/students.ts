@@ -368,7 +368,12 @@ export const upsertStudent = async (data: any) => {
             notes,
             stats,
         }).where(eq(students.userId, targetUserId));
+
+        // Invalidate class caches as student counts likely changed
+        const classCache = new RedisCache("classes", 60 * 60);
+        await classCache.invalidate().catch(() => {});
     } else {
+        // ... (CREATE branch remains same)
         // Create
         return db.transaction(async (tx) => {
             const [newUser] = await tx.insert(users).values({
