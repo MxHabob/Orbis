@@ -389,21 +389,21 @@ export function StudentCertificateSheet() {
                       <DropdownMenuLabel className="text-[10px] text-muted-foreground font-normal px-2 py-1.5 uppercase">
                         {t("reports.templates")}
                       </DropdownMenuLabel>
-                      {(templates as any)?.map((t: any) => (
+                      {(templates as any)?.map((template: any) => (
                         <DropdownMenuCheckboxItem
-                          key={t.id}
-                          checked={currentTemplate?.id === t.id}
-                          onCheckedChange={() => setParams({ templateId: t.id })}
+                          key={template.id}
+                          checked={currentTemplate?.id === template.id}
+                          onCheckedChange={() => setParams({ templateId: template.id })}
                           className={cn(
                             "text-xs",
-                            currentTemplate?.id === t.id
+                            currentTemplate?.id === template.id
                               ? "dark:bg-[#131313] text-primary"
                               : "text-[#666]"
                           )}
                         >
                           <span className="flex items-center gap-1">
-                             {t.name}
-                            {t.isDefault && (
+                             {template.name}
+                            {template.isDefault && (
                               <span className="text-muted-foreground text-[10px]">
                                 ({t("reports.default")})
                               </span>

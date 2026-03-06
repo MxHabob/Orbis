@@ -471,12 +471,13 @@ pub fn run() {
                 WebviewUrl::External(tauri::Url::parse(&app_url).unwrap()),
             )
             .title("Mommy")
-            .inner_size(1450.0, 910.0)
-            .min_inner_size(1450.0, 910.0)
+            .inner_size(1200.0, 750.0)
+            .min_inner_size(900.0, 600.0)
             .user_agent("Mozilla/5.0 (compatible; Mommy Desktop App)")
             .decorations(false)
             .visible(false)
             .transparent(true)
+            .center()
             .shadow(true);
 
             #[cfg(target_os = "macos")]

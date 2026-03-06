@@ -194,16 +194,16 @@ export function BottomBar() {
               <DropdownMenuLabel className="text-[10px] text-muted-foreground font-normal px-2 py-1.5 uppercase tracking-wider">
                 {t("reports.select_template")}
               </DropdownMenuLabel>
-              {(templates as any)?.map((t: any) => (
+              {(templates as any)?.map((template: any) => (
                 <DropdownMenuCheckboxItem
-                  key={t.id}
-                  checked={currentTemplate?.id === t.id}
-                  onCheckedChange={() => setTemplateId(t.id)}
+                  key={template.id}
+                  checked={currentTemplate?.id === template.id}
+                  onCheckedChange={() => setTemplateId(template.id)}
                   className="text-xs cursor-pointer"
                 >
                    <span className="flex items-center gap-1">
-                    {t.name}
-                    {t.isDefault && <span className="text-[9px] opacity-60 bg-accent px-1 rounded">({t("reports.default")})</span>}
+                    {template.name}
+                    {template.isDefault && <span className="text-[9px] opacity-60 bg-accent px-1 rounded">({t("reports.default")})</span>}
                   </span>
                 </DropdownMenuCheckboxItem>
               ))}

@@ -55,6 +55,30 @@
     "typecheck": {
       "dependsOn": ["^build"],
       "outputs": []
+    },
+    "tauri:build": {
+      "dependsOn": ["^build"],
+      "outputs": ["src-tauri/target/release/bundle/**"]
+    },
+    "tauri:dev": {
+      "persistent": true,
+      "cache": false
+    },
+    "tauri:staging": {
+      "persistent": true,
+      "cache": false
+    },
+    "tauri:prod": {
+      "persistent": true,
+      "cache": false
+    },
+    "tauri:build:staging": {
+      "dependsOn": ["^build"],
+      "outputs": ["src-tauri/target/release/bundle/**"]
+    },
+    "tauri:build:prod": {
+      "dependsOn": ["^build"],
+      "outputs": ["src-tauri/target/release/bundle/**"]
     }
   }
 }
