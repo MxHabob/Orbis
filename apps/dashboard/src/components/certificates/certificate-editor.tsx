@@ -71,8 +71,8 @@ export function CertificateEditor({
     const monthName = month ? (HIJRI_MONTHS.find(m => m.id === month)?.name || t("reports.month_label", { month })) : "";
 
     return {
-      student_name: student.name || t("reports.preview.student_name"),
-      name: student.name || t("reports.preview.student_name"),
+      student_name: student.name || "عبدالله محمد الهبوب",
+      name: student.name || "عبدالله محمد الهبوب",
       academic_number: student.studentNumber || "20240001",
       national_id: student.secretNumber || "123456789",
       department: stats.department || t("reports.preview.department"),
@@ -152,7 +152,6 @@ export function CertificateEditor({
         fontSize: 18,
         fontWeight: "bold",
         color: "#000000",
-        width: 30,
         align: "right",
         fontFamily: "inherit"
       })

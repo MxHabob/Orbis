@@ -10,14 +10,8 @@ import { useQuery } from "@tanstack/react-query";
 /**
  * Bulk Export Page for Puppeteer (2026 - Production Grade)
  *
- * This page is NOT for end users — it's rendered headlessly by Puppeteer.
+ * This page is rendered headlessly by Puppeteer for bulk certificate generation.
  * Each certificate gets its own page via CSS `break-before: page`.
- *
- * Performance Optimizations:
- * - Uses `font-display: swap` to prevent blocking on web fonts
- * - Disables animations and transitions for faster rendering
- * - Sets explicit dimensions to prevent layout shifts
- * - Signals readiness via `window.isReadyToCapture` after all grades load
  */
 
 const HIJRI_MONTHS_NAMES: Record<number, string> = {
@@ -47,19 +41,13 @@ const mapStudentToVariables = (student: any, type?: string, month?: number) => {
     final_result: stats.final_result || "",
     rank: stats.rank || "1",
     org_name: "مدرسة صنعاء النموذجية",
-    admin_name: stats.admin_name || "",
-    vp_name: stats.vp_name || "",
+    admin_name: stats.admin_name || "مدير المدرسة",
+    vp_name: stats.vp_name || "وكيل المدرسة",
     issue_date: new Date().toLocaleDateString('ar-YE', { year: 'numeric', month: 'long', day: 'numeric' }),
     report_type: type === "half-yearly" ? "نصفي" : (type === "final" ? "نهائي" : "شهري"),
-    reportType: type === "half-yearly" ? "نصفي" : (type === "final" ? "نهائي" : "شهري"),
     month_name: month ? (HIJRI_MONTHS_NAMES[month] || `شهر ${month}`) : "",
     academic_year: currentYear,
-    academicYear: currentYear,
-    year_name: currentYear,
-    yearName: currentYear,
     studentId: student.userId,
-    userId: student.userId,
-    id: student.userId,
   };
 };
 
@@ -74,7 +62,6 @@ export default function BulkExportCertificatePage() {
   const month = parseInt(searchParams.get("month") || "1");
   const trpc = useTRPC();
 
-  // Fetch all students in one batch query
   const { data: students, isLoading: loadingStudents } = useQuery(
     trpc.students.getByUserIds.queryOptions(
       { userIds: studentIds },
@@ -89,24 +76,15 @@ export default function BulkExportCertificatePage() {
 
   const [loadedCount, setLoadedCount] = useState(0);
 
-  // Signal Puppeteer when all certificates are rendered
   useEffect(() => {
-    console.log(`[ExportPage] loadedCount: ${loadedCount}, total: ${students?.length}`);
     if (students && students.length > 0 && loadedCount >= students.length) {
-      console.log(`[ExportPage] All certificates loaded. Signaling readiness...`);
-      // Wait for browser to finish painting
-      const timer = setTimeout(() => {
-        // Force layout recalculation
-        document.body.offsetHeight;
+      setTimeout(() => {
         (window as any).isReadyToCapture = true;
-        console.log(`[ExportPage] window.isReadyToCapture set to true`);
-      }, 1000);
-      return () => clearTimeout(timer);
+      }, 500); // Small wait for styles to settle
     }
   }, [loadedCount, students]);
 
   const handleCertificateLoad = useCallback(() => {
-    console.log(`[ExportPage] Certificate Loaded Event received`);
     setLoadedCount((prev) => prev + 1);
   }, []);
 
@@ -116,57 +94,38 @@ export default function BulkExportCertificatePage() {
     return (
       <div className="flex items-center justify-center min-h-screen bg-white">
         <Spinner />
-        <span className="ml-2">جاري تجهيز البيانات...</span>
-      </div>
-    );
-  }
-
-  if (students.length === 0) {
-    return (
-      <div className="p-8 text-center text-red-500">
-        لا توجد بيانات للطلاب المحددين
+        <span className="mr-2">جاري تجهيز البيانات...</span>
       </div>
     );
   }
 
   return (
-    <div className="bg-white p-0 m-0 flex flex-col items-center">
+    <div className="bg-white p-0 m-0">
       {students.map((student, index) => (
         <div
           key={student.userId}
-          className={`${index > 0 ? "break-before-page" : ""} print:m-0`}
+          className={`${index > 0 ? "break-before-page" : ""} flex justify-center`}
         >
           <CertificateViewer
             template={template as any}
             data={mapStudentToVariables(student, type, month)}
             certificateType={type}
             month={month}
+            preview={false}
             className="shadow-none border-none"
             onLoad={handleCertificateLoad}
           />
         </div>
       ))}
 
-      {/* Debug overlay — hidden in print */}
-      <div className="fixed top-0 left-0 bg-black/80 text-white p-2 text-xs z-50 print:hidden">
-        Loaded: {loadedCount} / {students.length}
-      </div>
-
-      {/* Print & Puppeteer CSS optimizations */}
       <style jsx global>{`
-        /* Disable animations for faster Puppeteer rendering */
-        *,
-        *::before,
-        *::after {
-          animation-duration: 0s !important;
-          animation-delay: 0s !important;
-          transition-duration: 0s !important;
-          transition-delay: 0s !important;
+        * {
+          animation: none !important;
+          transition: none !important;
         }
 
         @page {
           margin: 0 !important;
-          padding: 0 !important;
           size: auto;
         }
 
@@ -184,11 +143,8 @@ export default function BulkExportCertificatePage() {
           background-color: white !important;
           margin: 0 !important;
           padding: 0 !important;
-        }
-
-        /* Ensure images are loaded before capture */
-        img {
-          image-rendering: -webkit-optimize-contrast;
+          width: 100%;
+          direction: rtl;
         }
       `}</style>
     </div>

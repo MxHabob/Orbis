@@ -3,7 +3,7 @@
 import { memo } from "react";
 import { cn } from "@midday/ui/cn";
 import { Button } from "@midday/ui/button";
-import { Sparkles, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { GradesTable } from "../grades-table";
 import type { EditorElement } from "./types";
 
@@ -37,9 +37,10 @@ export const DraggableElement = memo(({
       id={el.id}
       data-id={el.id}
       className={cn(
-        "absolute target flex items-center justify-center",
-        isPreview ? "cursor-default select-text" : "cursor-pointer select-none",
-        isSelected && "z-50"
+        "absolute target flex items-center group",
+        el.align === "center" ? "justify-center" : el.align === "left" ? "justify-start" : "justify-end",
+        isPreview ? "cursor-default select-text" : "cursor-grab active:cursor-grabbing select-none hover:ring-2 hover:ring-primary/40 rounded-sm",
+        isSelected && "z-50 ring-2 ring-primary/60"
       )}
       onClick={(e) => {
         e.stopPropagation();
@@ -51,26 +52,39 @@ export const DraggableElement = memo(({
         transform: `rotate(${el.rotation || 0}deg)`,
         textAlign: el.align as any,
         opacity: el.opacity,
-        width: el.width ? `${el.width}%` : "auto",
+        width: el.width ? `${el.width}%` : (el.type === "text" || el.type === "variable") ? "fit-content" : "auto",
         height: (el.type === "shape") ? `${el.height}px` : "auto",
+        direction: "rtl",
+        minWidth: (el.type === "text" || el.type === "variable") ? "50px" : "auto",
       }}
     >
       {isSelected && !isPreview && (
-        <div className="absolute -top-12 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-background border shadow-xl p-1 rounded-lg z-[100] animate-in fade-in zoom-in duration-200">
+        <div className={cn(
+            "absolute left-1/2 -translate-x-1/2 flex items-center gap-1 px-1.5 py-1",
+            "bg-[#1a1a1a] dark:bg-white",
+            "border border-white/10 dark:border-black/10",
+            "shadow-[0_8px_30px_rgba(0,0,0,0.4)] rounded-xl z-[100]",
+            "pointer-events-auto",
+            el.y < 15 ? "top-full mt-4" : "-top-14"
+          )}>
            <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-destructive hover:bg-destructive/10"
+              className="h-7 w-7 text-red-400 hover:text-red-300 hover:bg-red-500/15 rounded-lg transition-all shrink-0"
               onClick={(e) => {
                 e.stopPropagation();
                 onDelete(el.id);
               }}
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-3.5 h-3.5" />
             </Button>
-            <div className="w-px h-4 bg-border mx-1" />
-            <div className="px-2 text-[10px] font-medium text-muted-foreground whitespace-nowrap">
-              {el.x.toFixed(0)}%, {el.y.toFixed(0)}%
+            <div className="h-4 w-px bg-white/10 dark:bg-black/10" />
+            <div className="flex items-center gap-1.5 px-2 py-0.5 font-mono text-[9px] whitespace-nowrap tabular-nums">
+              <span className="text-white/40 dark:text-black/40 uppercase">X</span>
+              <span className="text-white dark:text-black font-semibold">{el.x.toFixed(1)}%</span>
+              <div className="w-1 h-1 rounded-full bg-white/20 dark:bg-black/20" />
+              <span className="text-white/40 dark:text-black/40 uppercase">Y</span>
+              <span className="text-white dark:text-black font-semibold">{el.y.toFixed(1)}%</span>
             </div>
         </div>
       )}
@@ -96,18 +110,33 @@ export const DraggableElement = memo(({
       ) : (
         <div 
           className={cn(
-            "whitespace-nowrap font-bold transition-all",
-            el.variableKey && !isPreview && "px-3 py-1 bg-primary/10 text-primary border border-primary/20 rounded-lg flex items-center gap-2"
+            "text-content font-bold",
+            el.variableKey && !isPreview && "variable-pill-tag"
           )}
           style={{
             fontSize: `${el.fontSize}px`,
             fontWeight: el.fontWeight,
-            color: el.color,
+            color: isPreview || !el.variableKey ? el.color : undefined,
             fontFamily: el.fontFamily,
+            maxWidth: "100%",
+            overflow: "hidden",
+            display: "inline-flex",
+            alignItems: "center",
+            ...(el.variableKey && !isPreview ? {
+              padding: "4px 12px",
+              background: "#eef2ff",
+              border: "2px solid #818cf8",
+              borderRadius: "99px",
+              justifyContent: "center",
+              color: "#4338ca",
+              fontWeight: "700",
+              fontSize: `${Math.max(11, el.fontSize || 14)}px`,
+              boxShadow: "0 2px 8px rgba(99, 102, 241, 0.15)",
+              boxSizing: "border-box",
+            } : {}),
           }}
         >
-          {el.variableKey && !isPreview && <Sparkles className="w-3 h-3" />}
-          {content}
+          <span className="truncate">{content}</span>
         </div>
       )}
     </div>

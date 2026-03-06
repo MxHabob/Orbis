@@ -63,32 +63,6 @@ export const Canvas = memo(({
     }
   }, [selectedElementId, elements]);
 
-  const handleTransform = (e: any) => {
-    const id = e.target.getAttribute("data-id");
-    if (!id) return;
-
-    const { drag, scale: elementScale, rotate } = e.transform;
-    
-    // Convert px to % for our store
-    const xPercentage = (e.left / canvasWidth) * 100;
-    const yPercentage = (e.top / canvasHeight) * 100;
-
-    const updates: Partial<EditorElement> = {
-      x: xPercentage,
-      y: yPercentage,
-      rotation: e.rotate,
-    };
-
-    if (e.width && e.height) {
-        // Handle physical width/height if needed, but we mostly use % for elements
-        // For text/variables we don't scale width usually, for images/shapes we do.
-        const widthPercentage = (e.offsetWidth / canvasWidth) * 100;
-        updates.width = widthPercentage;
-    }
-
-    updateElement(id, updates);
-  };
-
   const [isInteracting, setIsInteracting] = useState(false);
 
   // 1. Unified State Synchronization
@@ -106,7 +80,19 @@ export const Canvas = memo(({
     
     // Resize data
     if ("width" in lastEvent) {
+      const el = elements.find(e => e.id === id);
       updates.width = (lastEvent.width / canvasWidth) * 100;
+      
+      // If it's a text/variable, we scale the font size
+      if (el && (el.type === "text" || el.type === "variable") && el.fontSize) {
+          const ratio = lastEvent.width / (lastEvent.lastWidth || lastEvent.width);
+          // Only update font size if it's a significant change to avoid jitter
+          if (ratio !== 1) {
+             const newFontSize = Math.round(el.fontSize * (lastEvent.width / ((el.width || 20) / 100 * canvasWidth)));
+             updates.fontSize = newFontSize;
+          }
+      }
+
       updates.height = lastEvent.height;
       if (lastEvent.drag) {
         updates.x = (lastEvent.drag.left / canvasWidth) * 100;
@@ -163,7 +149,7 @@ export const Canvas = memo(({
   }, [selectedElementId, elements, updateElement, onDelete, canvasWidth, canvasHeight, isPreview]);
 
   return (
-    <div className="flex-1 overflow-hidden p-8 flex items-center justify-center relative bg-[#202124] dark:bg-[#0f0f0f]">
+    <div className="flex-1 overflow-hidden p-8 flex items-center justify-center relative bg-[#1a1a1d] dark:bg-[#0c0c0e]">
       <Selecto
         dragContainer={".canvas-container"}
         selectableTargets={[".target"]}
@@ -200,17 +186,18 @@ export const Canvas = memo(({
       >
         {({ zoomIn, zoomOut, resetTransform }) => (
           <>
-            <div className="absolute bottom-4 right-4 z-30 flex items-center gap-0.5 backdrop-blur-xl bg-black/60 dark:bg-white/10 border border-white/10 dark:border-white/[0.08] rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.4)] py-1 px-1.5 transition-all duration-300 hover:bg-black/70 dark:hover:bg-white/15">
+            {/* Zoom Controls — Redesigned */}
+            <div className="absolute bottom-4 right-4 z-30 flex items-center gap-0.5 backdrop-blur-xl bg-black/60 dark:bg-white/10 border border-white/10 dark:border-white/[0.08] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] py-1 px-1.5 transition-all duration-300 hover:bg-black/70 dark:hover:bg-white/15">
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="h-7 w-7 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-all duration-200" 
+                className="h-7 w-7 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-all duration-200" 
                 onClick={() => zoomOut()}
               >
                 <ZoomOut className="w-3.5 h-3.5" />
               </Button>
               <button 
-                className="text-[11px] font-semibold tracking-wide px-2.5 min-w-[48px] text-center text-white/90 hover:text-white hover:bg-white/10 rounded-full py-1 transition-all duration-200"
+                className="text-[11px] font-semibold tracking-wide px-2.5 min-w-[48px] text-center text-white/90 hover:text-white hover:bg-white/10 rounded-xl py-1 transition-all duration-200 font-mono"
                 onClick={() => resetTransform()}
               >
                 {(scale * 100).toFixed(0)}%
@@ -218,20 +205,53 @@ export const Canvas = memo(({
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="h-7 w-7 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-all duration-200" 
+                className="h-7 w-7 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-all duration-200" 
                 onClick={() => zoomIn()}
               >
                 <ZoomIn className="w-3.5 h-3.5" />
               </Button>
             </div>
 
+            {/* Preview Mode Indicator */}
+            {isPreview && (
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/15 border border-emerald-500/20 backdrop-blur-xl">
+                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-[11px] font-semibold text-emerald-300 tracking-wide">PREVIEW MODE</span>
+              </div>
+            )}
+
             <div className="w-full h-full canvas-container flex items-center justify-center">
               <TransformComponent wrapperClass="!w-full !h-full" contentClass="!w-full !h-full flex items-center justify-center">
                 <div
                   ref={canvasRef}
-                  className={cn("relative bg-white shadow-2xl origin-center transition-shadow duration-300", !isPreview && "ring-1 ring-black/10")}
-                  style={{ width: canvasWidth, height: canvasHeight }}
+                  className={cn(
+                    "relative bg-white shadow-[0_20px_60px_rgba(0,0,0,0.15)] origin-center transition-all duration-500 ease-out-expo", 
+                    !isPreview ? "ring-1 ring-black/5" : "overflow-hidden"
+                  )}
+                  style={{ 
+                    width: canvasWidth, 
+                    height: canvasHeight,
+                  }}
                 >
+                  {/* Dot Grid Background */}
+                  {!isPreview && (
+                    <div 
+                      className="absolute inset-0 pointer-events-none opacity-[0.03]" 
+                      style={{ 
+                        backgroundImage: `radial-gradient(#000 1px, transparent 1px)`, 
+                        backgroundSize: '20px 20px' 
+                      }} 
+                    />
+                  )}
+
+                  {/* Center crosshair guides — editor only */}
+                  {!isPreview && (
+                    <>
+                      <div className="absolute left-1/2 top-0 bottom-0 w-px bg-blue-500/[0.06] pointer-events-none" />
+                      <div className="absolute top-1/2 left-0 right-0 h-px bg-blue-500/[0.06] pointer-events-none" />
+                    </>
+                  )}
+
                   {backgroundImage && (
                     <img src={backgroundImage} className="absolute inset-0 w-full h-full object-cover pointer-events-none" alt="Background" />
                   )}
@@ -272,8 +292,8 @@ export const Canvas = memo(({
                         bounds={{ left: 0, top: 0, right: canvasWidth, bottom: canvasHeight }}
                         
                         // Guidelines & Snapping
-                        verticalGuidelines={[0, canvasWidth / 2, canvasWidth]}
-                        horizontalGuidelines={[0, canvasHeight / 2, canvasHeight]}
+                        verticalGuidelines={[0, canvasWidth / 4, canvasWidth / 2, canvasWidth * 3/4, canvasWidth]}
+                        horizontalGuidelines={[0, canvasHeight / 4, canvasHeight / 2, canvasHeight * 3/4, canvasHeight]}
                         elementGuidelines={elementGuidelines}
                         snapThreshold={5}
                         
@@ -287,6 +307,16 @@ export const Canvas = memo(({
                             e.target.style.width = `${e.width}px`;
                             e.target.style.height = `${e.height}px`;
                             e.target.style.transform = e.drag.transform;
+                            
+                            // Real-time font size feedback
+                            const id = e.target.getAttribute("data-id");
+                            const el = elements.find(item => item.id === id);
+                            if (el && (el.type === "text" || el.type === "variable")) {
+                                const ratio = e.width / (el.width ? (el.width / 100 * canvasWidth) : (e.target as HTMLElement).offsetWidth);
+                                const newSize = Math.round((el.fontSize || 18) * ratio);
+                                const textEl = e.target.querySelector('.text-content') as HTMLElement;
+                                if (textEl) textEl.style.fontSize = `${newSize}px`;
+                            }
                         }}
                         onResizeEnd={e => syncElement(e.target.getAttribute("data-id")!, e.lastEvent)}
                         

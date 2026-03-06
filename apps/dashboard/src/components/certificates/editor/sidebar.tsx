@@ -339,25 +339,34 @@ export const Sidebar = memo(({
 
                 {(selectedElement.type === "image" || selectedElement.type === "shape" || selectedElement.type === "table" || selectedElement.type === "text" || selectedElement.type === "variable") && (
                   <div className="space-y-2">
-                    <Label className="text-xs">{t("reports.editor.element_size")}: {selectedElement.width}%</Label>
+                    <Label className="text-xs font-semibold flex justify-between">
+                      {t("reports.editor.element_size")}
+                      <span className="text-primary font-mono">{Number(selectedElement.width || 20).toFixed(1)}%</span>
+                    </Label>
                     <Slider 
                       value={[selectedElement.width || 20]} 
                       onValueChange={([v]) => updateElement(selectedElement.id, { width: v })}
-                      min={5} max={100} step={1}
+                      min={1} max={100} step={0.1}
+                      className="py-4"
                     />
                   </div>
                 )}
 
                 <div className="space-y-2">
-                  <Label className="text-xs">{t("reports.editor.color")}</Label>
-                  <div className="flex items-center gap-2">
-                    <input 
-                      type="color" 
-                      className="w-10 h-10 rounded border cursor-pointer"
-                      value={selectedElement.type === 'shape' ? selectedElement.backgroundColor : selectedElement.color}
-                      onChange={(e) => updateElement(selectedElement.id, selectedElement.type === 'shape' ? { backgroundColor: e.target.value } : { color: e.target.value })}
-                    />
-                    <span className="text-xs font-mono">{(selectedElement.type === 'shape' ? selectedElement.backgroundColor : selectedElement.color)?.toUpperCase()}</span>
+                  <Label className="text-xs font-semibold">{t("reports.editor.color")}</Label>
+                  <div className="flex items-center gap-3 p-2 border rounded-xl bg-accent/30 translate-all duration-200">
+                    <div className="relative w-10 h-10 rounded-lg overflow-hidden border-2 border-background shadow-sm shrink-0">
+                      <input 
+                        type="color" 
+                        className="absolute inset-[-100%] w-[300%] h-[300%] cursor-pointer"
+                        value={selectedElement.type === 'shape' ? selectedElement.backgroundColor : selectedElement.color}
+                        onChange={(e) => updateElement(selectedElement.id, selectedElement.type === 'shape' ? { backgroundColor: e.target.value } : { color: e.target.value })}
+                      />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Hex Code</span>
+                      <span className="text-xs font-mono font-bold">{(selectedElement.type === 'shape' ? selectedElement.backgroundColor : selectedElement.color)?.toUpperCase()}</span>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -75,10 +75,9 @@ export function CertificateViewer({
     );
 
     if (!hasTable && onLoad) {
-      // Simulate load delay for consistency or just call it
       const timer = setTimeout(() => {
         onLoad();
-      }, 100);
+      }, 300); // 300ms to allow fonts to render
       return () => clearTimeout(timer);
     }
   }, [elements, onLoad]);
@@ -93,8 +92,9 @@ export function CertificateViewer({
   const replaceVariables = (text: string) => {
     if (!text) return "";
     return text.replace(/\{\{(.*?)\}\}/g, (match, key) => {
-      const value = data[key.trim()];
-      if (value !== undefined) return String(value);
+      const trimmedKey = key.trim();
+      const value = data[trimmedKey];
+      if (value !== undefined && value !== null) return String(value);
       return preview ? match : "";
     });
   };
@@ -106,6 +106,8 @@ export function CertificateViewer({
         width: `${canvasWidth}px`,
         height: `${canvasHeight}px`,
         aspectRatio: `${canvasWidth}/${canvasHeight}`,
+        boxSizing: 'border-box',
+        direction: 'rtl',
       }}
       data-canvas-content
     >
@@ -119,21 +121,30 @@ export function CertificateViewer({
        )}
 
        {/* Elements */}
-       {elements.map((el) => (
-         <div
+       {elements.map((el) => {
+         const elementContent = el.variableKey ? replaceVariables(el.variableKey) : replaceVariables(el.content);
+         const isText = el.type === "text" || el.type === "variable";
+         
+         return (
+          <div
             key={el.id}
-            className="absolute transition-all"
+            className={cn(
+              "absolute flex items-center",
+              el.align === "center" ? "justify-center" : el.align === "left" ? "justify-start" : "justify-end"
+            )}
             style={{
               left: `${el.x}%`,
               top: `${el.y}%`,
               transform: `rotate(${el.rotation || 0}deg)`,
               textAlign: el.align as any,
               opacity: el.opacity ?? 1,
-              width: el.width ? `${el.width}%` : "auto",
+              width: el.width ? `${el.width}%` : isText ? "fit-content" : "auto",
               height: el.type === "shape" ? `${el.height}px` : "auto",
               zIndex: (el.type === "image" || el.type === "badge") ? 5 : 10,
+              minWidth: isText ? "50px" : "auto",
+              boxSizing: 'border-box',
             }}
-         >
+          >
            {el.type === "image" ? (
              <img src={el.content} className="w-full h-auto pointer-events-none" alt="logo" />
            ) : el.type === "badge" ? (
@@ -159,19 +170,24 @@ export function CertificateViewer({
               />
            ) : (
              <div 
+                className="font-bold w-full"
                 style={{
                   fontSize: `${el.fontSize}px`,
                   fontWeight: el.fontWeight,
                   color: el.color,
                   fontFamily: el.fontFamily,
                   whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  textAlign: el.align as any,
                 }}
              >
-                {el.variableKey ? replaceVariables(el.variableKey) : replaceVariables(el.content)}
+                {elementContent}
              </div>
            )}
-         </div>
-       ))}
+          </div>
+         );
+       })}
     </div>
   );
 }

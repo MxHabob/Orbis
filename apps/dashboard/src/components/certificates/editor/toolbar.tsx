@@ -11,9 +11,11 @@ import {
 } from "@midday/ui/select";
 import {
   Maximize,
-  Type,
+  Pencil,
   Eye,
-  Table as TableIcon,
+  User,
+  Calendar,
+  GraduationCap,
 } from "lucide-react";
 
 import { useI18n } from "@/locales/client";
@@ -54,17 +56,23 @@ export const Toolbar = memo(({
 }: ToolbarProps) => {
   const t = useI18n();
   return (
-    <div className="h-16 border-b flex items-center justify-between px-6 bg-background shrink-0">
-      <div className="flex items-center gap-4 overflow-x-auto no-scrollbar py-2">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground whitespace-nowrap">
+    <div className="h-14 flex items-center justify-between px-4 bg-background/95 backdrop-blur-sm shrink-0">
+      <div className="flex items-center gap-3 overflow-x-auto no-scrollbar py-2">
+        {/* Paper info badge */}
+        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground whitespace-nowrap bg-accent/50 px-2.5 py-1 rounded-lg border border-border/30">
           <Maximize className="w-3 h-3" />
-          {paperSize.toUpperCase()} · {orientation === 'portrait' ? t("reports.editor.portrait") : t("reports.editor.landscape")}
+          <span className="font-medium">{paperSize.toUpperCase()}</span>
+          <span className="text-muted-foreground/50">·</span>
+          <span>{orientation === 'portrait' ? t("reports.editor.portrait") : t("reports.editor.landscape")}</span>
         </div>
 
+        {/* Preview-only controls */}
         {isPreview && (
-          <div className="flex items-center gap-2 border-r pr-4 ml-2" dir="ltr">
+          <div className="flex items-center gap-1.5 pr-3 ml-1" dir="ltr">
+            {/* Student selector */}
             <Select dir="ltr" value={previewStudentId || students?.[0]?.userId || ""} onValueChange={setPreviewStudentId}>
-              <SelectTrigger className="h-7 w-[140px] text-[10px] bg-accent/50 border-0 shadow-none focus:ring-0">
+              <SelectTrigger className="h-7 w-[140px] text-[10px] bg-accent/40 shadow-none focus:ring-0 rounded-lg gap-1">
+                <User className="w-3 h-3 text-muted-foreground shrink-0" />
                 <SelectValue placeholder={t("reports.preview.student_name")} />
               </SelectTrigger>
               <SelectContent className="max-h-[400px]">
@@ -76,8 +84,10 @@ export const Toolbar = memo(({
               </SelectContent>
             </Select>
 
+            {/* Type selector */}
             <Select dir="ltr" value={selectedType} onValueChange={setSelectedType}>
-              <SelectTrigger className="h-7 w-[100px] text-[10px] bg-accent/50 border-0 shadow-none focus:ring-0">
+              <SelectTrigger className="h-7 w-[100px] text-[10px] bg-accent/40 shadow-none focus:ring-0 rounded-lg gap-1">
+                <GraduationCap className="w-3 h-3 text-muted-foreground shrink-0" />
                 <SelectValue placeholder={t("reports.type")} />
               </SelectTrigger>
               <SelectContent>
@@ -87,9 +97,11 @@ export const Toolbar = memo(({
               </SelectContent>
             </Select>
 
+            {/* Month selector */}
             {selectedType === "monthly" && (
               <Select dir="ltr" value={selectedMonth.toString()} onValueChange={(v) => setSelectedMonth(parseInt(v))}>
-                <SelectTrigger className="h-7 w-[100px] text-[10px] bg-accent/50 border-0 shadow-none focus:ring-0">
+                <SelectTrigger className="h-7 w-[100px] text-[10px] bg-accent/40 shadow-none focus:ring-0 rounded-lg gap-1">
+                  <Calendar className="w-3 h-3 text-muted-foreground shrink-0" />
                   <SelectValue placeholder={t("grades.select_month")} />
                 </SelectTrigger>
                 <SelectContent className="max-h-[300px]">
@@ -102,8 +114,9 @@ export const Toolbar = memo(({
               </Select>
             )}
 
+            {/* Year selector */}
             <Select dir="ltr" value={selectedYear} onValueChange={setSelectedYear}>
-              <SelectTrigger className="h-7 w-[100px] text-[10px] bg-accent/50 border-0 shadow-none focus:ring-0">
+              <SelectTrigger className="h-7 w-[100px] text-[10px] bg-accent/40 shadow-none focus:ring-0 rounded-lg gap-1">
                 <SelectValue placeholder={t("reports.academic_year")} />
               </SelectTrigger>
               <SelectContent>
@@ -116,21 +129,24 @@ export const Toolbar = memo(({
         )}
       </div>
 
-      <div className="flex items-center gap-2">
+      {/* Mode Toggle */}
+      <div className="flex items-center gap-1 bg-accent/50 p-0.5 rounded-xl">
         <Button 
-          variant={!isPreview ? "secondary" : "ghost"} 
+          variant="ghost"
           size="sm"
           onClick={() => setIsPreview(false)}
+          className={`h-7 text-xs rounded-lg gap-1.5 px-3 transition-all ${!isPreview ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
         >
-          <Type className="w-4 h-4 mr-2" />
+          <Pencil className="w-3 h-3" />
           {t("common.edit")}
         </Button>
         <Button 
-          variant={isPreview ? "secondary" : "ghost"} 
+          variant="ghost"
           size="sm"
           onClick={() => setIsPreview(true)}
+          className={`h-7 text-xs rounded-lg gap-1.5 px-3 transition-all ${isPreview ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
         >
-          <Eye className="w-4 h-4 mr-2" />
+          <Eye className="w-3 h-3" />
           {t("common.preview")}
         </Button>
       </div>

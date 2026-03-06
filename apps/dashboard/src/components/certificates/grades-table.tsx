@@ -16,13 +16,13 @@ interface GradesTableProps {
   fontSize?: number;
 }
 
-// Grade label colors for visual distinction
-const GRADE_COLORS: Record<string, string> = {
-  "ممتاز": "text-emerald-700 bg-emerald-50",
-  "جيد جداً": "text-blue-700 bg-blue-50",
-  "جيد": "text-amber-700 bg-amber-50",
-  "مقبول": "text-orange-700 bg-orange-50",
-  "راسب": "text-red-700 bg-red-50",
+// Print-safe grade colors using solid colors (no opacity modifiers that fail in html2canvas)
+const GRADE_COLORS: Record<string, { text: string; bg: string }> = {
+  "ممتاز": { text: "#047857", bg: "#ecfdf5" },
+  "جيد جداً": { text: "#1d4ed8", bg: "#eff6ff" },
+  "جيد": { text: "#b45309", bg: "#fffbeb" },
+  "مقبول": { text: "#c2410c", bg: "#fff7ed" },
+  "راسب": { text: "#dc2626", bg: "#fef2f2" },
 };
 
 export function GradesTable({ 
@@ -41,7 +41,7 @@ export function GradesTable({
       { studentId, type, month },
       { 
         enabled: !!studentId,
-        staleTime: 1000 * 60 * 5 // 5 minutes cache
+        staleTime: 1000 * 60 * 5
       }
     )
   );
@@ -54,9 +54,11 @@ export function GradesTable({
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-8 bg-white border border-black/10 rounded">
-        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-        <span className="ml-2 text-xs text-muted-foreground">جاري تحميل الدرجات...</span>
+      <div 
+        style={{ padding: "24px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: "8px" }}
+      >
+        <Loader2 className="w-4 h-4 animate-spin" style={{ color: "#9ca3af" }} />
+        <span style={{ fontSize: "11px", color: "#9ca3af" }}>جاري تحميل الدرجات...</span>
       </div>
     );
   }
@@ -67,21 +69,28 @@ export function GradesTable({
 
   if (rows.length === 0) {
     return (
-      <div className="p-8 text-center bg-white border border-dashed border-gray-300 rounded text-muted-foreground text-xs" dir="rtl">
+      <div 
+        style={{ 
+          padding: "24px", 
+          textAlign: "center", 
+          background: "#ffffff", 
+          border: "1px dashed #d1d5db", 
+          borderRadius: "8px", 
+          color: "#9ca3af", 
+          fontSize: "11px",
+          direction: "rtl",
+        }}
+      >
         لا توجد بيانات درجات مسجلة لهذا الطالب في هذا الوقت.
       </div>
     );
   }
 
-  // Columns: assessmentItems (or aggregated columns) + المجموع + التقدير
   const hasGradeLabel = rows.some((row: any) => row.gradeLabel);
-  const totalColumns = 1 + columns.length + 1 + (hasGradeLabel ? 1 : 0); 
-  const gridTemplateColumns = `minmax(100px, 2fr) repeat(${columns.length}, 1fr) minmax(50px, 1fr)${hasGradeLabel ? ' minmax(60px, 1fr)' : ''}`;
-  
   const totalFinalScore = rows.reduce((acc: number, curr: any) => acc + (curr.total || 0), 0);
   const totalMaxScore = rows.reduce((acc: number, curr: any) => acc + (curr.maxTotal || 0), 0);
 
-  // Dynamic font sizes based on the base fontSize prop
+  // Dynamic font sizes
   const headerSize = `${Math.max(6, fontSize - 1)}px`;
   const bodySize = `${fontSize}px`;
   const badgeSize = `${Math.max(6, fontSize - 2)}px`;
@@ -89,81 +98,134 @@ export function GradesTable({
   const footerValueSize = `${Math.max(10, fontSize + 2)}px`;
 
   return (
-    <div className={cn("w-full text-zinc-900 flex flex-col gap-2", className)} dir="rtl">
-      <div className="w-full bg-white rounded-lg border border-zinc-200 shadow-sm overflow-hidden">
-        <table className="w-full border-collapse table-fixed">
+    <div className={cn("w-full flex flex-col", className)} dir="rtl" style={{ color: "#18181b" }}>
+      <div style={{ 
+        width: "100%", 
+        background: "#ffffff", 
+        borderRadius: "6px", 
+        border: "1.5px solid #e4e4e7", 
+        overflow: "hidden",
+      }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
           <thead>
-            <tr 
-              className="border-b-2 border-zinc-300 bg-zinc-100"
-              style={{ fontSize: headerSize }}
-            >
-              <th 
-                className="py-2 px-3 text-right text-zinc-600 font-bold border-l border-zinc-200"
-                style={{ width: "25%" }}
-              >
+            <tr style={{ 
+              fontSize: headerSize, 
+              borderBottom: "2px solid #d4d4d8",
+              background: "#f4f4f5",
+            }}>
+              <th style={{ 
+                padding: "6px 10px", 
+                textAlign: "right", 
+                color: "#52525b", 
+                fontWeight: 700,
+                borderLeft: "1px solid #e4e4e7",
+                width: "25%",
+              }}>
                 المادة
               </th>
               {columns.map((col: string) => (
                 <th 
                   key={col} 
-                  className="py-2 px-1 text-center border-l border-zinc-200 text-zinc-600 font-semibold"
+                  style={{ 
+                    padding: "6px 4px", 
+                    textAlign: "center", 
+                    borderLeft: "1px solid #e4e4e7", 
+                    color: "#52525b", 
+                    fontWeight: 600,
+                  }}
                 >
                   {col}
                 </th>
               ))}
-              <th 
-                className="py-2 px-1 text-center font-bold text-zinc-900 bg-zinc-200/60 border-l border-zinc-200"
-                style={{ width: "12%" }}
-              >
+              <th style={{ 
+                padding: "6px 4px", 
+                textAlign: "center", 
+                fontWeight: 700, 
+                color: "#18181b", 
+                background: "#e4e4e7",
+                borderLeft: "1px solid #d4d4d8",
+                width: "12%",
+              }}>
                 المجموع
               </th>
               {hasGradeLabel && (
-                <th 
-                  className="py-2 px-1 text-center font-bold text-zinc-900 bg-zinc-200/60"
-                  style={{ width: "15%" }}
-                >
+                <th style={{ 
+                  padding: "6px 4px", 
+                  textAlign: "center", 
+                  fontWeight: 700, 
+                  color: "#18181b", 
+                  background: "#e4e4e7",
+                  width: "15%",
+                }}>
                   التقدير
                 </th>
               )}
             </tr>
           </thead>
 
-          <tbody className="divide-y divide-zinc-100">
+          <tbody>
             {rows.map((row: any, i: number) => (
               <tr 
                 key={i} 
-                className="text-center items-center hover:bg-zinc-50/50 transition-colors group"
-                style={{ fontSize: bodySize }}
+                style={{ 
+                  fontSize: bodySize,
+                  borderBottom: i < rows.length - 1 ? "1px solid #f4f4f5" : "none",
+                  textAlign: "center",
+                }}
               >
-                <td className="py-1.5 px-3 text-right font-bold text-zinc-800 border-l border-zinc-100">
+                <td style={{ 
+                  padding: "5px 10px", 
+                  textAlign: "right", 
+                  fontWeight: 700, 
+                  color: "#27272a",
+                  borderLeft: "1px solid #f4f4f5",
+                }}>
                   {row.subject}
                 </td>
                 
                 {columns.map((col: string) => (
-                  <td key={col} className="py-1.5 px-1 border-l border-zinc-100 text-zinc-600 text-center">
+                  <td key={col} style={{ 
+                    padding: "5px 4px", 
+                    borderLeft: "1px solid #f4f4f5", 
+                    color: row.grades[col] != null ? "#3f3f46" : "#d4d4d8",
+                    textAlign: "center",
+                  }}>
                     {row.grades[col] != null ? (
-                      <span className="font-medium">{row.grades[col]}</span>
+                      <span style={{ fontWeight: 500 }}>{row.grades[col]}</span>
                     ) : (
-                      <span className="text-zinc-300">-</span>
+                      <span>-</span>
                     )}
                   </td>
                 ))}
                 
-                <td className="py-1.5 px-1 font-bold text-zinc-900 bg-zinc-50/50 group-hover:bg-zinc-100/50 transition-colors border-l border-zinc-100 text-center">
+                <td style={{ 
+                  padding: "5px 4px", 
+                  fontWeight: 700, 
+                  color: "#18181b", 
+                  background: "#fafafa",
+                  borderLeft: "1px solid #f4f4f5",
+                  textAlign: "center",
+                }}>
                   {row.total || 0}
                 </td>
                 
                 {hasGradeLabel && (
-                  <td className="py-1.5 px-1 text-center">
+                  <td style={{ padding: "5px 4px", textAlign: "center" }}>
                     {row.gradeLabel ? (
-                      <span className={cn(
-                        "px-1.5 py-0.5 rounded font-bold whitespace-nowrap inline-block",
-                        GRADE_COLORS[row.gradeLabel] || "text-zinc-600 bg-zinc-100"
-                      )} style={{ fontSize: badgeSize }}>
+                      <span style={{ 
+                        padding: "2px 6px", 
+                        borderRadius: "4px", 
+                        fontWeight: 700, 
+                        whiteSpace: "nowrap",
+                        display: "inline-block",
+                        fontSize: badgeSize,
+                        color: GRADE_COLORS[row.gradeLabel]?.text || "#52525b",
+                        background: GRADE_COLORS[row.gradeLabel]?.bg || "#f4f4f5",
+                      }}>
                         {row.gradeLabel}
                       </span>
                     ) : (
-                      <span className="text-zinc-300">-</span>
+                      <span style={{ color: "#d4d4d8" }}>-</span>
                     )}
                   </td>
                 )}
@@ -172,18 +234,27 @@ export function GradesTable({
           </tbody>
 
           <tfoot>
-            <tr className="border-t-2 border-zinc-800 bg-zinc-800 text-white font-bold">
-              <td className="py-2 px-3 text-right" style={{ fontSize: footerLabelSize }}>
+            <tr style={{ 
+              borderTop: "2px solid #18181b",
+              background: "#18181b",
+              color: "#ffffff",
+              fontWeight: 700,
+            }}>
+              <td style={{ padding: "8px 10px", textAlign: "right", fontSize: footerLabelSize }}>
                 المجموع الكلي
               </td>
               <td 
-                className="py-1.5 px-3 text-center tracking-tight"
-                colSpan={totalColumns - 1}
-                style={{ fontSize: footerValueSize }}
+                style={{ 
+                  padding: "6px 10px", 
+                  textAlign: "center", 
+                  fontSize: footerValueSize,
+                  letterSpacing: "-0.02em",
+                }}
+                colSpan={columns.length + 1 + (hasGradeLabel ? 1 : 0)}
               >
                 {totalFinalScore}
                 {totalMaxScore > 0 && (
-                  <span className="text-zinc-400 mr-2" style={{ fontSize: headerSize }}>
+                  <span style={{ color: "#a1a1aa", marginRight: "8px", fontSize: headerSize }}>
                     / {totalMaxScore}
                   </span>
                 )}
