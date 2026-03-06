@@ -6,7 +6,7 @@ import { Sheet, SheetContent } from "@midday/ui/sheet";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import React from "react";
 import { CertificateEditor } from "../certificates/certificate-editor";
-import type { PaperSize, EditorElement } from "../certificates/editor/types";
+import type { PaperSize } from "../certificates/editor/types";
 
 export function CertificateSheet() {
   const trpc = useTRPC();

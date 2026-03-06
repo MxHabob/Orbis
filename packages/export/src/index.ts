@@ -153,6 +153,16 @@ export async function generateCanvasPdf(
         if (element) {
            element.style.overflow = "visible";
            element.style.maxHeight = "none";
+           element.style.transform = "none";
+           element.style.margin = "0";
+
+           const parent = element.parentElement;
+           if (parent) {
+             parent.style.transform = "none";
+             parent.style.scale = "1";
+             parent.style.margin = "0";
+             parent.style.padding = "0";
+           }
         }
         
         const hideElements = clonedDoc.querySelectorAll('[data-hide-in-pdf="true"]');
@@ -248,6 +258,14 @@ export async function generateCanvasPdfBlob(
         if (element) {
            element.style.overflow = "visible";
            element.style.maxHeight = "none";
+           element.style.transform = "none";
+           element.style.margin = "0";
+
+           const parent = element.parentElement;
+           if (parent) {
+             parent.style.transform = "none";
+             parent.style.scale = "1";
+           }
         }
         
         const hideElements = clonedDoc.querySelectorAll('[data-hide-in-pdf="true"]');

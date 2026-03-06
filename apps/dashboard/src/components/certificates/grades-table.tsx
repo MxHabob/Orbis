@@ -75,7 +75,7 @@ export function GradesTable({
 
   // Columns: assessmentItems (or aggregated columns) + المجموع + التقدير
   const hasGradeLabel = rows.some((row: any) => row.gradeLabel);
-  const totalColumns = columns.length + (hasGradeLabel ? 2 : 1); 
+  const totalColumns = 1 + columns.length + 1 + (hasGradeLabel ? 1 : 0); 
   const gridTemplateColumns = `minmax(100px, 2fr) repeat(${columns.length}, 1fr) minmax(50px, 1fr)${hasGradeLabel ? ' minmax(60px, 1fr)' : ''}`;
   
   const totalFinalScore = rows.reduce((acc: number, curr: any) => acc + (curr.total || 0), 0);
@@ -91,90 +91,106 @@ export function GradesTable({
   return (
     <div className={cn("w-full text-zinc-900 flex flex-col gap-2", className)} dir="rtl">
       <div className="w-full bg-white rounded-lg border border-zinc-200 shadow-sm overflow-hidden">
-        {/* Header Row  */}
-        <div 
-          className="grid border-b-2 border-zinc-300 font-bold uppercase tracking-wider text-center bg-zinc-100"
-          style={{ gridTemplateColumns, fontSize: headerSize }}
-        >
-          <div className="py-2 px-3 text-right text-zinc-600 font-bold border-l border-zinc-200">المادة</div>
-          {columns.map((col: string) => (
-            <div key={col} className="py-2 px-1 flex items-center justify-center border-l border-zinc-200 text-zinc-600 font-semibold">
-              {col}
-            </div>
-          ))}
-          <div className="py-2 px-1 flex items-center justify-center font-bold text-zinc-900 bg-zinc-200/60 border-l border-zinc-200">
-            المجموع
-          </div>
-          {hasGradeLabel && (
-            <div className="py-2 px-1 flex items-center justify-center font-bold text-zinc-900 bg-zinc-200/60">
-              التقدير
-            </div>
-          )}
-        </div>
-
-        {/* Data Rows */}
-        <div className="divide-y divide-zinc-100">
-          {rows.map((row: any, i: number) => (
-            <div 
-              key={i} 
-              className="grid text-center items-center hover:bg-zinc-50/50 transition-colors group"
-              style={{ gridTemplateColumns, fontSize: bodySize }}
+        <table className="w-full border-collapse table-fixed">
+          <thead>
+            <tr 
+              className="border-b-2 border-zinc-300 bg-zinc-100"
+              style={{ fontSize: headerSize }}
             >
-              <div className="py-1.5 px-3 text-right font-bold text-zinc-800 border-l border-zinc-100">
-                {row.subject}
-              </div>
-              
+              <th 
+                className="py-2 px-3 text-right text-zinc-600 font-bold border-l border-zinc-200"
+                style={{ width: "25%" }}
+              >
+                المادة
+              </th>
               {columns.map((col: string) => (
-                <div key={col} className="py-1.5 px-1 flex items-center justify-center border-l border-zinc-100 text-zinc-600">
-                  {row.grades[col] != null ? (
-                    <span className="font-medium">{row.grades[col]}</span>
-                  ) : (
-                    <span className="text-zinc-300">-</span>
-                  )}
-                </div>
+                <th 
+                  key={col} 
+                  className="py-2 px-1 text-center border-l border-zinc-200 text-zinc-600 font-semibold"
+                >
+                  {col}
+                </th>
               ))}
-              
-              <div className="py-1.5 px-1 flex items-center justify-center font-bold text-zinc-900 bg-zinc-50/50 group-hover:bg-zinc-100/50 transition-colors border-l border-zinc-100">
-                {row.total || 0}
-              </div>
-              
+              <th 
+                className="py-2 px-1 text-center font-bold text-zinc-900 bg-zinc-200/60 border-l border-zinc-200"
+                style={{ width: "12%" }}
+              >
+                المجموع
+              </th>
               {hasGradeLabel && (
-                <div className="py-1.5 px-1 flex items-center justify-center">
-                  {row.gradeLabel ? (
-                    <span className={cn(
-                      "px-1.5 py-0.5 rounded font-bold whitespace-nowrap",
-                      GRADE_COLORS[row.gradeLabel] || "text-zinc-600 bg-zinc-100"
-                    )} style={{ fontSize: badgeSize }}>
-                      {row.gradeLabel}
-                    </span>
-                  ) : (
-                    <span className="text-zinc-300">-</span>
-                  )}
-                </div>
+                <th 
+                  className="py-2 px-1 text-center font-bold text-zinc-900 bg-zinc-200/60"
+                  style={{ width: "15%" }}
+                >
+                  التقدير
+                </th>
               )}
-            </div>
-          ))}
-        </div>
+            </tr>
+          </thead>
 
-        {/* Grand Total Footer */}
-        <div 
-          className="grid border-t-2 border-zinc-800 font-bold items-center bg-zinc-800 text-white"
-          style={{ gridTemplateColumns }}
-        >
-          <div className="py-2 px-3 text-right font-bold" style={{ fontSize: footerLabelSize }}>المجموع الكلي</div>
-          <div 
-            className="py-1.5 px-3 text-center tracking-tight font-bold"
-            style={{ 
-              gridColumn: `span ${totalColumns - 1}`,
-              fontSize: footerValueSize
-            }}
-          >
-            {totalFinalScore}
-            {totalMaxScore > 0 && (
-              <span className="text-zinc-400 mr-1" style={{ fontSize: headerSize }}>/ {totalMaxScore}</span>
-            )}
-          </div>
-        </div>
+          <tbody className="divide-y divide-zinc-100">
+            {rows.map((row: any, i: number) => (
+              <tr 
+                key={i} 
+                className="text-center items-center hover:bg-zinc-50/50 transition-colors group"
+                style={{ fontSize: bodySize }}
+              >
+                <td className="py-1.5 px-3 text-right font-bold text-zinc-800 border-l border-zinc-100">
+                  {row.subject}
+                </td>
+                
+                {columns.map((col: string) => (
+                  <td key={col} className="py-1.5 px-1 border-l border-zinc-100 text-zinc-600 text-center">
+                    {row.grades[col] != null ? (
+                      <span className="font-medium">{row.grades[col]}</span>
+                    ) : (
+                      <span className="text-zinc-300">-</span>
+                    )}
+                  </td>
+                ))}
+                
+                <td className="py-1.5 px-1 font-bold text-zinc-900 bg-zinc-50/50 group-hover:bg-zinc-100/50 transition-colors border-l border-zinc-100 text-center">
+                  {row.total || 0}
+                </td>
+                
+                {hasGradeLabel && (
+                  <td className="py-1.5 px-1 text-center">
+                    {row.gradeLabel ? (
+                      <span className={cn(
+                        "px-1.5 py-0.5 rounded font-bold whitespace-nowrap inline-block",
+                        GRADE_COLORS[row.gradeLabel] || "text-zinc-600 bg-zinc-100"
+                      )} style={{ fontSize: badgeSize }}>
+                        {row.gradeLabel}
+                      </span>
+                    ) : (
+                      <span className="text-zinc-300">-</span>
+                    )}
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+
+          <tfoot>
+            <tr className="border-t-2 border-zinc-800 bg-zinc-800 text-white font-bold">
+              <td className="py-2 px-3 text-right" style={{ fontSize: footerLabelSize }}>
+                المجموع الكلي
+              </td>
+              <td 
+                className="py-1.5 px-3 text-center tracking-tight"
+                colSpan={totalColumns - 1}
+                style={{ fontSize: footerValueSize }}
+              >
+                {totalFinalScore}
+                {totalMaxScore > 0 && (
+                  <span className="text-zinc-400 mr-2" style={{ fontSize: headerSize }}>
+                    / {totalMaxScore}
+                  </span>
+                )}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
       </div>
     </div>
   );
