@@ -264,6 +264,7 @@ export function CertificateEditor({
         addElement={addElement}
         updateElement={updateElement}
         deleteElement={deleteElement}
+        reorderElements={setElements}
         handleSave={handleSave}
         isSaving={isSaving}
         mode={mode}

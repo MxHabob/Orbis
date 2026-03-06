@@ -106,7 +106,7 @@ export const Canvas = memo(({
     }
 
     updateElement(id, updates);
-  }, [canvasWidth, canvasHeight, updateElement]);
+  }, [canvasWidth, canvasHeight, updateElement, elements]);
 
   // 2. Memoized Guidelines for Performance
   const elementGuidelines = useMemo(() => 

@@ -16,6 +16,8 @@ import {
   User,
   Calendar,
   GraduationCap,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 import { useI18n } from "@/locales/client";
@@ -69,20 +71,48 @@ export const Toolbar = memo(({
         {/* Preview-only controls */}
         {isPreview && (
           <div className="flex items-center gap-1.5 pr-3 ml-1" dir="ltr">
-            {/* Student selector */}
-            <Select dir="ltr" value={previewStudentId || students?.[0]?.userId || ""} onValueChange={setPreviewStudentId}>
-              <SelectTrigger className="h-7 w-[140px] text-[10px] bg-accent/40 shadow-none focus:ring-0 rounded-lg gap-1">
-                <User className="w-3 h-3 text-muted-foreground shrink-0" />
-                <SelectValue placeholder={t("reports.preview.student_name")} />
-              </SelectTrigger>
-              <SelectContent className="max-h-[400px]">
-                {students?.map((s: any) => (
-                  <SelectItem key={s.userId} value={s.userId} className="text-xs">
-                    {s.name || t("common.no_data")}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* Student pagination controls */}
+            <div className="flex items-center gap-0.5 bg-accent/40 rounded-lg p-0.5 border border-border/20">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-6 w-6 rounded-md" 
+                onClick={() => {
+                  const currentIndex = students?.findIndex((s: any) => s.userId === previewStudentId);
+                  if (currentIndex > 0) setPreviewStudentId(students[currentIndex - 1].userId);
+                }}
+                disabled={!students || students.findIndex((s: any) => s.userId === (previewStudentId || students?.[0]?.userId)) <= 0}
+              >
+                <ChevronLeft className="w-3 h-3" />
+              </Button>
+
+              <Select dir="ltr" value={previewStudentId || students?.[0]?.userId || ""} onValueChange={setPreviewStudentId}>
+                <SelectTrigger className="h-6 w-[140px] text-[10px] border-0 shadow-none focus:ring-0 bg-transparent gap-1">
+                  <User className="w-3 h-3 text-muted-foreground shrink-0" />
+                  <SelectValue placeholder={t("reports.preview.student_name")} />
+                </SelectTrigger>
+                <SelectContent className="max-h-[400px]">
+                  {students?.map((s: any) => (
+                    <SelectItem key={s.userId} value={s.userId} className="text-xs">
+                      {s.name || t("common.no_data")}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-6 w-6 rounded-md" 
+                onClick={() => {
+                  const currentIndex = students?.findIndex((s: any) => s.userId === previewStudentId);
+                  if (currentIndex < students.length - 1) setPreviewStudentId(students[currentIndex + 1].userId);
+                }}
+                disabled={!students || students.findIndex((s: any) => s.userId === (previewStudentId || students?.[0]?.userId)) >= students.length - 1}
+              >
+                <ChevronRight className="w-3 h-3" />
+              </Button>
+            </div>
 
             {/* Type selector */}
             <Select dir="ltr" value={selectedType} onValueChange={setSelectedType}>

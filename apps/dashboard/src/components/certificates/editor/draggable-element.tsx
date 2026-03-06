@@ -38,9 +38,9 @@ export const DraggableElement = memo(({
       data-id={el.id}
       className={cn(
         "absolute target flex items-center group",
-        el.align === "center" ? "justify-center" : el.align === "left" ? "justify-start" : "justify-end",
+        el.align === "center" ? "justify-center" : el.align === "left" ? "justify-end" : "justify-start",
         isPreview ? "cursor-default select-text" : "cursor-grab active:cursor-grabbing select-none hover:ring-2 hover:ring-primary/40 rounded-sm",
-        isSelected && "z-50 ring-2 ring-primary/60"
+        isSelected && "z-50"
       )}
       onClick={(e) => {
         e.stopPropagation();
@@ -109,34 +109,18 @@ export const DraggableElement = memo(({
         <img src={content} className="w-full h-auto shadow-sm" draggable={false} alt="asset" />
       ) : (
         <div 
-          className={cn(
-            "text-content font-bold",
-            el.variableKey && !isPreview && "variable-pill-tag"
-          )}
+          className="text-content font-bold w-full"
           style={{
             fontSize: `${el.fontSize}px`,
             fontWeight: el.fontWeight,
-            color: isPreview || !el.variableKey ? el.color : undefined,
+            color: el.color,
             fontFamily: el.fontFamily,
+            textAlign: el.align as any,
             maxWidth: "100%",
-            overflow: "hidden",
-            display: "inline-flex",
-            alignItems: "center",
-            ...(el.variableKey && !isPreview ? {
-              padding: "4px 12px",
-              background: "#eef2ff",
-              border: "2px solid #818cf8",
-              borderRadius: "99px",
-              justifyContent: "center",
-              color: "#4338ca",
-              fontWeight: "700",
-              fontSize: `${Math.max(11, el.fontSize || 14)}px`,
-              boxShadow: "0 2px 8px rgba(99, 102, 241, 0.15)",
-              boxSizing: "border-box",
-            } : {}),
+            wordBreak: "break-word",
           }}
         >
-          <span className="truncate">{content}</span>
+          <span className="whitespace-pre-wrap break-words">{content}</span>
         </div>
       )}
     </div>

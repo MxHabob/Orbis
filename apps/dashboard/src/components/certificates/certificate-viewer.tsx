@@ -130,7 +130,7 @@ export function CertificateViewer({
             key={el.id}
             className={cn(
               "absolute flex items-center",
-              el.align === "center" ? "justify-center" : el.align === "left" ? "justify-start" : "justify-end"
+              el.align === "center" ? "justify-center" : el.align === "left" ? "justify-end" : "justify-start"
             )}
             style={{
               left: `${el.x}%`,
@@ -176,9 +176,9 @@ export function CertificateViewer({
                   fontWeight: el.fontWeight,
                   color: el.color,
                   fontFamily: el.fontFamily,
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                  overflow: "visible",
                   textAlign: el.align as any,
                 }}
              >

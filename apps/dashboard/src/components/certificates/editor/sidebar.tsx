@@ -26,6 +26,14 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
+  AlignStartVertical,
+  AlignCenterVertical,
+  AlignEndVertical,
+  AlignStartHorizontal,
+  AlignCenterHorizontal,
+  AlignEndHorizontal,
+  Grid3X3,
+  Layers2,
   ArrowLeft,
   X,
   Loader2,
@@ -52,6 +60,7 @@ interface SidebarProps {
   addElement: (type: ElementType, content: string, variableKey?: string) => void;
   updateElement: (id: string, updates: Partial<EditorElement>) => void;
   deleteElement: (id: string) => void;
+  reorderElements: (newElements: EditorElement[]) => void;
   handleSave: () => void;
   isSaving: boolean;
   mode: "create" | "edit";
@@ -75,6 +84,7 @@ export const Sidebar = memo(({
   addElement,
   updateElement,
   deleteElement,
+  reorderElements,
   handleSave,
   isSaving,
   mode,
@@ -306,7 +316,18 @@ export const Sidebar = memo(({
                 {(selectedElement.type === "text" || selectedElement.type === "variable" || selectedElement.type === "table") && (
                   <>
                     <div className="space-y-2">
-                      <Label className="text-xs">{t("reports.editor.font_size")}: {selectedElement.fontSize}px</Label>
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs">{t("reports.editor.font_size")}</Label>
+                        <div className="flex items-center gap-1.5">
+                           <Input 
+                             type="number" 
+                             value={selectedElement.fontSize || 18} 
+                             onChange={(e) => updateElement(selectedElement.id, { fontSize: parseInt(e.target.value) || 8 })}
+                             className="h-7 w-14 text-[10px] text-center font-mono px-1 bg-accent/50 border-0 focus-visible:ring-1"
+                           />
+                           <span className="text-[10px] text-muted-foreground font-bold">px</span>
+                        </div>
+                      </div>
                       <Slider 
                         value={[selectedElement.fontSize || 18]} 
                         onValueChange={([v]) => updateElement(selectedElement.id, { fontSize: v })}
@@ -337,22 +358,137 @@ export const Sidebar = memo(({
                   </>
                 )}
 
-                {(selectedElement.type === "image" || selectedElement.type === "shape" || selectedElement.type === "table" || selectedElement.type === "text" || selectedElement.type === "variable") && (
-                  <div className="space-y-2">
-                    <Label className="text-xs font-semibold flex justify-between">
-                      {t("reports.editor.element_size")}
-                      <span className="text-primary font-mono">{Number(selectedElement.width || 20).toFixed(1)}%</span>
-                    </Label>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-semibold">{t("reports.editor.element_size")}</Label>
+                      <div className="flex items-center gap-1.5 font-mono text-[10px]">
+                        <Input 
+                          type="number" 
+                          value={Math.round(selectedElement.width || 20)} 
+                          onChange={(e) => updateElement(selectedElement.id, { width: parseFloat(e.target.value) || 1 })}
+                          className="h-7 w-12 text-center px-1 bg-accent/50 border-0 focus-visible:ring-1"
+                        />
+                        <span className="text-muted-foreground font-bold">%</span>
+                      </div>
+                    </div>
                     <Slider 
                       value={[selectedElement.width || 20]} 
                       onValueChange={([v]) => updateElement(selectedElement.id, { width: v })}
                       min={1} max={100} step={0.1}
-                      className="py-4"
                     />
                   </div>
-                )}
 
-                <div className="space-y-2">
+                  <div className="space-y-3 pt-2">
+                    <Label className="text-xs font-semibold flex items-center gap-2">
+                      <Grid3X3 className="w-3 h-3 text-muted-foreground" />
+                      {t("reports.editor.page_alignment" as any, { defaultValue: "محاذاة الصفحة" } as any)}
+                    </Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-[10px] text-muted-foreground px-1 uppercase tracking-wider font-bold">أفقي</span>
+                        <div className="flex items-center gap-1 bg-accent/50 p-1.5 rounded-xl border border-border/10">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 flex-1 bg-background shadow-sm hover:bg-background/80" 
+                            onClick={() => updateElement(selectedElement.id, { x: 0 })}
+                          >
+                            <AlignStartHorizontal className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 flex-1 bg-background shadow-sm hover:bg-background/80" 
+                            onClick={() => updateElement(selectedElement.id, { x: (100 - (selectedElement.width || 20)) / 2 })}
+                          >
+                            <AlignCenterHorizontal className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 flex-1 bg-background shadow-sm hover:bg-background/80" 
+                            onClick={() => updateElement(selectedElement.id, { x: 100 - (selectedElement.width || 20) })}
+                          >
+                            <AlignEndHorizontal className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-[10px] text-muted-foreground px-1 uppercase tracking-wider font-bold">رأسي</span>
+                        <div className="flex items-center gap-1 bg-accent/50 p-1.5 rounded-xl border border-border/10">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 flex-1 bg-background shadow-sm hover:bg-background/80" 
+                            onClick={() => updateElement(selectedElement.id, { y: 0 })}
+                          >
+                            <AlignStartVertical className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 flex-1 bg-background shadow-sm hover:bg-background/80" 
+                            onClick={() => updateElement(selectedElement.id, { y: 45 })}
+                          >
+                            <AlignCenterVertical className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 flex-1 bg-background shadow-sm hover:bg-background/80" 
+                            onClick={() => updateElement(selectedElement.id, { y: 90 })}
+                          >
+                            <AlignEndVertical className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 pt-4 border-t">
+                    <Label className="text-xs font-semibold flex items-center gap-2">
+                      <Layers2 className="w-3 h-3 text-muted-foreground" />
+                      ترتيب الطبقات
+                    </Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-[10px] h-8"
+                        onClick={() => {
+                          const index = elements.findIndex(el => el.id === selectedElementId);
+                          if (index === -1) return;
+                          const newElements = [...elements];
+                          const [element] = newElements.splice(index, 1);
+                          if (element) {
+                            newElements.unshift(element); // Send to background
+                            reorderElements(newElements);
+                          }
+                        }}
+                      >
+                         إرسال للخلف
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-[10px] h-8"
+                        onClick={() => {
+                          const index = elements.findIndex(el => el.id === selectedElementId);
+                          if (index === -1) return;
+                          const newElements = [...elements];
+                          const [element] = newElements.splice(index, 1);
+                          if (element) {
+                            newElements.push(element); // Bring to front
+                            reorderElements(newElements);
+                          }
+                        }}
+                      >
+                         إحضار للمقدمة
+                      </Button>
+                    </div>
+                  </div>
+
+                <div className="space-y-2 pt-4 border-t">
                   <Label className="text-xs font-semibold">{t("reports.editor.color")}</Label>
                   <div className="flex items-center gap-3 p-2 border rounded-xl bg-accent/30 translate-all duration-200">
                     <div className="relative w-10 h-10 rounded-lg overflow-hidden border-2 border-background shadow-sm shrink-0">
