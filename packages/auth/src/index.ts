@@ -79,6 +79,13 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
+  magicLink: {
+    enabled: true,
+  },
+  accountLinking: {
+    enabled: true,
+    trustedProviders: ["google", "apple", "github"],
+  },
   onSessionConfig: () => {
     return {
       cookieOptions: {

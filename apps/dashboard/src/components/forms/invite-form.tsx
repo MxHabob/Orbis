@@ -71,6 +71,13 @@ export function InviteForm({ onSuccess, skippable = true }: InviteFormProps) {
 
         onSuccess?.();
       },
+      onError: (error) => {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to create accounts.",
+          variant: "destructive",
+        });
+      },
     }),
   );
 
@@ -89,6 +96,7 @@ export function InviteForm({ onSuccess, skippable = true }: InviteFormProps) {
   });
 
   const onSubmit = form.handleSubmit((data) => {
+    console.log("Submitting invites:", data);
     inviteMutation.mutate(
       data.invites
         .filter((invite) => invite.email !== "")
@@ -138,7 +146,7 @@ export function InviteForm({ onSuccess, skippable = true }: InviteFormProps) {
           Add more
         </Button>
 
-        <div className="border-t-[1px] pt-4 mt-8 items-center justify-between">
+        <div className="border-t-[1px] pt-4 mt-4 flex items-center justify-between">
           <div>
             {Object.values(form.formState.errors).length > 0 && (
               <span className="text-sm text-destructive">
@@ -199,7 +207,7 @@ function InviteRow({
   const isParent = selectedRole === "parent";
 
   return (
-    <div className="relative rounded-lg p-4 transition-all duration-200">
+    <div className="relative rounded-lg px-1 py-1 transition-all duration-200">
       {/* Remove button */}
       {onRemove && (
         <button
@@ -217,9 +225,6 @@ function InviteRow({
           name={`invites.${index}.name`}
           render={({ field }) => (
             <FormItem className="col-span-4">
-              <FormLabel className="text-xs font-medium text-muted-foreground">
-                Full Name
-              </FormLabel>
               <FormControl>
                 <Input
                   placeholder="Full Name"
@@ -236,9 +241,6 @@ function InviteRow({
           name={`invites.${index}.email`}
           render={({ field }) => (
             <FormItem className="col-span-5">
-              <FormLabel className="text-xs font-medium text-muted-foreground">
-                Email Address
-              </FormLabel>
               <FormControl>
                 <Input
                   placeholder="jane@example.com"
@@ -259,9 +261,6 @@ function InviteRow({
           name={`invites.${index}.role`}
           render={({ field }) => (
             <FormItem className="col-span-3">
-              <FormLabel className="text-xs font-medium text-muted-foreground">
-                Role
-              </FormLabel>
               <Select
                 onValueChange={field.onChange}
                 defaultValue={field.value}
