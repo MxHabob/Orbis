@@ -173,7 +173,7 @@ export function VaultUploadZone({ onUpload, children }: Props) {
       className="relative h-full"
       {...getRootProps({ onClick: (evt) => evt.stopPropagation() })}
     >
-      <div className="absolute top-0 right-0 left-0 z-[51] w-full pointer-events-none h-[calc(100vh-150px)]">
+      <div className="absolute top-0 right-0 left-0 z-[51] w-full pointer-events-none h-[calc(100vh-250px)]">
         <div
           className={cn(
             "bg-background h-full w-full flex items-center justify-center text-center",

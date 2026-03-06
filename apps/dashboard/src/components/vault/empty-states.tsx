@@ -11,7 +11,7 @@ export function NoResults() {
   const t = useI18n();
 
   return (
-    <div className="h-screen w-full flex items-center justify-center flex-col">
+    <div className="h-[calc(100vh-300px)] w-full flex items-center justify-center flex-col">
       <div className="flex flex-col items-center -mt-[160px]">
         <Icons.Transactions2 className="mb-4" />
         <div className="text-center mb-6 space-y-2">

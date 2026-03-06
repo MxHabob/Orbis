@@ -7,7 +7,7 @@ export function VaultGetStarted() {
   const t = useI18n();
 
   return (
-    <div className="h-[calc(100vh-250px)] flex items-center justify-center">
+    <div className="h-[calc(100vh-300px)] flex items-center justify-center">
       <div className="relative z-20 m-auto flex w-full max-w-[380px] flex-col">
         <div className="flex w-full flex-col relative text-center">
           <div className="pb-4">
