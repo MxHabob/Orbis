@@ -115,6 +115,7 @@ export function StudentImportModal() {
                   control,
                   watch,
                   setValue,
+                  onFileProcessed: () => setPageNumber(1),
                 }}
               >
                 <div className="overflow-visible">
