@@ -369,6 +369,11 @@ export default {
     delete_team_confirm_title: "Are you absolutely sure?",
     delete_team_confirm_description: "This action cannot be undone. This will permanently delete your team and remove your data from our servers.",
     delete_team_input_label: "Type {delete} to confirm.",
+    support: "Support",
+    support_description: "Contact us for help and support. Ideas to improve this page or issues you are experiencing.",
+    support_message_placeholder: "How can we help you?",
+    support_success: "Thank you for your feedback! We will be back with you as soon as possible.",
+    send: "Send",
   },
   vault: {
     search_placeholder: "Search files...",

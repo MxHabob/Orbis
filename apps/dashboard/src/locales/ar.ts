@@ -368,6 +368,11 @@ export default {
     delete_team_confirm_title: "هل أنت متأكد تماماً؟",
     delete_team_confirm_description: "هذا الإجراء لا يمكن التراجع عنه. سيؤدي هذا إلى حذف فريقك نهائياً وإزالة بياناتك من خوادمنا.",
     delete_team_input_label: "اكتب {delete} للتأكيد.",
+    support: "الدعم الفني",
+    support_description: "تواصل معنا للحصول على المساعدة والدعم، أو إذا كان لديك أفكار لتحسين هذه الصفحة، أو إذا واجهت أية مشاكل.",
+    support_message_placeholder: "كيف يمكننا مساعدتك؟",
+    support_success: "شكراً لملاحظاتك! سنعود إليك في أقرب وقت ممكن.",
+    send: "إرسال",
   },
   vault: {
     search_placeholder: "البحث في الملفات...",

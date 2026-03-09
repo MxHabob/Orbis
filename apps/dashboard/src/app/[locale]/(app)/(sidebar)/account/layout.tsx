@@ -9,6 +9,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
       <SecondaryMenu
         items={[
           { path: "/account", label: t("settings.general") },
+          { path: "/account/support", label: t("settings.support") },
         ]}
       />
 
