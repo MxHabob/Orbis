@@ -1,6 +1,7 @@
 "use client";
 
 import { useZodForm } from "@/hooks/use-zod-form";
+import { useI18n } from "@/locales/client";
 import { useTRPC } from "@/trpc/client";
 import { AnimatedSizeContainer } from "@midday/ui/animated-size-container";
 import {
@@ -31,6 +32,7 @@ export function StudentImportModal() {
   const [pageNumber, setPageNumber] = useState<number>(0);
   const page = pages[pageNumber];
   const { toast } = useToast();
+  const t = useI18n();
 
   const [params, setParams] = useQueryStates({
     step: parseAsString,
@@ -149,17 +151,113 @@ export function StudentImportModal() {
                           })
                           .filter((s): s is NonNullable<typeof s> => s !== null);
 
-                        await importStudentsMutation.mutateAsync({
+                        const importResult = await importStudentsMutation.mutateAsync({
                           classId: data.classId!,
                           academicYearId: data.academicYearId,
                           students,
                         });
                         
-                        toast({ title: "Students imported successfully", variant: "success" });
+                        // Show detailed result toast
+                        const { summary, skippedStudents, failedStudents } = importResult;
+
+                        if (summary.skipped === 0 && summary.failed === 0) {
+                          toast({
+                            title: t("students.import_success", { count: summary.added }),
+                            variant: "success",
+                            duration: 5000,
+                          });
+                        } else if (summary.added === 0 && summary.total > 0) {
+                          toast({
+                            title: t("students.import_none_added"),
+                            description: (
+                              <div className="mt-1 space-y-1.5">
+                                <p className="text-xs text-[#878787]">
+                                  {t("students.import_all_exist", { count: summary.total })}
+                                </p>
+                                {skippedStudents.length > 0 && (
+                                  <div className="space-y-1 pr-1">
+                                    {skippedStudents.slice(0, 3).map((s, i) => (
+                                      <div key={i} className="flex items-start gap-1.5 text-xs text-[#878787]">
+                                        <span className="shrink-0 mt-0.5">•</span>
+                                        <span>
+                                          <span className="text-foreground font-medium">{s.name}</span>
+                                          {" — "}{s.reason}
+                                        </span>
+                                      </div>
+                                    ))}
+                                    {skippedStudents.length > 3 && (
+                                      <p className="text-[10px] text-[#666]">
+                                        {t("students.import_and_others", { count: skippedStudents.length - 3 })}
+                                      </p>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            ),
+                            variant: "error",
+                            duration: 12000,
+                          });
+                        } else {
+                          toast({
+                            title: t("students.import_partial", { added: summary.added, total: summary.total }),
+                            description: (
+                              <div className="mt-1 space-y-1.5">
+                                <div className="flex gap-3 text-xs text-[#878787]">
+                                  {summary.skipped > 0 && (
+                                    <span>{t("students.import_skipped_count", { count: summary.skipped })}</span>
+                                  )}
+                                  {summary.failed > 0 && (
+                                    <span>{t("students.import_failed_count", { count: summary.failed })}</span>
+                                  )}
+                                </div>
+                                {skippedStudents.length > 0 && (
+                                  <div className="space-y-1 pr-1">
+                                    {skippedStudents.slice(0, 3).map((s, i) => (
+                                      <div key={i} className="flex items-start gap-1.5 text-xs text-[#878787]">
+                                        <span className="shrink-0 mt-0.5">•</span>
+                                        <span>
+                                          <span className="text-foreground font-medium">{s.name}</span>
+                                          {" — "}{s.reason}
+                                        </span>
+                                      </div>
+                                    ))}
+                                    {skippedStudents.length > 3 && (
+                                      <p className="text-[10px] text-[#666]">
+                                        {t("students.import_and_others", { count: skippedStudents.length - 3 })}
+                                      </p>
+                                    )}
+                                  </div>
+                                )}
+                                {failedStudents.length > 0 && (
+                                  <div className="space-y-1 pr-1 border-t border-border pt-1.5 mt-1.5">
+                                    {failedStudents.slice(0, 2).map((s, i) => (
+                                      <div key={i} className="flex items-start gap-1.5 text-xs text-[#FF3638]">
+                                        <span className="shrink-0 mt-0.5">✕</span>
+                                        <span>
+                                          <span className="font-medium">{s.name}</span>
+                                          {" — "}{s.error}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            ),
+                            variant: "warning",
+                            duration: 15000,
+                          });
+                        }
+
                         queryClient.invalidateQueries({ queryKey: trpc.students.getAll.queryKey() });
+                        queryClient.invalidateQueries({ queryKey: trpc.students.getByClassId.queryKey() });
                         onclose();
                       } catch (err: any) {
-                        toast({ title: "Error during import", description: err.message, variant: "error" });
+                        toast({ 
+                          title: t("students.import_error"), 
+                          description: err.message, 
+                          variant: "error", 
+                          duration: 8000,
+                        });
                       } finally {
                         setIsImporting(false);
                       }

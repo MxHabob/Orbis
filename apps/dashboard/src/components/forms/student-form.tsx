@@ -26,6 +26,7 @@ import { Input } from "@midday/ui/input";
 import { Label } from "@midday/ui/label";
 import { SubmitButton } from "@midday/ui/submit-button";
 import { Textarea } from "@midday/ui/textarea";
+import { useToast } from "@midday/ui/use-toast";
 import {
   Select,
   SelectContent,
@@ -67,6 +68,8 @@ export function StudentForm({ data }: Props) {
 
   const { data: classes } = useQuery(trpc.classes.getAll.queryOptions());
 
+  const { toast } = useToast();
+
   const upsertStudentMutation = useMutation(
     trpc.students.upsert.mutationOptions({
       onSuccess: () => {
@@ -74,8 +77,26 @@ export function StudentForm({ data }: Props) {
           queryKey: trpc.students.getAll.queryKey(),
         });
 
+        // Also invalidate class-specific queries
+        queryClient.invalidateQueries({
+          queryKey: trpc.students.getByClassId.queryKey(),
+        });
+
+        toast({
+          title: t("students.student_added_success"),
+          variant: "success",
+        });
+
         // Close the student form
         setStudentParams(null);
+      },
+      onError: (error) => {
+        toast({
+          title: t("students.add_error"),
+          description: error.message,
+          variant: "error",
+          duration: 8000,
+        });
       },
     }),
   );

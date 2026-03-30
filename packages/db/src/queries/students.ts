@@ -1,10 +1,66 @@
 import { db } from "@db/client";
 import { students, classes, users, enrollments, academicYears } from "@db/schema";
-import { eq, asc, desc, and, or, ilike, inArray } from "drizzle-orm";
+import { eq, asc, desc, and, or, ilike, inArray, sql } from "drizzle-orm";
 
 import { RedisCache } from "@midday/cache";
 
 const studentCache = new RedisCache("student", 30 * 60);
+
+/**
+ * Normalize a student name for duplicate comparison.
+ * Trims whitespace, collapses multiple spaces, and lowercases.
+ */
+export const normalizeStudentName = (name: string): string => {
+  return name.trim().replace(/\s+/g, ' ').toLowerCase();
+};
+
+/**
+ * Find existing students by name+sex pairs (for duplicate detection).
+ * Returns matching students with their current class info.
+ */
+export const findExistingStudentsByNameAndSex = async (
+  pairs: { name: string; sex: string }[]
+): Promise<{
+  userId: string;
+  studentNumber: string;
+  currentClassId: number | null;
+  name: string | null;
+  sex: string;
+  className: string | null;
+}[]> => {
+  if (pairs.length === 0) return [];
+
+  const uniqueNames = [...new Set(pairs.map(p => normalizeStudentName(p.name)))];
+  if (uniqueNames.length === 0) return [];
+
+  // Query students whose names match (case-insensitive, trimmed)
+  const nameConditions = uniqueNames.map(name =>
+    sql`LOWER(TRIM(${users.name})) = ${name}`
+  );
+
+  const existingStudents = await db
+    .select({
+      userId: students.userId,
+      studentNumber: students.studentNumber,
+      currentClassId: students.currentClassId,
+      name: users.name,
+      sex: users.sex,
+      className: classes.name,
+    })
+    .from(students)
+    .innerJoin(users, eq(students.userId, users.id))
+    .leftJoin(classes, eq(students.currentClassId, classes.id))
+    .where(or(...nameConditions));
+
+  // Filter for exact name+sex pair matches
+  const pairSet = new Set(
+    pairs.map(p => `${normalizeStudentName(p.name)}|${(p.sex || 'unspecified').toLowerCase()}`)
+  );
+
+  return existingStudents.filter(s =>
+    pairSet.has(`${normalizeStudentName(s.name || '')}|${(s.sex || 'unspecified').toLowerCase()}`)
+  );
+};
 
 export const getAllStudentss = async () => {
     return db
@@ -373,8 +429,21 @@ export const upsertStudent = async (data: any) => {
         const classCache = new RedisCache("classes", 60 * 60);
         await classCache.invalidate().catch(() => {});
     } else {
-        // ... (CREATE branch remains same)
-        // Create
+        // CHECK FOR DUPLICATE before creating (by name + sex)
+        const existingDuplicates = await findExistingStudentsByNameAndSex([
+            { name: name || '', sex: sex || 'unspecified' }
+        ]);
+
+        if (existingDuplicates.length > 0) {
+            const dup = existingDuplicates[0]!;
+            const dupClassName = dup.className || 'غير محدد';
+            const sexLabel = sex === 'male' ? 'ذكر' : sex === 'female' ? 'أنثى' : '';
+            throw new Error(
+                `الطالب "${name}"${sexLabel ? ` (${sexLabel})` : ''} مسجل بالفعل في الصف "${dupClassName}" برقم "${dup.studentNumber}". لا يمكن إضافته مرة أخرى.`
+            );
+        }
+
+        // Create new student
         return db.transaction(async (tx) => {
             const [newUser] = await tx.insert(users).values({
                 name,
@@ -429,6 +498,26 @@ export const deleteStudent = async (userId: string) => {
     await studentCache.delete(`user:${userId}`);
 }
 
+export type BulkImportResult = {
+  summary: {
+    total: number;
+    added: number;
+    skipped: number;
+    failed: number;
+  };
+  skippedStudents: {
+    name: string;
+    reason: string;
+    existingClass: string;
+    existingStudentNumber: string;
+  }[];
+  failedStudents: {
+    rowNumber: number;
+    name: string;
+    error: string;
+  }[];
+};
+
 export const bulkImportStudents = async (
   classId: number, 
   studentData: {
@@ -440,104 +529,167 @@ export const bulkImportStudents = async (
     sex?: 'male' | 'female' | 'unspecified';
   }[],
   academicYearId?: number
-) => {
-  // 1. Get academic year: Use provided ID or current one from DB
+): Promise<BulkImportResult> => {
+  // 1. Get academic year
   let yearId = academicYearId;
-  
   if (!yearId) {
     const [currentYear] = await db
       .select()
       .from(academicYears)
       .where(eq(academicYears.isCurrent, true))
       .limit(1);
-      
-    if (!currentYear) throw new Error("No current academic year found and no yearId provided");
+    if (!currentYear) throw new Error("لم يتم العثور على سنة دراسية حالية");
     yearId = currentYear.id;
   }
 
-  const results: { studentNumber: string | undefined; status: string; error?: string }[] = [];
+  const result: BulkImportResult = {
+    summary: { total: studentData.length, added: 0, skipped: 0, failed: 0 },
+    skippedStudents: [],
+    failedStudents: [],
+  };
 
-  // Use transaction for bulk import to ensure numbers are consistent if generated
-  return db.transaction(async (tx) => {
-    for (const item of studentData) {
-      try {
-        let userId: string;
-        let finalStudentNumber = item.studentNumber;
-        let finalSecretNumber = item.secretNumber;
+  if (studentData.length === 0) return result;
 
-        // Check if student exists by number (if provided)
-        let existingStudent = null;
-        if (finalStudentNumber) {
-           [existingStudent] = await tx
-            .select()
-            .from(students)
-            .where(eq(students.studentNumber, finalStudentNumber))
-            .limit(1);
-        }
-        
-        if (existingStudent) {
-          userId = existingStudent.userId;
-          // Update user info and sync current class
-          await tx.update(users).set({ 
-            name: item.name, 
-            phone: item.phone, 
-            email: item.email,
-            sex: item.sex || 'unspecified'
-          }).where(eq(users.id, userId));
+  // 2. Pre-check for duplicates by name+sex (batch query)
+  const pairs = studentData.map(s => ({
+    name: s.name,
+    sex: (s.sex || 'unspecified') as string,
+  }));
+  const existingByNameSex = await findExistingStudentsByNameAndSex(pairs);
 
-          // Update student's current class
-          await tx.update(students).set({
-            currentClassId: classId,
-            secretNumber: finalSecretNumber || existingStudent.secretNumber, // Keep existing if not provided
-          }).where(eq(students.userId, userId));
-        } else {
-          const [newUser] = await tx.insert(users).values({
-            name: item.name,
-            phone: item.phone,
-            email: item.email,
-            role: 'student',
-            sex: item.sex || 'unspecified'
-          }).returning();
-          
-          if (!newUser) throw new Error("Failed to create user");
-          userId = newUser.id;
+  // Build lookup map: normalized "name|sex" → duplicate info
+  const duplicateMap = new Map<string, typeof existingByNameSex[0]>();
+  for (const dup of existingByNameSex) {
+    const key = `${normalizeStudentName(dup.name || '')}|${(dup.sex || 'unspecified').toLowerCase()}`;
+    duplicateMap.set(key, dup);
+  }
 
-          // Generate numbers if not provided
-          if (!finalStudentNumber) {
-              finalStudentNumber = await generateNextStudentNumber(tx);
-          }
-          if (!finalSecretNumber) {
-              finalSecretNumber = generateSecretNumber();
-          }
+  // 3. Also check for duplicates by studentNumber (if provided)
+  const providedNumbers = studentData
+    .map(s => s.studentNumber)
+    .filter((n): n is string => !!n);
 
-          await tx.insert(students).values({
-            userId,
-            studentNumber: finalStudentNumber,
-            secretNumber: finalSecretNumber,
-            currentClassId: classId,
-          });
-        }
+  const existingByNumber = new Map<string, { userId: string; className: string | null }>(); 
+  if (providedNumbers.length > 0) {
+    const existingWithNumbers = await db
+      .select({
+        studentNumber: students.studentNumber,
+        userId: students.userId,
+        className: classes.name,
+      })
+      .from(students)
+      .leftJoin(classes, eq(students.currentClassId, classes.id))
+      .where(inArray(students.studentNumber, providedNumbers));
 
-        // 2. Ensure enrollment in the target year
-        await tx.insert(enrollments).values({
-          studentId: userId,
-          classId,
-          academicYearId: yearId,
-        }).onConflictDoUpdate({
-          target: [enrollments.studentId, enrollments.classId, enrollments.academicYearId],
-          set: {
-            status: 'active',
-            enrolledAt: new Date(),
-          }
+    for (const s of existingWithNumbers) {
+      existingByNumber.set(s.studentNumber, { userId: s.userId, className: s.className });
+    }
+  }
+
+  // 4. Separate students: skip duplicates, collect new students
+  const studentsToAdd: { item: typeof studentData[0]; originalIndex: number }[] = [];
+  const seenInBatch = new Set<string>(); // Deduplicate within the same CSV
+
+  for (let i = 0; i < studentData.length; i++) {
+    const item = studentData[i]!;
+    const sex = (item.sex || 'unspecified').toLowerCase();
+    const nameKey = `${normalizeStudentName(item.name)}|${sex}`;
+
+    // Check duplicate by name+sex against DB
+    const dupByName = duplicateMap.get(nameKey);
+    if (dupByName) {
+      result.summary.skipped++;
+      result.skippedStudents.push({
+        name: item.name,
+        reason: `مسجل بالفعل في الصف "${dupByName.className || 'غير محدد'}"`,
+        existingClass: dupByName.className || 'غير محدد',
+        existingStudentNumber: dupByName.studentNumber,
+      });
+      continue;
+    }
+
+    // Check duplicate by studentNumber against DB
+    if (item.studentNumber && existingByNumber.has(item.studentNumber)) {
+      const dupByNum = existingByNumber.get(item.studentNumber)!;
+      result.summary.skipped++;
+      result.skippedStudents.push({
+        name: item.name,
+        reason: `رقم الطالب "${item.studentNumber}" مستخدم بالفعل`,
+        existingClass: dupByNum.className || 'غير محدد',
+        existingStudentNumber: item.studentNumber,
+      });
+      continue;
+    }
+
+    // Check duplicate within the same CSV file
+    if (seenInBatch.has(nameKey)) {
+      result.summary.skipped++;
+      result.skippedStudents.push({
+        name: item.name,
+        reason: 'مكرر داخل نفس الملف',
+        existingClass: '-',
+        existingStudentNumber: '-',
+      });
+      continue;
+    }
+    seenInBatch.add(nameKey);
+
+    studentsToAdd.push({ item, originalIndex: i });
+  }
+
+  // 5. Process each new student individually (own transaction per student)
+  for (const { item, originalIndex } of studentsToAdd) {
+    try {
+      await db.transaction(async (tx) => {
+        // Create user
+        const [newUser] = await tx.insert(users).values({
+          name: item.name,
+          phone: item.phone || null,
+          email: item.email || null,
+          role: 'student',
+          sex: (item.sex || 'unspecified') as any,
+        }).returning();
+
+        if (!newUser) throw new Error("فشل إنشاء المستخدم");
+
+        // Generate numbers if not provided
+        const finalStudentNumber = item.studentNumber || await generateNextStudentNumber(tx);
+        const finalSecretNumber = item.secretNumber || generateSecretNumber();
+
+        // Create student record
+        await tx.insert(students).values({
+          userId: newUser.id,
+          studentNumber: finalStudentNumber,
+          secretNumber: finalSecretNumber,
+          currentClassId: classId,
         });
 
-        results.push({ studentNumber: finalStudentNumber, status: 'success' });
-      } catch (error) {
-        results.push({ studentNumber: item.studentNumber || 'unknown', status: 'error', error: (error as Error).message });
-      }
+        // Create enrollment
+        await tx.insert(enrollments).values({
+          studentId: newUser.id,
+          classId,
+          academicYearId: yearId!,
+        }).onConflictDoNothing();
+      });
+
+      result.summary.added++;
+    } catch (error) {
+      result.summary.failed++;
+      result.failedStudents.push({
+        rowNumber: originalIndex + 1,
+        name: item.name,
+        error: (error as Error).message || 'خطأ غير معروف',
+      });
     }
-    return results;
-  });
+  }
+
+  // Invalidate class cache since student counts changed
+  if (result.summary.added > 0) {
+    const classCache = new RedisCache("classes", 60 * 60);
+    await classCache.invalidate().catch(() => {});
+  }
+
+  return result;
 };
 
 export const getStudentEnrollments = async (studentId: string) => {

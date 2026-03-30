@@ -4,6 +4,7 @@ import {
   upsertStudentSchema,
 } from "@api/schemas/students";
 import { createTRPCRouter, protectedProcedure } from "@api/trpc/init";
+import { TRPCError } from "@trpc/server";
 import {
   createStudent,
   deleteStudent,
@@ -127,7 +128,18 @@ export const studentsRouter = createTRPCRouter({
   upsert: protectedProcedure
     .input(upsertStudentSchema)
     .mutation(async ({ input }) => {
-      return upsertStudent(input);
+      try {
+        return await upsertStudent(input);
+      } catch (error) {
+        const message = (error as Error).message || '';
+        if (message.includes('مسجل بالفعل')) {
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message,
+          });
+        }
+        throw error;
+      }
     }),
 
   exportByClassId: protectedProcedure
