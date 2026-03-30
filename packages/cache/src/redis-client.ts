@@ -68,6 +68,19 @@ export class RedisCache {
     }
   }
 
+  async deletePattern(pattern: string): Promise<void> {
+    try {
+      const keys = await this.redis.keys(this.getKey(pattern));
+      if (keys.length > 0) {
+        await this.redis.del(...keys);
+      }
+    } catch (error: any) {
+      if (error?.code !== "ERR_REDIS_CONNECTION_CLOSED") {
+        console.error(`Redis deletePattern error [${error?.code || 'unknown'}] for ${this.prefix} cache, pattern "${pattern}":`, error?.message || error);
+      }
+    }
+  }
+
   async publish(channel: string, data: unknown): Promise<void> {
     try {
       const serializedData =

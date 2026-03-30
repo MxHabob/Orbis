@@ -12,7 +12,7 @@ export const createAssessment = async (data: CreateAssessmentParams) => {
   
   // Invalidate cache for this class/subject
   if (result) {
-    await assessmentCache.delete(`class:${result.classId}`);
+    await assessmentCache.deletePattern(`class:${result.classId}*`);
   }
   return result;
 };
@@ -67,14 +67,14 @@ export const getAssessmentsForClass = async (classId: number, subjectId?: number
 
 export const updateAssessment = async (id: number, data: Partial<CreateAssessmentParams>) => {
   const [result] = await db.update(assessmentItems).set(data).where(eq(assessmentItems.id, id)).returning();
-  if (result) await assessmentCache.delete(`class:${result.classId}`);
+  if (result) await assessmentCache.deletePattern(`class:${result.classId}*`);
   return result;
 };
 
 export const deleteAssessment = async (id: number) => {
   const [existing] = await db.select().from(assessmentItems).where(eq(assessmentItems.id, id));
   await db.delete(assessmentItems).where(eq(assessmentItems.id, id));
-  if (existing) await assessmentCache.delete(`class:${existing.classId}`);
+  if (existing) await assessmentCache.deletePattern(`class:${existing.classId}*`);
 };
 
 export const getMonthlyAssessmentItems = async (params: {
@@ -167,7 +167,7 @@ export const initializeStandardMonthlyAssessments = async (params: {
   const results = await db.insert(assessmentItems).values(itemsToCreate).returning();
   
   if (results.length > 0) {
-    await assessmentCache.delete(`class:${params.classId}`);
+    await assessmentCache.deletePattern(`class:${params.classId}*`);
   }
   
   return results;
@@ -198,7 +198,7 @@ export const initializeTermExamAssessments = async (params: {
   const results = await db.insert(assessmentItems).values(itemsToCreate).returning();
   
   if (results.length > 0) {
-    await assessmentCache.delete(`class:${params.classId}`);
+    await assessmentCache.deletePattern(`class:${params.classId}*`);
   }
   
   return results;
