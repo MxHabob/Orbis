@@ -83,6 +83,9 @@ export function ClassEditForm({ data }: Props) {
         queryClient.invalidateQueries({
           queryKey: trpc.classes.getById.queryKey({ id: data.id }),
         });
+        queryClient.invalidateQueries({ queryKey: trpc.grades.getGridData.queryKey() });
+        queryClient.invalidateQueries({ queryKey: trpc.assessments.getByClass.queryKey() });
+        queryClient.invalidateQueries({ queryKey: trpc.students.getAll.queryKey() });
         setParams(null);
       },
     }),

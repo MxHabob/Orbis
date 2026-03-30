@@ -13,6 +13,11 @@ import { logger } from "@midday/logger";
  * - Lock duration extended for long PDF generation
  */
 export const startWorker = () => {
+  if (!process.env.REDIS_URL) {
+    logger.info("[Worker] REDIS_URL not provided. Worker disabled for local/offline mode.");
+    return null;
+  }
+
   const worker = new Worker(
     QUEUE_NAME,
     async (job: Job) => {

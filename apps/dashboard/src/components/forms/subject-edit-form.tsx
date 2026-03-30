@@ -56,6 +56,8 @@ export function SubjectEditForm({ data }: Props) {
         queryClient.invalidateQueries({
           queryKey: trpc.subjects.getById.queryKey({ id: data.id }),
         });
+        queryClient.invalidateQueries({ queryKey: trpc.classes.getAll.queryKey() });
+        queryClient.invalidateQueries({ queryKey: trpc.grades.getGridData.queryKey() });
         setParams(null);
       },
     }),

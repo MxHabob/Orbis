@@ -32,13 +32,22 @@ export const JobService = {
     );
 
     try {
+      if (!process.env.REDIS_URL) {
+         throw new Error("No REDIS_URL configured, bypassing queue");
+      }
       await jobQueue.add("certificate-export", data, {
         jobId,
         priority: 1,
       });
     } catch (error) {
-      logger.error(`[JobService] Failed to queue certificate export: ${error instanceof Error ? error.message : String(error)}`);
-      throw new Error("فشل في إضافة الطلب إلى قائمة الانتظار. يرجى التحقق من اتصال Redis.");
+      logger.warn(`[JobService] Redis queue unavailable, running inline: ${error instanceof Error ? error.message : String(error)}`);
+      
+      // Fallback to inline execution for offline/local development
+      import("./handlers/certificate-export").then((m) => {
+        m.handleCertificateExport({ id: jobId, data } as any)
+         .catch((err) => logger.error(`Inline export failed: ${err}`));
+      });
+      return { jobId };
     }
 
     return { jobId };
@@ -50,9 +59,12 @@ export const JobService = {
   async triggerStudentImport(data: any) {
     const jobId = `student-import-${nanoid(10)}`;
     try {
+      if (!process.env.REDIS_URL) {
+         throw new Error("No REDIS_URL configured, bypassing queue");
+      }
       await jobQueue.add("student-import", data, { jobId });
     } catch (error) {
-      logger.error(`[JobService] Failed to queue student import: ${error instanceof Error ? error.message : String(error)}`);
+      logger.warn(`[JobService] Failed to queue student import, queue unavailable: ${error instanceof Error ? error.message : String(error)}`);
       throw new Error("فشل في إضافة الطلب إلى قائمة الانتظار. يرجى التحقق من اتصال Redis.");
     }
     return { jobId };

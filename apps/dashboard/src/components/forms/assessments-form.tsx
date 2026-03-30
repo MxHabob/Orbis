@@ -100,6 +100,7 @@ export function AssessmentsForm({ classId, subjectId, termId, month, onSuccess }
       toast({ title: "Success!", description: "Standard items created.", variant: "success" });
       refetch();
       queryClient.invalidateQueries({ queryKey: trpc.grades.getGridData.queryKey() });
+      queryClient.invalidateQueries({ queryKey: trpc.assessments.getByClass.queryKey() });
     },
   });
 
@@ -151,6 +152,7 @@ export function AssessmentsForm({ classId, subjectId, termId, month, onSuccess }
       });
 
       queryClient.invalidateQueries({ queryKey: trpc.grades.getGridData.queryKey() });
+      queryClient.invalidateQueries({ queryKey: trpc.assessments.getByClass.queryKey() });
       onSuccess?.();
     } catch (err) {
       toast({

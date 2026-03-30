@@ -5,8 +5,8 @@ const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
 
 export const connection = new IORedis(redisUrl, {
   maxRetriesPerRequest: null,
-  // Enable lazy connect to avoid blocking startup
-  lazyConnect: false,
+  // Enable lazy connect to avoid blocking startup for local offline environments
+  lazyConnect: true,
   // Reconnection strategy
   retryStrategy: (times: number) => {
     if (times > 50) return null; // Stop retrying after 50 attempts (~2.5 minutes)
