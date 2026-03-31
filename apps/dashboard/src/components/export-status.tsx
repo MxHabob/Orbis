@@ -21,21 +21,28 @@ type ExportResult = {
  * No need for signed URL since the file is in the exports bucket.
  */
 function DownloadButton({
-  url,
+  fullPath,
   fileName,
   onDownload,
 }: {
-  url: string;
+  fullPath?: string;
   fileName: string;
   onDownload: () => void;
 }) {
   const handleClick = useCallback(() => {
-    downloadFile(url, fileName);
+    if (!fullPath) return;
+    
+    // Use API proxy to handle authentication and avoid S3 AccessDenied
+    const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/files/proxy?filePath=vault/${fullPath}`;
+    const url = new URL(downloadUrl, window.location.origin);
+    url.searchParams.set("download", "true");
+    
+    downloadFile(url.toString(), fileName);
     onDownload();
-  }, [url, fileName, onDownload]);
+  }, [fullPath, fileName, onDownload]);
 
   return (
-    <Button size="sm" onClick={handleClick} disabled={!url}>
+    <Button size="sm" onClick={handleClick} disabled={!fullPath}>
       تحميل الملف
     </Button>
   );
@@ -179,7 +186,7 @@ export function ExportStatus() {
           footer: (
             <div className="mt-4 flex gap-3">
               <DownloadButton
-                url={exportResult.url}
+                fullPath={exportResult.fullPath}
                 fileName={exportResult.fileName}
                 onDownload={handleOnDownload}
               />
