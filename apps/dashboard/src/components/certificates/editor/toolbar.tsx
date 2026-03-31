@@ -70,7 +70,7 @@ export const Toolbar = memo(({
 
         {/* Preview-only controls */}
         {isPreview && (
-          <div className="flex items-center gap-1.5 pr-3 ml-1" dir="ltr">
+          <div className="flex items-center gap-1.5 pr-3 ml-1 overflow-x-auto overflow-y-hidden no-scrollbar" dir="ltr">
             {/* Student pagination controls */}
             <div className="flex items-center gap-0.5 bg-accent/40 rounded-lg p-0.5 border border-border/20">
               <Button 
@@ -86,19 +86,9 @@ export const Toolbar = memo(({
                 <ChevronLeft className="w-3 h-3" />
               </Button>
 
-              <Select dir="ltr" value={previewStudentId || students?.[0]?.userId || ""} onValueChange={setPreviewStudentId}>
-                <SelectTrigger className="h-6 w-[140px] text-[10px] border-0 shadow-none focus:ring-0 bg-transparent gap-1">
-                  <User className="w-3 h-3 text-muted-foreground shrink-0" />
-                  <SelectValue placeholder={t("reports.preview.student_name")} />
-                </SelectTrigger>
-                <SelectContent className="max-h-[400px]">
-                  {students?.map((s: any) => (
-                    <SelectItem key={s.userId} value={s.userId} className="text-xs">
-                      {s.name || t("common.no_data")}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center justify-center min-w-[140px] px-2 text-[10px] font-medium truncate">
+                {students?.find((s: any) => s.userId === (previewStudentId || students?.[0]?.userId))?.name || t("reports.preview.student_name")}
+              </div>
 
               <Button 
                 variant="ghost" 
@@ -117,7 +107,6 @@ export const Toolbar = memo(({
             {/* Type selector */}
             <Select dir="ltr" value={selectedType} onValueChange={setSelectedType}>
               <SelectTrigger className="h-7 w-[100px] text-[10px] bg-accent/40 shadow-none focus:ring-0 rounded-lg gap-1">
-                <GraduationCap className="w-3 h-3 text-muted-foreground shrink-0" />
                 <SelectValue placeholder={t("reports.type")} />
               </SelectTrigger>
               <SelectContent>
@@ -131,7 +120,6 @@ export const Toolbar = memo(({
             {selectedType === "monthly" && (
               <Select dir="ltr" value={selectedMonth.toString()} onValueChange={(v) => setSelectedMonth(parseInt(v))}>
                 <SelectTrigger className="h-7 w-[100px] text-[10px] bg-accent/40 shadow-none focus:ring-0 rounded-lg gap-1">
-                  <Calendar className="w-3 h-3 text-muted-foreground shrink-0" />
                   <SelectValue placeholder={t("grades.select_month")} />
                 </SelectTrigger>
                 <SelectContent className="max-h-[300px]">
@@ -176,7 +164,7 @@ export const Toolbar = memo(({
           onClick={() => setIsPreview(true)}
           className={`h-7 text-xs rounded-lg gap-1.5 px-3 transition-all ${isPreview ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
         >
-          <Eye className="w-3 h-3" />
+          <Eye className={`w-3 h-3 ${isPreview ? 'text-green-500 animate-pulse' : ''}`} />
           {t("common.preview")}
         </Button>
       </div>

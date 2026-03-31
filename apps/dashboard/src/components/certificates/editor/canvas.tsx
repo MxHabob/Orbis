@@ -212,14 +212,6 @@ export const Canvas = memo(({
               </Button>
             </div>
 
-            {/* Preview Mode Indicator */}
-            {isPreview && (
-              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/15 border border-emerald-500/20 backdrop-blur-xl">
-                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-[11px] font-semibold text-emerald-300 tracking-wide">PREVIEW MODE</span>
-              </div>
-            )}
-
             <div className="w-full h-full canvas-container flex items-center justify-center">
               <TransformComponent wrapperClass="!w-full !h-full" contentClass="!w-full !h-full flex items-center justify-center">
                 <div
