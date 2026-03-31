@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@midday/ui/cn";
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useState, useRef } from "react";
 import { ShieldCheck, Award, BadgeAlert, Check } from "lucide-react";
 import { GradesTable } from "./grades-table";
 
@@ -66,21 +66,30 @@ export function CertificateViewer({
     return (template.content?.elements || []) as Element[];
   }, [template]);
 
-  useEffect(() => {
-    const hasTable = elements.some(
-      (el) =>
-        el.type === "table" ||
-        el.type === "grades-table" ||
-        (el.type === "variable" && el.variableKey === "table")
-    );
+  const [bgLoaded, setBgLoaded] = useState(false);
+  const onLoadCalledRef = useRef(false);
 
-    if (!hasTable && onLoad) {
+  const hasTable = useMemo(() => elements.some(
+    (el) =>
+      el.type === "table" ||
+      el.type === "grades-table" ||
+      (el.type === "variable" && el.variableKey === "table")
+  ), [elements]);
+
+  // For certificates WITHOUT tables: fire onLoad when background image loads (or no bg)
+  useEffect(() => {
+    if (onLoadCalledRef.current) return;
+    if (hasTable) return; // Tables handle their own onLoad
+
+    const hasBg = !!template.backgroundImageUrl;
+    if (!hasBg || bgLoaded) {
+      onLoadCalledRef.current = true;
       const timer = setTimeout(() => {
-        onLoad();
-      }, 300); // 300ms to allow fonts to render
+        onLoad?.();
+      }, 300);
       return () => clearTimeout(timer);
     }
-  }, [elements, onLoad]);
+  }, [hasTable, bgLoaded, template.backgroundImageUrl, onLoad]);
 
   const size = (template.size || "a4") as keyof typeof PAPER_SIZES;
   const orientation = template.orientation || "portrait";
@@ -116,7 +125,10 @@ export function CertificateViewer({
          <img 
             src={template.backgroundImageUrl} 
             alt="Background" 
+            crossOrigin="anonymous"
             className="w-full h-full object-fill absolute inset-0 pointer-events-none"
+            onLoad={() => setBgLoaded(true)}
+            onError={() => setBgLoaded(true)} // Don't block on error
          />
        )}
 

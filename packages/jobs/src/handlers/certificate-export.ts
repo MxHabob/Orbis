@@ -143,7 +143,11 @@ export async function handleCertificateExport(
     });
     
     const page = await browser.newPage();
-    await page.setViewport({ width: 1200, height: 1600 });
+    // Set viewport to match paper dimensions for accurate rendering
+    // A4 at 96dpi: 794x1123, but we use larger for quality
+    const vpWidth = templateOrientation === 'portrait' ? Math.round(paperDims!.width * 96 / 25.4) : Math.round(paperDims!.height * 96 / 25.4);
+    const vpHeight = templateOrientation === 'portrait' ? Math.round(paperDims!.height * 96 / 25.4) : Math.round(paperDims!.width * 96 / 25.4);
+    await page.setViewport({ width: vpWidth, height: vpHeight, deviceScaleFactor: 2 });
     await setupLogging(page);
     await setupAuth(page, session.token, dashboardUrl);
 
@@ -154,6 +158,16 @@ export async function handleCertificateExport(
     const isMonthly = certificateType === "monthly";
     const typeLabel = TYPES_AR[certificateType] || certificateType;
     const monthLabel = isMonthly ? MONTHS_AR[selectedMonth] : "";
+
+    // Pre-fetch template data from DB (bypass tRPC auth issues)
+    let templateData: any = null;
+    if (templateId) {
+      templateData = await getCertificateTemplateById(templateId);
+    }
+    if (!templateData) {
+      throw new Error("لم يتم العثور على قالب الشهادة");
+    }
+    logger.info(`[CertExport] Template loaded: ${templateData.name}`);
 
     for (let i = 0; i < classMetadata.length; i++) {
       const cls = classMetadata[i]!;
@@ -169,31 +183,68 @@ export async function handleCertificateExport(
         continue;
       }
 
+      logger.info(`[CertExport] Found ${students.length} students in ${cls.name}`);
+
       // Generate filename: اسم الفصل_الشهر_نوع الشهادة
       const namePart = cls.name.replace(/\s+/g, "_");
       const monthPart = isMonthly ? `_${monthLabel}` : "";
       const pdfName = `${namePart}${monthPart}_${typeLabel}.pdf`;
       const pdfTitle = `شهادات ${typeLabel} - ${cls.name}${isMonthly ? ` - شهر ${monthLabel}` : ""}`;
 
-      // Build Export URL for this class
-      const studentIds = students.map(s => s.userId).join(",");
-      const exportUrl = buildExportUrl(dashboardUrl, {
-        studentIds,
-        templateId,
+      // Inject pre-fetched data directly into the page window object
+      // This bypasses tRPC authentication entirely
+      const injectedData = {
+        students: students.map(s => ({
+          userId: s.userId,
+          name: s.name,
+          studentNumber: s.studentNumber,
+          secretNumber: s.secretNumber,
+          currentClassId: s.currentClassId,
+          status: s.status,
+          stats: s.stats,
+          sex: s.sex,
+          email: s.email,
+          image: s.image,
+          currentClass: s.currentClass,
+        })),
+        template: {
+          id: templateData.id,
+          name: templateData.name,
+          backgroundImageUrl: templateData.backgroundImageUrl,
+          content: templateData.content,
+          size: templateData.size,
+          orientation: templateData.orientation,
+          primaryColor: templateData.primaryColor,
+        },
         certificateType,
         selectedMonth,
-      });
+      };
 
-      // Render & Capture
-      await page.goto(exportUrl, { waitUntil: "networkidle2", timeout: PAGE_NAVIGATION_TIMEOUT });
+      // Remove previous injected data by creating a fresh page context
+      await page.evaluateOnNewDocument((data: any) => {
+        (window as any).__EXPORT_DATA__ = data;
+      }, injectedData);
+
+      // Build simple export URL (no need for studentIds in URL anymore)
+      const exportUrl = `${dashboardUrl}/export/certificate/bulk?mode=injected`;
+
+      // Navigate and wait for render
+      await page.goto(exportUrl, { waitUntil: "networkidle0", timeout: PAGE_NAVIGATION_TIMEOUT });
+      
+      // Wait for the page's own ready signal (data + images + fonts loaded)
       await page.waitForFunction(() => (window as any).isReadyToCapture === true, { timeout: READY_SIGNAL_TIMEOUT });
+      
+      // Additional stabilization: wait for any final repaints
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      logger.info(`[CertExport] Page ready, generating PDF for class: ${cls.name}`);
 
       const pdfBuffer = await page.pdf({
         width: `${templateOrientation === 'portrait' ? paperDims!.width : paperDims!.height}mm`,
         height: `${templateOrientation === 'portrait' ? paperDims!.height : paperDims!.width}mm`,
         printBackground: true,
         margin: { top: "0mm", right: "0mm", bottom: "0mm", left: "0mm" },
-        preferCSSPageSize: true,
+        preferCSSPageSize: false,
         landscape: templateOrientation === 'landscape',
       });
 
