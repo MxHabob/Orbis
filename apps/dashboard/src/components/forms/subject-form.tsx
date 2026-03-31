@@ -22,6 +22,7 @@ const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
   code: z.string().optional().nullable(),
   color: z.string().default("#FFF3E0"),
+  sortOrder: z.coerce.number().int().default(0),
 });
 
 type SubjectFormValues = z.infer<typeof formSchema>;
@@ -50,6 +51,7 @@ export function SubjectForm({ data }: Props) {
     name: data?.name || "",
     code: data?.code || "",
     color: data?.color || "#FFF3E0",
+    sortOrder: data?.sortOrder ?? 0,
   };
 
   const form = useZodForm(formSchema, {
@@ -115,6 +117,26 @@ export function SubjectForm({ data }: Props) {
                       {...field}
                       value={field.value ?? ""}
                       placeholder="e.g. MATH101"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="sortOrder"
+              render={({ field }) => (
+                <FormItem className="space-y-1">
+                  <FormLabel className="text-xs text-[#878787] font-normal">
+                    Sort Order
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      type="number"
+                      placeholder="0"
                     />
                   </FormControl>
                   <FormMessage />

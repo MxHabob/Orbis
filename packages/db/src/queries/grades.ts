@@ -34,8 +34,8 @@ export const getStudentGrades = async (studentId: string, termId?: number) => {
     .from(gradeEntries)
     .innerJoin(assessmentItems, eq(gradeEntries.assessmentItemId, assessmentItems.id))
     .innerJoin(subjects, eq(assessmentItems.subjectId, subjects.id))
-    .where(eq(gradeEntries.studentId, studentId));
-    
+    .where(eq(gradeEntries.studentId, studentId))
+    .orderBy(asc(subjects.sortOrder), asc(subjects.name), asc(assessmentItems.month), asc(assessmentItems.id));
 
   const results = await query;
   
@@ -504,7 +504,7 @@ export const getStudentReportData = async (studentId: string, type?: string, mon
             eq(assessmentItems.month, targetMonth),
           )
         )
-        .orderBy(asc(subjects.name), asc(assessmentItems.id));
+        .orderBy(asc(subjects.sortOrder), asc(subjects.name), asc(assessmentItems.id));
 
       if (monthItems.length === 0) return { rows: [], columns: [], type: "monthly" };
 
@@ -590,7 +590,7 @@ export const getStudentReportData = async (studentId: string, type?: string, mon
             inArray(assessmentItems.month, [...monthlyMonths, examMonth]),
           )
         )
-        .orderBy(asc(subjects.name), asc(assessmentItems.month), asc(assessmentItems.id));
+        .orderBy(asc(subjects.sortOrder), asc(subjects.name), asc(assessmentItems.month), asc(assessmentItems.id));
 
       if (allItems.length === 0) return { rows: [], columns: ["محصلة الشهور", "اختبار نصف العام", "المجموع", "التقدير"], type: "half-yearly" };
 
@@ -703,7 +703,7 @@ export const getStudentReportData = async (studentId: string, type?: string, mon
             inArray(assessmentItems.month, [...term1Months, midtermMonth, ...term2Months, finalExamMonth]),
           )
         )
-        .orderBy(asc(subjects.name), asc(assessmentItems.month), asc(assessmentItems.id));
+        .orderBy(asc(subjects.sortOrder), asc(subjects.name), asc(assessmentItems.month), asc(assessmentItems.id));
 
       if (allItems.length === 0) {
         return {

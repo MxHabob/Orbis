@@ -49,6 +49,13 @@ export const columns: ColumnDef<any>[] = [
     ),
   },
   {
+    header: "Order",
+    accessorKey: "sortOrder",
+    cell: ({ row }) => (
+      <span className="text-muted-foreground text-center inline-block w-8 border rounded-sm bg-secondary/50">{row.getValue("sortOrder")}</span>
+    ),
+  },
+  {
     id: "actions",
     cell: ({ row, table }) => {
       const meta = table.options.meta as unknown as SubjectsTableMeta;

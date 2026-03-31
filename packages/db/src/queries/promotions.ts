@@ -85,7 +85,7 @@ export const calculateStudentFinalScore = async (
         ])
       )
     )
-    .orderBy(asc(subjects.name), asc(assessmentItems.month));
+    .orderBy(asc(subjects.sortOrder), asc(subjects.name), asc(assessmentItems.month));
 
   if (allItems.length === 0) {
     return {

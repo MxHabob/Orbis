@@ -17,6 +17,10 @@ export const subjectSchema = z.object({
     description: "Color for the subject UI",
     example: "#FFF3E0",
   }),
+  sortOrder: z.number().int().default(0).openapi({
+    description: "Sort order for the subject in UI",
+    example: 0,
+  }),
 });
 
 export const createSubjectSchema = subjectSchema.omit({ id: true });

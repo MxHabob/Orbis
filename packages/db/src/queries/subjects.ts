@@ -1,6 +1,6 @@
 import { db } from "@db/client";
 import { subjects } from "@db/schema";
-import { eq } from "drizzle-orm";
+import { eq, asc } from "drizzle-orm";
 import { RedisCache } from "@midday/cache";
 
 const subjectCache = new RedisCache("subjects", 60 * 60 * 24); // 24 hours
@@ -11,7 +11,7 @@ export const getAllSubjects = async () => {
   
   if (cached) return cached;
 
-  const results = await db.select().from(subjects);
+  const results = await db.select().from(subjects).orderBy(asc(subjects.sortOrder), asc(subjects.id));
   
   if (results) {
     await subjectCache.set(cacheKey, results);

@@ -139,7 +139,7 @@ export async function getCertificateData(
           : inArray(assessmentItems.termId, termIdsForSubjects)
       )
     )
-    .orderBy(asc(subjects.name));
+    .orderBy(asc(subjects.sortOrder), asc(subjects.name));
 
   if (subjectRows.length === 0) {
     return {

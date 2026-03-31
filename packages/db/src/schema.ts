@@ -124,8 +124,11 @@ export const subjects = pgTable('subjects', {
   name: varchar('name', { length: 255 }).notNull(),
   code: varchar('code', { length: 50 }).unique(),
   color: text('color').default("#FFF3E0").notNull(),
+  sortOrder: integer('sort_order').default(0).notNull(),
   deletedAt: timestamp('deleted_at'),
-});
+}, (table) => ({
+  sortOrderIdx: index('subjects_sort_order_idx').on(table.sortOrder),
+}));
 
 // Classes Table (Year-Independent — classes are permanent entities)
 export const classes = pgTable('classes', {

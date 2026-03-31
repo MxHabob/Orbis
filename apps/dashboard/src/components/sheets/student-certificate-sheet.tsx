@@ -149,7 +149,7 @@ export function StudentCertificateSheet() {
       admin_name: stats.admin_name || t("reports.preview.admin_name"),
       vp_name: stats.vp_name || t("reports.preview.vp_name"),
       issue_date: new Date().toLocaleDateString(locale === 'ar' ? 'ar-YE' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-      report_type: selectedType === "half-yearly" ? "نصفي" : (selectedType === "final" ? "نهائي" : "شهري"),
+      report_type: selectedType === "half-yearly" ? "النصفي" : (selectedType === "final" ? "النهائي" : `شهري - لشهر ${selectedMonth ? (HIJRI_MONTHS.find(m => m.id === selectedMonth)?.name || t("reports.month_label", { month: selectedMonth })) : ""}`),
       month_name: selectedMonth ? (HIJRI_MONTHS.find(m => m.id === selectedMonth)?.name || t("reports.month_label", { month: selectedMonth })) : "",
       academic_year: studentData.currentClass?.yearName || "2024/2025",
     } as Record<string, string | number>;
