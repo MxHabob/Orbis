@@ -57,8 +57,9 @@ export function AssessmentsForm({ classId, subjectId, termId, month, onSuccess }
       termId,
       month,
     }),
-    staleTime: 1000 * 60 * 5, // 5 minutes cache
-    gcTime: 1000 * 60 * 10, // 10 minutes cache
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: true,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
