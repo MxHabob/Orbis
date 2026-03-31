@@ -22,10 +22,16 @@ export function VaultItemActions({ id, filePath, hideDelete }: Props) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const trpc = useTRPC();
 
-  const fileName = filePath.at(-1);
-  const { url: downloadUrl } = useFileUrl({
-    documentId: id,
-  });
+  const filename = filePath?.at(-1);
+  const { url: downloadUrl } = useFileUrl(
+    id || filePath
+      ? {
+          type: "download",
+          documentId: (id) as string,
+          url: !id && filePath ? `${process.env.NEXT_PUBLIC_API_URL}/files/proxy?filePath=vault/${filePath.join("/")}` : undefined,
+        }
+      : null,
+  );
 
   const handleShare = () => {
     if (downloadUrl) {
@@ -42,8 +48,10 @@ export function VaultItemActions({ id, filePath, hideDelete }: Props) {
         size="icon"
         className="rounded-full size-7 bg-background"
         onClick={() => {
-          if (downloadUrl && fileName) {
-            downloadFile(downloadUrl, fileName);
+          if (downloadUrl && filename) {
+            const url = new URL(downloadUrl, window.location.origin);
+            url.searchParams.set("download", "true");
+            downloadFile(url.toString(), filename);
           }
         }}
         disabled={!downloadUrl}

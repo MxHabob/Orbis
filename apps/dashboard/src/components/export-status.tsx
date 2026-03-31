@@ -3,6 +3,7 @@
 import { useJobStatus } from "@/hooks/use-job-status";
 import { useSuccessSound } from "@/hooks/use-success-sound";
 import { useExportStore } from "@/store/export";
+import { downloadFile } from "@/lib/download";
 import { Button } from "@midday/ui/button";
 import { useToast } from "@midday/ui/use-toast";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -29,14 +30,7 @@ function DownloadButton({
   onDownload: () => void;
 }) {
   const handleClick = useCallback(() => {
-    // Trigger download via a hidden anchor element
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = fileName;
-    link.target = "_blank";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    downloadFile(url, fileName);
     onDownload();
   }, [url, fileName, onDownload]);
 
