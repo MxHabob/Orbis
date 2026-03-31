@@ -116,7 +116,6 @@ export async function generateCanvasPdf(
     orientation = "portrait",
   } = options;
 
-  // Resolve theme
   const resolvedTheme =
     theme === "system" || !theme
       ? window.matchMedia("(prefers-color-scheme: dark)").matches
@@ -144,39 +143,51 @@ export async function generateCanvasPdf(
       logging: false,
       removeContainer: true,
       imageTimeout: 0,
-      width: canvasContent.scrollWidth || canvasContent.offsetWidth,
-      height: canvasContent.scrollHeight || canvasContent.offsetHeight,
-      windowWidth: canvasContent.scrollWidth,
-      foreignObjectRendering: false,
+      scrollX: 0,
+      scrollY: 0,
+      width: canvasContent.offsetWidth,
+      height: canvasContent.offsetHeight,
+      windowWidth: canvasContent.offsetWidth,
+      windowHeight: canvasContent.offsetHeight,
       onclone: (clonedDoc) => {
-        const element = clonedDoc.body.querySelector(selector || "[data-canvas-content]") as HTMLElement;
-        if (element) {
-           element.style.overflow = "visible";
-           element.style.maxHeight = "none";
-           element.style.transform = "none";
-           element.style.margin = "0";
+        // Critical for Arabic/RTL: Ensure the cloned document has the correct direction
+        const dir = document.documentElement.dir || document.body.dir || "rtl";
+        clonedDoc.documentElement.dir = dir;
+        clonedDoc.body.dir = dir;
 
-           const parent = element.parentElement;
-           if (parent) {
-             parent.style.transform = "none";
-             parent.style.scale = "1";
-             parent.style.margin = "0";
-             parent.style.padding = "0";
-           }
+        const element = clonedDoc.querySelector(selector || "[data-canvas-content]") as HTMLElement;
+        if (element) {
+          // Isolate the element by hiding everything else
+          Array.from(clonedDoc.body.children).forEach((child: any) => {
+            if (child instanceof HTMLElement && !child.contains(element)) {
+              child.style.display = "none";
+            }
+          });
+
+          // Reset positioning to 0,0 of the canvas
+          element.style.position = "absolute";
+          element.style.top = "0";
+          element.style.left = "0";
+          element.style.margin = "0";
+          element.style.padding = "0";
+          element.style.transform = "none";
+          element.style.visibility = "visible";
+          element.style.opacity = "1";
+          
+          // Force body and document to match the element's width to fix percentage-based offsets
+          clonedDoc.body.style.width = `${canvasContent.offsetWidth}px`;
+          clonedDoc.body.style.height = `${canvasContent.offsetHeight}px`;
+          clonedDoc.body.style.margin = "0";
+          clonedDoc.body.style.padding = "0";
+          clonedDoc.body.style.overflow = "hidden";
+          clonedDoc.body.style.backgroundColor = backgroundColor;
         }
-        
-        const hideElements = clonedDoc.querySelectorAll('[data-hide-in-pdf="true"]');
-        hideElements.forEach((el) => {
-          (el as HTMLElement).style.display = "none";
-        });
       },
     });
 
     const { jsPDF } = await import("jspdf");
-    
     const imgData = canvas.toDataURL("image/jpeg", quality);
 
-    // Get paper dimensions in mm
     const paper = PDF_PAPER_SIZES[paperSize] || PDF_PAPER_SIZES.a4!;
     const pageWidth = orientation === "portrait" ? paper!.width : paper!.height;
     const pageHeight = orientation === "portrait" ? paper!.height : paper!.width;
@@ -187,11 +198,9 @@ export async function generateCanvasPdf(
       format: [pageWidth, pageHeight],
     });
 
-    // Set background
     pdf.setFillColor(backgroundRgb.r, backgroundRgb.g, backgroundRgb.b);
     pdf.rect(0, 0, pageWidth, pageHeight, "F");
 
-    // Fill entire page edge-to-edge (no margins)
     pdf.addImage(
       imgData,
       "JPEG",
@@ -202,7 +211,6 @@ export async function generateCanvasPdf(
     );
 
     pdf.save(filename);
-
   } catch (error) {
     console.error("Error generating PDF:", error);
     throw error;

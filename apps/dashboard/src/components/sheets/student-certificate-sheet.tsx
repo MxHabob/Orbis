@@ -107,14 +107,22 @@ export function StudentCertificateSheet() {
         : certificateType === "final" 
           ? t("reports.final")
           : t("reports.monthly");
+      // Professional PDF generation using higher scale and specific capture area
+      // Let the off-screen container render fully (fonts, images, etc.)
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // University Grade PDF generation: capture from a hidden, non-scaled container
       await generateCanvasPdf({
-         filename: `${t("reports.certificate")}_${studentData.name}_${typeLabel}.pdf`,
-        selector: "[data-canvas-content]",
+        filename: `${t("reports.certificate")}_${studentData.name}_${typeLabel}.pdf`,
+        selector: "#perfect-pdf-capture-root [data-canvas-content]",
         paperSize: (template as any).size || "a4",
         orientation: (template as any).orientation || "portrait",
+        scale: 4, // Maximum resolution
+        useCORS: true,
       });
       toast({ title: t("reports.export_success"), variant: "success" });
     } catch (error) {
+      console.error("PDF Export Error:", error);
       toast({ title: t("reports.export_failed"), variant: "destructive" });
     } finally {
       setIsExporting(false);
@@ -138,9 +146,9 @@ export function StudentCertificateSheet() {
       final_result: stats.final_result || "",
       rank: stats.rank || "1",
       org_name: "مدرسة صنعاء النموذجية",
-      admin_name: t("reports.preview.admin_name"),
-      vp_name: t("reports.preview.vp_name"),
-      issue_date: new Date().toLocaleDateString(locale === 'ar' ? 'ar-YE' : 'en-US'),
+      admin_name: stats.admin_name || t("reports.preview.admin_name"),
+      vp_name: stats.vp_name || t("reports.preview.vp_name"),
+      issue_date: new Date().toLocaleDateString(locale === 'ar' ? 'ar-YE' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
       report_type: selectedType === "half-yearly" ? "نصفي" : (selectedType === "final" ? "نهائي" : "شهري"),
       month_name: selectedMonth ? (HIJRI_MONTHS.find(m => m.id === selectedMonth)?.name || t("reports.month_label", { month: selectedMonth })) : "",
       academic_year: studentData.currentClass?.yearName || "2024/2025",
@@ -168,53 +176,25 @@ export function StudentCertificateSheet() {
 
   // Print handler with dynamic page size
   const handlePrint = React.useCallback(() => {
-    // Inject a temporary style tag with the correct @page size
-    const styleEl = document.createElement('style');
-    styleEl.id = 'cert-print-style';
-    styleEl.textContent = `
-      @page {
-        size: ${printWidthMm}mm ${printHeightMm}mm !important;
-        margin: 0 !important;
-      }
-      @media print {
-        body > * { display: none !important; }
-        body > [data-radix-portal] { display: block !important; }
-        [data-radix-portal] > * { display: block !important; }
-        [data-cert-print-container] {
-          display: block !important;
-          position: fixed !important;
-          inset: 0 !important;
-          z-index: 99999 !important;
-          background: white !important;
-          overflow: visible !important;
-        }
-        [data-cert-print-container] [data-canvas-content] {
-          width: ${printWidthMm}mm !important;
-          height: ${printHeightMm}mm !important;
-          box-shadow: none !important;
-          margin: 0 !important;
-          transform: none !important;
-        }
-        [data-cert-print-container] [data-canvas-content] img {
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-        * {
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-      }
-    `;
-    document.head.appendChild(styleEl);
-    
     window.print();
+  }, []);
+
+  const handleShareToX = () => {
+    if (!studentData) return;
     
-    // Clean up after print dialog closes
-    setTimeout(() => {
-      const el = document.getElementById('cert-print-style');
-      if (el) el.remove();
-    }, 1000);
-  }, [printWidthMm, printHeightMm]);
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    // Construction of a public-ish sharing URL if applicable, or just a dashboard link
+    const sharingUrl = `${baseUrl}/${locale}/export/certificate?studentId=${studentId}&templateId=${currentTemplate?.id}&type=${selectedType}&month=${selectedMonth}`;
+    
+    const monthName = availableMonths.find(m => m.value === selectedMonth)?.label || "";
+    
+    const text = selectedType === "final" 
+      ? t("reports.share_text_final", { name: studentData.name })
+      : t("reports.share_text_monthly", { name: studentData.name, month: monthName });
+
+    const xUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(sharingUrl)}`;
+    window.open(xUrl, '_blank');
+  };
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>
@@ -222,7 +202,25 @@ export function StudentCertificateSheet() {
         style={{ maxWidth: 740 }} 
         className="p-0 bg-white dark:bg-[#080808] transition-[max-width] duration-300 ease-in-out [&>button]:hidden border-none"
       >
-        <div className="relative h-full flex flex-col" data-cert-print-container>
+        <div className="relative h-full flex flex-col print-content">
+          {/* University Grade Off-screen PDF Capture Container - ZERO SCALE issues */}
+          <div 
+            className="fixed left-0 top-0 pointer-events-none opacity-0 z-[-1000]"
+            aria-hidden="true"
+             id="perfect-pdf-capture-root"
+          >
+            {studentDataValues && template && (
+                <CertificateViewer 
+                  template={template as any} 
+                  data={studentDataValues}
+                  certificateType={selectedType}
+                  month={selectedMonth}
+                  preview={false}
+                  className="shadow-none border-none m-0 p-0"
+                />
+            )}
+          </div>
+
           <ScrollArea className="flex-1 p-6" hideScrollbar>
             <div className="p-8 pb-32 min-h-full flex flex-col items-center justify-center bg-[#fcfcfc] dark:bg-[#0f0f0f]">
               {(isStudentLoading || !template) ? (
@@ -231,7 +229,7 @@ export function StudentCertificateSheet() {
                   <p className="text-sm text-muted-foreground font-medium">{t("reports.preparing")}</p>
                 </div>
               ) : (
-                <div className="w-full flex flex-col items-center">
+                <div className="w-full flex flex-col items-center" id="certificate-capture-area">
                   {(() => {
                     const canvasWidth = templateOrientation === 'landscape' ? paperConfig.height : paperConfig.width;
                     const canvasHeight = templateOrientation === 'landscape' ? paperConfig.width : paperConfig.height;
@@ -272,7 +270,9 @@ export function StudentCertificateSheet() {
             </div>
           </ScrollArea>
 
-          <div className="absolute bottom-4 w-full border-t border-border pt-4 px-6 bg-white dark:bg-[#080808] z-10">
+          <div 
+            className="absolute bottom-4 w-full border-t border-border pt-4 px-6 bg-white dark:bg-[#080808] z-10 no-print"
+          >
             <div className="flex justify-between items-center">
               <div className="flex gap-2">
                 {/* Certificate Type Selector */}
@@ -445,7 +445,7 @@ export function StudentCertificateSheet() {
                   onClick={handleClose}
                   className="h-9 w-9"
                 >
-                  <Icons.X className="size-4" />
+                  <Icons.Close className="size-4" />
                 </Button>
               </div>
             </div>
