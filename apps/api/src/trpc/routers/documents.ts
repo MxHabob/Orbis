@@ -88,28 +88,36 @@ export const documentsRouter = createTRPCRouter({
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx: { session, db }, input }) => {
-      // 1. Get document to find the key
-      const [doc] = await db
-        .select()
-        .from(documents)
-        .where(
-          and(
-            eq(documents.id, input.id),
-            eq(documents.userId, session.user.id)
-          )
-        );
+      // 1. Find all documents to be deleted (the file/folder itself and all its children)
+      // Since we use 'onDelete: cascade' in the DB, we need to collect the S3 keys
+      // BEFORE deleting from the database.
+      
+      const descendants = await db.execute<{ key: string }>(sql`
+        WITH RECURSIVE subordinates AS (
+          SELECT id, key, parent_folder_id FROM documents 
+          WHERE id = ${input.id}::uuid AND user_id = ${session.user.id}::uuid
+          UNION
+          SELECT e.id, e.key, e.parent_folder_id FROM documents e
+          INNER JOIN subordinates s ON s.id = e.parent_folder_id
+        )
+        SELECT key FROM subordinates WHERE key IS NOT NULL
+      `);
 
-      if (!doc) throw new TRPCError({ code: "NOT_FOUND" });
+      const keysToDelete = descendants.rows.map((r) => r.key);
 
-      // 2. Delete from DB
-      await deleteDocument(input.id, session.user.id);
+      // 2. Delete from DB (Recursive cascade will handle children in DB)
+      const result = await deleteDocument(input.id, session.user.id);
 
-      // 3. Delete from S3
-      if (doc.key) {
-        const { deleteFile } = require("@midday/storage");
-        await deleteFile({
+      if (!result) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      // 3. Delete from S3 (MinIO) - Bulk deletion for performance
+      if (keysToDelete.length > 0) {
+        const { deleteFiles } = require("@midday/storage");
+        await deleteFiles({
           bucket: "vault",
-          key: doc.key,
+          keys: keysToDelete,
         });
       }
 

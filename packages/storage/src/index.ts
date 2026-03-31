@@ -1,4 +1,10 @@
-import { PutObjectCommand, GetObjectCommand, DeleteObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { 
+  PutObjectCommand, 
+  GetObjectCommand, 
+  DeleteObjectCommand, 
+  DeleteObjectsCommand,
+  S3Client 
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const endpoint = process.env.S3_ENDPOINT_URL ?? "http://localhost:9000";
@@ -76,6 +82,22 @@ export async function deleteFile(params: {
     new DeleteObjectCommand({
       Bucket: params.bucket,
       Key: params.key,
+    }),
+  );
+}
+
+export async function deleteFiles(params: {
+  bucket: string;
+  keys: string[];
+}): Promise<void> {
+  if (params.keys.length === 0) return;
+
+  await s3Client.send(
+    new DeleteObjectsCommand({
+      Bucket: params.bucket,
+      Delete: {
+        Objects: params.keys.map((key) => ({ Key: key })),
+      },
     }),
   );
 }
