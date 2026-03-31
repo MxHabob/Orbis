@@ -21,7 +21,7 @@ export function AverageGrade() {
     }),
   );
 
-  const averageGrade = data?.averageGrade ?? 0;
+  const averageGrade = Number(data?.averageGrade) || 0;
   const formattedGrade = averageGrade.toFixed(1);
 
   return (

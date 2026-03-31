@@ -2,6 +2,7 @@ import { AverageGrade } from "@/components/average-grade";
 import { CollapsibleSummary } from "@/components/collapsible-summary";
 import { StudentSummarySkeleton } from "@/components/student-summary-skeleton";
 import { StudentHeader } from "@/components/student-header";
+import { StudentHeaderSkeleton } from "@/components/student-header-skeleton";
 import { ErrorFallback } from "@/components/error-fallback";
 import { FailedStudents } from "@/components/failed-students";
 import { PassedStudents } from "@/components/passed-students";
@@ -19,13 +20,28 @@ import type { SearchParams } from "nuqs";
 import { Suspense } from "react";
 
 export const metadata: Metadata = {
-  title: "Class Report | Midday",
+  title: "Class Report | Mommy",
 };
 
 type Props = {
   params: Promise<{ Id: string }>;
   searchParams: Promise<SearchParams>;
 };
+
+// Async component for fetching class data without blocking the full page rendering
+async function StudentHeaderContainer({ id }: { id: string }) {
+  const classData = await getQueryClient().fetchQuery(
+    trpc.classes.getById.queryOptions({ id: Number(id) })
+  );
+
+  return (
+    <StudentHeader 
+      name={classData?.name ?? "Class Report"} 
+      color={classData?.color}
+      id={id}
+    />
+  );
+}
 
 export default async function Page(props: Props) {
   const { Id } = await props.params;
@@ -52,12 +68,12 @@ export default async function Page(props: Props) {
     academicYearId
   });
 
-  // Prefetch class statistics and student list
-  batchPrefetch([infiniteOptions, statisticsOptions].filter(Boolean) as any);
-
-  const classData = await getQueryClient().fetchQuery(
+  // Prefetch class statistics, student list, and class name
+  batchPrefetch([
+    infiniteOptions, 
+    statisticsOptions,
     trpc.classes.getById.queryOptions({ id: Number(Id) })
-  );
+  ].filter(Boolean) as any);
 
   return (
     <HydrateClient>
@@ -80,11 +96,9 @@ export default async function Page(props: Props) {
             </div>
           </CollapsibleSummary>
 
-            <StudentHeader 
-              name={classData?.name ?? "Class Report"} 
-              color={classData?.color}
-              id={Id}
-            />
+          <Suspense fallback={<StudentHeaderSkeleton />}>
+            <StudentHeaderContainer id={Id} />
+          </Suspense>
             
           <ErrorBoundary errorComponent={ErrorFallback}>
             <Suspense fallback={<CustomersSkeleton />}>

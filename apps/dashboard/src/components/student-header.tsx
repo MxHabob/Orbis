@@ -22,7 +22,7 @@ import { Button } from "@midday/ui/button";
 import { useStudentParams } from "@/hooks/use-student-params";
 import { useTRPC } from "@/trpc/client";
 import { useToast } from "@midday/ui/use-toast";
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { downloadBase64 } from "@midday/export";
 import { useI18n } from "@/locales/client";
@@ -71,7 +71,7 @@ function StudentActions({ classId, className }: StudentActionsProps) {
 
   const { filter, setFilter } = useCustomerFilterParams();
 
-  const { data: years, isLoading: isLoadingYears } = useQuery(
+  const { data: years } = useSuspenseQuery(
     trpc.academic.getYears.queryOptions()
   );
 
@@ -160,8 +160,7 @@ function StudentActions({ classId, className }: StudentActionsProps) {
               >
                 {t("education.current")}
               </DropdownMenuItem>
-              {!isLoadingYears &&
-                years?.map((year) => (
+              {years?.map((year) => (
                   <DropdownMenuItem
                     key={year.id}
                     onClick={() => handleYearChange(year.id.toString())}
@@ -211,7 +210,7 @@ type Props = {
 };
 
 export const StudentHeader = ({ name, color, id }: Props) => {
-  const customerInfo = (
+  const classInfo = (
     <div className="flex items-center space-x-3">
       {name && (
         <Avatar className="size-6 rounded-none border border-border flex-shrink-0">
@@ -232,7 +231,7 @@ export const StudentHeader = ({ name, color, id }: Props) => {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4">
       <div className="flex items-center gap-4 min-w-0">
-        {customerInfo}
+        {classInfo}
       </div>
 
       <div className="flex items-center gap-3">

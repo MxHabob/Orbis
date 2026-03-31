@@ -4,19 +4,19 @@ import { TableSkeleton } from "@/components/tables/core";
 import type { ColumnSizingState, VisibilityState } from "@tanstack/react-table";
 import { columns } from "./columns";
 
-interface CustomersSkeletonProps {
+interface StudentsSkeletonProps {
   columnVisibility?: VisibilityState;
   columnSizing?: ColumnSizingState;
   columnOrder?: string[];
   isEmpty?: boolean;
 }
 
-export function CustomersSkeleton({
+export function StudentsSkeleton({
   columnVisibility = {},
   columnSizing = {},
   columnOrder = [],
   isEmpty = false,
-}: CustomersSkeletonProps) {
+}: StudentsSkeletonProps) {
   return (
     <div
       className="overflow-hidden border-l border-r border-b border-border"

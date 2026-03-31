@@ -22,7 +22,7 @@ export function FailedStudents() {
     }),
   );
 
-  const failedCount = data?.failedCount ?? 0;
+  const failedCount = Number(data?.failedCount) || 0;
 
   return (
     <Card className="hidden sm:block">

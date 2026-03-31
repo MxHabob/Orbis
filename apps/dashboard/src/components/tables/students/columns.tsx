@@ -247,7 +247,7 @@ export const columns: ColumnDef<Student>[] = [
     cell: ({ row, table }) => (
       <ActionsCell
         studentId={row.original.userId}
-        onDelete={table.options.meta?.deleteCustomer}
+        onDelete={table.options.meta?.deleteStudent}
       />
     ),
   },

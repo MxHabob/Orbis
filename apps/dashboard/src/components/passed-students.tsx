@@ -22,7 +22,7 @@ export function PassedStudents() {
     }),
   );
 
-  const passedCount = data?.passedCount ?? 0;
+  const passedCount = Number(data?.passedCount) || 0;
 
   return (
     <Card className="hidden sm:block">

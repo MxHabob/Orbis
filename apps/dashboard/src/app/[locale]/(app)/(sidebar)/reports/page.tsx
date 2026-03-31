@@ -1,5 +1,6 @@
 import { ErrorFallback } from "@/components/error-fallback";
-import { ReportsHeader } from "@/components/invoice-header";
+import { ReportsHeader } from "@/components/reports-header";
+import { ReportsHeaderSkeleton } from "@/components/reports-header-skeleton";
 import { ScrollableContent } from "@/components/scrollable-content";
 import { DataTable } from "@/components/tables/reports/data-table";
 import { ReportsSkeleton } from "@/components/tables/reports/skeleton";
@@ -41,10 +42,16 @@ export default async function Reports(props: Props) {
     <HydrateClient>
       <ScrollableContent>
         <div className="flex flex-col gap-6">
-          <ReportsHeader />
-
           <ErrorBoundary errorComponent={ErrorFallback}>
-            <Suspense fallback={<ReportsSkeleton />}>
+            <Suspense 
+              fallback={
+                <div className="flex flex-col gap-6">
+                  <ReportsHeaderSkeleton />
+                  <ReportsSkeleton />
+                </div>
+              }
+            >
+              <ReportsHeader />
               <DataTable initialSettings={initialSettings} />
             </Suspense>
           </ErrorBoundary>

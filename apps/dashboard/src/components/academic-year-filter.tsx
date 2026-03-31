@@ -3,7 +3,7 @@
 import { useClassesFilterParams } from "@/hooks/use-classes-filter-params";
 import { useCustomerFilterParams } from "@/hooks/use-customer-filter-params";
 import { useTRPC } from "@/trpc/client";
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import {
   Select,
   SelectContent,
@@ -11,7 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@midday/ui/select";
-import { cn } from "@midday/ui/cn";
 import { usePathname } from "next/navigation";
 import { useI18n } from "@/locales/client";
 
@@ -28,7 +27,7 @@ export function AcademicYearFilter() {
   const currentFilter = isDetailsPage ? customerFilter : classFilter;
   const setCurrentFilter = isDetailsPage ? setCustomerFilter : setClassFilter;
 
-  const { data: years, isLoading } = useQuery(
+  const { data: years } = useSuspenseQuery(
     trpc.academic.getYears.queryOptions()
   );
 
@@ -50,7 +49,7 @@ export function AcademicYearFilter() {
           <SelectItem value="current" className="text-xs rounded-none">
             {t("education.current")}
           </SelectItem>
-          {!isLoading && years?.map((year) => (
+          {years?.map((year) => (
             <SelectItem 
               key={year.id} 
               value={year.id.toString()} 

@@ -79,7 +79,7 @@ export function DataTable({ initialSettings, id }: Props) {
     console.log("data :", data);
     console.log("infiniteQueryOptions :", infiniteQueryOptions);
 
-  const deleteCustomerMutation = useMutation(
+  const deleteStudentMutation = useMutation(
     trpc.students.delete.mutationOptions({
       onSuccess: () => {
         refetch();
@@ -87,13 +87,11 @@ export function DataTable({ initialSettings, id }: Props) {
     }),
   );
 
-
-
-  const handleDeleteCustomer = useCallback(
+  const handleDeleteStudent = useCallback(
     (id: string) => {
-      deleteCustomerMutation.mutate({ userId: id });
+      deleteStudentMutation.mutate({ userId: id });
     },
-    [deleteCustomerMutation],
+    [deleteStudentMutation],
   );
 
   const tableData = useMemo(() => {
@@ -113,9 +111,9 @@ export function DataTable({ initialSettings, id }: Props) {
 
   const tableMeta = useMemo(
     () => ({
-      deleteCustomer: handleDeleteCustomer,
+      deleteStudent: handleDeleteStudent,
     }),
-    [handleDeleteCustomer],
+    [handleDeleteStudent],
   );
 
   const table = useReactTable({

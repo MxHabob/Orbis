@@ -22,7 +22,7 @@ export function TotalStudents() {
     }),
   );
 
-  const totalCount = data?.totalCount ?? 0;
+  const totalCount = Number(data?.totalCount) || 0;
 
   return (
     <Card className="hidden sm:block">
