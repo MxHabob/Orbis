@@ -185,69 +185,20 @@ export function CertificateEditor({
     });
   }, [updateElement]);
 
-  const processDocumentMutation = useMutation(
-    trpc.documents.processDocument.mutationOptions({
-      onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: trpc.documents.get.queryKey(),
-        });
-      },
-    }),
-  );
-
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, elementType: "background" | "image") => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 50 * 1024 * 1024) {
-      toast({ title: t("vault.file_too_large"), variant: "error" });
-      return;
-    }
-
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("bucket", "vault");
-      formData.append("path", `certificates/${Date.now()}-${file.name}`);
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/upload`, {
-        method: "POST",
-        body: formData,
-        credentials: "include",
-      });
-
-      if (!response.ok) throw new Error("Upload failed");
-
-      const data = await response.json();
-      
-      // Register in Vault (DB record)
-      await processDocumentMutation.mutateAsync([{
-        filePath: data.path.split("/"),
-        mimetype: file.type,
-        size: file.size,
-      }]);
-
-      // Use the proxy URL to ensure the image is accessible with the current session
-      const imageUrl = `${process.env.NEXT_PUBLIC_API_URL}/files/proxy?filePath=vault/${data.path}`;
-
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
       if (elementType === "background") {
-        setBackgroundImage(imageUrl);
+        setBackgroundImage(dataUrl);
       } else {
-        addElement("image", imageUrl);
+        addElement("image", dataUrl);
       }
-
-      toast({ 
-        title: t("vault.upload_success"), 
-        variant: "success",
-        duration: 2000
-      });
-    } catch (error) {
-      console.error("Upload error:", error);
-      toast({ 
-        title: t("vault.upload_error"), 
-        variant: "destructive" 
-      });
-    }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSave = async () => {
