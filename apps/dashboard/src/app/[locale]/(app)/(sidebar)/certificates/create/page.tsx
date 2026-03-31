@@ -2,7 +2,7 @@
 import { CertificateEditor } from "@/components/certificates/certificate-editor";
 
 export const metadata = {
-  title: "Create Template | Midday",
+  title: "Create Template | Mommy",
 };
 
 export default function CreateTemplatePage() {

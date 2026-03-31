@@ -8,7 +8,7 @@ import { cookies } from "next/headers";
 import type { SearchParams } from "nuqs";
 
 export const metadata: Metadata = {
-  title: "Overview | Entity",
+  title: "Overview | Mommy",
 };
 
 type Props = {

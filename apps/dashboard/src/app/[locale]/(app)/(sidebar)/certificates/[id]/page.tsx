@@ -4,7 +4,7 @@ import { getCertificateTemplateById } from "@midday/db/queries/certificate-templ
 import { notFound } from "next/navigation";
 
 export const metadata = {
-  title: "Edit Template | Midday",
+  title: "Edit Template | Mommy",
 };
 
 export default async function EditTemplatePage({ params }: { params: Promise<{ id: string }> }) {

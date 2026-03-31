@@ -3,7 +3,7 @@ import { prefetch, trpc } from "@/trpc/server";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Staff | Midday",
+  title: "Staff | Mommy",
 };
 
 export default function Staff() {

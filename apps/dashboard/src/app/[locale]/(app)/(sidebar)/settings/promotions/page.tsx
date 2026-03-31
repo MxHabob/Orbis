@@ -4,7 +4,7 @@ import { trpc, HydrateClient, getQueryClient } from "@/trpc/server";
 import { PromotionsClient } from "@/components/promotions/promotions-client";
 
 export const metadata: Metadata = {
-  title: "Promotions | Settings",
+  title: "Promotions | Mommy",
 };
 
 export default async function PromotionsPage() {

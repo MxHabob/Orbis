@@ -13,7 +13,7 @@ import { loadGradeFilterParams } from "@/hooks/use-grade-filter-params";
 import type { SearchParams } from "nuqs";
 
 export const metadata: Metadata = {
-  title: "Grade | Entity",
+  title: "Grade | Mommy",
 };
 
 type Props = {

@@ -12,13 +12,13 @@ import { Providers } from "./providers";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://app.entity.com"),
-  title: "Entity | School Management",
+  title: "Mommy | School Management",
   description:
-    "Automate financial tasks, stay organized, and make informed decisions effortlessly.",
+    "Automate School tasks, stay organized, and make informed decisions effortlessly.",
   twitter: {
-    title: "Entity | School Management",
+    title: "Mommy | School Management",
     description:
-      "Automate financial tasks, stay organized, and make informed decisions effortlessly.",
+      "Automate School tasks, stay organized, and make informed decisions effortlessly.",
     images: [
       {
         url: "https://cdn.entity.ai/opengraph-image-v1.jpg",
@@ -33,11 +33,11 @@ export const metadata: Metadata = {
     ],
   },
   openGraph: {
-    title: "Entity | School Management",
+    title: "Mommy | School Management",
     description:
       "Automate financial tasks, stay organized, and make informed decisions effortlessly.",
     url: "https://app.entity.com",
-    siteName: "Entity",
+    siteName: "Mommy",
     images: [
       {
         url: "https://cdn.entity.ai/opengraph-image-v1.jpg",
