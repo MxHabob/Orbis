@@ -5,7 +5,28 @@ import { Input } from "@midday/ui/input";
 import { Icons } from "@midday/ui/icons";
 import { useRef, useState, useEffect } from "react";
 import { Avatar, AvatarFallback } from "@midday/ui/avatar";
-import { AcademicYearFilter } from "./academic-year-filter";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger, 
+  DropdownMenuSub, 
+  DropdownMenuSubTrigger, 
+  DropdownMenuPortal, 
+  DropdownMenuSubContent,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuSeparator
+} from "@midday/ui/dropdown-menu";
+import { Button } from "@midday/ui/button";
+import { useStudentParams } from "@/hooks/use-student-params";
+import { useTRPC } from "@/trpc/client";
+import { useToast } from "@midday/ui/use-toast";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
+import { downloadBase64 } from "@midday/export";
+import { useI18n } from "@/locales/client";
+import { cn } from "@midday/ui/cn";
 
 function StudentSearchFilter() {
   const [input, setInput] = useState("");
@@ -35,20 +56,167 @@ function StudentSearchFilter() {
   );
 }
 
+interface StudentActionsProps {
+  classId?: string;
+  className?: string;
+}
+
+function StudentActions({ classId, className }: StudentActionsProps) {
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { setParams: setStudentParams } = useStudentParams();
+  const [isExporting, setIsExporting] = useState(false);
+  const t = useI18n();
+
+  const { filter, setFilter } = useCustomerFilterParams();
+
+  const { data: years, isLoading: isLoadingYears } = useQuery(
+    trpc.academic.getYears.queryOptions()
+  );
+
+  const exportMutation = useMutation(
+    trpc.students.exportByClassId.mutationOptions({
+      onSuccess: (data) => {
+        downloadBase64(data.data, data.filename, data.mimeType);
+        toast({
+          title: "Export Successful",
+          description: "Report has been exported successfully.",
+          variant: "success",
+        });
+      },
+      onError: (err) => {
+        toast({
+          title: "Export Failed",
+          description: `Failed to export report: ${err.message}`,
+          variant: "destructive",
+        });
+      },
+      onSettled: () => setIsExporting(false),
+    })
+  );
+
+  const handleExport = (format: "xlsx" | "csv") => {
+    if (!classId) return;
+    setIsExporting(true);
+    exportMutation.mutate({
+      classId,
+      format,
+    });
+  };
+
+  const handleYearChange = (yearId: string | null) => {
+    setFilter({ academicYearId: yearId });
+  };
+
+  const currentYearId = filter.academicYearId || "current";
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 gap-2 text-xs border-border rounded-none shadow-none bg-background focus:ring-0"
+          disabled={isExporting}
+        >
+          {isExporting ? (
+            <Loader2 className="animate-spin size-3.5" />
+          ) : (
+             <Icons.Add size={14} />
+          )}
+          <span>{(t("common.actions") as string) || "Actions"}</span>
+          <Icons.ChevronDown size={14} className="text-muted-foreground ml-auto" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent sideOffset={8} align="end" className="min-w-[200px] rounded-none">
+        <DropdownMenuLabel className="text-[10px] uppercase text-muted-foreground font-semibold px-2 py-1">
+          {t("common.actions") as string}
+        </DropdownMenuLabel>
+        
+        <DropdownMenuItem
+          onClick={() => setStudentParams({ createStudent: true })}
+          className="gap-2 cursor-pointer rounded-none text-xs"
+        >
+          <Icons.Accounts size={16} className="text-muted-foreground" />
+          <span>Add Student</span>
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator className="bg-border/50" />
+
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger className="gap-2 cursor-pointer rounded-none text-xs">
+            <Icons.CalendarMonth size={16} className="text-muted-foreground" />
+            <span>{t("education.academic_year")}</span>
+          </DropdownMenuSubTrigger>
+          <DropdownMenuPortal>
+            <DropdownMenuSubContent sideOffset={10} className="rounded-none min-w-[150px]">
+              <DropdownMenuItem
+                onClick={() => handleYearChange(null)}
+                className={cn(
+                  "cursor-pointer rounded-none text-xs",
+                  currentYearId === "current" && "bg-accent"
+                )}
+              >
+                {t("education.current")}
+              </DropdownMenuItem>
+              {!isLoadingYears &&
+                years?.map((year) => (
+                  <DropdownMenuItem
+                    key={year.id}
+                    onClick={() => handleYearChange(year.id.toString())}
+                    className={cn(
+                      "cursor-pointer rounded-none text-xs",
+                      currentYearId === year.id.toString() && "bg-accent"
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span>{year.yearName}</span>
+                      {year.isCurrent && (
+                        <span className="text-[9px] text-muted-foreground">(Active)</span>
+                      )}
+                    </div>
+                  </DropdownMenuItem>
+                ))}
+            </DropdownMenuSubContent>
+          </DropdownMenuPortal>
+        </DropdownMenuSub>
+
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger className="gap-2 cursor-pointer rounded-none text-xs" disabled={!classId}>
+            <Icons.Share size={16} className="text-muted-foreground" />
+            <span>Export</span>
+          </DropdownMenuSubTrigger>
+          <DropdownMenuPortal>
+            <DropdownMenuSubContent sideOffset={10} className="rounded-none">
+              <DropdownMenuItem
+                className="gap-2 cursor-pointer rounded-none text-xs"
+                onClick={() => handleExport("xlsx")}
+              >
+                <Icons.FolderZip size={16} className="text-muted-foreground" />
+                <span>Excel (XLSX)</span>
+              </DropdownMenuItem>
+              {/* PDF export could be added here if needed, matching ReportActions logic */}
+            </DropdownMenuSubContent>
+          </DropdownMenuPortal>
+        </DropdownMenuSub>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 type Props = {
   name: string;
   color?: string | null;
+  id?: string;
 };
 
-export const StudentHeader = ({
-  name,
-  color,
-}: Props) => {
+export const StudentHeader = ({ name, color, id }: Props) => {
   const customerInfo = (
     <div className="flex items-center space-x-3">
       {name && (
         <Avatar className="size-6 rounded-none border border-border flex-shrink-0">
-          <AvatarFallback 
+          <AvatarFallback
             className="text-xs font-medium rounded-none"
             style={{ backgroundColor: color || "#F2F1EF" }}
           >
@@ -56,7 +224,9 @@ export const StudentHeader = ({
           </AvatarFallback>
         </Avatar>
       )}
-      <h1 className="truncate text-xl font-serif font-medium tracking-tight whitespace-nowrap">{name}</h1>
+      <h1 className="truncate text-xl font-serif font-medium tracking-tight whitespace-nowrap">
+        {name}
+      </h1>
     </div>
   );
 
@@ -68,7 +238,7 @@ export const StudentHeader = ({
 
       <div className="flex items-center gap-3">
         <StudentSearchFilter />
-        <AcademicYearFilter />
+        <StudentActions classId={id} className={name} />
       </div>
     </div>
   );

@@ -83,6 +83,7 @@ export default async function Page(props: Props) {
             <StudentHeader 
               name={classData?.name ?? "Class Report"} 
               color={classData?.color}
+              id={Id}
             />
             
           <ErrorBoundary errorComponent={ErrorFallback}>
