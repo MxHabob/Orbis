@@ -4,18 +4,18 @@ import { StudentSummarySkeleton } from "@/components/student-summary-skeleton";
 import { StudentHeader } from "@/components/student-header";
 import { StudentHeaderSkeleton } from "@/components/student-header-skeleton";
 import { ErrorFallback } from "@/components/error-fallback";
+import { ErrorBoundary } from "@/components/error-boundary";
 import { FailedStudents } from "@/components/failed-students";
 import { PassedStudents } from "@/components/passed-students";
 import { ScrollableContent } from "@/components/scrollable-content";
 import { DataTable } from "@/components/tables/students/data-table";
-import { CustomersSkeleton } from "@/components/tables/students/skeleton";
+import { StudentsSkeleton } from "@/components/tables/students/skeleton";
 import { TotalStudents } from "@/components/total-students";
 import { loadCustomerFilterParams } from "@/hooks/use-customer-filter-params";
 import { loadSortParams } from "@/hooks/use-sort-params";
 import { HydrateClient, batchPrefetch, trpc, getQueryClient } from "@/trpc/server";
 import { getInitialTableSettings } from "@/utils/columns";
 import type { Metadata } from "next";
-import { ErrorBoundary } from "next/dist/client/components/error-boundary";
 import type { SearchParams } from "nuqs";
 import { Suspense } from "react";
 
@@ -100,8 +100,8 @@ export default async function Page(props: Props) {
             <StudentHeaderContainer id={Id} />
           </Suspense>
             
-          <ErrorBoundary errorComponent={ErrorFallback}>
-            <Suspense fallback={<CustomersSkeleton />}>
+          <ErrorBoundary fallback={<ErrorFallback />}>
+            <Suspense fallback={<StudentsSkeleton />}>
               <DataTable initialSettings={initialSettings} id={Id} />
             </Suspense>
           </ErrorBoundary>

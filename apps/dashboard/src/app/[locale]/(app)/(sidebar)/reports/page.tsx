@@ -9,7 +9,7 @@ import { loadSortParams } from "@/hooks/use-sort-params";
 import { HydrateClient, batchPrefetch, trpc } from "@/trpc/server";
 import { getInitialTableSettings } from "@/utils/columns";
 import type { Metadata } from "next";
-import { ErrorBoundary } from "next/dist/client/components/error-boundary";
+import { ErrorBoundary } from "@/components/error-boundary";
 import type { SearchParams } from "nuqs";
 import { Suspense } from "react";
 
@@ -42,7 +42,7 @@ export default async function Reports(props: Props) {
     <HydrateClient>
       <ScrollableContent>
         <div className="flex flex-col gap-6">
-          <ErrorBoundary errorComponent={ErrorFallback}>
+          <ErrorBoundary fallback={<ErrorFallback />}>
             <Suspense 
               fallback={
                 <div className="flex flex-col gap-6">

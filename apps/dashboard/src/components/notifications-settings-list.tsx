@@ -5,7 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@midday/ui/card";
-import { ErrorBoundary } from "next/dist/client/components/error-boundary";
+import { ErrorBoundary } from "@/components/error-boundary";
 import { Suspense } from "react";
 import { ErrorFallback } from "./error-fallback";
 import {
@@ -24,7 +24,7 @@ export async function NotificationsSettingsList() {
       </CardHeader>
 
       <CardContent>
-        <ErrorBoundary errorComponent={ErrorFallback}>
+        <ErrorBoundary fallback={<ErrorFallback />}>
           <Suspense fallback={<NotificationSettingsSkeleton />}>
             <NotificationSettings />
           </Suspense>

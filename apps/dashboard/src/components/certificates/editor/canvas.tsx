@@ -1,14 +1,18 @@
 "use client";
 
 import { memo, useRef, useState, useEffect, useCallback, useMemo } from "react";
-import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
+import dynamic from "next/dynamic";
 import { Button } from "@midday/ui/button";
 import { ZoomIn, ZoomOut } from "lucide-react";
 import { cn } from "@midday/ui/cn";
 import { DraggableElement } from "./draggable-element";
 import type { EditorElement, PaperSize } from "./types";
-import Moveable from "react-moveable";
-import Selecto from "react-selecto";
+import type ReactMoveable from "react-moveable";
+
+const TransformWrapper = dynamic(() => import("react-zoom-pan-pinch").then(mod => mod.TransformWrapper), { ssr: false });
+const TransformComponent = dynamic(() => import("react-zoom-pan-pinch").then(mod => mod.TransformComponent), { ssr: false });
+const Moveable = dynamic(() => import("react-moveable"), { ssr: false });
+const Selecto = dynamic(() => import("react-selecto"), { ssr: false });
 
 interface CanvasProps {
   canvasRef: any;
@@ -50,7 +54,7 @@ export const Canvas = memo(({
   month,
 }: CanvasProps) => {
   const [scale, setScale] = useState(1);
-  const moveableRef = useRef<Moveable>(null);
+  const moveableRef = useRef<ReactMoveable>(null);
   const [targets, setTargets] = useState<HTMLElement[]>([]);
 
   useEffect(() => {

@@ -5,7 +5,7 @@ import { GradeGridWrapper } from "@/components/grades/grade-grid-wrapper";
 import { ScrollableContent } from "@/components/scrollable-content";
 import { GradesSkeleton } from "@/components/tables/grades/skeleton";
 import { getInitialTableSettings } from "@/utils/columns";
-import { ErrorBoundary } from "next/dist/client/components/error-boundary";
+import { ErrorBoundary } from "@/components/error-boundary";
 import { ErrorFallback } from "@/components/error-fallback";
 import { GradesUploadZone } from "@/components/grades/grades-upload-zone";
 import { trpc, prefetch, HydrateClient, getQueryClient } from "@/trpc/server";
@@ -85,7 +85,7 @@ export default async function GradesPage(props: Props) {
         <GradesUploadZone>
           <div className="flex flex-col gap-6" data-canvas-content>
             <GradeGridHeader initialData={initialData} defaults={defaults} />
-            <ErrorBoundary errorComponent={ErrorFallback}>
+            <ErrorBoundary fallback={<ErrorFallback />}>
               <Suspense fallback={<GradesSkeleton />}>
                 <GradeGridWrapper initialSettings={initialSettings} />
               </Suspense>

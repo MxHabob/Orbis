@@ -76,9 +76,6 @@ export function DataTable({ initialSettings, id }: Props) {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } =
     useSuspenseInfiniteQuery(infiniteQueryOptions);
 
-    console.log("data :", data);
-    console.log("infiniteQueryOptions :", infiniteQueryOptions);
-
   const deleteStudentMutation = useMutation(
     trpc.students.delete.mutationOptions({
       onSuccess: () => {
