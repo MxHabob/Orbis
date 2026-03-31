@@ -34,7 +34,7 @@ function StudentSearchFilter() {
 
   useEffect(() => {
     if (filter.q) setInput(filter.q);
-  }, []);
+  }, [filter.q]);
 
   const handleSearch = (evt: React.ChangeEvent<HTMLInputElement>) => {
     const value = evt.target.value;
@@ -43,11 +43,11 @@ function StudentSearchFilter() {
   };
 
   return (
-    <div className="relative w-full sm:w-[250px]">
-      <Icons.Search className="absolute pointer-events-none left-3 top-[10px] h-3.5 w-3.5 text-muted-foreground" />
+    <div className="relative w-full sm:w-[350px]">
+      <Icons.Search className="absolute pointer-events-none left-3 top-[11px] h-3.5 w-3.5 text-muted-foreground" />
       <Input
         placeholder="Search students..."
-        className="pl-9 h-8 text-xs bg-background rounded-none border-border shadow-none focus-visible:ring-0"
+        className="pl-9 h-9 text-xs bg-background rounded-none border-border shadow-none focus-visible:ring-0"
         value={input}
         onChange={handleSearch}
         autoComplete="off"
@@ -117,7 +117,7 @@ function StudentActions({ classId, className }: StudentActionsProps) {
         <Button
           variant="outline"
           size="sm"
-          className="h-8 gap-2 text-xs border-border rounded-none shadow-none bg-background focus:ring-0"
+          className="h-9 gap-2 text-xs border-border rounded-none shadow-none bg-background focus:ring-0 px-3"
           disabled={isExporting}
         >
           {isExporting ? (
@@ -125,8 +125,8 @@ function StudentActions({ classId, className }: StudentActionsProps) {
           ) : (
              <Icons.Add size={14} />
           )}
-          <span>{(t("common.actions") as string) || "Actions"}</span>
-          <Icons.ChevronDown size={14} className="text-muted-foreground ml-auto" />
+          <span>{t("common.actions") as string || "Actions"}</span>
+          <Icons.ChevronDown size={14} className="text-muted-foreground ml-1" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent sideOffset={8} align="end" className="min-w-[200px] rounded-none">
@@ -136,7 +136,7 @@ function StudentActions({ classId, className }: StudentActionsProps) {
         
         <DropdownMenuItem
           onClick={() => setStudentParams({ createStudent: true })}
-          className="gap-2 cursor-pointer rounded-none text-xs"
+          className="gap-2 cursor-pointer rounded-none text-xs px-2 py-1.5"
         >
           <Icons.Accounts size={16} className="text-muted-foreground" />
           <span>Add Student</span>
@@ -145,7 +145,7 @@ function StudentActions({ classId, className }: StudentActionsProps) {
         <DropdownMenuSeparator className="bg-border/50" />
 
         <DropdownMenuSub>
-          <DropdownMenuSubTrigger className="gap-2 cursor-pointer rounded-none text-xs">
+          <DropdownMenuSubTrigger className="gap-2 cursor-pointer rounded-none text-xs px-2 py-1.5">
             <Icons.CalendarMonth size={16} className="text-muted-foreground" />
             <span>{t("education.academic_year")}</span>
           </DropdownMenuSubTrigger>
@@ -183,7 +183,7 @@ function StudentActions({ classId, className }: StudentActionsProps) {
         </DropdownMenuSub>
 
         <DropdownMenuSub>
-          <DropdownMenuSubTrigger className="gap-2 cursor-pointer rounded-none text-xs" disabled={!classId}>
+          <DropdownMenuSubTrigger className="gap-2 cursor-pointer rounded-none text-xs px-2 py-1.5" disabled={!classId}>
             <Icons.Share size={16} className="text-muted-foreground" />
             <span>Export</span>
           </DropdownMenuSubTrigger>
@@ -196,7 +196,6 @@ function StudentActions({ classId, className }: StudentActionsProps) {
                 <Icons.FolderZip size={16} className="text-muted-foreground" />
                 <span>Excel (XLSX)</span>
               </DropdownMenuItem>
-              {/* PDF export could be added here if needed, matching ReportActions logic */}
             </DropdownMenuSubContent>
           </DropdownMenuPortal>
         </DropdownMenuSub>
@@ -231,7 +230,7 @@ export const StudentHeader = ({ name, color, id }: Props) => {
   );
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-2">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4">
       <div className="flex items-center gap-4 min-w-0">
         {customerInfo}
       </div>
