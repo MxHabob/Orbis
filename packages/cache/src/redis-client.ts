@@ -23,16 +23,24 @@ export class RedisCache {
       const value = await this.redis.get(this.getKey(key));
       if (value === null) return undefined;
 
+      // Safe JSON parsing with fallback to raw value
       try {
-        return JSON.parse(value) as T;
+        // Only attempt to parse if it looks like JSON (starts with { or [ or is a boolean/number)
+        if (typeof value === "string" && (
+            value.startsWith("{") || 
+            value.startsWith("[") || 
+            value === "true" || 
+            value === "false" || 
+            !isNaN(Number(value))
+          )) {
+          return JSON.parse(value) as T;
+        }
+        return value as unknown as T;
       } catch {
-        // fallback to raw string (backward compatibility)
         return value as unknown as T;
       }
     } catch (error: any) {
-      if (error?.code !== "ERR_REDIS_CONNECTION_CLOSED") {
-        console.error(`Redis get error [${error?.code || 'unknown'}] for ${this.prefix} cache, key "${key}":`, error?.message || error);
-      }
+      this.logError("get", key, error);
       return undefined;
     }
   }
@@ -46,39 +54,58 @@ export class RedisCache {
       const ttl = ttlSeconds ?? this.defaultTTL;  
 
       if (ttl > 0) {
-        // Use positional arguments for EX
         await this.redis.set(redisKey, serializedValue, "EX", ttl);
       } else {
         await this.redis.set(redisKey, serializedValue);
       }
     } catch (error: any) {
-      if (error?.code !== "ERR_REDIS_CONNECTION_CLOSED") {
-        console.error(`Redis set error [${error?.code || 'unknown'}] for ${this.prefix} cache, key "${key}":`, error?.message || error);
-      }
+      this.logError("set", key, error);
     }
   }
 
+  /**
+   * Delete a single key. 
+   * Uses UNLINK (non-blocking) for better performance on large values.
+   */
   async delete(key: string): Promise<void> {
     try {
-      await this.redis.del(this.getKey(key));
+      // UNLINK is better than DEL in 2026 as it reclaims memory asynchronously
+      await (this.redis as any).unlink?.(this.getKey(key)) || await this.redis.del(this.getKey(key));
     } catch (error: any) {
-      if (error?.code !== "ERR_REDIS_CONNECTION_CLOSED") {
-        console.error(`Redis delete error [${error?.code || 'unknown'}] for ${this.prefix} cache, key "${key}":`, error?.message || error);
-      }
+      this.logError("delete", key, error);
     }
   }
 
+  /**
+   * Delete keys matching a pattern.
+   * Uses SCAN (non-blocking) instead of KEYS to prevent blocking the Redis event loop.
+   */
   async deletePattern(pattern: string): Promise<void> {
     try {
-      const keys = await this.redis.keys(this.getKey(pattern));
-      if (keys.length > 0) {
-        await this.redis.del(...keys);
-      }
+      const fullPattern = this.getKey(pattern);
+      let cursor = "0";
+      
+      do {
+        // SCAN provides a non-blocking way to iterate through keys
+        const [nextCursor, keys] = await (this.redis as any).scan(cursor, "MATCH", fullPattern, "COUNT", 100);
+        cursor = nextCursor;
+        
+        if (keys && keys.length > 0) {
+          // UNLINK all found keys at once
+          await (this.redis as any).unlink?.(...keys) || await this.redis.del(...keys);
+        }
+      } while (cursor !== "0");
+      
     } catch (error: any) {
-      if (error?.code !== "ERR_REDIS_CONNECTION_CLOSED") {
-        console.error(`Redis deletePattern error [${error?.code || 'unknown'}] for ${this.prefix} cache, pattern "${pattern}":`, error?.message || error);
-      }
+      this.logError("deletePattern", pattern, error);
     }
+  }
+
+  /**
+   * Invalidate the entire cache prefix.
+   */
+  async invalidate(): Promise<void> {
+    await this.deletePattern("*");
   }
 
   async publish(channel: string, data: unknown): Promise<void> {
@@ -87,9 +114,7 @@ export class RedisCache {
         typeof data === "string" ? data : JSON.stringify(data);
       await this.redis.publish(channel, serializedData);
     } catch (error: any) {
-      if (error?.code !== "ERR_REDIS_CONNECTION_CLOSED") {
-        console.error(`Redis publish error on channel ${channel} [${error?.code || 'unknown'}]:`, error?.message || error);
-      }
+      this.logError("publish", channel, error);
     }
   }
 
@@ -103,4 +128,13 @@ export class RedisCache {
       throw new Error(`Redis health check failed: ${error}`);
     }
   }
-}
+
+  private logError(operation: string, key: string, error: any): void {
+    if (error?.code !== "ERR_REDIS_CONNECTION_CLOSED") {
+      console.error(
+        `[RedisCache] ${operation} error [${error?.code || 'unknown'}] for ${this.prefix} cache, key "${key}":`, 
+        error?.message || error
+      );
+    }
+  }
+}
