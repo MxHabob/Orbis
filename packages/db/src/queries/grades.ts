@@ -732,6 +732,7 @@ export const getStudentReportData = async (studentId: string, type?: string, mon
       // Group by subject → show each assessmentItem as a column
       const subjectMap = new Map<string, { subject: string; grades: Record<string, number | null>; total: number; maxTotal: number }>();
       const columnsSet = new Set<string>();
+      const columnsMaxScores: Record<string, string> = {};
 
       for (const item of monthItems) {
         if (!subjectMap.has(item.subjectName)) {
@@ -739,6 +740,7 @@ export const getStudentReportData = async (studentId: string, type?: string, mon
         }
         const row = subjectMap.get(item.subjectName)!;
         columnsSet.add(item.title);
+        columnsMaxScores[item.title] = item.maxScore || "0";
 
         const scoreStr = gradeMap.get(item.id);
         const score = scoreStr ? parseFloat(scoreStr) : null;
@@ -763,6 +765,7 @@ export const getStudentReportData = async (studentId: string, type?: string, mon
       return {
         rows,
         columns: Array.from(columnsSet),
+        columnMaxScores: columnsMaxScores,
         type: "monthly",
       };
     }
@@ -797,6 +800,11 @@ export const getStudentReportData = async (studentId: string, type?: string, mon
         .orderBy(asc(subjects.sortOrder), asc(subjects.name), asc(assessmentItems.month), asc(assessmentItems.id));
 
       if (allItems.length === 0) return { rows: [], columns: ["محصلة الشهور", "اختبار نصف العام", "المجموع", "التقدير"], type: "half-yearly" };
+
+      // ... (Rest of half-early and final implementation exists in db)
+      // I am just omitting the rest since it's already there and I don't need to replace it.
+      // Wait, let's add `getClassBulkReportData` at the very end of the file.
+
 
       // Get grades
       const itemIds = allItems.map(i => i.id);
@@ -1012,4 +1020,35 @@ export const getStudentReportData = async (studentId: string, type?: string, mon
 
     // Fallback
     return { rows: [], columns: [], type: type || "monthly" };
+};
+
+export const getClassBulkReportData = async (classId: number, type: string, month?: number) => {
+    const enrolledStudents = await db
+      .select({
+        studentId: students.userId,
+        studentNumber: students.studentNumber,
+        name: users.name,
+      })
+      .from(enrollments)
+      .innerJoin(students, eq(enrollments.studentId, students.userId))
+      .innerJoin(users, eq(students.userId, users.id))
+      .where(
+        and(
+          eq(enrollments.classId, classId),
+          eq(enrollments.status, "active")
+        )
+      )
+      .orderBy(users.name);
+
+    const results = await Promise.all(
+      enrolledStudents.map(async (student) => {
+        const reportData = await getStudentReportData(student.studentId, type, month, classId);
+        return {
+          ...student,
+          reportData
+        };
+      })
+    );
+
+    return results;
 };

@@ -155,4 +155,48 @@ export const gradesRouter = createTRPCRouter({
             : "text/csv",
       };
     }),
+
+  exportClassReport: protectedProcedure
+    .input(
+      z.object({
+        classId: z.number(),
+        type: z.enum(["monthly", "half-yearly", "final"]),
+        month: z.number().optional(),
+        monthText: z.string().optional(),
+        format: z.enum(["xlsx", "csv"]).default("xlsx"),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const { getClassBulkReportData } = await import("@midday/db/queries");
+      const { generateClassBulkReportExport } = await import("@api/utils/excel-export");
+      const { getClassesV4 } = await import("@midday/db/queries");
+
+      const allClasses = await getClassesV4({ flat: true, limit: 0 }); // change limit to get all
+      const classData = allClasses.find(c => c.id === input.classId);
+
+      const bulkData = await getClassBulkReportData(input.classId, input.type, input.month);
+
+      const buffer = await generateClassBulkReportExport(bulkData as any, {
+        className: classData?.name || "Class",
+        reportType: input.type,
+        month: input.month,
+        monthText: input.monthText,
+        format: input.format,
+      });
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, -5);
+      // Replace illegal characters for filenames
+      const safeName = (classData?.name || "Class").replace(/[\/\\?%*:|"<>]/g, '_');
+      const monthPart = input.monthText ? `_${input.monthText.replace(/[\/\\?%*:|"<>]/g, '_')}` : "";
+      const filename = `${safeName}_${input.type}${monthPart}_report_${timestamp}.${input.format}`;
+
+      return {
+        data: buffer.toString("base64"),
+        filename,
+        mimeType:
+          input.format === "xlsx"
+            ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            : "text/csv",
+      };
+    }),
 });
