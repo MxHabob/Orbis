@@ -6,6 +6,188 @@ import { RedisCache } from "@midday/cache";
 // Cache for grades - maybe shorter TTL as they change
 const gradeCache = new RedisCache("grades", 5 * 60);
 
+type RankingPeriod = "monthly" | "half-yearly" | "final";
+
+const rankCache = new RedisCache("rankings", 10 * 60);
+
+const ARABIC_RANK_ORDINALS = [
+  "",
+  "الأول",
+  "الثاني",
+  "الثالث",
+  "الرابع",
+  "الخامس",
+  "السادس",
+  "السابع",
+  "الثامن",
+  "التاسع",
+  "العاشر",
+];
+
+function getMonthsForRankingPeriod(period: RankingPeriod, month?: number): number[] {
+  if (period === "monthly") {
+    if (!month || month < 1 || month > 8) {
+      throw new Error("month is required for monthly period and must be between 1 and 8");
+    }
+    return [month];
+  }
+  if (period === "half-yearly") return [1, 2, 3, 4];
+  return [1, 2, 3, 4, 5, 6, 7, 8];
+}
+
+function getArabicRankLabel(rank: number, tied: boolean): string {
+  const base = ARABIC_RANK_ORDINALS[rank] ?? `المرتبة ${rank}`;
+  return tied ? `${base} مكرر` : base;
+}
+
+export const getTopStudents = async (params: {
+  classId: number;
+  academicYearId: number;
+  period: RankingPeriod;
+  month?: number;
+  limit?: number;
+}) => {
+  const limit = Math.max(1, Math.min(params.limit ?? 10, 10));
+  const months = getMonthsForRankingPeriod(params.period, params.month);
+  const monthPart = params.period === "monthly" ? params.month : "all";
+  const cacheKey = `top:${params.classId}:${params.academicYearId}:${params.period}:${monthPart}:${limit}`;
+
+  const cached = await rankCache.get<any[]>(cacheKey);
+  if (cached) return cached;
+
+  const enrolledStudents = await db
+    .select({
+      studentId: students.userId,
+      studentName: users.name,
+      studentNumber: students.studentNumber,
+      image: users.image,
+    })
+    .from(enrollments)
+    .innerJoin(students, eq(enrollments.studentId, students.userId))
+    .innerJoin(users, eq(students.userId, users.id))
+    .where(
+      and(
+        eq(enrollments.classId, params.classId),
+        eq(enrollments.academicYearId, params.academicYearId),
+        eq(enrollments.status, "active"),
+      ),
+    )
+    .orderBy(asc(users.name));
+
+  if (enrolledStudents.length === 0) {
+    await rankCache.set(cacheKey, []);
+    return [];
+  }
+
+  const items = await db
+    .select({
+      id: assessmentItems.id,
+      maxScore: assessmentItems.maxScore,
+    })
+    .from(assessmentItems)
+    .innerJoin(academicTerms, eq(assessmentItems.termId, academicTerms.id))
+    .where(
+      and(
+        eq(assessmentItems.classId, params.classId),
+        eq(academicTerms.academicYearId, params.academicYearId),
+        inArray(assessmentItems.month, months),
+      ),
+    );
+
+  if (items.length === 0) {
+    await rankCache.set(cacheKey, []);
+    return [];
+  }
+
+  const itemIds = items.map((i) => i.id);
+  const maxByItemId = new Map<number, number>();
+  for (const item of items) {
+    maxByItemId.set(item.id, Number.parseFloat(item.maxScore || "0"));
+  }
+
+  const grades = await db
+    .select({
+      studentId: gradeEntries.studentId,
+      assessmentItemId: gradeEntries.assessmentItemId,
+      score: gradeEntries.score,
+    })
+    .from(gradeEntries)
+    .where(inArray(gradeEntries.assessmentItemId, itemIds));
+
+  const statsByStudentId = new Map<string, { totalScore: number; maxScore: number; scoredItems: number }>();
+  for (const grade of grades) {
+    if (!grade.studentId) continue;
+    const score = Number.parseFloat(grade.score || "");
+    if (Number.isNaN(score)) continue;
+    const maxScore = maxByItemId.get(grade.assessmentItemId) ?? 0;
+    const current = statsByStudentId.get(grade.studentId) ?? { totalScore: 0, maxScore: 0, scoredItems: 0 };
+    current.totalScore += score;
+    current.maxScore += maxScore;
+    current.scoredItems += 1;
+    statsByStudentId.set(grade.studentId, current);
+  }
+
+  const rankedBase = enrolledStudents
+    .map((student) => {
+      const stats = statsByStudentId.get(student.studentId);
+      if (!stats || stats.maxScore <= 0) return null;
+      const percentage = (stats.totalScore / stats.maxScore) * 100;
+      return {
+        studentId: student.studentId,
+        studentName: student.studentName ?? "",
+        studentNumber: student.studentNumber,
+        image: student.image,
+        totalScore: Number(stats.totalScore.toFixed(2)),
+        maxScore: Number(stats.maxScore.toFixed(2)),
+        percentage: Number(percentage.toFixed(2)),
+        scoredItems: stats.scoredItems,
+      };
+    })
+    .filter((v): v is NonNullable<typeof v> => Boolean(v))
+    .sort((a, b) => {
+      if (b.percentage !== a.percentage) return b.percentage - a.percentage;
+      if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
+      if (b.scoredItems !== a.scoredItems) return b.scoredItems - a.scoredItems;
+      return a.studentId.localeCompare(b.studentId);
+    });
+
+  const ranked = rankedBase.map((item, index) => {
+    const prev = index > 0 ? rankedBase[index - 1] : null;
+    const sameAsPrev =
+      !!prev &&
+      prev.percentage === item.percentage &&
+      prev.totalScore === item.totalScore &&
+      prev.scoredItems === item.scoredItems;
+    const rank = sameAsPrev && prev ? (prev as any).__rank : index + 1;
+    return { ...item, __rank: rank };
+  });
+
+  const top = ranked.filter((r) => r.__rank <= limit);
+  const rankCounts = new Map<number, number>();
+  for (const row of top) {
+    rankCounts.set(row.__rank, (rankCounts.get(row.__rank) ?? 0) + 1);
+  }
+
+  const results = top.map((row) => {
+    const tied = (rankCounts.get(row.__rank) ?? 0) > 1;
+    return {
+      rank: row.__rank as number,
+      rankLabel: getArabicRankLabel(row.__rank as number, tied),
+      isTied: tied,
+      studentId: row.studentId,
+      studentName: row.studentName,
+      studentNumber: row.studentNumber,
+      image: row.image,
+      totalScore: row.totalScore,
+      maxScore: row.maxScore,
+      percentage: row.percentage,
+    };
+  });
+
+  await rankCache.set(cacheKey, results);
+  return results;
+};
+
 export const getStudentGrades = async (studentId: string, termId?: number) => {
   const cacheKey = `student:${studentId}:${termId || 'all'}`;
   const cached = await gradeCache.get<any[]>(cacheKey);
@@ -50,12 +232,14 @@ export type CreateGradeParams = typeof gradeEntries.$inferInsert;
 export const createGradeEntry = async (data: CreateGradeParams) => {
     const [result] = await db.insert(gradeEntries).values(data).returning();
     if (result) await gradeCache.delete(`student:${result.studentId}:all`);
+    await rankCache.invalidate().catch(() => {});
     return result;
 };
 
 export const updateGradeEntry = async (id: number, data: Partial<CreateGradeParams>) => {
     const [result] = await db.update(gradeEntries).set(data).where(eq(gradeEntries.id, id)).returning();
     if (result) await gradeCache.delete(`student:${result.studentId}:all`);
+    await rankCache.invalidate().catch(() => {});
     return result;
 };
 
@@ -106,6 +290,7 @@ export const bulkImportGrades = async (assessmentItemId: number, gradeData: {
         }
     }
 
+    await rankCache.invalidate().catch(() => {});
     return results;
 };
 
@@ -137,6 +322,8 @@ export const upsertGrade = async (data: {
   if (result) {
     await gradeCache.delete(`student:${data.studentId}:all`);
   }
+
+  await rankCache.invalidate().catch(() => {});
 
   return result;
 };
@@ -185,6 +372,8 @@ export const batchUpsertGrades = async (
   for (const studentId of studentIdsToInvalidate) {
     await gradeCache.delete(`student:${studentId}:all`);
   }
+
+  await rankCache.invalidate().catch(() => {});
 
   return results;
 };

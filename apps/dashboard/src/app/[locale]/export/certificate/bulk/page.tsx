@@ -75,6 +75,25 @@ export default function BulkExportCertificatePage() {
     ));
 
   const [loadedCount, setLoadedCount] = useState(0);
+  const rankingPeriod = type === "half-yearly" ? "half-yearly" : type === "final" ? "final" : "monthly";
+  const rankingMonth = rankingPeriod === "monthly" ? month : undefined;
+  const classId = students?.[0]?.currentClass?.id;
+  const academicYearId = students?.[0]?.currentClass?.academicYearId;
+
+  const { data: topStudents } = useQuery(
+    trpc.grades.getTopStudents.queryOptions(
+      {
+        classId: classId || 0,
+        academicYearId: academicYearId || 0,
+        period: rankingPeriod as "monthly" | "half-yearly" | "final",
+        month: rankingMonth,
+        limit: 10,
+      },
+      {
+        enabled: !!classId && !!academicYearId && (rankingPeriod !== "monthly" || !!rankingMonth),
+      }
+    )
+  );
 
   useEffect(() => {
     if (students && students.length > 0 && loadedCount >= students.length) {
@@ -106,15 +125,26 @@ export default function BulkExportCertificatePage() {
           key={student.userId}
           className={`${index > 0 ? "break-before-page" : ""} flex justify-center`}
         >
+          {(() => {
+            const rankEntry = topStudents?.find((item: any) => item.studentId === student.userId);
+            return (
           <CertificateViewer
             template={template as any}
-            data={mapStudentToVariables(student, type, month)}
+            data={{
+              ...mapStudentToVariables(student, type, month),
+              rank: rankEntry?.rankLabel || ((student.stats as any)?.rank || "1"),
+              rank_percentage: rankEntry?.percentage ?? "",
+              rank_total: rankEntry?.totalScore ?? "",
+              rank_max: rankEntry?.maxScore ?? "",
+            }}
             certificateType={type}
             month={month}
             preview={false}
             className="shadow-none border-none"
             onLoad={handleCertificateLoad}
           />
+            );
+          })()}
         </div>
       ))}
 

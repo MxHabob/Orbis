@@ -78,6 +78,25 @@ export default function ExportCertificatePage() {
   );
 
   const [isReady, setIsReady] = useState(false);
+  const rankingPeriod = type === "half-yearly" ? "half-yearly" : type === "final" ? "final" : "monthly";
+  const rankingMonth = rankingPeriod === "monthly" ? month : undefined;
+  const classId = (student as any)?.currentClass?.id;
+  const academicYearId = (student as any)?.currentClass?.academicYearId;
+
+  const { data: topStudents } = useQuery(
+    trpc.grades.getTopStudents.queryOptions(
+      {
+        classId: classId || 0,
+        academicYearId: academicYearId || 0,
+        period: rankingPeriod as "monthly" | "half-yearly" | "final",
+        month: rankingMonth,
+        limit: 10,
+      },
+      {
+        enabled: !!classId && !!academicYearId && (rankingPeriod !== "monthly" || !!rankingMonth),
+      }
+    )
+  );
 
   useEffect(() => {
     if (student && template) {
@@ -99,7 +118,13 @@ export default function ExportCertificatePage() {
     );
   }
 
-  const studentVariables = mapStudentToVariables(student as any, type, month);
+  const studentVariables = {
+    ...mapStudentToVariables(student as any, type, month),
+    rank: topStudents?.find((item: any) => item.studentId === (student as any)?.userId)?.rankLabel || (((student as any)?.stats as any)?.rank || "1"),
+    rank_percentage: topStudents?.find((item: any) => item.studentId === (student as any)?.userId)?.percentage ?? "",
+    rank_total: topStudents?.find((item: any) => item.studentId === (student as any)?.userId)?.totalScore ?? "",
+    rank_max: topStudents?.find((item: any) => item.studentId === (student as any)?.userId)?.maxScore ?? "",
+  };
 
   return (
     <>

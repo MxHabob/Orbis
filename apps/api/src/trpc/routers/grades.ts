@@ -9,13 +9,15 @@ import {
   getClassStatistics,
   getCertificateData,
   getStudentReportData,
+  getTopStudents,
 } from "@midday/db/queries";
-import { 
-  createGradeEntrySchema, 
-  updateGradeEntrySchema, 
+import {
+  createGradeEntrySchema,
+  updateGradeEntrySchema,
   bulkImportGradesSchema,
   batchUpsertGradesSchema,
-  getGradeGridDataSchema
+  getGradeGridDataSchema,
+  getTopStudentsSchema,
 } from "@api/schemas/grades";
 import { getCertificateDataSchema } from "@api/schemas/certificates";
 import { z } from "zod";
@@ -42,6 +44,12 @@ export const gradesRouter = createTRPCRouter({
     }))
     .query(async ({ input }) => {
       return getStudentReportData(input.studentId, input.type, input.month, input.classId);
+    }),
+
+  getTopStudents: protectedProcedure
+    .input(getTopStudentsSchema)
+    .query(async ({ input }) => {
+      return getTopStudents(input);
     }),
 
   createEntry: protectedProcedure

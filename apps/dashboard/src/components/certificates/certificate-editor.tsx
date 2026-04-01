@@ -61,9 +61,33 @@ export function CertificateEditor({
     [students, previewStudentId]
   );
 
-  const getPreviewData = useCallback((student: any, type: string, month: number, year: string) => {
+  const rankingPeriod = selectedType === "half-yearly" ? "half-yearly" : selectedType === "final" ? "final" : "monthly";
+  const rankingMonth = rankingPeriod === "monthly" ? selectedMonth : undefined;
+  const previewClassId = (selectedPreviewStudent as any)?.currentClass?.id;
+  const previewAcademicYearId = (selectedPreviewStudent as any)?.currentClass?.academicYearId;
+
+  const { data: topStudents } = useQuery(
+    trpc.grades.getTopStudents.queryOptions(
+      {
+        classId: previewClassId || 0,
+        academicYearId: previewAcademicYearId || 0,
+        period: rankingPeriod,
+        month: rankingMonth,
+        limit: 10,
+      },
+      {
+        enabled:
+          !!previewClassId &&
+          !!previewAcademicYearId &&
+          (rankingPeriod !== "monthly" || !!rankingMonth),
+      }
+    )
+  );
+
+  const getPreviewData = useCallback((student: any, type: string, month: number, year: string, rankingData?: any[]) => {
     if (!student) return {};
     const stats = (student.stats as any) || {};
+    const currentStudentRank = (rankingData || []).find((item: any) => item.studentId === student.userId);
 
     const typeLabel = type === "half-yearly" ? t("reports.preview.type_half_yearly") : 
                      type === "final" ? t("reports.preview.type_final") : t("reports.preview.type_monthly");
@@ -82,7 +106,10 @@ export function CertificateEditor({
       total_grade_text: stats.total_grade_text || "",
       grade_label: stats.grade_label || "",
       final_result: stats.final_result || "",
-      rank: stats.rank || "1",
+      rank: currentStudentRank?.rankLabel || stats.rank || "1",
+      rank_percentage: currentStudentRank?.percentage ?? "",
+      rank_total: currentStudentRank?.totalScore ?? "",
+      rank_max: currentStudentRank?.maxScore ?? "",
       org_name: t("reports.preview.org_name"),
       admin_name: t("reports.preview.admin_name"),
       vp_name: t("reports.preview.vp_name"),
@@ -94,8 +121,8 @@ export function CertificateEditor({
   }, [t, locale]);
 
   const previewData = useMemo(() => 
-    getPreviewData(selectedPreviewStudent, selectedType, selectedMonth, selectedYear), 
-    [selectedPreviewStudent, selectedType, selectedMonth, selectedYear, getPreviewData]
+    getPreviewData(selectedPreviewStudent, selectedType, selectedMonth, selectedYear, topStudents as any[]), 
+    [selectedPreviewStudent, selectedType, selectedMonth, selectedYear, topStudents, getPreviewData]
   );
 
   const upsertTemplate = useMutation(

@@ -80,6 +80,7 @@ export const getAllStudentss = async () => {
                 id: classes.id,
                 name: classes.name,
                 yearName: academicYears.yearName,
+                academicYearId: enrollments.academicYearId,
             },
         })
         .from(students)
@@ -172,6 +173,7 @@ export const getStudentsByClassId = async (
                 id: classes.id,
                 name: classes.name,
                 yearName: academicYears.yearName,
+                academicYearId: enrollments.academicYearId,
             },
             enrollmentDate: enrollments.enrolledAt,
         })
@@ -221,6 +223,7 @@ export const getStudentByUserId = async (userId: string) => {
                 id: classes.id,
                 name: classes.name,
                 yearName: academicYears.yearName,
+                academicYearId: enrollments.academicYearId,
             },
         })
         .from(students)

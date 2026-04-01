@@ -88,6 +88,29 @@ export function StudentCertificateSheet() {
     enabled: isOpen && !!currentTemplate?.id,
   });
 
+  const rankingPeriod = selectedType === "half-yearly" ? "half-yearly" : selectedType === "final" ? "final" : "monthly";
+  const rankingMonth = rankingPeriod === "monthly" ? selectedMonth : undefined;
+  const studentRecord = studentData as any;
+
+  const { data: topStudents } = useQuery({
+    ...trpc.grades.getTopStudents.queryOptions(
+      {
+        classId: studentRecord?.currentClass?.id || 0,
+        academicYearId: studentRecord?.currentClass?.academicYearId || 0,
+        period: rankingPeriod,
+        month: rankingMonth,
+        limit: 10,
+      },
+      {
+        enabled:
+          isOpen &&
+          !!studentRecord?.currentClass?.id &&
+          !!studentRecord?.currentClass?.academicYearId &&
+          (rankingPeriod !== "monthly" || !!rankingMonth),
+      },
+    ),
+  });
+
   const handleClose = () => {
     setParams({ 
       studentId: null, 
@@ -118,7 +141,6 @@ export function StudentCertificateSheet() {
         paperSize: (template as any).size || "a4",
         orientation: (template as any).orientation || "portrait",
         scale: 4, // Maximum resolution
-        useCORS: true,
       });
       toast({ title: t("reports.export_success"), variant: "success" });
     } catch (error) {
@@ -130,30 +152,34 @@ export function StudentCertificateSheet() {
   };
 
   const studentDataValues = React.useMemo(() => {
-    if (!studentData) return undefined;
-    const stats = (studentData.stats as any) || {};
+    if (!studentRecord) return undefined;
+    const stats = (studentRecord.stats as any) || {};
+    const currentStudentRank = (topStudents || []).find((item: any) => item.studentId === studentRecord.userId);
     return {
-      studentId: studentData.userId,
-      student_name: studentData.name || "",
-      academic_number: studentData.studentNumber || "",
-      national_id: studentData.secretNumber || "",
+      studentId: studentRecord.userId,
+      student_name: studentRecord.name || "",
+      academic_number: studentRecord.studentNumber || "",
+      national_id: studentRecord.secretNumber || "",
       department: stats.department || "",
       section: stats.section || "",
-      class_name: studentData.currentClass?.name || "",
+      class_name: studentRecord.currentClass?.name || "",
       total_grade: stats.total_grade || "0",
       total_grade_text: stats.total_grade_text || "",
       grade_label: stats.grade_label || "",
       final_result: stats.final_result || "",
-      rank: stats.rank || "1",
+      rank: currentStudentRank?.rankLabel || stats.rank || "1",
+      rank_percentage: currentStudentRank?.percentage ?? "",
+      rank_total: currentStudentRank?.totalScore ?? "",
+      rank_max: currentStudentRank?.maxScore ?? "",
       org_name: "مدرسة صنعاء النموذجية",
       admin_name: stats.admin_name || t("reports.preview.admin_name"),
       vp_name: stats.vp_name || t("reports.preview.vp_name"),
       issue_date: new Date().toLocaleDateString(locale === 'ar' ? 'ar-YE' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
       report_type: selectedType === "half-yearly" ? "النصفي" : (selectedType === "final" ? "النهائي" : `شهري - لشهر ${selectedMonth ? (HIJRI_MONTHS.find(m => m.id === selectedMonth)?.name || t("reports.month_label", { month: selectedMonth })) : ""}`),
       month_name: selectedMonth ? (HIJRI_MONTHS.find(m => m.id === selectedMonth)?.name || t("reports.month_label", { month: selectedMonth })) : "",
-      academic_year: studentData.currentClass?.yearName || "2024/2025",
+      academic_year: studentRecord.currentClass?.yearName || "2024/2025",
     } as Record<string, string | number>;
-  }, [studentData, selectedType, selectedMonth, t, locale]);
+  }, [studentRecord, topStudents, selectedType, selectedMonth, t, locale]);
 
   const certificateTypes = [
     { value: "monthly", label: t("reports.monthly_full"), description: t("reports.one_month") },

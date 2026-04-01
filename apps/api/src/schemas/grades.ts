@@ -39,3 +39,28 @@ export const getGradeGridDataSchema = z.object({
   month: z.number(),
   academicYearId: z.number(),
 });
+
+export const getTopStudentsSchema = z
+  .object({
+    classId: z.number(),
+    academicYearId: z.number(),
+    period: z.enum(["monthly", "half-yearly", "final"]),
+    month: z.number().min(1).max(8).optional(),
+    limit: z.number().min(1).max(10).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.period === "monthly" && data.month == null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["month"],
+        message: "month is required when period is monthly",
+      });
+    }
+    if (data.period !== "monthly" && data.month != null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["month"],
+        message: "month is only allowed when period is monthly",
+      });
+    }
+  });
