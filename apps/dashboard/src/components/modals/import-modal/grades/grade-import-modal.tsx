@@ -19,6 +19,7 @@ import { parseFile } from "@midday/import";
 import { ImportCsvContext, gradeImportSchema, type GradeImportFormData } from "../shared/context";
 import { SelectFile } from "../shared/select-file";
 import { GradeFieldMapping } from "./grade-field-mapping";
+import { invalidateGradesDomain } from "@/utils/query-invalidation";
 
 const pages = ["select-file", "confirm-import"] as const;
 
@@ -40,6 +41,20 @@ function GradeImportFormContent({ params, onclose }: GradeImportFormContentProps
     trpc.assessments.importGrades.mutationOptions({})
   );
   const [isImporting, setIsImporting] = useState(false);
+  const gradeGridInput =
+    params.import_classId &&
+    params.import_subjectId &&
+    params.import_termId &&
+    params.import_month &&
+    params.import_yearId
+      ? {
+          classId: Number(params.import_classId),
+          subjectId: Number(params.import_subjectId),
+          termId: Number(params.import_termId),
+          month: params.import_month,
+          academicYearId: Number(params.import_yearId),
+        }
+      : null;
   const [fileColumns, setFileColumns] = useState<string[] | null>(null);
   const [firstRows, setFirstRows] = useState<Record<string, string>[] | null>(null);
   const [pageNumber, setPageNumber] = useState<number>(0);
@@ -157,6 +172,7 @@ function GradeImportFormContent({ params, onclose }: GradeImportFormContentProps
 
                     await Promise.all(importPromises);
                     toast({ title: "Grades imported successfully", variant: "success" });
+                    void invalidateGradesDomain(queryClient, trpc, gradeGridInput);
                     queryClient.invalidateQueries({ queryKey: trpc.assessments.getGrades.queryKey() });
                     onclose();
                   } catch (err: any) {

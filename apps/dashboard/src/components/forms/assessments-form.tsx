@@ -22,6 +22,7 @@ import { useI18n } from "@/locales/client";
 import { useState, useMemo } from "react";
 import { useAction } from "next-safe-action/hooks";
 import { initializeAssessmentsAction } from "@/actions/assessments/initialize-assessments";
+import { invalidateGradesDomain } from "@/utils/query-invalidation";
 
 const formSchema = z.object({
   assessments: z.array(
@@ -40,10 +41,10 @@ type AssessmentsFormProps = {
   subjectId: number;
   termId: number;
   month: number;
-  onSuccess?: () => void;
+  onSuccessAction?: () => void;
 };
 
-export function AssessmentsForm({ classId, subjectId, termId, month, onSuccess }: AssessmentsFormProps) {
+export function AssessmentsForm({ classId, subjectId, termId, month, onSuccessAction }: AssessmentsFormProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -63,6 +64,18 @@ export function AssessmentsForm({ classId, subjectId, termId, month, onSuccess }
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
+
+  const gradeGridInput = useMemo(() => {
+    const academicYearId = Number(initialData?.[0]?.academicYearId);
+    if (!academicYearId || Number.isNaN(academicYearId)) return null;
+    return {
+      classId,
+      subjectId,
+      termId,
+      month,
+      academicYearId,
+    };
+  }, [classId, subjectId, termId, month, initialData]);
 
   const formValues = useMemo(() => {
     if (!initialData) return undefined;
@@ -100,7 +113,7 @@ export function AssessmentsForm({ classId, subjectId, termId, month, onSuccess }
     onSuccess: () => {
       toast({ title: "Success!", description: "Standard items created.", variant: "success" });
       refetch();
-      queryClient.invalidateQueries({ queryKey: trpc.grades.getGridData.queryKey() });
+      void invalidateGradesDomain(queryClient, trpc, gradeGridInput);
       queryClient.invalidateQueries({ queryKey: trpc.assessments.getByClass.queryKey() });
     },
   });
@@ -152,9 +165,9 @@ export function AssessmentsForm({ classId, subjectId, termId, month, onSuccess }
         variant: "success",
       });
 
-      queryClient.invalidateQueries({ queryKey: trpc.grades.getGridData.queryKey() });
+      void invalidateGradesDomain(queryClient, trpc, gradeGridInput);
       queryClient.invalidateQueries({ queryKey: trpc.assessments.getByClass.queryKey() });
-      onSuccess?.();
+      onSuccessAction?.();
     } catch (err) {
       toast({
         title: "Error",
@@ -234,7 +247,7 @@ export function AssessmentsForm({ classId, subjectId, termId, month, onSuccess }
               variant="ghost"
               type="button"
               className="p-0 hover:bg-transparent font-normal"
-              onClick={onSuccess}
+              onClick={onSuccessAction}
             >
               Cancel
             </Button>

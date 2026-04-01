@@ -51,7 +51,7 @@ export function InitializeAssessmentsModal() {
                subjectId={subjectId} 
                termId={termId} 
                month={month} 
-               onSuccess={onclose} 
+               onSuccessAction={onclose} 
             />
           )}
         </div>

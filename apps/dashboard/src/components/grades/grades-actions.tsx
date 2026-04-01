@@ -22,6 +22,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { exportToCsv, parseCsv, generateCanvasPdf, downloadBase64 } from "@midday/export";
 import { useI18n } from "@/locales/client";
+import { invalidateGradesDomain } from "@/utils/query-invalidation";
 
 export function GradesActions() {
   const [_, setParams] = useQueryStates({
@@ -49,6 +50,20 @@ export function GradesActions() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const gradeGridInput =
+    filter.selectedClassId &&
+    filter.selectedSubjectId &&
+    filter.termId &&
+    filter.month &&
+    filter.yearId
+      ? {
+          classId: filter.selectedClassId,
+          subjectId: filter.selectedSubjectId,
+          termId: filter.termId,
+          month: filter.month,
+          academicYearId: filter.yearId,
+        }
+      : null;
 
   const batchUpsertMutation = useMutation(
     trpc.grades.batchUpsert.mutationOptions({
@@ -58,9 +73,7 @@ export function GradesActions() {
           description: "Grades imported successfully",
           variant: "success",
         });
-        queryClient.invalidateQueries({
-          queryKey: trpc.grades.getGridData.queryKey(),
-        });
+        void invalidateGradesDomain(queryClient, trpc, gradeGridInput);
       },
       onError: (err) => {
         toast({

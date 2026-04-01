@@ -16,6 +16,7 @@ import { useQueryStates, parseAsInteger, parseAsString } from "nuqs";
 import { useAction } from "next-safe-action/hooks";
 import { initializeAssessmentsAction } from "@/actions/assessments/initialize-assessments";
 import { useQueryClient } from "@tanstack/react-query";
+import { invalidateGradesDomain } from "@/utils/query-invalidation";
 
 export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) {
   const { filter } = useGradeFilterParams();
@@ -52,14 +53,29 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
 
   const [pendingChanges, setPendingChanges] = useState<Record<string, number | null>>({});
 
-  const { data, isLoading, error, refetch } = useQuery(
+  const gridInput =
+    classId && subjectId && termId && month && yearId
+      ? {
+          classId,
+          subjectId,
+          termId,
+          month,
+          academicYearId: yearId,
+        }
+      : null;
+
+  const gridQueryKey = gridInput
+    ? trpc.grades.getGridData.queryKey(gridInput)
+    : trpc.grades.getGridData.queryKey();
+
+  const { data, isLoading, error } = useQuery(
     trpc.grades.getGridData.queryOptions(
-      { 
-        classId: classId!, 
-        subjectId: subjectId!, 
-        termId: termId!, 
-        month: month!, 
-        academicYearId: yearId! 
+      {
+        classId: classId!,
+        subjectId: subjectId!,
+        termId: termId!,
+        month: month!,
+        academicYearId: yearId!,
       },
       {
         enabled: !!(classId && subjectId && termId && month && yearId),
@@ -69,6 +85,51 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
 
   const batchUpsertMutation = useMutation(
     trpc.grades.batchUpsert.mutationOptions({
+      onMutate: async (variables) => {
+        if (!gridInput) return { previousData: undefined };
+
+        await queryClient.cancelQueries({ queryKey: gridQueryKey });
+        const previousData = queryClient.getQueryData<any>(gridQueryKey);
+
+        queryClient.setQueryData<any>(gridQueryKey, (current: any) => {
+          if (!current) return current;
+
+          const nextGrades = [...(current.grades ?? [])];
+
+          for (const grade of variables.grades) {
+            const index = nextGrades.findIndex(
+              (entry) =>
+                entry.studentId === grade.studentId &&
+                entry.assessmentItemId === grade.assessmentItemId,
+            );
+
+            if (grade.score === null) {
+              if (index !== -1) nextGrades.splice(index, 1);
+              continue;
+            }
+
+            if (index !== -1) {
+              nextGrades[index] = {
+                ...nextGrades[index],
+                score: grade.score,
+              };
+            } else {
+              nextGrades.push({
+                studentId: grade.studentId,
+                assessmentItemId: grade.assessmentItemId,
+                score: grade.score,
+              });
+            }
+          }
+
+          return {
+            ...current,
+            grades: nextGrades,
+          };
+        });
+
+        return { previousData };
+      },
       onSuccess: () => {
         toast({
           title: "Success",
@@ -76,14 +137,19 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
           variant: "success",
         });
         setPendingChanges({});
-        refetch();
       },
-      onError: (err) => {
+      onError: (err, _variables, context) => {
+        if (context?.previousData && gridInput) {
+          queryClient.setQueryData(gridQueryKey, context.previousData);
+        }
         toast({
           title: "Error",
           description: `Failed to save grades: ${err.message}`,
           variant: "destructive",
         });
+      },
+      onSettled: async () => {
+        await invalidateGradesDomain(queryClient, trpc, gridInput);
       },
     })
   );

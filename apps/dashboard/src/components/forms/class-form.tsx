@@ -26,6 +26,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { z } from "zod/v3";
+import { invalidateClassDomain } from "@/utils/query-invalidation";
 
 const classTypes = [
   'classroom',
@@ -64,9 +65,7 @@ export function ClassForm({ data }: Props) {
   const classMutation = useMutation(
     trpc.classes.create.mutationOptions({
       onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: trpc.classes.getAll.queryKey(),
-        });
+        void invalidateClassDomain(queryClient, trpc);
         setParams(null);
       },
     }),

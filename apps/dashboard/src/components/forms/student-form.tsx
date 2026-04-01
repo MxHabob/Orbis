@@ -36,6 +36,7 @@ import {
 } from "@midday/ui/select";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod/v3";
+import { invalidateStudentDomain } from "@/utils/query-invalidation";
 
 const formSchema = z.object({
   id: z.string().uuid().optional(),
@@ -73,14 +74,7 @@ export function StudentForm({ data }: Props) {
   const upsertStudentMutation = useMutation(
     trpc.students.upsert.mutationOptions({
       onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: trpc.students.getAll.queryKey(),
-        });
-
-        // Also invalidate class-specific queries
-        queryClient.invalidateQueries({
-          queryKey: trpc.students.getByClassId.queryKey(),
-        });
+        void invalidateStudentDomain(queryClient, trpc);
 
         toast({
           title: t("students.student_added_success"),

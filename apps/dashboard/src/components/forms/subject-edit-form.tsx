@@ -17,6 +17,7 @@ import { SubmitButton } from "@midday/ui/submit-button";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { z } from "zod/v3";
+import { invalidateSubjectDomain } from "@/utils/query-invalidation";
 
 const formSchema = z.object({
   id: z.number(),
@@ -52,14 +53,7 @@ export function SubjectEditForm({ data }: Props) {
   const updateSubjectMutation = useMutation(
     trpc.subjects.update.mutationOptions({
       onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: trpc.subjects.getAll.queryKey(),
-        });
-        queryClient.invalidateQueries({
-          queryKey: trpc.subjects.getById.queryKey({ id: data.id }),
-        });
-        queryClient.invalidateQueries({ queryKey: trpc.classes.getAll.queryKey() });
-        queryClient.invalidateQueries({ queryKey: trpc.grades.getGridData.queryKey() });
+        void invalidateSubjectDomain(queryClient, trpc, data?.id);
         setParams(null);
       },
     }),

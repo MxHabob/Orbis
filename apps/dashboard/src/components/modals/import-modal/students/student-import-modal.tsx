@@ -20,6 +20,7 @@ import { parseFile } from "@midday/import";
 import { ImportCsvContext, studentImportSchema, type StudentImportFormData } from "../shared/context";
 import { SelectFile } from "../shared/select-file";
 import { StudentFieldMapping } from "./student-field-mapping";
+import { invalidateStudentDomain } from "@/utils/query-invalidation";
 
 const pages = ["select-file", "confirm-import"] as const;
 
@@ -248,8 +249,7 @@ export function StudentImportModal() {
                           });
                         }
 
-                        queryClient.invalidateQueries({ queryKey: trpc.students.getAll.queryKey() });
-                        queryClient.invalidateQueries({ queryKey: trpc.students.getByClassId.queryKey() });
+                        void invalidateStudentDomain(queryClient, trpc);
                         onclose();
                       } catch (err: any) {
                         toast({ 

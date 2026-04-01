@@ -23,6 +23,7 @@ import { Icons } from "@midday/ui/icons";
 import { Sheet, SheetContent, SheetHeader } from "@midday/ui/sheet";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { SubjectEditForm } from "../forms/subject-edit-form";
+import { invalidateSubjectDomain } from "@/utils/query-invalidation";
 
 export function SubjectEditSheet() {
   const trpc = useTRPC();
@@ -43,9 +44,7 @@ export function SubjectEditSheet() {
   const deleteSubjectMutation = useMutation(
     trpc.subjects.delete.mutationOptions({
       onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: trpc.subjects.getAll.queryKey(),
-        });
+        void invalidateSubjectDomain(queryClient, trpc, Number(subjectId));
         setParams(null);
       },
     }),

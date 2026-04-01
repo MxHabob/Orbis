@@ -23,6 +23,7 @@ import { Icons } from "@midday/ui/icons";
 import { Sheet, SheetContent, SheetHeader } from "@midday/ui/sheet";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ClassEditForm } from "../forms/class-edit-form";
+import { invalidateClassDomain } from "@/utils/query-invalidation";
 
 export function ClassEditSheet() {
   const trpc = useTRPC();
@@ -43,9 +44,7 @@ export function ClassEditSheet() {
   const deleteClassMutation = useMutation(
     trpc.classes.delete.mutationOptions({
       onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: trpc.classes.getAll.queryKey(),
-        });
+        void invalidateClassDomain(queryClient, trpc, Number(classId));
         setParams(null);
       },
     }),

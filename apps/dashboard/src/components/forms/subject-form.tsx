@@ -17,6 +17,7 @@ import { SubmitButton } from "@midday/ui/submit-button";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { z } from "zod/v3";
+import { invalidateSubjectDomain } from "@/utils/query-invalidation";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -39,9 +40,7 @@ export function SubjectForm({ data }: Props) {
   const subjectMutation = useMutation(
     trpc.subjects.create.mutationOptions({
       onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: trpc.subjects.getAll.queryKey(),
-        });
+        void invalidateSubjectDomain(queryClient, trpc);
         setParams(null);
       },
     }),
