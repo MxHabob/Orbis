@@ -117,23 +117,6 @@ export const createAcademicYear = async (data: CreateAcademicYearParams) => {
       },
     ]);
 
-    // 2. Create Classes (Default Grades 1-9)
-    const grades = [
-      "الصف الأول", "الصف الثاني", "الصف الثالث", 
-      "الصف الرابع", "الصف الخامس", "الصف السادس",
-      "الصف السابع", "الصف الثامن", "الصف التاسع"
-    ];
-    const colors = ["#f44336", "#e91e63", "#9c27b0", "#673ab7", "#3f51b5", "#2196f3", "#00bcd4", "#009688", "#4caf50"];
-
-    await tx.insert(classes).values(
-      grades.map((name, index) => ({
-        name,
-        color: colors[index] || "#e6e6e6",
-        sortOrder: index,
-        type: "classroom" as const,
-      }))
-    );
-
     await calendarCache.delete("years:all");
     return result;
   });
