@@ -114,7 +114,7 @@ export function CertificateEditor({
       admin_name: t("reports.preview.admin_name"),
       vp_name: t("reports.preview.vp_name"),
       issue_date: new Date().toLocaleDateString(locale === 'ar' ? 'ar-YE' : 'en-US'),
-      report_type: type === "half-yearly" ? "النصفي" : (type === "final" ? "النهائي" : `شهري - لشهر ${monthName}`),
+      report_type: type === "half-yearly" ? "النصفي" : (type === "final" ? "النهائي" : `الشهري - لشهر ${monthName}`),
       month_name: monthName,
       academic_year: year,
     };

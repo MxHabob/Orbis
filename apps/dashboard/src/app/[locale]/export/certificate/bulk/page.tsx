@@ -44,7 +44,7 @@ const mapStudentToVariables = (student: any, type?: string, month?: number) => {
     admin_name: stats.admin_name || "مدير المدرسة",
     vp_name: stats.vp_name || "وكيل المدرسة",
     issue_date: new Date().toLocaleDateString('ar-YE', { year: 'numeric', month: 'long', day: 'numeric' }),
-    report_type: type === "half-yearly" ? "النصفي" : (type === "final" ? "النهائي" : `شهري - لشهر ${month ? (HIJRI_MONTHS_NAMES[month] || `شهر ${month}`) : ""}`),
+    report_type: type === "half-yearly" ? "النصفي" : (type === "final" ? "النهائي" : `الشهري - لشهر ${month ? (HIJRI_MONTHS_NAMES[month] || `شهر ${month}`) : ""}`),
     month_name: month ? (HIJRI_MONTHS_NAMES[month] || `شهر ${month}`) : "",
     academic_year: currentYear,
     studentId: student.userId,
