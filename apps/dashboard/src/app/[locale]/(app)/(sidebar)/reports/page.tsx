@@ -27,7 +27,6 @@ export default async function Reports(props: Props) {
   const filter = loadClassesFilterParams(searchParams);
   const { sort } = loadSortParams(searchParams);
 
-  // Get unified table settings from cookie
   const initialSettings = await getInitialTableSettings("reports");
 
   batchPrefetch([
