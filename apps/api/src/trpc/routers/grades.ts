@@ -160,7 +160,7 @@ export const gradesRouter = createTRPCRouter({
     .input(
       z.object({
         classId: z.number(),
-        type: z.enum(["monthly", "half-yearly", "final"]),
+        type: z.enum(["monthly", "half-yearly", "final", "attendance_sheet"]),
         month: z.number().optional(),
         monthText: z.string().optional(),
         format: z.enum(["xlsx", "csv"]).default("xlsx"),
@@ -168,21 +168,43 @@ export const gradesRouter = createTRPCRouter({
     )
     .mutation(async ({ input }) => {
       const { getClassBulkReportData } = await import("@midday/db/queries");
-      const { generateClassBulkReportExport } = await import("@api/utils/excel-export");
+      const { generateClassBulkReportExport, generateAttendanceSheetExport } = await import("@api/utils/excel-export");
       const { getClassesV4 } = await import("@midday/db/queries");
+      const { db } = await import("@db/client");
+      const { users, students, classes } = await import("@db/schema");
+      const { eq, and, asc } = await import("drizzle-orm");
 
       const allClasses = await getClassesV4({ flat: true, limit: 0 }); // change limit to get all
       const classData = allClasses.find(c => c.id === input.classId);
 
-      const bulkData = await getClassBulkReportData(input.classId, input.type, input.month);
+      let buffer: Buffer;
 
-      const buffer = await generateClassBulkReportExport(bulkData as any, {
-        className: classData?.name || "Class",
-        reportType: input.type,
-        month: input.month,
-        monthText: input.monthText,
-        format: input.format,
-      });
+      if (input.type === "attendance_sheet") {
+        const studentsData = await db
+          .select({
+            name: users.name,
+            phone: users.phone,
+          })
+          .from(students)
+          .innerJoin(users, eq(students.userId, users.id))
+          .where(and(eq(students.currentClassId, input.classId), eq(students.status, 'active')))
+          .orderBy(asc(users.name));
+
+        buffer = await generateAttendanceSheetExport(studentsData, {
+          className: classData?.name || "Class",
+          format: input.format,
+        });
+      } else {
+        const bulkData = await getClassBulkReportData(input.classId, input.type, input.month);
+
+        buffer = await generateClassBulkReportExport(bulkData as any, {
+          className: classData?.name || "Class",
+          reportType: input.type,
+          month: input.month,
+          monthText: input.monthText,
+          format: input.format,
+        });
+      }
 
       const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, -5);
       // Replace illegal characters for filenames

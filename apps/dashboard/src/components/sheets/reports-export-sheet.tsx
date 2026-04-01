@@ -33,7 +33,7 @@ export function ReportsExportSheet() {
   const { toast } = useToast();
   
   const [classId, setClassId] = useState<string>("");
-  const [reportType, setReportType] = useState<"monthly" | "half-yearly" | "final">("monthly");
+  const [reportType, setReportType] = useState<"monthly" | "half-yearly" | "final" | "attendance_sheet">("monthly");
   const [month, setMonth] = useState<string>("");
 
   const isOpen = Boolean(exportReport);
@@ -113,6 +113,7 @@ export function ReportsExportSheet() {
                 <SelectItem value="monthly">{t("reports.monthly")}</SelectItem>
                 <SelectItem value="half-yearly">{t("reports.half_yearly")}</SelectItem>
                 <SelectItem value="final">{t("reports.final")}</SelectItem>
+                <SelectItem value="attendance_sheet">{t("reports.attendance_sheet")}</SelectItem>
               </SelectContent>
             </Select>
           </div>

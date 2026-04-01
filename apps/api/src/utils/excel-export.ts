@@ -356,7 +356,7 @@ export async function generateClassBulkReportExport(
   for (const subject of allSubjects) {
     for (let i = columnsRef.length - 1; i >= 0; i--) {
         const colTitle = columnsRef[i];
-        const maxScore = columnMaxScoresRef[colTitle] ? `Max ${columnMaxScoresRef[colTitle]}` : "Max Score";
+        const maxScore = columnMaxScoresRef[colTitle] ? `${columnMaxScoresRef[colTitle]}` : "Max Score";
         row2.push(`${colTitle}\n${maxScore}`);
     }
     // "المجموع" follows the assessments
@@ -423,6 +423,92 @@ export async function generateClassBulkReportExport(
   });
 
   if (format === "csv") {
+    const csvData = await workbook.csv.writeBuffer();
+    return Buffer.from(csvData);
+  }
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  return Buffer.from(buffer);
+}
+
+export async function generateAttendanceSheetExport(
+  students: { name: string | null; phone: string | null }[],
+  options: { className: string; format: "xlsx" | "csv" }
+): Promise<Buffer> {
+  const ExcelJS = await import("exceljs");
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet("الحضور والغياب", {
+    views: [{ rightToLeft: true }],
+  });
+
+  const titleText = `كشف الحضور والغياب - ${options.className}`;
+  worksheet.addRow([titleText]);
+  worksheet.mergeCells(1, 1, 1, 28);
+  const titleCell = worksheet.getCell(1, 1);
+  titleCell.font = { bold: true, size: 16 };
+  titleCell.alignment = { horizontal: "center", vertical: "middle" };
+
+  const weeks = ["الأسبوع الأول", "الأسبوع الثاني", "الأسبوع الثالث", "الأسبوع الرابع", "الأسبوع الخامس"];
+  const days = ["السبت", "الأحد", "الإثنين", "الثلاثاء", "الأربعاء"];
+
+  const row2 = ["م", "اسم الطالب"];
+  const row3 = ["", ""];
+
+  for (const week of weeks) {
+    row2.push(week, "", "", "", "");
+    row3.push(...days);
+  }
+  
+  row2.push("رقم التلفون");
+  row3.push("");
+
+  const header1 = worksheet.addRow(row2);
+  const header2 = worksheet.addRow(row3);
+
+  worksheet.mergeCells(2, 1, 3, 1);
+  worksheet.mergeCells(2, 2, 3, 2);
+  worksheet.mergeCells(2, 28, 3, 28);
+
+  let weekStartCol = 3;
+  for (let i = 0; i < 5; i++) {
+    worksheet.mergeCells(2, weekStartCol, 2, weekStartCol + 4);
+    weekStartCol += 5;
+  }
+
+  worksheet.getColumn(1).width = 5;
+  worksheet.getColumn(2).width = 30;
+  for (let i = 3; i <= 27; i++) {
+    worksheet.getColumn(i).width = 5;
+  }
+  worksheet.getColumn(28).width = 20;
+
+  [header1, header2].forEach((row) => {
+    row.alignment = { horizontal: "center", vertical: "middle" };
+    row.font = { bold: true };
+    row.eachCell({ includeEmpty: true }, (cell: any) => {
+      cell.border = {
+        top: { style: 'thin' }, left: { style: 'thin' },
+        bottom: { style: 'thin' }, right: { style: 'thin' }
+      };
+    });
+  });
+
+  students.forEach((student, sIdx) => {
+    const rowData: any[] = [sIdx + 1, student.name || ""];
+    for (let i = 0; i < 25; i++) rowData.push("");
+    rowData.push(student.phone || "");
+
+    const dRow = worksheet.addRow(rowData);
+    dRow.alignment = { horizontal: "center", vertical: "middle" };
+    dRow.eachCell({ includeEmpty: true }, (cell: any) => {
+      cell.border = {
+        top: { style: 'thin' }, left: { style: 'thin' },
+        bottom: { style: 'thin' }, right: { style: 'thin' }
+      };
+    });
+  });
+
+  if (options.format === "csv") {
     const csvData = await workbook.csv.writeBuffer();
     return Buffer.from(csvData);
   }

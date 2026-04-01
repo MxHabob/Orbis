@@ -1,6 +1,6 @@
 import { z } from "@hono/zod-openapi";
 
-export const studentStatusEnum = z.enum(['active', 'graduated', 'transferred', 'suspended']);
+export const studentStatusEnum = z.enum(['active', 'graduated', 'transferred', 'suspended', 'auditor', 'homeschooled']);
 
 export const studentSchema = z.object({
   userId: z.string().uuid().openapi({

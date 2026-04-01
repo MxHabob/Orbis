@@ -51,7 +51,7 @@ const formSchema = z.object({
   studentNumber: z.string().optional().nullable().or(z.literal("")),
   secretNumber: z.string().optional().nullable(),
   currentClassId: z.string().optional().nullable(),
-  status: z.enum(['active', 'graduated', 'transferred', 'suspended']).default('active'),
+  status: z.enum(['active', 'graduated', 'transferred', 'suspended', 'auditor', 'homeschooled']).default('active'),
   note: z.string().optional().nullable(),
 });
 
@@ -333,6 +333,8 @@ export function StudentForm({ data }: Props) {
                               <SelectItem value="graduated">{t("students.graduated")}</SelectItem>
                               <SelectItem value="transferred">{t("students.transferred")}</SelectItem>
                               <SelectItem value="suspended">{t("students.suspended")}</SelectItem>
+                              <SelectItem value="auditor">{t("students.auditor")}</SelectItem>
+                              <SelectItem value="homeschooled">{t("students.homeschooled")}</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
