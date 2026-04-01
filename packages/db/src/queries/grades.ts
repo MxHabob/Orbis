@@ -129,6 +129,7 @@ export const getTopStudents = async (params: {
     if (!grade.studentId) continue;
     const score = Number.parseFloat(grade.score || "");
     if (Number.isNaN(score)) continue;
+    if (!grade.assessmentItemId) continue;
     const maxScore = maxByItemId.get(grade.assessmentItemId) ?? 0;
     const current = statsByStudentId.get(grade.studentId) ?? { totalScore: 0, maxScore: 0, scoredItems: 0 };
     current.totalScore += score;
@@ -1028,6 +1029,7 @@ export const getClassBulkReportData = async (classId: number, type: string, mont
         studentId: students.userId,
         studentNumber: students.studentNumber,
         name: users.name,
+        status: students.status,
       })
       .from(enrollments)
       .innerJoin(students, eq(enrollments.studentId, students.userId))
@@ -1038,7 +1040,7 @@ export const getClassBulkReportData = async (classId: number, type: string, mont
           eq(enrollments.status, "active")
         )
       )
-      .orderBy(users.name);
+      .orderBy(asc(users.name));
 
     const results = await Promise.all(
       enrolledStudents.map(async (student) => {

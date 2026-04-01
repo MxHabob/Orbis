@@ -310,6 +310,7 @@ export interface ClassBulkReportStudent {
   studentId: string;
   studentNumber: string;
   name: string | null;
+  status?: string | null;
   reportData: {
     rows: any[];
     columns: string[];
@@ -331,7 +332,12 @@ export async function generateClassBulkReportExport(
   const { className, reportType, format } = options;
 
   const workbook = new ExcelJS.Workbook();
-  const worksheet = workbook.addWorksheet("Report", { rightToLeft: true }); // Arabi structure
+  const primaryArgb = hexToArgb(options.classColor);
+  
+  const worksheet = workbook.addWorksheet("كشف الدرجات", { 
+    views: [{ rightToLeft: true }],
+    properties: { tabColor: { argb: primaryArgb } }
+  }); 
 
   // Header Title
   const titleText =
@@ -340,7 +346,8 @@ export async function generateClassBulkReportExport(
       : `تقرير درجات نصفي - ${className}`;
 
   const titleRow = worksheet.addRow([titleText]);
-  titleRow.font = { size: 16, bold: true };
+  titleRow.font = { size: 18, bold: true, color: { argb: primaryArgb } };
+  titleRow.alignment = { horizontal: "center", vertical: "middle" };
   worksheet.addRow([]);
 
   if (studentsData.length === 0) {
@@ -348,28 +355,25 @@ export async function generateClassBulkReportExport(
     return format === "csv" ? Buffer.from(await workbook.csv.writeBuffer()) : Buffer.from(await workbook.xlsx.writeBuffer());
   }
 
-  // Extract columns and subjects from the first student (they all share the same structure ideally)
+  // Extract columns and subjects
   const columnsRef = studentsData[0]?.reportData?.columns || [];
   const columnMaxScoresRef = (studentsData[0]?.reportData as any)?.columnMaxScores || {};
   const allSubjects = studentsData[0]?.reportData?.rows.map(r => r.subject) || [];
 
-  // Row 1: Subject headers spanning sub-columns
   const row1 = ["م", "رقم الطالب", "اسم الطالب"];
   const subColCount = columnsRef.length + 1; // assessments columns + المجموع 
   
   for (const subject of allSubjects) {
      row1.push(subject);
-     for (let i = 1; i < subColCount; i++) row1.push(""); // empty cells to merge
+     for (let i = 1; i < subColCount; i++) row1.push(""); 
   }
   
-  const primaryArgb = hexToArgb(options.classColor);
-
   const header1 = worksheet.addRow(row1);
   header1.font = { bold: true, size: 12 };
   header1.alignment = { horizontal: "center", vertical: "middle" };
-  header1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC6E0B4' } }; // Light green background from image
+  // 2026: Using a very soft gray-green or subtle brand accent for subjects header
+  header1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F5F5' } }; 
 
-  // Merge cells for subjects in row1
   let colIndex = 4;
   for (const subject of allSubjects) {
     if (subColCount > 1) {
@@ -378,15 +382,14 @@ export async function generateClassBulkReportExport(
     colIndex += subColCount;
   }
 
-  // Row 2: sub-columns (assessments & total)
   const row2 = ["", "", ""];
   for (const subject of allSubjects) {
     for (let i = columnsRef.length - 1; i >= 0; i--) {
         const colTitle = columnsRef[i];
-        const maxScore = columnMaxScoresRef[colTitle] ? `${columnMaxScoresRef[colTitle]}` : "Max Score";
-        row2.push(`${colTitle}\n${maxScore}`);
+        if (!colTitle) continue;
+        const maxScore = columnMaxScoresRef[colTitle] ? `${columnMaxScoresRef[colTitle]}` : "";
+        row2.push(`${colTitle}${maxScore ? `\n(${maxScore})` : ""}`);
     }
-    // "المجموع" follows the assessments
     row2.push("المجموع");
   }
 
@@ -394,27 +397,32 @@ export async function generateClassBulkReportExport(
   header2.font = { bold: true, color: { argb: "FFFFFFFF" } };
   header2.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
   header2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: primaryArgb } };
-  header2.height = 30;
+  header2.height = 35;
 
-  worksheet.mergeCells(header1.number, 1, header2.number, 1); // Merge "م"
-  worksheet.mergeCells(header1.number, 2, header2.number, 2); // Merge "student number"
-  worksheet.mergeCells(header1.number, 3, header2.number, 3); // Merge "اسم الطالب"
+  worksheet.mergeCells(header1.number, 1, header2.number, 1); 
+  worksheet.mergeCells(header1.number, 2, header2.number, 2); 
+  worksheet.mergeCells(header1.number, 3, header2.number, 3); 
 
   worksheet.getColumn(1).width = 5;
   worksheet.getColumn(2).width = 15;
-  worksheet.getColumn(3).width = 30;
+  worksheet.getColumn(3).width = 35;
 
-  // Add borders for headers
+  // Set widths for subject columns
+  for (let i = 4; i <= row2.length; i++) {
+    worksheet.getColumn(i).width = 12;
+  }
+
   [header1, header2].forEach(row => {
     row.eachCell({ includeEmpty: true }, cell => {
       cell.border = {
-        top: { style: 'thin' }, left: { style: 'thin' },
-        bottom: { style: 'thin' }, right: { style: 'thin' }
+        top: { style: 'thin', color: { argb: "FFE0E0E0" } }, 
+        left: { style: 'thin', color: { argb: "FFE0E0E0" } },
+        bottom: { style: 'thin', color: { argb: "FFE0E0E0" } }, 
+        right: { style: 'thin', color: { argb: "FFE0E0E0" } }
       };
     });
   });
 
-  // Data rows
   studentsData.forEach((student, sIdx) => {
     const rowData = [
       sIdx + 1,
@@ -429,24 +437,43 @@ export async function generateClassBulkReportExport(
       if (subjectRow) {
          for (let i = columnsRef.length - 1; i >= 0; i--) {
            const colName = columnsRef[i];
+           if (!colName) continue;
            const g = subjectRow.grades[colName];
            rowData.push(g !== null && g !== undefined ? g : "-");
          }
-         rowData.push(subjectRow.total); // المجموع
+         rowData.push(subjectRow.total);
       } else {
-         for (let i = 0; i < columnsRef.length; i++) rowData.push("-");
-         rowData.push("-");
+         for (let i = 0; i < subColCount; i++) rowData.push("-");
       }
     }
 
     const dRow = worksheet.addRow(rowData);
     dRow.alignment = { horizontal: "center", vertical: "middle" };
+    dRow.height = 25;
     dRow.eachCell({ includeEmpty: true }, cell => {
        cell.border = {
-         top: { style: 'thin' }, left: { style: 'thin' },
-         bottom: { style: 'thin' }, right: { style: 'thin' }
+         top: { style: 'thin', color: { argb: "FFF0F0F0" } }, 
+         left: { style: 'thin', color: { argb: "FFF0F0F0" } },
+         bottom: { style: 'thin', color: { argb: "FFF0F0F0" } }, 
+         right: { style: 'thin', color: { argb: "FFF0F0F0" } }
        };
     });
+
+    if (student.status === "auditor" || student.status === "homeschooled") {
+       dRow.eachCell({ includeEmpty: true }, cell => {
+          cell.fill = { 
+            type: "pattern", 
+            pattern: "solid", 
+            fgColor: { argb: "FFFFEBEE" } 
+          };
+          cell.border = {
+            top: { style: 'thin', color: { argb: 'FFFFCDD2' } },
+            left: { style: 'thin', color: { argb: 'FFFFCDD2' } },
+            bottom: { style: 'thin', color: { argb: 'FFFFCDD2' } },
+            right: { style: 'thin', color: { argb: 'FFFFCDD2' } }
+          };
+       });
+    }
   });
 
   if (format === "csv") {
@@ -463,17 +490,17 @@ export async function generateAttendanceSheetExport(
   options: { className: string; classColor?: string; format: "xlsx" | "csv" }
 ): Promise<Buffer> {
   const primaryArgb = hexToArgb(options.classColor);
-  const ExcelJS = await import("exceljs");
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet("الحضور والغياب", {
     views: [{ rightToLeft: true }],
+    properties: { tabColor: { argb: primaryArgb } }
   });
 
   const titleText = `كشف الحضور والغياب - ${options.className}`;
   worksheet.addRow([titleText]);
   worksheet.mergeCells(1, 1, 1, 28);
   const titleCell = worksheet.getCell(1, 1);
-  titleCell.font = { bold: true, size: 16 };
+  titleCell.font = { bold: true, size: 18, color: { argb: primaryArgb } };
   titleCell.alignment = { horizontal: "center", vertical: "middle" };
 
   const weeks = ["الأسبوع الأول", "الأسبوع الثاني", "الأسبوع الثالث", "الأسبوع الرابع", "الأسبوع الخامس"];
@@ -504,9 +531,9 @@ export async function generateAttendanceSheetExport(
   }
 
   worksheet.getColumn(1).width = 5;
-  worksheet.getColumn(2).width = 30;
+  worksheet.getColumn(2).width = 35;
   for (let i = 3; i <= 27; i++) {
-    worksheet.getColumn(i).width = 5;
+    worksheet.getColumn(i).width = 6;
   }
   worksheet.getColumn(28).width = 20;
 
@@ -514,10 +541,13 @@ export async function generateAttendanceSheetExport(
     row.alignment = { horizontal: "center", vertical: "middle" };
     row.font = { bold: true, color: { argb: "FFFFFFFF" } };
     row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: primaryArgb } };
+    row.height = 25;
     row.eachCell({ includeEmpty: true }, (cell: any) => {
       cell.border = {
-        top: { style: 'thin' }, left: { style: 'thin' },
-        bottom: { style: 'thin' }, right: { style: 'thin' }
+        top: { style: 'thin', color: { argb: 'FFE0E0E0' } }, 
+        left: { style: 'thin', color: { argb: 'FFE0E0E0' } },
+        bottom: { style: 'thin', color: { argb: 'FFE0E0E0' } }, 
+        right: { style: 'thin', color: { argb: 'FFE0E0E0' } }
       };
     });
   });
@@ -529,16 +559,29 @@ export async function generateAttendanceSheetExport(
 
     const dRow = worksheet.addRow(rowData);
     dRow.alignment = { horizontal: "center", vertical: "middle" };
+    dRow.height = 22;
     dRow.eachCell({ includeEmpty: true }, (cell: any) => {
       cell.border = {
-        top: { style: 'thin' }, left: { style: 'thin' },
-        bottom: { style: 'thin' }, right: { style: 'thin' }
+        top: { style: 'thin', color: { argb: 'FFF0F0F0' } }, 
+        left: { style: 'thin', color: { argb: 'FFF0F0F0' } },
+        bottom: { style: 'thin', color: { argb: 'FFF0F0F0' } }, 
+        right: { style: 'thin', color: { argb: 'FFF0F0F0' } }
       };
     });
     
     if (student.status === "auditor") {
-      dRow.eachCell((cell) => {
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFEBEE' } };
+      dRow.eachCell({ includeEmpty: true }, (cell: any) => {
+        cell.fill = { 
+          type: 'pattern', 
+          pattern: 'solid', 
+          fgColor: { argb: 'FFFFEBEE' } 
+        };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFFFCDD2' } },
+          left: { style: 'thin', color: { argb: 'FFFFCDD2' } },
+          bottom: { style: 'thin', color: { argb: 'FFFFCDD2' } },
+          right: { style: 'thin', color: { argb: 'FFFFCDD2' } }
+        };
       });
     }
   });
@@ -555,7 +598,10 @@ export async function generateAttendanceSheetExport(
 export async function generateStudentsParentsExport(
   students: {
     studentNumber: string;
+    secretNumber?: string | null;
     studentName: string | null;
+    studentEmail?: string | null;
+    studentSex?: string | null;
     studentStatus: string | null;
     phone: string | null;
     fatherName: string | null;
@@ -566,43 +612,68 @@ export async function generateStudentsParentsExport(
   options: { className: string; classColor?: string; format: "xlsx" | "csv" }
 ): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
-  const worksheet = workbook.addWorksheet("Students & Parents", {
+  const primaryArgb = hexToArgb(options.classColor);
+  
+  const worksheet = workbook.addWorksheet("الطلاب وأولياء الأمور", {
     views: [{ rightToLeft: true }],
+    properties: { tabColor: { argb: primaryArgb } }
   });
 
-  const primaryArgb = hexToArgb(options.classColor);
+  // Modern Styling (2026 best practices: subtle shades, high contrast headers)
   const titleText = `كشف معلومات الطلاب مع أولياء الأمور - ${options.className}`;
   worksheet.addRow([titleText]);
-  worksheet.mergeCells(1, 1, 1, 9);
+  worksheet.mergeCells(1, 1, 1, 12);
   const titleCell = worksheet.getCell(1, 1);
-  titleCell.font = { bold: true, size: 16 };
+  titleCell.font = { bold: true, size: 18, color: { argb: primaryArgb } }; // Use class color for title
   titleCell.alignment = { horizontal: "center", vertical: "middle" };
-  worksheet.addRow([]);
+  worksheet.addRow([]); // Spacer
 
-  const columns = ["م", "رقم الطالب", "اسم الطالب", "الجوال", "اسم الأب", "جوال الأب", "اسم الأم", "جوال الأم", "الحالة"];
+  const columns = [
+    "م", 
+    "رقم الطالب", 
+    "الرقم السري", 
+    "اسم الطالب", 
+    "الجنس", 
+    "البريد الإلكتروني", 
+    "الجوال", 
+    "اسم الأب", 
+    "جوال الأب", 
+    "اسم الأم", 
+    "جوال الأم", 
+    "الحالة"
+  ];
+  
   const headerRow = worksheet.addRow(columns);
-
   headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
-  headerRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: primaryArgb } };
+  headerRow.fill = { 
+    type: "pattern", 
+    pattern: "solid", 
+    fgColor: { argb: primaryArgb } 
+  };
   headerRow.alignment = { horizontal: "center", vertical: "middle" };
-  headerRow.height = 25;
+  headerRow.height = 30; // Increased height for better UX
 
-  worksheet.getColumn(1).width = 5;
-  worksheet.getColumn(2).width = 15;
-  worksheet.getColumn(3).width = 30;
-  worksheet.getColumn(4).width = 15;
-  worksheet.getColumn(5).width = 30;
-  worksheet.getColumn(6).width = 15;
-  worksheet.getColumn(7).width = 30;
-  worksheet.getColumn(8).width = 15;
-  worksheet.getColumn(9).width = 15;
+  // Column settings
+  const columnWidths = [5, 15, 12, 35, 10, 25, 15, 30, 15, 30, 15, 12];
+  columnWidths.forEach((width, idx) => {
+    worksheet.getColumn(idx + 1).width = width;
+  });
 
   headerRow.eachCell((cell) => {
     cell.border = {
-      top: { style: 'thin' }, left: { style: 'thin' },
-      bottom: { style: 'thin' }, right: { style: 'thin' }
+      top: { style: 'thin', color: { argb: 'FFE0E0E0' } },
+      left: { style: 'thin', color: { argb: 'FFE0E0E0' } },
+      bottom: { style: 'thin', color: { argb: 'FFE0E0E0' } },
+      right: { style: 'thin', color: { argb: 'FFE0E0E0' } }
     };
   });
+
+  // Student sex labels translation
+  const sexLabels: Record<string, string> = {
+    'male': 'ذكر',
+    'female': 'أنثى',
+    'unspecified': 'غير محدد'
+  };
 
   students.forEach((student, sIdx) => {
     const rowStatus = student.studentStatus === 'active' ? 'نشط' : 
@@ -613,7 +684,10 @@ export async function generateStudentsParentsExport(
     const rowData = [
       sIdx + 1,
       student.studentNumber,
+      student.secretNumber || "-",
       student.studentName || "-",
+      sexLabels[student.studentSex || 'unspecified'] || "-",
+      student.studentEmail || "-",
       student.phone || "-",
       student.fatherName || "-",
       student.fatherPhone || "-",
@@ -624,16 +698,32 @@ export async function generateStudentsParentsExport(
     
     const dRow = worksheet.addRow(rowData);
     dRow.alignment = { horizontal: "center", vertical: "middle" };
+    
+    // Borders for data rows
     dRow.eachCell({ includeEmpty: true }, (cell) => {
       cell.border = {
-        top: { style: 'thin' }, left: { style: 'thin' },
-        bottom: { style: 'thin' }, right: { style: 'thin' }
+        top: { style: 'thin', color: { argb: 'FFF0F0F0' } },
+        left: { style: 'thin', color: { argb: 'FFF0F0F0' } },
+        bottom: { style: 'thin', color: { argb: 'FFF0F0F0' } },
+        right: { style: 'thin', color: { argb: 'FFF0F0F0' } }
       };
     });
 
+    // Row Highlighting for auditors (Premium 2026 design: soft highlight)
     if (student.studentStatus === 'auditor') {
-      dRow.eachCell((cell) => {
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFEBEE' } };
+      dRow.eachCell({ includeEmpty: true }, (cell) => {
+        cell.fill = { 
+          type: 'pattern', 
+          pattern: 'solid', 
+          fgColor: { argb: 'FFFFEBEE' } // Light Soft Salmon/Red
+        };
+        // Add a slightly stronger border to auditor rows to make them distinct
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFFFCDD2' } },
+          left: { style: 'thin', color: { argb: 'FFFFCDD2' } },
+          bottom: { style: 'thin', color: { argb: 'FFFFCDD2' } },
+          right: { style: 'thin', color: { argb: 'FFFFCDD2' } }
+        };
       });
     }
   });

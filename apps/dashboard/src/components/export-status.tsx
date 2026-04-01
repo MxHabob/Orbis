@@ -6,6 +6,7 @@ import { useExportStore } from "@/store/export";
 import { downloadFile } from "@/lib/download";
 import { Button } from "@midday/ui/button";
 import { useToast } from "@midday/ui/use-toast";
+import { useI18n } from "@/locales/client";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 type ExportResult = {
@@ -55,6 +56,7 @@ function DownloadButton({
  * Shows granular progress with phase descriptions.
  */
 export function ExportStatus() {
+  const t = useI18n();
   const { toast, dismiss, update } = useToast();
   const { play: playSuccessSound } = useSuccessSound();
   const [toastId, setToastId] = useState<string | null>(null);
@@ -85,17 +87,15 @@ export function ExportStatus() {
    * Get a human-readable description based on progress and job status.
    */
   const getProgressDescription = (progressValue: number | undefined, jobStatus: string | undefined): string => {
-    if (jobStatus === "waiting") return "في الانتظار (سيتم البدء قريباً)...";
-    if (progressValue === undefined) return "جاري التحضير...";
+    if (jobStatus === "waiting") return t("reports.export_progress.waiting");
+    if (progressValue === undefined) return t("reports.export_progress.preparing");
     
     const val = progressValue;
-    if (val < 5) return "جاري تحضير البيانات...";
-    if (val < 10) return "جاري إنشاء جلسة المحرك...";
-    if (val < 15) return "جاري تشغيل محرك التصدير...";
-    if (val < 85) return "جاري توليد الشهادات (قد يستغرق وقتاً)...";
-    if (val < 90) return "جاري دمج ملفات PDF...";
-    if (val < 95) return "جاري رفع الملف النهائي...";
-    return "جاري الإنهاء...";
+    if (val < 5) return t("reports.export_progress.preparing_data");
+    if (val < 15) return t("reports.export_progress.starting_engine");
+    if (val < 85) return t("reports.export_progress.generating");
+    if (val < 95) return t("reports.export_progress.uploading");
+    return t("reports.export_progress.finalizing");
   };
 
   // Handle failure
@@ -106,9 +106,8 @@ export function ExportStatus() {
       toast({
         duration: 6000,
         variant: "error",
-        title: "فشل استخراج الشهادات",
-        description:
-          "حدث خطأ غير متوقع في محرك التصدير. يرجى المحاولة مرة أخرى.",
+        title: t("reports.export_progress.failed"),
+        description: t("reports.export_progress.failed_desc"),
       });
 
       setToastId(null);
@@ -129,10 +128,9 @@ export function ExportStatus() {
   useEffect(() => {
     if (exportData?.runId && !toastId && status !== "completed") {
       const { id } = toast({
-        title: "جاري تجهيز الشهادات (في الخلفية)",
+        title: t("reports.export_progress.queued_title"),
         variant: "progress",
-        description:
-          "يمكنك إغلاق هذه الرسالة ومواصلة العمل، سنخطرك عند الاكتمال.",
+        description: t("reports.export_progress.background_notice"),
         duration: Number.POSITIVE_INFINITY,
         progress: 0,
       });
@@ -180,8 +178,8 @@ export function ExportStatus() {
       if (exportResult) {
         update(toastId, {
           id: toastId,
-          title: "اكتمل استخراج الشهادات ✅",
-          description: `تم استخراج ${exportResult.totalItems} شهادة بنجاح.`,
+          title: t("reports.export_progress.completed"),
+          description: exportResult.fileName,
           variant: "success",
           footer: (
             <div className="mt-4 flex gap-3">
@@ -196,8 +194,8 @@ export function ExportStatus() {
       } else {
         update(toastId, {
           id: toastId,
-          title: "اكتمل التصدير",
-          description: "تم تجهيز الملف بنجاح.",
+          title: t("reports.export_progress.completed"),
+          description: t("reports.export_progress.completed_desc"),
           variant: "success",
         });
       }

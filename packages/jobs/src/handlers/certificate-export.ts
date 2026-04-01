@@ -6,7 +6,6 @@ import { createDocument } from "@midday/db/queries/documents";
 import { db } from "@midday/db/client";
 import { uploadFile } from "@midday/storage";
 import { logger } from "@midday/logger";
-import { auth } from "@midday/auth";
 import puppeteer, { type Browser, type Page, type PaperFormat } from "puppeteer";
 
 // ============================================================
@@ -176,7 +175,7 @@ export async function handleCertificateExport(
       const pdfTitle = `شهادات ${typeLabel} - ${cls.name}${isMonthly ? ` - شهر ${monthLabel}` : ""}`;
 
       // Build Export URL for this class
-      const studentIds = students.map(s => s.userId).join(",");
+      const studentIds = students.map((s: any) => s.userId).join(",");
       const exportUrl = buildExportUrl(dashboardUrl, {
         studentIds,
         templateId,

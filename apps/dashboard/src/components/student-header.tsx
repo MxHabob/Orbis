@@ -24,7 +24,7 @@ import { useTRPC } from "@/trpc/client";
 import { useToast } from "@midday/ui/use-toast";
 import { useMutation, useQueryClient, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
-import { downloadBase64 } from "@midday/export";
+import { useExportStore } from "@/store/export";
 import { useI18n } from "@/locales/client";
 import { cn } from "@midday/ui/cn";
 
@@ -75,13 +75,16 @@ function StudentActions({ classId, className }: StudentActionsProps) {
     trpc.academic.getYears.queryOptions()
   );
 
+  const { setExportData, setIsExporting: setGlobalExporting } = useExportStore();
+
   const exportMutation = useMutation(
-    trpc.students.exportByClassId.mutationOptions({
+    trpc.grades.exportClassReport.mutationOptions({
       onSuccess: (data) => {
-        downloadBase64(data.data, data.filename, data.mimeType);
+        setExportData({ runId: data.jobId });
+        setGlobalExporting(true);
         toast({
-          title: "Export Successful",
-          description: "Report has been exported successfully.",
+          title: t("common.export_started") as string || "Export Started",
+          description: t("common.export_started_desc") as string || "Your report is being generated in the background.",
           variant: "success",
         });
       },
@@ -100,7 +103,8 @@ function StudentActions({ classId, className }: StudentActionsProps) {
     if (!classId) return;
     setIsExporting(true);
     exportMutation.mutate({
-      classId,
+      classId: parseInt(classId),
+      type: "students_parents_data",
       format,
     });
   };

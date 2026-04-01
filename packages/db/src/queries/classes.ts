@@ -17,15 +17,31 @@ interface ClassQueryParams {
   offset?: number;
 }
 
+export interface EnrichedClass {
+  id: number;
+  name: string;
+  type: string;
+  division: string | null;
+  color: string;
+  parentClassId: number | null;
+  sortOrder: number;
+  students: number;
+  parentClass: { name: string } | null;
+  _count: {
+    students: number;
+    schedule: number;
+  };
+}
+
 /**
  * Production-ready class query with recursive enrollment rollup.
  * Optimized to avoid N+1 queries by using advanced SQL aggregation.
  */
-export const getClassesV4 = async (params: ClassQueryParams | number) => {
+export const getClassesV4 = async (params: ClassQueryParams | number): Promise<EnrichedClass[]> => {
   try {
     // Normalize params
     const isNumber = typeof params === "number";
-    const p: any = isNumber ? { academicYearId: params } : (params || {});
+    const p: ClassQueryParams = isNumber ? { academicYearId: params as number } : (params as ClassQueryParams || {});
     
     // Resolve yearId
     let yearId = p.academicYearId ? Number(p.academicYearId) : undefined;
@@ -45,7 +61,7 @@ export const getClassesV4 = async (params: ClassQueryParams | number) => {
 
   const orderBy = [];
   if (p.sort?.length) {
-    p.sort.forEach((s) => {
+    p.sort.forEach((s: string) => {
       const [column, direction] = s.split(":");
       const dirFunc = direction === "desc" ? desc : asc;
       switch (column) {

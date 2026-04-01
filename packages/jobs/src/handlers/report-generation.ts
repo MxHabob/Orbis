@@ -2,8 +2,7 @@ import type { Job } from "bullmq";
 import type { ReportGenerationData } from "../queue";
 import { logger } from "@midday/logger";
 import { getClassBulkReportData, getClassesV4 } from "@midday/db/queries";
-import { generateClassBulkReportExport, generateAttendanceSheetExport } from "@midday/export";
-import { db } from "@midday/db/client";
+import { generateClassBulkReportExport, generateAttendanceSheetExport, generateStudentsParentsExport } from "@midday/export";
 import { uploadFile } from "@midday/storage";
 import { createDocument } from "@midday/db/queries/documents";
 
@@ -27,23 +26,25 @@ export async function handleReportGeneration(job: Job<ReportGenerationData>) {
     let buffer: Buffer;
 
     if (type === "attendance_sheet") {
-      const { users, students } = await import("@midday/db/schema");
-      const { eq, and, asc } = await import("drizzle-orm");
-      
-      const studentsData = await db
-        .select({
-          name: users.name,
-          phone: users.phone,
-        })
-        .from(students)
-        .innerJoin(users, eq(students.userId, users.id))
-        .where(and(eq(students.currentClassId, classId), eq(students.status, 'active')))
-        .orderBy(asc(users.name));
+      const { getAttendanceSheetData } = await import("@midday/db/queries");
+      const studentsData = await getAttendanceSheetData(classId);
 
       await job.updateProgress(50);
 
       buffer = await generateAttendanceSheetExport(studentsData, {
         className: classData.name,
+        classColor: classData.color,
+        format: format,
+      });
+    } else if (type === "students_parents_data") {
+      const { getStudentsParentsData } = await import("@midday/db/queries");
+      const studentsData = await getStudentsParentsData(classId);
+
+      await job.updateProgress(50);
+
+      buffer = await generateStudentsParentsExport(studentsData, {
+        className: classData.name,
+        classColor: classData.color,
         format: format,
       });
     } else {
@@ -53,6 +54,7 @@ export async function handleReportGeneration(job: Job<ReportGenerationData>) {
 
       buffer = await generateClassBulkReportExport(bulkData as any, {
         className: classData.name,
+        classColor: classData.color,
         reportType: type,
         month: month,
         monthText: monthText,

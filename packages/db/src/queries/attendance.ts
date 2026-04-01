@@ -1,6 +1,6 @@
 import { db } from "@db/client";
 import { attendanceRecords, students, users, scheduledLessons, subjects } from "@db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, asc } from "drizzle-orm";
 import { RedisCache } from "@midday/cache";
 
 const attendanceCache = new RedisCache("attendance", 10 * 60);
@@ -102,4 +102,22 @@ export const bulkMarkAttendance = async (records: MarkAttendanceParams[]) => {
         }
     }
     return results;
+};
+
+/**
+ * Get data for the class attendance sheet export.
+ */
+export const getAttendanceSheetData = async (classId: number) => {
+
+
+  return db
+    .select({
+      name: users.name,
+      phone: users.phone,
+      status: students.status,
+    })
+    .from(students)
+    .innerJoin(users, eq(students.userId, users.id))
+    .where(eq(students.currentClassId, classId))
+    .orderBy(asc(users.name));
 };

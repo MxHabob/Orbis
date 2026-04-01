@@ -50,7 +50,7 @@ export interface CertificateExportData extends BaseJobData {
 
 export interface ReportGenerationData extends BaseJobData {
   classId: number;
-  type: "monthly" | "half-yearly" | "final" | "attendance_sheet";
+  type: "monthly" | "half-yearly" | "final" | "attendance_sheet" | "students_parents_data";
   month?: number;
   monthText?: string;
   format: "xlsx" | "csv";

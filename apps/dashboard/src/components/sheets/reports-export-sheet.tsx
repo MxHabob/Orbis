@@ -35,7 +35,7 @@ export function ReportsExportSheet() {
   const { setExportData, setIsExporting } = useExportStore();
   
   const [classId, setClassId] = useState<string>("");
-  const [reportType, setReportType] = useState<"monthly" | "half-yearly" | "final" | "attendance_sheet">("monthly");
+  const [reportType, setReportType] = useState<"monthly" | "half-yearly" | "final" | "attendance_sheet" | "students_parents_data">("monthly");
   const [month, setMonth] = useState<string>("");
 
   const isOpen = Boolean(exportReport);
@@ -112,6 +112,7 @@ export function ReportsExportSheet() {
                 <SelectItem value="half-yearly">{t("reports.half_yearly")}</SelectItem>
                 <SelectItem value="final">{t("reports.final")}</SelectItem>
                 <SelectItem value="attendance_sheet">{t("reports.attendance_sheet")}</SelectItem>
+                <SelectItem value="students_parents_data">{t("reports.students_parents_data")}</SelectItem>
               </SelectContent>
             </Select>
           </div>

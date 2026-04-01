@@ -160,7 +160,7 @@ export const gradesRouter = createTRPCRouter({
     .input(
       z.object({
         classId: z.number(),
-        type: z.enum(["monthly", "half-yearly", "final", "attendance_sheet"]),
+        type: z.enum(["monthly", "half-yearly", "final", "attendance_sheet", "students_parents_data"]),
         month: z.number().optional(),
         monthText: z.string().optional(),
         format: z.enum(["xlsx", "csv"]).default("xlsx"),

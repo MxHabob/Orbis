@@ -1,5 +1,5 @@
 import { db } from "@db/client";
-import { students, classes, users, enrollments, academicYears } from "@db/schema";
+import { students, classes, users, enrollments, academicYears, parentStudents } from "@db/schema";
 import { eq, asc, desc, and, or, ilike, inArray, sql } from "drizzle-orm";
 
 import { RedisCache } from "@midday/cache";
@@ -713,4 +713,60 @@ export const getStudentEnrollments = async (studentId: string) => {
         .innerJoin(academicYears, eq(enrollments.academicYearId, academicYears.id))
         .where(eq(enrollments.studentId, studentId));
 };
+
+/**
+ * Get data for the class students and parents export.
+ */
+export const getStudentsParentsData = async (classId: number) => {
+  const studentsDataRaw = await db
+    .select({
+      studentNumber: students.studentNumber,
+      secretNumber: students.secretNumber,
+      studentName: users.name,
+      studentEmail: users.email,
+      studentSex: users.sex,
+      studentStatus: students.status,
+      studentPhone: users.phone,
+      studentId: students.userId,
+    })
+    .from(students)
+    .innerJoin(users, eq(students.userId, users.id))
+    .where(eq(students.currentClassId, classId))
+    .orderBy(asc(users.name));
+
+  const studentIds = studentsDataRaw.map((s) => s.studentId);
+  const parentsDataRaw =
+    studentIds.length > 0
+      ? await db
+          .select({
+            studentId: parentStudents.studentId,
+            relationship: parentStudents.relationship,
+            parentName: users.name,
+            parentPhone: users.phone,
+          })
+          .from(parentStudents)
+          .innerJoin(users, eq(parentStudents.parentId, users.id))
+          .where(inArray(parentStudents.studentId, studentIds))
+      : [];
+
+  return studentsDataRaw.map((s) => {
+    const p = parentsDataRaw.filter((p) => p.studentId === s.studentId);
+    const father = p.find((p) => p.relationship === "father" || p.relationship === "parent");
+    const mother = p.find((p) => p.relationship === "mother");
+    return {
+      studentNumber: s.studentNumber,
+      secretNumber: s.secretNumber,
+      studentName: s.studentName,
+      studentEmail: s.studentEmail,
+      studentSex: s.studentSex,
+      studentStatus: s.studentStatus,
+      phone: s.studentPhone,
+      fatherName: father?.parentName || null,
+      fatherPhone: father?.parentPhone || null,
+      motherName: mother?.parentName || null,
+      motherPhone: mother?.parentPhone || null,
+    };
+  });
+};
+
 

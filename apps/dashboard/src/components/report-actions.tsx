@@ -20,6 +20,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { parseCsv, generateCanvasPdf, downloadBase64 } from "@midday/export";
 import { useStudentParams } from "@/hooks/use-student-params";
+import { useExportStore } from "@/store/export";
+import { useI18n } from "@/locales/client";
 
 interface ReportActionsProps {
   classId: string;
@@ -27,6 +29,7 @@ interface ReportActionsProps {
 }
 
 export function ReportActions({ classId, className }: ReportActionsProps) {
+  const t = useI18n();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -37,10 +40,12 @@ export function ReportActions({ classId, className }: ReportActionsProps) {
 
   const importMutation = useMutation(
     trpc.students.import.mutationOptions({
-      onSuccess: () => {
+      onSuccess: (_data, variables) => {
         toast({
-          title: "Success",
-          description: "Students imported successfully",
+          title: t("common.success"),
+          description: t("students.import_success", {
+            count: variables.students.length,
+          }),
           variant: "success",
         });
         queryClient.invalidateQueries({
@@ -58,13 +63,16 @@ export function ReportActions({ classId, className }: ReportActionsProps) {
     })
   );
 
+  const { setExportData, setIsExporting: setGlobalExporting } = useExportStore();
+
   const exportMutation = useMutation(
-    trpc.students.exportByClassId.mutationOptions({
+    trpc.grades.exportClassReport.mutationOptions({
       onSuccess: (data) => {
-        downloadBase64(data.data, data.filename, data.mimeType);
+        setExportData({ runId: data.jobId });
+        setGlobalExporting(true);
         toast({
-          title: "Export Successful",
-          description: "Report has been exported successfully.",
+          title: t("common.export_started") as string || "Export Started",
+          description: t("common.export_started_desc") as string || "Your report is being generated in the background.",
           variant: "success",
         });
       },
@@ -82,7 +90,8 @@ export function ReportActions({ classId, className }: ReportActionsProps) {
   const handleExport = (format: "xlsx" | "csv") => {
     setIsExporting(true);
     exportMutation.mutate({
-      classId,
+      classId: parseInt(classId),
+      type: "students_parents_data",
       format,
     });
   };
@@ -96,8 +105,8 @@ export function ReportActions({ classId, className }: ReportActionsProps) {
       });
 
       toast({
-        title: "Export Successful",
-        description: "Report has been exported to PDF.",
+        title: t("reports.export_excel_success") as string || "Export Successful",
+        description: t("reports.export_excel_success_desc") as string || "Report has been exported to PDF.",
         variant: "success",
       });
     } catch (error: any) {
@@ -187,13 +196,13 @@ export function ReportActions({ classId, className }: ReportActionsProps) {
           className="space-x-2"
         >
           <Icons.Accounts size={18} />
-          <span>Add student</span>
+          <span>{t("students.create")}</span>
         </DropdownMenuItem>
         <DropdownMenuGroup>
           <DropdownMenuSub>
             <DropdownMenuSubTrigger className="space-x-2 cursor-pointer">
               <Icons.Share size={18} />
-              <span>Export</span>
+              <span>{t("reports.export")}</span>
             </DropdownMenuSubTrigger>
             <DropdownMenuPortal>
               <DropdownMenuSubContent sideOffset={14} alignOffset={-4}>
