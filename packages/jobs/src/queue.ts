@@ -47,3 +47,11 @@ export interface CertificateExportData extends BaseJobData {
   certificateType: string;
   selectedMonth: number;
 }
+
+export interface ReportGenerationData extends BaseJobData {
+  classId: number;
+  type: "monthly" | "half-yearly" | "final" | "attendance_sheet";
+  month?: number;
+  monthText?: string;
+  format: "xlsx" | "csv";
+}

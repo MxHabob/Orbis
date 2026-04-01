@@ -19,9 +19,18 @@ interface StudentExportData {
 
 interface ExportOptions {
   className: string;
+  classColor?: string;
   academicYear?: string;
   statistics?: ClassStatistics | null;
   format: "xlsx" | "csv";
+}
+
+export function hexToArgb(hex?: string): string {
+  if (!hex) return "FF4A90E2"; // default blue
+  const cleanHex = hex.replace("#", "");
+  if (cleanHex.length === 6) return `FF${cleanHex.toUpperCase()}`;
+  if (cleanHex.length === 8) return cleanHex.toUpperCase();
+  return "FF4A90E2";
 }
 
 /**
@@ -43,8 +52,10 @@ export async function generateStudentExport(
   workbook.created = new Date();
   workbook.modified = new Date();
 
+  const primaryArgb = hexToArgb(options.classColor);
+
   const worksheet = workbook.addWorksheet("Students", {
-    properties: { tabColor: { argb: "FF4A90E2" } },
+    properties: { tabColor: { argb: primaryArgb } },
   });
 
   // Add header section
@@ -90,7 +101,7 @@ export async function generateStudentExport(
   headerRow.fill = {
     type: "pattern",
     pattern: "solid",
-    fgColor: { argb: "FF4A90E2" },
+    fgColor: { argb: primaryArgb },
   };
   headerRow.alignment = { vertical: "middle", horizontal: "center" };
   headerRow.height = 20;
@@ -127,10 +138,21 @@ export async function generateStudentExport(
       if (student.average >= 90) {
         avgCell.font = { color: { argb: "FF28A745" }, bold: true };
       } else if (student.average >= 50) {
-        avgCell.font = { color: { argb: "FF4A90E2" } };
+        avgCell.font = { color: { argb: primaryArgb } };
       } else {
         avgCell.font = { color: { argb: "FFDC3545" } };
       }
+    }
+    
+    // Highlight auditors with a distinct light red style
+    if (student.status === "Auditor" || student.status === "auditor") {
+      row.eachCell((cell) => {
+        cell.fill = {
+           type: "pattern",
+           pattern: "solid",
+           fgColor: { argb: "FFFFEBEE" } // Light red
+        };
+      });
     }
   }
 
@@ -233,11 +255,13 @@ export async function generateGradesExport(
 
   // Header row
   const headerRow = worksheet.addRow(columns.map((col) => col.header));
+  const primaryArgb = hexToArgb(options.classColor);
+
   headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
   headerRow.fill = {
     type: "pattern",
     pattern: "solid",
-    fgColor: { argb: "FF4A90E2" },
+    fgColor: { argb: primaryArgb },
   };
   headerRow.alignment = { horizontal: "center" };
 
@@ -297,6 +321,7 @@ export async function generateClassBulkReportExport(
   studentsData: ClassBulkReportStudent[],
   options: {
     className: string;
+    classColor?: string;
     reportType: string;
     month?: number;
     monthText?: string;
@@ -337,6 +362,8 @@ export async function generateClassBulkReportExport(
      for (let i = 1; i < subColCount; i++) row1.push(""); // empty cells to merge
   }
   
+  const primaryArgb = hexToArgb(options.classColor);
+
   const header1 = worksheet.addRow(row1);
   header1.font = { bold: true, size: 12 };
   header1.alignment = { horizontal: "center", vertical: "middle" };
@@ -366,7 +393,7 @@ export async function generateClassBulkReportExport(
   const header2 = worksheet.addRow(row2);
   header2.font = { bold: true, color: { argb: "FFFFFFFF" } };
   header2.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
-  header2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4A90E2' } };
+  header2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: primaryArgb } };
   header2.height = 30;
 
   worksheet.mergeCells(header1.number, 1, header2.number, 1); // Merge "م"
@@ -432,9 +459,10 @@ export async function generateClassBulkReportExport(
 }
 
 export async function generateAttendanceSheetExport(
-  students: { name: string | null; phone: string | null }[],
-  options: { className: string; format: "xlsx" | "csv" }
+  students: { name: string | null; phone: string | null; status?: string | null }[],
+  options: { className: string; classColor?: string; format: "xlsx" | "csv" }
 ): Promise<Buffer> {
+  const primaryArgb = hexToArgb(options.classColor);
   const ExcelJS = await import("exceljs");
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet("الحضور والغياب", {
@@ -484,7 +512,8 @@ export async function generateAttendanceSheetExport(
 
   [header1, header2].forEach((row) => {
     row.alignment = { horizontal: "center", vertical: "middle" };
-    row.font = { bold: true };
+    row.font = { bold: true, color: { argb: "FFFFFFFF" } };
+    row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: primaryArgb } };
     row.eachCell({ includeEmpty: true }, (cell: any) => {
       cell.border = {
         top: { style: 'thin' }, left: { style: 'thin' },
@@ -506,6 +535,12 @@ export async function generateAttendanceSheetExport(
         bottom: { style: 'thin' }, right: { style: 'thin' }
       };
     });
+    
+    if (student.status === "auditor") {
+      dRow.eachCell((cell) => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFEBEE' } };
+      });
+    }
   });
 
   if (options.format === "csv") {
@@ -515,4 +550,97 @@ export async function generateAttendanceSheetExport(
 
   const buffer = await workbook.xlsx.writeBuffer();
   return Buffer.from(buffer);
+}
+
+export async function generateStudentsParentsExport(
+  students: {
+    studentNumber: string;
+    studentName: string | null;
+    studentStatus: string | null;
+    phone: string | null;
+    fatherName: string | null;
+    fatherPhone: string | null;
+    motherName: string | null;
+    motherPhone: string | null;
+  }[],
+  options: { className: string; classColor?: string; format: "xlsx" | "csv" }
+): Promise<Buffer> {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet("Students & Parents", {
+    views: [{ rightToLeft: true }],
+  });
+
+  const primaryArgb = hexToArgb(options.classColor);
+  const titleText = `كشف معلومات الطلاب مع أولياء الأمور - ${options.className}`;
+  worksheet.addRow([titleText]);
+  worksheet.mergeCells(1, 1, 1, 9);
+  const titleCell = worksheet.getCell(1, 1);
+  titleCell.font = { bold: true, size: 16 };
+  titleCell.alignment = { horizontal: "center", vertical: "middle" };
+  worksheet.addRow([]);
+
+  const columns = ["م", "رقم الطالب", "اسم الطالب", "الجوال", "اسم الأب", "جوال الأب", "اسم الأم", "جوال الأم", "الحالة"];
+  const headerRow = worksheet.addRow(columns);
+
+  headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
+  headerRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: primaryArgb } };
+  headerRow.alignment = { horizontal: "center", vertical: "middle" };
+  headerRow.height = 25;
+
+  worksheet.getColumn(1).width = 5;
+  worksheet.getColumn(2).width = 15;
+  worksheet.getColumn(3).width = 30;
+  worksheet.getColumn(4).width = 15;
+  worksheet.getColumn(5).width = 30;
+  worksheet.getColumn(6).width = 15;
+  worksheet.getColumn(7).width = 30;
+  worksheet.getColumn(8).width = 15;
+  worksheet.getColumn(9).width = 15;
+
+  headerRow.eachCell((cell) => {
+    cell.border = {
+      top: { style: 'thin' }, left: { style: 'thin' },
+      bottom: { style: 'thin' }, right: { style: 'thin' }
+    };
+  });
+
+  students.forEach((student, sIdx) => {
+    const rowStatus = student.studentStatus === 'active' ? 'نشط' : 
+                      student.studentStatus === 'auditor' ? 'مستمع' :
+                      student.studentStatus === 'graduated' ? 'متخرج' :
+                      student.studentStatus === 'transferred' ? 'منقول' : 'غير محدد';
+    
+    const rowData = [
+      sIdx + 1,
+      student.studentNumber,
+      student.studentName || "-",
+      student.phone || "-",
+      student.fatherName || "-",
+      student.fatherPhone || "-",
+      student.motherName || "-",
+      student.motherPhone || "-",
+      rowStatus
+    ];
+    
+    const dRow = worksheet.addRow(rowData);
+    dRow.alignment = { horizontal: "center", vertical: "middle" };
+    dRow.eachCell({ includeEmpty: true }, (cell) => {
+      cell.border = {
+        top: { style: 'thin' }, left: { style: 'thin' },
+        bottom: { style: 'thin' }, right: { style: 'thin' }
+      };
+    });
+
+    if (student.studentStatus === 'auditor') {
+      dRow.eachCell((cell) => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFEBEE' } };
+      });
+    }
+  });
+
+  if (options.format === "csv") {
+    return Buffer.from(await workbook.csv.writeBuffer());
+  }
+
+  return Buffer.from(await workbook.xlsx.writeBuffer());
 }

@@ -3,6 +3,7 @@ import { saveAs } from "file-saver";
 import Papa from "papaparse";
 import html2canvas from "html2canvas";
 import { type jsPDF } from "jspdf";
+export * from "./excel-export";
 
 export type ExportCsvOptions = {
   filename?: string;

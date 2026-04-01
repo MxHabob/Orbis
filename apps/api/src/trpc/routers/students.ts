@@ -18,7 +18,7 @@ import {
   upsertStudent,
   getStudentEnrollments,
 } from "@midday/db/queries";
-import { generateStudentExport, generateExportFilename } from "@api/utils/excel-export";
+import { generateStudentExport, generateExportFilename } from "@midday/export";
 import { z } from "zod";
 
 export const studentsRouter = createTRPCRouter({

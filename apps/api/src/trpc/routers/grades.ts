@@ -112,7 +112,7 @@ export const gradesRouter = createTRPCRouter({
     )
     .mutation(async ({ input }) => {
       const data = await getGradeGridData(input);
-      const { generateGradesExport, generateGradesFilename } = await import("@api/utils/excel-export");
+      const { generateGradesExport, generateGradesFilename } = await import("@midday/export");
       const { getClassesV4 } = await import("@midday/db/queries");
 
       const allClasses = await getClassesV4({
@@ -166,59 +166,21 @@ export const gradesRouter = createTRPCRouter({
         format: z.enum(["xlsx", "csv"]).default("xlsx"),
       })
     )
-    .mutation(async ({ input }) => {
-      const { getClassBulkReportData } = await import("@midday/db/queries");
-      const { generateClassBulkReportExport, generateAttendanceSheetExport } = await import("@api/utils/excel-export");
-      const { getClassesV4 } = await import("@midday/db/queries");
-      const { db } = await import("@db/client");
-      const { users, students, classes } = await import("@db/schema");
-      const { eq, and, asc } = await import("drizzle-orm");
+    .mutation(async ({ input, ctx }) => {
+      const { jobQueue } = await import("@midday/jobs/queue");
 
-      const allClasses = await getClassesV4({ flat: true, limit: 0 }); // change limit to get all
-      const classData = allClasses.find(c => c.id === input.classId);
-
-      let buffer: Buffer;
-
-      if (input.type === "attendance_sheet") {
-        const studentsData = await db
-          .select({
-            name: users.name,
-            phone: users.phone,
-          })
-          .from(students)
-          .innerJoin(users, eq(students.userId, users.id))
-          .where(and(eq(students.currentClassId, input.classId), eq(students.status, 'active')))
-          .orderBy(asc(users.name));
-
-        buffer = await generateAttendanceSheetExport(studentsData, {
-          className: classData?.name || "Class",
-          format: input.format,
-        });
-      } else {
-        const bulkData = await getClassBulkReportData(input.classId, input.type, input.month);
-
-        buffer = await generateClassBulkReportExport(bulkData as any, {
-          className: classData?.name || "Class",
-          reportType: input.type,
-          month: input.month,
-          monthText: input.monthText,
-          format: input.format,
-        });
-      }
-
-      const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, -5);
-      // Replace illegal characters for filenames
-      const safeName = (classData?.name || "Class").replace(/[\/\\?%*:|"<>]/g, '_');
-      const monthPart = input.monthText ? `_${input.monthText.replace(/[\/\\?%*:|"<>]/g, '_')}` : "";
-      const filename = `${safeName}_${input.type}${monthPart}_report_${timestamp}.${input.format}`;
+      const job = await jobQueue.add("report-generation", {
+        userId: ctx.session.user.id,
+        classId: input.classId,
+        type: input.type,
+        month: input.month,
+        monthText: input.monthText,
+        format: input.format,
+      });
 
       return {
-        data: buffer.toString("base64"),
-        filename,
-        mimeType:
-          input.format === "xlsx"
-            ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            : "text/csv",
+        jobId: job.id,
+        status: "queued"
       };
     }),
 });

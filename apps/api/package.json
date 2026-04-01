@@ -23,6 +23,7 @@
     "@hono/zod-validator": "^0.7.5",
     "@midday/auth": "workspace:*",
     "@midday/cache": "workspace:*",
+    "@midday/export": "workspace:*",
     "@midday/db": "workspace:*",
     "@midday/encryption": "workspace:*",
     "@midday/location": "workspace:*",

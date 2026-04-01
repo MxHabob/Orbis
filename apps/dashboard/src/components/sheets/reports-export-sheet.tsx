@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@midday/ui/select";
+import { useExportStore } from "@/store/export";
 import { useTRPC } from "@/trpc/client";
 import { useState } from "react";
 import { useToast } from "@midday/ui/use-toast";
@@ -31,6 +32,7 @@ export function ReportsExportSheet() {
   const { exportReport, setParams } = useReportExportParams();
   const trpc = useTRPC();
   const { toast } = useToast();
+  const { setExportData, setIsExporting } = useExportStore();
   
   const [classId, setClassId] = useState<string>("");
   const [reportType, setReportType] = useState<"monthly" | "half-yearly" | "final" | "attendance_sheet">("monthly");
@@ -45,12 +47,8 @@ export function ReportsExportSheet() {
   const exportMutation = useMutation(
     trpc.grades.exportClassReport.mutationOptions({
       onSuccess: (data) => {
-        downloadBase64(data.data, data.filename, data.mimeType);
-        toast({
-          title: t("reports.export_excel_success"),
-          description: t("reports.export_excel_success_desc"),
-          variant: "success",
-        });
+        setExportData({ runId: data.jobId });
+        setIsExporting(true);
         setParams({ exportReport: null });
       },
       onError: (err) => {

@@ -1,6 +1,7 @@
 import { Worker, type Job } from "bullmq";
-import { connection, QUEUE_NAME, type CertificateExportData } from "./queue";
+import { connection, QUEUE_NAME, type CertificateExportData, type ReportGenerationData } from "./queue";
 import { handleCertificateExport } from "./handlers/certificate-export";
+import { handleReportGeneration } from "./handlers/report-generation";
 import { logger } from "@midday/logger";
 
 /**
@@ -30,6 +31,11 @@ export const startWorker = () => {
         case "certificate-export":
           return handleCertificateExport(
             job as Job<CertificateExportData>
+          );
+
+        case "report-generation":
+          return handleReportGeneration(
+            job as Job<ReportGenerationData>
           );
 
         case "student-import":

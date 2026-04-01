@@ -18,6 +18,7 @@
   "dependencies": {
     "@midday/auth": "workspace:*",
     "@midday/db": "workspace:*",
+    "@midday/export": "workspace:*",
     "@midday/logger": "workspace:*",
     "@midday/storage": "workspace:*",
     "@midday/utils": "workspace:*",
