@@ -175,7 +175,7 @@ export async function generateStudentExport(
         cell.fill = {
            type: "pattern",
            pattern: "solid",
-           fgColor: { argb: "FFFFEBEE" } // Light red
+           fgColor: { argb: "#FA9C9C" } // Light red
         };
       });
     }
@@ -378,7 +378,6 @@ export async function generateClassBulkReportExport(
   const titleRow = worksheet.addRow([titleText]);
   titleRow.font = { size: 18, bold: true, color: { argb: primaryArgb } };
   titleRow.alignment = { horizontal: "center", vertical: "middle" };
-  worksheet.addRow([]);
 
   if (studentsData.length === 0) {
     worksheet.addRow(["لايوجد بيانات"]);
@@ -420,7 +419,7 @@ export async function generateClassBulkReportExport(
 
   const row2 = ["", "", ""];
   for (const subject of allSubjects) {
-    for (let i = columnsRef.length - 1; i >= 0; i--) {
+    for (let i = 0; i < columnsRef.length; i++) {
         const colTitle = columnsRef[i];
         if (!colTitle) continue;
         const maxScore = columnMaxScoresRef[colTitle] ? `${columnMaxScoresRef[colTitle]}` : "";
@@ -467,7 +466,7 @@ export async function generateClassBulkReportExport(
       
       // If subject header and not the name/ID part, use soft shade
       if (row.number === header1.number && colIndex > 3) {
-         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: softPrimaryArgb } };
+         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: mediumSoftPrimaryArgb } };
       }
     });
   });
@@ -796,3 +795,35 @@ export async function generateStudentsParentsExport(
 
   return Buffer.from(await workbook.xlsx.writeBuffer());
 }
+
+export function generateAttendanceFilename(
+  className: string,
+  format: "xlsx" | "csv",
+): string {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, -5);
+  const safeName = className.replace(/[^a-zA-Z0-9-_\u0600-\u06FF]/g, "_");
+  return `${safeName}_كشف_الحضور_${timestamp}.${format}`;
+}
+
+export function generateParentsReportFilename(
+  className: string,
+  format: "xlsx" | "csv",
+): string {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, -5);
+  const safeName = className.replace(/[^a-zA-Z0-9-_\u0600-\u06FF]/g, "_");
+  return `${safeName}_بيانات_الأهالي_${timestamp}.${format}`;
+}
+
+export function generateBulkReportFilename(
+  className: string,
+  type: string,
+  format: "xlsx" | "csv",
+  monthText?: string
+): string {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, -5);
+  const safeName = className.replace(/[^a-zA-Z0-9-_\u0600-\u06FF]/g, "_");
+  const typeText = type === "monthly" ? "شهري" : type === "half-yearly" ? "نصفي" : type === "final" ? "نهائي" : "درجات";
+  const monthPart = monthText ? `_${monthText.replace(/[^a-zA-Z0-9-_\u0600-\u06FF]/g, "_")}` : "";
+  return `${safeName}_تقرير_${typeText}${monthPart}_${timestamp}.${format}`;
+}
+

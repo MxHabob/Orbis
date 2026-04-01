@@ -2,7 +2,14 @@ import type { Job } from "bullmq";
 import type { ReportGenerationData } from "../queue";
 import { logger } from "@midday/logger";
 import { getClassBulkReportData, getClassesV4 } from "@midday/db/queries";
-import { generateClassBulkReportExport, generateAttendanceSheetExport, generateStudentsParentsExport } from "@midday/export";
+import { 
+  generateClassBulkReportExport, 
+  generateAttendanceSheetExport, 
+  generateStudentsParentsExport,
+  generateAttendanceFilename,
+  generateParentsReportFilename,
+  generateBulkReportFilename
+} from "@midday/export";
 import { uploadFile } from "@midday/storage";
 import { createDocument } from "@midday/db/queries/documents";
 
@@ -64,11 +71,20 @@ export async function handleReportGeneration(job: Job<ReportGenerationData>) {
 
     await job.updateProgress(80);
 
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, -5);
-    const safeName = classData.name.replace(/[\/\\?%*:|"<>]/g, '_');
-    const monthPart = monthText ? `_${monthText.replace(/[\/\\?%*:|"<>]/g, '_')}` : "";
-    const filename = `${safeName}_${type}${monthPart}_report_${timestamp}.${format}`;
-    const pdfTitle = `تقرير ${type} - ${classData.name}`;
+    let filename: string;
+    let pdfTitle: string;
+
+    if (type === "attendance_sheet") {
+      filename = generateAttendanceFilename(classData.name, format);
+      pdfTitle = `كشف الحضور والغياب - ${classData.name}`;
+    } else if (type === "students_parents_data") {
+      filename = generateParentsReportFilename(classData.name, format);
+      pdfTitle = `بيانات الطلاب والأهالي - ${classData.name}`;
+    } else {
+      filename = generateBulkReportFilename(classData.name, type, format, monthText);
+      const typeText = type === "monthly" ? "شهري" : type === "half-yearly" ? "نصفي" : type === "final" ? "نهائي" : "درجات";
+      pdfTitle = `تقرير درجات ${typeText} - ${classData.name}`;
+    }
 
     const mimeType = format === "xlsx" 
       ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" 
