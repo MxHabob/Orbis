@@ -151,12 +151,12 @@ export const studentsRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input }) => {
-      const { getClassesV3 } = await import("@midday/db/queries");
+      const { getClassesV4 } = await import("@midday/db/queries");
       const { getClassStatistics, getStudentsByClassId } = await import("@midday/db/queries");
       
       const classIdNumber = Number(input.classId);
       
-      const allClasses = await getClassesV3({
+      const allClasses = await getClassesV4({
         flat: true,
         limit: 1,
       });

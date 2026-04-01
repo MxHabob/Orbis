@@ -113,9 +113,9 @@ export const gradesRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       const data = await getGradeGridData(input);
       const { generateGradesExport, generateGradesFilename } = await import("@api/utils/excel-export");
-      const { getClassesV3 } = await import("@midday/db/queries");
+      const { getClassesV4 } = await import("@midday/db/queries");
 
-      const allClasses = await getClassesV3({
+      const allClasses = await getClassesV4({
         flat: true,
         limit: 1,
       });
