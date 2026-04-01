@@ -34,6 +34,29 @@ export function hexToArgb(hex?: string): string {
 }
 
 /**
+ * Lightens a hex color by a given percentage
+ * @param hex - The hex color (e.g., #RRGGBB)
+ * @param percent - Percentage to lighten (0-100)
+ * @returns Lightened ARGB string
+ */
+export function getLightenedArgb(hex?: string, percent: number = 80): string {
+  if (!hex) hex = "#4A90E2";
+  const cleanHex = hex.replace("#", "");
+  
+  const r = parseInt(cleanHex.substring(0, 2), 16);
+  const g = parseInt(cleanHex.substring(2, 4), 16);
+  const b = parseInt(cleanHex.substring(4, 6), 16);
+
+  const lighten = (val: number) => {
+    const newVal = Math.floor(val + (255 - val) * (percent / 100));
+    return newVal.toString(16).padStart(2, '0').toUpperCase();
+  };
+
+  return `FF${lighten(r)}${lighten(g)}${lighten(b)}`;
+}
+
+
+/**
  * Generate Excel/CSV export for students in a class
  * Following 2026 best practices:
  * - Modern ExcelJS library
@@ -54,28 +77,40 @@ export async function generateStudentExport(
 
   const primaryArgb = hexToArgb(options.classColor);
 
-  const worksheet = workbook.addWorksheet("Students", {
+  const worksheet = workbook.addWorksheet("قائمة الطلاب", {
+    views: [{ rightToLeft: true }], // Adding RTL support for Arab eyes
     properties: { tabColor: { argb: primaryArgb } },
   });
 
-  // Add header section
-  const titleRow = worksheet.addRow([
-    `Class Report: ${className}${academicYear ? ` - ${academicYear}` : ""}`,
-  ]);
-  titleRow.font = { size: 16, bold: true };
-  titleRow.height = 25;
+  // Define columns (in Arabic)
+  const columns = [
+    { header: "رقم الطالب", key: "studentNumber", width: 20 },
+    { header: "الاسم", key: "name", width: 30 },
+    { header: "البريد الإلكتروني", key: "email", width: 30 },
+    { header: "الجوال", key: "phone", width: 20 },
+    { header: "الجنس", key: "sex", width: 15 },
+    { header: "المتوسط", key: "average", width: 12 },
+    { header: "الحالة", key: "status", width: 15 },
+  ];
+
+  const totalCols = columns.length;
+  const titleRow = worksheet.addRow([`تقرير بيانات الفصل: ${className}${academicYear ? ` - ${academicYear}` : ""}`]);
+  worksheet.mergeCells(titleRow.number, 1, titleRow.number, totalCols);
+  titleRow.font = { size: 16, bold: true, color: { argb: primaryArgb } }; // Use primary color for header title
+  titleRow.alignment = { horizontal: "center", vertical: "middle" };
+  titleRow.height = 30;
 
   // Add statistics if available
   if (statistics) {
     worksheet.addRow([]);
     const statsRow = worksheet.addRow([
-      "Total Students:",
+      "إجمالي الطلاب:",
       statistics.totalCount || 0,
-      "Passed:",
+      "الناجحين:",
       statistics.passedCount || 0,
-      "Failed:",
+      "الراسبين:",
       statistics.failedCount || 0,
-      "Average:",
+      "المتوسط العام:",
       statistics.averageGrade ? `${statistics.averageGrade.toFixed(2)}%` : "N/A",
     ]);
     statsRow.font = { bold: true };
@@ -84,16 +119,6 @@ export async function generateStudentExport(
     worksheet.addRow([]);
   }
 
-  // Define columns
-  const columns = [
-    { header: "Student Number", key: "studentNumber", width: 20 },
-    { header: "Name", key: "name", width: 30 },
-    { header: "Email", key: "email", width: 30 },
-    { header: "Phone", key: "phone", width: 20 },
-    { header: "Gender", key: "sex", width: 15 },
-    { header: "Average", key: "average", width: 12 },
-    { header: "Status", key: "status", width: 15 },
-  ];
 
   // Add column headers
   const headerRow = worksheet.addRow(columns.map((col) => col.header));
@@ -209,8 +234,8 @@ export function generateExportFilename(
     .toISOString()
     .replace(/[:.]/g, "-")
     .slice(0, -5);
-  const safeName = className.replace(/[^a-zA-Z0-9-_]/g, "_");
-  return `${safeName}_students_${timestamp}.${format}`;
+  const safeName = className.replace(/[^a-zA-Z0-9-_\u0600-\u06FF]/g, "_"); // Support Arabic characters in filename
+  return `${safeName}_طلاب_${timestamp}.${format}`;
 }
 
 export interface GradesExportOptions extends ExportOptions {
@@ -233,19 +258,25 @@ export async function generateGradesExport(
   const { className, academicYear, assessmentItems, format } = options;
 
   const workbook = new ExcelJS.Workbook();
-  const worksheet = workbook.addWorksheet("Grades");
+  const worksheet = workbook.addWorksheet("كشف الدرجات", {
+    views: [{ rightToLeft: true }],
+  });
 
-  // Title
+  const totalCols = 2 + assessmentItems.length;
   const titleRow = worksheet.addRow([
-    `Grades Report: ${className}${academicYear ? ` - ${academicYear}` : ""}`,
+    `تقرير درجات الفصل: ${className}${academicYear ? ` - ${academicYear}` : ""}`,
   ]);
-  titleRow.font = { size: 16, bold: true };
+  worksheet.mergeCells(titleRow.number, 1, titleRow.number, totalCols);
+  const primaryArgb = hexToArgb(options.classColor);
+  titleRow.font = { size: 18, bold: true, color: { argb: primaryArgb } };
+  titleRow.alignment = { horizontal: "center", vertical: "middle" };
+  titleRow.height = 30;
   worksheet.addRow([]);
 
   // Columns definition
   const columns = [
-    { header: "Student Number", key: "studentNumber", width: 20 },
-    { header: "Name", key: "name", width: 30 },
+    { header: "رقم الطالب", key: "studentNumber", width: 20 },
+    { header: "الاسم", key: "name", width: 30 },
     ...assessmentItems.map((item) => ({
       header: item.title,
       key: `item_${item.id}`,
@@ -255,7 +286,6 @@ export async function generateGradesExport(
 
   // Header row
   const headerRow = worksheet.addRow(columns.map((col) => col.header));
-  const primaryArgb = hexToArgb(options.classColor);
 
   headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
   headerRow.fill = {
@@ -302,8 +332,8 @@ export function generateGradesFilename(
     .toISOString()
     .replace(/[:.]/g, "-")
     .slice(0, -5);
-  const safeName = className.replace(/[^a-zA-Z0-9-_]/g, "_");
-  return `${safeName}_grades_${timestamp}.${format}`;
+  const safeName = className.replace(/[^a-zA-Z0-9-_\u0600-\u06FF]/g, "_");
+  return `${safeName}_درجات_${timestamp}.${format}`;
 }
 
 export interface ClassBulkReportStudent {
@@ -369,10 +399,16 @@ export async function generateClassBulkReportExport(
   }
   
   const header1 = worksheet.addRow(row1);
-  header1.font = { bold: true, size: 12 };
+  header1.font = { bold: true, size: 12, color: { argb: primaryArgb } }; // Same as primary color but bold 
   header1.alignment = { horizontal: "center", vertical: "middle" };
-  // 2026: Using a very soft gray-green or subtle brand accent for subjects header
-  header1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F5F5' } }; 
+  const softPrimaryArgb = getLightenedArgb(options.classColor, 95); // Very soft primary shade
+  const mediumSoftPrimaryArgb = getLightenedArgb(options.classColor, 85); // A bit more distinct
+  
+  header1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: softPrimaryArgb } }; 
+
+  const totalCols = row1.length;
+  worksheet.mergeCells(titleRow.number, 1, titleRow.number, totalCols);
+  titleRow.height = 35; // Taller header for cleaner look
 
   let colIndex = 4;
   for (const subject of allSubjects) {
@@ -403,6 +439,13 @@ export async function generateClassBulkReportExport(
   worksheet.mergeCells(header1.number, 2, header2.number, 2); 
   worksheet.mergeCells(header1.number, 3, header2.number, 3); 
 
+  // Style the merged name/ID header cells separately to ensure they looks premium
+  [1, 2, 3].forEach(colIndex => {
+    const cell = header1.getCell(colIndex);
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: primaryArgb } };
+    cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+  });
+
   worksheet.getColumn(1).width = 5;
   worksheet.getColumn(2).width = 15;
   worksheet.getColumn(3).width = 35;
@@ -413,13 +456,19 @@ export async function generateClassBulkReportExport(
   }
 
   [header1, header2].forEach(row => {
-    row.eachCell({ includeEmpty: true }, cell => {
+    row.eachCell({ includeEmpty: true }, (cell, colIndex) => {
+      // Border color should be a subtle version of the primary or a clean gray
       cell.border = {
         top: { style: 'thin', color: { argb: "FFE0E0E0" } }, 
         left: { style: 'thin', color: { argb: "FFE0E0E0" } },
         bottom: { style: 'thin', color: { argb: "FFE0E0E0" } }, 
         right: { style: 'thin', color: { argb: "FFE0E0E0" } }
       };
+      
+      // If subject header and not the name/ID part, use soft shade
+      if (row.number === header1.number && colIndex > 3) {
+         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: softPrimaryArgb } };
+      }
     });
   });
 
@@ -450,13 +499,26 @@ export async function generateClassBulkReportExport(
     const dRow = worksheet.addRow(rowData);
     dRow.alignment = { horizontal: "center", vertical: "middle" };
     dRow.height = 25;
-    dRow.eachCell({ includeEmpty: true }, cell => {
+    dRow.eachCell({ includeEmpty: true }, (cell, colIndex) => {
        cell.border = {
          top: { style: 'thin', color: { argb: "FFF0F0F0" } }, 
          left: { style: 'thin', color: { argb: "FFF0F0F0" } },
          bottom: { style: 'thin', color: { argb: "FFF0F0F0" } }, 
          right: { style: 'thin', color: { argb: "FFF0F0F0" } }
        };
+
+       // Alternate row shading for better readability (Subtle brand touch)
+       if (sIdx % 2 !== 0 && colIndex > 3) {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF9F9F9' } };
+       }
+
+       // Coloring for "Total" (المجموع) column if needed
+       // Total columns are every 'subColCount' after col 3
+       const isTotalCol = (colIndex - 3) % subColCount === 0 && colIndex > 3;
+       if (isTotalCol) {
+          cell.font = { bold: true, color: { argb: primaryArgb } }; // Highlight total in Primary color
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: softPrimaryArgb } }; // Soft background
+       }
     });
 
     if (student.status === "auditor" || student.status === "homeschooled") {
