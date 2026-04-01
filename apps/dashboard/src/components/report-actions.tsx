@@ -71,8 +71,8 @@ export function ReportActions({ classId, className }: ReportActionsProps) {
         setExportData({ runId: data.jobId });
         setGlobalExporting(true);
         toast({
-          title: t("common.export_started") as string || "Export Started",
-          description: t("common.export_started_desc") as string || "Your report is being generated in the background.",
+          title: t("common.export_started"),
+          description: t("common.export_started_desc"),
           variant: "success",
         });
       },
@@ -105,8 +105,8 @@ export function ReportActions({ classId, className }: ReportActionsProps) {
       });
 
       toast({
-        title: t("reports.export_excel_success") as string || "Export Successful",
-        description: t("reports.export_excel_success_desc") as string || "Report has been exported to PDF.",
+        title: t("reports.export_excel_success"),
+        description: t("reports.export_excel_success_desc"),
         variant: "success",
       });
     } catch (error: any) {
