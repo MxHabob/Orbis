@@ -80,19 +80,7 @@ export const Canvas = memo(({
     
     // Resize data
     if ("width" in lastEvent) {
-      const el = elements.find(e => e.id === id);
       updates.width = (lastEvent.width / canvasWidth) * 100;
-      
-      // If it's a text/variable, we scale the font size
-      if (el && (el.type === "text" || el.type === "variable") && el.fontSize) {
-          const ratio = lastEvent.width / (lastEvent.lastWidth || lastEvent.width);
-          // Only update font size if it's a significant change to avoid jitter
-          if (ratio !== 1) {
-             const newFontSize = Math.round(el.fontSize * (lastEvent.width / ((el.width || 20) / 100 * canvasWidth)));
-             updates.fontSize = newFontSize;
-          }
-      }
-
       updates.height = lastEvent.height;
       if (lastEvent.drag) {
         updates.x = (lastEvent.drag.left / canvasWidth) * 100;
@@ -299,16 +287,6 @@ export const Canvas = memo(({
                             e.target.style.width = `${e.width}px`;
                             e.target.style.height = `${e.height}px`;
                             e.target.style.transform = e.drag.transform;
-                            
-                            // Real-time font size feedback
-                            const id = e.target.getAttribute("data-id");
-                            const el = elements.find(item => item.id === id);
-                            if (el && (el.type === "text" || el.type === "variable")) {
-                                const ratio = e.width / (el.width ? (el.width / 100 * canvasWidth) : (e.target as HTMLElement).offsetWidth);
-                                const newSize = Math.round((el.fontSize || 18) * ratio);
-                                const textEl = e.target.querySelector('.text-content') as HTMLElement;
-                                if (textEl) textEl.style.fontSize = `${newSize}px`;
-                            }
                         }}
                         onResizeEnd={e => syncElement(e.target.getAttribute("data-id")!, e.lastEvent)}
                         
