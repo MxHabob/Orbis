@@ -22,12 +22,13 @@ interface ClassQueryParams {
  * Optimized to avoid N+1 queries by using advanced SQL aggregation.
  */
 export const getClassesV4 = async (params: ClassQueryParams | number) => {
-  // Normalize params
-  const isNumber = typeof params === "number";
-  const p = isNumber ? { academicYearId: params } : params || {};
-  
-  // Resolve yearId
-  let yearId = p.academicYearId ? Number(p.academicYearId) : undefined;
+  try {
+    // Normalize params
+    const isNumber = typeof params === "number";
+    const p: any = isNumber ? { academicYearId: params } : (params || {});
+    
+    // Resolve yearId
+    let yearId = p.academicYearId ? Number(p.academicYearId) : undefined;
   if (!yearId) {
     const [currentYear] = await db
       .select({ id: academicYears.id })
@@ -133,6 +134,14 @@ export const getClassesV4 = async (params: ClassQueryParams | number) => {
   if (!p.q && !p.sort && !p.flat) await classCache.set(cacheKey, results, 3600);
 
   return results;
+  } catch (error: any) {
+    console.error("[getClassesV4] Server Error:", error?.message || error);
+    // Be very explicit about the error to see the stack trace in dev
+    if (process.env.NODE_ENV === "development") {
+      console.error(error);
+    }
+    throw error;
+  }
 };
 
 export const getClassById = (id: number) => 
