@@ -39,7 +39,7 @@ const mapStudentToVariables = (student: any, type?: string, month?: number) => {
     total_grade_text: stats.total_grade_text || "",
     grade_label: stats.grade_label || "",
     final_result: stats.final_result || "",
-    rank: stats.rank || "1",
+    rank: stats.rank || "",
     org_name: "مدرسة صنعاء النموذجية",
     admin_name: stats.admin_name || "مدير المدرسة",
     vp_name: stats.vp_name || "وكيل المدرسة",
@@ -132,7 +132,7 @@ export default function BulkExportCertificatePage() {
             template={template as any}
             data={{
               ...mapStudentToVariables(student, type, month),
-              rank: rankEntry?.rankLabel || ((student.stats as any)?.rank || "1"),
+              rank: rankEntry?.rankLabel || ((student.stats as any)?.rank || ""),
               rank_percentage: rankEntry?.percentage ?? "",
               rank_total: rankEntry?.totalScore ?? "",
               rank_max: rankEntry?.maxScore ?? "",

@@ -167,7 +167,7 @@ export function StudentCertificateSheet() {
       total_grade_text: stats.total_grade_text || "",
       grade_label: stats.grade_label || "",
       final_result: stats.final_result || "",
-      rank: currentStudentRank?.rankLabel || stats.rank || "1",
+      rank: currentStudentRank?.rankLabel || stats.rank || "",
       rank_percentage: currentStudentRank?.percentage ?? "",
       rank_total: currentStudentRank?.totalScore ?? "",
       rank_max: currentStudentRank?.maxScore ?? "",

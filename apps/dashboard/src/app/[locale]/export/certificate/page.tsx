@@ -37,7 +37,7 @@ const mapStudentToVariables = (student: any, type?: string, month?: number) => {
     total_grade_text: stats.total_grade_text || "",
     grade_label: stats.grade_label || "",
     final_result: stats.final_result || "",
-    rank: stats.rank || "1",
+    rank: stats.rank || "",
     org_name: "مدرسة صنعاء النموذجية",
     admin_name: stats.admin_name || "",
     vp_name: stats.vp_name || "",
@@ -120,7 +120,7 @@ export default function ExportCertificatePage() {
 
   const studentVariables = {
     ...mapStudentToVariables(student as any, type, month),
-    rank: topStudents?.find((item: any) => item.studentId === (student as any)?.userId)?.rankLabel || (((student as any)?.stats as any)?.rank || "1"),
+    rank: topStudents?.find((item: any) => item.studentId === (student as any)?.userId)?.rankLabel || (((student as any)?.stats as any)?.rank || ""),
     rank_percentage: topStudents?.find((item: any) => item.studentId === (student as any)?.userId)?.percentage ?? "",
     rank_total: topStudents?.find((item: any) => item.studentId === (student as any)?.userId)?.totalScore ?? "",
     rank_max: topStudents?.find((item: any) => item.studentId === (student as any)?.userId)?.maxScore ?? "",
