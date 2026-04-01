@@ -86,15 +86,10 @@ export const getAllStudentss = async () => {
         .from(students)
         .innerJoin(users, eq(students.userId, users.id))
         .leftJoin(classes, eq(students.currentClassId, classes.id))
-        .leftJoin(academicYears, eq(
-            db.select({ id: academicYears.id })
-              .from(academicYears)
-              .where(eq(academicYears.isCurrent, true))
-              .limit(1),
-            academicYears.id
-        )) // Fallback to current year if enrollment missing or complex
-        .orderBy(asc(users.name))
-        .limit(10);
+        .leftJoin(enrollments, and(eq(enrollments.studentId, students.userId), eq(enrollments.classId, students.currentClassId)))
+        .leftJoin(academicYears, eq(enrollments.academicYearId, academicYears.id))
+        .orderBy(desc(academicYears.yearName), asc(users.name))
+        .limit(50);
 };
 
 export const getStudentsByClassId = async (

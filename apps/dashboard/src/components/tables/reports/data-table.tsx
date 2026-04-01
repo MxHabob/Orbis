@@ -38,7 +38,6 @@ export function DataTable({ initialSettings }: Props) {
   const trpc = useTRPC();
   const { params } = useSortParams();
   const { filter, hasFilters } = useClassesFilterParams();
-  const { data: session } = authClient.useSession();
   const parentRef = useRef<HTMLDivElement>(null);
 
   const { setColumns, setRowSelection, rowSelection } = useReportStore();

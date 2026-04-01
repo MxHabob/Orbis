@@ -7,7 +7,7 @@ import {
   createClass,
   deleteClass,
   getClassById,
-  getClassesV3,
+  getClassesV4,
   updateClass,
 } from "@midday/db/queries";
 import { z } from "zod";
@@ -31,7 +31,7 @@ export const classesRouter = createTRPCRouter({
       const limit = input?.limit ?? 50;
       const cursor = input?.cursor ?? 0;
 
-      const data = await getClassesV3({
+      const data = await getClassesV4({
         ...input,
         limit: limit + 1,
         offset: cursor,
