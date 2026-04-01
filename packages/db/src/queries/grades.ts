@@ -50,10 +50,20 @@ export const getTopStudents = async (params: {
   const limit = Math.max(1, Math.min(params.limit ?? 10, 10));
   const months = getMonthsForRankingPeriod(params.period, params.month);
   const monthPart = params.period === "monthly" ? params.month : "all";
-  const cacheKey = `top:${params.classId}:${params.academicYearId}:${params.period}:${monthPart}:${limit}`;
+  const cacheKey = `top:v3:${params.classId}:${params.academicYearId}:${params.period}:${monthPart}:${limit}`;
 
   const cached = await rankCache.get<any[]>(cacheKey);
   if (cached) return cached;
+
+  // Handle child classes (sections)
+  const childClasses = await db
+    .select({ id: classes.id })
+    .from(classes)
+    .where(eq(classes.parentClassId, params.classId));
+
+  const targetClassIds = childClasses.length > 0 
+    ? [params.classId, ...childClasses.map(c => c.id)] 
+    : [params.classId];
 
   const enrolledStudents = await db
     .select({
@@ -67,7 +77,7 @@ export const getTopStudents = async (params: {
     .innerJoin(users, eq(students.userId, users.id))
     .where(
       and(
-        eq(enrollments.classId, params.classId),
+        inArray(enrollments.classId, targetClassIds),
         eq(enrollments.academicYearId, params.academicYearId),
         eq(enrollments.status, "active"),
       ),
@@ -88,7 +98,7 @@ export const getTopStudents = async (params: {
     .innerJoin(academicTerms, eq(assessmentItems.termId, academicTerms.id))
     .where(
       and(
-        eq(assessmentItems.classId, params.classId),
+        inArray(assessmentItems.classId, targetClassIds),
         eq(academicTerms.academicYearId, params.academicYearId),
         inArray(assessmentItems.month, months),
       ),
@@ -151,15 +161,20 @@ export const getTopStudents = async (params: {
       return a.studentId.localeCompare(b.studentId);
     });
 
+  let currentRank = 0;
   const ranked = rankedBase.map((item, index) => {
-    const prev = index > 0 ? rankedBase[index - 1] : null;
+    const prev = index > 0 ? rankedBase[index - 1]! : null;
     const sameAsPrev =
       !!prev &&
       prev.percentage === item.percentage &&
       prev.totalScore === item.totalScore &&
       prev.scoredItems === item.scoredItems;
-    const rank = sameAsPrev && prev ? (prev as any).__rank : index + 1;
-    return { ...item, __rank: rank };
+    
+    if (!sameAsPrev) {
+      currentRank = index + 1;
+    }
+    
+    return { ...item, __rank: currentRank };
   });
 
   const top = ranked.filter((r) => r.__rank <= limit);

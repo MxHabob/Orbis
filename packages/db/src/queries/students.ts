@@ -201,7 +201,7 @@ export const getStudentsByClassId = async (
 
 
 export const getStudentByUserId = async (userId: string) => {
-    const cacheKey = `user:${userId}`;
+    const cacheKey = `user:v2:${userId}`;
     const cached = await studentCache.get<any>(cacheKey);
     if (cached) return cached;
 
@@ -262,6 +262,7 @@ export const getStudentsByUserIds = async (userIds: string[]) => {
                 id: classes.id,
                 name: classes.name,
                 yearName: academicYears.yearName,
+                academicYearId: enrollments.academicYearId,
             },
         })
         .from(students)
@@ -273,7 +274,7 @@ export const getStudentsByUserIds = async (userIds: string[]) => {
 };
 
 export const getStudentById = async (id: string) => {
-    const cacheKey = `user:${id}`;
+    const cacheKey = `user:v2:${id}`;
     const cached = await studentCache.get<any>(cacheKey);
     if (cached) return cached;
 
@@ -295,6 +296,7 @@ export const getStudentById = async (id: string) => {
                 id: classes.id,
                 name: classes.name,
                 yearName: academicYears.yearName,
+                academicYearId: enrollments.academicYearId,
             },
         })
         .from(students)
@@ -313,7 +315,7 @@ export const getStudentById = async (id: string) => {
 };
 
 export const getStudentByNumber = async (studentNumber: string) => {
-    const cacheKey = `number:${studentNumber}`;
+    const cacheKey = `user:v2:${studentNumber}`;
     const cached = await studentCache.get<any>(cacheKey);
     if (cached) return cached;
 
@@ -335,6 +337,7 @@ export const getStudentByNumber = async (studentNumber: string) => {
                 id: classes.id,
                 name: classes.name,
                 yearName: academicYears.yearName,
+                academicYearId: enrollments.academicYearId,
             },
         })
         .from(students)
@@ -399,7 +402,7 @@ export const createStudent = async (data: CreateStudentParams) => {
 
 export const updateStudent = async (userId: string, data: Partial<CreateStudentParams>) => {
     const [result] = await db.update(students).set(data).where(eq(students.userId, userId)).returning();
-    await studentCache.delete(`user:${userId}`);
+    await studentCache.delete(`user:v2:${userId}`);
     if (result) await studentCache.delete(`number:${result.studentNumber}`);
     return result;
 };
@@ -485,12 +488,12 @@ export const upsertStudent = async (data: any) => {
                 }
             }
 
-            await studentCache.delete(`user:${targetUserId}`);
+            await studentCache.delete(`user:v2:${targetUserId}`);
             return { id: targetUserId };
         });
     }
 
-    await studentCache.delete(`user:${targetUserId}`);
+    await studentCache.delete(`user:v2:${targetUserId}`);
     return { id: targetUserId };
 };
 
@@ -498,7 +501,7 @@ export const deleteStudent = async (userId: string) => {
     // Usually we delete the user, and cascade deletes student.
     // But if we delete just student profile:
     await db.delete(students).where(eq(students.userId, userId));
-    await studentCache.delete(`user:${userId}`);
+    await studentCache.delete(`user:v2:${userId}`);
 }
 
 export type BulkImportResult = {
