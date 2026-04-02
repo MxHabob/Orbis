@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "../init";
+import { createTRPCRouter, protectedProcedure, teacherProcedure } from "../init";
 import { jobQueue } from "@midday/jobs/queue";
 import { TRPCError } from "@trpc/server";
 
@@ -8,7 +8,7 @@ export const jobsRouter = createTRPCRouter({
    * Get the status of a background job by ID.
    * Returns status, progress, result, and error details.
    */
-  getStatus: protectedProcedure
+  getStatus: teacherProcedure
     .input(z.object({ jobId: z.string() }))
     .query(async ({ input }) => {
       const job = await jobQueue.getJob(input.jobId);

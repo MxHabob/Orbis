@@ -1,4 +1,4 @@
-import { createTRPCRouter, protectedProcedure } from "@api/trpc/init";
+import { createTRPCRouter, protectedProcedure, teacherProcedure } from "@api/trpc/init";
 import { 
   getAttendanceByLesson, 
   getStudentAttendance, 
@@ -28,7 +28,7 @@ export const attendanceRouter = createTRPCRouter({
       return getStudentAttendance(input.studentId, input.startDate, input.endDate);
     }),
 
-  mark: protectedProcedure
+  mark: teacherProcedure
     .input(markAttendanceSchema)
     .mutation(async ({ input, ctx }) => {
       // Automatically set the marker ID if not provided, assuming marker is the logged in user
@@ -39,7 +39,7 @@ export const attendanceRouter = createTRPCRouter({
       return markAttendance(data);
     }),
 
-  bulkMark: protectedProcedure
+  bulkMark: teacherProcedure
     .input(bulkMarkAttendanceSchema)
     .mutation(async ({ input, ctx }) => {
       const data = input.map(record => ({

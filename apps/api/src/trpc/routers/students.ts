@@ -3,7 +3,7 @@ import {
   updateStudentSchema,
   upsertStudentSchema,
 } from "@api/schemas/students";
-import { createTRPCRouter, protectedProcedure } from "@api/trpc/init";
+import { createTRPCRouter, protectedProcedure, adminProcedure, teacherProcedure } from "@api/trpc/init";
 import { TRPCError } from "@trpc/server";
 import {
   createStudent,
@@ -90,25 +90,25 @@ export const studentsRouter = createTRPCRouter({
       return getStudentEnrollments(input.studentId);
     }),
 
-  create: protectedProcedure
+  create: adminProcedure
     .input(createStudentSchema)
     .mutation(async ({ input }) => {
       return createStudent(input);
     }),
 
-  update: protectedProcedure
+  update: adminProcedure
     .input(updateStudentSchema)
     .mutation(async ({ input }) => {
       return updateStudent(input.userId, input);
     }),
 
-  delete: protectedProcedure
+  delete: adminProcedure
     .input(z.object({ userId: z.string().uuid() }))
     .mutation(async ({ input }) => {
       return deleteStudent(input.userId);
     }),
 
-  import: protectedProcedure
+  import: adminProcedure
     .input(z.object({
       classId: z.number(),
       academicYearId: z.number().optional(),
@@ -125,7 +125,7 @@ export const studentsRouter = createTRPCRouter({
       const { bulkImportStudents } = await import("@midday/db/queries");
       return bulkImportStudents(input.classId, input.students, input.academicYearId);
     }),
-  upsert: protectedProcedure
+  upsert: adminProcedure
     .input(upsertStudentSchema)
     .mutation(async ({ input }) => {
       try {
@@ -142,7 +142,7 @@ export const studentsRouter = createTRPCRouter({
       }
     }),
 
-  exportByClassId: protectedProcedure
+  exportByClassId: teacherProcedure
     .input(
       z.object({
         classId: z.string(),

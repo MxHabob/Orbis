@@ -1,4 +1,4 @@
-import { createTRPCRouter, protectedProcedure } from "@api/trpc/init";
+import { createTRPCRouter, protectedProcedure, teacherProcedure } from "@api/trpc/init";
 import { 
   getStudentGrades, 
   createGradeEntry, 
@@ -52,7 +52,7 @@ export const gradesRouter = createTRPCRouter({
       return getTopStudents(input);
     }),
 
-  createEntry: protectedProcedure
+  createEntry: teacherProcedure
     .input(createGradeEntrySchema)
     .mutation(async ({ input, ctx }) => {
       const data = {
@@ -62,7 +62,7 @@ export const gradesRouter = createTRPCRouter({
       return createGradeEntry(data);
     }),
 
-  updateEntry: protectedProcedure
+  updateEntry: teacherProcedure
     .input(updateGradeEntrySchema)
     .mutation(async ({ input, ctx }) => {
       const data = {
@@ -72,7 +72,7 @@ export const gradesRouter = createTRPCRouter({
       return updateGradeEntry(input.id, data);
     }),
 
-  batchUpsert: protectedProcedure
+  batchUpsert: teacherProcedure
     .input(batchUpsertGradesSchema)
     .mutation(async ({ input, ctx }) => {
       const grades = input.grades.map(g => ({
@@ -82,7 +82,7 @@ export const gradesRouter = createTRPCRouter({
       return batchUpsertGrades(grades, ctx.session.user.id);
     }),
 
-  bulkImport: protectedProcedure
+  bulkImport: teacherProcedure
     .input(bulkImportGradesSchema)
     .mutation(async ({ input, ctx }) => {
       return bulkImportGrades(
@@ -104,7 +104,7 @@ export const gradesRouter = createTRPCRouter({
       return getCertificateData(input);
     }),
 
-  export: protectedProcedure
+  export: teacherProcedure
     .input(
       getGradeGridDataSchema.extend({
         format: z.enum(["xlsx", "csv"]).default("xlsx"),
@@ -156,7 +156,7 @@ export const gradesRouter = createTRPCRouter({
       };
     }),
 
-  exportClassReport: protectedProcedure
+  exportClassReport: teacherProcedure
     .input(
       z.object({
         classId: z.number(),

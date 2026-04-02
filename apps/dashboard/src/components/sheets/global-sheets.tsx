@@ -25,13 +25,6 @@ import { ReportsExportSheet } from "@/components/sheets/reports-export-sheet";
 export function GlobalSheets() {
   return (
     <>
-      {/* <TrackerUpdateSheet />
-      <TrackerCreateSheet />
-      <TrackerScheduleSheet /> */}
-
-      {/* <CategoryCreateSheet />
-      <CategoryEditSheet /> */}
-
       <StudentCreateSheet />
       <StudentEditSheet />
       <StudentDetailsSheet />
@@ -40,29 +33,11 @@ export function GlobalSheets() {
       <ClassEditSheet />
       <SubjectCreateSheet />
       <SubjectEditSheet />
-      {/* <CustomerDetailsSheet /> */}
-      {/* <CustomerEditSheet /> */}
-
-      {/* <ProductCreateSheet />
-      <ProductEditSheet /> */}
-
-      {/* <TransactionSheet />
-      <TransactionCreateSheet />
-      <TransactionEditSheet /> */}
-
-      {/* <SelectBankAccountsModal /> */}
-
-      {/* <SearchModal /> */}
-
+      <SearchModal />
       <DocumentSheet />
-      {/* <InboxDetailsSheet /> */}
 
       <ImportModal />
-      {/* <ConnectTransactionsModal /> */}
 
-      {/* <InvoiceDetailsSheet /> */}
-      {/* <InvoiceSheet /> */}
-      {/* <EditRecurringSheet /> */}
       <CertificateSheet />
       <LessonCreateSheet />
       <LessonEditSheet />

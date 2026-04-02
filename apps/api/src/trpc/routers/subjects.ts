@@ -2,7 +2,7 @@ import {
   createSubjectSchema,
   updateSubjectSchema,
 } from "@api/schemas/subjects";
-import { createTRPCRouter, protectedProcedure } from "@api/trpc/init";
+import { createTRPCRouter, protectedProcedure, adminProcedure } from "@api/trpc/init";
 import {
   createSubject,
   deleteSubject,
@@ -23,19 +23,19 @@ export const subjectsRouter = createTRPCRouter({
       return getSubjectById(input.id);
     }),
 
-  create: protectedProcedure
+  create: adminProcedure
     .input(createSubjectSchema)
     .mutation(async ({ input }) => {
       return createSubject(input);
     }),
 
-  update: protectedProcedure
+  update: adminProcedure
     .input(updateSubjectSchema)
     .mutation(async ({ input }) => {
       return updateSubject(input.id, input);
     }),
 
-  delete: protectedProcedure
+  delete: adminProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       return deleteSubject(input.id);

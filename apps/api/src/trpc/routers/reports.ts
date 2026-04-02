@@ -1,6 +1,5 @@
-
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "../init";
+import { createTRPCRouter, protectedProcedure, teacherProcedure } from "../init";
 import { 
   getStudentCount, 
   getTeacherCount, 
@@ -12,7 +11,7 @@ import {
 } from "@midday/db/queries/metrics";
 
 export const reportsRouter = createTRPCRouter({
-  getSchoolMetrics: protectedProcedure
+  getSchoolMetrics: teacherProcedure
     .input(
       z.object({
         from: z.string().optional(),

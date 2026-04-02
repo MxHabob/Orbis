@@ -2,7 +2,7 @@ import {
   createNotificationSchema,
   updateNotificationSchema,
 } from "@api/schemas/notifications";
-import { createTRPCRouter, protectedProcedure } from "@api/trpc/init";
+import { createTRPCRouter, protectedProcedure, teacherProcedure } from "@api/trpc/init";
 import {
   createNotification,
   getUnreadCount,
@@ -35,7 +35,7 @@ export const notificationsRouter = createTRPCRouter({
     return getUnreadCount(session.user.id);
   }),
 
-  create: protectedProcedure
+  create: teacherProcedure
     .input(createNotificationSchema)
     .mutation(async ({ input }) => {
       return createNotification(input);

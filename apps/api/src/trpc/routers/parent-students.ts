@@ -1,4 +1,4 @@
-import { createTRPCRouter, protectedProcedure } from "@api/trpc/init";
+import { createTRPCRouter, protectedProcedure, adminProcedure } from "@api/trpc/init";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import {
@@ -17,7 +17,7 @@ export const parentStudentsRouter = createTRPCRouter({
   // ==========================================
   // Link a parent to a single student
   // ==========================================
-  link: protectedProcedure
+  link: adminProcedure
     .input(
       z.object({
         parentId: z.string().uuid(),
@@ -26,12 +26,7 @@ export const parentStudentsRouter = createTRPCRouter({
         isPrimary: z.boolean().default(false),
       })
     )
-    .mutation(async ({ ctx: { db, session }, input }) => {
-      // Only admin can manage parent-student links
-      const currentUser = await getUserById(db, session.user.id);
-      if (currentUser?.role !== "admin") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Only admins can manage parent-student links" });
-      }
+    .mutation(async ({ ctx: { db }, input }) => {
 
       // Verify the parent user actually has the "parent" role
       const parentUser = await getUserById(db, input.parentId);
@@ -50,7 +45,7 @@ export const parentStudentsRouter = createTRPCRouter({
   // ==========================================
   // Bulk link: parent → multiple students
   // ==========================================
-  linkMany: protectedProcedure
+  linkMany: adminProcedure
     .input(
       z.object({
         parentId: z.string().uuid(),
@@ -63,11 +58,7 @@ export const parentStudentsRouter = createTRPCRouter({
         ).min(1).max(20),
       })
     )
-    .mutation(async ({ ctx: { db, session }, input }) => {
-      const currentUser = await getUserById(db, session.user.id);
-      if (currentUser?.role !== "admin") {
-        throw new TRPCError({ code: "FORBIDDEN" });
-      }
+    .mutation(async ({ ctx: { db }, input }) => {
 
       const parentUser = await getUserById(db, input.parentId);
       if (!parentUser || parentUser.role !== "parent") {
@@ -80,18 +71,14 @@ export const parentStudentsRouter = createTRPCRouter({
   // ==========================================
   // Unlink parent from student
   // ==========================================
-  unlink: protectedProcedure
+  unlink: adminProcedure
     .input(
       z.object({
         parentId: z.string().uuid(),
         studentId: z.string().uuid(),
       })
     )
-    .mutation(async ({ ctx: { db, session }, input }) => {
-      const currentUser = await getUserById(db, session.user.id);
-      if (currentUser?.role !== "admin") {
-        throw new TRPCError({ code: "FORBIDDEN" });
-      }
+    .mutation(async ({ ctx: { db }, input }) => {
 
       await unlinkParentFromStudent(db, input.parentId, input.studentId);
       return { success: true };
@@ -100,7 +87,7 @@ export const parentStudentsRouter = createTRPCRouter({
   // ==========================================
   // Update relationship details (e.g. change to primary contact)
   // ==========================================
-  updateLink: protectedProcedure
+  updateLink: adminProcedure
     .input(
       z.object({
         parentId: z.string().uuid(),
@@ -109,11 +96,7 @@ export const parentStudentsRouter = createTRPCRouter({
         isPrimary: z.boolean().optional(),
       })
     )
-    .mutation(async ({ ctx: { db, session }, input }) => {
-      const currentUser = await getUserById(db, session.user.id);
-      if (currentUser?.role !== "admin") {
-        throw new TRPCError({ code: "FORBIDDEN" });
-      }
+    .mutation(async ({ ctx: { db }, input }) => {
 
       const { parentId, studentId, ...data } = input;
       return updateParentStudentLink(db, parentId, studentId, data);

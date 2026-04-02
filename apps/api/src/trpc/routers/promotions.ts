@@ -6,7 +6,7 @@ import {
   promotionStatisticsSchema,
   overridePromotionSchema,
 } from "@api/schemas/promotions";
-import { createTRPCRouter, protectedProcedure } from "@api/trpc/init";
+import { createTRPCRouter, adminProcedure } from "@api/trpc/init";
 import {
   previewClassPromotion,
   executeBulkPromotion,
@@ -21,7 +21,7 @@ export const promotionsRouter = createTRPCRouter({
    * معاينة الترفيع - عرض قائمة الطلاب مع نتائجهم ومقترح الترفيع
    * Preview promotion results for a class before executing
    */
-  preview: protectedProcedure
+  preview: adminProcedure
     .input(previewPromotionSchema)
     .query(async ({ input }) => {
       return previewClassPromotion({
@@ -34,7 +34,7 @@ export const promotionsRouter = createTRPCRouter({
    * تنفيذ الترفيع الجماعي
    * Execute bulk promotion for a class of students
    */
-  execute: protectedProcedure
+  execute: adminProcedure
     .input(executePromotionSchema)
     .mutation(async ({ input, ctx }) => {
       return executeBulkPromotion({
@@ -50,7 +50,7 @@ export const promotionsRouter = createTRPCRouter({
    * التراجع عن الترفيع
    * Rollback a previous promotion operation
    */
-  rollback: protectedProcedure
+  rollback: adminProcedure
     .input(rollbackPromotionSchema)
     .mutation(async ({ input, ctx }) => {
       return rollbackPromotion({
@@ -65,7 +65,7 @@ export const promotionsRouter = createTRPCRouter({
    * سجل الترفيعات
    * Get promotion history with filters
    */
-  historyRecords: protectedProcedure
+  historyRecords: adminProcedure
     .input(promotionHistorySchema)
     .query(async ({ input }) => {
       return getPromotionHistory({
@@ -82,7 +82,7 @@ export const promotionsRouter = createTRPCRouter({
    * إحصائيات الترفيع
    * Get promotion statistics for a year/class
    */
-  statistics: protectedProcedure
+  statistics: adminProcedure
     .input(promotionStatisticsSchema)
     .query(async ({ input }) => {
       return getPromotionStatistics({
@@ -95,7 +95,7 @@ export const promotionsRouter = createTRPCRouter({
    * تجاوز يدوي - ترفيع أو تأخير طالب بقرار إداري
    * Override promotion decision for a single student
    */
-  override: protectedProcedure
+  override: adminProcedure
     .input(overridePromotionSchema)
     .mutation(async ({ input, ctx }) => {
       return overrideStudentPromotion({

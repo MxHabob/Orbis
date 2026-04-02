@@ -4,6 +4,7 @@ import { FormatAmount } from "@/components/format-amount";
 import { useClassParams } from "@/hooks/use-class-params";
 import { useDocumentParams } from "@/hooks/use-document-params";
 import { useFileUrl } from "@/hooks/use-file-url";
+import { useReportExportParams } from "@/hooks/use-report-export-params";
 import { useStudentParams } from "@/hooks/use-student-params";
 import { useSubjectParams } from "@/hooks/use-subject-params";
 import { useTrackerParams } from "@/hooks/use-tracker-params";
@@ -27,6 +28,7 @@ import { Spinner } from "@midday/ui/spinner";
 import { formatDate } from "@midday/utils/format";
 import { useQuery } from "@tanstack/react-query";
 import { formatISO } from "date-fns";
+import { useI18n } from "@/locales/client";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
@@ -152,24 +154,24 @@ function DownloadButton({
 }
 
 // Helper function to format group names
-const formatGroupName = (name: string): string | null => {
+const formatGroupName = (name: string, t: any): string | null => {
   switch (name) {
     case "shortcut":
-      return "Shortcuts";
+      return t("common.actions");
     case "student":
-      return "Students";
+      return t("roles.student");
     case "class":
-      return "Classes";
+      return t("settings.classes");
     case "staff":
-      return "Staff";
+      return t("settings.staff");
     case "subject":
-      return "Subjects";
+      return t("settings.subjects");
     case "vault":
-      return "Vault";
-    case "tracker_project":
-      return "Tracker";
-    case "inbox":
-      return "Inbox";
+      return t("menu.vault");
+    case "report":
+      return t("menu.reports");
+    case "certificate":
+      return t("menu.certificates");
 
     default:
       return null;
@@ -226,6 +228,7 @@ const useSearchNavigation = () => {
   const { setParams: setSubjectParams } = useSubjectParams();
   const { setParams: setTrackerParams } = useTrackerParams();
   const { setParams: setDocumentParams } = useDocumentParams();
+  const { setParams: setReportExportParams } = useReportExportParams();
 
   const shouldUseWebNavigation = async () => {
     if (!isDesktopApp()) {
@@ -296,6 +299,9 @@ const useSearchNavigation = () => {
     },
     navigateToPath: (path: string) => {
       return navigateToPath(path);
+    },
+    openReportsSheet: () => {
+      return navigateWithParams({ exportReport: true }, setReportExportParams);
     },
     // Action helpers
     createStudent: () => {
@@ -399,7 +405,7 @@ const SearchResultItemDisplay = ({
         break;
       }
       case "class": {
-        onSelect = () => nav.navigateToClass({ classId: item.id });
+        onSelect = () => nav.navigateToPath(`/reports/${item.id}`);
 
         icon = <Icons.Check className="size-4 dark:text-[#666] text-primary" />;
         resultDisplay = (
@@ -507,6 +513,9 @@ const SearchResultItemDisplay = ({
         );
         break;
       }
+      case "inbox":
+      case "tracker_project":
+        return null;
       default:
         // For types not explicitly handled but have data,
         // icon remains the default data icon, and resultDisplay remains item.title.
@@ -536,6 +545,7 @@ const SearchResultItemDisplay = ({
 };
 
 export function Search() {
+  const t = useI18n();
   const { data: user } = useUserQuery();
   const [debounceDelay, setDebounceDelay] = useState(200);
   const ref = useRef<HTMLDivElement>(null);
@@ -582,62 +592,68 @@ export function Search() {
     {
       id: "sc-create-student",
       type: "student",
-      title: "Add student",
+      title: t("students.create"),
       action: nav.createStudent,
     },
     {
       id: "sc-create-class",
       type: "class",
-      title: "Create class",
+      title: t("education.create_class"),
       action: nav.createClass,
     },
     {
       id: "sc-create-subject",
       type: "subject",
-      title: "Add subject",
+      title: t("settings.subjects"),
       action: nav.createSubject,
-    },
-    {
-      id: "sc-view-students",
-      type: "student",
-      title: "View students",
-      action: () => nav.navigateToPath("/students"),
     },
     {
       id: "sc-view-classes",
       type: "class",
-      title: "View classes",
-      action: () => nav.navigateToPath("/classes"),
+      title: t("menu.classes"),
+      action: () => nav.navigateToPath("/settings/classes"),
     },
     {
       id: "sc-view-staff",
       type: "staff",
-      title: "View staff",
-      action: () => nav.navigateToPath("/staff"),
+      title: t("menu.staff_teachers"),
+      action: () => nav.navigateToPath("/settings/staff"),
     },
     {
       id: "sc-view-grades",
-      type: "student",
-      title: "View grades",
+      type: "shortcut",
+      title: t("menu.grades"),
       action: () => nav.navigateToPath("/grades"),
     },
     {
       id: "sc-view-documents",
       type: "vault",
-      title: "View vault",
+      title: t("menu.vault"),
       action: () => nav.navigateToPath("/vault"),
     },
     {
-      id: "sc-view-inbox",
-      type: "inbox",
-      title: "View inbox",
-      action: () => nav.navigateToPath("/inbox"),
+      id: "sc-view-certificates",
+      type: "certificate",
+      title: t("menu.certificates"),
+      action: () => nav.navigateToPath("/certificates"),
     },
     {
-      id: "sc-view-tracker",
-      type: "tracker_project",
-      title: "View tracker",
-      action: () => nav.navigateToPath("/tracker"),
+      id: "sc-view-reports",
+      type: "report",
+      title: t("reports.extract_report"),
+      action: nav.openReportsSheet,
+    },
+    {
+      id: "sc-view-subjects",
+      type: "subject",
+      title: t("menu.subjects"),
+      action: () => nav.navigateToPath("/settings/subjects"),
+    },
+    {
+      id: "sc-view-promotions",
+      type: "shortcut",
+      title: t("menu.promotions"),
+      action: () => nav.navigateToPath("/settings/promotions"),
     },
   ];
 
@@ -660,10 +676,14 @@ export function Search() {
   const combinedData = useMemo(() => {
     // Type assertion for searchResults from DB to ensure they have actions if needed,
     // or map them to include default actions. For now, assuming they come with 'type' and 'title'.
-    const mappedSearchResults = searchResults.map((res) => ({
-      ...res,
-      action: () => {},
-    }));
+    const mappedSearchResults = searchResults
+      .filter(
+        (res) => res.type !== "inbox" && res.type !== "tracker_project",
+      )
+      .map((res) => ({
+        ...res,
+        action: () => {},
+      }));
     return [...mappedSearchResults];
   }, [debouncedSearch, searchResults]);
 
@@ -778,7 +798,7 @@ export function Search() {
             Object.entries(groupedData).map(([groupName, items]) => (
               <CommandGroup
                 key={groupName}
-                heading={formatGroupName(groupName)}
+                heading={formatGroupName(groupName, t)}
               >
                 {items.map((item: SearchItem) => (
                   <SearchResultItemDisplay

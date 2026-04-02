@@ -4,7 +4,7 @@ import {
   updateAcademicTermSchema,
   updateAcademicYearSchema,
 } from "@api/schemas/academic";
-import { createTRPCRouter, protectedProcedure } from "@api/trpc/init";
+import { createTRPCRouter, protectedProcedure, adminProcedure } from "@api/trpc/init";
 import {
   createAcademicTerm,
   createAcademicYear,
@@ -50,37 +50,37 @@ export const academicRouter = createTRPCRouter({
       return getTermsByYear(input.yearId);
     }),
 
-  createYear: protectedProcedure
+  createYear: adminProcedure
     .input(createAcademicYearSchema)
     .mutation(async ({ input }) => {
       return createAcademicYear(input);
     }),
 
-  updateYear: protectedProcedure
+  updateYear: adminProcedure
     .input(updateAcademicYearSchema)
     .mutation(async ({ input }) => {
       return updateAcademicYear(input.id, input);
     }),
 
-  deleteYear: protectedProcedure
+  deleteYear: adminProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       return deleteAcademicYear(input.id);
     }),
 
-  createTerm: protectedProcedure
+  createTerm: adminProcedure
     .input(createAcademicTermSchema)
     .mutation(async ({ input }) => {
       return createAcademicTerm(input);
     }),
 
-  updateTerm: protectedProcedure
+  updateTerm: adminProcedure
     .input(updateAcademicTermSchema)
     .mutation(async ({ input }) => {
       return updateAcademicTerm(input.id, input);
     }),
 
-  deleteTerm: protectedProcedure
+  deleteTerm: adminProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       return deleteAcademicTerm(input.id);

@@ -2,7 +2,7 @@ import {
   createClassSchema,
   updateClassSchema,
 } from "@api/schemas/classes";
-import { createTRPCRouter, protectedProcedure } from "@api/trpc/init";
+import { createTRPCRouter, protectedProcedure, adminProcedure } from "@api/trpc/init";
 import {
   createClass,
   deleteClass,
@@ -58,19 +58,19 @@ export const classesRouter = createTRPCRouter({
       return getClassById(input.id);
     }),
 
-  create: protectedProcedure
+  create: adminProcedure
     .input(createClassSchema)
     .mutation(async ({ input }) => {
       return createClass(input);
     }),
 
-  update: protectedProcedure
+  update: adminProcedure
     .input(updateClassSchema)
     .mutation(async ({ input }) => {
       return updateClass(input.id, input);
     }),
 
-  delete: protectedProcedure
+  delete: adminProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       return deleteClass(input.id);

@@ -1,4 +1,4 @@
-import { createTRPCRouter, protectedProcedure } from "@api/trpc/init";
+import { createTRPCRouter, protectedProcedure, adminProcedure, teacherProcedure } from "@api/trpc/init";
 import {
   listCertificateTemplates,
   getCertificateTemplateById,
@@ -101,25 +101,25 @@ export const certificateTemplateRouter = createTRPCRouter({
     return signTemplateBackground(template);
   }),
 
-  upsert: protectedProcedure
+  upsert: adminProcedure
     .input(upsertCertificateTemplateSchema)
     .mutation(({ input }) => upsertCertificateTemplate(input)),
 
-  create: protectedProcedure
+  create: adminProcedure
     .input(createCertificateTemplateSchema)
     .mutation(({ input }) => createCertificateTemplate(input)),
 
-  setDefault: protectedProcedure
+  setDefault: adminProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(({ input }) => setDefaultCertificateTemplate(input.id)),
 
-  delete: protectedProcedure
+  delete: adminProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(({ input }) => deleteCertificateTemplate(input.id)),
 
   summary: protectedProcedure.query(() => getCertificateTemplatesSummary()),
 
-  startExport: protectedProcedure
+  startExport: teacherProcedure
     .input(z.object({
       classIds: z.array(z.string()),
       templateId: z.string().optional(),

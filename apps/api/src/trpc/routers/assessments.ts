@@ -4,7 +4,7 @@ import {
   updateAssessmentItemSchema,
   updateGradeEntrySchema,
 } from "@api/schemas/assessments";
-import { createTRPCRouter, protectedProcedure } from "@api/trpc/init";
+import { createTRPCRouter, protectedProcedure, adminProcedure, teacherProcedure } from "@api/trpc/init";
 import {
   createAssessment,
   createGradeEntry,
@@ -36,7 +36,7 @@ export const assessmentsRouter = createTRPCRouter({
       );
     }),
 
-  create: protectedProcedure
+  create: adminProcedure
     .input(createAssessmentItemSchema)
     .mutation(async ({ input }) => {
       return createAssessment({
@@ -46,7 +46,7 @@ export const assessmentsRouter = createTRPCRouter({
       });
     }),
 
-  update: protectedProcedure
+  update: adminProcedure
     .input(updateAssessmentItemSchema)
     .mutation(async ({ input }) => {
       const { id, ...data } = input;
@@ -61,7 +61,7 @@ export const assessmentsRouter = createTRPCRouter({
       });
     }),
 
-  delete: protectedProcedure
+  delete: adminProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       return deleteAssessment(input.id);
@@ -79,7 +79,7 @@ export const assessmentsRouter = createTRPCRouter({
       return getStudentGrades(input.studentId, input.termId);
     }),
 
-  addGrade: protectedProcedure
+  addGrade: teacherProcedure
     .input(createGradeEntrySchema)
     .mutation(async ({ input }) => {
       return createGradeEntry({
@@ -88,7 +88,7 @@ export const assessmentsRouter = createTRPCRouter({
       });
     }),
 
-  updateGrade: protectedProcedure
+  updateGrade: teacherProcedure
     .input(updateGradeEntrySchema)
     .mutation(async ({ input }) => {
       const { id, ...data } = input;
@@ -101,7 +101,7 @@ export const assessmentsRouter = createTRPCRouter({
       });
     }),
 
-  importGrades: protectedProcedure
+  importGrades: teacherProcedure
     .input(z.object({
       assessmentItemId: z.number(),
       month: z.number().optional(),

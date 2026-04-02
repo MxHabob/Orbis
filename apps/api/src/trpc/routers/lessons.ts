@@ -1,4 +1,4 @@
-import { createTRPCRouter, protectedProcedure } from "@api/trpc/init";
+import { createTRPCRouter, protectedProcedure, adminProcedure } from "@api/trpc/init";
 import { 
   getTimeSlots, 
   getClassSchedule, 
@@ -42,26 +42,26 @@ export const lessonsRouter = createTRPCRouter({
       return getScheduledLessonById(input.id);
     }),
 
-  createTimeSlot: protectedProcedure
+  createTimeSlot: adminProcedure
     .input(createTimeSlotSchema)
     .mutation(async ({ input }) => {
       return createTimeSlot(input);
     }),
 
-  create: protectedProcedure
+  create: adminProcedure
     .input(createScheduledLessonSchema)
     .mutation(async ({ input }) => {
       return createScheduledLesson(input);
     }),
 
-  update: protectedProcedure
+  update: adminProcedure
     .input(updateScheduledLessonSchema)
     .mutation(async ({ input }) => {
       const { id, ...data } = input;
       return updateScheduledLesson(id, data);
     }),
 
-  delete: protectedProcedure
+  delete: adminProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       return deleteScheduledLesson(input.id);

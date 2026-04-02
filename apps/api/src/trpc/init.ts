@@ -15,6 +15,8 @@ type TRPCContext = {
   geo: ReturnType<typeof getGeoContext>;
   teamId?: string;
   forcePrimary?: boolean;
+  role?: string;
+  employeeRoles?: string[];
 };
 
 export const createTRPCContext = async (
@@ -74,7 +76,28 @@ export const protectedProcedure = t.procedure
 
     return opts.next({
       ctx: {
+        ...opts.ctx,
         session,
       },
     });
   });
+
+export const adminProcedure = protectedProcedure.use(async ({ ctx, next }) => {
+  if (ctx.role !== "admin") {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "This action is restricted to administrators.",
+    });
+  }
+  return next();
+});
+
+export const teacherProcedure = protectedProcedure.use(async ({ ctx, next }) => {
+  if (ctx.role !== "admin" && ctx.role !== "teacher") {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "This action is restricted to teachers or administrators.",
+    });
+  }
+  return next();
+});

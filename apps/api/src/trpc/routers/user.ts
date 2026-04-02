@@ -1,6 +1,6 @@
 import { updateUserSchema } from "@api/schemas/users";
 import { resend } from "@api/services/resend";
-import { createTRPCRouter, protectedProcedure, publicProcedure } from "@api/trpc/init";
+import { createTRPCRouter, protectedProcedure, publicProcedure, adminProcedure } from "@api/trpc/init";
 import { accounts, users as usersSchema } from "@midday/db/schema";
 import { and, eq, isNotNull } from "drizzle-orm";
 import { withRetryOnPrimary } from "@api/utils/db-retry";
@@ -24,7 +24,7 @@ export const userRouter = createTRPCRouter({
   get: protectedProcedure.query(async ({ ctx: { db } }) => {
     return getStaffUsers(db);
   }),
-  create: protectedProcedure
+  create: adminProcedure
     .input(
       z.array(
         z.object({
@@ -95,7 +95,7 @@ export const userRouter = createTRPCRouter({
     };
   }),
 
-  update: protectedProcedure
+  update: adminProcedure
     .input(updateUserSchema)
     .mutation(async ({ ctx: { db, session }, input }) => {
       const id = input.id ?? session.user.id;
@@ -113,7 +113,7 @@ export const userRouter = createTRPCRouter({
       });
     }),
 
-  delete: protectedProcedure
+  delete: adminProcedure
     .input(z.object({ id: z.string().uuid() }).optional())
     .mutation(async ({ ctx: { db, session }, input }) => {
       const id = input?.id ?? session.user.id;
