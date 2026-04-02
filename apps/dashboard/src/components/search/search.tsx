@@ -771,7 +771,6 @@ export function Search() {
           onValueChange={(value: string) => {
             setDebouncedSearch(value);
 
-            // If the search term is longer than 1 word, increase the debounce delay
             if (value.trim().split(/\s+/).length > 1) {
               setDebounceDelay(700);
             } else {
