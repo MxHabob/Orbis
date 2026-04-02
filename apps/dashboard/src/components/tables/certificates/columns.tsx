@@ -21,7 +21,7 @@ export const columns: ColumnDef<CertificateTemplate>[] = [
       sticky: true,
       skeleton: { type: "checkbox" },
       className:
-        "w-[50px] min-w-[50px] md:sticky md:left-0 bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-20",
+        "w-[50px] min-w-[50px] md:sticky md:inset-inline-start-0 bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-20 justify-center !border-inline-end !border-border p-0",
     },
     cell: ({ row }) => (
       <Checkbox
@@ -38,7 +38,6 @@ export const columns: ColumnDef<CertificateTemplate>[] = [
   },
   {
     id: "name",
-    header: "Template Name",
     accessorKey: "name",
     size: 300,
     minSize: 200,
@@ -47,17 +46,16 @@ export const columns: ColumnDef<CertificateTemplate>[] = [
     meta: {
       sticky: true,
       skeleton: { type: "text", width: "w-48" },
-      headerLabel: "Template Name",
       sortField: "name",
       className:
-        "w-[300px] min-w-[200px] md:sticky md:left-[50px] bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-20",
+        "w-[300px] min-w-[200px] md:sticky md:inset-inline-start-[50px] bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-20 !border-inline-end !border-border",
     },
     cell: ({ row }) => {
       const name = row.original.name;
       const isDefault = row.original.isDefault;
       
       return (
-        <div className="flex items-center space-x-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
           <div className="h-8 w-8 rounded border bg-muted/50 flex items-center justify-center shrink-0">
              <Icons.Files className="w-4 h-4 text-muted-foreground" />
           </div>
@@ -75,7 +73,6 @@ export const columns: ColumnDef<CertificateTemplate>[] = [
   },
   {
     id: "size",
-    header: "Size",
     accessorKey: "size",
     size: 100,
     minSize: 80,
@@ -83,7 +80,6 @@ export const columns: ColumnDef<CertificateTemplate>[] = [
     enableResizing: true,
     meta: {
       skeleton: { type: "text", width: "w-12" },
-      headerLabel: "Size",
       className: "w-[100px] min-w-[80px]",
     },
     cell: ({ row }) => {
@@ -92,7 +88,6 @@ export const columns: ColumnDef<CertificateTemplate>[] = [
   },
   {
     id: "orientation",
-    header: "Orientation",
     accessorKey: "orientation",
     size: 120,
     minSize: 100,
@@ -100,7 +95,6 @@ export const columns: ColumnDef<CertificateTemplate>[] = [
     enableResizing: true,
     meta: {
       skeleton: { type: "text", width: "w-16" },
-      headerLabel: "Orientation",
       className: "w-[120px] min-w-[100px]",
     },
     cell: ({ row }) => {
@@ -110,7 +104,6 @@ export const columns: ColumnDef<CertificateTemplate>[] = [
   },
   {
     id: "updatedAt",
-    header: "Last Updated",
     accessorKey: "updatedAt",
     size: 180,
     minSize: 150,
@@ -118,7 +111,6 @@ export const columns: ColumnDef<CertificateTemplate>[] = [
     enableResizing: true,
     meta: {
       skeleton: { type: "text", width: "w-24" },
-      headerLabel: "Last Updated",
       className: "w-[180px] min-w-[150px]",
     },
     cell: ({ row }) => {
@@ -140,9 +132,8 @@ export const columns: ColumnDef<CertificateTemplate>[] = [
     meta: {
       sticky: true,
       skeleton: { type: "icon" },
-      headerLabel: "",
       className:
-        "w-[80px] min-w-[80px] md:sticky md:right-0 bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-30 justify-center !border-l !border-border",
+        "w-[80px] min-w-[80px] md:sticky md:inset-inline-end-0 bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-30 justify-center !border-inline-start !border-border",
     },
     cell: ({ row }) => {
       return <ActionsMenu row={row.original} />;

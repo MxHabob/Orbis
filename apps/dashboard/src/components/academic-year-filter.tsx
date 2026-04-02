@@ -58,7 +58,7 @@ export function AcademicYearFilter() {
               <div className="flex items-center gap-2">
                 <span>{year.yearName}</span>
                 {year.isCurrent && (
-                   <span className="text-[9px] text-muted-foreground">(Active)</span>
+                   <span className="text-[9px] text-muted-foreground">({t("education.current")})</span>
                 )}
               </div>
             </SelectItem>

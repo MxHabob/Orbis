@@ -69,8 +69,8 @@ export function GradesActions() {
     trpc.grades.batchUpsert.mutationOptions({
       onSuccess: () => {
         toast({
-          title: "Success",
-          description: "Grades imported successfully",
+          title: t("common.success"),
+          description: t("grades.import_success"),
           variant: "success",
         });
         void invalidateGradesDomain(queryClient, trpc, gradeGridInput);
@@ -90,14 +90,14 @@ export function GradesActions() {
       onSuccess: (data) => {
         downloadBase64(data.data, data.filename, data.mimeType);
         toast({
-          title: "Export Successful",
-          description: "Grades have been exported successfully.",
+          title: t("common.success"),
+          description: t("grades.export_success"),
           variant: "success",
         });
       },
       onError: (err) => {
         toast({
-          title: "Export Failed",
+          title: t("common.error"),
           description: `Failed to export grades: ${err.message}`,
           variant: "destructive",
         });

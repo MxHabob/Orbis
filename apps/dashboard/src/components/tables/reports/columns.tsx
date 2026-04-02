@@ -24,7 +24,7 @@ export const columns: ColumnDef<ClassReport>[] = [
       sticky: true,
       skeleton: { type: "checkbox" },
       className:
-        "w-[50px] min-w-[50px] md:sticky md:left-0 bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-20",
+        "w-[50px] min-w-[50px] md:sticky md:inset-inline-start-0 bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-20 justify-center !border-inline-end !border-border p-0",
     },
     cell: ({ row }) => (
       <Checkbox
@@ -41,7 +41,6 @@ export const columns: ColumnDef<ClassReport>[] = [
   },
   {
     id: "name",
-    header: "Class Name",
     accessorKey: "name",
     size: 250,
     minSize: 180,
@@ -50,10 +49,9 @@ export const columns: ColumnDef<ClassReport>[] = [
     meta: {
       sticky: true,
       skeleton: { type: "avatar-text", width: "w-32" },
-      headerLabel: "Class Name",
       sortField: "name",
       className:
-        "w-[250px] min-w-[180px] md:sticky md:left-[50px] bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-20",
+        "w-[250px] min-w-[180px] md:sticky md:inset-inline-start-[50px] bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-20 !border-inline-end !border-border",
     },
     cell: ({ row }) => {
       const data = row.original;
@@ -61,7 +59,7 @@ export const columns: ColumnDef<ClassReport>[] = [
       const color = (data as any).color;
       
       return (
-        <div className="flex items-center space-x-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
           <Avatar className="size-5 flex-shrink-0">
             <AvatarFallback 
               className="text-[9px] font-medium"
@@ -77,7 +75,6 @@ export const columns: ColumnDef<ClassReport>[] = [
   },
   {
     id: "type",
-    header: "Type",
     accessorKey: "type",
     size: 150,
     minSize: 120,
@@ -85,7 +82,6 @@ export const columns: ColumnDef<ClassReport>[] = [
     enableResizing: true,
     meta: {
       skeleton: { type: "text", width: "w-24" },
-      headerLabel: "Type",
       className: "w-[150px] min-w-[120px]",
     },
     cell: ({ row }) => {
@@ -95,7 +91,6 @@ export const columns: ColumnDef<ClassReport>[] = [
   },
   {
     id: "division",
-    header: "Division",
     accessorKey: "division",
     size: 120,
     minSize: 100,
@@ -103,7 +98,6 @@ export const columns: ColumnDef<ClassReport>[] = [
     enableResizing: true,
     meta: {
       skeleton: { type: "text", width: "w-16" },
-      headerLabel: "Division",
       className: "w-[120px] min-w-[100px]",
     },
     cell: ({ row }) => {
@@ -112,15 +106,13 @@ export const columns: ColumnDef<ClassReport>[] = [
   },
   {
     id: "studentCount",
-    header: "Students",
     accessorKey: "_count.students",
-    size: 100,
-    minSize: 80,
+    size: 130,
+    minSize: 100,
     maxSize: 150,
     enableResizing: true,
     meta: {
       skeleton: { type: "text", width: "w-12" },
-      headerLabel: "Students",
       className: "w-[100px] min-w-[80px]",
     },
     cell: ({ row }) => {
@@ -134,15 +126,13 @@ export const columns: ColumnDef<ClassReport>[] = [
   },
   {
     id: "scheduleCount",
-    header: "Schedule",
     accessorKey: "_count.schedule",
-    size: 100,
-    minSize: 80,
+    size: 130,
+    minSize: 100,
     maxSize: 150,
     enableResizing: true,
     meta: {
       skeleton: { type: "text", width: "w-12" },
-      headerLabel: "Schedule",
       className: "w-[100px] min-w-[80px]",
     },
     cell: ({ row }) => {
@@ -156,7 +146,6 @@ export const columns: ColumnDef<ClassReport>[] = [
   },
   {
     id: "parentClass",
-    header: "Parent Class",
     accessorKey: "parentClass.name",
     size: 180,
     minSize: 140,
@@ -164,7 +153,6 @@ export const columns: ColumnDef<ClassReport>[] = [
     enableResizing: true,
     meta: {
       skeleton: { type: "text", width: "w-24" },
-      headerLabel: "Parent Class",
       className: "w-[180px] min-w-[140px]",
     },
     cell: ({ row }) => {
@@ -178,7 +166,6 @@ export const columns: ColumnDef<ClassReport>[] = [
   },
   {
     id: "actions",
-    header: "Actions",
     size: 100,
     minSize: 80,
     maxSize: 100,
@@ -187,9 +174,8 @@ export const columns: ColumnDef<ClassReport>[] = [
     meta: {
       sticky: true,
       skeleton: { type: "icon" },
-      headerLabel: "Actions",
       className:
-        "w-[100px] min-w-[80px] md:sticky md:right-0 bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-30 justify-center !border-l !border-border",
+        "w-[100px] min-w-[80px] md:sticky md:inset-inline-end-0 bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-30 justify-center !border-inline-start !border-border",
     },
     cell: ({ row }) => {
       return <ActionsMenu row={row.original} />;

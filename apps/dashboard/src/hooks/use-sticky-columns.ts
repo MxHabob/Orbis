@@ -73,7 +73,7 @@ export function useStickyColumns({
     (columnId: string) => {
       const position = stickyPositions[columnId];
       return position !== undefined
-        ? ({ "--stick-left": `${position}px` } as React.CSSProperties)
+        ? ({ "--stick-start": `${position}px` } as React.CSSProperties)
         : {};
     },
     [stickyPositions],
@@ -85,7 +85,7 @@ export function useStickyColumns({
       const isSticky = stickyColumnIds.has(columnId);
       return cn(
         baseClassName,
-        isSticky && "md:sticky md:left-[var(--stick-left)]",
+        isSticky && "md:sticky md:inset-inline-start-[var(--stick-start)]",
       );
     },
     [stickyColumnIds],

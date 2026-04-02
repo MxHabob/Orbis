@@ -94,7 +94,7 @@ export const columns: ColumnDef<Document>[] = [
       sticky: true,
       skeleton: { type: "checkbox" },
       className:
-        "w-[50px] min-w-[50px] md:sticky md:left-0 bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-20",
+        "w-[50px] min-w-[50px] md:sticky md:inset-inline-start-0 bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-20 justify-center !border-inline-end !border-border p-0",
     },
     cell: ({ row }) => (
       <Checkbox
@@ -122,7 +122,7 @@ export const columns: ColumnDef<Document>[] = [
       skeleton: { type: "text", width: "w-52" },
       headerLabel: "vault.filename",
       className:
-        "w-[450px] min-w-[180px] md:sticky md:left-[50px] bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-20",
+        "w-[450px] min-w-[180px] md:sticky md:inset-inline-start-[50px] bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-20 !border-inline-end !border-border",
     },
     cell: ({ row }) => {
       const mimetype = row.original.metadata?.mimetype as string | undefined;
@@ -197,7 +197,7 @@ export const columns: ColumnDef<Document>[] = [
       skeleton: { type: "icon" },
       headerLabel: "vault.actions",
       className:
-        "w-[100px] min-w-[80px] md:sticky md:right-0 bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-30 justify-center !border-l !border-border",
+        "w-[100px] min-w-[80px] md:sticky md:inset-inline-end-0 bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-30 justify-center !border-inline-start !border-border",
     },
     cell: ({ row, table }) => {
       const t = useI18n();

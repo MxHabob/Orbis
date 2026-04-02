@@ -55,7 +55,7 @@ const StudentNameCell = memo(
     const displayName = name ?? "-";
 
     return (
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center gap-2">
         <Avatar className="size-5">
           {image && (
             <AvatarImageNext
@@ -103,7 +103,7 @@ export const createGradeColumns = (
         skeleton: { type: "avatar-text", width: "w-40" },
         headerLabel: "grades.student_name",
         className:
-          "w-[250px] min-w-[200px] sticky left-0 bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-20 border-r",
+          "w-[250px] min-w-[200px] md:sticky md:inset-inline-start-0 bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-20 !border-inline-end !border-border",
       },
       cell: ({ row }) => (
         <StudentNameCell
@@ -133,7 +133,7 @@ export const createGradeColumns = (
       minSize: 140,
       meta: {
         headerLabel: "grades.average_months",
-        className: "text-center border-r bg-muted/30",
+        className: "text-center !border-inline-end !border-border bg-muted/30",
       },
       cell: ({ row, table }) => {
         let totalScore = 0;
@@ -183,7 +183,7 @@ export const createGradeColumns = (
         minSize: 250,
         meta: { 
           headerLabel: month === 4 ? "grades.midterm_exam" : "grades.final_exam", 
-          className: "text-center border-r" 
+          className: "text-center !border-inline-end !border-border" 
         },
         cell: ({ row, table }) => {
           const gradeValue =
@@ -213,7 +213,7 @@ export const createGradeColumns = (
           headerLabel: "grades.status",
           sticky: true,
           className:
-            "text-center border-l bg-primary/5 group-hover:bg-primary/10 z-20",
+            "text-center !border-inline-start !border-border bg-primary/5 group-hover:bg-primary/10 z-20 md:sticky md:inset-inline-end-[120px]",
         },
         cell: ({ row, table }) => {
           let monthlyTotal = 0;
@@ -275,7 +275,7 @@ export const createGradeColumns = (
         skeleton: { type: "text", width: "w-16" },
         headerLabel: "grades.total",
         className:
-          "text-center bg-primary/5 group-hover:bg-primary/10 z-20 border-l",
+          "text-center bg-primary/5 group-hover:bg-primary/10 z-20 !border-inline-start !border-border md:sticky md:inset-inline-end-0",
       },
       cell: ({ row, table }) => {
         let monthlyTotal = 0;
@@ -321,11 +321,11 @@ export const createGradeColumns = (
         id: `assessment-${item.id}`,
         accessorKey: `assessment-${item.id}`,
         header: () => (
-          <div className="flex flex-col items-center gap-0.5 px-2">
+          <div className="flex flex-col items-center gap-0.5">
             <span className="font-bold text-xs md:text-sm tracking-tight whitespace-nowrap">
               {item.title}
             </span>
-            <span className="text-[9px] uppercase text-muted-foreground font-medium">
+            <span className="text-[8px] uppercase text-muted-foreground font-medium">
               {t?.("grades.max") || "Max"}: {item.maxScore}
             </span>
           </div>
@@ -334,7 +334,7 @@ export const createGradeColumns = (
         minSize: 100,
         meta: {
           headerLabel: item.title,
-          className: "text-center border-r",
+          className: "text-center !border-inline-end !border-border",
         },
         cell: ({ row, table }) => {
           const gradeValue =
@@ -378,7 +378,7 @@ export const createGradeColumns = (
         skeleton: { type: "text", width: "w-16" },
         headerLabel: "grades.total",
         className:
-          "text-center bg-primary/5 group-hover:bg-primary/10 z-20 border-l",
+          "text-center bg-primary/5 group-hover:bg-primary/10 z-20 !border-inline-start !border-border md:sticky md:inset-inline-end-0",
       },
       cell: ({ row, table }) => {
         let total = 0;

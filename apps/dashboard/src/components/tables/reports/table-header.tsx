@@ -21,6 +21,8 @@ import { TableHead, TableHeader, TableRow } from "@midday/ui/table";
 import type { Header, Table } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { useMemo } from "react";
+import { useI18n } from "@/locales/client";
+import { useCurrentLocale } from "@/locales/client";
 
 interface Props<TData> {
   table?: Table<TData>;
@@ -34,6 +36,9 @@ export function DataTableHeader<TData>({
   tableScroll,
 }: Props<TData>) {
   const { sortColumn, sortValue, createSortQuery } = useSortQuery();
+  const t = useI18n();
+  const locale = useCurrentLocale();
+  const isRTL = locale === "ar";
 
   // Use the reusable sticky columns hook
   const { getStickyStyle, getStickyClassName, isVisible } = useStickyColumns({
@@ -103,8 +108,11 @@ export function DataTableHeader<TData>({
                   "group/header relative h-full px-4 border-t border-border flex items-center",
                 );
                 const isActionsColumn = columnId === "actions";
+                const isSelectColumn = columnId === "select";
                 const finalClassName = isActionsColumn
-                  ? "group/header relative h-full px-4 !border-t !border-l !border-border flex items-center justify-center md:sticky md:right-0 bg-background z-10"
+                  ? "group/header relative h-full px-4 !border-t !border-inline-start !border-border flex items-center justify-center md:sticky md:inset-inline-end-0 bg-background z-10"
+                  : isSelectColumn
+                  ? `group/header relative h-full p-0 !border-t !border-inline-end !border-border flex items-center justify-center md:sticky md:inset-inline-start-0 bg-background z-10`
                   : `${stickyClass} bg-background z-10`;
 
                 return (
@@ -120,6 +128,7 @@ export function DataTableHeader<TData>({
                       sortValue,
                       createSortQuery,
                       table,
+                      t,
                       tableScroll,
                     )}
                     {header.column.getCanResize() && (
@@ -144,6 +153,7 @@ export function DataTableHeader<TData>({
                       sortValue,
                       createSortQuery,
                       table,
+                      t,
                       tableScroll,
                     )}
                   </div>
@@ -167,6 +177,7 @@ function renderHeaderContent<TData>(
   sortValue: string | undefined,
   createSortQuery: (name: string) => void,
   table: Table<TData>,
+  t: any,
   tableScroll?: TableScrollState,
 ) {
   const sortField = SORT_FIELD_MAPS.reports[columnId];
@@ -190,7 +201,7 @@ function renderHeaderContent<TData>(
   // Actions column - static text
   if (columnId === "actions") {
     return (
-      <span className="text-muted-foreground w-full text-center">Actions</span>
+      <span className="text-muted-foreground w-full text-center">{t("common.actions")}</span>
     );
   }
 
@@ -200,7 +211,7 @@ function renderHeaderContent<TData>(
       <div className="flex items-center justify-between w-full overflow-hidden">
         <div className="min-w-0 overflow-hidden">
           <SortButton
-            label="Class Name"
+            label={t("education.class_name")}
             sortField="name"
             currentSortColumn={sortColumn}
             currentSortValue={sortValue}
@@ -222,7 +233,7 @@ function renderHeaderContent<TData>(
 
   // Sortable headers
   if (sortField) {
-    const headerLabel = meta?.headerLabel || getHeaderLabel(columnId);
+    const headerLabel = meta?.headerLabel || getHeaderLabel(columnId, t);
     return (
       <div className="w-full overflow-hidden">
         <SortButton
@@ -237,7 +248,7 @@ function renderHeaderContent<TData>(
   }
 
   // Non-sortable headers - just render the label
-  const headerLabel = meta?.headerLabel || getHeaderLabel(columnId);
+  const headerLabel = meta?.headerLabel || getHeaderLabel(columnId, t);
   return <span className="truncate">{headerLabel}</span>;
 }
 
@@ -274,15 +285,17 @@ function SortButton({
   );
 }
 
-function getHeaderLabel(columnId: string): string {
+function getHeaderLabel(columnId: string, t: any): string {
   const labels: Record<string, string> = {
     select: "",
-    name: "Class Name",
-    description: "Description",
-    studentCount: "Students",
-    scheduleCount: "Schedule",
-    parentClass: "Parent Class",
-    actions: "Actions",
+    name: t("education.class_name"),
+    description: t("common.description"),
+    studentCount: t("common.students"),
+    scheduleCount: t("common.schedule"),
+    parentClass: t("education.parent_class"),
+    actions: t("common.actions"),
+    type: t("education.type"),
+    division: t("education.division"),
   };
   return labels[columnId] || columnId;
 }

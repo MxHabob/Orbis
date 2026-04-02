@@ -16,9 +16,10 @@ import {
 import { Icons } from "@midday/ui/icons";
 import { Input } from "@midday/ui/input";
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useGradeFilterParams } from "@/hooks/use-grade-filter-params";
+import { useI18n } from "@/locales/client";
 
 interface FilterMenuItemProps {
   icon: (typeof Icons)[keyof typeof Icons];
@@ -87,6 +88,7 @@ export function GradesSearchFilter() {
   const { filter, setFilter, hasFilters } = useGradeFilterParams();
   const [input, setInput] = useState(filter.q ?? "");
   const trpc = useTRPC();
+  const t = useI18n();
 
   // Fetch filter data
   const { data: years } = useQuery(trpc.academic.getYears.queryOptions());
@@ -142,7 +144,7 @@ export function GradesSearchFilter() {
         <Icons.Search className="absolute pointer-events-none left-3 top-[11px]" />
         <Input
           ref={inputRef}
-          placeholder="Search student name..."
+          placeholder={t("grades.search_student_name")}
           className="pl-9 w-full sm:w-[350px] pr-8"
           value={input}
           onChange={handleSearch}

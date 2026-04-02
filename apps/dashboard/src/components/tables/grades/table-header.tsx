@@ -117,9 +117,9 @@ export function DataTableHeader<TData>({
                 
                 let additionalClasses = "";
                 if (isTotalColumn) {
-                  additionalClasses = "justify-center md:sticky md:right-0 bg-primary/5 font-bold !border-l";
+                  additionalClasses = "justify-center md:sticky md:inset-inline-end-0 bg-primary/5 font-bold !border-inline-start !border-border";
                 } else if (isStudentNameColumn) {
-                  additionalClasses = "md:sticky md:left-0 bg-background";
+                  additionalClasses = "md:sticky md:inset-inline-start-0 bg-background !border-inline-end !border-border";
                 } else {
                   additionalClasses = "bg-background";
                 }

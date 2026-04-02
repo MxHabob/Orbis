@@ -767,7 +767,7 @@ export function Search() {
       <div className="border-b border-border relative">
         <CommandInput
           ref={searchInputRef}
-          placeholder="Type a command or search..."
+          placeholder={t("common.find_anything")}
           onValueChange={(value: string) => {
             setDebouncedSearch(value);
 
@@ -791,7 +791,7 @@ export function Search() {
         <CommandList ref={height} className="scrollbar-hide">
           {!isLoading && combinedData.length === 0 && debouncedSearch && (
             <CommandEmpty>
-              No results found for "{debouncedSearch}".
+              {t("common.no_data")}
             </CommandEmpty>
           )}
           {!isLoading &&
