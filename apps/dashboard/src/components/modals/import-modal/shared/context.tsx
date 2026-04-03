@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import type { Control, UseFormSetValue, UseFormWatch } from "react-hook-form";
+import type { Control, UseFormSetValue, UseFormWatch, FormState } from "react-hook-form";
 import { 
   mappableFields, 
   importSchema, 
@@ -28,6 +28,7 @@ export type ImportCsvContextType<T extends ImportCsvFormData = any> = {
   control: Control<T>;
   watch: UseFormWatch<T>;
   setValue: UseFormSetValue<T>;
+  formState: FormState<T>;
   onFileProcessed?: () => void;
 };
 

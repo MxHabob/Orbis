@@ -18,6 +18,7 @@ import {
 } from "@midday/ui/tooltip";
 import { Controller, useWatch } from "react-hook-form";
 import { mappableFields, useCsvContext } from "./context";
+import { useI18n } from "@/locales/client";
 
 export function FieldRow({
   field,
@@ -30,10 +31,30 @@ export function FieldRow({
   label?: string;
   required?: boolean;
 }) {
+  const t = useI18n();
   const fields = type ? mappableFields[type] : null;
   const fieldConfig = fields ? (fields as any)[field] : null;
   
-  const label = explicitLabel ?? fieldConfig?.label ?? field;
+  // Mapping field names to translation keys
+  const getLabel = (f: string) => {
+    if (explicitLabel) return explicitLabel;
+    
+    const keyMap: Record<string, any> = {
+      studentNumber: t("students.student_number"),
+      name: t("students.full_name"),
+      phone: t("students.phone"),
+      email: t("students.email"),
+      sex: t("students.sex"),
+      fatherName: t("students.father_name"),
+      fatherPhone: t("students.father_phone"),
+      motherName: t("students.mother_name"),
+      motherPhone: t("students.mother_phone"),
+    };
+
+    return keyMap[f] ?? fieldConfig?.label ?? f;
+  };
+
+  const label = getLabel(field);
   const required = explicitRequired ?? fieldConfig?.required ?? false;
 
   const { control, fileColumns, firstRows } = useCsvContext();
@@ -58,18 +79,17 @@ export function FieldRow({
                 onValueChange={controllerField.onChange}
               >
                 <SelectTrigger className="w-full relative">
-                  <SelectValue placeholder={`Select ${label}`} />
+                  <SelectValue placeholder={`${t("import.map_from_column")}`} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
                     <SelectLabel>{label}</SelectLabel>
                     {[
-                      // Filter out empty columns
-                      ...(fileColumns?.filter((column) => column !== "") || []),
+                      ...(fileColumns?.filter((column) => column != null && column !== "") || []),
                       ...(controllerField.value && !required ? ["None"] : []),
-                    ]?.map((column) => {
+                    ]?.map((column, index) => {
                       return (
-                        <SelectItem key={column} value={column}>
+                        <SelectItem key={`${column}-${index}`} value={column}>
                           {column}
                         </SelectItem>
                       );
@@ -90,7 +110,7 @@ export function FieldRow({
         <div className="grow whitespace-nowrap text-sm font-normal text-muted-foreground justify-between flex">
           <div className="flex items-center gap-1.5">
             <span>{label}</span>
-            {!required && <span className="text-[10px] text-[#878787] uppercase">(Optional)</span>}
+            {!required && <span className="text-[10px] text-[#878787] uppercase">({t("common.other")})</span>}
           </div>
 
           {description?.trim() && (

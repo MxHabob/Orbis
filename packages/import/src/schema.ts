@@ -46,6 +46,15 @@ export const studentImportSchema = baseImportSchema.extend({
   fatherPhone: z.string().optional(),
   motherName: z.string().optional(),
   motherPhone: z.string().optional(),
+  metadataMappings: z.array(z.object({
+    key: z.string().min(1, "Key is required"),
+    column: z.string().min(1, "Column is required")
+  })).optional().default([]).refine((mappings) => {
+    const keys = mappings.map(m => m.key.toLowerCase().trim());
+    return new Set(keys).size === keys.length;
+  }, {
+    message: "Metadata keys must be unique"
+  }),
 }).refine((data) => {
   if (!data.autoGenerateStudentNumber && !data.studentNumber) return false;
   return !!data.name;

@@ -257,6 +257,7 @@ export function StudentImportModal() {
                   control,
                   watch,
                   setValue,
+                  formState,
                   onFileProcessed: () => setPageNumber(1),
                 }}
               >
@@ -281,24 +282,11 @@ export function StudentImportModal() {
                             if (!data.autoGenerateStudentNumber && !studentNumber) return null;
                             if (!name) return null;
 
-                            // Any columns that are NOT mapped elsewhere go to metadata
-                            const mappedCols = [
-                               data.studentNumber,
-                               data.name,
-                               data.phone,
-                               data.email,
-                               data.sex,
-                               data.fatherName,
-                               data.fatherPhone,
-                               data.motherName,
-                               data.motherPhone
-                            ].filter(Boolean);
-
                             const metadata: Record<string, any> = {};
-                            Object.keys(row).forEach(key => {
-                               if (!mappedCols.includes(key)) {
-                                  metadata[key] = row[key];
-                               }
+                            data.metadataMappings?.forEach(mapping => {
+                              if (mapping.key && mapping.column && row[mapping.column]) {
+                                metadata[mapping.key] = row[mapping.column];
+                              }
                             });
 
                             return {
@@ -339,7 +327,7 @@ export function StudentImportModal() {
                         <StudentFieldMapping />
                         {Object.keys(formState.errors).length > 0 && (
                           <div className="text-xs text-red-500 mt-2">
-                            Please fill all required fields: {renderErrors(formState.errors).join(', ')}
+                            {t("import.fill_required", { errors: renderErrors(formState.errors).join(', ') })}
                           </div>
                         )}
                         <SubmitButton 
@@ -348,7 +336,7 @@ export function StudentImportModal() {
                           isSubmitting={formState.isSubmitting}
                           className="mt-4"
                         >
-                          Confirm Mapping
+                          {t("import.confirm_mapping")}
                         </SubmitButton>
                         <button
                           type="button"
@@ -360,7 +348,7 @@ export function StudentImportModal() {
                             setFirstRows(null);
                           }}
                         >
-                          Choose another file
+                          {t("import.choose_another_file")}
                         </button>
                       </>
                     )}
