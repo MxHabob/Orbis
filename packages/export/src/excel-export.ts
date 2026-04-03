@@ -266,9 +266,10 @@ export async function generateGradesExport(
   const distinctMonths = [...new Set(assessmentItems.map((i) => i.month).filter((m): m is number => m != null))].sort((a, b) => a - b);
 
   const monthNames: Record<number, string> = {
-    1: "الشهر الأول", 2: "الشهر الثاني", 3: "الشهر الثالث",
-    4: "الاختبار النصفي", 5: "الشهر الخامس", 6: "الشهر السادس",
-    7: "الشهر السابع", 8: "الاختبار النهائي",
+    1: "محرم", 2: "صفر", 3: "ربيع أول",
+    4: "ربيع ثاني", 5: "جمادى أول", 6: "جمادى ثاني",
+    7: "رجب", 8: "شعبان", 9: "رمضان", 10: "شوال",
+    11: "ذو القعدة", 12: "ذو الحجة"
   };
 
   const primaryArgb = hexToArgb(options.classColor);
@@ -489,14 +490,16 @@ export async function generateGradesExport(
 
 export function generateGradesFilename(
   className: string,
+  subjectName: string | undefined | null,
   format: "xlsx" | "csv",
 ): string {
   const timestamp = new Date()
     .toISOString()
     .replace(/[:.]/g, "-")
     .slice(0, -5);
-  const safeName = className.replace(/[^a-zA-Z0-9-_\u0600-\u06FF]/g, "_");
-  return `${safeName}_درجات_${timestamp}.${format}`;
+  const safeClassName = className.replace(/[^a-zA-Z0-9-_\u0600-\u06FF]/g, "_");
+  const safeSubjectName = subjectName ? subjectName.replace(/[^a-zA-Z0-9-_\u0600-\u06FF]/g, "_") : "عام";
+  return `كشف_درجات_${safeClassName}_${safeSubjectName}_${timestamp}.${format}`;
 }
 
 export interface ClassBulkReportStudent {

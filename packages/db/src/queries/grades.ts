@@ -474,10 +474,16 @@ export const getGradeGridData = async (params: {
         .where(inArray(gradeEntries.assessmentItemId, itemIds));
     }
 
+    const targetSubject = await db.query.subjects.findFirst({
+      where: eq(subjects.id, params.subjectId),
+      columns: { name: true }
+    });
+
     return {
       items: itemsList,
       students: enrolledStudents,
       grades: gradesList,
+      subjectName: targetSubject?.name || "",
       month: params.month,
     };
   } catch (error) {
