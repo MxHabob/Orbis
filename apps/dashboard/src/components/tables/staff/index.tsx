@@ -19,8 +19,10 @@ import * as React from "react";
 import { useState } from "react";
 import { columns } from "./columns";
 import { authClient } from "@midday/auth/auth-client";
+import { useStaffParams } from "@/hooks/use-staff-params";
 
 export function DataTable() {
+  const { setParams } = useStaffParams();
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const trpc = useTRPC();
   const [isOpen, onOpenChange] = useState(false);
@@ -28,8 +30,6 @@ export function DataTable() {
   const { data } = useSuspenseQuery({
     ...trpc.user.getStaff.queryOptions(),
   });
-
-  console.log("data : ",data);
 
   const table = useReactTable({
     getRowId: (row) => row.id,
@@ -42,6 +42,7 @@ export function DataTable() {
       columnFilters,
     },
     meta: {
+      setParams,
       currentUser: data?.find((member) => member?.id === session?.user.id),
       totalOwners: data?.filter((member) => member?.role === "admin").length,
     },

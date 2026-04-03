@@ -7,16 +7,17 @@ export function PreviewEmptyState() {
   const t = useI18n();
 
   return (
-    <div className="flex flex-col items-center justify-center py-24 text-center border-b border-x bg-background border-border">
-      <div className="size-10 bg-muted flex items-center justify-center rounded-none mb-4">
-        <UserSearch className="size-5 text-muted-foreground" />
+    <div className="flex flex-col items-center justify-center py-10 px-6 border border-dashed rounded-xl bg-muted/5 text-muted-foreground animate-in fade-in duration-500">
+      <div className="h-16 w-16 rounded-full bg-muted/10 flex items-center justify-center mb-6 text-3xl">
+        👥
       </div>
-      <h3 className="text-xs font-bold uppercase tracking-tight mb-1">
+      <h2 className="font-medium text-lg text-foreground mb-2">
         {t("grades.no_students")}
-      </h3>
-      <p className="text-[11px] text-[#606060] max-w-[200px] leading-relaxed">
-        {(t as any)("promotions.no_preview_desc") || "لا توجد بيانات متاحة للمعاينة في هذا الصف."}
+      </h2>
+      <p className="text-sm text-[#606060] max-w-sm text-center">
+        {t("grades.no_students_description")}
       </p>
     </div>
   );
 }
+

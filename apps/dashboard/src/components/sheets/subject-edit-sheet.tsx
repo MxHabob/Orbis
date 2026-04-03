@@ -3,17 +3,6 @@
 import { useSubjectParams } from "@/hooks/use-subject-params";
 import { useTRPC } from "@/trpc/client";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@midday/ui/alert-dialog";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -23,7 +12,6 @@ import { Icons } from "@midday/ui/icons";
 import { Sheet, SheetContent, SheetHeader } from "@midday/ui/sheet";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { SubjectEditForm } from "../forms/subject-edit-form";
-import { invalidateSubjectDomain } from "@/utils/query-invalidation";
 
 export function SubjectEditSheet() {
   const trpc = useTRPC();
@@ -41,14 +29,7 @@ export function SubjectEditSheet() {
     ),
   );
 
-  const deleteSubjectMutation = useMutation(
-    trpc.subjects.delete.mutationOptions({
-      onSuccess: () => {
-        void invalidateSubjectDomain(queryClient, trpc, Number(subjectId));
-        setParams(null);
-      },
-    }),
-  );
+
 
   return (
     <Sheet open={isOpen} onOpenChange={() => setParams(null)}>
@@ -64,38 +45,12 @@ export function SubjectEditSheet() {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent sideOffset={10} align="end">
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <DropdownMenuItem
-                      className="text-destructive"
-                      onSelect={(e) => e.preventDefault()}
-                    >
-                      Delete
-                    </DropdownMenuItem>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>
-                        Are you absolutely sure?
-                      </AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This action cannot be undone. This will permanently
-                        delete the subject and remove its data from our
-                        servers.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() =>
-                          deleteSubjectMutation.mutate({ id: Number(subjectId) })
-                        }
-                      >
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                <DropdownMenuItem
+                  className="text-destructive"
+                  onSelect={() => setParams({ deleteSubjectId: subjectId })}
+                >
+                  Delete
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           )}

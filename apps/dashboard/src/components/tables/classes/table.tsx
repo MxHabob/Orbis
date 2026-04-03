@@ -45,15 +45,7 @@ export function DataTable() {
     trpc.classes.getAll.queryOptions(),
   );
 
-  const deleteClassMutation = useMutation(
-    trpc.classes.delete.mutationOptions({
-      onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: trpc.classes.getAll.queryKey(),
-        });
-      },
-    }),
-  );
+
 
   const flattenedData = React.useMemo(() => {
     return flattenClasses(data?.data as any ?? []);
@@ -113,7 +105,7 @@ export function DataTable() {
 
   const tableMeta: ClassesTableMeta = {
     deleteClass: (id: number) => {
-      deleteClassMutation.mutate({ id });
+      setParams({ deleteClassId: id.toString() });
     },
     onEditClass: (id: number) => {
       setParams({ classId: id.toString() });

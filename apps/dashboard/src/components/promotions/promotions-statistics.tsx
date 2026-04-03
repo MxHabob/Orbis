@@ -62,11 +62,20 @@ export function PromotionsStatistics({ data, isLoading }: PromotionsStatisticsPr
 
   if (data.total === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-center border-b">
-        <h3 className="text-sm font-medium text-[#606060]">{t("common.no_data")}</h3>
+      <div className="flex flex-col items-center justify-center py-10 px-6 border border-dashed rounded-xl bg-muted/5 text-muted-foreground animate-in fade-in duration-500">
+        <div className="h-16 w-16 rounded-full bg-muted/10 flex items-center justify-center mb-6 text-3xl">
+          📈
+        </div>
+        <h2 className="font-medium text-lg text-foreground mb-2">
+          {t("common.no_data")}
+        </h2>
+        <p className="text-sm text-[#606060] max-w-sm text-center">
+          {t("grades.no_results_description")}
+        </p>
       </div>
     );
   }
+
 
   const kpis = [
     {

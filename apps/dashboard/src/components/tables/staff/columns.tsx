@@ -1,16 +1,5 @@
 import { useI18n, useScopedI18n } from "@/locales/client";
 import type { RouterOutputs } from "@api/trpc/routers/_app";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@midday/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImageNext } from "@midday/ui/avatar";
 import { Button } from "@midday/ui/button";
 import {
@@ -26,15 +15,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@midday/ui/select";
-import { useToast } from "@midday/ui/use-toast";
 import type { ColumnDef, FilterFn, Row } from "@tanstack/react-table";
 import { MoreHorizontal } from "lucide-react";
-import { Loader2 } from "lucide-react";
 import * as React from "react";
 import "@tanstack/react-table";
 import { useTRPC } from "@/trpc/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 
 type TeamMember = RouterOutputs["user"]["getStaff"][number];
 
@@ -86,36 +72,10 @@ export const columns: ColumnDef<TeamMember>[] = [
   {
     id: "actions",
     cell: ({ row, table }) => {
-      const t = useI18n();
       const tRoles = useScopedI18n("roles");
-      const { toast } = useToast();
       const meta = table.options.meta;
       const trpc = useTRPC();
       const queryClient = useQueryClient();
-      const router = useRouter();
-
-      const deleteMemberMutation = useMutation(
-        trpc.user.delete.mutationOptions({
-          onSuccess: () => {
-            queryClient.invalidateQueries({
-              queryKey: trpc.user.getStaff.queryKey(),
-            });
-          },
-          onError: () => {
-            toast({
-              title: "Error deleting member",
-            });
-          },
-        }),
-      );
-
-      const leaveTeamMutation = useMutation(
-        trpc.user.delete.mutationOptions({
-          onSuccess: async () => {
-            router.push("/teams");
-          },
-        }),
-      );
 
       const updateMemberMutation = useMutation(
         trpc.user.update.mutationOptions({
@@ -170,85 +130,12 @@ export const columns: ColumnDef<TeamMember>[] = [
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   {meta?.currentUser?.id !== row.original.id && (
-                    <AlertDialog>
-                      <DropdownMenuItem
-                        className="text-destructive"
-                        asDialogTrigger
-                      >
-                        <AlertDialogTrigger>Remove Member</AlertDialogTrigger>
-                      </DropdownMenuItem>
-
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>
-                            Remove Team Member
-                          </AlertDialogTitle>
-                          <AlertDialogDescription>
-                            You are about to remove the following Team Member,
-                            are you sure you want to continue?
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            disabled={deleteMemberMutation.isPending}
-                            onClick={() => {
-                              deleteMemberMutation.mutate({
-                                id: row.original.id!,
-                              });
-                            }}
-                          >
-                            {deleteMemberMutation.isPending ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              "Confirm"
-                            )}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )}
-
-                  {meta?.currentUser?.id === row.original.id && (
-                    <AlertDialog>
-                      <DropdownMenuItem
-                        className="text-destructive"
-                        asDialogTrigger
-                      >
-                        <AlertDialogTrigger>Leave Team</AlertDialogTrigger>
-                      </DropdownMenuItem>
-
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Leave Team</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            You are about to leave this team. In order to regain
-                            access at a later time, a Team Owner must invite
-                            you.
-                            <p className="mt-4">
-                              Are you sure you want to continue?
-                            </p>
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            disabled={leaveTeamMutation.isPending}
-                            onClick={() =>
-                              leaveTeamMutation.mutate({
-                                id: row.original.id!,
-                              })
-                            }
-                          >
-                            {leaveTeamMutation.isPending ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              "Confirm"
-                            )}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    <DropdownMenuItem
+                      className="text-destructive"
+                      onSelect={() => meta?.setParams?.({ deleteStaffId: row.original.id })}
+                    >
+                      Remove Member
+                    </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>

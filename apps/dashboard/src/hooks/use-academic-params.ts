@@ -5,6 +5,8 @@ export function useAcademicParams() {
     editYearId: parseAsString,
     editTermId: parseAsString,
     parentYearId: parseAsString,
+    deleteYearId: parseAsString,
+    deleteTermId: parseAsString,
     createYear: parseAsBoolean,
     createTerm: parseAsBoolean,
     q: parseAsString,

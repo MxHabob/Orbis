@@ -4,6 +4,7 @@ import type { Dispatch, SetStateAction } from "react";
 
 declare module "@tanstack/react-table" {
   interface TableMeta<TData extends RowData> {
+    setParams?: (params: Record<string, any>) => void;
     // Transaction table meta
     dateFormat?: string | null;
     timeFormat?: number | null;

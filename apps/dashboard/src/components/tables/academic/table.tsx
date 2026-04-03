@@ -12,7 +12,6 @@ import {
   TableRow,
 } from "@midday/ui/table";
 import {
-  useMutation,
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
@@ -41,21 +40,7 @@ export function DataTable() {
     trpc.academic.getYears.queryOptions()
   );
 
-  const deleteYearMutation = useMutation(
-    trpc.academic.deleteYear.mutationOptions({
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: trpc.academic.getYears.queryKey() });
-      },
-    })
-  );
 
-  const deleteTermMutation = useMutation(
-    trpc.academic.deleteTerm.mutationOptions({
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: trpc.academic.getYears.queryKey() });
-      },
-    })
-  );
 
   const flattenedData = React.useMemo(() => {
     return flattenAcademicYears(data as any ?? []);
@@ -84,10 +69,10 @@ export function DataTable() {
 
   const tableMeta: AcademicTableMeta = {
     deleteYear: (id: number) => {
-      if (confirm(t("common.delete") + "?")) deleteYearMutation.mutate({ id });
+      setParams({ deleteYearId: id.toString() });
     },
     deleteTerm: (id: number) => {
-      if (confirm(t("common.delete") + "?")) deleteTermMutation.mutate({ id });
+      setParams({ deleteTermId: id.toString() });
     },
     onEditYear: (id: number) => {
       setParams({ editYearId: id.toString() });

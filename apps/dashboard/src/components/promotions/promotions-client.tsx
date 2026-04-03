@@ -4,6 +4,7 @@ import { usePromotions } from "@/hooks/use-promotions";
 import { PromotionsHeader } from "./promotions-header";
 import { PromotionsTabs } from "./promotions-tabs";
 import { RollbackConfirmDialog } from "../modals/promotions/rollback-confirm-dialog";
+import { ExecutePromotionDialog } from "../modals/promotions/execute-promotion-dialog";
 import { OverridePromotionModal } from "../modals/promotions/override-modal";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -46,6 +47,7 @@ export function PromotionsClient({
 
     // Handlers
     handleExecute,
+    confirmExecute,
     handleRollbackClick,
     confirmRollback,
     handleRefresh,
@@ -56,7 +58,10 @@ export function PromotionsClient({
     overrideRecord,
     rollbackConfirmOpen,
     setRollbackConfirmOpen,
+    executeConfirmOpen,
+    setExecuteConfirmOpen,
     pendingRollbackIds,
+    studentsCount
   } = usePromotions();
 
   return (
@@ -102,6 +107,14 @@ export function PromotionsClient({
         onOpenChange={setRollbackConfirmOpen}
         studentCount={pendingRollbackIds.length}
         onConfirm={confirmRollback}
+      />
+
+      <ExecutePromotionDialog
+        open={executeConfirmOpen}
+        onOpenChange={setExecuteConfirmOpen}
+        studentCount={studentsCount}
+        onConfirm={confirmExecute}
+        isLoading={isExecuting}
       />
     </div>
   );

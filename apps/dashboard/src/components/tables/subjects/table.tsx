@@ -37,15 +37,7 @@ export function DataTable() {
     trpc.subjects.getAll.queryOptions(),
   );
 
-  const deleteSubjectMutation = useMutation(
-    trpc.subjects.delete.mutationOptions({
-      onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: trpc.subjects.getAll.queryKey(),
-        });
-      },
-    }),
-  );
+
 
   // Get search filter value
   const [searchValue, setSearchValue] = React.useState<string>("");
@@ -61,7 +53,7 @@ export function DataTable() {
 
   const tableMeta: SubjectsTableMeta = {
     deleteSubject: (id: number) => {
-      deleteSubjectMutation.mutate({ id });
+      setParams({ deleteSubjectId: id.toString() });
     },
     onEditSubject: (id: number) => {
       setParams({ subjectId: id.toString() });

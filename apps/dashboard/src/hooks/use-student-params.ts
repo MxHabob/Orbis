@@ -6,6 +6,7 @@ export function useStudentParams() {
   
   const [queryStates, setQueryStates] = useQueryStates({
     studentId: parseAsString,
+    deleteStudentId: parseAsString,
     createStudent: parseAsBoolean,
     classId: parseAsString,
     name: parseAsString,
@@ -16,6 +17,7 @@ export function useStudentParams() {
     templateId: parseAsString,
     month: parseAsInteger,
   });
+
 
   return {
     ...queryStates,

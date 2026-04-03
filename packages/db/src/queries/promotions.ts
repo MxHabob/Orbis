@@ -350,6 +350,9 @@ export const previewClassPromotion = async (params: {
           : scoreData.passed
             ? ("promoted" as const)
             : ("retained" as const),
+      toClassId: scoreData.passed
+        ? (!isLastGrade ? nextClass?.id : undefined)
+        : classId,
       alreadyPromoted,
     });
   }

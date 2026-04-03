@@ -40,6 +40,7 @@ export function usePromotions() {
 
   const [activeTab, setActiveTab] = useState<PromotionTab>("preview");
   const [rollbackConfirmOpen, setRollbackConfirmOpen] = useState(false);
+  const [executeConfirmOpen, setExecuteConfirmOpen] = useState(false);
   const [pendingRollbackIds, setPendingRollbackIds] = useState<string[]>([]);
   const [overrideRecord, setOverrideRecord] = useState<unknown>(null);
 
@@ -87,6 +88,7 @@ export function usePromotions() {
         toast({ title: t("promotions.process_success") });
         queryClient.invalidateQueries({ queryKey: historyQueryOptions.queryKey });
         queryClient.invalidateQueries({ queryKey: statsQueryOptions.queryKey });
+        setExecuteConfirmOpen(false);
         setActiveTab("history");
       },
       onError: (err) => {
@@ -128,16 +130,11 @@ export function usePromotions() {
     )
       return;
 
-    const decisions: PromotionDecision[] =
-      previewQuery.data?.students
-        ?.filter((s) => s.suggestedStatus !== "already_promoted")
-        .map((student) => ({
-          studentId: student.studentId,
-          status: student.suggestedStatus as PromotionDecision["status"],
-          toClassId: student.toClassId,
-        })) ?? [];
+    const decisionsCount = previewQuery.data?.students?.filter(
+      (s) => s.suggestedStatus !== "already_promoted",
+    ).length;
 
-    if (decisions.length === 0) {
+    if (!decisionsCount || decisionsCount === 0) {
       toast({
         title: t("common.error"),
         description: t("promotions.no_students_to_promote"),
@@ -145,6 +142,37 @@ export function usePromotions() {
       });
       return;
     }
+
+    setExecuteConfirmOpen(true);
+  }, [
+    promotionClassId,
+    sourceYearId,
+    targetYearId,
+    previewQuery.data,
+    toast,
+    t,
+  ]);
+
+  const confirmExecute = useCallback(() => {
+    if (
+      !promotionClassId ||
+      !sourceYearId ||
+      !targetYearId ||
+      !previewQuery.data
+    )
+      return;
+
+    const decisions: PromotionDecision[] =
+      previewQuery.data?.students
+        ?.filter((s) => s.suggestedStatus !== "already_promoted")
+        .map((student) => ({
+          studentId: student.studentId,
+          status: student.suggestedStatus as PromotionDecision["status"],
+          toClassId:
+            student.suggestedStatus === "promoted"
+              ? previewQuery.data?.nextClass?.id
+              : undefined,
+        })) ?? [];
 
     executeMutation.mutate({
       classId: promotionClassId,
@@ -158,8 +186,6 @@ export function usePromotions() {
     targetYearId,
     previewQuery.data,
     executeMutation,
-    toast,
-    t,
   ]);
 
   const handleRollbackClick = useCallback((studentIds: string[]) => {
@@ -228,6 +254,7 @@ export function usePromotions() {
 
     // Handlers
     handleExecute,
+    confirmExecute,
     handleRollbackClick,
     confirmRollback,
     handleRefresh,
@@ -238,6 +265,9 @@ export function usePromotions() {
     overrideRecord,
     rollbackConfirmOpen,
     setRollbackConfirmOpen,
+    executeConfirmOpen,
+    setExecuteConfirmOpen,
     pendingRollbackIds,
+    studentsCount: previewQuery.data?.students?.filter(s => s.suggestedStatus !== "already_promoted").length ?? 0
   } as const;
 }

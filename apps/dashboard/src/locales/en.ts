@@ -20,6 +20,7 @@ export default {
     export_started: "Export Started",
     export_started_desc: "Your report is being generated in the background.",
     success: "Success",
+
     find_anything: "Find anything...",
     students: "Students",
     schedule: "Schedule",
@@ -28,6 +29,10 @@ export default {
     orientation: "Orientation",
     template_name: "Template Name",
     description: "Description",
+    confirm_action: "Confirm Action",
+    destructive_action: "Destructive Action",
+    irreversible_action: "This action cannot be undone. This will permanently remove the data from our servers.",
+    deleting: "Deleting...",
   },
   transaction_methods: {
     card_purchase: "Card Purchase",
@@ -624,6 +629,16 @@ export default {
       type_final: "Final",
     }
   },
+  subjects: {
+    delete_title: "Delete Subject",
+    delete_description: "Are you sure you want to delete this subject? All grades associated with it will be permanently removed.",
+  },
+  staff: {
+    delete_title: "Remove Team Member",
+    delete_description: "Are you sure you want to remove this member from the team? They will no longer have access to the school.",
+    leave_title: "Leave Team",
+    leave_description: "Are you sure you want to leave the team? You will need an invitation from the principal to rejoin.",
+  },
   account_type: {
     depository: "Depository",
     credit: "Credit",
@@ -975,6 +990,8 @@ export default {
     division_placeholder: "e.g. A",
     sort_order: "Sort Order",
     sort_order_placeholder: "e.g. 1",
+    delete_title: "Delete Class",
+    delete_description: "Are you sure you want to delete this class? All students, grades, and schedules associated with it will be permanently removed.",
   },
   students: {
     general_info: "General Information",
@@ -1006,6 +1023,8 @@ export default {
     father_phone: "Father's Phone",
     mother_name: "Mother's Full Name",
     mother_phone: "Mother's Phone",
+    delete_student: "Delete Student",
+    delete_description: "Are you sure you want to delete this student? All of their data and grades will be permanently removed from the system.",
     create: "Create",
     update: "Update",
     student_added_success: "Student added successfully",

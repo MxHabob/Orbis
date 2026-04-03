@@ -16,7 +16,7 @@ import { STICKY_COLUMNS, SUMMARY_GRID_HEIGHTS } from "@/utils/table-configs";
 import type { TableSettings } from "@/utils/table-settings";
 import { DndContext, closestCenter } from "@dnd-kit/core";
 import { Table, TableBody, TableCell, TableRow } from "@midday/ui/table";
-import { useMutation, useSuspenseInfiniteQuery } from "@tanstack/react-query";
+import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { type VirtualItem, useVirtualizer } from "@tanstack/react-virtual";
 import {
@@ -39,9 +39,9 @@ type Props = {
 
 export function DataTable({ initialSettings, id }: Props) {
   const trpc = useTRPC();
-  const { setParams } = useStudentParams();
   const { filter, hasFilters } = useCustomerFilterParams();
   const { params } = useSortParams();
+  const { deleteStudentId, setParams: setStudentParams } = useStudentParams();
   const parentRef = useRef<HTMLDivElement>(null);
   const { setColumns } = useStudentsStore();
 
@@ -76,19 +76,11 @@ export function DataTable({ initialSettings, id }: Props) {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } =
     useSuspenseInfiniteQuery(infiniteQueryOptions);
 
-  const deleteStudentMutation = useMutation(
-    trpc.students.delete.mutationOptions({
-      onSuccess: () => {
-        refetch();
-      },
-    }),
-  );
-
   const handleDeleteStudent = useCallback(
     (id: string) => {
-      deleteStudentMutation.mutate({ userId: id });
+      setStudentParams({ deleteStudentId: id });
     },
-    [deleteStudentMutation],
+    [setStudentParams],
   );
 
   const tableData = useMemo(() => {
@@ -98,12 +90,12 @@ export function DataTable({ initialSettings, id }: Props) {
   const setOpen = useCallback(
     (id?: string) => {
       if (id) {
-        setParams({ studentId: id, details: true });
+        setStudentParams({ studentId: id, details: true });
       } else {
-        setParams(null);
+        setStudentParams(null);
       }
     },
-    [setParams],
+    [setStudentParams],
   );
 
   const tableMeta = useMemo(
@@ -112,6 +104,7 @@ export function DataTable({ initialSettings, id }: Props) {
     }),
     [handleDeleteStudent],
   );
+
 
   const table = useReactTable({
     data: tableData,
@@ -128,7 +121,7 @@ export function DataTable({ initialSettings, id }: Props) {
       columnSizing,
       columnOrder,
     },
-    meta: tableMeta,
+    meta: tableMeta as any,
   });
 
   // DnD for column reordering

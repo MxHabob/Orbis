@@ -7,7 +7,9 @@ export function useClassParams() {
   const [queryStates, setQueryStates] = useQueryStates({
     academicYearId: parseAsString,
     classId: parseAsString,
+    deleteClassId: parseAsString,
     createClass: parseAsBoolean,
+
     name: parseAsString,
     q: parseAsString,
     step: parseAsString,

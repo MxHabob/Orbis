@@ -21,6 +21,7 @@ import { LessonEditSheet } from "@/components/sheets/lesson-edit-sheet";
 import { LessonScheduleSheet } from "@/components/sheets/lesson-schedule-sheet";
 import { AcademicSheets } from "@/components/sheets/academic-sheets";
 import { ReportsExportSheet } from "@/components/sheets/reports-export-sheet";
+import { GlobalDeleteDialog } from "@/components/modals/global-delete-dialog";
 
 export function GlobalSheets() {
   return (
@@ -44,6 +45,8 @@ export function GlobalSheets() {
       <LessonScheduleSheet />
       <AcademicSheets />
       <ReportsExportSheet />
+      
+      <GlobalDeleteDialog />
     </>
   );
 }
