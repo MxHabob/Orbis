@@ -13,14 +13,16 @@ import {
 } from "@midday/ui/dialog";
 import { SubmitButton } from "@midday/ui/submit-button";
 import { useToast } from "@midday/ui/use-toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { parseAsBoolean, parseAsString, useQueryStates } from "nuqs";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { parseFile } from "@midday/import";
 import { ImportCsvContext, studentImportSchema, type StudentImportFormData } from "../shared/context";
 import { SelectFile } from "../shared/select-file";
 import { StudentFieldMapping } from "./student-field-mapping";
+import { StudentImportConfirm } from "./student-import-confirm";
 import { invalidateStudentDomain } from "@/utils/query-invalidation";
+
 
 const pages = ["select-file", "confirm-import"] as const;
 
@@ -49,6 +51,24 @@ export function StudentImportModal() {
     trpc.students.import.mutationOptions({})
   );
 
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [pendingStudents, setPendingStudents] = useState<any[]>([]);
+  const [pendingMeta, setPendingMeta] = useState<{ classId: number, academicYearId?: number } | null>(null);
+
+  const { data: classesData } = useQuery(
+    trpc.classes.getAll.queryOptions({ 
+      academicYearId: pendingMeta?.academicYearId 
+    }, { 
+      enabled: !!pendingMeta?.classId 
+    })
+  );
+
+  const selectedClassName = useMemo(() => {
+    if (!pendingMeta?.classId || !classesData?.data) return "";
+    const cls = classesData.data.find(c => c.id === pendingMeta.classId);
+    return cls ? `${cls.name} ${cls.division ?? ""}` : `Class #${pendingMeta.classId}`;
+  }, [pendingMeta, classesData]);
+
   const {
     control,
     watch,
@@ -70,8 +90,127 @@ export function StudentImportModal() {
 
   const file = watch("file");
 
+  const performImport = async () => {
+    if (!pendingMeta || pendingStudents.length === 0) return;
+    setIsImporting(true);
+    try {
+      const importResult = await importStudentsMutation.mutateAsync({
+        classId: pendingMeta.classId,
+        academicYearId: pendingMeta.academicYearId,
+        students: pendingStudents,
+      });
+
+      // Show detailed result toast
+      const { summary, skippedStudents, failedStudents } = importResult;
+
+      if (summary.skipped === 0 && summary.failed === 0) {
+        toast({
+          title: t("students.import_success", { count: summary.added }),
+          variant: "success",
+          duration: 5000,
+        });
+      } else if (summary.added === 0 && summary.total > 0) {
+        toast({
+          title: t("students.import_none_added"),
+          description: (
+            <div className="mt-1 space-y-1.5">
+              <p className="text-xs text-[#878787]">
+                {t("students.import_all_exist", { count: summary.total })}
+              </p>
+              {skippedStudents.length > 0 && (
+                <div className="space-y-1 pr-1">
+                  {skippedStudents.slice(0, 3).map((s, i) => (
+                    <div key={i} className="flex items-start gap-1.5 text-xs text-[#878787]">
+                      <span className="shrink-0 mt-0.5">•</span>
+                      <span>
+                        <span className="text-foreground font-medium">{s.name}</span>
+                        {" — "}{s.reason}
+                      </span>
+                    </div>
+                  ))}
+                  {skippedStudents.length > 3 && (
+                    <p className="text-[10px] text-[#666]">
+                      {t("students.import_and_others", { count: skippedStudents.length - 3 })}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          ),
+          variant: "error",
+          duration: 12000,
+        });
+      } else {
+        toast({
+          title: t("students.import_partial", { added: summary.added, total: summary.total }),
+          description: (
+            <div className="mt-1 space-y-1.5">
+              <div className="flex gap-3 text-xs text-[#878787]">
+                {summary.skipped > 0 && (
+                  <span>{t("students.import_skipped_count", { count: summary.skipped })}</span>
+                )}
+                {summary.failed > 0 && (
+                  <span>{t("students.import_failed_count", { count: summary.failed })}</span>
+                )}
+              </div>
+              {skippedStudents.length > 0 && (
+                <div className="space-y-1 pr-1">
+                  {skippedStudents.slice(0, 3).map((s, i) => (
+                    <div key={i} className="flex items-start gap-1.5 text-xs text-[#878787]">
+                      <span className="shrink-0 mt-0.5">•</span>
+                      <span>
+                        <span className="text-foreground font-medium">{s.name}</span>
+                        {" — "}{s.reason}
+                      </span>
+                    </div>
+                  ))}
+                  {skippedStudents.length > 3 && (
+                    <p className="text-[10px] text-[#666]">
+                      {t("students.import_and_others", { count: skippedStudents.length - 3 })}
+                    </p>
+                  )}
+                </div>
+              )}
+              {failedStudents.length > 0 && (
+                <div className="space-y-1 pr-1 border-t border-border pt-1.5 mt-1.5">
+                  {failedStudents.slice(0, 2).map((s, i) => (
+                    <div key={i} className="flex items-start gap-1.5 text-xs text-[#FF3638]">
+                      <span className="shrink-0 mt-0.5">✕</span>
+                      <span>
+                        <span className="font-medium">{s.name}</span>
+                        {" — "}{s.error}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ),
+          variant: "warning",
+          duration: 15000,
+        });
+      }
+
+      void invalidateStudentDomain(queryClient, trpc);
+      onclose();
+    } catch (err: any) {
+      toast({ 
+        title: t("students.import_error"), 
+        description: err.message, 
+        variant: "error", 
+        duration: 8000,
+      });
+    } finally {
+      setIsImporting(false);
+      setShowConfirm(false);
+    }
+  };
+
   const onclose = () => {
     setIsImporting(false);
+    setShowConfirm(false);
+    setPendingStudents([]);
+    setPendingMeta(null);
     setFileColumns(null);
     setFirstRows(null);
     setPageNumber(0);
@@ -125,7 +264,6 @@ export function StudentImportModal() {
                   <form
                     className="flex flex-col gap-y-4"
                     onSubmit={handleSubmit(async (data) => {
-                      setIsImporting(true);
                       try {
                         const { data: rows } = await parseFile<Record<string, string>>(data.file, {
                           header: true,
@@ -136,11 +274,32 @@ export function StudentImportModal() {
                           .map((row) => {
                             const studentNumber = data.autoGenerateStudentNumber 
                               ? undefined
-                              : row[data.studentNumber!];
+                              : (data.studentNumber ? row[data.studentNumber] : undefined);
                             
-                            const name = row[data.name!];
+                            const name = data.name ? row[data.name] : undefined;
+                            
                             if (!data.autoGenerateStudentNumber && !studentNumber) return null;
                             if (!name) return null;
+
+                            // Any columns that are NOT mapped elsewhere go to metadata
+                            const mappedCols = [
+                               data.studentNumber,
+                               data.name,
+                               data.phone,
+                               data.email,
+                               data.sex,
+                               data.fatherName,
+                               data.fatherPhone,
+                               data.motherName,
+                               data.motherPhone
+                            ].filter(Boolean);
+
+                            const metadata: Record<string, any> = {};
+                            Object.keys(row).forEach(key => {
+                               if (!mappedCols.includes(key)) {
+                                  metadata[key] = row[key];
+                               }
+                            });
 
                             return {
                               studentNumber,
@@ -148,118 +307,29 @@ export function StudentImportModal() {
                               phone: (data.phone && row[data.phone]) ? row[data.phone] : undefined,
                               email: (data.email && row[data.email]) ? row[data.email] : undefined,
                               sex: (data.sex && row[data.sex]) ? (row[data.sex]!.toLowerCase() as any) : 'unspecified',
+                              metadata,
+                              fatherName: (data.fatherName && row[data.fatherName]) ? row[data.fatherName] : undefined,
+                              fatherPhone: (data.fatherPhone && row[data.fatherPhone]) ? row[data.fatherPhone] : undefined,
+                              motherName: (data.motherName && row[data.motherName]) ? row[data.motherName] : undefined,
+                              motherPhone: (data.motherPhone && row[data.motherPhone]) ? row[data.motherPhone] : undefined,
                             };
                           })
                           .filter((s): s is NonNullable<typeof s> => s !== null);
 
-                        const importResult = await importStudentsMutation.mutateAsync({
-                          classId: data.classId!,
-                          academicYearId: data.academicYearId,
-                          students,
-                        });
-                        
-                        // Show detailed result toast
-                        const { summary, skippedStudents, failedStudents } = importResult;
-
-                        if (summary.skipped === 0 && summary.failed === 0) {
-                          toast({
-                            title: t("students.import_success", { count: summary.added }),
-                            variant: "success",
-                            duration: 5000,
-                          });
-                        } else if (summary.added === 0 && summary.total > 0) {
-                          toast({
-                            title: t("students.import_none_added"),
-                            description: (
-                              <div className="mt-1 space-y-1.5">
-                                <p className="text-xs text-[#878787]">
-                                  {t("students.import_all_exist", { count: summary.total })}
-                                </p>
-                                {skippedStudents.length > 0 && (
-                                  <div className="space-y-1 pr-1">
-                                    {skippedStudents.slice(0, 3).map((s, i) => (
-                                      <div key={i} className="flex items-start gap-1.5 text-xs text-[#878787]">
-                                        <span className="shrink-0 mt-0.5">•</span>
-                                        <span>
-                                          <span className="text-foreground font-medium">{s.name}</span>
-                                          {" — "}{s.reason}
-                                        </span>
-                                      </div>
-                                    ))}
-                                    {skippedStudents.length > 3 && (
-                                      <p className="text-[10px] text-[#666]">
-                                        {t("students.import_and_others", { count: skippedStudents.length - 3 })}
-                                      </p>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            ),
-                            variant: "error",
-                            duration: 12000,
-                          });
-                        } else {
-                          toast({
-                            title: t("students.import_partial", { added: summary.added, total: summary.total }),
-                            description: (
-                              <div className="mt-1 space-y-1.5">
-                                <div className="flex gap-3 text-xs text-[#878787]">
-                                  {summary.skipped > 0 && (
-                                    <span>{t("students.import_skipped_count", { count: summary.skipped })}</span>
-                                  )}
-                                  {summary.failed > 0 && (
-                                    <span>{t("students.import_failed_count", { count: summary.failed })}</span>
-                                  )}
-                                </div>
-                                {skippedStudents.length > 0 && (
-                                  <div className="space-y-1 pr-1">
-                                    {skippedStudents.slice(0, 3).map((s, i) => (
-                                      <div key={i} className="flex items-start gap-1.5 text-xs text-[#878787]">
-                                        <span className="shrink-0 mt-0.5">•</span>
-                                        <span>
-                                          <span className="text-foreground font-medium">{s.name}</span>
-                                          {" — "}{s.reason}
-                                        </span>
-                                      </div>
-                                    ))}
-                                    {skippedStudents.length > 3 && (
-                                      <p className="text-[10px] text-[#666]">
-                                        {t("students.import_and_others", { count: skippedStudents.length - 3 })}
-                                      </p>
-                                    )}
-                                  </div>
-                                )}
-                                {failedStudents.length > 0 && (
-                                  <div className="space-y-1 pr-1 border-t border-border pt-1.5 mt-1.5">
-                                    {failedStudents.slice(0, 2).map((s, i) => (
-                                      <div key={i} className="flex items-start gap-1.5 text-xs text-[#FF3638]">
-                                        <span className="shrink-0 mt-0.5">✕</span>
-                                        <span>
-                                          <span className="font-medium">{s.name}</span>
-                                          {" — "}{s.error}
-                                        </span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            ),
-                            variant: "warning",
-                            duration: 15000,
-                          });
+                        if (students.length === 0) {
+                           toast({ title: "No valid students found", variant: "error" });
+                           return;
                         }
 
-                        void invalidateStudentDomain(queryClient, trpc);
-                        onclose();
+                        setPendingStudents(students);
+                        setPendingMeta({ classId: data.classId!, academicYearId: data.academicYearId });
+                        setShowConfirm(true);
                       } catch (err: any) {
                         toast({ 
                           title: t("students.import_error"), 
                           description: err.message, 
                           variant: "error", 
-                          duration: 8000,
                         });
-                      } finally {
-                        setIsImporting(false);
                       }
                     })}
                   >
@@ -272,8 +342,13 @@ export function StudentImportModal() {
                             Please fill all required fields: {renderErrors(formState.errors).join(', ')}
                           </div>
                         )}
-                        <SubmitButton isSubmitting={isImporting} disabled={!isValid} className="mt-4">
-                          Confirm Import
+                        <SubmitButton 
+                          type="submit" 
+                          disabled={!isValid} 
+                          isSubmitting={formState.isSubmitting}
+                          className="mt-4"
+                        >
+                          Confirm Mapping
                         </SubmitButton>
                         <button
                           type="button"
@@ -296,6 +371,15 @@ export function StudentImportModal() {
           </div>
         </div>
       </DialogContent>
+
+      <StudentImportConfirm
+        isOpen={showConfirm}
+        onOpenChange={setShowConfirm}
+        studentCount={pendingStudents.length}
+        className={selectedClassName}
+        onConfirm={performImport}
+        isImporting={isImporting}
+      />
     </Dialog>
   );
 }

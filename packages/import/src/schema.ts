@@ -7,6 +7,10 @@ export const mappableFields = {
     phone: { label: "Phone", required: false },
     email: { label: "Email", required: false },
     sex: { label: "Sex (Male/Female)", required: false },
+    fatherName: { label: "Father Name", required: false },
+    fatherPhone: { label: "Father Phone", required: false },
+    motherName: { label: "Mother Name", required: false },
+    motherPhone: { label: "Mother Phone", required: false },
   },
   grades: {
     studentNumber: { label: "Student Number", required: true },
@@ -38,6 +42,10 @@ export const studentImportSchema = baseImportSchema.extend({
   phone: z.string().optional(),
   email: z.string().optional(),
   sex: z.string().optional(),
+  fatherName: z.string().optional(),
+  fatherPhone: z.string().optional(),
+  motherName: z.string().optional(),
+  motherPhone: z.string().optional(),
 }).refine((data) => {
   if (!data.autoGenerateStudentNumber && !data.studentNumber) return false;
   return !!data.name;

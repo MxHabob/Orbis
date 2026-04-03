@@ -4,6 +4,7 @@ export * from "./excel";
 export * from "./parser";
 export * from "./schema";
 export * from "./utils";
+export * from "./students";
 
 export function formatDate(dateStr: string): string | undefined {
   if (!dateStr) return undefined;

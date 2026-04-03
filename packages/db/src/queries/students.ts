@@ -72,6 +72,7 @@ export const getAllStudentss = async () => {
             status: students.status,
             notes: students.notes,
             stats: students.stats,
+            metadata: students.metadata,
             name: users.name,
             image: users.image,
             email: users.email,
@@ -160,6 +161,7 @@ export const getStudentsByClassId = async (
             status: students.status,
             notes: students.notes,
             stats: students.stats,
+            metadata: students.metadata,
             name: users.name,
             image: users.image,
             email: users.email,
@@ -209,6 +211,7 @@ export const getStudentByUserId = async (userId: string) => {
             status: students.status,
             notes: students.notes,
             stats: students.stats,
+            metadata: students.metadata,
             name: users.name,
             email: users.email,
             phone: users.phone,
@@ -248,6 +251,7 @@ export const getStudentsByUserIds = async (userIds: string[]) => {
             status: students.status,
             notes: students.notes,
             stats: students.stats,
+            metadata: students.metadata,
             name: users.name,
             email: users.email,
             phone: users.phone,
@@ -282,6 +286,7 @@ export const getStudentById = async (id: string) => {
             status: students.status,
             notes: students.notes,
             stats: students.stats,
+            metadata: students.metadata,
             name: users.name,
             email: users.email,
             phone: users.phone,
@@ -323,6 +328,7 @@ export const getStudentByNumber = async (studentNumber: string) => {
             status: students.status,
             notes: students.notes,
             stats: students.stats,
+            metadata: students.metadata,
             name: users.name,
             email: users.email,
             phone: users.phone,
@@ -403,7 +409,7 @@ export const updateStudent = async (userId: string, data: Partial<CreateStudentP
 };
 
 export const upsertStudent = async (data: any) => {
-    const { userId, name, email, phone, sex, studentNumber, secretNumber, currentClassId, status, notes, stats } = data;
+    const { userId, name, email, phone, sex, studentNumber, secretNumber, currentClassId, status, notes, stats, metadata } = data;
 
     let targetUserId = userId;
 
@@ -424,6 +430,7 @@ export const upsertStudent = async (data: any) => {
             status,
             notes,
             stats,
+            metadata,
         }).where(eq(students.userId, targetUserId));
 
         // Invalidate class caches as student counts likely changed
@@ -469,6 +476,7 @@ export const upsertStudent = async (data: any) => {
                 status,
                 notes,
                 stats,
+                metadata,
             });
 
             // Ensure enrollment if class is provided
@@ -528,6 +536,11 @@ export const bulkImportStudents = async (
     phone?: string;
     email?: string;
     sex?: 'male' | 'female' | 'unspecified';
+    metadata?: any;
+    fatherName?: string;
+    fatherPhone?: string;
+    motherName?: string;
+    motherPhone?: string;
   }[],
   academicYearId?: number
 ): Promise<BulkImportResult> => {
@@ -663,7 +676,49 @@ export const bulkImportStudents = async (
           studentNumber: finalStudentNumber,
           secretNumber: finalSecretNumber,
           currentClassId: classId,
+          metadata: item.metadata || {},
         });
+
+        // Insert Parents if available
+        if (item.fatherName) {
+           const [fatherUser] = await tx
+              .insert(users)
+              .values({
+                name: item.fatherName,
+                phone: item.fatherPhone || null,
+                role: "parent",
+              })
+              .returning({ id: users.id });
+              
+           if (fatherUser) {
+              await tx.insert(parentStudents).values({
+                 parentId: fatherUser.id,
+                 studentId: newUser.id,
+                 relationship: "father",
+                 isPrimary: true,
+              });
+           }
+        }
+
+        if (item.motherName) {
+           const [motherUser] = await tx
+              .insert(users)
+              .values({
+                name: item.motherName,
+                phone: item.motherPhone || null,
+                role: "parent",
+              })
+              .returning({ id: users.id });
+              
+           if (motherUser) {
+              await tx.insert(parentStudents).values({
+                 parentId: motherUser.id,
+                 studentId: newUser.id,
+                 relationship: "mother",
+                 isPrimary: !item.fatherName,
+              });
+           }
+        }
 
         // Create enrollment
         await tx.insert(enrollments).values({
@@ -765,6 +820,7 @@ export const getStudentsParentsData = async (classId: number) => {
       fatherPhone: father?.parentPhone || null,
       motherName: mother?.parentName || null,
       motherPhone: mother?.parentPhone || null,
+      metadata: s.studentId ? undefined : undefined // placeholder if needed downstream
     };
   });
 };

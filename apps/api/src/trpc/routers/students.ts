@@ -118,7 +118,12 @@ export const studentsRouter = createTRPCRouter({
         name: z.string(),
         phone: z.string().optional(),
         email: z.string().optional(),
-        sex: z.enum(['male', 'female', 'unspecified']).optional()
+        sex: z.enum(['male', 'female', 'unspecified']).optional(),
+        metadata: z.any().optional(),
+        fatherName: z.string().optional(),
+        fatherPhone: z.string().optional(),
+        motherName: z.string().optional(),
+        motherPhone: z.string().optional(),
       }))
     }))
     .mutation(async ({ input }) => {

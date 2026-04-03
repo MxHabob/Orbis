@@ -1014,5 +1014,9 @@ export default {
     import_failed_count: "Failed: {count}",
     import_error: "Error during import",
     import_and_others: "and {count} more...",
+    confirm_import_title: "Are you absolutely sure?",
+    confirm_import_description: "You are about to import {count} student(s) to {className}. This will create new student records and link them to the selected class.",
+    importing: "Importing...",
+    confirm_import_button: "Confirm and Import Students",
   },
 } as const;

@@ -88,7 +88,10 @@ export function FieldRow({
 
       <span className="flex h-9 w-full items-center justify-between whitespace-nowrap border border-border bg-transparent px-3 py-2 text-sm">
         <div className="grow whitespace-nowrap text-sm font-normal text-muted-foreground justify-between flex">
-          <span>{label}</span>
+          <div className="flex items-center gap-1.5">
+            <span>{label}</span>
+            {!required && <span className="text-[10px] text-[#878787] uppercase">(Optional)</span>}
+          </div>
 
           {description?.trim() && (
             <TooltipProvider delayDuration={50}>

@@ -44,9 +44,10 @@ export function StudentFieldMapping() {
   }, { 
     enabled: !!academicYearId,
     select: (data) => {
-      if (!classId && data.data?.length === 1) {
+      const firstClass = data.data?.[0];
+      if (!classId && data.data?.length === 1 && firstClass) {
         setTimeout(() => {
-          if (!watch("classId")) setValue("classId", data.data[0].id);
+          if (!watch("classId")) setValue("classId", firstClass.id);
         }, 0);
       }
       return data;
@@ -145,6 +146,13 @@ export function StudentFieldMapping() {
         <FieldRow field="phone" type="students" />
         <FieldRow field="email" type="students" />
         <FieldRow field="sex" type="students" />
+        <div className="col-span-2 pt-4 border-t mt-2">
+           <Label className="text-[#878787] text-xs font-normal uppercase tracking-wider">Parent Information</Label>
+        </div>
+        <FieldRow field="fatherName" type="students" />
+        <FieldRow field="fatherPhone" type="students" />
+        <FieldRow field="motherName" type="students" />
+        <FieldRow field="motherPhone" type="students" />
       </div>
     </div>
   );

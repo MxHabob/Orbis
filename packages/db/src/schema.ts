@@ -159,10 +159,12 @@ export const students = pgTable('students', {
   status: studentStatusEnum('status').default('active'),
   notes: text('notes'),
   stats: jsonb('stats'),
+  metadata: jsonb('metadata').default('{}'),
   deletedAt: timestamp('deleted_at'),
 }, (table) => ({
   studentNumIdx: index('student_num_idx').on(table.studentNumber),
   secretNumIdx: index('secret_num_idx').on(table.secretNumber),
+  metadataIdx: index('student_metadata_gin_idx').using('gin', table.metadata),
 }));
 
 // Student Enrollments Table

@@ -687,6 +687,10 @@ export default {
     import_failed_count: "فشل: {count}",
     import_error: "خطأ أثناء الاستيراد",
     import_and_others: "و {count} آخرين...",
+    confirm_import_title: "هل أنت متأكد تماماً؟",
+    confirm_import_description: "أنت على وشك استيراد {count} طالب إلى {className}. سيؤدي هذا إلى إنشاء سجلات طلاب جديدة وربطهم بالفصل المختار للموقع.",
+    importing: "جاري الاستيراد...",
+    confirm_import_button: "تأكيد واستيراد الطلاب",
   },
   account_type: {
     depository: "حساب إيداع",

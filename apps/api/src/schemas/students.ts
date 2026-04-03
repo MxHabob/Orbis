@@ -29,6 +29,9 @@ export const studentSchema = z.object({
   stats: z.record(z.string(), z.any()).nullable().openapi({
     description: "Additional statistics or metadata",
   }),
+  metadata: z.record(z.string(), z.any()).optional().nullable().openapi({
+    description: "Dynamic custom properties",
+  }),
 });
 
 export const createStudentSchema = studentSchema;
@@ -46,6 +49,7 @@ export const upsertStudentSchema = z.object({
   status: studentStatusEnum.default('active'),
   notes: z.string().optional().nullable(),
   stats: z.record(z.string(), z.any()).optional().nullable(),
+  metadata: z.record(z.string(), z.any()).optional().nullable(),
 });
 
 export const importStudentsSchema = z.object({
@@ -57,6 +61,11 @@ export const importStudentsSchema = z.object({
     phone: z.string().optional(),
     email: z.string().optional(),
     sex: z.enum(['male', 'female', 'unspecified']).default('unspecified'),
+    metadata: z.any().optional(),
+    fatherName: z.string().optional(),
+    fatherPhone: z.string().optional(),
+    motherName: z.string().optional(),
+    motherPhone: z.string().optional(),
   })),
 });
 
