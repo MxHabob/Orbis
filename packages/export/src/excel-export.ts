@@ -187,10 +187,10 @@ export async function generateStudentExport(
       // Skip title and stats rows
       row.eachCell((cell) => {
         cell.border = {
-          top: { style: "thin", color: { argb: "FFD3D3D3" } },
-          left: { style: "thin", color: { argb: "FFD3D3D3" } },
-          bottom: { style: "thin", color: { argb: "FFD3D3D3" } },
-          right: { style: "thin", color: { argb: "FFD3D3D3" } },
+          top: { style: "thin", color: { argb: "FF000000" } },
+          left: { style: "thin", color: { argb: "FF000000" } },
+          bottom: { style: "thin", color: { argb: "FF000000" } },
+          right: { style: "thin", color: { argb: "FF000000" } },
         };
         cell.alignment = { vertical: "middle" };
       });
@@ -286,6 +286,15 @@ export async function generateGradesExport(
 
   // Header row
   const headerRow = worksheet.addRow(columns.map((col) => col.header));
+  
+  headerRow.eachCell({ includeEmpty: true }, (cell) => {
+    cell.border = {
+      top: { style: 'thin', color: { argb: 'FF000000' } },
+      left: { style: 'thin', color: { argb: 'FF000000' } },
+      bottom: { style: 'thin', color: { argb: 'FF000000' } },
+      right: { style: 'thin', color: { argb: 'FF000000' } }
+    };
+  });
 
   headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
   headerRow.fill = {
@@ -310,7 +319,15 @@ export async function generateGradesExport(
 
     const row = worksheet.addRow(rowData);
     
-    // Add some alignment
+    // Add border and alignment
+    row.eachCell({ includeEmpty: true }, (cell) => {
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FF000000' } },
+        left: { style: 'thin', color: { argb: 'FF000000' } },
+        bottom: { style: 'thin', color: { argb: 'FF000000' } },
+        right: { style: 'thin', color: { argb: 'FF000000' } }
+      };
+    });
     row.alignment = { vertical: "middle" };
   }
 
@@ -458,10 +475,10 @@ export async function generateClassBulkReportExport(
     row.eachCell({ includeEmpty: true }, (cell, colIndex) => {
       // Border color should be a subtle version of the primary or a clean gray
       cell.border = {
-        top: { style: 'thin', color: { argb: "FFE0E0E0" } }, 
-        left: { style: 'thin', color: { argb: "FFE0E0E0" } },
-        bottom: { style: 'thin', color: { argb: "FFE0E0E0" } }, 
-        right: { style: 'thin', color: { argb: "FFE0E0E0" } }
+        top: { style: 'thin', color: { argb: "FF000000" } }, 
+        left: { style: 'thin', color: { argb: "FF000000" } },
+        bottom: { style: 'thin', color: { argb: "FF000000" } }, 
+        right: { style: 'thin', color: { argb: "FF000000" } }
       };
       
       // If subject header and not the name/ID part, use soft shade
@@ -500,10 +517,10 @@ export async function generateClassBulkReportExport(
     dRow.height = 25;
     dRow.eachCell({ includeEmpty: true }, (cell, colIndex) => {
        cell.border = {
-         top: { style: 'thin', color: { argb: "FFF0F0F0" } }, 
-         left: { style: 'thin', color: { argb: "FFF0F0F0" } },
-         bottom: { style: 'thin', color: { argb: "FFF0F0F0" } }, 
-         right: { style: 'thin', color: { argb: "FFF0F0F0" } }
+         top: { style: 'thin', color: { argb: "FF000000" } }, 
+         left: { style: 'thin', color: { argb: "FF000000" } },
+         bottom: { style: 'thin', color: { argb: "FF000000" } }, 
+         right: { style: 'thin', color: { argb: "FF000000" } }
        };
 
        // Alternate row shading for better readability (Subtle brand touch)
@@ -528,10 +545,10 @@ export async function generateClassBulkReportExport(
             fgColor: { argb: "FFFFEBEE" } 
           };
           cell.border = {
-            top: { style: 'thin', color: { argb: 'FFFFCDD2' } },
-            left: { style: 'thin', color: { argb: 'FFFFCDD2' } },
-            bottom: { style: 'thin', color: { argb: 'FFFFCDD2' } },
-            right: { style: 'thin', color: { argb: 'FFFFCDD2' } }
+            top: { style: 'thin', color: { argb: 'FF000000' } },
+            left: { style: 'thin', color: { argb: 'FF000000' } },
+            bottom: { style: 'thin', color: { argb: 'FF000000' } },
+            right: { style: 'thin', color: { argb: 'FF000000' } }
           };
        });
     }
@@ -605,10 +622,10 @@ export async function generateAttendanceSheetExport(
     row.height = 25;
     row.eachCell({ includeEmpty: true }, (cell: any) => {
       cell.border = {
-        top: { style: 'thin', color: { argb: 'FFE0E0E0' } }, 
-        left: { style: 'thin', color: { argb: 'FFE0E0E0' } },
-        bottom: { style: 'thin', color: { argb: 'FFE0E0E0' } }, 
-        right: { style: 'thin', color: { argb: 'FFE0E0E0' } }
+        top: { style: 'thin', color: { argb: 'FF000000' } }, 
+        left: { style: 'thin', color: { argb: 'FF000000' } },
+        bottom: { style: 'thin', color: { argb: 'FF000000' } }, 
+        right: { style: 'thin', color: { argb: 'FF000000' } }
       };
     });
   });
@@ -623,10 +640,10 @@ export async function generateAttendanceSheetExport(
     dRow.height = 22;
     dRow.eachCell({ includeEmpty: true }, (cell: any) => {
       cell.border = {
-        top: { style: 'thin', color: { argb: 'FFF0F0F0' } }, 
-        left: { style: 'thin', color: { argb: 'FFF0F0F0' } },
-        bottom: { style: 'thin', color: { argb: 'FFF0F0F0' } }, 
-        right: { style: 'thin', color: { argb: 'FFF0F0F0' } }
+        top: { style: 'thin', color: { argb: 'FF000000' } }, 
+        left: { style: 'thin', color: { argb: 'FF000000' } },
+        bottom: { style: 'thin', color: { argb: 'FF000000' } }, 
+        right: { style: 'thin', color: { argb: 'FF000000' } }
       };
     });
     
@@ -638,10 +655,10 @@ export async function generateAttendanceSheetExport(
           fgColor: { argb: 'FFFFEBEE' } 
         };
         cell.border = {
-          top: { style: 'thin', color: { argb: 'FFFFCDD2' } },
-          left: { style: 'thin', color: { argb: 'FFFFCDD2' } },
-          bottom: { style: 'thin', color: { argb: 'FFFFCDD2' } },
-          right: { style: 'thin', color: { argb: 'FFFFCDD2' } }
+          top: { style: 'thin', color: { argb: 'FF000000' } },
+          left: { style: 'thin', color: { argb: 'FF000000' } },
+          bottom: { style: 'thin', color: { argb: 'FF000000' } },
+          right: { style: 'thin', color: { argb: 'FF000000' } }
         };
       });
     }
@@ -722,10 +739,10 @@ export async function generateStudentsParentsExport(
 
   headerRow.eachCell((cell) => {
     cell.border = {
-      top: { style: 'thin', color: { argb: 'FFE0E0E0' } },
-      left: { style: 'thin', color: { argb: 'FFE0E0E0' } },
-      bottom: { style: 'thin', color: { argb: 'FFE0E0E0' } },
-      right: { style: 'thin', color: { argb: 'FFE0E0E0' } }
+      top: { style: 'thin', color: { argb: 'FF000000' } },
+      left: { style: 'thin', color: { argb: 'FF000000' } },
+      bottom: { style: 'thin', color: { argb: 'FF000000' } },
+      right: { style: 'thin', color: { argb: 'FF000000' } }
     };
   });
 
@@ -763,10 +780,10 @@ export async function generateStudentsParentsExport(
     // Borders for data rows
     dRow.eachCell({ includeEmpty: true }, (cell) => {
       cell.border = {
-        top: { style: 'thin', color: { argb: 'FFF0F0F0' } },
-        left: { style: 'thin', color: { argb: 'FFF0F0F0' } },
-        bottom: { style: 'thin', color: { argb: 'FFF0F0F0' } },
-        right: { style: 'thin', color: { argb: 'FFF0F0F0' } }
+        top: { style: 'thin', color: { argb: 'FF000000' } },
+        left: { style: 'thin', color: { argb: 'FF000000' } },
+        bottom: { style: 'thin', color: { argb: 'FF000000' } },
+        right: { style: 'thin', color: { argb: 'FF000000' } }
       };
     });
 
@@ -780,10 +797,10 @@ export async function generateStudentsParentsExport(
         };
         // Add a slightly stronger border to auditor rows to make them distinct
         cell.border = {
-          top: { style: 'thin', color: { argb: 'FFFFCDD2' } },
-          left: { style: 'thin', color: { argb: 'FFFFCDD2' } },
-          bottom: { style: 'thin', color: { argb: 'FFFFCDD2' } },
-          right: { style: 'thin', color: { argb: 'FFFFCDD2' } }
+          top: { style: 'thin', color: { argb: 'FF000000' } },
+          left: { style: 'thin', color: { argb: 'FF000000' } },
+          bottom: { style: 'thin', color: { argb: 'FF000000' } },
+          right: { style: 'thin', color: { argb: 'FF000000' } }
         };
       });
     }
