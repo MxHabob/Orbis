@@ -5,9 +5,11 @@ import { Button } from "@midday/ui/button";
 import { Checkbox } from "@midday/ui/checkbox";
 import { Icons } from "@midday/ui/icons";
 import { Popover, PopoverContent, PopoverTrigger } from "@midday/ui/popover";
+import { useI18n } from "@/locales/client";
 
 export function ReportColumnVisibility() {
   const { columns } = useReportStore();
+  const t = useI18n();
 
   return (
     <Popover>
@@ -26,6 +28,27 @@ export function ReportColumnVisibility() {
                 column.id !== "actions",
             )
             .map((column) => {
+              let label = column.id;
+              if (typeof column.columnDef.header === "string") {
+                label = column.columnDef.header;
+              } else if (column.id === "name") {
+                label = t("education.class_name");
+              } else if (column.id === "description") {
+                label = t("common.description");
+              } else if (column.id === "studentCount") {
+                label = t("common.students");
+              } else if (column.id === "scheduleCount") {
+                label = t("common.schedule");
+              } else if (column.id === "parentClass") {
+                label = t("education.parent_class");
+              } else if (column.id === "type") {
+                label = t("education.type");
+              } else if (column.id === "division") {
+                label = t("education.division");
+              } else if ((column.columnDef.meta as any)?.headerLabel) {
+                label = (column.columnDef.meta as any).headerLabel;
+              }
+
               return (
                 <div key={column.id} className="flex items-center space-x-2">
                   <Checkbox
@@ -39,7 +62,7 @@ export function ReportColumnVisibility() {
                     htmlFor={column.id}
                     className="text-sm peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                   >
-                    {column.columnDef.header?.toString() ?? column.id}
+                    {label}
                   </label>
                 </div>
               );

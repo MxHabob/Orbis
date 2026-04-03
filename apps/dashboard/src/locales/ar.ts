@@ -27,6 +27,7 @@ export default {
     size: "الحجم",
     orientation: "الاتجاه",
     template_name: "اسم القالب",
+    description: "الوصف",
   },
   transaction_methods: {
     card_purchase: "شراء بالبطاقة",

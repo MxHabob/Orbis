@@ -27,6 +27,7 @@ export default {
     size: "Size",
     orientation: "Orientation",
     template_name: "Template Name",
+    description: "Description",
   },
   transaction_methods: {
     card_purchase: "Card Purchase",
