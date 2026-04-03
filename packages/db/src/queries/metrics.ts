@@ -53,7 +53,7 @@ export async function getAverageAttendanceRate(filters?: MetricFilters) {
     .where(conditions.length > 0 ? and(...conditions) : undefined);
 
   if (!stats || !stats.total) return 0;
-  return (Number(stats.present) / Number(stats.total)) * 100;
+  return Math.round((Number(stats.present) / Number(stats.total)) * 100);
 }
 
 export async function getGenderDistribution(filters?: MetricFilters) {
@@ -128,5 +128,5 @@ export async function getOverallPerformance(filters?: MetricFilters) {
     .from(gradeEntries)
     .where(and(...conditions));
     
-  return Number(result?.avgScore || 0);
+  return Math.round(Number(result?.avgScore || 0));
 }

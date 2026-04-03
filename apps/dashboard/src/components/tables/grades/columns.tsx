@@ -78,7 +78,7 @@ const StudentNameCell = memo(
 
 StudentNameCell.displayName = "StudentNameCell";
 
-const roundGrade = (value: number) => Math.round(value * 2) / 2;
+const roundGrade = (value: number) => Math.round(value);
 
 export const createGradeColumns = (
   items: AssessmentItem[] = [],

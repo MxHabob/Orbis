@@ -283,7 +283,7 @@ export const bulkImportGrades = async (assessmentItemId: number, gradeData: {
             const [result] = await db.insert(gradeEntries).values({
                 studentId: student.userId,
                 assessmentItemId,
-                score: item.score?.toString(),
+                score: item.score !== null ? Math.round(item.score).toString() : null,
                 isAbsent: item.isAbsent,
                 comments: item.comments,
                 gradedById,
@@ -291,7 +291,7 @@ export const bulkImportGrades = async (assessmentItemId: number, gradeData: {
             }).onConflictDoUpdate({
                 target: [gradeEntries.studentId, gradeEntries.assessmentItemId],
                 set: {
-                    score: item.score?.toString(),
+                    score: item.score !== null ? Math.round(item.score).toString() : null,
                     isAbsent: item.isAbsent,
                     comments: item.comments,
                     gradedById,
@@ -321,14 +321,14 @@ export const upsertGrade = async (data: {
     .values({
       studentId: data.studentId,
       assessmentItemId: data.assessmentItemId,
-      score: data.score,
+      score: data.score ? Math.round(parseFloat(data.score)).toString() : null,
       gradedById: data.gradedById,
       updatedAt: new Date(),
     })
     .onConflictDoUpdate({
       target: [gradeEntries.studentId, gradeEntries.assessmentItemId],
       set: {
-        score: data.score,
+        score: data.score ? Math.round(parseFloat(data.score)).toString() : null,
         gradedById: data.gradedById,
         updatedAt: new Date(),
       },
@@ -364,14 +364,14 @@ export const batchUpsertGrades = async (
       .values({
         studentId: grade.studentId,
         assessmentItemId: grade.assessmentItemId,
-        score: grade.score,
+        score: grade.score ? Math.round(parseFloat(grade.score)).toString() : null,
         gradedById,
         updatedAt: new Date(),
       })
       .onConflictDoUpdate({
         target: [gradeEntries.studentId, gradeEntries.assessmentItemId],
         set: {
-          score: grade.score,
+          score: grade.score ? Math.round(parseFloat(grade.score)).toString() : null,
           gradedById,
           updatedAt: new Date(),
         },

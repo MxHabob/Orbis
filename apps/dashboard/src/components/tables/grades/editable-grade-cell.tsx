@@ -18,7 +18,11 @@ export const EditableGradeCell = memo(function EditableGradeCell({
   maxScore,
   table,
 }: EditableGradeCellProps) {
-  const [value, setValue] = useState(initialValue || "");
+  const [value, setValue] = useState(
+    initialValue && !isNaN(parseFloat(initialValue))
+      ? Math.round(parseFloat(initialValue)).toString()
+      : initialValue || ""
+  );
 
   const onGradeChange = (table.options.meta as any)?.onGradeChange;
   const originalGrades = (table.options.meta as any)?.grades as any[];
@@ -31,7 +35,11 @@ export const EditableGradeCell = memo(function EditableGradeCell({
 
   // Update local value if initialValue changes (from external refetch or sync)
   useEffect(() => {
-    setValue(initialValue || "");
+    setValue(
+      initialValue && !isNaN(parseFloat(initialValue))
+        ? Math.round(parseFloat(initialValue)).toString()
+        : initialValue || ""
+    );
   }, [initialValue]);
 
   const handleBlur = () => {
@@ -108,7 +116,7 @@ export const EditableGradeCell = memo(function EditableGradeCell({
           isEmpty && "opacity-40"
         )}
         placeholder="-"
-        step="0.5"
+        step="1"
         min="0"
         max={maxScore}
       />

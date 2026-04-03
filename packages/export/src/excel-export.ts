@@ -111,7 +111,7 @@ export async function generateStudentExport(
       "الراسبين:",
       statistics.failedCount || 0,
       "المتوسط العام:",
-      statistics.averageGrade ? `${statistics.averageGrade.toFixed(2)}%` : "N/A",
+      statistics.averageGrade ? `${Math.round(statistics.averageGrade)}%` : "N/A",
     ]);
     statsRow.font = { bold: true };
     worksheet.addRow([]);
@@ -144,7 +144,7 @@ export async function generateStudentExport(
       sex: student.sex
         ? student.sex.charAt(0).toUpperCase() + student.sex.slice(1)
         : "-",
-      average: student.average ? `${student.average.toFixed(2)}%` : "-",
+      average: student.average ? `${Math.round(student.average)}%` : "-",
       status: student.status
         ? student.status.charAt(0).toUpperCase() + student.status.slice(1)
         : "-",

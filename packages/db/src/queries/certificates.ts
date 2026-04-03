@@ -235,14 +235,14 @@ export async function getCertificateData(
         const colKey = MONTHLY_TYPE_MAP[it.type] ?? it.type;
         const score = parseScore(gradeByItemId.get(it.id) ?? null);
         if (score != null) {
-          columns[colKey] = score;
+          columns[colKey] = Math.round(score);
           sum += score;
           hasAny = true;
         } else {
           columns[colKey] = null;
         }
       }
-      if (hasAny) total = sum;
+      if (hasAny) total = Math.round(sum);
       // Ensure standard column keys exist for header
       ["Behavior", "Attendance", "Participation", "Oral", "Written Exam"].forEach((k) => {
         if (columns[k] === undefined) columns[k] = null;
@@ -260,12 +260,12 @@ export async function getCertificateData(
       if (examItem) {
         examScore = parseScore(gradeByItemId.get(examItem.id) ?? null);
       }
-      columns["Monthly Average"] = monthlyTotal > 0 ? monthlyTotal : null;
+      columns["Monthly Average"] = monthlyTotal > 0 ? Math.round(monthlyTotal) : null;
       columns["Mid-term Exam"] = examScore;
       total =
         monthlyTotal > 0 && examScore != null
-          ? monthlyTotal + examScore
-          : examScore ?? (monthlyTotal > 0 ? monthlyTotal : null);
+          ? Math.round(monthlyTotal + examScore)
+          : examScore !== null ? Math.round(examScore) : (monthlyTotal > 0 ? Math.round(monthlyTotal) : null);
     } else {
       // year_end: aggregate by termId (first term id = term 1, second = term 2)
       const [term1Id, term2Id] = termIdsToFetch;
@@ -277,9 +277,9 @@ export async function getCertificateData(
         if (it.termId === term1Id) t1 += s;
         if (term2Id != null && it.termId === term2Id) t2 += s;
       }
-      columns["Term 1 Average"] = t1 > 0 ? t1 : null;
-      columns["Term 2 Average"] = t2 > 0 ? t2 : null;
-      total = t1 > 0 && t2 > 0 ? t1 + t2 : t1 > 0 ? t1 : t2 > 0 ? t2 : null;
+      columns["Term 1 Average"] = t1 > 0 ? Math.round(t1) : null;
+      columns["Term 2 Average"] = t2 > 0 ? Math.round(t2) : null;
+      total = t1 > 0 && t2 > 0 ? Math.round(t1 + t2) : t1 > 0 ? Math.round(t1) : t2 > 0 ? Math.round(t2) : null;
     }
 
     return {

@@ -23,7 +23,7 @@ const gradeCache = new RedisCache("grades", 5 * 60);
 // Helper: Grade calculation (same as grades.ts)
 // ==========================================
 function roundGrade(value: number): number {
-  return Math.round(value * 2) / 2;
+  return Math.round(value);
 }
 
 function getGradeLabel(total: number, maxTotal: number): string {
