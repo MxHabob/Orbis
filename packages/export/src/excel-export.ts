@@ -239,7 +239,8 @@ export function generateExportFilename(
 }
 
 export interface GradesExportOptions extends ExportOptions {
-  assessmentItems: { id: number; title: string; month?: number }[];
+  subjectName?: string;
+  assessmentItems: { id: number; title: string; month?: number; maxScore?: string | number }[];
 }
 
 export interface StudentGradeRow {
@@ -263,192 +264,193 @@ export async function generateGradesExport(
   });
 
   const distinctMonths = [...new Set(assessmentItems.map((i) => i.month).filter((m): m is number => m != null))].sort((a, b) => a - b);
-  const hasMultipleMonths = distinctMonths.length > 1;
 
   const monthNames: Record<number, string> = {
-    1: "الشهر الأول",
-    2: "الشهر الثاني",
-    3: "الشهر الثالث",
-    4: "الاختبار النصفي",
-    5: "الشهر الخامس",
-    6: "الشهر السادس",
-    7: "الشهر السابع",
-    8: "الاختبار النهائي",
+    1: "الشهر الأول", 2: "الشهر الثاني", 3: "الشهر الثالث",
+    4: "الاختبار النصفي", 5: "الشهر الخامس", 6: "الشهر السادس",
+    7: "الشهر السابع", 8: "الاختبار النهائي",
   };
 
-  const columns = [
-    { header: "م", key: "index", width: 5 },
-    { header: "رقم الطالب", key: "studentNumber", width: 20 },
-    { header: "الاسم", key: "name", width: 30 },
-  ];
-
-  let colIndex = 4;
-  const headerGroups: { title: string; start: number; end: number, isTotal?: boolean }[] = [];
-
-  if (!hasMultipleMonths) {
-    assessmentItems.forEach((item) => {
-      columns.push({ header: item.title, key: `item_${item.id}`, width: 15 });
-      colIndex++;
-    });
-  } else {
-    distinctMonths.forEach((m) => {
-      const isExamMonth = m === 4 || m === 8;
-      const mItems = assessmentItems.filter((i) => i.month === m);
-      const groupStart = colIndex;
-
-      if (isExamMonth) {
-        columns.push({ header: "محصلة الشهور", key: `sumOfMonths_${m}`, width: 15 });
-        colIndex++;
-      }
-
-      mItems.forEach((item) => {
-        columns.push({ header: item.title, key: `item_${item.id}`, width: 15 });
-        colIndex++;
-      });
-
-      if (!isExamMonth) {
-        columns.push({ header: "المجموع", key: `month_total_${m}`, width: 15 });
-      } else {
-        columns.push({ header: "المجموع الكلي", key: `final_total_${m}`, width: 15 });
-      }
-      colIndex++;
-
-      headerGroups.push({ title: monthNames[m] || `شهر ${m}`, start: groupStart, end: colIndex - 1 });
-    });
-  }
-
-  const totalCols = columns.length;
-  const titleRow = worksheet.addRow([
-    `تقرير درجات الفصل: ${className}${academicYear ? ` - ${academicYear}` : ""}`,
-  ]);
-  worksheet.mergeCells(titleRow.number, 1, titleRow.number, totalCols);
   const primaryArgb = hexToArgb(options.classColor);
+  const softPrimaryArgb = getLightenedArgb(options.classColor, 95);
+
+  const subjectPart = options.subjectName ? ` - مادة: ${options.subjectName}` : "";
+  const titleText = `تقرير درجات الفصل: ${className}${academicYear ? ` - ${academicYear}` : ""}${subjectPart}`;
+  
+  const titleRow = worksheet.addRow([titleText]);
   titleRow.font = { size: 18, bold: true, color: { argb: primaryArgb } };
   titleRow.alignment = { horizontal: "center", vertical: "middle" };
-  titleRow.height = 30;
-  worksheet.addRow([]);
+  titleRow.height = 35;
 
-  // Grouped header row
-  if (hasMultipleMonths) {
-    const groupHeaderRow = worksheet.addRow([]);
-    
-    // Setup merging for base columns across rows 3 and 4
-    worksheet.mergeCells(3, 1, 4, 1);
-    const cell0 = groupHeaderRow.getCell(1);
-    cell0.value = "م";
-    
-    worksheet.mergeCells(3, 2, 4, 2);
-    const cell1 = groupHeaderRow.getCell(2);
-    cell1.value = "رقم الطالب";
-    
-    worksheet.mergeCells(3, 3, 4, 3);
-    const cell2 = groupHeaderRow.getCell(3);
-    cell2.value = "الاسم";
+  // Header 1 (Group Row) Setup
+  const row1 = ["م", "رقم الطالب", "الاسم"];
+  const headerGroups: { title: string; start: number; end: number }[] = [];
+  let colIndex = 4;
+  
+  // Header 2 (Columns Row) Setup
+  const row2 = ["", "", ""];
+  const finalColumnsConfig: { key: string; width: number }[] = [];
 
-    // Style the first three columns to ensure they don't lose formatting due to the merge precedence
-    [cell0, cell1, cell2].forEach((cell) => {
-      cell.alignment = { horizontal: "center", vertical: "middle" };
-      cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
-      cell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: primaryArgb },
-      };
-    });
+  // Build columns structure
+  if (distinctMonths.length === 0) {
+     const groupStart = colIndex;
+     let mMax = 0;
+     assessmentItems.forEach((item) => {
+        mMax += parseFloat(String(item.maxScore ?? "0")) || 0;
+        row2.push(`${item.title}${item.maxScore ? `\n(${item.maxScore})` : ""}`);
+        finalColumnsConfig.push({ key: `item_${item.id}`, width: 12 });
+        colIndex++;
+     });
+     if (assessmentItems.length > 0) {
+        row2.push(`المجموع\n(${mMax})`);
+        finalColumnsConfig.push({ key: `month_total`, width: 12 });
+        colIndex++;
+     }
+     row1.push(options.subjectName || "التقييمات");
+     for(let i=1; i < colIndex - groupStart; i++) row1.push("");
+     headerGroups.push({ title: options.subjectName || "التقييمات", start: groupStart, end: colIndex - 1 });
+  } else {
+     distinctMonths.forEach((m) => {
+        const isExamMonth = m === 4 || m === 8;
+        const mItems = assessmentItems.filter((i) => i.month === m);
+        const groupStart = colIndex;
 
-    headerGroups.forEach(g => {
-      worksheet.mergeCells(3, g.start, 3, g.end);
-      const cell = groupHeaderRow.getCell(g.start);
-      cell.value = g.title;
-      cell.alignment = { horizontal: "center", vertical: "middle" };
-      cell.font = { bold: true, color: { argb: "FFFFFFFF" } }; // Same as header row
-      cell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: primaryArgb }, // Same as class color
-      };
-    });
+        if (isExamMonth) {
+           row2.push("محصلة الشهور\n(20)");
+           finalColumnsConfig.push({ key: `sumOfMonths_${m}`, width: 15 });
+           colIndex++;
+        }
 
-    // Style the group header row borders
-    groupHeaderRow.eachCell({ includeEmpty: true }, (cell) => {
-      cell.border = {
-        top: { style: 'thin', color: { argb: 'FF000000' } },
-        left: { style: 'thin', color: { argb: 'FF000000' } },
-        bottom: { style: 'thin', color: { argb: 'FF000000' } },
-        right: { style: 'thin', color: { argb: 'FF000000' } }
-      };
-    });
+        let mMax = 0;
+        mItems.forEach((item) => {
+           mMax += parseFloat(String(item.maxScore ?? "0")) || 0;
+           row2.push(`${item.title}${item.maxScore ? `\n(${item.maxScore})` : ""}`);
+           finalColumnsConfig.push({ key: `item_${item.id}`, width: 12 });
+           colIndex++;
+        });
+
+        if (!isExamMonth) {
+           row2.push(`المجموع\n(${mMax})`);
+           finalColumnsConfig.push({ key: `month_total_${m}`, width: 12 });
+        } else {
+           row2.push("المجموع الكلي\n(50)");
+           finalColumnsConfig.push({ key: `final_total_${m}`, width: 15 });
+        }
+        colIndex++;
+
+        row1.push(monthNames[m] || `شهر ${m}`);
+        for(let i=1; i < colIndex - groupStart; i++) row1.push("");
+        headerGroups.push({ title: monthNames[m] || `شهر ${m}`, start: groupStart, end: colIndex - 1 });
+     });
   }
 
-  // Header row - avoid rewriting base columns if merged
-  const headerRow = worksheet.addRow(
-    columns.map((col, idx) => (hasMultipleMonths && idx < 3) ? "" : col.header)
-  );
-  
-  headerRow.eachCell({ includeEmpty: true }, (cell) => {
-    cell.border = {
-      top: { style: 'thin', color: { argb: 'FF000000' } },
-      left: { style: 'thin', color: { argb: 'FF000000' } },
-      bottom: { style: 'thin', color: { argb: 'FF000000' } },
-      right: { style: 'thin', color: { argb: 'FF000000' } }
-    };
+  // Insert Header 1 (Group Row)
+  const header1 = worksheet.addRow(row1);
+  header1.font = { bold: true, size: 12, color: { argb: primaryArgb } }; 
+  header1.alignment = { horizontal: "center", vertical: "middle" };
+  header1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: softPrimaryArgb } }; 
+
+  // Format Title Span
+  const totalCols = row1.length;
+  worksheet.mergeCells(titleRow.number, 1, titleRow.number, totalCols);
+
+  // Group Merging
+  headerGroups.forEach(g => {
+    if (g.end > g.start) {
+      worksheet.mergeCells(header1.number, g.start, header1.number, g.end);
+    }
   });
 
-  headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
-  headerRow.fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: { argb: primaryArgb },
-  };
-  headerRow.alignment = { horizontal: "center", vertical: "middle" };
+  // Insert Header 2 (Columns Row)
+  const header2 = worksheet.addRow(row2);
+  header2.font = { bold: true, color: { argb: "FFFFFFFF" } };
+  header2.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+  header2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: primaryArgb } };
+  header2.height = 35;
 
-  // Set widths explicitly without triggering mapping conflicts
-  columns.forEach((col, idx) => {
-    worksheet.getColumn(idx + 1).width = col.width;
+  // Merge base identifier columns vertically
+  worksheet.mergeCells(header1.number, 1, header2.number, 1); 
+  worksheet.mergeCells(header1.number, 2, header2.number, 2); 
+  worksheet.mergeCells(header1.number, 3, header2.number, 3); 
+
+  // Style base identifier merged columns like bulk report design
+  [1, 2, 3].forEach(col => {
+    const cell = header1.getCell(col);
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: primaryArgb } };
+    cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+  });
+
+  // Set borders for headers
+  [header1, header2].forEach(row => {
+    row.eachCell({ includeEmpty: true }, (cell) => {
+      cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+    });
+  });
+
+  // Apply widths
+  worksheet.getColumn(1).width = 5;
+  worksheet.getColumn(2).width = 20;
+  worksheet.getColumn(3).width = 30;
+  finalColumnsConfig.forEach((col, idx) => {
+    worksheet.getColumn(4 + idx).width = col.width;
   });
 
   // Data rows
   for (const [i, student] of data.entries()) {
     const rowValues: any[] = [];
-    
-    // Add base values securely relying on column index order
     rowValues[0] = i + 1; // "م"
     rowValues[1] = student.studentNumber;
     rowValues[2] = student.name;
 
     let colPointer = 3;
 
-    if (!hasMultipleMonths) {
+    if (distinctMonths.length === 0) {
+      let mTotal = 0;
       assessmentItems.forEach((item) => {
         const val = student.grades[item.id];
         if (typeof val === "number" || typeof val === "string") {
           const num = parseFloat(val as string);
-          rowValues[colPointer++] = !isNaN(num) ? Math.round(num) : "-";
+          if (!isNaN(num)) {
+            const roundedVal = Math.round(num);
+            rowValues[colPointer++] = roundedVal;
+            mTotal += num;
+          } else {
+             rowValues[colPointer++] = "-";
+          }
         } else {
           rowValues[colPointer++] = "-";
         }
       });
+      if (assessmentItems.length > 0) {
+         rowValues[colPointer++] = Math.round(mTotal);
+      }
     } else {
-      let allMonthsTotal = 0;
+      let allMonthsTotalRaw = 0;
+      let allMonthsMaxTotal = 0;
       
       distinctMonths.forEach((m) => {
         const isExamMonth = m === 4 || m === 8;
         const mItems = assessmentItems.filter((i) => i.month === m);
         
+        let scaledMonthly = 0;
         if (isExamMonth) {
-          rowValues[colPointer++] = allMonthsTotal;
+          scaledMonthly = allMonthsMaxTotal > 0 ? Math.round((allMonthsTotalRaw / allMonthsMaxTotal) * 20) : 0;
+          rowValues[colPointer++] = scaledMonthly;
         }
 
         let mTotal = 0;
+        let mMax = 0;
         mItems.forEach((item) => {
+          const ms = parseFloat(String(item.maxScore ?? "0"));
+          if (!isNaN(ms)) mMax += ms;
+
           const val = student.grades[item.id];
           
           if (typeof val === "number" || typeof val === "string") {
             const num = parseFloat(val as string);
             if (!isNaN(num)) {
-              const roundedNum = Math.round(num);
-              rowValues[colPointer++] = roundedNum;
-              mTotal += roundedNum;
+              rowValues[colPointer++] = Math.round(num);
+              mTotal += num; // accumulate raw sum for logic scaling accurate decimals
             } else {
               rowValues[colPointer++] = "-";
             }
@@ -458,23 +460,19 @@ export async function generateGradesExport(
         });
 
         if (!isExamMonth) {
-          rowValues[colPointer++] = mTotal;
-          allMonthsTotal += mTotal;
+          rowValues[colPointer++] = Math.round(mTotal);
+          allMonthsTotalRaw += mTotal;
+          allMonthsMaxTotal += mMax;
         } else {
-          rowValues[colPointer++] = allMonthsTotal + mTotal;
+          const scaledExam = mMax > 0 ? Math.round((mTotal / mMax) * 30) : 0;
+          rowValues[colPointer++] = Math.round(scaledMonthly + scaledExam);
         }
       });
     }
 
     const row = worksheet.addRow(rowValues);
-    
     row.eachCell({ includeEmpty: true }, (cell) => {
-      cell.border = {
-        top: { style: 'thin', color: { argb: 'FF000000' } },
-        left: { style: 'thin', color: { argb: 'FF000000' } },
-        bottom: { style: 'thin', color: { argb: 'FF000000' } },
-        right: { style: 'thin', color: { argb: 'FF000000' } }
-      };
+      cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
     });
     row.alignment = { vertical: "middle", horizontal: "center" };
   }
