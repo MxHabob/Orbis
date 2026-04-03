@@ -50,6 +50,10 @@ export const upsertStudentSchema = z.object({
   notes: z.string().optional().nullable(),
   stats: z.record(z.string(), z.any()).optional().nullable(),
   metadata: z.record(z.string(), z.any()).optional().nullable(),
+  fatherName: z.string().optional().nullable(),
+  fatherPhone: z.string().optional().nullable(),
+  motherName: z.string().optional().nullable(),
+  motherPhone: z.string().optional().nullable(),
 });
 
 export const importStudentsSchema = z.object({

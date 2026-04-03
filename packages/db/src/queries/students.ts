@@ -234,7 +234,30 @@ export const getStudentByUserId = async (userId: string) => {
         .limit(1);
     
     if (student) {
-        await studentCache.set(cacheKey, student);
+        // Fetch parents
+        const parents = await db
+            .select({
+                relationship: parentStudents.relationship,
+                name: users.name,
+                phone: users.phone,
+            })
+            .from(parentStudents)
+            .innerJoin(users, eq(parentStudents.parentId, users.id))
+            .where(eq(parentStudents.studentId, student.userId));
+
+        const father = parents.find(p => p.relationship === 'father');
+        const mother = parents.find(p => p.relationship === 'mother');
+
+        const enrichedStudent = {
+            ...student,
+            fatherName: father?.name || null,
+            fatherPhone: father?.phone || null,
+            motherName: mother?.name || null,
+            motherPhone: mother?.phone || null,
+        };
+
+        await studentCache.set(cacheKey, enrichedStudent);
+        return enrichedStudent;
     }
     return student;
 };
@@ -309,7 +332,30 @@ export const getStudentById = async (id: string) => {
         .limit(1);
     
     if (student) {
-        await studentCache.set(cacheKey, student);
+        // Fetch parents
+        const parents = await db
+            .select({
+                relationship: parentStudents.relationship,
+                name: users.name,
+                phone: users.phone,
+            })
+            .from(parentStudents)
+            .innerJoin(users, eq(parentStudents.parentId, users.id))
+            .where(eq(parentStudents.studentId, student.userId));
+
+        const father = parents.find(p => p.relationship === 'father');
+        const mother = parents.find(p => p.relationship === 'mother');
+
+        const enrichedStudent = {
+            ...student,
+            fatherName: father?.name || null,
+            fatherPhone: father?.phone || null,
+            motherName: mother?.name || null,
+            motherPhone: mother?.phone || null,
+        };
+
+        await studentCache.set(cacheKey, enrichedStudent);
+        return enrichedStudent;
     }
     return student;
 };
@@ -351,7 +397,30 @@ export const getStudentByNumber = async (studentNumber: string) => {
         .limit(1);
     
     if (student) {
-        await studentCache.set(cacheKey, student);
+        // Fetch parents
+        const parents = await db
+            .select({
+                relationship: parentStudents.relationship,
+                name: users.name,
+                phone: users.phone,
+            })
+            .from(parentStudents)
+            .innerJoin(users, eq(parentStudents.parentId, users.id))
+            .where(eq(parentStudents.studentId, student.userId));
+
+        const father = parents.find(p => p.relationship === 'father');
+        const mother = parents.find(p => p.relationship === 'mother');
+
+        const enrichedStudent = {
+            ...student,
+            fatherName: father?.name || null,
+            fatherPhone: father?.phone || null,
+            motherName: mother?.name || null,
+            motherPhone: mother?.phone || null,
+        };
+
+        await studentCache.set(cacheKey, enrichedStudent);
+        return enrichedStudent;
     }
     return student;
 };
@@ -409,12 +478,17 @@ export const updateStudent = async (userId: string, data: Partial<CreateStudentP
 };
 
 export const upsertStudent = async (data: any) => {
-    const { userId, name, email, phone, sex, studentNumber, secretNumber, currentClassId, status, notes, stats, metadata } = data;
+    const { 
+        userId, name, email, phone, sex, studentNumber, 
+        secretNumber, currentClassId, status, notes, 
+        stats, metadata, fatherName, fatherPhone, 
+        motherName, motherPhone 
+    } = data;
 
     let targetUserId = userId;
 
     if (targetUserId) {
-        // Update
+        // Update user
         await db.update(users).set({
             name,
             email,
@@ -423,6 +497,7 @@ export const upsertStudent = async (data: any) => {
             updatedAt: new Date(),
         }).where(eq(users.id, targetUserId));
 
+        // Update student record
         await db.update(students).set({
             studentNumber,
             secretNumber,
@@ -432,6 +507,79 @@ export const upsertStudent = async (data: any) => {
             stats,
             metadata,
         }).where(eq(students.userId, targetUserId));
+
+        // Handle parents for existing student
+        await db.transaction(async (tx) => {
+            if (fatherName) {
+                // Check if already has a father
+                const [existingFather] = await tx
+                    .select()
+                    .from(parentStudents)
+                    .where(and(eq(parentStudents.studentId, targetUserId), eq(parentStudents.relationship, 'father')))
+                    .limit(1);
+
+                if (!existingFather) {
+                    const [fatherUser] = await tx
+                        .insert(users)
+                        .values({
+                            name: fatherName,
+                            phone: fatherPhone || null,
+                            role: "parent",
+                        })
+                        .returning({ id: users.id });
+
+                    if (fatherUser) {
+                        await tx.insert(parentStudents).values({
+                            parentId: fatherUser.id,
+                            studentId: targetUserId,
+                            relationship: "father",
+                            isPrimary: true,
+                        });
+                    }
+                } else {
+                    // Update father's info
+                    await tx.update(users).set({
+                        name: fatherName,
+                        phone: fatherPhone || null,
+                    }).where(eq(users.id, existingFather.parentId));
+                }
+            }
+
+            if (motherName) {
+                // Check if already has a mother
+                const [existingMother] = await tx
+                    .select()
+                    .from(parentStudents)
+                    .where(and(eq(parentStudents.studentId, targetUserId), eq(parentStudents.relationship, 'mother')))
+                    .limit(1);
+
+                if (!existingMother) {
+                    const [motherUser] = await tx
+                        .insert(users)
+                        .values({
+                            name: motherName,
+                            phone: motherPhone || null,
+                            role: "parent",
+                        })
+                        .returning({ id: users.id });
+
+                    if (motherUser) {
+                        await tx.insert(parentStudents).values({
+                            parentId: motherUser.id,
+                            studentId: targetUserId,
+                            relationship: "mother",
+                            isPrimary: !fatherName,
+                        });
+                    }
+                } else {
+                    // Update mother's info
+                    await tx.update(users).set({
+                        name: motherName,
+                        phone: motherPhone || null,
+                    }).where(eq(users.id, existingMother.parentId));
+                }
+            }
+        });
 
         // Invalidate class caches as student counts likely changed
         const classCache = new RedisCache("classes", 60 * 60);
@@ -478,6 +626,47 @@ export const upsertStudent = async (data: any) => {
                 stats,
                 metadata,
             });
+
+            // Handle parents for new student
+            if (fatherName) {
+                const [fatherUser] = await tx
+                    .insert(users)
+                    .values({
+                        name: fatherName,
+                        phone: fatherPhone || null,
+                        role: "parent",
+                    })
+                    .returning({ id: users.id });
+
+                if (fatherUser) {
+                    await tx.insert(parentStudents).values({
+                        parentId: fatherUser.id,
+                        studentId: targetUserId,
+                        relationship: "father",
+                        isPrimary: true,
+                    });
+                }
+            }
+
+            if (motherName) {
+                const [motherUser] = await tx
+                    .insert(users)
+                    .values({
+                        name: motherName,
+                        phone: motherPhone || null,
+                        role: "parent",
+                    })
+                    .returning({ id: users.id });
+
+                if (motherUser) {
+                    await tx.insert(parentStudents).values({
+                        parentId: motherUser.id,
+                        studentId: targetUserId,
+                        relationship: "mother",
+                        isPrimary: !fatherName,
+                    });
+                }
+            }
 
             // Ensure enrollment if class is provided
             if (currentClassId) {

@@ -53,6 +53,11 @@ const formSchema = z.object({
   currentClassId: z.string().optional().nullable(),
   status: z.enum(['active', 'graduated', 'transferred', 'suspended', 'auditor', 'homeschooled']).default('active'),
   note: z.string().optional().nullable(),
+  fatherName: z.string().optional().nullable(),
+  fatherPhone: z.string().optional().nullable(),
+  motherName: z.string().optional().nullable(),
+  motherPhone: z.string().optional().nullable(),
+  metadata: z.record(z.any()).optional().nullable(),
 });
 
 type Props = {
@@ -106,6 +111,11 @@ export function StudentForm({ data }: Props) {
     currentClassId: data?.currentClassId?.toString() ?? classId ?? "",
     status: (data?.status as any) ?? "active",
     note: data?.notes ?? "",
+    fatherName: data?.fatherName ?? "",
+    fatherPhone: data?.fatherPhone ?? "",
+    motherName: data?.motherName ?? "",
+    motherPhone: data?.motherPhone ?? "",
+    metadata: data?.metadata ?? null,
   }), [data, classId]);
 
   const form = useZodForm(formSchema, {
@@ -124,6 +134,11 @@ export function StudentForm({ data }: Props) {
       currentClassId: values.currentClassId ? Number(values.currentClassId) : null,
       status: values.status,
       notes: values.note || null,
+      fatherName: values.fatherName || null,
+      fatherPhone: values.fatherPhone || null,
+      motherName: values.motherName || null,
+      motherPhone: values.motherPhone || null,
+      metadata: values.metadata || null,
     });
   };
 
@@ -359,6 +374,136 @@ export function StudentForm({ data }: Props) {
                               autoComplete="off"
                             />
                           </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="additional">
+                <AccordionTrigger>{t("students.additional_info")}</AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="fatherName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs text-[#878787] font-normal">
+                              {t("students.father_name")}
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                value={field.value ?? ""}
+                                placeholder="Father Full Name"
+                                autoComplete="off"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="fatherPhone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs text-[#878787] font-normal">
+                              {t("students.father_phone")}
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                value={field.value ?? ""}
+                                placeholder="Father Phone"
+                                autoComplete="off"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="motherName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs text-[#878787] font-normal">
+                              {t("students.mother_name")}
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                value={field.value ?? ""}
+                                placeholder="Mother Full Name"
+                                autoComplete="off"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="motherPhone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs text-[#878787] font-normal">
+                              {t("students.mother_phone")}
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                value={field.value ?? ""}
+                                placeholder="Mother Phone"
+                                autoComplete="off"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <FormField
+                      control={form.control}
+                      name="metadata"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs text-[#878787] font-normal uppercase tracking-wider">
+                            {t("students.metadata")}
+                          </FormLabel>
+                          <FormControl>
+                            <Textarea
+                              className="font-mono text-[11px] min-h-[120px] resize-none"
+                              placeholder='{ "key": "value" }'
+                              value={field.value && typeof field.value === 'object' ? JSON.stringify(field.value, null, 2) : field.value || ""}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                try {
+                                  if (val.trim() === "") {
+                                    field.onChange(null);
+                                  } else {
+                                    const parsed = JSON.parse(val);
+                                    field.onChange(parsed);
+                                  }
+                                } catch (err) {
+                                  field.onChange(val);
+                                }
+                              }}
+                            />
+                          </FormControl>
+                          <FormDescription className="text-[10px]">
+                            {t("students.metadata_desc")}
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}

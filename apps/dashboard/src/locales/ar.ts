@@ -695,6 +695,8 @@ export default {
     confirm_import_description: "أنت على وشك استيراد {count} طالب إلى {className}. سيؤدي هذا إلى إنشاء سجلات طلاب جديدة وربطهم بالفصل المختار للموقع.",
     importing: "جاري الاستيراد...",
     confirm_import_button: "تأكيد واستيراد الطلاب",
+    metadata: "البيانات الإضافية (JSON)",
+    metadata_desc: "أدخل البيانات الإضافية بتنسيق JSON (مثل: مكان العمل، التاريخ الطبي)",
   },
   account_type: {
     depository: "حساب إيداع",

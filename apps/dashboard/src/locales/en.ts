@@ -1022,6 +1022,8 @@ export default {
     confirm_import_description: "You are about to import {count} student(s) to {className}. This will create new student records and link them to the selected class.",
     importing: "Importing...",
     confirm_import_button: "Confirm and Import Students",
+    metadata: "Metadata (JSON)",
+    metadata_desc: "Enter additional data in JSON format.",
   },
   import: {
     csv_column: "CSV Data column",
