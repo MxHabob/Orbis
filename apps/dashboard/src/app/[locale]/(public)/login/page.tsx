@@ -2,7 +2,6 @@ import { AppleSignIn } from "@/components/apple-sign-in";
 import { GithubSignIn } from "@/components/github-sign-in";
 import { GoogleSignIn } from "@/components/google-sign-in";
 import { LoginAccordion } from "@/components/login-accordion";
-import { LoginVideoBackground } from "@/components/login-video-background";
 import { UserAuthForm } from "@/components/user-auth-form";
 import { Cookies } from "@/utils/constants";
 import { auth } from "@midday/auth";
@@ -123,11 +122,8 @@ export default async function Page() {
         </div>
       </nav>
 
-      {/* Left Side - Video Background */}
-      <LoginVideoBackground />
-
-      {/* Right Side - Login Form */}
-      <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-8 lg:p-12 pb-2">
+      {/* Login Form */}
+      <div className="w-full flex flex-col justify-center items-center p-8 lg:p-12 pb-2">
         <div className="w-full max-w-md flex flex-col h-full">
           <div className="space-y-8 flex-1 flex flex-col justify-center">
             {/* Header */}
