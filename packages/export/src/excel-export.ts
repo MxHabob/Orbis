@@ -404,7 +404,13 @@ export async function generateGradesExport(
 
     if (!hasMultipleMonths) {
       assessmentItems.forEach((item) => {
-        rowValues[colPointer++] = student.grades[item.id] ?? "-";
+        const val = student.grades[item.id];
+        if (typeof val === "number" || typeof val === "string") {
+          const num = parseFloat(val as string);
+          rowValues[colPointer++] = !isNaN(num) ? Math.round(num) : "-";
+        } else {
+          rowValues[colPointer++] = "-";
+        }
       });
     } else {
       let allMonthsTotal = 0;
@@ -420,11 +426,18 @@ export async function generateGradesExport(
         let mTotal = 0;
         mItems.forEach((item) => {
           const val = student.grades[item.id];
-          rowValues[colPointer++] = val ?? "-";
           
           if (typeof val === "number" || typeof val === "string") {
             const num = parseFloat(val as string);
-            if (!isNaN(num)) mTotal += num;
+            if (!isNaN(num)) {
+              const roundedNum = Math.round(num);
+              rowValues[colPointer++] = roundedNum;
+              mTotal += roundedNum;
+            } else {
+              rowValues[colPointer++] = "-";
+            }
+          } else {
+            rowValues[colPointer++] = "-";
           }
         });
 

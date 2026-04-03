@@ -148,9 +148,9 @@ export const getTopStudents = async (params: {
         studentName: student.studentName ?? "",
         studentNumber: student.studentNumber,
         image: student.image,
-        totalScore: Number(stats.totalScore.toFixed(2)),
-        maxScore: Number(stats.maxScore.toFixed(2)),
-        percentage: Number(percentage.toFixed(2)),
+        totalScore: Math.round(stats.totalScore),
+        maxScore: Math.round(stats.maxScore),
+        percentage: Math.round(percentage),
         scoredItems: stats.scoredItems,
       };
     })
@@ -644,7 +644,7 @@ export const getClassStatistics = async (classId: string, academicYearId?: numbe
 // Helper: Calculate grade label from percentage
 // ==========================================
 function roundGrade(value: number): number {
-  return Math.round(value * 2) / 2;
+  return Math.round(value);
 }
 
 function getGradeLabel(total: number, maxTotal: number): string {
