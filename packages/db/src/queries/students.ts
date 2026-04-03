@@ -6,6 +6,12 @@ import { RedisCache } from "@midday/cache";
 
 const studentCache = new RedisCache("student", 30 * 60);
 
+type ParentInfo = {
+  relationship: string;
+  name: string | null;
+  phone: string | null;
+};
+
 /**
  * Normalize a student name for duplicate comparison.
  * Trims whitespace, collapses multiple spaces, and lowercases.
@@ -223,6 +229,16 @@ export const getStudentByUserId = async (userId: string) => {
                 yearName: academicYears.yearName,
                 academicYearId: enrollments.academicYearId,
             },
+            parents: sql<ParentInfo[]>`(
+                SELECT COALESCE(JSON_AGG(JSON_BUILD_OBJECT(
+                    'relationship', ps.relationship, 
+                    'name', pu.name, 
+                    'phone', pu.phone
+                )), '[]'::json)
+                FROM ${parentStudents} ps
+                JOIN ${users} pu ON ps.parent_id = pu.id
+                WHERE ps.student_id = ${students.userId}
+            )`
         })
         .from(students)
         .innerJoin(users, eq(students.userId, users.id))
@@ -234,22 +250,13 @@ export const getStudentByUserId = async (userId: string) => {
         .limit(1);
     
     if (student) {
-        // Fetch parents
-        const parents = await db
-            .select({
-                relationship: parentStudents.relationship,
-                name: users.name,
-                phone: users.phone,
-            })
-            .from(parentStudents)
-            .innerJoin(users, eq(parentStudents.parentId, users.id))
-            .where(eq(parentStudents.studentId, student.userId));
+        const father = student.parents?.find(p => p.relationship === 'father');
+        const mother = student.parents?.find(p => p.relationship === 'mother');
 
-        const father = parents.find(p => p.relationship === 'father');
-        const mother = parents.find(p => p.relationship === 'mother');
+        const { parents, ...studentData } = student;
 
         const enrichedStudent = {
-            ...student,
+            ...studentData,
             fatherName: father?.name || null,
             fatherPhone: father?.phone || null,
             motherName: mother?.name || null,
@@ -321,6 +328,16 @@ export const getStudentById = async (id: string) => {
                 yearName: academicYears.yearName,
                 academicYearId: enrollments.academicYearId,
             },
+            parents: sql<ParentInfo[]>`(
+                SELECT COALESCE(JSON_AGG(JSON_BUILD_OBJECT(
+                    'relationship', ps.relationship, 
+                    'name', pu.name, 
+                    'phone', pu.phone
+                )), '[]'::json)
+                FROM ${parentStudents} ps
+                JOIN ${users} pu ON ps.parent_id = pu.id
+                WHERE ps.student_id = ${students.userId}
+            )`
         })
         .from(students)
         .innerJoin(users, eq(students.userId, users.id))
@@ -332,22 +349,13 @@ export const getStudentById = async (id: string) => {
         .limit(1);
     
     if (student) {
-        // Fetch parents
-        const parents = await db
-            .select({
-                relationship: parentStudents.relationship,
-                name: users.name,
-                phone: users.phone,
-            })
-            .from(parentStudents)
-            .innerJoin(users, eq(parentStudents.parentId, users.id))
-            .where(eq(parentStudents.studentId, student.userId));
+        const father = student.parents?.find(p => p.relationship === 'father');
+        const mother = student.parents?.find(p => p.relationship === 'mother');
 
-        const father = parents.find(p => p.relationship === 'father');
-        const mother = parents.find(p => p.relationship === 'mother');
+        const { parents, ...studentData } = student;
 
         const enrichedStudent = {
-            ...student,
+            ...studentData,
             fatherName: father?.name || null,
             fatherPhone: father?.phone || null,
             motherName: mother?.name || null,
@@ -386,6 +394,16 @@ export const getStudentByNumber = async (studentNumber: string) => {
                 yearName: academicYears.yearName,
                 academicYearId: enrollments.academicYearId,
             },
+            parents: sql<ParentInfo[]>`(
+                SELECT COALESCE(JSON_AGG(JSON_BUILD_OBJECT(
+                    'relationship', ps.relationship, 
+                    'name', pu.name, 
+                    'phone', pu.phone
+                )), '[]'::json)
+                FROM ${parentStudents} ps
+                JOIN ${users} pu ON ps.parent_id = pu.id
+                WHERE ps.student_id = ${students.userId}
+            )`
         })
         .from(students)
         .innerJoin(users, eq(students.userId, users.id))
@@ -397,22 +415,13 @@ export const getStudentByNumber = async (studentNumber: string) => {
         .limit(1);
     
     if (student) {
-        // Fetch parents
-        const parents = await db
-            .select({
-                relationship: parentStudents.relationship,
-                name: users.name,
-                phone: users.phone,
-            })
-            .from(parentStudents)
-            .innerJoin(users, eq(parentStudents.parentId, users.id))
-            .where(eq(parentStudents.studentId, student.userId));
+        const father = student.parents?.find(p => p.relationship === 'father');
+        const mother = student.parents?.find(p => p.relationship === 'mother');
 
-        const father = parents.find(p => p.relationship === 'father');
-        const mother = parents.find(p => p.relationship === 'mother');
+        const { parents, ...studentData } = student;
 
         const enrichedStudent = {
-            ...student,
+            ...studentData,
             fatherName: father?.name || null,
             fatherPhone: father?.phone || null,
             motherName: mother?.name || null,
