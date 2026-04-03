@@ -8,7 +8,8 @@ import {
   generateStudentsParentsExport,
   generateAttendanceFilename,
   generateParentsReportFilename,
-  generateBulkReportFilename
+  generateBulkReportFilename,
+  generateGradesFilename
 } from "@midday/export";
 import { uploadFile } from "@midday/storage";
 import { createDocument } from "@midday/db/queries/documents";
@@ -54,6 +55,42 @@ export async function handleReportGeneration(job: Job<ReportGenerationData>) {
         classColor: classData.color,
         format: format,
       });
+    } else if (type === "grades_grid") {
+      const { getGradeGridData } = await import("@midday/db/queries");
+      const { generateGradesExport } = await import("@midday/export");
+      const data = await getGradeGridData({
+        classId: classId,
+        subjectId: job.data.subjectId!,
+        termId: job.data.termId!,
+        month: job.data.month!,
+        academicYearId: job.data.academicYearId!,
+      });
+
+      const exportData = data.students.map((student: any) => {
+        const studentGrades: Record<number, number | string | null> = {};
+        data.items.forEach((item: any) => {
+          const grade = data.grades.find(
+            (g: any) => g.studentId === student.studentId && g.assessmentItemId === item.id
+          );
+          studentGrades[item.id] = grade?.score ?? null;
+        });
+
+        return {
+          studentNumber: student.studentNumber,
+          name: student.name || "N/A",
+          grades: studentGrades,
+        };
+      });
+
+      await job.updateProgress(50);
+
+      buffer = await generateGradesExport(exportData, {
+        className: classData.name,
+        classColor: classData.color,
+        academicYear: undefined,
+        assessmentItems: data.items,
+        format: format,
+      });
     } else {
       const bulkData = await getClassBulkReportData(classId, type as any, month);
       
@@ -80,6 +117,9 @@ export async function handleReportGeneration(job: Job<ReportGenerationData>) {
     } else if (type === "students_parents_data") {
       filename = generateParentsReportFilename(classData.name, format);
       pdfTitle = `بيانات الطلاب والأهالي - ${classData.name}`;
+    } else if (type === "grades_grid") {
+      filename = generateGradesFilename(classData.name, format);
+      pdfTitle = `كشف الدرجات - ${classData.name}`;
     } else {
       filename = generateBulkReportFilename(classData.name, type, format, monthText);
       const typeText = type === "monthly" ? "شهري" : type === "half-yearly" ? "نصفي" : type === "final" ? "نهائي" : "درجات";

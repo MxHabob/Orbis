@@ -17,6 +17,7 @@ import { useToast } from "@midday/ui/use-toast";
 import { downloadBase64, generateCanvasPdf } from "@midday/export";
 import { Icons } from "@midday/ui/icons";
 import { Loader2 } from "lucide-react";
+import { useExportStore } from "@/store/export";
 
 type Props = {
   row: ClassReport;
@@ -27,20 +28,18 @@ export function ActionsMenu({ row }: Props) {
   const trpc = useTRPC();
   const { toast } = useToast();
 
+  const { setExportData, setIsExporting } = useExportStore();
+
   const exportMutation = useMutation(
-    trpc.students.exportByClassId.mutationOptions({
+    trpc.grades.exportClassReport.mutationOptions({
       onSuccess: (data) => {
-        downloadBase64(data.data, data.filename, data.mimeType);
-        
-        toast({
-          title: "Export Successful",
-          description: `Students data has been exported successfully.`,
-        });
+        setExportData({ runId: data.jobId });
+        setIsExporting(true);
       },
       onError: (error) => {
         toast({
           title: "Export Failed",
-          description: error.message || "An error occurred while exporting students data.",
+          description: error.message || "An error occurred while exporting data.",
           variant: "destructive",
         });
       },
@@ -53,8 +52,9 @@ export function ActionsMenu({ row }: Props) {
 
   const handleExportExcel = () => {
     exportMutation.mutate({
-      classId: row.id.toString(),
-      format: "xlsx",
+      classId: Number(row.id),
+      type: "students_parents_data",
+      format: "xlsx"
     });
   };
 

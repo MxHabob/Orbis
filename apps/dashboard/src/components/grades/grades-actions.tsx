@@ -23,6 +23,7 @@ import { Loader2 } from "lucide-react";
 import { exportToCsv, parseCsv, generateCanvasPdf, downloadBase64 } from "@midday/export";
 import { useI18n } from "@/locales/client";
 import { invalidateGradesDomain } from "@/utils/query-invalidation";
+import { useExportStore } from "@/store/export";
 
 export function GradesActions() {
   const [_, setParams] = useQueryStates({
@@ -45,6 +46,7 @@ export function GradesActions() {
 
   const { filter } = useGradeFilterParams();
   const trpc = useTRPC();
+  const { setExportData, setIsExporting: setGlobalExporting } = useExportStore();
   const queryClient = useQueryClient(); 
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -88,12 +90,8 @@ export function GradesActions() {
   const exportMutation = useMutation(
     trpc.grades.export.mutationOptions({
       onSuccess: (data) => {
-        downloadBase64(data.data, data.filename, data.mimeType);
-        toast({
-          title: t("common.success"),
-          description: t("grades.export_success"),
-          variant: "success",
-        });
+        setExportData({ runId: data.jobId });
+        setGlobalExporting(true);
       },
       onError: (err) => {
         toast({
