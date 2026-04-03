@@ -334,24 +334,38 @@ export async function generateGradesExport(
     
     // Setup merging for base columns across rows 3 and 4
     worksheet.mergeCells(3, 1, 4, 1);
-    groupHeaderRow.getCell(1).value = "م";
+    const cell0 = groupHeaderRow.getCell(1);
+    cell0.value = "م";
     
     worksheet.mergeCells(3, 2, 4, 2);
-    groupHeaderRow.getCell(2).value = "رقم الطالب";
+    const cell1 = groupHeaderRow.getCell(2);
+    cell1.value = "رقم الطالب";
     
     worksheet.mergeCells(3, 3, 4, 3);
-    groupHeaderRow.getCell(3).value = "الاسم";
+    const cell2 = groupHeaderRow.getCell(3);
+    cell2.value = "الاسم";
+
+    // Style the first three columns to ensure they don't lose formatting due to the merge precedence
+    [cell0, cell1, cell2].forEach((cell) => {
+      cell.alignment = { horizontal: "center", vertical: "middle" };
+      cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: primaryArgb },
+      };
+    });
 
     headerGroups.forEach(g => {
       worksheet.mergeCells(3, g.start, 3, g.end);
       const cell = groupHeaderRow.getCell(g.start);
       cell.value = g.title;
       cell.alignment = { horizontal: "center", vertical: "middle" };
-      cell.font = { bold: true, color: { argb: "FF000000" } };
+      cell.font = { bold: true, color: { argb: "FFFFFFFF" } }; // Same as header row
       cell.fill = {
         type: "pattern",
         pattern: "solid",
-        fgColor: { argb: "FFB2EBF2" }, // Light cyan background to match the image
+        fgColor: { argb: primaryArgb }, // Same as class color
       };
     });
 
@@ -366,8 +380,10 @@ export async function generateGradesExport(
     });
   }
 
-  // Header row
-  const headerRow = worksheet.addRow(columns.map((col) => col.header));
+  // Header row - avoid rewriting base columns if merged
+  const headerRow = worksheet.addRow(
+    columns.map((col, idx) => (hasMultipleMonths && idx < 3) ? "" : col.header)
+  );
   
   headerRow.eachCell({ includeEmpty: true }, (cell) => {
     cell.border = {
