@@ -239,7 +239,7 @@ export function generateExportFilename(
 }
 
 export interface GradesExportOptions extends ExportOptions {
-  assessmentItems: { id: number; title: string }[];
+  assessmentItems: { id: number; title: string; month?: number }[];
 }
 
 export interface StudentGradeRow {
@@ -262,7 +262,62 @@ export async function generateGradesExport(
     views: [{ rightToLeft: true }],
   });
 
-  const totalCols = 2 + assessmentItems.length;
+  const distinctMonths = [...new Set(assessmentItems.map((i) => i.month).filter((m): m is number => m != null))].sort((a, b) => a - b);
+  const hasMultipleMonths = distinctMonths.length > 1;
+
+  const monthNames: Record<number, string> = {
+    1: "الشهر الأول",
+    2: "الشهر الثاني",
+    3: "الشهر الثالث",
+    4: "الاختبار النصفي",
+    5: "الشهر الخامس",
+    6: "الشهر السادس",
+    7: "الشهر السابع",
+    8: "الاختبار النهائي",
+  };
+
+  const columns = [
+    { header: "م", key: "index", width: 5 },
+    { header: "رقم الطالب", key: "studentNumber", width: 20 },
+    { header: "الاسم", key: "name", width: 30 },
+  ];
+
+  let colIndex = 4;
+  const headerGroups: { title: string; start: number; end: number, isTotal?: boolean }[] = [];
+
+  if (!hasMultipleMonths) {
+    assessmentItems.forEach((item) => {
+      columns.push({ header: item.title, key: `item_${item.id}`, width: 15 });
+      colIndex++;
+    });
+  } else {
+    distinctMonths.forEach((m) => {
+      const isExamMonth = m === 4 || m === 8;
+      const mItems = assessmentItems.filter((i) => i.month === m);
+      const groupStart = colIndex;
+
+      if (isExamMonth) {
+        columns.push({ header: "محصلة الشهور", key: `sumOfMonths_${m}`, width: 15 });
+        colIndex++;
+      }
+
+      mItems.forEach((item) => {
+        columns.push({ header: item.title, key: `item_${item.id}`, width: 15 });
+        colIndex++;
+      });
+
+      if (!isExamMonth) {
+        columns.push({ header: "المجموع", key: `month_total_${m}`, width: 15 });
+      } else {
+        columns.push({ header: "المجموع الكلي", key: `final_total_${m}`, width: 15 });
+      }
+      colIndex++;
+
+      headerGroups.push({ title: monthNames[m] || `شهر ${m}`, start: groupStart, end: colIndex - 1 });
+    });
+  }
+
+  const totalCols = columns.length;
   const titleRow = worksheet.addRow([
     `تقرير درجات الفصل: ${className}${academicYear ? ` - ${academicYear}` : ""}`,
   ]);
@@ -273,16 +328,43 @@ export async function generateGradesExport(
   titleRow.height = 30;
   worksheet.addRow([]);
 
-  // Columns definition
-  const columns = [
-    { header: "رقم الطالب", key: "studentNumber", width: 20 },
-    { header: "الاسم", key: "name", width: 30 },
-    ...assessmentItems.map((item) => ({
-      header: item.title,
-      key: `item_${item.id}`,
-      width: 15,
-    })),
-  ];
+  // Grouped header row
+  if (hasMultipleMonths) {
+    const groupHeaderRow = worksheet.addRow([]);
+    
+    // Setup merging for base columns across rows 3 and 4
+    worksheet.mergeCells(3, 1, 4, 1);
+    groupHeaderRow.getCell(1).value = "م";
+    
+    worksheet.mergeCells(3, 2, 4, 2);
+    groupHeaderRow.getCell(2).value = "رقم الطالب";
+    
+    worksheet.mergeCells(3, 3, 4, 3);
+    groupHeaderRow.getCell(3).value = "الاسم";
+
+    headerGroups.forEach(g => {
+      worksheet.mergeCells(3, g.start, 3, g.end);
+      const cell = groupHeaderRow.getCell(g.start);
+      cell.value = g.title;
+      cell.alignment = { horizontal: "center", vertical: "middle" };
+      cell.font = { bold: true, color: { argb: "FF000000" } };
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFB2EBF2" }, // Light cyan background to match the image
+      };
+    });
+
+    // Style the group header row borders
+    groupHeaderRow.eachCell({ includeEmpty: true }, (cell) => {
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FF000000' } },
+        left: { style: 'thin', color: { argb: 'FF000000' } },
+        bottom: { style: 'thin', color: { argb: 'FF000000' } },
+        right: { style: 'thin', color: { argb: 'FF000000' } }
+      };
+    });
+  }
 
   // Header row
   const headerRow = worksheet.addRow(columns.map((col) => col.header));
@@ -302,24 +384,61 @@ export async function generateGradesExport(
     pattern: "solid",
     fgColor: { argb: primaryArgb },
   };
-  headerRow.alignment = { horizontal: "center" };
+  headerRow.alignment = { horizontal: "center", vertical: "middle" };
 
-  worksheet.columns = columns;
+  // Set widths explicitly without triggering mapping conflicts
+  columns.forEach((col, idx) => {
+    worksheet.getColumn(idx + 1).width = col.width;
+  });
 
   // Data rows
-  for (const student of data) {
-    const rowData: any = {
-      studentNumber: student.studentNumber,
-      name: student.name,
-    };
-
-    assessmentItems.forEach((item) => {
-      rowData[`item_${item.id}`] = student.grades[item.id] ?? "-";
-    });
-
-    const row = worksheet.addRow(rowData);
+  for (const [i, student] of data.entries()) {
+    const rowValues: any[] = [];
     
-    // Add border and alignment
+    // Add base values securely relying on column index order
+    rowValues[0] = i + 1; // "م"
+    rowValues[1] = student.studentNumber;
+    rowValues[2] = student.name;
+
+    let colPointer = 3;
+
+    if (!hasMultipleMonths) {
+      assessmentItems.forEach((item) => {
+        rowValues[colPointer++] = student.grades[item.id] ?? "-";
+      });
+    } else {
+      let allMonthsTotal = 0;
+      
+      distinctMonths.forEach((m) => {
+        const isExamMonth = m === 4 || m === 8;
+        const mItems = assessmentItems.filter((i) => i.month === m);
+        
+        if (isExamMonth) {
+          rowValues[colPointer++] = allMonthsTotal;
+        }
+
+        let mTotal = 0;
+        mItems.forEach((item) => {
+          const val = student.grades[item.id];
+          rowValues[colPointer++] = val ?? "-";
+          
+          if (typeof val === "number" || typeof val === "string") {
+            const num = parseFloat(val as string);
+            if (!isNaN(num)) mTotal += num;
+          }
+        });
+
+        if (!isExamMonth) {
+          rowValues[colPointer++] = mTotal;
+          allMonthsTotal += mTotal;
+        } else {
+          rowValues[colPointer++] = allMonthsTotal + mTotal;
+        }
+      });
+    }
+
+    const row = worksheet.addRow(rowValues);
+    
     row.eachCell({ includeEmpty: true }, (cell) => {
       cell.border = {
         top: { style: 'thin', color: { argb: 'FF000000' } },
@@ -328,7 +447,7 @@ export async function generateGradesExport(
         right: { style: 'thin', color: { argb: 'FF000000' } }
       };
     });
-    row.alignment = { vertical: "middle" };
+    row.alignment = { vertical: "middle", horizontal: "center" };
   }
 
   // Generate buffer
