@@ -123,8 +123,8 @@ export default async function Page() {
       </nav>
 
       {/* Login Form */}
-      <div className="w-full flex flex-col justify-center items-center p-8 lg:p-12 pb-2">
-        <div className="w-full max-w-md flex flex-col h-full">
+      <div className="w-full flex-1 flex flex-col items-center p-8 lg:p-12 pb-2">
+        <div className="w-full max-w-md flex flex-col flex-1">
           <div className="space-y-8 flex-1 flex flex-col justify-center">
             {/* Header */}
             <div className="text-center space-y-2">
