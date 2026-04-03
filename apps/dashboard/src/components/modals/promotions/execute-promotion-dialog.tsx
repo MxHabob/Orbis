@@ -1,6 +1,7 @@
 "use client";
 
 import { useI18n } from "@/locales/client";
+import { Alert, AlertDescription, AlertTitle } from "@midday/ui/alert";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,7 +12,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@midday/ui/alert-dialog";
-import { AlertTriangle, TrendingUp, Loader2 } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 
 interface ExecutePromotionDialogProps {
   open: boolean;
@@ -34,7 +35,7 @@ export function ExecutePromotionDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent className="rounded-none border-border shadow-none max-w-md">
         <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-center gap-2 text-sm font-bold">
+          <AlertDialogTitle className="flex items-center gap-2 text-lg font-bold">
             {t("promotions.execute")}
           </AlertDialogTitle>
           <AlertDialogDescription asChild>
@@ -42,19 +43,20 @@ export function ExecutePromotionDialog({
               <p className="text-xs text-[#606060]">
                 {t("promotions.confirm_execute", { count: studentCount })}
               </p>
-              
-              <div className="flex flex-col items-center justify-center py-10 px-6 border border-dashed rounded-xl bg-muted/2 text-muted-foreground animate-in fade-in duration-500">
-                <div className="flex items-start gap-2">
-                  <div className="text-[11px]">
-                    <p className="font-medium text-red-700 dark:text-red-300 mb-1">
-                      {t("common.confirm_action")}
-                    </p>
-                    <p className="text-red-600/80 dark:text-red-400/60">
-                      {t("promotions.irreversible_action")}
-                    </p>
-                  </div>
+
+            <Alert className="bg-amber-500/20 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800 border-dashed">
+              <AlertCircle className="h-4 w-4 text-amber-500" />
+              <div className="flex items-center justify-between w-full">
+                <div>
+                  <AlertTitle className="text-amber-800 dark:text-amber-400">
+                     {t("common.confirm_action")}
+                  </AlertTitle>
+                  <AlertDescription className="text-amber-700 dark:text-amber-500">
+                    {t("promotions.irreversible_action")}
+                  </AlertDescription>
                 </div>
               </div>
+            </Alert>
             </div>
           </AlertDialogDescription>
         </AlertDialogHeader>

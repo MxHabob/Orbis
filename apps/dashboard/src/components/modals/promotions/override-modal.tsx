@@ -107,10 +107,10 @@ export function OverridePromotionModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px] rounded-none border-border shadow-none p-0 overflow-hidden">
         <DialogHeader className="p-6 pb-2">
-          <DialogTitle className="text-sm font-bold uppercase tracking-tight">
+          <DialogTitle className="text-lg font-bold tracking-tight">
             {t("promotions.override_decision")}
           </DialogTitle>
-          <DialogDescription className="text-xs text-[#606060]">
+          <DialogDescription className="text-sm">
              تعديل يدوي لقرار الترفيع للطالب <strong className="text-foreground">{record.studentName}</strong>.
           </DialogDescription>
         </DialogHeader>
