@@ -148,11 +148,11 @@ export function GlobalDeleteDialog() {
     config.title = t("staff.delete_title");
     config.description = t("staff.delete_description");
   } else if (deleteYearId) {
-    config.title = t("education.delete_year_title", { defaultValue: "Delete Academic Year" });
-    config.description = t("education.delete_year_description", { defaultValue: "Are you sure you want to delete this academic year? All terms and records associated with it will be removed." });
+    config.title = t("education.delete_year_title");
+    config.description = t("education.delete_year_description");
   } else if (deleteTermId) {
-    config.title = t("education.delete_term_title", { defaultValue: "Delete Academic Term" });
-    config.description = t("education.delete_term_description", { defaultValue: "Are you sure you want to delete this class term? All records associated with it will be removed." });
+    config.title = t("education.delete_term_title");
+    config.description = t("education.delete_term_description");
   }
 
   return (
