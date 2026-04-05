@@ -14,13 +14,14 @@ import {
 import { useState } from "react";
 import { columns } from "./columns";
 import { DataTableHeader } from "./table-header";
+import { useStaffParams } from "@/hooks/use-staff-params";
 
 export function DataTable() {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-
+  const { setParams } = useStaffParams();
   const trpc = useTRPC();
   const { data } = useSuspenseQuery({
-    ...trpc.user.invites.queryOptions(),
+    ...trpc.user.getParents.queryOptions(),
   });
 
   const table = useReactTable({
@@ -33,12 +34,14 @@ export function DataTable() {
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    meta: {
+      setParams,
+    },
   });
 
   return (
     <div className="w-full">
       <DataTableHeader table={table} />
-
       <Table>
         <TableBody>
           {table.getRowModel().rows?.length ? (
@@ -68,10 +71,10 @@ export function DataTable() {
                 className="h-[360px] text-center"
               >
                 <h2 className="font-medium mb-1">
-                  No Pending Invitations Found
+                  No Parents Found
                 </h2>
                 <span className="text-[#606060]">
-                  Use the button above to invite a Team Member.
+                  Use the button above to add a Parent.
                 </span>
               </TableCell>
             </TableRow>

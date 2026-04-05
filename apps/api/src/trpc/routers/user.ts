@@ -11,7 +11,7 @@ import {
   deleteUser,
   getStaffUsers,
   getUserById,
-  getUserInvites,
+  getParentUsers,
   updateUser,
   linkParentToStudents,
 } from "@midday/db/queries";
@@ -20,6 +20,9 @@ import { generateFileKey } from "@midday/encryption";
 export const userRouter = createTRPCRouter({
   getStaff: protectedProcedure.query(async ({ ctx: { db } }) => {
     return getStaffUsers(db);
+  }),
+  getParents: protectedProcedure.query(async ({ ctx: { db } }) => {
+    return getParentUsers(db);
   }),
   get: protectedProcedure.query(async ({ ctx: { db } }) => {
     return getStaffUsers(db);

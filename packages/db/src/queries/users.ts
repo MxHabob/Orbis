@@ -1,10 +1,14 @@
 import type { Database } from "@db/client";
 import { users } from "@db/schema";
 import { userCache } from "@midday/cache";
-import { eq, not } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 
 export const getStaffUsers = async (db: Database) => {
-  return db.select().from(users).where(not(eq(users.role, "student")));
+  return db.select().from(users).where(or(eq(users.role, "staff"), eq(users.role, "teacher")));
+};
+
+export const getParentUsers = async (db: Database) => {
+  return db.select().from(users).where(eq(users.role, "parent"));
 };
 
 export const getUserById = async (db: Database, id: string) => {
@@ -73,8 +77,4 @@ export const createUsers = async (db: Database, data: (typeof users.$inferInsert
     .values(data)
     .onConflictDoNothing()
     .returning();
-};
-
-export const getUserInvites = async (_db: Database, _email: string) => {
-  return [];
 };

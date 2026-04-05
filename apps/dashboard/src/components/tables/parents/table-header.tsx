@@ -9,7 +9,7 @@ import type { Table } from "@tanstack/react-table";
 import { useState } from "react";
 
 type Props = {
-  table?: Table<RouterOutputs["team"]["teamInvites"][number]>;
+  table?: Table<RouterOutputs["user"]["getParents"][number]>;
 };
 
 export function DataTableHeader({ table }: Props) {
@@ -20,9 +20,9 @@ export function DataTableHeader({ table }: Props) {
       <Input
         className="flex-1"
         placeholder="Search..."
-        value={(table?.getColumn("email")?.getFilterValue() as string) ?? ""}
+        value={(table?.getColumn("user")?.getFilterValue() as string) ?? ""}
         onChange={(event) =>
-          table?.getColumn("email")?.setFilterValue(event.target.value)
+          table?.getColumn("user")?.setFilterValue(event.target.value)
         }
         autoComplete="off"
         autoCapitalize="none"
@@ -30,7 +30,7 @@ export function DataTableHeader({ table }: Props) {
         spellCheck="false"
       />
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
-        <Button onClick={() => onOpenChange(true)}>Invite member</Button>
+        <Button onClick={() => onOpenChange(true)}>Create parent</Button>
         <InviteTeamMembersModal onOpenChange={onOpenChange} />
       </Dialog>
     </div>

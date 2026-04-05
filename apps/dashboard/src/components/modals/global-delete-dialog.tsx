@@ -61,6 +61,9 @@ export function GlobalDeleteDialog() {
         queryClient.invalidateQueries({
           queryKey: trpc.user.getStaff.queryKey(),
         });
+        queryClient.invalidateQueries({
+          queryKey: trpc.user.getParents.queryKey(),
+        });
         setStaffParams({ deleteStaffId: null });
         toast({ title: t("common.success"), variant: "success" });
       },

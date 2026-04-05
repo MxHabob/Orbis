@@ -1,5 +1,4 @@
-import { useI18n } from "@/locales/client";
-import { useTRPC } from "@/trpc/client";
+import { useScopedI18n } from "@/locales/client";
 import type { RouterOutputs } from "@api/trpc/routers/_app";
 import { Avatar, AvatarFallback } from "@midday/ui/avatar";
 import { Button } from "@midday/ui/button";
@@ -9,26 +8,27 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@midday/ui/dropdown-menu";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef, FilterFn, Row } from "@tanstack/react-table";
 import { MoreHorizontal } from "lucide-react";
 
-type TeamInvite = RouterOutputs["team"]["teamInvites"][number];
+type ParentUser = RouterOutputs["user"]["getParents"][number];
 
-const emailFilterFn: FilterFn<TeamInvite> = (
-  row: Row<TeamInvite>,
+const userFilterFn: FilterFn<ParentUser> = (
+  row: Row<ParentUser>,
   _: string,
   filterValue: string,
 ) => {
+  const name = row.original.name?.toLowerCase();
   const email = row.original.email?.toLowerCase();
-  return email?.includes(filterValue.toLowerCase()) ?? false;
+  const filter = filterValue.toLowerCase();
+  return (name?.includes(filter) || email?.includes(filter)) ?? false;
 };
 
-export const columns: ColumnDef<TeamInvite>[] = [
+export const columns: ColumnDef<ParentUser>[] = [
   {
-    id: "email",
+    id: "user",
     accessorKey: "email",
-    filterFn: emailFilterFn,
+    filterFn: userFilterFn,
     cell: ({ row }) => {
       return (
         <div className="flex items-center space-x-4">
@@ -40,7 +40,7 @@ export const columns: ColumnDef<TeamInvite>[] = [
             </AvatarFallback>
           </Avatar>
           <div className="flex flex-col">
-            <span className="font-medium text-sm">Pending Invitation</span>
+            <span className="font-medium text-sm">{row.original.name || "Parent User"}</span>
             <span className="text-sm text-[#606060]">{row.original.email}</span>
           </div>
         </div>
@@ -49,26 +49,15 @@ export const columns: ColumnDef<TeamInvite>[] = [
   },
   {
     id: "actions",
-    cell: ({ row }) => {
-      const t = useI18n();
-      const trpc = useTRPC();
-      const queryClient = useQueryClient();
-
-      const deleteInvite = useMutation(
-        trpc.team.deleteInvite.mutationOptions({
-          onSuccess: () => {
-            queryClient.invalidateQueries({
-              queryKey: trpc.team.teamInvites.queryKey(),
-            });
-          },
-        }),
-      );
+    cell: ({ row, table }) => {
+      const tRoles = useScopedI18n("roles");
+      const meta = table.options.meta;
 
       return (
         <div className="flex justify-end">
           <div className="flex space-x-2 items-center">
             <span className="text-[#606060]">
-              {t(`roles.${row.original.role || "member"}`)}
+              {tRoles((row.original.role as any) || "member")}
             </span>
 
             <DropdownMenu>
@@ -81,10 +70,8 @@ export const columns: ColumnDef<TeamInvite>[] = [
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
                   className="text-destructive"
-                  onClick={() =>
-                    deleteInvite.mutate({
-                      id: row.original.id,
-                    })
+                  onSelect={() =>
+                    meta?.setParams?.({ deleteStaffId: row.original.id })
                   }
                 >
                   Remove
