@@ -17,11 +17,13 @@ type Props = {
   onUpload?: (url: string) => void;
   size?: number;
   className?: string;
+  folder?: string;
+  skipUserUpdate?: boolean;
 };
 
 export const AvatarUpload = forwardRef<HTMLInputElement, Props>(
   (
-    { userId, avatarUrl: initialAvatarUrl, size = 65, onUpload, className },
+    { userId, avatarUrl: initialAvatarUrl, size = 65, onUpload, className, folder, skipUserUpdate },
     ref,
   ) => {
     const [avatar, setAvatar] = useState(initialAvatarUrl);
@@ -49,12 +51,14 @@ export const AvatarUpload = forwardRef<HTMLInputElement, Props>(
 
       const { url } = await uploadFile({
         bucket: "avatars",
-        path: [userId, filename],
+        path: folder ? [folder, userId, filename] : [userId, filename],
         file: selectedFile[0] as File,
       });
 
       if (url) {
-        updateUserMutation.mutate({ image: url });
+        if (!skipUserUpdate) {
+          updateUserMutation.mutate({ image: url });
+        }
         setAvatar(url);
         onUpload?.(url);
       }

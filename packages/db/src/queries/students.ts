@@ -488,7 +488,7 @@ export const updateStudent = async (userId: string, data: Partial<CreateStudentP
 
 export const upsertStudent = async (data: any) => {
     const { 
-        userId, name, email, phone, sex, studentNumber, 
+        userId, name, image, email, phone, sex, studentNumber, 
         secretNumber, currentClassId, status, notes, 
         stats, metadata, fatherName, fatherPhone, 
         motherName, motherPhone 
@@ -500,6 +500,7 @@ export const upsertStudent = async (data: any) => {
         // Update user
         await db.update(users).set({
             name,
+            ...(image !== undefined ? { image } : {}),
             email,
             phone,
             sex,
@@ -612,6 +613,7 @@ export const upsertStudent = async (data: any) => {
         return db.transaction(async (tx) => {
             const [newUser] = await tx.insert(users).values({
                 name,
+                ...(image ? { image } : {}),
                 email,
                 phone,
                 sex,

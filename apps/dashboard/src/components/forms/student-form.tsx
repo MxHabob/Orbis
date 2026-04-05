@@ -6,6 +6,7 @@ import { useI18n } from "@/locales/client";
 import { useZodForm } from "@/hooks/use-zod-form";
 import { useTRPC } from "@/trpc/client";
 import type { RouterOutputs } from "@api/trpc/routers/_app";
+import { AvatarUpload } from "@/components/avatar-upload";
 import {
   Accordion,
   AccordionContent,
@@ -40,6 +41,7 @@ import { invalidateStudentDomain } from "@/utils/query-invalidation";
 
 const formSchema = z.object({
   id: z.string().uuid().optional(),
+  image: z.string().optional().nullable(),
   name: z.string().min(2, {
     message: "Name must be at least 2 characters.",
   }),
@@ -102,6 +104,7 @@ export function StudentForm({ data }: Props) {
 
   const defaultValues = React.useMemo(() => ({
     id: data?.userId,
+    image: data?.image ?? null,
     name: data?.name ?? "",
     email: data?.email ?? "",
     phone: data?.phone ?? "",
@@ -126,6 +129,7 @@ export function StudentForm({ data }: Props) {
     upsertStudentMutation.mutate({
       userId: values.id,
       name: values.name,
+      image: values.image || null,
       email: values.email || null,
       phone: values.phone || null,
       sex: values.sex,
@@ -161,17 +165,28 @@ export function StudentForm({ data }: Props) {
                       name="name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-xs text-[#878787] font-normal">
-                            {t("students.full_name")}
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              autoFocus
-                              placeholder="John Doe"
-                              autoComplete="off"
-                            />
-                          </FormControl>
+                          <div className="flex items-center gap-3">
+                            {data?.userId && (
+                              <AvatarUpload
+                                userId={data.userId}
+                                avatarUrl={data?.image}
+                                folder="students"
+                                size={40}
+                                skipUserUpdate
+                                onUpload={(url) => {
+                                  form.setValue("image", url, { shouldDirty: true });
+                                }}
+                              />
+                            )}
+                            <FormControl>
+                              <Input
+                                {...field}
+                                autoFocus
+                                placeholder="John Doe"
+                                autoComplete="off"
+                              />
+                            </FormControl>
+                          </div>
                           <FormMessage />
                         </FormItem>
                       )}
