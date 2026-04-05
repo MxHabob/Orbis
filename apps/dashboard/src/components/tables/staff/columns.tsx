@@ -132,7 +132,7 @@ export const columns: ColumnDef<TeamMember>[] = [
                     className="text-destructive"
                     onSelect={() => meta?.setParams?.({ deleteStaffId: row.original.id })}
                   >
-                    Remove Member
+                    Remove The {row.original.role}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
