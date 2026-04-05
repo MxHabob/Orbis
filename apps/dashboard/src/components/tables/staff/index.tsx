@@ -43,7 +43,7 @@ export function DataTable() {
     },
     meta: {
       setParams,
-      currentUser: data?.find((member) => member?.id === session?.user),
+      currentUser: data?.find((member) => member?.id === session?.user?.id),
       totalOwners: data?.filter((member) => member?.role === "admin").length,
     },
   });

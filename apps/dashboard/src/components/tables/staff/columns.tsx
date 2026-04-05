@@ -90,10 +90,8 @@ export const columns: ColumnDef<TeamMember>[] = [
       return (
         <div className="flex justify-end">
           <div className="flex space-x-2 items-center">
-            {(meta?.currentUser?.role === "admin" &&
-              meta?.currentUser?.id !== row.original.id) ||
-            (meta?.currentUser?.role === "admin" &&
-              (meta?.totalOwners ?? 0) > 1) ? (
+            {meta?.currentUser?.role === "admin" &&
+              meta?.currentUser?.id !== row.original.id ? (
               <Select
                 value={row.original.role ?? undefined}
                 onValueChange={(role) => {
@@ -121,7 +119,8 @@ export const columns: ColumnDef<TeamMember>[] = [
                 {tRoles((row.original.role as any) || "member")}
               </span>
             )}
-            {meta?.currentUser?.role === "admin" && (
+            {meta?.currentUser?.role === "admin" &&
+              meta?.currentUser?.id !== row.original.id && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-8 w-8 p-0">
@@ -129,14 +128,12 @@ export const columns: ColumnDef<TeamMember>[] = [
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  {meta?.currentUser?.id !== row.original.id && (
-                    <DropdownMenuItem
-                      className="text-destructive"
-                      onSelect={() => meta?.setParams?.({ deleteStaffId: row.original.id })}
-                    >
-                      Remove Member
-                    </DropdownMenuItem>
-                  )}
+                  <DropdownMenuItem
+                    className="text-destructive"
+                    onSelect={() => meta?.setParams?.({ deleteStaffId: row.original.id })}
+                  >
+                    Remove Member
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
