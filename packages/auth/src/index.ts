@@ -98,3 +98,5 @@ export const auth = betterAuth({
     };
   },
 });
+
+export { hashPassword, verifyPassword } from "better-auth/crypto";

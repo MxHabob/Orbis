@@ -8,6 +8,7 @@ export const metadata: Metadata = {
 
 export default function Staff() {
   prefetch(trpc.user.getStaff.queryOptions());
+  prefetch(trpc.user.getParents.queryOptions());
 
   return <StaffUsers />;
 }

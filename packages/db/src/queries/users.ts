@@ -4,7 +4,13 @@ import { userCache } from "@midday/cache";
 import { eq, or } from "drizzle-orm";
 
 export const getStaffUsers = async (db: Database) => {
-  return db.select().from(users).where(or(eq(users.role, "staff"), eq(users.role, "teacher")));
+  return db.select().from(users).where(
+    or(
+      eq(users.role, "admin"),
+      eq(users.role, "staff"),
+      eq(users.role, "teacher")
+    )
+  );
 };
 
 export const getParentUsers = async (db: Database) => {

@@ -15,7 +15,6 @@ import {
   updateUser,
   linkParentToStudents,
 } from "@midday/db/queries";
-import { generateFileKey } from "@midday/encryption";
 
 export const userRouter = createTRPCRouter({
   getStaff: protectedProcedure.query(async ({ ctx: { db } }) => {
