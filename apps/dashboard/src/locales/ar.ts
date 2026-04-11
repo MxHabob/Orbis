@@ -370,6 +370,8 @@ export default {
     subjects: "المواد",
     staff: "الموظفين",
     notifications: "الإشعارات",
+    promotions: "الترفيع الأكاديمي",
+    control: "الكنترول",
     developer: "المطور",
     entity_name_title: "اسم المستخدم",
     entity_name_description: "هذا هو الاسم المرئي للمستخدم في النظام. على سبيل المثال، اسم المستخدم أو القسم.",

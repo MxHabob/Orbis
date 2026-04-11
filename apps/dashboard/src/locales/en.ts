@@ -370,6 +370,8 @@ export default {
     classes: "Classes",
     subjects: "Subjects",
     staff: "Staff",
+    promotions: "Academic Promotions",
+    control: "Control",
     notifications: "Notifications",
     developer: "Developer",
     entity_name_title: "User name",
