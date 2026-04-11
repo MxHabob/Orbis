@@ -1012,30 +1012,32 @@ export async function generateControlStaffExport(
     properties: { tabColor: { argb: primaryArgb } }
   });
 
-  const titleText = `قالب مركز الاختبارات - موظفين الكنترول - ${options.className}`;
+  const titleText = `كشف موظفي الكنترول (الأساسي) - ${options.className}`;
   const titleRow = worksheet.addRow([titleText]);
-  worksheet.mergeCells(1, 1, 1, 4);
+  worksheet.mergeCells(1, 1, 1, 5);
   titleRow.font = { bold: true, size: 16, color: { argb: primaryArgb } };
   titleRow.alignment = { horizontal: "center", vertical: "middle" };
   titleRow.height = 35;
 
-  const headerRow = worksheet.addRow(["م", "اسم الطالب", "رقم الجلوس", "الرقم السري"]);
+  const headerRow = worksheet.addRow(["م", "الرقم السري", "اسم الطالب", "رقم الجلوس", "ملاحظات"]);
   headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
   headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: primaryArgb } };
   headerRow.alignment = { horizontal: "center", vertical: "middle" };
   headerRow.height = 25;
 
   worksheet.getColumn(1).width = 5;
-  worksheet.getColumn(2).width = 40;
-  worksheet.getColumn(3).width = 20;
+  worksheet.getColumn(2).width = 25;
+  worksheet.getColumn(3).width = 40;
   worksheet.getColumn(4).width = 20;
+  worksheet.getColumn(5).width = 20;
 
   students.forEach((s, idx) => {
     const row = worksheet.addRow([
       idx + 1,
+      s.secretNumber || "-",
       s.name,
       s.seatingNumber || "-",
-      s.secretNumber || "-"
+      ""
     ]);
     row.alignment = { horizontal: "center", vertical: "middle" };
     row.height = 22;
@@ -1048,6 +1050,111 @@ export async function generateControlStaffExport(
 
   return options.format === "csv" ? Buffer.from(await workbook.csv.writeBuffer()) : Buffer.from(await workbook.xlsx.writeBuffer());
 }
+
+/**
+ * Template 2: Teacher Grading Sheet
+ * ONLY Secret Numbers + Empty Grade Column for teachers to fill.
+ */
+export async function generateTeacherGradingSheet(
+  students: StudentExportData[],
+  options: { className: string; classColor?: string; format: "xlsx" | "csv"; reportType: string }
+): Promise<Buffer> {
+  const workbook = new ExcelJS.Workbook();
+  const primaryArgb = hexToArgb(options.classColor);
+  const worksheet = workbook.addWorksheet("كشف رصد المدرس", {
+    views: [{ rightToLeft: true }],
+    properties: { tabColor: { argb: primaryArgb } }
+  });
+
+  const typeLabel = options.reportType === "final" ? "النهائية" : "النصفية";
+  const titleText = `كشف رصد الدرجات ${typeLabel} للمدرس - ${options.className}`;
+  const titleRow = worksheet.addRow([titleText]);
+  worksheet.mergeCells(1, 1, 1, 3);
+  titleRow.font = { bold: true, size: 16, color: { argb: primaryArgb } };
+  titleRow.alignment = { horizontal: "center", vertical: "middle" };
+  titleRow.height = 35;
+
+  const headerRow = worksheet.addRow(["م", "الرقم السري", "درجة الاختبار"]);
+  headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
+  headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: primaryArgb } };
+  headerRow.alignment = { horizontal: "center", vertical: "middle" };
+  headerRow.height = 25;
+
+  worksheet.getColumn(1).width = 5;
+  worksheet.getColumn(2).width = 30;
+  worksheet.getColumn(3).width = 30;
+
+  students.forEach((s, idx) => {
+    const row = worksheet.addRow([
+      idx + 1,
+      s.secretNumber || "-",
+      "" // Empty for teacher to fill
+    ]);
+    row.alignment = { horizontal: "center", vertical: "middle" };
+    row.height = 25;
+    row.eachCell({ includeEmpty: true }, (cell) => {
+       cell.border = {
+         top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' }
+       };
+    });
+  });
+
+  return options.format === "csv" ? Buffer.from(await workbook.csv.writeBuffer()) : Buffer.from(await workbook.xlsx.writeBuffer());
+}
+
+/**
+ * Template 3: Control Comparison Sheet
+ * Secret Number + Seating Number + Grade (for verification)
+ */
+export async function generateControlComparisonSheet(
+  students: (StudentExportData & { average?: number })[],
+  options: { className: string; classColor?: string; format: "xlsx" | "csv"; reportType: string }
+): Promise<Buffer> {
+  const workbook = new ExcelJS.Workbook();
+  const primaryArgb = hexToArgb(options.classColor);
+  const worksheet = workbook.addWorksheet("كشف المطابقة", {
+    views: [{ rightToLeft: true }],
+    properties: { tabColor: { argb: primaryArgb } }
+  });
+
+  const typeLabel = options.reportType === "final" ? "النهائية" : "النصفية";
+  const titleText = `كشف مطابقة الدرجات ${typeLabel} - ${options.className}`;
+  const titleRow = worksheet.addRow([titleText]);
+  worksheet.mergeCells(1, 1, 1, 4);
+  titleRow.font = { bold: true, size: 16, color: { argb: primaryArgb } };
+  titleRow.alignment = { horizontal: "center", vertical: "middle" };
+  titleRow.height = 35;
+
+  const headerRow = worksheet.addRow(["م", "الرقم السري", "رقم الجلوس", "الدرجة المرصودة"]);
+  headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
+  headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: primaryArgb } };
+  headerRow.alignment = { horizontal: "center", vertical: "middle" };
+  headerRow.height = 25;
+
+  worksheet.getColumn(1).width = 5;
+  worksheet.getColumn(2).width = 25;
+  worksheet.getColumn(3).width = 25;
+  worksheet.getColumn(4).width = 25;
+
+  students.forEach((s, idx) => {
+    const row = worksheet.addRow([
+      idx + 1,
+      s.secretNumber || "-",
+      s.seatingNumber || "-",
+      s.average !== undefined ? Math.round(s.average) : "-"
+    ]);
+    row.alignment = { horizontal: "center", vertical: "middle" };
+    row.height = 22;
+    row.eachCell({ includeEmpty: true }, (cell) => {
+       cell.border = {
+         top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' }
+       };
+    });
+  });
+
+  return options.format === "csv" ? Buffer.from(await workbook.csv.writeBuffer()) : Buffer.from(await workbook.xlsx.writeBuffer());
+}
+
 
 /**
  * Template 2 & 3: Secret Numbers + Grade Export

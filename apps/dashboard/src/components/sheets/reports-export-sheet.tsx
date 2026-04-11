@@ -35,7 +35,7 @@ export function ReportsExportSheet() {
   const { setExportData, setIsExporting } = useExportStore();
   
   const [classId, setClassId] = useState<string>("");
-  const [reportType, setReportType] = useState<"monthly" | "half-yearly" | "final" | "attendance_sheet" | "students_parents_data" | "control_staff" | "secret_final" | "secret_midterm">("monthly");
+  const [reportType, setReportType] = useState<"monthly" | "half-yearly" | "final" | "attendance_sheet" | "students_parents_data" | "control_staff" | "secret_final" | "secret_midterm" | "teacher_grading" | "control_comparison">("monthly");
   const [month, setMonth] = useState<string>("");
 
   const isOpen = Boolean(exportReport);
@@ -68,8 +68,8 @@ export function ReportsExportSheet() {
     exportMutation.mutate({
       classId: parseInt(classId),
       type: reportType,
-      month: reportType === "monthly" ? parseInt(month) : undefined,
-      monthText: reportType === "monthly" ? HIJRI_MONTHS.find(m => m.id === parseInt(month))?.label : undefined,
+      month: (reportType === "monthly" || reportType === "teacher_grading" || reportType === "control_comparison") ? parseInt(month) : undefined,
+      monthText: (reportType === "monthly" || reportType === "teacher_grading" || reportType === "control_comparison") ? HIJRI_MONTHS.find(m => m.id === parseInt(month))?.label : undefined,
       format: "xlsx",
     });
   };
@@ -114,25 +114,37 @@ export function ReportsExportSheet() {
                 <SelectItem value="attendance_sheet">{t("reports.attendance_sheet")}</SelectItem>
                 <SelectItem value="students_parents_data">{t("reports.students_parents_data")}</SelectItem>
                 <SelectItem value="control_staff">{t("reports.control_staff")}</SelectItem>
+                <SelectItem value="teacher_grading">{t("reports.teacher_grading")}</SelectItem>
+                <SelectItem value="control_comparison">{t("reports.control_comparison")}</SelectItem>
                 <SelectItem value="secret_final">{t("reports.secret_final")}</SelectItem>
                 <SelectItem value="secret_midterm">{t("reports.secret_midterm")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {reportType === "monthly" && (
+          {(reportType === "monthly" || reportType === "teacher_grading" || reportType === "control_comparison") && (
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium">{t("grades.select_month")}</label>
+              <label className="text-sm font-medium">
+                {reportType === "monthly" ? t("grades.select_month") : "اختبار الفترة (نصفي/نهائي)"}
+              </label>
               <Select value={month} onValueChange={setMonth}>
                 <SelectTrigger>
                   <SelectValue placeholder={t("grades.select_month")} />
                 </SelectTrigger>
                 <SelectContent>
-                  {HIJRI_MONTHS.filter((m) => !m.isExam && !m.isVacation).map((m) => (
-                    <SelectItem key={m.id} value={m.id.toString()}>
-                      {m.label}
-                    </SelectItem>
-                  ))}
+                  {reportType === "monthly" ? (
+                    HIJRI_MONTHS.filter((m) => !m.isExam && !m.isVacation).map((m) => (
+                      <SelectItem key={m.id} value={m.id.toString()}>
+                        {m.label}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    HIJRI_MONTHS.filter((m) => m.isExam).map((m) => (
+                      <SelectItem key={m.id} value={m.id.toString()}>
+                        {m.id === 4 ? "اختبار منتصف العام (نصفي)" : "اختبار نهاية العام (نهائي)"}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -142,7 +154,7 @@ export function ReportsExportSheet() {
         <div className="mt-4 flex gap-2">
           <Button 
             onClick={handleExport} 
-            disabled={!classId || (reportType === "monthly" && !month) || exportMutation.isPending}
+            disabled={!classId || ((reportType === "monthly" || reportType === "teacher_grading" || reportType === "control_comparison") && !month) || exportMutation.isPending}
             className="w-full mt-auto"
           >
             {exportMutation.isPending ? (

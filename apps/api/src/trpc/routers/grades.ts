@@ -92,6 +92,25 @@ export const gradesRouter = createTRPCRouter({
       );
     }),
 
+  bulkImportBySecret: teacherProcedure
+    .input(z.object({
+        assessmentItemId: z.number(),
+        gradeData: z.array(z.object({
+            secretNumber: z.string(),
+            score: z.number().nullable(),
+            isAbsent: z.boolean().optional(),
+            comments: z.string().optional(),
+        })),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const { bulkImportGradesBySecretNumber } = await import("@midday/db/queries");
+      return bulkImportGradesBySecretNumber(
+          input.assessmentItemId, 
+          input.gradeData, 
+          ctx.session.user.id
+      );
+    }),
+
   getClassStatistics: protectedProcedure
     .input(z.object({ classId: z.string(), academicYearId: z.number().optional() }))
     .query(async ({ input }) => {
@@ -136,7 +155,7 @@ export const gradesRouter = createTRPCRouter({
     .input(
       z.object({
         classId: z.number(),
-        type: z.enum(["monthly", "half-yearly", "final", "attendance_sheet", "students_parents_data", "control_staff", "secret_final", "secret_midterm"]),
+        type: z.enum(["monthly", "half-yearly", "final", "attendance_sheet", "students_parents_data", "control_staff", "secret_final", "secret_midterm", "teacher_grading", "control_comparison"]),
         month: z.number().optional(),
         monthText: z.string().optional(),
         format: z.enum(["xlsx", "csv"]).default("xlsx"),

@@ -65,17 +65,15 @@ export const studentImportSchema = baseImportSchema.extend({
   return { message: "Name mapping is required", path: ["name"] };
 });
 
-/**
- * Schema for Importing Grades
- */
 export const gradeImportSchema = baseImportSchema.extend({
   type: z.literal("grades").default("grades"),
   subjectId: z.number({ required_error: "Subject is required" }).optional(),
   termId: z.number().optional(),
   assessmentItemId: z.number().optional(),
   month: z.number({ required_error: "Month is required" }).optional(),
-  // Usually mapping fields are strings (column names)
-  studentNumber: z.string({ required_error: "Student Number mapping is required" }),
+  // Identifier field
+  identifierType: z.enum(["studentNumber", "secretNumber"]).default("studentNumber"),
+  studentNumber: z.string({ required_error: "Identifier mapping is required" }),
   score: z.string().optional(),
   isAbsent: z.string().optional(),
   comments: z.string().optional(),

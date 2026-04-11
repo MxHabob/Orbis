@@ -105,16 +105,30 @@ export const assessmentsRouter = createTRPCRouter({
     .input(z.object({
       assessmentItemId: z.number(),
       month: z.number().optional(),
+      identifierType: z.enum(["studentNumber", "secretNumber"]).default("studentNumber"),
       grades: z.array(z.object({
-        studentNumber: z.string(),
+        identifier: z.string(),
         score: z.number().nullable(),
         isAbsent: z.boolean().optional(),
         comments: z.string().optional(),
       }))
     }))
     .mutation(async ({ input, ctx }) => {
-      const { bulkImportGrades } = await import("@midday/db/queries");
-      return bulkImportGrades(input.assessmentItemId, input.grades, ctx.session.user.id);
+      const { bulkImportGrades, bulkImportGradesBySecretNumber } = await import("@midday/db/queries");
+      
+      if (input.identifierType === "secretNumber") {
+        return bulkImportGradesBySecretNumber(
+          input.assessmentItemId,
+          input.grades.map(g => ({ ...g, secretNumber: g.identifier })),
+          ctx.session.user.id
+        );
+      }
+
+      return bulkImportGrades(
+        input.assessmentItemId, 
+        input.grades.map(g => ({ ...g, studentNumber: g.identifier })), 
+        ctx.session.user.id
+      );
     }),
 });
 

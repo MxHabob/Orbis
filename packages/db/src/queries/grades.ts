@@ -310,6 +310,56 @@ export const bulkImportGrades = async (assessmentItemId: number, gradeData: {
     return results;
 };
 
+export const bulkImportGradesBySecretNumber = async (assessmentItemId: number, gradeData: {
+    secretNumber: string;
+    score: number | null;
+    isAbsent?: boolean;
+    comments?: string;
+}[], gradedById?: string) => {
+    const results = [];
+
+    for (const item of gradeData) {
+        try {
+            // 1. Find student by secretNumber
+            const [student] = await db.select().from(students).where(eq(students.secretNumber, item.secretNumber)).limit(1);
+            
+            if (!student) {
+                results.push({ secretNumber: item.secretNumber, status: 'error', error: 'Student with this secret number not found' });
+                continue;
+            }
+
+            // 2. Upsert grade entry
+            const [result] = await db.insert(gradeEntries).values({
+                studentId: student.userId,
+                assessmentItemId,
+                score: item.score !== null ? Math.round(item.score).toString() : null,
+                isAbsent: item.isAbsent,
+                comments: item.comments,
+                gradedById,
+                updatedAt: new Date(),
+            }).onConflictDoUpdate({
+                target: [gradeEntries.studentId, gradeEntries.assessmentItemId],
+                set: {
+                    score: item.score !== null ? Math.round(item.score).toString() : null,
+                    isAbsent: item.isAbsent,
+                    comments: item.comments,
+                    gradedById,
+                    updatedAt: new Date(),
+                }
+            }).returning();
+
+            results.push({ secretNumber: item.secretNumber, status: 'success' });
+            await gradeCache.delete(`student:${student.userId}:all`);
+        } catch (error) {
+            results.push({ secretNumber: item.secretNumber, status: 'error', error: (error as Error).message });
+        }
+    }
+
+    await rankCache.invalidate().catch(() => {});
+    return results;
+};
+
+
 export const upsertGrade = async (data: {
   studentId: string;
   assessmentItemId: number;

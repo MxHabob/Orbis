@@ -13,8 +13,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Controller } from "react-hook-form";
 import { useCsvContext, type GradeImportFormData } from "../shared/context";
 import { FieldRow } from "../shared/field-row";
+import { useI18n } from "@/locales/client";
 
 export function GradeFieldMapping() {
+  const t = useI18n();
   const { setValue, control, watch } = useCsvContext<GradeImportFormData>();
   const trpc = useTRPC();
   
@@ -160,7 +162,7 @@ export function GradeFieldMapping() {
           />
         </div>
 
-        <div className="space-y-2 md:col-span-2">
+        <div className="space-y-2 md:col-span-1">
           <Label className="text-[#878787] text-xs font-normal">Import Month</Label>
           <Controller
             control={control}
@@ -193,16 +195,38 @@ export function GradeFieldMapping() {
             )}
           />
         </div>
+
+        <div className="space-y-2 md:col-span-1">
+          <Label className="text-[#878787] text-xs font-normal">{t("grades.identifier_type")}</Label>
+          <Controller
+            control={control}
+            name="identifierType"
+            render={({ field }) => (
+              <Select
+                value={field.value}
+                onValueChange={field.onChange}
+              >
+                <SelectTrigger className="w-full h-9">
+                  <SelectValue placeholder={t("grades.identifier_type")} />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="studentNumber">{t("grades.student_number_standard")}</SelectItem>
+                    <SelectItem value="secretNumber">{t("grades.secret_number_control")}</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
+        </div>
       </div>
 
       {classId && subjectId && month ? (
         <div className="grid grid-cols-2 gap-x-4 gap-y-2">
           <div className="col-span-2 mb-2">
-            <div className="text-sm font-medium">Map Columns</div>
+            <div className="text-sm font-medium">{t("reports.template")}</div>
           </div>
           <FieldRow
             field="studentNumber"
-            label="Student Identifier (ID/Number)"
+            label={watch("identifierType") === "secretNumber" ? t("grades.identifier_col_label_secret") : t("grades.identifier_col_label_standard")}
             required
           />
           {assessments?.map((assessment) => (

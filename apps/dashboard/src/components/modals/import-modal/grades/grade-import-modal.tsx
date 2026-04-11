@@ -120,6 +120,7 @@ function GradeImportFormContent({ params, onclose }: GradeImportFormContentProps
               control,
               watch,
               setValue,
+              formState,
               onFileProcessed: () => setPageNumber(1),
             }}
           >
@@ -143,14 +144,14 @@ function GradeImportFormContent({ params, onclose }: GradeImportFormContentProps
                       
                       const grades = rows
                         .map((row) => {
-                          const studentNumber = row[data.studentNumber!];
-                          if (!studentNumber) return null;
+                          const identifier = row[data.studentNumber!];
+                          if (!identifier) return null;
                           const scoreVal = row[columnName as string];
                           if (scoreVal === undefined || scoreVal === null || scoreVal.trim() === '') return null;
                           let score = parseFloat(scoreVal);
                           if (isNaN(score)) return null;
 
-                          return { studentNumber, score, isAbsent: false };
+                          return { identifier, score, isAbsent: false };
                         })
                         .filter((g): g is NonNullable<typeof g> => g !== null);
 
@@ -160,6 +161,7 @@ function GradeImportFormContent({ params, onclose }: GradeImportFormContentProps
                             assessmentItemId,
                             grades,
                             month: data.month,
+                            identifierType: data.identifierType,
                           } as any)
                         );
                       }
