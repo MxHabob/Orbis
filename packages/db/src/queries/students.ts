@@ -74,6 +74,7 @@ export const getAllStudentss = async () => {
             userId: students.userId,
             studentNumber: students.studentNumber,
             secretNumber: students.secretNumber,
+            seatingNumber: students.seatingNumber,
             currentClassId: students.currentClassId,
             status: students.status,
             notes: students.notes,
@@ -163,6 +164,7 @@ export const getStudentsByClassId = async (
             userId: students.userId,
             studentNumber: students.studentNumber,
             secretNumber: students.secretNumber,
+            seatingNumber: students.seatingNumber,
             currentClassId: students.currentClassId,
             status: students.status,
             notes: students.notes,
@@ -213,6 +215,7 @@ export const getStudentByUserId = async (userId: string) => {
             userId: students.userId,
             studentNumber: students.studentNumber,
             secretNumber: students.secretNumber,
+            seatingNumber: students.seatingNumber,
             currentClassId: students.currentClassId,
             status: students.status,
             notes: students.notes,
@@ -277,6 +280,7 @@ export const getStudentsByUserIds = async (userIds: string[]) => {
             userId: students.userId,
             studentNumber: students.studentNumber,
             secretNumber: students.secretNumber,
+            seatingNumber: students.seatingNumber,
             currentClassId: students.currentClassId,
             status: students.status,
             notes: students.notes,
@@ -312,6 +316,7 @@ export const getStudentById = async (id: string) => {
             userId: students.userId,
             studentNumber: students.studentNumber,
             secretNumber: students.secretNumber,
+            seatingNumber: students.seatingNumber,
             currentClassId: students.currentClassId,
             status: students.status,
             notes: students.notes,
@@ -378,6 +383,7 @@ export const getStudentByNumber = async (studentNumber: string) => {
             userId: students.userId,
             studentNumber: students.studentNumber,
             secretNumber: students.secretNumber,
+            seatingNumber: students.seatingNumber,
             currentClassId: students.currentClassId,
             status: students.status,
             notes: students.notes,
@@ -489,7 +495,7 @@ export const updateStudent = async (userId: string, data: Partial<CreateStudentP
 export const upsertStudent = async (data: any) => {
     const { 
         userId, name, image, email, phone, sex, studentNumber, 
-        secretNumber, currentClassId, status, notes, 
+        secretNumber, seatingNumber, currentClassId, status, notes, 
         stats, metadata, fatherName, fatherPhone, 
         motherName, motherPhone 
     } = data;
@@ -511,6 +517,7 @@ export const upsertStudent = async (data: any) => {
         await db.update(students).set({
             studentNumber,
             secretNumber,
+            seatingNumber,
             currentClassId,
             status,
             notes,
@@ -631,6 +638,7 @@ export const upsertStudent = async (data: any) => {
                 userId: targetUserId,
                 studentNumber: finalStudentNumber,
                 secretNumber: finalSecretNumber,
+                seatingNumber,
                 currentClassId,
                 status,
                 notes,
@@ -732,6 +740,7 @@ export const bulkImportStudents = async (
   studentData: {
     studentNumber?: string;
     secretNumber?: string;
+    seatingNumber?: string;
     name: string;
     phone?: string;
     email?: string;
@@ -875,6 +884,7 @@ export const bulkImportStudents = async (
           userId: newUser.id,
           studentNumber: finalStudentNumber,
           secretNumber: finalSecretNumber,
+          seatingNumber: item.seatingNumber,
           currentClassId: classId,
           metadata: item.metadata || {},
         });
@@ -977,6 +987,7 @@ export const getStudentsParentsData = async (classId: number) => {
     .select({
       studentNumber: students.studentNumber,
       secretNumber: students.secretNumber,
+      seatingNumber: students.seatingNumber,
       studentName: users.name,
       studentEmail: users.email,
       studentSex: users.sex,
@@ -1011,6 +1022,7 @@ export const getStudentsParentsData = async (classId: number) => {
     return {
       studentNumber: s.studentNumber,
       secretNumber: s.secretNumber,
+      seatingNumber: s.seatingNumber,
       studentName: s.studentName,
       studentEmail: s.studentEmail,
       studentSex: s.studentSex,
@@ -1025,4 +1037,62 @@ export const getStudentsParentsData = async (classId: number) => {
   });
 };
 
+/**
+ * Regenerate secret numbers for all students with a custom prefix.
+ * Optimized for 2026 standards with transaction handling and cache invalidation.
+ */
+export const regenerateAllSecretNumbers = async (prefix: string) => {
+  return db.transaction(async (tx) => {
+    const allStudents = await tx.select({ userId: students.userId }).from(students);
+    
+    // Batch updates to avoid overwhelming the connection pool while maintaining speed
+    const chunkSize = 50;
+    for (let i = 0; i < allStudents.length; i += chunkSize) {
+      const chunk = allStudents.slice(i, i + chunkSize);
+      await Promise.all(
+        chunk.map((student) => 
+          tx.update(students)
+            .set({ 
+              secretNumber: `${prefix}${generateSecretNumber()}`,
+              updatedAt: new Date()
+            } as any)
+            .where(eq(students.userId, student.userId))
+        )
+      );
+    }
+    
+    await studentCache.invalidate().catch(() => {});
+    return { count: allStudents.length };
+  });
+};
 
+/**
+ * Regenerate seating numbers for all students starting from a provided base.
+ * Follows 2026 best practices: Deterministic alphabetical order and transactional integrity.
+ */
+export const regenerateAllSeatingNumbers = async (startFrom: number) => {
+  return db.transaction(async (tx) => {
+    // We order by name to provide a logical seating arrangement
+    const allStudents = await tx
+      .select({ userId: students.userId })
+      .from(students)
+      .innerJoin(users, eq(students.userId, users.id))
+      .orderBy(asc(users.name));
+
+    let currentCounter = startFrom;
+    
+    // Sequential updates to maintain the strictly ordered increment
+    for (const student of allStudents) {
+      currentCounter++;
+      await tx.update(students)
+        .set({ 
+          seatingNumber: currentCounter.toString(),
+          updatedAt: new Date()
+        } as any)
+        .where(eq(students.userId, student.userId));
+    }
+    
+    await studentCache.invalidate().catch(() => {});
+    return { count: allStudents.length };
+  });
+};

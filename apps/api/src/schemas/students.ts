@@ -15,6 +15,10 @@ export const studentSchema = z.object({
     description: "Secret number for anonymous grading",
     example: "SEC123",
   }),
+  seatingNumber: z.string().max(20).nullable().openapi({
+    description: "Seating number for exams",
+    example: "SEAT123",
+  }),
   currentClassId: z.number().nullable().openapi({
     description: "ID of the current class",
     example: 1,
@@ -46,6 +50,7 @@ export const upsertStudentSchema = z.object({
   sex: z.enum(['male', 'female', 'unspecified']).default('unspecified'),
   studentNumber: z.string().max(20).optional().nullable(),
   secretNumber: z.string().max(20).optional().nullable(),
+  seatingNumber: z.string().max(20).optional().nullable(),
   currentClassId: z.number().optional().nullable(),
   status: studentStatusEnum.default('active'),
   notes: z.string().optional().nullable(),
@@ -62,6 +67,7 @@ export const importStudentsSchema = z.object({
   students: z.array(z.object({
     studentNumber: z.string().optional(),
     secretNumber: z.string().optional(),
+    seatingNumber: z.string().optional(),
     name: z.string(),
     phone: z.string().optional(),
     email: z.string().optional(),

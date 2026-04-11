@@ -155,6 +155,7 @@ export const students = pgTable('students', {
   userId: uuid('user_id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
   studentNumber: varchar('student_number', { length: 20 }).unique().notNull(),
   secretNumber: varchar('secret_number', { length: 20 }),
+  seatingNumber: varchar('seating_number', { length: 20 }),
   currentClassId: integer('current_class_id').references(() => classes.id),
   status: studentStatusEnum('status').default('active'),
   notes: text('notes'),
@@ -164,6 +165,7 @@ export const students = pgTable('students', {
 }, (table) => ({
   studentNumIdx: index('student_num_idx').on(table.studentNumber),
   secretNumIdx: index('secret_num_idx').on(table.secretNumber),
+  seatingNumIdx: index('seating_num_idx').on(table.seatingNumber),
   metadataIdx: index('student_metadata_gin_idx').using('gin', table.metadata),
 }));
 

@@ -17,6 +17,8 @@ import {
   getAllStudentss,
   upsertStudent,
   getStudentEnrollments,
+  regenerateAllSecretNumbers,
+  regenerateAllSeatingNumbers,
 } from "@midday/db/queries";
 import { generateStudentExport, generateExportFilename } from "@midday/export";
 import { z } from "zod";
@@ -115,6 +117,7 @@ export const studentsRouter = createTRPCRouter({
       students: z.array(z.object({
         studentNumber: z.string().optional(),
         secretNumber: z.string().optional(),
+        seatingNumber: z.string().optional(),
         name: z.string(),
         phone: z.string().optional(),
         email: z.string().optional(),
@@ -186,6 +189,7 @@ export const studentsRouter = createTRPCRouter({
 
       const exportData = students.map((student) => ({
         studentNumber: student.studentNumber,
+        seatingNumber: student.seatingNumber,
         name: student.name || "N/A",
         email: student.email,
         phone: null,
@@ -212,5 +216,15 @@ export const studentsRouter = createTRPCRouter({
             ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             : "text/csv",
       };
+    }),
+  regenerateSecretNumbers: adminProcedure
+    .input(z.object({ prefix: z.string().min(1) }))
+    .mutation(async ({ input }) => {
+      return regenerateAllSecretNumbers(input.prefix);
+    }),
+  regenerateSeatingNumbers: adminProcedure
+    .input(z.object({ startFrom: z.number().int().min(0) }))
+    .mutation(async ({ input }) => {
+      return regenerateAllSeatingNumbers(input.startFrom);
     }),
 });
