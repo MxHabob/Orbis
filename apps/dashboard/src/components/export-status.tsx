@@ -30,6 +30,7 @@ function DownloadButton({
   fileName: string;
   onDownload: () => void;
 }) {
+  const t = useI18n();
   const handleClick = useCallback(() => {
     if (!fullPath) return;
     
@@ -44,7 +45,7 @@ function DownloadButton({
 
   return (
     <Button size="sm" onClick={handleClick} disabled={!fullPath}>
-      تحميل الملف
+      {t("reports.export_progress.download")}
     </Button>
   );
 }

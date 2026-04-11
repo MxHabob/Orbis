@@ -19,8 +19,14 @@ import {
   getStudentEnrollments,
   regenerateAllSecretNumbers,
   regenerateAllSeatingNumbers,
+  getStudentReportData,
 } from "@midday/db/queries";
-import { generateStudentExport, generateExportFilename } from "@midday/export";
+import { 
+  generateStudentExport, 
+  generateExportFilename,
+  generateControlStaffExport,
+  generateSecretGradesExport 
+} from "@midday/export";
 import { z } from "zod";
 
 export const studentsRouter = createTRPCRouter({
@@ -155,6 +161,7 @@ export const studentsRouter = createTRPCRouter({
       z.object({
         classId: z.string(),
         format: z.enum(["xlsx", "csv"]).default("xlsx"),
+        type: z.enum(["basic", "control_staff", "secret_final", "secret_midterm"]).default("basic"),
         academicYearId: z.number().optional(),
       })
     )
@@ -174,7 +181,7 @@ export const studentsRouter = createTRPCRouter({
       if (!classData) {
         throw new Error("Class not found");
       }
-
+ 
       const students = await getStudentsByClassId(
         classIdNumber, 
         10000, 
@@ -183,31 +190,73 @@ export const studentsRouter = createTRPCRouter({
         null, 
         input.academicYearId
       );
-
-      // Get class statistics
-      const statistics = await getClassStatistics(input.classId, input.academicYearId);
-
-      const exportData = students.map((student) => ({
-        studentNumber: student.studentNumber,
-        seatingNumber: student.seatingNumber,
-        name: student.name || "N/A",
-        email: student.email,
-        phone: null,
-        sex: student.sex || null,
-        average: null,
-        status: student.status,
-      }));
-
-      const buffer = await generateStudentExport(exportData, {
-        className: classData.name,
-        academicYear: undefined,
-        statistics: statistics || null,
-        format: input.format,
-      });
-
-      // Generate filename
-      const filename = generateExportFilename(classData.name, input.format);
-
+ 
+      let buffer: Buffer;
+      let filename: string;
+ 
+      if (input.type === "control_staff") {
+        const exportData = students.map((student) => ({
+          studentNumber: student.studentNumber,
+          name: student.name || "N/A",
+          seatingNumber: student.seatingNumber,
+          secretNumber: student.secretNumber,
+        }));
+ 
+        buffer = await generateControlStaffExport(exportData, {
+          className: classData.name,
+          classColor: classData.color,
+          format: input.format,
+        });
+        filename = `موظفي_الكنترول_${classData.name}_${new Date().getTime()}.${input.format}`;
+      } else if (input.type === "secret_final" || input.type === "secret_midterm") {
+        const reportType = input.type === "secret_final" ? "final" : "half-yearly";
+        
+        // Fetch report data for each student
+        const studentsWithGrades = await Promise.all(students.map(async (s) => {
+          const reportData = await getStudentReportData(s.userId, reportType, undefined, classIdNumber);
+          return {
+            studentId: s.userId,
+            studentNumber: s.studentNumber,
+            name: s.name,
+            seatingNumber: s.seatingNumber,
+            secretNumber: s.secretNumber,
+            reportData,
+          };
+        }));
+ 
+        buffer = await generateSecretGradesExport(studentsWithGrades, {
+          className: classData.name,
+          classColor: classData.color,
+          reportType,
+          format: input.format,
+        });
+        filename = input.type === "secret_final" 
+          ? `درجات_التصفية_${classData.name}.${input.format}`
+          : `درجات_نصفية_${classData.name}.${input.format}`;
+      } else {
+        // Default basic export
+        const statistics = await getClassStatistics(input.classId, input.academicYearId);
+ 
+        const exportData = students.map((student) => ({
+          studentNumber: student.studentNumber,
+          seatingNumber: student.seatingNumber,
+          name: student.name || "N/A",
+          email: student.email,
+          phone: null,
+          sex: student.sex || null,
+          average: null,
+          status: student.status,
+        }));
+ 
+        buffer = await generateStudentExport(exportData, {
+          className: classData.name,
+          academicYear: undefined,
+          statistics: statistics || null,
+          format: input.format,
+        });
+        filename = generateExportFilename(classData.name, input.format);
+      }
+ 
       return {
         data: buffer.toString("base64"),
         filename,

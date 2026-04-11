@@ -13,6 +13,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
           { path: "/settings/subjects", label: t("settings.subjects") },
           { path: "/settings/staff", label: t("settings.staff") },
           { path: "/settings/promotions", label: t("menu.promotions") },
+          { path: "/settings/control", label: t("menu.control") },
           { path: "/settings/notifications", label: t("settings.notifications") },
         ]}
       />

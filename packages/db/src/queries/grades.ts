@@ -1034,6 +1034,8 @@ export const getClassBulkReportData = async (classId: number, type: string, mont
       .select({
         studentId: students.userId,
         studentNumber: students.studentNumber,
+        seatingNumber: students.seatingNumber,
+        secretNumber: students.secretNumber,
         name: users.name,
         status: students.status,
       })

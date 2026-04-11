@@ -35,7 +35,7 @@ export function ReportsExportSheet() {
   const { setExportData, setIsExporting } = useExportStore();
   
   const [classId, setClassId] = useState<string>("");
-  const [reportType, setReportType] = useState<"monthly" | "half-yearly" | "final" | "attendance_sheet" | "students_parents_data">("monthly");
+  const [reportType, setReportType] = useState<"monthly" | "half-yearly" | "final" | "attendance_sheet" | "students_parents_data" | "control_staff" | "secret_final" | "secret_midterm">("monthly");
   const [month, setMonth] = useState<string>("");
 
   const isOpen = Boolean(exportReport);
@@ -76,7 +76,7 @@ export function ReportsExportSheet() {
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => setParams({ exportReport: open ? true : null })}>
-      <SheetContent className="flex flex-col" side="right" dir="auto">
+      <SheetContent className="flex flex-col" side="right">
         <SheetHeader className="text-start">
           <SheetTitle className="text-start">{t("reports.export_reports_title")}</SheetTitle>
           <SheetDescription className="text-start">
@@ -87,11 +87,11 @@ export function ReportsExportSheet() {
         <div className="flex flex-col gap-6 py-6 flex-1">
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium">{t("education.class_name")}</label>
-            <Select value={classId} onValueChange={setClassId} dir="auto">
+            <Select value={classId} onValueChange={setClassId}>
               <SelectTrigger>
                 <SelectValue placeholder={t("grades.select_class")} />
               </SelectTrigger>
-              <SelectContent dir="auto">
+              <SelectContent>
                 {classesResponse?.data?.map((c: any) => (
                   <SelectItem key={c.id} value={c.id.toString()}>
                     {c.name}
@@ -103,16 +103,19 @@ export function ReportsExportSheet() {
 
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium">{t("reports.report_type")}</label>
-            <Select value={reportType} onValueChange={(val: any) => setReportType(val)} dir="auto">
+            <Select value={reportType} onValueChange={(val: any) => setReportType(val)}>
               <SelectTrigger>
                 <SelectValue placeholder={t("reports.type")} />
               </SelectTrigger>
-              <SelectContent dir="auto">
+              <SelectContent>
                 <SelectItem value="monthly">{t("reports.monthly")}</SelectItem>
                 <SelectItem value="half-yearly">{t("reports.half_yearly")}</SelectItem>
                 <SelectItem value="final">{t("reports.final")}</SelectItem>
                 <SelectItem value="attendance_sheet">{t("reports.attendance_sheet")}</SelectItem>
                 <SelectItem value="students_parents_data">{t("reports.students_parents_data")}</SelectItem>
+                <SelectItem value="control_staff">{t("reports.control_staff")}</SelectItem>
+                <SelectItem value="secret_final">{t("reports.secret_final")}</SelectItem>
+                <SelectItem value="secret_midterm">{t("reports.secret_midterm")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -120,11 +123,11 @@ export function ReportsExportSheet() {
           {reportType === "monthly" && (
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium">{t("grades.select_month")}</label>
-              <Select value={month} onValueChange={setMonth} dir="auto">
+              <Select value={month} onValueChange={setMonth}>
                 <SelectTrigger>
                   <SelectValue placeholder={t("grades.select_month")} />
                 </SelectTrigger>
-                <SelectContent dir="auto">
+                <SelectContent>
                   {HIJRI_MONTHS.filter((m) => !m.isExam && !m.isVacation).map((m) => (
                     <SelectItem key={m.id} value={m.id.toString()}>
                       {m.label}
