@@ -162,18 +162,6 @@ export async function handleReportGeneration(job: Job<ReportGenerationData>) {
         reportType,
         format: format,
       });
-    } else if (type === "secret_final" || type === "secret_midterm") {
-      const reportType = type === "secret_final" ? "final" : "half-yearly";
-      const bulkData = (await getClassBulkReportData(classId, reportType, month)) as any;
-
-      await job.updateProgress(50);
-
-      buffer = await generateSecretGradesExport(bulkData, {
-        className: classData.name,
-        classColor: classData.color,
-        reportType,
-        format: format,
-      });
     } else {
       const bulkData = await getClassBulkReportData(classId, type as any, month);
       
@@ -206,10 +194,6 @@ export async function handleReportGeneration(job: Job<ReportGenerationData>) {
     } else if (type === "control_staff") {
       filename = `موظفي_الكنترول_${classData.name}_${new Date().getTime()}.${format}`;
       pdfTitle = `موظفي الكنترول - ${classData.name}`;
-    } else if (type === "secret_final" || type === "secret_midterm") {
-      const isFinal = type === "secret_final";
-      filename = `${isFinal ? "درجات_نهائية" : "درجات_نصفية"}_سري_${classData.name}.${format}`;
-      pdfTitle = isFinal ? "كشف الدرجات النهائية (بالأرقام السرية)" : "كشف درجات منتصف العام (بأرقام الجلوس)";
     } else if (type === "teacher_grading") {
       filename = `كشف_المدرس_${classData.name}.${format}`;
       pdfTitle = `كشف رصد المدرس - ${classData.name}`;

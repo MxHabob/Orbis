@@ -35,7 +35,7 @@ export function ReportsExportSheet() {
   const { setExportData, setIsExporting } = useExportStore();
   
   const [classId, setClassId] = useState<string>("");
-  const [reportType, setReportType] = useState<"monthly" | "half-yearly" | "final" | "attendance_sheet" | "students_parents_data" | "control_staff" | "secret_final" | "secret_midterm" | "teacher_grading" | "control_comparison">("monthly");
+  const [reportType, setReportType] = useState<"monthly" | "half-yearly" | "final" | "attendance_sheet" | "students_parents_data" | "control_staff" | "teacher_grading" | "control_comparison">("monthly");
   const [month, setMonth] = useState<string>("");
 
   const isOpen = Boolean(exportReport);
@@ -116,8 +116,6 @@ export function ReportsExportSheet() {
                 <SelectItem value="control_staff">{t("reports.control_staff")}</SelectItem>
                 <SelectItem value="teacher_grading">{t("reports.teacher_grading")}</SelectItem>
                 <SelectItem value="control_comparison">{t("reports.control_comparison")}</SelectItem>
-                <SelectItem value="secret_final">{t("reports.secret_final")}</SelectItem>
-                <SelectItem value="secret_midterm">{t("reports.secret_midterm")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -125,7 +123,7 @@ export function ReportsExportSheet() {
           {(reportType === "monthly" || reportType === "teacher_grading" || reportType === "control_comparison") && (
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium">
-                {reportType === "monthly" ? t("grades.select_month") : "اختبار الفترة (نصفي/نهائي)"}
+                {reportType === "monthly" ? t("grades.select_month") : t("reports.term_test")}
               </label>
               <Select value={month} onValueChange={setMonth}>
                 <SelectTrigger>
@@ -141,7 +139,7 @@ export function ReportsExportSheet() {
                   ) : (
                     HIJRI_MONTHS.filter((m) => m.isExam).map((m) => (
                       <SelectItem key={m.id} value={m.id.toString()}>
-                        {m.id === 4 ? "اختبار منتصف العام (نصفي)" : "اختبار نهاية العام (نهائي)"}
+                        {m.id === 4 ? t("reports.midterm_test") : t("reports.final_test")}
                       </SelectItem>
                     ))
                   )}

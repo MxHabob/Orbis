@@ -161,7 +161,7 @@ export const studentsRouter = createTRPCRouter({
       z.object({
         classId: z.string(),
         format: z.enum(["xlsx", "csv"]).default("xlsx"),
-        type: z.enum(["basic", "control_staff", "secret_final", "secret_midterm"]).default("basic"),
+        type: z.enum(["basic", "control_staff"]).default("basic"),
         academicYearId: z.number().optional(),
       })
     )
@@ -208,31 +208,6 @@ export const studentsRouter = createTRPCRouter({
           format: input.format,
         });
         filename = `موظفي_الكنترول_${classData.name}_${new Date().getTime()}.${input.format}`;
-      } else if (input.type === "secret_final" || input.type === "secret_midterm") {
-        const reportType = input.type === "secret_final" ? "final" : "half-yearly";
-        
-        // Fetch report data for each student
-        const studentsWithGrades = await Promise.all(students.map(async (s) => {
-          const reportData = await getStudentReportData(s.userId, reportType, undefined, classIdNumber);
-          return {
-            studentId: s.userId,
-            studentNumber: s.studentNumber,
-            name: s.name,
-            seatingNumber: s.seatingNumber,
-            secretNumber: s.secretNumber,
-            reportData,
-          };
-        }));
- 
-        buffer = await generateSecretGradesExport(studentsWithGrades, {
-          className: classData.name,
-          classColor: classData.color,
-          reportType,
-          format: input.format,
-        });
-        filename = input.type === "secret_final" 
-          ? `درجات_التصفية_${classData.name}.${input.format}`
-          : `درجات_نصفية_${classData.name}.${input.format}`;
       } else {
         // Default basic export
         const statistics = await getClassStatistics(input.classId, input.academicYearId);
