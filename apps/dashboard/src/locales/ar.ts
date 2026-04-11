@@ -18,6 +18,7 @@ export default {
     edit: "تعديل",
     preview: "معاينة",
     export_started: "بدأ التصدير",
+    add_student: "إضافة طالب",
     export_started_desc: "يتم إنشاء التقرير الخاص بك في الخلفية.",
     success: "نجاح",
     find_anything: "ابحث عن أي شيء...",

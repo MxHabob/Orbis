@@ -143,7 +143,7 @@ function StudentActions({ classId, className }: StudentActionsProps) {
           className="gap-2 cursor-pointer rounded-none text-xs px-2 py-1.5"
         >
           <Icons.Accounts size={16} className="text-muted-foreground" />
-          <span>Add Student</span>
+          <span>{t("common.add_student")}</span>
         </DropdownMenuItem>
 
         <DropdownMenuSeparator className="bg-border/50" />

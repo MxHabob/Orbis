@@ -18,9 +18,9 @@ export default {
     edit: "Edit",
     preview: "Preview",
     export_started: "Export Started",
+    add_student: "Add Student",
     export_started_desc: "Your report is being generated in the background.",
     success: "Success",
-
     find_anything: "Find anything...",
     students: "Students",
     schedule: "Schedule",
