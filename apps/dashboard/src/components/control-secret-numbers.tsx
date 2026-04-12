@@ -37,7 +37,7 @@ import { useZodForm } from "@/hooks/use-zod-form";
 import { z } from "zod/v3";
 
 const schema = z.object({
-  prefix: z.string().min(1),
+  pattern: z.string().min(1),
 });
 
 export function ControlSecretNumbers() {
@@ -48,7 +48,7 @@ export function ControlSecretNumbers() {
 
   const form = useZodForm(schema, {
     defaultValues: {
-      prefix: "",
+      pattern: "",
     },
   });
 
@@ -86,17 +86,22 @@ export function ControlSecretNumbers() {
             <CardContent>
               <FormField
                 control={form.control}
-                name="prefix"
+                name="pattern"
                 render={({ field }) => (
                   <FormItem>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        placeholder={t("control.prefix_placeholder")}
-                        className="max-w-[300px]"
-                        autoComplete="off"
-                      />
-                    </FormControl>
+                    <div className="space-y-1">
+                      <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                        {t("control.prefix_label")}
+                      </label>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder={t("control.prefix_placeholder")}
+                          className="max-w-[300px]"
+                          autoComplete="off"
+                        />
+                      </FormControl>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}

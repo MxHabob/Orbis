@@ -242,9 +242,9 @@ export const studentsRouter = createTRPCRouter({
       };
     }),
   regenerateSecretNumbers: adminProcedure
-    .input(z.object({ prefix: z.string().min(1) }))
+    .input(z.object({ pattern: z.string().min(1) }))
     .mutation(async ({ input }) => {
-      return regenerateAllSecretNumbers(input.prefix);
+      return regenerateAllSecretNumbers(input.pattern);
     }),
   regenerateSeatingNumbers: adminProcedure
     .input(z.object({ startFrom: z.number().int().min(0) }))

@@ -1,6 +1,7 @@
 import { db } from "@db/client";
 import { students, classes, users, enrollments, academicYears, parentStudents } from "@db/schema";
 import { eq, asc, desc, and, or, ilike, inArray, sql } from "drizzle-orm";
+import { randomInt } from "node:crypto";
 
 import { RedisCache } from "@midday/cache";
 
@@ -442,12 +443,43 @@ export const getStudentByNumber = async (studentNumber: string) => {
 
 export type CreateStudentParams = typeof students.$inferInsert;
 
-export const generateSecretNumber = () => {
+/**
+ * Randomly generates a secret number based on a provided pattern.
+ * Pattern Rules (2026 Standard):
+ * - Digit (0-9): Replaced by a random digit [0-9]
+ * - Letter (A-Z/a-z): Replaced by a random uppercase letter [A-Z]
+ * - Other: Remains as a literal character
+ * 
+ * Uses cryptographically secure random generation for peak security.
+ */
+export const generateSecretByPattern = (pattern: string): string => {
+    const digits = '0123456789';
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let result = '';
+    
+    for (const char of pattern) {
+        if (/[0-9]/.test(char)) {
+            result += digits.charAt(randomInt(0, digits.length));
+        } else if (/[a-zA-Z]/.test(char)) {
+            result += letters.charAt(randomInt(0, letters.length));
+        } else {
+            result += char;
+        }
+    }
+    
+    return result;
+}
+
+/**
+ * Standard secret number generator.
+ * Follows 2026 security guidelines using CSPRNG.
+ */
+export const generateSecretNumber = (): string => {
     // Generate 6 characters alphanumeric (e.g., 24A7F9)
     const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     let result = '';
     for (let i = 0; i < 6; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
+        result += chars.charAt(randomInt(0, chars.length));
     }
     return result;
 }
@@ -1038,10 +1070,13 @@ export const getStudentsParentsData = async (classId: number) => {
 };
 
 /**
- * Regenerate secret numbers for all students with a custom prefix.
- * Optimized for 2026 standards with transaction handling and cache invalidation.
+ * Regenerate secret numbers for all students using a pattern.
+ * Pattern rules:
+ * - Digit (0-9) -> Random digit
+ * - Letter (A-Z) -> Random letter
+ * - Other -> Literal character
  */
-export const regenerateAllSecretNumbers = async (prefix: string) => {
+export const regenerateAllSecretNumbers = async (pattern: string) => {
   return db.transaction(async (tx) => {
     const allStudents = await tx.select({ userId: students.userId }).from(students);
     
@@ -1053,7 +1088,7 @@ export const regenerateAllSecretNumbers = async (prefix: string) => {
         chunk.map((student) => 
           tx.update(students)
             .set({ 
-              secretNumber: `${prefix}${generateSecretNumber()}`,
+              secretNumber: generateSecretByPattern(pattern),
               updatedAt: new Date()
             } as any)
             .where(eq(students.userId, student.userId))
