@@ -17,6 +17,7 @@ import {
   FormControl,
   FormField,
   FormItem,
+  FormLabel,
   FormMessage,
 } from "@midday/ui/form";
 import { Input } from "@midday/ui/input";
@@ -31,13 +32,22 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@midday/ui/alert-dialog";
-import { Loader2 } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@midday/ui/select";
+import { Loader2, Hash, HashIcon } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useZodForm } from "@/hooks/use-zod-form";
 import { z } from "zod/v3";
 
 const schema = z.object({
-  pattern: z.string().min(1),
+  classId: z.coerce.number().optional(),
+  startFrom: z.coerce.number().int().min(0).optional(),
+  pattern: z.string().optional(),
 });
 
 export function ControlSecretNumbers() {
@@ -46,8 +56,13 @@ export function ControlSecretNumbers() {
   const { toast } = useToast();
   const [showConfirm, setShowConfirm] = useState(false);
 
+  const classesQuery = useQuery(trpc.classes.getAll.queryOptions({
+    limit: 1000,
+  }));
+
   const form = useZodForm(schema, {
     defaultValues: {
+      startFrom: 1,
       pattern: "",
     },
   });
@@ -78,38 +93,100 @@ export function ControlSecretNumbers() {
         <form onSubmit={onSubmit}>
           <Card>
             <CardHeader>
-              <CardTitle>{t("control.regenerate_secret")}</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Hash className="h-5 w-5" />
+                {t("control.regenerate_secret")}
+              </CardTitle>
               <CardDescription>
                 {t("control.confirm_secret_desc")}
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="classId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("students.class")}</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value?.toString()}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={t("control.class_placeholder") || "All Classes"} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="0" key="all-classes">
+                            {t("common.no_data") || "All Classes"}
+                          </SelectItem>
+                          {classesQuery.data?.data?.map((c) => (
+                            <SelectItem key={c.id} value={c.id.toString()}>
+                              {c.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="startFrom"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("control.start_number_label")}</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="number"
+                          placeholder="e.g. 721"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
               <FormField
                 control={form.control}
                 name="pattern"
                 render={({ field }) => (
                   <FormItem>
-                    <div className="space-y-1">
-                      <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                        {t("control.prefix_label")}
-                      </label>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          placeholder={t("control.prefix_placeholder")}
-                          className="max-w-[300px]"
-                          autoComplete="off"
-                        />
-                      </FormControl>
-                    </div>
+                    <FormLabel>
+                      {t("control.prefix_label")} ({t("common.optional") || "Optional"})
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder={t("control.prefix_placeholder")}
+                        autoComplete="off"
+                      />
+                    </FormControl>
+                    <CardDescription className="text-xs mt-1">
+                      {t("control.prefix_placeholder_desc")}
+                    </CardDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
+              <div className="bg-muted/30 p-3 rounded-lg border border-border/50">
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  <span className="font-semibold text-primary">Note:</span> If you leave the class selection empty, the system will process the entire school. It will group students by class and assign sequential blocks (e.g., Grade 1: 721-750, Grade 2: 751-780), while maintaining random shuffling within each class for security.
+                </p>
+              </div>
             </CardContent>
-            <CardFooter className="flex justify-between">
-              <div />
-              <Button type="submit">
+            <CardFooter className="flex justify-end">
+              <Button type="submit" disabled={mutation.isPending}>
+                {mutation.isPending && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
                 {t("control.regenerate_secret")}
               </Button>
             </CardFooter>
@@ -130,7 +207,14 @@ export function ControlSecretNumbers() {
               {t("common.cancel")}
             </AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => mutation.mutate(form.getValues())}
+              onClick={() => {
+                const values = form.getValues();
+                mutation.mutate({
+                  ...values,
+                  classId: values.classId === 0 ? undefined : values.classId,
+                  startFrom: values.startFrom || 1,
+                });
+              }}
               disabled={mutation.isPending}
               className="bg-destructive hover:bg-destructive text-white"
             >
@@ -145,3 +229,4 @@ export function ControlSecretNumbers() {
     </>
   );
 }
+

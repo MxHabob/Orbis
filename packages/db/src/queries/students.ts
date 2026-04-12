@@ -1070,64 +1070,194 @@ export const getStudentsParentsData = async (classId: number) => {
 };
 
 /**
- * Regenerate secret numbers for all students using a pattern.
- * Pattern rules:
- * - Digit (0-9) -> Random digit
- * - Letter (A-Z) -> Random letter
- * - Other -> Literal character
+ * Regenerate secret numbers for students.
+ * Follows 2026 best practices for Anonymous Grading:
+ * 1. Schools typically want classes to have continuous blocks of numbers (e.g., Grade 1: 101-130).
+ * 2. If no classId is provided, iterates through all classes in order.
+ * 3. Shuffles students WITHIN each class to maintain anonymity while keeping the ranges organized.
  */
-export const regenerateAllSecretNumbers = async (pattern: string) => {
+export const regenerateSecretNumbers = async (params: {
+  startFrom?: number;
+  pattern?: string;
+  classId?: number;
+  academicYearId?: number;
+}) => {
+  const { startFrom, pattern, classId, academicYearId } = params;
+
   return db.transaction(async (tx) => {
-    const allStudents = await tx.select({ userId: students.userId }).from(students);
-    
-    // Batch updates to avoid overwhelming the connection pool while maintaining speed
-    const chunkSize = 50;
-    for (let i = 0; i < allStudents.length; i += chunkSize) {
-      const chunk = allStudents.slice(i, i + chunkSize);
-      await Promise.all(
-        chunk.map((student) => 
-          tx.update(students)
-            .set({ 
-              secretNumber: generateSecretByPattern(pattern),
-              updatedAt: new Date()
-            } as any)
-            .where(eq(students.userId, student.userId))
-        )
-      );
+    // 1. Get the current academic year if not provided
+    let yearId = academicYearId;
+    if (!yearId) {
+      const [currentYear] = await tx
+        .select({ id: academicYears.id })
+        .from(academicYears)
+        .where(eq(academicYears.isCurrent, true))
+        .limit(1);
+      yearId = currentYear?.id;
     }
-    
+
+    if (!yearId) throw new Error("Academic year not found");
+
+    // 2. Determine which classes to process
+    let classGroups: { id: number; name: string; sortOrder: number }[] = [];
+
+    if (classId) {
+      // Single class (including its sections/children)
+      const targetClasses = await tx
+        .select({ id: classes.id, name: classes.name, sortOrder: classes.sortOrder })
+        .from(classes)
+        .where(
+          or(
+            eq(classes.id, classId),
+            eq(classes.parentClassId, classId)
+          )
+        );
+      classGroups = targetClasses;
+    } else {
+      // All classes in the academic year
+      const enrolledClasses = await tx
+        .select({ id: classes.id, name: classes.name, sortOrder: classes.sortOrder })
+        .from(enrollments)
+        .innerJoin(classes, eq(enrollments.classId, classes.id))
+        .where(eq(enrollments.academicYearId, yearId))
+        .groupBy(classes.id, classes.name, classes.sortOrder);
+      
+      classGroups = enrolledClasses;
+    }
+
+    // Sort classes by hierarchy/defined order
+    classGroups.sort((a, b) => (a.sortOrder - b.sortOrder) || a.name.localeCompare(b.name));
+
+    let currentCounter = startFrom || 1;
+    let totalProcessed = 0;
+
+    // 3. Process each class group
+    for (const group of classGroups) {
+      const classStudents = await tx
+        .select({ userId: students.userId })
+        .from(enrollments)
+        .innerJoin(students, eq(enrollments.studentId, students.userId))
+        .where(
+          and(
+            eq(enrollments.classId, group.id),
+            eq(enrollments.academicYearId, yearId)
+          )
+        );
+
+      if (classStudents.length === 0) continue;
+
+      /**
+       * ANONYMOUS SHUFFLING (2026 STANDARD):
+       * Shuffle students within the class range to ensure the teacher/student 
+       * cannot predict the mapping based on alphabetical order.
+       */
+      const shuffled = [...classStudents].sort(() => Math.random() - 0.5);
+
+      for (const student of shuffled) {
+        const secretValue = pattern 
+          ? generateSecretByPattern(pattern) 
+          : (currentCounter++).toString();
+        
+        await tx.update(students)
+          .set({ 
+            secretNumber: secretValue,
+            updatedAt: new Date()
+          } as any)
+          .where(eq(students.userId, student.userId));
+        
+        totalProcessed++;
+      }
+    }
+
     await studentCache.invalidate().catch(() => {});
-    return { count: allStudents.length };
+    return { count: totalProcessed };
   });
 };
 
 /**
- * Regenerate seating numbers for all students starting from a provided base.
- * Follows 2026 best practices: Deterministic alphabetical order and transactional integrity.
+ * Regenerate seating numbers for students.
+ * Organized by class (if no classId provided, processes all classes).
+ * Patients within each class are ordered alphabetically.
  */
-export const regenerateAllSeatingNumbers = async (startFrom: number) => {
+export const regenerateSeatingNumbers = async (params: {
+  startFrom: number;
+  classId?: number;
+  academicYearId?: number;
+}) => {
+  const { startFrom, classId, academicYearId } = params;
+
   return db.transaction(async (tx) => {
-    // We order by name to provide a logical seating arrangement
-    const allStudents = await tx
-      .select({ userId: students.userId })
-      .from(students)
-      .innerJoin(users, eq(students.userId, users.id))
-      .orderBy(asc(users.name));
+    let yearId = academicYearId;
+    if (!yearId) {
+      const [currentYear] = await tx
+        .select({ id: academicYears.id })
+        .from(academicYears)
+        .where(eq(academicYears.isCurrent, true))
+        .limit(1);
+      yearId = currentYear?.id;
+    }
+
+    if (!yearId) throw new Error("Academic year not found");
+
+    // Identical class discovery logic as above
+    let classGroups: { id: number; name: string; sortOrder: number }[] = [];
+
+    if (classId) {
+      const targetClasses = await tx
+        .select({ id: classes.id, name: classes.name, sortOrder: classes.sortOrder })
+        .from(classes)
+        .where(
+          or(
+            eq(classes.id, classId),
+            eq(classes.parentClassId, classId)
+          )
+        );
+      classGroups = targetClasses;
+    } else {
+      const enrolledClasses = await tx
+        .select({ id: classes.id, name: classes.name, sortOrder: classes.sortOrder })
+        .from(enrollments)
+        .innerJoin(classes, eq(enrollments.classId, classes.id))
+        .where(eq(enrollments.academicYearId, yearId))
+        .groupBy(classes.id, classes.name, classes.sortOrder);
+      
+      classGroups = enrolledClasses;
+    }
+
+    classGroups.sort((a, b) => (a.sortOrder - b.sortOrder) || a.name.localeCompare(b.name));
 
     let currentCounter = startFrom;
-    
-    // Sequential updates to maintain the strictly ordered increment
-    for (const student of allStudents) {
-      currentCounter++;
-      await tx.update(students)
-        .set({ 
-          seatingNumber: currentCounter.toString(),
-          updatedAt: new Date()
-        } as any)
-        .where(eq(students.userId, student.userId));
+    let totalProcessed = 0;
+
+    for (const group of classGroups) {
+      const classStudents = await tx
+        .select({ userId: students.userId })
+        .from(enrollments)
+        .innerJoin(students, eq(enrollments.studentId, students.userId))
+        .innerJoin(users, eq(students.userId, users.id))
+        .where(
+          and(
+            eq(enrollments.classId, group.id),
+            eq(enrollments.academicYearId, yearId)
+          )
+        )
+        .orderBy(asc(users.name));
+
+      for (const student of classStudents) {
+        await tx.update(students)
+          .set({ 
+            seatingNumber: currentCounter.toString(),
+            updatedAt: new Date()
+          } as any)
+          .where(eq(students.userId, student.userId));
+        
+        currentCounter++;
+        totalProcessed++;
+      }
     }
     
     await studentCache.invalidate().catch(() => {});
-    return { count: allStudents.length };
+    return { count: totalProcessed };
   });
 };
+

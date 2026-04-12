@@ -33,6 +33,7 @@ export default {
     destructive_action: "إجراء مدمر",
     irreversible_action: "هذا الإجراء لا يمكن التراجع عنه. سيتم حذف البيانات نهائياً من الخادم.",
     deleting: "جاري الحذف...",
+    optional: "اختياري",
   },
   transaction_methods: {
     card_purchase: "شراء بالبطاقة",
@@ -1037,6 +1038,8 @@ export default {
     regenerating: "جاري إعادة التوليد...",
     success_secret: "تمت إعادة توليد الأرقام السرية بنجاح",
     success_seating: "تمت إعادة توليد أرقام الجلوس بنجاح",
+    class_placeholder: "اختر فصلاً (اختياري)",
+    prefix_placeholder_desc: "إذا تم توفير نمط، فسيتم استخدامه بدلاً من التسلسل الرقمي.",
   },
   promotions: {
     title: "الترفيع الأكاديمي",

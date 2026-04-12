@@ -33,6 +33,7 @@ export default {
     destructive_action: "Destructive Action",
     irreversible_action: "This action cannot be undone. This will permanently remove the data from our servers.",
     deleting: "Deleting...",
+    optional: "Optional",
   },
   transaction_methods: {
     card_purchase: "Card Purchase",
@@ -961,6 +962,8 @@ export default {
     regenerating: "Regenerating...",
     success_secret: "Secret numbers regenerated successfully",
     success_seating: "Seating numbers regenerated successfully",
+    class_placeholder: "Select Class (Optional)",
+    prefix_placeholder_desc: "If provided, this pattern will override the numeric sequence.",
   },
   promotions: {
     title: "Academic Promotions",

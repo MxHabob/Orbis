@@ -17,8 +17,8 @@ import {
   getAllStudentss,
   upsertStudent,
   getStudentEnrollments,
-  regenerateAllSecretNumbers,
-  regenerateAllSeatingNumbers,
+  regenerateSecretNumbers,
+  regenerateSeatingNumbers,
   getStudentReportData,
 } from "@midday/db/queries";
 import { 
@@ -242,13 +242,22 @@ export const studentsRouter = createTRPCRouter({
       };
     }),
   regenerateSecretNumbers: adminProcedure
-    .input(z.object({ pattern: z.string().min(1) }))
+    .input(z.object({ 
+      classId: z.coerce.number().optional(),
+      startFrom: z.coerce.number().int().min(0).optional(),
+      pattern: z.string().optional(),
+      academicYearId: z.coerce.number().optional(),
+    }))
     .mutation(async ({ input }) => {
-      return regenerateAllSecretNumbers(input.pattern);
+      return regenerateSecretNumbers(input);
     }),
   regenerateSeatingNumbers: adminProcedure
-    .input(z.object({ startFrom: z.number().int().min(0) }))
+    .input(z.object({ 
+      classId: z.coerce.number().optional(),
+      startFrom: z.coerce.number().int().min(0),
+      academicYearId: z.coerce.number().optional(),
+    }))
     .mutation(async ({ input }) => {
-      return regenerateAllSeatingNumbers(input.startFrom);
+      return regenerateSeatingNumbers(input);
     }),
 });
