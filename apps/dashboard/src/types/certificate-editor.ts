@@ -57,6 +57,7 @@ export interface EditorState {
       rows: number;
       columns: number;
       gap: number;
+      gapStyle?: 'solid' | 'dashed' | 'dotted' | 'none' | 'filled';
     };
   };
   history: {

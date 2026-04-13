@@ -109,7 +109,14 @@ export function EditorCanvas() {
                                 {Array.from({ length: layoutConfig.columns - 1 }).map((_, i) => (
                                     <div 
                                         key={`v-gap-${i}`}
-                                        className="absolute bg-primary/10 border-x border-primary/20"
+                                        className={cn(
+                                            "absolute transition-all duration-300",
+                                            layoutConfig.gapStyle === 'filled' && "bg-primary/10 border-x border-primary/20",
+                                            layoutConfig.gapStyle === 'solid' && "border-x border-primary/30",
+                                            layoutConfig.gapStyle === 'dashed' && "border-x border-dashed border-primary/30",
+                                            layoutConfig.gapStyle === 'dotted' && "border-x border-dotted border-primary/30",
+                                            layoutConfig.gapStyle === 'none' && "opacity-0"
+                                        )}
                                         style={{
                                             left: (i + 1) * (baseFrame.width / layoutConfig.columns) - (layoutConfig.gap / 2),
                                             top: 0,
@@ -121,7 +128,14 @@ export function EditorCanvas() {
                                 {Array.from({ length: layoutConfig.rows - 1 }).map((_, i) => (
                                     <div 
                                         key={`h-gap-${i}`}
-                                        className="absolute bg-primary/10 border-y border-primary/20"
+                                        className={cn(
+                                            "absolute transition-all duration-300",
+                                            layoutConfig.gapStyle === 'filled' && "bg-primary/10 border-y border-primary/20",
+                                            layoutConfig.gapStyle === 'solid' && "border-y border-primary/30",
+                                            layoutConfig.gapStyle === 'dashed' && "border-y border-dashed border-primary/30",
+                                            layoutConfig.gapStyle === 'dotted' && "border-y border-dotted border-primary/30",
+                                            layoutConfig.gapStyle === 'none' && "opacity-0"
+                                        )}
                                         style={{
                                             top: (i + 1) * (baseFrame.height / layoutConfig.rows) - (layoutConfig.gap / 2),
                                             left: 0,

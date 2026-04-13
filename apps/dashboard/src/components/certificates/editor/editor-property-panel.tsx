@@ -323,6 +323,25 @@ export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
                                             </div>
                                        </div>
                                    </div>
+
+                                   <div className="space-y-1.5">
+                                        <Label className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter">Indicator Style</Label>
+                                        <Select 
+                                            value={canvasConfig.layoutConfig?.gapStyle || "filled"} 
+                                            onValueChange={(v) => setCanvasConfig({ layoutConfig: { ...canvasConfig.layoutConfig!, gapStyle: v as any } })}
+                                        >
+                                            <SelectTrigger className="h-10 bg-muted border-border/50 text-[10px] font-bold rounded-xl">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="none">None (Hidden)</SelectItem>
+                                                <SelectItem value="solid">Solid Line</SelectItem>
+                                                <SelectItem value="dashed">Dashed Line</SelectItem>
+                                                <SelectItem value="dotted">Dotted Line</SelectItem>
+                                                <SelectItem value="filled">Gutter (Shaded Area)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                   </div>
                                </div>
                            </Section>
                        )}
