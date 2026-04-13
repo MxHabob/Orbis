@@ -1,8 +1,8 @@
-import { PAPER_PRESETS } from "../components/certificates/types"; // I will move PAPER_PRESETS to a shared place later if needed
+import { PAPER_PRESETS } from "../components/certificates/editor/constants"; // I will move PAPER_PRESETS to a shared place later if needed
 
 export interface EditorElement {
   id: string;
-  type: "text" | "image" | "shape" | "variable" | "frame";
+  type: "text" | "image" | "shape" | "variable" | "frame" | "table";
   name: string;
   x: number;
   y: number;

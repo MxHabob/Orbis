@@ -40,7 +40,7 @@ export function EditorFloatingToolbar() {
   return (
     <TooltipProvider delayDuration={400}>
       <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[40] pointer-events-auto">
-        <div className="flex items-center gap-1.5 glass-panel p-2 rounded-2xl border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] ring-1 ring-white/10">
+        <div className="flex items-center gap-1 p-1 bg-background/80 backdrop-blur-xl rounded-2xl border border-border shadow-[0_20px_50px_rgba(0,0,0,0.3)] ring-1 ring-border/50">
            {tools.map((tool, idx) => (
               <React.Fragment key={tool.id}>
                  <Tooltip>
@@ -48,10 +48,10 @@ export function EditorFloatingToolbar() {
                        <button 
                           onClick={tool.action}
                           className={cn(
-                             "h-10 w-10 flex items-center justify-center rounded-xl transition-all group relative duration-200",
+                             "h-9 w-9 flex items-center justify-center rounded-xl transition-all group relative duration-200",
                              tool.id === 'select' 
-                                ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30" 
-                                : "text-white/40 hover:text-white hover:bg-white/5"
+                                ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" 
+                                : "text-muted-foreground hover:text-foreground hover:bg-accent"
                           )}
                        >
                           <tool.icon className={cn("w-4 h-4", tool.id === 'select' && "fill-current")} strokeWidth={2.5} />
@@ -62,11 +62,11 @@ export function EditorFloatingToolbar() {
                           )}
                        </button>
                     </TooltipTrigger>
-                    <TooltipContent side="top" sideOffset={12} className="bg-black/80 backdrop-blur-xl border-white/10 text-white text-[10px] font-black p-2 px-3 rounded-lg uppercase tracking-widest">
+                    <TooltipContent side="top" sideOffset={12} className="bg-popover border-border text-popover-foreground text-[10px] font-bold p-2 px-3 rounded-lg uppercase tracking-wider">
                        {tool.label}
                     </TooltipContent>
                  </Tooltip>
-                 {(idx === 0 || idx === 8) && <div className="w-[1px] h-5 bg-white/10 mx-1" />}
+                 {(idx === 0 || idx === 8) && <div className="w-[1px] h-4 bg-border mx-1" />}
               </React.Fragment>
            ))}
         </div>

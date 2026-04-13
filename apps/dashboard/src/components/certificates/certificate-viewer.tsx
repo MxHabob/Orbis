@@ -2,33 +2,15 @@
 
 import { cn } from "@midday/ui/cn";
 import { useMemo, useEffect, useState, useRef } from "react";
-import { ShieldCheck, Award, BadgeAlert, Check } from "lucide-react";
 import { GradesTable } from "./grades-table";
-
-interface Element {
-  id: string;
-  type: "text" | "variable" | "image" | "badge" | "table" | "grades-table" | "shape";
-  content: string;
-  variableKey?: string;
-  x: number;
-  y: number;
-  fontSize?: number;
-  fontWeight?: string;
-  color?: string;
-  align?: "left" | "center" | "right";
-  width?: number;
-  height?: number;
-  opacity?: number;
-  rotation?: number;
-  fontFamily?: string;
-  backgroundColor?: string;
-  columns?: Array<{ id: string; header: string; width: number; variableKey?: string }>;
-}
+import { type EditorElement as IEditorElement } from "@/types/certificate-editor";
 
 interface CertificateViewerProps {
   template: {
     backgroundImageUrl?: string | null;
-    content?: any;
+    content?: {
+        elements: IEditorElement[];
+    } | any;
     size?: string;
     orientation?: string;
   };
@@ -40,19 +22,6 @@ interface CertificateViewerProps {
   onLoad?: () => void;
 }
 
-const PAPER_SIZES: Record<string, { pxWidth: number; pxHeight: number; mmWidth: number; mmHeight: number }> = {
-  a4: { pxWidth: 595, pxHeight: 842, mmWidth: 210, mmHeight: 297 },
-  a5: { pxWidth: 420, pxHeight: 595, mmWidth: 148, mmHeight: 210 },
-  letter: { pxWidth: 612, pxHeight: 792, mmWidth: 216, mmHeight: 279 },
-};
-
-const STAMP_ICONS = {
-  Approved: ShieldCheck,
-  Excellent: Award,
-  Urgent: BadgeAlert,
-  Verified: Check,
-};
-
 export function CertificateViewer({
   template,
   data = {},
@@ -63,143 +32,147 @@ export function CertificateViewer({
   onLoad,
 }: CertificateViewerProps) {
   const elements = useMemo(() => {
-    return (template.content?.elements || []) as Element[];
+    // Standardize elements from the new editor structure
+    const rawElements = (template.content?.elements || []) as IEditorElement[];
+    return rawElements.sort((a, b) => a.zIndex - b.zIndex);
   }, [template]);
 
   const [bgLoaded, setBgLoaded] = useState(false);
   const onLoadCalledRef = useRef(false);
 
-  const hasTable = useMemo(() => elements.some(
-    (el) =>
-      el.type === "table" ||
-      el.type === "grades-table" ||
-      (el.type === "variable" && el.variableKey === "table")
-  ), [elements]);
+  // Find the base frame (page size)
+  const baseFrame = useMemo(() => elements.find(el => el.type === 'frame'), [elements]);
+  const canvasWidth = baseFrame?.width || 794; // Default to A4 pixels
+  const canvasHeight = baseFrame?.height || 1123;
 
-  // For certificates WITHOUT tables: fire onLoad when background image loads (or no bg)
+  const hasTable = useMemo(() => elements.some(el => el.type === "table"), [elements]);
+
+  // Handle onLoad signaling
   useEffect(() => {
     if (onLoadCalledRef.current) return;
-    if (hasTable) return; // Tables handle their own onLoad
-
-    const hasBg = !!template.backgroundImageUrl;
-    if (!hasBg || bgLoaded) {
-      onLoadCalledRef.current = true;
-      const timer = setTimeout(() => {
+    if (hasTable) return; // GradesTable handles its own onLoad signaling via props if needed, 
+    // but here we just wait for images.
+    
+    if (bgLoaded || !template.backgroundImageUrl) {
+        onLoadCalledRef.current = true;
         onLoad?.();
-      }, 300);
-      return () => clearTimeout(timer);
     }
-  }, [hasTable, bgLoaded, template.backgroundImageUrl, onLoad]);
+  }, [bgLoaded, template.backgroundImageUrl, hasTable, onLoad]);
 
-  const size = (template.size || "a4") as keyof typeof PAPER_SIZES;
-  const orientation = template.orientation || "portrait";
-  
-  const currentSize = PAPER_SIZES[size] ?? PAPER_SIZES.a4!;
-  const canvasWidth = orientation === "portrait" ? currentSize!.pxWidth : currentSize!.pxHeight;
-  const canvasHeight = orientation === "portrait" ? currentSize!.pxHeight : currentSize!.pxWidth;
+  const renderElement = (el: IEditorElement) => {
+    if (!el.visible) return null;
 
-  const replaceVariables = (text: string) => {
-    if (!text) return "";
-    return text.replace(/\{\{(.*?)\}\}/g, (match, key) => {
-      const trimmedKey = key.trim();
-      const value = data[trimmedKey];
-      if (value !== undefined && value !== null) return String(value);
-      return preview ? match : "";
-    });
+    const style = el.style || {};
+    
+    // Position elements relative to the base frame if one exists, otherwise absolute
+    // In our new editor, elements are placed at absolute (x, y) on a 10000x10000 canvas.
+    // However, for viewing, we want to crop to the frame.
+    const left = baseFrame ? el.x - baseFrame.x : el.x;
+    const top = baseFrame ? el.y - baseFrame.y : el.y;
+
+    // Skip rendering the base frame itself as a child if we are using it as the container bg
+    if (el.id === baseFrame?.id) return null;
+
+    const isText = el.type === "text" || el.type === "variable";
+    
+    let content = el.content || "";
+    if (el.type === "variable" && el.variableKey) {
+        content = String(data[el.variableKey] || (preview ? `{${el.name}}` : ""));
+    }
+
+    return (
+      <div
+        key={el.id}
+        className={cn(
+          "absolute flex",
+          style.textAlign === "center" ? "justify-center" : style.textAlign === "right" ? "justify-end" : "justify-start"
+        )}
+        style={{
+          left: `${left}px`,
+          top: `${top}px`,
+          width: `${el.width}px`,
+          height: `${el.height}px`,
+          transform: `rotate(${el.rotation || 0}deg)`,
+          opacity: el.opacity ?? 1,
+          zIndex: el.zIndex,
+          pointerEvents: "none",
+        }}
+      >
+        {el.type === "image" ? (
+          <img 
+            src={el.content} 
+            className="w-full h-full object-contain" 
+            alt={el.name} 
+            onLoad={() => {}} // Could track fine-grained loading
+          />
+        ) : el.type === "shape" ? (
+          <div 
+            className="w-full h-full" 
+            style={{ 
+                backgroundColor: style.backgroundColor,
+                borderRadius: `${style.borderRadius || 0}px`,
+                border: `${style.borderWidth || 0}px solid ${style.borderColor || "transparent"}`,
+                boxShadow: style.shadow || "none",
+            }} 
+          />
+        ) : el.type === "table" ? (
+          <GradesTable 
+            studentId={(data.studentId || data.userId) as string} 
+            type={certificateType}
+            month={month}
+            isPreview={preview}
+            onLoad={onLoad}
+            fontSize={style.fontSize || 10}
+          />
+        ) : (
+          <div 
+            className="w-full h-full"
+            style={{
+              fontSize: `${style.fontSize}px`,
+              fontWeight: style.fontWeight || "bold",
+              color: style.color || "#000000",
+              fontFamily: style.fontFamily,
+              textAlign: style.textAlign || "center",
+              lineHeight: style.lineHeight || 1.2,
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+            }}
+          >
+            {content}
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
     <div 
-      className={cn("bg-white shadow-2xl relative overflow-hidden select-none print:shadow-none print:m-0", className)}
+      className={cn("relative bg-white overflow-hidden print:shadow-none", className)}
       style={{
         width: `${canvasWidth}px`,
         height: `${canvasHeight}px`,
-        aspectRatio: `${canvasWidth}/${canvasHeight}`,
-        boxSizing: 'border-box',
+        backgroundColor: baseFrame?.style?.backgroundColor || "#ffffff",
+        backgroundImage: baseFrame?.content ? `url(${baseFrame.content})` : "none",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
         direction: 'rtl',
       }}
       data-canvas-content
     >
-       {/* Background */}
-       {template.backgroundImageUrl && (
+       {/* Support for old legacy background image if needed */}
+       {template.backgroundImageUrl && !baseFrame?.content && (
          <img 
             src={template.backgroundImageUrl} 
             alt="Background" 
             crossOrigin="anonymous"
             className="w-full h-full object-fill absolute inset-0 pointer-events-none"
             onLoad={() => setBgLoaded(true)}
-            onError={() => setBgLoaded(true)} // Don't block on error
+            onError={() => setBgLoaded(true)}
          />
        )}
 
-       {/* Elements */}
-       {elements.map((el) => {
-         const elementContent = el.variableKey ? replaceVariables(el.variableKey) : replaceVariables(el.content);
-         const isText = el.type === "text" || el.type === "variable";
-         
-         return (
-          <div
-            key={el.id}
-            className={cn(
-              "absolute flex items-center",
-              el.align === "center" ? "justify-center" : el.align === "left" ? "justify-end" : "justify-start"
-            )}
-            style={{
-              left: `${el.x}%`,
-              top: `${el.y}%`,
-              transform: `rotate(${el.rotation || 0}deg)`,
-              textAlign: el.align as any,
-              opacity: el.opacity ?? 1,
-              width: el.width ? `${el.width}%` : isText ? "fit-content" : "auto",
-              height: el.type === "shape" ? `${el.height}px` : "auto",
-              zIndex: (el.type === "image" || el.type === "badge") ? 5 : 10,
-              minWidth: isText ? "50px" : "auto",
-              boxSizing: 'border-box',
-            }}
-          >
-           {el.type === "image" ? (
-             <img src={el.content} className="w-full h-auto pointer-events-none" alt="logo" />
-           ) : el.type === "badge" ? (
-              <div className="w-full aspect-square flex items-center justify-center rounded-full bg-white shadow-xl border-4" style={{ borderColor: el.color }}>
-                 {(() => {
-                   const StampIcon = (STAMP_ICONS as any)[el.content] || ShieldCheck;
-                   return <StampIcon className="w-[60%] h-[60%]" style={{ color: el.color }} />;
-                 })()}
-              </div>
-           ) : el.type === "shape" ? (
-              <div 
-                 className="w-full h-full" 
-                 style={{ backgroundColor: el.backgroundColor }} 
-              />
-           ) : (el.type === "table" || el.type === "grades-table" || (el.type === "variable" && el.variableKey === "table")) ? (
-              <GradesTable 
-                 studentId={(data.studentId || data.userId || data.id) as string} 
-                 type={certificateType}
-                 month={month}
-                 isPreview={preview}
-                 onLoad={onLoad}
-                 fontSize={el.fontSize}
-              />
-           ) : (
-             <div 
-                className="font-bold w-full"
-                style={{
-                  fontSize: `${el.fontSize}px`,
-                  fontWeight: el.fontWeight,
-                  color: el.color,
-                  fontFamily: el.fontFamily,
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-word",
-                  overflow: "visible",
-                  textAlign: el.align as any,
-                }}
-             >
-                {elementContent}
-             </div>
-           )}
-          </div>
-         );
-       })}
+       {/* Render all elements */}
+       {elements.map(renderElement)}
     </div>
   );
 }

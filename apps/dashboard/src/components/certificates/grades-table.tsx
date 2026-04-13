@@ -7,11 +7,12 @@ import { cn } from "@midday/ui/cn";
 import { useEffect } from "react";
 
 interface GradesTableProps {
-  studentId: string;
+  studentId?: string;
   type?: string;
   month?: number;
   className?: string;
   isPreview?: boolean;
+  isPlaceholder?: boolean;
   onLoad?: () => void;
   fontSize?: number;
 }
@@ -25,34 +26,48 @@ const GRADE_COLORS: Record<string, { text: string; bg: string }> = {
   "راسب": { text: "#dc2626", bg: "#fef2f2" },
 };
 
+const DUMMY_DATA = {
+    columns: ["شهر 1", "شهر 2", "مواظبة"],
+    rows: [
+        { subject: "لغة عربية", grades: { "شهر 1": 15, "شهر 2": 18, "مواظبة": 5 }, total: 38, maxTotal: 40, gradeLabel: "ممتاز" },
+        { subject: "رياضيات", grades: { "شهر 1": 12, "شهر 2": 14, "مواظبة": 4 }, total: 30, maxTotal: 40, gradeLabel: "جيد جداً" },
+        { subject: "علوم", grades: { "شهر 1": 18, "شهر 2": 19, "مواظبة": 5 }, total: 42, maxTotal: 50, gradeLabel: "ممتاز" },
+        { subject: "إنجليزي", grades: { "شهر 1": 10, "شهر 2": 11, "مواظبة": 3 }, total: 24, maxTotal: 30, gradeLabel: "جيد" },
+    ],
+    type: "monthly"
+};
+
 export function GradesTable({ 
   studentId, 
   type, 
   month, 
   className, 
   isPreview, 
+  isPlaceholder,
   onLoad,
   fontSize = 10
 }: GradesTableProps) {
   const trpc = useTRPC();
 
-  const { data, isLoading } = useQuery(
+  const { data: realData, isLoading } = useQuery(
     trpc.grades.getReportData.queryOptions(
-      { studentId, type, month },
+      { studentId: studentId!, type, month },
       { 
-        enabled: !!studentId,
+        enabled: !!studentId && !isPlaceholder,
         staleTime: 1000 * 60 * 5
       }
     )
   );
 
+  const data = isPlaceholder ? DUMMY_DATA : realData;
+
   useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading || isPlaceholder) {
       onLoad?.();
     }
-  }, [isLoading, data, onLoad]);
+  }, [isLoading, data, onLoad, isPlaceholder]);
 
-  if (isLoading) {
+  if (isLoading && !isPlaceholder) {
     return (
       <div 
         style={{ padding: "24px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: "8px" }}
@@ -65,8 +80,7 @@ export function GradesTable({
 
   const columns = data?.columns || [];
   const rows = data?.rows || [];
-  const certificateType = data?.type || type || "monthly";
-
+  
   if (rows.length === 0) {
     return (
       <div 

@@ -5,20 +5,23 @@ import {
   Square, 
   Image as ImageIcon, 
   Database, 
-  Search,
   Layers,
   Eye,
   Lock,
   Type as TextIcon,
-  ChevronDown,
   Hash,
   Grid2X2,
   Plus,
   Upload,
   MoreVertical,
-  Cloud,
   Loader2,
-  GripVertical
+  GripVertical,
+  User,
+  Fingerprint,
+  Table as TableIcon,
+  Trophy,
+  Award,
+  Search
 } from "lucide-react";
 import { Button } from "@midday/ui/button";
 import { ScrollArea } from "@midday/ui/scroll-area";
@@ -32,6 +35,7 @@ import { useToast } from "@midday/ui/use-toast";
 import { authClient } from "@midday/auth/auth-client";
 import { Label } from "@midday/ui/label";
 import { PAPER_PRESETS } from "./constants";
+import { Input } from "@midday/ui/input";
 
 // DnD Kit Imports
 import {
@@ -44,7 +48,6 @@ import {
   DragEndEvent,
 } from '@dnd-kit/core';
 import {
-  arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
@@ -58,7 +61,8 @@ interface SidebarProps {
 
 export function EditorSidebar({ templateName }: SidebarProps) {
   const { elements, selectedElementIds, setSelectedElements, addElement, reorderElements } = useEditorStore();
-  const [activeTab, setActiveTab] = useState<"layers" | "assets">("layers");
+  const [activeTab, setActiveTab] = useState<"layers" | "assets" | "variables">("layers");
+  const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
   const trpc = useTRPC();
   const { data: session } = authClient.useSession();
@@ -129,50 +133,62 @@ export function EditorSidebar({ templateName }: SidebarProps) {
     }
   };
 
+  const databaseVariables = [
+    { key: "student_name", label: "اسم الطالب الكامل", icon: User },
+    { key: "seat_number", label: "رقم الجلوس العام", icon: Hash },
+    { key: "secret_number", label: "الرقم السري للمغلف", icon: Fingerprint },
+    { key: "student_id", label: "الرقم الأكاديمي", icon: Hash },
+    { key: "class_name", label: "اسم الفصل / الصف", icon: Grid2X2 },
+    { key: "rank", label: "الترتيب العام (المركز)", icon: Trophy },
+    { key: "certificate_type", label: "نوع الشهادة / التقرير", icon: Award },
+    { key: "school_year", label: "العام الدراسي", icon: Hash },
+    { key: "grades_table", label: "جدول كشف الدرجات", icon: TableIcon, isTable: true },
+  ].filter(v => v.label.includes(searchQuery) || v.key.includes(searchQuery));
+
   return (
-    <div className="flex flex-col h-full glass-panel select-none w-64 z-20 border-r-0">
+    <div className="flex flex-col h-full bg-background select-none w-64 z-20 border-r border-border">
       {/* Header */}
-      <div className="p-5 space-y-4">
+      <div className="p-4 space-y-4">
          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/20 flex items-center justify-center">
-                    <Icons.Figma className="w-4 h-4 text-white" />
+            <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
+                    <Grid2X2 className="w-4 h-4 text-primary-foreground" />
                 </div>
                 <div className="flex flex-col">
-                    <span className="text-xs font-bold text-white tracking-tight truncate max-w-[120px]">{templateName}</span>
-                    <span className="text-[10px] text-white/30 font-medium">Auto-saving...</span>
+                    <span className="text-[11px] font-bold text-foreground tracking-tight truncate max-w-[120px]">{templateName}</span>
+                    <span className="text-[9px] text-muted-foreground font-medium uppercase">Edit Template</span>
                 </div>
             </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-white/20 hover:text-white/80 hover:bg-white/5 rounded-lg">
-                <MoreVertical className="w-4 h-4" />
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
+                <MoreVertical className="w-3.5 h-3.5" />
             </Button>
          </div>
 
          {/* Creation Tools */}
-         <div className="grid grid-cols-4 gap-2">
+         <div className="grid grid-cols-4 gap-1">
             {[
                 { type: 'frame', icon: Hash, label: 'Page' },
                 { type: 'text', icon: TextIcon, label: 'Text' },
                 { type: 'image', icon: ImageIcon, label: 'Image' },
-                { type: 'shape', icon: Square, label: 'Rect' }
+                { type: 'shape', icon: Square, label: 'Shape' }
             ].map(tool => (
                 <button 
                   key={tool.label}
                   onClick={() => addElement({ type: tool.type as any })}
-                  className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/5 transition-all group"
+                  className="flex flex-col items-center gap-1 p-1.5 rounded-lg hover:bg-accent transition-colors group"
                 >
-                    <div className="w-9 h-9 rounded-lg bg-white/[0.03] border border-white/[0.05] flex items-center justify-center group-hover:scale-105 group-hover:bg-white/[0.08] group-hover:border-white/[0.1] transition-all">
-                        <tool.icon className={cn("w-4 h-4", tool.type === 'frame' ? "text-purple-400" : "text-white/60")} />
-                    </div>
-                    <span className="text-[9px] text-white/30 font-bold uppercase tracking-wider group-hover:text-white/60">{tool.label}</span>
+                    <tool.icon className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                    <span className="text-[9px] text-muted-foreground font-medium group-hover:text-foreground">{tool.label}</span>
                 </button>
             ))}
          </div>
 
+         <Separator className="bg-border/50" />
+
          {/* Page Presets */}
-         <div className="space-y-2 mt-2">
-             <Label className="text-[9px] font-black text-white/20 uppercase tracking-widest pl-1">Page Presets</Label>
-             <div className="grid grid-cols-1 gap-1">
+         <div className="space-y-1.5">
+             <Label className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground pl-1">Page Formats</Label>
+             <div className="space-y-0.5">
                  {PAPER_PRESETS.map(preset => (
                      <button
                         key={preset.id}
@@ -182,92 +198,134 @@ export function EditorSidebar({ templateName }: SidebarProps) {
                             height: preset.height,
                             name: preset.name
                         })}
-                        className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-white/5 transition-all border border-transparent hover:border-white/5 group"
+                        className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-accent transition-all text-left group"
                      >
-                         <span className="text-[10px] font-bold text-white/60 group-hover:text-white">{preset.name}</span>
-                         <span className="text-[9px] text-white/20 font-mono">{preset.width}×{preset.height}</span>
+                         <span className="text-[11px] font-medium text-foreground/70 group-hover:text-foreground">{preset.name}</span>
+                         <span className="text-[10px] text-muted-foreground/50 font-mono group-hover:text-muted-foreground">{preset.width}×{preset.height}</span>
                      </button>
                  ))}
              </div>
          </div>
       </div>
 
-      <Separator className="bg-white/5 mx-5 w-auto" />
+      <Separator className="bg-border mx-4 w-auto" />
 
-      {/* Tabs */}
-      <div className="px-5 flex items-center gap-6 mt-4 mb-2">
-         <button onClick={() => setActiveTab('layers')} className={cn("text-[11px] font-bold transition-all relative pb-2", activeTab === 'layers' ? "text-white" : "text-white/30 hover:text-white/50")}>
-            Layers
-            {activeTab === 'layers' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]" />}
-         </button>
-         <button onClick={() => setActiveTab('assets')} className={cn("text-[11px] font-bold transition-all relative pb-2", activeTab === 'assets' ? "text-white" : "text-white/30 hover:text-white/50")}>
-            Assets
-            {activeTab === 'assets' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]" />}
-         </button>
+      {/* Tabs Navigation */}
+      <div className="px-4 flex items-center gap-4 mt-4 mb-2">
+         {["layers", "assets", "variables"].map((tab) => (
+             <button 
+                key={tab}
+                onClick={() => setActiveTab(tab as any)} 
+                className={cn(
+                    "text-[11px] font-bold transition-all relative pb-2 capitalize", 
+                    activeTab === tab ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"
+                )}
+             >
+                {tab}
+             </button>
+         ))}
       </div>
 
-      <ScrollArea className="flex-1 px-2">
+      <ScrollArea className="flex-1">
           {activeTab === 'layers' ? (
-             <div className="flex flex-col py-2">
-                <div className="px-3 mt-1">
-                   {activeLayers.length === 0 ? (
-                       <div className="flex flex-col items-center justify-center py-10 px-6 text-center opacity-20">
-                            <Layers className="w-8 h-8 mb-3" />
-                            <p className="text-[11px] font-medium leading-relaxed">Design is empty.</p>
-                       </div>
-                   ) : (
-                    <DndContext 
-                        sensors={sensors}
-                        collisionDetection={closestCenter}
-                        onDragEnd={handleDragEnd}
+             <div className="flex flex-col py-2 px-2">
+                {activeLayers.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-10 px-6 text-center opacity-30">
+                        <Layers className="w-6 h-6 mb-3" />
+                        <p className="text-[10px] font-medium leading-relaxed">Workspace is empty</p>
+                    </div>
+                ) : (
+                <DndContext 
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                >
+                    <SortableContext 
+                        items={activeLayers.map(el => el.id)}
+                        strategy={verticalListSortingStrategy}
                     >
-                        <SortableContext 
-                            items={activeLayers.map(el => el.id)}
-                            strategy={verticalListSortingStrategy}
+                        {activeLayers.map((el) => (
+                            <SortableLayerItem 
+                                key={el.id} 
+                                element={el} 
+                                selected={selectedElementIds.includes(el.id)} 
+                                onClick={() => setSelectedElements([el.id])} 
+                            />
+                        ))}
+                    </SortableContext>
+                </DndContext>
+                )}
+             </div>
+          ) : activeTab === 'assets' ? (
+             <div className="p-4 space-y-4">
+                <div {...getRootProps()} className="relative group">
+                    <input {...getInputProps()} />
+                    <Button disabled={isUploading} size="sm" className="w-full gap-2 text-[10px] font-bold rounded-lg transition-all border border-border bg-background hover:bg-accent text-foreground">
+                       {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                       Upload Asset
+                    </Button>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2 pb-6">
+                   {globalAssets.filter((a: any) => a.mimetype?.startsWith('image/')).map((asset: any) => {
+                      const imageUrl = `${process.env.NEXT_PUBLIC_API_URL}/files/proxy?filePath=vault/${asset.key}`;
+                      return (
+                        <div 
+                          key={asset.id} 
+                          onClick={() => addElement({ type: 'image', content: imageUrl, width: 400, height: 400, name: asset.name })} 
+                          className="group relative aspect-square bg-accent/30 rounded-lg border border-border overflow-hidden hover:border-primary transition-all cursor-pointer"
                         >
-                            {activeLayers.map((el) => (
-                                <SortableLayerItem 
-                                    key={el.id} 
-                                    element={el} 
-                                    selected={selectedElementIds.includes(el.id)} 
-                                    onClick={() => setSelectedElements([el.id])} 
-                                />
-                            ))}
-                        </SortableContext>
-                    </DndContext>
-                   )}
+                           <img src={imageUrl} alt={asset.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
+                           <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <Plus className="w-4 h-4 text-primary" />
+                           </div>
+                        </div>
+                      );
+                   })}
                 </div>
              </div>
           ) : (
-             <div className="p-4 space-y-6">
-                <div className="flex flex-col gap-5">
-                    <div {...getRootProps()} className="relative group">
-                        <input {...getInputProps()} />
-                        <Button disabled={isUploading} className="w-full bg-blue-600 hover:bg-blue-500 text-white border-0 h-10 gap-2 text-[11px] font-bold shadow-lg shadow-blue-600/20 rounded-xl transition-all hover:-translate-y-0.5 active:translate-y-0">
-                           {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4 shadow-sm" />}
-                           Import Assets
-                        </Button>
-                    </div>
-                    
-                    <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-3 pb-6">
-                           {globalAssets.filter((a: any) => a.mimetype?.startsWith('image/')).map((asset: any) => {
-                              const imageUrl = `${process.env.NEXT_PUBLIC_API_URL}/files/proxy?filePath=vault/${asset.key}`;
-                              return (
-                                <div 
-                                  key={asset.id} 
-                                  onClick={() => addElement({ type: 'image', content: imageUrl, width: 400, height: 400, name: asset.name })} 
-                                  className="group relative aspect-square bg-white/[0.03] rounded-xl border border-white/[0.05] overflow-hidden hover:border-blue-500/50 transition-all cursor-pointer shadow-xl active:scale-95"
-                                >
-                                   <img src={imageUrl} alt={asset.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                                   <div className="absolute inset-0 bg-blue-600/20 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
-                                      <Plus className="w-6 h-6 text-white drop-shadow-lg" />
-                                   </div>
-                                </div>
-                              );
-                           })}
-                        </div>
-                    </div>
+             <div className="p-4 space-y-4">
+                <div className="relative">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                    <Input 
+                        placeholder="Search variables..." 
+                        className="h-8 pl-8 text-[11px] bg-accent/50 border-border rounded-lg"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                </div>
+
+                <div className="space-y-1">
+                    {databaseVariables.map(v => (
+                        <button
+                            key={v.key}
+                            onClick={() => addElement({ 
+                                type: v.isTable ? "table" : "variable", 
+                                variableKey: v.key,
+                                name: v.label,
+                                width: v.isTable ? 600 : 250,
+                                height: v.isTable ? 400 : 40,
+                                style: { 
+                                    fontFamily: 'Inter',
+                                    fontSize: v.isTable ? 10 : 24,
+                                    color: v.isTable ? '#000000' : 'hsl(var(--primary))',
+                                    fontWeight: 'bold',
+                                    textAlign: 'center'
+                                }
+                            })}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-accent group transition-all"
+                        >
+                            <div className="w-8 h-8 rounded-lg bg-accent/50 flex items-center justify-center transition-colors group-hover:bg-primary/10">
+                                <v.icon className={cn("w-4 h-4 transition-colors", activeTab === 'variables' ? "text-primary/60 group-hover:text-primary" : "text-muted-foreground")} />
+                            </div>
+                            <div className="flex flex-col text-left overflow-hidden">
+                                <span className="text-[11px] font-bold text-foreground/80 group-hover:text-foreground tracking-tight truncate">{v.label}</span>
+                                <span className="text-[9px] text-muted-foreground font-mono">{v.key}</span>
+                            </div>
+                            <Plus className="w-3.5 h-3.5 ml-auto opacity-0 group-hover:opacity-40 transition-opacity shrink-0" />
+                        </button>
+                    ))}
                 </div>
              </div>
           )}
@@ -288,7 +346,7 @@ function SortableLayerItem({ element, selected, onClick }: { element: any, selec
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition: transition || 'all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+    transition,
     zIndex: isDragging ? 100 : 1,
     opacity: isDragging ? 0.6 : 1
   };
@@ -299,46 +357,35 @@ function SortableLayerItem({ element, selected, onClick }: { element: any, selec
       style={style}
       onClick={onClick}
       className={cn(
-        "group flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-default transition-all duration-200 mb-1 active:scale-[0.98]",
+        "group flex items-center gap-2 px-2 py-1.5 rounded-md cursor-default transition-colors mb-0.5",
         selected 
-            ? "bg-blue-600 shadow-[0_4px_15px_rgba(37,99,235,0.3)] text-white" 
-            : "hover:bg-white/[0.05] text-white/[0.4] hover:text-white/[0.9]"
+            ? "bg-primary text-primary-foreground" 
+            : "hover:bg-accent text-muted-foreground hover:text-foreground font-medium"
       )}
     >
-      <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-60 hover:opacity-100 transition-opacity">
-          <GripVertical className="w-3.5 h-3.5" />
+      <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-50 transition-opacity">
+          <GripVertical className="w-3 h-3" />
       </div>
       <LayerIcon type={element.type} selected={selected} />
       <span className={cn("text-[11px] truncate flex-1 tracking-tight", selected ? "font-bold" : "font-medium")}>
           {element.name || element.type}
       </span>
-      <div className="flex items-center opacity-0 group-hover:opacity-100 gap-2.5 transition-all">
-          <Lock className={cn("w-3.5 h-3.5 transition-all cursor-pointer", element.locked ? "text-white" : "opacity-40 hover:opacity-100")} />
-          <Eye className={cn("w-3.5 h-3.5 transition-all cursor-pointer", !element.visible ? "text-white" : "opacity-40 hover:opacity-100")} />
+      <div className="flex items-center opacity-0 group-hover:opacity-100 gap-1.5 transition-opacity">
+          <Lock className={cn("w-3 h-3 cursor-pointer", element.locked ? "text-primary-foreground" : "opacity-40 hover:opacity-100")} />
+          <Eye className={cn("w-3 h-3 cursor-pointer", !element.visible ? "text-primary-foreground" : "opacity-40 hover:opacity-100")} />
       </div>
     </div>
   );
 }
 
 function LayerIcon({ type, selected }: { type: string, selected?: boolean }) {
-    const className = cn("w-4 h-4", selected ? "text-white" : "text-white/40 group-hover:text-white/80");
+    const className = cn("w-3.5 h-3.5", selected ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground");
     switch (type) {
         case 'text': return <TextIcon className={className} />;
         case 'image': return <ImageIcon className={className} />;
         case 'shape': return <Square className={className} />;
-        case 'variable': return <Database className={cn("w-4 h-4", selected ? "text-white" : "text-blue-400")} />;
+        case 'variable': return <Database className={cn("w-3.5 h-3.5", selected ? "text-primary-foreground" : "text-primary")} />;
+        case 'table': return <TableIcon className={cn("w-3.5 h-3.5", selected ? "text-primary-foreground" : "text-primary")} />;
         default: return <Grid2X2 className={className} />;
     }
-}
-
-const Icons = {
-    Figma: ({ className }: { className: string }) => (
-        <svg viewBox="0 0 38 57" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
-            <path d="M19 28.5C19 25.9837 20.0009 23.5706 21.7825 21.7891C23.564 20.0076 25.9771 19.0067 28.4933 19.0067C31.0096 19.0067 33.4227 20.0076 35.2042 21.7891C36.9858 23.5706 37.9867 25.9837 37.9867 28.5L37.9867 38H28.4933C25.9771 38 23.564 36.9991 21.7825 35.2176C20.0009 33.436 19 31.0229 19 28.5Z" fill="#1ABCFE"/>
-            <path d="M0 47.5C0 44.9837 1.00089 42.5706 2.78249 40.7891C4.56408 39.0076 6.97718 38.0067 9.49333 38.0067H19V47.5C19 50.0163 17.9991 52.4294 16.2175 54.2109C14.4359 55.9924 12.0228 56.9933 9.50667 56.9933C6.99052 56.9933 4.57741 55.9924 2.79582 54.2109C1.01423 52.4294 0.0133333 50.0163 0.0133333 47.5H0Z" fill="#0AC17E"/>
-            <path d="M0 28.5C0 25.9837 1.00089 23.5706 2.78249 21.7891C4.56408 20.0076 6.97718 19.0067 9.49333 19.0067H19V38H9.49333C6.97718 38 4.56408 36.9991 2.78249 35.2176C1.00089 33.436 0 31.0229 0 28.5Z" fill="#A259FF"/>
-            <path d="M0 9.50667C0 6.99052 1.00089 4.57741 2.78249 2.79582C4.56408 1.01423 6.97718 0.0133333 9.49333 0.0133333H19V19.0067H9.49333C6.97718 19.0067 4.56408 18.0058 2.78249 16.2242C1.00089 14.4426 0 12.0295 0 9.51333V9.50667Z" fill="#F24E1E"/>
-            <path d="M19 0.0133333H28.5067C31.0228 0.0133333 33.4359 1.01423 35.2175 2.79582C36.9991 4.57741 38 6.99052 38 9.50667C38 12.0228 36.9991 14.4359 35.2175 16.2175C33.4359 17.9991 31.0228 19 28.5067 19H19V0.0133333Z" fill="#FF7262"/>
-        </svg>
-    )
 }

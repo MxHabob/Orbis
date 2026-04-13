@@ -36,26 +36,26 @@ export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
   };
 
   return (
-    <div className="h-full flex flex-col glass-panel select-none w-[280px] z-20 border-l-0 shadow-[-10px_0_30px_rgba(0,0,0,0.3)]">
+    <div className="h-full flex flex-col bg-background select-none w-72 z-20 border-l border-border">
       {/* Premium Header */}
-      <div className="p-5 flex items-center justify-between shrink-0">
-          <div className="flex -space-x-2">
+      <div className="p-4 flex items-center justify-between shrink-0 border-b border-border">
+          <div className="flex -space-x-1.5">
             {[1, 2, 3].map(i => (
-                <Avatar key={i} className="h-7 w-7 border-2 border-[#121212] ring-1 ring-white/10">
-                    <AvatarFallback className={cn("text-[9px] font-bold text-white", i === 1 ? "bg-blue-600" : "bg-purple-600")}>{i === 1 ? 'JD' : 'AS'}</AvatarFallback>
+                <Avatar key={i} className="h-6 w-6 border-2 border-background ring-1 ring-border">
+                    <AvatarFallback className={cn("text-[8px] font-bold text-white", i === 1 ? "bg-primary" : "bg-purple-600")}>{i === 1 ? 'JD' : 'AS'}</AvatarFallback>
                 </Avatar>
             ))}
-            <div className="h-7 w-7 rounded-full bg-white/5 border-2 border-[#121212] flex items-center justify-center text-[9px] font-bold text-white/40 ring-1 ring-white/10">+2</div>
           </div>
 
           <div className="flex items-center gap-2">
-             <Button variant="ghost" size="icon" className="h-9 w-9 text-white/40 hover:text-white hover:bg-white/5 rounded-xl transition-all">
+             <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
                 <Share2 className="w-4 h-4" />
              </Button>
              <Button 
                 onClick={onSave}
                 disabled={isSaving}
-                className="h-9 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-5 rounded-xl shadow-lg shadow-blue-600/20 truncate"
+                size="sm"
+                className="h-8 text-[11px] font-bold px-4 rounded-lg"
              >
                 {isSaving ? "Saving..." : "Deploy"}
              </Button>
@@ -63,13 +63,13 @@ export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
       </div>
 
       {/* Tabs / Modes */}
-      <div className="px-5 mb-4">
-          <div className="flex p-1 bg-white/[0.03] rounded-xl gap-1 border border-white/[0.05]">
+      <div className="px-4 py-3">
+          <div className="flex p-1 bg-accent/50 rounded-lg gap-1 border border-border">
              <button 
                 onClick={() => setMode('design')}
                 className={cn(
-                    "flex-1 py-2 rounded-lg text-xs font-bold transition-all",
-                    mode === 'design' ? "bg-white/[0.07] text-white shadow-xl ring-1 ring-white/10" : "text-white/30 hover:text-white/50"
+                    "flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all",
+                    mode === 'design' ? "bg-background text-foreground shadow-sm border border-border" : "text-muted-foreground hover:text-foreground"
                 )}
              >
                 Design
@@ -77,8 +77,8 @@ export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
              <button 
                 onClick={() => setMode('prototype')}
                 className={cn(
-                    "flex-1 py-2 rounded-lg text-xs font-bold transition-all",
-                    mode === 'prototype' ? "bg-white/[0.07] text-white shadow-xl ring-1 ring-white/10" : "text-white/30 hover:text-white/50"
+                    "flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all",
+                    mode === 'prototype' ? "bg-background text-foreground shadow-sm border border-border" : "text-muted-foreground hover:text-foreground"
                 )}
              >
                 Proto
@@ -87,13 +87,13 @@ export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
       </div>
 
       <ScrollArea className="flex-1">
-          <div className="px-5 pb-10">
+          <div className="px-4 pb-10">
               {mode === 'prototype' ? (
-                 <div className="space-y-8 mt-2">
+                 <div className="space-y-6 mt-2">
                     {!selectedElement ? (
-                        <div className="flex flex-col items-center justify-center py-20 text-center opacity-20">
-                            <Zap className="w-10 h-10 mb-4" strokeWidth={1} />
-                            <p className="text-[11px] font-medium uppercase tracking-widest leading-6">Select element to<br/>create interaction</p>
+                        <div className="flex flex-col items-center justify-center py-20 text-center opacity-30">
+                            <Zap className="w-8 h-8 mb-4 stroke-1" />
+                            <p className="text-[10px] font-medium uppercase tracking-widest leading-6">Select element to<br/>add interaction</p>
                         </div>
                     ) : (
                         <div className="space-y-6">
@@ -101,37 +101,37 @@ export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
                             {selectedElement.interactions?.length === 0 ? (
                                 <button 
                                     onClick={() => handleUpdate({ interactions: [{ trigger: 'onClick', action: 'openUrl', value: 'https://' }] })}
-                                    className="w-full p-4 border border-dashed border-white/10 rounded-2xl hover:bg-white/5 transition-all text-center group"
+                                    className="w-full p-4 border border-dashed border-border rounded-xl hover:bg-accent/50 transition-all text-center group"
                                 >
-                                    <p className="text-[11px] text-white/30 font-medium group-hover:text-white/60">Tap to add interaction</p>
+                                    <p className="text-[10px] text-muted-foreground font-medium group-hover:text-foreground">Add interaction</p>
                                 </button>
                             ) : (
-                                <div className="space-y-4">
+                                <div className="space-y-3">
                                     {selectedElement.interactions?.map((int, i) => (
-                                        <div key={i} className="bg-white/[0.03] p-4 rounded-2xl space-y-4 border border-white/10 shadow-xl relative group/int">
-                                            <div className="flex items-center justify-between">
-                                                <div className="px-2 py-1 rounded-md bg-blue-500/10 text-blue-400 text-[10px] font-bold uppercase tracking-wider">Click</div>
-                                                <button className="opacity-0 group-hover/int:opacity-100 transition-opacity text-white/20 hover:text-red-400" onClick={() => handleUpdate({ interactions: [] })}>
-                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                </button>
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <Label className="text-[9px] text-white/20 uppercase font-black tracking-widest">Navigate to</Label>
-                                                <Input 
-                                                    className="h-8 bg-black/20 border-white/5 text-[11px] rounded-lg focus:ring-blue-500"
-                                                    value={int.value}
-                                                    onChange={(e) => {
-                                                        const currentInts = selectedElement.interactions;
-                                                        if (!currentInts) return;
-                                                        const newInts = [...currentInts];
-                                                        if (newInts[i]) {
-                                                            newInts[i].value = e.target.value;
-                                                            handleUpdate({ interactions: newInts });
-                                                        }
-                                                    }}
-                                                />
-                                            </div>
-                                        </div>
+                                         <div key={i} className="bg-accent/30 p-3 rounded-xl space-y-3 border border-border relative group/int">
+                                             <div className="flex items-center justify-between">
+                                                 <div className="px-2 py-0.5 rounded-md bg-primary/10 text-primary text-[9px] font-bold uppercase tracking-wider">Click</div>
+                                                 <button className="opacity-0 group-hover/int:opacity-100 transition-opacity text-muted-foreground hover:text-destructive" onClick={() => handleUpdate({ interactions: [] })}>
+                                                     <Trash2 className="w-3 h-3" />
+                                                 </button>
+                                             </div>
+                                             <div className="space-y-1">
+                                                 <Label className="text-[9px] text-muted-foreground uppercase font-bold tracking-tight">Navigate to</Label>
+                                                 <Input 
+                                                     className="h-7 bg-background border-border text-[10px] rounded-lg"
+                                                     value={int.value}
+                                                     onChange={(e) => {
+                                                         const currentInts = selectedElement.interactions;
+                                                         if (!currentInts) return;
+                                                         const newInts = [...currentInts];
+                                                         if (newInts[i]) {
+                                                             newInts[i].value = e.target.value;
+                                                             handleUpdate({ interactions: newInts });
+                                                         }
+                                                     }}
+                                                 />
+                                             </div>
+                                         </div>
                                     ))}
                                 </div>
                             )}
@@ -139,48 +139,44 @@ export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
                     )}
                  </div>
               ) : (
-                 <div className="space-y-8 mt-2">
+                 <div className="space-y-6 mt-2">
                     {!selectedElement ? (
-                        <div className="space-y-8">
+                        <div className="space-y-6">
                             <div>
                                 <SectionHeader title="Design Settings" />
-                                <div className="mt-4 space-y-4">
-                                    <div className="space-y-2">
-                                        <Label className="text-[10px] font-bold text-white/20 uppercase tracking-widest font-black">Canvas Color</Label>
+                                <div className="mt-3 space-y-4">
+                                    <div className="space-y-1.5">
+                                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">Canvas Color</Label>
                                         <ColorControl 
                                             value={canvasConfig.backgroundColor || "#121212"} 
                                             onChange={(c) => setCanvasConfig({ backgroundColor: c })}
                                         />
                                     </div>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div className="bg-white/[0.03] p-3 rounded-xl border border-white/[0.05]">
-                                             <Label className="text-[9px] text-white/20 uppercase font-black">Grid</Label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div className="bg-accent/30 p-2.5 rounded-lg border border-border">
+                                             <Label className="text-[9px] text-muted-foreground uppercase font-bold">Grid</Label>
                                              <div className="mt-1 flex items-center justify-between">
-                                                <span className="text-xs font-bold text-white/60">{canvasConfig.gridSize}px</span>
-                                                <div className={cn("w-3 h-3 rounded-full", canvasConfig.showGrid ? "bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" : "bg-white/10")} />
+                                                <span className="text-[11px] font-medium">{canvasConfig.gridSize}px</span>
+                                                <div className={cn("w-2.5 h-2.5 rounded-full", canvasConfig.showGrid ? "bg-primary" : "bg-border")} />
                                              </div>
                                         </div>
-                                        <div className="bg-white/[0.03] p-3 rounded-xl border border-white/[0.05]">
-                                             <Label className="text-[9px] text-white/20 uppercase font-black">Rulers</Label>
+                                        <div className="bg-accent/30 p-2.5 rounded-lg border border-border">
+                                             <Label className="text-[9px] text-muted-foreground uppercase font-bold">Rulers</Label>
                                              <div className="mt-1 flex items-center justify-between">
-                                                <span className="text-xs font-bold text-white/60">{canvasConfig.showRulers ? 'ON' : 'OFF'}</span>
-                                                <div className={cn("w-3 h-3 rounded-full", canvasConfig.showRulers ? "bg-white/40" : "bg-white/10")} />
+                                                <span className="text-[11px] font-medium">{canvasConfig.showRulers ? 'ON' : 'OFF'}</span>
+                                                <div className={cn("w-2.5 h-2.5 rounded-full", canvasConfig.showRulers ? "bg-primary" : "bg-border")} />
                                              </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            <Separator className="bg-white/5" />
-                            <div className="opacity-40 grayscale group cursor-not-allowed">
-                                <SectionHeader title="Styles" icon={Plus} />
-                                <p className="text-[10px] mt-2 text-white/30">No global styles defined</p>
-                            </div>
+                            <Separator className="bg-border" />
                         </div>
                     ) : (
-                        <div className="space-y-8">
+                        <div className="space-y-6">
                             <div>
                                 <SectionHeader title="Transform" />
-                                <div className="grid grid-cols-2 gap-x-6 gap-y-5 mt-4 bg-white/[0.02] p-4 rounded-2xl border border-white/[0.05]">
+                                <div className="grid grid-cols-2 gap-x-4 gap-y-3 mt-3 bg-accent/30 p-3 rounded-xl border border-border">
                                     <PropertyField 
                                         label="X" 
                                         value={Math.round(selectedElement.x)} 
@@ -201,7 +197,7 @@ export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
                                         value={Math.round(selectedElement.height)} 
                                         onChange={(v) => handleUpdate({ height: v })}
                                     />
-                                    <div className="col-span-2 pt-1 border-t border-white/5">
+                                    <div className="col-span-2 pt-1 border-t border-border">
                                         <PropertyField 
                                             label="°" 
                                             value={Math.round(selectedElement.rotation)} 
@@ -211,36 +207,36 @@ export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
                                 </div>
                             </div>
                             
-                            <Separator className="bg-white/5" />
+                            <Separator className="bg-border" />
                             
                             {selectedElement.type === 'text' && (
                                 <>
-                                    <div className="space-y-4">
+                                    <div className="space-y-3">
                                         <SectionHeader title="Typography" icon={Settings2} />
-                                        <div className="space-y-4">
-                                            <div className="bg-white/[0.03] p-3 rounded-xl border border-white/5">
-                                                <span className="text-[10px] text-white/20 uppercase font-black block mb-2">Font Size</span>
-                                                <div className="flex items-center gap-4">
+                                        <div className="space-y-3">
+                                            <div className="bg-accent/30 p-3 rounded-lg border border-border">
+                                                <span className="text-[10px] text-muted-foreground uppercase font-bold block mb-2">Font Size</span>
+                                                <div className="flex items-center gap-3">
                                                     <Slider 
                                                         value={[selectedElement.style.fontSize || 32]} 
                                                         max={200} 
                                                         step={1} 
                                                         onValueChange={([v]) => handleUpdate({ style: { ...selectedElement.style, fontSize: v } })}
                                                     />
-                                                    <span className="text-xs font-bold w-8 text-right">{selectedElement.style.fontSize}</span>
+                                                    <span className="text-[11px] font-bold w-6 text-right">{selectedElement.style.fontSize}</span>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <Separator className="bg-white/5" />
+                                    <Separator className="bg-border" />
                                 </>
                             )}
 
-                            <div className="space-y-4">
+                            <div className="space-y-3">
                                 <SectionHeader title="Appearance" icon={Plus} />
-                                <div className="space-y-4">
-                                    <div className="space-y-2">
-                                        <Label className="text-[10px] font-bold text-white/20 uppercase tracking-widest font-black">Fill</Label>
+                                <div className="space-y-3">
+                                    <div className="space-y-1.5">
+                                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">Fill</Label>
                                         <ColorControl 
                                             value={selectedElement.style.color || selectedElement.style.backgroundColor || "#000000"} 
                                             onChange={(color) => handleUpdate({ 
@@ -248,10 +244,10 @@ export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
                                             })}
                                         />
                                     </div>
-                                    <div className="bg-white/[0.03] p-3 rounded-xl border border-white/5">
+                                    <div className="bg-accent/30 p-3 rounded-lg border border-border">
                                         <div className="flex items-center justify-between mb-2">
-                                            <span className="text-[10px] text-white/20 uppercase font-black">Opacity</span>
-                                            <span className="text-xs font-bold">{Math.round((selectedElement.opacity ?? 1) * 100)}%</span>
+                                            <span className="text-[10px] text-muted-foreground uppercase font-bold">Opacity</span>
+                                            <span className="text-[11px] font-bold">{Math.round((selectedElement.opacity ?? 1) * 100)}%</span>
                                         </div>
                                         <Slider 
                                             value={[(selectedElement.opacity ?? 1) * 100]} 
@@ -273,22 +269,22 @@ export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
 
 function SectionHeader({ title, icon: Icon }: { title: string, icon?: any }) {
     return (
-        <div className="flex items-center justify-between group cursor-pointer transition-all hover:translate-x-1">
-            <span className="text-xs font-bold text-white/90 tracking-tight">{title}</span>
-            {Icon && <Icon className="w-4 h-4 text-white/20 group-hover:text-white transition-colors" />}
+        <div className="flex items-center justify-between group cursor-pointer transition-all hover:translate-x-0.5">
+            <span className="text-[11px] font-bold text-foreground tracking-tight">{title}</span>
+            {Icon && <Icon className="w-3 h-3 text-muted-foreground group-hover:text-foreground transition-colors" />}
         </div>
     )
 }
 
 function PropertyField({ label, value, onChange }: { label: string, value: number, onChange: (v: number) => void }) {
     return (
-        <div className="flex items-center gap-3 group">
-            <span className="text-[10px] font-black text-white/20 w-3">{label}</span>
+        <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold text-muted-foreground w-3 truncate">{label}</span>
             <input 
                 type="number" 
                 value={value}
                 onChange={(e) => onChange(Number(e.target.value))}
-                className="bg-transparent border-none text-xs text-white/80 font-bold p-0 focus:ring-0 w-full [appearance:textfield] transition-colors focus:text-blue-400"
+                className="bg-transparent border-none text-[11px] text-foreground font-bold p-0 focus:ring-0 w-full [appearance:textfield] transition-colors focus:text-primary"
             />
         </div>
     )
@@ -296,16 +292,15 @@ function PropertyField({ label, value, onChange }: { label: string, value: numbe
 
 function ColorControl({ value, onChange }: { value: string, onChange: (v: string) => void }) {
     return (
-        <div className="flex items-center gap-3 bg-black/20 p-2 rounded-xl border border-white/5 group hover:border-white/20 transition-all">
-            <div className="relative h-6 w-10 shrink-0">
+        <div className="flex items-center gap-2 bg-background p-2 rounded-lg border border-border group hover:border-primary/50 transition-all">
+            <div className="relative h-5 w-8 shrink-0">
                 <ColorPicker value={value} onSelect={onChange} />
             </div>
             <input 
                 value={value.toUpperCase()} 
                 onChange={(e) => onChange(e.target.value)}
-                className="bg-transparent border-none text-[11px] text-white/60 font-mono font-bold w-full focus:ring-0 uppercase tracking-wider"
+                className="bg-transparent border-none text-[10px] text-muted-foreground font-mono font-bold w-full focus:ring-0 uppercase tracking-tight"
             />
         </div>
     );
 }
-

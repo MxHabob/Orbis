@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, memo } from "react";
 import { type EditorElement as IEditorElement } from "@/types/certificate-editor";
 import { cn } from "@midday/ui/cn";
 import { useEditorStore } from "@/store/certificate-editor";
+import { GradesTable } from "../grades-table";
 
 interface Props {
   element: IEditorElement;
@@ -83,10 +84,14 @@ export const EditorElement = memo(function EditorElement({ element }: Props) {
             }}
           >
             {element.type === 'variable' ? (
-                <span className="bg-blue-500/10 text-blue-600 px-2 py-0.5 rounded-md border border-blue-500/20 font-mono text-[0.85em] flex items-center gap-1.5">
-                    <span className="opacity-40">#</span>
-                    {element.variableKey || "variable"}
-                </span>
+                <div className="flex flex-col items-center gap-1.5 w-full">
+                    <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">{element.name}</span>
+                    <div className="bg-primary/5 text-primary px-4 py-2 rounded-xl border border-primary/20 font-bold text-[1em] flex items-center gap-2 shadow-sm">
+                        <span className="opacity-20 text-[0.8em]">{'{'}</span>
+                        {element.variableKey}
+                        <span className="opacity-20 text-[0.8em]">{'}'}</span>
+                    </div>
+                </div>
             ) : (
                 element.content || "Double click to edit"
             )}
@@ -105,6 +110,14 @@ export const EditorElement = memo(function EditorElement({ element }: Props) {
               }}
             />
           </div>
+        );
+      case "table":
+        return (
+            <GradesTable 
+                isPlaceholder={true} 
+                className="w-full h-full" 
+                fontSize={style.fontSize || 10}
+            />
         );
       case "shape":
         return (
@@ -140,9 +153,9 @@ export const EditorElement = memo(function EditorElement({ element }: Props) {
     <div
       data-element-id={element.id}
       className={cn(
-        "absolute outline-none editor-element-container transition-[outline,box-shadow,background] duration-200",
-        !element.locked && "hover:outline hover:outline-2 hover:outline-blue-500/40 hover:outline-offset-2",
-        isEditing && "outline outline-2 outline-blue-600 outline-offset-4 bg-white/5 backdrop-blur-sm shadow-2xl z-[99999] rounded-sm",
+        "absolute outline-none editor-element-container",
+        !element.locked && "hover:outline hover:outline-2 hover:outline-primary/40 hover:outline-offset-2",
+        isEditing && "outline outline-2 outline-primary outline-offset-4 bg-white/5 backdrop-blur-sm shadow-2xl z-[99999] rounded-sm",
         element.locked && "opacity-60 cursor-not-allowed"
       )}
       style={{

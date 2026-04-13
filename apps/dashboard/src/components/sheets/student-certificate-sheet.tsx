@@ -158,8 +158,9 @@ export function StudentCertificateSheet() {
     return {
       studentId: studentRecord.userId,
       student_name: studentRecord.name || "",
-      academic_number: studentRecord.studentNumber || "",
-      national_id: studentRecord.secretNumber || "",
+      seat_number: studentRecord.studentNumber || "",
+      secret_number: studentRecord.secretNumber || "",
+      student_id: studentRecord.academicId || studentRecord.studentNumber || "",
       department: stats.department || "",
       section: stats.section || "",
       class_name: studentRecord.currentClass?.name || "",
@@ -168,16 +169,13 @@ export function StudentCertificateSheet() {
       grade_label: stats.grade_label || "",
       final_result: stats.final_result || "",
       rank: currentStudentRank?.rankLabel || stats.rank || "",
-      rank_percentage: currentStudentRank?.percentage ?? "",
-      rank_total: currentStudentRank?.totalScore ?? "",
-      rank_max: currentStudentRank?.maxScore ?? "",
+      certificate_type: selectedType === "half-yearly" ? "النصفي" : (selectedType === "final" ? "النهائي" : "الشهري"),
       org_name: "مدرسة صنعاء النموذجية",
       admin_name: stats.admin_name || t("reports.preview.admin_name"),
       vp_name: stats.vp_name || t("reports.preview.vp_name"),
       issue_date: new Date().toLocaleDateString(locale === 'ar' ? 'ar-YE' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
       report_type: selectedType === "half-yearly" ? "النصفي" : (selectedType === "final" ? "النهائي" : `الشهري - لشهر ${selectedMonth ? (HIJRI_MONTHS.find(m => m.id === selectedMonth)?.name || t("reports.month_label", { month: selectedMonth })) : ""}`),
-      month_name: selectedMonth ? (HIJRI_MONTHS.find(m => m.id === selectedMonth)?.name || t("reports.month_label", { month: selectedMonth })) : "",
-      academic_year: studentRecord.currentClass?.yearName || "2024/2025",
+      school_year: studentRecord.currentClass?.yearName || "2024/2025",
     } as Record<string, string | number>;
   }, [studentRecord, topStudents, selectedType, selectedMonth, t, locale]);
 
