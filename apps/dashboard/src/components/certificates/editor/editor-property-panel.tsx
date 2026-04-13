@@ -10,7 +10,10 @@ import {
   Share2,
   Settings2,
   Zap,
-  Trash2
+  Trash2,
+  LayoutGrid,
+  Layers,
+  Grid2X2
 } from "lucide-react";
 import { Button } from "@midday/ui/button";
 import { ColorPicker } from "@/components/color-picker";
@@ -209,6 +212,69 @@ export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
                             
                             <Separator className="bg-border" />
                             
+                            {selectedElement.type === 'frame' && (
+                                <>
+                                    <div className="space-y-3">
+                                        <SectionHeader title="Grid Layout" icon={LayoutGrid} />
+                                        <div className="space-y-3">
+                                            <div className="grid grid-cols-2 gap-1.5">
+                                                <Button 
+                                                    variant="outline" 
+                                                    size="sm" 
+                                                    className="h-7 text-[9px] font-bold gap-1 px-1.5 border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary"
+                                                    onClick={() => {
+                                                        const a4Width = 794;
+                                                        const a4Height = 1123;
+                                                        handleUpdate({ width: a4Width, height: Math.floor(a4Height / 2) });
+                                                        setCanvasConfig({ layoutConfig: { rows: 2, columns: 1, gap: 0 } });
+                                                    }}
+                                                >
+                                                    <Layers className="w-3 h-3" />
+                                                    2-UPS (Half A4)
+                                                </Button>
+                                                <Button 
+                                                    variant="outline" 
+                                                    size="sm" 
+                                                    className="h-7 text-[9px] font-bold gap-1 px-1.5 border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary"
+                                                    onClick={() => {
+                                                        const a4Width = 794;
+                                                        const a4Height = 1123;
+                                                        handleUpdate({ width: Math.floor(a4Width / 2), height: Math.floor(a4Height / 3) });
+                                                        setCanvasConfig({ layoutConfig: { rows: 3, columns: 2, gap: 0 } });
+                                                    }}
+                                                >
+                                                    <Grid2X2 className="w-3 h-3" />
+                                                    6-UPS (Cards)
+                                                </Button>
+                                            </div>
+
+                                            <div className="bg-accent/30 p-3 rounded-xl border border-border space-y-3">
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <PropertyField 
+                                                        label="Rows" 
+                                                        value={canvasConfig.layoutConfig?.rows || 1} 
+                                                        onChange={(v) => setCanvasConfig({ layoutConfig: { ...canvasConfig.layoutConfig, rows: v, columns: canvasConfig.layoutConfig?.columns || 1, gap: canvasConfig.layoutConfig?.gap || 0 } })}
+                                                    />
+                                                    <PropertyField 
+                                                        label="Cols" 
+                                                        value={canvasConfig.layoutConfig?.columns || 1} 
+                                                        onChange={(v) => setCanvasConfig({ layoutConfig: { ...canvasConfig.layoutConfig, columns: v, rows: canvasConfig.layoutConfig?.rows || 1, gap: canvasConfig.layoutConfig?.gap || 0 } })}
+                                                    />
+                                                </div>
+                                                <div className="pt-2 border-t border-border/50">
+                                                    <PropertyField 
+                                                        label="Gap" 
+                                                        value={canvasConfig.layoutConfig?.gap || 0} 
+                                                        onChange={(v) => setCanvasConfig({ layoutConfig: { ...canvasConfig.layoutConfig, gap: v, rows: canvasConfig.layoutConfig?.rows || 1, columns: canvasConfig.layoutConfig?.columns || 1 } })}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <Separator className="bg-border" />
+                                </>
+                            )}
+
                             {selectedElement.type === 'text' && (
                                 <>
                                     <div className="space-y-3">

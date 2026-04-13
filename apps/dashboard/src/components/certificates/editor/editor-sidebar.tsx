@@ -21,7 +21,8 @@ import {
   Table as TableIcon,
   Trophy,
   Award,
-  Search
+  Search,
+  LayoutGrid
 } from "lucide-react";
 import { Button } from "@midday/ui/button";
 import { ScrollArea } from "@midday/ui/scroll-area";
@@ -60,7 +61,16 @@ interface SidebarProps {
 }
 
 export function EditorSidebar({ templateName }: SidebarProps) {
-  const { elements, selectedElementIds, setSelectedElements, addElement, reorderElements } = useEditorStore();
+  const { 
+    elements, 
+    selectedElementIds, 
+    setSelectedElements, 
+    addElement, 
+    reorderElements,
+    canvasConfig,
+    setCanvasConfig
+  } = useEditorStore();
+  
   const [activeTab, setActiveTab] = useState<"layers" | "assets" | "variables">("layers");
   const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
@@ -186,7 +196,7 @@ export function EditorSidebar({ templateName }: SidebarProps) {
          <Separator className="bg-border/50" />
 
          {/* Page Presets */}
-         <div className="space-y-1.5">
+         <div className="space-y-1.5 pt-1">
              <Label className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground pl-1">Page Formats</Label>
              <div className="space-y-0.5">
                  {PAPER_PRESETS.map(preset => (

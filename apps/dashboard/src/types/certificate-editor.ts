@@ -51,6 +51,11 @@ export interface EditorState {
     gridColumns: number;
     gridColor: string;
     showRulers: boolean;
+    layoutConfig?: {
+      rows: number;
+      columns: number;
+      gap: number;
+    };
   };
   history: {
     past: EditorElement[][];
