@@ -43,7 +43,14 @@ export function CertificateViewer({
 
   const layoutConfig = template.content?.canvasConfig?.layoutConfig || template.content?.layoutConfig || { rows: 1, columns: 1, gap: 0 };
   const [bgLoaded, setBgLoaded] = useState(false);
+  const [imagesLoadedCount, setImagesLoadedCount] = useState(0);
   const onLoadCalledRef = useRef(false);
+
+  const imageElements = useMemo(() => elements.filter(el => el.type === "image" && el.visible), [elements]);
+  const dataArray = Array.isArray(data) ? data : [data];
+  const totalSlots = layoutConfig.rows * layoutConfig.columns;
+  const currentData = preview ? dataArray : dataArray.slice(0, totalSlots);
+  const totalImages = imageElements.length * currentData.length;
 
   // Find the base frame (which defines the overall sheet size if subdivided, or individual record size)
   const baseFrame = useMemo(() => elements.find(el => el.type === 'frame'), [elements]);
@@ -58,11 +65,24 @@ export function CertificateViewer({
 
   useEffect(() => {
     if (onLoadCalledRef.current) return;
-    if (bgLoaded || !template.backgroundImageUrl || hasTable) {
-        onLoadCalledRef.current = true;
-        onLoad?.();
+    
+    const backgroundReady = !template.backgroundImageUrl || bgLoaded;
+    const imagesReady = imagesLoadedCount >= totalImages;
+
+    if (backgroundReady && imagesReady) {
+        // Still give half-yearly/final tables a bit more time if they exist
+        if (hasTable) {
+             const timer = setTimeout(() => {
+                onLoadCalledRef.current = true;
+                onLoad?.();
+             }, 1000);
+             return () => clearTimeout(timer);
+        } else {
+            onLoadCalledRef.current = true;
+            onLoad?.();
+        }
     }
-  }, [bgLoaded, template.backgroundImageUrl, hasTable, onLoad]);
+  }, [bgLoaded, template.backgroundImageUrl, hasTable, onLoad, imagesLoadedCount, totalImages]);
 
   const renderSingleRecord = (recordData: Record<string, any>, recordIndex: number) => {
     const row = Math.floor(recordIndex / layoutConfig.columns);
@@ -125,6 +145,8 @@ export function CertificateViewer({
                           className="w-full h-full object-contain" 
                           alt={el.name} 
                           crossOrigin="anonymous"
+                          onLoad={() => setImagesLoadedCount(prev => prev + 1)}
+                          onError={() => setImagesLoadedCount(prev => prev + 1)}
                         />
                     ) : el.type === "shape" ? (
                         <div 
