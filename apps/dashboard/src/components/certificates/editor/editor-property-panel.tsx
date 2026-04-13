@@ -1,10 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useEditorStore } from "@/store/certificate-editor";
-import { Input } from "@midday/ui/input";
-import { Label } from "@midday/ui/label";
-import { Slider } from "@midday/ui/slider";
 import { 
   Plus,
   Share2,
@@ -13,14 +10,39 @@ import {
   Trash2,
   LayoutGrid,
   Layers,
-  Grid2X2
+  Grid2X2,
+  AlignCenter,
+  AlignLeft,
+  AlignRight,
+  AlignJustify,
+  AlignStartVertical,
+  AlignCenterVertical,
+  AlignEndVertical,
+  Maximize2,
+  Minimize2,
+  Type,
+  Palette,
+  Eye,
+  Droplet,
+  Sun,
+  Minus,
+  RotateCcw,
+  FlipHorizontal,
+  FlipVertical,
+  Box,
+  CornerUpRight,
+  ChevronDown,
+  MoreVertical,
+  ArrowRightToLine,
+  ArrowLeftToLine
 } from "lucide-react";
 import { Button } from "@midday/ui/button";
 import { ColorPicker } from "@/components/color-picker";
 import { cn } from "@midday/ui/cn";
 import { ScrollArea } from "@midday/ui/scroll-area";
 import { Separator } from "@midday/ui/separator";
-import { Avatar, AvatarFallback } from "@midday/ui/avatar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@midday/ui/select";
+import { Label } from "@midday/ui/label";
 
 interface PropertyPanelProps {
   onSave?: () => void;
@@ -38,335 +60,297 @@ export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
     }
   };
 
+  const handleStyleUpdate = (styleUpdates: any) => {
+    if (selectedElement) {
+        updateElement(selectedElement.id, {
+            style: { ...selectedElement.style, ...styleUpdates }
+        });
+    }
+  };
+
+  const elementName = selectedElement ? (selectedElement.name || selectedElement.type.charAt(0).toUpperCase() + selectedElement.type.slice(1)) : "Canvas";
+
   return (
-    <div className="h-full flex flex-col bg-background select-none w-72 z-20 border-l border-border">
-      {/* Premium Header */}
-      <div className="p-4 flex items-center justify-between shrink-0 border-b border-border">
-          <div className="flex -space-x-1.5">
-            {[1, 2, 3].map(i => (
-                <Avatar key={i} className="h-6 w-6 border-2 border-background ring-1 ring-border">
-                    <AvatarFallback className={cn("text-[8px] font-bold text-white", i === 1 ? "bg-primary" : "bg-purple-600")}>{i === 1 ? 'JD' : 'AS'}</AvatarFallback>
-                </Avatar>
-            ))}
-          </div>
+    <div className="h-full flex flex-col bg-[#0d0d0d] text-[#e0e0e0] select-none w-[240px] z-20 border-l border-white/5 shadow-2xl transition-all duration-300">
+      {/* Header / Actions Row */}
+      <div className="px-2 py-2 flex items-center gap-1.5 shrink-0 border-b border-white/[0.04] bg-[#0d0d0d]">
+          <Button 
+            onClick={onSave}
+            disabled={isSaving}
+            className="h-7 text-[10px] font-bold px-3 rounded-md bg-white text-black hover:bg-white/90 border-none shrink-0 gap-1.5 shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all hover:scale-[1.02] active:scale-95"
+          >
+            <Plus className="w-3.5 h-3.5 fill-current" />
+            حفظ
+          </Button>
+          
+          <Button 
+            variant="outline"
+            className="h-7 text-[10px] font-bold px-3 rounded-md border-white/10 bg-white/[0.03] hover:bg-white/[0.08] text-white shrink-0 gap-1.5 transition-all"
+          >
+            <Maximize2 className="w-3.5 h-3.5 opacity-60" />
+            استخراج
+          </Button>
 
-          <div className="flex items-center gap-2">
-             <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                <Share2 className="w-4 h-4" />
-             </Button>
-             <Button 
-                onClick={onSave}
-                disabled={isSaving}
-                size="sm"
-                className="h-8 text-[11px] font-bold px-4 rounded-lg"
-             >
-                {isSaving ? "Saving..." : "Deploy"}
-             </Button>
-          </div>
-      </div>
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-[#919191] hover:text-white hover:bg-white/5 transition-colors shrink-0">
+            <MoreVertical className="w-3.5 h-3.5" />
+          </Button>
 
-      {/* Tabs / Modes */}
-      <div className="px-4 py-3">
-          <div className="flex p-1 bg-accent/50 rounded-lg gap-1 border border-border">
-             <button 
-                onClick={() => setMode('design')}
-                className={cn(
-                    "flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all",
-                    mode === 'design' ? "bg-background text-foreground shadow-sm border border-border" : "text-muted-foreground hover:text-foreground"
-                )}
-             >
-                Design
-             </button>
-             <button 
-                onClick={() => setMode('prototype')}
-                className={cn(
-                    "flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all",
-                    mode === 'prototype' ? "bg-background text-foreground shadow-sm border border-border" : "text-muted-foreground hover:text-foreground"
-                )}
-             >
-                Proto
-             </button>
-          </div>
+          <Separator orientation="vertical" className="h-4 bg-white/10 mx-0.5" />
+          
+          <span className="text-[10px] font-bold text-[#919191] truncate flex-1 pl-1 opacity-60 tracking-tight">
+            {elementName}
+          </span>
       </div>
 
       <ScrollArea className="flex-1">
-          <div className="px-4 pb-10">
-              {mode === 'prototype' ? (
-                 <div className="space-y-6 mt-2">
-                    {!selectedElement ? (
-                        <div className="flex flex-col items-center justify-center py-20 text-center opacity-30">
-                            <Zap className="w-8 h-8 mb-4 stroke-1" />
-                            <p className="text-[10px] font-medium uppercase tracking-widest leading-6">Select element to<br/>add interaction</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-6">
-                            <SectionHeader title="Interactions" icon={Plus} />
-                            {selectedElement.interactions?.length === 0 ? (
-                                <button 
-                                    onClick={() => handleUpdate({ interactions: [{ trigger: 'onClick', action: 'openUrl', value: 'https://' }] })}
-                                    className="w-full p-4 border border-dashed border-border rounded-xl hover:bg-accent/50 transition-all text-center group"
-                                >
-                                    <p className="text-[10px] text-muted-foreground font-medium group-hover:text-foreground">Add interaction</p>
-                                </button>
-                            ) : (
-                                <div className="space-y-3">
-                                    {selectedElement.interactions?.map((int, i) => (
-                                         <div key={i} className="bg-accent/30 p-3 rounded-xl space-y-3 border border-border relative group/int">
-                                             <div className="flex items-center justify-between">
-                                                 <div className="px-2 py-0.5 rounded-md bg-primary/10 text-primary text-[9px] font-bold uppercase tracking-wider">Click</div>
-                                                 <button className="opacity-0 group-hover/int:opacity-100 transition-opacity text-muted-foreground hover:text-destructive" onClick={() => handleUpdate({ interactions: [] })}>
-                                                     <Trash2 className="w-3 h-3" />
-                                                 </button>
-                                             </div>
-                                             <div className="space-y-1">
-                                                 <Label className="text-[9px] text-muted-foreground uppercase font-bold tracking-tight">Navigate to</Label>
-                                                 <Input 
-                                                     className="h-7 bg-background border-border text-[10px] rounded-lg"
-                                                     value={int.value}
-                                                     onChange={(e) => {
-                                                         const currentInts = selectedElement.interactions;
-                                                         if (!currentInts) return;
-                                                         const newInts = [...currentInts];
-                                                         if (newInts[i]) {
-                                                             newInts[i].value = e.target.value;
-                                                             handleUpdate({ interactions: newInts });
-                                                         }
-                                                     }}
-                                                 />
-                                             </div>
-                                         </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    )}
-                 </div>
+          <div className="flex flex-col pb-20">
+              {!selectedElement ? (
+                  <div className="p-3 space-y-5">
+                      <div className="flex items-center justify-between">
+                         <span className="text-[9px] font-black uppercase tracking-[0.1em] text-[#666]">Document Settings</span>
+                      </div>
+                      <div className="space-y-4">
+                          <div className="space-y-2">
+                             <Label className="text-[10px] text-[#919191] uppercase font-bold tracking-tighter opacity-80">Background</Label>
+                             <ColorControl 
+                                value={canvasConfig.backgroundColor || "#ffffff"} 
+                                onChange={(c) => setCanvasConfig({ backgroundColor: c })}
+                             />
+                          </div>
+                      </div>
+                  </div>
               ) : (
-                 <div className="space-y-6 mt-2">
-                    {!selectedElement ? (
-                        <div className="space-y-6">
-                            <div>
-                                <SectionHeader title="Design Settings" />
-                                <div className="mt-3 space-y-4">
-                                    <div className="space-y-1.5">
-                                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">Canvas Color</Label>
-                                        <ColorControl 
-                                            value={canvasConfig.backgroundColor || "#121212"} 
-                                            onChange={(c) => setCanvasConfig({ backgroundColor: c })}
-                                        />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <div className="bg-accent/30 p-2.5 rounded-lg border border-border">
-                                             <Label className="text-[9px] text-muted-foreground uppercase font-bold">Grid</Label>
-                                             <div className="mt-1 flex items-center justify-between">
-                                                <span className="text-[11px] font-medium">{canvasConfig.gridSize}px</span>
-                                                <div className={cn("w-2.5 h-2.5 rounded-full", canvasConfig.showGrid ? "bg-primary" : "bg-border")} />
-                                             </div>
-                                        </div>
-                                        <div className="bg-accent/30 p-2.5 rounded-lg border border-border">
-                                             <Label className="text-[9px] text-muted-foreground uppercase font-bold">Rulers</Label>
-                                             <div className="mt-1 flex items-center justify-between">
-                                                <span className="text-[11px] font-medium">{canvasConfig.showRulers ? 'ON' : 'OFF'}</span>
-                                                <div className={cn("w-2.5 h-2.5 rounded-full", canvasConfig.showRulers ? "bg-primary" : "bg-border")} />
-                                             </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <Separator className="bg-border" />
-                        </div>
-                    ) : (
-                        <div className="space-y-6">
-                            <div>
-                                <SectionHeader title="Transform" />
-                                <div className="grid grid-cols-2 gap-x-4 gap-y-3 mt-3 bg-accent/30 p-3 rounded-xl border border-border">
-                                    <PropertyField 
-                                        label="X" 
-                                        value={Math.round(selectedElement.x)} 
-                                        onChange={(v) => handleUpdate({ x: v })}
-                                    />
-                                    <PropertyField 
-                                        label="Y" 
-                                        value={Math.round(selectedElement.y)} 
-                                        onChange={(v) => handleUpdate({ y: v })}
-                                    />
-                                    <PropertyField 
-                                        label="W" 
-                                        value={Math.round(selectedElement.width)} 
-                                        onChange={(v) => handleUpdate({ width: v })}
-                                    />
-                                    <PropertyField 
-                                        label="H" 
-                                        value={Math.round(selectedElement.height)} 
-                                        onChange={(v) => handleUpdate({ height: v })}
-                                    />
-                                    <div className="col-span-2 pt-1 border-t border-border">
-                                        <PropertyField 
-                                            label="°" 
-                                            value={Math.round(selectedElement.rotation)} 
-                                            onChange={(v) => handleUpdate({ rotation: v })}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
+                  <div className="divide-y divide-white/[0.04]">
+                      {/* Section: Frame / Transform */}
+                      <Section title="Layout & Transform">
+                         <div className="flex items-center gap-0.5 bg-white/[0.02] border border-white/[0.05] rounded-lg p-0.5 mb-3">
+                            <AlignButton icon={AlignLeft} />
+                            <AlignButton icon={AlignCenter} />
+                            <AlignButton icon={AlignRight} />
+                            <Separator orientation="vertical" className="h-3 bg-white/10 mx-0.5" />
+                            <AlignButton icon={AlignStartVertical} />
+                            <AlignButton icon={AlignCenterVertical} />
+                            <AlignButton icon={AlignEndVertical} />
+                         </div>
+
+                         <div className="grid grid-cols-2 gap-x-2 gap-y-2">
+                            <PropertyInput label="X" value={Math.round(selectedElement.x)} onChange={(v) => handleUpdate({ x: v })} />
+                            <PropertyInput label="Y" value={Math.round(selectedElement.y)} onChange={(v) => handleUpdate({ y: v })} />
+                            <PropertyInput label="W" value={Math.round(selectedElement.width)} onChange={(v) => handleUpdate({ width: v })} />
+                            <PropertyInput label="H" value={Math.round(selectedElement.height)} onChange={(v) => handleUpdate({ height: v })} />
                             
-                            <Separator className="bg-border" />
-                            
-                            {selectedElement.type === 'frame' && (
-                                <>
-                                    <div className="space-y-3">
-                                        <SectionHeader title="Grid Layout" icon={LayoutGrid} />
-                                        <div className="space-y-3">
-                                            <div className="grid grid-cols-2 gap-1.5">
-                                                <Button 
-                                                    variant="outline" 
-                                                    size="sm" 
-                                                    className="h-7 text-[9px] font-bold gap-1 px-1.5 border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary"
-                                                    onClick={() => {
-                                                        const a4Width = 794;
-                                                        const a4Height = 1123;
-                                                        handleUpdate({ width: a4Width, height: Math.floor(a4Height / 2) });
-                                                        setCanvasConfig({ layoutConfig: { rows: 2, columns: 1, gap: 0 } });
-                                                    }}
-                                                >
-                                                    <Layers className="w-3 h-3" />
-                                                    2-UPS (Half A4)
-                                                </Button>
-                                                <Button 
-                                                    variant="outline" 
-                                                    size="sm" 
-                                                    className="h-7 text-[9px] font-bold gap-1 px-1.5 border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary"
-                                                    onClick={() => {
-                                                        const a4Width = 794;
-                                                        const a4Height = 1123;
-                                                        handleUpdate({ width: Math.floor(a4Width / 2), height: Math.floor(a4Height / 3) });
-                                                        setCanvasConfig({ layoutConfig: { rows: 3, columns: 2, gap: 0 } });
-                                                    }}
-                                                >
-                                                    <Grid2X2 className="w-3 h-3" />
-                                                    6-UPS (Cards)
-                                                </Button>
-                                            </div>
+                            <PropertyInput label="°" value={Math.round(selectedElement.rotation)} onChange={(v) => handleUpdate({ rotation: v })} />
+                            <div className="flex items-center gap-0.5 bg-white/[0.02] border border-white/[0.05] rounded p-0.5">
+                                <AlignButton icon={RotateCcw} />
+                                <AlignButton icon={FlipHorizontal} />
+                                <AlignButton icon={FlipVertical} />
+                            </div>
+                         </div>
+                         
+                         {/* Border Radius moved here */}
+                         <div className="mt-2">
+                            <PropertyInput 
+                                label="R" 
+                                icon={Box}
+                                value={selectedElement.style.borderRadius || 0} 
+                                onChange={(v) => handleStyleUpdate({ borderRadius: v })} 
+                            />
+                         </div>
+                      </Section>
 
-                                            <div className="bg-accent/30 p-3 rounded-xl border border-border space-y-3">
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <PropertyField 
-                                                        label="Rows" 
-                                                        value={canvasConfig.layoutConfig?.rows || 1} 
-                                                        onChange={(v) => setCanvasConfig({ layoutConfig: { ...canvasConfig.layoutConfig, rows: v, columns: canvasConfig.layoutConfig?.columns || 1, gap: canvasConfig.layoutConfig?.gap || 0 } })}
-                                                    />
-                                                    <PropertyField 
-                                                        label="Cols" 
-                                                        value={canvasConfig.layoutConfig?.columns || 1} 
-                                                        onChange={(v) => setCanvasConfig({ layoutConfig: { ...canvasConfig.layoutConfig, columns: v, rows: canvasConfig.layoutConfig?.rows || 1, gap: canvasConfig.layoutConfig?.gap || 0 } })}
-                                                    />
-                                                </div>
-                                                <div className="pt-2 border-t border-border/50">
-                                                    <PropertyField 
-                                                        label="Gap" 
-                                                        value={canvasConfig.layoutConfig?.gap || 0} 
-                                                        onChange={(v) => setCanvasConfig({ layoutConfig: { ...canvasConfig.layoutConfig, gap: v, rows: canvasConfig.layoutConfig?.rows || 1, columns: canvasConfig.layoutConfig?.columns || 1 } })}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <Separator className="bg-border" />
-                                </>
-                            )}
+                      {/* Typography (Only for Text/Variable) */}
+                      {(selectedElement.type === 'text' || selectedElement.type === 'variable') && (
+                          <Section title="Typography" showGrid>
+                             <div className="space-y-2">
+                                <Select 
+                                    value={selectedElement.style.fontFamily || "Inter"} 
+                                    onValueChange={(v) => handleStyleUpdate({ fontFamily: v })}
+                                >
+                                    <SelectTrigger className="h-7 text-[10px] bg-white/[0.02] border-white/[0.08] text-white focus:ring-0 px-2 font-medium hover:bg-white/[0.05] transition-colors">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-[#121212] border-white/10 text-white">
+                                        <SelectItem value="Inter">Inter</SelectItem>
+                                        <SelectItem value="Roboto">Roboto</SelectItem>
+                                        <SelectItem value="Amiri">Amiri (Arabic)</SelectItem>
+                                        <SelectItem value="Traditional Arabic">Traditional Arabic</SelectItem>
+                                    </SelectContent>
+                                </Select>
 
-                            {selectedElement.type === 'text' && (
-                                <>
-                                    <div className="space-y-3">
-                                        <SectionHeader title="Typography" icon={Settings2} />
-                                        <div className="space-y-3">
-                                            <div className="bg-accent/30 p-3 rounded-lg border border-border">
-                                                <span className="text-[10px] text-muted-foreground uppercase font-bold block mb-2">Font Size</span>
-                                                <div className="flex items-center gap-3">
-                                                    <Slider 
-                                                        value={[selectedElement.style.fontSize || 32]} 
-                                                        max={200} 
-                                                        step={1} 
-                                                        onValueChange={([v]) => handleUpdate({ style: { ...selectedElement.style, fontSize: v } })}
-                                                    />
-                                                    <span className="text-[11px] font-bold w-6 text-right">{selectedElement.style.fontSize}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <Separator className="bg-border" />
-                                </>
-                            )}
-
-                            <div className="space-y-3">
-                                <SectionHeader title="Appearance" icon={Plus} />
-                                <div className="space-y-3">
-                                    <div className="space-y-1.5">
-                                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">Fill</Label>
-                                        <ColorControl 
-                                            value={selectedElement.style.color || selectedElement.style.backgroundColor || "#000000"} 
-                                            onChange={(color) => handleUpdate({ 
-                                                style: { [selectedElement.type === 'shape' || selectedElement.type === 'frame' ? 'backgroundColor' : 'color']: color } 
-                                            })}
+                                <div className="grid grid-cols-2 gap-2">
+                                    <Select 
+                                        value={selectedElement.style.fontWeight || "400"} 
+                                        onValueChange={(v) => handleStyleUpdate({ fontWeight: v })}
+                                    >
+                                        <SelectTrigger className="h-7 text-[10px] bg-white/[0.02] border-white/[0.08] text-white focus:ring-0 px-2 font-medium">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-[#121212] border-white/10 text-white">
+                                            <SelectItem value="300">Light</SelectItem>
+                                            <SelectItem value="400">Regular</SelectItem>
+                                            <SelectItem value="600">Semi Bold</SelectItem>
+                                            <SelectItem value="700">Bold</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <div className="bg-white/[0.02] border border-white/[0.08] rounded h-7 flex items-center px-1.5 gap-1 pt-0.5 focus-within:ring-1 focus-within:ring-white/20 transition-all">
+                                        <input 
+                                            type="number" 
+                                            value={selectedElement.style.fontSize || 16}
+                                            onChange={(e) => handleStyleUpdate({ fontSize: Number(e.target.value) })}
+                                            className="bg-transparent border-none text-[10px] text-white font-bold p-0 focus:ring-0 w-full"
                                         />
-                                    </div>
-                                    <div className="bg-accent/30 p-3 rounded-lg border border-border">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <span className="text-[10px] text-muted-foreground uppercase font-bold">Opacity</span>
-                                            <span className="text-[11px] font-bold">{Math.round((selectedElement.opacity ?? 1) * 100)}%</span>
-                                        </div>
-                                        <Slider 
-                                            value={[(selectedElement.opacity ?? 1) * 100]} 
-                                            max={100} 
-                                            onValueChange={([v]) => handleUpdate({ opacity: v / 100 })}
-                                        />
+                                        <ChevronDown className="w-3 h-3 text-[#919191] ml-auto shrink-0 opacity-40" />
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                    )}
-                 </div>
+
+                                <div className="flex items-center gap-0.5 bg-white/[0.02] border border-white/[0.05] rounded p-0.5">
+                                    <AlignButton 
+                                        active={selectedElement.style.textAlign === 'left'}
+                                        icon={AlignLeft} 
+                                        onClick={() => handleStyleUpdate({ textAlign: 'left' })} 
+                                    />
+                                    <AlignButton 
+                                        active={selectedElement.style.textAlign === 'center'}
+                                        icon={AlignCenter} 
+                                        onClick={() => handleStyleUpdate({ textAlign: 'center' })} 
+                                    />
+                                    <AlignButton 
+                                        active={selectedElement.style.textAlign === 'right'}
+                                        icon={AlignRight} 
+                                        onClick={() => handleStyleUpdate({ textAlign: 'right' })} 
+                                    />
+                                    <Separator orientation="vertical" className="h-3 bg-white/10 mx-0.5" />
+                                    <button 
+                                        onClick={() => handleStyleUpdate({ direction: 'ltr' })}
+                                        className={cn("flex-1 text-[9px] font-black h-6 rounded transition-all", (selectedElement.style.direction === 'ltr' || !selectedElement.style.direction) ? "bg-white/10 text-white shadow-lg shadow-white/5" : "text-[#919191]")}
+                                    >
+                                        LTR
+                                    </button>
+                                    <button 
+                                        onClick={() => handleStyleUpdate({ direction: 'rtl' })}
+                                        className={cn("flex-1 text-[9px] font-black h-6 rounded transition-all", selectedElement.style.direction === 'rtl' ? "bg-white/10 text-white shadow-lg shadow-white/5" : "text-[#919191]")}
+                                    >
+                                        RTL
+                                    </button>
+                                </div>
+                             </div>
+                          </Section>
+                      )}
+
+                      {/* Fill Section with Integrated Opacity */}
+                      <Section title="Fill" showPlus>
+                         <div className="flex flex-col gap-2">
+                            <ColorControl 
+                                value={selectedElement.style.color || selectedElement.style.backgroundColor || "#000000"} 
+                                opacity={Math.round((selectedElement.opacity ?? 1) * 100)}
+                                onChange={(color) => handleUpdate({ 
+                                    style: { ...selectedElement.style, [selectedElement.type === 'shape' || selectedElement.type === 'frame' ? 'backgroundColor' : 'color']: color } 
+                                })}
+                                onOpacityChange={(opacity) => handleUpdate({ opacity: opacity / 100 })}
+                            />
+                         </div>
+                      </Section>
+
+                      {/* Stroke Section */}
+                      <Section title="Stroke" showPlus>
+                         <div className="flex items-center justify-between opacity-20 hover:opacity-100 transition-opacity cursor-pointer py-1">
+                            <span className="text-[10px] text-[#919191]">No stroke</span>
+                         </div>
+                      </Section>
+
+                      {/* Effects Section */}
+                      <Section title="Effects" showPlus>
+                         <div className="flex items-center justify-between opacity-20 hover:opacity-100 transition-opacity cursor-pointer py-1">
+                            <span className="text-[10px] text-[#919191]">No shadow or blur</span>
+                         </div>
+                      </Section>
+                  </div>
               )}
           </div>
       </ScrollArea>
+      
+      {/* Zoom / Info Bar */}
+      <div className="p-3 border-t border-white/[0.04] bg-[#0d0d0d] flex items-center justify-between shrink-0">
+          <div className="bg-white/5 rounded-full p-1.5 hover:bg-white/10 transition-colors cursor-pointer border border-white/5">
+             <Plus className="w-3 h-3 text-[#919191]" />
+          </div>
+          <div className="text-[9px] font-black text-[#919191] bg-white/5 w-5 h-5 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors cursor-pointer border border-white/5">
+             <span>?</span>
+          </div>
+      </div>
     </div>
   );
 }
 
-function SectionHeader({ title, icon: Icon }: { title: string, icon?: any }) {
+function Section({ title, children, showEye, showPalette, showGrid, showPlus }: { 
+    title: string, children: React.ReactNode, showEye?: boolean, showPalette?: boolean, showGrid?: boolean, showPlus?: boolean 
+}) {
     return (
-        <div className="flex items-center justify-between group cursor-pointer transition-all hover:translate-x-0.5">
-            <span className="text-[11px] font-bold text-foreground tracking-tight">{title}</span>
-            {Icon && <Icon className="w-3 h-3 text-muted-foreground group-hover:text-foreground transition-colors" />}
+        <div className="p-3 space-y-3">
+            <div className="flex items-center justify-between group">
+                <span className="text-[11px] font-bold text-[#666]">{title}</span>
+            </div>
+            {children}
         </div>
     )
 }
 
-function PropertyField({ label, value, onChange }: { label: string, value: number, onChange: (v: number) => void }) {
+function AlignButton({ icon: Icon, active, onClick }: { icon: any, active?: boolean, onClick?: () => void }) {
     return (
-        <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold text-muted-foreground w-3 truncate">{label}</span>
+        <button 
+            onClick={onClick}
+            className={cn(
+                "flex-1 h-6 flex items-center justify-center rounded transition-all duration-200 hover:bg-white/5",
+                active ? "bg-white/10 text-white shadow-inner" : "text-[#919191]"
+            )}
+        >
+            <Icon className="w-3.5 h-3.5" />
+        </button>
+    )
+}
+
+function PropertyInput({ label, value, onChange, icon: Icon }: { label: string, value: number, onChange: (v: number) => void, icon?: any }) {
+    return (
+        <div className="flex items-center gap-1.5 bg-white/[0.01] border border-white/[0.05] p-1.5 rounded h-7 focus-within:bg-white/[0.03] focus-within:border-white/10 transition-all flex-1">
+            {Icon ? <Icon className="w-3 h-3 text-[#666] shrink-0" /> : <span className="text-[9px] font-black text-[#666] w-2 flex justify-center uppercase tracking-tighter shrink-0">{label}</span>}
             <input 
                 type="number" 
                 value={value}
                 onChange={(e) => onChange(Number(e.target.value))}
-                className="bg-transparent border-none text-[11px] text-foreground font-bold p-0 focus:ring-0 w-full [appearance:textfield] transition-colors focus:text-primary"
+                className="bg-transparent border-none text-[10px] text-white font-bold p-0 focus:ring-0 w-full [appearance:textfield]"
             />
         </div>
     )
 }
 
-function ColorControl({ value, onChange }: { value: string, onChange: (v: string) => void }) {
+function ColorControl({ value, opacity, onChange, onOpacityChange }: { 
+    value: string, 
+    opacity?: number, 
+    onChange: (v: string) => void, 
+    onOpacityChange?: (v: number) => void 
+}) {
     return (
-        <div className="flex items-center gap-2 bg-background p-2 rounded-lg border border-border group hover:border-primary/50 transition-all">
-            <div className="relative h-5 w-8 shrink-0">
+        <div className="flex items-center gap-2 bg-white/[0.01] border border-white/[0.05] pr-1.5 pl-1 rounded h-8 group hover:bg-white/[0.04] transition-all flex-1">
+            <div className="h-5 w-8 shrink-0 relative rounded overflow-hidden border border-white/10">
                 <ColorPicker value={value} onSelect={onChange} />
             </div>
             <input 
-                value={value.toUpperCase()} 
-                onChange={(e) => onChange(e.target.value)}
-                className="bg-transparent border-none text-[10px] text-muted-foreground font-mono font-bold w-full focus:ring-0 uppercase tracking-tight"
+                value={value.toUpperCase().replace('#', '')} 
+                onChange={(e) => onChange(`#${e.target.value}`)}
+                className="bg-transparent border-none text-[10px] text-white font-mono font-black w-14 focus:ring-0 uppercase tracking-tight shrink-0"
             />
+            
+            <Separator orientation="vertical" className="h-3 bg-white/10 mx-0.5" />
+            
+            <div className="flex items-center gap-1 flex-1">
+                <input 
+                    type="number" 
+                    value={opacity ?? 100}
+                    onChange={(e) => onOpacityChange?.(Number(e.target.value))}
+                    className="bg-transparent border-none text-[10px] text-white font-black p-0 focus:ring-0 w-full text-right [appearance:textfield]"
+                />
+                <span className="text-[9px] text-[#666] font-black opacity-40">%</span>
+            </div>
         </div>
     );
 }

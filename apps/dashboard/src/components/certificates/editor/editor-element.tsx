@@ -51,6 +51,7 @@ export const EditorElement = memo(function EditorElement({ element }: Props) {
                 textAlign: style.textAlign || "left",
                 lineHeight: style.lineHeight || 1.2,
                 letterSpacing: `${style.letterSpacing || 0}px`,
+                direction: style.direction || "ltr",
               }}
               value={tempContent}
               onChange={(e) => setTempContent(e.target.value)}
@@ -81,6 +82,7 @@ export const EditorElement = memo(function EditorElement({ element }: Props) {
               lineHeight: style.lineHeight || 1.2,
               letterSpacing: `${style.letterSpacing || 0}px`,
               textShadow: style.shadow || "none",
+              direction: style.direction || "ltr",
             }}
           >
             {element.type === 'variable' ? (

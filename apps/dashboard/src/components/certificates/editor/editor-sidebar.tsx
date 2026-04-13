@@ -345,6 +345,10 @@ export function EditorSidebar({ templateName }: SidebarProps) {
 }
 
 function SortableLayerItem({ element, selected, onClick }: { element: any, selected: boolean, onClick: () => void }) {
+  const { updateElement } = useEditorStore();
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempName, setTempName] = useState(element.name || element.type);
+
   const {
     attributes,
     listeners,
@@ -359,6 +363,13 @@ function SortableLayerItem({ element, selected, onClick }: { element: any, selec
     transition,
     zIndex: isDragging ? 100 : 1,
     opacity: isDragging ? 0.6 : 1
+  };
+
+  const handleRename = () => {
+    if (tempName.trim()) {
+        updateElement(element.id, { name: tempName });
+    }
+    setIsEditing(false);
   };
 
   return (
@@ -377,9 +388,31 @@ function SortableLayerItem({ element, selected, onClick }: { element: any, selec
           <GripVertical className="w-3 h-3" />
       </div>
       <LayerIcon type={element.type} selected={selected} />
-      <span className={cn("text-[11px] truncate flex-1 tracking-tight", selected ? "font-bold" : "font-medium")}>
-          {element.name || element.type}
-      </span>
+      
+      {isEditing ? (
+          <input 
+              autoFocus
+              className="flex-1 bg-background text-foreground text-[11px] px-1 py-0 rounded border-none outline-none focus:ring-1 focus:ring-primary-foreground h-4"
+              value={tempName}
+              onChange={(e) => setTempName(e.target.value)}
+              onBlur={handleRename}
+              onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleRename();
+                  if (e.key === 'Escape') {
+                      setTempName(element.name || element.type);
+                      setIsEditing(false);
+                  }
+              }}
+          />
+      ) : (
+          <span 
+              onDoubleClick={() => setIsEditing(true)}
+              className={cn("text-[11px] truncate flex-1 tracking-tight", selected ? "font-bold" : "font-medium")}
+          >
+              {element.name || element.type}
+          </span>
+      )}
+
       <div className="flex items-center opacity-0 group-hover:opacity-100 gap-1.5 transition-opacity">
           <Lock className={cn("w-3 h-3 cursor-pointer", element.locked ? "text-primary-foreground" : "opacity-40 hover:opacity-100")} />
           <Eye className={cn("w-3 h-3 cursor-pointer", !element.visible ? "text-primary-foreground" : "opacity-40 hover:opacity-100")} />

@@ -28,6 +28,7 @@ export interface EditorElement {
     borderWidth?: number;
     borderColor?: string;
     shadow?: string;
+    direction?: "ltr" | "rtl";
   };
   interactions?: {
     trigger: "onClick" | "onHover";
