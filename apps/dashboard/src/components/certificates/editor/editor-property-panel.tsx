@@ -47,7 +47,15 @@ import { Separator } from "@midday/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@midday/ui/select";
 import { Label } from "@midday/ui/label";
 import { Input } from "@midday/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@midday/ui/popover";
 import { PAPER_PRESETS } from "./constants";
+import { 
+  Columns, 
+  Rows, 
+  ArrowDownWideNarrow, 
+  ArrowUpWideNarrow,
+  Space
+} from "lucide-react";
 
 interface PropertyPanelProps {
   onSave?: () => void;
@@ -276,19 +284,48 @@ export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
                           </Section>
                       )}
 
-                      {/* Fill Section with Integrated Opacity */}
-                      <Section title="Appearance">
-                         <div className="flex flex-col gap-2">
-                            <ColorControl 
-                                value={selectedElement.style.color || selectedElement.style.backgroundColor || "#000000"} 
-                                opacity={Math.round((selectedElement.opacity ?? 1) * 100)}
-                                onChange={(color) => handleUpdate({ 
-                                    style: { ...selectedElement.style, [selectedElement.type === 'shape' || selectedElement.type === 'frame' ? 'backgroundColor' : 'color']: color } 
-                                })}
-                                onOpacityChange={(opacity) => handleUpdate({ opacity: opacity / 100 })}
-                            />
-                         </div>
-                      </Section>
+                      {/* Fill Section (Replaces Appearance) */}
+                       <Section title="Fill">
+                          <div className="flex flex-col gap-2">
+                             <ColorControl 
+                                 value={(selectedElement.type === 'frame' || selectedElement.type === 'shape') ? (selectedElement.style.backgroundColor || "#ffffff") : (selectedElement.style.color || "#000000")} 
+                                 opacity={Math.round((selectedElement.opacity ?? 1) * 100)}
+                                 onChange={(color) => handleUpdate({ 
+                                     style: { ...selectedElement.style, [selectedElement.type === 'shape' || selectedElement.type === 'frame' ? 'backgroundColor' : 'color']: color } 
+                                 })}
+                                 onOpacityChange={(opacity) => handleUpdate({ opacity: opacity / 100 })}
+                             />
+                          </div>
+                       </Section>
+
+                       {/* Auto Layout (Grid) Section for Frames */}
+                       {selectedElement.type === 'frame' && (
+                           <Section title="Auto layout">
+                               <div className="space-y-4">                                   <div className="flex items-center gap-3">
+                                       <div className="flex-1 space-y-1.5">
+                                            <Label className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter">Grid</Label>
+                                            <GridLayoutPicker 
+                                                rows={canvasConfig.layoutConfig?.rows || 1} 
+                                                columns={canvasConfig.layoutConfig?.columns || 1}
+                                                onChange={(rows, cols) => setCanvasConfig({ layoutConfig: { ...canvasConfig.layoutConfig!, rows, columns: cols } })}
+                                            />
+                                       </div>
+                                       <div className="flex-1 space-y-1.5">
+                                            <Label className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter">Gap</Label>
+                                            <div className="relative">
+                                                <Input 
+                                                    type="number"
+                                                    value={canvasConfig.layoutConfig?.gap || 0}
+                                                    onChange={(e) => setCanvasConfig({ layoutConfig: { ...canvasConfig.layoutConfig!, gap: Number(e.target.value) } })}
+                                                    className="h-10 pl-8 bg-muted border-border/50 text-[11px] font-bold rounded-xl"
+                                                />
+                                                <Space className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground opacity-40 shrink-0" />
+                                            </div>
+                                       </div>
+                                   </div>
+                               </div>
+                           </Section>
+                       )}
 
                       {/* Advanced (Placeholder for now) */}
                       <Section title="Advanced">
@@ -385,6 +422,93 @@ function ColorControl({ value, opacity, onChange, onOpacityChange }: {
                 <span className="text-[10px] text-muted-foreground font-bold opacity-40">%</span>
             </div>
         </div>
+    );
+}
+
+function GridLayoutPicker({ rows, columns, onChange }: { rows: number, columns: number, onChange: (rows: number, cols: number) => void }) {
+    const [hovered, setHovered] = React.useState<{ r: number, c: number } | null>(null);
+
+    return (
+        <Popover>
+            <PopoverTrigger asChild>
+                <button className="flex items-center gap-2 p-2.5 bg-muted rounded-xl hover:bg-muted/80 transition-all border border-border/50 group w-full h-10 overflow-hidden">
+                    <div className="grid grid-cols-3 gap-0.5 opacity-30 group-hover:opacity-100 transition-opacity">
+                        <div className="w-1 h-1 bg-foreground rounded-[1px]" />
+                        <div className="w-1 h-1 bg-foreground rounded-[1px]" />
+                        <div className="w-1 h-1 bg-foreground rounded-[1px]" />
+                        <div className="w-1 h-1 bg-foreground rounded-[1px]" />
+                        <div className="w-1 h-1 bg-foreground rounded-[1px]" />
+                        <div className="w-1 h-1 bg-foreground rounded-[1px]" />
+                    </div>
+                    <span className="text-[11px] font-bold text-foreground flex-1 text-center font-mono">
+                        {rows} × {columns}
+                    </span>
+                </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-3 bg-card border border-border shadow-2xl rounded-2xl" side="left" align="start">
+               <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                     <div className="flex-1 bg-muted rounded-lg p-2.5 flex items-center gap-2 border border-border/50">
+                        <Columns className="w-3.5 h-3.5 opacity-40 shrink-0" />
+                        <input 
+                           type="number" 
+                           value={columns} 
+                           onChange={(e) => onChange(rows, Number(e.target.value))}
+                           className="bg-transparent border-none text-[11px] font-bold w-full focus:outline-none" 
+                        />
+                     </div>
+                     <span className="text-muted-foreground/30 text-[10px] font-bold">×</span>
+                     <div className="flex-1 bg-muted rounded-lg p-2.5 flex items-center gap-2 border border-border/50">
+                        <Rows className="w-3.5 h-3.5 opacity-40 shrink-0" />
+                        <input 
+                           type="number" 
+                           value={rows} 
+                           onChange={(e) => onChange(Number(e.target.value), columns)}
+                           className="bg-transparent border-none text-[11px] font-bold w-full focus:outline-none" 
+                        />
+                     </div>
+                  </div>
+
+                  <div 
+                     className="grid grid-cols-10 gap-1 p-1 bg-muted/40 rounded-xl cursor-crosshair"
+                     onMouseLeave={() => setHovered(null)}
+                  >
+                     {Array.from({ length: 100 }).map((_, i) => {
+                        const r = Math.floor(i / 10) + 1;
+                        const c = (i % 10) + 1;
+                        const isActive = r <= rows && c <= columns;
+                        const isHovered = hovered && r <= hovered.r && c <= hovered.c;
+
+                        return (
+                           <div 
+                              key={i}
+                              onMouseEnter={() => setHovered({ r, c })}
+                              onClick={() => onChange(r, c)}
+                              className={cn(
+                                 "aspect-square rounded-[3px] transition-all duration-150",
+                                 isActive 
+                                    ? "bg-primary shadow-[0_0_8px_rgba(var(--primary),0.4)] scale-90" 
+                                    : isHovered 
+                                        ? "bg-primary/20 scale-95" 
+                                        : "bg-foreground/5 hover:bg-foreground/10"
+                              )}
+                           />
+                        );
+                     })}
+                  </div>
+                  
+                  <div className="text-center py-1">
+                     <span className="text-[10px] text-muted-foreground font-bold font-mono tracking-widest opacity-40 uppercase">
+                        {hovered ? `${hovered.r} × ${hovered.c}` : `${rows} × ${columns}`} preview
+                     </span>
+                  </div>
+
+                  <Button variant="outline" className="w-full h-8 text-[11px] font-bold tracking-tight rounded-xl">
+                     Open grid settings
+                  </Button>
+               </div>
+            </PopoverContent>
+        </Popover>
     );
 }
 

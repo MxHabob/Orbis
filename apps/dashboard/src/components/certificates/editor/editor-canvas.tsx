@@ -90,6 +90,26 @@ export function EditorCanvas() {
                     {elements.map((element) => (
                         <EditorElement key={element.id} element={element} />
                     ))}
+
+                    {/* Non-intrusive Grid Overlay for Frame Division */}
+                    {baseFrame && (layoutConfig.rows > 1 || layoutConfig.columns > 1) && (
+                        <div 
+                            className="absolute pointer-events-none rounded-[inherit]"
+                            style={{
+                                left: baseFrame.x,
+                                top: baseFrame.y,
+                                width: baseFrame.width,
+                                height: baseFrame.height,
+                                zIndex: baseFrame.zIndex + 0.5,
+                                backgroundImage: `
+                                    linear-gradient(to right, hsl(var(--primary) / 0.15) 1px, transparent 1px),
+                                    linear-gradient(to bottom, hsl(var(--primary) / 0.15) 1px, transparent 1px)
+                                `,
+                                backgroundSize: `${(baseFrame.width + layoutConfig.gap) / layoutConfig.columns}px ${(baseFrame.height + layoutConfig.gap) / layoutConfig.rows}px`,
+                                border: '1px solid hsl(var(--primary) / 0.2)',
+                            }}
+                        />
+                    )}
                     
                     <EditorSelectionManager containerRef={canvasRef} />
                 </div>
