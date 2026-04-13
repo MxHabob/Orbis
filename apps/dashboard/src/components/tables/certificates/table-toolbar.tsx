@@ -8,6 +8,7 @@ import { useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
+import Link from "next/link";
 
 export function TableToolbar() {
   const { filter, setFilter } = useCertificateFilterParams();
@@ -76,9 +77,11 @@ export function TableToolbar() {
           size="icon"
           variant="outline"
           className="size-[36px] shrink-0"
-          onClick={() => router.push("/certificates/create")}
+          asChild
         >
-          <Plus className="w-4 h-4" />
+          <Link href="/certificates/create" target="_blank">
+            <Plus className="w-4 h-4" />
+          </Link>
         </Button>
       </div>
     </div>

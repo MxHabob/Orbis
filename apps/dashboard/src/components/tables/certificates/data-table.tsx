@@ -92,9 +92,9 @@ export function DataTable({ initialSettings }: Props) {
 
   const handleCellClick = useCallback(
     (rowId: string) => {
-      router.push(`/certificates/${rowId}`);
+      window.open(`/certificates/${rowId}`, "_blank");
     },
-    [router],
+    [],
   );
 
   useEffect(() => {

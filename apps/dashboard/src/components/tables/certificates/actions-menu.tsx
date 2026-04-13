@@ -12,7 +12,8 @@ import { DotsHorizontalIcon } from "@radix-ui/react-icons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@midday/ui/use-toast";
 import { useRouter } from "next/navigation";
-import { Star, Trash, Edit } from "lucide-react";
+import { Star, Trash, Edit, Eye } from "lucide-react";
+import Link from "next/link";
 import type { CertificateTemplate } from "./types";
 
 type Props = {
@@ -63,9 +64,11 @@ export function ActionsMenu({ row }: Props) {
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => router.push(`/certificates/${row.id}`)}>
-            <Edit className="w-4 h-4 mr-2" />
-            Edit Template
+          <DropdownMenuItem asChild>
+            <Link href={`/certificates/${row.id}`} target="_blank">
+              <Edit className="w-4 h-4 mr-2" />
+              Edit Template
+            </Link>
           </DropdownMenuItem>
           
           <DropdownMenuItem onClick={() => setDefaultMutation.mutate({ id: row.id })}>
