@@ -45,14 +45,14 @@ export function CertificateViewer({
   const [bgLoaded, setBgLoaded] = useState(false);
   const onLoadCalledRef = useRef(false);
 
-  // Find the base frame (which defines the individual record size)
+  // Find the base frame (which defines the overall sheet size if subdivided, or individual record size)
   const baseFrame = useMemo(() => elements.find(el => el.type === 'frame'), [elements]);
-  const recordWidth = baseFrame?.width || 794; 
-  const recordHeight = baseFrame?.height || 1123;
+  const sheetWidth = baseFrame?.width || 794; 
+  const sheetHeight = baseFrame?.height || 1123;
 
-  // Calculate overall canvas size based on layout
-  const canvasWidth = (recordWidth * layoutConfig.columns) + (layoutConfig.gap * (layoutConfig.columns - 1));
-  const canvasHeight = (recordHeight * layoutConfig.rows) + (layoutConfig.gap * (layoutConfig.rows - 1));
+  // Internal Subdivision Math (2026 Print Standards)
+  const slotWidth = (sheetWidth - (layoutConfig.columns - 1) * layoutConfig.gap) / layoutConfig.columns;
+  const slotHeight = (sheetHeight - (layoutConfig.rows - 1) * layoutConfig.gap) / layoutConfig.rows;
 
   const hasTable = useMemo(() => elements.some(el => el.type === "table"), [elements]);
 
@@ -68,8 +68,11 @@ export function CertificateViewer({
     const row = Math.floor(recordIndex / layoutConfig.columns);
     const col = recordIndex % layoutConfig.columns;
     
-    const offsetX = col * (recordWidth + layoutConfig.gap);
-    const offsetY = row * (recordHeight + layoutConfig.gap);
+    const offsetX = col * (slotWidth + layoutConfig.gap);
+    const offsetY = row * (slotHeight + layoutConfig.gap);
+
+    // If no data for this slot, don't render content but keep the slot layout in preview
+    if (!recordData || Object.keys(recordData).length === 0) return null;
 
     return (
       <div 
@@ -78,20 +81,18 @@ export function CertificateViewer({
         style={{
             left: `${offsetX}px`,
             top: `${offsetY}px`,
-            width: `${recordWidth}px`,
-            height: `${recordHeight}px`,
-            backgroundColor: baseFrame?.style?.backgroundColor || "#ffffff",
-            backgroundImage: baseFrame?.content ? `url(${baseFrame.content})` : "none",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            // Add a subtle separator if previewing multiple on one page
-            border: preview && (layoutConfig.rows > 1 || layoutConfig.columns > 1) ? '1px dashed #e5e7eb' : 'none'
+            width: `${slotWidth}px`,
+            height: `${slotHeight}px`,
+            // Background is usually on the master sheet (frame), but can be repeated if desired
+            // For now, we assume the master frame handles the sheet background
         }}
       >
         {elements.map((el) => {
             if (!el.visible || el.id === baseFrame?.id) return null;
 
             const style = el.style || {};
+            // We assume design was done relative to the first slot's relative coordinates
+            // (el.x - baseFrame.x) is the relative position within slot 0
             const left = baseFrame ? el.x - baseFrame.x : el.x;
             const top = baseFrame ? el.y - baseFrame.y : el.y;
 
@@ -172,8 +173,8 @@ export function CertificateViewer({
     <div 
       className={cn("relative bg-white print:shadow-none", className)}
       style={{
-        width: `${canvasWidth}px`,
-        height: `${canvasHeight}px`,
+        width: `${sheetWidth}px`,
+        height: `${sheetHeight}px`,
         direction: 'rtl',
       }}
       data-canvas-content

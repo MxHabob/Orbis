@@ -68,7 +68,7 @@ export default function BulkExportCertificatePage() {
       { enabled: studentIds.length > 0 }
     ));
 
-  const { data: template, isLoading: loadingTemplate } = useQuery(
+  const { data: certificateTemplate, isLoading: loadingTemplate } = useQuery(
     trpc.certificateTemplates.getById.queryOptions(
       { id: templateId! },
       { enabled: !!templateId }
@@ -107,7 +107,19 @@ export default function BulkExportCertificatePage() {
     setLoadedCount((prev) => prev + 1);
   }, []);
 
-  const isLoading = loadingStudents || loadingTemplate || !students || !template;
+  const layoutConfig = (certificateTemplate?.content as any)?.layoutConfig || { rows: 1, columns: 1, gap: 0 };
+  const totalSlots = layoutConfig.rows * layoutConfig.columns;
+
+  const studentChunks = useMemo(() => {
+    if (!students) return [];
+    const chunks = [];
+    for (let i = 0; i < students.length; i += totalSlots) {
+       chunks.push(students.slice(i, i + totalSlots));
+    }
+    return chunks;
+  }, [students, totalSlots]);
+
+  const isLoading = loadingStudents || loadingTemplate || !students || !certificateTemplate;
 
   if (isLoading) {
     return (
@@ -120,31 +132,34 @@ export default function BulkExportCertificatePage() {
 
   return (
     <div className="bg-white p-0 m-0">
-      {students.map((student, index) => (
+      {studentChunks.map((chunk, chunkIndex) => (
         <div
-          key={student.userId}
-          className={`${index > 0 ? "break-before-page" : ""} flex justify-center`}
+          key={`sheet-${chunkIndex}`}
+          className={`${chunkIndex > 0 ? "break-before-page" : ""} flex justify-center`}
         >
-          {(() => {
-            const rankEntry = topStudents?.find((item: any) => item.studentId === student.userId);
-            return (
           <CertificateViewer
-            template={template as any}
-            data={{
-              ...mapStudentToVariables(student, type, month),
-              rank: rankEntry?.rankLabel || ((student.stats as any)?.rank || ""),
-              rank_percentage: rankEntry?.percentage ?? "",
-              rank_total: rankEntry?.totalScore ?? "",
-              rank_max: rankEntry?.maxScore ?? "",
-            }}
+            template={certificateTemplate as any}
+            data={chunk.map(student => {
+                const rankEntry = topStudents?.find((item: any) => item.studentId === student.userId);
+                return {
+                    ...mapStudentToVariables(student, type, month),
+                    rank: rankEntry?.rankLabel || ((student.stats as any)?.rank || ""),
+                    rank_percentage: rankEntry?.percentage ?? "",
+                    rank_total: rankEntry?.totalScore ?? "",
+                    rank_max: rankEntry?.maxScore ?? "",
+                };
+            })}
             certificateType={type}
             month={month}
             preview={false}
             className="shadow-none border-none"
-            onLoad={handleCertificateLoad}
+            onLoad={() => {
+                // If it's a grid, we need to handle the loaded count differently? 
+                // Actually handleCertificateLoad was counting students.
+                // We'll increment by chunk size
+                setLoadedCount(prev => prev + chunk.length);
+            }}
           />
-            );
-          })()}
         </div>
       ))}
 
