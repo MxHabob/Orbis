@@ -176,6 +176,7 @@ export function StudentCertificateSheet() {
       issue_date: new Date().toLocaleDateString(locale === 'ar' ? 'ar-YE' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
       report_type: selectedType === "half-yearly" ? "النصفي" : (selectedType === "final" ? "النهائي" : `الشهري - لشهر ${selectedMonth ? (HIJRI_MONTHS.find(m => m.id === selectedMonth)?.name || t("reports.month_label", { month: selectedMonth })) : ""}`),
       school_year: studentRecord.currentClass?.yearName || "2024/2025",
+      student_image: studentRecord.image || "",
     } as Record<string, string | number>;
   }, [studentRecord, topStudents, selectedType, selectedMonth, t, locale]);
 

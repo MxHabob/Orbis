@@ -41,7 +41,7 @@ export function CertificateViewer({
     return rawElements.sort((a, b) => a.zIndex - b.zIndex);
   }, [template]);
 
-  const layoutConfig = template.content?.layoutConfig || { rows: 1, columns: 1, gap: 0 };
+  const layoutConfig = template.content?.canvasConfig?.layoutConfig || template.content?.layoutConfig || { rows: 1, columns: 1, gap: 0 };
   const [bgLoaded, setBgLoaded] = useState(false);
   const onLoadCalledRef = useRef(false);
 
@@ -51,8 +51,8 @@ export function CertificateViewer({
   const sheetHeight = baseFrame?.height || 1123;
 
   // Internal Subdivision Math (2026 Print Standards)
-  const slotWidth = (sheetWidth - (layoutConfig.columns - 1) * layoutConfig.gap) / layoutConfig.columns;
-  const slotHeight = (sheetHeight - (layoutConfig.rows - 1) * layoutConfig.gap) / layoutConfig.rows;
+  const slotWidth = (sheetWidth - (layoutConfig.columns - 1) * (layoutConfig.gap || 0)) / layoutConfig.columns;
+  const slotHeight = (sheetHeight - (layoutConfig.rows - 1) * (layoutConfig.gap || 0)) / layoutConfig.rows;
 
   const hasTable = useMemo(() => elements.some(el => el.type === "table"), [elements]);
 
@@ -68,8 +68,8 @@ export function CertificateViewer({
     const row = Math.floor(recordIndex / layoutConfig.columns);
     const col = recordIndex % layoutConfig.columns;
     
-    const offsetX = col * (slotWidth + layoutConfig.gap);
-    const offsetY = row * (slotHeight + layoutConfig.gap);
+    const offsetX = col * (slotWidth + (layoutConfig.gap || 0));
+    const offsetY = row * (slotHeight + (layoutConfig.gap || 0));
 
     // If no data for this slot, don't render content but keep the slot layout in preview
     if (!recordData || Object.keys(recordData).length === 0) return null;
@@ -120,7 +120,12 @@ export function CertificateViewer({
                     }}
                 >
                     {el.type === "image" ? (
-                        <img src={el.content} className="w-full h-full object-contain" alt={el.name} />
+                        <img 
+                          src={el.variableKey ? recordData[el.variableKey] : el.content} 
+                          className="w-full h-full object-contain" 
+                          alt={el.name} 
+                          crossOrigin="anonymous"
+                        />
                     ) : el.type === "shape" ? (
                         <div 
                             className="w-full h-full" 

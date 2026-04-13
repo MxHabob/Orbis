@@ -188,6 +188,7 @@ export function EditorSidebar({}: SidebarProps) {
     { key: "rank", label: "الترتيب العام (المركز)", icon: Trophy },
     { key: "certificate_type", label: "نوع الشهادة / التقرير", icon: Award },
     { key: "school_year", label: "العام الدراسي", icon: Hash },
+    { key: "student_image", label: "صورة الطالب", icon: ImageIcon },
     { key: "grades_table", label: "جدول كشف الدرجات", icon: TableIcon, isTable: true },
   ].filter(v => v.label.includes(searchQuery) || v.key.includes(searchQuery));
 

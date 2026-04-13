@@ -48,6 +48,7 @@ const mapStudentToVariables = (student: any, type?: string, month?: number) => {
     month_name: month ? (HIJRI_MONTHS_NAMES[month] || `شهر ${month}`) : "",
     academic_year: currentYear,
     studentId: student.userId,
+    student_image: student.image || "",
   };
 };
 
@@ -107,7 +108,8 @@ export default function BulkExportCertificatePage() {
     setLoadedCount((prev) => prev + 1);
   }, []);
 
-  const layoutConfig = (certificateTemplate?.content as any)?.layoutConfig || { rows: 1, columns: 1, gap: 0 };
+  const canvasConfig = (certificateTemplate?.content as any)?.canvasConfig;
+  const layoutConfig = canvasConfig?.layoutConfig || (certificateTemplate?.content as any)?.layoutConfig || { rows: 1, columns: 1, gap: 0 };
   const totalSlots = layoutConfig.rows * layoutConfig.columns;
 
   const studentChunks = useMemo(() => {
