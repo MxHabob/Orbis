@@ -1,5 +1,5 @@
 
-import { CertificateEditor } from "@/components/certificates/certificate-editor";
+import { CertificateEditor } from "@/components/certificates/editor/certificate-editor";
 import { getCertificateTemplateById } from "@midday/db/queries/certificate-templates";
 import { notFound } from "next/navigation";
 

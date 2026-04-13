@@ -1,15 +1,15 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
-import { type EditorElement as IEditorElement } from "../types";
+import React, { useState, useRef, useEffect, memo } from "react";
+import { type EditorElement as IEditorElement } from "@/types/certificate-editor";
 import { cn } from "@midday/ui/cn";
-import { useEditorStore } from "../store/use-editor-store";
+import { useEditorStore } from "@/store/certificate-editor";
 
 interface Props {
   element: IEditorElement;
 }
 
-export function EditorElement({ element }: Props) {
+export const EditorElement = memo(function EditorElement({ element }: Props) {
   const { updateElement } = useEditorStore();
   const [isEditing, setIsEditing] = useState(false);
   const [tempContent, setTempContent] = useState(element.content || "");
@@ -41,7 +41,7 @@ export function EditorElement({ element }: Props) {
           return (
             <textarea
               ref={inputRef}
-              className="w-full h-full bg-transparent border-none outline-none resize-none overflow-hidden p-0 m-0 no-pan"
+              className="w-full h-full bg-transparent border-none outline-none resize-none overflow-hidden p-0 m-0 no-pan scroll-none"
               style={{
                 color: style.color || "#000000",
                 fontSize: `${style.fontSize || 16}px`,
@@ -66,7 +66,10 @@ export function EditorElement({ element }: Props) {
         return (
           <div
             onDoubleClick={() => !element.locked && element.type === "text" && setIsEditing(true)}
-            className="w-full h-full flex items-center select-none cursor-text"
+            className={cn(
+                "w-full h-full flex items-center select-none",
+                element.type === 'text' ? "cursor-text" : "cursor-default"
+            )}
             style={{
               color: style.color || "#000000",
               fontSize: `${style.fontSize || 16}px`,
@@ -76,42 +79,55 @@ export function EditorElement({ element }: Props) {
               justifyContent: style.textAlign === "left" ? "flex-start" : style.textAlign === "right" ? "flex-end" : "center",
               lineHeight: style.lineHeight || 1.2,
               letterSpacing: `${style.letterSpacing || 0}px`,
+              textShadow: style.shadow || "none",
             }}
           >
-            {element.content || element.variableKey || "Double click to edit"}
+            {element.type === 'variable' ? (
+                <span className="bg-blue-500/10 text-blue-600 px-2 py-0.5 rounded-md border border-blue-500/20 font-mono text-[0.85em] flex items-center gap-1.5">
+                    <span className="opacity-40">#</span>
+                    {element.variableKey || "variable"}
+                </span>
+            ) : (
+                element.content || "Double click to edit"
+            )}
           </div>
         );
       case "image":
         return (
-          <div className="w-full h-full relative overflow-hidden">
+          <div className="w-full h-full relative group/img transition-transform duration-500">
              <img
               src={element.content}
               alt=""
               className="w-full h-full object-contain pointer-events-none"
+              style={{ 
+                  opacity: element.opacity,
+                  filter: style.shadow ? `drop-shadow(${style.shadow})` : "none"
+              }}
             />
           </div>
         );
       case "shape":
         return (
           <div
+            className="w-full h-full shadow-lg transition-all duration-300"
             style={{
               backgroundColor: style.backgroundColor || "#3b82f6",
-              width: "100%",
-              height: "100%",
               borderRadius: `${style.borderRadius || 0}px`,
               border: `${style.borderWidth || 0}px solid ${style.borderColor || "transparent"}`,
+              boxShadow: style.shadow || "none",
             }}
           />
         );
       case "frame":
         return (
           <div
-            className="w-full h-full shadow-[0_0_50px_rgba(0,0,0,0.1)] relative"
+            className="w-full h-full shadow-2xl relative overflow-hidden"
             style={{
               backgroundColor: style.backgroundColor || "#ffffff",
               backgroundImage: element.content ? `url(${element.content})` : "none",
               backgroundSize: "cover",
               backgroundPosition: "center",
+              borderRadius: `${style.borderRadius || 0}px`,
             }}
           />
         );
@@ -124,10 +140,10 @@ export function EditorElement({ element }: Props) {
     <div
       data-element-id={element.id}
       className={cn(
-        "absolute cursor-move outline-none editor-element-container",
-        element.type === "variable" && "ring-1 ring-blue-500/30 ring-dashed hover:ring-blue-500/60",
-        isEditing && "ring-2 ring-primary bg-white shadow-2xl z-[99999]",
-        element.locked && "pointer-events-none opacity-80"
+        "absolute outline-none editor-element-container transition-[outline,box-shadow,background] duration-200",
+        !element.locked && "hover:outline hover:outline-2 hover:outline-blue-500/40 hover:outline-offset-2",
+        isEditing && "outline outline-2 outline-blue-600 outline-offset-4 bg-white/5 backdrop-blur-sm shadow-2xl z-[99999] rounded-sm",
+        element.locked && "opacity-60 cursor-not-allowed"
       )}
       style={{
         left: element.x,
@@ -135,11 +151,11 @@ export function EditorElement({ element }: Props) {
         width: element.width,
         height: element.height,
         transform: `rotate(${element.rotation}deg)`,
-        opacity: element.opacity,
+        opacity: isEditing ? 1 : element.opacity,
         zIndex: element.zIndex,
       }}
     >
       {renderContent()}
     </div>
   );
-}
+});

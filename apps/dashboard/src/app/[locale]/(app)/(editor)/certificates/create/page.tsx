@@ -1,5 +1,5 @@
 
-import { CertificateEditor } from "@/components/certificates/certificate-editor";
+import { CertificateEditor } from "@/components/certificates/editor/certificate-editor";
 
 export const metadata = {
   title: "Create Template | Mommy",

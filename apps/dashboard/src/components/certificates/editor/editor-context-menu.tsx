@@ -20,14 +20,12 @@ import {
   ChevronUp, 
   ChevronDown,
   Lock,
-  EyeOff,
   Group,
-  Ungroup,
   MousePointer2,
   Layers,
   Zap
 } from "lucide-react";
-import { useEditorStore } from "../store/use-editor-store";
+import { useEditorStore } from "@/store/certificate-editor";
 
 interface Props {
   children: React.ReactNode;
@@ -41,8 +39,7 @@ export function EditorContextMenu({ children }: Props) {
     bringToFront, 
     sendToBack,
     bringForward,
-    sendBackward,
-    elements
+    sendBackward
   } = useEditorStore();
 
   const selectionCount = selectedElementIds.length;
@@ -54,16 +51,16 @@ export function EditorContextMenu({ children }: Props) {
         {children}
       </ContextMenuTrigger>
       
-      <ContextMenuContent className="w-64 bg-[#2c2c2c] border-[#444] text-white/90 shadow-2xl p-1 rounded-[8px]">
+      <ContextMenuContent className="w-64 bg-[#2c2c2c] border-[#444] text-white/90 shadow-2xl p-1 rounded-xl">
         {isSelected ? (
           <>
-            <ContextMenuItem onClick={() => duplicateElements(selectedElementIds)} className="gap-2 focus:bg-[#0c8ce9] focus:text-white rounded-[4px] text-[11px] font-medium py-1.5 px-2">
+            <ContextMenuItem onClick={() => duplicateElements(selectedElementIds)} className="gap-2 focus:bg-blue-600 focus:text-white rounded-lg text-[11px] font-medium py-1.5 px-2">
               <Copy className="w-3.5 h-3.5" />
               Duplicate
               <ContextMenuShortcut className="text-white/40">⌘D</ContextMenuShortcut>
             </ContextMenuItem>
             
-            <ContextMenuItem onClick={() => deleteElements(selectedElementIds)} className="gap-2 focus:bg-red-500/20 focus:text-red-400 text-red-400 rounded-[4px] text-[11px] font-medium py-1.5 px-2">
+            <ContextMenuItem onClick={() => deleteElements(selectedElementIds)} className="gap-2 focus:bg-red-500/20 focus:text-red-400 text-red-400 rounded-lg text-[11px] font-medium py-1.5 px-2">
               <Trash2 className="w-3.5 h-3.5" />
               Delete
               <ContextMenuShortcut className="text-red-400/40">⌫</ContextMenuShortcut>
@@ -72,36 +69,32 @@ export function EditorContextMenu({ children }: Props) {
             <ContextMenuSeparator className="bg-white/10 my-1" />
 
             <ContextMenuSub>
-              <ContextMenuSubTrigger className="gap-2 focus:bg-[#0c8ce9] focus:text-white rounded-[4px] text-[11px] font-medium py-1.5 px-2">
+              <ContextMenuSubTrigger className="gap-2 focus:bg-blue-600 focus:text-white rounded-lg text-[11px] font-medium py-1.5 px-2">
                 <Layers className="w-3.5 h-3.5" />
                 Arrange
               </ContextMenuSubTrigger>
-              <ContextMenuSubContent className="bg-[#2c2c2c] border-[#444] text-white/90 p-1 rounded-[8px]">
+              <ContextMenuSubContent className="bg-[#2c2c2c] border-[#444] text-white/90 p-1 rounded-xl">
                 {(() => {
                   const firstId = selectedElementIds[0];
                   if (!firstId) return null;
                   
                   return (
                     <>
-                      <ContextMenuItem onClick={() => bringToFront(firstId)} className="gap-2 focus:bg-[#0c8ce9] focus:text-white py-1.5 px-2 text-[11px]">
+                      <ContextMenuItem onClick={() => bringToFront(firstId)} className="gap-2 focus:bg-blue-600 focus:text-white py-1.5 px-2 text-[11px] rounded-lg">
                         <ArrowUp className="w-3.5 h-3.5" />
                         Bring to Front
-                        <ContextMenuShortcut className="text-white/40">] ]</ContextMenuShortcut>
                       </ContextMenuItem>
-                      <ContextMenuItem onClick={() => bringForward(firstId)} className="gap-2 focus:bg-[#0c8ce9] focus:text-white py-1.5 px-2 text-[11px]">
+                      <ContextMenuItem onClick={() => bringForward(firstId)} className="gap-2 focus:bg-blue-600 focus:text-white py-1.5 px-2 text-[11px] rounded-lg">
                         <ChevronUp className="w-3.5 h-3.5" />
                         Bring Forward
-                        <ContextMenuShortcut className="text-white/40">]</ContextMenuShortcut>
                       </ContextMenuItem>
-                      <ContextMenuItem onClick={() => sendBackward(firstId)} className="gap-2 focus:bg-[#0c8ce9] focus:text-white py-1.5 px-2 text-[11px]">
+                      <ContextMenuItem onClick={() => sendBackward(firstId)} className="gap-2 focus:bg-blue-600 focus:text-white py-1.5 px-2 text-[11px] rounded-lg">
                         <ChevronDown className="w-3.5 h-3.5" />
                         Send Backward
-                        <ContextMenuShortcut className="text-white/40">[</ContextMenuShortcut>
                       </ContextMenuItem>
-                      <ContextMenuItem onClick={() => sendToBack(firstId)} className="gap-2 focus:bg-[#0c8ce9] focus:text-white py-1.5 px-2 text-[11px]">
+                      <ContextMenuItem onClick={() => sendToBack(firstId)} className="gap-2 focus:bg-blue-600 focus:text-white py-1.5 px-2 text-[11px] rounded-lg">
                         <ArrowDown className="w-3.5 h-3.5" />
                         Send to Back
-                        <ContextMenuShortcut className="text-white/40">[ [</ContextMenuShortcut>
                       </ContextMenuItem>
                     </>
                   );
@@ -111,13 +104,13 @@ export function EditorContextMenu({ children }: Props) {
 
             <ContextMenuSeparator className="bg-white/10 my-1" />
 
-            <ContextMenuItem className="gap-2 focus:bg-[#0c8ce9] focus:text-white rounded-[4px] text-[11px] font-medium py-1.5 px-2">
+            <ContextMenuItem className="gap-2 focus:bg-blue-600 focus:text-white rounded-lg text-[11px] font-medium py-1.5 px-2">
               <Group className="w-3.5 h-3.5" />
               Group Selection
               <ContextMenuShortcut className="text-white/40">⌘G</ContextMenuShortcut>
             </ContextMenuItem>
 
-            <ContextMenuItem className="gap-2 focus:bg-[#0c8ce9] focus:text-white rounded-[4px] text-[11px] font-medium py-1.5 px-2">
+            <ContextMenuItem className="gap-2 focus:bg-blue-600 focus:text-white rounded-lg text-[11px] font-medium py-1.5 px-2">
               <Lock className="w-3.5 h-3.5" />
               Lock Selection
               <ContextMenuShortcut className="text-white/40">⌘L</ContextMenuShortcut>
@@ -125,21 +118,20 @@ export function EditorContextMenu({ children }: Props) {
 
             <ContextMenuSeparator className="bg-white/10 my-1" />
 
-            <ContextMenuItem className="gap-2 focus:bg-emerald-500/20 focus:text-emerald-400 rounded-[4px] text-[11px] font-bold py-1.5 px-2">
+            <ContextMenuItem className="gap-2 focus:bg-emerald-500/20 focus:text-emerald-400 rounded-lg text-[11px] font-bold py-1.5 px-2">
               <Zap className="w-3.5 h-3.5" />
               Add Interaction
-              <ContextMenuShortcut className="text-emerald-400/40">⌘⇧K</ContextMenuShortcut>
             </ContextMenuItem>
           </>
         ) : (
           <>
-            <ContextMenuItem className="gap-2 focus:bg-[#0c8ce9] focus:text-white rounded-[4px] text-[11px] font-medium py-1.5 px-2">
+            <ContextMenuItem className="gap-2 focus:bg-blue-600 focus:text-white rounded-lg text-[11px] font-medium py-1.5 px-2">
               <MousePointer2 className="w-3.5 h-3.5" />
               Select All
               <ContextMenuShortcut className="text-white/40">⌘A</ContextMenuShortcut>
             </ContextMenuItem>
             <ContextMenuSeparator className="bg-white/10 my-1" />
-            <ContextMenuItem className="gap-2 focus:bg-[#0c8ce9] focus:text-white rounded-[4px] text-[11px] font-medium py-1.5 px-2">
+            <ContextMenuItem className="gap-2 focus:bg-blue-600 focus:text-white rounded-lg text-[11px] font-medium py-1.5 px-2">
               Paste Here
               <ContextMenuShortcut className="text-white/40">⌘V</ContextMenuShortcut>
             </ContextMenuItem>
