@@ -216,14 +216,11 @@ export function CertificateViewer({
     >
        {template.backgroundImageUrl && (
          <img 
-            src={template.backgroundImageUrl.includes("/files/proxy") && !template.backgroundImageUrl.includes("token=") 
-                ? `${template.backgroundImageUrl}&token=export_authorized_2026` 
-                : template.backgroundImageUrl} 
+            src={template.backgroundImageUrl} 
             alt="Background" 
-            crossOrigin="anonymous"
             className="w-full h-full object-fill absolute inset-0 pointer-events-none"
             onLoad={() => unregisterAsset('background')}
-            onBlur={() => registerAsset('background')} // Technical hook for re-renders
+            onBlur={() => registerAsset('background')} 
             style={{ zIndex: -1 }}
          />
        )}
@@ -262,12 +259,11 @@ function ImageAsset({ id, src, alt, onRegister, onUnregister }: any) {
 
     return (
         <img 
-            src={finalSrc} 
+            src={src || ""} 
             className="w-full h-full object-contain" 
             alt={alt} 
-            crossOrigin="anonymous" 
             onLoad={() => onUnregister(id)}
-            onError={() => onUnregister(id)} // Don't block export on failed assets
+            onError={() => onUnregister(id)} 
         />
     );
 }
