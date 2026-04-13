@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@midday/ui/cn";
-import { useMemo, useEffect, useState, useRef } from "react";
+import { useMemo, useEffect, useState, useRef, useCallback } from "react";
 import { GradesTable } from "./grades-table";
 import { type EditorElement as IEditorElement } from "@/types/certificate-editor";
 
