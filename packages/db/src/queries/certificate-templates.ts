@@ -9,9 +9,10 @@ export async function listCertificateTemplates(q?: string) {
   let query = db.select({
     id: certificateTemplates.id,
     name: certificateTemplates.name,
+    category: certificateTemplates.category,
     isDefault: certificateTemplates.isDefault,
-    size: certificateTemplates.size,
-    orientation: certificateTemplates.orientation,
+    isArchived: certificateTemplates.isArchived,
+    thumbnailUrl: certificateTemplates.thumbnailUrl,
     updatedAt: certificateTemplates.updatedAt,
   }).from(certificateTemplates);
 
@@ -48,13 +49,15 @@ export async function upsertCertificateTemplate(
   if (id) {
     const updatePayload: any = { updatedAt: new Date() };
 
-    // Explicitly handle fields to ensure we don't accidentally set them to undefined/defaults if not provided
+    // Support flexible design tree updates (Figma Style)
     if (rest.name !== undefined) updatePayload.name = rest.name;
+    if (rest.description !== undefined) updatePayload.description = rest.description;
     if (rest.isDefault !== undefined) updatePayload.isDefault = rest.isDefault;
-    if (rest.orientation !== undefined) updatePayload.orientation = rest.orientation;
-    if (rest.size !== undefined) updatePayload.size = rest.size;
-    if (rest.primaryColor !== undefined) updatePayload.primaryColor = rest.primaryColor;
-    if (rest.backgroundImageUrl !== undefined) updatePayload.backgroundImageUrl = rest.backgroundImageUrl;
+    if (rest.isArchived !== undefined) updatePayload.isArchived = rest.isArchived;
+    if (rest.category !== undefined) updatePayload.category = rest.category;
+    if (rest.version !== undefined) updatePayload.version = rest.version;
+    if (rest.tags !== undefined) updatePayload.tags = rest.tags;
+    if (rest.thumbnailUrl !== undefined) updatePayload.thumbnailUrl = rest.thumbnailUrl;
     if (rest.content !== undefined) updatePayload.content = rest.content;
 
     const [updated] = await db
@@ -65,14 +68,16 @@ export async function upsertCertificateTemplate(
     return updated ?? null;
   }
 
-  const payload = {
-    name: data.name ?? "Default",
+  const payload: CertificateTemplateInsert = {
+    name: data.name ?? "Untitled Design",
+    description: data.description ?? null,
     isDefault: data.isDefault ?? false,
-    orientation: data.orientation ?? "portrait",
-    size: data.size ?? "a4",
-    primaryColor: data.primaryColor ?? "#000000",
-    backgroundImageUrl: data.backgroundImageUrl ?? null,
-    content: data.content ?? null,
+    isArchived: data.isArchived ?? false,
+    category: data.category ?? "design",
+    version: data.version ?? 1,
+    tags: data.tags ?? [],
+    content: data.content ?? { elements: [], canvasConfig: {} },
+    thumbnailUrl: data.thumbnailUrl ?? null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };

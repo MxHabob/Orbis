@@ -1,17 +1,17 @@
 "use client";
 
 import { useCertificateFilterParams } from "@/hooks/use-certificate-filter-params";
-import { useCertificateParams } from "@/hooks/use-certificate-params";
 import { Icons } from "@midday/ui/icons";
 import { Input } from "@midday/ui/input";
 import { Button } from "@midday/ui/button";
 import { useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
+import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 
 export function TableToolbar() {
   const { filter, setFilter } = useCertificateFilterParams();
-  const { setParams } = useCertificateParams();
+  const router = useRouter();
   const [input, setInput] = useState(filter.q ?? "");
   const [exportOpen, setExportOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -76,7 +76,7 @@ export function TableToolbar() {
           size="icon"
           variant="outline"
           className="size-[36px] shrink-0"
-          onClick={() => setParams({ type: "create" })}
+          onClick={() => router.push("/certificates/create")}
         >
           <Plus className="w-4 h-4" />
         </Button>

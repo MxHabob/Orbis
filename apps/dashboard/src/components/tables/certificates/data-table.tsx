@@ -25,7 +25,7 @@ import { BottomBar } from "./bottom-bar";
 import { AnimatePresence } from "framer-motion";
 
 import { useCertificateFilterParams } from "@/hooks/use-certificate-filter-params";
-import { useCertificateParams } from "@/hooks/use-certificate-params";
+import { useRouter } from "next/navigation";
 
 const NON_CLICKABLE_COLUMNS = new Set(["select", "actions"]);
 
@@ -34,7 +34,7 @@ type Props = {
 };
 
 export function DataTable({ initialSettings }: Props) {
-
+  const router = useRouter();
   const trpc = useTRPC();
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -42,7 +42,6 @@ export function DataTable({ initialSettings }: Props) {
   useScrollHeader(parentRef);
 
   const { filter } = useCertificateFilterParams();
-  const { setParams } = useCertificateParams();
   const { rowSelection, setRowSelection } = useReportStore();
 
   const {
@@ -93,9 +92,9 @@ export function DataTable({ initialSettings }: Props) {
 
   const handleCellClick = useCallback(
     (rowId: string) => {
-      setParams({ templateId: rowId, type: "edit" });
+      router.push(`/certificates/${rowId}`);
     },
-    [setParams],
+    [router],
   );
 
   useEffect(() => {

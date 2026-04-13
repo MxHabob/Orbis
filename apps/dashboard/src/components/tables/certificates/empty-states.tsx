@@ -1,10 +1,10 @@
 "use client";
 
-import { useCertificateParams } from "@/hooks/use-certificate-params";
 import { Button } from "@midday/ui/button";
+import { useRouter } from "next/navigation";
 
 export function EmptyState() {
-  const { setParams } = useCertificateParams();
+  const router = useRouter();
 
   return (
     <div className="flex items-center justify-center ">
@@ -19,11 +19,7 @@ export function EmptyState() {
 
         <Button
           variant="outline"
-          onClick={() =>
-            setParams({
-              type: "create",
-            })
-          }
+          onClick={() => router.push("/certificates/create")}
         >
           Create template
         </Button>

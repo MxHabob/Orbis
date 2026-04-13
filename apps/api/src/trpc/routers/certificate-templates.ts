@@ -57,12 +57,19 @@ async function signUrl(urlStr: string) {
 async function signTemplateBackground(template: any) {
   if (!template) return template;
 
-  // Sign main background image
+  // Best Practice 2026: Sign root levels and nested design tree levels
+  
+  // 1. Support legacy or high-level root background if present
   if (template.backgroundImageUrl) {
     template.backgroundImageUrl = await signUrl(template.backgroundImageUrl);
   }
 
-  // Sign images inside elements (logos, signatures, etc.)
+  // 2. Sign backgrounds hidden within the Figma-style Content Tree
+  if (template.content?.canvasConfig?.backgroundImage) {
+    template.content.canvasConfig.backgroundImage = await signUrl(template.content.canvasConfig.backgroundImage);
+  }
+
+  // 3. Sign images inside elements (nodes tree)
   if (template.content?.elements && Array.isArray(template.content.elements)) {
     template.content.elements = await Promise.all(
       template.content.elements.map(async (el: any) => {

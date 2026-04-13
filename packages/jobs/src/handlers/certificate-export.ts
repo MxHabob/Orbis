@@ -114,14 +114,18 @@ export async function handleCertificateExport(
     const session = await getValidSessionByUserId(userId);
     if (!session) throw new Error("جلسة عمل غير صالحة. يرجى تسجيل الدخول.");
 
-    // Fetch template to get paper size and orientation
+    // Fetch template to get paper size and orientation from the Unified Content Tree
     let templateSize = "a4";
     let templateOrientation: "portrait" | "landscape" = "portrait";
+    
     if (templateId) {
       const templateData = await getCertificateTemplateById(templateId);
       if (templateData) {
-        templateSize = (templateData as any).size || "a4";
-        templateOrientation = ((templateData as any).orientation || "portrait") as "portrait" | "landscape";
+        // Best Practice 2026: Extract from Figma-style Content Tree
+        const canvasConfig = (templateData as any).content?.canvasConfig;
+        
+        templateSize = canvasConfig?.size || (templateData as any).size || "a4";
+        templateOrientation = (canvasConfig?.orientation || (templateData as any).orientation || "portrait") as "portrait" | "landscape";
       }
     }
     

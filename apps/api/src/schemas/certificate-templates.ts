@@ -1,30 +1,33 @@
 import { z } from "zod";
 
+/**
+ * Figma-Style Design Persistence Schema (2026)
+ * 
+ * We follow the philosophy that the database table is just a metadata shell.
+ * 100% of the design logic, frames, nodes, and configurations are stored
+ * inside the `content` JSONB field.
+ */
+
 export const upsertCertificateTemplateSchema = z.object({
   id: z.string().uuid().optional(),
   name: z.string().min(1).optional(),
+  description: z.string().optional(),
+  category: z.string().optional(),
   isDefault: z.boolean().optional(),
+  isArchived: z.boolean().optional(),
   
-  // Layout
-  orientation: z.enum(["portrait", "landscape"]).optional(),
-  size: z.enum(["a4", "letter", "a5"]).optional(),
-  primaryColor: z.string().optional(),
-  backgroundImageUrl: z.string().nullable().optional(),
+  // High-performance metadata for list views
+  thumbnailUrl: z.string().nullable().optional(),
+  version: z.number().optional(),
+  tags: z.array(z.string()).optional(),
   
-  // Content JSON
-  content: z.any().nullable().optional(),
+  // The Complete Document Object (Figma-like Node Tree)
+  // [elements, frameSettings, canvasStyles, etc.]
+  content: z.any(),
 });
 
 export const createCertificateTemplateSchema = z.object({
   name: z.string().min(1),
-  isDefault: z.boolean().default(false),
-  
-  // Layout
-  orientation: z.enum(["portrait", "landscape"]).default("portrait"),
-  size: z.enum(["a4", "letter", "a5"]).default("a4"),
-  primaryColor: z.string().default("#000000"),
-  backgroundImageUrl: z.string().nullable().optional(),
-  
-  // Content JSON
-  content: z.any().nullable().optional(),
+  category: z.string().default("design"),
+  content: z.any().default({ elements: [], canvasConfig: { size: 'a4', orientation: 'portrait' } }),
 });

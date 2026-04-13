@@ -294,21 +294,25 @@ export const scheduledLessons = pgTable('scheduled_lessons', {
   classDaySlotIdx: index('sched_class_day_slot_idx').on(t.classId, t.dayOfWeek, t.timeSlotId, t.academicYearId),
 }));
 
-// Certificate Templates Table (Flexible System - 2026)
+// Professional Design Templates Table (Figma-Style - 2026)
 export const certificateTemplates = pgTable('certificate_templates', {
   id: uuid('id').defaultRandom().primaryKey(),
-  name: varchar('name', { length: 100 }).notNull(),
+  name: varchar('name', { length: 255 }).notNull(),
+  description: text('description'),
+  
+  // High-level categorization
+  category: varchar('category', { length: 50 }).default('design'), 
   isDefault: boolean('is_default').default(false).notNull(),
+  isArchived: boolean('is_archived').default(false).notNull(),
   
-  // Visual & Layout Configuration
-  orientation: varchar('orientation', { length: 20 }).default('portrait').notNull(),
-  size: varchar('size', { length: 20 }).default('a4').notNull(),
-  primaryColor: varchar('primary_color', { length: 20 }).default('#000000'),
-  backgroundImageUrl: text('background_image_url'), // For Canva/Custom backgrounds
+  // The Complete Design Tree (Nodes, Frames, Elements, Styles, Local Config)
+  // This mirrors Figma's node-based approach where EVERYTHING is in the tree.
+  content: jsonb('content').notNull().default({}), 
   
-  // Rich Text Content (Tiptap JSON)
-  // Rich Text Content (Tiptap JSON / Canvas Elements)
-  content: jsonb('content'), // Single field for all certificate elements & configuration
+  // Fast-access Display Metadata
+  thumbnailUrl: text('thumbnail_url'),
+  version: integer('version').default(1), 
+  tags: jsonb('tags').$type<string[]>().default([]),
   
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
