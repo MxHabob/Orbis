@@ -191,9 +191,7 @@ export function CertificateViewer({
     );
   };
 
-  const dataArray = Array.isArray(data) ? data : [data];
-  // Fill the remaining grid slots with empty objects in preview mode
-  const totalSlots = layoutConfig.rows * layoutConfig.columns;
+
   const displayData = preview ? [...dataArray, ...Array(Math.max(0, totalSlots - dataArray.length)).fill({})] : dataArray;
 
   return (
