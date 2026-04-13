@@ -86,13 +86,10 @@ export const EditorElement = memo(function EditorElement({ element }: Props) {
             }}
           >
             {element.type === 'variable' ? (
-                <div className="flex flex-col items-center gap-1.5 w-full">
-                    <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">{element.name}</span>
-                    <div className="bg-primary/5 text-primary px-4 py-2 rounded-xl border border-primary/20 font-bold text-[1em] flex items-center gap-2 shadow-sm">
-                        <span className="opacity-20 text-[0.8em]">{'{'}</span>
-                        {element.variableKey}
-                        <span className="opacity-20 text-[0.8em]">{'}'}</span>
-                    </div>
+                <div className="flex items-center pointer-events-none">
+                    <span className="opacity-40" style={{ fontSize: '0.8em' }}>{'{ '}</span>
+                    <span>{element.variableKey}</span>
+                    <span className="opacity-40" style={{ fontSize: '0.8em' }}>{' }'}</span>
                 </div>
             ) : (
                 element.content || "Double click to edit"
