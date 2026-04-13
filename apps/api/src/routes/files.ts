@@ -68,12 +68,14 @@ export async function handleFileProxy(c: Context<HonoEnv>) {
   } catch (err: any) {
     console.error(`[FileProxy] Fatal Error for ${bucket}/${key}:`, err);
     
-    // Return detailed S3 error to browser for debugging 
+    // Ensure CORS headers are present even on errors to prevent Puppeteer from masking 400s as CORS errors
     return c.json({ 
       error: "Storage Error", 
       message: err.message,
       code: err.name,
       requestedPath: `${bucket}/${key}`
-    }, 400); 
+    }, 400, {
+      "Access-Control-Allow-Origin": "*",
+    }); 
   }
 }

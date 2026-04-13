@@ -248,24 +248,27 @@ function ImageAsset({ id, src, alt, onRegister, onUnregister }: any) {
         if (!src) return "";
         let url = src;
         
-        // Append export token for headless browsers if it's our proxy
-        if (url.includes("/files/proxy") && !url.includes("token=")) {
-            url += `&token=export_authorized_2026`;
+        // Advanced Encoding using URLSearchParams
+        if (url.includes("filePath=")) {
+            const [base, query] = url.split("?");
+            const params = new URLSearchParams(query);
+            const filePath = params.get("filePath");
+            if (filePath) {
+                params.set("filePath", filePath);
+                // Also ensure we have the export token for legacy support
+                if (!params.has("token")) {
+                    params.set("token", "export_authorized_2026");
+                }
+                return `${base}?${params.toString()}`;
+            }
         }
         
-        // Basic safety encoding for spaces and special chars
         return url.replace(/ /g, "%20");
-    }, [src]);
-
-    const cacheBustedSrc = useMemo(() => {
-        if (!src) return "";
-        const connector = src.includes("?") ? "&" : "?";
-        return `${src}${connector}cb=${Date.now()}`;
     }, [src]);
 
     return (
         <img 
-            src={cacheBustedSrc} 
+            src={finalSrc} 
             className="w-full h-full object-contain" 
             alt={alt} 
             referrerPolicy="no-referrer"
