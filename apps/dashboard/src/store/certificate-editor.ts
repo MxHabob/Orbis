@@ -3,6 +3,7 @@ import { subscribeWithSelector } from "zustand/middleware";
 import { type EditorElement, type EditorState } from "@/types/certificate-editor";
 
 interface EditorActions {
+  setName: (name: string) => void;
   // Mode Actions
   setMode: (mode: "design" | "prototype") => void;
   
@@ -41,6 +42,7 @@ interface EditorActions {
 
 export const useEditorStore = create<EditorState & EditorActions>()(
   subscribeWithSelector((set, get) => ({
+    name: "Untitled Template",
     mode: "design",
     activePageId: "page-1",
     elements: [],
@@ -61,6 +63,7 @@ export const useEditorStore = create<EditorState & EditorActions>()(
       future: [],
     },
 
+    setName: (name) => set({ name }),
     setMode: (mode) => set({ mode }),
     setElements: (elements) => set({ elements }),
 

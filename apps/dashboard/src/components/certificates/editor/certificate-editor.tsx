@@ -32,7 +32,7 @@ interface Props {
 }
 
 export function CertificateEditor({ initialData }: Props) {
-  const { setElements, setCanvasConfig, elements, canvasConfig, addElement } = useEditorStore();
+  const { setElements, setCanvasConfig, elements, canvasConfig, addElement, setName, name } = useEditorStore();
   const trpc = useTRPC();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -40,6 +40,9 @@ export function CertificateEditor({ initialData }: Props) {
 
   // Initialize store with clean data
   useEffect(() => {
+    if (initialData?.name) {
+      setName(initialData.name);
+    }
     if (initialData?.content) {
       if (initialData.content.elements) {
         setElements(initialData.content.elements);
@@ -48,7 +51,7 @@ export function CertificateEditor({ initialData }: Props) {
         setCanvasConfig(initialData.content.canvasConfig);
       }
     }
-  }, [initialData, setElements, setCanvasConfig]);
+  }, [initialData, setElements, setCanvasConfig, setName]);
 
   const processDocumentMutation = useMutation(
     trpc.documents.processDocument.mutationOptions(),
@@ -122,12 +125,12 @@ export function CertificateEditor({ initialData }: Props) {
   const handleSave = useCallback(() => {
     upsertTemplate.mutate({
       id: initialData?.id,
-      name: initialData?.name ?? "Untitled Template",
+      name: name || "Untitled Template",
       description: initialData?.description ?? "",
       category: initialData?.category ?? "general",
       content: { elements, canvasConfig },
     });
-  }, [initialData, elements, canvasConfig, upsertTemplate]);
+  }, [initialData, elements, canvasConfig, upsertTemplate, name]);
 
   // Shortcuts
   useEffect(() => {
@@ -170,20 +173,13 @@ export function CertificateEditor({ initialData }: Props) {
       <input {...getInputProps()} />
       
       {isDragActive && (
-          <div className="absolute inset-0 z-[1000] bg-blue-500/10 backdrop-blur-md border-2 border-blue-500/50 border-dashed flex items-center justify-center pointer-events-none">
+          <div className="absolute inset-0 z-[1000] flex items-center justify-center pointer-events-none">
              <div className="glass-panel p-10 rounded-3xl flex flex-col items-center gap-6 border-white/20">
-                <div className="w-20 h-20 rounded-2xl bg-blue-500/20 flex items-center justify-center animate-bounce">
-                    <Icons.Upload className="w-10 h-10 text-blue-400" />
-                </div>
-                <div className="text-center text-white">
-                    <p className="text-2xl font-bold mb-1">Drop assets to add</p>
-                    <p className="text-sm opacity-50 uppercase tracking-widest font-medium">PNG, JPG, SVG supported</p>
-                </div>
              </div>
           </div>
       )}
 
-      <EditorSidebar templateName={initialData?.name || "Untitled"} />
+      <EditorSidebar />
       
       <main className="flex-1 relative flex flex-col min-w-0 bg-[#0c0c0e]">
         <div className="absolute inset-0 canvas-grid opacity-30 pointer-events-none" />

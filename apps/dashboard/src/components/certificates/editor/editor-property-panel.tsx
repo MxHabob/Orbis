@@ -34,7 +34,10 @@ import {
   ChevronDown,
   MoreVertical,
   ArrowRightToLine,
-  ArrowLeftToLine
+  ArrowLeftToLine,
+  Hash,
+  Square,
+  Image as ImageIcon
 } from "lucide-react";
 import { Button } from "@midday/ui/button";
 import { ColorPicker } from "@/components/color-picker";
@@ -43,6 +46,7 @@ import { ScrollArea } from "@midday/ui/scroll-area";
 import { Separator } from "@midday/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@midday/ui/select";
 import { Label } from "@midday/ui/label";
+import { PAPER_PRESETS } from "./constants";
 
 interface PropertyPanelProps {
   onSave?: () => void;
@@ -50,7 +54,7 @@ interface PropertyPanelProps {
 }
 
 export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
-  const { elements, selectedElementIds, updateElement, canvasConfig, setCanvasConfig, mode, setMode } = useEditorStore();
+  const { elements, selectedElementIds, updateElement, canvasConfig, setCanvasConfig, addElement } = useEditorStore();
 
   const selectedElement = elements.find((el) => el.id === selectedElementIds[0]);
 
@@ -105,19 +109,60 @@ export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
       <ScrollArea className="flex-1">
           <div className="flex flex-col pb-20">
               {!selectedElement ? (
-                  <div className="p-3 space-y-5">
-                      <div className="flex items-center justify-between">
-                         <span className="text-[9px] font-black uppercase tracking-[0.1em] text-[#666]">Document Settings</span>
-                      </div>
-                      <div className="space-y-4">
-                          <div className="space-y-2">
-                             <Label className="text-[10px] text-[#919191] uppercase font-bold tracking-tighter opacity-80">Background</Label>
-                             <ColorControl 
-                                value={canvasConfig.backgroundColor || "#ffffff"} 
-                                onChange={(c) => setCanvasConfig({ backgroundColor: c })}
-                             />
+                  <div className="divide-y divide-white/[0.04]">
+                      {/* Creation Tools moved here since they were removed from sidebar */}
+                      <Section title="Tools">
+                          <div className="grid grid-cols-4 gap-1">
+                             {[
+                                 { type: 'frame', icon: Hash, label: 'Page' },
+                                 { type: 'text', icon: Type, label: 'Text' },
+                                 { type: 'image', icon: ImageIcon, label: 'Image' },
+                                 { type: 'shape', icon: Square, label: 'Shape' }
+                             ].map(tool => (
+                                 <button 
+                                   key={tool.label}
+                                   onClick={() => addElement({ type: tool.type as any })}
+                                   className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-white/5 transition-colors group"
+                                 >
+                                     <tool.icon className="w-4 h-4 text-[#919191] group-hover:text-white transition-colors" />
+                                     <span className="text-[8px] text-[#666] font-bold group-hover:text-[#919191] uppercase">{tool.label}</span>
+                                 </button>
+                             ))}
                           </div>
-                      </div>
+                      </Section>
+
+                      <Section title="Document">
+                          <div className="space-y-4">
+                              <div className="space-y-2">
+                                 <Label className="text-[9px] text-[#666] font-black uppercase tracking-tighter">Background Color</Label>
+                                 <ColorControl 
+                                    value={canvasConfig.backgroundColor || "#ffffff"} 
+                                    onChange={(c) => setCanvasConfig({ backgroundColor: c })}
+                                 />
+                              </div>
+                          </div>
+                      </Section>
+
+                      {/* Page Presets moved here */}
+                      <Section title="Page Presets">
+                          <div className="space-y-1">
+                              {PAPER_PRESETS.map(preset => (
+                                  <button
+                                     key={preset.id}
+                                     onClick={() => addElement({ 
+                                         type: 'frame', 
+                                         width: preset.width, 
+                                         height: preset.height,
+                                         name: preset.name
+                                     })}
+                                     className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-white/[0.03] transition-all group border border-transparent hover:border-white/[0.05]"
+                                  >
+                                      <span className="text-[11px] font-bold text-[#919191] group-hover:text-white">{preset.name}</span>
+                                      <span className="text-[9px] text-[#666] font-mono group-hover:text-[#919191]">{preset.width}×{preset.height}</span>
+                                  </button>
+                              ))}
+                          </div>
+                      </Section>
                   </div>
               ) : (
                   <div className="divide-y divide-white/[0.04]">
@@ -147,7 +192,7 @@ export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
                             </div>
                          </div>
                          
-                         {/* Border Radius moved here */}
+                         {/* Border Radius */}
                          <div className="mt-2">
                             <PropertyInput 
                                 label="R" 
@@ -160,7 +205,7 @@ export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
 
                       {/* Typography (Only for Text/Variable) */}
                       {(selectedElement.type === 'text' || selectedElement.type === 'variable') && (
-                          <Section title="Typography" showGrid>
+                          <Section title="Typography">
                              <div className="space-y-2">
                                 <Select 
                                     value={selectedElement.style.fontFamily || "Inter"} 
@@ -238,7 +283,7 @@ export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
                       )}
 
                       {/* Fill Section with Integrated Opacity */}
-                      <Section title="Fill" showPlus>
+                      <Section title="Fill">
                          <div className="flex flex-col gap-2">
                             <ColorControl 
                                 value={selectedElement.style.color || selectedElement.style.backgroundColor || "#000000"} 
@@ -252,14 +297,14 @@ export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
                       </Section>
 
                       {/* Stroke Section */}
-                      <Section title="Stroke" showPlus>
+                      <Section title="Stroke">
                          <div className="flex items-center justify-between opacity-20 hover:opacity-100 transition-opacity cursor-pointer py-1">
                             <span className="text-[10px] text-[#919191]">No stroke</span>
                          </div>
                       </Section>
 
                       {/* Effects Section */}
-                      <Section title="Effects" showPlus>
+                      <Section title="Effects">
                          <div className="flex items-center justify-between opacity-20 hover:opacity-100 transition-opacity cursor-pointer py-1">
                             <span className="text-[10px] text-[#919191]">No shadow or blur</span>
                          </div>
@@ -282,9 +327,7 @@ export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
   );
 }
 
-function Section({ title, children, showEye, showPalette, showGrid, showPlus }: { 
-    title: string, children: React.ReactNode, showEye?: boolean, showPalette?: boolean, showGrid?: boolean, showPlus?: boolean 
-}) {
+function Section({ title, children }: { title: string, children: React.ReactNode }) {
     return (
         <div className="p-3 space-y-3">
             <div className="flex items-center justify-between group">

@@ -22,7 +22,6 @@ import {
   Trophy,
   Award,
   Search,
-  LayoutGrid
 } from "lucide-react";
 import { Button } from "@midday/ui/button";
 import { ScrollArea } from "@midday/ui/scroll-area";
@@ -34,9 +33,8 @@ import { useTRPC } from "@/trpc/client";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useToast } from "@midday/ui/use-toast";
 import { authClient } from "@midday/auth/auth-client";
-import { Label } from "@midday/ui/label";
-import { PAPER_PRESETS } from "./constants";
 import { Input } from "@midday/ui/input";
+import { EditorSidebarHeader } from "./editor-sidebar-header";
 
 // DnD Kit Imports
 import {
@@ -55,12 +53,11 @@ import {
   useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuShortcut, ContextMenuTrigger } from "@midday/ui/context-menu";
 
-interface SidebarProps {
-  templateName: string;
-}
+interface SidebarProps {}
 
-export function EditorSidebar({ templateName }: SidebarProps) {
+export function EditorSidebar({}: SidebarProps) {
   const { 
     elements, 
     selectedElementIds, 
@@ -68,7 +65,8 @@ export function EditorSidebar({ templateName }: SidebarProps) {
     addElement, 
     reorderElements,
     canvasConfig,
-    setCanvasConfig
+    setCanvasConfig,
+    name
   } = useEditorStore();
   
   const [activeTab, setActiveTab] = useState<"layers" | "assets" | "variables">("layers");
@@ -156,123 +154,82 @@ export function EditorSidebar({ templateName }: SidebarProps) {
   ].filter(v => v.label.includes(searchQuery) || v.key.includes(searchQuery));
 
   return (
-    <div className="flex flex-col h-full bg-background select-none w-64 z-20 border-r border-border">
-      {/* Header */}
-      <div className="p-4 space-y-4">
-         <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
-                    <Grid2X2 className="w-4 h-4 text-primary-foreground" />
-                </div>
-                <div className="flex flex-col">
-                    <span className="text-[11px] font-bold text-foreground tracking-tight truncate max-w-[120px]">{templateName}</span>
-                    <span className="text-[9px] text-muted-foreground font-medium uppercase">Edit Template</span>
-                </div>
-            </div>
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
-                <MoreVertical className="w-3.5 h-3.5" />
-            </Button>
-         </div>
+    <div className="flex flex-col h-full select-none w-64 z-20 border-r border-white/5">
+      <EditorSidebarHeader />
 
-         {/* Creation Tools */}
-         <div className="grid grid-cols-4 gap-1">
-            {[
-                { type: 'frame', icon: Hash, label: 'Page' },
-                { type: 'text', icon: TextIcon, label: 'Text' },
-                { type: 'image', icon: ImageIcon, label: 'Image' },
-                { type: 'shape', icon: Square, label: 'Shape' }
-            ].map(tool => (
-                <button 
-                  key={tool.label}
-                  onClick={() => addElement({ type: tool.type as any })}
-                  className="flex flex-col items-center gap-1 p-1.5 rounded-lg hover:bg-accent transition-colors group"
-                >
-                    <tool.icon className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-                    <span className="text-[9px] text-muted-foreground font-medium group-hover:text-foreground">{tool.label}</span>
-                </button>
-            ))}
-         </div>
-
-         <Separator className="bg-border/50" />
-
-         {/* Page Presets */}
-         <div className="space-y-1.5 pt-1">
-             <Label className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground pl-1">Page Formats</Label>
-             <div className="space-y-0.5">
-                 {PAPER_PRESETS.map(preset => (
-                     <button
-                        key={preset.id}
-                        onClick={() => addElement({ 
-                            type: 'frame', 
-                            width: preset.width, 
-                            height: preset.height,
-                            name: preset.name
-                        })}
-                        className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-accent transition-all text-left group"
-                     >
-                         <span className="text-[11px] font-medium text-foreground/70 group-hover:text-foreground">{preset.name}</span>
-                         <span className="text-[10px] text-muted-foreground/50 font-mono group-hover:text-muted-foreground">{preset.width}×{preset.height}</span>
-                     </button>
-                 ))}
-             </div>
-         </div>
-      </div>
-
-      <Separator className="bg-border mx-4 w-auto" />
-
-      {/* Tabs Navigation */}
-      <div className="px-4 flex items-center gap-4 mt-4 mb-2">
+      <div className="px-3 flex items-center gap-4 mt-2 mb-2">
          {["layers", "assets", "variables"].map((tab) => (
              <button 
                 key={tab}
                 onClick={() => setActiveTab(tab as any)} 
                 className={cn(
                     "text-[11px] font-bold transition-all relative pb-2 capitalize", 
-                    activeTab === tab ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"
+                    activeTab === tab ? "text-white border-b-2 border-[#3b82f6]" : "text-[#919191] hover:text-white"
                 )}
              >
-                {tab}
+                {tab === 'layers' ? 'File' : tab}
              </button>
          ))}
       </div>
 
       <ScrollArea className="flex-1">
           {activeTab === 'layers' ? (
-             <div className="flex flex-col py-2 px-2">
-                {activeLayers.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-10 px-6 text-center opacity-30">
-                        <Layers className="w-6 h-6 mb-3" />
-                        <p className="text-[10px] font-medium leading-relaxed">Workspace is empty</p>
+             <div className="flex flex-col">
+                {/* Pages Section */}
+                <div className="px-3 py-2">
+                    <div className="flex items-center justify-between mb-2 px-1">
+                        <span className="text-[11px] font-bold text-white opacity-90">Pages</span>
+                        <Plus className="w-3.5 h-3.5 text-[#919191] cursor-pointer hover:text-white" />
                     </div>
-                ) : (
-                <DndContext 
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={handleDragEnd}
-                >
-                    <SortableContext 
-                        items={activeLayers.map(el => el.id)}
-                        strategy={verticalListSortingStrategy}
-                    >
-                        {activeLayers.map((el) => (
-                            <SortableLayerItem 
-                                key={el.id} 
-                                element={el} 
-                                selected={selectedElementIds.includes(el.id)} 
-                                onClick={() => setSelectedElements([el.id])} 
-                            />
-                        ))}
-                    </SortableContext>
-                </DndContext>
-                )}
+                    <div className="flex items-center gap-2 px-2 py-1.5 rounded bg-white/[0.05] text-white">
+                        <span className="text-[11px] font-medium">Page 1</span>
+                    </div>
+                </div>
+
+                <Separator className="bg-white/5 mx-3 w-auto my-2" />
+
+                {/* Layers Section */}
+                <div className="px-3 py-2">
+                    <div className="flex items-center justify-between mb-2 px-1">
+                        <span className="text-[11px] font-bold text-white opacity-90">Layers</span>
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                        {activeLayers.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-10 px-6 text-center opacity-10">
+                                <Layers className="w-6 h-6 mb-3" />
+                                <p className="text-[10px] font-bold uppercase tracking-widest">Empty</p>
+                            </div>
+                        ) : (
+                        <DndContext 
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={handleDragEnd}
+                        >
+                            <SortableContext 
+                                items={activeLayers.map(el => el.id)}
+                                strategy={verticalListSortingStrategy}
+                            >
+                                {activeLayers.map((el) => (
+                                    <SortableLayerItem 
+                                        key={el.id} 
+                                        element={el} 
+                                        selected={selectedElementIds.includes(el.id)} 
+                                        onClick={() => setSelectedElements([el.id])} 
+                                    />
+                                ))}
+                            </SortableContext>
+                        </DndContext>
+                        )}
+                    </div>
+                </div>
              </div>
           ) : activeTab === 'assets' ? (
              <div className="p-4 space-y-4">
                 <div {...getRootProps()} className="relative group">
                     <input {...getInputProps()} />
-                    <Button disabled={isUploading} size="sm" className="w-full gap-2 text-[10px] font-bold rounded-lg transition-all border border-border bg-background hover:bg-accent text-foreground">
+                    <Button disabled={isUploading} size="sm" className="w-full gap-2 text-[10px] font-bold rounded-lg border-white/5 bg-white/5 hover:bg-white/10 text-white">
                        {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-                       Upload Asset
+                       Upload
                     </Button>
                 </div>
                 
@@ -283,30 +240,27 @@ export function EditorSidebar({ templateName }: SidebarProps) {
                         <div 
                           key={asset.id} 
                           onClick={() => addElement({ type: 'image', content: imageUrl, width: 400, height: 400, name: asset.name })} 
-                          className="group relative aspect-square bg-accent/30 rounded-lg border border-border overflow-hidden hover:border-primary transition-all cursor-pointer"
+                          className="group relative aspect-square bg-white/[0.02] rounded border border-white/5 overflow-hidden hover:border-white/20 transition-all cursor-pointer"
                         >
                            <img src={imageUrl} alt={asset.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
-                           <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                              <Plus className="w-4 h-4 text-primary" />
-                           </div>
                         </div>
                       );
                    })}
                 </div>
              </div>
           ) : (
-             <div className="p-4 space-y-4">
+             <div className="p-3 space-y-4">
                 <div className="relative">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#666]" />
                     <Input 
                         placeholder="Search variables..." 
-                        className="h-8 pl-8 text-[11px] bg-accent/50 border-border rounded-lg"
+                        className="h-8 pl-8 text-[10px] bg-white/[0.02] border-white/5 rounded-lg text-white font-bold"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </div>
 
-                <div className="space-y-1">
+                <div className="space-y-0.5">
                     {databaseVariables.map(v => (
                         <button
                             key={v.key}
@@ -324,16 +278,13 @@ export function EditorSidebar({ templateName }: SidebarProps) {
                                     textAlign: 'center'
                                 }
                             })}
-                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-accent group transition-all"
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded hover:bg-white/5 group transition-all"
                         >
-                            <div className="w-8 h-8 rounded-lg bg-accent/50 flex items-center justify-center transition-colors group-hover:bg-primary/10">
-                                <v.icon className={cn("w-4 h-4 transition-colors", activeTab === 'variables' ? "text-primary/60 group-hover:text-primary" : "text-muted-foreground")} />
-                            </div>
+                            <v.icon className={cn("w-3.5 h-3.5 transition-colors", activeTab === 'variables' ? "text-white/40 group-hover:text-white" : "text-[#666]")} />
                             <div className="flex flex-col text-left overflow-hidden">
-                                <span className="text-[11px] font-bold text-foreground/80 group-hover:text-foreground tracking-tight truncate">{v.label}</span>
-                                <span className="text-[9px] text-muted-foreground font-mono">{v.key}</span>
+                                <span className="text-[10px] font-bold text-[#919191] group-hover:text-white tracking-tight truncate">{v.label}</span>
+                                <span className="text-[8px] text-[#666] font-mono uppercase">{v.key}</span>
                             </div>
-                            <Plus className="w-3.5 h-3.5 ml-auto opacity-0 group-hover:opacity-40 transition-opacity shrink-0" />
                         </button>
                     ))}
                 </div>
@@ -345,7 +296,7 @@ export function EditorSidebar({ templateName }: SidebarProps) {
 }
 
 function SortableLayerItem({ element, selected, onClick }: { element: any, selected: boolean, onClick: () => void }) {
-  const { updateElement } = useEditorStore();
+  const { updateElement, deleteElements, duplicateElements, bringToFront, sendToBack } = useEditorStore();
   const [isEditing, setIsEditing] = useState(false);
   const [tempName, setTempName] = useState(element.name || element.type);
 
@@ -373,62 +324,93 @@ function SortableLayerItem({ element, selected, onClick }: { element: any, selec
   };
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      onClick={onClick}
-      className={cn(
-        "group flex items-center gap-2 px-2 py-1.5 rounded-md cursor-default transition-colors mb-0.5",
-        selected 
-            ? "bg-primary text-primary-foreground" 
-            : "hover:bg-accent text-muted-foreground hover:text-foreground font-medium"
-      )}
-    >
-      <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-50 transition-opacity">
-          <GripVertical className="w-3 h-3" />
-      </div>
-      <LayerIcon type={element.type} selected={selected} />
-      
-      {isEditing ? (
-          <input 
-              autoFocus
-              className="flex-1 bg-background text-foreground text-[11px] px-1 py-0 rounded border-none outline-none focus:ring-1 focus:ring-primary-foreground h-4"
-              value={tempName}
-              onChange={(e) => setTempName(e.target.value)}
-              onBlur={handleRename}
-              onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleRename();
-                  if (e.key === 'Escape') {
-                      setTempName(element.name || element.type);
-                      setIsEditing(false);
-                  }
-              }}
-          />
-      ) : (
-          <span 
-              onDoubleClick={() => setIsEditing(true)}
-              className={cn("text-[11px] truncate flex-1 tracking-tight", selected ? "font-bold" : "font-medium")}
-          >
-              {element.name || element.type}
-          </span>
-      )}
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <div
+          ref={setNodeRef}
+          style={style}
+          onClick={onClick}
+          className={cn(
+            "group flex items-center gap-2 px-2 py-1 rounded cursor-default transition-all mb-0.5",
+            selected 
+                ? "bg-white/[0.08] text-white" 
+                : "hover:bg-white/[0.03] text-[#919191] hover:text-white"
+          )}
+        >
+          <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-40 transition-opacity">
+              <GripVertical className="w-3 h-3" />
+          </div>
+          <LayerIcon type={element.type} selected={selected} />
+          
+          {isEditing ? (
+              <input 
+                  autoFocus
+                  className="flex-1 bg-[#1a1a1a] text-white text-[10px] px-1 py-0 rounded border border-white/20 outline-none h-4 font-bold"
+                  value={tempName}
+                  onChange={(e) => setTempName(e.target.value)}
+                  onBlur={handleRename}
+                  onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleRename();
+                      if (e.key === 'Escape') {
+                          setTempName(element.name || element.type);
+                          setIsEditing(false);
+                      }
+                  }}
+              />
+          ) : (
+              <span 
+                  onDoubleClick={() => setIsEditing(true)}
+                  className={cn("text-[11px] truncate flex-1 tracking-tight", selected ? "opacity-100 font-bold" : "opacity-70 group-hover:opacity-100")}
+              >
+                  {element.name || element.type}
+              </span>
+          )}
 
-      <div className="flex items-center opacity-0 group-hover:opacity-100 gap-1.5 transition-opacity">
-          <Lock className={cn("w-3 h-3 cursor-pointer", element.locked ? "text-primary-foreground" : "opacity-40 hover:opacity-100")} />
-          <Eye className={cn("w-3 h-3 cursor-pointer", !element.visible ? "text-primary-foreground" : "opacity-40 hover:opacity-100")} />
-      </div>
-    </div>
+          <div className="flex items-center opacity-0 group-hover:opacity-60 gap-1.5 transition-opacity">
+              <button onClick={(e) => { e.stopPropagation(); updateElement(element.id, { locked: !element.locked }); }}>
+                 <Lock className={cn("w-3 h-3 cursor-pointer hover:text-white", element.locked ? "text-white opacity-100" : "text-[#919191]")} />
+              </button>
+              <button onClick={(e) => { e.stopPropagation(); updateElement(element.id, { visible: !element.visible }); }}>
+                 <Eye className={cn("w-3 h-3 cursor-pointer hover:text-white", !element.visible ? "text-white opacity-100" : "text-[#919191]")} />
+              </button>
+          </div>
+        </div>
+      </ContextMenuTrigger>
+
+      <ContextMenuContent className="w-48 bg-[#2c2c2c] border-white/10 text-white shadow-2xl">
+          <ContextMenuItem onClick={() => setIsEditing(true)} className="text-[10px] font-bold gap-2 focus:bg-white/10">
+              إعادة تسمية
+              <ContextMenuShortcut>F2</ContextMenuShortcut>
+          </ContextMenuItem>
+          <ContextMenuItem onClick={() => duplicateElements([element.id])} className="text-[10px] font-bold gap-2 focus:bg-white/10">
+              تكرار العنصر
+              <ContextMenuShortcut>⌘D</ContextMenuShortcut>
+          </ContextMenuItem>
+          <ContextMenuSeparator className="bg-white/5" />
+          <ContextMenuItem onClick={() => bringToFront(element.id)} className="text-[10px] font-bold gap-2 focus:bg-white/10">
+              إحضار للمقدمة
+          </ContextMenuItem>
+          <ContextMenuItem onClick={() => sendToBack(element.id)} className="text-[10px] font-bold gap-2 focus:bg-white/10">
+              إرسال للخلف
+          </ContextMenuItem>
+          <ContextMenuSeparator className="bg-white/5" />
+          <ContextMenuItem onClick={() => deleteElements([element.id])} className="text-[10px] font-bold gap-2 text-red-400 hover:text-red-300 focus:bg-red-400/20">
+              حذف العنصر
+              <ContextMenuShortcut>⌫</ContextMenuShortcut>
+          </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }
 
 function LayerIcon({ type, selected }: { type: string, selected?: boolean }) {
-    const className = cn("w-3.5 h-3.5", selected ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground");
+    const className = cn("w-3.5 h-3.5 transition-colors", selected ? "text-white" : "text-[#666] group-hover:text-[#919191]");
     switch (type) {
         case 'text': return <TextIcon className={className} />;
         case 'image': return <ImageIcon className={className} />;
         case 'shape': return <Square className={className} />;
-        case 'variable': return <Database className={cn("w-3.5 h-3.5", selected ? "text-primary-foreground" : "text-primary")} />;
-        case 'table': return <TableIcon className={cn("w-3.5 h-3.5", selected ? "text-primary-foreground" : "text-primary")} />;
+        case 'variable': return <Database className={cn("w-3.5 h-3.5", selected ? "text-white" : "text-blue-400")} />;
+        case 'table': return <TableIcon className={cn("w-3.5 h-3.5", selected ? "text-white" : "text-blue-400")} />;
         default: return <Grid2X2 className={className} />;
     }
 }

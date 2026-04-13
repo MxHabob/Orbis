@@ -38,6 +38,7 @@ export interface EditorElement {
 }
 
 export interface EditorState {
+  name: string;
   mode: "design" | "prototype";
   activePageId: string;
   elements: EditorElement[];
