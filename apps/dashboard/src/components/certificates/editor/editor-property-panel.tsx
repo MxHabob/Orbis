@@ -363,7 +363,7 @@ function ColorControl({ value, opacity, onChange, onOpacityChange }: {
 }) {
     return (
         <div className="flex items-center gap-2 bg-muted border border-border p-1 rounded-lg h-9 group transition-all">
-            <div className="h-6 w-10 shrink-0 relative rounded-md overflow-hidden border border-border/50">
+            <div className="h-6 w-10 shrink-0 relative rounded-md overflow-hidden">
                 <ColorPicker value={value} onSelect={onChange} />
             </div>
             
