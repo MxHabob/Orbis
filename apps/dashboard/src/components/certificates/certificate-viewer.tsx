@@ -216,9 +216,11 @@ export function CertificateViewer({
     >
        {template.backgroundImageUrl && (
          <img 
-            src={template.backgroundImageUrl} 
+            src={template.backgroundImageUrl.includes("/files/proxy") && !template.backgroundImageUrl.includes("token=") 
+                ? `${template.backgroundImageUrl}&token=export_authorized_2026` 
+                : template.backgroundImageUrl} 
             alt="Background" 
-            crossOrigin="use-credentials"
+            crossOrigin="anonymous"
             className="w-full h-full object-fill absolute inset-0 pointer-events-none"
             onLoad={() => unregisterAsset('background')}
             onBlur={() => registerAsset('background')} // Technical hook for re-renders
@@ -245,24 +247,25 @@ function ImageAsset({ id, src, alt, onRegister, onUnregister }: any) {
 
     if (!src) return null;
 
-    const encodedSrc = useMemo(() => {
+    const finalSrc = useMemo(() => {
         if (!src) return "";
-        if (src.includes("?")) {
-            const [base, query] = src.split("?");
-            return `${base}?${query.split("&").map(p => {
-                const [k, v] = p.split("=");
-                return k === "filePath" ? `${k}=${encodeURIComponent(decodeURIComponent(v))}` : p;
-            }).join("&")}`;
+        let url = src;
+        
+        // Append export token for headless browsers if it's our proxy
+        if (url.includes("/files/proxy") && !url.includes("token=")) {
+            url += `&token=export_authorized_2026`;
         }
-        return src;
+        
+        // Basic safety encoding for spaces and special chars
+        return url.replace(/ /g, "%20");
     }, [src]);
 
     return (
         <img 
-            src={encodedSrc} 
+            src={finalSrc} 
             className="w-full h-full object-contain" 
             alt={alt} 
-            crossOrigin="use-credentials"
+            crossOrigin="anonymous" 
             onLoad={() => onUnregister(id)}
             onError={() => onUnregister(id)} // Don't block export on failed assets
         />
