@@ -26,7 +26,7 @@ export default async function EditorLayout({
 
   return (
     <HydrateClient>
-      <div className="h-screen w-screen overflow-hidden bg-background">
+      <div className="fixed inset-0 overflow-hidden bg-background">
         {children}
         <GlobalSheetsProvider />
       </div>

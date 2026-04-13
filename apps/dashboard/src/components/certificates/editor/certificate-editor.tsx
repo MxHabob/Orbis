@@ -12,7 +12,6 @@ import { useToast } from "@midday/ui/use-toast";
 import { type EditorElement } from "@/types/certificate-editor";
 import { useDropzone } from "react-dropzone";
 import { authClient } from "@midday/auth/auth-client";
-import { Icons } from "@midday/ui/icons";
 import "@/styles/certificate-editor.css";
 
 interface Props {
@@ -168,7 +167,7 @@ export function CertificateEditor({ initialData }: Props) {
   return (
     <div 
         {...getRootProps()}
-        className="flex h-screen w-full certificate-editor-root overflow-hidden font-sans outline-none text-white/90 bg-[#09090b]"
+        className="flex h-full w-full certificate-editor-root overflow-hidden font-sans outline-none text-white/90 bg-[#09090b]"
     >
       <input {...getInputProps()} />
       

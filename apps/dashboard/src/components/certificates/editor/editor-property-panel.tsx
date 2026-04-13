@@ -46,6 +46,7 @@ import { ScrollArea } from "@midday/ui/scroll-area";
 import { Separator } from "@midday/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@midday/ui/select";
 import { Label } from "@midday/ui/label";
+import { Input } from "@midday/ui/input";
 import { PAPER_PRESETS } from "./constants";
 
 interface PropertyPanelProps {
@@ -54,7 +55,7 @@ interface PropertyPanelProps {
 }
 
 export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
-  const { elements, selectedElementIds, updateElement, canvasConfig, setCanvasConfig, addElement } = useEditorStore();
+  const { elements, selectedElementIds, updateElement, canvasConfig, setCanvasConfig, addElement, name } = useEditorStore();
 
   const selectedElement = elements.find((el) => el.id === selectedElementIds[0]);
 
@@ -75,43 +76,35 @@ export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
   const elementName = selectedElement ? (selectedElement.name || selectedElement.type.charAt(0).toUpperCase() + selectedElement.type.slice(1)) : "Canvas";
 
   return (
-    <div className="h-full flex flex-col bg-[#0d0d0d] text-[#e0e0e0] select-none w-[240px] z-20 border-l border-white/5 shadow-2xl transition-all duration-300">
+    <div className="h-full flex flex-col bg-background text-foreground select-none w-64 z-20 border-l border-border transition-all duration-300">
       {/* Header / Actions Row */}
-      <div className="px-2 py-2 flex items-center gap-1.5 shrink-0 border-b border-white/[0.04] bg-[#0d0d0d]">
+      <div className="px-2 py-2 flex items-center justify-between gap-1.5 shrink-0 border-b border-border bg-background">
+          <span className="text-[12px] font-bold text-foreground/80 truncate">{elementName}</span>
+        <div className="flex items-center gap-1.5">
           <Button 
             onClick={onSave}
             disabled={isSaving}
-            className="h-7 text-[10px] font-bold px-3 rounded-md bg-white text-black hover:bg-white/90 border-none shrink-0 gap-1.5 shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all hover:scale-[1.02] active:scale-95"
+            size="sm"
+            className="h-7 text-[10px] font-bold px-3 shrink-0 gap-1.5"
           >
-            <Plus className="w-3.5 h-3.5 fill-current" />
-            حفظ
+            {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
           </Button>
           
           <Button 
             variant="outline"
-            className="h-7 text-[10px] font-bold px-3 rounded-md border-white/10 bg-white/[0.03] hover:bg-white/[0.08] text-white shrink-0 gap-1.5 transition-all"
-          >
+            size="sm"
+            className="h-7 text-[10px] font-bold px-3 shrink-0 gap-1.5"
+            >
             <Maximize2 className="w-3.5 h-3.5 opacity-60" />
-            استخراج
           </Button>
-
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-[#919191] hover:text-white hover:bg-white/5 transition-colors shrink-0">
-            <MoreVertical className="w-3.5 h-3.5" />
-          </Button>
-
-          <Separator orientation="vertical" className="h-4 bg-white/10 mx-0.5" />
-          
-          <span className="text-[10px] font-bold text-[#919191] truncate flex-1 pl-1 opacity-60 tracking-tight">
-            {elementName}
-          </span>
+        </div>
       </div>
-
       <ScrollArea className="flex-1">
           <div className="flex flex-col pb-20">
               {!selectedElement ? (
-                  <div className="divide-y divide-white/[0.04]">
-                      {/* Creation Tools moved here since they were removed from sidebar */}
-                      <Section title="Tools">
+                  <div className="divide-y divide-border">
+                      {/* Creation Tools */}
+                      <Section title="Design Tools">
                           <div className="grid grid-cols-4 gap-1">
                              {[
                                  { type: 'frame', icon: Hash, label: 'Page' },
@@ -122,19 +115,19 @@ export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
                                  <button 
                                    key={tool.label}
                                    onClick={() => addElement({ type: tool.type as any })}
-                                   className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-white/5 transition-colors group"
+                                   className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-muted transition-colors group"
                                  >
-                                     <tool.icon className="w-4 h-4 text-[#919191] group-hover:text-white transition-colors" />
-                                     <span className="text-[8px] text-[#666] font-bold group-hover:text-[#919191] uppercase">{tool.label}</span>
+                                     <tool.icon className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                                     <span className="text-[8px] text-muted-foreground font-bold group-hover:text-foreground uppercase tracking-tighter">{tool.label}</span>
                                  </button>
                              ))}
                           </div>
                       </Section>
 
-                      <Section title="Document">
+                      <Section title="Canvas Settings">
                           <div className="space-y-4">
                               <div className="space-y-2">
-                                 <Label className="text-[9px] text-[#666] font-black uppercase tracking-tighter">Background Color</Label>
+                                 <Label className="text-[10px] text-muted-foreground font-black uppercase tracking-tighter">Wallpaper Color</Label>
                                  <ColorControl 
                                     value={canvasConfig.backgroundColor || "#ffffff"} 
                                     onChange={(c) => setCanvasConfig({ backgroundColor: c })}
@@ -143,8 +136,8 @@ export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
                           </div>
                       </Section>
 
-                      {/* Page Presets moved here */}
-                      <Section title="Page Presets">
+                      {/* Page Presets */}
+                      <Section title="Document Format">
                           <div className="space-y-1">
                               {PAPER_PRESETS.map(preset => (
                                   <button
@@ -155,24 +148,24 @@ export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
                                          height: preset.height,
                                          name: preset.name
                                      })}
-                                     className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-white/[0.03] transition-all group border border-transparent hover:border-white/[0.05]"
+                                     className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-muted transition-all group border border-transparent hover:border-border"
                                   >
-                                      <span className="text-[11px] font-bold text-[#919191] group-hover:text-white">{preset.name}</span>
-                                      <span className="text-[9px] text-[#666] font-mono group-hover:text-[#919191]">{preset.width}×{preset.height}</span>
+                                      <span className="text-[11px] font-bold text-muted-foreground group-hover:text-foreground">{preset.name}</span>
+                                      <span className="text-[9px] text-muted-foreground/50 font-mono group-hover:text-muted-foreground">{preset.width}×{preset.height}</span>
                                   </button>
                               ))}
                           </div>
                       </Section>
                   </div>
               ) : (
-                  <div className="divide-y divide-white/[0.04]">
+                  <div className="divide-y divide-border">
                       {/* Section: Frame / Transform */}
-                      <Section title="Layout & Transform">
-                         <div className="flex items-center gap-0.5 bg-white/[0.02] border border-white/[0.05] rounded-lg p-0.5 mb-3">
+                      <Section title="Position & Scale">
+                         <div className="flex items-center gap-0.5 bg-muted p-0.5 mb-3">
                             <AlignButton icon={AlignLeft} />
                             <AlignButton icon={AlignCenter} />
                             <AlignButton icon={AlignRight} />
-                            <Separator orientation="vertical" className="h-3 bg-white/10 mx-0.5" />
+                            <Separator orientation="vertical" className="h-3 mx-0.5" />
                             <AlignButton icon={AlignStartVertical} />
                             <AlignButton icon={AlignCenterVertical} />
                             <AlignButton icon={AlignEndVertical} />
@@ -185,7 +178,7 @@ export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
                             <PropertyInput label="H" value={Math.round(selectedElement.height)} onChange={(v) => handleUpdate({ height: v })} />
                             
                             <PropertyInput label="°" value={Math.round(selectedElement.rotation)} onChange={(v) => handleUpdate({ rotation: v })} />
-                            <div className="flex items-center gap-0.5 bg-white/[0.02] border border-white/[0.05] rounded p-0.5">
+                            <div className="flex items-center gap-0.5 bg-muted border border-border/50 rounded p-0.5">
                                 <AlignButton icon={RotateCcw} />
                                 <AlignButton icon={FlipHorizontal} />
                                 <AlignButton icon={FlipVertical} />
@@ -211,10 +204,10 @@ export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
                                     value={selectedElement.style.fontFamily || "Inter"} 
                                     onValueChange={(v) => handleStyleUpdate({ fontFamily: v })}
                                 >
-                                    <SelectTrigger className="h-7 text-[10px] bg-white/[0.02] border-white/[0.08] text-white focus:ring-0 px-2 font-medium hover:bg-white/[0.05] transition-colors">
+                                    <SelectTrigger className="h-8 text-[11px] bg-muted border-border text-foreground hover:bg-muted/80 transition-colors">
                                         <SelectValue />
                                     </SelectTrigger>
-                                    <SelectContent className="bg-[#121212] border-white/10 text-white">
+                                    <SelectContent>
                                         <SelectItem value="Inter">Inter</SelectItem>
                                         <SelectItem value="Roboto">Roboto</SelectItem>
                                         <SelectItem value="Amiri">Amiri (Arabic)</SelectItem>
@@ -227,28 +220,29 @@ export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
                                         value={selectedElement.style.fontWeight || "400"} 
                                         onValueChange={(v) => handleStyleUpdate({ fontWeight: v })}
                                     >
-                                        <SelectTrigger className="h-7 text-[10px] bg-white/[0.02] border-white/[0.08] text-white focus:ring-0 px-2 font-medium">
+                                        <SelectTrigger className="h-8 text-[11px] bg-muted border-border">
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent className="bg-[#121212] border-white/10 text-white">
+                                        <SelectContent>
                                             <SelectItem value="300">Light</SelectItem>
                                             <SelectItem value="400">Regular</SelectItem>
                                             <SelectItem value="600">Semi Bold</SelectItem>
                                             <SelectItem value="700">Bold</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                    <div className="bg-white/[0.02] border border-white/[0.08] rounded h-7 flex items-center px-1.5 gap-1 pt-0.5 focus-within:ring-1 focus-within:ring-white/20 transition-all">
-                                        <input 
+                                    
+                                    <div className="relative group/input">
+                                        <Input 
                                             type="number" 
                                             value={selectedElement.style.fontSize || 16}
                                             onChange={(e) => handleStyleUpdate({ fontSize: Number(e.target.value) })}
-                                            className="bg-transparent border-none text-[10px] text-white font-bold p-0 focus:ring-0 w-full"
+                                            className="h-8 text-[11px] bg-muted border-border pl-6 pr-2 font-bold"
                                         />
-                                        <ChevronDown className="w-3 h-3 text-[#919191] ml-auto shrink-0 opacity-40" />
+                                        <Type className="w-3 h-3 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground opacity-50" />
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-0.5 bg-white/[0.02] border border-white/[0.05] rounded p-0.5">
+                                <div className="flex items-center gap-0.5 bg-muted p-0.5">
                                     <AlignButton 
                                         active={selectedElement.style.textAlign === 'left'}
                                         icon={AlignLeft} 
@@ -264,16 +258,16 @@ export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
                                         icon={AlignRight} 
                                         onClick={() => handleStyleUpdate({ textAlign: 'right' })} 
                                     />
-                                    <Separator orientation="vertical" className="h-3 bg-white/10 mx-0.5" />
+                                    <Separator orientation="vertical" className="h-3 mx-0.5" />
                                     <button 
                                         onClick={() => handleStyleUpdate({ direction: 'ltr' })}
-                                        className={cn("flex-1 text-[9px] font-black h-6 rounded transition-all", (selectedElement.style.direction === 'ltr' || !selectedElement.style.direction) ? "bg-white/10 text-white shadow-lg shadow-white/5" : "text-[#919191]")}
+                                        className={cn("flex-1 text-[10px] font-bold h-6 rounded transition-all", (selectedElement.style.direction === 'ltr' || !selectedElement.style.direction) ? "bg-background text-foreground shadow-sm" : "text-muted-foreground")}
                                     >
                                         LTR
                                     </button>
                                     <button 
                                         onClick={() => handleStyleUpdate({ direction: 'rtl' })}
-                                        className={cn("flex-1 text-[9px] font-black h-6 rounded transition-all", selectedElement.style.direction === 'rtl' ? "bg-white/10 text-white shadow-lg shadow-white/5" : "text-[#919191]")}
+                                        className={cn("flex-1 text-[10px] font-bold h-6 rounded transition-all", selectedElement.style.direction === 'rtl' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground")}
                                     >
                                         RTL
                                     </button>
@@ -283,7 +277,7 @@ export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
                       )}
 
                       {/* Fill Section with Integrated Opacity */}
-                      <Section title="Fill">
+                      <Section title="Appearance">
                          <div className="flex flex-col gap-2">
                             <ColorControl 
                                 value={selectedElement.style.color || selectedElement.style.backgroundColor || "#000000"} 
@@ -296,17 +290,11 @@ export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
                          </div>
                       </Section>
 
-                      {/* Stroke Section */}
-                      <Section title="Stroke">
-                         <div className="flex items-center justify-between opacity-20 hover:opacity-100 transition-opacity cursor-pointer py-1">
-                            <span className="text-[10px] text-[#919191]">No stroke</span>
-                         </div>
-                      </Section>
-
-                      {/* Effects Section */}
-                      <Section title="Effects">
-                         <div className="flex items-center justify-between opacity-20 hover:opacity-100 transition-opacity cursor-pointer py-1">
-                            <span className="text-[10px] text-[#919191]">No shadow or blur</span>
+                      {/* Advanced (Placeholder for now) */}
+                      <Section title="Advanced">
+                         <div className="flex items-center justify-between opacity-30 hover:opacity-100 transition-opacity cursor-pointer">
+                            <span className="text-[10px] text-muted-foreground">Shadow & Effects</span>
+                            <ChevronDown className="w-3 h-3 text-muted-foreground" />
                          </div>
                       </Section>
                   </div>
@@ -314,14 +302,13 @@ export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
           </div>
       </ScrollArea>
       
-      {/* Zoom / Info Bar */}
-      <div className="p-3 border-t border-white/[0.04] bg-[#0d0d0d] flex items-center justify-between shrink-0">
-          <div className="bg-white/5 rounded-full p-1.5 hover:bg-white/10 transition-colors cursor-pointer border border-white/5">
-             <Plus className="w-3 h-3 text-[#919191]" />
+      {/* Footer Info */}
+      <div className="p-3 bg-muted/20 flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+             <div className="w-1.5 h-1.5 rounded-full bg-purple-800" />
+             <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">MulverseCo. Template Editor</span>
           </div>
-          <div className="text-[9px] font-black text-[#919191] bg-white/5 w-5 h-5 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors cursor-pointer border border-white/5">
-             <span>?</span>
-          </div>
+          <div className="text-[10px] font-bold text-muted-foreground/30">v2.4.0</div>
       </div>
     </div>
   );
@@ -329,9 +316,9 @@ export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
 
 function Section({ title, children }: { title: string, children: React.ReactNode }) {
     return (
-        <div className="p-3 space-y-3">
-            <div className="flex items-center justify-between group">
-                <span className="text-[11px] font-bold text-[#666]">{title}</span>
+        <div className="p-4 space-y-3">
+            <div className="flex items-center justify-between group px-1">
+                <span className="text-[11px] font-bold text-muted-foreground/80 tracking-wider">{title}</span>
             </div>
             {children}
         </div>
@@ -343,8 +330,8 @@ function AlignButton({ icon: Icon, active, onClick }: { icon: any, active?: bool
         <button 
             onClick={onClick}
             className={cn(
-                "flex-1 h-6 flex items-center justify-center rounded transition-all duration-200 hover:bg-white/5",
-                active ? "bg-white/10 text-white shadow-inner" : "text-[#919191]"
+                "flex-1 h-7 flex items-center justify-center rounded transition-all duration-200",
+                active ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-background/20"
             )}
         >
             <Icon className="w-3.5 h-3.5" />
@@ -354,14 +341,16 @@ function AlignButton({ icon: Icon, active, onClick }: { icon: any, active?: bool
 
 function PropertyInput({ label, value, onChange, icon: Icon }: { label: string, value: number, onChange: (v: number) => void, icon?: any }) {
     return (
-        <div className="flex items-center gap-1.5 bg-white/[0.01] border border-white/[0.05] p-1.5 rounded h-7 focus-within:bg-white/[0.03] focus-within:border-white/10 transition-all flex-1">
-            {Icon ? <Icon className="w-3 h-3 text-[#666] shrink-0" /> : <span className="text-[9px] font-black text-[#666] w-2 flex justify-center uppercase tracking-tighter shrink-0">{label}</span>}
-            <input 
+        <div className="relative group/prop">
+            <Input 
                 type="number" 
                 value={value}
                 onChange={(e) => onChange(Number(e.target.value))}
-                className="bg-transparent border-none text-[10px] text-white font-bold p-0 focus:ring-0 w-full [appearance:textfield]"
+                className="h-8 text-[11px] bg-muted border-border pl-6 pr-2 font-bold focus:bg-background transition-colors"
             />
+            <div className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center justify-center">
+                {Icon ? <Icon className="w-3 h-3 text-muted-foreground/40" /> : <span className="text-[9px] font-black text-muted-foreground/40 uppercase tracking-tighter">{label}</span>}
+            </div>
         </div>
     )
 }
@@ -373,27 +362,47 @@ function ColorControl({ value, opacity, onChange, onOpacityChange }: {
     onOpacityChange?: (v: number) => void 
 }) {
     return (
-        <div className="flex items-center gap-2 bg-white/[0.01] border border-white/[0.05] pr-1.5 pl-1 rounded h-8 group hover:bg-white/[0.04] transition-all flex-1">
-            <div className="h-5 w-8 shrink-0 relative rounded overflow-hidden border border-white/10">
+        <div className="flex items-center gap-2 bg-muted border border-border p-1 rounded-lg h-9 group transition-all">
+            <div className="h-6 w-10 shrink-0 relative rounded-md overflow-hidden border border-border/50">
                 <ColorPicker value={value} onSelect={onChange} />
             </div>
-            <input 
+            
+            <Input 
                 value={value.toUpperCase().replace('#', '')} 
                 onChange={(e) => onChange(`#${e.target.value}`)}
-                className="bg-transparent border-none text-[10px] text-white font-mono font-black w-14 focus:ring-0 uppercase tracking-tight shrink-0"
+                className="h-6 bg-transparent border-none text-[11px] font-mono font-bold w-16 p-0 focus-visible:ring-0 uppercase tracking-tight"
             />
             
-            <Separator orientation="vertical" className="h-3 bg-white/10 mx-0.5" />
+            <Separator orientation="vertical" className="h-4 mx-0.5 opacity-20" />
             
             <div className="flex items-center gap-1 flex-1">
-                <input 
+                <Input 
                     type="number" 
                     value={opacity ?? 100}
                     onChange={(e) => onOpacityChange?.(Number(e.target.value))}
-                    className="bg-transparent border-none text-[10px] text-white font-black p-0 focus:ring-0 w-full text-right [appearance:textfield]"
+                    className="h-6 bg-transparent border-none text-[11px] font-bold p-0 focus-visible:ring-0 w-full text-right"
                 />
-                <span className="text-[9px] text-[#666] font-black opacity-40">%</span>
+                <span className="text-[10px] text-muted-foreground font-bold opacity-40">%</span>
             </div>
         </div>
     );
+}
+
+function Loader2(props: any) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+    </svg>
+  );
 }

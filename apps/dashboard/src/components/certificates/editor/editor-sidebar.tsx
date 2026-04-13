@@ -22,6 +22,12 @@ import {
   Trophy,
   Award,
   Search,
+  Copy,
+  Trash2,
+  ArrowUp,
+  ArrowDown,
+  ChevronDown,
+  FileText
 } from "lucide-react";
 import { Button } from "@midday/ui/button";
 import { ScrollArea } from "@midday/ui/scroll-area";
@@ -34,6 +40,14 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useToast } from "@midday/ui/use-toast";
 import { authClient } from "@midday/auth/auth-client";
 import { Input } from "@midday/ui/input";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+  ContextMenuSeparator,
+  ContextMenuShortcut,
+} from "@midday/ui/context-menu";
 import { EditorSidebarHeader } from "./editor-sidebar-header";
 
 // DnD Kit Imports
@@ -53,7 +67,6 @@ import {
   useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuShortcut, ContextMenuTrigger } from "@midday/ui/context-menu";
 
 interface SidebarProps {}
 
@@ -64,8 +77,6 @@ export function EditorSidebar({}: SidebarProps) {
     setSelectedElements, 
     addElement, 
     reorderElements,
-    canvasConfig,
-    setCanvasConfig,
     name
   } = useEditorStore();
   
@@ -154,9 +165,10 @@ export function EditorSidebar({}: SidebarProps) {
   ].filter(v => v.label.includes(searchQuery) || v.key.includes(searchQuery));
 
   return (
-    <div className="flex flex-col h-full select-none w-64 z-20 border-r border-white/5">
+    <div className="flex flex-col h-full bg-background select-none w-64 z-20 border-r border-border">
       <EditorSidebarHeader />
 
+      {/* Tabs / Tool Bar */}
       <div className="px-3 flex items-center gap-4 mt-2 mb-2">
          {["layers", "assets", "variables"].map((tab) => (
              <button 
@@ -164,7 +176,7 @@ export function EditorSidebar({}: SidebarProps) {
                 onClick={() => setActiveTab(tab as any)} 
                 className={cn(
                     "text-[11px] font-bold transition-all relative pb-2 capitalize", 
-                    activeTab === tab ? "text-white border-b-2 border-[#3b82f6]" : "text-[#919191] hover:text-white"
+                    activeTab === tab ? "text-foreground border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"
                 )}
              >
                 {tab === 'layers' ? 'File' : tab}
@@ -178,26 +190,26 @@ export function EditorSidebar({}: SidebarProps) {
                 {/* Pages Section */}
                 <div className="px-3 py-2">
                     <div className="flex items-center justify-between mb-2 px-1">
-                        <span className="text-[11px] font-bold text-white opacity-90">Pages</span>
-                        <Plus className="w-3.5 h-3.5 text-[#919191] cursor-pointer hover:text-white" />
+                        <span className="text-[11px] font-bold text-foreground opacity-90">Pages</span>
+                        <Plus className="w-3.5 h-3.5 text-muted-foreground cursor-pointer hover:text-foreground" />
                     </div>
-                    <div className="flex items-center gap-2 px-2 py-1.5 rounded bg-white/[0.05] text-white">
+                    <div className="flex items-center gap-2 px-2 py-1.5 rounded bg-muted text-foreground">
                         <span className="text-[11px] font-medium">Page 1</span>
                     </div>
                 </div>
 
-                <Separator className="bg-white/5 mx-3 w-auto my-2" />
+                <Separator className="mx-3 w-auto my-2" />
 
                 {/* Layers Section */}
                 <div className="px-3 py-2">
                     <div className="flex items-center justify-between mb-2 px-1">
-                        <span className="text-[11px] font-bold text-white opacity-90">Layers</span>
+                        <span className="text-[11px] font-bold text-foreground opacity-90">Layers</span>
                     </div>
                     <div className="flex flex-col gap-0.5">
                         {activeLayers.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-10 px-6 text-center opacity-10">
                                 <Layers className="w-6 h-6 mb-3" />
-                                <p className="text-[10px] font-bold uppercase tracking-widest">Empty</p>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-foreground">Empty</p>
                             </div>
                         ) : (
                         <DndContext 
@@ -227,9 +239,9 @@ export function EditorSidebar({}: SidebarProps) {
              <div className="p-4 space-y-4">
                 <div {...getRootProps()} className="relative group">
                     <input {...getInputProps()} />
-                    <Button disabled={isUploading} size="sm" className="w-full gap-2 text-[10px] font-bold rounded-lg border-white/5 bg-white/5 hover:bg-white/10 text-white">
+                    <Button disabled={isUploading} size="sm" className="w-full gap-2">
                        {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-                       Upload
+                       Upload Asset
                     </Button>
                 </div>
                 
@@ -240,7 +252,7 @@ export function EditorSidebar({}: SidebarProps) {
                         <div 
                           key={asset.id} 
                           onClick={() => addElement({ type: 'image', content: imageUrl, width: 400, height: 400, name: asset.name })} 
-                          className="group relative aspect-square bg-white/[0.02] rounded border border-white/5 overflow-hidden hover:border-white/20 transition-all cursor-pointer"
+                          className="group relative aspect-square bg-muted rounded border border-border overflow-hidden hover:border-primary/20 transition-all cursor-pointer"
                         >
                            <img src={imageUrl} alt={asset.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
                         </div>
@@ -251,10 +263,10 @@ export function EditorSidebar({}: SidebarProps) {
           ) : (
              <div className="p-3 space-y-4">
                 <div className="relative">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#666]" />
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                     <Input 
                         placeholder="Search variables..." 
-                        className="h-8 pl-8 text-[10px] bg-white/[0.02] border-white/5 rounded-lg text-white font-bold"
+                        className="h-8 pl-8 text-[11px] bg-muted border-border"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
@@ -278,12 +290,12 @@ export function EditorSidebar({}: SidebarProps) {
                                     textAlign: 'center'
                                 }
                             })}
-                            className="w-full flex items-center gap-3 px-3 py-2 rounded hover:bg-white/5 group transition-all"
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded hover:bg-muted group transition-all"
                         >
-                            <v.icon className={cn("w-3.5 h-3.5 transition-colors", activeTab === 'variables' ? "text-white/40 group-hover:text-white" : "text-[#666]")} />
+                            <v.icon className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
                             <div className="flex flex-col text-left overflow-hidden">
-                                <span className="text-[10px] font-bold text-[#919191] group-hover:text-white tracking-tight truncate">{v.label}</span>
-                                <span className="text-[8px] text-[#666] font-mono uppercase">{v.key}</span>
+                                <span className="text-[10px] font-bold text-foreground group-hover:text-primary tracking-tight truncate">{v.label}</span>
+                                <span className="text-[8px] text-muted-foreground font-mono uppercase">{v.key}</span>
                             </div>
                         </button>
                     ))}
@@ -333,19 +345,19 @@ function SortableLayerItem({ element, selected, onClick }: { element: any, selec
           className={cn(
             "group flex items-center gap-2 px-2 py-1 rounded cursor-default transition-all mb-0.5",
             selected 
-                ? "bg-white/[0.08] text-white" 
-                : "hover:bg-white/[0.03] text-[#919191] hover:text-white"
+                ? "bg-accent text-accent-foreground" 
+                : "hover:bg-muted text-foreground/70 hover:text-foreground"
           )}
         >
           <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-40 transition-opacity">
-              <GripVertical className="w-3 h-3" />
+              <GripVertical className="w-3 h-3 text-muted-foreground" />
           </div>
           <LayerIcon type={element.type} selected={selected} />
           
           {isEditing ? (
-              <input 
+              <Input 
                   autoFocus
-                  className="flex-1 bg-[#1a1a1a] text-white text-[10px] px-1 py-0 rounded border border-white/20 outline-none h-4 font-bold"
+                  className="flex-1 h-5 text-[10px] px-1 py-0 rounded border-primary/30 font-bold"
                   value={tempName}
                   onChange={(e) => setTempName(e.target.value)}
                   onBlur={handleRename}
@@ -366,36 +378,36 @@ function SortableLayerItem({ element, selected, onClick }: { element: any, selec
               </span>
           )}
 
-          <div className="flex items-center opacity-0 group-hover:opacity-60 gap-1.5 transition-opacity">
-              <button onClick={(e) => { e.stopPropagation(); updateElement(element.id, { locked: !element.locked }); }}>
-                 <Lock className={cn("w-3 h-3 cursor-pointer hover:text-white", element.locked ? "text-white opacity-100" : "text-[#919191]")} />
+          <div className="flex items-center opacity-0 group-hover:opacity-60 gap-1.5 transition-opacity text-muted-foreground">
+              <button className="hover:text-foreground" onClick={(e) => { e.stopPropagation(); updateElement(element.id, { locked: !element.locked }); }}>
+                 {element.locked ? <Lock className="w-3 h-3" /> : <Lock className="w-3 h-3 opacity-20" />}
               </button>
-              <button onClick={(e) => { e.stopPropagation(); updateElement(element.id, { visible: !element.visible }); }}>
-                 <Eye className={cn("w-3 h-3 cursor-pointer hover:text-white", !element.visible ? "text-white opacity-100" : "text-[#919191]")} />
+              <button className="hover:text-foreground" onClick={(e) => { e.stopPropagation(); updateElement(element.id, { visible: !element.visible }); }}>
+                 {element.visible ? <Eye className="w-3 h-3" /> : <Eye className="w-3 h-3 opacity-20" />}
               </button>
           </div>
         </div>
       </ContextMenuTrigger>
 
-      <ContextMenuContent className="w-48 bg-[#2c2c2c] border-white/10 text-white shadow-2xl">
-          <ContextMenuItem onClick={() => setIsEditing(true)} className="text-[10px] font-bold gap-2 focus:bg-white/10">
-              إعادة تسمية
+      <ContextMenuContent className="w-48">
+          <ContextMenuItem onClick={() => setIsEditing(true)} className="text-xs font-medium gap-2">
+              Rename
               <ContextMenuShortcut>F2</ContextMenuShortcut>
           </ContextMenuItem>
-          <ContextMenuItem onClick={() => duplicateElements([element.id])} className="text-[10px] font-bold gap-2 focus:bg-white/10">
-              تكرار العنصر
+          <ContextMenuItem onClick={() => duplicateElements([element.id])} className="text-xs font-medium gap-2">
+              Duplicate
               <ContextMenuShortcut>⌘D</ContextMenuShortcut>
           </ContextMenuItem>
-          <ContextMenuSeparator className="bg-white/5" />
-          <ContextMenuItem onClick={() => bringToFront(element.id)} className="text-[10px] font-bold gap-2 focus:bg-white/10">
-              إحضار للمقدمة
+          <ContextMenuSeparator />
+          <ContextMenuItem onClick={() => bringToFront(element.id)} className="text-xs font-medium gap-2">
+              Bring to Front
           </ContextMenuItem>
-          <ContextMenuItem onClick={() => sendToBack(element.id)} className="text-[10px] font-bold gap-2 focus:bg-white/10">
-              إرسال للخلف
+          <ContextMenuItem onClick={() => sendToBack(element.id)} className="text-xs font-medium gap-2">
+              Send to Back
           </ContextMenuItem>
-          <ContextMenuSeparator className="bg-white/5" />
-          <ContextMenuItem onClick={() => deleteElements([element.id])} className="text-[10px] font-bold gap-2 text-red-400 hover:text-red-300 focus:bg-red-400/20">
-              حذف العنصر
+          <ContextMenuSeparator />
+          <ContextMenuItem onClick={() => deleteElements([element.id])} className="text-xs font-medium gap-2 text-destructive focus:text-destructive">
+              Delete
               <ContextMenuShortcut>⌫</ContextMenuShortcut>
           </ContextMenuItem>
       </ContextMenuContent>
@@ -404,13 +416,13 @@ function SortableLayerItem({ element, selected, onClick }: { element: any, selec
 }
 
 function LayerIcon({ type, selected }: { type: string, selected?: boolean }) {
-    const className = cn("w-3.5 h-3.5 transition-colors", selected ? "text-white" : "text-[#666] group-hover:text-[#919191]");
+    const className = cn("w-3.5 h-3.5 transition-colors", selected ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground");
     switch (type) {
         case 'text': return <TextIcon className={className} />;
         case 'image': return <ImageIcon className={className} />;
         case 'shape': return <Square className={className} />;
-        case 'variable': return <Database className={cn("w-3.5 h-3.5", selected ? "text-white" : "text-blue-400")} />;
-        case 'table': return <TableIcon className={cn("w-3.5 h-3.5", selected ? "text-white" : "text-blue-400")} />;
+        case 'variable': return <Database className={cn("w-3.5 h-3.5", selected ? "text-primary-foreground" : "text-primary")} />;
+        case 'table': return <TableIcon className={cn("w-3.5 h-3.5", selected ? "text-primary-foreground" : "text-primary")} />;
         default: return <Grid2X2 className={className} />;
     }
 }
