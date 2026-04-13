@@ -257,11 +257,18 @@ function ImageAsset({ id, src, alt, onRegister, onUnregister }: any) {
         return url.replace(/ /g, "%20");
     }, [src]);
 
+    const cacheBustedSrc = useMemo(() => {
+        if (!src) return "";
+        const connector = src.includes("?") ? "&" : "?";
+        return `${src}${connector}cb=${Date.now()}`;
+    }, [src]);
+
     return (
         <img 
-            src={src || ""} 
+            src={cacheBustedSrc} 
             className="w-full h-full object-contain" 
             alt={alt} 
+            referrerPolicy="no-referrer"
             onLoad={() => onUnregister(id)}
             onError={() => onUnregister(id)} 
         />

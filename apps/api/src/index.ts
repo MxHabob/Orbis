@@ -16,9 +16,15 @@ const app = new OpenAPIHono<HonoEnv>();
 app.use(httpLogger());
 
 app.use(
-  secureHeaders({
-    crossOriginResourcePolicy: "cross-origin",
-  }),
+  "*",
+  async (c, next) => {
+    if (c.req.path.includes("/files/proxy")) {
+      return next();
+    }
+    return secureHeaders({
+      crossOriginResourcePolicy: "cross-origin",
+    })(c, next);
+  },
 );
 
 app.use(

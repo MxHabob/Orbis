@@ -44,24 +44,23 @@ export async function handleFileProxy(c: Context<HonoEnv>) {
     }
 
     // 3. Set Performance & Security Headers
-    if (result.ContentType) c.header("Content-Type", result.ContentType);
-    if (result.ContentLength) c.header("Content-Length", result.ContentLength.toString());
-    
-    // 2026 Best Practice: Strict caching for immutable assets
-    c.header("Cache-Control", "public, max-age=31536000, immutable");
-    if (result.ETag) c.header("ETag", result.ETag);
-    if (result.LastModified) c.header("Last-Modified", result.LastModified.toUTCString());
+    const headers: Record<string, string> = {
+      "Cache-Control": "public, max-age=31536000, immutable",
+      "Access-Control-Allow-Origin": "*",
+    };
+
+    if (result.ContentType) headers["Content-Type"] = result.ContentType;
+    if (result.ContentLength) headers["Content-Length"] = result.ContentLength.toString();
+    if (result.ETag) headers["ETag"] = result.ETag;
+    if (result.LastModified) headers["Last-Modified"] = result.LastModified.toUTCString();
 
     // Support Partial Content (206) for media
     if (range && result.ContentRange) {
-      c.header("Content-Range", result.ContentRange);
-      c.status(206);
+      headers["Content-Range"] = result.ContentRange;
+      return c.body(result.Body as any, 206, headers);
     }
 
-    // Transform S3 body to web-compatible stream
-    const stream = (result.Body as any).transformToWebStream?.() ?? result.Body;
-
-    return c.body(stream as any);
+    return c.body(result.Body as any, 200, headers);
   } catch (err: any) {
     // 4. Advanced Error Reporting
     const errorStatus = err.name === "NoSuchKey" ? 404 : 500;
