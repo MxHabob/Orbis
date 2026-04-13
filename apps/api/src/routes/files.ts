@@ -1,19 +1,18 @@
-import { auth } from "@midday/auth";
+import { verifySession } from "../utils/auth";
 import { getFile } from "@midday/storage";
 import type { Context } from "hono";
+import type { HonoEnv } from "../utils/auth";
 
 /**
  * Handle file proxying with best practices:
- * 1. Supports Authentication (via Session)
+ * 1. Supports Authentication (via Session or Service Token)
  * 2. Supports Range Requests (for video/large files)
  * 3. Handles Content-Type and Content-Length correctly
  * 4. Streaming for low memory usage
  * 5. Security: Verifies bucket/key and user access
  */
-export async function handleFileProxy(c: Context) {
-  const session = await auth.api.getSession({
-    headers: c.req.raw.headers,
-  });
+export async function handleFileProxy(c: Context<HonoEnv>) {
+  const session = await verifySession(c);
 
   if (!session?.user) {
     return c.json({ error: "Unauthorized" }, 401);

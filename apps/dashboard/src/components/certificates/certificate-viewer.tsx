@@ -218,7 +218,7 @@ export function CertificateViewer({
          <img 
             src={template.backgroundImageUrl} 
             alt="Background" 
-            crossOrigin="anonymous"
+            crossOrigin="use-credentials"
             className="w-full h-full object-fill absolute inset-0 pointer-events-none"
             onLoad={() => unregisterAsset('background')}
             onBlur={() => registerAsset('background')} // Technical hook for re-renders
@@ -250,7 +250,7 @@ function ImageAsset({ id, src, alt, onRegister, onUnregister }: any) {
             src={src} 
             className="w-full h-full object-contain" 
             alt={alt} 
-            crossOrigin="anonymous"
+            crossOrigin="use-credentials"
             onLoad={() => onUnregister(id)}
             onError={() => onUnregister(id)} // Don't block export on failed assets
         />
