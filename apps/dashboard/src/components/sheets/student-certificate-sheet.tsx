@@ -121,8 +121,10 @@ export function StudentCertificateSheet() {
     });
   };
 
+  const [isReadyToCapture, setIsReadyToCapture] = useState(false);
+
   const handleDownload = async () => {
-    if (!studentData || !template) return;
+    if (!studentData || !template || !isReadyToCapture) return;
     setIsExporting(true);
     try {
       const typeLabel = certificateType === "half-yearly" 
@@ -130,11 +132,8 @@ export function StudentCertificateSheet() {
         : certificateType === "final" 
           ? t("reports.final")
           : t("reports.monthly");
-      // Professional PDF generation using higher scale and specific capture area
-      // Let the off-screen container render fully (fonts, images, etc.)
-      await new Promise((resolve) => setTimeout(resolve, 500));
 
-      // University Grade PDF generation: capture from a hidden, non-scaled container
+      // Professional PDF generation using high scale and specific capture area
       await generateCanvasPdf({
         filename: `${t("reports.certificate")}_${studentData.name}_${typeLabel}.pdf`,
         selector: "#perfect-pdf-capture-root [data-canvas-content]",
@@ -242,6 +241,7 @@ export function StudentCertificateSheet() {
                   month={selectedMonth}
                   preview={false}
                   className="shadow-none border-none m-0 p-0"
+                  onLoad={() => setIsReadyToCapture(true)}
                 />
             )}
           </div>

@@ -75,9 +75,10 @@ export default function BulkExportCertificatePage() {
       { enabled: !!templateId }
     ));
 
-  const [loadedCount, setLoadedCount] = useState(0);
+  const [finishedPages, setFinishedPages] = useState<Set<number>>(new Set());
   const rankingPeriod = type === "half-yearly" ? "half-yearly" : type === "final" ? "final" : "monthly";
   const rankingMonth = rankingPeriod === "monthly" ? month : undefined;
+  
   const classId = students?.[0]?.currentClass?.id;
   const academicYearId = students?.[0]?.currentClass?.academicYearId;
 
@@ -96,18 +97,6 @@ export default function BulkExportCertificatePage() {
     )
   );
 
-  useEffect(() => {
-    if (students && students.length > 0 && loadedCount >= students.length) {
-      setTimeout(() => {
-        (window as any).isReadyToCapture = true;
-      }, 500); // Small wait for styles to settle
-    }
-  }, [loadedCount, students]);
-
-  const handleCertificateLoad = useCallback(() => {
-    setLoadedCount((prev) => prev + 1);
-  }, []);
-
   const canvasConfig = (certificateTemplate?.content as any)?.canvasConfig;
   const layoutConfig = canvasConfig?.layoutConfig || (certificateTemplate?.content as any)?.layoutConfig || { rows: 1, columns: 1, gap: 0 };
   const totalSlots = layoutConfig.rows * layoutConfig.columns;
@@ -121,19 +110,38 @@ export default function BulkExportCertificatePage() {
     return chunks;
   }, [students, totalSlots]);
 
+  // Readiness logic (Production Grade 2026)
+  useEffect(() => {
+    if (studentChunks.length > 0 && finishedPages.size >= studentChunks.length) {
+      // Allow a final breath for any deferred animations/fonts
+      const timer = setTimeout(() => {
+        (window as any).isReadyToCapture = true;
+        console.info(`[Export] PDF Pipeline Ready: ${finishedPages.size} pages processed.`);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [finishedPages, studentChunks]);
+
+  const handlePageReady = useCallback((index: number) => {
+    setFinishedPages(prev => new Set([...prev, index]));
+  }, []);
+
   const isLoading = loadingStudents || loadingTemplate || !students || !certificateTemplate;
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-white">
-        <Spinner />
-        <span className="mr-2">جاري تجهيز البيانات...</span>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-white font-sans text-slate-400">
+        <Spinner className="w-8 h-8 opacity-20" />
+        <span className="mt-4 text-xs font-bold uppercase tracking-widest opacity-40">Initializing PDF Pipeline...</span>
       </div>
     );
   }
 
   return (
-    <div className="bg-white p-0 m-0">
+    <div className="bg-white p-0 m-0 overflow-hidden">
+      {/* 2026 Meta Hints for Puppeteer */}
+      <div id="pdf-metadata" style={{ display: 'none' }} data-total-pages={studentChunks.length} />
+
       {studentChunks.map((chunk, chunkIndex) => (
         <div
           key={`sheet-${chunkIndex}`}
@@ -154,13 +162,8 @@ export default function BulkExportCertificatePage() {
             certificateType={type}
             month={month}
             preview={false}
-            className="shadow-none border-none"
-            onLoad={() => {
-                // If it's a grid, we need to handle the loaded count differently? 
-                // Actually handleCertificateLoad was counting students.
-                // We'll increment by chunk size
-                setLoadedCount(prev => prev + chunk.length);
-            }}
+            className="shadow-none border-none outline-none"
+            onLoad={() => handlePageReady(chunkIndex)}
           />
         </div>
       ))}
@@ -169,20 +172,18 @@ export default function BulkExportCertificatePage() {
         * {
           animation: none !important;
           transition: none !important;
+          print-color-adjust: exact !important;
+          -webkit-print-color-adjust: exact !important;
         }
 
         @page {
           margin: 0 !important;
-          size: auto;
         }
 
         @media print {
           .break-before-page {
             break-before: page;
-          }
-          * {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
+            page-break-before: always;
           }
         }
 

@@ -41,78 +41,90 @@ export function CertificateViewer({
     return rawElements.sort((a, b) => a.zIndex - b.zIndex);
   }, [template]);
 
-  const layoutConfig = template.content?.canvasConfig?.layoutConfig || template.content?.layoutConfig || { rows: 1, columns: 1, gap: 0 };
-  const [bgLoaded, setBgLoaded] = useState(false);
-  const [imagesLoadedCount, setImagesLoadedCount] = useState(0);
+  const canvasConfig = template.content?.canvasConfig;
+  const layoutConfig = canvasConfig?.layoutConfig || template.content?.layoutConfig || { rows: 1, columns: 1, gap: 0 };
+  
+  // State for asset tracking
+  const [assetsReady, setAssetsReady] = useState(false);
+  const loadingRegistry = useRef<Set<string>>(new Set());
   const onLoadCalledRef = useRef(false);
 
-  const imageElements = useMemo(() => elements.filter(el => el.type === "image" && el.visible), [elements]);
-  const dataArray = Array.isArray(data) ? data : [data];
+  // Normalize data for grid rendering
+  const dataArray = useMemo(() => Array.isArray(data) ? data : [data], [data]);
   const totalSlots = layoutConfig.rows * layoutConfig.columns;
-  const currentData = preview ? dataArray : dataArray.slice(0, totalSlots);
-  const totalImages = imageElements.length * currentData.length;
+  const activeData = useMemo(() => 
+    preview 
+      ? [...dataArray, ...Array(Math.max(0, totalSlots - dataArray.length)).fill({})] 
+      : dataArray.slice(0, totalSlots)
+  , [dataArray, totalSlots, preview]);
 
-  // Find the base frame (which defines the overall sheet size if subdivided, or individual record size)
+  // Dimensions math
   const baseFrame = useMemo(() => elements.find(el => el.type === 'frame'), [elements]);
   const sheetWidth = baseFrame?.width || 794; 
   const sheetHeight = baseFrame?.height || 1123;
-
-  // Internal Subdivision Math (2026 Print Standards)
   const slotWidth = (sheetWidth - (layoutConfig.columns - 1) * (layoutConfig.gap || 0)) / layoutConfig.columns;
   const slotHeight = (sheetHeight - (layoutConfig.rows - 1) * (layoutConfig.gap || 0)) / layoutConfig.rows;
 
   const hasTable = useMemo(() => elements.some(el => el.type === "table"), [elements]);
 
+  // Asset synchronization logic
+  const registerAsset = useCallback((id: string) => {
+    loadingRegistry.current.add(id);
+    setAssetsReady(false);
+  }, []);
+
+  const unregisterAsset = useCallback((id: string) => {
+    loadingRegistry.current.delete(id);
+    if (loadingRegistry.current.size === 0) {
+      setAssetsReady(true);
+    }
+  }, []);
+
+  // Effect to handle final readiness signal
   useEffect(() => {
     if (onLoadCalledRef.current) return;
-    
-    const backgroundReady = !template.backgroundImageUrl || bgLoaded;
-    const imagesReady = imagesLoadedCount >= totalImages;
 
-    if (backgroundReady && imagesReady) {
-        // Still give half-yearly/final tables a bit more time if they exist
-        if (hasTable) {
-             const timer = setTimeout(() => {
-                onLoadCalledRef.current = true;
-                onLoad?.();
-             }, 1000);
-             return () => clearTimeout(timer);
-        } else {
+    // Check if initial assets are empty or already loaded
+    if (loadingRegistry.current.size === 0 && !onLoadCalledRef.current) {
+        setAssetsReady(true);
+    }
+
+    if (assetsReady) {
+        const triggerReady = () => {
+            if (onLoadCalledRef.current) return;
             onLoadCalledRef.current = true;
             onLoad?.();
-        }
+        };
+
+        // Extra safety buffer for complex components (Tables/Gradients)
+        const timer = setTimeout(triggerReady, hasTable ? 800 : 200);
+        return () => clearTimeout(timer);
     }
-  }, [bgLoaded, template.backgroundImageUrl, hasTable, onLoad, imagesLoadedCount, totalImages]);
+  }, [assetsReady, onLoad, hasTable]);
 
   const renderSingleRecord = (recordData: Record<string, any>, recordIndex: number) => {
     const row = Math.floor(recordIndex / layoutConfig.columns);
     const col = recordIndex % layoutConfig.columns;
-    
     const offsetX = col * (slotWidth + (layoutConfig.gap || 0));
     const offsetY = row * (slotHeight + (layoutConfig.gap || 0));
 
-    // If no data for this slot, don't render content but keep the slot layout in preview
-    if (!recordData || Object.keys(recordData).length === 0) return null;
+    if (!recordData || (Object.keys(recordData).length === 0 && !preview)) return null;
 
     return (
       <div 
-        key={`record-${recordIndex}`}
-        className="absolute overflow-hidden"
+        key={`record-${recordIndex}-${recordData.studentId || recordIndex}`}
+        className="absolute overflow-hidden select-none"
         style={{
             left: `${offsetX}px`,
             top: `${offsetY}px`,
             width: `${slotWidth}px`,
             height: `${slotHeight}px`,
-            // Background is usually on the master sheet (frame), but can be repeated if desired
-            // For now, we assume the master frame handles the sheet background
         }}
       >
         {elements.map((el) => {
             if (!el.visible || el.id === baseFrame?.id) return null;
 
             const style = el.style || {};
-            // We assume design was done relative to the first slot's relative coordinates
-            // (el.x - baseFrame.x) is the relative position within slot 0
             const left = baseFrame ? el.x - baseFrame.x : el.x;
             const top = baseFrame ? el.y - baseFrame.y : el.y;
 
@@ -121,11 +133,13 @@ export function CertificateViewer({
                 content = String(recordData[el.variableKey] || (preview ? `{${el.name}}` : ""));
             }
 
+            const elementId = `el-${recordIndex}-${el.id}`;
+
             return (
                 <div
-                    key={`${recordIndex}-${el.id}`}
+                    key={elementId}
                     className={cn(
-                        "absolute flex",
+                        "absolute flex transition-opacity duration-300",
                         style.textAlign === "center" ? "justify-center" : style.textAlign === "right" ? "justify-end" : "justify-start"
                     )}
                     style={{
@@ -140,13 +154,12 @@ export function CertificateViewer({
                     }}
                 >
                     {el.type === "image" ? (
-                        <img 
-                          src={el.variableKey ? recordData[el.variableKey] : el.content} 
-                          className="w-full h-full object-contain" 
-                          alt={el.name} 
-                          crossOrigin="anonymous"
-                          onLoad={() => setImagesLoadedCount(prev => prev + 1)}
-                          onError={() => setImagesLoadedCount(prev => prev + 1)}
+                        <ImageAsset 
+                            id={elementId}
+                            src={el.variableKey ? recordData[el.variableKey] : el.content}
+                            alt={el.name}
+                            onRegister={registerAsset}
+                            onUnregister={unregisterAsset}
                         />
                     ) : el.type === "shape" ? (
                         <div 
@@ -164,7 +177,7 @@ export function CertificateViewer({
                             type={certificateType}
                             month={month}
                             isPreview={preview}
-                            onLoad={onLoad}
+                            onLoad={() => {}} // Internal table loading is handled by the 800ms buffer
                             fontSize={style.fontSize || 10}
                         />
                     ) : (
@@ -191,12 +204,9 @@ export function CertificateViewer({
     );
   };
 
-
-  const displayData = preview ? [...dataArray, ...Array(Math.max(0, totalSlots - dataArray.length)).fill({})] : dataArray;
-
   return (
     <div 
-      className={cn("relative bg-white print:shadow-none", className)}
+      className={cn("relative bg-white print:shadow-none overflow-hidden", className)}
       style={{
         width: `${sheetWidth}px`,
         height: `${sheetHeight}px`,
@@ -204,20 +214,45 @@ export function CertificateViewer({
       }}
       data-canvas-content
     >
-       {/* Support for old legacy background image if needed (now at canvas level) */}
        {template.backgroundImageUrl && (
          <img 
             src={template.backgroundImageUrl} 
             alt="Background" 
             crossOrigin="anonymous"
             className="w-full h-full object-fill absolute inset-0 pointer-events-none"
-            onLoad={() => setBgLoaded(true)}
+            onLoad={() => unregisterAsset('background')}
+            onBlur={() => registerAsset('background')} // Technical hook for re-renders
             style={{ zIndex: -1 }}
          />
        )}
 
-       {/* Render Records in Grid */}
-       {displayData.slice(0, totalSlots).map((recordData, idx) => renderSingleRecord(recordData, idx))}
+       {activeData.map((recordData, idx) => renderSingleRecord(recordData, idx))}
     </div>
   );
+}
+
+/**
+ * 2026 Optimized Image Component
+ * Handles lazy registration and error boundaries for headless capture
+ */
+function ImageAsset({ id, src, alt, onRegister, onUnregister }: any) {
+    useEffect(() => {
+        if (src) {
+            onRegister(id);
+        }
+        return () => onUnregister(id);
+    }, [id, src, onRegister, onUnregister]);
+
+    if (!src) return null;
+
+    return (
+        <img 
+            src={src} 
+            className="w-full h-full object-contain" 
+            alt={alt} 
+            crossOrigin="anonymous"
+            onLoad={() => onUnregister(id)}
+            onError={() => onUnregister(id)} // Don't block export on failed assets
+        />
+    );
 }
