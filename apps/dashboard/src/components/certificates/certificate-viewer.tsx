@@ -245,9 +245,21 @@ function ImageAsset({ id, src, alt, onRegister, onUnregister }: any) {
 
     if (!src) return null;
 
+    const encodedSrc = useMemo(() => {
+        if (!src) return "";
+        if (src.includes("?")) {
+            const [base, query] = src.split("?");
+            return `${base}?${query.split("&").map(p => {
+                const [k, v] = p.split("=");
+                return k === "filePath" ? `${k}=${encodeURIComponent(decodeURIComponent(v))}` : p;
+            }).join("&")}`;
+        }
+        return src;
+    }, [src]);
+
     return (
         <img 
-            src={src} 
+            src={encodedSrc} 
             className="w-full h-full object-contain" 
             alt={alt} 
             crossOrigin="use-credentials"
