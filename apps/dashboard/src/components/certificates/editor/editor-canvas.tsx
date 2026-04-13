@@ -19,7 +19,10 @@ export function EditorCanvas() {
   const totalSlots = layoutConfig.rows * layoutConfig.columns;
 
   return (
-    <div className="flex-1 relative overflow-hidden bg-[#0c0c0e]">
+    <div 
+        className="flex-1 relative overflow-hidden infinite-canvas-wrapper transition-colors duration-300"
+        style={{ backgroundColor: canvasConfig.backgroundColor }}
+    >
       {/* Precision Grid Layer */}
       <div 
         className="absolute inset-0 canvas-grid pointer-events-none opacity-20 transition-opacity duration-500"
