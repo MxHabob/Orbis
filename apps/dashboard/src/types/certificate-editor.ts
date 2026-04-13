@@ -2,8 +2,9 @@ import { PAPER_PRESETS } from "../components/certificates/editor/constants"; // 
 
 export interface EditorElement {
   id: string;
-  type: "text" | "image" | "shape" | "variable" | "frame" | "table";
+  type: "text" | "image" | "shape" | "variable" | "frame" | "table" | "group";
   name: string;
+  parentId?: string; // Support for grouping and nested structures
   x: number;
   y: number;
   width: number;

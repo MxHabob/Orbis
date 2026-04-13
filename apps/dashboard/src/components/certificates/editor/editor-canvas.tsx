@@ -51,17 +51,6 @@ export function EditorCanvas() {
           onMouseUp={(e) => {
              if (e.button === 1) setIsMiddleMouseDown(false);
           }}
-          onClick={(e) => {
-             const target = e.target as HTMLElement;
-             const isElement = target.closest(".editor-element-container");
-             const isMoveable = target.closest(".moveable-control-box");
-             const isToolbar = target.closest(".floating-toolbar");
-             const isContext = target.closest(".context-menu-content");
-             
-             if (!isElement && !isMoveable && !isToolbar && !isContext) {
-                setSelectedElements([]);
-             }
-          }}
         >
           <TransformComponent
               wrapperStyle={{ width: "100%", height: "100%", cursor: "crosshair" }}
@@ -75,6 +64,11 @@ export function EditorCanvas() {
                     ref={canvasRef}
                     id="infinite-canvas"
                     className="relative"
+                    onMouseDown={(e) => {
+                        if (e.target === e.currentTarget) {
+                            setSelectedElements([]);
+                        }
+                    }}
                     style={{
                       width: "10000px",
                       height: "10000px",

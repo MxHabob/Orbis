@@ -16,7 +16,12 @@ export function EditorSelectionManager({ containerRef }: Props) {
     setSelectedElements, 
     updateElement, 
     deleteElements, 
-    duplicateElements 
+    duplicateElements,
+    groupElements,
+    ungroupElements,
+    undo,
+    redo,
+    saveToHistory
   } = useEditorStore();
 
   const [targets, setTargets] = useState<HTMLElement[]>([]);
@@ -25,10 +30,43 @@ export function EditorSelectionManager({ containerRef }: Props) {
   // Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (selectedElementIds.length === 0) return;
       if (["INPUT", "TEXTAREA"].includes((e.target as HTMLElement).tagName)) return;
       
       const step = e.shiftKey ? 10 : 1;
+
+      // Undo/Redo Shortcuts
+      if ((e.metaKey || e.ctrlKey) && e.key === "z") {
+        e.preventDefault();
+        if (e.shiftKey) {
+            redo();
+        } else {
+            undo();
+        }
+        return;
+      }
+
+      if ((e.metaKey || e.ctrlKey) && e.key === "y") {
+        e.preventDefault();
+        redo();
+        return;
+      }
+
+      if (selectedElementIds.length === 0) return;
+
+      // Grouping Shortcuts
+      if ((e.metaKey || e.ctrlKey) && e.key === "g") {
+        e.preventDefault();
+        if (e.shiftKey) {
+            // Ungroup each selected element if it's a group
+            selectedElementIds.forEach(id => {
+                const el = elements.find(e => e.id === id);
+                if (el?.type === 'group') ungroupElements(id);
+            });
+        } else {
+            groupElements();
+        }
+        return;
+      }
 
       if (e.key === "Delete" || e.key === "Backspace") {
         deleteElements(selectedElementIds);
@@ -81,7 +119,6 @@ export function EditorSelectionManager({ containerRef }: Props) {
         resizable={true}
         rotatable={true}
         snappable={true}
-        snapCenter={true}
         snapThreshold={5}
         elementGuidelines={elements
             .filter(el => !selectedElementIds.includes(el.id))
@@ -97,6 +134,7 @@ export function EditorSelectionManager({ containerRef }: Props) {
             if (id) {
                 const el = elements.find(e => e.id === id);
                 if (el) {
+                    saveToHistory();
                     updateElement(id, {
                         x: Math.round(el.x + lastEvent.beforeTranslate[0]),
                         y: Math.round(el.y + lastEvent.beforeTranslate[1]),
@@ -111,6 +149,7 @@ export function EditorSelectionManager({ containerRef }: Props) {
             });
         }}
         onDragGroupEnd={({ events }) => {
+            saveToHistory();
             events.forEach(({ target, lastEvent }) => {
                 const id = target.getAttribute("data-element-id");
                 if (id && lastEvent) {
@@ -135,6 +174,7 @@ export function EditorSelectionManager({ containerRef }: Props) {
             if (id && lastEvent) {
                const el = elements.find(e => e.id === id);
                if (el) {
+                  saveToHistory();
                   updateElement(id, {
                     width: Math.round(parseFloat(target.style.width)),
                     height: Math.round(parseFloat(target.style.height)),
@@ -153,6 +193,7 @@ export function EditorSelectionManager({ containerRef }: Props) {
             });
         }}
         onResizeGroupEnd={({ events }) => {
+            saveToHistory();
             events.forEach(({ target, lastEvent }) => {
                 const id = target.getAttribute("data-element-id");
                 if (id && lastEvent) {
@@ -175,6 +216,7 @@ export function EditorSelectionManager({ containerRef }: Props) {
         onRotateEnd={({ target, lastEvent }) => {
             const id = target.getAttribute("data-element-id");
             if (id && lastEvent) {
+                saveToHistory();
                 updateElement(id, { rotation: lastEvent.rotation });
             }
             target.style.transform = "";
@@ -185,6 +227,7 @@ export function EditorSelectionManager({ containerRef }: Props) {
             });
         }}
         onRotateGroupEnd={({ events }) => {
+            saveToHistory();
             events.forEach(({ target, lastEvent }) => {
                 const id = target.getAttribute("data-element-id");
                 if (id && lastEvent) {
@@ -199,9 +242,10 @@ export function EditorSelectionManager({ containerRef }: Props) {
         dragContainer={containerRef.current}
         selectableTargets={[".editor-element-container"]}
         hitRate={0}
-        selectByClick={true}
+        selectByClick={false}
         selectFromInside={false}
-        toggleContinueSelect={["shift"]}
+        toggleContinueSelect={[]}
+        ratio={0}
         onDragStart={(e) => {
             const target = e.inputEvent.target as HTMLElement;
             if (
@@ -212,9 +256,17 @@ export function EditorSelectionManager({ containerRef }: Props) {
             }
         }}
         onSelect={(e) => {
-            const ids = e.selected
+            const findRootId = (id: string): string => {
+                const el = elements.find(e => e.id === id);
+                if (el?.parentId) return findRootId(el.parentId);
+                return id;
+            };
+
+            const ids = Array.from(new Set(e.selected
                 .map(el => el.getAttribute('data-element-id'))
-                .filter(Boolean) as string[];
+                .filter(Boolean)
+                .map(id => findRootId(id!))
+            ));
             
             setSelectedElements(ids);
         }}

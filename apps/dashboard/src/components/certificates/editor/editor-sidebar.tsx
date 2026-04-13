@@ -139,7 +139,34 @@ export function EditorSidebar({}: SidebarProps) {
     accept: { "image/*": [".png", ".jpg", ".jpeg", ".svg", ".webp"] }
   });
 
-  const activeLayers = [...elements].reverse(); 
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+
+  const toggleGroup = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newCollapsed = new Set(collapsedGroups);
+    if (newCollapsed.has(id)) newCollapsed.delete(id);
+    else newCollapsed.add(id);
+    setCollapsedGroups(newCollapsed);
+  };
+
+  // Build a hierarchical tree for rendering
+  const buildLayerTree = (items: typeof elements, parentId?: string, depth = 0): any[] => {
+    const result: any[] = [];
+    const children = items
+        .filter(el => el.parentId === parentId)
+        .sort((a, b) => b.zIndex - a.zIndex); // Top zIndex first in layers list
+
+    children.forEach(child => {
+        result.push({ ...child, depth });
+        if (child.type === 'group' && !collapsedGroups.has(child.id)) {
+            result.push(...buildLayerTree(items, child.id, depth + 1));
+        }
+    });
+
+    return result;
+  };
+
+  const activeLayers = buildLayerTree(elements); 
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -225,6 +252,9 @@ export function EditorSidebar({}: SidebarProps) {
                                     <SortableLayerItem 
                                         key={el.id} 
                                         element={el} 
+                                        depth={el.depth}
+                                        isCollapsed={collapsedGroups.has(el.id)}
+                                        onToggleGroup={(e) => toggleGroup(el.id, e)}
                                         selected={selectedElementIds.includes(el.id)} 
                                         onClick={() => setSelectedElements([el.id])} 
                                     />
@@ -307,7 +337,14 @@ export function EditorSidebar({}: SidebarProps) {
   );
 }
 
-function SortableLayerItem({ element, selected, onClick }: { element: any, selected: boolean, onClick: () => void }) {
+function SortableLayerItem({ element, selected, onClick, depth = 0, isCollapsed, onToggleGroup }: { 
+    element: any, 
+    selected: boolean, 
+    onClick: () => void,
+    depth?: number,
+    isCollapsed?: boolean,
+    onToggleGroup?: (e: React.MouseEvent) => void
+}) {
   const { updateElement, deleteElements, duplicateElements, bringToFront, sendToBack } = useEditorStore();
   const [isEditing, setIsEditing] = useState(false);
   const [tempName, setTempName] = useState(element.name || element.type);
@@ -325,7 +362,8 @@ function SortableLayerItem({ element, selected, onClick }: { element: any, selec
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 100 : 1,
-    opacity: isDragging ? 0.6 : 1
+    opacity: isDragging ? 0.6 : 1,
+    paddingLeft: `${(depth * 12) + 8}px`
   };
 
   const handleRename = () => {
@@ -352,6 +390,13 @@ function SortableLayerItem({ element, selected, onClick }: { element: any, selec
           <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-40 transition-opacity">
               <GripVertical className="w-3 h-3 text-muted-foreground" />
           </div>
+
+          {element.type === 'group' && (
+              <button onClick={onToggleGroup} className="p-0.5 hover:bg-muted-foreground/10 rounded transition-transform">
+                  <ChevronDown className={cn("w-3 h-3 transition-transform", isCollapsed && "-rotate-90")} />
+              </button>
+          )}
+
           <LayerIcon type={element.type} selected={selected} />
           
           {isEditing ? (
@@ -423,6 +468,7 @@ function LayerIcon({ type, selected }: { type: string, selected?: boolean }) {
         case 'shape': return <Square className={className} />;
         case 'variable': return <Database className={cn("w-3.5 h-3.5", selected ? "text-primary-foreground" : "text-primary")} />;
         case 'table': return <TableIcon className={cn("w-3.5 h-3.5", selected ? "text-primary-foreground" : "text-primary")} />;
+        case 'group': return <Layers className={className} />;
         default: return <Grid2X2 className={className} />;
     }
 }

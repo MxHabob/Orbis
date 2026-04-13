@@ -35,7 +35,11 @@ interface EditorActions {
   // Batch Load
   setElements: (elements: EditorElement[]) => void;
 
-  // New features for 2026
+  // Grouping
+  groupElements: () => void;
+  ungroupElements: (id: string) => void;
+  
+  // Clipboard
   copySelection: () => void;
   pasteSelection: () => void;
 }
@@ -120,16 +124,48 @@ export const useEditorStore = create<EditorState & EditorActions>()(
     },
 
     updateElement: (id, updates) => {
-      set((state) => ({
-        elements: state.elements.map((el) =>
+      set((state) => {
+        const targetElement = state.elements.find(el => el.id === id);
+        if (!targetElement) return state;
+
+        const deltaX = updates.x !== undefined ? updates.x - targetElement.x : 0;
+        const deltaY = updates.y !== undefined ? updates.y - targetElement.y : 0;
+
+        // Recursive function to update children if it's a group
+        const updateRecursive = (elements: EditorElement[], elementId: string, dx: number, dy: number): EditorElement[] => {
+            let newElements = [...elements];
+            const children = newElements.filter(el => el.parentId === elementId);
+            
+            children.forEach(child => {
+                newElements = newElements.map(el => 
+                    el.id === child.id 
+                        ? { ...el, x: el.x + dx, y: el.y + dy }
+                        : el
+                );
+                // Recursively update descendants
+                if (child.type === 'group') {
+                    newElements = updateRecursive(newElements, child.id, dx, dy);
+                }
+            });
+            
+            return newElements;
+        };
+
+        let newElements = state.elements.map((el) =>
           el.id === id ? { 
               ...el, 
               ...updates, 
               style: { ...el.style, ...updates.style },
               interactions: updates.interactions || el.interactions
           } : el
-        ),
-      }));
+        );
+
+        if (targetElement.type === 'group' && (deltaX !== 0 || deltaY !== 0)) {
+            newElements = updateRecursive(newElements, id, deltaX, deltaY);
+        }
+
+        return { elements: newElements };
+      });
     },
 
     updateSelectedElements: (updates) => {
@@ -335,6 +371,69 @@ export const useEditorStore = create<EditorState & EditorActions>()(
         } catch (e) {
             console.error("Paste failed", e);
         }
+    },
+
+    groupElements: () => {
+        const { elements, selectedElementIds } = get();
+        if (selectedElementIds.length < 2) return;
+        
+        get().saveToHistory();
+        
+        const selectedElements = elements.filter(el => selectedElementIds.includes(el.id));
+        
+        // Calculate bounding box
+        const minX = Math.min(...selectedElements.map(el => el.x));
+        const minY = Math.min(...selectedElements.map(el => el.y));
+        const maxX = Math.max(...selectedElements.map(el => el.x + el.width));
+        const maxY = Math.max(...selectedElements.map(el => el.y + el.height));
+        
+        const groupId = `group-${crypto.randomUUID()}`;
+        const newGroup: EditorElement = {
+            id: groupId,
+            name: "New Group",
+            type: "group",
+            x: minX,
+            y: minY,
+            width: maxX - minX,
+            height: maxY - minY,
+            rotation: 0,
+            opacity: 1,
+            zIndex: Math.max(...elements.map(e => e.zIndex)) + 1,
+            visible: true,
+            locked: false,
+            style: {
+                backgroundColor: "transparent"
+            }
+        };
+        
+        set(state => ({
+            elements: [
+                ...state.elements.map(el => 
+                    selectedElementIds.includes(el.id) 
+                        ? { ...el, parentId: groupId } 
+                        : el
+                ),
+                newGroup
+            ],
+            selectedElementIds: [groupId]
+        }));
+    },
+
+    ungroupElements: (id) => {
+        const { elements } = get();
+        const group = elements.find(el => el.id === id && el.type === 'group');
+        if (!group) return;
+        
+        get().saveToHistory();
+        
+        set(state => ({
+            elements: state.elements
+                .filter(el => el.id !== id)
+                .map(el => el.parentId === id ? { ...el, parentId: group.parentId } : el),
+            selectedElementIds: state.elements
+                .filter(el => el.parentId === id)
+                .map(el => el.id)
+        }));
     }
   }))
 );

@@ -34,16 +34,21 @@ interface Props {
 export function EditorContextMenu({ children }: Props) {
   const { 
     selectedElementIds, 
+    elements,
     deleteElements, 
     duplicateElements, 
     bringToFront, 
     sendToBack,
     bringForward,
-    sendBackward
+    sendBackward,
+    groupElements,
+    ungroupElements
   } = useEditorStore();
 
   const selectionCount = selectedElementIds.length;
   const isSelected = selectionCount > 0;
+  const firstSelected = elements.find(el => el.id === selectedElementIds[0]);
+  const isGroupSelected = selectedElementIds.length === 1 && firstSelected?.type === 'group';
 
   return (
     <ContextMenu>
@@ -104,11 +109,19 @@ export function EditorContextMenu({ children }: Props) {
 
             <ContextMenuSeparator className="bg-white/10 my-1" />
 
-            <ContextMenuItem className="gap-2 focus:bg-blue-600 focus:text-white rounded-lg text-[11px] font-medium py-1.5 px-2">
-              <Group className="w-3.5 h-3.5" />
-              Group Selection
-              <ContextMenuShortcut className="text-white/40">⌘G</ContextMenuShortcut>
-            </ContextMenuItem>
+            {isGroupSelected ? (
+              <ContextMenuItem onClick={() => ungroupElements(firstSelected!.id)} className="gap-2 focus:bg-blue-600 focus:text-white rounded-lg text-[11px] font-medium py-1.5 px-2">
+                <Group className="w-3.5 h-3.5 rotate-180" />
+                Ungroup Selection
+                <ContextMenuShortcut className="text-white/40">⇧⌘G</ContextMenuShortcut>
+              </ContextMenuItem>
+            ) : (
+                <ContextMenuItem onClick={() => groupElements()} className="gap-2 focus:bg-blue-600 focus:text-white rounded-lg text-[11px] font-medium py-1.5 px-2">
+                    <Group className="w-3.5 h-3.5" />
+                    Group Selection
+                    <ContextMenuShortcut className="text-white/40">⌘G</ContextMenuShortcut>
+                </ContextMenuItem>
+            )}
 
             <ContextMenuItem className="gap-2 focus:bg-blue-600 focus:text-white rounded-lg text-[11px] font-medium py-1.5 px-2">
               <Lock className="w-3.5 h-3.5" />

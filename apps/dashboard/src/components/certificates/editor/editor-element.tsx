@@ -11,7 +11,13 @@ interface Props {
 }
 
 export const EditorElement = memo(function EditorElement({ element }: Props) {
-  const { updateElement } = useEditorStore();
+  const { 
+    updateElement, 
+    selectedElementIds, 
+    setSelectedElements,
+    elements
+  } = useEditorStore();
+  
   const [isEditing, setIsEditing] = useState(false);
   const [tempContent, setTempContent] = useState(element.content || "");
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -29,6 +35,34 @@ export const EditorElement = memo(function EditorElement({ element }: Props) {
     setIsEditing(false);
     if (tempContent !== element.content) {
       updateElement(element.id, { content: tempContent });
+    }
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (element.locked) return;
+    
+    // Stop propagation to prevent Selecto/Canvas from overriding
+    e.stopPropagation();
+
+    const findRootId = (id: string): string => {
+        const el = elements.find(e => e.id === id);
+        if (el?.parentId) return findRootId(el.parentId);
+        return id;
+    };
+
+    const rootId = findRootId(element.id);
+    const isMulti = e.ctrlKey || e.metaKey || e.shiftKey;
+
+    if (isMulti) {
+        if (selectedElementIds.includes(rootId)) {
+            setSelectedElements(selectedElementIds.filter(id => id !== rootId));
+        } else {
+            setSelectedElements([...selectedElementIds, rootId]);
+        }
+    } else {
+        if (!selectedElementIds.includes(rootId)) {
+            setSelectedElements([rootId]);
+        }
     }
   };
 
@@ -143,6 +177,10 @@ export const EditorElement = memo(function EditorElement({ element }: Props) {
             }}
           />
         );
+      case "group":
+        return (
+          <div className="w-full h-full border border-dashed border-primary/20 pointer-events-none group-hover:border-primary/40 transition-colors" />
+        );
       default:
         return null;
     }
@@ -151,6 +189,7 @@ export const EditorElement = memo(function EditorElement({ element }: Props) {
   return (
     <div
       data-element-id={element.id}
+      onMouseDown={handleMouseDown}
       className={cn(
         "absolute outline-none editor-element-container",
         !element.locked && "hover:outline hover:outline-2 hover:outline-primary/40 hover:outline-offset-2",

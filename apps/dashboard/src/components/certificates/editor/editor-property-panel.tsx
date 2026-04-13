@@ -168,6 +168,37 @@ export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
               ) : (
                   <div className="divide-y divide-border">
                       {/* Section: Frame / Transform */}
+                      <Section title="Element">
+                         <div className="space-y-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter">Name</Label>
+                                <Input 
+                                    value={selectedElement.name || ""} 
+                                    onChange={(e) => handleUpdate({ name: e.target.value })}
+                                    placeholder="Enter element name..."
+                                    className="h-8 text-[11px] bg-muted border-border font-bold"
+                                />
+                            </div>
+
+                            {selectedElement.type === 'group' && (
+                                <div className="pt-2">
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="w-full h-8 text-[11px] gap-2 border-dashed"
+                                        onClick={() => {
+                                            const { ungroupElements } = useEditorStore.getState();
+                                            ungroupElements(selectedElement.id);
+                                        }}
+                                    >
+                                        <Minimize2 className="w-3.5 h-3.5" />
+                                        Ungroup Elements
+                                    </Button>
+                                </div>
+                            )}
+                         </div>
+                      </Section>
+
                       <Section title="Position & Scale">
                          <div className="flex items-center gap-0.5 bg-muted p-0.5 mb-3">
                             <AlignButton icon={AlignLeft} />
@@ -194,14 +225,16 @@ export function EditorPropertyPanel({ onSave, isSaving }: PropertyPanelProps) {
                          </div>
                          
                          {/* Border Radius */}
-                         <div className="mt-2">
-                            <PropertyInput 
-                                label="R" 
-                                icon={Box}
-                                value={selectedElement.style.borderRadius || 0} 
-                                onChange={(v) => handleStyleUpdate({ borderRadius: v })} 
-                            />
-                         </div>
+                         {selectedElement.type !== 'group' && (
+                             <div className="mt-2">
+                                <PropertyInput 
+                                    label="R" 
+                                    icon={Box}
+                                    value={selectedElement.style.borderRadius || 0} 
+                                    onChange={(v) => handleStyleUpdate({ borderRadius: v })} 
+                                />
+                             </div>
+                         )}
                       </Section>
 
                       {/* Typography (Only for Text/Variable) */}
