@@ -20,60 +20,60 @@ export async function handleFileProxy(c: Context<HonoEnv>) {
     return c.json({ error: "Missing filePath" }, 400);
   }
 
-  // Simplified path resolution
+  // 2. Resolve Bucket & Key with smart retry logic
   const decodedPath = decodeURIComponent(rawFilePath);
   const cleanPath = decodedPath.startsWith('/') ? decodedPath.slice(1) : decodedPath;
   const parts = cleanPath.split("/");
-  const bucket = parts[0];
-  const key = parts.slice(1).join("/");
+  
+  // Strategy A: Standard [Bucket, ...Key]
+  let bucket = parts[0];
+  let key = parts.slice(1).join("/");
 
+  // Strategy B: Fallback if path doesn't include bucket or is malformed
   if (!bucket || !key) {
-    console.error(`[FileProxy] Parsing Failed for: ${rawFilePath} (Clean: ${cleanPath})`);
-    return c.json({ error: "Malformed request: invalid storage path structure" }, 400);
+    bucket = process.env.S3_BUCKET || "vault";
+    key = cleanPath;
   }
 
   try {
-    const result = await getFile({
-      bucket,
-      key,
-      range,
-    });
+    // Attempt to fetch from S3
+    let result;
+    try {
+      result = await getFile({ bucket, key, range: c.req.header("range") });
+    } catch (firstErr) {
+      // Strategy C: If bucket was double-prefixed (e.g. vault/vault/key)
+      if (key.startsWith(bucket + "/")) {
+        const secondaryKey = key.replace(bucket + "/", "");
+        result = await getFile({ bucket, key: secondaryKey, range: c.req.header("range") });
+      } else {
+        throw firstErr;
+      }
+    }
 
-    if (!result.Body) {
-      return c.json({ error: "Resource not found in storage" }, 404);
+    if (!result?.Body) {
+      return c.json({ error: "Empty response from storage" }, 404);
     }
 
     // 3. Set Performance & Security Headers
     const headers: Record<string, string> = {
       "Cache-Control": "public, max-age=31536000, immutable",
       "Access-Control-Allow-Origin": "*",
+      "Content-Type": result.ContentType || "application/octet-stream",
     };
 
-    if (result.ContentType) headers["Content-Type"] = result.ContentType;
     if (result.ContentLength) headers["Content-Length"] = result.ContentLength.toString();
     if (result.ETag) headers["ETag"] = result.ETag;
-    if (result.LastModified) headers["Last-Modified"] = result.LastModified.toUTCString();
-
-    // Support Partial Content (206) for media
-    if (range && result.ContentRange) {
-      headers["Content-Range"] = result.ContentRange;
-      return c.body(result.Body as any, 206, headers);
-    }
 
     return c.body(result.Body as any, 200, headers);
   } catch (err: any) {
-    // 4. Advanced Error Reporting
-    const errorStatus = err.name === "NoSuchKey" ? 404 : 500;
+    console.error(`[FileProxy] Fatal Error for ${bucket}/${key}:`, err);
     
-    console.error(`[FileProxy] Failed to serve ${bucket}/${key}:`, {
-      name: err.name,
-      message: err.message,
-      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
-    });
-
+    // Return detailed S3 error to browser for debugging 
     return c.json({ 
-      error: errorStatus === 404 ? "File not found" : "Internal storage error", 
-      details: process.env.NODE_ENV === 'development' ? err.message : undefined 
-    }, errorStatus);
+      error: "Storage Error", 
+      message: err.message,
+      code: err.name,
+      requestedPath: `${bucket}/${key}`
+    }, 400); 
   }
 }
