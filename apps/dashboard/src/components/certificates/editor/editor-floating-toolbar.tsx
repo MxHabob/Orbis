@@ -40,7 +40,7 @@ export function EditorFloatingToolbar() {
   return (
     <TooltipProvider delayDuration={400}>
       <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[40] pointer-events-auto">
-        <div className="flex items-center gap-1 p-1 bg-background/80 backdrop-blur-xl rounded-2xl border border-border shadow-[0_20px_50px_rgba(0,0,0,0.3)] ring-1 ring-border/50">
+        <div className="flex items-center gap-1 p-1 bg-background rounded-2xl">
            {tools.map((tool, idx) => (
               <React.Fragment key={tool.id}>
                  <Tooltip>
