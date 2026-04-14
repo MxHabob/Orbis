@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useTRPC } from "@/trpc/client";
 import { CertificateViewer } from "@/components/certificates/certificate-viewer";
 import { Spinner } from "@midday/ui/spinner";
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 /**
@@ -26,6 +26,12 @@ const mapStudentToVariables = (student: any, type?: string, month?: number) => {
   const stats = (student.stats as any) || {};
   const currentYear = student.currentClass?.yearName || "2024-2025";
   
+  // Resolve image path: if it's just a filename, prepend the standard student folder
+  let resolvedImage = student.image || "";
+  if (resolvedImage && !resolvedImage.startsWith('http') && !resolvedImage.includes('/')) {
+    resolvedImage = `students/${student.userId}/${resolvedImage}`;
+  }
+
   return {
     ...student,
     student_name: student.name || "",
@@ -48,11 +54,24 @@ const mapStudentToVariables = (student: any, type?: string, month?: number) => {
     month_name: month ? (HIJRI_MONTHS_NAMES[month] || `شهر ${month}`) : "",
     academic_year: currentYear,
     studentId: student.userId,
-    student_image: student.image || "",
+    student_image: resolvedImage,
   };
 };
 
 export default function BulkExportCertificatePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center min-h-screen bg-white">
+        <Spinner className="w-8 h-8 opacity-20" />
+        <span className="mt-4 text-xs font-bold uppercase tracking-widest opacity-40">Initializing PDF Pipeline...</span>
+      </div>
+    }>
+      <BulkExportContent />
+    </Suspense>
+  );
+}
+
+function BulkExportContent() {
   const searchParams = useSearchParams();
   const studentIds = useMemo(
     () => searchParams.get("studentIds")?.split(",").filter(Boolean) || [],
@@ -113,12 +132,16 @@ export default function BulkExportCertificatePage() {
   // Readiness logic (Production Grade 2026)
   useEffect(() => {
     if (studentChunks.length > 0 && finishedPages.size >= studentChunks.length) {
-      // Allow a final breath for any deferred animations/fonts
-      const timer = setTimeout(() => {
-        (window as any).isReadyToCapture = true;
-        console.info(`[Export] PDF Pipeline Ready: ${finishedPages.size} pages processed.`);
-      }, 1000);
-      return () => clearTimeout(timer);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const delay = Math.max(5000, studentChunks.length * 300);
+          const timer = setTimeout(() => {
+            (window as any).isReadyToCapture = true;
+            console.info(`[Export] PDF Pipeline Ready. Final delay: ${delay}ms`);
+          }, delay);
+          return () => clearTimeout(timer);
+        });
+      });
     }
   }, [finishedPages, studentChunks]);
 
@@ -130,7 +153,7 @@ export default function BulkExportCertificatePage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-white font-sans text-slate-400">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-white">
         <Spinner className="w-8 h-8 opacity-20" />
         <span className="mt-4 text-xs font-bold uppercase tracking-widest opacity-40">Initializing PDF Pipeline...</span>
       </div>
@@ -139,7 +162,6 @@ export default function BulkExportCertificatePage() {
 
   return (
     <div className="bg-white p-0 m-0 overflow-hidden">
-      {/* 2026 Meta Hints for Puppeteer */}
       <div id="pdf-metadata" style={{ display: 'none' }} data-total-pages={studentChunks.length} />
 
       {studentChunks.map((chunk, chunkIndex) => (
@@ -176,9 +198,7 @@ export default function BulkExportCertificatePage() {
           -webkit-print-color-adjust: exact !important;
         }
 
-        @page {
-          margin: 0 !important;
-        }
+        @page { margin: 0 !important; }
 
         @media print {
           .break-before-page {

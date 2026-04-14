@@ -146,6 +146,8 @@ export async function handleCertificateExport(
     });
     
     const page = await browser.newPage();
+    // Use a real browser user agent to avoid bot detection and ensuring proper rendering quirks
+    await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
     await page.setViewport({ width: 1200, height: 1600 });
     await setupLogging(page);
     await setupAuth(page, session.token, dashboardUrl);

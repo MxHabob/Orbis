@@ -70,7 +70,6 @@ export function CertificateViewer({
   // Asset synchronization logic
   const registerAsset = useCallback((id: string) => {
     loadingRegistry.current.add(id);
-    setAssetsReady(false);
   }, []);
 
   const unregisterAsset = useCallback((id: string) => {
@@ -80,24 +79,43 @@ export function CertificateViewer({
     }
   }, []);
 
+  // Pre-register all assets synchronously to avoid race conditions
+  useMemo(() => {
+    loadingRegistry.current.clear();
+    
+    if (template.backgroundImageUrl) {
+        loadingRegistry.current.add('background');
+    }
+
+    activeData.forEach((recordData, idx) => {
+        elements.forEach(el => {
+            if (el.type === 'image' && (el.variableKey ? recordData[el.variableKey] : el.content)) {
+                loadingRegistry.current.add(`el-${idx}-${el.id}`);
+            }
+        });
+    });
+
+    if (loadingRegistry.current.size === 0) {
+        setAssetsReady(true);
+    } else {
+        setAssetsReady(false);
+    }
+  }, [activeData, elements, template.backgroundImageUrl]);
+
   // Effect to handle final readiness signal
   useEffect(() => {
     if (onLoadCalledRef.current) return;
-
-    // Check if initial assets are empty or already loaded
-    if (loadingRegistry.current.size === 0 && !onLoadCalledRef.current) {
-        setAssetsReady(true);
-    }
 
     if (assetsReady) {
         const triggerReady = () => {
             if (onLoadCalledRef.current) return;
             onLoadCalledRef.current = true;
+            console.log("[CertificateViewer] Assets ready, triggering onLoad");
             onLoad?.();
         };
 
-        // Extra safety buffer for complex components (Tables/Gradients)
-        const timer = setTimeout(triggerReady, hasTable ? 800 : 200);
+        // Extra safety buffer for complex components (Tables/Gradients/Paints)
+        const timer = setTimeout(triggerReady, hasTable ? 1200 : 500);
         return () => clearTimeout(timer);
     }
   }, [assetsReady, onLoad, hasTable]);
@@ -216,11 +234,11 @@ export function CertificateViewer({
     >
        {template.backgroundImageUrl && (
          <img 
-            src={template.backgroundImageUrl} 
+            src={normalizeImageUrl(template.backgroundImageUrl)}
             alt="Background" 
             className="w-full h-full object-fill absolute inset-0 pointer-events-none"
             onLoad={() => unregisterAsset('background')}
-            onBlur={() => registerAsset('background')} 
+            onError={() => unregisterAsset('background')} 
             style={{ zIndex: -1 }}
          />
        )}
@@ -231,49 +249,80 @@ export function CertificateViewer({
 }
 
 /**
+ * Normalize ANY image URL to go through the local API proxy.
+ */
+function normalizeImageUrl(src: string | undefined | null): string {
+    if (!src) return "";
+    const url = String(src).trim();
+    if (!url) return "";
+
+    // 1. Data URIs -> passthrough
+    if (url.startsWith('data:')) return url;
+
+    // 2. Already proxied -> prioritize same-origin relative path
+    // This allows the dashboard rewrite to handle the cross-origin fetch seamlessly
+    if (url.includes('/files/proxy') || url.includes('/api/proxy')) {
+        if (url.startsWith('http')) {
+            try {
+                const parsed = new URL(url);
+                return `/files/proxy${parsed.search}`;
+            } catch { return url; }
+        }
+        return url.startsWith('/') ? url : `/${url}`;
+    }
+
+    // 3. S3/HTTP URLs -> extract path and route through same-origin rewrite
+    if (url.startsWith('http')) {
+        try {
+            const parsed = new URL(url);
+            const rawPath = parsed.pathname.startsWith('/') ? parsed.pathname.slice(1) : parsed.pathname;
+            if (rawPath) {
+                return `/files/proxy?filePath=${encodeURIComponent(rawPath)}`;
+            }
+        } catch (e) { /* fall through */ }
+        return url;
+    }
+
+    // 4. Raw file paths -> same-origin rewrite
+    return `/files/proxy?filePath=${encodeURIComponent(url)}`;
+}
+
+/**
  * 2026 Optimized Image Component
- * Handles lazy registration and error boundaries for headless capture
  */
 function ImageAsset({ id, src, alt, onRegister, onUnregister }: any) {
     useEffect(() => {
-        if (src) {
-            onRegister(id);
-        }
         return () => onUnregister(id);
-    }, [id, src, onRegister, onUnregister]);
+    }, [id, src, onUnregister]);
 
     if (!src) return null;
 
-    const finalSrc = useMemo(() => {
-        if (!src) return "";
-        let url = src;
-        
-        // Advanced Encoding using URLSearchParams
-        if (url.includes("filePath=")) {
-            const [base, query] = url.split("?");
-            const params = new URLSearchParams(query);
-            const filePath = params.get("filePath");
-            if (filePath) {
-                params.set("filePath", filePath);
-                // Also ensure we have the export token for legacy support
-                if (!params.has("token")) {
-                    params.set("token", "export_authorized_2026");
-                }
-                return `${base}?${params.toString()}`;
-            }
-        }
-        
-        return url.replace(/ /g, "%20");
-    }, [src]);
+    const finalSrc = useMemo(() => normalizeImageUrl(src), [src]);
+
+    if (!finalSrc) return null;
 
     return (
         <img 
             src={finalSrc} 
             className="w-full h-full object-contain" 
             alt={alt} 
-            referrerPolicy="no-referrer"
-            onLoad={() => onUnregister(id)}
-            onError={() => onUnregister(id)} 
+            crossOrigin="anonymous"
+            loading="eager"
+            onLoad={async (e) => {
+                const img = e.currentTarget;
+                if (img.decode) {
+                    try {
+                        await img.decode();
+                    } catch (err) {
+                        console.warn(`[ImageAsset] Decode failed for ${id}:`, err);
+                    }
+                }
+                onUnregister(id);
+            }}
+            onError={() => {
+                console.error(`[ImageAsset] FAILED to load image from: ${finalSrc}`);
+                onUnregister(id);
+            }} 
         />
     );
 }

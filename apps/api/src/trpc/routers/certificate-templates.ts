@@ -14,74 +14,63 @@ import {
   createCertificateTemplateSchema,
 } from "@api/schemas/certificate-templates";
 import { z } from "zod";
-import { getDownloadUrl } from "@midday/storage";
-
-// Helper to sign background image URLs if they are proxy URLs or internal paths
-// Best Practice 2026: Provide pre-authorized URLs for protected assets to avoid CORS/Auth issues in <img> tags
-async function signUrl(urlStr: string) {
+// Best Practice 2026: All image URLs are normalized to proxy URLs
+// This ensures they work in both browser AND Puppeteer headless contexts.
+// Pre-signed S3 URLs are NOT used because they point to internal MinIO servers
+// (e.g. 172.16.x.x:9088) which may be unreachable from Puppeteer's Chromium.
+function toProxyUrl(urlStr: string): string {
   if (!urlStr || typeof urlStr !== 'string') return urlStr;
-  
-  // 1. If it's already a public URL (e.g., S3, Cloudinary), leave it
-  if (urlStr.startsWith('http') && !urlStr.includes('/files/proxy')) {
+
+  // Data URIs are always passthrough
+  if (urlStr.startsWith('data:')) return urlStr;
+
+  // Already a proxy URL — leave as-is
+  if (urlStr.includes('/files/proxy')) return urlStr;
+
+  // S3/Storage HTTP URLs — extract path and build proxy URL
+  if (urlStr.startsWith('http')) {
+    try {
+      const parsed = new URL(urlStr);
+      const rawPath = parsed.pathname.startsWith('/') ? parsed.pathname.slice(1) : parsed.pathname;
+      if (rawPath) {
+        // Return a relative proxy URL — the dashboard will prepend NEXT_PUBLIC_API_URL
+        return `/files/proxy?filePath=${encodeURIComponent(rawPath)}`;
+      }
+    } catch {
+      // Fall through
+    }
     return urlStr;
   }
 
-  try {
-    let filePath: string | null = null;
-    
-    // 2. If it's a proxy URL, extract filePath
-    if (urlStr.includes('/files/proxy')) {
-       // Support relative or absolute proxy URLs
-       const url = new URL(urlStr.startsWith('http') ? urlStr : `http://localhost${urlStr}`);
-       filePath = url.searchParams.get("filePath");
-    } else if (urlStr.startsWith('vault/')) {
-       // 3. If it's a raw path
-       filePath = urlStr;
-    }
-
-    if (filePath?.startsWith("vault/")) {
-      const key = filePath.replace("vault/", "");
-      return await getDownloadUrl({
-        bucket: "vault",
-        key,
-        expiresIn: 3600, // Valid for 1 hour
-      });
-    }
-  } catch (e) {
-    console.error("Failed to sign URL", e);
+  // Raw file paths (e.g., "vault/xxx/yyy.png") — build proxy URL
+  if (!urlStr.startsWith('/')) {
+    return `/files/proxy?filePath=${encodeURIComponent(urlStr)}`;
   }
 
   return urlStr;
 }
 
-async function signTemplateBackground(template: any) {
+function normalizeTemplateUrls(template: any) {
   if (!template) return template;
 
-  // Best Practice 2026: Sign root levels and nested design tree levels
-  
-  // 1. Support legacy or high-level root background if present
+  // 1. Normalize root-level background URL
   if (template.backgroundImageUrl) {
-    template.backgroundImageUrl = await signUrl(template.backgroundImageUrl);
+    template.backgroundImageUrl = toProxyUrl(template.backgroundImageUrl);
   }
 
-  // 2. Sign backgrounds hidden within the Figma-style Content Tree
+  // 2. Normalize backgrounds in the Figma-style Content Tree
   if (template.content?.canvasConfig?.backgroundImage) {
-    template.content.canvasConfig.backgroundImage = await signUrl(template.content.canvasConfig.backgroundImage);
+    template.content.canvasConfig.backgroundImage = toProxyUrl(template.content.canvasConfig.backgroundImage);
   }
 
-  // 3. Sign images inside elements (nodes tree)
+  // 3. Normalize images inside elements (nodes tree)
   if (template.content?.elements && Array.isArray(template.content.elements)) {
-    template.content.elements = await Promise.all(
-      template.content.elements.map(async (el: any) => {
-        if (el.type === "image" && el.content) {
-          return {
-            ...el,
-            content: await signUrl(el.content),
-          };
-        }
-        return el;
-      })
-    );
+    template.content.elements = template.content.elements.map((el: any) => {
+      if (el.type === "image" && el.content) {
+        return { ...el, content: toProxyUrl(el.content) };
+      }
+      return el;
+    });
   }
 
   return template;
@@ -92,20 +81,19 @@ export const certificateTemplateRouter = createTRPCRouter({
     .input(z.object({ q: z.string().optional() }).optional())
     .query(async ({ input }) => {
       const templates = await listCertificateTemplates(input?.q);
-      // Even for lists, we want to sign backgrounds if we decide to show them in the gallery
-      return Promise.all(templates.map(signTemplateBackground));
+      return templates.map(normalizeTemplateUrls);
     }),
 
   getById: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ input }) => {
       const template = await getCertificateTemplateById(input.id);
-      return signTemplateBackground(template);
+      return normalizeTemplateUrls(template);
     }),
 
   getDefault: protectedProcedure.query(async () => {
     const template = await getDefaultCertificateTemplate();
-    return signTemplateBackground(template);
+    return normalizeTemplateUrls(template);
   }),
 
   upsert: adminProcedure
