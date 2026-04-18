@@ -175,12 +175,6 @@ export function ControlSecretNumbers() {
                   </FormItem>
                 )}
               />
-
-              <div className="bg-muted/30 p-3 rounded-lg border border-border/50">
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  <span className="font-semibold text-primary">Note:</span> If you leave the class selection empty, the system will process the entire school. It will group students by class and assign sequential blocks (e.g., Grade 1: 721-750, Grade 2: 751-780), while maintaining random shuffling within each class for security.
-                </p>
-              </div>
             </CardContent>
             <CardFooter className="flex justify-end">
               <Button type="submit" disabled={mutation.isPending}>

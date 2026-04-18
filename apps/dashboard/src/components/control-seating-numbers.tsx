@@ -150,12 +150,6 @@ export function ControlSeatingNumbers() {
                   )}
                 />
               </div>
-
-              <div className="bg-muted/30 p-3 rounded-lg border border-border/50">
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  <span className="font-semibold text-primary">Note:</span> If you leave the class selection empty, the system will process the entire school alphabetically within each class, assigning consecutive ranges (e.g., Grade 1: 1-30, Grade 2: 31-50, etc.).
-                </p>
-              </div>
             </CardContent>
             <CardFooter className="flex justify-end">
               <Button type="submit" disabled={mutation.isPending}>
