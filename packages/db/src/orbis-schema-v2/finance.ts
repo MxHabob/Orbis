@@ -13,7 +13,7 @@ import {
   unique,
   serial,
 } from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
+import { sql } from "drizzle-orm/sql";
 import { financeSchema } from "./types";
 import { moneyType, percentType } from "./types";
 

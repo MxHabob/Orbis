@@ -12,7 +12,7 @@ import {
   smallint,
   jsonb,
 } from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
+import { sql } from "drizzle-orm/sql";
 import { academicSchema } from "./types";
 import { scoreType, percentType, hijriDateType } from "./types";
 import { academicStatusEnum, attendanceEnum } from "./enums";

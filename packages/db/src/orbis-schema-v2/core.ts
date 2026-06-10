@@ -17,7 +17,7 @@ import {
   primaryKey,
   pgSchema,
 } from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
+import { sql } from "drizzle-orm/sql";
 import { coreSchema } from "./types";
 import { userStatusEnum, roleEnum } from "./enums";
 
