@@ -7,9 +7,13 @@ export async function parseExcel<T>(file: File): Promise<{ data: T[]; meta: { fi
       return { data: [], meta: { fields: [] } };
     }
 
-    // Assuming first row is header
-    const headers = rows[0].map(String);
-    
+    const firstRow = rows[0];
+    if (!firstRow || firstRow.length === 0) {
+      return { data: [], meta: { fields: [] } };
+    }
+
+    const headers = firstRow.map(String);
+
     const data: T[] = rows.slice(1).map((row) => {
       const obj: any = {};
       headers.forEach((header, index) => {

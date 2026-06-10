@@ -12,11 +12,6 @@
   </p>
 </p>
 
-<p align="center">
-  <a href="https://go.orbis.ai/K7GwMoQ">
-    <img src="https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase" />
-  </a>
-</p>
 
 ## About Orbis
 
@@ -46,7 +41,6 @@ We are working on the documentation to get started with Orbis for local developm
 - React
 - TypeScript
 - Nextjs
-- Supabase
 - Shadcn
 - Tauri
 - Expo
@@ -54,7 +48,6 @@ We are working on the documentation to get started with Orbis for local developm
 
 ### Hosting
 
-- Supabase (database, storage, realtime, auth)
 - Vercel (Website, Dashboard)
 - Fly.io (API/tRPC)
 

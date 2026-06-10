@@ -1,6 +1,7 @@
 {
   "extends": "@orbis/tsconfig/base.json",
   "compilerOptions": {
+    "baseUrl": ".",
     "module": "esnext",
     "moduleResolution": "bundler",
     "outDir": "dist",
@@ -8,7 +9,11 @@
     "strict": true,
     "lib": ["esnext", "dom"],
     "declaration": true,
-    "declarationMap": true
+    "declarationMap": true,
+    "paths": {
+      "@db/*": ["../db/src/*"],
+      "@api/*": ["../../apps/api/src/*"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

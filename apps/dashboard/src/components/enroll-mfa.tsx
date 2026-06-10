@@ -1,4 +1,3 @@
-import { createClient } from "@orbis/supabase/client";
 import { Button } from "@orbis/ui/button";
 import {
   Collapsible,
@@ -14,7 +13,6 @@ import { useEffect, useState } from "react";
 import { CopyInput } from "./copy-input";
 
 export function EnrollMFA() {
-  const supabase = createClient();
   const router = useRouter();
   const [isValidating, setValidating] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
@@ -30,46 +28,12 @@ export function EnrollMFA() {
     if (!isValidating && factorId) {
       setValidating(true);
 
-      const challenge = await supabase.auth.mfa.challenge({ factorId });
-
-      if (!challenge.data) {
-        setError(true);
-        setValidating(false);
-        return;
-      }
-
-      const verify = await supabase.auth.mfa.verify({
-        factorId,
-        challengeId: challenge.data.id,
-        code,
-      });
-
-      if (verify.data) {
-        setIsRedirecting(true);
-        router.replace("/");
-      } else {
-        setError(true);
-        setValidating(false);
-      }
     }
   };
 
   useEffect(() => {
     async function enroll() {
-      const { data, error } = await supabase.auth.mfa.enroll({
-        factorType: "totp",
-        issuer: "app.orbis.ai",
-      });
 
-      if (error || !data) {
-        setError(true);
-        return;
-      }
-
-      setFactorId(data.id);
-
-      setQR(data.totp.qr_code);
-      setSecret(data.totp.secret);
     }
 
     enroll();
@@ -77,9 +41,6 @@ export function EnrollMFA() {
 
   const handleOnCancel = () => {
     if (factorId) {
-      supabase.auth.mfa.unenroll({
-        factorId,
-      });
     }
     router.push("/");
   };

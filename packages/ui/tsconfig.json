@@ -2,6 +2,8 @@
   "extends": "@orbis/tsconfig/react-library.json",
   "compilerOptions": {
     "baseUrl": ".",
+    "typeRoots": ["./node_modules/@types", "../../types"],
+    "types": ["bun", "node"],
     "paths": {
       "@/*": ["./src/*"]
     }

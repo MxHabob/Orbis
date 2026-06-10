@@ -18,6 +18,9 @@
     "./country-flags": "./src/country-flags.ts",
     "./timezones": "./src/timezones.ts"
   },
+  "dependencies": {
+    "next": "16.1.5"
+  },
   "devDependencies": {
     "typescript": "^5.9.3"
   }

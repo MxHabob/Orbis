@@ -11,7 +11,12 @@ async function main() {
   
   try {
     const worker = startWorker();
-    
+
+    if (!worker) {
+      logger.info("Worker is disabled because REDIS_URL is not configured.");
+      return;
+    }
+
     // Graceful shutdown
     process.on("SIGTERM", async () => {
       logger.info("SIGTERM received. Shutting down worker...");
