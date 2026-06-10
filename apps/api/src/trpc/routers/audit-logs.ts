@@ -1,5 +1,5 @@
 import { createTRPCRouter, adminProcedure } from "@api/trpc/init";
-import { getAuditLogs } from "@midday/db/queries";
+import { getAuditLogs } from "@orbis/db/queries";
 import { z } from "zod";
 
 export const auditLogsRouter = createTRPCRouter({

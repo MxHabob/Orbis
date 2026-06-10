@@ -10,7 +10,7 @@ import {
   getCertificateData,
   getStudentReportData,
   getTopStudents,
-} from "@midday/db/queries";
+} from "@orbis/db/queries";
 import {
   createGradeEntrySchema,
   updateGradeEntrySchema,
@@ -103,7 +103,7 @@ export const gradesRouter = createTRPCRouter({
         })),
     }))
     .mutation(async ({ input, ctx }) => {
-      const { bulkImportGradesBySecretNumber } = await import("@midday/db/queries");
+      const { bulkImportGradesBySecretNumber } = await import("@orbis/db/queries");
       return bulkImportGradesBySecretNumber(
           input.assessmentItemId, 
           input.gradeData, 
@@ -130,7 +130,7 @@ export const gradesRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const { jobQueue } = await import("@midday/jobs/queue");
+      const { jobQueue } = await import("@orbis/jobs/queue");
       const classIdNum = typeof input.classId === "string" ? parseInt(input.classId) : input.classId;
       const subjectIdNum = typeof input.subjectId === "string" ? parseInt(input.subjectId) : input.subjectId;
 
@@ -162,7 +162,7 @@ export const gradesRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const { jobQueue } = await import("@midday/jobs/queue");
+      const { jobQueue } = await import("@orbis/jobs/queue");
 
       const job = await jobQueue.add("report-generation", {
         userId: ctx.session.user.id,

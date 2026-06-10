@@ -1,7 +1,7 @@
 import { db } from "@db/client";
 import { gradeEntries, assessmentItems, students, subjects, classes, enrollments, users, academicTerms, academicYears } from "@db/schema";
 import { eq, and, desc, asc, inArray } from "drizzle-orm";
-import { RedisCache } from "@midday/cache";
+import { RedisCache } from "@orbis/cache";
 
 // Cache for grades - maybe shorter TTL as they change
 const gradeCache = new RedisCache("grades", 5 * 60);

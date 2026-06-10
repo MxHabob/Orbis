@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 
 import { useClassParams } from "@/hooks/use-class-params";
 import { useTRPC } from "@/trpc/client";
-import { cn } from "@midday/ui/cn";
+import { cn } from "@orbis/ui/cn";
 import {
   Table,
   TableBody,
@@ -12,7 +12,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@midday/ui/table";
+} from "@orbis/ui/table";
 import {
   useMutation,
   useQueryClient,

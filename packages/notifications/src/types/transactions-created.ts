@@ -1,5 +1,5 @@
-import { getI18n } from "@midday/email/locales";
-import { getInboxEmail } from "@midday/inbox";
+import { getI18n } from "@orbis/email/locales";
+import { getInboxEmail } from "@orbis/inbox";
 import type { NotificationHandler } from "../base";
 import { transactionsCreatedSchema } from "../schemas";
 

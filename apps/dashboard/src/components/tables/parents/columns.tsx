@@ -1,13 +1,13 @@
 import { useScopedI18n } from "@/locales/client";
 import type { RouterOutputs } from "@api/trpc/routers/_app";
-import { Avatar, AvatarFallback } from "@midday/ui/avatar";
-import { Button } from "@midday/ui/button";
+import { Avatar, AvatarFallback } from "@orbis/ui/avatar";
+import { Button } from "@orbis/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@midday/ui/dropdown-menu";
+} from "@orbis/ui/dropdown-menu";
 import type { ColumnDef, FilterFn, Row } from "@tanstack/react-table";
 import { MoreHorizontal } from "lucide-react";
 

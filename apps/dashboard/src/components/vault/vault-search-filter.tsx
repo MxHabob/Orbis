@@ -4,9 +4,9 @@
 import { FilterList } from "@/components/filter-list";
 import { useDocumentFilterParams } from "@/hooks/use-document-filter-params";
 import { useTRPC } from "@/trpc/client";
-import { authClient } from "@midday/auth/auth-client";
-import { Calendar } from "@midday/ui/calendar";
-import { cn } from "@midday/ui/cn";
+import { authClient } from "@orbis/auth/auth-client";
+import { Calendar } from "@orbis/ui/calendar";
+import { cn } from "@orbis/ui/cn";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,9 +16,9 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from "@midday/ui/dropdown-menu";
-import { Icons } from "@midday/ui/icons";
-import { Input } from "@midday/ui/input";
+} from "@orbis/ui/dropdown-menu";
+import { Icons } from "@orbis/ui/icons";
+import { Input } from "@orbis/ui/input";
 import { formatISO, parseISO } from "date-fns";
 import { useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";

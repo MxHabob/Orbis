@@ -17,7 +17,7 @@ import {
   getTermsByYear,
   updateAcademicTerm,
   updateAcademicYear,
-} from "@midday/db/queries";
+} from "@orbis/db/queries";
 import { z } from "zod";
 
 export const academicRouter = createTRPCRouter({

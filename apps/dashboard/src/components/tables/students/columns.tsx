@@ -2,16 +2,16 @@
 
 import { useStudentParams } from "@/hooks/use-student-params";
 import type { RouterOutputs } from "@api/trpc/routers/_app";
-import { Avatar, AvatarFallback, AvatarImageNext } from "@midday/ui/avatar";
-import { Badge } from "@midday/ui/badge";
-import { Button } from "@midday/ui/button";
-import { Icons } from "@midday/ui/icons";
+import { Avatar, AvatarFallback, AvatarImageNext } from "@orbis/ui/avatar";
+import { Badge } from "@orbis/ui/badge";
+import { Button } from "@orbis/ui/button";
+import { Icons } from "@orbis/ui/icons";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@midday/ui/dropdown-menu";
+} from "@orbis/ui/dropdown-menu";
 import type { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { memo, useCallback } from "react";

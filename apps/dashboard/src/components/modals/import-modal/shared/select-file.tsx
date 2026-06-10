@@ -1,12 +1,12 @@
 "use client";
 
-import { cn } from "@midday/ui/cn";
-import { Spinner } from "@midday/ui/spinner";
+import { cn } from "@orbis/ui/cn";
+import { Spinner } from "@orbis/ui/spinner";
 import { useCallback, useRef, useState } from "react";
 import Dropzone, { type FileRejection } from "react-dropzone";
 import { Controller } from "react-hook-form";
 import { useCsvContext } from "./context";
-import { parseFile } from "@midday/import";
+import { parseFile } from "@orbis/import";
 
 
 export function SelectFile() {

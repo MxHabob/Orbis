@@ -1,6 +1,6 @@
 import type { Database } from "@db/client";
 import { users } from "@db/schema";
-import { userCache } from "@midday/cache";
+import { userCache } from "@orbis/cache";
 import { eq, or } from "drizzle-orm";
 
 export const getStaffUsers = async (db: Database) => {

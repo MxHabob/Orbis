@@ -13,16 +13,16 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@midday/ui/form";
-import { Input } from "@midday/ui/input";
-import { SubmitButton } from "@midday/ui/submit-button";
+} from "@orbis/ui/form";
+import { Input } from "@orbis/ui/input";
+import { SubmitButton } from "@orbis/ui/submit-button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@midday/ui/select";
+} from "@orbis/ui/select";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { z } from "zod/v3";

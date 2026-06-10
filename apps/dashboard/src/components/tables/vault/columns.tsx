@@ -17,18 +17,18 @@ const isMimeTypeSupportedForProcessing = (mimetype: string) => {
   ].includes(mimetype);
 };
 
-import { Badge } from "@midday/ui/badge";
-import { Button } from "@midday/ui/button";
-import { Checkbox } from "@midday/ui/checkbox";
-import { cn } from "@midday/ui/cn";
+import { Badge } from "@orbis/ui/badge";
+import { Button } from "@orbis/ui/button";
+import { Checkbox } from "@orbis/ui/checkbox";
+import { cn } from "@orbis/ui/cn";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@midday/ui/dropdown-menu";
-import { Skeleton } from "@midday/ui/skeleton";
+} from "@orbis/ui/dropdown-menu";
+import { Skeleton } from "@orbis/ui/skeleton";
 import type { ColumnDef } from "@tanstack/react-table";
 import { MoreHorizontal } from "lucide-react";
 import { useState } from "react";

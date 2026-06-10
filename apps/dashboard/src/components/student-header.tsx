@@ -1,10 +1,10 @@
 "use client";
 
 import { useCustomerFilterParams } from "@/hooks/use-customer-filter-params";
-import { Input } from "@midday/ui/input";
-import { Icons } from "@midday/ui/icons";
+import { Input } from "@orbis/ui/input";
+import { Icons } from "@orbis/ui/icons";
 import { useRef, useState, useEffect } from "react";
-import { Avatar, AvatarFallback } from "@midday/ui/avatar";
+import { Avatar, AvatarFallback } from "@orbis/ui/avatar";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -17,16 +17,16 @@ import {
   DropdownMenuGroup,
   DropdownMenuLabel,
   DropdownMenuSeparator
-} from "@midday/ui/dropdown-menu";
-import { Button } from "@midday/ui/button";
+} from "@orbis/ui/dropdown-menu";
+import { Button } from "@orbis/ui/button";
 import { useStudentParams } from "@/hooks/use-student-params";
 import { useTRPC } from "@/trpc/client";
-import { useToast } from "@midday/ui/use-toast";
+import { useToast } from "@orbis/ui/use-toast";
 import { useMutation, useQueryClient, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useExportStore } from "@/store/export";
 import { useI18n } from "@/locales/client";
-import { cn } from "@midday/ui/cn";
+import { cn } from "@orbis/ui/cn";
 
 function StudentSearchFilter() {
   const [input, setInput] = useState("");

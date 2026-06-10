@@ -1,9 +1,9 @@
 "use server";
 
 import { authActionClient } from "@/actions/safe-action";
-import { getCurrentAcademicYear } from "@midday/db/queries/academic-calendar";
-import { getClassSchedule, getTeacherSchedule } from "@midday/db/queries/lessons";
-import { getStudentByUserId } from "@midday/db/queries/students";
+import { getCurrentAcademicYear } from "@orbis/db/queries/academic-calendar";
+import { getClassSchedule, getTeacherSchedule } from "@orbis/db/queries/lessons";
+import { getStudentByUserId } from "@orbis/db/queries/students";
 import { 
   addDays, 
   differenceInDays, 

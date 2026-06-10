@@ -2,12 +2,12 @@
 
 import { useTRPC } from "@/trpc/client";
 import { useI18n } from "@/locales/client";
-import { cn } from "@midday/ui/cn";
-import { useToast } from "@midday/ui/use-toast";
+import { cn } from "@orbis/ui/cn";
+import { useToast } from "@orbis/ui/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { type FileRejection, useDropzone } from "react-dropzone";
-import { authClient } from "@midday/auth/auth-client";
+import { authClient } from "@orbis/auth/auth-client";
 
 type UploadResult = {
   filename: string;

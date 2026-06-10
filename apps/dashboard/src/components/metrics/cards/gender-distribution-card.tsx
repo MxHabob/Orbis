@@ -5,7 +5,7 @@ import { AnimatedNumber } from "@/components/animated-number";
 import { useSchoolMetrics } from "@/hooks/use-school-metrics";
 import { useLongPress } from "@/hooks/use-long-press";
 import { useMetricsCustomize } from "@/hooks/use-metrics-customize";
-import { cn } from "@midday/ui/cn";
+import { cn } from "@orbis/ui/cn";
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { ShareMetricButton } from "../components/share-metric-button";
 

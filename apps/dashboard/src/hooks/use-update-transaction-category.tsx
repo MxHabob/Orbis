@@ -2,8 +2,8 @@
 
 import { useInvalidateTransactionQueries } from "@/hooks/use-invalidate-transaction-queries";
 import { useTRPC } from "@/trpc/client";
-import { ToastAction } from "@midday/ui/toast";
-import { toast } from "@midday/ui/use-toast";
+import { ToastAction } from "@orbis/ui/toast";
+import { toast } from "@orbis/ui/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 type Category = {
@@ -88,7 +88,7 @@ export function useUpdateTransactionCategory(
       toast({
         duration: 6000,
         variant: "ai",
-        title: "Midday AI",
+        title: "Orbis AI",
         description: `We found ${similarTransactions.length} similar transactions to "${transactionName}". Mark them as ${category.name} too?`,
         footer: (
           <div className="flex space-x-2 mt-4">

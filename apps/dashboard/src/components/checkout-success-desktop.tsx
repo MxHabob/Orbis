@@ -15,7 +15,7 @@ export function CheckoutSuccessDesktop({
 
   useEffect(() => {
     if (redirectPath && !hasRunned.current) {
-      window.location.replace(`midday://${redirectPath}`);
+      window.location.replace(`orbis://${redirectPath}`);
       hasRunned.current = true;
     }
   }, [redirectPath]);
@@ -27,14 +27,14 @@ export function CheckoutSuccessDesktop({
           src={appIcon}
           width={80}
           height={80}
-          alt="Midday"
+          alt="Orbis"
           quality={100}
           className="mb-10"
         />
         <p>Checkout successful</p>
         <p className="mb-4">
-          If Midday dosen't open in a few seconds,{" "}
-          <a className="underline" href={`midday://${redirectPath}`}>
+          If Orbis dosen't open in a few seconds,{" "}
+          <a className="underline" href={`orbis://${redirectPath}`}>
             click here
           </a>
           .

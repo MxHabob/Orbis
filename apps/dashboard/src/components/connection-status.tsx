@@ -7,13 +7,13 @@ import {
   buildConnectionIssues,
   getHighestSeverity,
 } from "@/utils/connection-status";
-import { Button } from "@midday/ui/button";
+import { Button } from "@orbis/ui/button";
 import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
-} from "@midday/ui/hover-card";
-import { Icons } from "@midday/ui/icons";
+} from "@orbis/ui/hover-card";
+import { Icons } from "@orbis/ui/icons";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";

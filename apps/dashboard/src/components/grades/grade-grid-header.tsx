@@ -7,14 +7,14 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@midday/ui/select";
+} from "@orbis/ui/select";
 import { GradesActions } from "./grades-actions";
 import { GradesSearchFilter } from "./grades-search-filter";
 import { useI18n } from "@/locales/client";
 import { useGradingStore } from "@/store/use-grading-store";
 import { useGradeFilterParams } from "@/hooks/use-grade-filter-params";
 import { HIJRI_MONTHS } from "@/utils/academic-calendar";
-import { Badge } from "@midday/ui/badge";
+import { Badge } from "@orbis/ui/badge";
 
 interface GradeGridHeaderProps {
   initialData: {

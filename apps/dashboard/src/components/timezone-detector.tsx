@@ -1,7 +1,7 @@
 "use client";
 
 import { useUserMutation } from "@/hooks/use-user";
-import { authClient } from "@midday/auth/auth-client";
+import { authClient } from "@orbis/auth/auth-client";
 import { useEffect, useRef } from "react";
 
 export function TimezoneDetector() {

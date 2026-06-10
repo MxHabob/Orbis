@@ -1,7 +1,7 @@
 "use client";
 
 import { useLessonParams } from "@/hooks/use-lesson-params";
-import { Sheet, SheetContent, SheetHeader } from "@midday/ui/sheet";
+import { Sheet, SheetContent, SheetHeader } from "@orbis/ui/sheet";
 import React from "react";
 import { LessonSchedule } from "../lesson-schedule";
 

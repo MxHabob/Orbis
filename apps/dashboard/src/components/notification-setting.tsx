@@ -1,8 +1,8 @@
 "use client";
 
 import { useTRPC } from "@/trpc/client";
-import { Checkbox } from "@midday/ui/checkbox";
-import { Label } from "@midday/ui/label";
+import { Checkbox } from "@orbis/ui/checkbox";
+import { Label } from "@orbis/ui/label";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 type Props = {

@@ -8,7 +8,7 @@ import {
   type ImportCsvFormData,
   type GradeImportFormData,
   type StudentImportFormData
-} from "@midday/import";
+} from "@orbis/import";
 
 export { 
   mappableFields, 

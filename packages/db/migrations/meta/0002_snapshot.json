@@ -1400,14 +1400,14 @@
           "primaryKey": false,
           "notNull": true
         },
-        "related_entity_type": {
-          "name": "related_entity_type",
+        "related_orbis_type": {
+          "name": "related_orbis_type",
           "type": "varchar(50)",
           "primaryKey": false,
           "notNull": false
         },
-        "related_entity_id": {
-          "name": "related_entity_id",
+        "related_orbis_id": {
+          "name": "related_orbis_id",
           "type": "varchar(100)",
           "primaryKey": false,
           "notNull": false

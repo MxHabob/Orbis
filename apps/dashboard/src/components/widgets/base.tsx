@@ -1,5 +1,5 @@
 import { useLongPress } from "@/hooks/use-long-press";
-import { cn } from "@midday/ui/cn";
+import { cn } from "@orbis/ui/cn";
 import { useIsCustomizing, useWidgetActions } from "./widget-provider";
 
 interface BaseWidgetProps {

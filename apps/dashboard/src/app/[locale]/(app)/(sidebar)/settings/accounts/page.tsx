@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Bank Connections | Mommy",
+  title: "Bank Connections | Orbis",
 };
 
 export default async function Page() {

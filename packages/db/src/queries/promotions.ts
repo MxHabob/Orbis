@@ -12,7 +12,7 @@ import {
   auditLogs,
 } from "@db/schema";
 import { eq, and, asc, inArray, isNull, desc, sql } from "drizzle-orm";
-import { RedisCache } from "@midday/cache";
+import { RedisCache } from "@orbis/cache";
 
 // Cache instances to invalidate after promotion
 const classCache = new RedisCache("classes", 60 * 60);

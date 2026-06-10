@@ -11,18 +11,18 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@midday/ui/form";
-import { Input } from "@midday/ui/input";
+} from "@orbis/ui/form";
+import { Input } from "@orbis/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@midday/ui/select";
-import { SubmitButton } from "@midday/ui/submit-button";
-import { Textarea } from "@midday/ui/textarea";
-import { Switch } from "@midday/ui/switch";
+} from "@orbis/ui/select";
+import { SubmitButton } from "@orbis/ui/submit-button";
+import { Textarea } from "@orbis/ui/textarea";
+import { Switch } from "@orbis/ui/switch";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { z } from "zod/v3";

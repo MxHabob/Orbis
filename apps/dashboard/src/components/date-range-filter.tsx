@@ -2,14 +2,14 @@
 
 import { useUserQuery } from "@/hooks/use-user";
 import { getDatePresets } from "@/utils/date-presets";
-import { Calendar } from "@midday/ui/calendar";
+import { Calendar } from "@orbis/ui/calendar";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@midday/ui/select";
+} from "@orbis/ui/select";
 import { formatISO, parseISO } from "date-fns";
 
 interface DateRangeFilterProps {

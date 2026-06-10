@@ -10,7 +10,7 @@ import {
   markAsRead,
   updateAllNotificationsStatus,
   updateNotificationStatus,
-} from "@midday/db/queries";
+} from "@orbis/db/queries";
 import { z } from "zod";
 
 export const notificationsRouter = createTRPCRouter({

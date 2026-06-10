@@ -1,7 +1,7 @@
 "use client";
 
 import { Cookies } from "@/utils/constants";
-import type { AppRouter } from "@midday/api/trpc/routers/_app";
+import type { AppRouter } from "@orbis/api/trpc/routers/_app";
 
 import type { QueryClient } from "@tanstack/react-query";
 import { QueryClientProvider, isServer } from "@tanstack/react-query";
@@ -56,7 +56,7 @@ function getApiUrl(): string {
   }
   
   // Production fallback
-  return "https://api.midday.ai";
+  return "https://api.orbis.ai";
 }
 
 export function TRPCReactProvider(

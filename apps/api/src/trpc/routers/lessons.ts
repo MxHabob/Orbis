@@ -8,7 +8,7 @@ import {
   updateScheduledLesson,
   deleteScheduledLesson,
   getScheduledLessonById
-} from "@midday/db/queries";
+} from "@orbis/db/queries";
 
 import { 
   createTimeSlotSchema, 

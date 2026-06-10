@@ -1,9 +1,9 @@
 import "@/styles/globals.css";
-import { cn } from "@midday/ui/cn";
-import "@midday/ui/globals.css";
+import { cn } from "@orbis/ui/cn";
+import "@orbis/ui/globals.css";
 import { DesktopHeader } from "@/components/desktop-header";
 import { isDesktopApp } from "@/utils/desktop";
-import { Toaster } from "@midday/ui/toaster";
+import { Toaster } from "@orbis/ui/toaster";
 import type { Metadata } from "next";
 import { Hedvig_Letters_Sans, Hedvig_Letters_Serif } from "next/font/google";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
@@ -11,41 +11,41 @@ import type { ReactElement } from "react";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://app.entity.com"),
-  title: "Mommy | School Management",
+  metadataBase: new URL("https://app.orbis.com"),
+  title: "Orbis | School Management",
   description:
     "Automate School tasks, stay organized, and make informed decisions effortlessly.",
   twitter: {
-    title: "Mommy | School Management",
+    title: "Orbis | School Management",
     description:
       "Automate School tasks, stay organized, and make informed decisions effortlessly.",
     images: [
       {
-        url: "https://cdn.entity.ai/opengraph-image-v1.jpg",
+        url: "https://cdn.orbis.ai/opengraph-image-v1.jpg",
         width: 800,
         height: 600,
       },
       {
-        url: "https://cdn.entity.ai/opengraph-image-v1.jpg",
+        url: "https://cdn.orbis.ai/opengraph-image-v1.jpg",
         width: 1800,
         height: 1600,
       },
     ],
   },
   openGraph: {
-    title: "Mommy | School Management",
+    title: "Orbis | School Management",
     description:
       "Automate financial tasks, stay organized, and make informed decisions effortlessly.",
-    url: "https://app.entity.com",
-    siteName: "Mommy",
+    url: "https://app.orbis.com",
+    siteName: "Orbis",
     images: [
       {
-        url: "https://cdn.entity.ai/opengraph-image-v1.jpg",
+        url: "https://cdn.orbis.ai/opengraph-image-v1.jpg",
         width: 800,
         height: 600,
       },
       {
-        url: "https://cdn.entity.ai/opengraph-image-v1.jpg",
+        url: "https://cdn.orbis.ai/opengraph-image-v1.jpg",
         width: 1800,
         height: 1600,
       },

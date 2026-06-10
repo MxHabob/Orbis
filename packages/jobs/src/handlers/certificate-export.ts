@@ -1,11 +1,11 @@
 import type { Job } from "bullmq";
 import type { CertificateExportData } from "../queue";
-import { getStudentsByClassId, getValidSessionByUserId } from "@midday/db/queries";
-import { getCertificateTemplateById } from "@midday/db/queries/certificate-templates";
-import { createDocument } from "@midday/db/queries/documents";
-import { db } from "@midday/db/client";
-import { uploadFile } from "@midday/storage";
-import { logger } from "@midday/logger";
+import { getStudentsByClassId, getValidSessionByUserId } from "@orbis/db/queries";
+import { getCertificateTemplateById } from "@orbis/db/queries/certificate-templates";
+import { createDocument } from "@orbis/db/queries/documents";
+import { db } from "@orbis/db/client";
+import { uploadFile } from "@orbis/storage";
+import { logger } from "@orbis/logger";
 import puppeteer, { type Browser, type Page, type PaperFormat } from "puppeteer";
 
 // ============================================================
@@ -96,7 +96,7 @@ export async function handleCertificateExport(
     // ──────────────────────────────────────────
     // Phase 1: Fetch metadata & Session
     // ──────────────────────────────────────────
-    const { classes, academicYears } = await import("@midday/db/schema");
+    const { classes, academicYears } = await import("@orbis/db/schema");
     const { eq, inArray } = await import("drizzle-orm");
 
     const classMetadata = await db

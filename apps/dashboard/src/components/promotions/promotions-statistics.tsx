@@ -1,8 +1,8 @@
 "use client";
 
 import { useI18n } from "@/locales/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@midday/ui/card";
-import { Skeleton } from "@midday/ui/skeleton";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@orbis/ui/card";
+import { Skeleton } from "@orbis/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -10,9 +10,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@midday/ui/table";
+} from "@orbis/ui/table";
 import { Users, TrendingUp, Award, GraduationCap } from "lucide-react";
-import { cn } from "@midday/ui/cn";
+import { cn } from "@orbis/ui/cn";
 
 interface PromotionStatisticsData {
   total: number;

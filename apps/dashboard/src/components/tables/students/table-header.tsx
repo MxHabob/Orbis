@@ -15,8 +15,8 @@ import {
   SortableContext,
   horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { Button } from "@midday/ui/button";
-import { TableHead, TableHeader, TableRow } from "@midday/ui/table";
+import { Button } from "@orbis/ui/button";
+import { TableHead, TableHeader, TableRow } from "@orbis/ui/table";
 import type { Header, Table } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { useMemo } from "react";

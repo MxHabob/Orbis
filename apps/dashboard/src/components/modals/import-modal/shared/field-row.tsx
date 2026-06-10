@@ -1,6 +1,6 @@
 "use client";
 
-import { Icons } from "@midday/ui/icons";
+import { Icons } from "@orbis/ui/icons";
 import {
   Select,
   SelectContent,
@@ -9,13 +9,13 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
-} from "@midday/ui/select";
+} from "@orbis/ui/select";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@midday/ui/tooltip";
+} from "@orbis/ui/tooltip";
 import { Controller, useWatch } from "react-hook-form";
 import { mappableFields, useCsvContext } from "./context";
 import { useI18n } from "@/locales/client";

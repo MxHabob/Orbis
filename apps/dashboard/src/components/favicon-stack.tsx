@@ -26,7 +26,7 @@ function getFaviconUrl(url: string): string {
 }
 
 /**
- * Modify URL to add utm_source=midday.ai and replace utm_source=openai if present
+ * Modify URL to add utm_source=orbis.ai and replace utm_source=openai if present
  */
 function modifyUrlWithUtmSource(url: string): string {
   try {
@@ -35,8 +35,8 @@ function modifyUrlWithUtmSource(url: string): string {
     // Remove existing utm_source parameter if present
     urlObj.searchParams.delete("utm_source");
 
-    // Add utm_source=midday.ai
-    urlObj.searchParams.set("utm_source", "midday.ai");
+    // Add utm_source=orbis.ai
+    urlObj.searchParams.set("utm_source", "orbis.ai");
 
     return urlObj.toString();
   } catch {

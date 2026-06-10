@@ -1,6 +1,6 @@
-import { Input } from "@midday/ui/input";
+import { Input } from "@orbis/ui/input";
 import { useState, useEffect, memo } from "react";
-import { cn } from "@midday/ui/cn";
+import { cn } from "@orbis/ui/cn";
 import type { Table } from "@tanstack/react-table";
 
 interface EditableGradeCellProps {

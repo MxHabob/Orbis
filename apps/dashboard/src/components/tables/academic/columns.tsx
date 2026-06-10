@@ -1,19 +1,19 @@
 "use client";
 
 import { useI18n } from "@/locales/client";
-import { Button } from "@midday/ui/button";
-import { cn } from "@midday/ui/cn";
+import { Button } from "@orbis/ui/button";
+import { cn } from "@orbis/ui/cn";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@midday/ui/dropdown-menu";
+} from "@orbis/ui/dropdown-menu";
 import { DotsHorizontalIcon } from "@radix-ui/react-icons";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ChevronDown, ChevronRight, Calendar } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
-import { Badge } from "@midday/ui/badge";
+import { Badge } from "@orbis/ui/badge";
 
 export interface AcademicTableMeta {
   deleteYear: (id: number) => void;

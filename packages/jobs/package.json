@@ -1,5 +1,5 @@
 {
-  "name": "@midday/jobs",
+  "name": "@orbis/jobs",
   "version": "1.0.0",
   "type": "module",
   "main": "src/index.ts",
@@ -16,12 +16,12 @@
     "./worker": "./src/worker.ts"
   },
   "dependencies": {
-    "@midday/auth": "workspace:*",
-    "@midday/db": "workspace:*",
-    "@midday/export": "workspace:*",
-    "@midday/logger": "workspace:*",
-    "@midday/storage": "workspace:*",
-    "@midday/utils": "workspace:*",
+    "@orbis/auth": "workspace:*",
+    "@orbis/db": "workspace:*",
+    "@orbis/export": "workspace:*",
+    "@orbis/logger": "workspace:*",
+    "@orbis/storage": "workspace:*",
+    "@orbis/utils": "workspace:*",
     "archiver": "^7.0.1",
     "bullmq": "^5.41.6",
     "ioredis": "5.9.3",
@@ -31,7 +31,7 @@
     "puppeteer": "^24.2.0"
   },
   "devDependencies": {
-    "@midday/tsconfig": "workspace:*",
+    "@orbis/tsconfig": "workspace:*",
     "typescript": "^5.7.3"
   }
 }

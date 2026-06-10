@@ -8,7 +8,7 @@ import {
   setDefaultCertificateTemplate,
   deleteCertificateTemplate,
   getCertificateTemplatesSummary,
-} from "@midday/db/queries";
+} from "@orbis/db/queries";
 import {
   upsertCertificateTemplateSchema,
   createCertificateTemplateSchema,
@@ -122,7 +122,7 @@ export const certificateTemplateRouter = createTRPCRouter({
       selectedMonth: z.number(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const { JobService } = await import("@midday/jobs/service");
+      const { JobService } = await import("@orbis/jobs/service");
       const result = await JobService.triggerCertificateExport({
         ...input,
         userId: ctx.session.user.id,

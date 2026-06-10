@@ -1,6 +1,6 @@
 import { jobQueue, type CertificateExportData } from "./queue";
 import { nanoid } from "nanoid";
-import { logger } from "@midday/logger";
+import { logger } from "@orbis/logger";
 
 /**
  * Background Job Service (2026)

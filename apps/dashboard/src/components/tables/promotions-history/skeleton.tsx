@@ -8,8 +8,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@midday/ui/table";
-import { Skeleton } from "@midday/ui/skeleton";
+} from "@orbis/ui/table";
+import { Skeleton } from "@orbis/ui/skeleton";
 
 export function HistoryTableSkeleton() {
   const t = useI18n();

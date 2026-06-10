@@ -3,7 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import { useTRPC } from "@/trpc/client";
 import { CertificateViewer } from "@/components/certificates/certificate-viewer";
-import { Spinner } from "@midday/ui/spinner";
+import { Spinner } from "@orbis/ui/spinner";
 import { useEffect, useState, useMemo, useCallback, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 

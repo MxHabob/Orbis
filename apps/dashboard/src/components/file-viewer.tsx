@@ -1,7 +1,7 @@
 "use client";
 
 import { useFileUrl } from "@/hooks/use-file-url";
-import { Skeleton } from "@midday/ui/skeleton";
+import { Skeleton } from "@orbis/ui/skeleton";
 import dynamic from "next/dynamic";
 import { FilePreviewIcon } from "./file-preview-icon";
 

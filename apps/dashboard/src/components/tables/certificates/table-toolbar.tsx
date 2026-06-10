@@ -1,9 +1,9 @@
 "use client";
 
 import { useCertificateFilterParams } from "@/hooks/use-certificate-filter-params";
-import { Icons } from "@midday/ui/icons";
-import { Input } from "@midday/ui/input";
-import { Button } from "@midday/ui/button";
+import { Icons } from "@orbis/ui/icons";
+import { Input } from "@orbis/ui/input";
+import { Button } from "@orbis/ui/button";
 import { useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useRouter } from "next/navigation";

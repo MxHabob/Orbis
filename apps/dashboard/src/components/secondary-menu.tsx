@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@midday/ui/cn";
+import { cn } from "@orbis/ui/cn";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 

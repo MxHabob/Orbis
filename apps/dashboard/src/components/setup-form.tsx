@@ -11,9 +11,9 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@midday/ui/form";
-import { Input } from "@midday/ui/input";
-import { SubmitButton } from "@midday/ui/submit-button";
+} from "@orbis/ui/form";
+import { Input } from "@orbis/ui/input";
+import { SubmitButton } from "@orbis/ui/submit-button";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";

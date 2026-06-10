@@ -1,4 +1,4 @@
-app = 'midday-api'
+app = 'orbis-api'
 primary_region = 'fra'
 
 [build]

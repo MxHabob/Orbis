@@ -1,8 +1,8 @@
 import { createContext, useContext } from "react";
 import type { Control, UseFormSetValue, UseFormWatch } from "react-hook-form";
-// import { z } from "zod/v3"; // Removed as we import schema from @midday/import
+// import { z } from "zod/v3"; // Removed as we import schema from @orbis/import
 
-import { mappableFields, importSchema, type ImportCsvFormData } from "@midday/import";
+import { mappableFields, importSchema, type ImportCsvFormData } from "@orbis/import";
 
 export { mappableFields, importSchema, type ImportCsvFormData };
 

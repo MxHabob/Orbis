@@ -3,18 +3,18 @@
 import { revalidateAfterTeamChange } from "@/actions/revalidate-action";
 import { useUserQuery } from "@/hooks/use-user";
 import { useTRPC } from "@/trpc/client";
-import { authClient } from "@midday/auth/auth-client";
-import { Avatar, AvatarFallback, AvatarImageNext } from "@midday/ui/avatar";
-import { Button } from "@midday/ui/button";
-import { cn } from "@midday/ui/cn";
-import { Icons } from "@midday/ui/icons";
-import { Skeleton } from "@midday/ui/skeleton";
+import { authClient } from "@orbis/auth/auth-client";
+import { Avatar, AvatarFallback, AvatarImageNext } from "@orbis/ui/avatar";
+import { Button } from "@orbis/ui/button";
+import { cn } from "@orbis/ui/cn";
+import { Icons } from "@orbis/ui/icons";
+import { Skeleton } from "@orbis/ui/skeleton";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@midday/ui/tooltip";
+} from "@orbis/ui/tooltip";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";

@@ -4,7 +4,7 @@ import { GoogleSignIn } from "@/components/google-sign-in";
 import { LoginAccordion } from "@/components/login-accordion";
 import { UserAuthForm } from "@/components/user-auth-form";
 import { Cookies } from "@/utils/constants";
-import { auth } from "@midday/auth";
+import { auth } from "@orbis/auth";
 import { Zap } from "lucide-react";
 import type { Metadata } from "next";
 import { cookies, headers } from "next/headers";
@@ -13,7 +13,7 @@ import { redirect } from "next/navigation";
 import { userAgent } from "next/server";
 
 export const metadata: Metadata = {
-  title: "Login | Mommy",
+  title: "Login | Orbis",
 };
 
 export default async function Page() {
@@ -128,7 +128,7 @@ export default async function Page() {
           <div className="space-y-8 flex-1 flex flex-col justify-center">
             {/* Header */}
             <div className="text-center space-y-2">
-              <h1 className="text-lg mb-4 font-serif">Welcome to Mommy School</h1>
+              <h1 className="text-lg mb-4 font-serif">Welcome to Orbis School</h1>
               <p className="font-sans text-sm text-[#878787]">
                 Sign in or create an account
               </p>
@@ -161,14 +161,14 @@ export default async function Page() {
             <p className="font-sans text-xs text-[#878787]">
               By signing in you agree to our{" "}
               <Link
-                href="https://entity.ai/terms"
+                href="https://orbis.ai/terms"
                 className="text-[#878787] hover:text-foreground transition-colors underline"
               >
                 Terms of service
               </Link>{" "}
               &{" "}
               <Link
-                href="https://entity.ai/policy"
+                href="https://orbis.ai/policy"
                 className="text-[#878787] hover:text-foreground transition-colors underline"
               >
                 Privacy policy

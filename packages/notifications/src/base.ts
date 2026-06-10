@@ -1,5 +1,5 @@
-import type { Database } from "@midday/db/client";
-import type { Activity } from "@midday/db/queries";
+import type { Database } from "@orbis/db/client";
+import type { Activity } from "@orbis/db/queries";
 import type { CreateEmailOptions } from "resend";
 import { z } from "zod";
 import type { CreateActivityInput } from "./schemas";

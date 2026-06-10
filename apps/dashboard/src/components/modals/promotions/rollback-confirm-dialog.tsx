@@ -10,7 +10,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@midday/ui/alert-dialog";
+} from "@orbis/ui/alert-dialog";
 
 interface RollbackConfirmDialogProps {
   open: boolean;

@@ -14,7 +14,7 @@ import { useTRPC } from "@/trpc/client";
 import { STICKY_COLUMNS, SUMMARY_GRID_HEIGHTS } from "@/utils/table-configs";
 import type { TableSettings } from "@/utils/table-settings";
 import { DndContext, closestCenter } from "@dnd-kit/core";
-import { Table, TableBody, TableCell, TableRow } from "@midday/ui/table";
+import { Table, TableBody, TableCell, TableRow } from "@orbis/ui/table";
 import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { type VirtualItem, useVirtualizer } from "@tanstack/react-virtual";
@@ -23,7 +23,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import { columns } from "./columns";
 import { EmptyState, NoResults } from "./empty-states";
 import { DataTableHeader } from "./table-header";
-import { authClient } from "@midday/auth/auth-client";
+import { authClient } from "@orbis/auth/auth-client";
 import { BottomBar } from "./bottom-bar";
 
 // Stable reference for non-clickable columns (avoids recreation on each render)

@@ -1,6 +1,6 @@
 import { createI18nMiddleware } from "next-international/middleware";
 import { type NextRequest, NextResponse } from "next/server";
-import { auth } from "@midday/auth";
+import { auth } from "@orbis/auth";
 
 const I18nMiddleware = createI18nMiddleware({
   locales: ["ar", "sv", "en"],

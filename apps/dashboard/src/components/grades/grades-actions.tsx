@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@midday/ui/button";
+import { Button } from "@orbis/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,16 +11,16 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from "@midday/ui/dropdown-menu";
-import { Icons } from "@midday/ui/icons";
+} from "@orbis/ui/dropdown-menu";
+import { Icons } from "@orbis/ui/icons";
 import { parseAsBoolean, parseAsString, parseAsInteger, useQueryStates } from "nuqs";
 import { useGradeFilterParams } from "@/hooks/use-grade-filter-params";
 import { useTRPC } from "@/trpc/client";
-import { useToast } from "@midday/ui/use-toast";
+import { useToast } from "@orbis/ui/use-toast";
 import { useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
-import { exportToCsv, parseCsv, generateCanvasPdf, downloadBase64 } from "@midday/export";
+import { exportToCsv, parseCsv, generateCanvasPdf, downloadBase64 } from "@orbis/export";
 import { useI18n } from "@/locales/client";
 import { invalidateGradesDomain } from "@/utils/query-invalidation";
 import { useExportStore } from "@/store/export";

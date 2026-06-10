@@ -23,11 +23,11 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
   DropdownMenuPortal,
-} from "@midday/ui/dropdown-menu";
-import { Badge } from "@midday/ui/badge";
+} from "@orbis/ui/dropdown-menu";
+import { Badge } from "@orbis/ui/badge";
 import { useEditorStore } from "@/store/certificate-editor";
-import { cn } from "@midday/ui/cn";
-import { Input } from "@midday/ui/input";
+import { cn } from "@orbis/ui/cn";
+import { Input } from "@orbis/ui/input";
 
 export function EditorSidebarHeader() {
   const { name, setName } = useEditorStore();

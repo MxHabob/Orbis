@@ -1,8 +1,8 @@
 import { verifySession } from "@api/utils/auth";
 import type { Session, HonoEnv } from "@api/utils/auth";
 import { getGeoContext } from "@api/utils/geo";
-import type { Database } from "@midday/db/client";
-import { db } from "@midday/db/client";
+import type { Database } from "@orbis/db/client";
+import { db } from "@orbis/db/client";
 import { TRPCError, initTRPC } from "@trpc/server";
 import type { Context } from "hono";
 import superjson from "superjson";

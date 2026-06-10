@@ -1,13 +1,13 @@
-import type { Database } from "@midday/db/client";
-import { shouldSendNotification } from "@midday/db/queries";
-import InvoiceEmail from "@midday/email/emails/invoice";
-import InvoiceOverdueEmail from "@midday/email/emails/invoice-overdue";
-import InvoicePaidEmail from "@midday/email/emails/invoice-paid";
-import InvoiceReminderEmail from "@midday/email/emails/invoice-reminder";
-import TransactionsEmail from "@midday/email/emails/transactions";
-import TransactionsExportedEmail from "@midday/email/emails/transactions-exported";
-import UpcomingInvoicesEmail from "@midday/email/emails/upcoming-invoices";
-import { render } from "@midday/email/render";
+import type { Database } from "@orbis/db/client";
+import { shouldSendNotification } from "@orbis/db/queries";
+import InvoiceEmail from "@orbis/email/emails/invoice";
+import InvoiceOverdueEmail from "@orbis/email/emails/invoice-overdue";
+import InvoicePaidEmail from "@orbis/email/emails/invoice-paid";
+import InvoiceReminderEmail from "@orbis/email/emails/invoice-reminder";
+import TransactionsEmail from "@orbis/email/emails/transactions";
+import TransactionsExportedEmail from "@orbis/email/emails/transactions-exported";
+import UpcomingInvoicesEmail from "@orbis/email/emails/upcoming-invoices";
+import { render } from "@orbis/email/render";
 import { nanoid } from "nanoid";
 import { type CreateEmailOptions, Resend } from "resend";
 import type { EmailInput } from "../base";
@@ -138,12 +138,12 @@ export class EmailService {
     const recipients = email.to || [email.user.email];
 
     const payload: CreateEmailOptions = {
-      from: email.from || "Midday <middaybot@midday.ai>",
+      from: email.from || "Orbis <orbisbot@orbis.ai>",
       to: recipients,
       subject: email.subject,
       html,
       headers: {
-        "X-Entity-Ref-ID": nanoid(),
+        "X-Orbis-Ref-ID": nanoid(),
         ...email.headers,
       },
     };

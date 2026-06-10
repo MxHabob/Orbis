@@ -1,5 +1,5 @@
 import { streamSSE } from "hono/streaming";
-import { getSharedRedisClient } from "@midday/cache";
+import { getSharedRedisClient } from "@orbis/cache";
 import type { Context } from "hono";
 
 export const realtimeHandler = async (c: Context) => {

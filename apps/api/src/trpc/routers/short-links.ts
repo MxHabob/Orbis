@@ -1,7 +1,7 @@
 import { createTRPCRouter, protectedProcedure } from "@api/trpc/init";
 import { z } from "zod";
 import { nanoid } from "nanoid";
-import { shortLinks } from "@midday/db/schema";
+import { shortLinks } from "@orbis/db/schema";
 import { TRPCError } from "@trpc/server";
 
 export const shortLinksRouter = createTRPCRouter({

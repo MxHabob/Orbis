@@ -1,7 +1,7 @@
 import { updateUserSchema } from "@api/schemas/users";
 import { resend } from "@api/services/resend";
 import { createTRPCRouter, protectedProcedure, publicProcedure, adminProcedure } from "@api/trpc/init";
-import { accounts, users as usersSchema } from "@midday/db/schema";
+import { accounts, users as usersSchema } from "@orbis/db/schema";
 import { and, eq, isNotNull } from "drizzle-orm";
 import { withRetryOnPrimary } from "@api/utils/db-retry";
 import { TRPCError } from "@trpc/server";
@@ -14,7 +14,7 @@ import {
   getParentUsers,
   updateUser,
   linkParentToStudents,
-} from "@midday/db/queries";
+} from "@orbis/db/queries";
 
 export const userRouter = createTRPCRouter({
   getStaff: protectedProcedure.query(async ({ ctx: { db } }) => {
@@ -177,7 +177,7 @@ export const userRouter = createTRPCRouter({
   updatePassword: protectedProcedure
     .input(z.object({ password: z.string().min(8) }))
     .mutation(async ({ ctx: { db, session }, input }) => {
-      const { hashPassword } = await import("@midday/auth");
+      const { hashPassword } = await import("@orbis/auth");
       const hashedPassword = await hashPassword(input.password);
 
       // Check if user already has a password account

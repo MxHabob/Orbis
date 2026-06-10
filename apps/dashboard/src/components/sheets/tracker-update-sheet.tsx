@@ -15,16 +15,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@midday/ui/alert-dialog";
+} from "@orbis/ui/alert-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@midday/ui/dropdown-menu";
-import { Icons } from "@midday/ui/icons";
-import { ScrollArea } from "@midday/ui/scroll-area";
-import { Sheet, SheetContent, SheetHeader } from "@midday/ui/sheet";
+} from "@orbis/ui/dropdown-menu";
+import { Icons } from "@orbis/ui/icons";
+import { ScrollArea } from "@orbis/ui/scroll-area";
+import { Sheet, SheetContent, SheetHeader } from "@orbis/ui/sheet";
 import { useMutation } from "@tanstack/react-query";
 import { useQueryClient } from "@tanstack/react-query";
 import { useQuery } from "@tanstack/react-query";

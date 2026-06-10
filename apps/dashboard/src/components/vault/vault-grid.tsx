@@ -15,7 +15,7 @@ import { useDebounceCallback } from "usehooks-ts";
 import { LoadMore } from "../load-more";
 import { NoResults } from "./empty-states";
 import { VaultGetStarted } from "./vault-get-started";
-import { authClient } from "@midday/auth/auth-client";
+import { authClient } from "@orbis/auth/auth-client";
 
 export function VaultGrid() {
   const trpc = useTRPC();

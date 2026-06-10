@@ -6,7 +6,7 @@ import {
   HydrateClient,
   trpc,
 } from "@/trpc/server";
-import { auth } from "@midday/auth"
+import { auth } from "@orbis/auth"
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 

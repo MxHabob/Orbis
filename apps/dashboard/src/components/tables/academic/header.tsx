@@ -1,10 +1,10 @@
 "use client";
 
 import { useAcademicParams } from "@/hooks/use-academic-params";
-import { Button } from "@midday/ui/button";
-import { Input } from "@midday/ui/input";
+import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
 import type { Table } from "@tanstack/react-table";
-import { Icons } from "@midday/ui/icons";
+import { Icons } from "@orbis/ui/icons";
 import { useI18n } from "@/locales/client";
 
 type Props = {

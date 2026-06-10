@@ -3,8 +3,8 @@
 import { useReportStore } from "@/store/report";
 import { useTRPC } from "@/trpc/client";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
-import { useToast } from "@midday/ui/use-toast";
-import { Button } from "@midday/ui/button";
+import { useToast } from "@orbis/ui/use-toast";
+import { Button } from "@orbis/ui/button";
 import { Trash } from "lucide-react";
 import { BottomBar as CoreBottomBar } from "../core/bottom-bar";
 

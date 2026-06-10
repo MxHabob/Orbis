@@ -8,11 +8,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createAcademicYearSchema } from "@api/schemas/academic";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@midday/ui/form";
-import { Input } from "@midday/ui/input";
-import { Button } from "@midday/ui/button";
-import { useToast } from "@midday/ui/use-toast";
-import { Switch } from "@midday/ui/switch";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@orbis/ui/form";
+import { Input } from "@orbis/ui/input";
+import { Button } from "@orbis/ui/button";
+import { useToast } from "@orbis/ui/use-toast";
+import { Switch } from "@orbis/ui/switch";
 
 interface AcademicYearFormProps {
   initialData?: any;

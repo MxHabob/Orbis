@@ -1,7 +1,7 @@
 import type { Job } from "bullmq";
 import type { ReportGenerationData } from "../queue";
-import { logger } from "@midday/logger";
-import { getClassBulkReportData, getClassesV4, getStudentsParentsData } from "@midday/db/queries";
+import { logger } from "@orbis/logger";
+import { getClassBulkReportData, getClassesV4, getStudentsParentsData } from "@orbis/db/queries";
 import { 
   generateClassBulkReportExport, 
   generateAttendanceSheetExport, 
@@ -14,9 +14,9 @@ import {
   generateSecretGradesExport,
   generateTeacherGradingSheet,
   generateControlComparisonSheet
-} from "@midday/export";
-import { uploadFile } from "@midday/storage";
-import { createDocument } from "@midday/db/queries/documents";
+} from "@orbis/export";
+import { uploadFile } from "@orbis/storage";
+import { createDocument } from "@orbis/db/queries/documents";
 
 export async function handleReportGeneration(job: Job<ReportGenerationData>) {
   const startTime = Date.now();
@@ -39,7 +39,7 @@ export async function handleReportGeneration(job: Job<ReportGenerationData>) {
     let buffer: Buffer;
 
     if (type === "attendance_sheet") {
-      const { getAttendanceSheetData } = await import("@midday/db/queries");
+      const { getAttendanceSheetData } = await import("@orbis/db/queries");
       const studentsData = await getAttendanceSheetData(classId);
 
       await job.updateProgress(50);
@@ -50,7 +50,7 @@ export async function handleReportGeneration(job: Job<ReportGenerationData>) {
         format: format,
       });
     } else if (type === "students_parents_data") {
-      const { getStudentsParentsData } = await import("@midday/db/queries");
+      const { getStudentsParentsData } = await import("@orbis/db/queries");
       const studentsData = await getStudentsParentsData(classId);
 
       await job.updateProgress(50);
@@ -61,8 +61,8 @@ export async function handleReportGeneration(job: Job<ReportGenerationData>) {
         format: format,
       });
     } else if (type === "grades_grid") {
-      const { getGradeGridData } = await import("@midday/db/queries");
-      const { generateGradesExport, generateGradesFilename } = await import("@midday/export");
+      const { getGradeGridData } = await import("@orbis/db/queries");
+      const { generateGradesExport, generateGradesFilename } = await import("@orbis/export");
 
       const data = await getGradeGridData({
         classId: classId,
@@ -123,7 +123,7 @@ export async function handleReportGeneration(job: Job<ReportGenerationData>) {
         format: format,
       });
     } else if (type === "teacher_grading") {
-      const { getStudentsParentsData } = await import("@midday/db/queries");
+      const { getStudentsParentsData } = await import("@orbis/db/queries");
       const studentsData = await getStudentsParentsData(classId);
 
       const exportData = studentsData.map((s: any) => ({

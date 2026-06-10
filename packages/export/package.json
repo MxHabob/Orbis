@@ -1,5 +1,5 @@
 {
-  "name": "@midday/export",
+  "name": "@orbis/export",
   "version": "1.0.0",
   "main": "src/index.ts",
   "private": true,
@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@midday/ui": "workspace:*",
+    "@orbis/ui": "workspace:*",
     "@types/file-saver": "^2.0.7",
     "@types/papaparse": "^5.5.1",
     "exceljs": "^4.4.0",
@@ -20,7 +20,7 @@
     "papaparse": "^5.5.3"
   },
   "devDependencies": {
-    "@midday/tsconfig": "workspace:*",
+    "@orbis/tsconfig": "workspace:*",
     "typescript": "^5.9.3",
     "@types/html2canvas": "^1.0.0"
   }

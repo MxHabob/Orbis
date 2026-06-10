@@ -16,10 +16,10 @@ const isMimeTypeSupportedForProcessing = (mimetype: string) => {
   ].includes(mimetype);
 };
 
-import { Button } from "@midday/ui/button";
-import { cn } from "@midday/ui/cn";
-import { Icons } from "@midday/ui/icons";
-import { Skeleton } from "@midday/ui/skeleton";
+import { Button } from "@orbis/ui/button";
+import { cn } from "@orbis/ui/cn";
+import { Icons } from "@orbis/ui/icons";
+import { Skeleton } from "@orbis/ui/skeleton";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { VaultItemActions } from "./vault-item-actions";

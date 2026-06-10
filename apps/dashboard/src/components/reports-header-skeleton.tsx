@@ -1,6 +1,6 @@
 "use client";
 
-import { Skeleton } from "@midday/ui/skeleton";
+import { Skeleton } from "@orbis/ui/skeleton";
 
 export function ReportsHeaderSkeleton() {
   return (

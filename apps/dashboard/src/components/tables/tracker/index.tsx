@@ -7,7 +7,7 @@ import { useTableScroll } from "@/hooks/use-table-scroll";
 import { useTrackerFilterParams } from "@/hooks/use-tracker-filter-params";
 import { useUserQuery } from "@/hooks/use-user";
 import { useTRPC } from "@/trpc/client";
-import { Table, TableBody } from "@midday/ui/table";
+import { Table, TableBody } from "@orbis/ui/table";
 import { useMutation, useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { useDeferredValue, useEffect } from "react";
 import { useInView } from "react-intersection-observer";

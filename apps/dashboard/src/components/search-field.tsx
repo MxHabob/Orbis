@@ -1,7 +1,7 @@
 "use client";
 
-import { Icons } from "@midday/ui/icons";
-import { Input } from "@midday/ui/input";
+import { Icons } from "@orbis/ui/icons";
+import { Input } from "@orbis/ui/input";
 import { useQueryState } from "nuqs";
 import { useHotkeys } from "react-hotkeys-hook";
 

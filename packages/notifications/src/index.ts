@@ -1,11 +1,11 @@
-import type { Database } from "@midday/db/client";
+import type { Database } from "@orbis/db/client";
 import {
   createActivity,
   getTeamById,
   getTeamMembers,
   shouldSendNotification,
   updateActivityMetadata,
-} from "@midday/db/queries";
+} from "@orbis/db/queries";
 import type {
   EmailInput,
   NotificationOptions,

@@ -1,4 +1,4 @@
-import { users, students, parentStudents, enrollments } from "@midday/db/schema";
+import { users, students, parentStudents, enrollments } from "@orbis/db/schema";
 
 // Map Arabic/English standard headers to our internal keys
 // This can be expanded based on UI requirements

@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@midday/ui/button";
+import { Button } from "@orbis/ui/button";
 import type { ReactNode } from "react";
 
 interface EmptyStateProps {

@@ -1,5 +1,5 @@
 import type { useI18n } from "@/locales/client";
-import { formatAmount } from "@midday/utils/format";
+import { formatAmount } from "@orbis/utils/format";
 import { format, parseISO } from "date-fns";
 
 type UseI18nReturn = ReturnType<typeof useI18n>;

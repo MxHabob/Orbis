@@ -1,26 +1,26 @@
 ![hero](github.png)
 
 <p align="center">
-	<h1 align="center"><b>Midday</b></h1>
+	<h1 align="center"><b>Orbis</b></h1>
 <p align="center">
     Your AI-Powered Business Assistant
     <br />
     <br />
-    <a href="https://midday.ai">Website</a>
+    <a href="https://orbis.ai">Website</a>
     ·
-    <a href="https://github.com/midday-ai/midday/issues">Issues</a>
+    <a href="https://github.com/orbis-ai/orbis/issues">Issues</a>
   </p>
 </p>
 
 <p align="center">
-  <a href="https://go.midday.ai/K7GwMoQ">
+  <a href="https://go.orbis.ai/K7GwMoQ">
     <img src="https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase" />
   </a>
 </p>
 
-## About Midday
+## About Orbis
 
-Midday is an all-in-one tool designed to help freelancers, contractors, consultants, and solo entrepreneurs manage their business operations more efficiently. It integrates various functions typically scattered across multiple platforms into a single, cohesive system.
+Orbis is an all-in-one tool designed to help freelancers, contractors, consultants, and solo entrepreneurs manage their business operations more efficiently. It integrates various functions typically scattered across multiple platforms into a single, cohesive system.
 
 
 ## Features
@@ -37,7 +37,7 @@ Midday is an all-in-one tool designed to help freelancers, contractors, consulta
 
 ## Get started
 
-We are working on the documentation to get started with Midday for local development: https://docs.midday.ai
+We are working on the documentation to get started with Orbis for local development: https://docs.orbis.ai
 
 ## App Architecture
 
@@ -83,6 +83,6 @@ This project is licensed under the **[AGPL-3.0](https://opensource.org/licenses/
 ### Commercial Use
 
 For commercial use or deployments requiring a setup fee, please contact us
-for a commercial license at [engineer@midday.ai](mailto:engineer@midday.ai).
+for a commercial license at [engineer@orbis.ai](mailto:engineer@orbis.ai).
 
 By using this software, you agree to the terms of the license.

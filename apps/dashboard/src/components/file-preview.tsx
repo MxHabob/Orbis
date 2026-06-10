@@ -2,9 +2,9 @@
 
 import { FilePreviewIcon } from "@/components/file-preview-icon";
 import { useFileUrl } from "@/hooks/use-file-url";
-import { cn } from "@midday/ui/cn";
-import { Icons } from "@midday/ui/icons";
-import { Skeleton } from "@midday/ui/skeleton";
+import { cn } from "@orbis/ui/cn";
+import { Icons } from "@orbis/ui/icons";
+import { Skeleton } from "@orbis/ui/skeleton";
 import Image from "next/image";
 import { useState } from "react";
 

@@ -14,13 +14,13 @@ import {
   Hand
 } from "lucide-react";
 import { useEditorStore } from "@/store/certificate-editor";
-import { cn } from "@midday/ui/cn";
+import { cn } from "@orbis/ui/cn";
 import { 
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@midday/ui/tooltip";
+} from "@orbis/ui/tooltip";
 
 export function EditorFloatingToolbar() {
   const { addElement } = useEditorStore();

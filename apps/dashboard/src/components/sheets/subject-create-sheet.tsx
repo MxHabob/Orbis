@@ -1,9 +1,9 @@
 "use client";
 
 import { useSubjectParams } from "@/hooks/use-subject-params";
-import { Button } from "@midday/ui/button";
-import { Icons } from "@midday/ui/icons";
-import { Sheet, SheetContent, SheetHeader } from "@midday/ui/sheet";
+import { Button } from "@orbis/ui/button";
+import { Icons } from "@orbis/ui/icons";
+import { Sheet, SheetContent, SheetHeader } from "@orbis/ui/sheet";
 import React from "react";
 import { SubjectForm } from "../forms/subject-form";
 

@@ -1,14 +1,14 @@
 "use client";
 
 import { useStudentParams } from "@/hooks/use-student-params";
-import { Sheet, SheetContent } from "@midday/ui/sheet";
+import { Sheet, SheetContent } from "@orbis/ui/sheet";
 import { useI18n, useCurrentLocale } from "@/locales/client";
 import React, { useState } from "react";
 import { useTRPC } from "@/trpc/client";
 import { HIJRI_MONTHS } from "@/utils/academic-calendar";
 import { useQuery } from "@tanstack/react-query";
 import { CertificateViewer } from "../certificates/certificate-viewer";
-import { Button } from "@midday/ui/button";
+import { Button } from "@orbis/ui/button";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -17,13 +17,13 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@midday/ui/dropdown-menu";
-import { Icons } from "@midday/ui/icons";
+} from "@orbis/ui/dropdown-menu";
+import { Icons } from "@orbis/ui/icons";
 import { Loader2, Printer } from "lucide-react";
-import { ScrollArea } from "@midday/ui/scroll-area";
-import { useToast } from "@midday/ui/use-toast";
-import { generateCanvasPdf } from "@midday/export";
-import { cn } from "@midday/ui/cn";
+import { ScrollArea } from "@orbis/ui/scroll-area";
+import { useToast } from "@orbis/ui/use-toast";
+import { generateCanvasPdf } from "@orbis/export";
+import { cn } from "@orbis/ui/cn";
 
 // ==========================================
 // Month Filtering Logic:

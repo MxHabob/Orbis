@@ -1,5 +1,5 @@
 {
-  "name": "@midday/auth",
+  "name": "@orbis/auth",
   "version": "1.0.0",
   "main": "src/index.ts",
   "private": true,
@@ -11,12 +11,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@midday/db": "workspace:*",
-    "@midday/cache": "workspace:*",
+    "@orbis/db": "workspace:*",
+    "@orbis/cache": "workspace:*",
     "better-auth": "1.4.17"
   },
   "devDependencies": {
-    "@midday/tsconfig": "workspace:*",
+    "@orbis/tsconfig": "workspace:*",
     "typescript": "^5.9.3"
   },
   "exports": {

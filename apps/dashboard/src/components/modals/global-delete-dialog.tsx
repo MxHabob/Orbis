@@ -10,7 +10,7 @@ import { useTRPC } from "@/trpc/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { DeleteDialog } from "./delete-dialog";
 import { invalidateStudentDomain, invalidateClassDomain, invalidateSubjectDomain } from "@/utils/query-invalidation";
-import { useToast } from "@midday/ui/use-toast";
+import { useToast } from "@orbis/ui/use-toast";
 
 export function GlobalDeleteDialog() {
   const trpc = useTRPC();

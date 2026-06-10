@@ -6,7 +6,7 @@ import {
   getMonthlyAssessmentItems, 
   initializeStandardMonthlyAssessments,
   initializeTermExamAssessments
-} from "@midday/db/queries/assessments";
+} from "@orbis/db/queries/assessments";
 import { revalidatePath } from "next/cache";
 
 const schema = z.object({

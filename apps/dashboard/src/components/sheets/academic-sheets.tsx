@@ -1,6 +1,6 @@
 "use client";
 
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@midday/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@orbis/ui/sheet";
 import { AcademicYearForm } from "../forms/academic-year-form";
 import { AcademicTermForm } from "../forms/academic-term-form";
 import { useI18n } from "@/locales/client";

@@ -3,20 +3,20 @@
 import { useZodForm } from "@/hooks/use-zod-form";
 import { useI18n } from "@/locales/client";
 import { useTRPC } from "@/trpc/client";
-import { AnimatedSizeContainer } from "@midday/ui/animated-size-container";
+import { AnimatedSizeContainer } from "@orbis/ui/animated-size-container";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@midday/ui/dialog";
-import { SubmitButton } from "@midday/ui/submit-button";
-import { useToast } from "@midday/ui/use-toast";
+} from "@orbis/ui/dialog";
+import { SubmitButton } from "@orbis/ui/submit-button";
+import { useToast } from "@orbis/ui/use-toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { parseAsBoolean, parseAsString, useQueryStates } from "nuqs";
 import { useEffect, useState, useMemo } from "react";
-import { parseFile } from "@midday/import";
+import { parseFile } from "@orbis/import";
 import { ImportCsvContext, studentImportSchema, type StudentImportFormData } from "../shared/context";
 import { SelectFile } from "../shared/select-file";
 import { StudentFieldMapping } from "./student-field-mapping";

@@ -1,21 +1,21 @@
 "use client";
 
-import { Button } from "@midday/ui/button";
-import { cn } from "@midday/ui/cn";
+import { Button } from "@orbis/ui/button";
+import { cn } from "@orbis/ui/cn";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@midday/ui/dropdown-menu";
+} from "@orbis/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@midday/ui/select";
-import { Textarea } from "@midday/ui/textarea";
+} from "@orbis/ui/select";
+import { Textarea } from "@orbis/ui/textarea";
 import type { ChatStatus, FileUIPart } from "ai";
 import { PaperclipIcon, PlusIcon, XIcon } from "lucide-react";
 import {

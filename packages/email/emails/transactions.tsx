@@ -1,5 +1,5 @@
-import { cn } from "@midday/ui/cn";
-import { getAppUrl } from "@midday/utils/envs";
+import { cn } from "@orbis/ui/cn";
+import { getAppUrl } from "@orbis/utils/envs";
 import {
   Body,
   Container,

@@ -1,4 +1,4 @@
-import { Icons } from "@midday/ui/icons";
+import { Icons } from "@orbis/ui/icons";
 import { Zap } from "lucide-react";
 
 export function SearchFooter() {

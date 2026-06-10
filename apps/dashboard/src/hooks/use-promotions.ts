@@ -9,7 +9,7 @@ import {
 } from "@tanstack/react-query";
 import { useTRPC } from "@/trpc/client";
 import { usePromotionsParams } from "@/hooks/use-promotions-params";
-import { useToast } from "@midday/ui/use-toast";
+import { useToast } from "@orbis/ui/use-toast";
 import { useI18n } from "@/locales/client";
 
 // ─── Types ───────────────────────────────────────────────────────────────────

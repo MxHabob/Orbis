@@ -4,11 +4,11 @@ import { MetricsFilter } from "@/components/metrics/components/metrics-filter";
 import { Customize } from "@/components/widgets/customize";
 import { useUserQuery } from "@/hooks/use-user";
 import { TZDate } from "@date-fns/tz";
-import { cn } from "@midday/ui/cn";
-import { TabsList, TabsTrigger } from "@midday/ui/tabs";
+import { cn } from "@orbis/ui/cn";
+import { TabsList, TabsTrigger } from "@orbis/ui/tabs";
 import { useEffect, useState } from "react";
 import { useIsCustomizing } from "./widget-provider";
-import { authClient } from "@midday/auth/auth-client";
+import { authClient } from "@orbis/auth/auth-client";
 import { useI18n } from "@/locales/client";
 
 function getTimeBasedGreeting(t: any, timezone?: string): string {

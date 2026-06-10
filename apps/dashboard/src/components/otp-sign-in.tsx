@@ -1,13 +1,13 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { authClient } from "@midday/auth/auth-client";
-import { cn } from "@midday/ui/cn";
-import { Form, FormControl, FormField, FormItem } from "@midday/ui/form";
-import { Input } from "@midday/ui/input";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@midday/ui/input-otp";
-import { Spinner } from "@midday/ui/spinner";
-import { SubmitButton } from "@midday/ui/submit-button";
+import { authClient } from "@orbis/auth/auth-client";
+import { cn } from "@orbis/ui/cn";
+import { Form, FormControl, FormField, FormItem } from "@orbis/ui/form";
+import { Input } from "@orbis/ui/input";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@orbis/ui/input-otp";
+import { Spinner } from "@orbis/ui/spinner";
+import { SubmitButton } from "@orbis/ui/submit-button";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";

@@ -6,11 +6,11 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@midday/ui/dropdown-menu";
-import { Button } from "@midday/ui/button";
+} from "@orbis/ui/dropdown-menu";
+import { Button } from "@orbis/ui/button";
 import { DotsHorizontalIcon } from "@radix-ui/react-icons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@midday/ui/use-toast";
+import { useToast } from "@orbis/ui/use-toast";
 import { useRouter } from "next/navigation";
 import { Star, Trash, Edit, Eye } from "lucide-react";
 import Link from "next/link";

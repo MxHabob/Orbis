@@ -92,13 +92,13 @@ const IV_LENGTH = 16;
 const AUTH_TAG_LENGTH = 16;
 
 function getKey(): Buffer {
-  const key = process.env.MIDDAY_ENCRYPTION_KEY;
+  const key = process.env.ORBIS_ENCRYPTION_KEY;
   if (!key) {
-    throw new Error("MIDDAY_ENCRYPTION_KEY environment variable is not set.");
+    throw new Error("ORBIS_ENCRYPTION_KEY environment variable is not set.");
   }
   if (Buffer.from(key, "hex").length !== 32) {
     throw new Error(
-      "MIDDAY_ENCRYPTION_KEY must be a 64-character hex string (32 bytes).",
+      "ORBIS_ENCRYPTION_KEY must be a 64-character hex string (32 bytes).",
     );
   }
   return Buffer.from(key, "hex");

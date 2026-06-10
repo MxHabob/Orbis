@@ -10,17 +10,17 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@midday/ui/card";
+} from "@orbis/ui/card";
 import {
   Form,
   FormControl,
   FormField,
   FormItem,
   FormMessage,
-} from "@midday/ui/form";
-import { SubmitButton } from "@midday/ui/submit-button";
+} from "@orbis/ui/form";
+import { SubmitButton } from "@orbis/ui/submit-button";
 import { z } from "zod";
-import { Input } from "@midday/ui/input";
+import { Input } from "@orbis/ui/input";
 
 const formSchema = z.object({
   yearName: z.string().min(1).max(20),

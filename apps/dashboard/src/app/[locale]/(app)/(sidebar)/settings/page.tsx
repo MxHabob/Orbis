@@ -5,7 +5,7 @@ import { DataTable } from "@/components/tables/academic/table";
 import { HydrateClient, prefetch, trpc } from "@/trpc/server";
 
 export const metadata: Metadata = {
-  title: "Settings | Mommy",
+  title: "Settings | Orbis",
 };
 
 export default async function AcademicSettingsPage() {

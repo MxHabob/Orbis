@@ -1,8 +1,8 @@
 "use client";
 
-import { Avatar, AvatarFallback } from "@midday/ui/avatar";
-import { Checkbox } from "@midday/ui/checkbox";
-import { cn } from "@midday/ui/cn";
+import { Avatar, AvatarFallback } from "@orbis/ui/avatar";
+import { Checkbox } from "@orbis/ui/checkbox";
+import { cn } from "@orbis/ui/cn";
 import type { RouterOutputs } from "@api/trpc/routers/_app";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ActionsMenu } from "./actions-menu";

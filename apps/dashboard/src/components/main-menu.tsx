@@ -1,7 +1,7 @@
 "use client";
 
-import { cn } from "@midday/ui/cn";
-import { Icons } from "@midday/ui/icons";
+import { cn } from "@orbis/ui/cn";
+import { Icons } from "@orbis/ui/icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";

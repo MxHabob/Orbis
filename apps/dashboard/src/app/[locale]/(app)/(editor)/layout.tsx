@@ -2,7 +2,7 @@ import { GlobalSheetsProvider } from "@/components/sheets/global-sheets-provider
 import {
   HydrateClient,
 } from "@/trpc/server";
-import { auth } from "@midday/auth"
+import { auth } from "@orbis/auth"
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 

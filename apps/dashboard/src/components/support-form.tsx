@@ -8,9 +8,9 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@midday/ui/card";
-import { Textarea } from "@midday/ui/textarea";
-import { Button } from "@midday/ui/button";
+} from "@orbis/ui/card";
+import { Textarea } from "@orbis/ui/textarea";
+import { Button } from "@orbis/ui/button";
 import { sendFeebackAction } from "@/actions/send-feedback-action";
 import { useAction } from "next-safe-action/hooks";
 import { useState } from "react";

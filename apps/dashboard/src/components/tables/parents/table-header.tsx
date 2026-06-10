@@ -2,9 +2,9 @@
 
 import { InviteTeamMembersModal } from "@/components/modals/create-staff-users-modal";
 import type { RouterOutputs } from "@api/trpc/routers/_app";
-import { Button } from "@midday/ui/button";
-import { Dialog } from "@midday/ui/dialog";
-import { Input } from "@midday/ui/input";
+import { Button } from "@orbis/ui/button";
+import { Dialog } from "@orbis/ui/dialog";
+import { Input } from "@orbis/ui/input";
 import type { Table } from "@tanstack/react-table";
 import { useState } from "react";
 

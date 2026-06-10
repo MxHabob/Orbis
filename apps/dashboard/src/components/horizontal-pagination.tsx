@@ -1,8 +1,8 @@
 "use client";
 
-import { Button } from "@midday/ui/button";
-import { cn } from "@midday/ui/cn";
-import { Icons } from "@midday/ui/icons";
+import { Button } from "@orbis/ui/button";
+import { cn } from "@orbis/ui/cn";
+import { Icons } from "@orbis/ui/icons";
 
 interface HorizontalPaginationProps {
   canScrollLeft: boolean;

@@ -8,14 +8,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@midday/ui/table";
+} from "@orbis/ui/table";
 import {
   flexRender,
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
 import React from "react";
-import { cn } from "@midday/ui/cn";
+import { cn } from "@orbis/ui/cn";
 import { columns, type PromotionPreview } from "./columns";
 import { PreviewTableSkeleton } from "./skeleton";
 import { PreviewEmptyState } from "./empty-states";

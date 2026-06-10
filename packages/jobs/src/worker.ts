@@ -2,7 +2,7 @@ import { Worker, type Job } from "bullmq";
 import { connection, QUEUE_NAME, type CertificateExportData, type ReportGenerationData } from "./queue";
 import { handleCertificateExport } from "./handlers/certificate-export";
 import { handleReportGeneration } from "./handlers/report-generation";
-import { logger } from "@midday/logger";
+import { logger } from "@orbis/logger";
 
 /**
  * Job Worker (Production Grade - 2026)

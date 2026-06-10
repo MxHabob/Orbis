@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@midday/ui/button";
+import { Button } from "@orbis/ui/button";
 import { useState } from "react";
 import { ChoosePlanModal } from "./modals/choose-plan-modal";
 

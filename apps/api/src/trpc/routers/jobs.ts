@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, teacherProcedure } from "../init";
-import { jobQueue } from "@midday/jobs/queue";
+import { jobQueue } from "@orbis/jobs/queue";
 import { TRPCError } from "@trpc/server";
 
 export const jobsRouter = createTRPCRouter({

@@ -2,7 +2,7 @@
 
 import { useI18n } from "@/locales/client";
 import { useTRPC } from "@/trpc/client";
-import { useToast } from "@midday/ui/use-toast";
+import { useToast } from "@orbis/ui/use-toast";
 import {
   Card,
   CardContent,
@@ -10,8 +10,8 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@midday/ui/card";
-import { Button } from "@midday/ui/button";
+} from "@orbis/ui/card";
+import { Button } from "@orbis/ui/button";
 import {
   Form,
   FormControl,
@@ -19,8 +19,8 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@midday/ui/form";
-import { Input } from "@midday/ui/input";
+} from "@orbis/ui/form";
+import { Input } from "@orbis/ui/input";
 import { useState } from "react";
 import {
   AlertDialog,
@@ -31,14 +31,14 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@midday/ui/alert-dialog";
+} from "@orbis/ui/alert-dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@midday/ui/select";
+} from "@orbis/ui/select";
 import { Loader2, Users } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useZodForm } from "@/hooks/use-zod-form";

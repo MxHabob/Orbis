@@ -1,5 +1,5 @@
-import { startWorker } from "@midday/jobs/worker";
-import { logger } from "@midday/logger";
+import { startWorker } from "@orbis/jobs/worker";
+import { logger } from "@orbis/logger";
 
 /**
  * API Worker Process

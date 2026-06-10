@@ -1,6 +1,6 @@
 "use client";
 
-import { Avatar, AvatarFallback, AvatarImageNext } from "@midday/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImageNext } from "@orbis/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,11 +9,11 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@midday/ui/dropdown-menu";
+} from "@orbis/ui/dropdown-menu";
 import Link from "next/link";
 import { SignOut } from "./sign-out";
 import { ThemeSwitch } from "./theme-switch";
-import { authClient } from "@midday/auth/auth-client";
+import { authClient } from "@orbis/auth/auth-client";
 
 type Props = {
   onlySignOut?: boolean;

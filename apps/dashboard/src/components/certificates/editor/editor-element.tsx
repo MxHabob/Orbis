@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, memo } from "react";
 import { type EditorElement as IEditorElement } from "@/types/certificate-editor";
-import { cn } from "@midday/ui/cn";
+import { cn } from "@orbis/ui/cn";
 import { useEditorStore } from "@/store/certificate-editor";
 import { GradesTable } from "../grades-table";
 

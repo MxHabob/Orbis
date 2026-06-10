@@ -2,8 +2,8 @@
 
 import { useTransactionTableContextOptional } from "@/components/tables/transactions/transaction-table-context";
 import { useTRPC } from "@/trpc/client";
-import { Badge } from "@midday/ui/badge";
-import { cn } from "@midday/ui/cn";
+import { Badge } from "@orbis/ui/badge";
+import { cn } from "@orbis/ui/cn";
 import {
   Command,
   CommandEmpty,
@@ -11,8 +11,8 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@midday/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@midday/ui/popover";
+} from "@orbis/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@orbis/ui/popover";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check } from "lucide-react";
 import { useState } from "react";

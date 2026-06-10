@@ -1,5 +1,5 @@
-import desktopPlugin from "@midday/desktop-client/desktop-variants";
-import baseConfig from "@midday/ui/tailwind.config";
+import desktopPlugin from "@orbis/desktop-client/desktop-variants";
+import baseConfig from "@orbis/ui/tailwind.config";
 import type { Config } from "tailwindcss";
 
 export default {

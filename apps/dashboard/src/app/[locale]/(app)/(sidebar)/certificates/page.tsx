@@ -7,7 +7,7 @@ import type { Metadata } from "next";
 import { TableToolbar } from "@/components/tables/certificates/table-toolbar";
 
 export const metadata: Metadata = {
-  title: "Certificate Templates | Mommy",
+  title: "Certificate Templates | Orbis",
 };
 
 export default async function CertificateTemplatesPage() {

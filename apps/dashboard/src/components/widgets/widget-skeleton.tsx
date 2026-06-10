@@ -1,5 +1,5 @@
-import { cn } from "@midday/ui/cn";
-import { Skeleton } from "@midday/ui/skeleton";
+import { cn } from "@orbis/ui/cn";
+import { Skeleton } from "@orbis/ui/skeleton";
 
 interface WidgetSkeletonProps {
   /**

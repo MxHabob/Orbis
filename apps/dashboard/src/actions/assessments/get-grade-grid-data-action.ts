@@ -1,7 +1,7 @@
 "use server";
 
 import { authActionClient } from "@/actions/safe-action";
-import { getGradeGridData } from "@midday/db/queries/grades";
+import { getGradeGridData } from "@orbis/db/queries/grades";
 import { z } from "zod";
 
 const schema = z.object({

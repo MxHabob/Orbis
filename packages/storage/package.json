@@ -1,5 +1,5 @@
 {
-  "name": "@midday/storage",
+  "name": "@orbis/storage",
   "version": "1.0.0",
   "main": "src/index.ts",
   "private": true,
@@ -8,7 +8,7 @@
     "@aws-sdk/s3-request-presigner": "^3.988.0"
   },
   "devDependencies": {
-    "@midday/tsconfig": "workspace:*",
+    "@orbis/tsconfig": "workspace:*",
     "@types/node": "^25.2.3",
     "typescript": "^5.7.3"
   }

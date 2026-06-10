@@ -3,8 +3,8 @@
 import { useLessonParams } from "@/hooks/use-lesson-params";
 import { useTRPC } from "@/trpc/client";
 import { useQuery } from "@tanstack/react-query";
-import { cn } from "@midday/ui/cn";
-import { Skeleton } from "@midday/ui/skeleton";
+import { cn } from "@orbis/ui/cn";
+import { Skeleton } from "@orbis/ui/skeleton";
 import React from "react";
 
 const daysOfWeek = [

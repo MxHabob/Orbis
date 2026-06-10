@@ -1,4 +1,4 @@
-import type { Database, DatabaseWithPrimary } from "@midday/db/client";
+import type { Database, DatabaseWithPrimary } from "@orbis/db/client";
 
 /**
  * Retry helper for database queries that may fail due to replication lag

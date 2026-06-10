@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@midday/ui/button";
+import { Button } from "@orbis/ui/button";
 import { useI18n } from "@/locales/client";
 
 export function VaultGetStarted() {

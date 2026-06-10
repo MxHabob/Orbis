@@ -2,20 +2,20 @@
 
 import { useZodForm } from "@/hooks/use-zod-form";
 import { useTRPC } from "@/trpc/client";
-import { AnimatedSizeContainer } from "@midday/ui/animated-size-container";
+import { AnimatedSizeContainer } from "@orbis/ui/animated-size-container";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@midday/ui/dialog";
-import { SubmitButton } from "@midday/ui/submit-button";
-import { useToast } from "@midday/ui/use-toast";
+} from "@orbis/ui/dialog";
+import { SubmitButton } from "@orbis/ui/submit-button";
+import { useToast } from "@orbis/ui/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { parseAsBoolean, parseAsString, parseAsInteger, useQueryStates } from "nuqs";
 import { useState } from "react";
-import { parseFile } from "@midday/import";
+import { parseFile } from "@orbis/import";
 import { ImportCsvContext, gradeImportSchema, type GradeImportFormData } from "../shared/context";
 import { SelectFile } from "../shared/select-file";
 import { GradeFieldMapping } from "./grade-field-mapping";

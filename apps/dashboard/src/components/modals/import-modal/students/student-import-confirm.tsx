@@ -9,7 +9,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@midday/ui/alert-dialog";
+} from "@orbis/ui/alert-dialog";
 import { useI18n } from "@/locales/client";
 import { Loader2, AlertCircle } from "lucide-react";
 

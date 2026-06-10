@@ -9,16 +9,16 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@midday/ui/card";
+} from "@orbis/ui/card";
 import {
   Form,
   FormControl,
   FormField,
   FormItem,
   FormMessage,
-} from "@midday/ui/form";
-import { Input } from "@midday/ui/input";
-import { SubmitButton } from "@midday/ui/submit-button";
+} from "@orbis/ui/form";
+import { Input } from "@orbis/ui/input";
+import { SubmitButton } from "@orbis/ui/submit-button";
 import { z } from "zod/v3";
 import { CountrySelector } from "./country-selector";
 
@@ -48,7 +48,7 @@ export function CompanyEmail() {
             <CardTitle>Company email</CardTitle>
             <CardDescription>
               This is the email address that will be used to receive emails from
-              Midday.
+              Orbis.
             </CardDescription>
           </CardHeader>
 

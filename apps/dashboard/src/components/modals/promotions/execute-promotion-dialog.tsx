@@ -1,7 +1,7 @@
 "use client";
 
 import { useI18n } from "@/locales/client";
-import { Alert, AlertDescription, AlertTitle } from "@midday/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@orbis/ui/alert";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,7 +11,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@midday/ui/alert-dialog";
+} from "@orbis/ui/alert-dialog";
 import { AlertCircle, Loader2 } from "lucide-react";
 
 interface ExecutePromotionDialogProps {

@@ -9,7 +9,7 @@ import {
   getAllSubjects,
   getSubjectById,
   updateSubject,
-} from "@midday/db/queries";
+} from "@orbis/db/queries";
 import { z } from "zod";
 
 export const subjectsRouter = createTRPCRouter({

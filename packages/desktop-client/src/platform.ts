@@ -28,19 +28,19 @@ export async function listenForDeepLinks(handler: DeepLinkHandler) {
 }
 
 /**
- * Generate a midday:// deep link URL
+ * Generate a orbis:// deep link URL
  * @param path The path to navigate to (without leading slash)
  * @returns The deep link URL
  *
  * @example
  * ```typescript
  * // Generate deep link URLs
- * const dashboardLink = createDeepLink('dashboard');           // midday://dashboard
- * const transactionLink = createDeepLink('transactions/123'); // midday://transactions/123
- * const settingsLink = createDeepLink('settings/profile');    // midday://settings/profile
+ * const dashboardLink = createDeepLink('dashboard');           // orbis://dashboard
+ * const transactionLink = createDeepLink('transactions/123'); // orbis://transactions/123
+ * const settingsLink = createDeepLink('settings/profile');    // orbis://settings/profile
  * ```
  */
 export function createDeepLink(path: string): string {
   const cleanPath = path.startsWith("/") ? path.slice(1) : path;
-  return `midday://${cleanPath}`;
+  return `orbis://${cleanPath}`;
 }

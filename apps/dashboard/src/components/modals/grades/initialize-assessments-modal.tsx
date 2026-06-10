@@ -6,7 +6,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@midday/ui/dialog";
+} from "@orbis/ui/dialog";
 import { parseAsString, parseAsInteger, useQueryStates } from "nuqs";
 import { useI18n } from "@/locales/client";
 import { AssessmentsForm } from "@/components/forms/assessments-form";

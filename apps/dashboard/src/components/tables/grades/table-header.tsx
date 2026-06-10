@@ -10,7 +10,7 @@ import {
   SortableContext,
   horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { TableHead, TableHeader, TableRow } from "@midday/ui/table";
+import { TableHead, TableHeader, TableRow } from "@orbis/ui/table";
 import type { Header, Table } from "@tanstack/react-table";
 import { useMemo } from "react";
 import { STICKY_COLUMNS } from "@/utils/table-configs";
@@ -20,16 +20,16 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@midday/ui/dropdown-menu";
+} from "@orbis/ui/dropdown-menu";
 import { MoreHorizontal, Eraser, Zap, Trash2 } from "lucide-react";
-import { Button } from "@midday/ui/button";
+import { Button } from "@orbis/ui/button";
 import type { AssessmentItem } from "./columns";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@midday/ui/tooltip";
+} from "@orbis/ui/tooltip";
 
 interface Props<TData> {
   table?: Table<TData>;

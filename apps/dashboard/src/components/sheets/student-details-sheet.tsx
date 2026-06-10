@@ -1,7 +1,7 @@
 "use client";
 
 import { useStudentParams } from "@/hooks/use-student-params";
-import { Sheet, SheetContent } from "@midday/ui/sheet";
+import { Sheet, SheetContent } from "@orbis/ui/sheet";
 import React from "react";
 import { useTRPC } from "@/trpc/client";
 import { useQuery } from "@tanstack/react-query";

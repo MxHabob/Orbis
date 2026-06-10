@@ -1,21 +1,21 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Button } from "@midday/ui/button";
+import { Button } from "@orbis/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-} from "@midday/ui/dropdown-menu";
+} from "@orbis/ui/dropdown-menu";
 import { DotsHorizontalIcon } from "@radix-ui/react-icons";
 import type { ClassReport } from "./columns";
 import { useMutation } from "@tanstack/react-query";
 import { useTRPC } from "@/trpc/client";
-import { useToast } from "@midday/ui/use-toast";
-import { downloadBase64, generateCanvasPdf } from "@midday/export";
-import { Icons } from "@midday/ui/icons";
+import { useToast } from "@orbis/ui/use-toast";
+import { downloadBase64, generateCanvasPdf } from "@orbis/export";
+import { Icons } from "@orbis/ui/icons";
 import { Loader2 } from "lucide-react";
 import { useExportStore } from "@/store/export";
 

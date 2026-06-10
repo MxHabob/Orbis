@@ -20,13 +20,13 @@ import {
   regenerateSecretNumbers,
   regenerateSeatingNumbers,
   getStudentReportData,
-} from "@midday/db/queries";
+} from "@orbis/db/queries";
 import { 
   generateStudentExport, 
   generateExportFilename,
   generateControlStaffExport,
   generateSecretGradesExport 
-} from "@midday/export";
+} from "@orbis/export";
 import { z } from "zod";
 
 export const studentsRouter = createTRPCRouter({
@@ -136,7 +136,7 @@ export const studentsRouter = createTRPCRouter({
       }))
     }))
     .mutation(async ({ input }) => {
-      const { bulkImportStudents } = await import("@midday/db/queries");
+      const { bulkImportStudents } = await import("@orbis/db/queries");
       return bulkImportStudents(input.classId, input.students, input.academicYearId);
     }),
   upsert: adminProcedure
@@ -166,8 +166,8 @@ export const studentsRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input }) => {
-      const { getClassesV4 } = await import("@midday/db/queries");
-      const { getClassStatistics, getStudentsByClassId } = await import("@midday/db/queries");
+      const { getClassesV4 } = await import("@orbis/db/queries");
+      const { getClassStatistics, getStudentsByClassId } = await import("@orbis/db/queries");
       
       const classIdNumber = Number(input.classId);
       

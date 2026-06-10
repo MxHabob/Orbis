@@ -39,15 +39,15 @@ import {
   Square,
   Image as ImageIcon
 } from "lucide-react";
-import { Button } from "@midday/ui/button";
+import { Button } from "@orbis/ui/button";
 import { ColorPicker } from "@/components/color-picker";
-import { cn } from "@midday/ui/cn";
-import { ScrollArea } from "@midday/ui/scroll-area";
-import { Separator } from "@midday/ui/separator";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@midday/ui/select";
-import { Label } from "@midday/ui/label";
-import { Input } from "@midday/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@midday/ui/popover";
+import { cn } from "@orbis/ui/cn";
+import { ScrollArea } from "@orbis/ui/scroll-area";
+import { Separator } from "@orbis/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@orbis/ui/select";
+import { Label } from "@orbis/ui/label";
+import { Input } from "@orbis/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@orbis/ui/popover";
 import { PAPER_PRESETS } from "./constants";
 import { 
   Columns, 

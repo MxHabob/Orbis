@@ -2,7 +2,7 @@
 
 
 import { useZodForm } from "@/hooks/use-zod-form";
-import { authClient } from "@midday/auth/auth-client";
+import { authClient } from "@orbis/auth/auth-client";
 import { useI18n } from "@/locales/client";
 import {
   Card,
@@ -11,16 +11,16 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@midday/ui/card";
+} from "@orbis/ui/card";
 import {
   Form,
   FormControl,
   FormField,
   FormItem,
   FormMessage,
-} from "@midday/ui/form";
-import { Input } from "@midday/ui/input";
-import { SubmitButton } from "@midday/ui/submit-button";
+} from "@orbis/ui/form";
+import { Input } from "@orbis/ui/input";
+import { SubmitButton } from "@orbis/ui/submit-button";
 import { z } from "zod/v3";
 
 const formSchema = z.object({
@@ -46,9 +46,9 @@ export function CompanyName() {
       <form onSubmit={onSubmit}>
         <Card>
           <CardHeader>
-            <CardTitle>{t("settings.entity_name_title")}</CardTitle>
+            <CardTitle>{t("settings.orbis_name_title")}</CardTitle>
             <CardDescription>
-              {t("settings.entity_name_description")}
+              {t("settings.orbis_name_description")}
             </CardDescription>
           </CardHeader>
 

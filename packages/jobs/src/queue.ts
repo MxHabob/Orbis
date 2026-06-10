@@ -14,7 +14,7 @@ export const connection = new IORedis(redisUrl, {
   },
 });
 
-export const QUEUE_NAME = "midday-jobs";
+export const QUEUE_NAME = "orbis-jobs";
 
 export const jobQueue = new Queue(QUEUE_NAME, {
   connection: connection as any,

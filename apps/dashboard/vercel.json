@@ -4,7 +4,7 @@
   "github": {
     "enabled": false
   },
-  "buildCommand": "cd ../.. && turbo run build --filter=@midday/dashboard --only",
+  "buildCommand": "cd ../.. && turbo run build --filter=@orbis/dashboard --only",
   "regions": ["fra1", "iad1", "sfo1"],
   "headers": [
     {
@@ -12,7 +12,7 @@
       "headers": [
         {
           "key": "Access-Control-Allow-Origin",
-          "value": "https://app.midday.ai"
+          "value": "https://app.orbis.ai"
         },
         {
           "key": "X-Content-Type-Options",

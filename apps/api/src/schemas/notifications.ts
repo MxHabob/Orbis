@@ -35,11 +35,11 @@ export const notificationSchema = z.object({
     description: "Notification message",
     example: "Welcome to the system",
   }),
-  relatedEntityType: z.string().max(50).nullable().openapi({
-    description: "Type of related entity",
+  relatedOrbisType: z.string().max(50).nullable().openapi({
+    description: "Type of related orbis",
   }),
-  relatedEntityId: z.string().max(100).nullable().openapi({
-    description: "ID of related entity",
+  relatedOrbisId: z.string().max(100).nullable().openapi({
+    description: "ID of related orbis",
   }),
   isRead: z.boolean().openapi({
     description: "Read status",

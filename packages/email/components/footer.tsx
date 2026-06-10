@@ -1,4 +1,4 @@
-import { getEmailUrl } from "@midday/utils/envs";
+import { getEmailUrl } from "@orbis/utils/envs";
 import {
   Column,
   Hr,
@@ -47,49 +47,49 @@ export function Footer() {
           </Text>
           <Link
             className={`text-[14px] block mb-1.5 ${themeClasses.mutedLink}`}
-            href="https://go.midday.ai/bOp4NOx"
+            href="https://go.orbis.ai/bOp4NOx"
             style={{ color: lightStyles.mutedText.color }}
           >
             Overview
           </Link>
           <Link
             className={`text-[14px] block mb-1.5 ${themeClasses.mutedLink}`}
-            href="https://go.midday.ai/VFcNsmQ"
+            href="https://go.orbis.ai/VFcNsmQ"
             style={{ color: lightStyles.mutedText.color }}
           >
             Inbox
           </Link>
           <Link
             className={`text-[14px] block mb-1.5 ${themeClasses.mutedLink}`}
-            href="https://go.midday.ai/uA06kWO"
+            href="https://go.orbis.ai/uA06kWO"
             style={{ color: lightStyles.mutedText.color }}
           >
             Vault
           </Link>
           <Link
             className={`text-[14px] block mb-1.5 ${themeClasses.mutedLink}`}
-            href="https://go.midday.ai/x7Fow9L"
+            href="https://go.orbis.ai/x7Fow9L"
             style={{ color: lightStyles.mutedText.color }}
           >
             Tracker
           </Link>
           <Link
             className={`text-[14px] block mb-1.5 ${themeClasses.mutedLink}`}
-            href="https://go.midday.ai/fkYXc95"
+            href="https://go.orbis.ai/fkYXc95"
             style={{ color: lightStyles.mutedText.color }}
           >
             Invoice
           </Link>
           <Link
             className={`text-[14px] block mb-1.5 ${themeClasses.mutedLink}`}
-            href="https://go.midday.ai/dEnP9h5"
+            href="https://go.orbis.ai/dEnP9h5"
             style={{ color: lightStyles.mutedText.color }}
           >
             Pricing
           </Link>
           <Link
             className={`text-[14px] block mb-1.5 ${themeClasses.mutedLink}`}
-            href="https://midday.ai/download"
+            href="https://orbis.ai/download"
             style={{ color: lightStyles.mutedText.color }}
           >
             Download
@@ -107,42 +107,42 @@ export function Footer() {
           </Text>
           <Link
             className={`text-[14px] block mb-1.5 ${themeClasses.mutedLink}`}
-            href="https://go.midday.ai/fhEy5CL"
+            href="https://go.orbis.ai/fhEy5CL"
             style={{ color: lightStyles.mutedText.color }}
           >
             Homepage
           </Link>
           <Link
             className={`text-[14px] block mb-1.5 ${themeClasses.mutedLink}`}
-            href="https://git.new/midday"
+            href="https://git.new/orbis"
             style={{ color: lightStyles.mutedText.color }}
           >
             Github
           </Link>
           <Link
             className={`text-[14px] block mb-1.5 ${themeClasses.mutedLink}`}
-            href="https://go.midday.ai/ZrhEMbR"
+            href="https://go.orbis.ai/ZrhEMbR"
             style={{ color: lightStyles.mutedText.color }}
           >
             Support
           </Link>
           <Link
             className={`text-[14px] block mb-1.5 ${themeClasses.mutedLink}`}
-            href="https://go.midday.ai/rofdWKi"
+            href="https://go.orbis.ai/rofdWKi"
             style={{ color: lightStyles.mutedText.color }}
           >
             Terms of service
           </Link>
           <Link
             className={`text-[14px] block mb-1.5 ${themeClasses.mutedLink}`}
-            href="https://go.midday.ai/TJIL5mQ"
+            href="https://go.orbis.ai/TJIL5mQ"
             style={{ color: lightStyles.mutedText.color }}
           >
             Privacy policy
           </Link>
           <Link
             className={`text-[14px] block mb-1.5 ${themeClasses.mutedLink}`}
-            href="https://go.midday.ai/IQ1kcN0"
+            href="https://go.orbis.ai/IQ1kcN0"
             style={{ color: lightStyles.mutedText.color }}
           >
             Branding
@@ -158,28 +158,28 @@ export function Footer() {
           </Text>
           <Link
             className={`text-[14px] block mb-1.5 ${themeClasses.mutedLink}`}
-            href="https://go.midday.ai/186swoH"
+            href="https://go.orbis.ai/186swoH"
             style={{ color: lightStyles.mutedText.color }}
           >
             Story
           </Link>
           <Link
             className={`text-[14px] block mb-1.5 ${themeClasses.mutedLink}`}
-            href="https://go.midday.ai/QWyX8Um"
+            href="https://go.orbis.ai/QWyX8Um"
             style={{ color: lightStyles.mutedText.color }}
           >
             Updates
           </Link>
           <Link
             className={`text-[14px] block mb-1.5 ${themeClasses.mutedLink}`}
-            href="https://go.midday.ai/Dd7M8cl"
+            href="https://go.orbis.ai/Dd7M8cl"
             style={{ color: lightStyles.mutedText.color }}
           >
             Open startup
           </Link>
           <Link
             className={`text-[14px] block mb-1.5 ${themeClasses.mutedLink}`}
-            href="https://go.midday.ai/M2Hv420"
+            href="https://go.orbis.ai/M2Hv420"
             style={{ color: lightStyles.mutedText.color }}
           >
             OSS Friends
@@ -192,32 +192,32 @@ export function Footer() {
 
       <Row>
         <Column className="align-middle w-[40px]">
-          <Link href="https://go.midday.ai/lS72Toq">
+          <Link href="https://go.orbis.ai/lS72Toq">
             <Img
               src={`${baseUrl}/email/x.png`}
               width="18"
               height="18"
-              alt="Midday on X"
+              alt="Orbis on X"
             />
           </Link>
         </Column>
         <Column className="align-middle w-[40px]">
-          <Link href="https://go.midday.ai/7rhA3rz">
+          <Link href="https://go.orbis.ai/7rhA3rz">
             <Img
               src={`${baseUrl}/email/producthunt.png`}
               width="22"
               height="22"
-              alt="Midday on Producthunt"
+              alt="Orbis on Producthunt"
             />
           </Link>
         </Column>
         <Column className="align-middle">
-          <Link href="https://go.midday.ai/Ct3xybK">
+          <Link href="https://go.orbis.ai/Ct3xybK">
             <Img
               src={`${baseUrl}/email/linkedin.png`}
               width="22"
               height="22"
-              alt="Midday on LinkedIn"
+              alt="Orbis on LinkedIn"
             />
           </Link>
         </Column>
@@ -230,12 +230,12 @@ export function Footer() {
         className={`text-xs ${themeClasses.secondaryText}`}
         style={{ color: lightStyles.secondaryText.color }}
       >
-        Midday Labs AB - Torsgatan 59 113 37, Stockholm, Sweden.
+        Orbis Labs AB - Torsgatan 59 113 37, Stockholm, Sweden.
       </Text>
 
       <Link
         className={`text-[14px] block ${themeClasses.mutedLink}`}
-        href="https://app.midday.ai/settings/notifications"
+        href="https://app.orbis.ai/settings/notifications"
         title="Unsubscribe"
         style={{ color: lightStyles.mutedText.color }}
       >

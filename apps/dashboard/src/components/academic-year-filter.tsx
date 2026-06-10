@@ -10,7 +10,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@midday/ui/select";
+} from "@orbis/ui/select";
 import { usePathname } from "next/navigation";
 import { useI18n } from "@/locales/client";
 

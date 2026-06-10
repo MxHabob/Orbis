@@ -1,8 +1,8 @@
 "use client";
 
 import { useTRPC } from "@/trpc/client";
-import { Icons } from "@midday/ui/icons";
-import { Label } from "@midday/ui/label";
+import { Icons } from "@orbis/ui/icons";
+import { Label } from "@orbis/ui/label";
 import {
   Select,
   SelectContent,
@@ -11,17 +11,17 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
-} from "@midday/ui/select";
+} from "@orbis/ui/select";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@midday/ui/tooltip";
+} from "@orbis/ui/tooltip";
 import { useQuery } from "@tanstack/react-query";
 import { Controller, useWatch } from "react-hook-form";
 import { mappableFields, useCsvContext } from "./context";
-import { Switch } from "@midday/ui/switch";
+import { Switch } from "@orbis/ui/switch";
 
 export function FieldMapping() {
   const { setValue, control, watch } = useCsvContext();

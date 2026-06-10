@@ -1,6 +1,6 @@
 import { createTRPCRouter, protectedProcedure } from "../init";
 import { z } from "zod";
-import { students, classes, users, subjects, documents } from "@midday/db/schema";
+import { students, classes, users, subjects, documents } from "@orbis/db/schema";
 import { ilike, or, and, eq } from "drizzle-orm";
 
 export const searchRouter = createTRPCRouter({

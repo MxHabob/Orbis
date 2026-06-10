@@ -1,7 +1,7 @@
 "use client";
 
 import { Portal } from "@/components/portal";
-import { Button } from "@midday/ui/button";
+import { Button } from "@orbis/ui/button";
 import { motion } from "framer-motion";
 import type { ReactNode } from "react";
 

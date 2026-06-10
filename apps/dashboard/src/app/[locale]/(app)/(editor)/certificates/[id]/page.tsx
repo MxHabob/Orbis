@@ -1,10 +1,10 @@
 
 import { CertificateEditor } from "@/components/certificates/editor/certificate-editor";
-import { getCertificateTemplateById } from "@midday/db/queries/certificate-templates";
+import { getCertificateTemplateById } from "@orbis/db/queries/certificate-templates";
 import { notFound } from "next/navigation";
 
 export const metadata = {
-  title: "Edit Template | Mommy",
+  title: "Edit Template | Orbis",
 };
 
 export default async function EditTemplatePage({ params }: { params: Promise<{ id: string }> }) {

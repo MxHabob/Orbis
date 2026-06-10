@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchStore } from "@/store/search";
-import { Dialog, DialogContent } from "@midday/ui/dialog";
+import { Dialog, DialogContent } from "@orbis/ui/dialog";
 import { useHotkeys } from "react-hotkeys-hook";
 import { Search } from "./search";
 import { SearchFooter } from "./search-footer";

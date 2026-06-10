@@ -13,24 +13,24 @@ import {
   formatOrdinal,
   localDateToUTCMidnight,
   validateRecurringConfig,
-} from "@midday/invoice/recurring";
-import { Button } from "@midday/ui/button";
-import { Calendar } from "@midday/ui/calendar";
-import { Icons } from "@midday/ui/icons";
-import { Input } from "@midday/ui/input";
-import { Label } from "@midday/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@midday/ui/popover";
-import { RadioGroup, RadioGroupItem } from "@midday/ui/radio-group";
-import { ScrollArea } from "@midday/ui/scroll-area";
+} from "@orbis/invoice/recurring";
+import { Button } from "@orbis/ui/button";
+import { Calendar } from "@orbis/ui/calendar";
+import { Icons } from "@orbis/ui/icons";
+import { Input } from "@orbis/ui/input";
+import { Label } from "@orbis/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@orbis/ui/popover";
+import { RadioGroup, RadioGroupItem } from "@orbis/ui/radio-group";
+import { ScrollArea } from "@orbis/ui/scroll-area";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@midday/ui/select";
-import { Sheet, SheetContent } from "@midday/ui/sheet";
-import { SubmitButton } from "@midday/ui/submit-button";
+} from "@orbis/ui/select";
+import { Sheet, SheetContent } from "@orbis/ui/sheet";
+import { SubmitButton } from "@orbis/ui/submit-button";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, getDate, getDay } from "date-fns";
 import * as React from "react";

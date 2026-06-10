@@ -1,16 +1,16 @@
 "use client";
 
-import { authClient } from "@midday/auth/auth-client";
+import { authClient } from "@orbis/auth/auth-client";
 import { useI18n } from "@/locales/client";
-import { Avatar, AvatarFallback, AvatarImage } from "@midday/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@orbis/ui/avatar";
 import {
   Card,
   CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@midday/ui/card";
-import { Spinner } from "@midday/ui/spinner";
+} from "@orbis/ui/card";
+import { Spinner } from "@orbis/ui/spinner";
 import { useRef } from "react";
 
 export function CompanyLogo() {
@@ -22,9 +22,9 @@ export function CompanyLogo() {
     <Card>
       <div className="flex justify-between items-center pr-6 rtl:ps-6 rtl:pr-0">
         <CardHeader>
-          <CardTitle>{t("settings.entity_name_title")}</CardTitle>
+          <CardTitle>{t("settings.orbis_name_title")}</CardTitle>
           <CardDescription>
-            {t("settings.entity_name_description")}
+            {t("settings.orbis_name_description")}
           </CardDescription>
         </CardHeader>
 

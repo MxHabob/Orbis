@@ -4,7 +4,7 @@ import {
   getStudentAttendance, 
   markAttendance, 
   bulkMarkAttendance 
-} from "@midday/db/queries";
+} from "@orbis/db/queries";
 import { 
   markAttendanceSchema, 
   bulkMarkAttendanceSchema 

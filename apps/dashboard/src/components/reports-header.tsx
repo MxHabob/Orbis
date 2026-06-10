@@ -4,8 +4,8 @@ import { ReportsSearchFilter } from "./reports-search-filter";
 import { ReportColumnVisibility } from "./report-column-visibility";
 import { AcademicYearFilter } from "./academic-year-filter";
 import { useReportExportParams } from "@/hooks/use-report-export-params";
-import { Button } from "@midday/ui/button";
-import { Icons } from "@midday/ui/icons";
+import { Button } from "@orbis/ui/button";
+import { Icons } from "@orbis/ui/icons";
 
 export function ReportsHeader() {
   const { setParams } = useReportExportParams();

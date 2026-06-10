@@ -4,7 +4,7 @@ import { useI18n } from "@/locales/client";
 import { useState, useEffect } from "react";
 import { useTRPC } from "@/trpc/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@midday/ui/use-toast";
+import { useToast } from "@orbis/ui/use-toast";
 import {
   Dialog,
   DialogContent,
@@ -12,17 +12,17 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@midday/ui/dialog";
-import { Button } from "@midday/ui/button";
-import { Label } from "@midday/ui/label";
+} from "@orbis/ui/dialog";
+import { Button } from "@orbis/ui/button";
+import { Label } from "@orbis/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@midday/ui/select";
-import { Textarea } from "@midday/ui/textarea";
+} from "@orbis/ui/select";
+import { Textarea } from "@orbis/ui/textarea";
 import { Loader2 } from "lucide-react";
 
 interface PromotionHistory {

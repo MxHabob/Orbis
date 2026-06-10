@@ -1,13 +1,13 @@
 "use client";
 
-import { Checkbox } from "@midday/ui/checkbox";
-import { Badge } from "@midday/ui/badge";
-import { Icons } from "@midday/ui/icons";
+import { Checkbox } from "@orbis/ui/checkbox";
+import { Badge } from "@orbis/ui/badge";
+import { Icons } from "@orbis/ui/icons";
 import type { ColumnDef } from "@tanstack/react-table";
 import { formatDate } from "date-fns";
 import { ActionsMenu } from "./actions-menu";
 import type { CertificateTemplate } from "./types";
-import { cn } from "@midday/ui/cn";
+import { cn } from "@orbis/ui/cn";
 
 export const columns: ColumnDef<CertificateTemplate>[] = [
   {

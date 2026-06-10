@@ -2,7 +2,7 @@
 
 import { Portal } from "@/components/portal";
 import { useI18n } from "@/locales/client";
-import { Button } from "@midday/ui/button";
+import { Button } from "@orbis/ui/button";
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, Save } from "lucide-react";
 import {
@@ -15,8 +15,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@midday/ui/alert-dialog";
-import { cn } from "@midday/ui/cn";
+} from "@orbis/ui/alert-dialog";
+import { cn } from "@orbis/ui/cn";
 
 interface GradesSaveBarProps {
   count: number;

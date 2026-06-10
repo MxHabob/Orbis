@@ -76,7 +76,7 @@ async fn check_for_updates(app: tauri::AppHandle) -> Result<(), String> {
                     // No update available - show current version info
                     let version = app.package_info().version.to_string();
                     app.dialog()
-                        .message(format!("Mommy\nversion {}\n\nYou're up to date!", version))
+                        .message(format!("Orbis\nversion {}\n\nYou're up to date!", version))
                         .title("No Updates Available")
                         .kind(MessageDialogKind::Info)
                         .buttons(MessageDialogButtons::Ok)
@@ -257,11 +257,11 @@ async fn create_preloaded_search_window(
         search_window_label,
         WebviewUrl::External(tauri::Url::parse(&search_url)?),
     )
-    .title("Mommy Search")
+    .title("Orbis Search")
     .inner_size(720.0, 450.0)
     .min_inner_size(720.0, 450.0)
     .resizable(false)
-    .user_agent("Mozilla/5.0 (compatible; Mommy Desktop App)")
+    .user_agent("Mozilla/5.0 (compatible; Orbis Desktop App)")
     .transparent(true)
     .decorations(false)
     .visible(false) // Start hidden for preloading
@@ -314,9 +314,9 @@ async fn create_preloaded_search_window(
 
 fn get_app_url() -> String {
     // Try runtime environment variable first, then fall back to compile-time
-    let env = env::var("MIDDAY_ENV")
+    let env = env::var("ORBIS_ENV")
         .unwrap_or_else(|_| {
-            option_env!("MIDDAY_ENV")
+            option_env!("ORBIS_ENV")
                 .unwrap_or("development")
                 .to_string()
         });
@@ -330,12 +330,12 @@ fn get_app_url() -> String {
             url
         },
         "staging" => {
-            let url = "https://beta.mommy.mulverse.com".to_string();
+            let url = "https://beta.orbis.mulverse.com".to_string();
             println!("🌍 Using staging URL: {}", url);
             url
         },
         "production" | "prod" => {
-            let url = "https://mommy.mulverse.com".to_string();
+            let url = "https://orbis.mulverse.com".to_string();
             println!("🌍 Using production URL: {}", url);
             url
         },
@@ -364,9 +364,9 @@ fn is_external_url(url: &str, app_url: &str) -> bool {
 
 fn handle_deep_link_event(app_handle: &tauri::AppHandle, urls: Vec<String>) {
     for url in &urls {
-        if url.starts_with("mommy://") {
+        if url.starts_with("orbis://") {
             // Extract the path from the deep link
-            let path = url.strip_prefix("mommy://").unwrap_or("");
+            let path = url.strip_prefix("orbis://").unwrap_or("");
 
             // Remove any leading slashes
             let clean_path = path.trim_start_matches('/');
@@ -470,10 +470,10 @@ pub fn run() {
                 "main",
                 WebviewUrl::External(tauri::Url::parse(&app_url).unwrap()),
             )
-            .title("Mommy")
+            .title("Orbis")
             .inner_size(1200.0, 750.0)
             .min_inner_size(900.0, 600.0)
-            .user_agent("Mozilla/5.0 (compatible; Mommy Desktop App)")
+            .user_agent("Mozilla/5.0 (compatible; Orbis Desktop App)")
             .decorations(false)
             .visible(false)
             .transparent(true)
@@ -566,7 +566,7 @@ pub fn run() {
             // Don't preload search window immediately - create it on first use instead
             // This prevents interference with the login flow
 
-            // Set the default app menu to restore the Midday menu
+            // Set the default app menu to restore the Orbis menu
             let app_menu = Menu::default(app.handle())?;
             app.set_menu(app_menu)?;
 

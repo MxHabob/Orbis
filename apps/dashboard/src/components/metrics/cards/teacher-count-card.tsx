@@ -6,7 +6,7 @@ import { SchoolMetricChart, type SchoolMetricData } from "@/components/charts/sc
 import { useSchoolMetrics } from "@/hooks/use-school-metrics";
 import { useLongPress } from "@/hooks/use-long-press";
 import { useMetricsCustomize } from "@/hooks/use-metrics-customize";
-import { cn } from "@midday/ui/cn";
+import { cn } from "@orbis/ui/cn";
 import { format, subMonths } from "date-fns";
 import { useMemo } from "react";
 import { ShareMetricButton } from "../components/share-metric-button";

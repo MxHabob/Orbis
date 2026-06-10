@@ -1,8 +1,8 @@
 "use client";
 
 import { useTRPC } from "@/trpc/client";
-import { ComboboxDropdown } from "@midday/ui/combobox-dropdown";
-import { Spinner } from "@midday/ui/spinner";
+import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
+import { Spinner } from "@orbis/ui/spinner";
 import { useQuery } from "@tanstack/react-query";
 
 type Selected = {

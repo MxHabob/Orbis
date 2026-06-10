@@ -1,12 +1,12 @@
-import { createClient } from "@midday/supabase/client";
-import { Button } from "@midday/ui/button";
+import { createClient } from "@orbis/supabase/client";
+import { Button } from "@orbis/ui/button";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@midday/ui/collapsible";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@midday/ui/input-otp";
-import { Spinner } from "@midday/ui/spinner";
+} from "@orbis/ui/collapsible";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@orbis/ui/input-otp";
+import { Spinner } from "@orbis/ui/spinner";
 import { CaretSortIcon } from "@radix-ui/react-icons";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -58,7 +58,7 @@ export function EnrollMFA() {
     async function enroll() {
       const { data, error } = await supabase.auth.mfa.enroll({
         factorType: "totp",
-        issuer: "app.midday.ai",
+        issuer: "app.orbis.ai",
       });
 
       if (error || !data) {

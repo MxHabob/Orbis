@@ -1,8 +1,8 @@
 "use client";
 
 import { useSearchStore } from "@/store/search";
-import { Button } from "@midday/ui/button";
-import { Icons } from "@midday/ui/icons";
+import { Button } from "@orbis/ui/button";
+import { Icons } from "@orbis/ui/icons";
 import { useI18n } from "@/locales/client";
 
 export function OpenSearchButton() {

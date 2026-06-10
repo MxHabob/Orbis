@@ -12,9 +12,9 @@ import { useUserQuery } from "@/hooks/use-user";
 import { downloadFile } from "@/lib/download";
 import { useSearchStore } from "@/store/search";
 import { useTRPC } from "@/trpc/client";
-import { Window, emit, invoke, listen } from "@midday/desktop-client/core";
-import { isDesktopApp } from "@midday/desktop-client/platform";
-import { Badge } from "@midday/ui/badge";
+import { Window, emit, invoke, listen } from "@orbis/desktop-client/core";
+import { isDesktopApp } from "@orbis/desktop-client/platform";
+import { Badge } from "@orbis/ui/badge";
 import {
   Command,
   CommandEmpty,
@@ -22,10 +22,10 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@midday/ui/command";
-import { Icons } from "@midday/ui/icons";
-import { Spinner } from "@midday/ui/spinner";
-import { formatDate } from "@midday/utils/format";
+} from "@orbis/ui/command";
+import { Icons } from "@orbis/ui/icons";
+import { Spinner } from "@orbis/ui/spinner";
+import { formatDate } from "@orbis/utils/format";
 import { useQuery } from "@tanstack/react-query";
 import { formatISO } from "date-fns";
 import { useI18n } from "@/locales/client";

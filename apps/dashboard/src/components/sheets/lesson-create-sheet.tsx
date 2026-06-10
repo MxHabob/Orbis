@@ -2,8 +2,8 @@
 
 import { LessonForm } from "@/components/forms/lesson-form";
 import { useLessonParams } from "@/hooks/use-lesson-params";
-import { ScrollArea } from "@midday/ui/scroll-area";
-import { Sheet, SheetContent, SheetHeader } from "@midday/ui/sheet";
+import { ScrollArea } from "@orbis/ui/scroll-area";
+import { Sheet, SheetContent, SheetHeader } from "@orbis/ui/sheet";
 import React from "react";
 
 export function LessonCreateSheet() {

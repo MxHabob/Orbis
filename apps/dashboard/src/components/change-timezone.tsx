@@ -2,17 +2,17 @@
 
 import { useUserMutation, useUserQuery } from "@/hooks/use-user";
 import { useI18n } from "@/locales/client";
-import { getTimezones } from "@midday/location/timezones";
+import { getTimezones } from "@orbis/location/timezones";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@midday/ui/card";
-import { ComboboxDropdown } from "@midday/ui/combobox-dropdown";
-import { Label } from "@midday/ui/label";
-import { Switch } from "@midday/ui/switch";
+} from "@orbis/ui/card";
+import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
+import { Label } from "@orbis/ui/label";
+import { Switch } from "@orbis/ui/switch";
 import { useEffect, useState } from "react";
 
 export function ChangeTimezone() {

@@ -1,7 +1,7 @@
 import { db } from "@db/client";
 import { subjects } from "@db/schema";
 import { eq, asc } from "drizzle-orm";
-import { RedisCache } from "@midday/cache";
+import { RedisCache } from "@orbis/cache";
 
 const subjectCache = new RedisCache("subjects", 60 * 60 * 24); // 24 hours
 

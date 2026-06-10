@@ -2,8 +2,8 @@
 
 import { useGlobalTimerStatus } from "@/hooks/use-global-timer-status";
 import { secondsToHoursAndMinutes } from "@/utils/format";
-import { cn } from "@midday/ui/cn";
-import { Icons } from "@midday/ui/icons";
+import { cn } from "@orbis/ui/cn";
+import { Icons } from "@orbis/ui/icons";
 
 interface GlobalTimerIndicatorProps {
   className?: string;

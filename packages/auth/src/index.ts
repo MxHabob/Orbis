@@ -1,12 +1,12 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { db } from "@midday/db/client";
+import { db } from "@orbis/db/client";
 import { 
   users, 
   sessions, 
   accounts, 
   verifications 
-} from "@midday/db/schema";
+} from "@orbis/db/schema";
 
 function getApiUrl(): string {
   if (process.env.BETTER_AUTH_URL) {
@@ -16,7 +16,7 @@ function getApiUrl(): string {
     return process.env.API_URL;
   }
   return process.env.NODE_ENV === "production"
-    ? "https://mommy-api.mulverse.com"
+    ? "https://orbis-api.mulverse.com"
     : "http://localhost:3002";
 }
 
@@ -54,7 +54,10 @@ function getTrustedOrigins(): string[] {
   return origins.length > 0 ? origins : ["http://localhost:3001"];
 }
 
+const betterAuthSecret = process.env.BETTER_AUTH_SECRET ?? "orbis-dev-secret-change-me";
+
 export const auth = betterAuth({
+  secret: betterAuthSecret,
   baseURL: getApiUrl(),
   trustedOrigins: getTrustedOrigins(),
   database: drizzleAdapter(db, {

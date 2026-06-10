@@ -1,7 +1,7 @@
 "use client";
 
 import { useI18n } from "@/locales/client";
-import { Button } from "@midday/ui/button";
+import { Button } from "@orbis/ui/button";
 import { School, ArrowRight, RotateCcw } from "lucide-react";
 
 interface HistoryTableHeaderProps {

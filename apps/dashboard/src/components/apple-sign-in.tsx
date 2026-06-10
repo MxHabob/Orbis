@@ -1,10 +1,10 @@
 "use client";
 
 import { getUrl } from "@/utils/environment";
-import { isDesktopApp } from "@midday/desktop-client/platform";
-import { authClient } from "@midday/auth/auth-client";
-import { Icons } from "@midday/ui/icons";
-import { SubmitButton } from "@midday/ui/submit-button";
+import { isDesktopApp } from "@orbis/desktop-client/platform";
+import { authClient } from "@orbis/auth/auth-client";
+import { Icons } from "@orbis/ui/icons";
+import { SubmitButton } from "@orbis/ui/submit-button";
 import { useState } from "react";
 
 type Props = {

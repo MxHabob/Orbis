@@ -3,9 +3,9 @@
 import { useMetricsFilter } from "@/hooks/use-metrics-filter";
 import { useUserQuery } from "@/hooks/use-user";
 import type { PeriodOption } from "@/utils/metrics-date-utils";
-import { Button } from "@midday/ui/button";
-import { Calendar, CalendarDayButton } from "@midday/ui/calendar";
-import { cn } from "@midday/ui/cn";
+import { Button } from "@orbis/ui/button";
+import { Calendar, CalendarDayButton } from "@orbis/ui/calendar";
+import { cn } from "@orbis/ui/cn";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -19,8 +19,8 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from "@midday/ui/dropdown-menu";
-import { Icons } from "@midday/ui/icons";
+} from "@orbis/ui/dropdown-menu";
+import { Icons } from "@orbis/ui/icons";
 import { CheckIcon } from "@radix-ui/react-icons";
 import { format, formatISO, parseISO } from "date-fns";
 import { useState } from "react";

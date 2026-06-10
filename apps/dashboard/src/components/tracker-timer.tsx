@@ -4,14 +4,14 @@ import { useGlobalTimerStatus } from "@/hooks/use-global-timer-status";
 import { useTimerStore } from "@/store/timer";
 import { useTRPC } from "@/trpc/client";
 import { secondsToHoursAndMinutes } from "@/utils/format";
-import { Icons } from "@midday/ui/icons";
+import { Icons } from "@orbis/ui/icons";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@midday/ui/tooltip";
-import { useToast } from "@midday/ui/use-toast";
+} from "@orbis/ui/tooltip";
+import { useToast } from "@orbis/ui/use-toast";
 import NumberFlow from "@number-flow/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";

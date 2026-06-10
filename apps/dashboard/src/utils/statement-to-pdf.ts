@@ -360,9 +360,9 @@ async function createPdfFromCanvas(
   // Add metadata
   pdf.setProperties({
     title: "Customer Statement",
-    subject: "Generated from Midday Dashboard",
-    author: "Midday",
-    creator: "Midday Dashboard",
+    subject: "Generated from Orbis Dashboard",
+    author: "Orbis",
+    creator: "Orbis Dashboard",
   });
 
   pdf.save(options.filename);
@@ -428,9 +428,9 @@ async function createPdfBlobFromCanvas(
   // Add metadata
   pdf.setProperties({
     title: "Customer Statement",
-    subject: "Generated from Midday Dashboard",
-    author: "Midday",
-    creator: "Midday Dashboard",
+    subject: "Generated from Orbis Dashboard",
+    author: "Orbis",
+    creator: "Orbis Dashboard",
   });
 
   return pdf.output("blob");

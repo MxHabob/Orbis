@@ -1,7 +1,7 @@
 import { db } from "@db/client";
 import { timeSlots, scheduledLessons, classes, subjects, users } from "@db/schema";
 import { eq, and, asc } from "drizzle-orm";
-import { RedisCache } from "@midday/cache";
+import { RedisCache } from "@orbis/cache";
 
 const lessonCache = new RedisCache("lessons", 60 * 60);
 

@@ -1,7 +1,7 @@
 {
-  "productName": "Mommy Staging",
+  "productName": "Orbis Staging",
   "version": "0.3.0",
-  "identifier": "com.mulverse.mommy.staging",
+  "identifier": "com.mulverse.orbis.staging",
   "bundle": {
     "icon": [
       "icons/staging/32x32.png",

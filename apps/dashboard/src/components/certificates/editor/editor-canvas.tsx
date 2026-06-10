@@ -6,7 +6,7 @@ import { useEditorStore } from "@/store/certificate-editor";
 import { EditorElement } from "./editor-element";
 import { EditorSelectionManager } from "./editor-selection-manager";
 import { EditorContextMenu } from "./editor-context-menu";
-import { cn } from "@midday/ui/cn";
+import { cn } from "@orbis/ui/cn";
 
 export function EditorCanvas() {
   const { elements, canvasConfig, setCanvasConfig, setSelectedElements } = useEditorStore();

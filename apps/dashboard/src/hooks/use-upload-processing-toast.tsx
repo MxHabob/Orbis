@@ -4,7 +4,7 @@ import { PROCESSING_TOAST_ID } from "@/components/transactions-upload-zone";
 import { useMatchSound } from "@/hooks/use-match-sound";
 import { useRealtime } from "@/hooks/use-realtime";
 import { usePendingUploadsStore } from "@/store/pending-uploads";
-import { toast } from "@midday/ui/use-toast";
+import { toast } from "@orbis/ui/use-toast";
 import NumberFlow from "@number-flow/react";
 import { useCallback, useEffect, useRef } from "react";
 

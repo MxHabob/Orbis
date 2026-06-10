@@ -1,7 +1,7 @@
 import type { Session } from "@api/utils/auth";
 import { withRetryOnPrimary } from "@api/utils/db-retry";
-import type { Database } from "@midday/db/client";
-import { getUserWithRoles } from "@midday/db/queries/users";
+import type { Database } from "@orbis/db/client";
+import { getUserWithRoles } from "@orbis/db/queries/users";
 import { TRPCError } from "@trpc/server";
 
 export const withPermission = async <TReturn>(opts: {

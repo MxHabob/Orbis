@@ -1,5 +1,5 @@
 {
-  "name": "@midday/db",
+  "name": "@orbis/db",
   "private": true,
   "scripts": {
     "lint": "biome check .",
@@ -38,10 +38,10 @@
   "dependencies": {
     "@date-fns/tz": "^1.4.1",
     "@date-fns/utc": "^2.1.1",
-    "@midday/cache": "workspace:*",
-    "@midday/encryption": "workspace:*",
-    "@midday/logger": "workspace:*",
-    "@midday/utils": "workspace:*",
+    "@orbis/cache": "workspace:*",
+    "@orbis/encryption": "workspace:*",
+    "@orbis/logger": "workspace:*",
+    "@orbis/utils": "workspace:*",
     "@sindresorhus/slugify": "^3.0.0",
     "@types/pg": "^8.15.6",
     "camelcase-keys": "^10.0.1",
@@ -51,7 +51,7 @@
     "snakecase-keys": "^9.0.2"
   },
   "devDependencies": {
-    "@midday/tsconfig": "workspace:*",
+    "@orbis/tsconfig": "workspace:*",
     "@types/bun": "latest",
     "drizzle-kit": "^0.31.8"
   }

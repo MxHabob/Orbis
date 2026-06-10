@@ -3,8 +3,8 @@
 import { useRealtime } from "@/hooks/use-realtime";
 import { useUserQuery } from "@/hooks/use-user";
 import { useTRPC } from "@/trpc/client";
-import type { AppRouter } from "@midday/api/trpc/routers/_app";
-import { authClient } from "@midday/auth/auth-client";
+import type { AppRouter } from "@orbis/api/trpc/routers/_app";
+import { authClient } from "@orbis/auth/auth-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import { useCallback, useMemo } from "react";

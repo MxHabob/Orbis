@@ -1,7 +1,7 @@
 import type { Database } from "@db/client";
 import { parentStudents, students, users, classes } from "@db/schema";
 import { eq, and, inArray } from "drizzle-orm";
-import { RedisCache } from "@midday/cache";
+import { RedisCache } from "@orbis/cache";
 
 const parentStudentCache = new RedisCache("parent-student", 30 * 60);
 

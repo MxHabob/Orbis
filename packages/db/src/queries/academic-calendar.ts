@@ -1,7 +1,7 @@
 import { db } from "@db/client";
 import { academicYears, academicTerms, classes, timeSlots } from "@db/schema";
 import { eq, desc } from "drizzle-orm";
-import { RedisCache } from "@midday/cache";
+import { RedisCache } from "@orbis/cache";
 
 const calendarCache = new RedisCache("calendar", 60 * 60 * 24); // 24 hours
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { Avatar, AvatarFallback, AvatarImageNext } from "@midday/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImageNext } from "@orbis/ui/avatar";
 import type { ColumnDef } from "@tanstack/react-table";
 import { memo } from "react";
 import { EditableGradeCell } from "./editable-grade-cell";

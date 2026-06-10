@@ -7,7 +7,7 @@ export const Cookies = {
   HideConnectFlow: "hide-connect-flow",
   LastProject: "last-project",
   WeeklyCalendar: "weekly-calendar",
-  ForcePrimary: "midday-force-primary",
+  ForcePrimary: "orbis-force-primary",
 };
 
 export const LocalStorageKeys = {

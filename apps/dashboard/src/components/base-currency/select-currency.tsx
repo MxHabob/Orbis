@@ -3,9 +3,9 @@
 import { SelectCurrency as SelectCurrencyBase } from "@/components/select-currency";
 import { useJobStatus } from "@/hooks/use-job-status";
 import { useTRPC } from "@/trpc/client";
-import { uniqueCurrencies } from "@midday/location/currencies";
-import { Button } from "@midday/ui/button";
-import { useToast } from "@midday/ui/use-toast";
+import { uniqueCurrencies } from "@orbis/location/currencies";
+import { Button } from "@orbis/ui/button";
+import { useToast } from "@orbis/ui/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 

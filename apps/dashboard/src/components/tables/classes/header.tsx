@@ -1,8 +1,8 @@
 "use client";
 
 import { useClassParams } from "@/hooks/use-class-params";
-import { Button } from "@midday/ui/button";
-import { Input } from "@midday/ui/input";
+import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
 import type { Table } from "@tanstack/react-table";
 import type { Class } from "./columns";
 

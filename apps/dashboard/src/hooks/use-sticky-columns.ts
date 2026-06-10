@@ -1,6 +1,6 @@
 import type { StickyColumnConfig } from "@/components/tables/core";
 import { STICKY_COLUMNS } from "@/utils/table-configs";
-import { cn } from "@midday/ui/cn";
+import { cn } from "@orbis/ui/cn";
 import type { VisibilityState } from "@tanstack/react-table";
 import { useCallback, useMemo } from "react";
 

@@ -7,9 +7,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@midday/ui/dropdown-menu";
-import { Icons } from "@midday/ui/icons";
-import { Sheet, SheetContent, SheetHeader } from "@midday/ui/sheet";
+} from "@orbis/ui/dropdown-menu";
+import { Icons } from "@orbis/ui/icons";
+import { Sheet, SheetContent, SheetHeader } from "@orbis/ui/sheet";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { StudentForm } from "../forms/student-form";
 

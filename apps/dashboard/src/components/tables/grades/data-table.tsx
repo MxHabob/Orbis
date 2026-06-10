@@ -10,7 +10,7 @@ import { useTableSettings } from "@/hooks/use-table-settings";
 import { STICKY_COLUMNS, SUMMARY_GRID_HEIGHTS } from "@/utils/table-configs";
 import type { TableSettings } from "@/utils/table-settings";
 import { DndContext, closestCenter } from "@dnd-kit/core";
-import { Table, TableBody, TableCell, TableRow } from "@midday/ui/table";
+import { Table, TableBody, TableCell, TableRow } from "@orbis/ui/table";
 import { getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { type VirtualItem, useVirtualizer } from "@tanstack/react-virtual";
 import { useMemo, useRef } from "react";

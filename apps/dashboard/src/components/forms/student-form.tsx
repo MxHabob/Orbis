@@ -12,8 +12,8 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@midday/ui/accordion";
-import { Button } from "@midday/ui/button";
+} from "@orbis/ui/accordion";
+import { Button } from "@orbis/ui/button";
 import {
   Form,
   FormControl,
@@ -22,19 +22,19 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@midday/ui/form";
-import { Input } from "@midday/ui/input";
-import { Label } from "@midday/ui/label";
-import { SubmitButton } from "@midday/ui/submit-button";
-import { Textarea } from "@midday/ui/textarea";
-import { useToast } from "@midday/ui/use-toast";
+} from "@orbis/ui/form";
+import { Input } from "@orbis/ui/input";
+import { Label } from "@orbis/ui/label";
+import { SubmitButton } from "@orbis/ui/submit-button";
+import { Textarea } from "@orbis/ui/textarea";
+import { useToast } from "@orbis/ui/use-toast";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@midday/ui/select";
+} from "@orbis/ui/select";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod/v3";
 import { invalidateStudentDomain } from "@/utils/query-invalidation";

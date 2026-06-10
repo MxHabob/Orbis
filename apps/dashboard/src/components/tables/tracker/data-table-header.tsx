@@ -2,9 +2,9 @@
 
 import { HorizontalPagination } from "@/components/horizontal-pagination";
 import { useSortParams } from "@/hooks/use-sort-params";
-import { Button } from "@midday/ui/button";
-import { cn } from "@midday/ui/cn";
-import { TableHead, TableHeader, TableRow } from "@midday/ui/table";
+import { Button } from "@orbis/ui/button";
+import { cn } from "@orbis/ui/cn";
+import { TableHead, TableHeader, TableRow } from "@orbis/ui/table";
 import { ArrowDown, ArrowUp } from "lucide-react";
 
 interface Props {

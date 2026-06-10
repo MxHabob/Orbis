@@ -1,8 +1,8 @@
 "use client";
 
 import { useI18n } from "@/locales/client";
-import { Badge } from "@midday/ui/badge";
-import { cn } from "@midday/ui/cn";
+import { Badge } from "@orbis/ui/badge";
+import { cn } from "@orbis/ui/cn";
 import { createColumnHelper } from "@tanstack/react-table";
 import { User, GraduationCap, School } from "lucide-react";
 import React from "react";

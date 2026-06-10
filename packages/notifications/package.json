@@ -1,5 +1,5 @@
 {
-  "name": "@midday/notifications",
+  "name": "@orbis/notifications",
   "version": "0.1.0",
   "private": true,
   "main": "src/index.ts",
@@ -14,14 +14,14 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@midday/email": "workspace:*",
-    "@midday/db": "workspace:*",
+    "@orbis/email": "workspace:*",
+    "@orbis/db": "workspace:*",
     "nanoid": "^5.1.6",
     "resend": "^6.5.2",
     "zod": "^4.1.13"
   },
   "devDependencies": {
-    "@midday/tsconfig": "workspace:*",
+    "@orbis/tsconfig": "workspace:*",
     "typescript": "^5.9.3"
   }
 }

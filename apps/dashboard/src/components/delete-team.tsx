@@ -12,17 +12,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@midday/ui/alert-dialog";
-import { Button } from "@midday/ui/button";
+} from "@orbis/ui/alert-dialog";
+import { Button } from "@orbis/ui/button";
 import {
   Card,
   CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@midday/ui/card";
-import { Input } from "@midday/ui/input";
-import { Label } from "@midday/ui/label";
+} from "@orbis/ui/card";
+import { Input } from "@orbis/ui/input";
+import { Label } from "@orbis/ui/label";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";

@@ -1,5 +1,5 @@
 {
-  "name": "@midday/ui",
+  "name": "@orbis/ui",
   "version": "1.0.0",
   "private": true,
   "sideEffects": false,
@@ -88,7 +88,7 @@
     "./web-search-sources": "./src/components/web-search-sources.tsx"
   },
   "dependencies": {
-    "@midday/utils": "workspace:*",
+    "@orbis/utils": "workspace:*",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",
     "@radix-ui/react-avatar": "^1.1.10",
@@ -148,7 +148,7 @@
     "vaul": "^1.1.2"
   },
   "devDependencies": {
-    "@midday/tsconfig": "workspace:*",
+    "@orbis/tsconfig": "workspace:*",
     "@types/react": "19.2.7",
     "@types/react-dom": "19.2.3",
     "autoprefixer": "^10.4.21",

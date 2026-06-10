@@ -6,7 +6,7 @@ import { secureHeaders } from "hono/secure-headers";
 import { createTRPCContext } from "./trpc/init";
 import { appRouter } from "./trpc/routers/_app";
 import { httpLogger } from "./utils/logger";
-import { auth } from "@midday/auth";
+import { auth } from "@orbis/auth";
 import type { HonoEnv } from "./utils/auth";
 import { handleUpload } from "./routes/upload";
 import { handleFileProxy } from "./routes/files";
@@ -75,7 +75,7 @@ app.use("*", async (c, next) => {
       : c.req.header("x-better-auth-session");
 
     if (sessionToken) {
-      const { getSession: getDbSession } = await import("@midday/db/queries");
+      const { getSession: getDbSession } = await import("@orbis/db/queries");
       const dbResult = await getDbSession(sessionToken);
       if (dbResult) {
         session = {
@@ -121,8 +121,8 @@ app.get("/files/proxy", (c) => handleFileProxy(c));
 
 app.get("/s/:code", async (c) => {
   const code = c.req.param("code");
-  const { db } = await import("@midday/db/client");
-  const { shortLinks } = await import("@midday/db/schema");
+  const { db } = await import("@orbis/db/client");
+  const { shortLinks } = await import("@orbis/db/schema");
   const { eq, and, gt } = await import("drizzle-orm");
 
   const [link] = await db
@@ -147,7 +147,7 @@ app.get("/s/:code", async (c) => {
 
       if (filePath?.startsWith("vault/")) {
         const key = filePath.replace("vault/", "");
-        const { getDownloadUrl } = await import("@midday/storage");
+        const { getDownloadUrl } = await import("@orbis/storage");
 
         const signedUrl = await getDownloadUrl({
           bucket: "vault",
@@ -169,16 +169,16 @@ app.doc("/openapi", {
   openapi: "3.1.0",
   info: {
     version: "0.0.1",
-    title: "Mommy School API",
+    title: "Orbis School API",
     description: "School Management System API Platform",
     contact: {
-      name: "Mommy School Support",
-      email: "engineer@mommyschool.com",
-      url: "https://mommyschool.com",
+      name: "Orbis School Support",
+      email: "engineer@orbisschool.com",
+      url: "https://orbisschool.com",
     },
     license: {
       name: "Proprietary",
-      url: "https://mommyschool.com/terms",
+      url: "https://orbisschool.com/terms",
     },
   },
   servers: [
@@ -199,7 +199,7 @@ app.openAPIRegistry.registerComponent("securitySchemes", "token", {
 
 app.get(
   "/",
-  Scalar({ url: "/openapi", pageTitle: "Mommy School API Docs", theme: "saturn" }),
+  Scalar({ url: "/openapi", pageTitle: "Orbis School API Docs", theme: "saturn" }),
 );
 
 export default {

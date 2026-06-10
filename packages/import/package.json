@@ -1,5 +1,5 @@
 {
-  "name": "@midday/import",
+  "name": "@orbis/import",
   "version": "1.0.0",
   "main": "src/index.ts",
   "private": true,
@@ -14,11 +14,11 @@
     "date-fns": "^4.1.0",
     "papaparse": "^5.5.3",
     "read-excel-file": "^6.0.3",
-    "@midday/db": "workspace:*",
+    "@orbis/db": "workspace:*",
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@midday/tsconfig": "workspace:*",
+    "@orbis/tsconfig": "workspace:*",
     "@types/papaparse": "^5.5.2",
     "typescript": "^5.9.3"
   },

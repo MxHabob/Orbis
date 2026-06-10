@@ -1,5 +1,5 @@
 {
-  "extends": "@midday/tsconfig/base.json",
+  "extends": "@orbis/tsconfig/base.json",
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",

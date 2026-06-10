@@ -13,7 +13,7 @@ import {
   getStudentGrades,
   updateAssessment,
   updateGradeEntry,
-} from "@midday/db/queries";
+} from "@orbis/db/queries";
 import { z } from "zod";
 
 export const assessmentsRouter = createTRPCRouter({
@@ -114,7 +114,7 @@ export const assessmentsRouter = createTRPCRouter({
       }))
     }))
     .mutation(async ({ input, ctx }) => {
-      const { bulkImportGrades, bulkImportGradesBySecretNumber } = await import("@midday/db/queries");
+      const { bulkImportGrades, bulkImportGradesBySecretNumber } = await import("@orbis/db/queries");
       
       if (input.identifierType === "secretNumber") {
         return bulkImportGradesBySecretNumber(

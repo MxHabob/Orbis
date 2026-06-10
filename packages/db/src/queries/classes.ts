@@ -1,7 +1,7 @@
 import { db } from "@db/client";
 import { classes, enrollments, academicYears } from "@db/schema";
 import { eq, and, isNull, isNotNull, inArray, ilike, sql, desc, asc, or, count } from "drizzle-orm";
-import { RedisCache } from "@midday/cache";
+import { RedisCache } from "@orbis/cache";
 
 const classCache = new RedisCache("classes", 60 * 60);
 

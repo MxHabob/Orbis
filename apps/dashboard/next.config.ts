@@ -1,8 +1,10 @@
 import { withSentryConfig } from "@sentry/nextjs";
 
 /** @type {import("next").NextConfig} */
+const isWindows = process.platform === "win32";
+
 const config = {
-  output: "standalone",
+  output: isWindows ? undefined : "standalone",
   poweredByHeader: false,
   reactStrictMode: true,
   experimental: {
@@ -32,9 +34,9 @@ const config = {
     ],
   },
   transpilePackages: [
-    "@midday/ui",
-    "@midday/tailwind",
-    "@midday/api",
+    "@orbis/ui",
+    "@orbis/tailwind",
+    "@orbis/api",
   ],
   serverExternalPackages: ["@react-pdf/renderer", "pino"],
   typescript: {

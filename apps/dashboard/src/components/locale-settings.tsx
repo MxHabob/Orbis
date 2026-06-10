@@ -2,16 +2,16 @@
 
 import { useUserMutation } from "@/hooks/use-user";
 import { useI18n, useChangeLocale, languages } from "@/locales/client";
-import { countries } from "@midday/location/countries-intl";
+import { countries } from "@orbis/location/countries-intl";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@midday/ui/card";
-import { ComboboxDropdown } from "@midday/ui/combobox-dropdown";
-import { authClient } from "@midday/auth/auth-client";
+} from "@orbis/ui/card";
+import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
+import { authClient } from "@orbis/auth/auth-client";
 
 export function LocaleSettings() {
   const t = useI18n();

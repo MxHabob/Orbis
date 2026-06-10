@@ -1,10 +1,10 @@
 import { createTRPCRouter, protectedProcedure } from "@api/trpc/init";
 import { z } from "zod";
-import { getD, createDocument, deleteDocument, updateDocument } from "@midday/db/queries/documents";
+import { getD, createDocument, deleteDocument, updateDocument } from "@orbis/db/queries/documents";
 import { TRPCError } from "@trpc/server";
 import { eq, and, sql } from "drizzle-orm";
-import { documents } from "@midday/db/schema";
-import { getDownloadUrl } from "@midday/storage";
+import { documents } from "@orbis/db/schema";
+import { getDownloadUrl } from "@orbis/storage";
 
 export const documentsRouter = createTRPCRouter({
   // ... existing procedures
@@ -114,7 +114,7 @@ export const documentsRouter = createTRPCRouter({
 
       // 3. Delete from S3-compatible storage (RustFS) - Bulk deletion for performance
       if (keysToDelete.length > 0) {
-        const { deleteFiles } = require("@midday/storage");
+        const { deleteFiles } = require("@orbis/storage");
         await deleteFiles({
           bucket: "vault",
           keys: keysToDelete,

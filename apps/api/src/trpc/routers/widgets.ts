@@ -1,7 +1,7 @@
 
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../init";
-import { users } from "@midday/db/schema";
+import { users } from "@orbis/db/schema";
 import { eq } from "drizzle-orm";
 
 

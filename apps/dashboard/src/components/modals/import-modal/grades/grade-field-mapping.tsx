@@ -1,14 +1,14 @@
 "use client";
 
 import { useTRPC } from "@/trpc/client";
-import { Label } from "@midday/ui/label";
+import { Label } from "@orbis/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@midday/ui/select";
+} from "@orbis/ui/select";
 import { useQuery } from "@tanstack/react-query";
 import { Controller } from "react-hook-form";
 import { useCsvContext, type GradeImportFormData } from "../shared/context";

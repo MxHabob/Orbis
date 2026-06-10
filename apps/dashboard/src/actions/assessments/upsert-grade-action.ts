@@ -1,7 +1,7 @@
 "use server";
 
 import { authActionClient } from "@/actions/safe-action";
-import { upsertGrade } from "@midday/db/queries/grades";
+import { upsertGrade } from "@orbis/db/queries/grades";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 

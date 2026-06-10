@@ -8,10 +8,10 @@ import { EditorCanvas } from "./editor-canvas";
 import { EditorFloatingToolbar } from "./editor-floating-toolbar";
 import { useTRPC } from "@/trpc/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@midday/ui/use-toast";
+import { useToast } from "@orbis/ui/use-toast";
 import { type EditorElement } from "@/types/certificate-editor";
 import { useDropzone } from "react-dropzone";
-import { authClient } from "@midday/auth/auth-client";
+import { authClient } from "@orbis/auth/auth-client";
 import "@/styles/certificate-editor.css";
 
 interface Props {

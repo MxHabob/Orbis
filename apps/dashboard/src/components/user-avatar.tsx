@@ -1,6 +1,6 @@
 "use client";
 
-import { authClient } from "@midday/auth/auth-client";
+import { authClient } from "@orbis/auth/auth-client";
 import { useI18n } from "@/locales/client";
 import {
   Card,
@@ -8,7 +8,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@midday/ui/card";
+} from "@orbis/ui/card";
 import { AvatarUpload } from "./avatar-upload";
 
 export function UserAvatar() {

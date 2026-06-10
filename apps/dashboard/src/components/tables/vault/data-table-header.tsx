@@ -11,8 +11,8 @@ import {
   SortableContext,
   horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { Checkbox } from "@midday/ui/checkbox";
-import { TableHead, TableHeader, TableRow } from "@midday/ui/table";
+import { Checkbox } from "@orbis/ui/checkbox";
+import { TableHead, TableHeader, TableRow } from "@orbis/ui/table";
 import type { Header, Table } from "@tanstack/react-table";
 import { useMemo } from "react";
 

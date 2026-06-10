@@ -3,10 +3,10 @@
 import { usePendingUploadsStore } from "@/store/pending-uploads";
 import { useTRPC } from "@/trpc/client";
 import { resumableUpload } from "@/utils/upload";
-import { authClient } from "@midday/auth/auth-client";
-import { cn } from "@midday/ui/cn";
-import { useToast } from "@midday/ui/use-toast";
-import { stripSpecialCharacters } from "@midday/utils";
+import { authClient } from "@orbis/auth/auth-client";
+import { cn } from "@orbis/ui/cn";
+import { useToast } from "@orbis/ui/use-toast";
+import { stripSpecialCharacters } from "@orbis/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";

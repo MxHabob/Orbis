@@ -1,27 +1,27 @@
 "use client";
 
 import { useTRPC } from "@/trpc/client";
-import { Label } from "@midday/ui/label";
+import { Label } from "@orbis/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@midday/ui/select";
+} from "@orbis/ui/select";
 import { useQuery } from "@tanstack/react-query";
 import { Controller, useFieldArray } from "react-hook-form";
-import { Switch } from "@midday/ui/switch";
-import { Button } from "@midday/ui/button";
-import { Input } from "@midday/ui/input";
-import { Icons } from "@midday/ui/icons";
+import { Switch } from "@orbis/ui/switch";
+import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
+import { Icons } from "@orbis/ui/icons";
 import {
   Select as BasicSelect,
   SelectContent as BasicSelectContent,
   SelectItem as BasicSelectItem,
   SelectTrigger as BasicSelectTrigger,
   SelectValue as BasicSelectValue,
-} from "@midday/ui/select";
+} from "@orbis/ui/select";
 import { useCsvContext, type StudentImportFormData } from "../shared/context";
 import { FieldRow } from "../shared/field-row";
 import { useI18n } from "@/locales/client";

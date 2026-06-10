@@ -8,7 +8,7 @@ import {
   getClassDistribution,
   getRecentEnrolledStudents,
   getOverallPerformance
-} from "@midday/db/queries/metrics";
+} from "@orbis/db/queries/metrics";
 
 export const reportsRouter = createTRPCRouter({
   getSchoolMetrics: teacherProcedure

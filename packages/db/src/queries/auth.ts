@@ -1,6 +1,6 @@
 import { db } from "@db/client";
 import { sessions, users } from "@db/schema";
-import { sessionCache, userCache } from "@midday/cache";
+import { sessionCache, userCache } from "@orbis/cache";
 import { eq, and, gte, desc } from "drizzle-orm";
 
 export const getSession = async (token: string) => {

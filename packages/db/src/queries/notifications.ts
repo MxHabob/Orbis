@@ -1,7 +1,7 @@
 import { db } from "@db/client";
 import { notifications } from "@db/schema";
 import { eq, desc, and } from "drizzle-orm";
-import { RedisCache } from "@midday/cache";
+import { RedisCache } from "@orbis/cache";
 
 // Notifications are transient and user-specific, maybe short cache or just direct access for realtime feel?
 // Let's cache the "unread count" or similar heavily accessed things.

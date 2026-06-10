@@ -1,6 +1,6 @@
-import { auth } from "@midday/auth";
-import { uploadFile } from "@midday/storage";
-import { stripSpecialCharacters } from "@midday/utils";
+import { auth } from "@orbis/auth";
+import { uploadFile } from "@orbis/storage";
+import { stripSpecialCharacters } from "@orbis/utils";
 import { nanoid } from "nanoid";
 import type { Context } from "hono";
 

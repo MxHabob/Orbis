@@ -1,6 +1,6 @@
 "use client";
 
-import { isDesktopApp } from "@midday/desktop-client/platform";
+import { isDesktopApp } from "@orbis/desktop-client/platform";
 import { usePathname } from "next/navigation";
 import { DesktopTrafficLight } from "./desktop-traffic-light";
 

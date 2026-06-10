@@ -1,5 +1,5 @@
-import { Skeleton } from "@midday/ui/skeleton";
-import { Table, TableBody, TableCell, TableRow } from "@midday/ui/table";
+import { Skeleton } from "@orbis/ui/skeleton";
+import { Table, TableBody, TableCell, TableRow } from "@orbis/ui/table";
 import { DataTableHeader } from "./table-header";
 
 export function PendingInvitesSkeleton() {

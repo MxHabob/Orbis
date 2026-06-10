@@ -20,7 +20,7 @@ import type { SearchParams } from "nuqs";
 import { Suspense } from "react";
 
 export const metadata: Metadata = {
-  title: "Class Report | Mommy",
+  title: "Class Report | Orbis",
 };
 
 type Props = {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useI18n } from "@/locales/client";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@midday/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@orbis/ui/tabs";
 import type { PromotionTab } from "@/hooks/use-promotions";
 import { PromotionsPreviewDataTable } from "../tables/promotions-preview/data-table";
 import { PromotionsHistoryDataTable } from "../tables/promotions-history/data-table";

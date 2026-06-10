@@ -14,8 +14,8 @@ import {
 import { useTrackerFilterParams } from "@/hooks/use-tracker-filter-params";
 import { useUserQuery } from "@/hooks/use-user";
 import { useTRPC } from "@/trpc/client";
-import { Calendar } from "@midday/ui/calendar";
-import { cn } from "@midday/ui/cn";
+import { Calendar } from "@orbis/ui/calendar";
+import { cn } from "@orbis/ui/cn";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -27,9 +27,9 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from "@midday/ui/dropdown-menu";
-import { Icons } from "@midday/ui/icons";
-import { Input } from "@midday/ui/input";
+} from "@orbis/ui/dropdown-menu";
+import { Icons } from "@orbis/ui/icons";
+import { Input } from "@orbis/ui/input";
 import { useQuery } from "@tanstack/react-query";
 import { formatISO, parseISO } from "date-fns";
 import { useCallback, useRef, useState } from "react";

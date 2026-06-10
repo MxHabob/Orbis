@@ -1,7 +1,7 @@
 "use client";
 
 import { OpenReportsSheet } from "@/components/open-report-sheet";
-import { Button } from "@midday/ui/button";
+import { Button } from "@orbis/ui/button";
 import { FileQuestion } from "lucide-react";
 
 export function EmptyState() {

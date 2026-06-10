@@ -1,8 +1,8 @@
 "use client";
 
 import { useTRPC } from "@/trpc/client";
-import { cn } from "@midday/ui/cn";
-import { Table, TableBody, TableCell, TableRow } from "@midday/ui/table";
+import { cn } from "@orbis/ui/cn";
+import { Table, TableBody, TableCell, TableRow } from "@orbis/ui/table";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import {
   type ColumnFiltersState,

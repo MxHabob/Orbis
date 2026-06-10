@@ -29,17 +29,17 @@ import {
   ChevronDown,
   FileText
 } from "lucide-react";
-import { Button } from "@midday/ui/button";
-import { ScrollArea } from "@midday/ui/scroll-area";
-import { Separator } from "@midday/ui/separator";
+import { Button } from "@orbis/ui/button";
+import { ScrollArea } from "@orbis/ui/scroll-area";
+import { Separator } from "@orbis/ui/separator";
 import { useEditorStore } from "@/store/certificate-editor";
-import { cn } from "@midday/ui/cn";
+import { cn } from "@orbis/ui/cn";
 import { useDropzone } from "react-dropzone";
 import { useTRPC } from "@/trpc/client";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useToast } from "@midday/ui/use-toast";
-import { authClient } from "@midday/auth/auth-client";
-import { Input } from "@midday/ui/input";
+import { useToast } from "@orbis/ui/use-toast";
+import { authClient } from "@orbis/auth/auth-client";
+import { Input } from "@orbis/ui/input";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -47,7 +47,7 @@ import {
   ContextMenuTrigger,
   ContextMenuSeparator,
   ContextMenuShortcut,
-} from "@midday/ui/context-menu";
+} from "@orbis/ui/context-menu";
 import { EditorSidebarHeader } from "./editor-sidebar-header";
 
 // DnD Kit Imports

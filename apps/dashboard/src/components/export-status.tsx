@@ -4,8 +4,8 @@ import { useJobStatus } from "@/hooks/use-job-status";
 import { useSuccessSound } from "@/hooks/use-success-sound";
 import { useExportStore } from "@/store/export";
 import { downloadFile } from "@/lib/download";
-import { Button } from "@midday/ui/button";
-import { useToast } from "@midday/ui/use-toast";
+import { Button } from "@orbis/ui/button";
+import { useToast } from "@orbis/ui/use-toast";
 import { useI18n } from "@/locales/client";
 import { useCallback, useEffect, useRef, useState } from "react";
 

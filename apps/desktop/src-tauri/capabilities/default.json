@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Default capabilities for Mommy desktop app including download support",
+  "description": "Default capabilities for Orbis desktop app including download support",
   "windows": ["main", "search"],
   "permissions": [
     "core:default",
@@ -32,8 +32,8 @@
   "remote": {
     "urls": [
       "http://localhost:3001/**",
-      "https://beta.mommy.mulverse.com/**",
-      "https://mommy.mulverse.com/**"
+      "https://beta.orbis.mulverse.com/**",
+      "https://orbis.mulverse.com/**"
     ]
   },
   "platforms": ["macOS"]

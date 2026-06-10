@@ -21,9 +21,9 @@ interface Props {
 }
 
 export const TransactionsExportedEmail = ({
-  teamName = "Midday",
+  teamName = "Orbis",
   transactionCount = 100,
-  downloadLink = "https://app.midday.ai/s/abc123",
+  downloadLink = "https://app.orbis.ai/s/abc123",
 }: Props) => {
   const text = `Transaction Export from ${teamName}`;
   const themeClasses = getEmailThemeClasses();

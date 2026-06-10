@@ -14,7 +14,7 @@ import {
   getPromotionHistory,
   getPromotionStatistics,
   overrideStudentPromotion,
-} from "@midday/db/queries";
+} from "@orbis/db/queries";
 
 export const promotionsRouter = createTRPCRouter({
   /**

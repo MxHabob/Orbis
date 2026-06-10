@@ -3,7 +3,7 @@
 version = 4
 
 [[package]]
-name = "Mommy"
+name = "Orbis"
 version = "0.3.0"
 dependencies = [
  "image",

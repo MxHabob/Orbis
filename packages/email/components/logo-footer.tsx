@@ -1,4 +1,4 @@
-import { getEmailUrl } from "@midday/utils/envs";
+import { getEmailUrl } from "@orbis/utils/envs";
 import { Img, Link, Section } from "@react-email/components";
 
 const baseUrl = getEmailUrl();
@@ -32,11 +32,11 @@ export function LogoFooter() {
           }
         `}</style>
 
-      <Link href="https://go.midday.ai/FZwOHud">
+      <Link href="https://go.orbis.ai/FZwOHud">
         <Img
           src={`${baseUrl}/email/logo-footer.png`}
           width="80"
-          alt="Midday"
+          alt="Orbis"
           className="block logo-blend"
         />
       </Link>

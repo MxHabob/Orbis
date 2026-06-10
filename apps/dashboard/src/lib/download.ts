@@ -1,5 +1,5 @@
-import { invoke } from "@midday/desktop-client/core";
-import { isDesktopApp } from "@midday/desktop-client/platform";
+import { invoke } from "@orbis/desktop-client/core";
+import { isDesktopApp } from "@orbis/desktop-client/platform";
 
 export async function downloadFile(url: string, filename: string) {
   if (!isDesktopApp()) {

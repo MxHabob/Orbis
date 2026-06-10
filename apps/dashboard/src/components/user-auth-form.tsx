@@ -1,22 +1,22 @@
 "use client";
 
-import { authClient } from "@midday/auth/auth-client";
-import { cn } from "@midday/ui/cn";
+import { authClient } from "@orbis/auth/auth-client";
+import { cn } from "@orbis/ui/cn";
 import {
   Form,
   FormControl,
   FormField,
   FormItem,
   FormMessage,
-} from "@midday/ui/form";
-import { Input } from "@midday/ui/input";
-import { SubmitButton } from "@midday/ui/submit-button";
+} from "@orbis/ui/form";
+import { Input } from "@orbis/ui/input";
+import { SubmitButton } from "@orbis/ui/submit-button";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useTRPC } from "@/trpc/client";
-import { toast } from "@midday/ui/use-toast";
+import { toast } from "@orbis/ui/use-toast";
 import { Loader2 } from "lucide-react";
 
 const formSchema = z.object({

@@ -1,5 +1,5 @@
 {
-  "name": "@midday/desktop-client",
+  "name": "@orbis/desktop-client",
   "private": true,
   "version": "0.1.0",
   "type": "module",

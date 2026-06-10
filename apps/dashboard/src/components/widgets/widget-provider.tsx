@@ -1,6 +1,6 @@
 "use client";
 
-import type { AppRouter } from "@midday/api/trpc/routers/_app";
+import type { AppRouter } from "@orbis/api/trpc/routers/_app";
 import type { inferRouterOutputs } from "@trpc/server";
 import { type ReactNode, createContext, useContext, useRef } from "react";
 import { useStore } from "zustand";

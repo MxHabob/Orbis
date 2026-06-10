@@ -1,5 +1,5 @@
 {
-  "name": "@midday/desktop",
+  "name": "@orbis/desktop",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -8,9 +8,9 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "tauri:dev": "MIDDAY_ENV=development tauri dev --config src-tauri/tauri.dev.conf.json",
-    "tauri:staging": "MIDDAY_ENV=staging tauri dev --config src-tauri/tauri.staging.conf.json",
-    "tauri:prod": "MIDDAY_ENV=production tauri dev",
+    "tauri:dev": "ORBIS_ENV=development tauri dev --config src-tauri/tauri.dev.conf.json",
+    "tauri:staging": "ORBIS_ENV=staging tauri dev --config src-tauri/tauri.staging.conf.json",
+    "tauri:prod": "ORBIS_ENV=production tauri dev",
     "tauri:build:dev": "tauri build --config src-tauri/tauri.dev.conf.json",
     "tauri:build:staging": "tauri build --config src-tauri/tauri.staging.conf.json",
     "tauri:build:prod": "tauri build"

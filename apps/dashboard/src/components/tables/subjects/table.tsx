@@ -2,7 +2,7 @@
 
 import { useSubjectParams } from "@/hooks/use-subject-params";
 import { useTRPC } from "@/trpc/client";
-import { cn } from "@midday/ui/cn";
+import { cn } from "@orbis/ui/cn";
 import {
   Table,
   TableBody,
@@ -10,7 +10,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@midday/ui/table";
+} from "@orbis/ui/table";
 import {
   useMutation,
   useQueryClient,

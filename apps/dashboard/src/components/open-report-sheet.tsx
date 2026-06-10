@@ -1,8 +1,8 @@
 "use client";
 
 import { useInvoiceParams } from "@/hooks/use-report-params";
-import { Button } from "@midday/ui/button";
-import { Icons } from "@midday/ui/icons";
+import { Button } from "@orbis/ui/button";
+import { Icons } from "@orbis/ui/icons";
 
 export function OpenReportsSheet() {
   const { setParams } = useInvoiceParams();

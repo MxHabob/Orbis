@@ -7,7 +7,7 @@ import { useUserQuery } from "@/hooks/use-user";
 import { useChatStore } from "@/store/chat";
 import { useTRPC } from "@/trpc/client";
 import { generateChartSelectionMessage } from "@/utils/chart-selection-message";
-import { cn } from "@midday/ui/cn";
+import { cn } from "@orbis/ui/cn";
 import NumberFlow from "@number-flow/react";
 import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";

@@ -5,12 +5,12 @@ import { useLocalStorage } from "@/hooks/use-local-storage";
 import { useTRPC } from "@/trpc/client";
 import { LocalStorageKeys } from "@/utils/constants";
 import type { RouterOutputs } from "@api/trpc/routers/_app";
-import { Button } from "@midday/ui/button";
-import { cn } from "@midday/ui/cn";
-import { Icons } from "@midday/ui/icons";
-import { Skeleton } from "@midday/ui/skeleton";
-import { SubmitButton } from "@midday/ui/submit-button";
-import { useToast } from "@midday/ui/use-toast";
+import { Button } from "@orbis/ui/button";
+import { cn } from "@orbis/ui/cn";
+import { Icons } from "@orbis/ui/icons";
+import { Skeleton } from "@orbis/ui/skeleton";
+import { SubmitButton } from "@orbis/ui/submit-button";
+import { useToast } from "@orbis/ui/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FilePreview } from "./file-preview";
 import { FormatAmount } from "./format-amount";
@@ -76,7 +76,7 @@ export function SuggestedMatch({
   const showLearningToast = () => {
     if (!hasSeenLearningToast) {
       toast({
-        title: "Midday AI",
+        title: "Orbis AI",
         description: "We learn from your choices to improve matches over time.",
         variant: "ai",
         duration: 5000,

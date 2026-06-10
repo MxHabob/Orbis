@@ -1,8 +1,8 @@
 "use client";
 
 import { useStickyColumns } from "@/hooks/use-sticky-columns";
-import { cn } from "@midday/ui/cn";
-import { Skeleton } from "@midday/ui/skeleton";
+import { cn } from "@orbis/ui/cn";
+import { Skeleton } from "@orbis/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -10,7 +10,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@midday/ui/table";
+} from "@orbis/ui/table";
 import type {
   ColumnDef,
   ColumnSizingState,

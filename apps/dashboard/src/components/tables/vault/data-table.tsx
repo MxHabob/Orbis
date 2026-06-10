@@ -18,8 +18,8 @@ import { useTRPC } from "@/trpc/client";
 import { STICKY_COLUMNS } from "@/utils/table-configs";
 import type { TableSettings } from "@/utils/table-settings";
 import { DndContext, closestCenter } from "@dnd-kit/core";
-import { Table, TableBody, TableCell, TableRow } from "@midday/ui/table";
-import { toast } from "@midday/ui/use-toast";
+import { Table, TableBody, TableCell, TableRow } from "@orbis/ui/table";
+import { toast } from "@orbis/ui/use-toast";
 import {
   useMutation,
   useQueryClient,

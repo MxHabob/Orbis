@@ -3,7 +3,7 @@ import { students, classes, users, enrollments, academicYears, parentStudents } 
 import { eq, asc, desc, and, or, ilike, inArray, sql } from "drizzle-orm";
 import { randomInt } from "node:crypto";
 
-import { RedisCache } from "@midday/cache";
+import { RedisCache } from "@orbis/cache";
 
 const studentCache = new RedisCache("student", 30 * 60);
 

@@ -1,8 +1,8 @@
 import "server-only";
 
 import { Cookies } from "@/utils/constants";
-import type { AppRouter } from "@midday/api/trpc/routers/_app";
-import { getCountryCode, getLocale, getTimezone } from "@midday/location";
+import type { AppRouter } from "@orbis/api/trpc/routers/_app";
+import { getCountryCode, getLocale, getTimezone } from "@orbis/location";
 
 import { HydrationBoundary } from "@tanstack/react-query";
 import { dehydrate } from "@tanstack/react-query";
@@ -40,7 +40,7 @@ function getApiUrl(): string {
   }
   
   // Production fallback
-  return "https://api.midday.ai";
+  return "https://api.orbis.ai";
 }
 
 export const trpc = createTRPCOptionsProxy<AppRouter>({

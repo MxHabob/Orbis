@@ -19,19 +19,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@midday/ui/alert-dialog";
-import { Avatar, AvatarFallback, AvatarImageNext } from "@midday/ui/avatar";
-import { Badge } from "@midday/ui/badge";
+} from "@orbis/ui/alert-dialog";
+import { Avatar, AvatarFallback, AvatarImageNext } from "@orbis/ui/avatar";
+import { Badge } from "@orbis/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@midday/ui/dropdown-menu";
-import { Icons } from "@midday/ui/icons";
-import { ScrollArea, ScrollBar } from "@midday/ui/scroll-area";
-import { TableCell, TableRow } from "@midday/ui/table";
+} from "@orbis/ui/dropdown-menu";
+import { Icons } from "@orbis/ui/icons";
+import { ScrollArea, ScrollBar } from "@orbis/ui/scroll-area";
+import { TableCell, TableRow } from "@orbis/ui/table";
 import Link from "next/link";
 
 type DataTableCellProps = {

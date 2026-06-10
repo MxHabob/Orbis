@@ -1,9 +1,9 @@
 "use client";
 
 import { useI18n } from "@/locales/client";
-import { Button } from "@midday/ui/button";
+import { Button } from "@orbis/ui/button";
 import { RotateCcw, PenSquare } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@midday/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@orbis/ui/tooltip";
 import type { PromotionHistory } from "./columns";
 
 interface ActionsMenuProps {

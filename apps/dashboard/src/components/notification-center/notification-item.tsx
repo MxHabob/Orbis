@@ -6,13 +6,13 @@ import {
   getMetadataProperty,
 } from "@/hooks/use-notifications";
 import { useI18n } from "@/locales/client";
-import { Button } from "@midday/ui/button";
-import { cn } from "@midday/ui/cn";
-import { Icons } from "@midday/ui/icons";
+import { Button } from "@orbis/ui/button";
+import { cn } from "@orbis/ui/cn";
+import { Icons } from "@orbis/ui/icons";
 import { formatDistanceToNow } from "date-fns";
 import { getNotificationDescription } from "./notification-descriptions";
 import { NotificationLink } from "./notification-link";
-import { authClient } from "@midday/auth/auth-client";
+import { authClient } from "@orbis/auth/auth-client";
 import { 
   GraduationCap, 
   BookOpen, 

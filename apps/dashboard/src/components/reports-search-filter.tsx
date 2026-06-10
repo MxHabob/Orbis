@@ -1,9 +1,9 @@
 "use client";
 
 import { useClassesFilterParams } from "@/hooks/use-classes-filter-params";
-import { cn } from "@midday/ui/cn";
-import { Icons } from "@midday/ui/icons";
-import { Input } from "@midday/ui/input";
+import { cn } from "@orbis/ui/cn";
+import { Icons } from "@orbis/ui/icons";
+import { Input } from "@orbis/ui/input";
 import { useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useI18n } from "@/locales/client";

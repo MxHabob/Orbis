@@ -11,7 +11,7 @@ import {
   ContextMenuSub,
   ContextMenuSubTrigger,
   ContextMenuSubContent
-} from "@midday/ui/context-menu";
+} from "@orbis/ui/context-menu";
 import { 
   Copy, 
   Trash2, 

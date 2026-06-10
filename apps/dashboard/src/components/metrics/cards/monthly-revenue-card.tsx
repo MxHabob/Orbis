@@ -7,7 +7,7 @@ import { useMetricsCustomize } from "@/hooks/use-metrics-customize";
 import { useChatStore } from "@/store/chat";
 import { useTRPC } from "@/trpc/client";
 import { generateChartSelectionMessage } from "@/utils/chart-selection-message";
-import { cn } from "@midday/ui/cn";
+import { cn } from "@orbis/ui/cn";
 import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { useMemo, useState } from "react";

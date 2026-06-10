@@ -1,8 +1,8 @@
 "use client";
 
 import { EnrollMFA } from "@/components/enroll-mfa";
-import { Button } from "@midday/ui/button";
-import { Icons } from "@midday/ui/icons";
+import { Button } from "@orbis/ui/button";
+import { Icons } from "@orbis/ui/icons";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -40,7 +40,7 @@ function MfaStart({ setEnroll }: Props) {
 
       <p className="text-xs text-[#878787]">
         Generate one-time passwords via authenticator apps like 1Password,
-        Authy, etc. as a second factor to verify your identity during sign-in.
+        Authy, etc. as a second factor to verify your idorbis during sign-in.
       </p>
     </>
   );
@@ -52,7 +52,7 @@ export function SetupMfa() {
   return (
     <div>
       <div className="absolute left-5 top-4 md:left-10 md:top-10">
-        <Link href="https://midday.ai">
+        <Link href="https://orbis.ai">
           <Icons.LogoSmall />
         </Link>
       </div>

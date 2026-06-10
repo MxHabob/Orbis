@@ -9,7 +9,7 @@ import {
   getChildrenByParentId,
   getParentsByStudentId,
   updateParentStudentLink,
-} from "@midday/db/queries";
+} from "@orbis/db/queries";
 
 const relationshipEnum = z.enum(["parent", "mother", "father", "guardian"]);
 

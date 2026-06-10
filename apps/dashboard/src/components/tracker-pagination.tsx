@@ -1,7 +1,7 @@
 "use client";
 
-import { Button } from "@midday/ui/button";
-import { Icons } from "@midday/ui/icons";
+import { Button } from "@orbis/ui/button";
+import { Icons } from "@orbis/ui/icons";
 import {
   addMonths,
   format,

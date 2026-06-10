@@ -2,9 +2,9 @@
 
 import { useAction } from "next-safe-action/hooks";
 import { initializeAssessmentsAction } from "@/actions/assessments/initialize-assessments";
-import { Button } from "@midday/ui/button";
+import { Button } from "@orbis/ui/button";
 import { Plus, Loader2 } from "lucide-react";
-import { toast } from "@midday/ui/use-toast";
+import { toast } from "@orbis/ui/use-toast";
 
 interface InitializeAssessmentsButtonProps {
   classId: number;

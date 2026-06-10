@@ -9,7 +9,7 @@ RUN bun add -g turbo
 FROM turbo-cli AS builder
 WORKDIR /app
 COPY . .
-RUN turbo prune @midday/dashboard --docker
+RUN turbo prune @orbis/dashboard --docker
 
 # Installer stage
 FROM base AS installer
@@ -32,7 +32,7 @@ ENV NEXT_PUBLIC_URL=$NEXT_PUBLIC_URL
 ENV NEXT_PUBLIC_S3_PUBLIC_URL=$NEXT_PUBLIC_S3_PUBLIC_URL
 ENV NODE_ENV=production
 
-RUN bun run build --filter=@midday/dashboard
+RUN bun run build --filter=@orbis/dashboard
 
 # Runner stage - using Bun for compatibility with Bun-specific APIs (e.g. RedisClient)
 FROM oven/bun:1.2.22-slim AS runner

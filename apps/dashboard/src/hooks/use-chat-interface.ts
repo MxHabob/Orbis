@@ -32,7 +32,7 @@ export function useChatInterface() {
     if (!potentialChatId) {
       setSelectedType(null);
       // Reset document title when navigating away from chat
-      document.title = "Overview | Midday";
+      document.title = "Overview | Orbis";
     }
   }, [pathname, setSelectedType]);
 
@@ -48,7 +48,7 @@ export function useChatInterface() {
       if (!potentialChatId) {
         setSelectedType(null);
         // Reset document title when navigating away from chat
-        document.title = "Overview | Midday";
+        document.title = "Overview | Orbis";
       }
     };
 

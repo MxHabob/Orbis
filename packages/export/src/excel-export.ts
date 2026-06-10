@@ -73,7 +73,7 @@ export async function generateStudentExport(
   const { className, academicYear, statistics, format } = options;
 
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = "Mulboi Education System";
+  workbook.creator = "Orbis Education System";
   workbook.created = new Date();
   workbook.modified = new Date();
 

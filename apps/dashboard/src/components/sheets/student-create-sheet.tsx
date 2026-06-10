@@ -1,9 +1,9 @@
 "use client";
 
 import { useStudentParams } from "@/hooks/use-student-params";
-import { Button } from "@midday/ui/button";
-import { Icons } from "@midday/ui/icons";
-import { Sheet, SheetContent, SheetHeader } from "@midday/ui/sheet";
+import { Button } from "@orbis/ui/button";
+import { Icons } from "@orbis/ui/icons";
+import { Sheet, SheetContent, SheetHeader } from "@orbis/ui/sheet";
 import React from "react";
 import { StudentForm } from "../forms/student-form";
 

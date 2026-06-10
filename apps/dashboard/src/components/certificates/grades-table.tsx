@@ -3,7 +3,7 @@
 import { useTRPC } from "@/trpc/client";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
-import { cn } from "@midday/ui/cn";
+import { cn } from "@orbis/ui/cn";
 import { useEffect } from "react";
 
 interface GradesTableProps {

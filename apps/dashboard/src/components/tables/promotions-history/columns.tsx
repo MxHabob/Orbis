@@ -1,7 +1,7 @@
 "use client";
 
 import { useI18n } from "@/locales/client";
-import { Badge } from "@midday/ui/badge";
+import { Badge } from "@orbis/ui/badge";
 import { createColumnHelper } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { User, ArrowRight } from "lucide-react";

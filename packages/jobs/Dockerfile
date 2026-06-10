@@ -23,7 +23,7 @@ WORKDIR /app
 # Copy all files
 COPY . .
 # Use turbo CLI from Bun global install to prune workspaces
-RUN turbo prune @midday/jobs --docker
+RUN turbo prune @orbis/jobs --docker
 
 # Installer stage
 FROM base AS installer

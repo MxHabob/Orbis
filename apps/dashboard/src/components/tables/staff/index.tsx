@@ -2,11 +2,11 @@
 
 import { InviteTeamMembersModal } from "@/components/modals/create-staff-users-modal";
 import { useTRPC } from "@/trpc/client";
-import { Button } from "@midday/ui/button";
-import { cn } from "@midday/ui/cn";
-import { Dialog } from "@midday/ui/dialog";
-import { Input } from "@midday/ui/input";
-import { Table, TableBody, TableCell, TableRow } from "@midday/ui/table";
+import { Button } from "@orbis/ui/button";
+import { cn } from "@orbis/ui/cn";
+import { Dialog } from "@orbis/ui/dialog";
+import { Input } from "@orbis/ui/input";
+import { Table, TableBody, TableCell, TableRow } from "@orbis/ui/table";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import {
   type ColumnFiltersState,
@@ -18,7 +18,7 @@ import {
 import * as React from "react";
 import { useState } from "react";
 import { columns } from "./columns";
-import { authClient } from "@midday/auth/auth-client";
+import { authClient } from "@orbis/auth/auth-client";
 import { useStaffParams } from "@/hooks/use-staff-params";
 
 export function DataTable() {

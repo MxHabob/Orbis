@@ -8,11 +8,11 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@midday/ui/select";
-import { Button } from "@midday/ui/button";
-import { Icons } from "@midday/ui/icons";
+} from "@orbis/ui/select";
+import { Button } from "@orbis/ui/button";
+import { Icons } from "@orbis/ui/icons";
 import { useEffect } from "react";
-import { cn } from "@midday/ui/cn";
+import { cn } from "@orbis/ui/cn";
 
 interface PromotionsHeaderProps {
   initialData: {

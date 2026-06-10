@@ -17,15 +17,15 @@ import {
 import type { RouterOutputs } from "@api/trpc/routers/_app";
 import { TZDate, tz } from "@date-fns/tz";
 import { UTCDate } from "@date-fns/utc";
-import { cn } from "@midday/ui/cn";
+import { cn } from "@orbis/ui/cn";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuShortcut,
   ContextMenuTrigger,
-} from "@midday/ui/context-menu";
-import { ScrollArea } from "@midday/ui/scroll-area";
+} from "@orbis/ui/context-menu";
+import { ScrollArea } from "@orbis/ui/scroll-area";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   addDays,

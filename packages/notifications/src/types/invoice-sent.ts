@@ -1,6 +1,6 @@
-import { getI18n } from "@midday/email/locales";
-import { encrypt } from "@midday/encryption";
-import { getAppUrl } from "@midday/utils/envs";
+import { getI18n } from "@orbis/email/locales";
+import { encrypt } from "@orbis/encryption";
+import { getAppUrl } from "@orbis/utils/envs";
 import type { NotificationHandler } from "../base";
 import { invoiceSentSchema } from "../schemas";
 
@@ -31,7 +31,7 @@ export const invoiceSent: NotificationHandler = {
       subject: t("invoice.sent.subject", {
         teamName: team.name,
       }),
-      from: `${team.name} <middaybot@midday.ai>`,
+      from: `${team.name} <orbisbot@orbis.ai>`,
       data: {
         customerName: data.customerName,
         teamName: team.name,

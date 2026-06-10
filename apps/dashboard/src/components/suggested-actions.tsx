@@ -3,9 +3,9 @@
 import { useChatInterface } from "@/hooks/use-chat-interface";
 import { useTRPC } from "@/trpc/client";
 import { useChatActions, useChatId } from "@/hooks/use-chat-actions";
-import type { AppRouter } from "@midday/api/trpc/routers/_app";
-import { cn } from "@midday/ui/cn";
-import { Icons } from "@midday/ui/icons";
+import type { AppRouter } from "@orbis/api/trpc/routers/_app";
+import { cn } from "@orbis/ui/cn";
+import { Icons } from "@orbis/ui/icons";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import type { inferRouterOutputs } from "@trpc/server";
 
