@@ -112,7 +112,7 @@ export const documentsRouter = createTRPCRouter({
         throw new TRPCError({ code: "NOT_FOUND" });
       }
 
-      // 3. Delete from S3 (MinIO) - Bulk deletion for performance
+      // 3. Delete from S3-compatible storage (RustFS) - Bulk deletion for performance
       if (keysToDelete.length > 0) {
         const { deleteFiles } = require("@midday/storage");
         await deleteFiles({

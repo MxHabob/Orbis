@@ -16,7 +16,7 @@ import {
 import { z } from "zod";
 // Best Practice 2026: All image URLs are normalized to proxy URLs
 // This ensures they work in both browser AND Puppeteer headless contexts.
-// Pre-signed S3 URLs are NOT used because they point to internal MinIO servers
+// Pre-signed S3 URLs are NOT used because they point to internal RustFS/S3-compatible storage
 // (e.g. 172.16.x.x:9088) which may be unreachable from Puppeteer's Chromium.
 function toProxyUrl(urlStr: string): string {
   if (!urlStr || typeof urlStr !== 'string') return urlStr;
