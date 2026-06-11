@@ -78,10 +78,11 @@ const config = {
   },
 };
 
-// Only apply Sentry configuration in production
+// Only apply Sentry configuration in production if SENTRY_AUTH_TOKEN is provided
 const isProduction = process.env.NODE_ENV === "production";
+const hasSentryToken = Boolean(process.env.SENTRY_AUTH_TOKEN);
 
-export default isProduction
+export default isProduction && hasSentryToken
   ? withSentryConfig(config, {
       org: process.env.SENTRY_ORG,
       project: process.env.SENTRY_PROJECT,
