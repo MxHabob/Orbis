@@ -7,9 +7,10 @@ import { withReplicas } from "./replicas";
 import * as schema from "./schema";
 
 const isDevelopment = process.env.NODE_ENV === "development";
+const isLocal = !process.env.FLY_APP_NAME && !process.env.FLY_REGION;
 
 const connectionConfig = {
-  max: isDevelopment ? 8 : 12,
+  max: isLocal ? 5 : (isDevelopment ? 8 : 12),
   idleTimeoutMillis: isDevelopment ? 5000 : 60000,
   connectionTimeoutMillis: 15000,
   maxUses: isDevelopment ? 100 : 0,
@@ -17,27 +18,14 @@ const connectionConfig = {
 };
 
 const primaryPool = new Pool({
-  connectionString: process.env.DATABASE_PRIMARY_URL!,
+  connectionString: process.env.DATABASE_PRIMARY_URL || process.env.DATABASE_URL!,
   ...connectionConfig,
 });
 
-const fraPool = new Pool({
-  connectionString: process.env.DATABASE_FRA_URL!,
-  ...connectionConfig,
-});
-
-const sjcPool = new Pool({
-  connectionString: process.env.DATABASE_SJC_URL!,
-  ...connectionConfig,
-});
-
-const iadPool = new Pool({
-  connectionString: process.env.DATABASE_IAD_URL!,
-  ...connectionConfig,
-});
-
+// Only create replica pools if replica URLs are provided (production cloud deployment)
 const hasReplicas = Boolean(
-  process.env.DATABASE_FRA_URL &&
+  !isLocal &&
+    process.env.DATABASE_FRA_URL &&
     process.env.DATABASE_SJC_URL &&
     process.env.DATABASE_IAD_URL,
 );
@@ -46,6 +34,29 @@ export const primaryDb = drizzle(primaryPool, {
   schema,
   casing: "snake_case",
 });
+
+let replicaDbs: ReturnType<typeof drizzle>[] = [];
+
+if (hasReplicas) {
+  const fraPool = new Pool({
+    connectionString: process.env.DATABASE_FRA_URL!,
+    ...connectionConfig,
+  });
+  const sjcPool = new Pool({
+    connectionString: process.env.DATABASE_SJC_URL!,
+    ...connectionConfig,
+  });
+  const iadPool = new Pool({
+    connectionString: process.env.DATABASE_IAD_URL!,
+    ...connectionConfig,
+  });
+
+  replicaDbs = [
+    drizzle(fraPool, { schema, casing: "snake_case" }),
+    drizzle(iadPool, { schema, casing: "snake_case" }),
+    drizzle(sjcPool, { schema, casing: "snake_case" }),
+  ];
+}
 
 const getReplicaIndexForRegion = () => {
   switch (process.env.FLY_REGION) {
@@ -66,20 +77,7 @@ const replicaIndex = getReplicaIndexForRegion();
 export const db = withReplicas(
   primaryDb,
   hasReplicas
-    ? [
-        drizzle(fraPool, {
-          schema,
-          casing: "snake_case",
-        }),
-        drizzle(iadPool, {
-          schema,
-          casing: "snake_case",
-        }),
-        drizzle(sjcPool, {
-          schema,
-          casing: "snake_case",
-        }),
-      ]
+    ? (replicaDbs as [typeof primaryDb, ...typeof primaryDb[]])
     : [primaryDb],
   (replicas) => replicas[replicaIndex] || replicas[0]!,
 );

@@ -30,11 +30,36 @@ app.use(
 app.use(
   "*",
   cors({
-    origin: [
-      "http://localhost:3001",
-      ...(process.env.ALLOWED_API_ORIGINS?.split(",") || []),
-      ...(process.env.NEXT_PUBLIC_URL ? [process.env.NEXT_PUBLIC_URL] : []),
-    ],
+    origin: (origin) => {
+      // Always allow configured origins
+      const allowedOrigins = [
+        "http://localhost:3001",
+        ...(process.env.ALLOWED_API_ORIGINS?.split(",") || []),
+        ...(process.env.NEXT_PUBLIC_URL ? [process.env.NEXT_PUBLIC_URL] : []),
+      ];
+
+      if (!origin || allowedOrigins.includes(origin)) {
+        return origin || "*";
+      }
+
+      // Allow any local network origin (school LAN)
+      try {
+        const url = new URL(origin);
+        const hostname = url.hostname;
+        const isLocalNetwork =
+          hostname === "localhost" ||
+          hostname === "127.0.0.1" ||
+          hostname.startsWith("192.168.") ||
+          hostname.startsWith("10.") ||
+          /^172\.(1[6-9]|2\d|3[01])\./.test(hostname);
+
+        if (isLocalNetwork) {
+          return origin;
+        }
+      } catch {}
+
+      return allowedOrigins[0] || "*";
+    },
     allowMethods: ["POST", "GET", "OPTIONS"],
     allowHeaders: [
       "Authorization",

@@ -14,8 +14,8 @@ import { logger } from "@orbis/logger";
  * - Lock duration extended for long PDF generation
  */
 export const startWorker = () => {
-  if (!process.env.REDIS_URL) {
-    logger.info("[Worker] REDIS_URL not provided. Worker disabled for local/offline mode.");
+  if (!process.env.REDIS_URL || !connection) {
+    logger.info("[Worker] REDIS_URL not provided or connection unavailable. Worker disabled for local/offline mode.");
     return null;
   }
 

@@ -3,8 +3,11 @@ import { RedisClient } from "bun";
 let sharedRedisClient: RedisClient | null = null;
 
 /**
- * Get or create a shared Redis client instance
- * This ensures we reuse the same connection for both cache and memory providers
+ * Get or create a shared Redis client instance.
+ * This ensures we reuse the same connection for both cache and memory providers.
+ * 
+ * For local deployments: Redis runs in Docker on localhost:6379
+ * For cloud: Uses REDIS_URL from environment
  */
 export function getSharedRedisClient(): RedisClient {
   if (sharedRedisClient) {
@@ -13,7 +16,12 @@ export function getSharedRedisClient(): RedisClient {
 
   const redisUrl = process.env.REDIS_URL;
   if (!redisUrl) {
-    throw new Error("REDIS_URL environment variable is required");
+    console.warn(
+      "[Redis] REDIS_URL not set. Cache operations will fail silently. " +
+      "For local deployment, run: docker compose -f docker-compose.local.yml up -d"
+    );
+    // Return a no-op client that won't crash the app
+    return createNoOpRedisClient() as any;
   }
 
   const isProduction =
@@ -23,9 +31,8 @@ export function getSharedRedisClient(): RedisClient {
     connectionTimeout: isProduction ? 10000 : 5000,
     idleTimeout: 0,
     autoReconnect: true,
-    maxRetries: 50, // Increase retries to handle temporary outages (~2-3 minutes)
+    maxRetries: 50,
   });
-
 
   sharedRedisClient.onclose = (error) => {
     if (error) {
@@ -33,7 +40,28 @@ export function getSharedRedisClient(): RedisClient {
     } else {
       console.log("[Redis] Connection closed cleanly");
     }
+    // Allow reconnection
+    sharedRedisClient = null;
   };
 
   return sharedRedisClient;
+}
+
+/**
+ * No-op Redis client for when Redis is unavailable.
+ * All operations succeed silently — the app works without cache.
+ */
+function createNoOpRedisClient() {
+  const noop = {
+    get: async () => null,
+    set: async () => "OK",
+    del: async () => 0,
+    unlink: async () => 0,
+    ping: async () => "PONG",
+    publish: async () => 0,
+    scan: async () => ["0", []],
+    subscribe: async () => {},
+    onclose: null,
+  };
+  return noop;
 }

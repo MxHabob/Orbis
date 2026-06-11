@@ -24,30 +24,40 @@ function getApiUrl(): string {
 function getTrustedOrigins(): string[] {
   const origins: string[] = [];
   
-  // Add from environment variable if set
   if (process.env.ALLOWED_API_ORIGINS) {
     origins.push(...process.env.ALLOWED_API_ORIGINS.split(","));
   }
   
-  // Add dashboard URL if set
   if (process.env.DASHBOARD_URL) {
     origins.push(process.env.DASHBOARD_URL);
   }
   
-  // Add NEXT_PUBLIC_URL if set (for dashboard)
   if (process.env.NEXT_PUBLIC_URL) {
     origins.push(process.env.NEXT_PUBLIC_URL);
   }
   
-  // Add NEXT_PUBLIC_APP_URL if set (for dashboard)
   if (process.env.NEXT_PUBLIC_APP_URL) {
     origins.push(process.env.NEXT_PUBLIC_APP_URL);
   }
   
-  // Default origins for development
+  // Default origins for development / local deployment
   if (process.env.NODE_ENV !== "production") {
-    if (!origins.includes("http://localhost:3001")) {
-      origins.push("http://localhost:3001");
+    const localDefaults = [
+      "http://localhost:3001",
+      "http://localhost:3002",
+      "http://127.0.0.1:3001",
+      "http://127.0.0.1:3002",
+    ];
+    for (const origin of localDefaults) {
+      if (!origins.includes(origin)) {
+        origins.push(origin);
+      }
+    }
+
+    // Add server LAN IP if configured (for school network access)
+    if (process.env.SERVER_LAN_IP) {
+      origins.push(`http://${process.env.SERVER_LAN_IP}:3001`);
+      origins.push(`http://${process.env.SERVER_LAN_IP}:3002`);
     }
   }
   

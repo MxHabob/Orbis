@@ -1,34 +1,43 @@
 import { Queue, type QueueOptions } from "bullmq";
 import IORedis from "ioredis";
 
-const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
+const redisUrl = process.env.REDIS_URL || "";
 
-export const connection = new IORedis(redisUrl, {
-  maxRetriesPerRequest: null,
-  // Enable lazy connect to avoid blocking startup for local offline environments
-  lazyConnect: true,
-  // Reconnection strategy
-  retryStrategy: (times: number) => {
-    if (times > 50) return null; // Stop retrying after 50 attempts (~2.5 minutes)
-    return Math.min(times * 200, 3000);
-  },
-});
+// Only create Redis connection if URL is provided
+const hasRedis = Boolean(redisUrl);
+
+let connection: IORedis | null = null;
+
+if (hasRedis) {
+  connection = new IORedis(redisUrl, {
+    maxRetriesPerRequest: null,
+    lazyConnect: true,
+    retryStrategy: (times: number) => {
+      if (times > 50) return null;
+      return Math.min(times * 200, 3000);
+    },
+  });
+}
+
+export { connection };
 
 export const QUEUE_NAME = "orbis-jobs";
 
-export const jobQueue = new Queue(QUEUE_NAME, {
-  connection: connection as any,
-  defaultJobOptions: {
-    attempts: 3,
-    backoff: {
-      type: "exponential",
-      delay: 2000,
-    },
-    // Keep completed jobs for 10 minutes, max 200
-    removeOnComplete: { age: 600, count: 200 },
-    removeOnFail: { age: 86400, count: 500 }, // Keep failed for 24h for debugging
-  },
-});
+// Only create queue if Redis is available
+export const jobQueue = hasRedis
+  ? new Queue(QUEUE_NAME, {
+      connection: connection as any,
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+          type: "exponential",
+          delay: 2000,
+        },
+        removeOnComplete: { age: 600, count: 200 },
+        removeOnFail: { age: 86400, count: 500 },
+      },
+    })
+  : (null as unknown as Queue);
 
 // ============================================================
 // Job Type Definitions

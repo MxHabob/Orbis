@@ -22,7 +22,14 @@
     "format": "biome format --write .",
     "lint": "turbo lint && manypkg check",
     "typecheck": "turbo typecheck",
-    "worker": "bun run packages/jobs/src/worker.ts"
+    "worker": "bun run packages/jobs/src/worker.ts",
+    "docker:up": "docker compose -f docker-compose.local.yml up -d",
+    "docker:down": "docker compose -f docker-compose.local.yml down",
+    "docker:reset": "docker compose -f docker-compose.local.yml down -v",
+    "docker:logs": "docker compose -f docker-compose.local.yml logs -f",
+    "db:push": "cd packages/db && bunx drizzle-kit push",
+    "db:migrate": "cd packages/db && bunx drizzle-kit migrate",
+    "setup:local": "powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1"
   },
   "dependencies": {
     "@biomejs/biome": "2.3.13",
