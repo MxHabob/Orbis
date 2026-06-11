@@ -16,6 +16,72 @@ use tauri::image::Image;
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use image;
 
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
+struct AppConfig {
+    server_url: String,
+}
+
+fn get_saved_url_or_env(app: &tauri::AppHandle) -> Option<String> {
+    // 1. Check ORBIS_ENV env var (highest priority, used by developers/config)
+    let env = env::var("ORBIS_ENV")
+        .unwrap_or_else(|_| {
+            option_env!("ORBIS_ENV")
+                .unwrap_or("")
+                .to_string()
+        });
+
+    if env == "development" || env == "dev" {
+        return Some("http://localhost:3001".to_string());
+    } else if env == "staging" {
+        return Some("https://beta.orbis.mulverse.com".to_string());
+    } else if env == "production" || env == "prod" {
+        return Some("https://orbis.mulverse.com".to_string());
+    } else if env.starts_with("http://") || env.starts_with("https://") {
+        return Some(env);
+    }
+
+    // 2. Check local config file
+    if let Ok(config_dir) = app.path().app_config_dir() {
+        let config_path = config_dir.join("config.json");
+        if config_path.exists() {
+            if let Ok(content) = std::fs::read_to_string(&config_path) {
+                if let Ok(config) = serde_json::from_str::<AppConfig>(&content) {
+                    if !config.server_url.is_empty() {
+                        return Some(config.server_url);
+                    }
+                }
+            }
+        }
+    }
+
+    None
+}
+
+#[tauri::command]
+fn get_saved_server_url(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    Ok(get_saved_url_or_env(&app))
+}
+
+#[tauri::command]
+fn save_server_url(app: tauri::AppHandle, url: String) -> Result<(), String> {
+    if !url.starts_with("http://") && !url.starts_with("https://") {
+        return Err("يجب أن يبدأ الرابط بـ http:// أو https://".to_string());
+    }
+    let config_dir = app.path().app_config_dir().map_err(|e| e.to_string())?;
+    std::fs::create_dir_all(&config_dir).map_err(|e| e.to_string())?;
+    let config_path = config_dir.join("config.json");
+    let config = AppConfig { server_url: url.clone() };
+    let content = serde_json::to_string_pretty(&config).map_err(|e| e.to_string())?;
+    std::fs::write(&config_path, content).map_err(|e| e.to_string())?;
+
+    // Now reload the main window to the new URL
+    if let Some(main_window) = app.get_webview_window("main") {
+        main_window.navigate(tauri::Url::parse(&url).map_err(|e| e.to_string())?)
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
 // Global state for search window availability
 type SearchWindowState = Arc<Mutex<bool>>;
 
@@ -166,7 +232,7 @@ fn toggle_search_window(
     } else {
         println!("🔍 Search window doesn't exist, creating it now...");
         // Create search window on-demand
-        let app_url = get_app_url();
+        let app_url = get_saved_url_or_env(app).unwrap_or_else(|| "http://localhost:3001".to_string());
         let app_clone = app.clone();
 
         // Use blocking approach for shortcut/tray handlers to ensure window is created
@@ -340,10 +406,16 @@ fn get_app_url() -> String {
             url
         },
         _ => {
-            eprintln!("Unknown environment: {}, defaulting to development", env);
-            let url = "http://localhost:3001".to_string();
-            println!("🌍 Using fallback development URL: {}", url);
-            url
+            if env.starts_with("http://") || env.starts_with("https://") {
+                let url = env.clone();
+                println!("🌍 Using custom target URL: {}", url);
+                url
+            } else {
+                eprintln!("Unknown environment: {}, defaulting to development", env);
+                let url = "http://localhost:3001".to_string();
+                println!("🌍 Using fallback development URL: {}", url);
+                url
+            }
         }
     }
 }
@@ -386,21 +458,31 @@ fn handle_deep_link_event(app_handle: &tauri::AppHandle, urls: Vec<String>) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let app_url = get_app_url();
-
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_process::init())
-        .invoke_handler(tauri::generate_handler![show_window, check_for_updates])
+        .invoke_handler(tauri::generate_handler![
+            show_window,
+            check_for_updates,
+            get_saved_server_url,
+            save_server_url
+        ])
         .setup(move |app| {
             // Add updater plugin conditionally for desktop
             #[cfg(desktop)]
             app.handle().plugin(tauri_plugin_updater::Builder::new().build())?;
 
-            let app_url_clone = app_url.clone();
+            let saved_url = get_saved_url_or_env(app.handle());
+            let app_url_clone = saved_url.clone();
             let app_handle = app.handle().clone();
+
+            let initial_url = if let Some(ref url) = saved_url {
+                WebviewUrl::External(tauri::Url::parse(url).unwrap())
+            } else {
+                WebviewUrl::App("index.html".into())
+            };
 
             // Create shared search window state
             let search_state: SearchWindowState = Arc::new(Mutex::new(false));
@@ -468,7 +550,7 @@ pub fn run() {
             let win_builder = WebviewWindowBuilder::new(
                 app,
                 "main",
-                WebviewUrl::External(tauri::Url::parse(&app_url).unwrap()),
+                initial_url,
             )
             .title("Orbis")
             .inner_size(1200.0, 750.0)
@@ -495,23 +577,35 @@ pub fn run() {
                 .on_navigation(move |url: &tauri::Url| {
                     let url_str = url.as_str();
 
-                    // Check if this is an external URL
-                    if is_external_url(url_str, &app_url_clone) {
-                        // Clone the URL string to avoid lifetime issues
+                    // Always allow local tauri app pages
+                    if url.scheme() == "tauri" || url.host_str() == Some("tauri.localhost") {
+                        return true;
+                    }
+
+                    // Get the saved server URL or fallback URL
+                    let target_base = get_saved_url_or_env(&app_handle_for_navigation);
+
+                    // If we navigate to our own server, allow it
+                    if let Some(base_url_str) = target_base {
+                        if let Ok(base_url) = tauri::Url::parse(&base_url_str) {
+                            if url.host() == base_url.host() {
+                                return true;
+                            }
+                        }
+                    }
+
+                    // Otherwise, if it's a different external domain, open in system browser
+                    let is_http_or_https = url.scheme() == "http" || url.scheme() == "https";
+                    if is_http_or_https {
                         let url_string = url_str.to_string();
                         let app_handle_clone = app_handle_for_navigation.clone();
-
-                        // Open in system browser using the opener plugin
                         tauri::async_runtime::spawn(async move {
                             let _ = tauri_plugin_opener::OpenerExt::opener(&app_handle_clone)
                                     .open_url(url_string, None::<String>);
                         });
-
-                        // Prevent navigation in webview
                         return false;
                     }
 
-                    // Allow internal navigation
                     true
                 })
                 .build()

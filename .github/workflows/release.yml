@@ -120,3 +120,39 @@ jobs:
           echo " - ghcr.io/${{ steps.prep.outputs.owner_lower }}/orbis-api:${{ steps.prep.outputs.tag_name }}"
           echo " - ghcr.io/${{ steps.prep.outputs.owner_lower }}/orbis-dashboard:${{ steps.prep.outputs.tag_name }}"
           echo " - ghcr.io/${{ steps.prep.outputs.owner_lower }}/orbis-worker:${{ steps.prep.outputs.tag_name }}"
+
+  release-desktop:
+    name: Build & Release Desktop App
+    needs: test
+    if: startsWith(github.ref, 'refs/tags/v')
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust Environment
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Bun Environment
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.22
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build Tauri App
+        uses: tauri-apps/tauri-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "Orbis Release ${{ github.ref_name }}"
+          releaseBody: "Automated release of Orbis Desktop Client and Server Docker Images."
+          releaseDraft: true
+          prerelease: false
+          projectPath: "apps/desktop"
