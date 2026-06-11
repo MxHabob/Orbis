@@ -378,62 +378,6 @@ async fn create_preloaded_search_window(
     Ok(())
 }
 
-fn get_app_url() -> String {
-    // Try runtime environment variable first, then fall back to compile-time
-    let env = env::var("ORBIS_ENV")
-        .unwrap_or_else(|_| {
-            option_env!("ORBIS_ENV")
-                .unwrap_or("development")
-                .to_string()
-        });
-
-    println!("🌍 Environment detected: {}", env);
-
-    match env.as_str() {
-        "development" | "dev" => {
-            let url = "http://localhost:3001".to_string();
-            println!("🌍 Using development URL: {}", url);
-            url
-        },
-        "staging" => {
-            let url = "https://beta.orbis.mulverse.com".to_string();
-            println!("🌍 Using staging URL: {}", url);
-            url
-        },
-        "production" | "prod" => {
-            let url = "https://orbis.mulverse.com".to_string();
-            println!("🌍 Using production URL: {}", url);
-            url
-        },
-        _ => {
-            if env.starts_with("http://") || env.starts_with("https://") {
-                let url = env.clone();
-                println!("🌍 Using custom target URL: {}", url);
-                url
-            } else {
-                eprintln!("Unknown environment: {}, defaulting to development", env);
-                let url = "http://localhost:3001".to_string();
-                println!("🌍 Using fallback development URL: {}", url);
-                url
-            }
-        }
-    }
-}
-
-fn is_external_url(url: &str, app_url: &str) -> bool {
-    // Parse both URLs to compare domains
-    if let (Ok(target_url), Ok(base_url)) = (tauri::Url::parse(url), tauri::Url::parse(app_url)) {
-        // Check if schemes are http/https
-        let is_http_scheme = target_url.scheme() == "http" || target_url.scheme() == "https";
-
-        // Check if it's a different domain/host
-        let is_different_host = target_url.host() != base_url.host();
-
-        return is_http_scheme && is_different_host;
-    }
-    false
-}
-
 fn handle_deep_link_event(app_handle: &tauri::AppHandle, urls: Vec<String>) {
     for url in &urls {
         if url.starts_with("orbis://") {
@@ -475,7 +419,6 @@ pub fn run() {
             app.handle().plugin(tauri_plugin_updater::Builder::new().build())?;
 
             let saved_url = get_saved_url_or_env(app.handle());
-            let app_url_clone = saved_url.clone();
             let app_handle = app.handle().clone();
 
             let initial_url = if let Some(ref url) = saved_url {
