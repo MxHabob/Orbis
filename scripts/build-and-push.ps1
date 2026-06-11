@@ -63,4 +63,4 @@ Write-Host "   API:       $ApiTagVersion & latest" -ForegroundColor Green
 Write-Host "   Dashboard: $DashboardTagVersion & latest" -ForegroundColor Green
 Write-Host "   Worker:    $WorkerTagVersion & latest" -ForegroundColor Green
 Write-Host "=====================================================================" -ForegroundColor Green
-Write-Host "Now you can distribute the 'dist/' folder to the schools." -ForegroundColor Gray
+Write-Host "Now you can distribute the 'cli/' folder to the schools." -ForegroundColor Gray

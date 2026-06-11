@@ -1,0 +1,178 @@
+# =============================================================================
+# Orbis Secure Local Deployment — Production Docker Compose
+# =============================================================================
+# This file is used to run Orbis in schools using pre-compiled container images
+# from the GitHub Container Registry. No source code is required on the host.
+#
+# Usage:
+#   docker compose up -d
+# Stop:
+#   docker compose down
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL 17 — Primary Database
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:17-alpine
+    container_name: orbis-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-orbis}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-orbis_local_2026}
+      POSTGRES_DB: ${DB_NAME:-orbis_db}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - orbis_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-orbis} -d $${POSTGRES_DB:-orbis_db}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    command: >
+      postgres
+        -c shared_buffers=256MB
+        -c effective_cache_size=512MB
+        -c work_mem=16MB
+        -c maintenance_work_mem=128MB
+        -c max_connections=50
+        -c wal_buffers=16MB
+        -c checkpoint_completion_target=0.9
+        -c random_page_cost=1.1
+        -c log_min_duration_statement=1000
+        -c timezone=UTC
+
+  # ---------------------------------------------------------------------------
+  # Redis 7 — Cache + Job Queue (BullMQ)
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: orbis-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - orbis_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    command: >
+      redis-server
+        --maxmemory 128mb
+        --maxmemory-policy allkeys-lru
+        --save 60 1
+        --appendonly yes
+        --appendfsync everysec
+
+  # ---------------------------------------------------------------------------
+  # RustFS — S3-Compatible Object Storage (Vault, Avatars, Exports)
+  # ---------------------------------------------------------------------------
+  rustfs:
+    image: rustfs/rustfs:latest
+    container_name: orbis-rustfs
+    restart: unless-stopped
+    environment:
+      RUSTFS_ROOT_USER: ${STORAGE_ACCESS_KEY:-rustfsadmin}
+      RUSTFS_ROOT_PASSWORD: ${STORAGE_SECRET_KEY:-rustfs_local_2026}
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Web Console
+    volumes:
+      - orbis_storage:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # Orbis API — Backend Hono & tRPC Service
+  # ---------------------------------------------------------------------------
+  api:
+    image: ghcr.io/${GHCR_USERNAME}/orbis-api:${ORBIS_VERSION:-stable}
+    container_name: orbis-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://${DB_USER:-orbis}:${DB_PASSWORD:-orbis_local_2026}@postgres:5432/${DB_NAME:-orbis_db}
+      DATABASE_PRIMARY_URL: postgresql://${DB_USER:-orbis}:${DB_PASSWORD:-orbis_local_2026}@postgres:5432/${DB_NAME:-orbis_db}
+      REDIS_URL: redis://redis:6379
+      RUN_MIGRATIONS_ON_STARTUP: "true"
+      S3_ENDPOINT_URL: http://rustfs:9000
+      S3_ACCESS_KEY_ID: ${STORAGE_ACCESS_KEY:-rustfsadmin}
+      S3_SECRET_ACCESS_KEY: ${STORAGE_SECRET_KEY:-rustfs_local_2026}
+    ports:
+      - "3002:3000"
+
+  # ---------------------------------------------------------------------------
+  # Orbis Dashboard — Next.js 16 Web Dashboard
+  # ---------------------------------------------------------------------------
+  dashboard:
+    image: ghcr.io/${GHCR_USERNAME}/orbis-dashboard:${ORBIS_VERSION:-stable}
+    container_name: orbis-dashboard
+    restart: unless-stopped
+    depends_on:
+      - api
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      # Point to API using relative routing internally, and override client vars at startup
+      NEXT_PUBLIC_API_URL: http://${SERVER_LAN_IP:-localhost}:3002
+      NEXT_PUBLIC_URL: http://${SERVER_LAN_IP:-localhost}:3001
+      NEXT_PUBLIC_S3_PUBLIC_URL: http://${SERVER_LAN_IP:-localhost}:9000
+      # Server-side connection to API container
+      API_URL: http://api:3000
+    ports:
+      - "3001:3001"
+
+  # ---------------------------------------------------------------------------
+  # Orbis Worker — Background Job processing (BullMQ)
+  # ---------------------------------------------------------------------------
+  worker:
+    image: ghcr.io/${GHCR_USERNAME}/orbis-worker:${ORBIS_VERSION:-stable}
+    container_name: orbis-worker
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${DB_USER:-orbis}:${DB_PASSWORD:-orbis_local_2026}@postgres:5432/${DB_NAME:-orbis_db}
+      DATABASE_PRIMARY_URL: postgresql://${DB_USER:-orbis}:${DB_PASSWORD:-orbis_local_2026}@postgres:5432/${DB_NAME:-orbis_db}
+      REDIS_URL: redis://redis:6379
+      S3_ENDPOINT_URL: http://rustfs:9000
+      S3_ACCESS_KEY_ID: ${STORAGE_ACCESS_KEY:-rustfsadmin}
+      S3_SECRET_ACCESS_KEY: ${STORAGE_SECRET_KEY:-rustfs_local_2026}
+      PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium
+      PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: "true"
+
+# =============================================================================
+# Persistent Volumes — Data survives container restarts
+# =============================================================================
+volumes:
+  orbis_pgdata:
+    name: orbis_pgdata
+  orbis_redis:
+    name: orbis_redis
+  orbis_storage:
+    name: orbis_storage

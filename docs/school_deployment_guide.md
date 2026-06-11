@@ -18,7 +18,7 @@
 
 ## 📥 الخطوة 1: نسخ مجلد التوزيع إلى السيرفر
 
-قم بنسخ المجلد المسمى [dist](file:///c:/Users/YZLPN3/Downloads/new/Orbis/dist) بالكامل إلى خادم المدرسة (مثلاً في المسار `C:\Orbis-Server`).
+قم بنسخ المجلد المسمى [cli](file:///c:/Users/YZLPN3/Downloads/new/Orbis/cli) بالكامل إلى خادم المدرسة (مثلاً في المسار `C:\Orbis-Server`).
 يجب أن يحتوي المجلد على الملفات التالية فقط:
 * `docker-compose.yml`: ملف التكوين العام للحاويات.
 * `start-school-server.ps1`: سكريبت التشغيل الذكي والتهيئة التلقائية.
@@ -104,10 +104,9 @@ docker compose logs -f api
 ```
 
 ### تحديث النظام لإصدار جديد ومستقر:
-لتحديث السيرفر عند إطلاق إصدار جديد (مثلاً تغيير رقم النسخة في ملف `.env` إلى `v1.1.0`):
+لتحديث السيرفر عند إطلاق إصدار جديد، استخدم أداة الإدارة لتغيير الإصدار وسحب التحديثات تلقائياً:
 ```powershell
-docker compose pull
-docker compose up -d
+powershell -ExecutionPolicy Bypass -File start-school-server.ps1 update
 ```
 
 ### تصفير وحذف قاعدة البيانات والملفات بالكامل (تنبيه: سيحذف كافة البيانات المدرجة!):

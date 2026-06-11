@@ -4,10 +4,10 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 
 function getApiUrl(): string {
-  if (process.env.BETTER_AUTH_URL) {
+  if (process.env.BETTER_AUTH_URL && process.env.BETTER_AUTH_URL !== "http://" && process.env.BETTER_AUTH_URL !== "https://") {
     return process.env.BETTER_AUTH_URL;
   }
-  if (process.env.API_URL) {
+  if (process.env.API_URL && process.env.API_URL !== "http://" && process.env.API_URL !== "https://") {
     return process.env.API_URL;
   }
   return process.env.NODE_ENV === "production"
@@ -20,7 +20,10 @@ function getTrustedOrigins(): string[] {
   const origins: string[] = [];
 
   if (process.env.ALLOWED_API_ORIGINS) {
-    origins.push(...process.env.ALLOWED_API_ORIGINS.split(","));
+    const parsed = process.env.ALLOWED_API_ORIGINS.split(",")
+      .map((o) => o.trim())
+      .filter((o) => o && o !== "http://" && o !== "https://");
+    origins.push(...parsed);
   }
 
   if (process.env.DASHBOARD_URL) {
@@ -59,8 +62,55 @@ function getTrustedOrigins(): string[] {
   return origins.length > 0 ? origins : ["http://localhost:3001"];
 }
 
+// Helper to resolve cookie domain dynamically
+function getCookieDomain(): string | undefined {
+  if (process.env.COOKIE_DOMAIN) {
+    return process.env.COOKIE_DOMAIN;
+  }
+
+  // Omit domain attribute in development / non-production to default to host-only
+  if (process.env.NODE_ENV !== "production") {
+    return undefined;
+  }
+
+  const appUrl =
+    process.env.NEXT_PUBLIC_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.BETTER_AUTH_URL;
+
+  if (appUrl) {
+    try {
+      const url = new URL(appUrl);
+      const hostname = url.hostname;
+
+      // Omit domain for localhost or IP addresses as browsers reject explicit cookie domains for them
+      if (
+        hostname === "localhost" ||
+        hostname === "127.0.0.1" ||
+        /^(\d{1,3}\.){3}\d{1,3}$/.test(hostname) ||
+        hostname.startsWith("192.168.") ||
+        hostname.startsWith("10.") ||
+        /^172\.(1[6-9]|2\d|3[01])\./.test(hostname)
+      ) {
+        return undefined;
+      }
+
+      const parts = hostname.split(".");
+      if (parts.length >= 2) {
+        return `.${parts.slice(-2).join(".")}`;
+      }
+    } catch {
+      // Fallback
+    }
+  }
+
+  return undefined;
+}
+
 const betterAuthSecret =
   process.env.BETTER_AUTH_SECRET ?? "orbis-dev-secret-change-me";
+
+const cookieDomain = getCookieDomain();
 
 export const auth = betterAuth({
   secret: betterAuthSecret,
@@ -77,9 +127,8 @@ export const auth = betterAuth({
   }),
   advanced: {
     crossSubDomainCookies: {
-      enabled: true,
-      domain:
-        process.env.NODE_ENV === "production" ? ".mulverse.com" : undefined,
+      enabled: cookieDomain !== undefined,
+      domain: cookieDomain,
     },
     database: {
       generateId: false,
@@ -103,8 +152,7 @@ export const auth = betterAuth({
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
         path: "/",
-        domain:
-          process.env.NODE_ENV === "production" ? ".mulverse.com" : undefined,
+        domain: cookieDomain,
       },
     };
   },

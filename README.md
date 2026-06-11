@@ -1,81 +1,117 @@
-![hero](github.png)
+<!-- Logo will be added here -->
 
 <p align="center">
 	<h1 align="center"><b>Orbis</b></h1>
 <p align="center">
-    Your AI-Powered Business Assistant
+    The Open-Source School Management Platform
     <br />
     <br />
-    <a href="https://orbis.ai">Website</a>
+    <a href="https://orbis.mulverse.com">Website</a>
     ·
-    <a href="https://github.com/orbis-ai/orbis/issues">Issues</a>
+    <a href="https://github.com/mulverse/orbis/issues">Issues</a>
+    ·
+    <a href="docs/LOCAL-DEPLOYMENT.md">Self-Host Guide</a>
   </p>
 </p>
 
 
 ## About Orbis
 
-Orbis is an all-in-one tool designed to help freelancers, contractors, consultants, and solo entrepreneurs manage their business operations more efficiently. It integrates various functions typically scattered across multiple platforms into a single, cohesive system.
+Orbis is a modern, self-hostable school management platform designed to run entirely on-premise — giving schools full ownership of their data with zero cloud dependency. Built as a monorepo with a focus on Arabic-first education workflows, Orbis provides everything a school needs to manage students, grades, attendance, schedules, and more from a single unified system.
 
 
 ## Features
 
-**Time Tracking**: Allows for live time tracking of projects to boost productivity and collaboration, providing insightful project overviews.<br/>
-**Invoicing**: An upcoming feature that will enable users to create web-based invoices, collaborate in real-time, and synchronize projects seamlessly.<br/>
-**Magic Inbox**: Automatically matches incoming invoices or receipts to the correct transactions, simplifying financial tracking and organization.<br/>
-**Vault**: Secure storage for important files like contracts and agreements, keeping everything in one place for easy access​.<br/>
-**Seamless Export**: Facilitates easy export of financial data, packaged neatly in CSV files for accountants.<br/>
-**Assistant**: Provides tailored insights into financial situations, helping users understand spending patterns, cut costs, and find documents.<br/>
+**Student Management** — Register, enroll, and track students across academic years with support for class divisions, seating numbers, and custom metadata.<br/>
+**Grading & Assessments** — Create exams, quizzes, assignments, and oral assessments with weighted scoring, grade publishing, and per-month tracking.<br/>
+**Attendance Tracking** — Mark attendance per scheduled lesson with statuses like present, absent, late, excused, and sick — with teacher verification support.<br/>
+**Class Scheduling** — Build weekly timetables with time slots, subject-teacher assignments, and automatic conflict detection.<br/>
+**Academic Structure** — Manage academic years, terms, grades (1–9), and subjects with automatic seed data for quick setup.<br/>
+**Certificate Designer** — A Figma-inspired visual editor for designing and printing student certificates and reports.<br/>
+**Document Vault** — Secure S3-backed file storage with folders, pinning, and per-user document management.<br/>
+**Parent Portal** — Link parents to students with relationship types and primary contact designation.<br/>
+**Student Promotions** — Promote, retain, or transfer students between academic years with full audit trails.<br/>
+**Notifications** — In-app notifications for grades, attendance alerts, announcements, behavior reports, and more.<br/>
+**On-Premise Deployment** — Deploy to any school server with a single PowerShell command — no source code required on-site.<br/>
+**Desktop App** — Native desktop application built with Tauri for offline-capable access.
 
 
+## Get Started
 
+Clone the repo and run the automated setup:
 
-## Get started
+```bash
+bun run setup:local
+```
 
-We are working on the documentation to get started with Orbis for local development: https://docs.orbis.ai
+This will spin up PostgreSQL, Redis, and RustFS via Docker, run migrations, seed initial data (grades, subjects, terms), and print access URLs.
 
-## App Architecture
+Then start the dev server:
 
-- Monorepo
-- Bun
-- React
-- TypeScript
-- Nextjs
-- Shadcn
-- Tauri
-- Expo
-- TailwindCSS
+```bash
+bun run dev
+```
 
-### Hosting
+For detailed setup instructions, see the [Local Deployment Guide](docs/LOCAL-DEPLOYMENT.md).
 
-- Vercel (Website, Dashboard)
-- Fly.io (API/tRPC)
+For deploying to a school server (production), see the [School Deployment Guide](docs/school_deployment_guide.md).
 
-### Services
+## Architecture
 
-- Trigger.dev (background jobs)
-- Resend (Transactional & Marketing)
-- Github Actions (CI/CD)
-- GoCardLess (Bank connection EU)
-- Plaid (Bank connection in Canada and US)
-- Teller (Bank connection in the US)
-- OpenPanel (Events and Analytics)
-- Polar (Payment processing)
-- Typesense (Search)
-- Gemini
-- OpenAI
+### Monorepo Structure
 
-## Repo Activity
+```
+apps/
+  api/           → Hono + tRPC API server (port 3002)
+  dashboard/     → Next.js admin dashboard (port 3001)
+  desktop/       → Tauri native desktop app
+packages/
+  auth/          → Better Auth integration
+  db/            → Drizzle ORM schema & migrations
+  cache/         → Redis caching layer
+  jobs/          → Background job worker (BullMQ)
+  storage/       → S3-compatible file storage (RustFS)
+  ui/            → Shared UI components (Shadcn)
+  email/         → Transactional emails (Resend)
+  encryption/    → Data encryption utilities
+  export/        → Data export (Excel/CSV)
+  import/        → Data import utilities
+  notifications/ → Notification system
+  logger/        → Structured logging (Pino)
+  location/      → Geolocation utilities
+  utils/         → Shared utilities
+cli/             → School server deployment CLI
+```
 
-![Alt](https://repobeats.axiom.co/api/embed/96aae855e5dd87c30d53c1d154b37cf7aa5a89b3.svg "Repobeats analytics image")
+### Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| **Runtime** | Bun |
+| **Language** | TypeScript |
+| **API** | Hono + tRPC |
+| **Frontend** | Next.js 16 + React 19 |
+| **Desktop** | Tauri |
+| **Styling** | TailwindCSS + Shadcn UI |
+| **Database** | PostgreSQL 17 (Drizzle ORM) |
+| **Cache** | Redis 7 |
+| **Storage** | RustFS (S3-compatible) |
+| **Auth** | Better Auth |
+| **Jobs** | BullMQ |
+| **Build** | Turborepo |
+
+### Hosting (Cloud Option)
+
+- **Vercel** — Dashboard
+- **Fly.io** — API
+- **GitHub Actions** — CI/CD
 
 ## License
 
-This project is licensed under the **[AGPL-3.0](https://opensource.org/licenses/AGPL-3.0)** for non-commercial use. 
+This software is licensed under the **Mulverse M.U.V. Proprietary Software License**.
 
-### Commercial Use
+Copyright © 2022–2026 **Mulverse Inc.**, Sana'a, Republic of Yemen.
 
-For commercial use or deployments requiring a setup fee, please contact us
-for a commercial license at [engineer@orbis.ai](mailto:engineer@orbis.ai).
+See the full [LICENSE](LICENSE) file for details.
 
-By using this software, you agree to the terms of the license.
+For commercial licensing inquiries, contact [mulverseco@gmail.com](mailto:mulverseco@gmail.com).
