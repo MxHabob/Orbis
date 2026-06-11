@@ -1,11 +1,11 @@
 "use client";
 
-import { useClassesFilterParams } from "@/hooks/use-classes-filter-params";
 import { cn } from "@orbis/ui/cn";
 import { Icons } from "@orbis/ui/icons";
 import { Input } from "@orbis/ui/input";
 import { useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
+import { useClassesFilterParams } from "@/hooks/use-classes-filter-params";
 import { useI18n } from "@/locales/client";
 
 export function ReportsSearchFilter() {
@@ -51,10 +51,7 @@ export function ReportsSearchFilter() {
 
   return (
     <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-4 sm:space-y-0 items-start sm:items-center w-full">
-      <form
-        className="relative w-full sm:w-auto"
-        onSubmit={handleSubmit}
-      >
+      <form className="relative w-full sm:w-auto" onSubmit={handleSubmit}>
         <Icons.Search className="absolute pointer-events-none inset-inline-start-3 top-[11px]" />
         <Input
           ref={inputRef}

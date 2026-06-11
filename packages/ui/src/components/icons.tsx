@@ -45,6 +45,7 @@ import {
   MdOutlineConfirmationNumber,
   MdOutlineContentCopy,
   MdOutlineCropFree,
+  MdOutlineDarkMode,
   MdOutlineDashboardCustomize,
   MdOutlineEditNote,
   MdOutlineEmail,
@@ -58,9 +59,8 @@ import {
   MdOutlineInfo,
   MdOutlineInventory2,
   MdOutlineLanguage,
-  MdOutlineLightMode,
-  MdOutlineDarkMode,
   MdOutlineLaunch,
+  MdOutlineLightMode,
   MdOutlineLink,
   MdOutlineListAlt,
   MdOutlineMoreTime,
@@ -715,7 +715,13 @@ export const Icons = {
   Instagram: (props: SVGIconProps) => (
     <SVGIcon {...props} viewBox="0 0 24 24">
       <defs>
-        <linearGradient id="instagram-gradient" x1="0%" y1="100%" x2="100%" y2="0%">
+        <linearGradient
+          id="instagram-gradient"
+          x1="0%"
+          y1="100%"
+          x2="100%"
+          y2="0%"
+        >
           <stop offset="0%" stopColor="#FEDA77" />
           <stop offset="25%" stopColor="#FA7E1E" />
           <stop offset="50%" stopColor="#D62976" />
@@ -734,7 +740,14 @@ export const Icons = {
         strokeWidth="2"
         fill="none"
       />
-      <circle cx="12" cy="12" r="3.5" stroke="#fff" strokeWidth="2" fill="none" />
+      <circle
+        cx="12"
+        cy="12"
+        r="3.5"
+        stroke="#fff"
+        strokeWidth="2"
+        fill="none"
+      />
       <circle cx="17" cy="7" r="1.5" fill="#fff" />
     </SVGIcon>
   ),

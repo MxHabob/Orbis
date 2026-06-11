@@ -1,6 +1,5 @@
 "use client";
 
-import { useTRPC } from "@/trpc/client";
 import { Icons } from "@orbis/ui/icons";
 import { Label } from "@orbis/ui/label";
 import {
@@ -12,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@orbis/ui/select";
+import { Switch } from "@orbis/ui/switch";
 import {
   Tooltip,
   TooltipContent,
@@ -20,8 +20,8 @@ import {
 } from "@orbis/ui/tooltip";
 import { useQuery } from "@tanstack/react-query";
 import { Controller, useWatch } from "react-hook-form";
+import { useTRPC } from "@/trpc/client";
 import { mappableFields, useCsvContext } from "./context";
-import { Switch } from "@orbis/ui/switch";
 
 export function FieldMapping() {
   const { setValue, control, watch } = useCsvContext();
@@ -32,32 +32,49 @@ export function FieldMapping() {
   // Common Context
   const { data: years } = useQuery(trpc.academic.getYears.queryOptions());
   const academicYearId = watch("academicYearId");
-  
+
   // Classes Context (Required for both)
-  const { data: classes } = useQuery(trpc.classes.getAll.queryOptions({ 
-    academicYearId: academicYearId ?? undefined 
-  }, { enabled: !!academicYearId }));
+  const { data: classes } = useQuery(
+    trpc.classes.getAll.queryOptions(
+      {
+        academicYearId: academicYearId ?? undefined,
+      },
+      { enabled: !!academicYearId },
+    ),
+  );
 
   // Grades Specific Context
-  const { data: subjects } = useQuery(trpc.subjects.getAll.queryOptions(undefined,{
-    enabled: type === "grades"
-  }));
-  
-  const { data: terms } = useQuery(trpc.academic.getTerms.queryOptions({ 
-    yearId: academicYearId! 
-  }, { enabled: type === "grades" && !!academicYearId }));
+  const { data: subjects } = useQuery(
+    trpc.subjects.getAll.queryOptions(undefined, {
+      enabled: type === "grades",
+    }),
+  );
+
+  const { data: terms } = useQuery(
+    trpc.academic.getTerms.queryOptions(
+      {
+        yearId: academicYearId!,
+      },
+      { enabled: type === "grades" && !!academicYearId },
+    ),
+  );
 
   const classId = watch("classId");
   const subjectId = watch("subjectId");
   const termId = watch("termId");
   const month = watch("month");
 
-  const { data: assessments } = useQuery(trpc.assessments.getByClass.queryOptions({ 
-    classId: classId!, 
-    subjectId: subjectId, 
-    termId: termId,
-    month: month
-  }, { enabled: type === "grades" && !!classId }));
+  const { data: assessments } = useQuery(
+    trpc.assessments.getByClass.queryOptions(
+      {
+        classId: classId!,
+        subjectId: subjectId,
+        termId: termId,
+        month: month,
+      },
+      { enabled: type === "grades" && !!classId },
+    ),
+  );
 
   return (
     <div className="mt-6">
@@ -69,7 +86,9 @@ export function FieldMapping() {
       {/* 1. Shared Context Selectors (Year & Class) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b pb-6 mb-6">
         <div className="space-y-2">
-          <Label className="text-[#878787] text-xs font-normal">Academic Year</Label>
+          <Label className="text-[#878787] text-xs font-normal">
+            Academic Year
+          </Label>
           <Controller
             control={control}
             name="academicYearId"
@@ -99,18 +118,26 @@ export function FieldMapping() {
         </div>
 
         <div className="space-y-2">
-          <Label className="text-[#878787] text-xs font-normal">Class / Section</Label>
+          <Label className="text-[#878787] text-xs font-normal">
+            Class / Section
+          </Label>
           <Controller
             control={control}
             name="classId"
             render={({ field }) => (
               <Select
                 value={field.value?.toString()}
-                onValueChange={(val) => field.onChange(val ? Number(val) : undefined)}
+                onValueChange={(val) =>
+                  field.onChange(val ? Number(val) : undefined)
+                }
                 disabled={!academicYearId}
               >
                 <SelectTrigger className="w-full h-9">
-                  <SelectValue placeholder={academicYearId ? "Select Class" : "Select Year first"} />
+                  <SelectValue
+                    placeholder={
+                      academicYearId ? "Select Class" : "Select Year first"
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   {classes?.data?.map((cls) => (
@@ -127,21 +154,27 @@ export function FieldMapping() {
         {type === "grades" && (
           <>
             <div className="space-y-2">
-              <Label className="text-[#878787] text-xs font-normal">Subject</Label>
+              <Label className="text-[#878787] text-xs font-normal">
+                Subject
+              </Label>
               <Controller
                 control={control}
                 name="subjectId"
                 render={({ field }) => (
                   <Select
                     value={field.value?.toString()}
-                    onValueChange={(val) => field.onChange(val ? Number(val) : undefined)}
+                    onValueChange={(val) =>
+                      field.onChange(val ? Number(val) : undefined)
+                    }
                   >
                     <SelectTrigger className="w-full h-9">
                       <SelectValue placeholder="Select Subject" />
                     </SelectTrigger>
                     <SelectContent>
                       {subjects?.map((s) => (
-                        <SelectItem key={s.id} value={s.id.toString()}>{s.name}</SelectItem>
+                        <SelectItem key={s.id} value={s.id.toString()}>
+                          {s.name}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -157,15 +190,23 @@ export function FieldMapping() {
                 render={({ field }) => (
                   <Select
                     value={field.value?.toString()}
-                    onValueChange={(val) => field.onChange(val ? Number(val) : undefined)}
+                    onValueChange={(val) =>
+                      field.onChange(val ? Number(val) : undefined)
+                    }
                     disabled={!academicYearId}
                   >
                     <SelectTrigger className="w-full h-9">
-                      <SelectValue placeholder={academicYearId ? "Select Term" : "Select Year first"} />
+                      <SelectValue
+                        placeholder={
+                          academicYearId ? "Select Term" : "Select Year first"
+                        }
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       {terms?.map((t) => (
-                        <SelectItem key={t.id} value={t.id.toString()}>{t.name}</SelectItem>
+                        <SelectItem key={t.id} value={t.id.toString()}>
+                          {t.name}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -174,21 +215,27 @@ export function FieldMapping() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-[#878787] text-xs font-normal">Import Month</Label>
+              <Label className="text-[#878787] text-xs font-normal">
+                Import Month
+              </Label>
               <Controller
                 control={control}
                 name="month"
                 render={({ field }) => (
                   <Select
                     value={field.value?.toString()}
-                    onValueChange={(val) => field.onChange(val ? Number(val) : undefined)}
+                    onValueChange={(val) =>
+                      field.onChange(val ? Number(val) : undefined)
+                    }
                   >
                     <SelectTrigger className="w-full h-9">
                       <SelectValue placeholder="Select Month" />
                     </SelectTrigger>
                     <SelectContent>
                       {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => (
-                        <SelectItem key={m} value={m.toString()}>Month {m}</SelectItem>
+                        <SelectItem key={m} value={m.toString()}>
+                          Month {m}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -215,16 +262,14 @@ export function FieldMapping() {
                     />
                   )}
                 />
-                <Label className="text-sm font-normal">Auto-generate student numbers</Label>
+                <Label className="text-sm font-normal">
+                  Auto-generate student numbers
+                </Label>
               </div>
             </div>
 
             {!autoGenerate && (
-              <FieldRow
-                field="studentNumber"
-                type="students"
-                required
-              />
+              <FieldRow field="studentNumber" type="students" required />
             )}
             <FieldRow field="name" type="students" required />
             <FieldRow field="phone" type="students" />
@@ -261,7 +306,6 @@ export function FieldMapping() {
   );
 }
 
-
 function FieldRow({
   field,
   type,
@@ -275,7 +319,7 @@ function FieldRow({
 }) {
   const fields = type ? mappableFields[type] : null;
   const fieldConfig = fields ? (fields as any)[field] : null;
-  
+
   const label = explicitLabel ?? fieldConfig?.label ?? field;
   const required = explicitRequired ?? fieldConfig?.required ?? false;
 

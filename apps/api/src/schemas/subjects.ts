@@ -24,4 +24,6 @@ export const subjectSchema = z.object({
 });
 
 export const createSubjectSchema = subjectSchema.omit({ id: true });
-export const updateSubjectSchema = subjectSchema.partial().required({ id: true });
+export const updateSubjectSchema = subjectSchema
+  .partial()
+  .required({ id: true });

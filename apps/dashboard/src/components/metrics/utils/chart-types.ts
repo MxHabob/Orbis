@@ -1,4 +1,3 @@
-
 // Chart type identifiers
 export type ChartId =
   | "student-count"

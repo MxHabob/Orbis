@@ -1,20 +1,25 @@
 import { updateUserSchema } from "@api/schemas/users";
 import { resend } from "@api/services/resend";
-import { createTRPCRouter, protectedProcedure, publicProcedure, adminProcedure } from "@api/trpc/init";
-import { accounts, users as usersSchema } from "@orbis/db/schema";
-import { and, eq, isNotNull } from "drizzle-orm";
+import {
+  adminProcedure,
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+} from "@api/trpc/init";
 import { withRetryOnPrimary } from "@api/utils/db-retry";
-import { TRPCError } from "@trpc/server";
-import { z } from "zod";
 import {
   createUsers,
   deleteUser,
+  getParentUsers,
   getStaffUsers,
   getUserById,
-  getParentUsers,
-  updateUser,
   linkParentToStudents,
+  updateUser,
 } from "@orbis/db/queries";
+import { accounts, users as usersSchema } from "@orbis/db/schema";
+import { TRPCError } from "@trpc/server";
+import { and, eq, isNotNull } from "drizzle-orm";
+import { z } from "zod";
 
 export const userRouter = createTRPCRouter({
   getStaff: protectedProcedure.query(async ({ ctx: { db } }) => {
@@ -35,7 +40,9 @@ export const userRouter = createTRPCRouter({
           role: z.enum(["admin", "parent", "teacher", "staff", "student"]),
           // Optional: link students when creating a parent
           studentIds: z.array(z.string().uuid()).optional(),
-          relationship: z.enum(["parent", "mother", "father", "guardian"]).optional(),
+          relationship: z
+            .enum(["parent", "mother", "father", "guardian"])
+            .optional(),
         }),
       ),
     )
@@ -65,7 +72,9 @@ export const userRouter = createTRPCRouter({
       // Auto-link parents to students if studentIds are provided
       for (const invite of input) {
         if (invite.role === "parent" && invite.studentIds?.length) {
-          const createdParent = createdUsers.find((u) => u.email === invite.email);
+          const createdParent = createdUsers.find(
+            (u) => u.email === invite.email,
+          );
           if (createdParent) {
             await linkParentToStudents(
               db,
@@ -146,33 +155,41 @@ export const userRouter = createTRPCRouter({
 
   getAccountStatus: publicProcedure
     .input(z.object({ email: z.string().email() }))
-    .query(async ({ ctx: { db }, input }: { ctx: any; input: { email: string } }) => {
-      const [user] = await db
-        .select()
-        .from(usersSchema)
-        .where(eq(usersSchema.email, input.email))
-        .limit(1);
+    .query(
+      async ({
+        ctx: { db },
+        input,
+      }: {
+        ctx: any;
+        input: { email: string };
+      }) => {
+        const [user] = await db
+          .select()
+          .from(usersSchema)
+          .where(eq(usersSchema.email, input.email))
+          .limit(1);
 
-      if (!user) {
-        return { status: "absent" };
-      }
+        if (!user) {
+          return { status: "absent" };
+        }
 
-      const [account] = await db
-        .select()
-        .from(accounts)
-        .where(
-          and(
-            eq(accounts.userId, user.id as string),
-            isNotNull(accounts.password)
+        const [account] = await db
+          .select()
+          .from(accounts)
+          .where(
+            and(
+              eq(accounts.userId, user.id as string),
+              isNotNull(accounts.password),
+            ),
           )
-        )
-        .limit(1);
+          .limit(1);
 
-      return {
-        status: account ? "exists" : ("needs_password" as const),
-        userId: user.id as string,
-      };
-    }),
+        return {
+          status: account ? "exists" : ("needs_password" as const),
+          userId: user.id as string,
+        };
+      },
+    ),
 
   updatePassword: protectedProcedure
     .input(z.object({ password: z.string().min(8) }))
@@ -182,10 +199,10 @@ export const userRouter = createTRPCRouter({
 
       // Check if user already has a password account
       const existingAccount = await db.query.accounts.findFirst({
-        where: (accounts, { and, eq }) => 
+        where: (accounts, { and, eq }) =>
           and(
             eq(accounts.userId, session.user.id),
-            eq(accounts.providerId, "email")
+            eq(accounts.providerId, "email"),
           ),
       });
 

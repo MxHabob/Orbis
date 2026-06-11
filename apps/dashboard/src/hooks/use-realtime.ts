@@ -15,12 +15,11 @@ interface RealtimeOptions {
  * Realtime is currently disabled to prevent Bun runtime crashes on Windows.
  * This hook is now a no-op.
  */
-export function useRealtime({
-  channelName,
-  onEvent,
-}: RealtimeOptions) {
+export function useRealtime({ channelName, onEvent }: RealtimeOptions) {
   useEffect(() => {
     // Realtime is disabled.
-    console.debug(`[Realtime] Subscription to ${channelName} ignored (Realtime is disabled)`);
+    console.debug(
+      `[Realtime] Subscription to ${channelName} ignored (Realtime is disabled)`,
+    );
   }, [channelName]);
 }

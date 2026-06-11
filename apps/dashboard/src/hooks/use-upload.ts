@@ -20,7 +20,8 @@ export function useUpload() {
     async (options: UploadOptions): Promise<UploadResult> => {
       setIsLoading(true);
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3002";
+        const apiUrl =
+          process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3002";
         const formData = new FormData();
         formData.append("file", options.file);
         formData.append("bucket", options.bucket);

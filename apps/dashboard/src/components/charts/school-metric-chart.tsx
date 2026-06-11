@@ -1,4 +1,3 @@
-import { formatAmount } from "@/utils/format";
 import {
   Area,
   CartesianGrid,
@@ -9,6 +8,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { formatAmount } from "@/utils/format";
 import {
   commonChartConfig,
   createCompactTickFormatter,
@@ -29,19 +29,27 @@ interface SchoolMetricChartProps {
   valueFormatter?: (value: number) => string;
 }
 
-const CustomTooltip = ({ active, payload, label, valueFormatter, currency = "USD", locale }: any) => {
+const CustomTooltip = ({
+  active,
+  payload,
+  label,
+  valueFormatter,
+  currency = "USD",
+  locale,
+}: any) => {
   if (active && payload && payload.length) {
     const value = payload[0].value;
     const average = payload[1]?.value;
 
-    const formatValue = (val: number) => 
-      valueFormatter ? valueFormatter(val) : 
-      formatAmount({
-        amount: val,
-        currency,
-        locale: locale ?? undefined,
-        maximumFractionDigits: 0,
-      }) ?? val.toLocaleString();
+    const formatValue = (val: number) =>
+      valueFormatter
+        ? valueFormatter(val)
+        : (formatAmount({
+            amount: val,
+            currency,
+            locale: locale ?? undefined,
+            maximumFractionDigits: 0,
+          }) ?? val.toLocaleString());
 
     return (
       <div className="border p-2 text-[10px] font-hedvig-sans bg-white dark:bg-[#0c0c0c] border-[#e6e6e6] dark:border-[#1d1d1d] text-black dark:text-white shadow-sm">
@@ -95,7 +103,13 @@ export function SchoolMetricChart({
                   opacity="0.6"
                 />
               </pattern>
-              <linearGradient id="schoolMetricGradient" x1="0" y1="0" x2="1" y2="0">
+              <linearGradient
+                id="schoolMetricGradient"
+                x1="0"
+                y1="0"
+                x2="1"
+                y2="0"
+              >
                 <stop offset="0%" stopColor="var(--chart-gradient-start)" />
                 <stop offset="100%" stopColor="var(--chart-gradient-end)" />
               </linearGradient>
@@ -126,7 +140,13 @@ export function SchoolMetricChart({
               dataKey="value"
             />
             <Tooltip
-              content={<CustomTooltip currency={currency} locale={locale} valueFormatter={valueFormatter} />}
+              content={
+                <CustomTooltip
+                  currency={currency}
+                  locale={locale}
+                  valueFormatter={valueFormatter}
+                />
+              }
               wrapperStyle={{ zIndex: 9999 }}
             />
             <Area
@@ -163,4 +183,3 @@ export function SchoolMetricChart({
     </div>
   );
 }
-

@@ -1,11 +1,11 @@
 "use client";
 
-import { useGradesStore } from "@/store/grades";
 import { Button } from "@orbis/ui/button";
 import { Checkbox } from "@orbis/ui/checkbox";
 import { Icons } from "@orbis/ui/icons";
 import { Popover, PopoverContent, PopoverTrigger } from "@orbis/ui/popover";
 import { useI18n } from "@/locales/client";
+import { useGradesStore } from "@/store/grades";
 
 export function GradesColumnVisibility() {
   const { columns } = useGradesStore();
@@ -30,10 +30,14 @@ export function GradesColumnVisibility() {
             .map((column) => {
               let label = column.id;
               const metaLabel = (column.columnDef.meta as any)?.headerLabel;
-              
+
               if (metaLabel) {
-                if (metaLabel.startsWith("grades.") || metaLabel.startsWith("common.") || metaLabel.startsWith("education.")) {
-                   // @ts-ignore
+                if (
+                  metaLabel.startsWith("grades.") ||
+                  metaLabel.startsWith("common.") ||
+                  metaLabel.startsWith("education.")
+                ) {
+                  // @ts-expect-error
                   label = t(metaLabel);
                 } else {
                   label = metaLabel;

@@ -1,11 +1,11 @@
-
 "use client";
 
+import { useParams } from "next/navigation";
+import { useMemo, useRef } from "react";
+import { useOnClickOutside } from "usehooks-ts";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { useMetricsCustomize } from "@/hooks/use-metrics-customize";
 import { useMetricsFilter } from "@/hooks/use-metrics-filter";
-import { useMemo, useRef } from "react";
-import { useOnClickOutside } from "usehooks-ts";
 import { AttendanceRateCard } from "./cards/attendance-rate-card";
 import { ClassDistributionCard } from "./cards/class-distribution-card";
 import { GenderDistributionCard } from "./cards/gender-distribution-card";
@@ -15,7 +15,6 @@ import { TeacherCountCard } from "./cards/teacher-count-card";
 import { MetricsGrid } from "./components/metrics-grid";
 import { SortableChartCard } from "./components/sortable-chart-card";
 import { type ChartId, DEFAULT_CHART_ORDER } from "./utils/chart-types";
-import { useParams } from "next/navigation";
 
 export function MetricsView() {
   const params = useParams();
@@ -29,13 +28,16 @@ export function MetricsView() {
   );
   const gridRef = useRef<HTMLDivElement>(null!);
 
-
   // Ensure all charts are in the order (handle new charts being added)
   const orderedCharts = useMemo(() => {
     const orderSet = new Set(chartOrder);
     // Filter out any old chart types that might be in local storage but not in our new set
-    const validCharts = chartOrder.filter(id => DEFAULT_CHART_ORDER.includes(id));
-    const missing = DEFAULT_CHART_ORDER.filter((id) => !validCharts.includes(id));
+    const validCharts = chartOrder.filter((id) =>
+      DEFAULT_CHART_ORDER.includes(id),
+    );
+    const missing = DEFAULT_CHART_ORDER.filter(
+      (id) => !validCharts.includes(id),
+    );
     return [...validCharts, ...missing];
   }, [chartOrder]);
 
@@ -100,7 +102,11 @@ export function MetricsView() {
       );
     }
 
-    return <div key={chartId} className="h-full">{chartContent}</div>;
+    return (
+      <div key={chartId} className="h-full">
+        {chartContent}
+      </div>
+    );
   };
 
   return (

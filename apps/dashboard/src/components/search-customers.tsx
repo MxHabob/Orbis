@@ -1,8 +1,8 @@
 "use client";
 
-import { useTRPC } from "@/trpc/client";
 import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
 import { useQuery } from "@tanstack/react-query";
+import { useTRPC } from "@/trpc/client";
 
 type Props = {
   onSelect: (id: string) => void;

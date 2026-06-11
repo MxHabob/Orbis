@@ -1,6 +1,5 @@
 "use client";
 
-import { useUserMutation, useUserQuery } from "@/hooks/use-user";
 import { Button } from "@orbis/ui/button";
 import {
   DropdownMenu,
@@ -12,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@orbis/ui/dropdown-menu";
 import { Icons } from "@orbis/ui/icons";
+import { useUserMutation, useUserQuery } from "@/hooks/use-user";
 
 export function TrackerSettings() {
   const { data: user } = useUserQuery();

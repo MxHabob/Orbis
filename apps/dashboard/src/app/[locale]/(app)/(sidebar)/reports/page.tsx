@@ -1,3 +1,7 @@
+import type { Metadata } from "next";
+import type { SearchParams } from "nuqs";
+import { Suspense } from "react";
+import { ErrorBoundary } from "@/components/error-boundary";
 import { ErrorFallback } from "@/components/error-fallback";
 import { ReportsHeader } from "@/components/reports-header";
 import { ReportsHeaderSkeleton } from "@/components/reports-header-skeleton";
@@ -6,12 +10,8 @@ import { DataTable } from "@/components/tables/reports/data-table";
 import { ReportsSkeleton } from "@/components/tables/reports/skeleton";
 import { loadClassesFilterParams } from "@/hooks/use-classes-filter-params";
 import { loadSortParams } from "@/hooks/use-sort-params";
-import { HydrateClient, batchPrefetch, trpc } from "@/trpc/server";
+import { batchPrefetch, HydrateClient, trpc } from "@/trpc/server";
 import { getInitialTableSettings } from "@/utils/columns";
-import type { Metadata } from "next";
-import { ErrorBoundary } from "@/components/error-boundary";
-import type { SearchParams } from "nuqs";
-import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "Reports | Orbis",
@@ -32,7 +32,9 @@ export default async function Reports(props: Props) {
   batchPrefetch([
     trpc.classes.getAll.infiniteQueryOptions({
       ...filter,
-      academicYearId: filter.academicYearId ? Number(filter.academicYearId) : undefined,
+      academicYearId: filter.academicYearId
+        ? Number(filter.academicYearId)
+        : undefined,
       sort,
     }),
   ]);
@@ -42,7 +44,7 @@ export default async function Reports(props: Props) {
       <ScrollableContent>
         <div className="flex flex-col gap-6">
           <ErrorBoundary fallback={<ErrorFallback />}>
-            <Suspense 
+            <Suspense
               fallback={
                 <div className="flex flex-col gap-6">
                   <ReportsHeaderSkeleton />

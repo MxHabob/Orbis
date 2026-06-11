@@ -1,5 +1,5 @@
-import { auth } from "@orbis/auth";
-import { type Context } from "hono";
+import type { auth } from "@orbis/auth";
+import type { Context } from "hono";
 
 export type Session = typeof auth.$Infer.Session;
 

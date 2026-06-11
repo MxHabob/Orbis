@@ -1,13 +1,13 @@
 "use client";
 
-import { useJobStatus } from "@/hooks/use-job-status";
-import { useSuccessSound } from "@/hooks/use-success-sound";
-import { useExportStore } from "@/store/export";
-import { downloadFile } from "@/lib/download";
 import { Button } from "@orbis/ui/button";
 import { useToast } from "@orbis/ui/use-toast";
-import { useI18n } from "@/locales/client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useJobStatus } from "@/hooks/use-job-status";
+import { useSuccessSound } from "@/hooks/use-success-sound";
+import { downloadFile } from "@/lib/download";
+import { useI18n } from "@/locales/client";
+import { useExportStore } from "@/store/export";
 
 type ExportResult = {
   url: string; // Direct S3 URL from uploadFile result
@@ -33,12 +33,12 @@ function DownloadButton({
   const t = useI18n();
   const handleClick = useCallback(() => {
     if (!fullPath) return;
-    
+
     // Use API proxy to handle authentication and avoid S3 AccessDenied
     const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/files/proxy?filePath=vault/${fullPath}`;
     const url = new URL(downloadUrl, window.location.origin);
     url.searchParams.set("download", "true");
-    
+
     downloadFile(url.toString(), fileName);
     onDownload();
   }, [fullPath, fileName, onDownload]);
@@ -87,10 +87,14 @@ export function ExportStatus() {
   /**
    * Get a human-readable description based on progress and job status.
    */
-  const getProgressDescription = (progressValue: number | undefined, jobStatus: string | undefined): string => {
+  const getProgressDescription = (
+    progressValue: number | undefined,
+    jobStatus: string | undefined,
+  ): string => {
     if (jobStatus === "waiting") return t("reports.export_progress.waiting");
-    if (progressValue === undefined) return t("reports.export_progress.preparing");
-    
+    if (progressValue === undefined)
+      return t("reports.export_progress.preparing");
+
     const val = progressValue;
     if (val < 5) return t("reports.export_progress.preparing_data");
     if (val < 15) return t("reports.export_progress.starting_engine");
@@ -154,7 +158,8 @@ export function ExportStatus() {
           : undefined;
 
     if (
-      (currentProgress !== undefined && currentProgress !== lastProgressRef.current) ||
+      (currentProgress !== undefined &&
+        currentProgress !== lastProgressRef.current) ||
       status === "waiting"
     ) {
       lastProgressRef.current = currentProgress;
@@ -168,11 +173,7 @@ export function ExportStatus() {
 
   // Handle completion
   useEffect(() => {
-    if (
-      status === "completed" &&
-      toastId &&
-      !completionHandledRef.current
-    ) {
+    if (status === "completed" && toastId && !completionHandledRef.current) {
       completionHandledRef.current = true;
       playSuccessSound();
 

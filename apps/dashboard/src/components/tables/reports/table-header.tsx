@@ -1,19 +1,8 @@
 "use client";
 
-import { HorizontalPagination } from "@/components/horizontal-pagination";
-import type { TableScrollState } from "@/components/tables/core";
-import { DraggableHeader } from "@/components/tables/draggable-header";
-import { ResizeHandle } from "@/components/tables/resize-handle";
-import { useSortQuery } from "@/hooks/use-sort-query";
-import { useStickyColumns } from "@/hooks/use-sticky-columns";
 import {
-  NON_REORDERABLE_COLUMNS,
-  SORT_FIELD_MAPS,
-  STICKY_COLUMNS,
-} from "@/utils/table-configs";
-import {
-  SortableContext,
   horizontalListSortingStrategy,
+  SortableContext,
 } from "@dnd-kit/sortable";
 import { Button } from "@orbis/ui/button";
 import { Checkbox } from "@orbis/ui/checkbox";
@@ -21,8 +10,18 @@ import { TableHead, TableHeader, TableRow } from "@orbis/ui/table";
 import type { Header, Table } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { useMemo } from "react";
-import { useI18n } from "@/locales/client";
-import { useCurrentLocale } from "@/locales/client";
+import { HorizontalPagination } from "@/components/horizontal-pagination";
+import type { TableScrollState } from "@/components/tables/core";
+import { DraggableHeader } from "@/components/tables/draggable-header";
+import { ResizeHandle } from "@/components/tables/resize-handle";
+import { useSortQuery } from "@/hooks/use-sort-query";
+import { useStickyColumns } from "@/hooks/use-sticky-columns";
+import { useCurrentLocale, useI18n } from "@/locales/client";
+import {
+  NON_REORDERABLE_COLUMNS,
+  SORT_FIELD_MAPS,
+  STICKY_COLUMNS,
+} from "@/utils/table-configs";
 
 interface Props<TData> {
   table?: Table<TData>;
@@ -77,8 +76,7 @@ export function DataTableHeader<TData>({
                 | { sticky?: boolean; className?: string }
                 | undefined;
               const isSticky = meta?.sticky;
-              const canReorder =
-                !NON_REORDERABLE_COLUMNS.reports.has(columnId);
+              const canReorder = !NON_REORDERABLE_COLUMNS.reports.has(columnId);
 
               if (!isVisible(columnId)) return null;
 
@@ -112,8 +110,8 @@ export function DataTableHeader<TData>({
                 const finalClassName = isActionsColumn
                   ? "group/header relative h-full px-4 !border-t !border-inline-start !border-border flex items-center justify-center md:sticky md:inset-inline-end-0 bg-background z-10"
                   : isSelectColumn
-                  ? `group/header relative h-full p-0 !border-t !border-inline-end !border-border flex items-center justify-center md:sticky md:inset-inline-start-0 bg-background z-10`
-                  : `${stickyClass} bg-background z-10`;
+                    ? `group/header relative h-full p-0 !border-t !border-inline-end !border-border flex items-center justify-center md:sticky md:inset-inline-start-0 bg-background z-10`
+                    : `${stickyClass} bg-background z-10`;
 
                 return (
                   <TableHead
@@ -201,7 +199,9 @@ function renderHeaderContent<TData>(
   // Actions column - static text
   if (columnId === "actions") {
     return (
-      <span className="text-muted-foreground w-full text-center">{t("common.actions")}</span>
+      <span className="text-muted-foreground w-full text-center">
+        {t("common.actions")}
+      </span>
     );
   }
 

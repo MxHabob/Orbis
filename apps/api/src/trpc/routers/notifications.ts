@@ -2,7 +2,11 @@ import {
   createNotificationSchema,
   updateNotificationSchema,
 } from "@api/schemas/notifications";
-import { createTRPCRouter, protectedProcedure, teacherProcedure } from "@api/trpc/init";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  teacherProcedure,
+} from "@api/trpc/init";
 import {
   createNotification,
   getUnreadCount,
@@ -21,7 +25,7 @@ export const notificationsRouter = createTRPCRouter({
         pageSize: z.number().optional(), // Map pageSize to limit
         status: z.union([z.string(), z.array(z.string())]).optional(),
         maxPriority: z.number().optional(),
-      })
+      }),
     )
     .query(async ({ ctx: { session }, input }) => {
       return getUserNotifications(session.user.id, {
@@ -42,13 +46,22 @@ export const notificationsRouter = createTRPCRouter({
     }),
 
   updateStatus: protectedProcedure
-    .input(z.object({ activityId: z.number(), status: z.enum(['unread', 'read', 'archived']) }))
+    .input(
+      z.object({
+        activityId: z.number(),
+        status: z.enum(["unread", "read", "archived"]),
+      }),
+    )
     .mutation(async ({ ctx: { session }, input }) => {
-      return updateNotificationStatus(session.user.id, input.activityId, input.status);
+      return updateNotificationStatus(
+        session.user.id,
+        input.activityId,
+        input.status,
+      );
     }),
 
   updateAllStatus: protectedProcedure
-    .input(z.object({ status: z.enum(['unread', 'read', 'archived']) }))
+    .input(z.object({ status: z.enum(["unread", "read", "archived"]) }))
     .mutation(async ({ ctx: { session }, input }) => {
       return updateAllNotificationsStatus(session.user.id, input.status);
     }),

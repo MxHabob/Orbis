@@ -1,6 +1,5 @@
 "use client";
 
-import { useTRPC } from "@/trpc/client";
 import { cn } from "@orbis/ui/cn";
 import { Table, TableBody, TableCell, TableRow } from "@orbis/ui/table";
 import { useSuspenseQuery } from "@tanstack/react-query";
@@ -12,9 +11,10 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useState } from "react";
+import { useStaffParams } from "@/hooks/use-staff-params";
+import { useTRPC } from "@/trpc/client";
 import { columns } from "./columns";
 import { DataTableHeader } from "./table-header";
-import { useStaffParams } from "@/hooks/use-staff-params";
 
 export function DataTable() {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -70,9 +70,7 @@ export function DataTable() {
                 colSpan={columns.length}
                 className="h-[360px] text-center"
               >
-                <h2 className="font-medium mb-1">
-                  No Parents Found
-                </h2>
+                <h2 className="font-medium mb-1">No Parents Found</h2>
                 <span className="text-[#606060]">
                   Use the button above to add a Parent.
                 </span>

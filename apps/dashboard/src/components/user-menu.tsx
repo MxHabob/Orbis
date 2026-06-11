@@ -1,5 +1,6 @@
 "use client";
 
+import { authClient } from "@orbis/auth/auth-client";
 import { Avatar, AvatarFallback, AvatarImageNext } from "@orbis/ui/avatar";
 import {
   DropdownMenu,
@@ -13,7 +14,6 @@ import {
 import Link from "next/link";
 import { SignOut } from "./sign-out";
 import { ThemeSwitch } from "./theme-switch";
-import { authClient } from "@orbis/auth/auth-client";
 
 type Props = {
   onlySignOut?: boolean;

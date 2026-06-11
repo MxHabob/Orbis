@@ -1,7 +1,5 @@
 "use client";
 
-import { useStudentParams } from "@/hooks/use-student-params";
-import { useTRPC } from "@/trpc/client";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,6 +9,8 @@ import {
 import { Icons } from "@orbis/ui/icons";
 import { Sheet, SheetContent, SheetHeader } from "@orbis/ui/sheet";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useStudentParams } from "@/hooks/use-student-params";
+import { useTRPC } from "@/trpc/client";
 import { StudentForm } from "../forms/student-form";
 
 export function StudentEditSheet() {

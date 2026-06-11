@@ -1,11 +1,11 @@
 "use client";
 
-import { useLessonParams } from "@/hooks/use-lesson-params";
-import { useTRPC } from "@/trpc/client";
-import { useQuery } from "@tanstack/react-query";
 import { cn } from "@orbis/ui/cn";
 import { Skeleton } from "@orbis/ui/skeleton";
+import { useQuery } from "@tanstack/react-query";
 import React from "react";
+import { useLessonParams } from "@/hooks/use-lesson-params";
+import { useTRPC } from "@/trpc/client";
 
 const daysOfWeek = [
   { value: 0, label: "Sunday" },
@@ -20,21 +20,24 @@ export function LessonSchedule() {
   const trpc = useTRPC();
 
   // We need a yearId. We'll try to find the current one if not provided.
-  const { data: academicYears } = useQuery(trpc.academic.getYears.queryOptions());
-  const activeYearId = academicYearId || academicYears?.find(y => y.isCurrent)?.id || 0;
+  const { data: academicYears } = useQuery(
+    trpc.academic.getYears.queryOptions(),
+  );
+  const activeYearId =
+    academicYearId || academicYears?.find((y) => y.isCurrent)?.id || 0;
 
   const { data: timeSlots, isLoading: isLoadingSlots } = useQuery(
     trpc.lessons.getTimeSlots.queryOptions(
       { yearId: activeYearId },
-      { enabled: !!activeYearId }
-    )
+      { enabled: !!activeYearId },
+    ),
   );
 
   const { data: lessons, isLoading: isLoadingLessons } = useQuery(
     trpc.lessons.getClassSchedule.queryOptions(
       { classId: classId!, yearId: activeYearId },
-      { enabled: !!classId && !!activeYearId }
-    )
+      { enabled: !!classId && !!activeYearId },
+    ),
   );
 
   if (!classId) {
@@ -61,9 +64,14 @@ export function LessonSchedule() {
         <table className="w-full border-collapse">
           <thead>
             <tr>
-              <th className="p-4 border bg-muted/50 text-left font-medium w-32">Period</th>
+              <th className="p-4 border bg-muted/50 text-left font-medium w-32">
+                Period
+              </th>
               {daysOfWeek.map((day) => (
-                <th key={day.value} className="p-4 border bg-muted/50 text-left font-medium min-w-[150px]">
+                <th
+                  key={day.value}
+                  className="p-4 border bg-muted/50 text-left font-medium min-w-[150px]"
+                >
                   {day.label}
                 </th>
               ))}
@@ -75,30 +83,32 @@ export function LessonSchedule() {
                 <td className="p-4 border font-medium">
                   <div className="text-sm">{slot.slotNumber}</div>
                   <div className="text-xs text-muted-foreground">
-                    {slot.startTime.substring(0, 5)} - {slot.endTime.substring(0, 5)}
+                    {slot.startTime.substring(0, 5)} -{" "}
+                    {slot.endTime.substring(0, 5)}
                   </div>
                 </td>
                 {daysOfWeek.map((day) => {
                   const lesson = lessons?.find(
-                    (l) => l.timeSlotId === slot.id && l.dayOfWeek === day.value
+                    (l) =>
+                      l.timeSlotId === slot.id && l.dayOfWeek === day.value,
                   );
 
                   return (
-                    <td 
-                      key={day.value} 
+                    <td
+                      key={day.value}
                       className={cn(
                         "p-2 border h-24 hover:bg-muted/30 transition-colors cursor-pointer relative",
-                        !lesson && "bg-muted/5"
+                        !lesson && "bg-muted/5",
                       )}
                       onClick={() => {
                         if (lesson) {
                           setParams({ update: true, lessonId: lesson.id });
                         } else {
-                          setParams({ 
-                            create: true, 
-                            dayOfWeek: day.value, 
+                          setParams({
+                            create: true,
+                            dayOfWeek: day.value,
                             timeSlotId: slot.id,
-                            classId: classId
+                            classId: classId,
                           });
                         }
                       }}

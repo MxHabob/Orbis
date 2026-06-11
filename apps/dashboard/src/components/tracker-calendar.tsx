@@ -1,10 +1,5 @@
 "use client";
 
-import { getCalendarEventsAction } from "@/actions/get-calendar-events-action";
-import { useCalendarDates } from "@/hooks/use-calendar-dates";
-import { useTrackerParams } from "@/hooks/use-tracker-params";
-import { useLessonParams } from "@/hooks/use-lesson-params";
-import { useUserQuery } from "@/hooks/use-user";
 // import { useTRPC } from "@/trpc/client";
 import { TZDate } from "@date-fns/tz";
 import { useQuery } from "@tanstack/react-query";
@@ -20,10 +15,14 @@ import {
   subMonths,
   subWeeks,
 } from "date-fns";
-import { useRef, useState } from "react";
-import React from "react";
+import React, { useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useOnClickOutside } from "usehooks-ts";
+import { getCalendarEventsAction } from "@/actions/get-calendar-events-action";
+import { useCalendarDates } from "@/hooks/use-calendar-dates";
+import { useLessonParams } from "@/hooks/use-lesson-params";
+import { useTrackerParams } from "@/hooks/use-tracker-params";
+import { useUserQuery } from "@/hooks/use-user";
 import { CalendarHeader } from "./tracker/calendar-header";
 import { CalendarMonthView } from "./tracker/calendar-month-view";
 import { CalendarWeekView } from "./tracker/calendar-week-view";
@@ -118,7 +117,6 @@ export function TrackerCalendar({ weeklyCalendar }: Props) {
       return res.data;
     },
   });
-
 
   function handlePeriodChange(direction: number) {
     if (selectedView === "week") {

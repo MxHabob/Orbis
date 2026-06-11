@@ -1,11 +1,11 @@
 "use client";
 
+import { Button } from "@orbis/ui/button";
+import { useToast } from "@orbis/ui/use-toast";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Trash } from "lucide-react";
 import { useReportStore } from "@/store/report";
 import { useTRPC } from "@/trpc/client";
-import { useQueryClient, useMutation } from "@tanstack/react-query";
-import { useToast } from "@orbis/ui/use-toast";
-import { Button } from "@orbis/ui/button";
-import { Trash } from "lucide-react";
 import { BottomBar as CoreBottomBar } from "../core/bottom-bar";
 
 type Props = {
@@ -18,7 +18,9 @@ export function BottomBar({ data }: Props) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const selectedIds = Object.keys(rowSelection).filter((id) => rowSelection[id]);
+  const selectedIds = Object.keys(rowSelection).filter(
+    (id) => rowSelection[id],
+  );
   const count = selectedIds.length;
 
   // Bulk delete mutation
@@ -37,16 +39,16 @@ export function BottomBar({ data }: Props) {
           variant: "success",
         });
       },
-    })
+    }),
   );
 
   const handleDelete = async () => {
     try {
       await Promise.all(
-        selectedIds.map((id) => deleteMutation.mutateAsync({ id }))
+        selectedIds.map((id) => deleteMutation.mutateAsync({ id })),
       );
     } catch (error) {
-       toast({
+      toast({
         title: "Error deleting templates",
         variant: "destructive",
       });
@@ -56,10 +58,7 @@ export function BottomBar({ data }: Props) {
   if (count === 0) return null;
 
   return (
-    <CoreBottomBar
-      selectedCount={count}
-      onDeselect={() => setRowSelection({})}
-    >
+    <CoreBottomBar selectedCount={count} onDeselect={() => setRowSelection({})}>
       <Button
         variant="ghost"
         size="sm"

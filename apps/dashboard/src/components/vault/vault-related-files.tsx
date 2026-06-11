@@ -1,7 +1,5 @@
 "use client";
 
-import { useDocumentParams } from "@/hooks/use-document-params";
-import { useTRPC } from "@/trpc/client";
 import {
   Accordion,
   AccordionContent,
@@ -11,6 +9,8 @@ import {
 import { Carousel, CarouselContent, CarouselItem } from "@orbis/ui/carousel";
 import { useQuery } from "@tanstack/react-query";
 import * as React from "react";
+import { useDocumentParams } from "@/hooks/use-document-params";
+import { useTRPC } from "@/trpc/client";
 import { VaultItem } from "./vault-item";
 import { VaultRelatedFilesSkeleton } from "./vault-related-files-skeleton";
 

@@ -25,7 +25,7 @@ export const executePromotionSchema = z.object({
       status: z.enum(["promoted", "retained", "graduated", "conditional"]),
       toClassId: z.number().optional(),
       notes: z.string().optional(),
-    })
+    }),
   ),
 });
 

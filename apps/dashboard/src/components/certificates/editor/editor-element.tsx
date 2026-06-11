@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useRef, useEffect, memo } from "react";
-import { type EditorElement as IEditorElement } from "@/types/certificate-editor";
 import { cn } from "@orbis/ui/cn";
+import type React from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { useEditorStore } from "@/store/certificate-editor";
+import type { EditorElement as IEditorElement } from "@/types/certificate-editor";
 import { GradesTable } from "../grades-table";
 
 interface Props {
@@ -11,17 +12,13 @@ interface Props {
 }
 
 export const EditorElement = memo(function EditorElement({ element }: Props) {
-  const { 
-    updateElement, 
-    selectedElementIds, 
-    setSelectedElements,
-    elements
-  } = useEditorStore();
-  
+  const { updateElement, selectedElementIds, setSelectedElements, elements } =
+    useEditorStore();
+
   const [isEditing, setIsEditing] = useState(false);
   const [tempContent, setTempContent] = useState(element.content || "");
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  
+
   const style = element.style || {};
 
   useEffect(() => {
@@ -40,29 +37,29 @@ export const EditorElement = memo(function EditorElement({ element }: Props) {
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (element.locked) return;
-    
+
     // Stop propagation to prevent Selecto/Canvas from overriding
     e.stopPropagation();
 
     const findRootId = (id: string): string => {
-        const el = elements.find(e => e.id === id);
-        if (el?.parentId) return findRootId(el.parentId);
-        return id;
+      const el = elements.find((e) => e.id === id);
+      if (el?.parentId) return findRootId(el.parentId);
+      return id;
     };
 
     const rootId = findRootId(element.id);
     const isMulti = e.ctrlKey || e.metaKey || e.shiftKey;
 
     if (isMulti) {
-        if (selectedElementIds.includes(rootId)) {
-            setSelectedElements(selectedElementIds.filter(id => id !== rootId));
-        } else {
-            setSelectedElements([...selectedElementIds, rootId]);
-        }
+      if (selectedElementIds.includes(rootId)) {
+        setSelectedElements(selectedElementIds.filter((id) => id !== rootId));
+      } else {
+        setSelectedElements([...selectedElementIds, rootId]);
+      }
     } else {
-        if (!selectedElementIds.includes(rootId)) {
-            setSelectedElements([rootId]);
-        }
+      if (!selectedElementIds.includes(rootId)) {
+        setSelectedElements([rootId]);
+      }
     }
   };
 
@@ -101,10 +98,12 @@ export const EditorElement = memo(function EditorElement({ element }: Props) {
         }
         return (
           <div
-            onDoubleClick={() => !element.locked && element.type === "text" && setIsEditing(true)}
+            onDoubleClick={() =>
+              !element.locked && element.type === "text" && setIsEditing(true)
+            }
             className={cn(
-                "w-full h-full flex items-center select-none",
-                element.type === 'text' ? "cursor-text" : "cursor-default"
+              "w-full h-full flex items-center select-none",
+              element.type === "text" ? "cursor-text" : "cursor-default",
             )}
             style={{
               color: style.color || "#000000",
@@ -112,45 +111,54 @@ export const EditorElement = memo(function EditorElement({ element }: Props) {
               fontWeight: style.fontWeight || "normal",
               fontFamily: style.fontFamily || "Inter, sans-serif",
               textAlign: style.textAlign || "left",
-              justifyContent: style.textAlign === "left" ? "flex-start" : style.textAlign === "right" ? "flex-end" : "center",
+              justifyContent:
+                style.textAlign === "left"
+                  ? "flex-start"
+                  : style.textAlign === "right"
+                    ? "flex-end"
+                    : "center",
               lineHeight: style.lineHeight || 1.2,
               letterSpacing: `${style.letterSpacing || 0}px`,
               textShadow: style.shadow || "none",
               direction: style.direction || "ltr",
             }}
           >
-            {element.type === 'variable' ? (
-                <div className="flex items-center pointer-events-none">
-                    <span className="opacity-40" style={{ fontSize: '0.8em' }}>{'{ '}</span>
-                    <span>{element.variableKey}</span>
-                    <span className="opacity-40" style={{ fontSize: '0.8em' }}>{' }'}</span>
-                </div>
+            {element.type === "variable" ? (
+              <div className="flex items-center pointer-events-none">
+                <span className="opacity-40" style={{ fontSize: "0.8em" }}>
+                  {"{ "}
+                </span>
+                <span>{element.variableKey}</span>
+                <span className="opacity-40" style={{ fontSize: "0.8em" }}>
+                  {" }"}
+                </span>
+              </div>
             ) : (
-                element.content || "Double click to edit"
+              element.content || "Double click to edit"
             )}
           </div>
         );
       case "image":
         return (
           <div className="w-full h-full relative group/img transition-transform duration-500">
-             <img
+            <img
               src={element.content}
               alt=""
               className="w-full h-full object-contain pointer-events-none"
-              style={{ 
-                  opacity: element.opacity,
-                  filter: style.shadow ? `drop-shadow(${style.shadow})` : "none"
+              style={{
+                opacity: element.opacity,
+                filter: style.shadow ? `drop-shadow(${style.shadow})` : "none",
               }}
             />
           </div>
         );
       case "table":
         return (
-            <GradesTable 
-                isPlaceholder={true} 
-                className="w-full h-full" 
-                fontSize={style.fontSize || 10}
-            />
+          <GradesTable
+            isPlaceholder={true}
+            className="w-full h-full"
+            fontSize={style.fontSize || 10}
+          />
         );
       case "shape":
         return (
@@ -170,7 +178,9 @@ export const EditorElement = memo(function EditorElement({ element }: Props) {
             className="w-full h-full shadow-2xl relative overflow-hidden"
             style={{
               backgroundColor: style.backgroundColor || "#ffffff",
-              backgroundImage: element.content ? `url(${element.content})` : "none",
+              backgroundImage: element.content
+                ? `url(${element.content})`
+                : "none",
               backgroundSize: "cover",
               backgroundPosition: "center",
               borderRadius: `${style.borderRadius || 0}px`,
@@ -192,9 +202,11 @@ export const EditorElement = memo(function EditorElement({ element }: Props) {
       onMouseDown={handleMouseDown}
       className={cn(
         "absolute outline-none editor-element-container",
-        !element.locked && "hover:outline hover:outline-2 hover:outline-primary/40 hover:outline-offset-2",
-        isEditing && "outline outline-2 outline-primary outline-offset-4 bg-white/5 backdrop-blur-sm shadow-2xl z-[99999] rounded-sm",
-        element.locked && "opacity-60 cursor-not-allowed"
+        !element.locked &&
+          "hover:outline hover:outline-2 hover:outline-primary/40 hover:outline-offset-2",
+        isEditing &&
+          "outline outline-2 outline-primary outline-offset-4 bg-white/5 backdrop-blur-sm shadow-2xl z-[99999] rounded-sm",
+        element.locked && "opacity-60 cursor-not-allowed",
       )}
       style={{
         left: element.x,

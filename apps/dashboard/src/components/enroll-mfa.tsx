@@ -27,14 +27,11 @@ export function EnrollMFA() {
 
     if (!isValidating && factorId) {
       setValidating(true);
-
     }
   };
 
   useEffect(() => {
-    async function enroll() {
-
-    }
+    async function enroll() {}
 
     enroll();
   }, []);

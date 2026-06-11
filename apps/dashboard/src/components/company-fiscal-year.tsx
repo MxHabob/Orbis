@@ -1,8 +1,5 @@
 "use client";
 
-import { useCurrentAcademicYearQuery, useUpdateAcademicYearMutation } from "@/hooks/use-academic-year";
-import { useZodForm } from "@/hooks/use-zod-form";
-import { useI18n } from "@/locales/client";
 import {
   Card,
   CardContent,
@@ -18,9 +15,15 @@ import {
   FormItem,
   FormMessage,
 } from "@orbis/ui/form";
+import { Input } from "@orbis/ui/input";
 import { SubmitButton } from "@orbis/ui/submit-button";
 import { z } from "zod";
-import { Input } from "@orbis/ui/input";
+import {
+  useCurrentAcademicYearQuery,
+  useUpdateAcademicYearMutation,
+} from "@/hooks/use-academic-year";
+import { useZodForm } from "@/hooks/use-zod-form";
+import { useI18n } from "@/locales/client";
 
 const formSchema = z.object({
   yearName: z.string().min(1).max(20),
@@ -68,7 +71,10 @@ export function SchoolAcademicYear() {
               render={({ field }) => (
                 <FormItem className="max-w-[300px]">
                   <FormControl>
-                    <Input {...field} placeholder={t("settings.academic_year_placeholder")} />
+                    <Input
+                      {...field}
+                      placeholder={t("settings.academic_year_placeholder")}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -82,10 +88,14 @@ export function SchoolAcademicYear() {
                 render={({ field }) => (
                   <FormItem className="flex-1">
                     <FormControl>
-                      <Input 
-                        type="date" 
-                        {...field} 
-                        value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : field.value}
+                      <Input
+                        type="date"
+                        {...field}
+                        value={
+                          field.value instanceof Date
+                            ? field.value.toISOString().split("T")[0]
+                            : field.value
+                        }
                       />
                     </FormControl>
                     <FormMessage />
@@ -99,10 +109,14 @@ export function SchoolAcademicYear() {
                 render={({ field }) => (
                   <FormItem className="flex-1">
                     <FormControl>
-                      <Input 
-                        type="date" 
-                        {...field} 
-                        value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : (field.value ?? "")}
+                      <Input
+                        type="date"
+                        {...field}
+                        value={
+                          field.value instanceof Date
+                            ? field.value.toISOString().split("T")[0]
+                            : (field.value ?? "")
+                        }
                       />
                     </FormControl>
                     <FormMessage />
@@ -114,7 +128,9 @@ export function SchoolAcademicYear() {
 
           <CardFooter className="flex justify-end">
             <SubmitButton
-              disabled={updateAcademicYearMutation.isPending || !form.formState.isDirty}
+              disabled={
+                updateAcademicYearMutation.isPending || !form.formState.isDirty
+              }
               isSubmitting={updateAcademicYearMutation.isPending}
             >
               {t("common.save")}

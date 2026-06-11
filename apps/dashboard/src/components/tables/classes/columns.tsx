@@ -103,9 +103,7 @@ export const columns: ColumnDef<any>[] = [
             className="size-3 rounded-sm border"
             style={{ backgroundColor: row.original.color || "#e6e6e6" }}
           />
-          <span className="font-medium">
-            {row.getValue("name")}
-          </span>
+          <span className="font-medium">{row.getValue("name")}</span>
         </div>
       );
     },
@@ -114,7 +112,9 @@ export const columns: ColumnDef<any>[] = [
     header: "Division",
     accessorKey: "division",
     cell: ({ row }) => (
-      <span className="text-muted-foreground">{row.getValue("division") || "-"}</span>
+      <span className="text-muted-foreground">
+        {row.getValue("division") || "-"}
+      </span>
     ),
   },
   {
@@ -123,7 +123,9 @@ export const columns: ColumnDef<any>[] = [
     cell: ({ row }) => {
       const type = row.getValue("type") as string | null;
       return (
-        <span className="capitalize text-muted-foreground">{type?.replace(/_/g, ' ') || "-"}</span>
+        <span className="capitalize text-muted-foreground">
+          {type?.replace(/_/g, " ") || "-"}
+        </span>
       );
     },
   },
@@ -131,7 +133,9 @@ export const columns: ColumnDef<any>[] = [
     header: "Sort Order",
     accessorKey: "sortOrder",
     cell: ({ row }) => (
-       <span className="text-muted-foreground">{row.original.sortOrder ?? "0"}</span>
+      <span className="text-muted-foreground">
+        {row.original.sortOrder ?? "0"}
+      </span>
     ),
   },
   {
@@ -155,17 +159,21 @@ export const columns: ColumnDef<any>[] = [
               align="end"
               onClick={(e) => e.stopPropagation()}
             >
-              <DropdownMenuItem onClick={() => meta?.onEditClass?.(row.original.id)}>
+              <DropdownMenuItem
+                onClick={() => meta?.onEditClass?.(row.original.id)}
+              >
                 Edit
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => meta?.onImportStudents?.(row.original.id)}>
+              <DropdownMenuItem
+                onClick={() => meta?.onImportStudents?.(row.original.id)}
+              >
                 Import Students
               </DropdownMenuItem>
               <DropdownMenuItem
-                  className="text-destructive"
-                  onClick={() => meta?.deleteClass?.(row.original.id)}
-                >
-                  Delete
+                className="text-destructive"
+                onClick={() => meta?.deleteClass?.(row.original.id)}
+              >
+                Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

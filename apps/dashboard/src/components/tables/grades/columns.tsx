@@ -38,20 +38,14 @@ export type GradeTableMeta = {
   onGradeChange?: (
     studentId: string,
     assessmentItemId: number,
-    value: number | null
+    value: number | null,
   ) => void;
   onBulkFill?: (assessmentItemId: number, value: number) => void;
   onClearColumn?: (assessmentItemId: number) => void;
 };
 
 const StudentNameCell = memo(
-  ({
-    name,
-    image,
-  }: {
-    name: string | null;
-    image: string | null;
-  }) => {
+  ({ name, image }: { name: string | null; image: string | null }) => {
     const displayName = name ?? "-";
 
     return (
@@ -73,7 +67,7 @@ const StudentNameCell = memo(
         <span className="truncate">{displayName}</span>
       </div>
     );
-  }
+  },
 );
 
 StudentNameCell.displayName = "StudentNameCell";
@@ -83,7 +77,7 @@ const roundGrade = (value: number) => Math.round(value);
 export const createGradeColumns = (
   items: AssessmentItem[] = [],
   month?: number,
-  t?: any
+  t?: any,
 ): ColumnDef<GradeStudent>[] => {
   const isSummaryMode = month === 4 || month === 8;
   const summaryMonths = month === 4 ? [1, 2, 3] : [5, 6, 7];
@@ -106,10 +100,7 @@ export const createGradeColumns = (
           "w-[250px] min-w-[200px] md:sticky md:inset-inline-start-0 bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-20 !border-inline-end !border-border",
       },
       cell: ({ row }) => (
-        <StudentNameCell
-          name={row.original.name}
-          image={row.original.image}
-        />
+        <StudentNameCell name={row.original.name} image={row.original.image} />
       ),
     },
   ];
@@ -145,14 +136,15 @@ export const createGradeColumns = (
           .forEach((item) => {
             const score = table.options.meta?.getGradeValue?.(
               row.original.studentId,
-              item.id
+              item.id,
             );
             if (score) totalScore += parseFloat(score);
             totalMax += Number(item.maxScore);
           });
 
         // Scale to 20: (Score / Max) * 20
-        const scaled = totalMax > 0 ? roundGrade((totalScore / totalMax) * 20) : 0;
+        const scaled =
+          totalMax > 0 ? roundGrade((totalScore / totalMax) * 20) : 0;
         return (
           <span className="font-bold text-blue-600 dark:text-blue-400">
             {scaled}
@@ -170,9 +162,9 @@ export const createGradeColumns = (
         header: () => (
           <div className="flex flex-col items-center gap-0.5 px-2">
             <span className="font-bold text-xs md:text-sm tracking-tight whitespace-nowrap">
-              {month === 4 
-                ? (t?.("grades.midterm_exam") || "الاختبار النصفي")
-                : (t?.("grades.final_exam") || "الاختبار النهائي")}
+              {month === 4
+                ? t?.("grades.midterm_exam") || "الاختبار النصفي"
+                : t?.("grades.final_exam") || "الاختبار النهائي"}
             </span>
             <span className="text-[9px] uppercase text-muted-foreground font-medium">
               {t?.("grades.max") || "الحد الأقصى"}: 30
@@ -181,15 +173,16 @@ export const createGradeColumns = (
         ),
         size: 560,
         minSize: 250,
-        meta: { 
-          headerLabel: month === 4 ? "grades.midterm_exam" : "grades.final_exam", 
-          className: "text-center !border-inline-end !border-border" 
+        meta: {
+          headerLabel:
+            month === 4 ? "grades.midterm_exam" : "grades.final_exam",
+          className: "text-center !border-inline-end !border-border",
         },
         cell: ({ row, table }) => {
           const gradeValue =
             table.options.meta?.getGradeValue?.(
               row.original.studentId,
-              examItem.id
+              examItem.id,
             ) ?? null;
           return (
             <EditableGradeCell
@@ -223,7 +216,7 @@ export const createGradeColumns = (
             .forEach((item) => {
               const score = table.options.meta?.getGradeValue?.(
                 row.original.studentId,
-                item.id
+                item.id,
               );
               if (score) monthlyTotal += parseFloat(score);
               monthlyMax += Number(item.maxScore);
@@ -232,20 +225,21 @@ export const createGradeColumns = (
             monthlyMax > 0 ? roundGrade((monthlyTotal / monthlyMax) * 20) : 0;
 
           let examScore = 0;
-          let examMax = Number(examItem.maxScore);
+          const examMax = Number(examItem.maxScore);
           const score = table.options.meta?.getGradeValue?.(
             row.original.studentId,
-            examItem.id
+            examItem.id,
           );
           if (score) examScore = parseFloat(score);
-          const examScaled = examMax > 0 ? roundGrade((examScore / examMax) * 30) : 0;
+          const examScaled =
+            examMax > 0 ? roundGrade((examScore / examMax) * 30) : 0;
 
           const totalValue = roundGrade(monthlyScaled + examScaled);
           const totalMax = 50;
           const isPass = totalValue >= 25; // 50% of 50 is 25
 
           return (
-      <div className="flex items-center justify-center h-full">
+            <div className="flex items-center justify-center h-full">
               <span
                 className={`text-sm font-bold px-2 py-0.5 rounded-full ${
                   isPass
@@ -253,7 +247,9 @@ export const createGradeColumns = (
                     : "text-red-600 bg-red-50 dark:bg-red-950/20"
                 }`}
               >
-                {isPass ? (t?.("grades.pass") || "ناجح") : (t?.("grades.fail") || "راسب")}
+                {isPass
+                  ? t?.("grades.pass") || "ناجح"
+                  : t?.("grades.fail") || "راسب"}
               </span>
             </div>
           );
@@ -285,7 +281,7 @@ export const createGradeColumns = (
           .forEach((item) => {
             const score = table.options.meta?.getGradeValue?.(
               row.original.studentId,
-              item.id
+              item.id,
             );
             if (score) monthlyTotal += parseFloat(score);
             monthlyMax += Number(item.maxScore);
@@ -297,12 +293,13 @@ export const createGradeColumns = (
         if (examItem) {
           const score = table.options.meta?.getGradeValue?.(
             row.original.studentId,
-            examItem.id
+            examItem.id,
           );
           if (score) {
             const examScore = parseFloat(score);
             const examMax = Number(examItem.maxScore);
-            examScaled = examMax > 0 ? roundGrade((examScore / examMax) * 30) : 0;
+            examScaled =
+              examMax > 0 ? roundGrade((examScore / examMax) * 30) : 0;
           }
         }
         const result = roundGrade(monthlyScaled + examScaled);
@@ -340,7 +337,7 @@ export const createGradeColumns = (
           const gradeValue =
             table.options.meta?.getGradeValue?.(
               row.original.studentId,
-              item.id
+              item.id,
             ) ?? null;
           return (
             <EditableGradeCell
@@ -386,7 +383,7 @@ export const createGradeColumns = (
         items.forEach((item) => {
           const gradeValue = table.options.meta?.getGradeValue?.(
             row.original.studentId,
-            item.id
+            item.id,
           );
           if (gradeValue) total += parseFloat(gradeValue);
           maxTotal += Number(item.maxScore);

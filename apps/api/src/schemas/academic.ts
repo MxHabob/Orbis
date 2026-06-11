@@ -24,7 +24,9 @@ export const academicYearSchema = z.object({
 });
 
 export const createAcademicYearSchema = academicYearSchema.omit({ id: true });
-export const updateAcademicYearSchema = academicYearSchema.partial().required({ id: true });
+export const updateAcademicYearSchema = academicYearSchema
+  .partial()
+  .required({ id: true });
 
 export const academicTermSchema = z.object({
   id: z.number().openapi({
@@ -54,4 +56,6 @@ export const academicTermSchema = z.object({
 });
 
 export const createAcademicTermSchema = academicTermSchema.omit({ id: true });
-export const updateAcademicTermSchema = academicTermSchema.partial().required({ id: true });
+export const updateAcademicTermSchema = academicTermSchema
+  .partial()
+  .required({ id: true });

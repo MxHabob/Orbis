@@ -2,7 +2,11 @@ import {
   createSubjectSchema,
   updateSubjectSchema,
 } from "@api/schemas/subjects";
-import { createTRPCRouter, protectedProcedure, adminProcedure } from "@api/trpc/init";
+import {
+  adminProcedure,
+  createTRPCRouter,
+  protectedProcedure,
+} from "@api/trpc/init";
 import {
   createSubject,
   deleteSubject,

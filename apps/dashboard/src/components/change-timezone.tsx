@@ -1,7 +1,5 @@
 "use client";
 
-import { useUserMutation, useUserQuery } from "@/hooks/use-user";
-import { useI18n } from "@/locales/client";
 import { getTimezones } from "@orbis/location/timezones";
 import {
   Card,
@@ -14,6 +12,8 @@ import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
 import { Label } from "@orbis/ui/label";
 import { Switch } from "@orbis/ui/switch";
 import { useEffect, useState } from "react";
+import { useUserMutation, useUserQuery } from "@/hooks/use-user";
+import { useI18n } from "@/locales/client";
 
 export function ChangeTimezone() {
   const t = useI18n();

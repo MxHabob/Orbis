@@ -1,14 +1,17 @@
 import { db } from "@db/client";
 import { documents } from "@db/schema";
-import { eq, and, desc, sql, ilike } from "drizzle-orm";
+import { and, desc, eq, ilike, sql } from "drizzle-orm";
 
 export type CreateDocumentParams = typeof documents.$inferInsert;
 
-export const getD = async (userId: string, filter: { 
-  q?: string | null, 
-  offset?: number,
-  pageSize?: number
-}) => {
+export const getD = async (
+  userId: string,
+  filter: {
+    q?: string | null;
+    offset?: number;
+    pageSize?: number;
+  },
+) => {
   const { q, offset = 0, pageSize = 20 } = filter;
 
   const where = [eq(documents.userId, userId)];
@@ -40,7 +43,11 @@ export const deleteDocument = async (id: string, userId: string) => {
   return result;
 };
 
-export const updateDocument = async (id: string, userId: string, data: Partial<CreateDocumentParams>) => {
+export const updateDocument = async (
+  id: string,
+  userId: string,
+  data: Partial<CreateDocumentParams>,
+) => {
   const [result] = await db
     .update(documents)
     .set({ ...data, updatedAt: new Date() })

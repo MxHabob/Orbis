@@ -1,11 +1,11 @@
 "use client";
 
-import { useI18n } from "@/locales/client";
 import { Badge } from "@orbis/ui/badge";
 import { createColumnHelper } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { User, ArrowRight } from "lucide-react";
+import { ArrowRight, User } from "lucide-react";
 import React from "react";
+import type { useI18n } from "@/locales/client";
 import { ActionsMenu } from "./actions-menu";
 
 export interface PromotionHistory {
@@ -34,7 +34,7 @@ export const columns = (
   t: ReturnType<typeof useI18n>,
   onRollback: (studentIds: string[]) => void,
   onOverride: (history: PromotionHistory) => void,
-  isRollingBack?: boolean
+  isRollingBack?: boolean,
 ) => [
   columnHelper.accessor("studentName", {
     header: t("students.full_name"),
@@ -44,12 +44,14 @@ export const columns = (
           <User size={12} />
         </div>
         <div className="flex flex-col min-w-0">
-           <span className="text-[11px] font-medium truncate">{info.getValue()}</span>
-           {info.row.original.studentNumber && (
-             <span className="text-[9px] text-[#606060] font-mono leading-none mt-0.5">
-               {info.row.original.studentNumber}
-             </span>
-           )}
+          <span className="text-[11px] font-medium truncate">
+            {info.getValue()}
+          </span>
+          {info.row.original.studentNumber && (
+            <span className="text-[9px] text-[#606060] font-mono leading-none mt-0.5">
+              {info.row.original.studentNumber}
+            </span>
+          )}
         </div>
       </div>
     ),
@@ -57,7 +59,9 @@ export const columns = (
   columnHelper.accessor("fromClassName", {
     header: t("promotions.current_year"),
     cell: (info) => (
-      <div className="text-[10px] font-medium text-[#606060]">{info.getValue()}</div>
+      <div className="text-[10px] font-medium text-[#606060]">
+        {info.getValue()}
+      </div>
     ),
   }),
   columnHelper.accessor("toClassName", {
@@ -77,15 +81,50 @@ export const columns = (
       const status = info.getValue();
       switch (status) {
         case "promoted":
-          return <Badge variant="success" className="rounded-none text-[9px] px-1 h-4">{t("promotions.status_promoted")}</Badge>;
+          return (
+            <Badge
+              variant="success"
+              className="rounded-none text-[9px] px-1 h-4"
+            >
+              {t("promotions.status_promoted")}
+            </Badge>
+          );
         case "retained":
-          return <Badge variant="destructive" className="rounded-none bg-red-500/10 text-red-500 hover:bg-red-500/20 text-[9px] px-1 h-4">{t("promotions.status_retained")}</Badge>;
+          return (
+            <Badge
+              variant="destructive"
+              className="rounded-none bg-red-500/10 text-red-500 hover:bg-red-500/20 text-[9px] px-1 h-4"
+            >
+              {t("promotions.status_retained")}
+            </Badge>
+          );
         case "graduated":
-          return <Badge variant="secondary" className="rounded-none bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 text-[9px] px-1 h-4">{t("promotions.status_graduated")}</Badge>;
+          return (
+            <Badge
+              variant="secondary"
+              className="rounded-none bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 text-[9px] px-1 h-4"
+            >
+              {t("promotions.status_graduated")}
+            </Badge>
+          );
         case "conditional":
-          return <Badge variant="outline" className="rounded-none text-[9px] px-1 h-4">{t("promotions.status_conditional")}</Badge>;
+          return (
+            <Badge
+              variant="outline"
+              className="rounded-none text-[9px] px-1 h-4"
+            >
+              {t("promotions.status_conditional")}
+            </Badge>
+          );
         default:
-          return <Badge variant="outline" className="rounded-none text-[9px] px-1 h-4 uppercase">{status}</Badge>;
+          return (
+            <Badge
+              variant="outline"
+              className="rounded-none text-[9px] px-1 h-4 uppercase"
+            >
+              {status}
+            </Badge>
+          );
       }
     },
   }),

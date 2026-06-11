@@ -1,12 +1,5 @@
 "use client";
 
-import { LessonForm } from "@/components/forms/lesson-form";
-import { useLessonParams } from "@/hooks/use-lesson-params";
-import { useTRPC } from "@/trpc/client";
-import { ScrollArea } from "@orbis/ui/scroll-area";
-import { Sheet, SheetContent, SheetHeader } from "@orbis/ui/sheet";
-import { useQuery } from "@tanstack/react-query";
-import React from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,7 +18,13 @@ import {
   DropdownMenuTrigger,
 } from "@orbis/ui/dropdown-menu";
 import { Icons } from "@orbis/ui/icons";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { ScrollArea } from "@orbis/ui/scroll-area";
+import { Sheet, SheetContent, SheetHeader } from "@orbis/ui/sheet";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import React from "react";
+import { LessonForm } from "@/components/forms/lesson-form";
+import { useLessonParams } from "@/hooks/use-lesson-params";
+import { useTRPC } from "@/trpc/client";
 
 export function LessonEditSheet() {
   const { setParams, update, lessonId } = useLessonParams();
@@ -39,18 +38,22 @@ export function LessonEditSheet() {
       { id: lessonId! },
       {
         enabled: isOpen,
-      }
-    )
+      },
+    ),
   );
 
   const deleteMutation = useMutation(
     trpc.lessons.delete.mutationOptions({
       onSuccess: () => {
         setParams({ lessonId: null, update: null });
-        queryClient.invalidateQueries({ queryKey: trpc.lessons.getClassSchedule.queryKey() });
-        queryClient.invalidateQueries({ queryKey: trpc.lessons.getTeacherSchedule.queryKey() });
+        queryClient.invalidateQueries({
+          queryKey: trpc.lessons.getClassSchedule.queryKey(),
+        });
+        queryClient.invalidateQueries({
+          queryKey: trpc.lessons.getTeacherSchedule.queryKey(),
+        });
       },
-    })
+    }),
   );
 
   return (
@@ -88,7 +91,8 @@ export function LessonEditSheet() {
         <AlertDialogHeader>
           <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete this lesson from the schedule.
+            This action cannot be undone. This will permanently delete this
+            lesson from the schedule.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

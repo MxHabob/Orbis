@@ -35,13 +35,28 @@ export const withPrimaryReadAfterWrite = async <TReturn>(opts: {
     return result;
   }
 
-    // For mutations, always use primary DB and update the team's timestamp
-    if (type === "mutation") {
-      const userId = ctx.session?.user.id;
-      if (userId) {
-        await replicationCache.set(userId);
-      }
+  // For mutations, always use primary DB and update the team's timestamp
+  if (type === "mutation") {
+    const userId = ctx.session?.user.id;
+    if (userId) {
+      await replicationCache.set(userId);
+    }
 
+    // Use primary-only mode to maintain interface consistency
+    const dbWithPrimary = ctx.db as DatabaseWithPrimary;
+    if (dbWithPrimary.usePrimaryOnly) {
+      ctx.db = dbWithPrimary.usePrimaryOnly();
+    }
+    // If usePrimaryOnly doesn't exist, we're already using the primary DB
+  }
+  // For queries, check if the team recently performed a mutation
+  else {
+    const userId = ctx.session?.user.id;
+    const timestamp = userId ? await replicationCache.get(userId) : undefined;
+    const now = Date.now();
+
+    // If the timestamp exists and hasn't expired, use primary DB
+    if (timestamp && now < timestamp) {
       // Use primary-only mode to maintain interface consistency
       const dbWithPrimary = ctx.db as DatabaseWithPrimary;
       if (dbWithPrimary.usePrimaryOnly) {
@@ -49,29 +64,14 @@ export const withPrimaryReadAfterWrite = async <TReturn>(opts: {
       }
       // If usePrimaryOnly doesn't exist, we're already using the primary DB
     }
-    // For queries, check if the team recently performed a mutation
-    else {
-      const userId = ctx.session?.user.id;
-      const timestamp = userId ? await replicationCache.get(userId) : undefined;
-      const now = Date.now();
+  }
 
-      // If the timestamp exists and hasn't expired, use primary DB
-      if (timestamp && now < timestamp) {
-        // Use primary-only mode to maintain interface consistency
-        const dbWithPrimary = ctx.db as DatabaseWithPrimary;
-        if (dbWithPrimary.usePrimaryOnly) {
-          ctx.db = dbWithPrimary.usePrimaryOnly();
-        }
-        // If usePrimaryOnly doesn't exist, we're already using the primary DB
-      }
-    }
-
-    // When no team ID is present, always use primary DB
-    const dbWithPrimary = ctx.db as DatabaseWithPrimary;
-    if (dbWithPrimary.usePrimaryOnly) {
-      ctx.db = dbWithPrimary.usePrimaryOnly();
-    }
-      // If usePrimaryOnly doesn't exist, we're already using the primary DB
+  // When no team ID is present, always use primary DB
+  const dbWithPrimary = ctx.db as DatabaseWithPrimary;
+  if (dbWithPrimary.usePrimaryOnly) {
+    ctx.db = dbWithPrimary.usePrimaryOnly();
+  }
+  // If usePrimaryOnly doesn't exist, we're already using the primary DB
 
   const result = await next({ ctx });
 

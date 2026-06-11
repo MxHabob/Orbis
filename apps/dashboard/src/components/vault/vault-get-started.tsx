@@ -11,7 +11,9 @@ export function VaultGetStarted() {
       <div className="relative z-20 m-auto flex w-full max-w-[380px] flex-col">
         <div className="flex w-full flex-col relative text-center">
           <div className="pb-4">
-            <h2 className="font-medium text-lg">{t("vault.get_started_title")}</h2>
+            <h2 className="font-medium text-lg">
+              {t("vault.get_started_title")}
+            </h2>
           </div>
 
           <p className="pb-6 text-sm text-[#878787]">

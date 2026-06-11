@@ -2,7 +2,7 @@
 
 import { cn } from "@orbis/ui/cn";
 import { TableCell, TableRow } from "@orbis/ui/table";
-import { type Row, flexRender } from "@tanstack/react-table";
+import { flexRender, type Row } from "@tanstack/react-table";
 import type { Customer } from "./columns";
 
 type Props = {

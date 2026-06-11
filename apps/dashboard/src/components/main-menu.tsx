@@ -265,7 +265,6 @@ export function MainMenu({ onSelectAction, isExpanded = false }: Props) {
     pathnameWithoutQuery.startsWith(knownPath),
   );
 
-
   // Reset expanded item when sidebar expands/collapses
   useEffect(() => {
     setExpandedItem(null);

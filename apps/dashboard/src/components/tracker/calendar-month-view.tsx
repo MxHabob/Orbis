@@ -1,6 +1,6 @@
-import type { CalendarEvent } from "@/actions/get-calendar-events-action";
 import type { TZDate } from "@date-fns/tz";
 import { format } from "date-fns";
+import type { CalendarEvent } from "@/actions/get-calendar-events-action";
 import { CalendarDay } from "./calendar-day";
 
 type CalendarGridProps = {

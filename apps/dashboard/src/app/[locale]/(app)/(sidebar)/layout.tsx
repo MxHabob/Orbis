@@ -1,21 +1,17 @@
+import { auth } from "@orbis/auth";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { ExportStatus } from "@/components/export-status";
 import { Header } from "@/components/header";
 import { GlobalSheetsProvider } from "@/components/sheets/global-sheets-provider";
 import { Sidebar } from "@/components/sidebar";
-import {
-  HydrateClient,
-  trpc,
-} from "@/trpc/server";
-import { auth } from "@orbis/auth"
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
+import { HydrateClient, trpc } from "@/trpc/server";
 
 export default async function Layout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -27,7 +23,6 @@ export default async function Layout({
   if (!session.user.name) {
     redirect("/setup");
   }
-
 
   const headersList = await headers();
   const pathname = headersList.get("x-pathname") || "";

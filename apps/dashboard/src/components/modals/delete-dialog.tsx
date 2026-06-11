@@ -1,6 +1,5 @@
 "use client";
 
-import { useI18n } from "@/locales/client";
 import { Alert, AlertDescription, AlertTitle } from "@orbis/ui/alert";
 import {
   AlertDialog,
@@ -15,6 +14,7 @@ import {
 import { Button } from "@orbis/ui/button";
 import { AlertCircle, AlertTriangle, Loader2, Trash2 } from "lucide-react";
 import React from "react";
+import { useI18n } from "@/locales/client";
 
 interface DeleteDialogProps {
   open: boolean;
@@ -51,19 +51,19 @@ export function DeleteDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-          <Alert className="bg-amber-500/20 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800 border-dashed">
-            <AlertCircle className="h-4 w-4 text-amber-500" />
-            <div className="flex items-center justify-between w-full">
-              <div>
-                <AlertTitle className="text-amber-800 dark:text-amber-400">
-                   {t("common.destructive_action")}
-                </AlertTitle>
-                <AlertDescription className="text-amber-700 dark:text-amber-500">
-                  {t("common.irreversible_action")}
-                </AlertDescription>
-              </div>
+        <Alert className="bg-amber-500/20 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800 border-dashed">
+          <AlertCircle className="h-4 w-4 text-amber-500" />
+          <div className="flex items-center justify-between w-full">
+            <div>
+              <AlertTitle className="text-amber-800 dark:text-amber-400">
+                {t("common.destructive_action")}
+              </AlertTitle>
+              <AlertDescription className="text-amber-700 dark:text-amber-500">
+                {t("common.irreversible_action")}
+              </AlertDescription>
             </div>
-          </Alert>
+          </div>
+        </Alert>
 
         <AlertDialogFooter className="gap-2">
           <AlertDialogCancel asChild>

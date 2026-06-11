@@ -34,36 +34,53 @@ const baseImportSchema = z.object({
 /**
  * Schema for Importing Students
  */
-export const studentImportSchema = baseImportSchema.extend({
-  type: z.literal("students").default("students"),
-  studentNumber: z.string().optional(),
-  autoGenerateStudentNumber: z.boolean().default(false),
-  name: z.string({ required_error: "Name mapping is required" }).optional(),
-  phone: z.string().optional(),
-  email: z.string().optional(),
-  sex: z.string().optional(),
-  fatherName: z.string().optional(),
-  fatherPhone: z.string().optional(),
-  motherName: z.string().optional(),
-  motherPhone: z.string().optional(),
-  metadataMappings: z.array(z.object({
-    key: z.string().min(1, "Key is required"),
-    column: z.string().min(1, "Column is required")
-  })).optional().default([]).refine((mappings) => {
-    const keys = mappings.map(m => m.key.toLowerCase().trim());
-    return new Set(keys).size === keys.length;
-  }, {
-    message: "Metadata keys must be unique"
-  }),
-}).refine((data) => {
-  if (!data.autoGenerateStudentNumber && !data.studentNumber) return false;
-  return !!data.name;
-}, (data) => {
-  if (!data.autoGenerateStudentNumber && !data.studentNumber) {
-    return { message: "Student Number mapping is required", path: ["studentNumber"] };
-  }
-  return { message: "Name mapping is required", path: ["name"] };
-});
+export const studentImportSchema = baseImportSchema
+  .extend({
+    type: z.literal("students").default("students"),
+    studentNumber: z.string().optional(),
+    autoGenerateStudentNumber: z.boolean().default(false),
+    name: z.string({ required_error: "Name mapping is required" }).optional(),
+    phone: z.string().optional(),
+    email: z.string().optional(),
+    sex: z.string().optional(),
+    fatherName: z.string().optional(),
+    fatherPhone: z.string().optional(),
+    motherName: z.string().optional(),
+    motherPhone: z.string().optional(),
+    metadataMappings: z
+      .array(
+        z.object({
+          key: z.string().min(1, "Key is required"),
+          column: z.string().min(1, "Column is required"),
+        }),
+      )
+      .optional()
+      .default([])
+      .refine(
+        (mappings) => {
+          const keys = mappings.map((m) => m.key.toLowerCase().trim());
+          return new Set(keys).size === keys.length;
+        },
+        {
+          message: "Metadata keys must be unique",
+        },
+      ),
+  })
+  .refine(
+    (data) => {
+      if (!data.autoGenerateStudentNumber && !data.studentNumber) return false;
+      return !!data.name;
+    },
+    (data) => {
+      if (!data.autoGenerateStudentNumber && !data.studentNumber) {
+        return {
+          message: "Student Number mapping is required",
+          path: ["studentNumber"],
+        };
+      }
+      return { message: "Name mapping is required", path: ["name"] };
+    },
+  );
 
 export const gradeImportSchema = baseImportSchema.extend({
   type: z.literal("grades").default("grades"),
@@ -72,7 +89,9 @@ export const gradeImportSchema = baseImportSchema.extend({
   assessmentItemId: z.number().optional(),
   month: z.number({ required_error: "Month is required" }).optional(),
   // Identifier field
-  identifierType: z.enum(["studentNumber", "secretNumber"]).default("studentNumber"),
+  identifierType: z
+    .enum(["studentNumber", "secretNumber"])
+    .default("studentNumber"),
   studentNumber: z.string({ required_error: "Identifier mapping is required" }),
   score: z.string().optional(),
   isAbsent: z.string().optional(),
@@ -82,10 +101,7 @@ export const gradeImportSchema = baseImportSchema.extend({
 /**
  * Discriminated union for type-safe handling of all import types
  */
-export const importSchema = z.union([
-  studentImportSchema,
-  gradeImportSchema,
-]);
+export const importSchema = z.union([studentImportSchema, gradeImportSchema]);
 
 export type StudentImportFormData = z.infer<typeof studentImportSchema>;
 export type GradeImportFormData = z.infer<typeof gradeImportSchema>;

@@ -1,14 +1,14 @@
 "use client";
 
-import { useUserQuery } from "@/hooks/use-user";
-import { secondsToHoursAndMinutes } from "@/utils/format";
-import { createSafeDate, formatHour, getSlotFromDate } from "@/utils/tracker";
-import type { CalendarEvent } from "@/actions/get-calendar-events-action";
 // import type { RouterOutputs } from "@api/trpc/routers/_app";
 import { TZDate } from "@date-fns/tz";
 import { cn } from "@orbis/ui/cn";
 import { format } from "date-fns";
 import { memo, useEffect, useMemo, useState } from "react";
+import type { CalendarEvent } from "@/actions/get-calendar-events-action";
+import { useUserQuery } from "@/hooks/use-user";
+import { secondsToHoursAndMinutes } from "@/utils/format";
+import { createSafeDate, formatHour, getSlotFromDate } from "@/utils/tracker";
 
 type CalendarWeekViewProps = {
   weekDays: TZDate[];
@@ -306,7 +306,7 @@ const DayEntries = memo(
       });
 
       // Check previous day for entries that continue into current day
-      const userTimezone =  "UTC";
+      const userTimezone = "UTC";
 
       // Simple previous day calculation using the date string directly
       const parts = currentDayStr.split("-").map(Number);
@@ -543,7 +543,6 @@ export const CalendarWeekView = memo(
     handleMouseUp,
     onEventClick,
   }: CalendarWeekViewProps) => {
-    
     const is24Hour = 24;
 
     // State to force re-render for running timers

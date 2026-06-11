@@ -1,7 +1,13 @@
 "use client";
 
-import { useI18n } from "@/locales/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@orbis/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@orbis/ui/card";
+import { cn } from "@orbis/ui/cn";
 import { Skeleton } from "@orbis/ui/skeleton";
 import {
   Table,
@@ -11,8 +17,8 @@ import {
   TableHeader,
   TableRow,
 } from "@orbis/ui/table";
-import { Users, TrendingUp, Award, GraduationCap } from "lucide-react";
-import { cn } from "@orbis/ui/cn";
+import { Award, GraduationCap, TrendingUp, Users } from "lucide-react";
+import { useI18n } from "@/locales/client";
 
 interface PromotionStatisticsData {
   total: number;
@@ -38,7 +44,10 @@ interface PromotionsStatisticsProps {
   isLoading: boolean;
 }
 
-export function PromotionsStatistics({ data, isLoading }: PromotionsStatisticsProps) {
+export function PromotionsStatistics({
+  data,
+  isLoading,
+}: PromotionsStatisticsProps) {
   const t = useI18n();
 
   if (isLoading || !data) {
@@ -76,7 +85,6 @@ export function PromotionsStatistics({ data, isLoading }: PromotionsStatisticsPr
     );
   }
 
-
   const kpis = [
     {
       title: "إجمالي الترفيعات",
@@ -104,13 +112,22 @@ export function PromotionsStatistics({ data, isLoading }: PromotionsStatisticsPr
     <div className="flex flex-col gap-6 w-full">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map((kpi, i) => (
-          <Card key={i} className="rounded-none border-border shadow-none bg-background">
+          <Card
+            key={i}
+            className="rounded-none border-border shadow-none bg-background"
+          >
             <CardHeader className="p-4 pb-1">
-              <span className="text-[10px] uppercase tracking-wider text-[#606060] font-bold">{kpi.title}</span>
+              <span className="text-[10px] uppercase tracking-wider text-[#606060] font-bold">
+                {kpi.title}
+              </span>
             </CardHeader>
             <CardContent className="p-4 pt-0">
-              <div className="text-2xl font-bold font-mono tracking-tight">{kpi.value}</div>
-              <div className="text-[10px] text-[#606060] mt-1">{kpi.description}</div>
+              <div className="text-2xl font-bold font-mono tracking-tight">
+                {kpi.value}
+              </div>
+              <div className="text-[10px] text-[#606060] mt-1">
+                {kpi.description}
+              </div>
             </CardContent>
           </Card>
         ))}
@@ -119,33 +136,58 @@ export function PromotionsStatistics({ data, isLoading }: PromotionsStatisticsPr
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Status Breakdown Table */}
         <Card className="col-span-1 lg:col-span-3 rounded-none border-border shadow-none">
-           <CardHeader className="p-4 border-b">
-             <CardTitle className="text-sm font-bold uppercase tracking-tight">تفاصيل الصفوف</CardTitle>
-           </CardHeader>
-           <CardContent className="p-0">
-             <Table>
-               <TableHeader>
-                 <TableRow className="hover:bg-transparent bg-muted/30">
-                   <TableHead className="text-xs uppercase font-bold tracking-tight">الصف</TableHead>
-                   <TableHead className="text-center text-xs uppercase font-bold tracking-tight">الإجمالي</TableHead>
-                   <TableHead className="text-center text-xs uppercase font-bold tracking-tight">ترفيع</TableHead>
-                   <TableHead className="text-center text-xs uppercase font-bold tracking-tight">إعادة</TableHead>
-                   <TableHead className="text-center text-xs uppercase font-bold tracking-tight">خريجين</TableHead>
-                 </TableRow>
-               </TableHeader>
-               <TableBody>
-                 {data.classBreakdown.map((c, i) => (
-                   <TableRow key={i} className="hover:bg-muted/30 transition-colors h-10 border-b">
-                     <TableCell className="font-medium text-[11px]">{c.className}</TableCell>
-                     <TableCell className="text-center text-[11px] font-mono">{c.total}</TableCell>
-                     <TableCell className="text-center text-[11px] font-mono text-emerald-600">{c.promoted}</TableCell>
-                     <TableCell className="text-center text-[11px] font-mono text-rose-600">{c.retained}</TableCell>
-                     <TableCell className="text-center text-[11px] font-mono text-blue-600">{c.graduated}</TableCell>
-                   </TableRow>
-                 ))}
-               </TableBody>
-             </Table>
-           </CardContent>
+          <CardHeader className="p-4 border-b">
+            <CardTitle className="text-sm font-bold uppercase tracking-tight">
+              تفاصيل الصفوف
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent bg-muted/30">
+                  <TableHead className="text-xs uppercase font-bold tracking-tight">
+                    الصف
+                  </TableHead>
+                  <TableHead className="text-center text-xs uppercase font-bold tracking-tight">
+                    الإجمالي
+                  </TableHead>
+                  <TableHead className="text-center text-xs uppercase font-bold tracking-tight">
+                    ترفيع
+                  </TableHead>
+                  <TableHead className="text-center text-xs uppercase font-bold tracking-tight">
+                    إعادة
+                  </TableHead>
+                  <TableHead className="text-center text-xs uppercase font-bold tracking-tight">
+                    خريجين
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.classBreakdown.map((c, i) => (
+                  <TableRow
+                    key={i}
+                    className="hover:bg-muted/30 transition-colors h-10 border-b"
+                  >
+                    <TableCell className="font-medium text-[11px]">
+                      {c.className}
+                    </TableCell>
+                    <TableCell className="text-center text-[11px] font-mono">
+                      {c.total}
+                    </TableCell>
+                    <TableCell className="text-center text-[11px] font-mono text-emerald-600">
+                      {c.promoted}
+                    </TableCell>
+                    <TableCell className="text-center text-[11px] font-mono text-rose-600">
+                      {c.retained}
+                    </TableCell>
+                    <TableCell className="text-center text-[11px] font-mono text-blue-600">
+                      {c.graduated}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
         </Card>
       </div>
     </div>

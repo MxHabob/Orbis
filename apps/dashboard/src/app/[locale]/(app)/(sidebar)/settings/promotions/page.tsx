@@ -1,7 +1,7 @@
-import { Suspense } from "react";
 import type { Metadata } from "next";
-import { trpc, HydrateClient, getQueryClient } from "@/trpc/server";
+import { Suspense } from "react";
 import { PromotionsClient } from "@/components/promotions/promotions-client";
+import { getQueryClient, HydrateClient, trpc } from "@/trpc/server";
 
 export const metadata: Metadata = {
   title: "Promotions | Orbis",
@@ -16,7 +16,7 @@ export default async function PromotionsPage() {
   ]);
 
   const classesResponse = await queryClient.fetchQuery(
-    trpc.classes.getAll.queryOptions({ academicYearId: currentYear?.id })
+    trpc.classes.getAll.queryOptions({ academicYearId: currentYear?.id }),
   );
 
   const initialData = {
@@ -30,11 +30,15 @@ export default async function PromotionsPage() {
 
   return (
     <HydrateClient>
-      <div className="flex flex-col gap-4"> 
-        <Suspense fallback={<div className="h-[500px] w-full bg-muted/20 animate-pulse rounded-lg" />}>
-          <PromotionsClient 
-            initialData={initialData} 
-            currentYearId={currentYear?.id} 
+      <div className="flex flex-col gap-4">
+        <Suspense
+          fallback={
+            <div className="h-[500px] w-full bg-muted/20 animate-pulse rounded-lg" />
+          }
+        >
+          <PromotionsClient
+            initialData={initialData}
+            currentYearId={currentYear?.id}
           />
         </Suspense>
       </div>

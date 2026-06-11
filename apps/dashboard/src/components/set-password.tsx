@@ -1,8 +1,6 @@
 "use client";
 
-import { useZodForm } from "@/hooks/use-zod-form";
 import { authClient } from "@orbis/auth/auth-client";
-import { useI18n } from "@/locales/client";
 import {
   Card,
   CardContent,
@@ -21,24 +19,28 @@ import {
 import { Input } from "@orbis/ui/input";
 import { SubmitButton } from "@orbis/ui/submit-button";
 import { useToast } from "@orbis/ui/use-toast";
-import { z } from "zod/v3";
-import { useSearchParams } from "next/navigation";
-import { useTRPC } from "@/trpc/client";
 import { useMutation } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
+import { z } from "zod/v3";
+import { useZodForm } from "@/hooks/use-zod-form";
+import { useI18n } from "@/locales/client";
+import { useTRPC } from "@/trpc/client";
 
-const formSchema = z.object({
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  confirmPassword: z.string().min(8, "Please confirm your password"),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
-});
+const formSchema = z
+  .object({
+    password: z.string().min(8, "Password must be at least 8 characters"),
+    confirmPassword: z.string().min(8, "Please confirm your password"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
 
 export function SetPassword() {
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const isSetup = searchParams.get("setup") === "true";
-  
+
   const form = useZodForm(formSchema, {
     defaultValues: {
       password: "",
@@ -52,7 +54,8 @@ export function SetPassword() {
       onSuccess: () => {
         toast({
           title: "Success",
-          description: "Password set successfully. Your account is now fully active.",
+          description:
+            "Password set successfully. Your account is now fully active.",
         });
         // Clear setup param if present
         if (isSetup) {
@@ -79,11 +82,15 @@ export function SetPassword() {
   return (
     <Form {...form}>
       <form onSubmit={onSubmit}>
-        <Card className={isSetup ? "border-primary border-2 animate-pulse" : ""}>
+        <Card
+          className={isSetup ? "border-primary border-2 animate-pulse" : ""}
+        >
           <CardHeader>
-            <CardTitle>{isSetup ? "Complete Your Account Setup" : "Change Password"}</CardTitle>
+            <CardTitle>
+              {isSetup ? "Complete Your Account Setup" : "Change Password"}
+            </CardTitle>
             <CardDescription>
-              {isSetup 
+              {isSetup
                 ? "Please set a password for your account to finish the setup process."
                 : "Enter a new password below."}
             </CardDescription>
@@ -131,7 +138,9 @@ export function SetPassword() {
           </CardContent>
 
           <CardFooter className="flex justify-between">
-            <div className="text-xs text-muted-foreground">Minimum 8 characters</div>
+            <div className="text-xs text-muted-foreground">
+              Minimum 8 characters
+            </div>
             <SubmitButton
               type="submit"
               disabled={updatePasswordMutation.isPending}

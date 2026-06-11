@@ -1,8 +1,5 @@
 "use client";
 
-import { useLessonParams } from "@/hooks/use-lesson-params";
-import { useZodForm } from "@/hooks/use-zod-form";
-import { useTRPC } from "@/trpc/client";
 import {
   Form,
   FormControl,
@@ -21,11 +18,14 @@ import {
   SelectValue,
 } from "@orbis/ui/select";
 import { SubmitButton } from "@orbis/ui/submit-button";
-import { Textarea } from "@orbis/ui/textarea";
 import { Switch } from "@orbis/ui/switch";
+import { Textarea } from "@orbis/ui/textarea";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { z } from "zod/v3";
+import { useLessonParams } from "@/hooks/use-lesson-params";
+import { useZodForm } from "@/hooks/use-zod-form";
+import { useTRPC } from "@/trpc/client";
 
 const daysOfWeek = [
   { value: 0, label: "Sunday" },
@@ -66,33 +66,48 @@ export function LessonForm({ data }: Props) {
   const { data: classes } = useQuery(trpc.classes.getAll.queryOptions({}));
   const { data: subjects } = useQuery(trpc.subjects.getAll.queryOptions());
   const { data: teachers } = useQuery(trpc.user.getStaff.queryOptions());
-  const { data: academicYears } = useQuery(trpc.academic.getYears.queryOptions());
+  const { data: academicYears } = useQuery(
+    trpc.academic.getYears.queryOptions(),
+  );
   // For time slots, we need an academicYearId. We'll use the current one or from form state.
   const { data: timeSlots } = useQuery(
     trpc.lessons.getTimeSlots.queryOptions(
-      { yearId: data?.academicYearId || academicYears?.find(y => y.isCurrent)?.id || 0 },
-      { enabled: !!academicYears }
-    )
+      {
+        yearId:
+          data?.academicYearId ||
+          academicYears?.find((y) => y.isCurrent)?.id ||
+          0,
+      },
+      { enabled: !!academicYears },
+    ),
   );
 
   const createMutation = useMutation(
     trpc.lessons.create.mutationOptions({
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: trpc.lessons.getClassSchedule.queryKey() });
-        queryClient.invalidateQueries({ queryKey: trpc.lessons.getTeacherSchedule.queryKey() });
+        queryClient.invalidateQueries({
+          queryKey: trpc.lessons.getClassSchedule.queryKey(),
+        });
+        queryClient.invalidateQueries({
+          queryKey: trpc.lessons.getTeacherSchedule.queryKey(),
+        });
         setParams({ create: null });
       },
-    })
+    }),
   );
 
   const updateMutation = useMutation(
     trpc.lessons.update.mutationOptions({
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: trpc.lessons.getClassSchedule.queryKey() });
-        queryClient.invalidateQueries({ queryKey: trpc.lessons.getTeacherSchedule.queryKey() });
+        queryClient.invalidateQueries({
+          queryKey: trpc.lessons.getClassSchedule.queryKey(),
+        });
+        queryClient.invalidateQueries({
+          queryKey: trpc.lessons.getTeacherSchedule.queryKey(),
+        });
         setParams({ update: null, lessonId: null });
       },
-    })
+    }),
   );
 
   const defaultValues: Partial<LessonFormValues> = {
@@ -102,7 +117,8 @@ export function LessonForm({ data }: Props) {
     teacherId: data?.teacherId,
     timeSlotId: data?.timeSlotId,
     dayOfWeek: data?.dayOfWeek ?? 0,
-    academicYearId: data?.academicYearId || academicYears?.find(y => y.isCurrent)?.id,
+    academicYearId:
+      data?.academicYearId || academicYears?.find((y) => y.isCurrent)?.id,
     academicTermId: data?.academicTermId,
     roomId: data?.roomId,
     isActive: data?.isActive ?? true,
@@ -144,8 +160,8 @@ export function LessonForm({ data }: Props) {
                   <FormLabel className="text-xs text-[#878787] font-normal">
                     Class
                   </FormLabel>
-                  <Select 
-                    onValueChange={(val) => field.onChange(Number(val))} 
+                  <Select
+                    onValueChange={(val) => field.onChange(Number(val))}
                     value={field.value?.toString()}
                   >
                     <FormControl>
@@ -174,8 +190,8 @@ export function LessonForm({ data }: Props) {
                   <FormLabel className="text-xs text-[#878787] font-normal">
                     Subject
                   </FormLabel>
-                  <Select 
-                    onValueChange={(val) => field.onChange(Number(val))} 
+                  <Select
+                    onValueChange={(val) => field.onChange(Number(val))}
                     value={field.value?.toString()}
                   >
                     <FormControl>
@@ -205,10 +221,7 @@ export function LessonForm({ data }: Props) {
                 <FormLabel className="text-xs text-[#878787] font-normal">
                   Teacher
                 </FormLabel>
-                <Select 
-                  onValueChange={field.onChange} 
-                  value={field.value}
-                >
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select teacher" />
@@ -236,8 +249,8 @@ export function LessonForm({ data }: Props) {
                   <FormLabel className="text-xs text-[#878787] font-normal">
                     Day
                   </FormLabel>
-                  <Select 
-                    onValueChange={(val) => field.onChange(Number(val))} 
+                  <Select
+                    onValueChange={(val) => field.onChange(Number(val))}
                     value={field.value?.toString()}
                   >
                     <FormControl>
@@ -247,7 +260,10 @@ export function LessonForm({ data }: Props) {
                     </FormControl>
                     <SelectContent>
                       {daysOfWeek.map((day) => (
-                        <SelectItem key={day.value} value={day.value.toString()}>
+                        <SelectItem
+                          key={day.value}
+                          value={day.value.toString()}
+                        >
                           {day.label}
                         </SelectItem>
                       ))}
@@ -266,8 +282,8 @@ export function LessonForm({ data }: Props) {
                   <FormLabel className="text-xs text-[#878787] font-normal">
                     Period / Time Slot
                   </FormLabel>
-                  <Select 
-                    onValueChange={(val) => field.onChange(Number(val))} 
+                  <Select
+                    onValueChange={(val) => field.onChange(Number(val))}
                     value={field.value?.toString()}
                   >
                     <FormControl>
@@ -298,9 +314,9 @@ export function LessonForm({ data }: Props) {
                   Notes
                 </FormLabel>
                 <FormControl>
-                  <Textarea 
-                    {...field} 
-                    value={field.value ?? ""} 
+                  <Textarea
+                    {...field}
+                    value={field.value ?? ""}
                     placeholder="Extra instructions or information..."
                     className="min-h-[100px]"
                   />

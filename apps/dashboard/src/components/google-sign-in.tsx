@@ -1,12 +1,12 @@
 "use client";
 
-import { getUrl } from "@/utils/environment";
-import { isDesktopApp } from "@orbis/desktop-client/platform";
 import { authClient } from "@orbis/auth/auth-client";
+import { isDesktopApp } from "@orbis/desktop-client/platform";
 import { Icons } from "@orbis/ui/icons";
 import { SubmitButton } from "@orbis/ui/submit-button";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { getUrl } from "@/utils/environment";
 
 type Props = {
   showLastUsed?: boolean;

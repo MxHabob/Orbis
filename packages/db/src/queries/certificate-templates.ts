@@ -1,20 +1,23 @@
 import { db } from "@db/client";
 import { certificateTemplates } from "@db/schema";
-import { eq, asc, ilike, count, desc } from "drizzle-orm";
+import { asc, count, desc, eq, ilike } from "drizzle-orm";
 
-export type CertificateTemplateInsert = typeof certificateTemplates.$inferInsert;
+export type CertificateTemplateInsert =
+  typeof certificateTemplates.$inferInsert;
 export type CertificateTemplate = typeof certificateTemplates.$inferSelect;
 
 export async function listCertificateTemplates(q?: string) {
-  let query = db.select({
-    id: certificateTemplates.id,
-    name: certificateTemplates.name,
-    category: certificateTemplates.category,
-    isDefault: certificateTemplates.isDefault,
-    isArchived: certificateTemplates.isArchived,
-    thumbnailUrl: certificateTemplates.thumbnailUrl,
-    updatedAt: certificateTemplates.updatedAt,
-  }).from(certificateTemplates);
+  let query = db
+    .select({
+      id: certificateTemplates.id,
+      name: certificateTemplates.name,
+      category: certificateTemplates.category,
+      isDefault: certificateTemplates.isDefault,
+      isArchived: certificateTemplates.isArchived,
+      thumbnailUrl: certificateTemplates.thumbnailUrl,
+      updatedAt: certificateTemplates.updatedAt,
+    })
+    .from(certificateTemplates);
 
   if (q) {
     query = query.where(ilike(certificateTemplates.name, `%${q}%`)) as any;
@@ -51,13 +54,16 @@ export async function upsertCertificateTemplate(
 
     // Support flexible design tree updates (Figma Style)
     if (rest.name !== undefined) updatePayload.name = rest.name;
-    if (rest.description !== undefined) updatePayload.description = rest.description;
+    if (rest.description !== undefined)
+      updatePayload.description = rest.description;
     if (rest.isDefault !== undefined) updatePayload.isDefault = rest.isDefault;
-    if (rest.isArchived !== undefined) updatePayload.isArchived = rest.isArchived;
+    if (rest.isArchived !== undefined)
+      updatePayload.isArchived = rest.isArchived;
     if (rest.category !== undefined) updatePayload.category = rest.category;
     if (rest.version !== undefined) updatePayload.version = rest.version;
     if (rest.tags !== undefined) updatePayload.tags = rest.tags;
-    if (rest.thumbnailUrl !== undefined) updatePayload.thumbnailUrl = rest.thumbnailUrl;
+    if (rest.thumbnailUrl !== undefined)
+      updatePayload.thumbnailUrl = rest.thumbnailUrl;
     if (rest.content !== undefined) updatePayload.content = rest.content;
 
     const [updated] = await db

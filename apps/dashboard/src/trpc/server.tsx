@@ -1,19 +1,17 @@
 import "server-only";
 
-import { Cookies } from "@/utils/constants";
 import type { AppRouter } from "@orbis/api/trpc/routers/_app";
 import { getCountryCode, getLocale, getTimezone } from "@orbis/location";
-
-import { HydrationBoundary } from "@tanstack/react-query";
-import { dehydrate } from "@tanstack/react-query";
+import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { createTRPCClient, httpBatchLink, loggerLink } from "@trpc/client";
 import {
-  type TRPCQueryOptions,
   createTRPCOptionsProxy,
+  type TRPCQueryOptions,
 } from "@trpc/tanstack-react-query";
 import { cookies } from "next/headers";
 import { cache } from "react";
 import superjson from "superjson";
+import { Cookies } from "@/utils/constants";
 import { makeQueryClient } from "./query-client";
 
 // IMPORTANT: Create a stable getter for the query client that
@@ -30,7 +28,7 @@ function getApiUrl(): string {
     }
     return url;
   }
-  
+
   // Default to localhost:3002 for development (API server port from package.json)
   // API server runs on port 3002 in development mode
   if (process.env.NODE_ENV === "development" || !process.env.NODE_ENV) {
@@ -38,7 +36,7 @@ function getApiUrl(): string {
     console.log(`[tRPC] Using default API URL: ${url}`);
     return url;
   }
-  
+
   // Production fallback
   return "https://api.orbis.ai";
 }
@@ -46,13 +44,13 @@ function getApiUrl(): string {
 export const trpc = createTRPCOptionsProxy<AppRouter>({
   queryClient: getQueryClient,
   client: createTRPCClient({
-      links: [
+    links: [
       httpBatchLink({
         url: `${getApiUrl()}/trpc`,
         transformer: superjson,
         async fetch(url, options) {
           const headers = new Headers(options?.headers);
-          
+
           // Add custom headers
           headers.set("x-user-timezone", await getTimezone());
           headers.set("x-user-locale", await getLocale());
@@ -86,7 +84,10 @@ export const trpc = createTRPCOptionsProxy<AppRouter>({
           } catch (error) {
             // Log error for debugging in development
             if (process.env.NODE_ENV === "development") {
-              console.error(`[tRPC Server] Failed to connect to API at ${url}:`, error);
+              console.error(
+                `[tRPC Server] Failed to connect to API at ${url}:`,
+                error,
+              );
             }
             throw error;
           }
@@ -150,7 +151,7 @@ export async function getTRPCClient() {
         transformer: superjson,
         async fetch(url, options) {
           const headers = new Headers(options?.headers);
-          
+
           // Add custom headers
           headers.set("x-user-timezone", await getTimezone());
           headers.set("x-user-locale", await getLocale());
@@ -184,7 +185,10 @@ export async function getTRPCClient() {
           } catch (error) {
             // Log error for debugging in development
             if (process.env.NODE_ENV === "development") {
-              console.error(`[tRPC Client] Failed to connect to API at ${url}:`, error);
+              console.error(
+                `[tRPC Client] Failed to connect to API at ${url}:`,
+                error,
+              );
             }
             throw error;
           }

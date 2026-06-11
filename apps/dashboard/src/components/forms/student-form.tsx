@@ -1,12 +1,6 @@
 "use client";
 
-import React from "react";
-import { useStudentParams } from "@/hooks/use-student-params";
-import { useI18n } from "@/locales/client";
-import { useZodForm } from "@/hooks/use-zod-form";
-import { useTRPC } from "@/trpc/client";
 import type { RouterOutputs } from "@api/trpc/routers/_app";
-import { AvatarUpload } from "@/components/avatar-upload";
 import {
   Accordion,
   AccordionContent,
@@ -25,9 +19,6 @@ import {
 } from "@orbis/ui/form";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
-import { SubmitButton } from "@orbis/ui/submit-button";
-import { Textarea } from "@orbis/ui/textarea";
-import { useToast } from "@orbis/ui/use-toast";
 import {
   Select,
   SelectContent,
@@ -35,8 +26,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@orbis/ui/select";
+import { SubmitButton } from "@orbis/ui/submit-button";
+import { Textarea } from "@orbis/ui/textarea";
+import { useToast } from "@orbis/ui/use-toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import React from "react";
 import { z } from "zod/v3";
+import { AvatarUpload } from "@/components/avatar-upload";
+import { useStudentParams } from "@/hooks/use-student-params";
+import { useZodForm } from "@/hooks/use-zod-form";
+import { useI18n } from "@/locales/client";
+import { useTRPC } from "@/trpc/client";
 import { invalidateStudentDomain } from "@/utils/query-invalidation";
 
 const formSchema = z.object({
@@ -45,15 +45,29 @@ const formSchema = z.object({
   name: z.string().min(2, {
     message: "Name must be at least 2 characters.",
   }),
-  email: z.string().email({
-    message: "Email is not valid.",
-  }).optional().nullable().or(z.literal("")),
+  email: z
+    .string()
+    .email({
+      message: "Email is not valid.",
+    })
+    .optional()
+    .nullable()
+    .or(z.literal("")),
   phone: z.string().optional().nullable(),
-  sex: z.enum(['male', 'female', 'unspecified']).default('unspecified'),
+  sex: z.enum(["male", "female", "unspecified"]).default("unspecified"),
   studentNumber: z.string().optional().nullable().or(z.literal("")),
   secretNumber: z.string().optional().nullable(),
   currentClassId: z.string().optional().nullable(),
-  status: z.enum(['active', 'graduated', 'transferred', 'suspended', 'auditor', 'homeschooled']).default('active'),
+  status: z
+    .enum([
+      "active",
+      "graduated",
+      "transferred",
+      "suspended",
+      "auditor",
+      "homeschooled",
+    ])
+    .default("active"),
   note: z.string().optional().nullable(),
   fatherName: z.string().optional().nullable(),
   fatherPhone: z.string().optional().nullable(),
@@ -102,24 +116,27 @@ export function StudentForm({ data }: Props) {
     }),
   );
 
-  const defaultValues = React.useMemo(() => ({
-    id: data?.userId,
-    image: data?.image ?? null,
-    name: data?.name ?? "",
-    email: data?.email ?? "",
-    phone: data?.phone ?? "",
-    sex: (data?.sex as 'male' | 'female' | 'unspecified') ?? "unspecified",
-    studentNumber: data?.studentNumber ?? "",
-    secretNumber: data?.secretNumber ?? "",
-    currentClassId: data?.currentClassId?.toString() ?? classId ?? "",
-    status: (data?.status as any) ?? "active",
-    note: data?.notes ?? "",
-    fatherName: data?.fatherName ?? "",
-    fatherPhone: data?.fatherPhone ?? "",
-    motherName: data?.motherName ?? "",
-    motherPhone: data?.motherPhone ?? "",
-    metadata: data?.metadata ?? null,
-  }), [data, classId]);
+  const defaultValues = React.useMemo(
+    () => ({
+      id: data?.userId,
+      image: data?.image ?? null,
+      name: data?.name ?? "",
+      email: data?.email ?? "",
+      phone: data?.phone ?? "",
+      sex: (data?.sex as "male" | "female" | "unspecified") ?? "unspecified",
+      studentNumber: data?.studentNumber ?? "",
+      secretNumber: data?.secretNumber ?? "",
+      currentClassId: data?.currentClassId?.toString() ?? classId ?? "",
+      status: (data?.status as any) ?? "active",
+      note: data?.notes ?? "",
+      fatherName: data?.fatherName ?? "",
+      fatherPhone: data?.fatherPhone ?? "",
+      motherName: data?.motherName ?? "",
+      motherPhone: data?.motherPhone ?? "",
+      metadata: data?.metadata ?? null,
+    }),
+    [data, classId],
+  );
 
   const form = useZodForm(formSchema, {
     values: defaultValues,
@@ -135,7 +152,9 @@ export function StudentForm({ data }: Props) {
       sex: values.sex,
       studentNumber: values.studentNumber || null,
       secretNumber: values.secretNumber || null,
-      currentClassId: values.currentClassId ? Number(values.currentClassId) : null,
+      currentClassId: values.currentClassId
+        ? Number(values.currentClassId)
+        : null,
       status: values.status,
       notes: values.note || null,
       fatherName: values.fatherName || null,
@@ -157,7 +176,9 @@ export function StudentForm({ data }: Props) {
               className="space-y-6"
             >
               <AccordionItem value="general">
-                <AccordionTrigger>{t("students.general_info")}</AccordionTrigger>
+                <AccordionTrigger>
+                  {t("students.general_info")}
+                </AccordionTrigger>
                 <AccordionContent>
                   <div className="space-y-4">
                     <FormField
@@ -174,7 +195,9 @@ export function StudentForm({ data }: Props) {
                                 size={40}
                                 skipUserUpdate
                                 onUpload={(url) => {
-                                  form.setValue("image", url, { shouldDirty: true });
+                                  form.setValue("image", url, {
+                                    shouldDirty: true,
+                                  });
                                 }}
                               />
                             )}
@@ -246,16 +269,27 @@ export function StudentForm({ data }: Props) {
                           <FormLabel className="text-xs text-[#878787] font-normal">
                             {t("students.sex")}
                           </FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder={t("students.select_sex")} />
+                                <SelectValue
+                                  placeholder={t("students.select_sex")}
+                                />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="unspecified">{t("students.unspecified")}</SelectItem>
-                              <SelectItem value="male">{t("students.male")}</SelectItem>
-                              <SelectItem value="female">{t("students.female")}</SelectItem>
+                              <SelectItem value="unspecified">
+                                {t("students.unspecified")}
+                              </SelectItem>
+                              <SelectItem value="male">
+                                {t("students.male")}
+                              </SelectItem>
+                              <SelectItem value="female">
+                                {t("students.female")}
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -267,7 +301,9 @@ export function StudentForm({ data }: Props) {
               </AccordionItem>
 
               <AccordionItem value="academic">
-                <AccordionTrigger>{t("students.academic_details")}</AccordionTrigger>
+                <AccordionTrigger>
+                  {t("students.academic_details")}
+                </AccordionTrigger>
                 <AccordionContent>
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
@@ -325,16 +361,25 @@ export function StudentForm({ data }: Props) {
                           <FormLabel className="text-xs text-[#878787] font-normal">
                             {t("students.class")}
                           </FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value ?? ""}>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value ?? ""}
+                          >
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder={t("students.select_class")} />
+                                <SelectValue
+                                  placeholder={t("students.select_class")}
+                                />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
                               {classes?.data?.map((cls) => (
-                                <SelectItem key={cls.id} value={cls.id.toString()}>
-                                  {cls.name} {cls.division ? `(${cls.division})` : ""}
+                                <SelectItem
+                                  key={cls.id}
+                                  value={cls.id.toString()}
+                                >
+                                  {cls.name}{" "}
+                                  {cls.division ? `(${cls.division})` : ""}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -352,19 +397,36 @@ export function StudentForm({ data }: Props) {
                           <FormLabel className="text-xs text-[#878787] font-normal">
                             {t("students.status")}
                           </FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder={t("students.select_status")} />
+                                <SelectValue
+                                  placeholder={t("students.select_status")}
+                                />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="active">{t("students.active")}</SelectItem>
-                              <SelectItem value="graduated">{t("students.graduated")}</SelectItem>
-                              <SelectItem value="transferred">{t("students.transferred")}</SelectItem>
-                              <SelectItem value="suspended">{t("students.suspended")}</SelectItem>
-                              <SelectItem value="auditor">{t("students.auditor")}</SelectItem>
-                              <SelectItem value="homeschooled">{t("students.homeschooled")}</SelectItem>
+                              <SelectItem value="active">
+                                {t("students.active")}
+                              </SelectItem>
+                              <SelectItem value="graduated">
+                                {t("students.graduated")}
+                              </SelectItem>
+                              <SelectItem value="transferred">
+                                {t("students.transferred")}
+                              </SelectItem>
+                              <SelectItem value="suspended">
+                                {t("students.suspended")}
+                              </SelectItem>
+                              <SelectItem value="auditor">
+                                {t("students.auditor")}
+                              </SelectItem>
+                              <SelectItem value="homeschooled">
+                                {t("students.homeschooled")}
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -398,7 +460,9 @@ export function StudentForm({ data }: Props) {
               </AccordionItem>
 
               <AccordionItem value="additional">
-                <AccordionTrigger>{t("students.additional_info")}</AccordionTrigger>
+                <AccordionTrigger>
+                  {t("students.additional_info")}
+                </AccordionTrigger>
                 <AccordionContent>
                   <div className="space-y-6">
                     <div className="grid grid-cols-2 gap-4">
@@ -500,7 +564,11 @@ export function StudentForm({ data }: Props) {
                             <Textarea
                               className="font-mono text-[11px] min-h-[120px] resize-none"
                               placeholder='{ "key": "value" }'
-                              value={field.value && typeof field.value === 'object' ? JSON.stringify(field.value, null, 2) : field.value || ""}
+                              value={
+                                field.value && typeof field.value === "object"
+                                  ? JSON.stringify(field.value, null, 2)
+                                  : field.value || ""
+                              }
                               onChange={(e) => {
                                 const val = e.target.value;
                                 try {

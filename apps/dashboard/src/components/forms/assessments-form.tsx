@@ -1,9 +1,13 @@
 "use client";
 
-import { useZodForm } from "@/hooks/use-zod-form";
-import { useTRPC } from "@/trpc/client";
 import { Button } from "@orbis/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel } from "@orbis/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+} from "@orbis/ui/form";
 import { Input } from "@orbis/ui/input";
 import {
   Select,
@@ -15,13 +19,15 @@ import {
 import { SubmitButton } from "@orbis/ui/submit-button";
 import { useToast } from "@orbis/ui/use-toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Loader2, Sparkles, X } from "lucide-react";
+import { useAction } from "next-safe-action/hooks";
+import { useMemo, useState } from "react";
 import { useFieldArray } from "react-hook-form";
 import { z } from "zod/v3";
-import { X, Sparkles, Loader2 } from "lucide-react";
-import { useI18n } from "@/locales/client";
-import { useState, useMemo } from "react";
-import { useAction } from "next-safe-action/hooks";
 import { initializeAssessmentsAction } from "@/actions/assessments/initialize-assessments";
+import { useZodForm } from "@/hooks/use-zod-form";
+import { useI18n } from "@/locales/client";
+import { useTRPC } from "@/trpc/client";
 import { invalidateGradesDomain } from "@/utils/query-invalidation";
 
 const formSchema = z.object({
@@ -29,7 +35,16 @@ const formSchema = z.object({
     z.object({
       id: z.number().optional(),
       title: z.string().min(1, "Title is required"),
-      type: z.enum(['exam', 'quiz', 'assignment', 'participation', 'oral', 'attendance', 'behavior', 'homework']),
+      type: z.enum([
+        "exam",
+        "quiz",
+        "assignment",
+        "participation",
+        "oral",
+        "attendance",
+        "behavior",
+        "homework",
+      ]),
       maxScore: z.string().min(1, "Score is required"),
       weight: z.string().default("1"),
     }),
@@ -44,14 +59,24 @@ type AssessmentsFormProps = {
   onSuccessAction?: () => void;
 };
 
-export function AssessmentsForm({ classId, subjectId, termId, month, onSuccessAction }: AssessmentsFormProps) {
+export function AssessmentsForm({
+  classId,
+  subjectId,
+  termId,
+  month,
+  onSuccessAction,
+}: AssessmentsFormProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const t = useI18n();
 
   // Load existing data
-  const { data: initialData, isLoading, refetch } = useQuery({
+  const {
+    data: initialData,
+    isLoading,
+    refetch,
+  } = useQuery({
     ...trpc.assessments.getByClass.queryOptions({
       classId,
       subjectId,
@@ -79,7 +104,7 @@ export function AssessmentsForm({ classId, subjectId, termId, month, onSuccessAc
 
   const formValues = useMemo(() => {
     if (!initialData) return undefined;
-    
+
     return {
       assessments: initialData.map((item) => ({
         id: item.id,
@@ -87,7 +112,7 @@ export function AssessmentsForm({ classId, subjectId, termId, month, onSuccessAc
         type: item.type as any,
         maxScore: item.maxScore ? String(item.maxScore) : "10",
         weight: item.weight ? String(item.weight) : "1",
-      }))
+      })),
     };
   }, [initialData]);
 
@@ -109,28 +134,41 @@ export function AssessmentsForm({ classId, subjectId, termId, month, onSuccessAc
   const updateMutation = useMutation(trpc.assessments.update.mutationOptions());
   const deleteMutation = useMutation(trpc.assessments.delete.mutationOptions());
 
-  const { execute: executeInitialize, status: initializeStatus } = useAction(initializeAssessmentsAction, {
-    onSuccess: () => {
-      toast({ title: "Success!", description: "Standard items created.", variant: "success" });
-      refetch();
-      void invalidateGradesDomain(queryClient, trpc, gradeGridInput);
-      queryClient.invalidateQueries({ queryKey: trpc.assessments.getByClass.queryKey() });
+  const { execute: executeInitialize, status: initializeStatus } = useAction(
+    initializeAssessmentsAction,
+    {
+      onSuccess: () => {
+        toast({
+          title: "Success!",
+          description: "Standard items created.",
+          variant: "success",
+        });
+        refetch();
+        void invalidateGradesDomain(queryClient, trpc, gradeGridInput);
+        queryClient.invalidateQueries({
+          queryKey: trpc.assessments.getByClass.queryKey(),
+        });
+      },
     },
-  });
+  );
 
   const onSubmit = form.handleSubmit(async (data) => {
     setIsSaving(true);
     try {
-      const currentIds = data.assessments.map(a => a.id).filter(Boolean) as number[];
-      const toDelete = (initialData || []).filter(a => !currentIds.includes(a.id));
+      const currentIds = data.assessments
+        .map((a) => a.id)
+        .filter(Boolean) as number[];
+      const toDelete = (initialData || []).filter(
+        (a) => !currentIds.includes(a.id),
+      );
 
       const promises: Promise<any>[] = [];
 
-      toDelete.forEach(a => {
+      toDelete.forEach((a) => {
         promises.push(deleteMutation.mutateAsync({ id: a.id }));
       });
 
-      data.assessments.forEach(a => {
+      data.assessments.forEach((a) => {
         if (a.id) {
           promises.push(
             updateMutation.mutateAsync({
@@ -139,7 +177,7 @@ export function AssessmentsForm({ classId, subjectId, termId, month, onSuccessAc
               maxScore: a.maxScore,
               type: a.type,
               weight: a.weight,
-            })
+            }),
           );
         } else {
           promises.push(
@@ -152,7 +190,7 @@ export function AssessmentsForm({ classId, subjectId, termId, month, onSuccessAc
               maxScore: a.maxScore,
               type: a.type,
               weight: a.weight,
-            } as any)
+            } as any),
           );
         }
       });
@@ -166,7 +204,9 @@ export function AssessmentsForm({ classId, subjectId, termId, month, onSuccessAc
       });
 
       void invalidateGradesDomain(queryClient, trpc, gradeGridInput);
-      queryClient.invalidateQueries({ queryKey: trpc.assessments.getByClass.queryKey() });
+      queryClient.invalidateQueries({
+        queryKey: trpc.assessments.getByClass.queryKey(),
+      });
       onSuccessAction?.();
     } catch (err) {
       toast({
@@ -220,16 +260,22 @@ export function AssessmentsForm({ classId, subjectId, termId, month, onSuccessAc
           >
             Add more
           </Button>
-          
-          <Button 
-             variant="ghost"
-             type="button"
-             className="text-[11px] text-muted-foreground p-0 h-auto font-normal hover:bg-transparent"
-             onClick={() => executeInitialize({ classId, subjectId, termId, month })}
-             disabled={initializeStatus === "executing"}
+
+          <Button
+            variant="ghost"
+            type="button"
+            className="text-[11px] text-muted-foreground p-0 h-auto font-normal hover:bg-transparent"
+            onClick={() =>
+              executeInitialize({ classId, subjectId, termId, month })
+            }
+            disabled={initializeStatus === "executing"}
           >
-             {initializeStatus === "executing" ? <Loader2 className="h-3 w-3 mr-2 animate-spin" /> : <Sparkles className="h-3 w-3 mr-2" />}
-             {t("grades.create_default_items")}
+            {initializeStatus === "executing" ? (
+              <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+            ) : (
+              <Sparkles className="h-3 w-3 mr-2" />
+            )}
+            {t("grades.create_default_items")}
           </Button>
         </div>
 
@@ -261,7 +307,6 @@ export function AssessmentsForm({ classId, subjectId, termId, month, onSuccessAc
             </SubmitButton>
           </div>
         </div>
-
       </form>
     </Form>
   );
@@ -318,18 +363,26 @@ function AssessmentRow({
               <FormLabel className="text-xs font-medium text-muted-foreground">
                 {t("grades.type")}
               </FormLabel>
-              <Select
-                onValueChange={field.onChange}
-                defaultValue={field.value}
-              >
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Type" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {['participation', 'attendance', 'homework', 'oral', 'behavior', 'quiz', 'assignment', 'exam'].map(type => (
-                    <SelectItem key={type} value={type}>{t(`grades.${type}`)}</SelectItem>
+                  {[
+                    "participation",
+                    "attendance",
+                    "homework",
+                    "oral",
+                    "behavior",
+                    "quiz",
+                    "assignment",
+                    "exam",
+                  ].map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {t(`grades.${type}`)}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>

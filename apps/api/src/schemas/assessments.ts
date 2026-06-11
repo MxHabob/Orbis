@@ -1,7 +1,14 @@
 import { z } from "@hono/zod-openapi";
 
 export const assessmentTypeEnum = z.enum([
-  'exam', 'quiz', 'assignment', 'participation', 'oral', 'attendance', 'behavior', 'homework'
+  "exam",
+  "quiz",
+  "assignment",
+  "participation",
+  "oral",
+  "attendance",
+  "behavior",
+  "homework",
 ]);
 
 export const assessmentItemSchema = z.object({
@@ -47,8 +54,12 @@ export const assessmentItemSchema = z.object({
   }),
 });
 
-export const createAssessmentItemSchema = assessmentItemSchema.omit({ id: true });
-export const updateAssessmentItemSchema = assessmentItemSchema.partial().required({ id: true });
+export const createAssessmentItemSchema = assessmentItemSchema.omit({
+  id: true,
+});
+export const updateAssessmentItemSchema = assessmentItemSchema
+  .partial()
+  .required({ id: true });
 
 export const gradeEntrySchema = z.object({
   id: z.number().openapi({
@@ -78,4 +89,6 @@ export const gradeEntrySchema = z.object({
 });
 
 export const createGradeEntrySchema = gradeEntrySchema.omit({ id: true });
-export const updateGradeEntrySchema = gradeEntrySchema.partial().required({ id: true });
+export const updateGradeEntrySchema = gradeEntrySchema
+  .partial()
+  .required({ id: true });

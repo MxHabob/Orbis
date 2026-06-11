@@ -1,13 +1,13 @@
 "use client";
 
-import { useRealtime } from "@/hooks/use-realtime";
-import { useUserQuery } from "@/hooks/use-user";
-import { useTRPC } from "@/trpc/client";
 import type { AppRouter } from "@orbis/api/trpc/routers/_app";
 import { authClient } from "@orbis/auth/auth-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import { useCallback, useMemo } from "react";
+import { useRealtime } from "@/hooks/use-realtime";
+import { useUserQuery } from "@/hooks/use-user";
+import { useTRPC } from "@/trpc/client";
 
 // Infer types from tRPC router
 // Define types locally until tRPC inference catches up
@@ -16,7 +16,7 @@ export interface Activity {
   type: string;
   title: string;
   message: string;
-  status: 'unread' | 'read' | 'archived';
+  status: "unread" | "read" | "archived";
   isRead: boolean;
   isArchived: boolean;
   isHighPriority: boolean;
@@ -88,7 +88,7 @@ export function useNotifications() {
     channelName: `user:${user?.id}:notifications`,
     onEvent: (payload) => {
       // payload will be { type: 'NOTIFICATION_CREATED', payload: result }
-      if (payload.type === 'NOTIFICATION_CREATED') {
+      if (payload.type === "NOTIFICATION_CREATED") {
         const newRecord = payload.payload;
         // Invalidate both inbox and archived queries
         queryClient.invalidateQueries({
@@ -172,7 +172,10 @@ export function useNotifications() {
               ...old,
               data: old.data.map((notification) =>
                 notification.id === variables.activityId
-                  ? { ...notification, status: variables.status as Activity["status"] }
+                  ? {
+                      ...notification,
+                      status: variables.status as Activity["status"],
+                    }
                   : notification,
               ),
             };
@@ -308,8 +311,10 @@ export function useNotifications() {
   );
 
   // Return notification activities directly without transformation
-  const notifications = (activitiesData as unknown as NotificationResponse)?.data || [];
-  const archivedNotifications = (archivedActivitiesData as unknown as NotificationResponse)?.data || [];
+  const notifications =
+    (activitiesData as unknown as NotificationResponse)?.data || [];
+  const archivedNotifications =
+    (archivedActivitiesData as unknown as NotificationResponse)?.data || [];
 
   // Mark a single message as read (archived)
   const markMessageAsRead = useCallback(

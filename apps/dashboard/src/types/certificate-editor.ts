@@ -1,4 +1,4 @@
-import { PAPER_PRESETS } from "../components/certificates/editor/constants"; // I will move PAPER_PRESETS to a shared place later if needed
+import type { PAPER_PRESETS } from "../components/certificates/editor/constants"; // I will move PAPER_PRESETS to a shared place later if needed
 
 export interface EditorElement {
   id: string;
@@ -45,7 +45,7 @@ export interface EditorState {
   elements: EditorElement[];
   selectedElementIds: string[];
   canvasConfig: {
-    size: typeof PAPER_PRESETS[number]["id"];
+    size: (typeof PAPER_PRESETS)[number]["id"];
     orientation: "portrait" | "landscape";
     backgroundColor: string;
     zoom: number;
@@ -58,7 +58,7 @@ export interface EditorState {
       rows: number;
       columns: number;
       gap: number;
-      gapStyle?: 'solid' | 'dashed' | 'dotted' | 'none' | 'filled';
+      gapStyle?: "solid" | "dashed" | "dotted" | "none" | "filled";
     };
   };
   history: {

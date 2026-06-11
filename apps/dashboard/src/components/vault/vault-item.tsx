@@ -1,19 +1,16 @@
 "use client";
 
+import type { RouterOutputs } from "@api/trpc/routers/_app";
 import { FilePreview } from "@/components/file-preview";
 import { useDocumentParams } from "@/hooks/use-document-params";
-import { useTRPC } from "@/trpc/client";
 import { useI18n } from "@/locales/client";
+import { useTRPC } from "@/trpc/client";
 import { isStaleProcessing } from "@/utils/document";
-import type { RouterOutputs } from "@api/trpc/routers/_app";
 
 const isMimeTypeSupportedForProcessing = (mimetype: string) => {
-  return [
-    "application/pdf",
-    "image/jpeg",
-    "image/png",
-    "image/webp",
-  ].includes(mimetype);
+  return ["application/pdf", "image/jpeg", "image/png", "image/webp"].includes(
+    mimetype,
+  );
 };
 
 import { Button } from "@orbis/ui/button";
@@ -104,7 +101,9 @@ export function VaultItem({ data, small }: Props) {
 
   // Get display name - fallback to filename from path if no title
   const displayName =
-    data?.title || data?.name?.split("/").at(-1) || t("vault.document_fallback");
+    data?.title ||
+    data?.name?.split("/").at(-1) ||
+    t("vault.document_fallback");
 
   /* const reprocessMutation = useMutation(
     trpc.documents.reprocessDocument.mutationOptions({

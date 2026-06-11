@@ -1,6 +1,6 @@
 import type { ExtractTablesWithRelations } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/node-postgres";
 import type { NodePgQueryResultHKT } from "drizzle-orm/node-postgres";
+import { drizzle } from "drizzle-orm/node-postgres";
 import type { PgTransaction } from "drizzle-orm/pg-core";
 import { Pool } from "pg";
 import { withReplicas } from "./replicas";
@@ -10,7 +10,7 @@ const isDevelopment = process.env.NODE_ENV === "development";
 const isLocal = !process.env.FLY_APP_NAME && !process.env.FLY_REGION;
 
 const connectionConfig = {
-  max: isLocal ? 5 : (isDevelopment ? 8 : 12),
+  max: isLocal ? 5 : isDevelopment ? 8 : 12,
   idleTimeoutMillis: isDevelopment ? 5000 : 60000,
   connectionTimeoutMillis: 15000,
   maxUses: isDevelopment ? 100 : 0,
@@ -18,7 +18,8 @@ const connectionConfig = {
 };
 
 const primaryPool = new Pool({
-  connectionString: process.env.DATABASE_PRIMARY_URL || process.env.DATABASE_URL!,
+  connectionString:
+    process.env.DATABASE_PRIMARY_URL || process.env.DATABASE_URL!,
   ...connectionConfig,
 });
 
@@ -77,7 +78,7 @@ const replicaIndex = getReplicaIndexForRegion();
 export const db = withReplicas(
   primaryDb,
   hasReplicas
-    ? (replicaDbs as [typeof primaryDb, ...typeof primaryDb[]])
+    ? (replicaDbs as [typeof primaryDb, ...(typeof primaryDb)[]])
     : [primaryDb],
   (replicas) => replicas[replicaIndex] || replicas[0]!,
 );

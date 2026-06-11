@@ -1,14 +1,13 @@
 "use client";
 
-import { secondsToHoursAndMinutes } from "@/utils/format";
-import { createSafeDate } from "@/utils/tracker";
-import type { CalendarEvent } from "@/actions/get-calendar-events-action";
 // import type { RouterOutputs } from "@api/trpc/routers/_app";
 import { TZDate } from "@date-fns/tz";
 import { cn } from "@orbis/ui/cn";
 import { format } from "date-fns";
 import { memo, useEffect, useMemo, useState } from "react";
-
+import type { CalendarEvent } from "@/actions/get-calendar-events-action";
+import { secondsToHoursAndMinutes } from "@/utils/format";
+import { createSafeDate } from "@/utils/tracker";
 
 type Props = {
   data: CalendarEvent[];

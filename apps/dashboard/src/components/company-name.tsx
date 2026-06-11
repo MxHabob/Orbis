@@ -1,9 +1,6 @@
 "use client";
 
-
-import { useZodForm } from "@/hooks/use-zod-form";
 import { authClient } from "@orbis/auth/auth-client";
-import { useI18n } from "@/locales/client";
 import {
   Card,
   CardContent,
@@ -22,6 +19,8 @@ import {
 import { Input } from "@orbis/ui/input";
 import { SubmitButton } from "@orbis/ui/submit-button";
 import { z } from "zod/v3";
+import { useZodForm } from "@/hooks/use-zod-form";
+import { useI18n } from "@/locales/client";
 
 const formSchema = z.object({
   name: z.string().min(2).max(32),
@@ -77,10 +76,7 @@ export function CompanyName() {
 
           <CardFooter className="flex justify-between">
             <div>{t("account.characters_limit", { count: 32 })}</div>
-            <SubmitButton
-              isSubmitting={isPending}
-              disabled={isPending}
-            >
+            <SubmitButton isSubmitting={isPending} disabled={isPending}>
               {t("common.save")}
             </SubmitButton>
           </CardFooter>

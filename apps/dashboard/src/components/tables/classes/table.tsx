@@ -1,9 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-
-import { useClassParams } from "@/hooks/use-class-params";
-import { useTRPC } from "@/trpc/client";
 import { cn } from "@orbis/ui/cn";
 import {
   Table,
@@ -23,32 +19,27 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import { useRouter } from "next/navigation";
 import React from "react";
-import {
-  type ClassesTableMeta,
-  columns,
-  flattenClasses,
-} from "./columns";
+import { useClassParams } from "@/hooks/use-class-params";
+import { useTRPC } from "@/trpc/client";
+import { type ClassesTableMeta, columns, flattenClasses } from "./columns";
 import { Header } from "./header";
 
 export function DataTable() {
-  const [expandedClasses, setExpandedClasses] = React.useState<
-    Set<number>
-  >(new Set());
+  const [expandedClasses, setExpandedClasses] = React.useState<Set<number>>(
+    new Set(),
+  );
 
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const { setParams } = useClassParams();
   const router = useRouter();
 
-  const { data } = useSuspenseQuery(
-    trpc.classes.getAll.queryOptions(),
-  );
-
-
+  const { data } = useSuspenseQuery(trpc.classes.getAll.queryOptions());
 
   const flattenedData = React.useMemo(() => {
-    return flattenClasses(data?.data as any ?? []);
+    return flattenClasses((data?.data as any) ?? []);
   }, [data]);
 
   // Get search filter value

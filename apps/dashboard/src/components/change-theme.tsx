@@ -1,5 +1,3 @@
-import { ThemeSwitch } from "@/components/theme-switch";
-import { useI18n } from "@/locales/client";
 import {
   Card,
   CardContent,
@@ -7,6 +5,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@orbis/ui/card";
+import { ThemeSwitch } from "@/components/theme-switch";
+import { useI18n } from "@/locales/client";
 
 export function ChangeTheme() {
   const t = useI18n();
@@ -15,9 +15,7 @@ export function ChangeTheme() {
     <Card>
       <CardHeader>
         <CardTitle>{t("account.theme_title")}</CardTitle>
-        <CardDescription>
-          {t("account.theme_description")}
-        </CardDescription>
+        <CardDescription>{t("account.theme_description")}</CardDescription>
       </CardHeader>
 
       <CardContent>

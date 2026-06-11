@@ -1,8 +1,5 @@
 "use client";
 
-import { revalidateAfterTeamChange } from "@/actions/revalidate-action";
-import { useUserQuery } from "@/hooks/use-user";
-import { useTRPC } from "@/trpc/client";
 import { authClient } from "@orbis/auth/auth-client";
 import { Avatar, AvatarFallback, AvatarImageNext } from "@orbis/ui/avatar";
 import { Button } from "@orbis/ui/button";
@@ -20,6 +17,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useOnClickOutside } from "usehooks-ts";
+import { revalidateAfterTeamChange } from "@/actions/revalidate-action";
+import { useUserQuery } from "@/hooks/use-user";
+import { useTRPC } from "@/trpc/client";
 
 type Props = {
   isExpanded?: boolean;

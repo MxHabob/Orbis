@@ -7,9 +7,11 @@ interface GradingState {
   subjectId: number | null;
   termId: number | null;
   month: number | null;
-  
+
   // Actions
-  setFilters: (filters: Partial<Omit<GradingState, 'setFilters' | 'reset'>>) => void;
+  setFilters: (
+    filters: Partial<Omit<GradingState, "setFilters" | "reset">>,
+  ) => void;
   reset: () => void;
 }
 
@@ -23,16 +25,17 @@ export const useGradingStore = create<GradingState>()(
       month: null,
 
       setFilters: (filters) => set((state) => ({ ...state, ...filters })),
-      reset: () => set({
-        yearId: null,
-        classId: null,
-        subjectId: null,
-        termId: null,
-        month: null,
-      }),
+      reset: () =>
+        set({
+          yearId: null,
+          classId: null,
+          subjectId: null,
+          termId: null,
+          month: null,
+        }),
     }),
     {
       name: "grading-storage-2026", // Key in localStorage
-    }
-  )
+    },
+  ),
 );

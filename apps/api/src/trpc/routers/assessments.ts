@@ -4,7 +4,12 @@ import {
   updateAssessmentItemSchema,
   updateGradeEntrySchema,
 } from "@api/schemas/assessments";
-import { createTRPCRouter, protectedProcedure, adminProcedure, teacherProcedure } from "@api/trpc/init";
+import {
+  adminProcedure,
+  createTRPCRouter,
+  protectedProcedure,
+  teacherProcedure,
+} from "@api/trpc/init";
 import {
   createAssessment,
   createGradeEntry,
@@ -25,14 +30,14 @@ export const assessmentsRouter = createTRPCRouter({
         subjectId: z.number().optional(),
         termId: z.number().optional(),
         month: z.number().optional(),
-      })
+      }),
     )
     .query(async ({ input }) => {
       return getAssessmentsForClass(
         input.classId,
         input.subjectId,
         input.termId,
-        input.month
+        input.month,
       );
     }),
 
@@ -73,7 +78,7 @@ export const assessmentsRouter = createTRPCRouter({
       z.object({
         studentId: z.string().uuid(),
         termId: z.number().optional(),
-      })
+      }),
     )
     .query(async ({ input }) => {
       return getStudentGrades(input.studentId, input.termId);
@@ -102,33 +107,40 @@ export const assessmentsRouter = createTRPCRouter({
     }),
 
   importGrades: teacherProcedure
-    .input(z.object({
-      assessmentItemId: z.number(),
-      month: z.number().optional(),
-      identifierType: z.enum(["studentNumber", "secretNumber"]).default("studentNumber"),
-      grades: z.array(z.object({
-        identifier: z.string(),
-        score: z.number().nullable(),
-        isAbsent: z.boolean().optional(),
-        comments: z.string().optional(),
-      }))
-    }))
+    .input(
+      z.object({
+        assessmentItemId: z.number(),
+        month: z.number().optional(),
+        identifierType: z
+          .enum(["studentNumber", "secretNumber"])
+          .default("studentNumber"),
+        grades: z.array(
+          z.object({
+            identifier: z.string(),
+            score: z.number().nullable(),
+            isAbsent: z.boolean().optional(),
+            comments: z.string().optional(),
+          }),
+        ),
+      }),
+    )
     .mutation(async ({ input, ctx }) => {
-      const { bulkImportGrades, bulkImportGradesBySecretNumber } = await import("@orbis/db/queries");
-      
+      const { bulkImportGrades, bulkImportGradesBySecretNumber } = await import(
+        "@orbis/db/queries"
+      );
+
       if (input.identifierType === "secretNumber") {
         return bulkImportGradesBySecretNumber(
           input.assessmentItemId,
-          input.grades.map(g => ({ ...g, secretNumber: g.identifier })),
-          ctx.session.user.id
+          input.grades.map((g) => ({ ...g, secretNumber: g.identifier })),
+          ctx.session.user.id,
         );
       }
 
       return bulkImportGrades(
-        input.assessmentItemId, 
-        input.grades.map(g => ({ ...g, studentNumber: g.identifier })), 
-        ctx.session.user.id
+        input.assessmentItemId,
+        input.grades.map((g) => ({ ...g, studentNumber: g.identifier })),
+        ctx.session.user.id,
       );
     }),
 });
-

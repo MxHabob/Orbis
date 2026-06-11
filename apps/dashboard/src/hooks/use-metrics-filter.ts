@@ -1,14 +1,14 @@
 "use client";
 
-import { useCurrentAcademicYearQuery } from "@/hooks/use-academic-year";
-import { useMetricsFilterStore } from "@/store/metrics-filter";
-import {
-  type PeriodOption,
-  getPeriodDateRange,
-} from "@/utils/metrics-date-utils";
 import { useQueryStates } from "nuqs";
 import { parseAsString } from "nuqs/server";
 import { useEffect, useMemo } from "react";
+import { useCurrentAcademicYearQuery } from "@/hooks/use-academic-year";
+import { useMetricsFilterStore } from "@/store/metrics-filter";
+import {
+  getPeriodDateRange,
+  type PeriodOption,
+} from "@/utils/metrics-date-utils";
 
 // Default values for metrics filters
 const DEFAULT_PERIOD: PeriodOption = "1-year";

@@ -1,7 +1,11 @@
 import { SecondaryMenu } from "@/components/secondary-menu";
 import { getI18n } from "@/locales/server";
 
-export default async function Layout({ children }: { children: React.ReactNode }) {
+export default async function Layout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const t = await getI18n();
 
   return (
@@ -14,7 +18,10 @@ export default async function Layout({ children }: { children: React.ReactNode }
           { path: "/settings/staff", label: t("settings.staff") },
           { path: "/settings/promotions", label: t("settings.promotions") },
           { path: "/settings/control", label: t("settings.control") },
-          { path: "/settings/notifications", label: t("settings.notifications") },
+          {
+            path: "/settings/notifications",
+            label: t("settings.notifications"),
+          },
         ]}
       />
 

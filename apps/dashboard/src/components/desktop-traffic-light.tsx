@@ -54,7 +54,9 @@ export function DesktopTrafficLight() {
         className="group relative w-3 h-3 flex items-center justify-center rounded-full bg-[#ff5f57] border border-[#e0443e] hover:bg-[#ff5f57] transition-all duration-200"
         aria-label="Close window"
       >
-        <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-[8px] text-[#4c0000] font-bold">✕</span>
+        <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-[8px] text-[#4c0000] font-bold">
+          ✕
+        </span>
       </button>
 
       {/* Minimize button */}
@@ -64,7 +66,9 @@ export function DesktopTrafficLight() {
         className="group relative w-3 h-3 flex items-center justify-center rounded-full bg-[#febc2e] border border-[#d8a024] hover:bg-[#febc2e] transition-all duration-200"
         aria-label="Minimize window"
       >
-        <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-[10px] text-[#5c4000] font-bold mt-[-4px]">−</span>
+        <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-[10px] text-[#5c4000] font-bold mt-[-4px]">
+          −
+        </span>
       </button>
 
       {/* Maximize/Restore button */}
@@ -74,7 +78,9 @@ export function DesktopTrafficLight() {
         className="group relative w-3 h-3 flex items-center justify-center rounded-full bg-[#28c840] border border-[#24a030] hover:bg-[#28c840] transition-all duration-200"
         aria-label="Toggle maximize"
       >
-        <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-[6px] text-[#003300] font-bold">⇅</span>
+        <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-[6px] text-[#003300] font-bold">
+          ⇅
+        </span>
       </button>
     </div>
   );

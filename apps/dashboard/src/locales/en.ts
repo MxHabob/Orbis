@@ -31,7 +31,8 @@ export default {
     description: "Description",
     confirm_action: "Confirm Action",
     destructive_action: "Destructive Action",
-    irreversible_action: "This action cannot be undone. This will permanently remove the data from our servers.",
+    irreversible_action:
+      "This action cannot be undone. This will permanently remove the data from our servers.",
     deleting: "Deleting...",
     optional: "Optional",
   },
@@ -354,13 +355,16 @@ export default {
   },
   account: {
     display_name_title: "Display Name",
-    display_name_description: "Please enter your full name, or a display name you are comfortable with.",
+    display_name_description:
+      "Please enter your full name, or a display name you are comfortable with.",
     characters_limit: "Please use {count} characters at maximum.",
     email_title: "Email",
     email_description: "Change your email address.",
-    email_primary_notice: "This is your primary email address for notifications and more.",
+    email_primary_notice:
+      "This is your primary email address for notifications and more.",
     avatar_title: "Avatar",
-    avatar_description: "This is your avatar. Click on the avatar to upload a custom one from your files.",
+    avatar_description:
+      "This is your avatar. Click on the avatar to upload a custom one from your files.",
     avatar_optional: "An avatar is optional but strongly recommended.",
     theme_title: "Appearance",
     theme_description: "Customize how Orbis looks on your device.",
@@ -376,22 +380,28 @@ export default {
     notifications: "Notifications",
     developer: "Developer",
     orbis_name_title: "User name",
-    orbis_name_description: "This is your user's visible name within Orbis. For example, the name of your user or department.",
+    orbis_name_description:
+      "This is your user's visible name within Orbis. For example, the name of your user or department.",
     academic_year_title: "Academic Year",
-    academic_year_description: "Set the current academic year and its duration. This will be used for student enrollments, grading, and reporting.",
+    academic_year_description:
+      "Set the current academic year and its duration. This will be used for student enrollments, grading, and reporting.",
     academic_year_placeholder: "Academic Year (e.g. 2024/2025)",
     academic_search: "Search academic years...",
     create_year: "Create Year",
     add_term: "Add Term",
     delete_team_title: "Delete team",
-    delete_team_description: "Permanently remove your Team and all of its contents from the Orbis platform. This action is not reversible — please continue with caution.",
+    delete_team_description:
+      "Permanently remove your Team and all of its contents from the Orbis platform. This action is not reversible — please continue with caution.",
     delete_team_confirm_title: "Are you absolutely sure?",
-    delete_team_confirm_description: "This action cannot be undone. This will permanently delete your team and remove your data from our servers.",
+    delete_team_confirm_description:
+      "This action cannot be undone. This will permanently delete your team and remove your data from our servers.",
     delete_team_input_label: "Type {delete} to confirm.",
     support: "Support",
-    support_description: "Contact us for help and support. Ideas to improve this page or issues you are experiencing.",
+    support_description:
+      "Contact us for help and support. Ideas to improve this page or issues you are experiencing.",
     support_message_placeholder: "How can we help you?",
-    support_success: "Thank you for your feedback! We will be back with you as soon as possible.",
+    support_success:
+      "Thank you for your feedback! We will be back with you as soon as possible.",
     send: "Send",
   },
   vault: {
@@ -401,12 +411,15 @@ export default {
     no_results_description: "Try another search term",
     clear_search: "Clear search",
     get_started_title: "Always find what you need",
-    get_started_description: "Drag & drop or upload your documents. We'll automatically organize them with tags based on content, making them easy and secure to find.",
+    get_started_description:
+      "Drag & drop or upload your documents. We'll automatically organize them with tags based on content, making them easy and secure to find.",
     processing_title: "Analyzing file",
-    processing_description: "The file is currently being analyzed, this may take a few moments.",
+    processing_description:
+      "The file is currently being analyzed, this may take a few moments.",
     delete_file: "Delete File",
     delete_description: "You are about to delete this file from your vault.",
-    delete_warning_attachments: "This file is attached to {count} transactions. Deleting will remove the attachment from the transactions.",
+    delete_warning_attachments:
+      "This file is attached to {count} transactions. Deleting will remove the attachment from the transactions.",
     delete_undo_warning: "This action cannot be undone.",
     delete_confirm_title: "Are you absolutely sure?",
     deleting: "Deleting...",
@@ -447,20 +460,24 @@ export default {
     total: "Total",
     status: "Status",
     no_students: "No students found",
-    no_students_description: "There are no students enrolled in this class for the selected academic year.",
+    no_students_description:
+      "There are no students enrolled in this class for the selected academic year.",
     no_results_description: "Try adjusting your filters",
     fill_max: "Fill with Max Score ({maxScore})",
     fill_zero: "Fill with Zeros (0)",
     clear_column: "Clear Column",
     discard: "Discard",
     discard_title: "Discard unsaved changes?",
-    "discard_description#one": "You have {count} unsaved change. This action cannot be undone and all your recent edits will be lost.",
-    "discard_description#other": "You have {count} unsaved changes. This action cannot be undone and all your recent edits will be lost.",
+    "discard_description#one":
+      "You have {count} unsaved change. This action cannot be undone and all your recent edits will be lost.",
+    "discard_description#other":
+      "You have {count} unsaved changes. This action cannot be undone and all your recent edits will be lost.",
     keep_editing: "Keep editing",
     discard_changes: "Discard changes",
     save_all: "Save All",
     initialize_assessments: "Manage Assessment Items",
-    initialize_assessments_description: "Control the assessment items for this month/period. You can add, delete, or edit.",
+    initialize_assessments_description:
+      "Control the assessment items for this month/period. You can add, delete, or edit.",
     create_default_items: "Create Default Items",
     add_item: "Add New Item",
     edit_item: "Edit Item",
@@ -478,7 +495,8 @@ export default {
     oral: "Oral",
     behavior: "Behavior",
     no_items: "No assessment items found for this period.",
-    standard_items_help: "This will create: Participation, Attendance, Behavior, Oral, Homework, and Exam.",
+    standard_items_help:
+      "This will create: Participation, Attendance, Behavior, Oral, Homework, and Exam.",
     export_success: "Items created successfully",
     import_success: "Grades imported successfully",
     subject: "Subject",
@@ -518,7 +536,8 @@ export default {
     select_template: "Select certificate template",
     select_template_prompt: "Select Template",
     export_reports_title: "Export Grades Reports",
-    export_reports_description: "Select the class and report type to export into an Excel file.",
+    export_reports_description:
+      "Select the class and report type to export into an Excel file.",
     extract_report: "Extract Report",
     export_excel_success: "Export Successful",
     export_excel_success_desc: "The report has been exported successfully.",
@@ -533,11 +552,13 @@ export default {
       finalizing: "Finalizing...",
       uploading: "Uploading final file...",
       failed: "Report Export Failed",
-      failed_desc: "An unexpected error occurred in the export engine. Please try again.",
+      failed_desc:
+        "An unexpected error occurred in the export engine. Please try again.",
       completed: "Report Export Completed ✅",
       completed_desc: "The file was generated successfully.",
       download: "Download File",
-      background_notice: "You can close this message and continue working, we will notify you when it's finished.",
+      background_notice:
+        "You can close this message and continue working, we will notify you when it's finished.",
       queued_title: "Preparing Reports (Background)",
     },
     month_1: "Month 1 (Muharram)",
@@ -628,7 +649,7 @@ export default {
         month_name: "Month Name",
         academic_year: "Academic Year",
         issue_date: "Issue Date",
-      }
+      },
     },
     preview: {
       student_name: "Student Name",
@@ -641,17 +662,20 @@ export default {
       type_monthly: "Monthly",
       type_half_yearly: "Semi-annual",
       type_final: "Final",
-    }
+    },
   },
   subjects: {
     delete_title: "Delete Subject",
-    delete_description: "Are you sure you want to delete this subject? All grades associated with it will be permanently removed.",
+    delete_description:
+      "Are you sure you want to delete this subject? All grades associated with it will be permanently removed.",
   },
   staff: {
     delete_title: "Remove Team Member",
-    delete_description: "Are you sure you want to remove this member from the team? They will no longer have access to the school.",
+    delete_description:
+      "Are you sure you want to remove this member from the team? They will no longer have access to the school.",
     leave_title: "Leave Team",
-    leave_description: "Are you sure you want to leave the team? You will need an invitation from the principal to rejoin.",
+    leave_description:
+      "Are you sure you want to leave the team? You will need an invitation from the principal to rejoin.",
   },
   account_type: {
     depository: "Depository",
@@ -949,7 +973,8 @@ export default {
   },
   control: {
     title: "Control Settings",
-    description: "Manage secret numbers and seating numbers for all students in the system.",
+    description:
+      "Manage secret numbers and seating numbers for all students in the system.",
     regenerate_secret: "Regenerate Secret Numbers",
     regenerate_seating: "Regenerate Seating Numbers",
     prefix_label: "Pattern",
@@ -957,17 +982,21 @@ export default {
     start_number_label: "Starting Number",
     start_number_placeholder: "e.g. 100",
     confirm_title: "Are you absolutely sure?",
-    confirm_secret_desc: "This action will change secret numbers for all students. This may affect previously printed reports.",
-    confirm_seating_desc: "This action will re-number all students alphabetically. Ensure this is the desired action.",
+    confirm_secret_desc:
+      "This action will change secret numbers for all students. This may affect previously printed reports.",
+    confirm_seating_desc:
+      "This action will re-number all students alphabetically. Ensure this is the desired action.",
     regenerating: "Regenerating...",
     success_secret: "Secret numbers regenerated successfully",
     success_seating: "Seating numbers regenerated successfully",
     class_placeholder: "Select Class (Optional)",
-    prefix_placeholder_desc: "If provided, this pattern will override the numeric sequence.",
+    prefix_placeholder_desc:
+      "If provided, this pattern will override the numeric sequence.",
   },
   promotions: {
     title: "Academic Promotions",
-    description: "Manage student promotions and graduation for the upcoming academic year.",
+    description:
+      "Manage student promotions and graduation for the upcoming academic year.",
     preview: "Preview Promotion",
     execute: "Execute Bulk Promotion",
     rollback: "Rollback Promotion",
@@ -989,14 +1018,18 @@ export default {
     auto_decision: "Auto (Based on grades)",
     manual_decision: "Manual",
     override_decision: "Override",
-    irreversible_action: "These students will be moved to the new academic year based on the proposed decisions. Ensure the data is correct before confirming.",
-    confirm_execute: "Are you sure you want to execute promotion for {count} students?",
-    confirm_rollback: "Are you sure you want to rollback promotion for this class? This will delete promotion records and revert students to their previous class.",
+    irreversible_action:
+      "These students will be moved to the new academic year based on the proposed decisions. Ensure the data is correct before confirming.",
+    confirm_execute:
+      "Are you sure you want to execute promotion for {count} students?",
+    confirm_rollback:
+      "Are you sure you want to rollback promotion for this class? This will delete promotion records and revert students to their previous class.",
     process_success: "Process completed successfully",
     process_error: "An error occurred during processing",
     promoted_at: "Promoted At",
     rollback_all: "Bulk Rollback",
-    confirm_rollback_bulk: "Are you sure you want to rollback promotion for {count} students?",
+    confirm_rollback_bulk:
+      "Are you sure you want to rollback promotion for {count} students?",
     no_students_to_promote: "No students to promote",
   },
   education: {
@@ -1025,11 +1058,14 @@ export default {
     sort_order: "Sort Order",
     sort_order_placeholder: "e.g. 1",
     delete_year_title: "Delete Year",
-    delete_year_description: "Are you sure you want to delete this year? All students, grades, and schedules associated with it will be permanently removed.",
+    delete_year_description:
+      "Are you sure you want to delete this year? All students, grades, and schedules associated with it will be permanently removed.",
     delete_term_title: "Delete Term",
-    delete_term_description: "Are you sure you want to delete this term? All students, grades, and schedules associated with it will be permanently removed.",
+    delete_term_description:
+      "Are you sure you want to delete this term? All students, grades, and schedules associated with it will be permanently removed.",
     delete_title: "Delete Class",
-    delete_description: "Are you sure you want to delete this class? All students, grades, and schedules associated with it will be permanently removed.",
+    delete_description:
+      "Are you sure you want to delete this class? All students, grades, and schedules associated with it will be permanently removed.",
   },
   students: {
     general_info: "General Information",
@@ -1062,7 +1098,8 @@ export default {
     mother_name: "Mother's Full Name",
     mother_phone: "Mother's Phone",
     delete_student: "Delete Student",
-    delete_description: "Are you sure you want to delete this student? All of their data and grades will be permanently removed from the system.",
+    delete_description:
+      "Are you sure you want to delete this student? All of their data and grades will be permanently removed from the system.",
     create: "Create",
     update: "Update",
     student_added_success: "Student added successfully",
@@ -1076,7 +1113,8 @@ export default {
     import_error: "Error during import",
     import_and_others: "and {count} more...",
     confirm_import_title: "Are you absolutely sure?",
-    confirm_import_description: "You are about to import {count} student(s) to {className}. This will create new student records and link them to the selected class.",
+    confirm_import_description:
+      "You are about to import {count} student(s) to {className}. This will create new student records and link them to the selected class.",
     importing: "Importing...",
     confirm_import_button: "Confirm and Import Students",
     metadata: "Metadata (JSON)",
@@ -1096,7 +1134,8 @@ export default {
     select_year_first: "Select Year first",
     map_from_column: "Map From Column",
     attribute_name: "Attribute Name",
-    click_to_add: "Click to add custom student attributes (Workplace, Medical, etc.)",
+    click_to_add:
+      "Click to add custom student attributes (Workplace, Medical, etc.)",
     confirm_mapping: "Confirm Mapping",
     choose_another_file: "Choose another file",
     fill_required: "Please fill all required fields: {errors}",

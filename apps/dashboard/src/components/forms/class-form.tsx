@@ -1,11 +1,5 @@
 "use client";
 
-import { InputColor } from "@/components/input-color";
-import { SelectParentClass } from "@/components/select-parent-class";
-import { useClassParams } from "@/hooks/use-class-params";
-import { useI18n, useScopedI18n } from "@/locales/client";
-import { useZodForm } from "@/hooks/use-zod-form";
-import { useTRPC } from "@/trpc/client";
 import {
   Form,
   FormControl,
@@ -15,7 +9,6 @@ import {
   FormMessage,
 } from "@orbis/ui/form";
 import { Input } from "@orbis/ui/input";
-import { SubmitButton } from "@orbis/ui/submit-button";
 import {
   Select,
   SelectContent,
@@ -23,25 +16,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@orbis/ui/select";
+import { SubmitButton } from "@orbis/ui/submit-button";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { z } from "zod/v3";
+import { InputColor } from "@/components/input-color";
+import { SelectParentClass } from "@/components/select-parent-class";
+import { useClassParams } from "@/hooks/use-class-params";
+import { useZodForm } from "@/hooks/use-zod-form";
+import { useI18n, useScopedI18n } from "@/locales/client";
+import { useTRPC } from "@/trpc/client";
 import { invalidateClassDomain } from "@/utils/query-invalidation";
 
 const classTypes = [
-  'classroom',
-  'laboratory',
-  'library',
-  'computer_lab',
-  'music_room',
-  'exam_hall',
-  'workshop',
-  'multi-purpose_room'
+  "classroom",
+  "laboratory",
+  "library",
+  "computer_lab",
+  "music_room",
+  "exam_hall",
+  "workshop",
+  "multi-purpose_room",
 ] as const;
 
 const formSchema = z.object({
   name: z.string().min(1, "name_required"),
-  type: z.enum(classTypes).default('classroom'),
+  type: z.enum(classTypes).default("classroom"),
   division: z.string().optional().nullable(),
   parentClassId: z.number().optional().nullable(),
   color: z.string().default("#e6e6e6"),
@@ -60,7 +60,6 @@ export function ClassForm({ data }: Props) {
   const { setParams } = useClassParams();
   const t = useI18n();
   const tEducation = useScopedI18n("education");
-
 
   const classMutation = useMutation(
     trpc.classes.create.mutationOptions({
@@ -92,9 +91,9 @@ export function ClassForm({ data }: Props) {
 
   const onSubmit = (formData: ClassFormValues) => {
     classMutation.mutate({
-        ...formData,
-        division: formData.division || null,
-        parentClassId: formData.parentClassId || null,
+      ...formData,
+      division: formData.division || null,
+      parentClassId: formData.parentClassId || null,
     });
   };
 
@@ -127,7 +126,8 @@ export function ClassForm({ data }: Props) {
                     />
                   </FormControl>
                   <FormMessage>
-                    {form.formState.errors.name?.message && tEducation(form.formState.errors.name.message as any)}
+                    {form.formState.errors.name?.message &&
+                      tEducation(form.formState.errors.name.message as any)}
                   </FormMessage>
                 </FormItem>
               )}
@@ -155,7 +155,7 @@ export function ClassForm({ data }: Props) {
             />
 
             <div className="grid grid-cols-2 gap-4">
-               <FormField
+              <FormField
                 control={form.control}
                 name="type"
                 render={({ field }) => (
@@ -163,10 +163,15 @@ export function ClassForm({ data }: Props) {
                     <FormLabel className="text-xs text-[#878787] font-normal">
                       {t("education.type")}
                     </FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder={t("education.select_type")} />
+                          <SelectValue
+                            placeholder={t("education.select_type")}
+                          />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -200,8 +205,6 @@ export function ClassForm({ data }: Props) {
                 )}
               />
             </div>
-
-
 
             <FormField
               control={form.control}

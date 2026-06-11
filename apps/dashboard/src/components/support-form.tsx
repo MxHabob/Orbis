@@ -1,6 +1,6 @@
 "use client";
 
-import { useI18n } from "@/locales/client";
+import { Button } from "@orbis/ui/button";
 import {
   Card,
   CardContent,
@@ -10,11 +10,11 @@ import {
   CardTitle,
 } from "@orbis/ui/card";
 import { Textarea } from "@orbis/ui/textarea";
-import { Button } from "@orbis/ui/button";
-import { sendFeebackAction } from "@/actions/send-feedback-action";
+import { Loader2 } from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { sendFeebackAction } from "@/actions/send-feedback-action";
+import { useI18n } from "@/locales/client";
 
 export function SupportForm() {
   const t = useI18n();
@@ -37,9 +37,7 @@ export function SupportForm() {
       <Card>
         <CardHeader>
           <CardTitle>{t("settings.support")}</CardTitle>
-          <CardDescription>
-            {t("settings.support_description")}
-          </CardDescription>
+          <CardDescription>{t("settings.support_description")}</CardDescription>
         </CardHeader>
 
         <CardContent>

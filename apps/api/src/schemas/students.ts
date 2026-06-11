@@ -1,6 +1,13 @@
 import { z } from "@hono/zod-openapi";
 
-export const studentStatusEnum = z.enum(['active', 'graduated', 'transferred', 'suspended', 'auditor', 'homeschooled']);
+export const studentStatusEnum = z.enum([
+  "active",
+  "graduated",
+  "transferred",
+  "suspended",
+  "auditor",
+  "homeschooled",
+]);
 
 export const studentSchema = z.object({
   userId: z.string().uuid().openapi({
@@ -39,7 +46,9 @@ export const studentSchema = z.object({
 });
 
 export const createStudentSchema = studentSchema;
-export const updateStudentSchema = studentSchema.partial().required({ userId: true });
+export const updateStudentSchema = studentSchema
+  .partial()
+  .required({ userId: true });
 
 export const upsertStudentSchema = z.object({
   userId: z.string().uuid().optional(),
@@ -47,12 +56,12 @@ export const upsertStudentSchema = z.object({
   image: z.string().optional().nullable(),
   email: z.string().email().optional().nullable(),
   phone: z.string().optional().nullable(),
-  sex: z.enum(['male', 'female', 'unspecified']).default('unspecified'),
+  sex: z.enum(["male", "female", "unspecified"]).default("unspecified"),
   studentNumber: z.string().max(20).optional().nullable(),
   secretNumber: z.string().max(20).optional().nullable(),
   seatingNumber: z.string().max(20).optional().nullable(),
   currentClassId: z.number().optional().nullable(),
-  status: studentStatusEnum.default('active'),
+  status: studentStatusEnum.default("active"),
   notes: z.string().optional().nullable(),
   stats: z.record(z.string(), z.any()).optional().nullable(),
   metadata: z.record(z.string(), z.any()).optional().nullable(),
@@ -64,20 +73,20 @@ export const upsertStudentSchema = z.object({
 
 export const importStudentsSchema = z.object({
   classId: z.number(),
-  students: z.array(z.object({
-    studentNumber: z.string().optional(),
-    secretNumber: z.string().optional(),
-    seatingNumber: z.string().optional(),
-    name: z.string(),
-    phone: z.string().optional(),
-    email: z.string().optional(),
-    sex: z.enum(['male', 'female', 'unspecified']).default('unspecified'),
-    metadata: z.any().optional(),
-    fatherName: z.string().optional(),
-    fatherPhone: z.string().optional(),
-    motherName: z.string().optional(),
-    motherPhone: z.string().optional(),
-  })),
+  students: z.array(
+    z.object({
+      studentNumber: z.string().optional(),
+      secretNumber: z.string().optional(),
+      seatingNumber: z.string().optional(),
+      name: z.string(),
+      phone: z.string().optional(),
+      email: z.string().optional(),
+      sex: z.enum(["male", "female", "unspecified"]).default("unspecified"),
+      metadata: z.any().optional(),
+      fatherName: z.string().optional(),
+      fatherPhone: z.string().optional(),
+      motherName: z.string().optional(),
+      motherPhone: z.string().optional(),
+    }),
+  ),
 });
-
-

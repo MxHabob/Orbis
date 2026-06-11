@@ -1,9 +1,5 @@
 "use client";
 
-import { useClassesFilterParams } from "@/hooks/use-classes-filter-params";
-import { useCustomerFilterParams } from "@/hooks/use-customer-filter-params";
-import { useTRPC } from "@/trpc/client";
-import { useSuspenseQuery } from "@tanstack/react-query";
 import {
   Select,
   SelectContent,
@@ -11,24 +7,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@orbis/ui/select";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
+import { useClassesFilterParams } from "@/hooks/use-classes-filter-params";
+import { useCustomerFilterParams } from "@/hooks/use-customer-filter-params";
 import { useI18n } from "@/locales/client";
+import { useTRPC } from "@/trpc/client";
 
 export function AcademicYearFilter() {
   const trpc = useTRPC();
   const pathname = usePathname();
   const t = useI18n();
-  
+
   // Choose the right hook based on the page
   const isDetailsPage = pathname.includes("/reports/");
-  const { filter: classFilter, setFilter: setClassFilter } = useClassesFilterParams();
-  const { filter: customerFilter, setFilter: setCustomerFilter } = useCustomerFilterParams();
-  
+  const { filter: classFilter, setFilter: setClassFilter } =
+    useClassesFilterParams();
+  const { filter: customerFilter, setFilter: setCustomerFilter } =
+    useCustomerFilterParams();
+
   const currentFilter = isDetailsPage ? customerFilter : classFilter;
   const setCurrentFilter = isDetailsPage ? setCustomerFilter : setClassFilter;
 
   const { data: years } = useSuspenseQuery(
-    trpc.academic.getYears.queryOptions()
+    trpc.academic.getYears.queryOptions(),
   );
 
   const handleValueChange = (value: string) => {
@@ -40,9 +42,7 @@ export function AcademicYearFilter() {
   return (
     <div className="flex items-center space-x-2">
       <Select value={currentValue} onValueChange={handleValueChange}>
-        <SelectTrigger 
-          className="h-8 min-w-[130px] text-xs border-border rounded-none shadow-none bg-background focus:ring-0"
-        >
+        <SelectTrigger className="h-8 min-w-[130px] text-xs border-border rounded-none shadow-none bg-background focus:ring-0">
           <SelectValue placeholder={t("education.academic_year")} />
         </SelectTrigger>
         <SelectContent className="rounded-none">
@@ -50,15 +50,17 @@ export function AcademicYearFilter() {
             {t("education.current")}
           </SelectItem>
           {years?.map((year) => (
-            <SelectItem 
-              key={year.id} 
-              value={year.id.toString()} 
+            <SelectItem
+              key={year.id}
+              value={year.id.toString()}
               className="text-xs rounded-none text-left"
             >
               <div className="flex items-center gap-2">
                 <span>{year.yearName}</span>
                 {year.isCurrent && (
-                   <span className="text-[9px] text-muted-foreground">({t("education.current")})</span>
+                  <span className="text-[9px] text-muted-foreground">
+                    ({t("education.current")})
+                  </span>
                 )}
               </div>
             </SelectItem>

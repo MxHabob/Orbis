@@ -1,11 +1,11 @@
 "use client";
 
-import { useReportStore } from "@/store/report";
 import { Button } from "@orbis/ui/button";
 import { Checkbox } from "@orbis/ui/checkbox";
 import { Icons } from "@orbis/ui/icons";
 import { Popover, PopoverContent, PopoverTrigger } from "@orbis/ui/popover";
 import { useI18n } from "@/locales/client";
+import { useReportStore } from "@/store/report";
 
 export function ReportColumnVisibility() {
   const { columns } = useReportStore();

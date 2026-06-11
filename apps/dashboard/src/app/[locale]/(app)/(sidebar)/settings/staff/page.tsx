@@ -1,6 +1,6 @@
+import type { Metadata } from "next";
 import { StaffUsers } from "@/components/staff-users";
 import { prefetch, trpc } from "@/trpc/server";
-import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Staff | Orbis",

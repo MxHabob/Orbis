@@ -1,7 +1,6 @@
 "use client";
 
 import { authClient } from "@orbis/auth/auth-client";
-import { useI18n } from "@/locales/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@orbis/ui/avatar";
 import {
   Card,
@@ -12,6 +11,7 @@ import {
 } from "@orbis/ui/card";
 import { Spinner } from "@orbis/ui/spinner";
 import { useRef } from "react";
+import { useI18n } from "@/locales/client";
 
 export function CompanyLogo() {
   const inputRef = useRef<HTMLInputElement>(null);

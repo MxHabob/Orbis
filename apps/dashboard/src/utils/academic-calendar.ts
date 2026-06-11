@@ -23,9 +23,9 @@ export const HIJRI_MONTHS: HijriMonth[] = [
 ];
 
 export function getMonthName(id: number): string {
-  return HIJRI_MONTHS.find(m => m.id === id)?.name || `Month ${id}`;
+  return HIJRI_MONTHS.find((m) => m.id === id)?.name || `Month ${id}`;
 }
 
 export function getMonthLabel(id: number): string {
-  return HIJRI_MONTHS.find(m => m.id === id)?.label || `Month ${id}`;
+  return HIJRI_MONTHS.find((m) => m.id === id)?.label || `Month ${id}`;
 }

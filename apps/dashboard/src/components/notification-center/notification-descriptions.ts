@@ -1,6 +1,6 @@
-import type { useI18n } from "@/locales/client";
 import { formatAmount } from "@orbis/utils/format";
 import { format, parseISO } from "date-fns";
+import type { useI18n } from "@/locales/client";
 
 type UseI18nReturn = ReturnType<typeof useI18n>;
 
@@ -320,9 +320,7 @@ const handleRecurringSeriesStarted: NotificationDescriptionHandler = (
   const endCount = metadata?.endCount;
 
   // Convert raw frequency (e.g., "monthly_date") to human-readable label (e.g., "Monthly")
-  const frequency = rawFrequency
-    ? null
-    : undefined;
+  const frequency = rawFrequency ? null : undefined;
 
   if (customerName && frequency) {
     if (endType === "after_count" && endCount) {

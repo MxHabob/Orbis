@@ -1,13 +1,13 @@
 "use client";
 
-import { useTRPC } from "@/trpc/client";
-import { useI18n } from "@/locales/client";
+import { authClient } from "@orbis/auth/auth-client";
 import { cn } from "@orbis/ui/cn";
 import { useToast } from "@orbis/ui/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { type FileRejection, useDropzone } from "react-dropzone";
-import { authClient } from "@orbis/auth/auth-client";
+import { useI18n } from "@/locales/client";
+import { useTRPC } from "@/trpc/client";
 
 type UploadResult = {
   filename: string;
@@ -72,13 +72,19 @@ export function VaultUploadZone({ onUpload, children }: Props) {
           const formData = new FormData();
           formData.append("file", file);
           formData.append("bucket", "vault");
-          formData.append("path", `${session?.user.id || "anonymous"}/${file.name}`);
+          formData.append(
+            "path",
+            `${session?.user.id || "anonymous"}/${file.name}`,
+          );
 
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/upload`, {
-            method: "POST",
-            body: formData,
-            credentials: "include",
-          });
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/upload`,
+            {
+              method: "POST",
+              body: formData,
+              credentials: "include",
+            },
+          );
 
           if (!response.ok) throw new Error("Upload failed");
 
@@ -88,7 +94,7 @@ export function VaultUploadZone({ onUpload, children }: Props) {
             file,
             path: data.path, // The key returned by storage
           };
-        })
+        }),
       );
 
       setProgress(80);
@@ -99,7 +105,7 @@ export function VaultUploadZone({ onUpload, children }: Props) {
           filePath: result.path.split("/"),
           mimetype: result.file.type,
           size: result.file.size,
-        }))
+        })),
       );
 
       setProgress(100);
@@ -183,11 +189,11 @@ export function VaultUploadZone({ onUpload, children }: Props) {
           <input {...getInputProps()} id="upload-files" />
 
           <div className="flex flex-col items-center justify-center gap-2">
-            <p className="text-sm">
-              {t("vault.drag_drop")}
-            </p>
+            <p className="text-sm">{t("vault.drag_drop")}</p>
 
-            <span className="text-xs text-[#878787]">{t("vault.max_size")}</span>
+            <span className="text-xs text-[#878787]">
+              {t("vault.max_size")}
+            </span>
           </div>
         </div>
       </div>

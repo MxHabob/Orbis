@@ -1,32 +1,37 @@
 "use client";
 
-import { useCustomerFilterParams } from "@/hooks/use-customer-filter-params";
-import { Input } from "@orbis/ui/input";
-import { Icons } from "@orbis/ui/icons";
-import { useRef, useState, useEffect } from "react";
 import { Avatar, AvatarFallback } from "@orbis/ui/avatar";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger, 
-  DropdownMenuSub, 
-  DropdownMenuSubTrigger, 
-  DropdownMenuPortal, 
-  DropdownMenuSubContent,
-  DropdownMenuGroup,
-  DropdownMenuLabel,
-  DropdownMenuSeparator
-} from "@orbis/ui/dropdown-menu";
 import { Button } from "@orbis/ui/button";
-import { useStudentParams } from "@/hooks/use-student-params";
-import { useTRPC } from "@/trpc/client";
-import { useToast } from "@orbis/ui/use-toast";
-import { useMutation, useQueryClient, useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
-import { useExportStore } from "@/store/export";
-import { useI18n } from "@/locales/client";
 import { cn } from "@orbis/ui/cn";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuPortal,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@orbis/ui/dropdown-menu";
+import { Icons } from "@orbis/ui/icons";
+import { Input } from "@orbis/ui/input";
+import { useToast } from "@orbis/ui/use-toast";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { useCustomerFilterParams } from "@/hooks/use-customer-filter-params";
+import { useStudentParams } from "@/hooks/use-student-params";
+import { useI18n } from "@/locales/client";
+import { useExportStore } from "@/store/export";
+import { useTRPC } from "@/trpc/client";
 
 function StudentSearchFilter() {
   const [input, setInput] = useState("");
@@ -72,10 +77,11 @@ function StudentActions({ classId, className }: StudentActionsProps) {
   const { filter, setFilter } = useCustomerFilterParams();
 
   const { data: years } = useSuspenseQuery(
-    trpc.academic.getYears.queryOptions()
+    trpc.academic.getYears.queryOptions(),
   );
 
-  const { setExportData, setIsExporting: setGlobalExporting } = useExportStore();
+  const { setExportData, setIsExporting: setGlobalExporting } =
+    useExportStore();
 
   const exportMutation = useMutation(
     trpc.grades.exportClassReport.mutationOptions({
@@ -83,8 +89,10 @@ function StudentActions({ classId, className }: StudentActionsProps) {
         setExportData({ runId: data.jobId });
         setGlobalExporting(true);
         toast({
-          title: t("common.export_started") as string || "Export Started",
-          description: t("common.export_started_desc") as string || "Your report is being generated in the background.",
+          title: (t("common.export_started") as string) || "Export Started",
+          description:
+            (t("common.export_started_desc") as string) ||
+            "Your report is being generated in the background.",
           variant: "success",
         });
       },
@@ -96,7 +104,7 @@ function StudentActions({ classId, className }: StudentActionsProps) {
         });
       },
       onSettled: () => setIsExporting(false),
-    })
+    }),
   );
 
   const handleExport = (format: "xlsx" | "csv") => {
@@ -127,17 +135,21 @@ function StudentActions({ classId, className }: StudentActionsProps) {
           {isExporting ? (
             <Loader2 className="animate-spin size-3.5" />
           ) : (
-             <Icons.Add size={14} />
+            <Icons.Add size={14} />
           )}
-          <span>{t("common.actions") as string || "Actions"}</span>
+          <span>{(t("common.actions") as string) || "Actions"}</span>
           <Icons.ChevronDown size={14} className="text-muted-foreground ml-1" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent sideOffset={8} align="end" className="min-w-[200px] rounded-none">
+      <DropdownMenuContent
+        sideOffset={8}
+        align="end"
+        className="min-w-[200px] rounded-none"
+      >
         <DropdownMenuLabel className="text-[10px] uppercase text-muted-foreground font-semibold px-2 py-1">
           {t("common.actions") as string}
         </DropdownMenuLabel>
-        
+
         <DropdownMenuItem
           onClick={() => setStudentParams({ createStudent: true })}
           className="gap-2 cursor-pointer rounded-none text-xs px-2 py-1.5"
@@ -154,39 +166,47 @@ function StudentActions({ classId, className }: StudentActionsProps) {
             <span>{t("education.academic_year")}</span>
           </DropdownMenuSubTrigger>
           <DropdownMenuPortal>
-            <DropdownMenuSubContent sideOffset={10} className="rounded-none min-w-[150px]">
+            <DropdownMenuSubContent
+              sideOffset={10}
+              className="rounded-none min-w-[150px]"
+            >
               <DropdownMenuItem
                 onClick={() => handleYearChange(null)}
                 className={cn(
                   "cursor-pointer rounded-none text-xs",
-                  currentYearId === "current" && "bg-accent"
+                  currentYearId === "current" && "bg-accent",
                 )}
               >
                 {t("education.current")}
               </DropdownMenuItem>
               {years?.map((year) => (
-                  <DropdownMenuItem
-                    key={year.id}
-                    onClick={() => handleYearChange(year.id.toString())}
-                    className={cn(
-                      "cursor-pointer rounded-none text-xs",
-                      currentYearId === year.id.toString() && "bg-accent"
+                <DropdownMenuItem
+                  key={year.id}
+                  onClick={() => handleYearChange(year.id.toString())}
+                  className={cn(
+                    "cursor-pointer rounded-none text-xs",
+                    currentYearId === year.id.toString() && "bg-accent",
+                  )}
+                >
+                  <div className="flex items-center gap-2">
+                    <span>{year.yearName}</span>
+                    {year.isCurrent && (
+                      <span className="text-[9px] text-muted-foreground">
+                        (Active)
+                      </span>
                     )}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span>{year.yearName}</span>
-                      {year.isCurrent && (
-                        <span className="text-[9px] text-muted-foreground">(Active)</span>
-                      )}
-                    </div>
-                  </DropdownMenuItem>
-                ))}
+                  </div>
+                </DropdownMenuItem>
+              ))}
             </DropdownMenuSubContent>
           </DropdownMenuPortal>
         </DropdownMenuSub>
 
         <DropdownMenuSub>
-          <DropdownMenuSubTrigger className="gap-2 cursor-pointer rounded-none text-xs px-2 py-1.5" disabled={!classId}>
+          <DropdownMenuSubTrigger
+            className="gap-2 cursor-pointer rounded-none text-xs px-2 py-1.5"
+            disabled={!classId}
+          >
             <Icons.Share size={16} className="text-muted-foreground" />
             <span>Export</span>
           </DropdownMenuSubTrigger>
@@ -234,9 +254,7 @@ export const StudentHeader = ({ name, color, id }: Props) => {
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4">
-      <div className="flex items-center gap-4 min-w-0">
-        {classInfo}
-      </div>
+      <div className="flex items-center gap-4 min-w-0">{classInfo}</div>
 
       <div className="flex items-center gap-3">
         <StudentSearchFilter />

@@ -1,6 +1,5 @@
 "use client";
 
-import { useUserMutation, useUserQuery } from "@/hooks/use-user";
 import {
   Card,
   CardContent,
@@ -15,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@orbis/ui/select";
+import { useUserMutation, useUserQuery } from "@/hooks/use-user";
 
 export function DateFormatSettings() {
   const { data: user } = useUserQuery();

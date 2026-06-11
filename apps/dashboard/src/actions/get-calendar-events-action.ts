@@ -1,18 +1,21 @@
 "use server";
 
-import { authActionClient } from "@/actions/safe-action";
 import { getCurrentAcademicYear } from "@orbis/db/queries/academic-calendar";
-import { getClassSchedule, getTeacherSchedule } from "@orbis/db/queries/lessons";
+import {
+  getClassSchedule,
+  getTeacherSchedule,
+} from "@orbis/db/queries/lessons";
 import { getStudentByUserId } from "@orbis/db/queries/students";
-import { 
-  addDays, 
-  differenceInDays, 
-  format, 
-  parseISO, 
+import {
+  addDays,
+  differenceInDays,
+  format,
   getDay,
-  parse
+  parse,
+  parseISO,
 } from "date-fns";
 import { z } from "zod";
+import { authActionClient } from "@/actions/safe-action";
 
 export type CalendarEvent = {
   id: string;
@@ -46,27 +49,30 @@ export const getCalendarEventsAction = authActionClient
 
     // 1. Get Current Academic Year
     const currentYear = await getCurrentAcademicYear();
-    
+
     if (!currentYear) {
-        return {};
+      return {};
     }
 
     // 2. Determine Context (Student or Teacher)
     let lessons: any[] = [];
 
-    if (user.role === 'student') {
-        const studentProfile = await getStudentByUserId(user.id);
-        if (studentProfile?.currentClassId) {
-            lessons = await getClassSchedule(studentProfile.currentClassId, currentYear.id);
-        }
-    } else if (user.role === 'teacher') {
-        lessons = await getTeacherSchedule(user.id, currentYear.id);
+    if (user.role === "student") {
+      const studentProfile = await getStudentByUserId(user.id);
+      if (studentProfile?.currentClassId) {
+        lessons = await getClassSchedule(
+          studentProfile.currentClassId,
+          currentYear.id,
+        );
+      }
+    } else if (user.role === "teacher") {
+      lessons = await getTeacherSchedule(user.id, currentYear.id);
     } else {
-        return {};
+      return {};
     }
 
     if (!lessons.length) {
-        return {};
+      return {};
     }
 
     // 3. Expand Lessons into Events for the Date Range
@@ -74,46 +80,56 @@ export const getCalendarEventsAction = authActionClient
     const daysDiff = differenceInDays(endDate, startDate);
 
     for (let i = 0; i <= daysDiff; i++) {
-        const currentDate = addDays(startDate, i);
-        // getDay returns 0 (Sunday) to 6 (Saturday)
-        const dayOfWeek = getDay(currentDate); 
-        
-        // Filter lessons for this day of week
-        const dayLessons = lessons.filter(l => l.dayOfWeek === dayOfWeek);
+      const currentDate = addDays(startDate, i);
+      // getDay returns 0 (Sunday) to 6 (Saturday)
+      const dayOfWeek = getDay(currentDate);
 
-        if (dayLessons.length > 0) {
-            const dateKey = format(currentDate, "yyyy-MM-dd");
-            result[dateKey] = dayLessons.map(lesson => {
-                // Construct Start/End Times
-                const startDateTime = parse(lesson.timeSlot.startTime, 'HH:mm:ss', currentDate);
-                const endDateTime = parse(lesson.timeSlot.endTime, 'HH:mm:ss', currentDate);
-                
-                const startIso = format(startDateTime, "yyyy-MM-dd'T'HH:mm:ssXXX");
-                const stopIso = format(endDateTime, "yyyy-MM-dd'T'HH:mm:ssXXX");
-                
-                // Determine project name based on context
-                const projectName = user.role === 'student' 
-                    ? `${lesson.subject.name} (${lesson.teacher?.name || 'Unknown'})`
-                    : `${lesson.subject.name} - ${lesson.class?.name || 'Unknown'}`;
+      // Filter lessons for this day of week
+      const dayLessons = lessons.filter((l) => l.dayOfWeek === dayOfWeek);
 
-                const duration = (endDateTime.getTime() - startDateTime.getTime()) / 1000;
+      if (dayLessons.length > 0) {
+        const dateKey = format(currentDate, "yyyy-MM-dd");
+        result[dateKey] = dayLessons.map((lesson) => {
+          // Construct Start/End Times
+          const startDateTime = parse(
+            lesson.timeSlot.startTime,
+            "HH:mm:ss",
+            currentDate,
+          );
+          const endDateTime = parse(
+            lesson.timeSlot.endTime,
+            "HH:mm:ss",
+            currentDate,
+          );
 
-                return {
-                    id: `${lesson.id}-${dateKey}`,
-                    start: startIso,
-                    stop: stopIso,
-                    duration: duration > 0 ? duration : 2400, // 40 mins default if calc fails
-                    trackerProject: {
-                        name: projectName,
-                        color: lesson.subject.color || '#000000',
-                    },
-                    lessonId: lesson.id,
-                    subjectId: lesson.subject.id,
-                    classId: lesson.class?.id || 0, // class might be missing in some views? NO, schedule query has it
-                    date: dateKey,
-                };
-            });
-        }
+          const startIso = format(startDateTime, "yyyy-MM-dd'T'HH:mm:ssXXX");
+          const stopIso = format(endDateTime, "yyyy-MM-dd'T'HH:mm:ssXXX");
+
+          // Determine project name based on context
+          const projectName =
+            user.role === "student"
+              ? `${lesson.subject.name} (${lesson.teacher?.name || "Unknown"})`
+              : `${lesson.subject.name} - ${lesson.class?.name || "Unknown"}`;
+
+          const duration =
+            (endDateTime.getTime() - startDateTime.getTime()) / 1000;
+
+          return {
+            id: `${lesson.id}-${dateKey}`,
+            start: startIso,
+            stop: stopIso,
+            duration: duration > 0 ? duration : 2400, // 40 mins default if calc fails
+            trackerProject: {
+              name: projectName,
+              color: lesson.subject.color || "#000000",
+            },
+            lessonId: lesson.id,
+            subjectId: lesson.subject.id,
+            classId: lesson.class?.id || 0, // class might be missing in some views? NO, schedule query has it
+            date: dateKey,
+          };
+        });
+      }
     }
 
     return result;

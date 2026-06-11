@@ -1,4 +1,4 @@
-import { createTRPCRouter, adminProcedure } from "@api/trpc/init";
+import { adminProcedure, createTRPCRouter } from "@api/trpc/init";
 import { getAuditLogs } from "@orbis/db/queries";
 import { z } from "zod";
 

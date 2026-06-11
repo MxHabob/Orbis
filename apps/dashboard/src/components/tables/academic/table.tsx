@@ -1,7 +1,5 @@
 "use client";
 
-import { useAcademicParams } from "@/hooks/use-academic-params";
-import { useTRPC } from "@/trpc/client";
 import { cn } from "@orbis/ui/cn";
 import {
   Table,
@@ -11,39 +9,36 @@ import {
   TableHeader,
   TableRow,
 } from "@orbis/ui/table";
-import {
-  useQueryClient,
-  useSuspenseQuery,
-} from "@tanstack/react-query";
+import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import {
   flexRender,
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
 import React from "react";
+import { useAcademicParams } from "@/hooks/use-academic-params";
+import { useI18n } from "@/locales/client";
+import { useTRPC } from "@/trpc/client";
 import {
   type AcademicTableMeta,
   columns,
   flattenAcademicYears,
 } from "./columns";
 import { Header } from "./header";
-import { useI18n } from "@/locales/client";
 
 export function DataTable() {
-  const [expandedYears, setExpandedYears] = React.useState<Set<number>>(new Set());
+  const [expandedYears, setExpandedYears] = React.useState<Set<number>>(
+    new Set(),
+  );
   const trpc = useTRPC();
   const t = useI18n();
   const queryClient = useQueryClient();
   const { setParams } = useAcademicParams();
 
-  const { data } = useSuspenseQuery(
-    trpc.academic.getYears.queryOptions()
-  );
-
-
+  const { data } = useSuspenseQuery(trpc.academic.getYears.queryOptions());
 
   const flattenedData = React.useMemo(() => {
-    return flattenAcademicYears(data as any ?? []);
+    return flattenAcademicYears((data as any) ?? []);
   }, [data]);
 
   const [searchValue, setSearchValue] = React.useState<string>("");
@@ -53,12 +48,12 @@ export function DataTable() {
 
     if (searchValue) {
       const searchLower = searchValue.toLowerCase();
-      result = result.filter(item => {
+      result = result.filter((item) => {
         const name = (item.isTerm ? item.name : item.yearName)?.toLowerCase();
         return name?.includes(searchLower);
       });
     } else {
-      result = result.filter(item => {
+      result = result.filter((item) => {
         if (!item.isTerm) return true;
         return expandedYears.has(item.parentYearId);
       });
@@ -81,7 +76,7 @@ export function DataTable() {
       setParams({ editTermId: id.toString() });
     },
     onCreateTerm: (yearId: number) => {
-       setParams({ createTerm: true, parentYearId: yearId.toString() });
+      setParams({ createTerm: true, parentYearId: yearId.toString() });
     },
     expandedYears,
     setExpandedYears,
@@ -91,7 +86,7 @@ export function DataTable() {
 
   const table = useReactTable({
     data: filteredData,
-    getRowId: (row) => `${row.isTerm ? 'term' : 'year'}-${row.id}`,
+    getRowId: (row) => `${row.isTerm ? "term" : "year"}-${row.id}`,
     columns,
     getCoreRowModel: getCoreRowModel(),
     manualFiltering: true,
@@ -125,7 +120,11 @@ export function DataTable() {
             <TableRow
               className="hover:bg-muted/50 cursor-pointer"
               key={row.id}
-              onClick={() => row.original.isTerm ? tableMeta.onEditTerm(row.original.id) : tableMeta.onEditYear(row.original.id)}
+              onClick={() =>
+                row.original.isTerm
+                  ? tableMeta.onEditTerm(row.original.id)
+                  : tableMeta.onEditYear(row.original.id)
+              }
             >
               {row.getVisibleCells().map((cell, index) => (
                 <TableCell

@@ -1,9 +1,5 @@
 "use client";
 
-
-import { FilterList } from "@/components/filter-list";
-import { useDocumentFilterParams } from "@/hooks/use-document-filter-params";
-import { useTRPC } from "@/trpc/client";
 import { authClient } from "@orbis/auth/auth-client";
 import { Calendar } from "@orbis/ui/calendar";
 import { cn } from "@orbis/ui/cn";
@@ -22,7 +18,10 @@ import { Input } from "@orbis/ui/input";
 import { formatISO, parseISO } from "date-fns";
 import { useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
+import { FilterList } from "@/components/filter-list";
+import { useDocumentFilterParams } from "@/hooks/use-document-filter-params";
 import { useI18n } from "@/locales/client";
+import { useTRPC } from "@/trpc/client";
 
 export function VaultSearchFilter() {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -81,10 +80,7 @@ export function VaultSearchFilter() {
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <div className="flex gap-4 items-center">
-        <form
-          className="relative"
-          onSubmit={handleSubmit}
-        >
+        <form className="relative" onSubmit={handleSubmit}>
           <Icons.Search className="absolute pointer-events-none start-3 top-[11px]" />
           <Input
             ref={inputRef}

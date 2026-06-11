@@ -1,5 +1,5 @@
-import { Suspense } from "react";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { AcademicSkeleton } from "@/components/tables/academic/skeleton";
 import { DataTable } from "@/components/tables/academic/table";
 import { HydrateClient, prefetch, trpc } from "@/trpc/server";

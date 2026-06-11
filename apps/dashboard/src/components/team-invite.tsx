@@ -1,12 +1,11 @@
 "use client";
 
-import { useTRPC } from "@/trpc/client";
 import type { RouterOutputs } from "@api/trpc/routers/_app";
-import { Avatar, AvatarFallback } from "@orbis/ui/avatar";
-import { AvatarImage } from "@orbis/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@orbis/ui/avatar";
 import { SubmitButton } from "@orbis/ui/submit-button";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { useTRPC } from "@/trpc/client";
 
 type Props = {
   invite: RouterOutputs["team"]["invitesByEmail"][number];

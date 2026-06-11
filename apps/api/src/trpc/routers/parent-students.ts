@@ -1,15 +1,19 @@
-import { createTRPCRouter, protectedProcedure, adminProcedure } from "@api/trpc/init";
-import { TRPCError } from "@trpc/server";
-import { z } from "zod";
 import {
+  adminProcedure,
+  createTRPCRouter,
+  protectedProcedure,
+} from "@api/trpc/init";
+import {
+  getChildrenByParentId,
+  getParentsByStudentId,
   getUserById,
   linkParentToStudent,
   linkParentToStudents,
   unlinkParentFromStudent,
-  getChildrenByParentId,
-  getParentsByStudentId,
   updateParentStudentLink,
 } from "@orbis/db/queries";
+import { TRPCError } from "@trpc/server";
+import { z } from "zod";
 
 const relationshipEnum = z.enum(["parent", "mother", "father", "guardian"]);
 
@@ -24,14 +28,16 @@ export const parentStudentsRouter = createTRPCRouter({
         studentId: z.string().uuid(),
         relationship: relationshipEnum.default("parent"),
         isPrimary: z.boolean().default(false),
-      })
+      }),
     )
     .mutation(async ({ ctx: { db }, input }) => {
-
       // Verify the parent user actually has the "parent" role
       const parentUser = await getUserById(db, input.parentId);
       if (!parentUser || parentUser.role !== "parent") {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "The specified user is not a parent" });
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "The specified user is not a parent",
+        });
       }
 
       return linkParentToStudent(db, {
@@ -49,20 +55,25 @@ export const parentStudentsRouter = createTRPCRouter({
     .input(
       z.object({
         parentId: z.string().uuid(),
-        students: z.array(
-          z.object({
-            studentId: z.string().uuid(),
-            relationship: relationshipEnum.default("parent"),
-            isPrimary: z.boolean().default(false),
-          })
-        ).min(1).max(20),
-      })
+        students: z
+          .array(
+            z.object({
+              studentId: z.string().uuid(),
+              relationship: relationshipEnum.default("parent"),
+              isPrimary: z.boolean().default(false),
+            }),
+          )
+          .min(1)
+          .max(20),
+      }),
     )
     .mutation(async ({ ctx: { db }, input }) => {
-
       const parentUser = await getUserById(db, input.parentId);
       if (!parentUser || parentUser.role !== "parent") {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "The specified user is not a parent" });
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "The specified user is not a parent",
+        });
       }
 
       return linkParentToStudents(db, input.parentId, input.students);
@@ -76,10 +87,9 @@ export const parentStudentsRouter = createTRPCRouter({
       z.object({
         parentId: z.string().uuid(),
         studentId: z.string().uuid(),
-      })
+      }),
     )
     .mutation(async ({ ctx: { db }, input }) => {
-
       await unlinkParentFromStudent(db, input.parentId, input.studentId);
       return { success: true };
     }),
@@ -94,10 +104,9 @@ export const parentStudentsRouter = createTRPCRouter({
         studentId: z.string().uuid(),
         relationship: relationshipEnum.optional(),
         isPrimary: z.boolean().optional(),
-      })
+      }),
     )
     .mutation(async ({ ctx: { db }, input }) => {
-
       const { parentId, studentId, ...data } = input;
       return updateParentStudentLink(db, parentId, studentId, data);
     }),

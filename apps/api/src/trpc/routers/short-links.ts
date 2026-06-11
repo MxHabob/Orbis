@@ -1,16 +1,19 @@
 import { createTRPCRouter, protectedProcedure } from "@api/trpc/init";
-import { z } from "zod";
-import { nanoid } from "nanoid";
 import { shortLinks } from "@orbis/db/schema";
 import { TRPCError } from "@trpc/server";
+import { nanoid } from "nanoid";
+import { z } from "zod";
 
 export const shortLinksRouter = createTRPCRouter({
   createForDocument: protectedProcedure
     .input(
       z.object({
         filePath: z.string(),
-        expireIn: z.number().optional().default(60 * 60 * 24 * 30), // 30 days
-      })
+        expireIn: z
+          .number()
+          .optional()
+          .default(60 * 60 * 24 * 30), // 30 days
+      }),
     )
     .mutation(async ({ ctx: { session, db }, input }) => {
       const code = nanoid(10);
@@ -37,7 +40,8 @@ export const shortLinksRouter = createTRPCRouter({
       }
 
       // We return the short URL that will be handled by our API redirector
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002";
+      const baseUrl =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002";
 
       return {
         shortUrl: `${baseUrl}/s/${code}`,

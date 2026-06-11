@@ -45,11 +45,7 @@ const config = {
       },
     ],
   },
-  transpilePackages: [
-    "@orbis/ui",
-    "@orbis/tailwind",
-    "@orbis/api",
-  ],
+  transpilePackages: ["@orbis/ui", "@orbis/tailwind", "@orbis/api"],
   serverExternalPackages: ["@react-pdf/renderer", "pino"],
   typescript: {
     ignoreBuildErrors: true,

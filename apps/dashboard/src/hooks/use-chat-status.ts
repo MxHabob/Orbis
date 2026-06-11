@@ -1,12 +1,12 @@
 "use client";
 
+import type { ChatStatus, ToolUIPart, UIMessage } from "ai";
+import { useMemo } from "react";
+import { useArtifacts, useDataPart } from "@/hooks/use-chat-actions";
 import type { ArtifactStage, ArtifactType } from "@/lib/artifact-config";
 import { getSectionFromStage } from "@/lib/artifact-config";
 import { extractBankAccountRequired } from "@/lib/chat-utils";
 import type { AgentStatus } from "@/types/agents";
-import { useArtifacts, useDataPart } from "@/hooks/use-chat-actions";
-import type { ChatStatus, ToolUIPart, UIMessage } from "ai";
-import { useMemo } from "react";
 
 interface ChatStatusResult {
   agentStatus: AgentStatus | null;

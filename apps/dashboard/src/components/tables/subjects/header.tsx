@@ -1,9 +1,9 @@
 "use client";
 
-import { useSubjectParams } from "@/hooks/use-subject-params";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import type { Table } from "@tanstack/react-table";
+import { useSubjectParams } from "@/hooks/use-subject-params";
 import type { Subject } from "./columns";
 
 type Props = {

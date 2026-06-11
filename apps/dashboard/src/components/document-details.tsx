@@ -1,5 +1,8 @@
 "use client";
 
+import { SheetHeader } from "@orbis/ui/sheet";
+import { formatDate } from "@orbis/utils/format";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { DocumentActions } from "@/components/document-actions";
 import { DocumentDetailsSkeleton } from "@/components/document-details-skeleton";
 import { FileViewer } from "@/components/file-viewer";
@@ -7,9 +10,6 @@ import { VaultRelatedFiles } from "@/components/vault/vault-related-files";
 import { useDocumentParams } from "@/hooks/use-document-params";
 import { useTRPC } from "@/trpc/client";
 import { formatSize } from "@/utils/format";
-import { formatDate } from "@orbis/utils/format";
-import { SheetHeader } from "@orbis/ui/sheet";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export function DocumentDetails() {
   const trpc = useTRPC();
@@ -25,7 +25,7 @@ export function DocumentDetails() {
       id: params.documentId!,
     }),
     enabled: isOpen,
-    staleTime: 0, 
+    staleTime: 0,
     initialData: () => {
       const pages = queryClient
         .getQueriesData({ queryKey: trpc.documents.get.infiniteQueryKey() })
@@ -57,7 +57,11 @@ export function DocumentDetails() {
           </span>
         </div>
 
-        <DocumentActions showDelete={fullView} filePath={data?.pathTokens as string[]} id={data?.id} />
+        <DocumentActions
+          showDelete={fullView}
+          filePath={data?.pathTokens as string[]}
+          id={data?.id}
+        />
       </SheetHeader>
 
       <div className="h-full max-h-[763px] p-0 pb-4 overflow-hidden">

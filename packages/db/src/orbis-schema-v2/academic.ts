@@ -1,21 +1,20 @@
 import {
+  boolean,
+  date,
+  index,
+  integer,
+  jsonb,
+  smallint,
+  text,
+  time,
+  timestamp,
+  unique,
   uuid,
   varchar,
-  text,
-  boolean,
-  timestamp,
-  date,
-  time,
-  index,
-  unique,
-  integer,
-  smallint,
-  jsonb,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm/sql";
-import { academicSchema } from "./types";
-import { scoreType, percentType, hijriDateType } from "./types";
 import { academicStatusEnum, attendanceEnum } from "./enums";
+import { academicSchema, hijriDateType, percentType, scoreType } from "./types";
 
 // ============================================================
 // ACADEMIC CYCLES (Years, Terms, Quarters)
@@ -57,17 +56,15 @@ export const academicCycles = academicSchema.table(
     registrationFee: integer("registration_fee"),
     lateRegistrationFee: integer("late_registration_fee"),
 
-    settings: jsonb("settings")
-      .default("{}")
-      .$type<{
-        reportCardTemplate?: string;
-        certificateTemplate?: string;
-        promotionCriteria?: {
-          minAttendance?: number;
-          minGpa?: number;
-          behaviorThreshold?: number;
-        };
-      }>(),
+    settings: jsonb("settings").default("{}").$type<{
+      reportCardTemplate?: string;
+      certificateTemplate?: string;
+      promotionCriteria?: {
+        minAttendance?: number;
+        minGpa?: number;
+        behaviorThreshold?: number;
+      };
+    }>(),
 
     sortOrder: smallint("sort_order").default(0),
 
@@ -82,7 +79,7 @@ export const academicCycles = academicSchema.table(
     parentIdx: index("cycle_parent_idx").on(t.parentId),
     dateRangeIdx: index("cycle_date_range_idx").on(t.startDate, t.endDate),
     orgCodeIdx: unique("cycle_org_code_idx").on(t.orgId, t.code),
-  })
+  }),
 );
 
 // ============================================================
@@ -118,15 +115,13 @@ export const orgUnits = academicSchema.table(
     phone: varchar("phone", { length: 15 }),
     email: varchar("email", { length: 254 }),
 
-    settings: jsonb("settings")
-      .default("{}")
-      .$type<{
-        maxClassSize?: number;
-        levels?: string[];
-        logo?: string;
-        color?: string;
-        facilities?: string[];
-      }>(),
+    settings: jsonb("settings").default("{}").$type<{
+      maxClassSize?: number;
+      levels?: string[];
+      logo?: string;
+      color?: string;
+      facilities?: string[];
+    }>(),
 
     sortOrder: smallint("sort_order").default(0),
     isActive: boolean("is_active").default(true).notNull(),
@@ -135,16 +130,12 @@ export const orgUnits = academicSchema.table(
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
   (t) => ({
-    orgTypeIdx: index("unit_org_type_idx").on(
-      t.orgId,
-      t.type,
-      t.isActive
-    ),
+    orgTypeIdx: index("unit_org_type_idx").on(t.orgId, t.type, t.isActive),
     pathIdx: index("unit_path_idx").on(t.path),
     headIdx: index("unit_head_idx").on(t.headId),
     parentIdx: index("unit_parent_idx").on(t.parentId),
     orgCodeIdx: unique("unit_org_code_idx").on(t.orgId, t.code),
-  })
+  }),
 );
 
 // ============================================================
@@ -198,17 +189,17 @@ export const classes = academicSchema.table(
     unitLevelIdx: index("class_unit_level_idx").on(
       t.unitId,
       t.level,
-      t.isActive
+      t.isActive,
     ),
     teacherIdx: index("class_teacher_idx").on(t.homeroomTeacherId),
     cycleIdx: index("class_cycle_idx").on(t.cycleId),
     orgActiveIdx: index("class_org_active_idx").on(
       t.orgId,
       t.isActive,
-      t.isDeleted
+      t.isDeleted,
     ),
     orgCodeIdx: unique("class_org_code_idx").on(t.orgId, t.name, t.cycleId),
-  })
+  }),
 );
 
 // ============================================================
@@ -238,19 +229,19 @@ export const subjects = academicSchema.table(
     requiresPractical: boolean("requires_practical").default(false).notNull(),
     maxStudentsPerClass: smallint("max_students_per_class"),
 
-    defaultGradeGroups: jsonb("default_grade_groups")
-      .default("[]")
-      .$type<
-        Array<{
-          name: string;
-          weight: number;
-          dropLowest?: number;
-          aggregation: "average" | "sum" | "best_of" | "weighted_average";
-        }>
-      >(),
+    defaultGradeGroups: jsonb("default_grade_groups").default("[]").$type<
+      Array<{
+        name: string;
+        weight: number;
+        dropLowest?: number;
+        aggregation: "average" | "sum" | "best_of" | "weighted_average";
+      }>
+    >(),
 
     prerequisites: jsonb("prerequisites").$type<string[]>().default("[]"),
-    learningOutcomes: jsonb("learning_outcomes").$type<string[]>().default("[]"),
+    learningOutcomes: jsonb("learning_outcomes")
+      .$type<string[]>()
+      .default("[]"),
 
     color: varchar("color", { length: 7 }).default("#6366f1"),
     icon: varchar("icon", { length: 50 }),
@@ -268,9 +259,9 @@ export const subjects = academicSchema.table(
     unitIdx: index("subj_unit_idx").on(t.unitId),
     nameSearchIdx: index("subj_name_search_idx").using(
       "gin",
-      sql`to_tsvector('arabic', COALESCE(${t.name}, '') || ' ' || COALESCE(${t.nameAr}, ''))`
+      sql`to_tsvector('arabic', COALESCE(${t.name}, '') || ' ' || COALESCE(${t.nameAr}, ''))`,
     ),
-  })
+  }),
 );
 
 // ============================================================
@@ -289,8 +280,8 @@ export const classSubjects = academicSchema.table(
     assistantTeacherId: uuid("assistant_teacher_id"),
     substituteTeacherId: uuid("substitute_teacher_id"),
 
-    gradeGroups: jsonb("grade_groups")
-      .$type<
+    gradeGroups:
+      jsonb("grade_groups").$type<
         Array<{
           name: string;
           weight: number;
@@ -303,15 +294,13 @@ export const classSubjects = academicSchema.table(
     theoryHours: smallint("theory_hours").default(1),
     practicalHours: smallint("practical_hours").default(1),
 
-    assessmentConfig: jsonb("assessment_config")
-      .default("{}")
-      .$type<{
-        examWeight?: number;
-        quizWeight?: number;
-        homeworkWeight?: number;
-        participationWeight?: number;
-        projectWeight?: number;
-      }>(),
+    assessmentConfig: jsonb("assessment_config").default("{}").$type<{
+      examWeight?: number;
+      quizWeight?: number;
+      homeworkWeight?: number;
+      participationWeight?: number;
+      projectWeight?: number;
+    }>(),
 
     isActive: boolean("is_active").default(true).notNull(),
 
@@ -324,7 +313,7 @@ export const classSubjects = academicSchema.table(
     teacherIdx: index("cs_teacher_idx").on(t.primaryTeacherId),
     cycleIdx: index("cs_cycle_idx").on(t.cycleId),
     subjectIdx: index("cs_subject_idx").on(t.subjectId),
-  })
+  }),
 );
 
 // ============================================================
@@ -367,15 +356,13 @@ export const enrollments = academicSchema.table(
     promotionDecision: varchar("promotion_decision", { length: 20 }),
     promotionNotes: text("promotion_notes"),
 
-    meta: jsonb("meta")
-      .default("{}")
-      .$type<{
-        transportType?: "bus" | "private" | "walk";
-        transportRoute?: string;
-        transportFee?: number;
-        documents?: Record<string, string>;
-        previousGrades?: Array<{ subject: string; grade: string; score: number }>;
-      }>(),
+    meta: jsonb("meta").default("{}").$type<{
+      transportType?: "bus" | "private" | "walk";
+      transportRoute?: string;
+      transportFee?: number;
+      documents?: Record<string, string>;
+      previousGrades?: Array<{ subject: string; grade: string; score: number }>;
+    }>(),
 
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -383,7 +370,7 @@ export const enrollments = academicSchema.table(
   (t) => ({
     studentCycleIdx: unique("enroll_student_cycle_idx").on(
       t.studentId,
-      t.cycleId
+      t.cycleId,
     ),
     classCycleIdx: index("enroll_class_cycle_idx").on(t.classId, t.cycleId),
     orgStatusIdx: index("enroll_org_status_idx")
@@ -391,12 +378,12 @@ export const enrollments = academicSchema.table(
       .where(sql`${t.status} = 'active'`),
     studentNumberIdx: unique("enroll_student_number_idx").on(
       t.orgId,
-      t.studentNumber
+      t.studentNumber,
     ),
     transferIdx: index("enroll_transfer_idx")
       .on(t.studentId, t.transferDate)
       .where(sql`${t.transferDate} IS NOT NULL`),
-  })
+  }),
 );
 
 // ============================================================
@@ -416,7 +403,9 @@ export const studentGuardians = academicSchema.table(
     relationshipAr: varchar("relationship_ar", { length: 30 }),
 
     isPrimary: boolean("is_primary").default(false).notNull(),
-    isEmergencyContact: boolean("is_emergency_contact").default(false).notNull(),
+    isEmergencyContact: boolean("is_emergency_contact")
+      .default(false)
+      .notNull(),
     isAuthorizedPickup: boolean("is_authorized_pickup").default(true).notNull(),
 
     canViewGrades: boolean("can_view_grades").default(true).notNull(),
@@ -450,7 +439,7 @@ export const studentGuardians = academicSchema.table(
     payerIdx: index("guardian_payer_idx")
       .on(t.studentId, t.isPayer)
       .where(sql`${t.isPayer} = true`),
-  })
+  }),
 );
 
 // ============================================================
@@ -486,15 +475,12 @@ export const timeSlots = academicSchema.table(
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
   (t) => ({
-    cycleNumberIdx: unique("slot_cycle_number_idx").on(
-      t.cycleId,
-      t.slotNumber
-    ),
+    cycleNumberIdx: unique("slot_cycle_number_idx").on(t.cycleId, t.slotNumber),
     cycleTimeIdx: index("slot_cycle_time_idx").on(t.cycleId, t.startTime),
     activeIdx: index("slot_active_idx")
       .on(t.cycleId, t.isActive)
       .where(sql`${t.isActive} = true`),
-  })
+  }),
 );
 
 // ============================================================
@@ -521,9 +507,7 @@ export const scheduledLessons = academicSchema.table(
     roomId: uuid("room_id"),
     roomName: varchar("room_name", { length: 50 }),
 
-    status: varchar("status", { length: 20 })
-      .default("scheduled")
-      .notNull(),
+    status: varchar("status", { length: 20 }).default("scheduled").notNull(),
     isSubstituted: boolean("is_substituted").default(false).notNull(),
     substitutionReason: varchar("substitution_reason", { length: 200 }),
 
@@ -552,13 +536,13 @@ export const scheduledLessons = academicSchema.table(
       t.classId,
       t.timeSlotId,
       t.dayOfWeek,
-      t.cycleId
+      t.cycleId,
     ),
     classDayIdx: index("lesson_class_day_idx").on(t.classId, t.dayOfWeek),
     teacherDayIdx: index("lesson_teacher_day_idx").on(
       t.teacherId,
       t.dayOfWeek,
-      t.timeSlotId
+      t.timeSlotId,
     ),
     cycleIdx: index("lesson_cycle_idx").on(t.cycleId),
     subjectIdx: index("lesson_subject_idx").on(t.subjectId),
@@ -568,7 +552,7 @@ export const scheduledLessons = academicSchema.table(
     attendanceIdx: index("lesson_attendance_idx")
       .on(t.classId, t.attendanceTaken)
       .where(sql`${t.attendanceTaken} = false`),
-  })
+  }),
 );
 
 // ============================================================
@@ -615,7 +599,9 @@ export const assessments = academicSchema.table(
     instructionsAr: text("instructions_ar"),
     attachments: jsonb("attachments")
       .default("[]")
-      .$type<Array<{ name: string; url: string; type: string; size: number }>>(),
+      .$type<
+        Array<{ name: string; url: string; type: string; size: number }>
+      >(),
 
     createdBy: uuid("created_by").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -632,7 +618,7 @@ export const assessments = academicSchema.table(
     lockedIdx: index("assess_locked_idx")
       .on(t.cycleId, t.isLocked)
       .where(sql`${t.isLocked} = false`),
-  })
+  }),
 );
 
 // ============================================================
@@ -676,13 +662,19 @@ export const grades = academicSchema.table(
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (t) => ({
-    unique: unique("grade_enroll_assess_idx").on(t.enrollmentId, t.assessmentId),
-    enrollCycleIdx: index("grade_enroll_cycle_idx").on(t.enrollmentId, t.cycleId),
+    unique: unique("grade_enroll_assess_idx").on(
+      t.enrollmentId,
+      t.assessmentId,
+    ),
+    enrollCycleIdx: index("grade_enroll_cycle_idx").on(
+      t.enrollmentId,
+      t.cycleId,
+    ),
     assessIdx: index("grade_assess_idx").on(t.assessmentId),
     assessEnrollIdx: index("grade_assess_enroll_idx").on(
       t.assessmentId,
       t.enrollmentId,
-      t.score
+      t.score,
     ),
     cycleScoreIdx: index("grade_cycle_score_idx")
       .on(t.cycleId, t.score)
@@ -693,7 +685,7 @@ export const grades = academicSchema.table(
     absentIdx: index("grade_absent_idx")
       .on(t.cycleId, t.isAbsent)
       .where(sql`${t.isAbsent} = true`),
-  })
+  }),
 );
 
 export const gradeHistory = academicSchema.table(
@@ -720,7 +712,7 @@ export const gradeHistory = academicSchema.table(
   (t) => ({
     gradeIdx: index("gh_grade_idx").on(t.gradeId, t.changedAt),
     changedByIdx: index("gh_changed_by_idx").on(t.changedBy),
-  })
+  }),
 );
 
 // ============================================================
@@ -739,17 +731,15 @@ export const attendanceDaily = academicSchema.table(
 
     status: attendanceEnum("status").notNull(),
 
-    lessons: jsonb("lessons")
-      .default("[]")
-      .$type<
-        Array<{
-          lessonId: string;
-          status: "present" | "absent" | "late" | "excused";
-          minutesLate?: number;
-          markedBy?: string;
-          markedAt?: string;
-        }>
-      >(),
+    lessons: jsonb("lessons").default("[]").$type<
+      Array<{
+        lessonId: string;
+        status: "present" | "absent" | "late" | "excused";
+        minutesLate?: number;
+        markedBy?: string;
+        markedAt?: string;
+      }>
+    >(),
 
     totalLessons: smallint("total_lessons").default(0),
     presentLessons: smallint("present_lessons").default(0),
@@ -785,7 +775,10 @@ export const attendanceDaily = academicSchema.table(
   (t) => ({
     unique: unique("attend_enroll_date_idx").on(t.enrollmentId, t.date),
     cycleDateIdx: index("attend_cycle_date_idx").on(t.cycleId, t.date),
-    enrollCycleIdx: index("attend_enroll_cycle_idx").on(t.enrollmentId, t.cycleId),
+    enrollCycleIdx: index("attend_enroll_cycle_idx").on(
+      t.enrollmentId,
+      t.cycleId,
+    ),
     statusIdx: index("attend_status_idx")
       .on(t.cycleId, t.status)
       .where(sql`${t.status} != 'present'`),
@@ -795,7 +788,7 @@ export const attendanceDaily = academicSchema.table(
     verifyIdx: index("attend_verify_idx")
       .on(t.cycleId, t.isVerified)
       .where(sql`${t.isVerified} = false AND ${t.excuseType} IS NOT NULL`),
-  })
+  }),
 );
 
 export const attendanceSummary = academicSchema.table(
@@ -831,13 +824,13 @@ export const attendanceSummary = academicSchema.table(
     unique: unique("attend_sum_unique_idx").on(
       t.enrollmentId,
       t.periodType,
-      t.periodStart
+      t.periodStart,
     ),
     enrollIdx: index("attend_sum_enroll_idx").on(t.enrollmentId),
     cycleAlertIdx: index("attend_sum_alert_idx")
       .on(t.cycleId, t.hasAlert)
       .where(sql`${t.hasAlert} = true`),
-  })
+  }),
 );
 
 // ============================================================
@@ -854,9 +847,7 @@ export const behaviorRecords = academicSchema.table(
     enrollmentId: uuid("enrollment_id").notNull(),
 
     type: varchar("type", { length: 20 }).notNull(),
-    severity: varchar("severity", { length: 10 })
-      .default("minor")
-      .notNull(),
+    severity: varchar("severity", { length: 10 }).default("minor").notNull(),
     category: varchar("category", { length: 50 }),
 
     title: varchar("title", { length: 100 }).notNull(),
@@ -910,6 +901,8 @@ export const behaviorRecords = academicSchema.table(
     reporterIdx: index("behavior_reporter_idx").on(t.reportedBy),
     parentNotifyIdx: index("behavior_parent_notify_idx")
       .on(t.enrollmentId, t.parentNotified)
-      .where(sql`${t.parentNotified} = false AND ${t.severity} IN ('major', 'critical')`),
-  })
+      .where(
+        sql`${t.parentNotified} = false AND ${t.severity} IN ('major', 'critical')`,
+      ),
+  }),
 );

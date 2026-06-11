@@ -1,11 +1,11 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { useTRPC } from "@/trpc/client";
-import { useQuery } from "@tanstack/react-query";
-import { CertificateViewer } from "@/components/certificates/certificate-viewer";
 import { Spinner } from "@orbis/ui/spinner";
+import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { CertificateViewer } from "@/components/certificates/certificate-viewer";
+import { useTRPC } from "@/trpc/client";
 
 /**
  * Specialized Export Proxy Page
@@ -13,14 +13,23 @@ import { useEffect, useState } from "react";
  */
 
 const HIJRI_MONTHS_NAMES: Record<number, string> = {
-  1: "محرم", 2: "صفر", 3: "ربيع أول", 4: "ربيع ثاني",
-  5: "جمادى أول", 6: "جمادى ثاني", 7: "رجب", 8: "شعبان",
-  9: "رمضان", 10: "شوال", 11: "ذو القعدة", 12: "ذو الحجة",
+  1: "محرم",
+  2: "صفر",
+  3: "ربيع أول",
+  4: "ربيع ثاني",
+  5: "جمادى أول",
+  6: "جمادى ثاني",
+  7: "رجب",
+  8: "شعبان",
+  9: "رمضان",
+  10: "شوال",
+  11: "ذو القعدة",
+  12: "ذو الحجة",
 };
 
 const mapStudentToVariables = (student: any, type?: string, month?: number) => {
   if (!student) return {};
-  
+
   const stats = (student.stats as any) || {};
   const currentYear = student.currentClass?.yearName || "2024-2025";
 
@@ -41,9 +50,23 @@ const mapStudentToVariables = (student: any, type?: string, month?: number) => {
     org_name: "مدرسة صنعاء النموذجية",
     admin_name: stats.admin_name || "",
     vp_name: stats.vp_name || "",
-    issue_date: new Date().toLocaleDateString('ar-YE', { year: 'numeric', month: 'long', day: 'numeric' }),
-    certificate_type: type === "half-yearly" ? "النصفي" : (type === "final" ? "النهائي" : "الشهري"),
-    report_type: type === "half-yearly" ? "النصفي" : (type === "final" ? "النهائي" : `الشهري - لشهر ${month ? (HIJRI_MONTHS_NAMES[month] || `شهر ${month}`) : ""}`),
+    issue_date: new Date().toLocaleDateString("ar-YE", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }),
+    certificate_type:
+      type === "half-yearly"
+        ? "النصفي"
+        : type === "final"
+          ? "النهائي"
+          : "الشهري",
+    report_type:
+      type === "half-yearly"
+        ? "النصفي"
+        : type === "final"
+          ? "النهائي"
+          : `الشهري - لشهر ${month ? HIJRI_MONTHS_NAMES[month] || `شهر ${month}` : ""}`,
     school_year: currentYear,
     studentId: student.userId,
     userId: student.userId,
@@ -62,19 +85,24 @@ export default function ExportCertificatePage() {
   const { data: student, isLoading: loadingStudent } = useQuery(
     trpc.students.getStudentByUserId.queryOptions(
       { userId: studentId! },
-      { enabled: !!studentId }
-    )
+      { enabled: !!studentId },
+    ),
   );
 
   const { data: template, isLoading: loadingTemplate } = useQuery(
     trpc.certificateTemplates.getById.queryOptions(
       { id: templateId! },
-      { enabled: !!templateId }
-    )
+      { enabled: !!templateId },
+    ),
   );
 
   const [isReady, setIsReady] = useState(false);
-  const rankingPeriod = type === "half-yearly" ? "half-yearly" : type === "final" ? "final" : "monthly";
+  const rankingPeriod =
+    type === "half-yearly"
+      ? "half-yearly"
+      : type === "final"
+        ? "final"
+        : "monthly";
   const rankingMonth = rankingPeriod === "monthly" ? month : undefined;
   const classId = (student as any)?.currentClass?.id;
   const academicYearId = (student as any)?.currentClass?.academicYearId;
@@ -89,9 +117,12 @@ export default function ExportCertificatePage() {
         limit: 10,
       },
       {
-        enabled: !!classId && !!academicYearId && (rankingPeriod !== "monthly" || !!rankingMonth),
-      }
-    )
+        enabled:
+          !!classId &&
+          !!academicYearId &&
+          (rankingPeriod !== "monthly" || !!rankingMonth),
+      },
+    ),
   );
 
   useEffect(() => {
@@ -116,10 +147,24 @@ export default function ExportCertificatePage() {
 
   const studentVariables = {
     ...mapStudentToVariables(student as any, type, month),
-    rank: topStudents?.find((item: any) => item.studentId === (student as any)?.userId)?.rankLabel || (((student as any)?.stats as any)?.rank || ""),
-    rank_percentage: topStudents?.find((item: any) => item.studentId === (student as any)?.userId)?.percentage ?? "",
-    rank_total: topStudents?.find((item: any) => item.studentId === (student as any)?.userId)?.totalScore ?? "",
-    rank_max: topStudents?.find((item: any) => item.studentId === (student as any)?.userId)?.maxScore ?? "",
+    rank:
+      topStudents?.find(
+        (item: any) => item.studentId === (student as any)?.userId,
+      )?.rankLabel ||
+      ((student as any)?.stats as any)?.rank ||
+      "",
+    rank_percentage:
+      topStudents?.find(
+        (item: any) => item.studentId === (student as any)?.userId,
+      )?.percentage ?? "",
+    rank_total:
+      topStudents?.find(
+        (item: any) => item.studentId === (student as any)?.userId,
+      )?.totalScore ?? "",
+    rank_max:
+      topStudents?.find(
+        (item: any) => item.studentId === (student as any)?.userId,
+      )?.maxScore ?? "",
   };
 
   return (

@@ -1,31 +1,25 @@
 "use client";
 
-import { useStudentParams } from "@/hooks/use-student-params";
 import type { RouterOutputs } from "@api/trpc/routers/_app";
 import { Avatar, AvatarFallback, AvatarImageNext } from "@orbis/ui/avatar";
 import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
-import { Icons } from "@orbis/ui/icons";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@orbis/ui/dropdown-menu";
+import { Icons } from "@orbis/ui/icons";
 import type { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { memo, useCallback } from "react";
+import { useStudentParams } from "@/hooks/use-student-params";
 
 export type Student = RouterOutputs["students"]["getByClassId"]["data"][number];
 
 const NameCell = memo(
-  ({
-    name,
-    image,
-  }: {
-    name: string | null;
-    image: string | null;
-  }) => {
+  ({ name, image }: { name: string | null; image: string | null }) => {
     const displayName = name ?? "-";
 
     return (
@@ -123,14 +117,13 @@ export const columns: ColumnDef<Student>[] = [
     cell: ({ row }) => {
       const { setParams } = useStudentParams();
       return (
-        <div 
-          className="cursor-pointer hover:underline" 
-          onClick={() => setParams({ studentId: row.original.userId, certificate: true })}
+        <div
+          className="cursor-pointer hover:underline"
+          onClick={() =>
+            setParams({ studentId: row.original.userId, certificate: true })
+          }
         >
-          <NameCell 
-            name={row.original.name} 
-            image={row.original.image} 
-          />
+          <NameCell name={row.original.name} image={row.original.image} />
         </div>
       );
     },
@@ -185,7 +178,7 @@ export const columns: ColumnDef<Student>[] = [
     cell: ({ row }) => {
       const status = row.original.status;
       return (
-        <Badge 
+        <Badge
           variant={status === "active" ? "success" : "secondary"}
           className="capitalize"
         >

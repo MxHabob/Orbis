@@ -1,16 +1,20 @@
 "use client";
 
-import { useI18n } from "@/locales/client";
-import { useStudentParams } from "@/hooks/use-student-params";
-import { useClassParams } from "@/hooks/use-class-params";
-import { useSubjectParams } from "@/hooks/use-subject-params";
-import { useStaffParams } from "@/hooks/use-staff-params";
-import { useAcademicParams } from "@/hooks/use-academic-params";
-import { useTRPC } from "@/trpc/client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { DeleteDialog } from "./delete-dialog";
-import { invalidateStudentDomain, invalidateClassDomain, invalidateSubjectDomain } from "@/utils/query-invalidation";
 import { useToast } from "@orbis/ui/use-toast";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAcademicParams } from "@/hooks/use-academic-params";
+import { useClassParams } from "@/hooks/use-class-params";
+import { useStaffParams } from "@/hooks/use-staff-params";
+import { useStudentParams } from "@/hooks/use-student-params";
+import { useSubjectParams } from "@/hooks/use-subject-params";
+import { useI18n } from "@/locales/client";
+import { useTRPC } from "@/trpc/client";
+import {
+  invalidateClassDomain,
+  invalidateStudentDomain,
+  invalidateSubjectDomain,
+} from "@/utils/query-invalidation";
+import { DeleteDialog } from "./delete-dialog";
 
 export function GlobalDeleteDialog() {
   const trpc = useTRPC();
@@ -18,11 +22,19 @@ export function GlobalDeleteDialog() {
   const t = useI18n();
   const { toast } = useToast();
 
-  const { deleteStudentId, setParams: setStudentParams, studentId } = useStudentParams();
+  const {
+    deleteStudentId,
+    setParams: setStudentParams,
+    studentId,
+  } = useStudentParams();
   const { deleteClassId, setParams: setClassParams } = useClassParams();
   const { deleteSubjectId, setParams: setSubjectParams } = useSubjectParams();
   const { deleteStaffId, setParams: setStaffParams } = useStaffParams();
-  const { deleteYearId, deleteTermId, setParams: setAcademicParams } = useAcademicParams();
+  const {
+    deleteYearId,
+    deleteTermId,
+    setParams: setAcademicParams,
+  } = useAcademicParams();
 
   // Mutations
   const deleteStudentMutation = useMutation(
@@ -32,7 +44,7 @@ export function GlobalDeleteDialog() {
         setStudentParams({ studentId: null, deleteStudentId: null });
         toast({ title: t("common.success"), variant: "success" });
       },
-    })
+    }),
   );
 
   const deleteClassMutation = useMutation(
@@ -42,17 +54,21 @@ export function GlobalDeleteDialog() {
         setClassParams({ classId: null, deleteClassId: null });
         toast({ title: t("common.success"), variant: "success" });
       },
-    })
+    }),
   );
 
   const deleteSubjectMutation = useMutation(
     trpc.subjects.delete.mutationOptions({
       onSuccess: () => {
-        void invalidateSubjectDomain(queryClient, trpc, Number(deleteSubjectId));
+        void invalidateSubjectDomain(
+          queryClient,
+          trpc,
+          Number(deleteSubjectId),
+        );
         setSubjectParams({ subjectId: null, deleteSubjectId: null });
         toast({ title: t("common.success"), variant: "success" });
       },
-    })
+    }),
   );
 
   const deleteStaffMutation = useMutation(
@@ -67,27 +83,31 @@ export function GlobalDeleteDialog() {
         setStaffParams({ deleteStaffId: null });
         toast({ title: t("common.success"), variant: "success" });
       },
-    })
+    }),
   );
 
   const deleteYearMutation = useMutation(
     trpc.academic.deleteYear.mutationOptions({
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: trpc.academic.getYears.queryKey() });
+        queryClient.invalidateQueries({
+          queryKey: trpc.academic.getYears.queryKey(),
+        });
         setAcademicParams({ deleteYearId: null });
         toast({ title: t("common.success"), variant: "success" });
       },
-    })
+    }),
   );
 
   const deleteTermMutation = useMutation(
     trpc.academic.deleteTerm.mutationOptions({
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: trpc.academic.getYears.queryKey() });
+        queryClient.invalidateQueries({
+          queryKey: trpc.academic.getYears.queryKey(),
+        });
         setAcademicParams({ deleteTermId: null });
         toast({ title: t("common.success"), variant: "success" });
       },
-    })
+    }),
   );
 
   // Handlers
@@ -121,21 +141,22 @@ export function GlobalDeleteDialog() {
   // Determine current active dialog configuration
   const config = {
     open: Boolean(
-      deleteStudentId || 
-      deleteClassId || 
-      deleteSubjectId || 
-      deleteStaffId ||
-      deleteYearId ||
-      deleteTermId
+      deleteStudentId ||
+        deleteClassId ||
+        deleteSubjectId ||
+        deleteStaffId ||
+        deleteYearId ||
+        deleteTermId,
     ),
     title: "",
     description: "",
-    isPending: deleteStudentMutation.isPending || 
-               deleteClassMutation.isPending || 
-               deleteSubjectMutation.isPending || 
-               deleteStaffMutation.isPending ||
-               deleteYearMutation.isPending ||
-               deleteTermMutation.isPending,
+    isPending:
+      deleteStudentMutation.isPending ||
+      deleteClassMutation.isPending ||
+      deleteSubjectMutation.isPending ||
+      deleteStaffMutation.isPending ||
+      deleteYearMutation.isPending ||
+      deleteTermMutation.isPending,
   };
 
   if (deleteStudentId) {

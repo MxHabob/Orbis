@@ -2,8 +2,8 @@
  * Shared utilities for chart styling and data formatting
  */
 
-import { formatAmount } from "@/utils/format";
 import { parseISO } from "date-fns";
+import { formatAmount } from "@/utils/format";
 
 // Tailwind classes for chart styling
 export const chartClasses = {

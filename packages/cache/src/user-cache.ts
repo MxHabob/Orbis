@@ -16,5 +16,5 @@ export const userCache = {
     if (user?.email) {
       await cache.delete(`email:${user.email}`);
     }
-  }
+  },
 };

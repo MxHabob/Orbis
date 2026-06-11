@@ -1,9 +1,14 @@
 "use client";
 
-import { useI18n } from "@/locales/client";
 import { Button } from "@orbis/ui/button";
-import { RotateCcw, PenSquare } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@orbis/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@orbis/ui/tooltip";
+import { PenSquare, RotateCcw } from "lucide-react";
+import { useI18n } from "@/locales/client";
 import type { PromotionHistory } from "./columns";
 
 interface ActionsMenuProps {
@@ -38,7 +43,10 @@ export function ActionsMenu({
               <PenSquare size={12} />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="top" className="rounded-none text-[10px] bg-background border-border text-foreground">
+          <TooltipContent
+            side="top"
+            className="rounded-none text-[10px] bg-background border-border text-foreground"
+          >
             {t("promotions.manual_decision")}
           </TooltipContent>
         </Tooltip>
@@ -60,7 +68,10 @@ export function ActionsMenu({
               <RotateCcw size={12} />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="top" className="rounded-none text-[10px] bg-background border-border text-foreground">
+          <TooltipContent
+            side="top"
+            className="rounded-none text-[10px] bg-background border-border text-foreground"
+          >
             {t("promotions.rollback")}
           </TooltipContent>
         </Tooltip>

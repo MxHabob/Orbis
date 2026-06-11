@@ -1,7 +1,7 @@
 import type { Database } from "@db/client";
-import { parentStudents, students, users, classes } from "@db/schema";
-import { eq, and, inArray } from "drizzle-orm";
+import { classes, parentStudents, students, users } from "@db/schema";
 import { RedisCache } from "@orbis/cache";
+import { and, eq, inArray } from "drizzle-orm";
 
 const parentStudentCache = new RedisCache("parent-student", 30 * 60);
 
@@ -17,7 +17,7 @@ export type LinkParentStudentParams = {
 
 export const linkParentToStudent = async (
   db: Database,
-  data: LinkParentStudentParams
+  data: LinkParentStudentParams,
 ) => {
   const [result] = await db
     .insert(parentStudents)
@@ -51,7 +51,11 @@ export const linkParentToStudent = async (
 export const linkParentToStudents = async (
   db: Database,
   parentId: string,
-  studentLinks: { studentId: string; relationship?: string; isPrimary?: boolean }[]
+  studentLinks: {
+    studentId: string;
+    relationship?: string;
+    isPrimary?: boolean;
+  }[],
 ) => {
   if (studentLinks.length === 0) return [];
 
@@ -84,15 +88,15 @@ export const linkParentToStudents = async (
 export const unlinkParentFromStudent = async (
   db: Database,
   parentId: string,
-  studentId: string
+  studentId: string,
 ) => {
   await db
     .delete(parentStudents)
     .where(
       and(
         eq(parentStudents.parentId, parentId),
-        eq(parentStudents.studentId, studentId)
-      )
+        eq(parentStudents.studentId, studentId),
+      ),
     );
 
   await Promise.all([
@@ -104,10 +108,7 @@ export const unlinkParentFromStudent = async (
 // ==========================================
 // Get children (students) for a parent
 // ==========================================
-export const getChildrenByParentId = async (
-  db: Database,
-  parentId: string
-) => {
+export const getChildrenByParentId = async (db: Database, parentId: string) => {
   const cacheKey = `parent:${parentId}`;
   const cached = await parentStudentCache.get<any[]>(cacheKey);
   if (cached) return cached;
@@ -144,7 +145,7 @@ export const getChildrenByParentId = async (
 // ==========================================
 export const getParentsByStudentId = async (
   db: Database,
-  studentId: string
+  studentId: string,
 ) => {
   const cacheKey = `student:${studentId}`;
   const cached = await parentStudentCache.get<any[]>(cacheKey);
@@ -176,7 +177,7 @@ export const updateParentStudentLink = async (
   db: Database,
   parentId: string,
   studentId: string,
-  data: { relationship?: string; isPrimary?: boolean }
+  data: { relationship?: string; isPrimary?: boolean },
 ) => {
   const [result] = await db
     .update(parentStudents)
@@ -184,8 +185,8 @@ export const updateParentStudentLink = async (
     .where(
       and(
         eq(parentStudents.parentId, parentId),
-        eq(parentStudents.studentId, studentId)
-      )
+        eq(parentStudents.studentId, studentId),
+      ),
     )
     .returning();
 

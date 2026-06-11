@@ -1,4 +1,3 @@
-
 import { CertificateEditor } from "@/components/certificates/editor/certificate-editor";
 
 export const metadata = {

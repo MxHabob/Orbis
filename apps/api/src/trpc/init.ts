@@ -1,13 +1,13 @@
+import type { HonoEnv, Session } from "@api/utils/auth";
 import { verifySession } from "@api/utils/auth";
-import type { Session, HonoEnv } from "@api/utils/auth";
 import { getGeoContext } from "@api/utils/geo";
 import type { Database } from "@orbis/db/client";
 import { db } from "@orbis/db/client";
-import { TRPCError, initTRPC } from "@trpc/server";
+import { initTRPC, TRPCError } from "@trpc/server";
 import type { Context } from "hono";
 import superjson from "superjson";
-import { withPrimaryReadAfterWrite } from "./middleware/primary-read-after-write";
 import { withPermission } from "./middleware/permission";
+import { withPrimaryReadAfterWrite } from "./middleware/primary-read-after-write";
 
 type TRPCContext = {
   session: Session | null;
@@ -92,12 +92,14 @@ export const adminProcedure = protectedProcedure.use(async ({ ctx, next }) => {
   return next();
 });
 
-export const teacherProcedure = protectedProcedure.use(async ({ ctx, next }) => {
-  if (ctx.role !== "admin" && ctx.role !== "teacher") {
-    throw new TRPCError({
-      code: "FORBIDDEN",
-      message: "This action is restricted to teachers or administrators.",
-    });
-  }
-  return next();
-});
+export const teacherProcedure = protectedProcedure.use(
+  async ({ ctx, next }) => {
+    if (ctx.role !== "admin" && ctx.role !== "teacher") {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "This action is restricted to teachers or administrators.",
+      });
+    }
+    return next();
+  },
+);

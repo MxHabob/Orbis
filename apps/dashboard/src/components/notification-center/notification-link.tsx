@@ -1,8 +1,8 @@
 "use client";
 
-import { useInboxParams } from "@/hooks/use-inbox-params";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
+import { useInboxParams } from "@/hooks/use-inbox-params";
 
 const SUPPORTED_NOTIFICATION_TYPES = [
   "invoice_paid",
@@ -62,7 +62,6 @@ export function NotificationLink({
 
     try {
       switch (activityType) {
-
         case "inbox_new":
           router.push("/inbox");
           break;
@@ -119,9 +118,7 @@ export function NotificationLink({
   // Non-clickable notification
   return (
     <div className="flex items-center justify-between space-x-4 px-4 py-3">
-      <div className="flex-1">
-        {children}
-      </div>
+      <div className="flex-1">{children}</div>
       {actionButton}
     </div>
   );

@@ -1,4 +1,3 @@
-import { useI18n, useScopedI18n } from "@/locales/client";
 import type { RouterOutputs } from "@api/trpc/routers/_app";
 import { Avatar, AvatarFallback, AvatarImageNext } from "@orbis/ui/avatar";
 import { Button } from "@orbis/ui/button";
@@ -18,9 +17,10 @@ import {
 import type { ColumnDef, FilterFn, Row } from "@tanstack/react-table";
 import { MoreHorizontal } from "lucide-react";
 import * as React from "react";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import "@tanstack/react-table";
-import { useTRPC } from "@/trpc/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTRPC } from "@/trpc/client";
 
 type TeamMember = RouterOutputs["user"]["getStaff"][number];
 
@@ -57,9 +57,7 @@ export const columns: ColumnDef<TeamMember>[] = [
               </AvatarFallback>
             </Avatar>
             <div className="flex flex-col">
-              <span className="font-medium text-sm">
-                {row.original.name}
-              </span>
+              <span className="font-medium text-sm">{row.original.name}</span>
               <span className="text-sm text-[#606060]">
                 {row.original.email}
               </span>
@@ -91,13 +89,18 @@ export const columns: ColumnDef<TeamMember>[] = [
         <div className="flex justify-end">
           <div className="flex space-x-2 items-center">
             {meta?.currentUser?.role === "admin" &&
-              meta?.currentUser?.id !== row.original.id ? (
+            meta?.currentUser?.id !== row.original.id ? (
               <Select
                 value={row.original.role ?? undefined}
                 onValueChange={(role) => {
                   updateMemberMutation.mutate({
                     id: row.original.id!,
-                    role: role as "admin" | "student" | "parent" | "teacher" | "staff",
+                    role: role as
+                      | "admin"
+                      | "student"
+                      | "parent"
+                      | "teacher"
+                      | "staff",
                   });
                 }}
               >
@@ -121,22 +124,24 @@ export const columns: ColumnDef<TeamMember>[] = [
             )}
             {meta?.currentUser?.role === "admin" &&
               meta?.currentUser?.id !== row.original.id && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="h-8 w-8 p-0">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    className="text-destructive"
-                    onSelect={() => meta?.setParams?.({ deleteStaffId: row.original.id })}
-                  >
-                    Remove The {row.original.role}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="h-8 w-8 p-0">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      className="text-destructive"
+                      onSelect={() =>
+                        meta?.setParams?.({ deleteStaffId: row.original.id })
+                      }
+                    >
+                      Remove The {row.original.role}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
           </div>
         </div>
       );

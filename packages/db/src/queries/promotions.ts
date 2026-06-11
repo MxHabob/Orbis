@@ -1,18 +1,18 @@
 import { db } from "@db/client";
 import {
-  students,
-  classes,
-  users,
-  enrollments,
   academicYears,
-  gradeEntries,
   assessmentItems,
-  subjects,
-  studentPromotions,
   auditLogs,
+  classes,
+  enrollments,
+  gradeEntries,
+  studentPromotions,
+  students,
+  subjects,
+  users,
 } from "@db/schema";
-import { eq, and, asc, inArray, isNull, desc, sql } from "drizzle-orm";
 import { RedisCache } from "@orbis/cache";
+import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 
 // Cache instances to invalidate after promotion
 const classCache = new RedisCache("classes", 60 * 60);
@@ -43,7 +43,7 @@ const PASS_THRESHOLD = 50; // 50%
 // ==========================================
 export const calculateStudentFinalScore = async (
   studentId: string,
-  classId: number
+  classId: number,
 ): Promise<{
   finalScore: number;
   maxScore: number;
@@ -82,10 +82,14 @@ export const calculateStudentFinalScore = async (
           midtermMonth,
           ...term2Months,
           finalExamMonth,
-        ])
-      )
+        ]),
+      ),
     )
-    .orderBy(asc(subjects.sortOrder), asc(subjects.name), asc(assessmentItems.month));
+    .orderBy(
+      asc(subjects.sortOrder),
+      asc(subjects.name),
+      asc(assessmentItems.month),
+    );
 
   if (allItems.length === 0) {
     return {
@@ -109,8 +113,8 @@ export const calculateStudentFinalScore = async (
     .where(
       and(
         eq(gradeEntries.studentId, studentId),
-        inArray(gradeEntries.assessmentItemId, itemIds)
-      )
+        inArray(gradeEntries.assessmentItemId, itemIds),
+      ),
     );
 
   const gradeMap = new Map(grades.map((g) => [g.assessmentItemId, g.score]));
@@ -147,8 +151,7 @@ export const calculateStudentFinalScore = async (
     }
     const row = subjectMap.get(item.subjectName)!;
     const scoreStr = gradeMap.get(item.id);
-    const score =
-      scoreStr ? Number.parseFloat(scoreStr) : 0;
+    const score = scoreStr ? Number.parseFloat(scoreStr) : 0;
 
     if (term1Months.includes(item.month)) {
       if (!Number.isNaN(score)) row.term1Total += score;
@@ -268,8 +271,8 @@ export const previewClassPromotion = async (params: {
       and(
         isNull(classes.parentClassId),
         isNull(classes.deletedAt),
-        sql`${classes.sortOrder} > ${classInfo.sortOrder}`
-      )
+        sql`${classes.sortOrder} > ${classInfo.sortOrder}`,
+      ),
     )
     .orderBy(asc(classes.sortOrder))
     .limit(1);
@@ -295,8 +298,8 @@ export const previewClassPromotion = async (params: {
           ? eq(enrollments.classId, targetClassIds[0]!)
           : inArray(enrollments.classId, targetClassIds),
         eq(enrollments.academicYearId, academicYearId),
-        eq(enrollments.status, "active")
-      )
+        eq(enrollments.status, "active"),
+      ),
     )
     .orderBy(users.name);
 
@@ -311,14 +314,14 @@ export const previewClassPromotion = async (params: {
       and(
         inArray(
           studentPromotions.studentId,
-          enrolledStudents.map((s) => s.studentId)
+          enrolledStudents.map((s) => s.studentId),
         ),
-        eq(studentPromotions.fromAcademicYearId, academicYearId)
-      )
+        eq(studentPromotions.fromAcademicYearId, academicYearId),
+      ),
     );
 
   const promotedStudentIds = new Set(
-    existingPromotions.map((p) => p.studentId)
+    existingPromotions.map((p) => p.studentId),
   );
 
   // Calculate scores for each student
@@ -327,7 +330,7 @@ export const previewClassPromotion = async (params: {
   for (const student of enrolledStudents) {
     const scoreData = await calculateStudentFinalScore(
       student.studentId,
-      classId
+      classId,
     );
 
     const alreadyPromoted = promotedStudentIds.has(student.studentId);
@@ -351,7 +354,9 @@ export const previewClassPromotion = async (params: {
             ? ("promoted" as const)
             : ("retained" as const),
       toClassId: scoreData.passed
-        ? (!isLastGrade ? nextClass?.id : undefined)
+        ? !isLastGrade
+          ? nextClass?.id
+          : undefined
         : classId,
       alreadyPromoted,
     });
@@ -369,9 +374,7 @@ export const previewClassPromotion = async (params: {
       name: classInfo.name,
       sortOrder: classInfo.sortOrder,
     },
-    nextClass: nextClass
-      ? { id: nextClass.id, name: nextClass.name }
-      : null,
+    nextClass: nextClass ? { id: nextClass.id, name: nextClass.name } : null,
     isLastGrade,
     academicYearId,
     students: results,
@@ -380,9 +383,7 @@ export const previewClassPromotion = async (params: {
       passed: results.filter((r) => r.passed).length,
       failed: results.filter((r) => !r.passed).length,
       alreadyPromoted: results.filter((r) => r.alreadyPromoted).length,
-      graduated: isLastGrade
-        ? results.filter((r) => r.passed).length
-        : 0,
+      graduated: isLastGrade ? results.filter((r) => r.passed).length : 0,
     },
   };
 };
@@ -444,8 +445,8 @@ export const executeBulkPromotion = async (params: {
       and(
         isNull(classes.parentClassId),
         isNull(classes.deletedAt),
-        sql`${classes.sortOrder} > ${classInfo.sortOrder}`
-      )
+        sql`${classes.sortOrder} > ${classInfo.sortOrder}`,
+      ),
     )
     .orderBy(asc(classes.sortOrder))
     .limit(1);
@@ -462,7 +463,7 @@ export const executeBulkPromotion = async (params: {
       // Calculate final score
       const scoreData = await calculateStudentFinalScore(
         decision.studentId,
-        classId
+        classId,
       );
 
       let targetClassId: number | null = null;
@@ -517,7 +518,8 @@ export const executeBulkPromotion = async (params: {
             finalScore: scoreData.percentage.toString(),
             status: decision.status,
             decision:
-              decision.status === "conditional" || decision.status === "retained"
+              decision.status === "conditional" ||
+              decision.status === "retained"
                 ? "manual"
                 : scoreData.passed
                   ? "auto"
@@ -537,8 +539,8 @@ export const executeBulkPromotion = async (params: {
             eq(enrollments.studentId, decision.studentId),
             eq(enrollments.classId, classId),
             eq(enrollments.academicYearId, fromAcademicYearId),
-            eq(enrollments.status, "active")
-          )
+            eq(enrollments.status, "active"),
+          ),
         );
 
       // 3. Update student's current class (if not graduated)
@@ -587,8 +589,9 @@ export const executeBulkPromotion = async (params: {
       });
       // Invalidate caches for this student
       await studentCache.delete(`user:${decision.studentId}`).catch(() => {});
-      await gradeCache.delete(`student:${decision.studentId}:all`).catch(() => {});
-
+      await gradeCache
+        .delete(`student:${decision.studentId}:all`)
+        .catch(() => {});
     } catch (error) {
       results.push({
         studentId: decision.studentId,
@@ -600,9 +603,15 @@ export const executeBulkPromotion = async (params: {
   }
 
   // Invalidate class caches globally after bulk promotion
-  await classCache.delete(`classes_v3:${fromAcademicYearId}:none:default:false:undefined:0`).catch(() => {});
-  await classCache.delete(`classes_v3:${toAcademicYearId}:none:default:false:undefined:0`).catch(() => {});
-  await classCache.delete(`classes_v3:all:none:default:false:undefined:0`).catch(() => {});
+  await classCache
+    .delete(`classes_v3:${fromAcademicYearId}:none:default:false:undefined:0`)
+    .catch(() => {});
+  await classCache
+    .delete(`classes_v3:${toAcademicYearId}:none:default:false:undefined:0`)
+    .catch(() => {});
+  await classCache
+    .delete(`classes_v3:all:none:default:false:undefined:0`)
+    .catch(() => {});
 
   return {
     total: results.length,
@@ -667,8 +676,8 @@ export const rollbackPromotion = async (params: {
           and(
             eq(enrollments.studentId, promo.studentId),
             eq(enrollments.classId, promo.fromClassId),
-            eq(enrollments.academicYearId, promo.fromAcademicYearId)
-          )
+            eq(enrollments.academicYearId, promo.fromAcademicYearId),
+          ),
         );
 
       // 3. Delete new enrollment (if exists)
@@ -679,8 +688,8 @@ export const rollbackPromotion = async (params: {
             and(
               eq(enrollments.studentId, promo.studentId),
               eq(enrollments.classId, promo.toClassId),
-              eq(enrollments.academicYearId, promo.toAcademicYearId)
-            )
+              eq(enrollments.academicYearId, promo.toAcademicYearId),
+            ),
           );
       }
 
@@ -737,14 +746,19 @@ export const getPromotionHistory = async (params: {
   limit?: number;
   offset?: number;
 }) => {
-  const { academicYearId, classId, studentId, status, limit = 50, offset = 0 } = params;
+  const {
+    academicYearId,
+    classId,
+    studentId,
+    status,
+    limit = 50,
+    offset = 0,
+  } = params;
 
   const conditions = [];
 
   if (academicYearId) {
-    conditions.push(
-      eq(studentPromotions.fromAcademicYearId, academicYearId)
-    );
+    conditions.push(eq(studentPromotions.fromAcademicYearId, academicYearId));
   }
   if (classId) {
     conditions.push(eq(studentPromotions.fromClassId, classId));
@@ -753,9 +767,7 @@ export const getPromotionHistory = async (params: {
     conditions.push(eq(studentPromotions.studentId, studentId));
   }
   if (status) {
-    conditions.push(
-      eq(studentPromotions.status, status as any)
-    );
+    conditions.push(eq(studentPromotions.status, status as any));
   }
 
   const results = await db
@@ -774,7 +786,9 @@ export const getPromotionHistory = async (params: {
       notes: studentPromotions.notes,
       promotedAt: studentPromotions.promotedAt,
       fromClassName: sql<string>`(SELECT name FROM classes WHERE id = ${studentPromotions.fromClassId})`,
-      toClassName: sql<string | null>`(SELECT name FROM classes WHERE id = ${studentPromotions.toClassId})`,
+      toClassName: sql<
+        string | null
+      >`(SELECT name FROM classes WHERE id = ${studentPromotions.toClassId})`,
       fromYearName: sql<string>`(SELECT year_name FROM academic_years WHERE id = ${studentPromotions.fromAcademicYearId})`,
       toYearName: sql<string>`(SELECT year_name FROM academic_years WHERE id = ${studentPromotions.toAcademicYearId})`,
     })
@@ -798,9 +812,7 @@ export const getPromotionStatistics = async (params: {
 }) => {
   const { academicYearId, classId } = params;
 
-  const conditions = [
-    eq(studentPromotions.fromAcademicYearId, academicYearId),
-  ];
+  const conditions = [eq(studentPromotions.fromAcademicYearId, academicYearId)];
   if (classId) {
     conditions.push(eq(studentPromotions.fromClassId, classId));
   }
@@ -818,17 +830,19 @@ export const getPromotionStatistics = async (params: {
   const total = allPromotions.length;
   const promoted = allPromotions.filter((p) => p.status === "promoted").length;
   const retained = allPromotions.filter((p) => p.status === "retained").length;
-  const graduated = allPromotions.filter((p) => p.status === "graduated").length;
-  const conditional = allPromotions.filter((p) => p.status === "conditional").length;
+  const graduated = allPromotions.filter(
+    (p) => p.status === "graduated",
+  ).length;
+  const conditional = allPromotions.filter(
+    (p) => p.status === "conditional",
+  ).length;
 
   const scores = allPromotions
     .map((p) => Number.parseFloat(p.finalScore || "0"))
     .filter((s) => !Number.isNaN(s) && s > 0);
 
   const averageScore =
-    scores.length > 0
-      ? scores.reduce((a, b) => a + b, 0) / scores.length
-      : 0;
+    scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
 
   const highestScore = scores.length > 0 ? Math.max(...scores) : 0;
   const lowestScore = scores.length > 0 ? Math.min(...scores) : 0;
@@ -836,7 +850,13 @@ export const getPromotionStatistics = async (params: {
   // Per-class breakdown
   const classBreakdown = new Map<
     number,
-    { className: string; total: number; promoted: number; retained: number; graduated: number }
+    {
+      className: string;
+      total: number;
+      promoted: number;
+      retained: number;
+      graduated: number;
+    }
   >();
 
   for (const p of allPromotions) {
@@ -862,7 +882,10 @@ export const getPromotionStatistics = async (params: {
     retained,
     graduated,
     conditional,
-    passRate: total > 0 ? roundGrade((promoted + graduated + conditional) / total * 100) : 0,
+    passRate:
+      total > 0
+        ? roundGrade(((promoted + graduated + conditional) / total) * 100)
+        : 0,
     averageScore: roundGrade(averageScore),
     highestScore: roundGrade(highestScore),
     lowestScore: roundGrade(lowestScore),

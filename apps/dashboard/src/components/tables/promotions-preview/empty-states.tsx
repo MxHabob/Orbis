@@ -1,7 +1,7 @@
 "use client";
 
-import { useI18n } from "@/locales/client";
 import { UserSearch } from "lucide-react";
+import { useI18n } from "@/locales/client";
 
 export function PreviewEmptyState() {
   const t = useI18n();
@@ -20,4 +20,3 @@ export function PreviewEmptyState() {
     </div>
   );
 }
-

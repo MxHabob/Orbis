@@ -1,6 +1,8 @@
 import readXlsxFile from "read-excel-file";
 
-export async function parseExcel<T>(file: File): Promise<{ data: T[]; meta: { fields: string[] } }> {
+export async function parseExcel<T>(
+  file: File,
+): Promise<{ data: T[]; meta: { fields: string[] } }> {
   try {
     const rows = await readXlsxFile(file);
     if (!rows || rows.length === 0) {
@@ -18,9 +20,9 @@ export async function parseExcel<T>(file: File): Promise<{ data: T[]; meta: { fi
       const obj: any = {};
       headers.forEach((header, index) => {
         // Convert all values to string to match CSV behavior
-        obj[header] = 
-          row[index] !== null && row[index] !== undefined 
-            ? String(row[index]) 
+        obj[header] =
+          row[index] !== null && row[index] !== undefined
+            ? String(row[index])
             : "";
       });
       return obj as T;

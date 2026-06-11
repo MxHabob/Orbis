@@ -1,23 +1,28 @@
+import type { Metadata } from "next";
+import type { SearchParams } from "nuqs";
+import { Suspense } from "react";
 import { AverageGrade } from "@/components/average-grade";
 import { CollapsibleSummary } from "@/components/collapsible-summary";
-import { StudentSummarySkeleton } from "@/components/student-summary-skeleton";
-import { StudentHeader } from "@/components/student-header";
-import { StudentHeaderSkeleton } from "@/components/student-header-skeleton";
-import { ErrorFallback } from "@/components/error-fallback";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { ErrorFallback } from "@/components/error-fallback";
 import { FailedStudents } from "@/components/failed-students";
 import { PassedStudents } from "@/components/passed-students";
 import { ScrollableContent } from "@/components/scrollable-content";
+import { StudentHeader } from "@/components/student-header";
+import { StudentHeaderSkeleton } from "@/components/student-header-skeleton";
+import { StudentSummarySkeleton } from "@/components/student-summary-skeleton";
 import { DataTable } from "@/components/tables/students/data-table";
 import { StudentsSkeleton } from "@/components/tables/students/skeleton";
 import { TotalStudents } from "@/components/total-students";
 import { loadCustomerFilterParams } from "@/hooks/use-customer-filter-params";
 import { loadSortParams } from "@/hooks/use-sort-params";
-import { HydrateClient, batchPrefetch, trpc, getQueryClient } from "@/trpc/server";
+import {
+  batchPrefetch,
+  getQueryClient,
+  HydrateClient,
+  trpc,
+} from "@/trpc/server";
 import { getInitialTableSettings } from "@/utils/columns";
-import type { Metadata } from "next";
-import type { SearchParams } from "nuqs";
-import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "Class Report | Orbis",
@@ -31,12 +36,12 @@ type Props = {
 // Async component for fetching class data without blocking the full page rendering
 async function StudentHeaderContainer({ id }: { id: string }) {
   const classData = await getQueryClient().fetchQuery(
-    trpc.classes.getById.queryOptions({ id: Number(id) })
+    trpc.classes.getById.queryOptions({ id: Number(id) }),
   );
 
   return (
-    <StudentHeader 
-      name={classData?.name ?? "Class Report"} 
+    <StudentHeader
+      name={classData?.name ?? "Class Report"}
       color={classData?.color}
       id={id}
     />
@@ -54,7 +59,9 @@ export default async function Page(props: Props) {
 
   if (!Id) return null;
 
-  const academicYearId = filter.academicYearId ? Number(filter.academicYearId) : undefined;
+  const academicYearId = filter.academicYearId
+    ? Number(filter.academicYearId)
+    : undefined;
 
   const infiniteOptions = trpc.students.getByClassId.infiniteQueryOptions({
     id: Id,
@@ -63,17 +70,19 @@ export default async function Page(props: Props) {
     academicYearId,
   });
 
-  const statisticsOptions = trpc.grades.getClassStatistics.queryOptions({ 
+  const statisticsOptions = trpc.grades.getClassStatistics.queryOptions({
     classId: Id,
-    academicYearId
+    academicYearId,
   });
 
   // Prefetch class statistics, student list, and class name
-  batchPrefetch([
-    infiniteOptions, 
-    statisticsOptions,
-    trpc.classes.getById.queryOptions({ id: Number(Id) })
-  ].filter(Boolean) as any);
+  batchPrefetch(
+    [
+      infiniteOptions,
+      statisticsOptions,
+      trpc.classes.getById.queryOptions({ id: Number(Id) }),
+    ].filter(Boolean) as any,
+  );
 
   return (
     <HydrateClient>
@@ -99,7 +108,7 @@ export default async function Page(props: Props) {
           <Suspense fallback={<StudentHeaderSkeleton />}>
             <StudentHeaderContainer id={Id} />
           </Suspense>
-            
+
           <ErrorBoundary fallback={<ErrorFallback />}>
             <Suspense fallback={<StudentsSkeleton />}>
               <DataTable initialSettings={initialSettings} id={Id} />

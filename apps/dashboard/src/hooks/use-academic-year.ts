@@ -1,11 +1,11 @@
 "use client";
 
-import { useTRPC } from "@/trpc/client";
 import {
   useMutation,
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
+import { useTRPC } from "@/trpc/client";
 
 interface GetAcademicYearsParams {
   cursor?: string | null;
@@ -114,9 +114,7 @@ export function useDeleteAcademicYearMutation() {
  */
 export function useAcademicTermsQuery(yearId: number) {
   const trpc = useTRPC();
-  return useSuspenseQuery(
-    trpc.academic.getTerms.queryOptions({ yearId }),
-  );
+  return useSuspenseQuery(trpc.academic.getTerms.queryOptions({ yearId }));
 }
 
 /**

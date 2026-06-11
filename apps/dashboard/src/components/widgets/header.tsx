@@ -1,15 +1,15 @@
 "use client";
 
-import { MetricsFilter } from "@/components/metrics/components/metrics-filter";
-import { Customize } from "@/components/widgets/customize";
-import { useUserQuery } from "@/hooks/use-user";
 import { TZDate } from "@date-fns/tz";
+import { authClient } from "@orbis/auth/auth-client";
 import { cn } from "@orbis/ui/cn";
 import { TabsList, TabsTrigger } from "@orbis/ui/tabs";
 import { useEffect, useState } from "react";
-import { useIsCustomizing } from "./widget-provider";
-import { authClient } from "@orbis/auth/auth-client";
+import { MetricsFilter } from "@/components/metrics/components/metrics-filter";
+import { Customize } from "@/components/widgets/customize";
+import { useUserQuery } from "@/hooks/use-user";
 import { useI18n } from "@/locales/client";
+import { useIsCustomizing } from "./widget-provider";
 
 function getTimeBasedGreeting(t: any, timezone?: string): string {
   const userTimezone =
@@ -46,7 +46,7 @@ export function WidgetsHeader() {
         setGreeting(newGreeting);
       },
       5 * 60 * 1000,
-    ); 
+    );
 
     return () => clearInterval(interval);
   }, [t]);

@@ -1,26 +1,25 @@
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import { createTRPCRouter } from "../init";
 import { academicRouter } from "./academic";
-import { attendanceRouter } from "./attendance";
 import { assessmentsRouter } from "./assessments";
+import { attendanceRouter } from "./attendance";
 import { auditLogsRouter } from "./audit-logs";
 import { certificateTemplateRouter } from "./certificate-templates";
 import { classesRouter } from "./classes";
+import { documentsRouter } from "./documents";
 import { gradesRouter } from "./grades";
+import { jobsRouter } from "./jobs";
 import { lessonsRouter } from "./lessons";
 import { notificationsRouter } from "./notifications";
 import { parentStudentsRouter } from "./parent-students";
+import { promotionsRouter } from "./promotions";
+import { reportsRouter } from "./reports";
+import { searchRouter } from "./search";
+import { shortLinksRouter } from "./short-links";
 import { studentsRouter } from "./students";
 import { subjectsRouter } from "./subjects";
 import { userRouter } from "./user";
 import { widgetsRouter } from "./widgets";
-import { reportsRouter } from "./reports";
-import { jobsRouter } from "./jobs";
-import { documentsRouter } from "./documents";
-import { shortLinksRouter } from "./short-links";
-import { promotionsRouter } from "./promotions";
-
-import { searchRouter } from "./search";
 
 export const appRouter = createTRPCRouter({
   academic: academicRouter,

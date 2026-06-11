@@ -16,7 +16,10 @@ export const scheduledLessonSchema = z.object({
   id: z.number().openapi({ example: 1 }),
   classId: z.number().openapi({ example: 1 }),
   subjectId: z.number().openapi({ example: 1 }),
-  teacherId: z.string().uuid().openapi({ example: "550e8400-e29b-41d4-a716-446655440000" }),
+  teacherId: z
+    .string()
+    .uuid()
+    .openapi({ example: "550e8400-e29b-41d4-a716-446655440000" }),
   timeSlotId: z.number().openapi({ example: 1 }),
   dayOfWeek: z.number().min(0).max(6).openapi({ example: 1 }),
   academicYearId: z.number().openapi({ example: 1 }),
@@ -26,6 +29,9 @@ export const scheduledLessonSchema = z.object({
   notes: z.string().nullable().openapi({ example: "Lesson notes" }),
 });
 
-export const createScheduledLessonSchema = scheduledLessonSchema.omit({ id: true });
-export const updateScheduledLessonSchema = scheduledLessonSchema.partial().extend({ id: z.number() });
-
+export const createScheduledLessonSchema = scheduledLessonSchema.omit({
+  id: true,
+});
+export const updateScheduledLessonSchema = scheduledLessonSchema
+  .partial()
+  .extend({ id: z.number() });

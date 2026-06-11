@@ -1,14 +1,18 @@
-import { z } from "zod";
-import { createTRPCRouter, protectedProcedure, teacherProcedure } from "../init";
-import { 
-  getStudentCount, 
-  getTeacherCount, 
-  getAverageAttendanceRate, 
-  getGenderDistribution,
+import {
+  getAverageAttendanceRate,
   getClassDistribution,
+  getGenderDistribution,
+  getOverallPerformance,
   getRecentEnrolledStudents,
-  getOverallPerformance
+  getStudentCount,
+  getTeacherCount,
 } from "@orbis/db/queries/metrics";
+import { z } from "zod";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  teacherProcedure,
+} from "../init";
 
 export const reportsRouter = createTRPCRouter({
   getSchoolMetrics: teacherProcedure
@@ -17,19 +21,19 @@ export const reportsRouter = createTRPCRouter({
         from: z.string().optional(),
         to: z.string().optional(),
         currency: z.string().optional(),
-      })
+      }),
     )
     .query(async ({ input }) => {
       console.log("Fetching school metrics with input:", input);
-      
+
       const [
-        studentCount, 
-        teacherCount, 
+        studentCount,
+        teacherCount,
         attendanceRate,
         genderStats,
         classStats,
         recentStudents,
-        overallPerformance
+        overallPerformance,
       ] = await Promise.all([
         getStudentCount(input),
         getTeacherCount(input),
@@ -37,7 +41,7 @@ export const reportsRouter = createTRPCRouter({
         getGenderDistribution(input),
         getClassDistribution(input),
         getRecentEnrolledStudents(input),
-        getOverallPerformance(input)
+        getOverallPerformance(input),
       ]);
 
       return {
@@ -47,7 +51,7 @@ export const reportsRouter = createTRPCRouter({
         genderStats,
         classStats,
         recentStudents,
-        performance: overallPerformance
+        performance: overallPerformance,
       };
     }),
 });

@@ -1,34 +1,34 @@
 "use client";
 
+import { authClient } from "@orbis/auth/auth-client";
+import { Button } from "@orbis/ui/button";
+import { cn } from "@orbis/ui/cn";
+import { Icons } from "@orbis/ui/icons";
+import { formatDistanceToNow } from "date-fns";
+import {
+  AlertTriangle,
+  BookOpen,
+  Calendar,
+  CreditCard,
+  FileText,
+  GraduationCap,
+  Inbox,
+  Megaphone,
+  MessageSquare,
+  Repeat,
+  Settings,
+  User,
+  Users,
+  Wallet,
+} from "lucide-react";
 import {
   type Activity,
   getMetadata,
   getMetadataProperty,
 } from "@/hooks/use-notifications";
 import { useI18n } from "@/locales/client";
-import { Button } from "@orbis/ui/button";
-import { cn } from "@orbis/ui/cn";
-import { Icons } from "@orbis/ui/icons";
-import { formatDistanceToNow } from "date-fns";
 import { getNotificationDescription } from "./notification-descriptions";
 import { NotificationLink } from "./notification-link";
-import { authClient } from "@orbis/auth/auth-client";
-import { 
-  GraduationCap, 
-  BookOpen, 
-  Calendar, 
-  Megaphone, 
-  MessageSquare,
-  Repeat,
-  FileText,
-  CreditCard,
-  Inbox,
-  Users,
-  Wallet,
-  User,
-  AlertTriangle,
-  Settings
-} from "lucide-react";
 
 interface NotificationItemProps {
   id: number;
@@ -80,9 +80,13 @@ export function NotificationItem({
       case "inbox_new":
         return <Inbox {...iconProps} />;
       default:
-        if (activityType.startsWith("invoice_")) return <FileText {...iconProps} />;
-        if (activityType.startsWith("recurring_")) return <Repeat {...iconProps} />;
-        return <Icons.Notifications size={16} className="text-muted-foreground" />;
+        if (activityType.startsWith("invoice_"))
+          return <FileText {...iconProps} />;
+        if (activityType.startsWith("recurring_"))
+          return <Repeat {...iconProps} />;
+        return (
+          <Icons.Notifications size={16} className="text-muted-foreground" />
+        );
     }
   };
 
@@ -103,13 +107,15 @@ export function NotificationItem({
 
       <div className="flex-1 min-w-0">
         <div className="flex flex-col">
-          <p className={cn(
-            "text-xs leading-normal break-words transition-colors",
-            isUnread ? "font-medium text-foreground" : "font-normal"
-          )}>
+          <p
+            className={cn(
+              "text-xs leading-normal break-words transition-colors",
+              isUnread ? "font-medium text-foreground" : "font-normal",
+            )}
+          >
             {description}
           </p>
-          
+
           {activity.message && activity.message !== description && (
             <p className="text-[11px] text-[#606060] line-clamp-2 leading-relaxed mt-0.5">
               {activity.message}
@@ -117,11 +123,11 @@ export function NotificationItem({
           )}
 
           <div className="flex items-center gap-2 mt-1 px-0">
-             <span className="text-[10px] text-[#606060]/70 font-medium">
-                {t("notifications.time_ago", {
-                  time: formatDistanceToNow(new Date(activity.createdAt)),
-                })}
-             </span>
+            <span className="text-[10px] text-[#606060]/70 font-medium">
+              {t("notifications.time_ago", {
+                time: formatDistanceToNow(new Date(activity.createdAt)),
+              })}
+            </span>
           </div>
         </div>
       </div>

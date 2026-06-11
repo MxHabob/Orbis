@@ -1,14 +1,14 @@
 "use client";
 
-import { useDocumentParams } from "@/hooks/use-document-params";
-import { useFileUrl } from "@/hooks/use-file-url";
-import { downloadFile } from "@/lib/download";
-import { useTRPC } from "@/trpc/client";
 import { Button } from "@orbis/ui/button";
 import { Icons } from "@orbis/ui/icons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useCopyToClipboard } from "usehooks-ts";
+import { useDocumentParams } from "@/hooks/use-document-params";
+import { useFileUrl } from "@/hooks/use-file-url";
+import { downloadFile } from "@/lib/download";
+import { useTRPC } from "@/trpc/client";
 
 type Props = {
   showDelete?: boolean;
@@ -29,7 +29,10 @@ export function DocumentActions({ showDelete = false, filePath, id }: Props) {
       ? {
           type: "download",
           documentId: (id || params.documentId) as string,
-          url: !id && !params.documentId && filePath ? `${process.env.NEXT_PUBLIC_API_URL}/files/proxy?filePath=vault/${filePath.join("/")}` : undefined,
+          url:
+            !id && !params.documentId && filePath
+              ? `${process.env.NEXT_PUBLIC_API_URL}/files/proxy?filePath=vault/${filePath.join("/")}`
+              : undefined,
         }
       : null,
   );

@@ -1,11 +1,11 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { useTRPC } from "@/trpc/client";
-import { CertificateViewer } from "@/components/certificates/certificate-viewer";
 import { Spinner } from "@orbis/ui/spinner";
-import { useEffect, useState, useMemo, useCallback, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { CertificateViewer } from "@/components/certificates/certificate-viewer";
+import { useTRPC } from "@/trpc/client";
 
 /**
  * Bulk Export Page for Puppeteer (2026 - Production Grade)
@@ -15,9 +15,18 @@ import { useQuery } from "@tanstack/react-query";
  */
 
 const HIJRI_MONTHS_NAMES: Record<number, string> = {
-  1: "محرم", 2: "صفر", 3: "ربيع أول", 4: "ربيع ثاني",
-  5: "جمادى أول", 6: "جمادى ثاني", 7: "رجب", 8: "شعبان",
-  9: "رمضان", 10: "شوال", 11: "ذو القعدة", 12: "ذو الحجة",
+  1: "محرم",
+  2: "صفر",
+  3: "ربيع أول",
+  4: "ربيع ثاني",
+  5: "جمادى أول",
+  6: "جمادى ثاني",
+  7: "رجب",
+  8: "شعبان",
+  9: "رمضان",
+  10: "شوال",
+  11: "ذو القعدة",
+  12: "ذو الحجة",
 };
 
 const mapStudentToVariables = (student: any, type?: string, month?: number) => {
@@ -25,10 +34,14 @@ const mapStudentToVariables = (student: any, type?: string, month?: number) => {
 
   const stats = (student.stats as any) || {};
   const currentYear = student.currentClass?.yearName || "2024-2025";
-  
+
   // Resolve image path: if it's just a filename, prepend the standard student folder
   let resolvedImage = student.image || "";
-  if (resolvedImage && !resolvedImage.startsWith('http') && !resolvedImage.includes('/')) {
+  if (
+    resolvedImage &&
+    !resolvedImage.startsWith("http") &&
+    !resolvedImage.includes("/")
+  ) {
     resolvedImage = `students/${student.userId}/${resolvedImage}`;
   }
 
@@ -49,9 +62,18 @@ const mapStudentToVariables = (student: any, type?: string, month?: number) => {
     org_name: "مدرسة صنعاء النموذجية",
     admin_name: stats.admin_name || "مدير المدرسة",
     vp_name: stats.vp_name || "وكيل المدرسة",
-    issue_date: new Date().toLocaleDateString('ar-YE', { year: 'numeric', month: 'long', day: 'numeric' }),
-    report_type: type === "half-yearly" ? "النصفي" : (type === "final" ? "النهائي" : `الشهري - لشهر ${month ? (HIJRI_MONTHS_NAMES[month] || `شهر ${month}`) : ""}`),
-    month_name: month ? (HIJRI_MONTHS_NAMES[month] || `شهر ${month}`) : "",
+    issue_date: new Date().toLocaleDateString("ar-YE", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }),
+    report_type:
+      type === "half-yearly"
+        ? "النصفي"
+        : type === "final"
+          ? "النهائي"
+          : `الشهري - لشهر ${month ? HIJRI_MONTHS_NAMES[month] || `شهر ${month}` : ""}`,
+    month_name: month ? HIJRI_MONTHS_NAMES[month] || `شهر ${month}` : "",
     academic_year: currentYear,
     studentId: student.userId,
     student_image: resolvedImage,
@@ -60,12 +82,16 @@ const mapStudentToVariables = (student: any, type?: string, month?: number) => {
 
 export default function BulkExportCertificatePage() {
   return (
-    <Suspense fallback={
-      <div className="flex flex-col items-center justify-center min-h-screen bg-white">
-        <Spinner className="w-8 h-8 opacity-20" />
-        <span className="mt-4 text-xs font-bold uppercase tracking-widest opacity-40">Initializing PDF Pipeline...</span>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="flex flex-col items-center justify-center min-h-screen bg-white">
+          <Spinner className="w-8 h-8 opacity-20" />
+          <span className="mt-4 text-xs font-bold uppercase tracking-widest opacity-40">
+            Initializing PDF Pipeline...
+          </span>
+        </div>
+      }
+    >
       <BulkExportContent />
     </Suspense>
   );
@@ -75,7 +101,7 @@ function BulkExportContent() {
   const searchParams = useSearchParams();
   const studentIds = useMemo(
     () => searchParams.get("studentIds")?.split(",").filter(Boolean) || [],
-    [searchParams]
+    [searchParams],
   );
   const templateId = searchParams.get("templateId");
   const type = searchParams.get("type") || "monthly";
@@ -85,19 +111,26 @@ function BulkExportContent() {
   const { data: students, isLoading: loadingStudents } = useQuery(
     trpc.students.getByUserIds.queryOptions(
       { userIds: studentIds },
-      { enabled: studentIds.length > 0 }
-    ));
+      { enabled: studentIds.length > 0 },
+    ),
+  );
 
   const { data: certificateTemplate, isLoading: loadingTemplate } = useQuery(
     trpc.certificateTemplates.getById.queryOptions(
       { id: templateId! },
-      { enabled: !!templateId }
-    ));
+      { enabled: !!templateId },
+    ),
+  );
 
   const [finishedPages, setFinishedPages] = useState<Set<number>>(new Set());
-  const rankingPeriod = type === "half-yearly" ? "half-yearly" : type === "final" ? "final" : "monthly";
+  const rankingPeriod =
+    type === "half-yearly"
+      ? "half-yearly"
+      : type === "final"
+        ? "final"
+        : "monthly";
   const rankingMonth = rankingPeriod === "monthly" ? month : undefined;
-  
+
   const classId = students?.[0]?.currentClass?.id;
   const academicYearId = students?.[0]?.currentClass?.academicYearId;
 
@@ -111,33 +144,46 @@ function BulkExportContent() {
         limit: 10,
       },
       {
-        enabled: !!classId && !!academicYearId && (rankingPeriod !== "monthly" || !!rankingMonth),
-      }
-    )
+        enabled:
+          !!classId &&
+          !!academicYearId &&
+          (rankingPeriod !== "monthly" || !!rankingMonth),
+      },
+    ),
   );
 
   const canvasConfig = (certificateTemplate?.content as any)?.canvasConfig;
-  const layoutConfig = canvasConfig?.layoutConfig || (certificateTemplate?.content as any)?.layoutConfig || { rows: 1, columns: 1, gap: 0 };
+  const layoutConfig = canvasConfig?.layoutConfig ||
+    (certificateTemplate?.content as any)?.layoutConfig || {
+      rows: 1,
+      columns: 1,
+      gap: 0,
+    };
   const totalSlots = layoutConfig.rows * layoutConfig.columns;
 
   const studentChunks = useMemo(() => {
     if (!students) return [];
     const chunks = [];
     for (let i = 0; i < students.length; i += totalSlots) {
-       chunks.push(students.slice(i, i + totalSlots));
+      chunks.push(students.slice(i, i + totalSlots));
     }
     return chunks;
   }, [students, totalSlots]);
 
   // Readiness logic (Production Grade 2026)
   useEffect(() => {
-    if (studentChunks.length > 0 && finishedPages.size >= studentChunks.length) {
+    if (
+      studentChunks.length > 0 &&
+      finishedPages.size >= studentChunks.length
+    ) {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           const delay = Math.max(5000, studentChunks.length * 300);
           const timer = setTimeout(() => {
             (window as any).isReadyToCapture = true;
-            console.info(`[Export] PDF Pipeline Ready. Final delay: ${delay}ms`);
+            console.info(
+              `[Export] PDF Pipeline Ready. Final delay: ${delay}ms`,
+            );
           }, delay);
           return () => clearTimeout(timer);
         });
@@ -146,23 +192,30 @@ function BulkExportContent() {
   }, [finishedPages, studentChunks]);
 
   const handlePageReady = useCallback((index: number) => {
-    setFinishedPages(prev => new Set([...prev, index]));
+    setFinishedPages((prev) => new Set([...prev, index]));
   }, []);
 
-  const isLoading = loadingStudents || loadingTemplate || !students || !certificateTemplate;
+  const isLoading =
+    loadingStudents || loadingTemplate || !students || !certificateTemplate;
 
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-white">
         <Spinner className="w-8 h-8 opacity-20" />
-        <span className="mt-4 text-xs font-bold uppercase tracking-widest opacity-40">Initializing PDF Pipeline...</span>
+        <span className="mt-4 text-xs font-bold uppercase tracking-widest opacity-40">
+          Initializing PDF Pipeline...
+        </span>
       </div>
     );
   }
 
   return (
     <div className="bg-white p-0 m-0 overflow-hidden">
-      <div id="pdf-metadata" style={{ display: 'none' }} data-total-pages={studentChunks.length} />
+      <div
+        id="pdf-metadata"
+        style={{ display: "none" }}
+        data-total-pages={studentChunks.length}
+      />
 
       {studentChunks.map((chunk, chunkIndex) => (
         <div
@@ -171,15 +224,18 @@ function BulkExportContent() {
         >
           <CertificateViewer
             template={certificateTemplate as any}
-            data={chunk.map(student => {
-                const rankEntry = topStudents?.find((item: any) => item.studentId === student.userId);
-                return {
-                    ...mapStudentToVariables(student, type, month),
-                    rank: rankEntry?.rankLabel || ((student.stats as any)?.rank || ""),
-                    rank_percentage: rankEntry?.percentage ?? "",
-                    rank_total: rankEntry?.totalScore ?? "",
-                    rank_max: rankEntry?.maxScore ?? "",
-                };
+            data={chunk.map((student) => {
+              const rankEntry = topStudents?.find(
+                (item: any) => item.studentId === student.userId,
+              );
+              return {
+                ...mapStudentToVariables(student, type, month),
+                rank:
+                  rankEntry?.rankLabel || (student.stats as any)?.rank || "",
+                rank_percentage: rankEntry?.percentage ?? "",
+                rank_total: rankEntry?.totalScore ?? "",
+                rank_max: rankEntry?.maxScore ?? "",
+              };
             })}
             certificateType={type}
             month={month}

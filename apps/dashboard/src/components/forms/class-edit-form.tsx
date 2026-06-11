@@ -1,9 +1,5 @@
 "use client";
 
-import { SelectParentClass } from "@/components/select-parent-class";
-import { useClassParams } from "@/hooks/use-class-params";
-import { useZodForm } from "@/hooks/use-zod-form";
-import { useTRPC } from "@/trpc/client";
 import {
   Form,
   FormControl,
@@ -13,7 +9,6 @@ import {
   FormMessage,
 } from "@orbis/ui/form";
 import { Input } from "@orbis/ui/input";
-import { SubmitButton } from "@orbis/ui/submit-button";
 import {
   Select,
   SelectContent,
@@ -21,27 +16,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@orbis/ui/select";
+import { SubmitButton } from "@orbis/ui/submit-button";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { z } from "zod/v3";
 import { InputColor } from "@/components/input-color";
+import { SelectParentClass } from "@/components/select-parent-class";
+import { useClassParams } from "@/hooks/use-class-params";
+import { useZodForm } from "@/hooks/use-zod-form";
+import { useTRPC } from "@/trpc/client";
 import { invalidateClassDomain } from "@/utils/query-invalidation";
 
 const classTypes = [
-  'classroom',
-  'laboratory',
-  'library',
-  'computer_lab',
-  'music_room',
-  'exam_hall',
-  'workshop',
-  'multi-purpose_room'
+  "classroom",
+  "laboratory",
+  "library",
+  "computer_lab",
+  "music_room",
+  "exam_hall",
+  "workshop",
+  "multi-purpose_room",
 ] as const;
 
 const formSchema = z.object({
   id: z.number(),
   name: z.string().min(1, "Name is required"),
-  type: z.enum(classTypes).default('classroom'),
+  type: z.enum(classTypes).default("classroom"),
   division: z.string().optional().nullable(),
   parentClassId: z.number().optional().nullable(),
   color: z.string().default("#e6e6e6"),
@@ -58,8 +58,6 @@ export function ClassEditForm({ data }: Props) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const { setParams } = useClassParams();
-
-
 
   const defaultValues = {
     id: data?.id,
@@ -86,9 +84,9 @@ export function ClassEditForm({ data }: Props) {
 
   const onSubmit = (formData: ClassEditFormValues) => {
     updateClassMutation.mutate({
-        ...formData,
-        division: formData.division || null,
-        parentClassId: formData.parentClassId || null,
+      ...formData,
+      division: formData.division || null,
+      parentClassId: formData.parentClassId || null,
     });
   };
 
@@ -130,7 +128,7 @@ export function ClassEditForm({ data }: Props) {
               name="parentClassId"
               render={({ field }) => {
                 const hasChildren = data?.children && data.children.length > 0;
-                
+
                 return (
                   <FormItem className="space-y-1">
                     <FormLabel className="text-xs text-[#878787] font-normal">
@@ -159,7 +157,7 @@ export function ClassEditForm({ data }: Props) {
             />
 
             <div className="grid grid-cols-2 gap-4">
-               <FormField
+              <FormField
                 control={form.control}
                 name="type"
                 render={({ field }) => (
@@ -167,7 +165,10 @@ export function ClassEditForm({ data }: Props) {
                     <FormLabel className="text-xs text-[#878787] font-normal">
                       Type
                     </FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select type" />
@@ -176,7 +177,8 @@ export function ClassEditForm({ data }: Props) {
                       <SelectContent>
                         {classTypes.map((type) => (
                           <SelectItem key={type} value={type}>
-                            {type.charAt(0).toUpperCase() + type.slice(1).replace('_', ' ')}
+                            {type.charAt(0).toUpperCase() +
+                              type.slice(1).replace("_", " ")}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -204,8 +206,6 @@ export function ClassEditForm({ data }: Props) {
                 )}
               />
             </div>
-
-
 
             <FormField
               control={form.control}

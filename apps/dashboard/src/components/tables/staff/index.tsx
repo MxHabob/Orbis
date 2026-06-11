@@ -1,7 +1,6 @@
 "use client";
 
-import { InviteTeamMembersModal } from "@/components/modals/create-staff-users-modal";
-import { useTRPC } from "@/trpc/client";
+import { authClient } from "@orbis/auth/auth-client";
 import { Button } from "@orbis/ui/button";
 import { cn } from "@orbis/ui/cn";
 import { Dialog } from "@orbis/ui/dialog";
@@ -17,9 +16,10 @@ import {
 } from "@tanstack/react-table";
 import * as React from "react";
 import { useState } from "react";
-import { columns } from "./columns";
-import { authClient } from "@orbis/auth/auth-client";
+import { InviteTeamMembersModal } from "@/components/modals/create-staff-users-modal";
 import { useStaffParams } from "@/hooks/use-staff-params";
+import { useTRPC } from "@/trpc/client";
+import { columns } from "./columns";
 
 export function DataTable() {
   const { setParams } = useStaffParams();

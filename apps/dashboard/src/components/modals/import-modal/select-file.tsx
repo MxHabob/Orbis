@@ -1,11 +1,10 @@
+import { parseFile } from "@orbis/import";
 import { cn } from "@orbis/ui/cn";
 import { Spinner } from "@orbis/ui/spinner";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Dropzone, { type FileRejection } from "react-dropzone";
 import { Controller } from "react-hook-form";
 import { useCsvContext } from "./context";
-import { parseFile } from "@orbis/import";
-
 
 export function SelectFile() {
   const { watch, control, setFileColumns, setFirstRows } = useCsvContext();
@@ -112,7 +111,8 @@ export function SelectFile() {
               "application/csv": [".csv"],
               "text/plain": [".csv"],
               "application/vnd.ms-excel": [".csv", ".xls"],
-              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+                [".xlsx"],
             }}
             maxSize={5000000}
           >
@@ -137,7 +137,9 @@ export function SelectFile() {
                     <div>
                       <p>Drop your file here, or click to browse.</p>
                       <span>5MB file limit. </span>
-                      <span className="mt-2 text-[10px]">CSV or Excel format</span>
+                      <span className="mt-2 text-[10px]">
+                        CSV or Excel format
+                      </span>
                     </div>
                   )}
 

@@ -1,9 +1,9 @@
 "use client";
 
-import { Portal } from "@/components/portal";
 import { Button } from "@orbis/ui/button";
 import { motion } from "framer-motion";
 import type { ReactNode } from "react";
+import { Portal } from "@/components/portal";
 
 interface BottomBarProps {
   /** Number of selected items */
@@ -49,7 +49,9 @@ export function BottomBar({
           />
           <div className="relative h-12 justify-between items-center flex pl-4 pr-2">
             <span className="text-sm">
-              {selectedLabel ? selectedLabel(selectedCount) : `${selectedCount} selected`}
+              {selectedLabel
+                ? selectedLabel(selectedCount)
+                : `${selectedCount} selected`}
             </span>
 
             <div className="flex items-center space-x-2">

@@ -1,16 +1,16 @@
 import { db } from "@db/client";
 import {
-  gradeEntries,
-  assessmentItems,
-  subjects,
-  classes,
   academicTerms,
-  enrollments,
-  students,
-  users,
   academicYears,
+  assessmentItems,
+  classes,
+  enrollments,
+  gradeEntries,
+  students,
+  subjects,
+  users,
 } from "@db/schema";
-import { eq, and, inArray, asc } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 
 export type CertificateType = "monthly" | "mid_term" | "year_end";
 
@@ -62,9 +62,10 @@ export type CertificateDataResult = {
 const DEFAULT_SCHOOL_NAME = "Sanaa Model School";
 
 export async function getCertificateData(
-  params: CertificateDataParams
+  params: CertificateDataParams,
 ): Promise<CertificateDataResult | null> {
-  const { studentId, classId, academicYearId, termId, certificateType, month } = params;
+  const { studentId, classId, academicYearId, termId, certificateType, month } =
+    params;
 
   // 1. Student + enrollment check
   const [enrollment] = await db
@@ -118,9 +119,15 @@ export async function getCertificateData(
     .limit(1);
 
   // For year_end we need subjects from both terms
-  const termIdsForSubjects = certificateType === "year_end"
-    ? (await db.select({ id: academicTerms.id }).from(academicTerms).where(eq(academicTerms.academicYearId, academicYearId))).map((t) => t.id)
-    : [termId];
+  const termIdsForSubjects =
+    certificateType === "year_end"
+      ? (
+          await db
+            .select({ id: academicTerms.id })
+            .from(academicTerms)
+            .where(eq(academicTerms.academicYearId, academicYearId))
+        ).map((t) => t.id)
+      : [termId];
 
   // 4. Distinct subjects for this class in this term (from assessment_items)
   const subjectRows = await db
@@ -136,8 +143,8 @@ export async function getCertificateData(
         eq(assessmentItems.classId, classId),
         termIdsForSubjects.length === 1
           ? eq(assessmentItems.termId, termIdsForSubjects[0]!)
-          : inArray(assessmentItems.termId, termIdsForSubjects)
-      )
+          : inArray(assessmentItems.termId, termIdsForSubjects),
+      ),
     )
     .orderBy(asc(subjects.sortOrder), asc(subjects.name));
 
@@ -191,10 +198,14 @@ export async function getCertificateData(
         eq(assessmentItems.classId, classId),
         inArray(assessmentItems.termId, termIdsToFetch),
         inArray(assessmentItems.subjectId, subjectIds),
-        inArray(assessmentItems.month, monthsToFetch)
-      )
+        inArray(assessmentItems.month, monthsToFetch),
+      ),
     )
-    .orderBy(asc(assessmentItems.subjectId), asc(assessmentItems.month), asc(assessmentItems.id));
+    .orderBy(
+      asc(assessmentItems.subjectId),
+      asc(assessmentItems.month),
+      asc(assessmentItems.id),
+    );
 
   const itemIds = items.map((i) => i.id);
 
@@ -208,12 +219,12 @@ export async function getCertificateData(
     .where(
       and(
         eq(gradeEntries.studentId, studentId),
-        inArray(gradeEntries.assessmentItemId, itemIds)
-      )
+        inArray(gradeEntries.assessmentItemId, itemIds),
+      ),
     );
 
   const gradeByItemId = new Map(
-    grades.map((g) => [g.assessmentItemId, g.score])
+    grades.map((g) => [g.assessmentItemId, g.score]),
   );
 
   function parseScore(s: string | null): number | null {
@@ -244,11 +255,19 @@ export async function getCertificateData(
       }
       if (hasAny) total = Math.round(sum);
       // Ensure standard column keys exist for header
-      ["Behavior", "Attendance", "Participation", "Oral", "Written Exam"].forEach((k) => {
+      [
+        "Behavior",
+        "Attendance",
+        "Participation",
+        "Oral",
+        "Written Exam",
+      ].forEach((k) => {
         if (columns[k] === undefined) columns[k] = null;
       });
     } else if (certificateType === "mid_term") {
-      const monthlyItems = subjItems.filter((i) => [9, 10, 11].includes(i.month));
+      const monthlyItems = subjItems.filter((i) =>
+        [9, 10, 11].includes(i.month),
+      );
       const examItems = subjItems.filter((i) => i.month === 13);
       let monthlyTotal = 0;
       let examScore: number | null = null;
@@ -260,12 +279,17 @@ export async function getCertificateData(
       if (examItem) {
         examScore = parseScore(gradeByItemId.get(examItem.id) ?? null);
       }
-      columns["Monthly Average"] = monthlyTotal > 0 ? Math.round(monthlyTotal) : null;
+      columns["Monthly Average"] =
+        monthlyTotal > 0 ? Math.round(monthlyTotal) : null;
       columns["Mid-term Exam"] = examScore;
       total =
         monthlyTotal > 0 && examScore != null
           ? Math.round(monthlyTotal + examScore)
-          : examScore !== null ? Math.round(examScore) : (monthlyTotal > 0 ? Math.round(monthlyTotal) : null);
+          : examScore !== null
+            ? Math.round(examScore)
+            : monthlyTotal > 0
+              ? Math.round(monthlyTotal)
+              : null;
     } else {
       // year_end: aggregate by termId (first term id = term 1, second = term 2)
       const [term1Id, term2Id] = termIdsToFetch;
@@ -279,7 +303,14 @@ export async function getCertificateData(
       }
       columns["Term 1 Average"] = t1 > 0 ? Math.round(t1) : null;
       columns["Term 2 Average"] = t2 > 0 ? Math.round(t2) : null;
-      total = t1 > 0 && t2 > 0 ? Math.round(t1 + t2) : t1 > 0 ? Math.round(t1) : t2 > 0 ? Math.round(t2) : null;
+      total =
+        t1 > 0 && t2 > 0
+          ? Math.round(t1 + t2)
+          : t1 > 0
+            ? Math.round(t1)
+            : t2 > 0
+              ? Math.round(t2)
+              : null;
     }
 
     return {

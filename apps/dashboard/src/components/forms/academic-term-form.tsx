@@ -1,17 +1,24 @@
 "use client";
 
+import { createAcademicTermSchema } from "@api/schemas/academic";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Button } from "@orbis/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@orbis/ui/form";
+import { Input } from "@orbis/ui/input";
+import { Switch } from "@orbis/ui/switch";
+import { useToast } from "@orbis/ui/use-toast";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
 import { useI18n } from "@/locales/client";
 import { useTRPC } from "@/trpc/client";
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { createAcademicTermSchema } from "@api/schemas/academic";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@orbis/ui/form";
-import { Input } from "@orbis/ui/input";
-import { Button } from "@orbis/ui/button";
-import { useToast } from "@orbis/ui/use-toast";
-import { Switch } from "@orbis/ui/switch";
-import { useEffect } from "react";
 
 interface AcademicTermFormProps {
   initialData?: any;
@@ -20,7 +27,12 @@ interface AcademicTermFormProps {
   onSuccess?: () => void;
 }
 
-export function AcademicTermForm({ initialData, yearId, termId, onSuccess }: AcademicTermFormProps) {
+export function AcademicTermForm({
+  initialData,
+  yearId,
+  termId,
+  onSuccess,
+}: AcademicTermFormProps) {
   const t = useI18n();
   const trpc = useTRPC();
   const { toast } = useToast();
@@ -43,7 +55,7 @@ export function AcademicTermForm({ initialData, yearId, termId, onSuccess }: Aca
   // Fetch all years to find the specific term if it's an edit by ID
   const { data: years } = useQuery({
     ...trpc.academic.getYears.queryOptions(),
-    enabled: !!termId && !initialData
+    enabled: !!termId && !initialData,
   });
 
   useEffect(() => {
@@ -76,13 +88,13 @@ export function AcademicTermForm({ initialData, yearId, termId, onSuccess }: Aca
         onSuccess?.();
       },
       onError: (error) => {
-        toast({ 
-          title: t("common.error"), 
+        toast({
+          title: t("common.error"),
           description: error.message,
-          variant: "destructive" 
+          variant: "destructive",
         });
       },
-    })
+    }),
   );
 
   const updateMutation = useMutation(
@@ -95,13 +107,13 @@ export function AcademicTermForm({ initialData, yearId, termId, onSuccess }: Aca
         onSuccess?.();
       },
       onError: (error) => {
-        toast({ 
-          title: t("common.error"), 
+        toast({
+          title: t("common.error"),
           description: error.message,
-          variant: "destructive" 
+          variant: "destructive",
         });
       },
-    })
+    }),
   );
 
   const isPending = createMutation.isPending || updateMutation.isPending;
@@ -128,7 +140,10 @@ export function AcademicTermForm({ initialData, yearId, termId, onSuccess }: Aca
             <FormItem>
               <FormLabel>{t("reports.half_yearly")}</FormLabel>
               <FormControl>
-                <Input placeholder={t("reports.half_yearly") + " 1"} {...field} />
+                <Input
+                  placeholder={t("reports.half_yearly") + " 1"}
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -143,7 +158,11 @@ export function AcademicTermForm({ initialData, yearId, termId, onSuccess }: Aca
               <FormItem>
                 <FormLabel>{t("common.start_date")}</FormLabel>
                 <FormControl>
-                  <Input type="date" {...field} value={field.value?.split('T')[0]} />
+                  <Input
+                    type="date"
+                    {...field}
+                    value={field.value?.split("T")[0]}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -156,7 +175,11 @@ export function AcademicTermForm({ initialData, yearId, termId, onSuccess }: Aca
               <FormItem>
                 <FormLabel>{t("common.end_date")}</FormLabel>
                 <FormControl>
-                  <Input type="date" {...field} value={field.value?.split('T')[0]} />
+                  <Input
+                    type="date"
+                    {...field}
+                    value={field.value?.split("T")[0]}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

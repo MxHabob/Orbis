@@ -1,19 +1,19 @@
 "use client";
 
+import { closestCenter, DndContext } from "@dnd-kit/core";
+import { Table, TableBody, TableCell, TableRow } from "@orbis/ui/table";
+import { getCoreRowModel, useReactTable } from "@tanstack/react-table";
+import { useVirtualizer, type VirtualItem } from "@tanstack/react-virtual";
+import { useMemo, useRef } from "react";
 import { VirtualRow } from "@/components/tables/core";
 import { useScrollHeader } from "@/hooks/use-scroll-header";
 import { useStickyColumns } from "@/hooks/use-sticky-columns";
-import { useTableScroll } from "@/hooks/use-table-scroll";
 import { useTableDnd } from "@/hooks/use-table-dnd";
-import { useI18n } from "@/locales/client";
+import { useTableScroll } from "@/hooks/use-table-scroll";
 import { useTableSettings } from "@/hooks/use-table-settings";
+import { useI18n } from "@/locales/client";
 import { STICKY_COLUMNS, SUMMARY_GRID_HEIGHTS } from "@/utils/table-configs";
 import type { TableSettings } from "@/utils/table-settings";
-import { DndContext, closestCenter } from "@dnd-kit/core";
-import { Table, TableBody, TableCell, TableRow } from "@orbis/ui/table";
-import { getCoreRowModel, useReactTable } from "@tanstack/react-table";
-import { type VirtualItem, useVirtualizer } from "@tanstack/react-virtual";
-import { useMemo, useRef } from "react";
 import {
   createGradeColumns,
   type GradeGridData,
@@ -73,30 +73,34 @@ export function GradeDataTable({
       }
 
       const grade = grades.find(
-        (g: any) => g.studentId === studentId && g.assessmentItemId === assessmentItemId
+        (g: any) =>
+          g.studentId === studentId && g.assessmentItemId === assessmentItemId,
       );
       return grade?.score ?? null;
     },
-    [grades, pendingChanges]
+    [grades, pendingChanges],
   );
 
-  const columns = useMemo(() => createGradeColumns(items, month ?? undefined, t), [items, month, t]);
+  const columns = useMemo(
+    () => createGradeColumns(items, month ?? undefined, t),
+    [items, month, t],
+  );
 
   // Modern React 2026: Derived State - calculate order during render, avoiding useEffect
   const effectiveColumnOrder = useMemo(() => {
     const currentColumnIds = columns.map((c) => c.id as string);
-    
+
     // If no saved order, use the default order from createGradeColumns
     if (columnOrder.length === 0) return currentColumnIds;
 
     // Filter out columns that no longer exist (e.g. after switching months)
     const activeOrder = columnOrder.filter(
-      (id) => currentColumnIds.includes(id) && id !== "total"
+      (id) => currentColumnIds.includes(id) && id !== "total",
     );
 
     // Find new columns that aren't in the saved order yet
     const newColumns = currentColumnIds.filter(
-      (id) => !columnOrder.includes(id) && id !== "total"
+      (id) => !columnOrder.includes(id) && id !== "total",
     );
 
     // Final construction: Preserved Order + New Columns + Total at the very end
@@ -104,15 +108,16 @@ export function GradeDataTable({
   }, [columns, columnOrder]);
 
   const tableMeta = useMemo(
-    () => ({
-      items,
-      grades,
-      getGradeValue,
-      onGradeChange,
-      onBulkFill,
-      onClearColumn,
-    } as GradeTableMeta),
-    [items, grades, getGradeValue, onGradeChange, onBulkFill, onClearColumn]
+    () =>
+      ({
+        items,
+        grades,
+        getGradeValue,
+        onGradeChange,
+        onBulkFill,
+        onClearColumn,
+      }) as GradeTableMeta,
+    [items, grades, getGradeValue, onGradeChange, onBulkFill, onClearColumn],
   );
 
   const table = useReactTable({
@@ -125,9 +130,10 @@ export function GradeDataTable({
     columnResizeMode: "onChange",
     onColumnSizingChange: setColumnSizing,
     onColumnOrderChange: (updater) => {
-      const nextOrder = typeof updater === "function" ? updater(columnOrder) : updater;
+      const nextOrder =
+        typeof updater === "function" ? updater(columnOrder) : updater;
       if (nextOrder.includes("total")) {
-        setColumnOrder([...nextOrder.filter(id => id !== "total"), "total"]);
+        setColumnOrder([...nextOrder.filter((id) => id !== "total"), "total"]);
       } else {
         setColumnOrder(nextOrder);
       }

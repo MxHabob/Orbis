@@ -1,6 +1,6 @@
+import { useQuery } from "@tanstack/react-query";
 import { useTRPC } from "@/trpc/client";
 import { useMetricsFilter } from "./use-metrics-filter";
-import { useQuery } from "@tanstack/react-query";
 
 export function useSchoolMetrics() {
   const trpc = useTRPC();
@@ -11,6 +11,6 @@ export function useSchoolMetrics() {
       from,
       to,
       currency,
-    })
+    }),
   );
 }

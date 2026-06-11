@@ -1,14 +1,13 @@
 "use client";
 
-import { Cookies } from "@/utils/constants";
 import type { AppRouter } from "@orbis/api/trpc/routers/_app";
-
 import type { QueryClient } from "@tanstack/react-query";
-import { QueryClientProvider, isServer } from "@tanstack/react-query";
+import { isServer, QueryClientProvider } from "@tanstack/react-query";
 import { createTRPCClient, httpBatchLink, loggerLink } from "@trpc/client";
 import { createTRPCContext } from "@trpc/tanstack-react-query";
 import { useState } from "react";
 import superjson from "superjson";
+import { Cookies } from "@/utils/constants";
 import { makeQueryClient } from "./query-client";
 
 // Helper to get cookie value by name
@@ -45,7 +44,7 @@ function getApiUrl(): string {
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL;
   }
-  
+
   // For local or LAN network deployments (e.g. localhost, 192.168.x.x, 10.x.x.x, 172.x.x.x)
   // we dynamically connect to port 3002 on the same host visited.
   if (typeof window !== "undefined") {
@@ -58,12 +57,12 @@ function getApiUrl(): string {
       hostname.startsWith("10.") ||
       /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) ||
       hostname.endsWith(".local");
-      
+
     if (isLocal) {
       return `${protocol}//${hostname}:3002`;
     }
   }
-  
+
   // Production fallback
   return "https://api.orbis.ai";
 }
@@ -87,8 +86,7 @@ export function TRPCReactProvider(
             });
           },
           async headers() {
-            const headers: Record<string, string> = {
-            };
+            const headers: Record<string, string> = {};
 
             // Pass force-primary cookie as header to API for replication lag handling
             const forcePrimary = getCookie(Cookies.ForcePrimary);

@@ -1,7 +1,13 @@
 import { db } from "@db/client";
-import { timeSlots, scheduledLessons, classes, subjects, users } from "@db/schema";
-import { eq, and, asc } from "drizzle-orm";
+import {
+  classes,
+  scheduledLessons,
+  subjects,
+  timeSlots,
+  users,
+} from "@db/schema";
 import { RedisCache } from "@orbis/cache";
+import { and, asc, eq } from "drizzle-orm";
 
 const lessonCache = new RedisCache("lessons", 60 * 60);
 
@@ -11,7 +17,8 @@ const lessonCache = new RedisCache("lessons", 60 * 60);
 
 export const getTimeSlots = async (yearId: number) => {
   const cacheKey = `slots:${yearId}`;
-  const cached = await lessonCache.get<typeof timeSlots.$inferSelect[]>(cacheKey);
+  const cached =
+    await lessonCache.get<(typeof timeSlots.$inferSelect)[]>(cacheKey);
   if (cached) return cached;
 
   const results = await db
@@ -71,7 +78,6 @@ export const getClassSchedule = async (classId: number, yearId: number) => {
       teacherId: scheduledLessons.teacherId,
     })
 
-
     .from(scheduledLessons)
     .innerJoin(timeSlots, eq(scheduledLessons.timeSlotId, timeSlots.id))
     .innerJoin(subjects, eq(scheduledLessons.subjectId, subjects.id))
@@ -80,8 +86,8 @@ export const getClassSchedule = async (classId: number, yearId: number) => {
       and(
         eq(scheduledLessons.classId, classId),
         eq(scheduledLessons.academicYearId, yearId),
-        eq(scheduledLessons.isActive, true)
-      )
+        eq(scheduledLessons.isActive, true),
+      ),
     );
 
   if (results) {
@@ -91,61 +97,66 @@ export const getClassSchedule = async (classId: number, yearId: number) => {
 };
 
 export const getTeacherSchedule = async (teacherId: string, yearId: number) => {
-    const cacheKey = `schedule:teacher:${teacherId}:${yearId}`;
-    const cached = await lessonCache.get<any[]>(cacheKey);
-    if (cached) return cached;
-  
-    const results = await db
-      .select({
-        id: scheduledLessons.id,
-        dayOfWeek: scheduledLessons.dayOfWeek,
-        timeSlot: {
-          id: timeSlots.id,
-          slotNumber: timeSlots.slotNumber,
-          startTime: timeSlots.startTime,
-          endTime: timeSlots.endTime,
-        },
-        class: {
-          id: classes.id,
-          name: classes.name,
-        },
-        subject: {
-          id: subjects.id,
-          name: subjects.name,
-        },
-        notes: scheduledLessons.notes,
-        classId: scheduledLessons.classId,
-        academicYearId: scheduledLessons.academicYearId,
-        timeSlotId: scheduledLessons.timeSlotId,
-        subjectId: scheduledLessons.subjectId,
-        teacherId: scheduledLessons.teacherId,
-      })
+  const cacheKey = `schedule:teacher:${teacherId}:${yearId}`;
+  const cached = await lessonCache.get<any[]>(cacheKey);
+  if (cached) return cached;
 
+  const results = await db
+    .select({
+      id: scheduledLessons.id,
+      dayOfWeek: scheduledLessons.dayOfWeek,
+      timeSlot: {
+        id: timeSlots.id,
+        slotNumber: timeSlots.slotNumber,
+        startTime: timeSlots.startTime,
+        endTime: timeSlots.endTime,
+      },
+      class: {
+        id: classes.id,
+        name: classes.name,
+      },
+      subject: {
+        id: subjects.id,
+        name: subjects.name,
+      },
+      notes: scheduledLessons.notes,
+      classId: scheduledLessons.classId,
+      academicYearId: scheduledLessons.academicYearId,
+      timeSlotId: scheduledLessons.timeSlotId,
+      subjectId: scheduledLessons.subjectId,
+      teacherId: scheduledLessons.teacherId,
+    })
 
-      .from(scheduledLessons)
-      .innerJoin(timeSlots, eq(scheduledLessons.timeSlotId, timeSlots.id))
-      .innerJoin(classes, eq(scheduledLessons.classId, classes.id))
-      .innerJoin(subjects, eq(scheduledLessons.subjectId, subjects.id))
-      .where(
-        and(
-          eq(scheduledLessons.teacherId, teacherId),
-          eq(scheduledLessons.academicYearId, yearId),
-          eq(scheduledLessons.isActive, true)
-        )
-      );
-  
-    if (results) {
-      await lessonCache.set(cacheKey, results);
-    }
-    return results;
+    .from(scheduledLessons)
+    .innerJoin(timeSlots, eq(scheduledLessons.timeSlotId, timeSlots.id))
+    .innerJoin(classes, eq(scheduledLessons.classId, classes.id))
+    .innerJoin(subjects, eq(scheduledLessons.subjectId, subjects.id))
+    .where(
+      and(
+        eq(scheduledLessons.teacherId, teacherId),
+        eq(scheduledLessons.academicYearId, yearId),
+        eq(scheduledLessons.isActive, true),
+      ),
+    );
+
+  if (results) {
+    await lessonCache.set(cacheKey, results);
+  }
+  return results;
 };
 
 export type CreateScheduledLessonParams = typeof scheduledLessons.$inferInsert;
-export const createScheduledLesson = async (data: CreateScheduledLessonParams) => {
+export const createScheduledLesson = async (
+  data: CreateScheduledLessonParams,
+) => {
   const [result] = await db.insert(scheduledLessons).values(data).returning();
   if (result) {
-    await lessonCache.delete(`schedule:class:${result.classId}:${result.academicYearId}`);
-    await lessonCache.delete(`schedule:teacher:${result.teacherId}:${result.academicYearId}`);
+    await lessonCache.delete(
+      `schedule:class:${result.classId}:${result.academicYearId}`,
+    );
+    await lessonCache.delete(
+      `schedule:teacher:${result.teacherId}:${result.academicYearId}`,
+    );
   }
   return result;
 };
@@ -168,7 +179,10 @@ export const getScheduledLessonById = async (id: number) => {
   return result;
 };
 
-export const updateScheduledLesson = async (id: number, data: Partial<CreateScheduledLessonParams>) => {
+export const updateScheduledLesson = async (
+  id: number,
+  data: Partial<CreateScheduledLessonParams>,
+) => {
   const [result] = await db
     .update(scheduledLessons)
     .set({ ...data, updatedAt: new Date() })
@@ -176,18 +190,28 @@ export const updateScheduledLesson = async (id: number, data: Partial<CreateSche
     .returning();
 
   if (result) {
-    await lessonCache.delete(`schedule:class:${result.classId}:${result.academicYearId}`);
-    await lessonCache.delete(`schedule:teacher:${result.teacherId}:${result.academicYearId}`);
+    await lessonCache.delete(
+      `schedule:class:${result.classId}:${result.academicYearId}`,
+    );
+    await lessonCache.delete(
+      `schedule:teacher:${result.teacherId}:${result.academicYearId}`,
+    );
   }
   return result;
 };
 
 export const deleteScheduledLesson = async (id: number) => {
-    const [existing] = await db.select().from(scheduledLessons).where(eq(scheduledLessons.id, id));
-    if (existing) {
-        await db.delete(scheduledLessons).where(eq(scheduledLessons.id, id));
-        await lessonCache.delete(`schedule:class:${existing.classId}:${existing.academicYearId}`);
-        await lessonCache.delete(`schedule:teacher:${existing.teacherId}:${existing.academicYearId}`);
-    }
+  const [existing] = await db
+    .select()
+    .from(scheduledLessons)
+    .where(eq(scheduledLessons.id, id));
+  if (existing) {
+    await db.delete(scheduledLessons).where(eq(scheduledLessons.id, id));
+    await lessonCache.delete(
+      `schedule:class:${existing.classId}:${existing.academicYearId}`,
+    );
+    await lessonCache.delete(
+      `schedule:teacher:${existing.teacherId}:${existing.academicYearId}`,
+    );
+  }
 };
-

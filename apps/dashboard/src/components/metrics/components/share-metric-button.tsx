@@ -10,7 +10,12 @@ interface ShareMetricButtonProps {
   currency?: string;
 }
 
-export function ShareMetricButton({ type, from, to, currency }: ShareMetricButtonProps) {
+export function ShareMetricButton({
+  type,
+  from,
+  to,
+  currency,
+}: ShareMetricButtonProps) {
   // return (
   //   <Button
   //     variant="ghost"

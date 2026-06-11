@@ -1,10 +1,10 @@
 "use client";
 
+import { Button } from "@orbis/ui/button";
+import { toast } from "@orbis/ui/use-toast";
+import { Loader2, Plus } from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
 import { initializeAssessmentsAction } from "@/actions/assessments/initialize-assessments";
-import { Button } from "@orbis/ui/button";
-import { Plus, Loader2 } from "lucide-react";
-import { toast } from "@orbis/ui/use-toast";
 
 interface InitializeAssessmentsButtonProps {
   classId: number;
@@ -41,9 +41,12 @@ export function InitializeAssessmentsButton({
   return (
     <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed rounded-xl bg-muted/20 gap-4">
       <div className="text-center">
-        <h3 className="text-lg font-semibold">No records found for this month</h3>
+        <h3 className="text-lg font-semibold">
+          No records found for this month
+        </h3>
         <p className="text-sm text-muted-foreground mt-1">
-          You must create assessment items (attendance, participation, homework, exam) before entering grades.
+          You must create assessment items (attendance, participation, homework,
+          exam) before entering grades.
         </p>
       </div>
       <Button

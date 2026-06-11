@@ -1,9 +1,6 @@
 "use client";
 
-import { useUserMutation, useUserQuery } from "@/hooks/use-user";
-import { useZodForm } from "@/hooks/use-zod-form";
 import { authClient } from "@orbis/auth/auth-client";
-import { useI18n } from "@/locales/client";
 import {
   Card,
   CardContent,
@@ -22,6 +19,9 @@ import {
 import { Input } from "@orbis/ui/input";
 import { SubmitButton } from "@orbis/ui/submit-button";
 import { z } from "zod/v3";
+import { useUserMutation, useUserQuery } from "@/hooks/use-user";
+import { useZodForm } from "@/hooks/use-zod-form";
+import { useI18n } from "@/locales/client";
 
 const formSchema = z.object({
   name: z.string().min(1).max(32).optional(),
@@ -31,7 +31,7 @@ export function DisplayName() {
   const { data: session } = authClient.useSession();
   const updateUserMutation = useUserMutation();
   const t = useI18n();
-  
+
   const form = useZodForm(formSchema, {
     defaultValues: {
       name: session?.user.name ?? session?.user.email ?? undefined,

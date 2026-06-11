@@ -1,11 +1,11 @@
 "use client";
 
-import { useI18n } from "@/locales/client";
 import { Badge } from "@orbis/ui/badge";
 import { cn } from "@orbis/ui/cn";
 import { createColumnHelper } from "@tanstack/react-table";
-import { User, GraduationCap, School } from "lucide-react";
+import { GraduationCap, School, User } from "lucide-react";
 import React from "react";
+import type { useI18n } from "@/locales/client";
 
 export interface PromotionPreview {
   studentId: string;
@@ -36,10 +36,12 @@ export const columns = (t: ReturnType<typeof useI18n>) => [
     cell: (info) => {
       const score = info.getValue();
       return score !== null ? (
-        <span className={cn(
-          "text-[10px] font-mono font-bold",
-          score < 50 ? "text-red-500" : "text-emerald-500"
-        )}>
+        <span
+          className={cn(
+            "text-[10px] font-mono font-bold",
+            score < 50 ? "text-red-500" : "text-emerald-500",
+          )}
+        >
           {score.toFixed(0)}%
         </span>
       ) : (
@@ -53,15 +55,50 @@ export const columns = (t: ReturnType<typeof useI18n>) => [
       const status = info.getValue();
       switch (status) {
         case "promoted":
-          return <Badge variant="success" className="rounded-none text-[9px] px-1 h-4">{t("promotions.status_promoted")}</Badge>;
+          return (
+            <Badge
+              variant="success"
+              className="rounded-none text-[9px] px-1 h-4"
+            >
+              {t("promotions.status_promoted")}
+            </Badge>
+          );
         case "retained":
-          return <Badge variant="destructive" className="rounded-none bg-red-500/10 text-red-500 hover:bg-red-500/20 text-[9px] px-1 h-4">{t("promotions.status_retained")}</Badge>;
+          return (
+            <Badge
+              variant="destructive"
+              className="rounded-none bg-red-500/10 text-red-500 hover:bg-red-500/20 text-[9px] px-1 h-4"
+            >
+              {t("promotions.status_retained")}
+            </Badge>
+          );
         case "graduated":
-          return <Badge variant="secondary" className="rounded-none bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 text-[9px] px-1 h-4">{t("promotions.status_graduated")}</Badge>;
+          return (
+            <Badge
+              variant="secondary"
+              className="rounded-none bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 text-[9px] px-1 h-4"
+            >
+              {t("promotions.status_graduated")}
+            </Badge>
+          );
         case "conditional":
-          return <Badge variant="outline" className="rounded-none text-[9px] px-1 h-4">{t("promotions.status_conditional")}</Badge>;
+          return (
+            <Badge
+              variant="outline"
+              className="rounded-none text-[9px] px-1 h-4"
+            >
+              {t("promotions.status_conditional")}
+            </Badge>
+          );
         default:
-          return <Badge variant="outline" className="rounded-none text-[9px] px-1 h-4 uppercase">{status}</Badge>;
+          return (
+            <Badge
+              variant="outline"
+              className="rounded-none text-[9px] px-1 h-4 uppercase"
+            >
+              {status}
+            </Badge>
+          );
       }
     },
   }),
@@ -73,12 +110,12 @@ export const columns = (t: ReturnType<typeof useI18n>) => [
       if (name) {
         return (
           <div className="flex items-center gap-2 text-[10px] font-medium text-[#606060]">
-             <School size={12} />
-             {name}
+            <School size={12} />
+            {name}
           </div>
         );
       }
-      if (row.suggestedStatus === 'graduated') {
+      if (row.suggestedStatus === "graduated") {
         return (
           <span className="flex items-center gap-2 text-[10px] text-blue-500 font-bold uppercase">
             <GraduationCap size={12} /> {t("students.graduated")}

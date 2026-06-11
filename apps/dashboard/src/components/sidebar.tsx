@@ -1,10 +1,10 @@
 "use client";
 
 import { cn } from "@orbis/ui/cn";
+import { Zap } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { MainMenu } from "./main-menu";
-import { Zap } from "lucide-react";
 import { TeamDropdown } from "./team-dropdown";
 
 export function Sidebar() {

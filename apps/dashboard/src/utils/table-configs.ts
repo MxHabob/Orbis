@@ -19,9 +19,7 @@ export const STICKY_COLUMNS: Record<TableId, StickyColumnConfig[]> = {
     { id: "select", width: 50 },
     { id: "title", width: 250 },
   ],
-  grades: [
-    { id: "studentName", width: 300 },
-  ],
+  grades: [{ id: "studentName", width: 300 }],
   classes: [
     { id: "select", width: 50 },
     { id: "name", width: 250 },

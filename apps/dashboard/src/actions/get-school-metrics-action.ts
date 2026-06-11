@@ -1,16 +1,15 @@
-
 "use server";
 
-import { authActionClient } from "@/actions/safe-action";
-import { 
-  getStudentCount, 
-  getTeacherCount, 
-  getAverageAttendanceRate, 
-  getGenderDistribution,
+import {
+  getAverageAttendanceRate,
   getClassDistribution,
+  getGenderDistribution,
+  getOverallPerformance,
   getRecentEnrolledStudents,
-  getOverallPerformance
+  getStudentCount,
+  getTeacherCount,
 } from "@orbis/db/queries/metrics";
+import { authActionClient } from "@/actions/safe-action";
 
 export const getSchoolMetricsAction = authActionClient
   .metadata({
@@ -18,13 +17,13 @@ export const getSchoolMetricsAction = authActionClient
   })
   .action(async () => {
     const [
-      studentCount, 
-      teacherCount, 
+      studentCount,
+      teacherCount,
       attendanceRate,
       genderStats,
       classStats,
       recentStudents,
-      overallPerformance
+      overallPerformance,
     ] = await Promise.all([
       getStudentCount(),
       getTeacherCount(),
@@ -32,7 +31,7 @@ export const getSchoolMetricsAction = authActionClient
       getGenderDistribution(),
       getClassDistribution(),
       getRecentEnrolledStudents(),
-      getOverallPerformance()
+      getOverallPerformance(),
     ]);
 
     return {
@@ -42,6 +41,6 @@ export const getSchoolMetricsAction = authActionClient
       genderStats,
       classStats,
       recentStudents,
-      performance: overallPerformance
+      performance: overallPerformance,
     };
   });

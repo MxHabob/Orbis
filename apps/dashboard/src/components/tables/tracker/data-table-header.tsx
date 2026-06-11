@@ -1,11 +1,11 @@
 "use client";
 
-import { HorizontalPagination } from "@/components/horizontal-pagination";
-import { useSortParams } from "@/hooks/use-sort-params";
 import { Button } from "@orbis/ui/button";
 import { cn } from "@orbis/ui/cn";
 import { TableHead, TableHeader, TableRow } from "@orbis/ui/table";
 import { ArrowDown, ArrowUp } from "lucide-react";
+import { HorizontalPagination } from "@/components/horizontal-pagination";
+import { useSortParams } from "@/hooks/use-sort-params";
 
 interface Props {
   tableScroll?: {

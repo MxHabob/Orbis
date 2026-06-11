@@ -1,7 +1,13 @@
 import { z } from "@hono/zod-openapi";
 
-export const roleEnum = z.enum(['admin', 'student', 'parent', 'teacher', 'staff']);
-export const userSexEnum = z.enum(['unspecified', 'male', 'female']);
+export const roleEnum = z.enum([
+  "admin",
+  "student",
+  "parent",
+  "teacher",
+  "staff",
+]);
+export const userSexEnum = z.enum(["unspecified", "male", "female"]);
 
 export const userSchema = z.object({
   id: z.string().uuid().openapi({
@@ -23,10 +29,10 @@ export const userSchema = z.object({
   emailVerified: z.boolean().default(false).openapi({
     example: true,
   }),
-  role: roleEnum.default('student').openapi({
+  role: roleEnum.default("student").openapi({
     example: "student",
   }),
-  sex: userSexEnum.default('unspecified').openapi({
+  sex: userSexEnum.default("unspecified").openapi({
     example: "male",
   }),
   image: z.string().max(255).nullable().openapi({
@@ -49,11 +55,11 @@ export const userSchema = z.object({
   }),
 });
 
-export const createUserSchema = userSchema.omit({ 
-  id: true, 
-  emailVerified: true 
+export const createUserSchema = userSchema.omit({
+  id: true,
+  emailVerified: true,
 });
 
-export const updateUserSchema = userSchema.partial().omit({ 
-  emailVerified: true 
+export const updateUserSchema = userSchema.partial().omit({
+  emailVerified: true,
 });

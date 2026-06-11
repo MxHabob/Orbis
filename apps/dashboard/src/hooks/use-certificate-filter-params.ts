@@ -1,4 +1,4 @@
-import { useQueryStates, parseAsString } from "nuqs";
+import { parseAsString, useQueryStates } from "nuqs";
 import { createLoader } from "nuqs/server";
 
 const certificateFilterParamsSchema = {
@@ -15,4 +15,6 @@ export function useCertificateFilterParams() {
   };
 }
 
-export const loadCertificateFilterParams = createLoader(certificateFilterParamsSchema);
+export const loadCertificateFilterParams = createLoader(
+  certificateFilterParamsSchema,
+);

@@ -1,10 +1,15 @@
 "use client";
 
-import { useZodForm } from "@/hooks/use-zod-form";
-import { useTRPC } from "@/trpc/client";
 import { Button } from "@orbis/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel } from "@orbis/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+} from "@orbis/ui/form";
 import { Input } from "@orbis/ui/input";
+import MultipleSelector, { type Option } from "@orbis/ui/multiple-selector";
 import {
   Select,
   SelectContent,
@@ -14,12 +19,13 @@ import {
 } from "@orbis/ui/select";
 import { SubmitButton } from "@orbis/ui/submit-button";
 import { useToast } from "@orbis/ui/use-toast";
-import MultipleSelector, { type Option } from "@orbis/ui/multiple-selector";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { X } from "lucide-react";
 import Link from "next/link";
 import { useFieldArray, useWatch } from "react-hook-form";
 import { z } from "zod/v3";
-import { X } from "lucide-react";
+import { useZodForm } from "@/hooks/use-zod-form";
+import { useTRPC } from "@/trpc/client";
 
 const formSchema = z.object({
   invites: z.array(
@@ -28,7 +34,9 @@ const formSchema = z.object({
       email: z.string().email(),
       role: z.enum(["admin", "teacher", "staff", "parent", "student"]),
       studentIds: z.array(z.string()).default([]),
-      relationship: z.enum(["parent", "mother", "father", "guardian"]).default("parent"),
+      relationship: z
+        .enum(["parent", "mother", "father", "guardian"])
+        .default("parent"),
     }),
   ),
 });
@@ -44,9 +52,7 @@ export function InviteForm({ onSuccess, skippable = true }: InviteFormProps) {
   const { toast } = useToast();
 
   // Fetch all students for the parent-student linking
-  const studentsQuery = useQuery(
-    trpc.students.getAll.queryOptions()
-  );
+  const studentsQuery = useQuery(trpc.students.getAll.queryOptions());
 
   const studentOptions: Option[] = (studentsQuery.data ?? []).map((s) => ({
     value: s.userId,
@@ -103,7 +109,8 @@ export function InviteForm({ onSuccess, skippable = true }: InviteFormProps) {
         .map((invite) => ({
           ...invite,
           studentIds: invite.role === "parent" ? invite.studentIds : undefined,
-          relationship: invite.role === "parent" ? invite.relationship : undefined,
+          relationship:
+            invite.role === "parent" ? invite.relationship : undefined,
         })),
     );
   });
@@ -226,11 +233,7 @@ function InviteRow({
           render={({ field }) => (
             <FormItem className="col-span-4">
               <FormControl>
-                <Input
-                  placeholder="Full Name"
-                  autoComplete="off"
-                  {...field}
-                />
+                <Input placeholder="Full Name" autoComplete="off" {...field} />
               </FormControl>
             </FormItem>
           )}
@@ -261,10 +264,7 @@ function InviteRow({
           name={`invites.${index}.role`}
           render={({ field }) => (
             <FormItem className="col-span-3">
-              <Select
-                onValueChange={field.onChange}
-                defaultValue={field.value}
-              >
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Role" />

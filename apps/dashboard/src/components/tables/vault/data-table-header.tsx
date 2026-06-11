@@ -1,20 +1,20 @@
 "use client";
 
-import { HorizontalPagination } from "@/components/horizontal-pagination";
-import { useI18n } from "@/locales/client";
-import type { TableScrollState } from "@/components/tables/core";
-import { DraggableHeader } from "@/components/tables/draggable-header";
-import { ResizeHandle } from "@/components/tables/resize-handle";
-import { useStickyColumns } from "@/hooks/use-sticky-columns";
-import { NON_REORDERABLE_COLUMNS, STICKY_COLUMNS } from "@/utils/table-configs";
 import {
-  SortableContext,
   horizontalListSortingStrategy,
+  SortableContext,
 } from "@dnd-kit/sortable";
 import { Checkbox } from "@orbis/ui/checkbox";
 import { TableHead, TableHeader, TableRow } from "@orbis/ui/table";
 import type { Header, Table } from "@tanstack/react-table";
 import { useMemo } from "react";
+import { HorizontalPagination } from "@/components/horizontal-pagination";
+import type { TableScrollState } from "@/components/tables/core";
+import { DraggableHeader } from "@/components/tables/draggable-header";
+import { ResizeHandle } from "@/components/tables/resize-handle";
+import { useStickyColumns } from "@/hooks/use-sticky-columns";
+import { useI18n } from "@/locales/client";
+import { NON_REORDERABLE_COLUMNS, STICKY_COLUMNS } from "@/utils/table-configs";
 
 interface Props<TData> {
   table?: Table<TData>;
@@ -98,8 +98,8 @@ export function DataTableHeader<TData>({
                 const finalClassName = isActionsColumn
                   ? "group/header relative h-full px-4 !border-t !border-inline-start !border-border flex items-center justify-center md:sticky md:inset-inline-end-0 bg-background z-10"
                   : isSelectColumn
-                  ? `group/header relative h-full p-0 !border-t !border-inline-end !border-border flex items-center justify-center md:sticky md:inset-inline-start-0 bg-background z-10`
-                  : `${stickyClass} bg-background z-10`;
+                    ? `group/header relative h-full p-0 !border-t !border-inline-end !border-border flex items-center justify-center md:sticky md:inset-inline-start-0 bg-background z-10`
+                    : `${stickyClass} bg-background z-10`;
 
                 return (
                   <TableHead

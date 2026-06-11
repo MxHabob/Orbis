@@ -1,9 +1,5 @@
 "use client";
 
-import { InputColor } from "@/components/input-color";
-import { useSubjectParams } from "@/hooks/use-subject-params";
-import { useZodForm } from "@/hooks/use-zod-form";
-import { useTRPC } from "@/trpc/client";
 import {
   Form,
   FormControl,
@@ -17,6 +13,10 @@ import { SubmitButton } from "@orbis/ui/submit-button";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { z } from "zod/v3";
+import { InputColor } from "@/components/input-color";
+import { useSubjectParams } from "@/hooks/use-subject-params";
+import { useZodForm } from "@/hooks/use-zod-form";
+import { useTRPC } from "@/trpc/client";
 import { invalidateSubjectDomain } from "@/utils/query-invalidation";
 
 const formSchema = z.object({
@@ -127,11 +127,7 @@ export function SubjectEditForm({ data }: Props) {
                     Sort Order
                   </FormLabel>
                   <FormControl>
-                    <Input
-                      {...field}
-                      type="number"
-                      placeholder="0"
-                    />
+                    <Input {...field} type="number" placeholder="0" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

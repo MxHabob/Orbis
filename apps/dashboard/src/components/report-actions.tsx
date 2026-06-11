@@ -1,5 +1,6 @@
 "use client";
 
+import { downloadBase64, generateCanvasPdf, parseCsv } from "@orbis/export";
 import { Button } from "@orbis/ui/button";
 import {
   DropdownMenu,
@@ -13,15 +14,14 @@ import {
   DropdownMenuTrigger,
 } from "@orbis/ui/dropdown-menu";
 import { Icons } from "@orbis/ui/icons";
-import { useTRPC } from "@/trpc/client";
 import { useToast } from "@orbis/ui/use-toast";
-import { useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
-import { parseCsv, generateCanvasPdf, downloadBase64 } from "@orbis/export";
+import { useRef, useState } from "react";
 import { useStudentParams } from "@/hooks/use-student-params";
-import { useExportStore } from "@/store/export";
 import { useI18n } from "@/locales/client";
+import { useExportStore } from "@/store/export";
+import { useTRPC } from "@/trpc/client";
 
 interface ReportActionsProps {
   classId: string;
@@ -49,7 +49,7 @@ export function ReportActions({ classId, className }: ReportActionsProps) {
           variant: "success",
         });
         queryClient.invalidateQueries({
-           queryKey: trpc.students.getByClassId.queryKey(),
+          queryKey: trpc.students.getByClassId.queryKey(),
         });
       },
       onError: (err) => {
@@ -60,10 +60,11 @@ export function ReportActions({ classId, className }: ReportActionsProps) {
         });
       },
       onSettled: () => setIsImporting(false),
-    })
+    }),
   );
 
-  const { setExportData, setIsExporting: setGlobalExporting } = useExportStore();
+  const { setExportData, setIsExporting: setGlobalExporting } =
+    useExportStore();
 
   const exportMutation = useMutation(
     trpc.grades.exportClassReport.mutationOptions({
@@ -84,7 +85,7 @@ export function ReportActions({ classId, className }: ReportActionsProps) {
         });
       },
       onSettled: () => setIsExporting(false),
-    })
+    }),
   );
 
   const handleExport = (format: "xlsx" | "csv") => {
@@ -101,7 +102,7 @@ export function ReportActions({ classId, className }: ReportActionsProps) {
     try {
       await generateCanvasPdf({
         filename: `${className || "report"}_${new Date().toISOString().split("T")[0]}.pdf`,
-        selector: "[data-canvas-content]"
+        selector: "[data-canvas-content]",
       });
 
       toast({
@@ -120,8 +121,9 @@ export function ReportActions({ classId, className }: ReportActionsProps) {
     }
   };
 
-
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 

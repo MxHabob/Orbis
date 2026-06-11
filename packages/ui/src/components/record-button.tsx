@@ -18,7 +18,10 @@ export interface RecordButtonProps {
 const RecordIcon = ({
   size = 16,
   isRecording = false,
-}: { size?: number; isRecording?: boolean }) => {
+}: {
+  size?: number;
+  isRecording?: boolean;
+}) => {
   return (
     <svg
       width={size}

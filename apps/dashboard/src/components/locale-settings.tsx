@@ -1,7 +1,6 @@
 "use client";
 
-import { useUserMutation } from "@/hooks/use-user";
-import { useI18n, useChangeLocale, languages } from "@/locales/client";
+import { authClient } from "@orbis/auth/auth-client";
 import { countries } from "@orbis/location/countries-intl";
 import {
   Card,
@@ -11,7 +10,8 @@ import {
   CardTitle,
 } from "@orbis/ui/card";
 import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
-import { authClient } from "@orbis/auth/auth-client";
+import { useUserMutation } from "@/hooks/use-user";
+import { languages, useChangeLocale, useI18n } from "@/locales/client";
 
 export function LocaleSettings() {
   const t = useI18n();
@@ -44,8 +44,8 @@ export function LocaleSettings() {
             className="text-xs py-1"
             onSelect={(item) => {
               updateUserMutation.mutate({ locale: item.value });
-              
-              const langPart = item.value?.split('-')[0];
+
+              const langPart = item.value?.split("-")[0];
               if (langPart && languages.includes(langPart)) {
                 changeLocale(langPart as any);
               }

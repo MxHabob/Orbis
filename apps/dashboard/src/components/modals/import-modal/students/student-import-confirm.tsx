@@ -10,8 +10,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@orbis/ui/alert-dialog";
+import { AlertCircle, Loader2 } from "lucide-react";
 import { useI18n } from "@/locales/client";
-import { Loader2, AlertCircle } from "lucide-react";
 
 type Props = {
   isOpen: boolean;
@@ -43,9 +43,9 @@ export function StudentImportConfirm({
           <AlertDialogDescription asChild>
             <div className="space-y-3">
               <p>
-                {t("students.confirm_import_description", { 
-                  count: studentCount, 
-                  className: className 
+                {t("students.confirm_import_description", {
+                  count: studentCount,
+                  className: className,
                 })}
               </p>
               <div className="my-6 px-3 py-3 bg-amber-50 border border-amber-200 dark:bg-amber-900/10 dark:border-amber-800/30">
@@ -69,11 +69,11 @@ export function StudentImportConfirm({
           <AlertDialogCancel disabled={isImporting}>
             {t("common.cancel")}
           </AlertDialogCancel>
-          <AlertDialogAction 
+          <AlertDialogAction
             onClick={(e) => {
               e.preventDefault();
               onConfirm();
-            }} 
+            }}
             disabled={isImporting}
             className="bg-primary text-primary-foreground hover:bg-primary/90"
           >

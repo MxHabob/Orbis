@@ -7,9 +7,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@orbis/ui/dialog";
-import { parseAsString, parseAsInteger, useQueryStates } from "nuqs";
-import { useI18n } from "@/locales/client";
+import { parseAsInteger, parseAsString, useQueryStates } from "nuqs";
 import { AssessmentsForm } from "@/components/forms/assessments-form";
+import { useI18n } from "@/locales/client";
 
 export function InitializeAssessmentsModal() {
   const t = useI18n();
@@ -22,7 +22,12 @@ export function InitializeAssessmentsModal() {
   });
 
   const isOpen = params.step === "initialize_assessments";
-  const { initialize_classId: classId, initialize_subjectId: subjectId, initialize_termId: termId, initialize_month: month } = params;
+  const {
+    initialize_classId: classId,
+    initialize_subjectId: subjectId,
+    initialize_termId: termId,
+    initialize_month: month,
+  } = params;
 
   const onclose = () => {
     setParams({
@@ -39,19 +44,21 @@ export function InitializeAssessmentsModal() {
       <DialogContent className="max-w-[780px]">
         <div className="p-2">
           <DialogHeader className="mb-4">
-            <DialogTitle className="text-xl font-semibold">{t("grades.initialize_assessments")}</DialogTitle>
+            <DialogTitle className="text-xl font-semibold">
+              {t("grades.initialize_assessments")}
+            </DialogTitle>
             <DialogDescription>
               {t("grades.initialize_assessments_description")}
             </DialogDescription>
           </DialogHeader>
 
           {classId && subjectId && termId && month && (
-            <AssessmentsForm 
-               classId={classId} 
-               subjectId={subjectId} 
-               termId={termId} 
-               month={month} 
-               onSuccessAction={onclose} 
+            <AssessmentsForm
+              classId={classId}
+              subjectId={subjectId}
+              termId={termId}
+              month={month}
+              onSuccessAction={onclose}
             />
           )}
         </div>

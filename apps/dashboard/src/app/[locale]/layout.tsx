@@ -1,13 +1,13 @@
 import "@/styles/globals.css";
 import { cn } from "@orbis/ui/cn";
 import "@orbis/ui/globals.css";
-import { DesktopHeader } from "@/components/desktop-header";
-import { isDesktopApp } from "@/utils/desktop";
 import { Toaster } from "@orbis/ui/toaster";
 import type { Metadata } from "next";
 import { Hedvig_Letters_Sans, Hedvig_Letters_Serif } from "next/font/google";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import type { ReactElement } from "react";
+import { DesktopHeader } from "@/components/desktop-header";
+import { isDesktopApp } from "@/utils/desktop";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {

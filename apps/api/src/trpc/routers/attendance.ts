@@ -1,14 +1,18 @@
-import { createTRPCRouter, protectedProcedure, teacherProcedure } from "@api/trpc/init";
-import { 
-  getAttendanceByLesson, 
-  getStudentAttendance, 
-  markAttendance, 
-  bulkMarkAttendance 
-} from "@orbis/db/queries";
-import { 
-  markAttendanceSchema, 
-  bulkMarkAttendanceSchema 
+import {
+  bulkMarkAttendanceSchema,
+  markAttendanceSchema,
 } from "@api/schemas/attendance";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  teacherProcedure,
+} from "@api/trpc/init";
+import {
+  bulkMarkAttendance,
+  getAttendanceByLesson,
+  getStudentAttendance,
+  markAttendance,
+} from "@orbis/db/queries";
 import { z } from "zod";
 
 export const attendanceRouter = createTRPCRouter({
@@ -19,13 +23,19 @@ export const attendanceRouter = createTRPCRouter({
     }),
 
   getStudentAttendance: protectedProcedure
-    .input(z.object({ 
-      studentId: z.string().uuid(), 
-      startDate: z.string().optional(), 
-      endDate: z.string().optional() 
-    }))
+    .input(
+      z.object({
+        studentId: z.string().uuid(),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      }),
+    )
     .query(async ({ input }) => {
-      return getStudentAttendance(input.studentId, input.startDate, input.endDate);
+      return getStudentAttendance(
+        input.studentId,
+        input.startDate,
+        input.endDate,
+      );
     }),
 
   mark: teacherProcedure
@@ -33,8 +43,8 @@ export const attendanceRouter = createTRPCRouter({
     .mutation(async ({ input, ctx }) => {
       // Automatically set the marker ID if not provided, assuming marker is the logged in user
       const data = {
-          ...input,
-          markedById: input.markedById || ctx.session.user.id
+        ...input,
+        markedById: input.markedById || ctx.session.user.id,
       };
       return markAttendance(data);
     }),
@@ -42,9 +52,9 @@ export const attendanceRouter = createTRPCRouter({
   bulkMark: teacherProcedure
     .input(bulkMarkAttendanceSchema)
     .mutation(async ({ input, ctx }) => {
-      const data = input.map(record => ({
-          ...record,
-          markedById: record.markedById || ctx.session.user.id
+      const data = input.map((record) => ({
+        ...record,
+        markedById: record.markedById || ctx.session.user.id,
       }));
       return bulkMarkAttendance(data);
     }),

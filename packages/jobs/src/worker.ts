@@ -1,8 +1,13 @@
-import { Worker, type Job } from "bullmq";
-import { connection, QUEUE_NAME, type CertificateExportData, type ReportGenerationData } from "./queue";
+import { logger } from "@orbis/logger";
+import { type Job, Worker } from "bullmq";
 import { handleCertificateExport } from "./handlers/certificate-export";
 import { handleReportGeneration } from "./handlers/report-generation";
-import { logger } from "@orbis/logger";
+import {
+  type CertificateExportData,
+  connection,
+  QUEUE_NAME,
+  type ReportGenerationData,
+} from "./queue";
 
 /**
  * Job Worker (Production Grade - 2026)
@@ -15,7 +20,9 @@ import { logger } from "@orbis/logger";
  */
 export const startWorker = () => {
   if (!process.env.REDIS_URL || !connection) {
-    logger.info("[Worker] REDIS_URL not provided or connection unavailable. Worker disabled for local/offline mode.");
+    logger.info(
+      "[Worker] REDIS_URL not provided or connection unavailable. Worker disabled for local/offline mode.",
+    );
     return null;
   }
 
@@ -24,19 +31,15 @@ export const startWorker = () => {
     async (job: Job) => {
       const attemptNum = job.attemptsMade + 1;
       logger.info(
-        `[Worker] Processing job ${job.id} (type: ${job.name}, attempt: ${attemptNum})`
+        `[Worker] Processing job ${job.id} (type: ${job.name}, attempt: ${attemptNum})`,
       );
 
       switch (job.name) {
         case "certificate-export":
-          return handleCertificateExport(
-            job as Job<CertificateExportData>
-          );
+          return handleCertificateExport(job as Job<CertificateExportData>);
 
         case "report-generation":
-          return handleReportGeneration(
-            job as Job<ReportGenerationData>
-          );
+          return handleReportGeneration(job as Job<ReportGenerationData>);
 
         case "student-import":
           // TODO: implement
@@ -56,7 +59,7 @@ export const startWorker = () => {
       lockRenewTime: 30_000,
       removeOnComplete: { count: 100 },
       removeOnFail: { count: 500 },
-    }
+    },
   );
 
   worker.on("completed", (job) => {
@@ -65,7 +68,7 @@ export const startWorker = () => {
 
   worker.on("failed", (job, err) => {
     logger.error(
-      `[Worker] ❌ Job ${job?.id} failed (attempt ${job?.attemptsMade}): ${err.message}`
+      `[Worker] ❌ Job ${job?.id} failed (attempt ${job?.attemptsMade}): ${err.message}`,
     );
   });
 
@@ -87,9 +90,7 @@ export const startWorker = () => {
   process.on("SIGTERM", shutdown);
   process.on("SIGINT", shutdown);
 
-  logger.info(
-    `[Worker] Started with concurrency=2, lockDuration=5min`
-  );
+  logger.info(`[Worker] Started with concurrency=2, lockDuration=5min`);
 
   return worker;
 };

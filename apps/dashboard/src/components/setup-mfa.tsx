@@ -1,10 +1,10 @@
 "use client";
 
-import { EnrollMFA } from "@/components/enroll-mfa";
 import { Button } from "@orbis/ui/button";
 import { Icons } from "@orbis/ui/icons";
 import Link from "next/link";
 import { useState } from "react";
+import { EnrollMFA } from "@/components/enroll-mfa";
 
 type Props = {
   setEnroll: (enroll: boolean) => void;

@@ -1,7 +1,5 @@
 "use client";
 
-import { useSubjectParams } from "@/hooks/use-subject-params";
-import { useTRPC } from "@/trpc/client";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,6 +9,8 @@ import {
 import { Icons } from "@orbis/ui/icons";
 import { Sheet, SheetContent, SheetHeader } from "@orbis/ui/sheet";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSubjectParams } from "@/hooks/use-subject-params";
+import { useTRPC } from "@/trpc/client";
 import { SubjectEditForm } from "../forms/subject-edit-form";
 
 export function SubjectEditSheet() {
@@ -28,8 +28,6 @@ export function SubjectEditSheet() {
       },
     ),
   );
-
-
 
   return (
     <Sheet open={isOpen} onOpenChange={() => setParams(null)}>

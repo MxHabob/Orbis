@@ -1,10 +1,6 @@
 "use client";
 
-import { VaultItem } from "@/components/vault/vault-item";
-import { useDocumentFilterParams } from "@/hooks/use-document-filter-params";
-import { useDocumentParams } from "@/hooks/use-document-params";
-import { useRealtime } from "@/hooks/use-realtime";
-import { useTRPC } from "@/trpc/client";
+import { authClient } from "@orbis/auth/auth-client";
 import {
   useQueryClient,
   useSuspenseInfiniteQuery,
@@ -12,10 +8,14 @@ import {
 import { useEffect, useMemo } from "react";
 import { useInView } from "react-intersection-observer";
 import { useDebounceCallback } from "usehooks-ts";
+import { VaultItem } from "@/components/vault/vault-item";
+import { useDocumentFilterParams } from "@/hooks/use-document-filter-params";
+import { useDocumentParams } from "@/hooks/use-document-params";
+import { useRealtime } from "@/hooks/use-realtime";
+import { useTRPC } from "@/trpc/client";
 import { LoadMore } from "../load-more";
 import { NoResults } from "./empty-states";
 import { VaultGetStarted } from "./vault-get-started";
-import { authClient } from "@orbis/auth/auth-client";
 
 export function VaultGrid() {
   const trpc = useTRPC();

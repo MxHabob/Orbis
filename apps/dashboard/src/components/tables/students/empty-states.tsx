@@ -1,7 +1,7 @@
 "use client";
 
-import { useCustomerParams } from "@/hooks/use-customer-params";
 import { Button } from "@orbis/ui/button";
+import { useCustomerParams } from "@/hooks/use-customer-params";
 
 export function EmptyState() {
   const { setParams } = useCustomerParams();

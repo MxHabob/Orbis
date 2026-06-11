@@ -1,17 +1,15 @@
-import { 
-  PutObjectCommand, 
-  GetObjectCommand, 
-  DeleteObjectCommand, 
+import {
+  DeleteObjectCommand,
   DeleteObjectsCommand,
-  S3Client 
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const endpoint = process.env.S3_ENDPOINT_URL ?? "http://localhost:9000";
 const accessKeyId =
-  process.env.S3_ACCESS_KEY_ID ||
-  process.env.RUSTFS_ROOT_USER ||
-  "rustfsadmin";
+  process.env.S3_ACCESS_KEY_ID || process.env.RUSTFS_ROOT_USER || "rustfsadmin";
 const secretAccessKey =
   process.env.S3_SECRET_ACCESS_KEY ||
   process.env.RUSTFS_ROOT_PASSWORD ||
@@ -59,8 +57,8 @@ export async function getDownloadUrl(params: {
     Key: params.key,
   });
 
-  return getSignedUrl(s3Client, command, { 
-    expiresIn: params.expiresIn ?? 3600 
+  return getSignedUrl(s3Client, command, {
+    expiresIn: params.expiresIn ?? 3600,
   });
 }
 

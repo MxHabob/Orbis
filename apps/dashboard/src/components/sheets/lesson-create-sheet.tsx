@@ -1,10 +1,10 @@
 "use client";
 
-import { LessonForm } from "@/components/forms/lesson-form";
-import { useLessonParams } from "@/hooks/use-lesson-params";
 import { ScrollArea } from "@orbis/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader } from "@orbis/ui/sheet";
 import React from "react";
+import { LessonForm } from "@/components/forms/lesson-form";
+import { useLessonParams } from "@/hooks/use-lesson-params";
 
 export function LessonCreateSheet() {
   const { setParams, create } = useLessonParams();

@@ -1,8 +1,8 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@orbis/ui/tabs";
 import { Suspense } from "react";
-import { DataTable as MembersTable } from "./tables/staff";
 import { DataTable as ParentsTable } from "./tables/parents";
 import { PendingInvitesSkeleton } from "./tables/parents/skeleton";
+import { DataTable as MembersTable } from "./tables/staff";
 
 export function StaffUsers() {
   return (

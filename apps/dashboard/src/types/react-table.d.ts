@@ -51,9 +51,20 @@ declare module "@tanstack/react-table" {
     totalOwners?: number;
 
     // Grades table meta
-    getGradeValue?: (studentId: string, assessmentItemId: number) => string | null;
-    onGradeChange?: (studentId: string, assessmentItemId: number, value: number | null) => void;
-    grades?: { studentId: string; assessmentItemId: number; score: string | null }[];
+    getGradeValue?: (
+      studentId: string,
+      assessmentItemId: number,
+    ) => string | null;
+    onGradeChange?: (
+      studentId: string,
+      assessmentItemId: number,
+      value: number | null,
+    ) => void;
+    grades?: {
+      studentId: string;
+      assessmentItemId: number;
+      score: string | null;
+    }[];
     items?: { id: number; title: string; maxScore: number | string }[];
   }
 

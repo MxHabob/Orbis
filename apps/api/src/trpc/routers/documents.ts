@@ -1,10 +1,15 @@
 import { createTRPCRouter, protectedProcedure } from "@api/trpc/init";
-import { z } from "zod";
-import { getD, createDocument, deleteDocument, updateDocument } from "@orbis/db/queries/documents";
-import { TRPCError } from "@trpc/server";
-import { eq, and, sql } from "drizzle-orm";
+import {
+  createDocument,
+  deleteDocument,
+  getD,
+  updateDocument,
+} from "@orbis/db/queries/documents";
 import { documents } from "@orbis/db/schema";
 import { getDownloadUrl } from "@orbis/storage";
+import { TRPCError } from "@trpc/server";
+import { and, eq, sql } from "drizzle-orm";
+import { z } from "zod";
 
 export const documentsRouter = createTRPCRouter({
   // ... existing procedures
@@ -14,7 +19,7 @@ export const documentsRouter = createTRPCRouter({
         pageSize: z.number().default(20),
         cursor: z.number().optional(),
         q: z.string().optional().nullable(),
-      })
+      }),
     )
     .query(async ({ ctx: { session }, input }) => {
       const offset = input.cursor ?? 0;
@@ -27,7 +32,8 @@ export const documentsRouter = createTRPCRouter({
       return {
         data,
         meta: {
-          cursor: data.length === input.pageSize ? offset + input.pageSize : null,
+          cursor:
+            data.length === input.pageSize ? offset + input.pageSize : null,
         },
       };
     }),
@@ -39,8 +45,8 @@ export const documentsRouter = createTRPCRouter({
           filePath: z.array(z.string()).min(1),
           mimetype: z.string(),
           size: z.number(),
-        })
-      )
+        }),
+      ),
     )
     .mutation(async ({ ctx: { session }, input }) => {
       const results = await Promise.all(
@@ -56,7 +62,8 @@ export const documentsRouter = createTRPCRouter({
 
           const parts = name.split(".");
           const extension = parts.length > 1 ? parts.pop() : undefined;
-          const title = parts.length > 0 && parts[0] !== "" ? parts.join(".") : name;
+          const title =
+            parts.length > 0 && parts[0] !== "" ? parts.join(".") : name;
 
           return createDocument({
             name,
@@ -73,7 +80,7 @@ export const documentsRouter = createTRPCRouter({
               mimetype: item.mimetype,
             },
           });
-        })
+        }),
       );
 
       return results;
@@ -91,7 +98,7 @@ export const documentsRouter = createTRPCRouter({
       // 1. Find all documents to be deleted (the file/folder itself and all its children)
       // Since we use 'onDelete: cascade' in the DB, we need to collect the S3 keys
       // BEFORE deleting from the database.
-      
+
       const descendants = await db.execute<{ key: string }>(sql`
         WITH RECURSIVE subordinates AS (
           SELECT id, key, parent_folder_id FROM documents 
@@ -130,7 +137,7 @@ export const documentsRouter = createTRPCRouter({
         id: z.string().uuid(),
         name: z.string().optional(),
         isPinned: z.boolean().optional(),
-      })
+      }),
     )
     .mutation(async ({ ctx: { session }, input }) => {
       const { id, ...data } = input;
@@ -147,8 +154,8 @@ export const documentsRouter = createTRPCRouter({
         .where(
           and(
             eq(documents.id, input.id),
-            eq(documents.userId, session.user.id)
-          )
+            eq(documents.userId, session.user.id),
+          ),
         );
 
       if (!doc || !doc.key) {
@@ -165,10 +172,10 @@ export const documentsRouter = createTRPCRouter({
       z.object({
         id: z.string().uuid().optional().nullable(),
         filePath: z.string().optional().nullable(),
-      })
+      }),
     )
     .query(async ({ ctx: { session, db }, input }) => {
-      let filter;
+      let filter: any;
 
       if (input.id) {
         filter = eq(documents.id, input.id);
@@ -192,7 +199,9 @@ export const documentsRouter = createTRPCRouter({
     }),
 
   getRelatedDocuments: protectedProcedure
-    .input(z.object({ id: z.string().uuid(), pageSize: z.number().default(12) }))
+    .input(
+      z.object({ id: z.string().uuid(), pageSize: z.number().default(12) }),
+    )
     .query(async ({ ctx: { session, db }, input }) => {
       return db
         .select()
@@ -200,8 +209,8 @@ export const documentsRouter = createTRPCRouter({
         .where(
           and(
             eq(documents.userId, session.user.id),
-            sql`id != ${input.id}::uuid`
-          )
+            sql`id != ${input.id}::uuid`,
+          ),
         )
         .limit(input.pageSize);
     }),

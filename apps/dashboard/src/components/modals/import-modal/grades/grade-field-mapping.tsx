@@ -1,6 +1,5 @@
 "use client";
 
-import { useTRPC } from "@/trpc/client";
 import { Label } from "@orbis/ui/label";
 import {
   Select,
@@ -11,15 +10,16 @@ import {
 } from "@orbis/ui/select";
 import { useQuery } from "@tanstack/react-query";
 import { Controller } from "react-hook-form";
-import { useCsvContext, type GradeImportFormData } from "../shared/context";
-import { FieldRow } from "../shared/field-row";
 import { useI18n } from "@/locales/client";
+import { useTRPC } from "@/trpc/client";
+import { type GradeImportFormData, useCsvContext } from "../shared/context";
+import { FieldRow } from "../shared/field-row";
 
 export function GradeFieldMapping() {
   const t = useI18n();
   const { setValue, control, watch } = useCsvContext<GradeImportFormData>();
   const trpc = useTRPC();
-  
+
   const academicYearId = watch("academicYearId");
   const classId = watch("classId");
   const subjectId = watch("subjectId");
@@ -29,37 +29,56 @@ export function GradeFieldMapping() {
   // --- High Performance Auto-Selection logic using React Query's select/onSuccess patterns ---
   // Instead of useEffect (which causes extra renders), we use default values and state management
 
-  const { data: years } = useQuery(trpc.academic.getYears.queryOptions(undefined));
+  const { data: years } = useQuery(
+    trpc.academic.getYears.queryOptions(undefined),
+  );
 
-  const { data: classes } = useQuery(trpc.classes.getAll.queryOptions({ 
-    academicYearId: academicYearId ?? undefined 
-  }, { 
-    enabled: !!academicYearId,
-  }));
-  
-  const { data: subjects } = useQuery(trpc.subjects.getAll.queryOptions(undefined));
+  const { data: classes } = useQuery(
+    trpc.classes.getAll.queryOptions(
+      {
+        academicYearId: academicYearId ?? undefined,
+      },
+      {
+        enabled: !!academicYearId,
+      },
+    ),
+  );
 
-  const { data: terms } = useQuery(trpc.academic.getTerms.queryOptions({ 
-    yearId: academicYearId! 
-  }, { 
-    enabled: !!academicYearId,
-  }));
+  const { data: subjects } = useQuery(
+    trpc.subjects.getAll.queryOptions(undefined),
+  );
 
-  const { data: assessments } = useQuery(trpc.assessments.getByClass.queryOptions({ 
-    classId: classId!, 
-    subjectId: subjectId, 
-    termId: termId,
-    month: month
-  }, { enabled: !!classId }));
+  const { data: terms } = useQuery(
+    trpc.academic.getTerms.queryOptions(
+      {
+        yearId: academicYearId!,
+      },
+      {
+        enabled: !!academicYearId,
+      },
+    ),
+  );
 
-
+  const { data: assessments } = useQuery(
+    trpc.assessments.getByClass.queryOptions(
+      {
+        classId: classId!,
+        subjectId: subjectId,
+        termId: termId,
+        month: month,
+      },
+      { enabled: !!classId },
+    ),
+  );
 
   return (
     <div className="mt-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b pb-6 mb-6">
         {/* Row 1: Year & Class */}
         <div className="space-y-2">
-          <Label className="text-[#878787] text-xs font-normal">Academic Year</Label>
+          <Label className="text-[#878787] text-xs font-normal">
+            Academic Year
+          </Label>
           <Controller
             control={control}
             name="academicYearId"
@@ -89,14 +108,18 @@ export function GradeFieldMapping() {
         </div>
 
         <div className="space-y-2">
-          <Label className="text-[#878787] text-xs font-normal">Class / Section</Label>
+          <Label className="text-[#878787] text-xs font-normal">
+            Class / Section
+          </Label>
           <Controller
             control={control}
             name="classId"
             render={({ field }) => (
               <Select
                 value={field.value?.toString()}
-                onValueChange={(val) => field.onChange(val ? Number(val) : undefined)}
+                onValueChange={(val) =>
+                  field.onChange(val ? Number(val) : undefined)
+                }
                 disabled={!academicYearId}
               >
                 <SelectTrigger className="w-full h-9">
@@ -123,14 +146,18 @@ export function GradeFieldMapping() {
             render={({ field }) => (
               <Select
                 value={field.value?.toString()}
-                onValueChange={(val) => field.onChange(val ? Number(val) : undefined)}
+                onValueChange={(val) =>
+                  field.onChange(val ? Number(val) : undefined)
+                }
               >
                 <SelectTrigger className="w-full h-9">
                   <SelectValue placeholder="Select Subject" />
                 </SelectTrigger>
                 <SelectContent>
                   {subjects?.map((s) => (
-                    <SelectItem key={s.id} value={s.id.toString()}>{s.name}</SelectItem>
+                    <SelectItem key={s.id} value={s.id.toString()}>
+                      {s.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -146,7 +173,9 @@ export function GradeFieldMapping() {
             render={({ field }) => (
               <Select
                 value={field.value?.toString()}
-                onValueChange={(val) => field.onChange(val ? Number(val) : undefined)}
+                onValueChange={(val) =>
+                  field.onChange(val ? Number(val) : undefined)
+                }
                 disabled={!academicYearId}
               >
                 <SelectTrigger className="w-full h-9">
@@ -154,7 +183,9 @@ export function GradeFieldMapping() {
                 </SelectTrigger>
                 <SelectContent>
                   {terms?.map((t) => (
-                    <SelectItem key={t.id} value={t.id.toString()}>{t.name}</SelectItem>
+                    <SelectItem key={t.id} value={t.id.toString()}>
+                      {t.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -163,14 +194,18 @@ export function GradeFieldMapping() {
         </div>
 
         <div className="space-y-2 md:col-span-1">
-          <Label className="text-[#878787] text-xs font-normal">Import Month</Label>
+          <Label className="text-[#878787] text-xs font-normal">
+            Import Month
+          </Label>
           <Controller
             control={control}
             name="month"
             render={({ field }) => (
               <Select
                 value={field.value?.toString()}
-                onValueChange={(val) => field.onChange(val ? Number(val) : undefined)}
+                onValueChange={(val) =>
+                  field.onChange(val ? Number(val) : undefined)
+                }
               >
                 <SelectTrigger className="w-full h-9">
                   <SelectValue placeholder="Select Month" />
@@ -197,21 +232,24 @@ export function GradeFieldMapping() {
         </div>
 
         <div className="space-y-2 md:col-span-1">
-          <Label className="text-[#878787] text-xs font-normal">{t("grades.identifier_type")}</Label>
+          <Label className="text-[#878787] text-xs font-normal">
+            {t("grades.identifier_type")}
+          </Label>
           <Controller
             control={control}
             name="identifierType"
             render={({ field }) => (
-              <Select
-                value={field.value}
-                onValueChange={field.onChange}
-              >
+              <Select value={field.value} onValueChange={field.onChange}>
                 <SelectTrigger className="w-full h-9">
                   <SelectValue placeholder={t("grades.identifier_type")} />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="studentNumber">{t("grades.student_number_standard")}</SelectItem>
-                    <SelectItem value="secretNumber">{t("grades.secret_number_control")}</SelectItem>
+                  <SelectItem value="studentNumber">
+                    {t("grades.student_number_standard")}
+                  </SelectItem>
+                  <SelectItem value="secretNumber">
+                    {t("grades.secret_number_control")}
+                  </SelectItem>
                 </SelectContent>
               </Select>
             )}
@@ -226,7 +264,11 @@ export function GradeFieldMapping() {
           </div>
           <FieldRow
             field="studentNumber"
-            label={watch("identifierType") === "secretNumber" ? t("grades.identifier_col_label_secret") : t("grades.identifier_col_label_standard")}
+            label={
+              watch("identifierType") === "secretNumber"
+                ? t("grades.identifier_col_label_secret")
+                : t("grades.identifier_col_label_standard")
+            }
             required
           />
           {assessments?.map((assessment) => (
@@ -240,7 +282,8 @@ export function GradeFieldMapping() {
         </div>
       ) : (
         <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
-          Please select a class, subject and month to proceed with grade mapping.
+          Please select a class, subject and month to proceed with grade
+          mapping.
         </div>
       )}
     </div>

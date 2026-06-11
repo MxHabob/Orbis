@@ -1,6 +1,6 @@
 import { db } from "@db/client";
 import { auditLogs } from "@db/schema";
-import { eq, desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 
 export const getAuditLogs = async (limit = 50) => {
   return db

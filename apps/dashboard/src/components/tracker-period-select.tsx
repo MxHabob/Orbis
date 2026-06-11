@@ -1,4 +1,3 @@
-import { useTrackerParams } from "@/hooks/use-tracker-params";
 import { TZDate } from "@date-fns/tz";
 import { Button } from "@orbis/ui/button";
 import { cn } from "@orbis/ui/cn";
@@ -12,6 +11,7 @@ import {
   startOfMonth,
   startOfWeek,
 } from "date-fns";
+import { useTrackerParams } from "@/hooks/use-tracker-params";
 
 type Props = {
   className?: string;

@@ -1,7 +1,7 @@
 import { db } from "@db/client";
-import { assessmentItems, subjects, classes, academicTerms } from "@db/schema";
-import { eq, and, inArray } from "drizzle-orm";
+import { academicTerms, assessmentItems, classes, subjects } from "@db/schema";
 import { RedisCache } from "@orbis/cache";
+import { and, eq, inArray } from "drizzle-orm";
 
 const assessmentCache = new RedisCache("assessments", 60 * 60);
 
@@ -9,7 +9,7 @@ export type CreateAssessmentParams = typeof assessmentItems.$inferInsert;
 
 export const createAssessment = async (data: CreateAssessmentParams) => {
   const [result] = await db.insert(assessmentItems).values(data).returning();
-  
+
   // Invalidate cache for this class/subject
   if (result) {
     await assessmentCache.deletePattern(`class:${result.classId}*`);
@@ -17,11 +17,16 @@ export const createAssessment = async (data: CreateAssessmentParams) => {
   return result;
 };
 
-export const getAssessmentsForClass = async (classId: number, subjectId?: number, termId?: number, month?: number) => {
+export const getAssessmentsForClass = async (
+  classId: number,
+  subjectId?: number,
+  termId?: number,
+  month?: number,
+) => {
   // Simple caching strategy for list
-  const cacheKey = `class:${classId}:${subjectId || 'all'}:${termId || 'all'}:${month || 'all'}`;
+  const cacheKey = `class:${classId}:${subjectId || "all"}:${termId || "all"}:${month || "all"}`;
   const cached = await assessmentCache.get<any[]>(cacheKey);
-  
+
   if (cached) return cached;
 
   const conditions = [eq(assessmentItems.classId, classId)];
@@ -46,35 +51,44 @@ export const getAssessmentsForClass = async (classId: number, subjectId?: number
       month: assessmentItems.month,
       subject: {
         name: subjects.name,
-        code: subjects.code
+        code: subjects.code,
       },
       term: {
-        name: academicTerms.name
-      }
+        name: academicTerms.name,
+      },
     })
     .from(assessmentItems)
     .leftJoin(subjects, eq(assessmentItems.subjectId, subjects.id))
     .leftJoin(academicTerms, eq(assessmentItems.termId, academicTerms.id))
     .where(and(...conditions));
 
-
-  
   if (results) {
     await assessmentCache.set(cacheKey, results);
   }
   return results;
 };
 
-export const updateAssessment = async (id: number, data: Partial<CreateAssessmentParams>) => {
-  const [result] = await db.update(assessmentItems).set(data).where(eq(assessmentItems.id, id)).returning();
+export const updateAssessment = async (
+  id: number,
+  data: Partial<CreateAssessmentParams>,
+) => {
+  const [result] = await db
+    .update(assessmentItems)
+    .set(data)
+    .where(eq(assessmentItems.id, id))
+    .returning();
   if (result) await assessmentCache.deletePattern(`class:${result.classId}*`);
   return result;
 };
 
 export const deleteAssessment = async (id: number) => {
-  const [existing] = await db.select().from(assessmentItems).where(eq(assessmentItems.id, id));
+  const [existing] = await db
+    .select()
+    .from(assessmentItems)
+    .where(eq(assessmentItems.id, id));
   await db.delete(assessmentItems).where(eq(assessmentItems.id, id));
-  if (existing) await assessmentCache.deletePattern(`class:${existing.classId}*`);
+  if (existing)
+    await assessmentCache.deletePattern(`class:${existing.classId}*`);
 };
 
 export const getMonthlyAssessmentItems = async (params: {
@@ -83,7 +97,7 @@ export const getMonthlyAssessmentItems = async (params: {
   termId: number;
   month: number | number[];
 }) => {
-  const monthCondition = Array.isArray(params.month) 
+  const monthCondition = Array.isArray(params.month)
     ? inArray(assessmentItems.month, params.month)
     : eq(assessmentItems.month, params.month);
 
@@ -95,8 +109,8 @@ export const getMonthlyAssessmentItems = async (params: {
         eq(assessmentItems.classId, params.classId),
         eq(assessmentItems.subjectId, params.subjectId),
         eq(assessmentItems.termId, params.termId),
-        monthCondition
-      )
+        monthCondition,
+      ),
     );
 };
 
@@ -164,12 +178,15 @@ export const initializeStandardMonthlyAssessments = async (params: {
     },
   ];
 
-  const results = await db.insert(assessmentItems).values(itemsToCreate).returning();
-  
+  const results = await db
+    .insert(assessmentItems)
+    .values(itemsToCreate)
+    .returning();
+
   if (results.length > 0) {
     await assessmentCache.deletePattern(`class:${params.classId}*`);
   }
-  
+
   return results;
 };
 
@@ -180,7 +197,7 @@ export const initializeTermExamAssessments = async (params: {
   month: number; // 4 for Mid-term, 8 for Final
 }) => {
   const isMidTerm = params.month === 4;
-  
+
   const itemsToCreate = [
     {
       title: isMidTerm ? "اختبار النصفي" : "الاختبار النهائي",
@@ -195,11 +212,14 @@ export const initializeTermExamAssessments = async (params: {
     },
   ];
 
-  const results = await db.insert(assessmentItems).values(itemsToCreate).returning();
-  
+  const results = await db
+    .insert(assessmentItems)
+    .values(itemsToCreate)
+    .returning();
+
   if (results.length > 0) {
     await assessmentCache.deletePattern(`class:${params.classId}*`);
   }
-  
+
   return results;
 };

@@ -1,7 +1,17 @@
 import { db } from "@db/client";
-import { gradeEntries, assessmentItems, students, subjects, classes, enrollments, users, academicTerms, academicYears } from "@db/schema";
-import { eq, and, desc, asc, inArray } from "drizzle-orm";
+import {
+  academicTerms,
+  academicYears,
+  assessmentItems,
+  classes,
+  enrollments,
+  gradeEntries,
+  students,
+  subjects,
+  users,
+} from "@db/schema";
 import { RedisCache } from "@orbis/cache";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 
 // Cache for grades - maybe shorter TTL as they change
 const gradeCache = new RedisCache("grades", 5 * 60);
@@ -24,10 +34,15 @@ const ARABIC_RANK_ORDINALS = [
   "الترتيب العاشر",
 ];
 
-function getMonthsForRankingPeriod(period: RankingPeriod, month?: number): number[] {
+function getMonthsForRankingPeriod(
+  period: RankingPeriod,
+  month?: number,
+): number[] {
   if (period === "monthly") {
     if (!month || month < 1 || month > 8) {
-      throw new Error("month is required for monthly period and must be between 1 and 8");
+      throw new Error(
+        "month is required for monthly period and must be between 1 and 8",
+      );
     }
     return [month];
   }
@@ -61,9 +76,10 @@ export const getTopStudents = async (params: {
     .from(classes)
     .where(eq(classes.parentClassId, params.classId));
 
-  const targetClassIds = childClasses.length > 0 
-    ? [params.classId, ...childClasses.map(c => c.id)] 
-    : [params.classId];
+  const targetClassIds =
+    childClasses.length > 0
+      ? [params.classId, ...childClasses.map((c) => c.id)]
+      : [params.classId];
 
   const enrolledStudents = await db
     .select({
@@ -124,14 +140,21 @@ export const getTopStudents = async (params: {
     .from(gradeEntries)
     .where(inArray(gradeEntries.assessmentItemId, itemIds));
 
-  const statsByStudentId = new Map<string, { totalScore: number; maxScore: number; scoredItems: number }>();
+  const statsByStudentId = new Map<
+    string,
+    { totalScore: number; maxScore: number; scoredItems: number }
+  >();
   for (const grade of grades) {
     if (!grade.studentId) continue;
     const score = Number.parseFloat(grade.score || "");
     if (Number.isNaN(score)) continue;
     if (!grade.assessmentItemId) continue;
     const maxScore = maxByItemId.get(grade.assessmentItemId) ?? 0;
-    const current = statsByStudentId.get(grade.studentId) ?? { totalScore: 0, maxScore: 0, scoredItems: 0 };
+    const current = statsByStudentId.get(grade.studentId) ?? {
+      totalScore: 0,
+      maxScore: 0,
+      scoredItems: 0,
+    };
     current.totalScore += score;
     current.maxScore += maxScore;
     current.scoredItems += 1;
@@ -170,11 +193,11 @@ export const getTopStudents = async (params: {
       prev.percentage === item.percentage &&
       prev.totalScore === item.totalScore &&
       prev.scoredItems === item.scoredItems;
-    
+
     if (!sameAsPrev) {
       currentRank = index + 1;
     }
-    
+
     return { ...item, __rank: currentRank };
   });
 
@@ -205,9 +228,9 @@ export const getTopStudents = async (params: {
 };
 
 export const getStudentGrades = async (studentId: string, termId?: number) => {
-  const cacheKey = `student:${studentId}:${termId || 'all'}`;
+  const cacheKey = `student:${studentId}:${termId || "all"}`;
   const cached = await gradeCache.get<any[]>(cacheKey);
-  
+
   if (cached) return cached;
 
   // Build query
@@ -226,17 +249,25 @@ export const getStudentGrades = async (studentId: string, termId?: number) => {
       subject: {
         name: subjects.name,
         code: subjects.code,
-        color: subjects.color
-      }
+        color: subjects.color,
+      },
     })
     .from(gradeEntries)
-    .innerJoin(assessmentItems, eq(gradeEntries.assessmentItemId, assessmentItems.id))
+    .innerJoin(
+      assessmentItems,
+      eq(gradeEntries.assessmentItemId, assessmentItems.id),
+    )
     .innerJoin(subjects, eq(assessmentItems.subjectId, subjects.id))
     .where(eq(gradeEntries.studentId, studentId))
-    .orderBy(asc(subjects.sortOrder), asc(subjects.name), asc(assessmentItems.month), asc(assessmentItems.id));
+    .orderBy(
+      asc(subjects.sortOrder),
+      asc(subjects.name),
+      asc(assessmentItems.month),
+      asc(assessmentItems.id),
+    );
 
   const results = await query;
-  
+
   if (results) {
     await gradeCache.set(cacheKey, results);
   }
@@ -246,119 +277,166 @@ export const getStudentGrades = async (studentId: string, termId?: number) => {
 
 export type CreateGradeParams = typeof gradeEntries.$inferInsert;
 export const createGradeEntry = async (data: CreateGradeParams) => {
-    const [result] = await db.insert(gradeEntries).values(data).returning();
-    if (result) await gradeCache.delete(`student:${result.studentId}:all`);
-    await rankCache.invalidate().catch(() => {});
-    return result;
+  const [result] = await db.insert(gradeEntries).values(data).returning();
+  if (result) await gradeCache.delete(`student:${result.studentId}:all`);
+  await rankCache.invalidate().catch(() => {});
+  return result;
 };
 
-export const updateGradeEntry = async (id: number, data: Partial<CreateGradeParams>) => {
-    const [result] = await db.update(gradeEntries).set(data).where(eq(gradeEntries.id, id)).returning();
-    if (result) await gradeCache.delete(`student:${result.studentId}:all`);
-    await rankCache.invalidate().catch(() => {});
-    return result;
+export const updateGradeEntry = async (
+  id: number,
+  data: Partial<CreateGradeParams>,
+) => {
+  const [result] = await db
+    .update(gradeEntries)
+    .set(data)
+    .where(eq(gradeEntries.id, id))
+    .returning();
+  if (result) await gradeCache.delete(`student:${result.studentId}:all`);
+  await rankCache.invalidate().catch(() => {});
+  return result;
 };
 
-
-export const bulkImportGrades = async (assessmentItemId: number, gradeData: {
+export const bulkImportGrades = async (
+  assessmentItemId: number,
+  gradeData: {
     studentNumber: string;
     score: number | null;
     isAbsent?: boolean;
     comments?: string;
-}[], gradedById?: string) => {
-    const results = [];
+  }[],
+  gradedById?: string,
+) => {
+  const results = [];
 
-    for (const item of gradeData) {
-        try {
-            // 1. Find student by studentNumber
-            const [student] = await db.select().from(students).where(eq(students.studentNumber, item.studentNumber)).limit(1);
-            
-            if (!student) {
-                results.push({ studentNumber: item.studentNumber, status: 'error', error: 'Student not found' });
-                continue;
-            }
+  for (const item of gradeData) {
+    try {
+      // 1. Find student by studentNumber
+      const [student] = await db
+        .select()
+        .from(students)
+        .where(eq(students.studentNumber, item.studentNumber))
+        .limit(1);
 
-            // 2. Upsert grade entry
-            // We use studentId and assessmentItemId as unique key
-            const [result] = await db.insert(gradeEntries).values({
-                studentId: student.userId,
-                assessmentItemId,
-                score: item.score !== null ? Math.round(item.score).toString() : null,
-                isAbsent: item.isAbsent,
-                comments: item.comments,
-                gradedById,
-                updatedAt: new Date(),
-            }).onConflictDoUpdate({
-                target: [gradeEntries.studentId, gradeEntries.assessmentItemId],
-                set: {
-                    score: item.score !== null ? Math.round(item.score).toString() : null,
-                    isAbsent: item.isAbsent,
-                    comments: item.comments,
-                    gradedById,
-                    updatedAt: new Date(),
-                }
-            }).returning();
+      if (!student) {
+        results.push({
+          studentNumber: item.studentNumber,
+          status: "error",
+          error: "Student not found",
+        });
+        continue;
+      }
 
-            results.push({ studentNumber: item.studentNumber, status: 'success' });
-            await gradeCache.delete(`student:${student.userId}:all`);
-        } catch (error) {
-            results.push({ studentNumber: item.studentNumber, status: 'error', error: (error as Error).message });
-        }
+      // 2. Upsert grade entry
+      // We use studentId and assessmentItemId as unique key
+      const [result] = await db
+        .insert(gradeEntries)
+        .values({
+          studentId: student.userId,
+          assessmentItemId,
+          score: item.score !== null ? Math.round(item.score).toString() : null,
+          isAbsent: item.isAbsent,
+          comments: item.comments,
+          gradedById,
+          updatedAt: new Date(),
+        })
+        .onConflictDoUpdate({
+          target: [gradeEntries.studentId, gradeEntries.assessmentItemId],
+          set: {
+            score:
+              item.score !== null ? Math.round(item.score).toString() : null,
+            isAbsent: item.isAbsent,
+            comments: item.comments,
+            gradedById,
+            updatedAt: new Date(),
+          },
+        })
+        .returning();
+
+      results.push({ studentNumber: item.studentNumber, status: "success" });
+      await gradeCache.delete(`student:${student.userId}:all`);
+    } catch (error) {
+      results.push({
+        studentNumber: item.studentNumber,
+        status: "error",
+        error: (error as Error).message,
+      });
     }
+  }
 
-    await rankCache.invalidate().catch(() => {});
-    return results;
+  await rankCache.invalidate().catch(() => {});
+  return results;
 };
 
-export const bulkImportGradesBySecretNumber = async (assessmentItemId: number, gradeData: {
+export const bulkImportGradesBySecretNumber = async (
+  assessmentItemId: number,
+  gradeData: {
     secretNumber: string;
     score: number | null;
     isAbsent?: boolean;
     comments?: string;
-}[], gradedById?: string) => {
-    const results = [];
+  }[],
+  gradedById?: string,
+) => {
+  const results = [];
 
-    for (const item of gradeData) {
-        try {
-            // 1. Find student by secretNumber
-            const [student] = await db.select().from(students).where(eq(students.secretNumber, item.secretNumber)).limit(1);
-            
-            if (!student) {
-                results.push({ secretNumber: item.secretNumber, status: 'error', error: 'Student with this secret number not found' });
-                continue;
-            }
+  for (const item of gradeData) {
+    try {
+      // 1. Find student by secretNumber
+      const [student] = await db
+        .select()
+        .from(students)
+        .where(eq(students.secretNumber, item.secretNumber))
+        .limit(1);
 
-            // 2. Upsert grade entry
-            const [result] = await db.insert(gradeEntries).values({
-                studentId: student.userId,
-                assessmentItemId,
-                score: item.score !== null ? Math.round(item.score).toString() : null,
-                isAbsent: item.isAbsent,
-                comments: item.comments,
-                gradedById,
-                updatedAt: new Date(),
-            }).onConflictDoUpdate({
-                target: [gradeEntries.studentId, gradeEntries.assessmentItemId],
-                set: {
-                    score: item.score !== null ? Math.round(item.score).toString() : null,
-                    isAbsent: item.isAbsent,
-                    comments: item.comments,
-                    gradedById,
-                    updatedAt: new Date(),
-                }
-            }).returning();
+      if (!student) {
+        results.push({
+          secretNumber: item.secretNumber,
+          status: "error",
+          error: "Student with this secret number not found",
+        });
+        continue;
+      }
 
-            results.push({ secretNumber: item.secretNumber, status: 'success' });
-            await gradeCache.delete(`student:${student.userId}:all`);
-        } catch (error) {
-            results.push({ secretNumber: item.secretNumber, status: 'error', error: (error as Error).message });
-        }
+      // 2. Upsert grade entry
+      const [result] = await db
+        .insert(gradeEntries)
+        .values({
+          studentId: student.userId,
+          assessmentItemId,
+          score: item.score !== null ? Math.round(item.score).toString() : null,
+          isAbsent: item.isAbsent,
+          comments: item.comments,
+          gradedById,
+          updatedAt: new Date(),
+        })
+        .onConflictDoUpdate({
+          target: [gradeEntries.studentId, gradeEntries.assessmentItemId],
+          set: {
+            score:
+              item.score !== null ? Math.round(item.score).toString() : null,
+            isAbsent: item.isAbsent,
+            comments: item.comments,
+            gradedById,
+            updatedAt: new Date(),
+          },
+        })
+        .returning();
+
+      results.push({ secretNumber: item.secretNumber, status: "success" });
+      await gradeCache.delete(`student:${student.userId}:all`);
+    } catch (error) {
+      results.push({
+        secretNumber: item.secretNumber,
+        status: "error",
+        error: (error as Error).message,
+      });
     }
+  }
 
-    await rankCache.invalidate().catch(() => {});
-    return results;
+  await rankCache.invalidate().catch(() => {});
+  return results;
 };
-
 
 export const upsertGrade = async (data: {
   studentId: string;
@@ -378,7 +456,9 @@ export const upsertGrade = async (data: {
     .onConflictDoUpdate({
       target: [gradeEntries.studentId, gradeEntries.assessmentItemId],
       set: {
-        score: data.score ? Math.round(parseFloat(data.score)).toString() : null,
+        score: data.score
+          ? Math.round(parseFloat(data.score)).toString()
+          : null,
         gradedById: data.gradedById,
         updatedAt: new Date(),
       },
@@ -400,7 +480,7 @@ export const batchUpsertGrades = async (
     assessmentItemId: number;
     score: string | null;
   }[],
-  gradedById: string
+  gradedById: string,
 ) => {
   if (grades.length === 0) return [];
 
@@ -414,20 +494,24 @@ export const batchUpsertGrades = async (
       .values({
         studentId: grade.studentId,
         assessmentItemId: grade.assessmentItemId,
-        score: grade.score ? Math.round(parseFloat(grade.score)).toString() : null,
+        score: grade.score
+          ? Math.round(parseFloat(grade.score)).toString()
+          : null,
         gradedById,
         updatedAt: new Date(),
       })
       .onConflictDoUpdate({
         target: [gradeEntries.studentId, gradeEntries.assessmentItemId],
         set: {
-          score: grade.score ? Math.round(parseFloat(grade.score)).toString() : null,
+          score: grade.score
+            ? Math.round(parseFloat(grade.score)).toString()
+            : null,
           gradedById,
           updatedAt: new Date(),
         },
       })
       .returning();
-    
+
     if (result) {
       results.push(result);
       studentIdsToInvalidate.add(grade.studentId);
@@ -444,8 +528,6 @@ export const batchUpsertGrades = async (
   return results;
 };
 
-
-
 export const getGradeGridData = async (params: {
   classId: number;
   subjectId: number;
@@ -459,12 +541,13 @@ export const getGradeGridData = async (params: {
       .from(classes)
       .where(eq(classes.parentClassId, params.classId));
 
-    const targetClassIds = childClasses.length > 0 
-      ? [params.classId, ...childClasses.map(c => c.id)] 
-      : [params.classId];
+    const targetClassIds =
+      childClasses.length > 0
+        ? [params.classId, ...childClasses.map((c) => c.id)]
+        : [params.classId];
     const isMidTerm = params.month === 4;
     const isFinal = params.month === 8;
-    
+
     let monthsToFetch: number | number[] = params.month;
     if (isMidTerm) {
       monthsToFetch = [1, 2, 3, 4];
@@ -472,8 +555,7 @@ export const getGradeGridData = async (params: {
       monthsToFetch = [5, 6, 7, 8];
     }
 
-
-    const monthCondition = Array.isArray(monthsToFetch) 
+    const monthCondition = Array.isArray(monthsToFetch)
       ? inArray(assessmentItems.month, monthsToFetch)
       : eq(assessmentItems.month, monthsToFetch as number);
 
@@ -485,8 +567,8 @@ export const getGradeGridData = async (params: {
           eq(assessmentItems.classId, params.classId),
           eq(assessmentItems.subjectId, params.subjectId),
           eq(assessmentItems.termId, params.termId),
-          monthCondition
-        )
+          monthCondition,
+        ),
       )
       .orderBy(asc(assessmentItems.month), asc(assessmentItems.id));
 
@@ -504,12 +586,12 @@ export const getGradeGridData = async (params: {
       .innerJoin(users, eq(students.userId, users.id))
       .where(
         and(
-          targetClassIds.length === 1 
+          targetClassIds.length === 1
             ? eq(enrollments.classId, targetClassIds[0]!)
             : inArray(enrollments.classId, targetClassIds),
           eq(enrollments.academicYearId, params.academicYearId),
-          eq(enrollments.status, "active")
-        )
+          eq(enrollments.status, "active"),
+        ),
       )
       .orderBy(users.name);
 
@@ -526,7 +608,7 @@ export const getGradeGridData = async (params: {
 
     const targetSubject = await db.query.subjects.findFirst({
       where: eq(subjects.id, params.subjectId),
-      columns: { name: true }
+      columns: { name: true },
     });
 
     return {
@@ -543,8 +625,11 @@ export const getGradeGridData = async (params: {
   }
 };
 
-export const getClassStatistics = async (classId: string, academicYearId?: number) => {
-  const cacheKey = `class:${classId}:statistics:${academicYearId || 'current'}`;
+export const getClassStatistics = async (
+  classId: string,
+  academicYearId?: number,
+) => {
+  const cacheKey = `class:${classId}:statistics:${academicYearId || "current"}`;
   const cached = await gradeCache.get<{
     totalCount: number;
     passedCount: number;
@@ -559,13 +644,13 @@ export const getClassStatistics = async (classId: string, academicYearId?: numbe
   // Get the current academic year if not provided
   let yearId = academicYearId;
   if (!yearId) {
-      const [currentYear] = await db
-          .select({ id: academicYears.id })
-          .from(academicYears)
-          .where(eq(academicYears.isCurrent, true))
-          .limit(1);
-      
-      yearId = currentYear?.id;
+    const [currentYear] = await db
+      .select({ id: academicYears.id })
+      .from(academicYears)
+      .where(eq(academicYears.isCurrent, true))
+      .limit(1);
+
+    yearId = currentYear?.id;
   }
 
   // Get child classes (sections) if any
@@ -574,9 +659,10 @@ export const getClassStatistics = async (classId: string, academicYearId?: numbe
     .from(classes)
     .where(eq(classes.parentClassId, classIdNum));
 
-  const targetClassIds = childClasses.length > 0
-    ? [classIdNum, ...childClasses.map(c => c.id)]
-    : [classIdNum];
+  const targetClassIds =
+    childClasses.length > 0
+      ? [classIdNum, ...childClasses.map((c) => c.id)]
+      : [classIdNum];
 
   // Get all enrollments for this class for the targeted year
   const enrolledStudents = await db
@@ -591,7 +677,7 @@ export const getClassStatistics = async (classId: string, academicYearId?: numbe
           ? eq(enrollments.classId, targetClassIds[0]!)
           : inArray(enrollments.classId, targetClassIds),
         yearId ? eq(enrollments.academicYearId, yearId) : undefined,
-      )
+      ),
     );
 
   const totalCount = enrolledStudents.length;
@@ -615,8 +701,8 @@ export const getClassStatistics = async (classId: string, academicYearId?: numbe
     .where(
       and(
         eq(assessmentItems.classId, classIdNum),
-        yearId ? eq(academicTerms.academicYearId, yearId) : undefined
-      )
+        yearId ? eq(academicTerms.academicYearId, yearId) : undefined,
+      ),
     );
 
   if (classAssessmentItems.length === 0) {
@@ -632,8 +718,8 @@ export const getClassStatistics = async (classId: string, academicYearId?: numbe
 
   // Get grades scoped to THIS class's assessment items
   const studentIds = enrolledStudents.map((s) => s.studentId);
-  const assessmentItemIds = classAssessmentItems.map(a => a.id);
-  
+  const assessmentItemIds = classAssessmentItems.map((a) => a.id);
+
   const studentGrades = await db
     .select({
       studentId: gradeEntries.studentId,
@@ -641,24 +727,39 @@ export const getClassStatistics = async (classId: string, academicYearId?: numbe
       maxScore: assessmentItems.maxScore,
     })
     .from(gradeEntries)
-    .innerJoin(assessmentItems, eq(gradeEntries.assessmentItemId, assessmentItems.id))
+    .innerJoin(
+      assessmentItems,
+      eq(gradeEntries.assessmentItemId, assessmentItems.id),
+    )
     .where(
       and(
         inArray(gradeEntries.studentId, studentIds),
-        inArray(gradeEntries.assessmentItemId, assessmentItemIds)
-      )
+        inArray(gradeEntries.assessmentItemId, assessmentItemIds),
+      ),
     );
 
   // Calculate statistics per student
-  const studentStats = new Map<string, { totalScore: number; maxTotalScore: number }>();
+  const studentStats = new Map<
+    string,
+    { totalScore: number; maxTotalScore: number }
+  >();
 
   for (const grade of studentGrades) {
-    if (!grade.studentId || !grade.score || grade.score === "null" || grade.score === "") continue;
-    
+    if (
+      !grade.studentId ||
+      !grade.score ||
+      grade.score === "null" ||
+      grade.score === ""
+    )
+      continue;
+
     const score = Number.parseFloat(grade.score || "0");
     if (Number.isNaN(score)) continue;
 
-    const existing = studentStats.get(grade.studentId) || { totalScore: 0, maxTotalScore: 0 };
+    const existing = studentStats.get(grade.studentId) || {
+      totalScore: 0,
+      maxTotalScore: 0,
+    };
     existing.totalScore += score;
     existing.maxTotalScore += Number.parseFloat(grade.maxScore || "100");
     studentStats.set(grade.studentId, existing);
@@ -671,7 +772,7 @@ export const getClassStatistics = async (classId: string, academicYearId?: numbe
 
   for (const [, stats] of studentStats) {
     if (stats.maxTotalScore === 0) continue;
-    
+
     const percentage = (stats.totalScore / stats.maxTotalScore) * 100;
     totalPercentage += percentage;
     studentsWithGrades++;
@@ -683,7 +784,8 @@ export const getClassStatistics = async (classId: string, academicYearId?: numbe
     }
   }
 
-  const averageGrade = studentsWithGrades > 0 ? totalPercentage / studentsWithGrades : 0;
+  const averageGrade =
+    studentsWithGrades > 0 ? totalPercentage / studentsWithGrades : 0;
 
   const result = {
     totalCount,
@@ -726,281 +828,341 @@ function getGradeLabel(total: number, maxTotal: number): string {
 //   3. final (نهائي): Shows محصلة الترم1 + اختبار النصفي + محصلة الترم2 + اختبار النهائي + المجموع + التقدير
 // ==========================================
 
-export const getStudentReportData = async (studentId: string, type?: string, month?: number, targetClassId?: number) => {
-    // 1. Resolve classId: use provided classId (for historical reports) or fall back to currentClassId
-    let classId = targetClassId;
+export const getStudentReportData = async (
+  studentId: string,
+  type?: string,
+  month?: number,
+  targetClassId?: number,
+) => {
+  // 1. Resolve classId: use provided classId (for historical reports) or fall back to currentClassId
+  let classId = targetClassId;
 
-    if (!classId) {
-      const [student] = await db
-        .select({ currentClassId: students.currentClassId })
-        .from(students)
-        .where(eq(students.userId, studentId))
-        .limit(1);
+  if (!classId) {
+    const [student] = await db
+      .select({ currentClassId: students.currentClassId })
+      .from(students)
+      .where(eq(students.userId, studentId))
+      .limit(1);
 
-      if (!student?.currentClassId) return { rows: [], columns: [], type: type || "monthly" };
-      classId = student.currentClassId;
-    }
+    if (!student?.currentClassId)
+      return { rows: [], columns: [], type: type || "monthly" };
+    classId = student.currentClassId;
+  }
 
-    // ==========================================
-    // MONTHLY CERTIFICATE (شهادة شهرية)
-    // ==========================================
-    if (type === "monthly" || !type) {
-      const targetMonth = month || 1;
-      
-      // Get assessment items for this specific month
-      const monthItems = await db
-        .select({
-          id: assessmentItems.id,
-          title: assessmentItems.title,
-          type: assessmentItems.type,
-          maxScore: assessmentItems.maxScore,
-          subjectId: assessmentItems.subjectId,
-          subjectName: subjects.name,
-        })
-        .from(assessmentItems)
-        .innerJoin(subjects, eq(assessmentItems.subjectId, subjects.id))
-        .where(
-          and(
-            eq(assessmentItems.classId, classId),
-            eq(assessmentItems.month, targetMonth),
-          )
-        )
-        .orderBy(asc(subjects.sortOrder), asc(subjects.name), asc(assessmentItems.id));
+  // ==========================================
+  // MONTHLY CERTIFICATE (شهادة شهرية)
+  // ==========================================
+  if (type === "monthly" || !type) {
+    const targetMonth = month || 1;
 
-      if (monthItems.length === 0) return { rows: [], columns: [], type: "monthly" };
+    // Get assessment items for this specific month
+    const monthItems = await db
+      .select({
+        id: assessmentItems.id,
+        title: assessmentItems.title,
+        type: assessmentItems.type,
+        maxScore: assessmentItems.maxScore,
+        subjectId: assessmentItems.subjectId,
+        subjectName: subjects.name,
+      })
+      .from(assessmentItems)
+      .innerJoin(subjects, eq(assessmentItems.subjectId, subjects.id))
+      .where(
+        and(
+          eq(assessmentItems.classId, classId),
+          eq(assessmentItems.month, targetMonth),
+        ),
+      )
+      .orderBy(
+        asc(subjects.sortOrder),
+        asc(subjects.name),
+        asc(assessmentItems.id),
+      );
 
-      // Get grades
-      const itemIds = monthItems.map(i => i.id);
-      const grades = await db
-        .select({
-          assessmentItemId: gradeEntries.assessmentItemId,
-          score: gradeEntries.score,
-        })
-        .from(gradeEntries)
-        .where(
-          and(
-            eq(gradeEntries.studentId, studentId),
-            inArray(gradeEntries.assessmentItemId, itemIds)
-          )
-        );
+    if (monthItems.length === 0)
+      return { rows: [], columns: [], type: "monthly" };
 
-      const gradeMap = new Map(grades.map(g => [g.assessmentItemId, g.score]));
+    // Get grades
+    const itemIds = monthItems.map((i) => i.id);
+    const grades = await db
+      .select({
+        assessmentItemId: gradeEntries.assessmentItemId,
+        score: gradeEntries.score,
+      })
+      .from(gradeEntries)
+      .where(
+        and(
+          eq(gradeEntries.studentId, studentId),
+          inArray(gradeEntries.assessmentItemId, itemIds),
+        ),
+      );
 
-      // Group by subject → show each assessmentItem as a column
-      const subjectMap = new Map<string, { subject: string; grades: Record<string, number | null>; total: number; maxTotal: number }>();
-      const columnsSet = new Set<string>();
-      const columnsMaxScores: Record<string, string> = {};
+    const gradeMap = new Map(grades.map((g) => [g.assessmentItemId, g.score]));
 
-      for (const item of monthItems) {
-        if (!subjectMap.has(item.subjectName)) {
-          subjectMap.set(item.subjectName, { subject: item.subjectName, grades: {}, total: 0, maxTotal: 0 });
-        }
-        const row = subjectMap.get(item.subjectName)!;
-        columnsSet.add(item.title);
-        columnsMaxScores[item.title] = item.maxScore || "0";
-
-        const scoreStr = gradeMap.get(item.id);
-        const score = scoreStr ? parseFloat(scoreStr) : null;
-        row.grades[item.title] = score;
-        if (score !== null && !isNaN(score)) {
-          row.total += score;
-        }
-        row.maxTotal += parseFloat(item.maxScore || "0");
+    // Group by subject → show each assessmentItem as a column
+    const subjectMap = new Map<
+      string,
+      {
+        subject: string;
+        grades: Record<string, number | null>;
+        total: number;
+        maxTotal: number;
       }
+    >();
+    const columnsSet = new Set<string>();
+    const columnsMaxScores: Record<string, string> = {};
 
-      const rows = Array.from(subjectMap.values()).map(row => {
-        const total = row.maxTotal > 0 ? roundGrade((row.total / row.maxTotal) * 100) : 0;
-        return {
-          subject: row.subject,
-          grades: row.grades,
-          total,
-          maxTotal: 100,
-          gradeLabel: getGradeLabel(total, 100),
-        };
-      });
+    for (const item of monthItems) {
+      if (!subjectMap.has(item.subjectName)) {
+        subjectMap.set(item.subjectName, {
+          subject: item.subjectName,
+          grades: {},
+          total: 0,
+          maxTotal: 0,
+        });
+      }
+      const row = subjectMap.get(item.subjectName)!;
+      columnsSet.add(item.title);
+      columnsMaxScores[item.title] = item.maxScore || "0";
 
-      return {
-        rows,
-        columns: Array.from(columnsSet),
-        columnMaxScores: columnsMaxScores,
-        type: "monthly",
-      };
+      const scoreStr = gradeMap.get(item.id);
+      const score = scoreStr ? parseFloat(scoreStr) : null;
+      row.grades[item.title] = score;
+      if (score !== null && !isNaN(score)) {
+        row.total += score;
+      }
+      row.maxTotal += parseFloat(item.maxScore || "0");
     }
 
-    // ==========================================
-    // HALF-YEARLY CERTIFICATE (شهادة نصف العام)
-    // Months 1,2,3 → محصلة الشهور | Month 4 → اختبار نصفي | المجموع | التقدير
-    // ==========================================
-    if (type === "half-yearly") {
-      const monthlyMonths = [1, 2, 3]; // الشهور الثلاثة الأولى
-      const examMonth = 4; // شهر الاختبار النصفي
+    const rows = Array.from(subjectMap.values()).map((row) => {
+      const total =
+        row.maxTotal > 0 ? roundGrade((row.total / row.maxTotal) * 100) : 0;
+      return {
+        subject: row.subject,
+        grades: row.grades,
+        total,
+        maxTotal: 100,
+        gradeLabel: getGradeLabel(total, 100),
+      };
+    });
 
-      // Get all assessment items for months 1-4
-      const allItems = await db
-        .select({
-          id: assessmentItems.id,
-          title: assessmentItems.title,
-          type: assessmentItems.type,
-          maxScore: assessmentItems.maxScore,
-          month: assessmentItems.month,
-          subjectId: assessmentItems.subjectId,
-          subjectName: subjects.name,
-        })
-        .from(assessmentItems)
-        .innerJoin(subjects, eq(assessmentItems.subjectId, subjects.id))
-        .where(
-          and(
-            eq(assessmentItems.classId, classId),
-            inArray(assessmentItems.month, [...monthlyMonths, examMonth]),
-          )
-        )
-        .orderBy(asc(subjects.sortOrder), asc(subjects.name), asc(assessmentItems.month), asc(assessmentItems.id));
+    return {
+      rows,
+      columns: Array.from(columnsSet),
+      columnMaxScores: columnsMaxScores,
+      type: "monthly",
+    };
+  }
 
-      if (allItems.length === 0) return { rows: [], columns: ["محصلة الشهور", "اختبار نصف العام", "المجموع", "التقدير"], type: "half-yearly" };
+  // ==========================================
+  // HALF-YEARLY CERTIFICATE (شهادة نصف العام)
+  // Months 1,2,3 → محصلة الشهور | Month 4 → اختبار نصفي | المجموع | التقدير
+  // ==========================================
+  if (type === "half-yearly") {
+    const monthlyMonths = [1, 2, 3]; // الشهور الثلاثة الأولى
+    const examMonth = 4; // شهر الاختبار النصفي
 
-      // ... (Rest of half-early and final implementation exists in db)
-      // I am just omitting the rest since it's already there and I don't need to replace it.
-      // Wait, let's add `getClassBulkReportData` at the very end of the file.
+    // Get all assessment items for months 1-4
+    const allItems = await db
+      .select({
+        id: assessmentItems.id,
+        title: assessmentItems.title,
+        type: assessmentItems.type,
+        maxScore: assessmentItems.maxScore,
+        month: assessmentItems.month,
+        subjectId: assessmentItems.subjectId,
+        subjectName: subjects.name,
+      })
+      .from(assessmentItems)
+      .innerJoin(subjects, eq(assessmentItems.subjectId, subjects.id))
+      .where(
+        and(
+          eq(assessmentItems.classId, classId),
+          inArray(assessmentItems.month, [...monthlyMonths, examMonth]),
+        ),
+      )
+      .orderBy(
+        asc(subjects.sortOrder),
+        asc(subjects.name),
+        asc(assessmentItems.month),
+        asc(assessmentItems.id),
+      );
 
+    if (allItems.length === 0)
+      return {
+        rows: [],
+        columns: ["محصلة الشهور", "اختبار نصف العام", "المجموع", "التقدير"],
+        type: "half-yearly",
+      };
 
-      // Get grades
-      const itemIds = allItems.map(i => i.id);
-      const grades = await db
-        .select({
-          assessmentItemId: gradeEntries.assessmentItemId,
-          score: gradeEntries.score,
-        })
-        .from(gradeEntries)
-        .where(
-          and(
-            eq(gradeEntries.studentId, studentId),
-            inArray(gradeEntries.assessmentItemId, itemIds)
-          )
-        );
+    // ... (Rest of half-early and final implementation exists in db)
+    // I am just omitting the rest since it's already there and I don't need to replace it.
+    // Wait, let's add `getClassBulkReportData` at the very end of the file.
 
-      const gradeMap = new Map(grades.map(g => [g.assessmentItemId, g.score]));
+    // Get grades
+    const itemIds = allItems.map((i) => i.id);
+    const grades = await db
+      .select({
+        assessmentItemId: gradeEntries.assessmentItemId,
+        score: gradeEntries.score,
+      })
+      .from(gradeEntries)
+      .where(
+        and(
+          eq(gradeEntries.studentId, studentId),
+          inArray(gradeEntries.assessmentItemId, itemIds),
+        ),
+      );
 
-      // Group by subject
-      const subjectMap = new Map<string, {
+    const gradeMap = new Map(grades.map((g) => [g.assessmentItemId, g.score]));
+
+    // Group by subject
+    const subjectMap = new Map<
+      string,
+      {
         subject: string;
         monthlyTotal: number;
         monthlyMaxTotal: number;
         examScore: number | null;
         examMaxScore: number;
-      }>();
-
-      for (const item of allItems) {
-        if (!subjectMap.has(item.subjectName)) {
-          subjectMap.set(item.subjectName, {
-            subject: item.subjectName,
-            monthlyTotal: 0,
-            monthlyMaxTotal: 0,
-            examScore: null,
-            examMaxScore: 0,
-          });
-        }
-        const row = subjectMap.get(item.subjectName)!;
-        const scoreStr = gradeMap.get(item.id);
-        const score = scoreStr ? parseFloat(scoreStr) : null;
-
-        if (monthlyMonths.includes(item.month)) {
-          // Accumulate monthly grades
-          if (score !== null && !isNaN(score)) {
-            row.monthlyTotal += score;
-          }
-          row.monthlyMaxTotal += parseFloat(item.maxScore || "0");
-        } else if (item.month === examMonth) {
-          // Midterm exam score
-          if (score !== null && !isNaN(score)) {
-            row.examScore = (row.examScore || 0) + score;
-          }
-          row.examMaxScore += parseFloat(item.maxScore || "0");
-        }
       }
+    >();
 
-      const rows = Array.from(subjectMap.values()).map(row => {
-        const scaledMonthly = row.monthlyMaxTotal > 0 ? roundGrade((row.monthlyTotal / row.monthlyMaxTotal) * 20) : 0;
-        const scaledExam = row.examMaxScore > 0 ? roundGrade(((row.examScore || 0) / row.examMaxScore) * 30) : 0;
-        const total = roundGrade(scaledMonthly + scaledExam);
-        const maxTotal = 50;
-        
-        return {
-          subject: row.subject,
-          grades: {
-            "محصلة الشهور": scaledMonthly,
-            "اختبار نصف العام": scaledExam,
-          } as Record<string, number | null>,
-          total,
-          maxTotal,
-          gradeLabel: getGradeLabel(total, maxTotal),
-        };
-      });
+    for (const item of allItems) {
+      if (!subjectMap.has(item.subjectName)) {
+        subjectMap.set(item.subjectName, {
+          subject: item.subjectName,
+          monthlyTotal: 0,
+          monthlyMaxTotal: 0,
+          examScore: null,
+          examMaxScore: 0,
+        });
+      }
+      const row = subjectMap.get(item.subjectName)!;
+      const scoreStr = gradeMap.get(item.id);
+      const score = scoreStr ? parseFloat(scoreStr) : null;
+
+      if (monthlyMonths.includes(item.month)) {
+        // Accumulate monthly grades
+        if (score !== null && !isNaN(score)) {
+          row.monthlyTotal += score;
+        }
+        row.monthlyMaxTotal += parseFloat(item.maxScore || "0");
+      } else if (item.month === examMonth) {
+        // Midterm exam score
+        if (score !== null && !isNaN(score)) {
+          row.examScore = (row.examScore || 0) + score;
+        }
+        row.examMaxScore += parseFloat(item.maxScore || "0");
+      }
+    }
+
+    const rows = Array.from(subjectMap.values()).map((row) => {
+      const scaledMonthly =
+        row.monthlyMaxTotal > 0
+          ? roundGrade((row.monthlyTotal / row.monthlyMaxTotal) * 20)
+          : 0;
+      const scaledExam =
+        row.examMaxScore > 0
+          ? roundGrade(((row.examScore || 0) / row.examMaxScore) * 30)
+          : 0;
+      const total = roundGrade(scaledMonthly + scaledExam);
+      const maxTotal = 50;
 
       return {
-        rows,
-        columns: ["محصلة الشهور", "اختبار نصف العام"],
-        type: "half-yearly",
+        subject: row.subject,
+        grades: {
+          "محصلة الشهور": scaledMonthly,
+          "اختبار نصف العام": scaledExam,
+        } as Record<string, number | null>,
+        total,
+        maxTotal,
+        gradeLabel: getGradeLabel(total, maxTotal),
+      };
+    });
+
+    return {
+      rows,
+      columns: ["محصلة الشهور", "اختبار نصف العام"],
+      type: "half-yearly",
+    };
+  }
+
+  // ==========================================
+  // FINAL CERTIFICATE (شهادة نهاية العام)
+  // محصلة الترم الأول (1,2,3) | اختبار نصف العام (4) | محصلة الترم الثاني (5,6,7) | الاختبار النهائي (8) | المجموع | التقدير
+  // ==========================================
+  if (type === "final") {
+    const term1Months = [1, 2, 3];
+    const midtermMonth = 4;
+    const term2Months = [5, 6, 7];
+    const finalExamMonth = 8;
+
+    // Get ALL assessment items across the entire year (months 1-8)
+    const allItems = await db
+      .select({
+        id: assessmentItems.id,
+        title: assessmentItems.title,
+        type: assessmentItems.type,
+        maxScore: assessmentItems.maxScore,
+        month: assessmentItems.month,
+        subjectId: assessmentItems.subjectId,
+        subjectName: subjects.name,
+      })
+      .from(assessmentItems)
+      .innerJoin(subjects, eq(assessmentItems.subjectId, subjects.id))
+      .where(
+        and(
+          eq(assessmentItems.classId, classId),
+          inArray(assessmentItems.month, [
+            ...term1Months,
+            midtermMonth,
+            ...term2Months,
+            finalExamMonth,
+          ]),
+        ),
+      )
+      .orderBy(
+        asc(subjects.sortOrder),
+        asc(subjects.name),
+        asc(assessmentItems.month),
+        asc(assessmentItems.id),
+      );
+
+    if (allItems.length === 0) {
+      return {
+        rows: [],
+        columns: [
+          "المحصلة الأولى",
+          "اختبار نصف العام",
+          "المحصلة الثانية",
+          "الاختبار النهائي",
+        ],
+        type: "final",
       };
     }
 
-    // ==========================================
-    // FINAL CERTIFICATE (شهادة نهاية العام)
-    // محصلة الترم الأول (1,2,3) | اختبار نصف العام (4) | محصلة الترم الثاني (5,6,7) | الاختبار النهائي (8) | المجموع | التقدير
-    // ==========================================
-    if (type === "final") {
-      const term1Months = [1, 2, 3];
-      const midtermMonth = 4;
-      const term2Months = [5, 6, 7];
-      const finalExamMonth = 8;
+    // Get grades
+    const itemIds = allItems.map((i) => i.id);
+    const grades = await db
+      .select({
+        assessmentItemId: gradeEntries.assessmentItemId,
+        score: gradeEntries.score,
+      })
+      .from(gradeEntries)
+      .where(
+        and(
+          eq(gradeEntries.studentId, studentId),
+          inArray(gradeEntries.assessmentItemId, itemIds),
+        ),
+      );
 
-      // Get ALL assessment items across the entire year (months 1-8)
-      const allItems = await db
-        .select({
-          id: assessmentItems.id,
-          title: assessmentItems.title,
-          type: assessmentItems.type,
-          maxScore: assessmentItems.maxScore,
-          month: assessmentItems.month,
-          subjectId: assessmentItems.subjectId,
-          subjectName: subjects.name,
-        })
-        .from(assessmentItems)
-        .innerJoin(subjects, eq(assessmentItems.subjectId, subjects.id))
-        .where(
-          and(
-            eq(assessmentItems.classId, classId),
-            inArray(assessmentItems.month, [...term1Months, midtermMonth, ...term2Months, finalExamMonth]),
-          )
-        )
-        .orderBy(asc(subjects.sortOrder), asc(subjects.name), asc(assessmentItems.month), asc(assessmentItems.id));
+    const gradeMap = new Map(grades.map((g) => [g.assessmentItemId, g.score]));
 
-      if (allItems.length === 0) {
-        return {
-          rows: [],
-          columns: ["المحصلة الأولى", "اختبار نصف العام", "المحصلة الثانية", "الاختبار النهائي"],
-          type: "final",
-        };
-      }
-
-      // Get grades
-      const itemIds = allItems.map(i => i.id);
-      const grades = await db
-        .select({
-          assessmentItemId: gradeEntries.assessmentItemId,
-          score: gradeEntries.score,
-        })
-        .from(gradeEntries)
-        .where(
-          and(
-            eq(gradeEntries.studentId, studentId),
-            inArray(gradeEntries.assessmentItemId, itemIds)
-          )
-        );
-
-      const gradeMap = new Map(grades.map(g => [g.assessmentItemId, g.score]));
-
-      // Group by subject
-      const subjectMap = new Map<string, {
+    // Group by subject
+    const subjectMap = new Map<
+      string,
+      {
         subject: string;
         term1Total: number;
         term1MaxTotal: number;
@@ -1010,105 +1172,133 @@ export const getStudentReportData = async (studentId: string, type?: string, mon
         term2MaxTotal: number;
         finalExamScore: number | null;
         finalExamMaxScore: number;
-      }>();
-
-      for (const item of allItems) {
-        if (!subjectMap.has(item.subjectName)) {
-          subjectMap.set(item.subjectName, {
-            subject: item.subjectName,
-            term1Total: 0,
-            term1MaxTotal: 0,
-            midtermScore: null,
-            midtermMaxScore: 0,
-            term2Total: 0,
-            term2MaxTotal: 0,
-            finalExamScore: null,
-            finalExamMaxScore: 0,
-          });
-        }
-        const row = subjectMap.get(item.subjectName)!;
-        const scoreStr = gradeMap.get(item.id);
-        const score = scoreStr ? parseFloat(scoreStr) : null;
-
-        if (term1Months.includes(item.month)) {
-          if (score !== null && !isNaN(score)) row.term1Total += score;
-          row.term1MaxTotal += parseFloat(item.maxScore || "0");
-        } else if (item.month === midtermMonth) {
-          if (score !== null && !isNaN(score)) row.midtermScore = (row.midtermScore || 0) + score;
-          row.midtermMaxScore += parseFloat(item.maxScore || "0");
-        } else if (term2Months.includes(item.month)) {
-          if (score !== null && !isNaN(score)) row.term2Total += score;
-          row.term2MaxTotal += parseFloat(item.maxScore || "0");
-        } else if (item.month === finalExamMonth) {
-          if (score !== null && !isNaN(score)) row.finalExamScore = (row.finalExamScore || 0) + score;
-          row.finalExamMaxScore += parseFloat(item.maxScore || "0");
-        }
       }
+    >();
 
-      const rows = Array.from(subjectMap.values()).map(row => {
-        const scaledT1 = row.term1MaxTotal > 0 ? roundGrade((row.term1Total / row.term1MaxTotal) * 20) : 0;
-        const scaledMidterm = row.midtermMaxScore > 0 ? roundGrade(((row.midtermScore || 0) / row.midtermMaxScore) * 30) : 0;
-        const scaledT2 = row.term2MaxTotal > 0 ? roundGrade((row.term2Total / row.term2MaxTotal) * 20) : 0;
-        const scaledFinal = row.finalExamMaxScore > 0 ? roundGrade(((row.finalExamScore || 0) / row.finalExamMaxScore) * 30) : 0;
-        
-        const total = roundGrade(scaledT1 + scaledMidterm + scaledT2 + scaledFinal);
-        const maxTotal = 100;
+    for (const item of allItems) {
+      if (!subjectMap.has(item.subjectName)) {
+        subjectMap.set(item.subjectName, {
+          subject: item.subjectName,
+          term1Total: 0,
+          term1MaxTotal: 0,
+          midtermScore: null,
+          midtermMaxScore: 0,
+          term2Total: 0,
+          term2MaxTotal: 0,
+          finalExamScore: null,
+          finalExamMaxScore: 0,
+        });
+      }
+      const row = subjectMap.get(item.subjectName)!;
+      const scoreStr = gradeMap.get(item.id);
+      const score = scoreStr ? parseFloat(scoreStr) : null;
 
-        return {
-          subject: row.subject,
-          grades: {
-            "المحصلة الأولى": scaledT1,
-            "اختبار نصف العام": scaledMidterm,
-            "المحصلة الثانية": scaledT2,
-            "الاختبار النهائي": scaledFinal,
-          } as Record<string, number | null>,
-          total,
-          maxTotal,
-          gradeLabel: getGradeLabel(total, maxTotal),
-        };
-      });
-
-      return {
-        rows,
-        columns: ["المحصلة الأولى", "اختبار نصف العام", "المحصلة الثانية", "الاختبار النهائي"],
-        type: "final",
-      };
+      if (term1Months.includes(item.month)) {
+        if (score !== null && !isNaN(score)) row.term1Total += score;
+        row.term1MaxTotal += parseFloat(item.maxScore || "0");
+      } else if (item.month === midtermMonth) {
+        if (score !== null && !isNaN(score))
+          row.midtermScore = (row.midtermScore || 0) + score;
+        row.midtermMaxScore += parseFloat(item.maxScore || "0");
+      } else if (term2Months.includes(item.month)) {
+        if (score !== null && !isNaN(score)) row.term2Total += score;
+        row.term2MaxTotal += parseFloat(item.maxScore || "0");
+      } else if (item.month === finalExamMonth) {
+        if (score !== null && !isNaN(score))
+          row.finalExamScore = (row.finalExamScore || 0) + score;
+        row.finalExamMaxScore += parseFloat(item.maxScore || "0");
+      }
     }
 
-    // Fallback
-    return { rows: [], columns: [], type: type || "monthly" };
+    const rows = Array.from(subjectMap.values()).map((row) => {
+      const scaledT1 =
+        row.term1MaxTotal > 0
+          ? roundGrade((row.term1Total / row.term1MaxTotal) * 20)
+          : 0;
+      const scaledMidterm =
+        row.midtermMaxScore > 0
+          ? roundGrade(((row.midtermScore || 0) / row.midtermMaxScore) * 30)
+          : 0;
+      const scaledT2 =
+        row.term2MaxTotal > 0
+          ? roundGrade((row.term2Total / row.term2MaxTotal) * 20)
+          : 0;
+      const scaledFinal =
+        row.finalExamMaxScore > 0
+          ? roundGrade(((row.finalExamScore || 0) / row.finalExamMaxScore) * 30)
+          : 0;
+
+      const total = roundGrade(
+        scaledT1 + scaledMidterm + scaledT2 + scaledFinal,
+      );
+      const maxTotal = 100;
+
+      return {
+        subject: row.subject,
+        grades: {
+          "المحصلة الأولى": scaledT1,
+          "اختبار نصف العام": scaledMidterm,
+          "المحصلة الثانية": scaledT2,
+          "الاختبار النهائي": scaledFinal,
+        } as Record<string, number | null>,
+        total,
+        maxTotal,
+        gradeLabel: getGradeLabel(total, maxTotal),
+      };
+    });
+
+    return {
+      rows,
+      columns: [
+        "المحصلة الأولى",
+        "اختبار نصف العام",
+        "المحصلة الثانية",
+        "الاختبار النهائي",
+      ],
+      type: "final",
+    };
+  }
+
+  // Fallback
+  return { rows: [], columns: [], type: type || "monthly" };
 };
 
-export const getClassBulkReportData = async (classId: number, type: string, month?: number) => {
-    const enrolledStudents = await db
-      .select({
-        studentId: students.userId,
-        studentNumber: students.studentNumber,
-        seatingNumber: students.seatingNumber,
-        secretNumber: students.secretNumber,
-        name: users.name,
-        status: students.status,
-      })
-      .from(enrollments)
-      .innerJoin(students, eq(enrollments.studentId, students.userId))
-      .innerJoin(users, eq(students.userId, users.id))
-      .where(
-        and(
-          eq(enrollments.classId, classId),
-          eq(enrollments.status, "active")
-        )
-      )
-      .orderBy(asc(users.name));
+export const getClassBulkReportData = async (
+  classId: number,
+  type: string,
+  month?: number,
+) => {
+  const enrolledStudents = await db
+    .select({
+      studentId: students.userId,
+      studentNumber: students.studentNumber,
+      seatingNumber: students.seatingNumber,
+      secretNumber: students.secretNumber,
+      name: users.name,
+      status: students.status,
+    })
+    .from(enrollments)
+    .innerJoin(students, eq(enrollments.studentId, students.userId))
+    .innerJoin(users, eq(students.userId, users.id))
+    .where(
+      and(eq(enrollments.classId, classId), eq(enrollments.status, "active")),
+    )
+    .orderBy(asc(users.name));
 
-    const results = await Promise.all(
-      enrolledStudents.map(async (student) => {
-        const reportData = await getStudentReportData(student.studentId, type, month, classId);
-        return {
-          ...student,
-          reportData
-        };
-      })
-    );
+  const results = await Promise.all(
+    enrolledStudents.map(async (student) => {
+      const reportData = await getStudentReportData(
+        student.studentId,
+        type,
+        month,
+        classId,
+      );
+      return {
+        ...student,
+        reportData,
+      };
+    }),
+  );
 
-    return results;
+  return results;
 };

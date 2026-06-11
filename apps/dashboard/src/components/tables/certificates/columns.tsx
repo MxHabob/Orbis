@@ -1,13 +1,13 @@
 "use client";
 
-import { Checkbox } from "@orbis/ui/checkbox";
 import { Badge } from "@orbis/ui/badge";
+import { Checkbox } from "@orbis/ui/checkbox";
+import { cn } from "@orbis/ui/cn";
 import { Icons } from "@orbis/ui/icons";
 import type { ColumnDef } from "@tanstack/react-table";
 import { formatDate } from "date-fns";
 import { ActionsMenu } from "./actions-menu";
 import type { CertificateTemplate } from "./types";
-import { cn } from "@orbis/ui/cn";
 
 export const columns: ColumnDef<CertificateTemplate>[] = [
   {
@@ -55,25 +55,34 @@ export const columns: ColumnDef<CertificateTemplate>[] = [
       const name = row.original.name;
       const isDefault = row.original.isDefault;
       const thumbnailUrl = row.original.thumbnailUrl;
-      
+
       return (
         <div className="flex items-center gap-3 min-w-0">
           <div className="h-10 w-10 rounded border bg-accent/20 flex items-center justify-center shrink-0 overflow-hidden">
-             {thumbnailUrl ? (
-                <img src={thumbnailUrl} alt="" className="w-full h-full object-cover" />
-             ) : (
-                <Icons.Files className="w-4 h-4 text-muted-foreground opacity-50" />
-             )}
+            {thumbnailUrl ? (
+              <img
+                src={thumbnailUrl}
+                alt=""
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <Icons.Files className="w-4 h-4 text-muted-foreground opacity-50" />
+            )}
           </div>
           <div className="flex flex-col min-w-0">
             <span className="truncate font-bold text-sm">{name}</span>
             <div className="flex items-center gap-1.5 mt-0.5">
-               {isDefault && (
-                 <Badge variant="secondary" className="text-[8px] font-bold uppercase py-0 px-1.5 h-3.5 bg-blue-500/10 text-blue-500 border-none">
-                   Default
-                 </Badge>
-               )}
-               <span className="text-[10px] text-muted-foreground uppercase font-mono">{row.original.category}</span>
+              {isDefault && (
+                <Badge
+                  variant="secondary"
+                  className="text-[8px] font-bold uppercase py-0 px-1.5 h-3.5 bg-blue-500/10 text-blue-500 border-none"
+                >
+                  Default
+                </Badge>
+              )}
+              <span className="text-[10px] text-muted-foreground uppercase font-mono">
+                {row.original.category}
+              </span>
             </div>
           </div>
         </div>
@@ -93,15 +102,17 @@ export const columns: ColumnDef<CertificateTemplate>[] = [
     },
     cell: ({ row }) => {
       return (
-         <div className="flex items-center gap-2">
-            <div className={cn(
-               "w-1.5 h-1.5 rounded-full",
-               row.original.isArchived ? "bg-gray-400" : "bg-green-500"
-            )} />
-            <span className="text-[11px] font-bold uppercase tracking-tight text-muted-foreground">
-               {row.original.isArchived ? "Archived" : "Live"}
-            </span>
-         </div>
+        <div className="flex items-center gap-2">
+          <div
+            className={cn(
+              "w-1.5 h-1.5 rounded-full",
+              row.original.isArchived ? "bg-gray-400" : "bg-green-500",
+            )}
+          />
+          <span className="text-[11px] font-bold uppercase tracking-tight text-muted-foreground">
+            {row.original.isArchived ? "Archived" : "Live"}
+          </span>
+        </div>
       );
     },
   },

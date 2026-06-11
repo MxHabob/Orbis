@@ -1,6 +1,6 @@
 "use client";
 
-import { useI18n } from "@/locales/client";
+import { cn } from "@orbis/ui/cn";
 import {
   Table,
   TableBody,
@@ -15,11 +15,11 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import React from "react";
-import { cn } from "@orbis/ui/cn";
+import { useI18n } from "@/locales/client";
 import { columns, type PromotionHistory } from "./columns";
-import { HistoryTableHeader } from "./table-header";
-import { HistoryTableSkeleton } from "./skeleton";
 import { HistoryEmptyState } from "./empty-states";
+import { HistoryTableSkeleton } from "./skeleton";
+import { HistoryTableHeader } from "./table-header";
 
 interface PromotionsHistoryTableProps {
   data: PromotionHistory[];
@@ -29,18 +29,18 @@ interface PromotionsHistoryTableProps {
   isRollingBack?: boolean;
 }
 
-export function PromotionsHistoryDataTable({ 
-  data, 
-  isLoading, 
-  onRollback, 
+export function PromotionsHistoryDataTable({
+  data,
+  isLoading,
+  onRollback,
   onOverride,
-  isRollingBack 
+  isRollingBack,
 }: PromotionsHistoryTableProps) {
   const t = useI18n();
 
   const tableColumns = React.useMemo(
     () => columns(t, onRollback, onOverride, isRollingBack),
-    [t, onRollback, onOverride, isRollingBack]
+    [t, onRollback, onOverride, isRollingBack],
   );
 
   const table = useReactTable({
@@ -66,39 +66,49 @@ export function PromotionsHistoryDataTable({
         currentYear={currentYearName}
         targetYear={targetYearName}
         count={data.length}
-        onRollbackAll={() => onRollback(data.map(d => d.studentId))}
+        onRollbackAll={() => onRollback(data.map((d) => d.studentId))}
         isRollingBack={isRollingBack}
       />
-      
+
       <div className="border-x border-b border-border">
         <Table>
           <TableHeader>
-            {table.getHeaderGroups().map(headerGroup => (
-              <TableRow key={headerGroup.id} className="hover:bg-transparent bg-muted/30 border-b h-10 border-border">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow
+                key={headerGroup.id}
+                className="hover:bg-transparent bg-muted/30 border-b h-10 border-border"
+              >
                 {headerGroup.headers.map((header, index) => (
-                  <TableHead 
-                    key={header.id} 
+                  <TableHead
+                    key={header.id}
                     className={cn(
                       "text-[10px] uppercase font-bold tracking-tight py-2 h-auto text-[#606060]",
                       header.id === "status" && "text-center",
-                      index === headerGroup.headers.length - 1 && "text-right"
+                      index === headerGroup.headers.length - 1 && "text-right",
                     )}
                   >
-                    {flexRender(header.column.columnDef.header, header.getContext())}
+                    {flexRender(
+                      header.column.columnDef.header,
+                      header.getContext(),
+                    )}
                   </TableHead>
                 ))}
               </TableRow>
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows.map(row => (
-              <TableRow key={row.id} className="h-10 hover:bg-muted/30 transition-colors group border-b last:border-0 text-foreground border-border">
+            {table.getRowModel().rows.map((row) => (
+              <TableRow
+                key={row.id}
+                className="h-10 hover:bg-muted/30 transition-colors group border-b last:border-0 text-foreground border-border"
+              >
                 {row.getVisibleCells().map((cell, index) => (
-                  <TableCell 
+                  <TableCell
                     key={cell.id}
                     className={cn(
                       cell.column.id === "status" && "text-center",
-                      index === row.getVisibleCells().length - 1 && "text-right"
+                      index === row.getVisibleCells().length - 1 &&
+                        "text-right",
                     )}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}

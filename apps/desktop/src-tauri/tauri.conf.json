@@ -37,7 +37,9 @@
     },
     "updater": {
       "active": true,
-      "endpoints": ["https://releases.mulverse.com/{{target}}/{{current_version}}"],
+      "endpoints": [
+        "https://releases.mulverse.com/{{target}}/{{current_version}}"
+      ],
       "pubkey": "dW51c2VkdW51c2VkdW51c2VkdW51c2VkdW51c2VkdW51c2VkdW51c2VkdW51c2Vk"
     }
   }

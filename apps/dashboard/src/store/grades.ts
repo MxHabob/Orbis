@@ -15,10 +15,7 @@ interface GradesState {
   setCanDelete: (canDelete?: boolean) => void;
   // Per-tab row selection
   rowSelectionByTab: RowSelectionByTab;
-  setRowSelection: (
-    tab: GradeTab,
-    updater: Updater<RowSelectionState>,
-  ) => void;
+  setRowSelection: (tab: GradeTab, updater: Updater<RowSelectionState>) => void;
   // Helper to get row selection for a specific tab
   getRowSelection: (tab: GradeTab) => Record<string, boolean>;
   // Clear selection for a specific tab

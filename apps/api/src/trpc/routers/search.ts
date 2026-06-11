@@ -1,7 +1,13 @@
-import { createTRPCRouter, protectedProcedure } from "../init";
+import {
+  classes,
+  documents,
+  students,
+  subjects,
+  users,
+} from "@orbis/db/schema";
+import { and, eq, ilike, or } from "drizzle-orm";
 import { z } from "zod";
-import { students, classes, users, subjects, documents } from "@orbis/db/schema";
-import { ilike, or, and, eq } from "drizzle-orm";
+import { createTRPCRouter, protectedProcedure } from "../init";
 
 export const searchRouter = createTRPCRouter({
   global: protectedProcedure
@@ -12,7 +18,13 @@ export const searchRouter = createTRPCRouter({
 
       const query = `%${searchTerm}%`;
 
-      const [studentResults, classResults, subjectResults, staffResults, documentResults] = await Promise.all([
+      const [
+        studentResults,
+        classResults,
+        subjectResults,
+        staffResults,
+        documentResults,
+      ] = await Promise.all([
         db
           .select({
             id: students.userId,
@@ -22,10 +34,7 @@ export const searchRouter = createTRPCRouter({
           .from(students)
           .innerJoin(users, eq(students.userId, users.id))
           .where(
-            or(
-              ilike(users.name, query),
-              ilike(students.studentNumber, query)
-            )
+            or(ilike(users.name, query), ilike(students.studentNumber, query)),
           )
           .limit(5),
         db
@@ -54,9 +63,13 @@ export const searchRouter = createTRPCRouter({
           .from(users)
           .where(
             and(
-              or(eq(users.role, 'teacher'), eq(users.role, 'admin'), eq(users.role, 'staff')),
-              or(ilike(users.name, query), ilike(users.email, query))
-            )
+              or(
+                eq(users.role, "teacher"),
+                eq(users.role, "admin"),
+                eq(users.role, "staff"),
+              ),
+              or(ilike(users.name, query), ilike(users.email, query)),
+            ),
           )
           .limit(5),
         db
@@ -71,8 +84,8 @@ export const searchRouter = createTRPCRouter({
           .where(
             and(
               eq(documents.userId, session.user.id),
-              or(ilike(documents.name, query), ilike(documents.title, query))
-            )
+              or(ilike(documents.name, query), ilike(documents.title, query)),
+            ),
           )
           .limit(5),
       ]);
@@ -82,7 +95,10 @@ export const searchRouter = createTRPCRouter({
           id: s.id,
           type: "student",
           title: s.title ?? "Unknown",
-          data: { name: s.title ?? "Unknown", student_number: s.studentNumber ?? undefined },
+          data: {
+            name: s.title ?? "Unknown",
+            student_number: s.studentNumber ?? undefined,
+          },
         })),
         ...classResults.map((c) => ({
           id: c.id.toString(),
@@ -100,17 +116,21 @@ export const searchRouter = createTRPCRouter({
           id: t.id,
           type: "staff",
           title: t.title ?? "Unknown Staff",
-          data: { name: t.title ?? "Unknown Staff", email: t.email ?? undefined, status: t.role ?? undefined },
+          data: {
+            name: t.title ?? "Unknown Staff",
+            email: t.email ?? undefined,
+            status: t.role ?? undefined,
+          },
         })),
         ...documentResults.map((d) => ({
           id: d.id,
           type: "vault",
           title: d.title || d.name || "Untitled Document",
-          data: { 
-            name: d.name || "Untitled Document", 
-            title: d.title ?? undefined, 
+          data: {
+            name: d.name || "Untitled Document",
+            title: d.title ?? undefined,
             metadata: { mimetype: d.mimetype ?? undefined },
-            path_tokens: (d.pathTokens as string[]) ?? []
+            path_tokens: (d.pathTokens as string[]) ?? [],
           },
         })),
       ];

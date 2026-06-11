@@ -1,16 +1,16 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useToast } from "@orbis/ui/use-toast";
 import {
   useMutation,
   useQuery,
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
-import { useTRPC } from "@/trpc/client";
+import { useCallback, useState } from "react";
 import { usePromotionsParams } from "@/hooks/use-promotions-params";
-import { useToast } from "@orbis/ui/use-toast";
 import { useI18n } from "@/locales/client";
+import { useTRPC } from "@/trpc/client";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -76,9 +76,7 @@ export function usePromotions() {
     enabled: !!sourceYearId && activeTab === "statistics",
   });
 
-  const classesQuery = useSuspenseQuery(
-    trpc.classes.getAll.queryOptions(),
-  );
+  const classesQuery = useSuspenseQuery(trpc.classes.getAll.queryOptions());
 
   // ── Mutations ──────────────────────────────────────────────────────────
 
@@ -86,7 +84,9 @@ export function usePromotions() {
     trpc.promotions.execute.mutationOptions({
       onSuccess: () => {
         toast({ title: t("promotions.process_success") });
-        queryClient.invalidateQueries({ queryKey: historyQueryOptions.queryKey });
+        queryClient.invalidateQueries({
+          queryKey: historyQueryOptions.queryKey,
+        });
         queryClient.invalidateQueries({ queryKey: statsQueryOptions.queryKey });
         setExecuteConfirmOpen(false);
         setActiveTab("history");
@@ -105,8 +105,12 @@ export function usePromotions() {
     trpc.promotions.rollback.mutationOptions({
       onSuccess: () => {
         toast({ title: t("promotions.process_success") });
-        queryClient.invalidateQueries({ queryKey: previewQueryOptions.queryKey });
-        queryClient.invalidateQueries({ queryKey: historyQueryOptions.queryKey });
+        queryClient.invalidateQueries({
+          queryKey: previewQueryOptions.queryKey,
+        });
+        queryClient.invalidateQueries({
+          queryKey: historyQueryOptions.queryKey,
+        });
         queryClient.invalidateQueries({ queryKey: statsQueryOptions.queryKey });
       },
       onError: (err) => {
@@ -214,14 +218,12 @@ export function usePromotions() {
     [],
   );
 
-  const closeOverrideModal = useCallback(
-    () => setOverrideRecord(null),
-    [],
-  );
+  const closeOverrideModal = useCallback(() => setOverrideRecord(null), []);
 
   // ── Derived state ──────────────────────────────────────────────────────
 
-  const canExecute = !!previewQuery.data?.students?.length && !!promotionClassId;
+  const canExecute =
+    !!previewQuery.data?.students?.length && !!promotionClassId;
 
   return {
     // Tab
@@ -268,6 +270,9 @@ export function usePromotions() {
     executeConfirmOpen,
     setExecuteConfirmOpen,
     pendingRollbackIds,
-    studentsCount: previewQuery.data?.students?.filter(s => s.suggestedStatus !== "already_promoted").length ?? 0
+    studentsCount:
+      previewQuery.data?.students?.filter(
+        (s) => s.suggestedStatus !== "already_promoted",
+      ).length ?? 0,
   } as const;
 }

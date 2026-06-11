@@ -1,11 +1,11 @@
 "use client";
 
 import { usePromotions } from "@/hooks/use-promotions";
-import { PromotionsHeader } from "./promotions-header";
-import { PromotionsTabs } from "./promotions-tabs";
-import { RollbackConfirmDialog } from "../modals/promotions/rollback-confirm-dialog";
 import { ExecutePromotionDialog } from "../modals/promotions/execute-promotion-dialog";
 import { OverridePromotionModal } from "../modals/promotions/override-modal";
+import { RollbackConfirmDialog } from "../modals/promotions/rollback-confirm-dialog";
+import { PromotionsHeader } from "./promotions-header";
+import { PromotionsTabs } from "./promotions-tabs";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -61,7 +61,7 @@ export function PromotionsClient({
     executeConfirmOpen,
     setExecuteConfirmOpen,
     pendingRollbackIds,
-    studentsCount
+    studentsCount,
   } = usePromotions();
 
   return (

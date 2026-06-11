@@ -1,12 +1,19 @@
-import type { Job } from "bullmq";
-import type { CertificateExportData } from "../queue";
-import { getStudentsByClassId, getValidSessionByUserId } from "@orbis/db/queries";
+import { db } from "@orbis/db/client";
+import {
+  getStudentsByClassId,
+  getValidSessionByUserId,
+} from "@orbis/db/queries";
 import { getCertificateTemplateById } from "@orbis/db/queries/certificate-templates";
 import { createDocument } from "@orbis/db/queries/documents";
-import { db } from "@orbis/db/client";
-import { uploadFile } from "@orbis/storage";
 import { logger } from "@orbis/logger";
-import puppeteer, { type Browser, type Page, type PaperFormat } from "puppeteer";
+import { uploadFile } from "@orbis/storage";
+import type { Job } from "bullmq";
+import puppeteer, {
+  type Browser,
+  type Page,
+  type PaperFormat,
+} from "puppeteer";
+import type { CertificateExportData } from "../queue";
 
 // ============================================================
 // Configuration Constants
@@ -58,15 +65,24 @@ const BROWSER_ARGS = [
 // Arabic Constants for Professional Naming
 // ============================================================
 const MONTHS_AR: Record<number, string> = {
-  1: "محرم", 2: "صفر", 3: "ربيع أول", 4: "ربيع ثاني",
-  5: "جمادى أول", 6: "جمادى ثاني", 7: "رجب", 8: "شعبان",
-  9: "رمضان", 10: "شوال", 11: "ذو القعدة", 12: "ذو الحجة",
+  1: "محرم",
+  2: "صفر",
+  3: "ربيع أول",
+  4: "ربيع ثاني",
+  5: "جمادى أول",
+  6: "جمادى ثاني",
+  7: "رجب",
+  8: "شعبان",
+  9: "رمضان",
+  10: "شوال",
+  11: "ذو القعدة",
+  12: "ذو الحجة",
 };
 
 const TYPES_AR: Record<string, string> = {
-  "monthly": "شهري",
+  monthly: "شهري",
   "half-yearly": "نصفي",
-  "final": "نهائي",
+  final: "نهائي",
 };
 
 // Map template paper size to Puppeteer paper format
@@ -82,16 +98,17 @@ const PAPER_DIMENSIONS_MM: Record<string, { width: number; height: number }> = {
   letter: { width: 216, height: 279 },
 };
 
-export async function handleCertificateExport(
-  job: Job<CertificateExportData>
-) {
+export async function handleCertificateExport(job: Job<CertificateExportData>) {
   const startTime = Date.now();
-  const { classIds, userId, templateId, certificateType, selectedMonth } = job.data;
-  
-  logger.info(`[CertExport] Job ${job.id} started. Classes: ${classIds.length}`);
+  const { classIds, userId, templateId, certificateType, selectedMonth } =
+    job.data;
+
+  logger.info(
+    `[CertExport] Job ${job.id} started. Classes: ${classIds.length}`,
+  );
 
   let browser: Browser | undefined;
-  
+
   try {
     // ──────────────────────────────────────────
     // Phase 1: Fetch metadata & Session
@@ -117,20 +134,23 @@ export async function handleCertificateExport(
     // Fetch template to get paper size and orientation from the Unified Content Tree
     let templateSize = "a4";
     let templateOrientation: "portrait" | "landscape" = "portrait";
-    
+
     if (templateId) {
       const templateData = await getCertificateTemplateById(templateId);
       if (templateData) {
         // Best Practice 2026: Extract from Figma-style Content Tree
         const canvasConfig = (templateData as any).content?.canvasConfig;
-        
+
         templateSize = canvasConfig?.size || (templateData as any).size || "a4";
-        templateOrientation = (canvasConfig?.orientation || (templateData as any).orientation || "portrait") as "portrait" | "landscape";
+        templateOrientation = (canvasConfig?.orientation ||
+          (templateData as any).orientation ||
+          "portrait") as "portrait" | "landscape";
       }
     }
-    
+
     const paperFormat = PAPER_FORMAT_MAP[templateSize] || "a4";
-    const paperDims = PAPER_DIMENSIONS_MM[templateSize] || PAPER_DIMENSIONS_MM.a4!;
+    const paperDims =
+      PAPER_DIMENSIONS_MM[templateSize] || PAPER_DIMENSIONS_MM.a4!;
     logger.info(`[CertExport] Paper: ${templateSize} (${templateOrientation})`);
 
     const dashboardUrl = process.env.NEXT_PUBLIC_URL || "http://localhost:3001";
@@ -144,10 +164,12 @@ export async function handleCertificateExport(
       args: BROWSER_ARGS,
       protocolTimeout: PAGE_NAVIGATION_TIMEOUT,
     });
-    
+
     const page = await browser.newPage();
     // Use a real browser user agent to avoid bot detection and ensuring proper rendering quirks
-    await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+    await page.setUserAgent(
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    );
     await page.setViewport({ width: 1200, height: 1600 });
     await setupLogging(page);
     await setupAuth(page, session.token, dashboardUrl);
@@ -155,7 +177,12 @@ export async function handleCertificateExport(
     // ──────────────────────────────────────────
     // Phase 3: Loop Classes & Generate PDFs
     // ──────────────────────────────────────────
-    const generatedFiles: { name: string; buffer: Buffer; classId: number; title: string }[] = [];
+    const generatedFiles: {
+      name: string;
+      buffer: Buffer;
+      classId: number;
+      title: string;
+    }[] = [];
     const isMonthly = certificateType === "monthly";
     const typeLabel = TYPES_AR[certificateType] || certificateType;
     const monthLabel = isMonthly ? MONTHS_AR[selectedMonth] : "";
@@ -165,7 +192,9 @@ export async function handleCertificateExport(
       const classProgress = 10 + (i / classMetadata.length) * 80;
       await job.updateProgress(Math.round(classProgress));
 
-      logger.info(`[CertExport] Processing class: ${cls.name} (${i + 1}/${classMetadata.length})`);
+      logger.info(
+        `[CertExport] Processing class: ${cls.name} (${i + 1}/${classMetadata.length})`,
+      );
 
       // Fetch students for this class
       const students = await getStudentsByClassId(cls.id, 1000, 0);
@@ -191,19 +220,25 @@ export async function handleCertificateExport(
 
       // Render & Capture — Best Practice 2026: Use networkidle0 to ensure all assets are fetched
       // plus our custom readiness signal for data-injection sanity
-      await page.goto(exportUrl, { waitUntil: "networkidle0", timeout: PAGE_NAVIGATION_TIMEOUT });
-      await page.waitForFunction(() => (window as any).isReadyToCapture === true, { 
-        timeout: READY_SIGNAL_TIMEOUT,
-        polling: 500 // Check frequently
+      await page.goto(exportUrl, {
+        waitUntil: "networkidle0",
+        timeout: PAGE_NAVIGATION_TIMEOUT,
       });
+      await page.waitForFunction(
+        () => (window as any).isReadyToCapture === true,
+        {
+          timeout: READY_SIGNAL_TIMEOUT,
+          polling: 500, // Check frequently
+        },
+      );
 
       const pdfBuffer = await page.pdf({
-        width: `${templateOrientation === 'portrait' ? paperDims!.width : paperDims!.height}mm`,
-        height: `${templateOrientation === 'portrait' ? paperDims!.height : paperDims!.width}mm`,
+        width: `${templateOrientation === "portrait" ? paperDims!.width : paperDims!.height}mm`,
+        height: `${templateOrientation === "portrait" ? paperDims!.height : paperDims!.width}mm`,
         printBackground: true,
         margin: { top: "0mm", right: "0mm", bottom: "0mm", left: "0mm" },
         preferCSSPageSize: true,
-        landscape: templateOrientation === 'landscape',
+        landscape: templateOrientation === "landscape",
       });
 
       generatedFiles.push({
@@ -214,7 +249,9 @@ export async function handleCertificateExport(
       });
 
       // Progress within class loop
-      await job.updateProgress(Math.round(classProgress + (1 / classMetadata.length) * 0.5));
+      await job.updateProgress(
+        Math.round(classProgress + (1 / classMetadata.length) * 0.5),
+      );
     }
 
     if (generatedFiles.length === 0) {
@@ -225,12 +262,19 @@ export async function handleCertificateExport(
     // Phase 4: Individual Uploads & ZIP Creation
     // ──────────────────────────────────────────
     await job.updateProgress(90);
-    logger.info(`[CertExport] Uploading ${generatedFiles.length} files and preparing final result...`);
+    logger.info(
+      `[CertExport] Uploading ${generatedFiles.length} files and preparing final result...`,
+    );
 
     // Upload each PDF to S3 & DB for the Vault
     for (const f of generatedFiles) {
       const path = `exports/${userId}/${Date.now()}_${f.name}`;
-      await uploadFile({ bucket: "vault", key: path, file: f.buffer, contentType: "application/pdf" });
+      await uploadFile({
+        bucket: "vault",
+        key: path,
+        file: f.buffer,
+        contentType: "application/pdf",
+      });
       await createDocument({
         name: f.name,
         title: f.title,
@@ -272,7 +316,9 @@ export async function handleCertificateExport(
 
     await job.updateProgress(100);
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-    logger.info(`[CertExport] ✅ Job ${job.id} completed in ${duration}s. Size: ${(finalBuffer.length / 1024).toFixed(0)}KB`);
+    logger.info(
+      `[CertExport] ✅ Job ${job.id} completed in ${duration}s. Size: ${(finalBuffer.length / 1024).toFixed(0)}KB`,
+    );
 
     return {
       success: true,
@@ -281,7 +327,6 @@ export async function handleCertificateExport(
       fileName: finalName,
       fullPath: finalPath,
     };
-
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : "Unknown error";
     logger.error(`[CertExport] ❌ Job ${job.id} failed: ${errMsg}`);
@@ -311,7 +356,10 @@ async function setupLogging(page: Page) {
 async function setupAuth(page: Page, token: string, dashboardUrl: string) {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002";
   const domains = [new URL(dashboardUrl).hostname, new URL(apiUrl).hostname];
-  const cookieNames = ["better-auth.session-token", "better-auth.session_token"];
+  const cookieNames = [
+    "better-auth.session-token",
+    "better-auth.session_token",
+  ];
 
   for (const domain of domains) {
     for (const name of cookieNames) {
@@ -323,13 +371,13 @@ async function setupAuth(page: Page, token: string, dashboardUrl: string) {
         httpOnly: true,
         secure: false,
         sameSite: "Lax",
-        url: domain === "localhost" ? `http://${domain}` : `https://${domain}`
+        url: domain === "localhost" ? `http://${domain}` : `https://${domain}`,
       });
     }
   }
 
   await page.setExtraHTTPHeaders({
-    "Authorization": `Bearer ${token}`,
+    Authorization: `Bearer ${token}`,
     "x-better-auth-session": token,
   });
 }
@@ -337,15 +385,20 @@ async function setupAuth(page: Page, token: string, dashboardUrl: string) {
 /**
  * Create a ZIP buffer from generated files using JSZip
  */
-async function createZipBuffer(files: { name: string; buffer: Buffer }[]): Promise<Buffer> {
+async function createZipBuffer(
+  files: { name: string; buffer: Buffer }[],
+): Promise<Buffer> {
   const JSZip = (await import("jszip")).default;
   const zip = new JSZip();
-  
+
   for (const f of files) {
     zip.file(f.name, f.buffer);
   }
-  
-  const content = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });
+
+  const content = await zip.generateAsync({
+    type: "nodebuffer",
+    compression: "DEFLATE",
+  });
   return content;
 }
 
@@ -361,7 +414,7 @@ async function fetchAllStudents(classIds: string[]) {
     classIds.map(async (id) => {
       const res = await getStudentsByClassId(Number(id), 1000, 0);
       return res || [];
-    })
+    }),
   );
   return results.flat();
 }
@@ -388,7 +441,7 @@ function buildExportUrl(
     templateId?: string;
     certificateType: string;
     selectedMonth: number;
-  }
+  },
 ): string {
   const url = new URL(`${baseUrl}/export/certificate/bulk`);
   url.searchParams.set("studentIds", params.studentIds);
@@ -403,7 +456,7 @@ function buildExportUrl(
   // Warn if URL is getting long (browser limit ~8000 chars)
   if (fullUrl.length > 6000) {
     logger.warn(
-      `[CertExport] URL length is ${fullUrl.length} chars — approaching browser limit`
+      `[CertExport] URL length is ${fullUrl.length} chars — approaching browser limit`,
     );
   }
 
@@ -437,7 +490,7 @@ async function mergePdfBuffers(buffers: Buffer[]): Promise<Buffer> {
 async function captureErrorScreenshot(
   page: Page,
   job: Job,
-  batchIdx: number
+  batchIdx: number,
 ): Promise<void> {
   try {
     const buffer = await page.screenshot({ fullPage: true });
@@ -452,7 +505,7 @@ async function captureErrorScreenshot(
     await job.log(`Error screenshot: ${errorPath}`);
   } catch (snapshotError) {
     logger.error(
-      `[CertExport] Failed to capture error screenshot: ${snapshotError}`
+      `[CertExport] Failed to capture error screenshot: ${snapshotError}`,
     );
   }
 }

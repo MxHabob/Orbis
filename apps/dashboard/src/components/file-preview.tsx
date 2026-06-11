@@ -1,12 +1,12 @@
 "use client";
 
-import { FilePreviewIcon } from "@/components/file-preview-icon";
-import { useFileUrl } from "@/hooks/use-file-url";
 import { cn } from "@orbis/ui/cn";
 import { Icons } from "@orbis/ui/icons";
 import { Skeleton } from "@orbis/ui/skeleton";
 import Image from "next/image";
 import { useState } from "react";
+import { FilePreviewIcon } from "@/components/file-preview-icon";
+import { useFileUrl } from "@/hooks/use-file-url";
 
 type Props = {
   documentId?: string;
@@ -36,13 +36,10 @@ export function FilePreview({
   const [imageError, setImageError] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
 
-  const {
-    url: src,
-    isLoading,
-  } = useFileUrl(
+  const { url: src, isLoading } = useFileUrl(
     documentId
       ? { documentId }
-      : { url: `/api/files/preview?filePath=vault/${filePath}` }
+      : { url: `/api/files/preview?filePath=vault/${filePath}` },
   );
 
   const isPreviewSupported = mimeType.startsWith("image/");

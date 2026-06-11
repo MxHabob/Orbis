@@ -1,8 +1,5 @@
 "use client";
 
-import { useMetricsFilter } from "@/hooks/use-metrics-filter";
-import { useUserQuery } from "@/hooks/use-user";
-import type { PeriodOption } from "@/utils/metrics-date-utils";
 import { Button } from "@orbis/ui/button";
 import { Calendar, CalendarDayButton } from "@orbis/ui/calendar";
 import { cn } from "@orbis/ui/cn";
@@ -25,6 +22,9 @@ import { CheckIcon } from "@radix-ui/react-icons";
 import { format, formatISO, parseISO } from "date-fns";
 import { useState } from "react";
 import type { DateRange } from "react-day-picker";
+import { useMetricsFilter } from "@/hooks/use-metrics-filter";
+import { useUserQuery } from "@/hooks/use-user";
+import type { PeriodOption } from "@/utils/metrics-date-utils";
 
 const PERIOD_OPTIONS: Array<{ value: PeriodOption; label: string }> = [
   { value: "3-months", label: "3 months" },
@@ -37,17 +37,10 @@ const PERIOD_OPTIONS: Array<{ value: PeriodOption; label: string }> = [
   { value: "custom", label: "Custom" },
 ];
 
-
-
 export function MetricsFilter() {
   const { data: user } = useUserQuery();
-  const {
-    period,
-    from,
-    to,
-    updatePeriod,
-    updateDateRange,
-  } = useMetricsFilter();
+  const { period, from, to, updatePeriod, updateDateRange } =
+    useMetricsFilter();
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 

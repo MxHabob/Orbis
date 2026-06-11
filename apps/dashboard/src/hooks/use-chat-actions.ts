@@ -10,7 +10,7 @@ export function useChatId() {
 
 export function useChatActions() {
   const setInput = useChatStore((state) => state.setInput);
-  
+
   const sendMessage = (message: any) => {
     // Placeholder implementation since the actual chat client is missing
     console.log("Sending message:", message);

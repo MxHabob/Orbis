@@ -92,10 +92,12 @@ function VirtualRowInner<TData>({
               }
             }}
           >
-            <div 
+            <div
               className={cn(
                 "overflow-hidden truncate",
-                isCentered ? "flex items-center justify-center h-full w-full" : "w-full"
+                isCentered
+                  ? "flex items-center justify-center h-full w-full"
+                  : "w-full",
               )}
             >
               {flexRender(cell.column.columnDef.cell, cell.getContext())}

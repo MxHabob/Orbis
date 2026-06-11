@@ -20,6 +20,7 @@ import {
   transactionCategories,
   transactions,
 } from "../schema";
+
 // Mock getCashBalance function
 const mockGetCombinedAccountBalance = async () => {
   return { balance: 0, currency: "GBP" };

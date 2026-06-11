@@ -1,7 +1,5 @@
 "use client";
 
-import { useSubjectParams } from "@/hooks/use-subject-params";
-import { useTRPC } from "@/trpc/client";
 import { cn } from "@orbis/ui/cn";
 import {
   Table,
@@ -22,10 +20,9 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import React from "react";
-import {
-  type SubjectsTableMeta,
-  columns,
-} from "./columns";
+import { useSubjectParams } from "@/hooks/use-subject-params";
+import { useTRPC } from "@/trpc/client";
+import { columns, type SubjectsTableMeta } from "./columns";
 import { Header } from "./header";
 
 export function DataTable() {
@@ -33,11 +30,7 @@ export function DataTable() {
   const queryClient = useQueryClient();
   const { setParams } = useSubjectParams();
 
-  const { data } = useSuspenseQuery(
-    trpc.subjects.getAll.queryOptions(),
-  );
-
-
+  const { data } = useSuspenseQuery(trpc.subjects.getAll.queryOptions());
 
   // Get search filter value
   const [searchValue, setSearchValue] = React.useState<string>("");
@@ -45,9 +38,10 @@ export function DataTable() {
   const filteredData = React.useMemo(() => {
     if (!searchValue) return data;
     const searchLower = searchValue.toLowerCase();
-    return data.filter(subject => 
-      subject.name.toLowerCase().includes(searchLower) || 
-      subject.code?.toLowerCase().includes(searchLower)
+    return data.filter(
+      (subject) =>
+        subject.name.toLowerCase().includes(searchLower) ||
+        subject.code?.toLowerCase().includes(searchLower),
     );
   }, [data, searchValue]);
 
@@ -99,7 +93,9 @@ export function DataTable() {
             <TableRow
               className="hover:bg-muted/50 cursor-pointer"
               key={row.id}
-              onClick={() => setParams({ subjectId: row.original.id.toString() })}
+              onClick={() =>
+                setParams({ subjectId: row.original.id.toString() })
+              }
             >
               {row.getVisibleCells().map((cell, index) => (
                 <TableCell

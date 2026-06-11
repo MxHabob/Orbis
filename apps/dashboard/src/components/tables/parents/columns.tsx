@@ -1,4 +1,3 @@
-import { useScopedI18n } from "@/locales/client";
 import type { RouterOutputs } from "@api/trpc/routers/_app";
 import { Avatar, AvatarFallback } from "@orbis/ui/avatar";
 import { Button } from "@orbis/ui/button";
@@ -10,6 +9,7 @@ import {
 } from "@orbis/ui/dropdown-menu";
 import type { ColumnDef, FilterFn, Row } from "@tanstack/react-table";
 import { MoreHorizontal } from "lucide-react";
+import { useScopedI18n } from "@/locales/client";
 
 type ParentUser = RouterOutputs["user"]["getParents"][number];
 
@@ -40,7 +40,9 @@ export const columns: ColumnDef<ParentUser>[] = [
             </AvatarFallback>
           </Avatar>
           <div className="flex flex-col">
-            <span className="font-medium text-sm">{row.original.name || "Parent User"}</span>
+            <span className="font-medium text-sm">
+              {row.original.name || "Parent User"}
+            </span>
             <span className="text-sm text-[#606060]">{row.original.email}</span>
           </div>
         </div>

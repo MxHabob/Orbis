@@ -1,18 +1,17 @@
-import { streamSSE } from "hono/streaming";
 import { getSharedRedisClient } from "@orbis/cache";
 import type { Context } from "hono";
+import { streamSSE } from "hono/streaming";
 
 export const realtimeHandler = async (c: Context) => {
   const user = c.get("user");
-  
+
   if (!user) {
     return c.json({ error: "Unauthorized" }, 401);
   }
   console.log(`[Realtime] Starting SSE stream for user ${user.id}`);
-  
+
   return streamSSE(c, async (stream) => {
     const subscriber = await getSharedRedisClient().duplicate();
-
 
     const channels = [
       `user:${user.id}:notifications`,
@@ -20,15 +19,16 @@ export const realtimeHandler = async (c: Context) => {
       "global:updates",
     ];
 
-
     for (const channel of channels) {
       subscriber.subscribe(channel, (message) => {
-        stream.writeSSE({
-          data: message,
-          event: channel,
-        }).catch((err) => {
-          console.error("[Realtime] Error writing SSE:", err);
-        });
+        stream
+          .writeSSE({
+            data: message,
+            event: channel,
+          })
+          .catch((err) => {
+            console.error("[Realtime] Error writing SSE:", err);
+          });
       });
     }
 

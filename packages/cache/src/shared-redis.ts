@@ -5,7 +5,7 @@ let sharedRedisClient: RedisClient | null = null;
 /**
  * Get or create a shared Redis client instance.
  * This ensures we reuse the same connection for both cache and memory providers.
- * 
+ *
  * For local deployments: Redis runs in Docker on localhost:6379
  * For cloud: Uses REDIS_URL from environment
  */
@@ -18,7 +18,7 @@ export function getSharedRedisClient(): RedisClient {
   if (!redisUrl) {
     console.warn(
       "[Redis] REDIS_URL not set. Cache operations will fail silently. " +
-      "For local deployment, run: docker compose -f docker-compose.local.yml up -d"
+        "For local deployment, run: docker compose -f docker-compose.local.yml up -d",
     );
     // Return a no-op client that won't crash the app
     return createNoOpRedisClient() as any;

@@ -17,8 +17,8 @@ import {
   TooltipTrigger,
 } from "@orbis/ui/tooltip";
 import { Controller, useWatch } from "react-hook-form";
-import { mappableFields, useCsvContext } from "./context";
 import { useI18n } from "@/locales/client";
+import { mappableFields, useCsvContext } from "./context";
 
 export function FieldRow({
   field,
@@ -34,11 +34,11 @@ export function FieldRow({
   const t = useI18n();
   const fields = type ? mappableFields[type] : null;
   const fieldConfig = fields ? (fields as any)[field] : null;
-  
+
   // Mapping field names to translation keys
   const getLabel = (f: string) => {
     if (explicitLabel) return explicitLabel;
-    
+
     const keyMap: Record<string, any> = {
       studentNumber: t("students.student_number"),
       name: t("students.full_name"),
@@ -85,7 +85,9 @@ export function FieldRow({
                   <SelectGroup>
                     <SelectLabel>{label}</SelectLabel>
                     {[
-                      ...(fileColumns?.filter((column) => column != null && column !== "") || []),
+                      ...(fileColumns?.filter(
+                        (column) => column != null && column !== "",
+                      ) || []),
                       ...(controllerField.value && !required ? ["None"] : []),
                     ]?.map((column, index) => {
                       return (
@@ -110,7 +112,11 @@ export function FieldRow({
         <div className="grow whitespace-nowrap text-sm font-normal text-muted-foreground justify-between flex">
           <div className="flex items-center gap-1.5">
             <span>{label}</span>
-            {!required && <span className="text-[10px] text-[#878787] uppercase">({t("common.other")})</span>}
+            {!required && (
+              <span className="text-[10px] text-[#878787] uppercase">
+                ({t("common.other")})
+              </span>
+            )}
           </div>
 
           {description?.trim() && (

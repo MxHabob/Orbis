@@ -1,5 +1,6 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import { authClient } from "@orbis/auth/auth-client";
 import { cn } from "@orbis/ui/cn";
 import {
@@ -11,13 +12,12 @@ import {
 } from "@orbis/ui/form";
 import { Input } from "@orbis/ui/input";
 import { SubmitButton } from "@orbis/ui/submit-button";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "@orbis/ui/use-toast";
+import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useTRPC } from "@/trpc/client";
-import { toast } from "@orbis/ui/use-toast";
-import { Loader2 } from "lucide-react";
 
 const formSchema = z.object({
   email: z.string().email(),
@@ -32,7 +32,9 @@ type Props = {
 
 export function UserAuthForm({ className, mode = "sign-in" }: Props) {
   const [isLoading, setIsLoading] = useState(false);
-  const [accountStatus, setAccountStatus] = useState<"absent" | "exists" | "needs_password" | null>(null);
+  const [accountStatus, setAccountStatus] = useState<
+    "absent" | "exists" | "needs_password" | null
+  >(null);
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -48,12 +50,12 @@ export function UserAuthForm({ className, mode = "sign-in" }: Props) {
   async function handleEmailBlur() {
     const email = form.getValues("email");
     if (!email || !z.string().email().safeParse(email).success) return;
-    
+
     setIsCheckingStatus(true);
     try {
       const result = await trpc.user.getAccountStatus.query({ email });
       setAccountStatus(result.status as any);
-      
+
       if (result.status === "needs_password") {
         toast({
           title: "Account found",
@@ -62,7 +64,8 @@ export function UserAuthForm({ className, mode = "sign-in" }: Props) {
       } else if (result.status === "absent") {
         toast({
           title: "Access Restricted",
-          description: "Only invited users can access this platform. Please contact your administrator.",
+          description:
+            "Only invited users can access this platform. Please contact your administrator.",
           variant: "destructive",
         });
       }
@@ -82,7 +85,8 @@ export function UserAuthForm({ className, mode = "sign-in" }: Props) {
     if (accountStatus === "absent") {
       toast({
         title: "Access Restricted",
-        description: "Your email is not registered. Only invited users can join.",
+        description:
+          "Your email is not registered. Only invited users can join.",
         variant: "destructive",
       });
       return;
@@ -172,7 +176,7 @@ export function UserAuthForm({ className, mode = "sign-in" }: Props) {
               </FormItem>
             )}
           />
-          
+
           {accountStatus !== "needs_password" && (
             <FormField
               control={form.control}

@@ -1,10 +1,10 @@
 "use client";
 
-import { useMetricsCustomize } from "@/hooks/use-metrics-customize";
-import { useOverviewTab } from "@/hooks/use-overview-tab";
 import { Button } from "@orbis/ui/button";
 import { Icons } from "@orbis/ui/icons";
 import { usePathname } from "next/navigation";
+import { useMetricsCustomize } from "@/hooks/use-metrics-customize";
+import { useOverviewTab } from "@/hooks/use-overview-tab";
 import { useIsCustomizing, useWidgetActions } from "./widget-provider";
 
 export function Customize() {
@@ -29,7 +29,8 @@ export function Customize() {
       : widgetsIsCustomizing;
 
   const handleToggle = () => {
-    if (isMetricsTab || true) { // Always toggle metrics for now as it's the main view
+    if (isMetricsTab || true) {
+      // Always toggle metrics for now as it's the main view
       setMetricsCustomizing(!metricsIsCustomizing);
     } else {
       setWidgetsCustomizing(!widgetsIsCustomizing);

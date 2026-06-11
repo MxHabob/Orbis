@@ -1,9 +1,5 @@
 import { useQueryStates } from "nuqs";
-import {
-  createLoader,
-  parseAsArrayOf,
-  parseAsString,
-} from "nuqs/server";
+import { createLoader, parseAsArrayOf, parseAsString } from "nuqs/server";
 
 const classesFilterParamsSchema = {
   q: parseAsString,

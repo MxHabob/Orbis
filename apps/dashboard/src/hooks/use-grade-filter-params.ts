@@ -1,4 +1,4 @@
-import { useQueryStates, parseAsInteger, parseAsString } from "nuqs";
+import { parseAsInteger, parseAsString, useQueryStates } from "nuqs";
 import { createLoader } from "nuqs/server";
 
 export const gradeFilterParamsSchema = {
@@ -22,6 +22,4 @@ export function useGradeFilterParams() {
   };
 }
 
-export const loadGradeFilterParams = createLoader(
-  gradeFilterParamsSchema,
-);
+export const loadGradeFilterParams = createLoader(gradeFilterParamsSchema);

@@ -1,8 +1,5 @@
 "use client";
 
-import { useUserMutation, useUserQuery } from "@/hooks/use-user";
-import { useZodForm } from "@/hooks/use-zod-form";
-import { useI18n } from "@/locales/client";
 import {
   Card,
   CardContent,
@@ -21,6 +18,9 @@ import {
 import { Input } from "@orbis/ui/input";
 import { SubmitButton } from "@orbis/ui/submit-button";
 import { z } from "zod/v3";
+import { useUserMutation, useUserQuery } from "@/hooks/use-user";
+import { useZodForm } from "@/hooks/use-zod-form";
+import { useI18n } from "@/locales/client";
 
 const formSchema = z.object({
   email: z.string().email(),
@@ -76,9 +76,7 @@ export function ChangeEmail() {
           </CardContent>
 
           <CardFooter className="flex justify-between">
-            <div>
-              {t("account.email_primary_notice")}
-            </div>
+            <div>{t("account.email_primary_notice")}</div>
             <SubmitButton
               type="submit"
               isSubmitting={updateUserMutation.isPending}

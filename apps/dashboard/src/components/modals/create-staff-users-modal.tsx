@@ -19,9 +19,12 @@ export function InviteTeamMembersModal({
     <DialogContent className="max-w-[780px]">
       <div className="p-2">
         <DialogHeader className="mb-4">
-          <DialogTitle className="text-xl font-semibold">User Creation</DialogTitle>
+          <DialogTitle className="text-xl font-semibold">
+            User Creation
+          </DialogTitle>
           <DialogDescription>
-            Add new members to your institution by providing their details below.
+            Add new members to your institution by providing their details
+            below.
           </DialogDescription>
         </DialogHeader>
 

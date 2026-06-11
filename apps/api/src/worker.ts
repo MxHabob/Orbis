@@ -3,12 +3,12 @@ import { logger } from "@orbis/logger";
 
 /**
  * API Worker Process
- * 
+ *
  * Runs independently of the Hono API to process background jobs.
  */
 async function main() {
   logger.info("Starting background worker...");
-  
+
   try {
     const worker = startWorker();
 

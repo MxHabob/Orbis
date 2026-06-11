@@ -1,4 +1,3 @@
-
 export const readLines = async (file: File, count = 4): Promise<string> => {
   const reader = file.stream().getReader();
   const decoder = new TextDecoder("utf-8");

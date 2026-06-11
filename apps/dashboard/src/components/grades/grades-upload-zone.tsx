@@ -1,8 +1,5 @@
 "use client";
 
-import { usePendingUploadsStore } from "@/store/pending-uploads";
-import { useTRPC } from "@/trpc/client";
-import { resumableUpload } from "@/utils/upload";
 import { authClient } from "@orbis/auth/auth-client";
 import { cn } from "@orbis/ui/cn";
 import { useToast } from "@orbis/ui/use-toast";
@@ -10,6 +7,9 @@ import { stripSpecialCharacters } from "@orbis/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
+import { usePendingUploadsStore } from "@/store/pending-uploads";
+import { useTRPC } from "@/trpc/client";
+import { resumableUpload } from "@/utils/upload";
 
 // Shared toast ID for coordinating between upload zone and data table
 export const PROCESSING_TOAST_ID = "transactions-processing";
@@ -96,10 +96,6 @@ export function GradesUploadZone({ children }: Props) {
         }),
       );
 
-
-
-
-
       // Reset once done
       uploadProgress.current = [];
 
@@ -118,8 +114,6 @@ export function GradesUploadZone({ children }: Props) {
         duration: Number.POSITIVE_INFINITY, // Persistent until updated
       });
     } catch (error) {
-
-
       setShowProgress(false);
       setToastId(undefined);
       dismiss(toastId);

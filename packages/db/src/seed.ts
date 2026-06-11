@@ -1,7 +1,7 @@
-import { eq, sql, getTableName } from "drizzle-orm";
 import { randomUUID } from "crypto";
-import * as schema from "./schema";
+import { eq, getTableName, sql } from "drizzle-orm";
 import { db } from "./client";
+import * as schema from "./schema";
 
 // ────────────────────────────────────────────────
 // Config
@@ -17,7 +17,7 @@ if (isProduction && !process.env.BYPASS_SEED_PROD_CHECK) {
 // Handle Arguments
 // ────────────────────────────────────────────────
 const args = process.argv.slice(2);
-const yearArg = args.find(arg => arg.startsWith('--'));
+const yearArg = args.find((arg) => arg.startsWith("--"));
 
 // Default year if not provided
 const academicYearInput = yearArg ? yearArg.slice(2) : "2025-2026";
@@ -27,24 +27,29 @@ console.log(`\n🚀 Seeding database for academic year: ${academicYearInput}`);
 // ────────────────────────────────────────────────
 // Seed Academic Years & Terms
 // ────────────────────────────────────────────────
-async function seedAcademicStructure(yearName: string): Promise<{ yearId: number }> {
+async function seedAcademicStructure(
+  yearName: string,
+): Promise<{ yearId: number }> {
   console.log("→ Seeding academic year & terms...");
 
   const startYearMatch = yearName.match(/\d{4}/);
-  const startYear = startYearMatch ? parseInt(startYearMatch[0]) : new Date().getFullYear();
+  const startYear = startYearMatch
+    ? parseInt(startYearMatch[0])
+    : new Date().getFullYear();
   const endYear = startYear + 1;
 
   // Insert Year
-  await db.insert(schema.academicYears)
-    .values({ 
-      yearName, 
+  await db
+    .insert(schema.academicYears)
+    .values({
+      yearName,
       isCurrent: true,
       startDate: `${startYear}-08-20`,
-      endDate: `${endYear}-06-20`
+      endDate: `${endYear}-06-20`,
     })
     .onConflictDoUpdate({
       target: schema.academicYears.yearName,
-      set: { isCurrent: true }
+      set: { isCurrent: true },
     });
 
   const [currentYear] = await db
@@ -74,9 +79,7 @@ async function seedAcademicStructure(yearName: string): Promise<{ yearId: number
   ];
 
   for (const term of terms) {
-    await db.insert(schema.academicTerms)
-      .values(term)
-      .onConflictDoNothing();
+    await db.insert(schema.academicTerms).values(term).onConflictDoNothing();
   }
 
   console.log("✓ Academic structure completed");
@@ -89,13 +92,13 @@ async function seedAcademicStructure(yearName: string): Promise<{ yearId: number
 async function seedSubjects() {
   console.log("→ Seeding subjects...");
   const subjectsData = [
-    { name: "القرآن الكريم",       code: "QUR", color: "#FFD700" }, // Gold
-    { name: "التربية الاسلامية",    code: "ISL", color: "#2E7D32" }, // Green
-    { name: "اللغه العربية",       code: "ARA", color: "#795548" }, // Brown
-    { name: "اللغة الانجليزية",     code: "ENG", color: "#1976D2" }, // Blue
-    { name: "العلوم",              code: "SCI", color: "#7B1FA2" }, // Purple
-    { name: "الرياضيات",           code: "MAT", color: "#E64A19" }, // Deep Orange
-    { name: "الاجتماعيات",         code: "SST", color: "#0097A7" }, // Teal
+    { name: "القرآن الكريم", code: "QUR", color: "#FFD700" }, // Gold
+    { name: "التربية الاسلامية", code: "ISL", color: "#2E7D32" }, // Green
+    { name: "اللغه العربية", code: "ARA", color: "#795548" }, // Brown
+    { name: "اللغة الانجليزية", code: "ENG", color: "#1976D2" }, // Blue
+    { name: "العلوم", code: "SCI", color: "#7B1FA2" }, // Purple
+    { name: "الرياضيات", code: "MAT", color: "#E64A19" }, // Deep Orange
+    { name: "الاجتماعيات", code: "SST", color: "#0097A7" }, // Teal
   ];
 
   await db.insert(schema.subjects).values(subjectsData).onConflictDoNothing();
@@ -108,16 +111,28 @@ async function seedSubjects() {
 async function seedClasses(yearId: number) {
   console.log("→ Seeding grades (1 to 9)...");
   const grades = [
-    "الصف الأول", "الصف الثاني", "الصف الثالث", 
-    "الصف الرابع", "الصف الخامس", "الصف السادس",
-    "الصف السابع", "الصف الثامن", "الصف التاسع"
+    "الصف الأول",
+    "الصف الثاني",
+    "الصف الثالث",
+    "الصف الرابع",
+    "الصف الخامس",
+    "الصف السادس",
+    "الصف السابع",
+    "الصف الثامن",
+    "الصف التاسع",
   ];
 
   // Professional gradient-like palette (HSL based for attractiveness)
   const colors = [
-    "#f44336", "#e91e63", "#9c27b0", 
-    "#673ab7", "#3f51b5", "#2196f3", 
-    "#00bcd4", "#009688", "#4caf50"
+    "#f44336",
+    "#e91e63",
+    "#9c27b0",
+    "#673ab7",
+    "#3f51b5",
+    "#2196f3",
+    "#00bcd4",
+    "#009688",
+    "#4caf50",
   ];
 
   const classesData = grades.map((name, index) => ({
@@ -155,7 +170,6 @@ async function main() {
     console.log("\n" + "=".repeat(60));
     console.log("           Seeding completed successfully ✓");
     console.log("=".repeat(60) + "\n");
-
   } catch (err) {
     console.error("❌ Seeding failed:", err);
     process.exit(1);
@@ -165,4 +179,3 @@ async function main() {
 if (import.meta.main) {
   main();
 }
-

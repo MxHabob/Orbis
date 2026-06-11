@@ -141,22 +141,16 @@ export function translations(locale: string, params?: TranslationParams) {
         "transactions.preview": `${params?.firstName ? `مرحباً ${params?.firstName}، ` : ""}لديك ${
           params?.numberOfTransactions
         } ${
-          params?.numberOfTransactions > 1
-            ? "معاملات جديدة"
-            : "معاملة جديدة"
+          params?.numberOfTransactions > 1 ? "معاملات جديدة" : "معاملة جديدة"
         }`,
         "transactions.title1": "لديك ",
         "transactions.title2": `${params?.numberOfTransactions} ${
-          params?.numberOfTransactions > 1
-            ? "معاملات جديدة"
-            : "معاملة جديدة"
+          params?.numberOfTransactions > 1 ? "معاملات جديدة" : "معاملة جديدة"
         }`,
         "transactions.description1": `${params?.firstName ? `مرحباً ${params?.firstName}` : "مرحباً"}`,
         "transactions.description2": "وجدنا",
         "transactions.description3": `${params?.numberOfTransactions} ${
-          params?.numberOfTransactions > 1
-            ? "معاملات جديدة"
-            : "معاملة جديدة"
+          params?.numberOfTransactions > 1 ? "معاملات جديدة" : "معاملة جديدة"
         }`,
         "transactions.description4": `${params?.teamName ? `لفريقك ${params?.teamName}` : "لحسابك"}. سنقوم بمطابقتها تلقائياً مع الإيصالات في صندوق الوارد، أو يمكنك ببساطة الرد على هذا البريد الإلكتروني بالإيصالات.`,
         "transactions.button": "عرض المعاملات",

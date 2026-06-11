@@ -1,8 +1,8 @@
-import { verifySession } from "../utils/auth";
 import { getFile } from "@orbis/storage";
 import type { Context } from "hono";
 import { stream } from "hono/streaming";
 import type { HonoEnv } from "../utils/auth";
+import { verifySession } from "../utils/auth";
 
 /**
  * Handle file proxying with 2026 Best Practices:
@@ -14,7 +14,7 @@ import type { HonoEnv } from "../utils/auth";
 export async function handleFileProxy(c: Context<HonoEnv>) {
   // EMERGENCY BYPASS: Making images public to resolve Puppeteer rendering issues
   // TODO: Restore authentication with a more robust token system later.
-  const isAuthorized = true; 
+  const isAuthorized = true;
 
   const rawFilePath = c.req.query("filePath");
   if (!rawFilePath) {
@@ -25,28 +25,32 @@ export async function handleFileProxy(c: Context<HonoEnv>) {
 
   // 1. Resolve Path
   const decodedPath = decodeURIComponent(rawFilePath);
-  const cleanPath = decodedPath.startsWith('/') ? decodedPath.slice(1) : decodedPath;
+  const cleanPath = decodedPath.startsWith("/")
+    ? decodedPath.slice(1)
+    : decodedPath;
   const parts = cleanPath.split("/");
-  
+
   // Strategy A: Standard [Bucket, ...Key]
   const firstPart = parts[0];
   const restOfPath = parts.slice(1).join("/");
 
   const tryBuckets = [];
-  
+
   if (firstPart && restOfPath) {
     tryBuckets.push({ bucket: firstPart, key: restOfPath });
   }
-  
+
   // Strategy: Try common patterns based on how files are stored in S3
   tryBuckets.push({ bucket: "avatars", key: `students/${cleanPath}` });
   tryBuckets.push({ bucket: "avatars", key: cleanPath });
   tryBuckets.push({ bucket: "vault", key: cleanPath });
   tryBuckets.push({ bucket: "vault", key: `exports/${cleanPath}` });
-  
+
   const defaultBucket = process.env.S3_BUCKET || "vault";
-  if (!tryBuckets.some(b => b.bucket === defaultBucket && b.key === cleanPath)) {
-      tryBuckets.push({ bucket: defaultBucket, key: cleanPath });
+  if (
+    !tryBuckets.some((b) => b.bucket === defaultBucket && b.key === cleanPath)
+  ) {
+    tryBuckets.push({ bucket: defaultBucket, key: cleanPath });
   }
 
   let lastError: any = null;
@@ -57,16 +61,16 @@ export async function handleFileProxy(c: Context<HonoEnv>) {
   for (const attempt of tryBuckets) {
     try {
       console.log(`[FileProxy] Attempting: ${attempt.bucket}/${attempt.key}`);
-      result = await getFile({ 
-        bucket: attempt.bucket, 
-        key: attempt.key, 
-        range: c.req.header("range") 
+      result = await getFile({
+        bucket: attempt.bucket,
+        key: attempt.key,
+        range: c.req.header("range"),
       });
-      
+
       if (result?.Body) {
         finalBucket = attempt.bucket;
         finalKey = attempt.key;
-        break; 
+        break;
       }
     } catch (err: any) {
       lastError = err;
@@ -77,20 +81,22 @@ export async function handleFileProxy(c: Context<HonoEnv>) {
     // Detect Content-Type if S3 returns generic one
     let contentType = result.ContentType || "application/octet-stream";
     if (contentType === "application/octet-stream" || !contentType) {
-        const ext = finalKey.split('.').pop()?.toLowerCase();
-        const types: Record<string, string> = {
-            'png': 'image/png',
-            'jpg': 'image/jpeg',
-            'jpeg': 'image/jpeg',
-            'webp': 'image/webp',
-            'svg': 'image/svg+xml',
-            'pdf': 'application/pdf',
-            'gif': 'image/gif'
-        };
-        if (ext && types[ext]) contentType = types[ext];
+      const ext = finalKey.split(".").pop()?.toLowerCase();
+      const types: Record<string, string> = {
+        png: "image/png",
+        jpg: "image/jpeg",
+        jpeg: "image/jpeg",
+        webp: "image/webp",
+        svg: "image/svg+xml",
+        pdf: "application/pdf",
+        gif: "image/gif",
+      };
+      if (ext && types[ext]) contentType = types[ext];
     }
 
-    console.log(`[FileProxy] Success: ${finalBucket}/${finalKey} (${result.ContentLength || 'unknown size'}, ${contentType})`);
+    console.log(
+      `[FileProxy] Success: ${finalBucket}/${finalKey} (${result.ContentLength || "unknown size"}, ${contentType})`,
+    );
 
     const headers: Record<string, string> = {
       "Cache-Control": "public, max-age=31536000, immutable",
@@ -99,28 +105,37 @@ export async function handleFileProxy(c: Context<HonoEnv>) {
       "Cross-Origin-Resource-Policy": "cross-origin",
     };
 
-    if (result.ContentLength) headers["Content-Length"] = result.ContentLength.toString();
+    if (result.ContentLength)
+      headers["Content-Length"] = result.ContentLength.toString();
     if (result.ETag) headers["ETag"] = result.ETag;
 
     // Convert S3 Body to a standard Web Stream (Fetch-compatible)
     // This is most reliable for Hono and headless browsers like Puppeteer
     const s3Body = result.Body as any;
-    const bodyStream = typeof s3Body.transformToWebStream === "function" 
-        ? s3Body.transformToWebStream() 
+    const bodyStream =
+      typeof s3Body.transformToWebStream === "function"
+        ? s3Body.transformToWebStream()
         : s3Body;
 
     return c.body(bodyStream, 200, headers);
   }
 
   // If we reach here, all strategies failed
-  console.error(`[FileProxy] All strategies failed for: ${cleanPath}`, lastError);
-  
-  return c.json({ 
-    error: "Storage Error", 
-    message: lastError?.message || "File not found in any known bucket",
-    requestedPath: cleanPath,
-    attempts: tryBuckets.length
-  }, 400, {
-    "Access-Control-Allow-Origin": "*",
-  }); 
+  console.error(
+    `[FileProxy] All strategies failed for: ${cleanPath}`,
+    lastError,
+  );
+
+  return c.json(
+    {
+      error: "Storage Error",
+      message: lastError?.message || "File not found in any known bucket",
+      requestedPath: cleanPath,
+      attempts: tryBuckets.length,
+    },
+    400,
+    {
+      "Access-Control-Allow-Origin": "*",
+    },
+  );
 }

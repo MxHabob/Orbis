@@ -1,13 +1,13 @@
 "use client";
 
-import { useFileUrl } from "@/hooks/use-file-url";
-import { downloadFile } from "@/lib/download";
-import { useTRPC } from "@/trpc/client";
 import { Button } from "@orbis/ui/button";
 import { Icons } from "@orbis/ui/icons";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { useCopyToClipboard } from "usehooks-ts";
+import { useFileUrl } from "@/hooks/use-file-url";
+import { downloadFile } from "@/lib/download";
+import { useTRPC } from "@/trpc/client";
 import { DeleteVaultFileDialog } from "./delete-vault-file-dialog";
 
 type Props = {
@@ -27,8 +27,11 @@ export function VaultItemActions({ id, filePath, hideDelete }: Props) {
     id || filePath
       ? {
           type: "download",
-          documentId: (id) as string,
-          url: !id && filePath ? `${process.env.NEXT_PUBLIC_API_URL}/files/proxy?filePath=vault/${filePath.join("/")}` : undefined,
+          documentId: id as string,
+          url:
+            !id && filePath
+              ? `${process.env.NEXT_PUBLIC_API_URL}/files/proxy?filePath=vault/${filePath.join("/")}`
+              : undefined,
         }
       : null,
   );

@@ -7,7 +7,15 @@ import type {
 /**
  * Table identifiers for all supported tables
  */
-export type TableId = "transactions" | "invoices" | "vault" | "students" | "grades" | "classes" | "reports" | "certificates";
+export type TableId =
+  | "transactions"
+  | "invoices"
+  | "vault"
+  | "students"
+  | "grades"
+  | "classes"
+  | "reports"
+  | "certificates";
 
 /**
  * Settings for a single table

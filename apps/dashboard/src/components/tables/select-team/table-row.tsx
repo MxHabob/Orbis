@@ -1,13 +1,13 @@
 "use client";
 
-import { revalidateAfterTeamChange } from "@/actions/revalidate-action";
-import { useTRPC } from "@/trpc/client";
 import type { RouterOutputs } from "@api/trpc/routers/_app";
 import { Avatar, AvatarFallback, AvatarImageNext } from "@orbis/ui/avatar";
 import { SubmitButton } from "@orbis/ui/submit-button";
 import { TableRow as BaseTableRow, TableCell } from "@orbis/ui/table";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { revalidateAfterTeamChange } from "@/actions/revalidate-action";
+import { useTRPC } from "@/trpc/client";
 
 type Props = {
   row: RouterOutputs["team"]["list"][number];

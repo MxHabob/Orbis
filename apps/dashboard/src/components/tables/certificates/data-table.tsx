@@ -1,31 +1,28 @@
 "use client";
 
+import { closestCenter, DndContext } from "@dnd-kit/core";
+import { Table, TableBody, TableCell, TableRow } from "@orbis/ui/table";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { getCoreRowModel, useReactTable } from "@tanstack/react-table";
+import { useVirtualizer, type VirtualItem } from "@tanstack/react-virtual";
+import { AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef } from "react";
 import { VirtualRow } from "@/components/tables/core";
+import { useCertificateFilterParams } from "@/hooks/use-certificate-filter-params";
 import { useScrollHeader } from "@/hooks/use-scroll-header";
 import { useStickyColumns } from "@/hooks/use-sticky-columns";
 import { useTableDnd } from "@/hooks/use-table-dnd";
 import { useTableScroll } from "@/hooks/use-table-scroll";
 import { useTableSettings } from "@/hooks/use-table-settings";
+import { useReportStore } from "@/store/report";
 import { useTRPC } from "@/trpc/client";
 import { STICKY_COLUMNS } from "@/utils/table-configs";
 import type { TableSettings } from "@/utils/table-settings";
-import { DndContext, closestCenter } from "@dnd-kit/core";
-import { Table, TableBody, TableCell, TableRow } from "@orbis/ui/table";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { getCoreRowModel, useReactTable } from "@tanstack/react-table";
-import { type VirtualItem, useVirtualizer } from "@tanstack/react-virtual";
-
-import { useCallback, useEffect, useRef } from "react";
+import { BottomBar } from "./bottom-bar";
 import { columns } from "./columns";
 import { EmptyState } from "./empty-states";
 import { DataTableHeader } from "./table-header";
-
-import { useReportStore } from "@/store/report";
-import { BottomBar } from "./bottom-bar";
-import { AnimatePresence } from "framer-motion";
-
-import { useCertificateFilterParams } from "@/hooks/use-certificate-filter-params";
-import { useRouter } from "next/navigation";
 
 const NON_CLICKABLE_COLUMNS = new Set(["select", "actions"]);
 
@@ -90,12 +87,9 @@ export function DataTable({ initialSettings }: Props) {
 
   const rows = table.getRowModel().rows;
 
-  const handleCellClick = useCallback(
-    (rowId: string) => {
-      window.open(`/certificates/${rowId}`, "_blank");
-    },
-    [],
-  );
+  const handleCellClick = useCallback((rowId: string) => {
+    window.open(`/certificates/${rowId}`, "_blank");
+  }, []);
 
   useEffect(() => {
     return () => setRowSelection({});
@@ -132,10 +126,14 @@ export function DataTable({ initialSettings }: Props) {
         <div
           ref={(el) => {
             if (parentRef) {
-              (parentRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+              (
+                parentRef as React.MutableRefObject<HTMLDivElement | null>
+              ).current = el;
             }
             if (tableScroll.containerRef) {
-              (tableScroll.containerRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+              (
+                tableScroll.containerRef as React.MutableRefObject<HTMLDivElement | null>
+              ).current = el;
             }
           }}
           className="overflow-auto overscroll-none border-l border-r border-b border-border scrollbar-hide"

@@ -1,35 +1,41 @@
+import {
+  getClassBulkReportData,
+  getClassesV4,
+  getStudentsParentsData,
+} from "@orbis/db/queries";
+import { createDocument } from "@orbis/db/queries/documents";
+import {
+  generateAttendanceFilename,
+  generateAttendanceSheetExport,
+  generateBulkReportFilename,
+  generateClassBulkReportExport,
+  generateControlComparisonSheet,
+  generateControlStaffExport,
+  generateGradesFilename,
+  generateParentsReportFilename,
+  generateSecretGradesExport,
+  generateStudentsParentsExport,
+  generateTeacherGradingSheet,
+} from "@orbis/export";
+import { logger } from "@orbis/logger";
+import { uploadFile } from "@orbis/storage";
 import type { Job } from "bullmq";
 import type { ReportGenerationData } from "../queue";
-import { logger } from "@orbis/logger";
-import { getClassBulkReportData, getClassesV4, getStudentsParentsData } from "@orbis/db/queries";
-import { 
-  generateClassBulkReportExport, 
-  generateAttendanceSheetExport, 
-  generateStudentsParentsExport,
-  generateAttendanceFilename,
-  generateParentsReportFilename,
-  generateBulkReportFilename,
-  generateGradesFilename,
-  generateControlStaffExport,
-  generateSecretGradesExport,
-  generateTeacherGradingSheet,
-  generateControlComparisonSheet
-} from "@orbis/export";
-import { uploadFile } from "@orbis/storage";
-import { createDocument } from "@orbis/db/queries/documents";
 
 export async function handleReportGeneration(job: Job<ReportGenerationData>) {
   const startTime = Date.now();
   const { classId, type, month, monthText, format, userId } = job.data;
   let subjectNameFound: string | undefined;
-  
-  logger.info(`[ReportGen] Job ${job.id} started. Class: ${classId}, Type: ${type}`);
-  
+
+  logger.info(
+    `[ReportGen] Job ${job.id} started. Class: ${classId}, Type: ${type}`,
+  );
+
   try {
     await job.updateProgress(10);
-    
+
     const allClasses = await getClassesV4({ flat: true, limit: 0 });
-    const classData = allClasses.find(c => c.id === classId);
+    const classData = allClasses.find((c) => c.id === classId);
     if (!classData) {
       throw new Error(`لم يتم العثور على الفصل الدراسي`);
     }
@@ -62,7 +68,9 @@ export async function handleReportGeneration(job: Job<ReportGenerationData>) {
       });
     } else if (type === "grades_grid") {
       const { getGradeGridData } = await import("@orbis/db/queries");
-      const { generateGradesExport, generateGradesFilename } = await import("@orbis/export");
+      const { generateGradesExport, generateGradesFilename } = await import(
+        "@orbis/export"
+      );
 
       const data = await getGradeGridData({
         classId: classId,
@@ -76,7 +84,9 @@ export async function handleReportGeneration(job: Job<ReportGenerationData>) {
         const studentGrades: Record<number, number | string | null> = {};
         data.items.forEach((item: any) => {
           const grade = data.grades.find(
-            (g: any) => g.studentId === student.studentId && g.assessmentItemId === item.id
+            (g: any) =>
+              g.studentId === student.studentId &&
+              g.assessmentItemId === item.id,
           );
           studentGrades[item.id] = grade?.score ?? null;
         });
@@ -141,19 +151,26 @@ export async function handleReportGeneration(job: Job<ReportGenerationData>) {
       });
     } else if (type === "control_comparison") {
       const reportType = month === 4 ? "half-yearly" : "final";
-      const bulkData = (await getClassBulkReportData(classId, reportType, month)) as any;
+      const bulkData = (await getClassBulkReportData(
+        classId,
+        reportType,
+        month,
+      )) as any;
 
       const exportData = bulkData.map((s: any) => {
-         const rows = s.reportData?.rows || [];
-         const totalSum = rows.reduce((acc: number, r: any) => acc + (r.total || 0), 0);
-         const average = rows.length > 0 ? totalSum / rows.length : 0;
-         return {
-            studentNumber: s.studentNumber,
-            name: s.name,
-            seatingNumber: s.seatingNumber,
-            secretNumber: s.secretNumber,
-            average: average
-         };
+        const rows = s.reportData?.rows || [];
+        const totalSum = rows.reduce(
+          (acc: number, r: any) => acc + (r.total || 0),
+          0,
+        );
+        const average = rows.length > 0 ? totalSum / rows.length : 0;
+        return {
+          studentNumber: s.studentNumber,
+          name: s.name,
+          seatingNumber: s.seatingNumber,
+          secretNumber: s.secretNumber,
+          average: average,
+        };
       });
 
       buffer = await generateControlComparisonSheet(exportData, {
@@ -163,8 +180,12 @@ export async function handleReportGeneration(job: Job<ReportGenerationData>) {
         format: format,
       });
     } else {
-      const bulkData = await getClassBulkReportData(classId, type as any, month);
-      
+      const bulkData = await getClassBulkReportData(
+        classId,
+        type as any,
+        month,
+      );
+
       await job.updateProgress(50);
 
       buffer = await generateClassBulkReportExport(bulkData as any, {
@@ -189,7 +210,11 @@ export async function handleReportGeneration(job: Job<ReportGenerationData>) {
       filename = generateParentsReportFilename(classData.name, format);
       pdfTitle = `بيانات الطلاب والأهالي - ${classData.name}`;
     } else if (type === "grades_grid") {
-      filename = generateGradesFilename(classData.name, subjectNameFound, format);
+      filename = generateGradesFilename(
+        classData.name,
+        subjectNameFound,
+        format,
+      );
       pdfTitle = `كشف الدرجات - ${classData.name}${subjectNameFound ? ` - ${subjectNameFound}` : ""}`;
     } else if (type === "control_staff") {
       filename = `موظفي_الكنترول_${classData.name}_${new Date().getTime()}.${format}`;
@@ -201,22 +226,35 @@ export async function handleReportGeneration(job: Job<ReportGenerationData>) {
       filename = `كشف_المطابقة_${classData.name}.${format}`;
       pdfTitle = `كشف مطابقة الدرجات - ${classData.name}`;
     } else {
-      filename = generateBulkReportFilename(classData.name, type, format, monthText);
-      const typeText = type === "monthly" ? "شهري" : type === "half-yearly" ? "نصفي" : type === "final" ? "نهائي" : "درجات";
+      filename = generateBulkReportFilename(
+        classData.name,
+        type,
+        format,
+        monthText,
+      );
+      const typeText =
+        type === "monthly"
+          ? "شهري"
+          : type === "half-yearly"
+            ? "نصفي"
+            : type === "final"
+              ? "نهائي"
+              : "درجات";
       pdfTitle = `تقرير درجات ${typeText} - ${classData.name}`;
     }
 
-    const mimeType = format === "xlsx" 
-      ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" 
-      : "text/csv";
+    const mimeType =
+      format === "xlsx"
+        ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        : "text/csv";
 
     // Upload to Vault storage replacing synchronous buffer responses
     const path = `exports/${userId}/${Date.now()}_${filename}`;
-    const uploadResult = await uploadFile({ 
-      bucket: "vault", 
-      key: path, 
-      file: buffer, 
-      contentType: mimeType 
+    const uploadResult = await uploadFile({
+      bucket: "vault",
+      key: path,
+      file: buffer,
+      contentType: mimeType,
     });
 
     // Save metadata in vault documents if appropriate
@@ -234,7 +272,9 @@ export async function handleReportGeneration(job: Job<ReportGenerationData>) {
 
     await job.updateProgress(100);
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-    logger.info(`[ReportGen] ✅ Job ${job.id} completed in ${duration}s. Size: ${(buffer.length / 1024).toFixed(0)}KB`);
+    logger.info(
+      `[ReportGen] ✅ Job ${job.id} completed in ${duration}s. Size: ${(buffer.length / 1024).toFixed(0)}KB`,
+    );
 
     return {
       success: true,
@@ -243,7 +283,6 @@ export async function handleReportGeneration(job: Job<ReportGenerationData>) {
       fullPath: path,
       totalItems: 1, // Represents 1 exported file/report
     };
-
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : "Unknown error";
     logger.error(`[ReportGen] ❌ Job ${job.id} failed: ${errMsg}`);

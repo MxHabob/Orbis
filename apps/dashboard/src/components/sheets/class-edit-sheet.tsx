@@ -1,7 +1,5 @@
 "use client";
 
-import { useClassParams } from "@/hooks/use-class-params";
-import { useTRPC } from "@/trpc/client";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,6 +9,8 @@ import {
 import { Icons } from "@orbis/ui/icons";
 import { Sheet, SheetContent, SheetHeader } from "@orbis/ui/sheet";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useClassParams } from "@/hooks/use-class-params";
+import { useTRPC } from "@/trpc/client";
 import { ClassEditForm } from "../forms/class-edit-form";
 
 export function ClassEditSheet() {
@@ -28,8 +28,6 @@ export function ClassEditSheet() {
       },
     ),
   );
-
-
 
   return (
     <Sheet open={isOpen} onOpenChange={() => setParams(null)}>

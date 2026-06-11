@@ -1,19 +1,19 @@
 "use client";
 
-import { useTRPC } from "@/trpc/client";
+import { Button } from "@orbis/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@orbis/ui/dropdown-menu";
-import { Button } from "@orbis/ui/button";
+import { useToast } from "@orbis/ui/use-toast";
 import { DotsHorizontalIcon } from "@radix-ui/react-icons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@orbis/ui/use-toast";
-import { useRouter } from "next/navigation";
-import { Star, Trash, Edit, Eye } from "lucide-react";
+import { Edit, Eye, Star, Trash } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useTRPC } from "@/trpc/client";
 import type { CertificateTemplate } from "./types";
 
 type Props = {
@@ -37,13 +37,13 @@ export function ActionsMenu({ row }: Props) {
           variant: "success",
         });
       },
-    })
+    }),
   );
 
   const setDefaultMutation = useMutation(
     trpc.certificateTemplates.setDefault.mutationOptions({
       onSuccess: () => {
-         queryClient.invalidateQueries({
+        queryClient.invalidateQueries({
           queryKey: trpc.certificateTemplates.list.queryKey(),
         });
         toast({
@@ -51,7 +51,7 @@ export function ActionsMenu({ row }: Props) {
           variant: "success",
         });
       },
-    })
+    }),
   );
 
   return (
@@ -70,14 +70,16 @@ export function ActionsMenu({ row }: Props) {
               Edit Template
             </Link>
           </DropdownMenuItem>
-          
-          <DropdownMenuItem onClick={() => setDefaultMutation.mutate({ id: row.id })}>
+
+          <DropdownMenuItem
+            onClick={() => setDefaultMutation.mutate({ id: row.id })}
+          >
             <Star className="w-4 h-4 mr-2" />
             Set as Default
           </DropdownMenuItem>
-          
-          <DropdownMenuItem 
-            className="text-destructive focus:text-destructive" 
+
+          <DropdownMenuItem
+            className="text-destructive focus:text-destructive"
             onClick={() => deleteMutation.mutate({ id: row.id })}
           >
             <Trash className="w-4 h-4 mr-2" />

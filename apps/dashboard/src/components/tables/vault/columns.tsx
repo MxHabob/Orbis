@@ -1,5 +1,6 @@
 "use client";
 
+import type { RouterOutputs } from "@api/trpc/routers/_app";
 import { useDocumentFilterParams } from "@/hooks/use-document-filter-params";
 import { useDocumentParams } from "@/hooks/use-document-params";
 import { useFileUrl } from "@/hooks/use-file-url";
@@ -7,14 +8,11 @@ import { downloadFile } from "@/lib/download";
 import { useI18n } from "@/locales/client";
 import { isStaleProcessing } from "@/utils/document";
 import { formatSize } from "@/utils/format";
-import type { RouterOutputs } from "@api/trpc/routers/_app";
+
 const isMimeTypeSupportedForProcessing = (mimetype: string) => {
-  return [
-    "application/pdf",
-    "image/jpeg",
-    "image/png",
-    "image/webp",
-  ].includes(mimetype);
+  return ["application/pdf", "image/jpeg", "image/png", "image/webp"].includes(
+    mimetype,
+  );
 };
 
 import { Badge } from "@orbis/ui/badge";
@@ -34,8 +32,12 @@ import { MoreHorizontal } from "lucide-react";
 import { useState } from "react";
 
 export type Document = RouterOutputs["documents"]["get"]["data"][number];
- 
-const Header = ({ id }: { id: "vault.filename" | "vault.size" | "vault.actions" }) => {
+
+const Header = ({
+  id,
+}: {
+  id: "vault.filename" | "vault.size" | "vault.actions";
+}) => {
   const t = useI18n();
   return <span>{t(id)}</span>;
 };
@@ -57,10 +59,10 @@ function DownloadFileMenuItem({
   );
   const [isDownloading, setIsDownloading] = useState(false);
   const t = useI18n();
- 
+
   const handleDownload = async () => {
     if (!downloadUrl) return;
- 
+
     try {
       setIsDownloading(true);
       await downloadFile(downloadUrl, filename);
@@ -70,7 +72,7 @@ function DownloadFileMenuItem({
       setIsDownloading(false);
     }
   };
- 
+
   return (
     <DropdownMenuItem
       onClick={handleDownload}
@@ -202,7 +204,6 @@ export const columns: ColumnDef<Document>[] = [
     cell: ({ row, table }) => {
       const t = useI18n();
       const { setParams } = useDocumentParams();
-
 
       const mimetype = row.original.metadata?.mimetype as string | undefined;
       const isSupported = mimetype

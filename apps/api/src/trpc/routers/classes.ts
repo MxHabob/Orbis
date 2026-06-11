@@ -1,8 +1,9 @@
+import { createClassSchema, updateClassSchema } from "@api/schemas/classes";
 import {
-  createClassSchema,
-  updateClassSchema,
-} from "@api/schemas/classes";
-import { createTRPCRouter, protectedProcedure, adminProcedure } from "@api/trpc/init";
+  adminProcedure,
+  createTRPCRouter,
+  protectedProcedure,
+} from "@api/trpc/init";
 import {
   createClass,
   deleteClass,

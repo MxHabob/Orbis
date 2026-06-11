@@ -1,14 +1,14 @@
 import { db } from "@db/client";
-import { 
-  students, 
-  users, 
-  classes, 
-  attendanceRecords, 
-  gradeEntries, 
+import {
   academicYears,
-  enrollments
+  attendanceRecords,
+  classes,
+  enrollments,
+  gradeEntries,
+  students,
+  users,
 } from "@db/schema";
-import { eq, sql, and, count, avg, desc, gte, lte } from "drizzle-orm";
+import { and, avg, count, desc, eq, gte, lte, sql } from "drizzle-orm";
 
 export interface MetricFilters {
   from?: string;
@@ -17,7 +17,7 @@ export interface MetricFilters {
 
 export async function getStudentCount(filters?: MetricFilters) {
   const conditions = [eq(students.status, "active")];
-  
+
   // Note: Student count is usually a snapshot, but we can filter by enrollment date if needed
   // if (filters?.from) conditions.push(gte(enrollments.enrolledAt, new Date(filters.from)));
   // if (filters?.to) conditions.push(lte(enrollments.enrolledAt, new Date(filters.to)));
@@ -26,7 +26,7 @@ export async function getStudentCount(filters?: MetricFilters) {
     .select({ count: count() })
     .from(students)
     .where(and(...conditions));
-    
+
   return result?.count || 0;
 }
 
@@ -40,14 +40,14 @@ export async function getTeacherCount(filters?: MetricFilters) {
 
 export async function getAverageAttendanceRate(filters?: MetricFilters) {
   const conditions: any[] = [];
-  
+
   if (filters?.from) conditions.push(gte(attendanceRecords.date, filters.from));
   if (filters?.to) conditions.push(lte(attendanceRecords.date, filters.to));
 
   const [stats] = await db
     .select({
       total: count(),
-      present: sql<number>`sum(case when ${attendanceRecords.status} = 'present' then 1 else 0 end)`
+      present: sql<number>`sum(case when ${attendanceRecords.status} = 'present' then 1 else 0 end)`,
     })
     .from(attendanceRecords)
     .where(conditions.length > 0 ? and(...conditions) : undefined);
@@ -78,14 +78,19 @@ export async function getClassDistribution(filters?: MetricFilters) {
   return db
     .select({
       className: classes.name,
-      studentCount: count(enrollments.id)
+      studentCount: count(enrollments.id),
     })
     .from(classes)
-    .leftJoin(enrollments, and(
-      eq(classes.id, enrollments.classId),
-      eq(enrollments.status, 'active'),
-      currentYear ? eq(enrollments.academicYearId, currentYear.id) : undefined
-    ))
+    .leftJoin(
+      enrollments,
+      and(
+        eq(classes.id, enrollments.classId),
+        eq(enrollments.status, "active"),
+        currentYear
+          ? eq(enrollments.academicYearId, currentYear.id)
+          : undefined,
+      ),
+    )
     .where(sql`${classes.deletedAt} IS NULL`)
     .groupBy(classes.name)
     .orderBy(desc(count(enrollments.id)))
@@ -94,8 +99,10 @@ export async function getClassDistribution(filters?: MetricFilters) {
 
 export async function getRecentEnrolledStudents(filters?: MetricFilters) {
   const conditions: any[] = [];
-  if (filters?.from) conditions.push(gte(enrollments.enrolledAt, new Date(filters.from)));
-  if (filters?.to) conditions.push(lte(enrollments.enrolledAt, new Date(filters.to)));
+  if (filters?.from)
+    conditions.push(gte(enrollments.enrolledAt, new Date(filters.from)));
+  if (filters?.to)
+    conditions.push(lte(enrollments.enrolledAt, new Date(filters.to)));
 
   return db
     .select({
@@ -114,19 +121,19 @@ export async function getRecentEnrolledStudents(filters?: MetricFilters) {
 }
 
 export async function getOverallPerformance(filters?: MetricFilters) {
-  const conditions: any[] = [
-    sql`${gradeEntries.score} is not null`
-  ];
+  const conditions: any[] = [sql`${gradeEntries.score} is not null`];
 
-  if (filters?.from) conditions.push(gte(gradeEntries.updatedAt, new Date(filters.from)));
-  if (filters?.to) conditions.push(lte(gradeEntries.updatedAt, new Date(filters.to)));
+  if (filters?.from)
+    conditions.push(gte(gradeEntries.updatedAt, new Date(filters.from)));
+  if (filters?.to)
+    conditions.push(lte(gradeEntries.updatedAt, new Date(filters.to)));
 
   const [result] = await db
     .select({
-      avgScore: avg(sql<number>`cast(${gradeEntries.score} as float)`)
+      avgScore: avg(sql<number>`cast(${gradeEntries.score} as float)`),
     })
     .from(gradeEntries)
     .where(and(...conditions));
-    
+
   return Math.round(Number(result?.avgScore || 0));
 }

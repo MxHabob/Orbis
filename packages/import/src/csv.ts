@@ -10,7 +10,7 @@ export type ImportCsvOptions = Papa.ParseConfig;
 
 export function parseCsv<T>(
   file: File | string,
-  options?: ImportCsvOptions
+  options?: ImportCsvOptions,
 ): Promise<ImportCsvResult<T>> {
   return new Promise((resolve, reject) => {
     Papa.parse(file, {

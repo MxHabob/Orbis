@@ -1,7 +1,5 @@
 "use client";
 
-import { useUserQuery } from "@/hooks/use-user";
-import { useTRPC } from "@/trpc/client";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,7 +24,9 @@ import { Label } from "@orbis/ui/label";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useUserQuery } from "@/hooks/use-user";
 import { useI18n } from "@/locales/client";
+import { useTRPC } from "@/trpc/client";
 
 export function DeleteTeam() {
   const [value, setValue] = useState("");
@@ -34,7 +34,6 @@ export function DeleteTeam() {
   const { data: user } = useUserQuery();
   const router = useRouter();
   const t = useI18n();
-
 
   return (
     <Card className="border-destructive">
@@ -58,19 +57,25 @@ export function DeleteTeam() {
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>{t("settings.delete_team_confirm_title")}</AlertDialogTitle>
+              <AlertDialogTitle>
+                {t("settings.delete_team_confirm_title")}
+              </AlertDialogTitle>
               <AlertDialogDescription asChild>
                 <div>
-                  <p>
-                    {t("settings.delete_team_confirm_description")}
-                  </p>
+                  <p>{t("settings.delete_team_confirm_description")}</p>
                 </div>
               </AlertDialogDescription>
             </AlertDialogHeader>
 
             <div className="flex flex-col gap-2 mt-2">
               <Label htmlFor="confirm-delete">
-                <span dangerouslySetInnerHTML={{ __html: t("settings.delete_team_input_label", { delete: `<span class="font-medium">DELETE</span>` }) }} />
+                <span
+                  dangerouslySetInnerHTML={{
+                    __html: t("settings.delete_team_input_label", {
+                      delete: `<span class="font-medium">DELETE</span>`,
+                    }),
+                  }}
+                />
               </Label>
               <Input
                 id="confirm-delete"
@@ -81,9 +86,7 @@ export function DeleteTeam() {
 
             <AlertDialogFooter>
               <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-              <AlertDialogAction
-                disabled={value !== "DELETE"}
-              >
+              <AlertDialogAction disabled={value !== "DELETE"}>
                 {value !== "DELETE" ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (

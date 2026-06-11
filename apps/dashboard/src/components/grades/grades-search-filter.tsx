@@ -1,6 +1,5 @@
 "use client";
 
-import { useTRPC } from "@/trpc/client";
 import { cn } from "@orbis/ui/cn";
 import {
   DropdownMenu,
@@ -20,6 +19,7 @@ import { useEffect, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useGradeFilterParams } from "@/hooks/use-grade-filter-params";
 import { useI18n } from "@/locales/client";
+import { useTRPC } from "@/trpc/client";
 
 interface FilterMenuItemProps {
   icon: (typeof Icons)[keyof typeof Icons];
@@ -37,8 +37,7 @@ interface FilterCheckboxItemProps {
 
 import { HIJRI_MONTHS } from "@/utils/academic-calendar";
 
-const months = HIJRI_MONTHS.map(m => ({ id: m.id, name: m.label }));
-
+const months = HIJRI_MONTHS.map((m) => ({ id: m.id, name: m.label }));
 
 function FilterMenuItem({ icon: Icon, label, children }: FilterMenuItemProps) {
   return (
@@ -95,11 +94,13 @@ export function GradesSearchFilter() {
   const { data: terms } = useQuery(
     trpc.academic.getTerms.queryOptions(
       { yearId: filter.yearId ?? 0 },
-      { enabled: !!filter.yearId }
-    )
+      { enabled: !!filter.yearId },
+    ),
   );
   const { data: classes } = useQuery(
-    trpc.classes.getAll.queryOptions({ academicYearId: filter.yearId ?? undefined })
+    trpc.classes.getAll.queryOptions({
+      academicYearId: filter.yearId ?? undefined,
+    }),
   );
   const { data: subjects } = useQuery(trpc.subjects.getAll.queryOptions());
 
@@ -117,7 +118,7 @@ export function GradesSearchFilter() {
     {
       enableOnFormTags: true,
       enabled: Boolean(input) && isFocused,
-    }
+    },
   );
 
   useHotkeys("meta+s", (evt) => {
@@ -137,10 +138,7 @@ export function GradesSearchFilter() {
 
   return (
     <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0 items-stretch sm:items-center w-full md:w-auto">
-      <form
-        className="relative flex-1 sm:flex-initial"
-        onSubmit={handleSubmit}
-      >
+      <form className="relative flex-1 sm:flex-initial" onSubmit={handleSubmit}>
         <Icons.Search className="absolute pointer-events-none left-3 top-[11px]" />
         <Input
           ref={inputRef}
@@ -164,7 +162,7 @@ export function GradesSearchFilter() {
               className={cn(
                 "absolute z-10 right-3 top-[10px] opacity-50 transition-opacity duration-300 hover:opacity-100",
                 hasFilters && "opacity-100",
-                isOpen && "opacity-100"
+                isOpen && "opacity-100",
               )}
             >
               <Icons.Filter />
@@ -186,7 +184,10 @@ export function GradesSearchFilter() {
                     name={year.yearName}
                     checked={filter.yearId === year.id}
                     onCheckedChange={() =>
-                      setFilter({ yearId: filter.yearId === year.id ? null : year.id, termId: null })
+                      setFilter({
+                        yearId: filter.yearId === year.id ? null : year.id,
+                        termId: null,
+                      })
                     }
                   />
                 ))}
@@ -202,12 +203,16 @@ export function GradesSearchFilter() {
                     name={term.name}
                     checked={filter.termId === term.id}
                     onCheckedChange={() =>
-                      setFilter({ termId: filter.termId === term.id ? null : term.id })
+                      setFilter({
+                        termId: filter.termId === term.id ? null : term.id,
+                      })
                     }
                   />
                 ))}
                 {!filter.yearId && (
-                   <p className="text-[10px] text-muted-foreground p-2 text-center">Select year first</p>
+                  <p className="text-[10px] text-muted-foreground p-2 text-center">
+                    Select year first
+                  </p>
                 )}
               </div>
             </FilterMenuItem>
@@ -221,7 +226,10 @@ export function GradesSearchFilter() {
                     name={`${c.name} ${c.division ? `- ${c.division}` : ""}`}
                     checked={filter.selectedClassId === c.id}
                     onCheckedChange={() =>
-                      setFilter({ selectedClassId: filter.selectedClassId === c.id ? null : c.id })
+                      setFilter({
+                        selectedClassId:
+                          filter.selectedClassId === c.id ? null : c.id,
+                      })
                     }
                   />
                 ))}
@@ -237,7 +245,12 @@ export function GradesSearchFilter() {
                     name={subject.name}
                     checked={filter.selectedSubjectId === subject.id}
                     onCheckedChange={() =>
-                      setFilter({ selectedSubjectId: filter.selectedSubjectId === subject.id ? null : subject.id })
+                      setFilter({
+                        selectedSubjectId:
+                          filter.selectedSubjectId === subject.id
+                            ? null
+                            : subject.id,
+                      })
                     }
                   />
                 ))}
@@ -253,7 +266,9 @@ export function GradesSearchFilter() {
                     name={month.name}
                     checked={filter.month === month.id}
                     onCheckedChange={() =>
-                      setFilter({ month: filter.month === month.id ? null : month.id })
+                      setFilter({
+                        month: filter.month === month.id ? null : month.id,
+                      })
                     }
                   />
                 ))}

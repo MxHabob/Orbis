@@ -1,10 +1,10 @@
-import type { CalendarEvent } from "@/actions/get-calendar-events-action";
 // import type { RouterOutputs } from "@api/trpc/routers/_app";
 import { TZDate } from "@date-fns/tz";
 import { cn } from "@orbis/ui/cn";
 import { format, formatISO, isToday } from "date-fns";
 import type React from "react";
 import { useCallback } from "react";
+import type { CalendarEvent } from "@/actions/get-calendar-events-action";
 import { TrackerEvents } from "./events";
 import {
   checkIsFirstSelectedDate,

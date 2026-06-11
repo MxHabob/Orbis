@@ -1,5 +1,11 @@
 "use client";
 
+import {
+  downloadBase64,
+  exportToCsv,
+  generateCanvasPdf,
+  parseCsv,
+} from "@orbis/export";
 import { Button } from "@orbis/ui/button";
 import {
   DropdownMenu,
@@ -13,17 +19,21 @@ import {
   DropdownMenuTrigger,
 } from "@orbis/ui/dropdown-menu";
 import { Icons } from "@orbis/ui/icons";
-import { parseAsBoolean, parseAsString, parseAsInteger, useQueryStates } from "nuqs";
-import { useGradeFilterParams } from "@/hooks/use-grade-filter-params";
-import { useTRPC } from "@/trpc/client";
 import { useToast } from "@orbis/ui/use-toast";
-import { useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
-import { exportToCsv, parseCsv, generateCanvasPdf, downloadBase64 } from "@orbis/export";
+import {
+  parseAsBoolean,
+  parseAsInteger,
+  parseAsString,
+  useQueryStates,
+} from "nuqs";
+import { useRef, useState } from "react";
+import { useGradeFilterParams } from "@/hooks/use-grade-filter-params";
 import { useI18n } from "@/locales/client";
-import { invalidateGradesDomain } from "@/utils/query-invalidation";
 import { useExportStore } from "@/store/export";
+import { useTRPC } from "@/trpc/client";
+import { invalidateGradesDomain } from "@/utils/query-invalidation";
 
 export function GradesActions() {
   const [_, setParams] = useQueryStates({
@@ -41,13 +51,14 @@ export function GradesActions() {
     initialize_month: parseAsInteger,
     hide: parseAsBoolean,
   });
-  
+
   const t = useI18n();
 
   const { filter } = useGradeFilterParams();
   const trpc = useTRPC();
-  const { setExportData, setIsExporting: setGlobalExporting } = useExportStore();
-  const queryClient = useQueryClient(); 
+  const { setExportData, setIsExporting: setGlobalExporting } =
+    useExportStore();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isExporting, setIsExporting] = useState(false);
@@ -84,7 +95,7 @@ export function GradesActions() {
           variant: "destructive",
         });
       },
-    })
+    }),
   );
 
   const exportMutation = useMutation(
@@ -101,7 +112,7 @@ export function GradesActions() {
         });
       },
       onSettled: () => setIsExporting(false),
-    })
+    }),
   );
 
   const handleExport = async (format: "xlsx" | "csv") => {
@@ -139,7 +150,7 @@ export function GradesActions() {
     try {
       await generateCanvasPdf({
         filename: `grades_report_${new Date().toISOString().split("T")[0]}.pdf`,
-        selector: "[data-canvas-content]" 
+        selector: "[data-canvas-content]",
       });
 
       toast({
@@ -159,10 +170,12 @@ export function GradesActions() {
   };
 
   const handleImportClick = () => {
-     fileInputRef.current?.click();
+    fileInputRef.current?.click();
   };
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -181,8 +194,9 @@ export function GradesActions() {
     ) {
       toast({
         title: "Error",
-        description: "Please ensure all filters are selected to match the context.",
-        variant: "destructive", 
+        description:
+          "Please ensure all filters are selected to match the context.",
+        variant: "destructive",
       });
       return;
     }
@@ -198,7 +212,7 @@ export function GradesActions() {
           termId,
           month,
           academicYearId: yearId,
-        })
+        }),
       );
 
       const { data, meta } = await parseCsv<any>(file);
@@ -212,68 +226,74 @@ export function GradesActions() {
       // Identify assessment columns from headers
       const assessmentColumns: { name: string; id: number }[] = [];
       meta.fields?.forEach((field) => {
-          const match = field.match(/.*\(ID:\s*(\d+)\)/);
-          if (match && match[1]) {
-            assessmentColumns.push({
-                name: field,
-                id: parseInt(match[1], 10)
-            });
-          }
+        const match = field.match(/.*\(ID:\s*(\d+)\)/);
+        if (match && match[1]) {
+          assessmentColumns.push({
+            name: field,
+            id: parseInt(match[1], 10),
+          });
+        }
       });
 
       if (assessmentColumns.length === 0) {
-          toast({
-            title: "Invalid Format",
-            description: "Could not find any assessment columns with ID format e.g. 'Quiz (ID: 123)'",
-            variant: "destructive"
-          });
-          setIsImporting(false);
-          return;
+        toast({
+          title: "Invalid Format",
+          description:
+            "Could not find any assessment columns with ID format e.g. 'Quiz (ID: 123)'",
+          variant: "destructive",
+        });
+        setIsImporting(false);
+        return;
       }
 
       // Process rows
       data.forEach((row) => {
-          const studentNumber = row["Student Number"];
-          if (!studentNumber) return;
+        const studentNumber = row["Student Number"];
+        if (!studentNumber) return;
 
-          // Find student ID
-          const student = currentData.students.find(s => s.studentNumber === studentNumber);
-          if (!student) return; // Skip unknown students
+        // Find student ID
+        const student = currentData.students.find(
+          (s) => s.studentNumber === studentNumber,
+        );
+        if (!student) return; // Skip unknown students
 
-          assessmentColumns.forEach(col => {
-            const scoreVal = row[col.name];
-            if (scoreVal !== undefined && scoreVal !== null && scoreVal !== "") {
-                const scoreNum = parseFloat(scoreVal);
-                if (!isNaN(scoreNum)) {
-                  gradesToUpsert.push({
-                    studentId: student.studentId,
-                    assessmentItemId: col.id,
-                    score: scoreNum
-                  });
-                }
+        assessmentColumns.forEach((col) => {
+          const scoreVal = row[col.name];
+          if (scoreVal !== undefined && scoreVal !== null && scoreVal !== "") {
+            const scoreNum = parseFloat(scoreVal);
+            if (!isNaN(scoreNum)) {
+              gradesToUpsert.push({
+                studentId: student.studentId,
+                assessmentItemId: col.id,
+                score: scoreNum,
+              });
             }
-          });
+          }
+        });
       });
 
       if (gradesToUpsert.length > 0) {
-          batchUpsertMutation.mutate({ grades: gradesToUpsert }, {
-            onSettled: () => setIsImporting(false)
-          });
+        batchUpsertMutation.mutate(
+          { grades: gradesToUpsert },
+          {
+            onSettled: () => setIsImporting(false),
+          },
+        );
       } else {
-          toast({
-            title: "No Data",
-            description: "No valid grades found to import.",
-            variant: "default" 
-          });
-          setIsImporting(false);
-      }
-    } catch (e: any) {
         toast({
-           title: "Error",
-           description: e.message,
-           variant: "destructive"
+          title: "No Data",
+          description: "No valid grades found to import.",
+          variant: "default",
         });
         setIsImporting(false);
+      }
+    } catch (e: any) {
+      toast({
+        title: "Error",
+        description: e.message,
+        variant: "destructive",
+      });
+      setIsImporting(false);
     }
   };
 
@@ -287,22 +307,32 @@ export function GradesActions() {
         onChange={handleFileChange}
       />
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon" disabled={isExporting || isImporting || batchUpsertMutation.isPending}>
-          {isExporting || isImporting || batchUpsertMutation.isPending ? <Loader2 className="animate-spin" size={17} /> : <Icons.Add size={17} />}
+        <Button
+          variant="outline"
+          size="icon"
+          disabled={isExporting || isImporting || batchUpsertMutation.isPending}
+        >
+          {isExporting || isImporting || batchUpsertMutation.isPending ? (
+            <Loader2 className="animate-spin" size={17} />
+          ) : (
+            <Icons.Add size={17} />
+          )}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent sideOffset={10} align="end">
         <DropdownMenuItem
-          onClick={() => setParams({ 
-            step: "import", 
-            type: "grades",
-            import_classId: filter.selectedClassId?.toString() ?? null,
-            import_yearId: filter.yearId?.toString() ?? null,
-            import_subjectId: filter.selectedSubjectId?.toString() ?? null,
-            import_termId: filter.termId?.toString() ?? null,
-            import_month: filter.month ?? null,
-            import_assessmentId: null // Reset this as it might be old
-          })}
+          onClick={() =>
+            setParams({
+              step: "import",
+              type: "grades",
+              import_classId: filter.selectedClassId?.toString() ?? null,
+              import_yearId: filter.yearId?.toString() ?? null,
+              import_subjectId: filter.selectedSubjectId?.toString() ?? null,
+              import_termId: filter.termId?.toString() ?? null,
+              import_month: filter.month ?? null,
+              import_assessmentId: null, // Reset this as it might be old
+            })
+          }
           className="space-x-2"
         >
           <Icons.Import size={18} />
@@ -310,19 +340,21 @@ export function GradesActions() {
         </DropdownMenuItem>
 
         <DropdownMenuItem
-          onClick={() => setParams({ 
-            step: "initialize_assessments", 
-            initialize_classId: filter.selectedClassId,
-            initialize_subjectId: filter.selectedSubjectId,
-            initialize_termId: filter.termId,
-            initialize_month: filter.month,
-          })}
+          onClick={() =>
+            setParams({
+              step: "initialize_assessments",
+              initialize_classId: filter.selectedClassId,
+              initialize_subjectId: filter.selectedSubjectId,
+              initialize_termId: filter.termId,
+              initialize_month: filter.month,
+            })
+          }
           className="space-x-2 text-primary"
         >
           <Icons.Add size={18} />
           <span>{t("grades.initialize_assessments")}</span>
         </DropdownMenuItem>
-        
+
         {/* Helper for receipts if needed, keeping generic */}
         <DropdownMenuItem
           onClick={() =>
@@ -342,14 +374,14 @@ export function GradesActions() {
             </DropdownMenuSubTrigger>
             <DropdownMenuPortal>
               <DropdownMenuSubContent sideOffset={14} alignOffset={-4}>
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   className="space-x-2 cursor-pointer"
                   onClick={() => handleExport("xlsx")}
                 >
                   <Icons.FolderZip size={18} />
                   <span>Excel (XLSX)</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   className="space-x-2 cursor-pointer"
                   onClick={handlePdfExport}
                 >

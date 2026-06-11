@@ -3,12 +3,15 @@
 /* Root tokens mapped to system variables */
 .certificate-editor-root {
   --editor-bg: hsl(var(--background));
-  --panel-bg: hsl(var(--background) / 0.85); /* Slightly transparent for depth */
+  --panel-bg: hsl(
+    var(--background) /
+    0.85
+  ); /* Slightly transparent for depth */
   --panel-border: hsl(var(--border));
   --accent: hsl(var(--primary));
   --accent-foreground: hsl(var(--primary-foreground));
   --glass-blur: 12px;
-  
+
   font-family: inherit; /* Use global Inter */
   background-color: var(--editor-bg);
   color: hsl(var(--foreground));
@@ -49,7 +52,10 @@
 /* Canvas Styling */
 .canvas-grid {
   pointer-events: none;
-  background-image: radial-gradient(hsl(var(--border) / 0.5) 1px, transparent 1px);
+  background-image: radial-gradient(
+    hsl(var(--border) / 0.5) 1px,
+    transparent 1px
+  );
   background-size: 24px 24px;
 }
 

@@ -1,10 +1,10 @@
 "use client";
 
-import { useDocumentParams } from "@/hooks/use-document-params";
-import { formatSize } from "@/utils/format";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { X } from "lucide-react";
+import { useDocumentParams } from "@/hooks/use-document-params";
+import { formatSize } from "@/utils/format";
 import { FilePreview } from "./file-preview";
 
 export type Attachment = {

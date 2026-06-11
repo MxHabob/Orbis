@@ -1,8 +1,8 @@
 "use client";
 
-import { TableSkeleton } from "@/components/tables/core";
 import type { ColumnSizingState, VisibilityState } from "@tanstack/react-table";
-import { createGradeColumns, type AssessmentItem } from "./columns";
+import { TableSkeleton } from "@/components/tables/core";
+import { type AssessmentItem, createGradeColumns } from "./columns";
 
 interface GradesSkeletonProps {
   items?: AssessmentItem[];

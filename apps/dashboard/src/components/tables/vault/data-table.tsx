@@ -1,5 +1,18 @@
 "use client";
 
+import { closestCenter, DndContext } from "@dnd-kit/core";
+import { Table, TableBody, TableCell, TableRow } from "@orbis/ui/table";
+import { toast } from "@orbis/ui/use-toast";
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseInfiniteQuery,
+} from "@tanstack/react-query";
+import { getCoreRowModel, useReactTable } from "@tanstack/react-table";
+import { useVirtualizer, type VirtualItem } from "@tanstack/react-virtual";
+import { AnimatePresence } from "framer-motion";
+import { useCallback, useMemo, useRef } from "react";
+import { useDebounceCallback } from "usehooks-ts";
 import { VirtualRow } from "@/components/tables/core";
 import { NoResults } from "@/components/vault/empty-states";
 import { VaultGetStarted } from "@/components/vault/vault-get-started";
@@ -13,27 +26,14 @@ import { useTableDnd } from "@/hooks/use-table-dnd";
 import { useTableScroll } from "@/hooks/use-table-scroll";
 import { useTableSettings } from "@/hooks/use-table-settings";
 import { useUserQuery } from "@/hooks/use-user";
+import { useI18n } from "@/locales/client";
 import { useDocumentsStore } from "@/store/vault";
 import { useTRPC } from "@/trpc/client";
 import { STICKY_COLUMNS } from "@/utils/table-configs";
 import type { TableSettings } from "@/utils/table-settings";
-import { DndContext, closestCenter } from "@dnd-kit/core";
-import { Table, TableBody, TableCell, TableRow } from "@orbis/ui/table";
-import { toast } from "@orbis/ui/use-toast";
-import {
-  useMutation,
-  useQueryClient,
-  useSuspenseInfiniteQuery,
-} from "@tanstack/react-query";
-import { getCoreRowModel, useReactTable } from "@tanstack/react-table";
-import { type VirtualItem, useVirtualizer } from "@tanstack/react-virtual";
-import { AnimatePresence } from "framer-motion";
-import { useCallback, useMemo, useRef } from "react";
-import { useDebounceCallback } from "usehooks-ts";
 import { BottomBar } from "./bottom-bar";
 import { columns } from "./columns";
 import { DataTableHeader } from "./data-table-header";
-import { useI18n } from "@/locales/client";
 
 // Stable reference for non-clickable columns (avoids recreation on each render)
 const NON_CLICKABLE_COLUMNS = new Set(["select", "actions"]);
@@ -158,13 +158,10 @@ export function DataTable({ initialSettings }: Props) {
     [deleteDocumentMutation],
   );
 
-  const handleShare = useCallback(
-    (filePath: string[]) => {
-      // Placeholder for share functionality
-      console.log("Share", filePath);
-    },
-    [],
-  );
+  const handleShare = useCallback((filePath: string[]) => {
+    // Placeholder for share functionality
+    console.log("Share", filePath);
+  }, []);
 
   const handleReprocess = useCallback(
     (id: string) => {

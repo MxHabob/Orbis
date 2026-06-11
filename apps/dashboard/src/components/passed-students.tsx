@@ -1,24 +1,25 @@
 "use client";
 
-import { useTRPC } from "@/trpc/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@orbis/ui/card";
 import NumberFlow from "@number-flow/react";
+import { Card, CardContent, CardHeader, CardTitle } from "@orbis/ui/card";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
-
 import { useCustomerFilterParams } from "@/hooks/use-customer-filter-params";
+import { useTRPC } from "@/trpc/client";
 
 export function PassedStudents() {
   const params = useParams();
   const classId = params.Id as string;
   const trpc = useTRPC();
   const { filter } = useCustomerFilterParams();
-  const academicYearId = filter.academicYearId ? Number(filter.academicYearId) : undefined;
-  
+  const academicYearId = filter.academicYearId
+    ? Number(filter.academicYearId)
+    : undefined;
+
   const { data } = useSuspenseQuery(
-    trpc.grades.getClassStatistics.queryOptions({ 
+    trpc.grades.getClassStatistics.queryOptions({
       classId,
-      academicYearId
+      academicYearId,
     }),
   );
 

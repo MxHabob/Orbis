@@ -1,8 +1,16 @@
 "use client";
 
+import { closestCenter, DndContext } from "@dnd-kit/core";
+import { authClient } from "@orbis/auth/auth-client";
+import { Table, TableBody, TableCell, TableRow } from "@orbis/ui/table";
+import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
+import { getCoreRowModel, useReactTable } from "@tanstack/react-table";
+import { useVirtualizer, type VirtualItem } from "@tanstack/react-virtual";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { VirtualRow } from "@/components/tables/core";
-import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { useClassesFilterParams } from "@/hooks/use-classes-filter-params";
+import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { useScrollHeader } from "@/hooks/use-scroll-header";
 import { useSortParams } from "@/hooks/use-sort-params";
 import { useStickyColumns } from "@/hooks/use-sticky-columns";
@@ -13,18 +21,10 @@ import { useReportStore } from "@/store/report";
 import { useTRPC } from "@/trpc/client";
 import { STICKY_COLUMNS, SUMMARY_GRID_HEIGHTS } from "@/utils/table-configs";
 import type { TableSettings } from "@/utils/table-settings";
-import { DndContext, closestCenter } from "@dnd-kit/core";
-import { Table, TableBody, TableCell, TableRow } from "@orbis/ui/table";
-import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
-import { getCoreRowModel, useReactTable } from "@tanstack/react-table";
-import { type VirtualItem, useVirtualizer } from "@tanstack/react-virtual";
-import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { BottomBar } from "./bottom-bar";
 import { columns } from "./columns";
 import { EmptyState, NoResults } from "./empty-states";
 import { DataTableHeader } from "./table-header";
-import { authClient } from "@orbis/auth/auth-client";
-import { BottomBar } from "./bottom-bar";
 
 // Stable reference for non-clickable columns (avoids recreation on each render)
 const NON_CLICKABLE_COLUMNS = new Set(["select", "actions"]);
@@ -62,7 +62,9 @@ export function DataTable({ initialSettings }: Props) {
     {
       sort: params.sort,
       ...filter,
-      academicYearId: filter.academicYearId ? Number(filter.academicYearId) : undefined,
+      academicYearId: filter.academicYearId
+        ? Number(filter.academicYearId)
+        : undefined,
     },
     {
       getNextPageParam: (lastPage) => lastPage.meta.cursor,
@@ -78,10 +80,10 @@ export function DataTable({ initialSettings }: Props) {
 
   // Memoize table meta
   // const tableMeta = useMemo(
-    //   () => ({
-      //     dateFormat: session?.user?.dateFormat,
-      //     timeFormat: session?.user?.timeFormat,
-      //   }),
+  //   () => ({
+  //     dateFormat: session?.user?.dateFormat,
+  //     timeFormat: session?.user?.timeFormat,
+  //   }),
   //   [session?.user?.dateFormat, session?.user?.timeFormat],
   // );
 

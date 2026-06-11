@@ -1,14 +1,14 @@
 "use client";
 
-import { useConnectParams } from "@/hooks/use-connect-params";
-import { useInitialConnectionStatus } from "@/hooks/use-initial-connection-status";
 import { Button } from "@orbis/ui/button";
 import { cn } from "@orbis/ui/cn";
 import { useQueryClient } from "@tanstack/react-query";
-import { useTheme } from "next-themes";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
+import { useConnectParams } from "@/hooks/use-connect-params";
+import { useInitialConnectionStatus } from "@/hooks/use-initial-connection-status";
 
 const Lottie = dynamic(() => import("lottie-react"), {
   ssr: false,

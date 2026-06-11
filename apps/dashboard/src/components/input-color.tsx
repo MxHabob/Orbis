@@ -1,6 +1,6 @@
-import { getColorFromName, getRandomColor } from "@/utils/categories";
 import { Input } from "@orbis/ui/input";
 import { useState } from "react";
+import { getColorFromName, getRandomColor } from "@/utils/categories";
 import { ColorPicker } from "./color-picker";
 
 type Props = {

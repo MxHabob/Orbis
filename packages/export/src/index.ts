@@ -1,8 +1,8 @@
-
 import { saveAs } from "file-saver";
-import Papa from "papaparse";
 import html2canvas from "html2canvas";
-import { type jsPDF } from "jspdf";
+import type { jsPDF } from "jspdf";
+import Papa from "papaparse";
+
 export * from "./excel-export";
 
 export type ExportCsvOptions = {
@@ -17,7 +17,11 @@ export type ImportCsvResult<T> = {
 
 export type ImportCsvOptions = Papa.ParseConfig;
 
-export function downloadBase64(data: string, filename: string, mimeType: string) {
+export function downloadBase64(
+  data: string,
+  filename: string,
+  mimeType: string,
+) {
   const byteCharacters = atob(data);
   const byteNumbers = new Array(byteCharacters.length);
   for (let i = 0; i < byteCharacters.length; i++) {
@@ -43,14 +47,15 @@ export function exportToCsv<T>(data: T[], options?: ExportCsvOptions) {
 
   const csv = Papa.unparse(data);
   const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-  
-  const filename = options?.filename || `export_${new Date().toISOString()}.csv`;
+
+  const filename =
+    options?.filename || `export_${new Date().toISOString()}.csv`;
   saveAs(blob, filename);
 }
 
 export function parseCsv<T>(
   file: File | string,
-  options?: ImportCsvOptions
+  options?: ImportCsvOptions,
 ): Promise<ImportCsvResult<T>> {
   return new Promise((resolve, reject) => {
     Papa.parse(file, {
@@ -88,8 +93,8 @@ export interface CanvasPdfOptions {
 }
 
 function getCanvasContent(selector?: string): HTMLElement | null {
-  const selectors = selector 
-    ? [selector] 
+  const selectors = selector
+    ? [selector]
     : ["[data-canvas-content]", "#main-content", "main"];
 
   for (const sel of selectors) {
@@ -156,7 +161,9 @@ export async function generateCanvasPdf(
         clonedDoc.documentElement.dir = dir;
         clonedDoc.body.dir = dir;
 
-        const element = clonedDoc.querySelector(selector || "[data-canvas-content]") as HTMLElement;
+        const element = clonedDoc.querySelector(
+          selector || "[data-canvas-content]",
+        ) as HTMLElement;
         if (element) {
           // Isolate the element by hiding everything else
           Array.from(clonedDoc.body.children).forEach((child: any) => {
@@ -174,7 +181,7 @@ export async function generateCanvasPdf(
           element.style.transform = "none";
           element.style.visibility = "visible";
           element.style.opacity = "1";
-          
+
           // Force body and document to match the element's width to fix percentage-based offsets
           clonedDoc.body.style.width = `${canvasContent.offsetWidth}px`;
           clonedDoc.body.style.height = `${canvasContent.offsetHeight}px`;
@@ -191,7 +198,8 @@ export async function generateCanvasPdf(
 
     const paper = PDF_PAPER_SIZES[paperSize] || PDF_PAPER_SIZES.a4!;
     const pageWidth = orientation === "portrait" ? paper!.width : paper!.height;
-    const pageHeight = orientation === "portrait" ? paper!.height : paper!.width;
+    const pageHeight =
+      orientation === "portrait" ? paper!.height : paper!.width;
 
     const pdf = new jsPDF({
       orientation,
@@ -208,7 +216,7 @@ export async function generateCanvasPdf(
       padding,
       padding,
       pageWidth - padding * 2,
-      pageHeight - padding * 2
+      pageHeight - padding * 2,
     );
 
     pdf.save(filename);
@@ -263,21 +271,25 @@ export async function generateCanvasPdfBlob(
       windowWidth: canvasContent.scrollWidth,
       foreignObjectRendering: false,
       onclone: (clonedDoc) => {
-        const element = clonedDoc.body.querySelector(selector || "[data-canvas-content]") as HTMLElement;
+        const element = clonedDoc.body.querySelector(
+          selector || "[data-canvas-content]",
+        ) as HTMLElement;
         if (element) {
-           element.style.overflow = "visible";
-           element.style.maxHeight = "none";
-           element.style.transform = "none";
-           element.style.margin = "0";
+          element.style.overflow = "visible";
+          element.style.maxHeight = "none";
+          element.style.transform = "none";
+          element.style.margin = "0";
 
-           const parent = element.parentElement;
-           if (parent) {
-             parent.style.transform = "none";
-             parent.style.scale = "1";
-           }
+          const parent = element.parentElement;
+          if (parent) {
+            parent.style.transform = "none";
+            parent.style.scale = "1";
+          }
         }
-        
-        const hideElements = clonedDoc.querySelectorAll('[data-hide-in-pdf="true"]');
+
+        const hideElements = clonedDoc.querySelectorAll(
+          '[data-hide-in-pdf="true"]',
+        );
         hideElements.forEach((el) => {
           (el as HTMLElement).style.display = "none";
         });
@@ -285,12 +297,13 @@ export async function generateCanvasPdfBlob(
     });
 
     const { jsPDF } = await import("jspdf");
-    
+
     const imgData = canvas.toDataURL("image/jpeg", quality);
 
     const paper = PDF_PAPER_SIZES[paperSize] || PDF_PAPER_SIZES.a4!;
     const pageWidth = orientation === "portrait" ? paper!.width : paper!.height;
-    const pageHeight = orientation === "portrait" ? paper!.height : paper!.width;
+    const pageHeight =
+      orientation === "portrait" ? paper!.height : paper!.width;
 
     const pdf = new jsPDF({
       orientation,
@@ -301,10 +314,16 @@ export async function generateCanvasPdfBlob(
     pdf.setFillColor(backgroundRgb.r, backgroundRgb.g, backgroundRgb.b);
     pdf.rect(0, 0, pageWidth, pageHeight, "F");
 
-    pdf.addImage(imgData, "JPEG", padding, padding, pageWidth - padding * 2, pageHeight - padding * 2);
+    pdf.addImage(
+      imgData,
+      "JPEG",
+      padding,
+      padding,
+      pageWidth - padding * 2,
+      pageHeight - padding * 2,
+    );
 
     return pdf.output("blob");
-
   } catch (error) {
     console.error("Error generating PDF blob:", error);
     throw error;

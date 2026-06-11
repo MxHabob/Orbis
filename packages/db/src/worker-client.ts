@@ -9,7 +9,10 @@ const isDevelopment = process.env.NODE_ENV === "development";
  * Worker database client with connection pool optimized for BullMQ concurrent jobs
  */
 const workerPool = new Pool({
-  connectionString: process.env.DATABASE_PRIMARY_POOLER_URL || process.env.DATABASE_PRIMARY_URL || process.env.DATABASE_URL!,
+  connectionString:
+    process.env.DATABASE_PRIMARY_POOLER_URL ||
+    process.env.DATABASE_PRIMARY_URL ||
+    process.env.DATABASE_URL!,
   max: isDevelopment ? 10 : 100, // Local: 10 connections, Production: 100 for concurrency
   idleTimeoutMillis: isDevelopment ? 5000 : 60000, // Match main client config
   connectionTimeoutMillis: 15000, // Match main client config

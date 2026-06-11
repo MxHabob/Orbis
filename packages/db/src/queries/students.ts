@@ -1,9 +1,15 @@
-import { db } from "@db/client";
-import { students, classes, users, enrollments, academicYears, parentStudents } from "@db/schema";
-import { eq, asc, desc, and, or, ilike, inArray, sql } from "drizzle-orm";
 import { randomInt } from "node:crypto";
-
+import { db } from "@db/client";
+import {
+  academicYears,
+  classes,
+  enrollments,
+  parentStudents,
+  students,
+  users,
+} from "@db/schema";
 import { RedisCache } from "@orbis/cache";
+import { and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 
 const studentCache = new RedisCache("student", 30 * 60);
 
@@ -18,7 +24,7 @@ type ParentInfo = {
  * Trims whitespace, collapses multiple spaces, and lowercases.
  */
 export const normalizeStudentName = (name: string): string => {
-  return name.trim().replace(/\s+/g, ' ').toLowerCase();
+  return name.trim().replace(/\s+/g, " ").toLowerCase();
 };
 
 /**
@@ -26,23 +32,27 @@ export const normalizeStudentName = (name: string): string => {
  * Returns matching students with their current class info.
  */
 export const findExistingStudentsByNameAndSex = async (
-  pairs: { name: string; sex: string }[]
-): Promise<{
-  userId: string;
-  studentNumber: string;
-  currentClassId: number | null;
-  name: string | null;
-  sex: string;
-  className: string | null;
-}[]> => {
+  pairs: { name: string; sex: string }[],
+): Promise<
+  {
+    userId: string;
+    studentNumber: string;
+    currentClassId: number | null;
+    name: string | null;
+    sex: string;
+    className: string | null;
+  }[]
+> => {
   if (pairs.length === 0) return [];
 
-  const uniqueNames = [...new Set(pairs.map(p => normalizeStudentName(p.name)))];
+  const uniqueNames = [
+    ...new Set(pairs.map((p) => normalizeStudentName(p.name))),
+  ];
   if (uniqueNames.length === 0) return [];
 
   // Query students whose names match (case-insensitive, trimmed)
-  const nameConditions = uniqueNames.map(name =>
-    sql`LOWER(TRIM(${users.name})) = ${name}`
+  const nameConditions = uniqueNames.map(
+    (name) => sql`LOWER(TRIM(${users.name})) = ${name}`,
   );
 
   const existingStudents = await db
@@ -61,179 +71,192 @@ export const findExistingStudentsByNameAndSex = async (
 
   // Filter for exact name+sex pair matches
   const pairSet = new Set(
-    pairs.map(p => `${normalizeStudentName(p.name)}|${(p.sex || 'unspecified').toLowerCase()}`)
+    pairs.map(
+      (p) =>
+        `${normalizeStudentName(p.name)}|${(p.sex || "unspecified").toLowerCase()}`,
+    ),
   );
 
-  return existingStudents.filter(s =>
-    pairSet.has(`${normalizeStudentName(s.name || '')}|${(s.sex || 'unspecified').toLowerCase()}`)
+  return existingStudents.filter((s) =>
+    pairSet.has(
+      `${normalizeStudentName(s.name || "")}|${(s.sex || "unspecified").toLowerCase()}`,
+    ),
   );
 };
 
 export const getAllStudentss = async () => {
-    return db
-        .select({
-            userId: students.userId,
-            studentNumber: students.studentNumber,
-            secretNumber: students.secretNumber,
-            seatingNumber: students.seatingNumber,
-            currentClassId: students.currentClassId,
-            status: students.status,
-            notes: students.notes,
-            stats: students.stats,
-            metadata: students.metadata,
-            name: users.name,
-            image: users.image,
-            email: users.email,
-            sex: users.sex,
-            currentClass: {
-                id: classes.id,
-                name: classes.name,
-                yearName: academicYears.yearName,
-                academicYearId: enrollments.academicYearId,
-            },
-        })
-        .from(students)
-        .innerJoin(users, eq(students.userId, users.id))
-        .leftJoin(classes, eq(students.currentClassId, classes.id))
-        .leftJoin(enrollments, and(eq(enrollments.studentId, students.userId), eq(enrollments.classId, students.currentClassId)))
-        .leftJoin(academicYears, eq(enrollments.academicYearId, academicYears.id))
-        .orderBy(desc(academicYears.yearName), asc(users.name))
-        .limit(50);
+  return db
+    .select({
+      userId: students.userId,
+      studentNumber: students.studentNumber,
+      secretNumber: students.secretNumber,
+      seatingNumber: students.seatingNumber,
+      currentClassId: students.currentClassId,
+      status: students.status,
+      notes: students.notes,
+      stats: students.stats,
+      metadata: students.metadata,
+      name: users.name,
+      image: users.image,
+      email: users.email,
+      sex: users.sex,
+      currentClass: {
+        id: classes.id,
+        name: classes.name,
+        yearName: academicYears.yearName,
+        academicYearId: enrollments.academicYearId,
+      },
+    })
+    .from(students)
+    .innerJoin(users, eq(students.userId, users.id))
+    .leftJoin(classes, eq(students.currentClassId, classes.id))
+    .leftJoin(
+      enrollments,
+      and(
+        eq(enrollments.studentId, students.userId),
+        eq(enrollments.classId, students.currentClassId),
+      ),
+    )
+    .leftJoin(academicYears, eq(enrollments.academicYearId, academicYears.id))
+    .orderBy(desc(academicYears.yearName), asc(users.name))
+    .limit(50);
 };
 
 export const getStudentsByClassId = async (
-  classId: number, 
-  limit = 50, 
-  offset = 0, 
-  q?: string, 
+  classId: number,
+  limit = 50,
+  offset = 0,
+  q?: string,
   sort?: string[] | null,
-  academicYearId?: number
+  academicYearId?: number,
 ) => {
-    const orderBy = [];
+  const orderBy = [];
 
-    if (sort?.length) {
-        sort.forEach((s) => {
-            const [column, direction] = s.split(":");
-            const dirFunc = direction === "desc" ? desc : asc;
+  if (sort?.length) {
+    sort.forEach((s) => {
+      const [column, direction] = s.split(":");
+      const dirFunc = direction === "desc" ? desc : asc;
 
-            switch (column) {
-                case "user.name":
-                case "name":
-                    orderBy.push(dirFunc(users.name));
-                    break;
-                case "studentNumber":
-                case "student_number":
-                    orderBy.push(dirFunc(students.studentNumber));
-                    break;
-                case "status":
-                    orderBy.push(dirFunc(students.status));
-                    break;
-            }
-        });
-    }
+      switch (column) {
+        case "user.name":
+        case "name":
+          orderBy.push(dirFunc(users.name));
+          break;
+        case "studentNumber":
+        case "student_number":
+          orderBy.push(dirFunc(students.studentNumber));
+          break;
+        case "status":
+          orderBy.push(dirFunc(students.status));
+          break;
+      }
+    });
+  }
 
-    if (orderBy.length === 0) {
-        orderBy.push(asc(users.name));
-    }
+  if (orderBy.length === 0) {
+    orderBy.push(asc(users.name));
+  }
 
-    // Get the current academic year if not provided
-    let yearId = academicYearId;
-    if (!yearId) {
-        const [currentYear] = await db
-            .select({ id: academicYears.id })
-            .from(academicYears)
-            .where(eq(academicYears.isCurrent, true))
-            .limit(1);
-        
-        yearId = currentYear?.id;
-    }
+  // Get the current academic year if not provided
+  let yearId = academicYearId;
+  if (!yearId) {
+    const [currentYear] = await db
+      .select({ id: academicYears.id })
+      .from(academicYears)
+      .where(eq(academicYears.isCurrent, true))
+      .limit(1);
 
-    // Get the class IDs for the selected class and its children (sections)
-    const childClasses = await db
-        .select({ id: classes.id })
-        .from(classes)
-        .where(eq(classes.parentClassId, classId));
+    yearId = currentYear?.id;
+  }
 
-    const targetClassIds = childClasses.length > 0
-        ? [classId, ...childClasses.map(c => c.id)]
-        : [classId];
+  // Get the class IDs for the selected class and its children (sections)
+  const childClasses = await db
+    .select({ id: classes.id })
+    .from(classes)
+    .where(eq(classes.parentClassId, classId));
 
-    // Use enrollment-based lookup — MUST filter by academic year
-    // This ensures reports show students who ARE in this class for the targeted year
-    return db
-        .select({
-            userId: students.userId,
-            studentNumber: students.studentNumber,
-            secretNumber: students.secretNumber,
-            seatingNumber: students.seatingNumber,
-            currentClassId: students.currentClassId,
-            status: students.status,
-            notes: students.notes,
-            stats: students.stats,
-            metadata: students.metadata,
-            name: users.name,
-            image: users.image,
-            email: users.email,
-            sex: users.sex,
-            currentClass: {
-                id: classes.id,
-                name: classes.name,
-                yearName: academicYears.yearName,
-                academicYearId: enrollments.academicYearId,
-            },
-            enrollmentDate: enrollments.enrolledAt,
-        })
-        .from(enrollments)
-        .innerJoin(students, eq(enrollments.studentId, students.userId))
-        .innerJoin(users, eq(students.userId, users.id))
-        .leftJoin(classes, eq(students.currentClassId, classes.id))
-        .leftJoin(academicYears, eq(enrollments.academicYearId, academicYears.id))
-        .where(
-            and(
-                targetClassIds.length === 1
-                    ? eq(enrollments.classId, targetClassIds[0]!)
-                    : inArray(enrollments.classId, targetClassIds),
-                yearId ? eq(enrollments.academicYearId, yearId) : undefined,
-                q ? or(
-                    ilike(users.name, `%${q}%`),
-                    ilike(students.studentNumber, `%${q}%`)
-                ) : undefined
+  const targetClassIds =
+    childClasses.length > 0
+      ? [classId, ...childClasses.map((c) => c.id)]
+      : [classId];
+
+  // Use enrollment-based lookup — MUST filter by academic year
+  // This ensures reports show students who ARE in this class for the targeted year
+  return db
+    .select({
+      userId: students.userId,
+      studentNumber: students.studentNumber,
+      secretNumber: students.secretNumber,
+      seatingNumber: students.seatingNumber,
+      currentClassId: students.currentClassId,
+      status: students.status,
+      notes: students.notes,
+      stats: students.stats,
+      metadata: students.metadata,
+      name: users.name,
+      image: users.image,
+      email: users.email,
+      sex: users.sex,
+      currentClass: {
+        id: classes.id,
+        name: classes.name,
+        yearName: academicYears.yearName,
+        academicYearId: enrollments.academicYearId,
+      },
+      enrollmentDate: enrollments.enrolledAt,
+    })
+    .from(enrollments)
+    .innerJoin(students, eq(enrollments.studentId, students.userId))
+    .innerJoin(users, eq(students.userId, users.id))
+    .leftJoin(classes, eq(students.currentClassId, classes.id))
+    .leftJoin(academicYears, eq(enrollments.academicYearId, academicYears.id))
+    .where(
+      and(
+        targetClassIds.length === 1
+          ? eq(enrollments.classId, targetClassIds[0]!)
+          : inArray(enrollments.classId, targetClassIds),
+        yearId ? eq(enrollments.academicYearId, yearId) : undefined,
+        q
+          ? or(
+              ilike(users.name, `%${q}%`),
+              ilike(students.studentNumber, `%${q}%`),
             )
-        )
-        .orderBy(...orderBy)
-        .limit(limit)
-        .offset(offset);
+          : undefined,
+      ),
+    )
+    .orderBy(...orderBy)
+    .limit(limit)
+    .offset(offset);
 };
 
-
 export const getStudentByUserId = async (userId: string) => {
-    const cacheKey = `user:v2:${userId}`;
-    const cached = await studentCache.get<any>(cacheKey);
-    if (cached) return cached;
+  const cacheKey = `user:v2:${userId}`;
+  const cached = await studentCache.get<any>(cacheKey);
+  if (cached) return cached;
 
-    const [student] = await db
-        .select({
-            userId: students.userId,
-            studentNumber: students.studentNumber,
-            secretNumber: students.secretNumber,
-            seatingNumber: students.seatingNumber,
-            currentClassId: students.currentClassId,
-            status: students.status,
-            notes: students.notes,
-            stats: students.stats,
-            metadata: students.metadata,
-            name: users.name,
-            email: users.email,
-            phone: users.phone,
-            sex: users.sex,
-            image: users.image,
-            currentClass: {
-                id: classes.id,
-                name: classes.name,
-                yearName: academicYears.yearName,
-                academicYearId: enrollments.academicYearId,
-            },
-            parents: sql<ParentInfo[]>`(
+  const [student] = await db
+    .select({
+      userId: students.userId,
+      studentNumber: students.studentNumber,
+      secretNumber: students.secretNumber,
+      seatingNumber: students.seatingNumber,
+      currentClassId: students.currentClassId,
+      status: students.status,
+      notes: students.notes,
+      stats: students.stats,
+      metadata: students.metadata,
+      name: users.name,
+      email: users.email,
+      phone: users.phone,
+      sex: users.sex,
+      image: users.image,
+      currentClass: {
+        id: classes.id,
+        name: classes.name,
+        yearName: academicYears.yearName,
+        academicYearId: enrollments.academicYearId,
+      },
+      parents: sql<ParentInfo[]>`(
                 SELECT COALESCE(JSON_AGG(JSON_BUILD_OBJECT(
                     'relationship', ps.relationship, 
                     'name', pu.name, 
@@ -242,99 +265,111 @@ export const getStudentByUserId = async (userId: string) => {
                 FROM ${parentStudents} ps
                 JOIN ${users} pu ON ps.parent_id = pu.id
                 WHERE ps.student_id = ${students.userId}
-            )`
-        })
-        .from(students)
-        .innerJoin(users, eq(students.userId, users.id))
-        .leftJoin(classes, eq(students.currentClassId, classes.id))
-        .leftJoin(enrollments, and(eq(enrollments.studentId, students.userId), eq(enrollments.classId, students.currentClassId)))
-        .leftJoin(academicYears, eq(enrollments.academicYearId, academicYears.id))
-        .where(eq(students.userId, userId))
-        .orderBy(desc(academicYears.yearName))
-        .limit(1);
-    
-    if (student) {
-        const father = student.parents?.find(p => p.relationship === 'father');
-        const mother = student.parents?.find(p => p.relationship === 'mother');
+            )`,
+    })
+    .from(students)
+    .innerJoin(users, eq(students.userId, users.id))
+    .leftJoin(classes, eq(students.currentClassId, classes.id))
+    .leftJoin(
+      enrollments,
+      and(
+        eq(enrollments.studentId, students.userId),
+        eq(enrollments.classId, students.currentClassId),
+      ),
+    )
+    .leftJoin(academicYears, eq(enrollments.academicYearId, academicYears.id))
+    .where(eq(students.userId, userId))
+    .orderBy(desc(academicYears.yearName))
+    .limit(1);
 
-        const { parents, ...studentData } = student;
+  if (student) {
+    const father = student.parents?.find((p) => p.relationship === "father");
+    const mother = student.parents?.find((p) => p.relationship === "mother");
 
-        const enrichedStudent = {
-            ...studentData,
-            fatherName: father?.name || null,
-            fatherPhone: father?.phone || null,
-            motherName: mother?.name || null,
-            motherPhone: mother?.phone || null,
-        };
+    const { parents, ...studentData } = student;
 
-        await studentCache.set(cacheKey, enrichedStudent);
-        return enrichedStudent;
-    }
-    return student;
+    const enrichedStudent = {
+      ...studentData,
+      fatherName: father?.name || null,
+      fatherPhone: father?.phone || null,
+      motherName: mother?.name || null,
+      motherPhone: mother?.phone || null,
+    };
+
+    await studentCache.set(cacheKey, enrichedStudent);
+    return enrichedStudent;
+  }
+  return student;
 };
 
 export const getStudentsByUserIds = async (userIds: string[]) => {
-    if (userIds.length === 0) return [];
-    
-    return db
-        .select({
-            userId: students.userId,
-            studentNumber: students.studentNumber,
-            secretNumber: students.secretNumber,
-            seatingNumber: students.seatingNumber,
-            currentClassId: students.currentClassId,
-            status: students.status,
-            notes: students.notes,
-            stats: students.stats,
-            metadata: students.metadata,
-            name: users.name,
-            email: users.email,
-            phone: users.phone,
-            sex: users.sex,
-            image: users.image,
-            currentClass: {
-                id: classes.id,
-                name: classes.name,
-                yearName: academicYears.yearName,
-                academicYearId: enrollments.academicYearId,
-            },
-        })
-        .from(students)
-        .innerJoin(users, eq(students.userId, users.id))
-        .leftJoin(classes, eq(students.currentClassId, classes.id))
-        .leftJoin(enrollments, and(eq(enrollments.studentId, students.userId), eq(enrollments.classId, students.currentClassId)))
-        .leftJoin(academicYears, eq(enrollments.academicYearId, academicYears.id))
-        .where(inArray(students.userId, userIds));
+  if (userIds.length === 0) return [];
+
+  return db
+    .select({
+      userId: students.userId,
+      studentNumber: students.studentNumber,
+      secretNumber: students.secretNumber,
+      seatingNumber: students.seatingNumber,
+      currentClassId: students.currentClassId,
+      status: students.status,
+      notes: students.notes,
+      stats: students.stats,
+      metadata: students.metadata,
+      name: users.name,
+      email: users.email,
+      phone: users.phone,
+      sex: users.sex,
+      image: users.image,
+      currentClass: {
+        id: classes.id,
+        name: classes.name,
+        yearName: academicYears.yearName,
+        academicYearId: enrollments.academicYearId,
+      },
+    })
+    .from(students)
+    .innerJoin(users, eq(students.userId, users.id))
+    .leftJoin(classes, eq(students.currentClassId, classes.id))
+    .leftJoin(
+      enrollments,
+      and(
+        eq(enrollments.studentId, students.userId),
+        eq(enrollments.classId, students.currentClassId),
+      ),
+    )
+    .leftJoin(academicYears, eq(enrollments.academicYearId, academicYears.id))
+    .where(inArray(students.userId, userIds));
 };
 
 export const getStudentById = async (id: string) => {
-    const cacheKey = `user:v2:${id}`;
-    const cached = await studentCache.get<any>(cacheKey);
-    if (cached) return cached;
+  const cacheKey = `user:v2:${id}`;
+  const cached = await studentCache.get<any>(cacheKey);
+  if (cached) return cached;
 
-    const [student] = await db
-        .select({
-            userId: students.userId,
-            studentNumber: students.studentNumber,
-            secretNumber: students.secretNumber,
-            seatingNumber: students.seatingNumber,
-            currentClassId: students.currentClassId,
-            status: students.status,
-            notes: students.notes,
-            stats: students.stats,
-            metadata: students.metadata,
-            name: users.name,
-            email: users.email,
-            phone: users.phone,
-            sex: users.sex,
-            image: users.image,
-            currentClass: {
-                id: classes.id,
-                name: classes.name,
-                yearName: academicYears.yearName,
-                academicYearId: enrollments.academicYearId,
-            },
-            parents: sql<ParentInfo[]>`(
+  const [student] = await db
+    .select({
+      userId: students.userId,
+      studentNumber: students.studentNumber,
+      secretNumber: students.secretNumber,
+      seatingNumber: students.seatingNumber,
+      currentClassId: students.currentClassId,
+      status: students.status,
+      notes: students.notes,
+      stats: students.stats,
+      metadata: students.metadata,
+      name: users.name,
+      email: users.email,
+      phone: users.phone,
+      sex: users.sex,
+      image: users.image,
+      currentClass: {
+        id: classes.id,
+        name: classes.name,
+        yearName: academicYears.yearName,
+        academicYearId: enrollments.academicYearId,
+      },
+      parents: sql<ParentInfo[]>`(
                 SELECT COALESCE(JSON_AGG(JSON_BUILD_OBJECT(
                     'relationship', ps.relationship, 
                     'name', pu.name, 
@@ -343,65 +378,71 @@ export const getStudentById = async (id: string) => {
                 FROM ${parentStudents} ps
                 JOIN ${users} pu ON ps.parent_id = pu.id
                 WHERE ps.student_id = ${students.userId}
-            )`
-        })
-        .from(students)
-        .innerJoin(users, eq(students.userId, users.id))
-        .leftJoin(classes, eq(students.currentClassId, classes.id))
-        .leftJoin(enrollments, and(eq(enrollments.studentId, students.userId), eq(enrollments.classId, students.currentClassId)))
-        .leftJoin(academicYears, eq(enrollments.academicYearId, academicYears.id))
-        .where(eq(students.userId, id))
-        .orderBy(desc(academicYears.yearName))
-        .limit(1);
-    
-    if (student) {
-        const father = student.parents?.find(p => p.relationship === 'father');
-        const mother = student.parents?.find(p => p.relationship === 'mother');
+            )`,
+    })
+    .from(students)
+    .innerJoin(users, eq(students.userId, users.id))
+    .leftJoin(classes, eq(students.currentClassId, classes.id))
+    .leftJoin(
+      enrollments,
+      and(
+        eq(enrollments.studentId, students.userId),
+        eq(enrollments.classId, students.currentClassId),
+      ),
+    )
+    .leftJoin(academicYears, eq(enrollments.academicYearId, academicYears.id))
+    .where(eq(students.userId, id))
+    .orderBy(desc(academicYears.yearName))
+    .limit(1);
 
-        const { parents, ...studentData } = student;
+  if (student) {
+    const father = student.parents?.find((p) => p.relationship === "father");
+    const mother = student.parents?.find((p) => p.relationship === "mother");
 
-        const enrichedStudent = {
-            ...studentData,
-            fatherName: father?.name || null,
-            fatherPhone: father?.phone || null,
-            motherName: mother?.name || null,
-            motherPhone: mother?.phone || null,
-        };
+    const { parents, ...studentData } = student;
 
-        await studentCache.set(cacheKey, enrichedStudent);
-        return enrichedStudent;
-    }
-    return student;
+    const enrichedStudent = {
+      ...studentData,
+      fatherName: father?.name || null,
+      fatherPhone: father?.phone || null,
+      motherName: mother?.name || null,
+      motherPhone: mother?.phone || null,
+    };
+
+    await studentCache.set(cacheKey, enrichedStudent);
+    return enrichedStudent;
+  }
+  return student;
 };
 
 export const getStudentByNumber = async (studentNumber: string) => {
-    const cacheKey = `user:v2:${studentNumber}`;
-    const cached = await studentCache.get<any>(cacheKey);
-    if (cached) return cached;
+  const cacheKey = `user:v2:${studentNumber}`;
+  const cached = await studentCache.get<any>(cacheKey);
+  if (cached) return cached;
 
-    const [student] = await db
-        .select({
-            userId: students.userId,
-            studentNumber: students.studentNumber,
-            secretNumber: students.secretNumber,
-            seatingNumber: students.seatingNumber,
-            currentClassId: students.currentClassId,
-            status: students.status,
-            notes: students.notes,
-            stats: students.stats,
-            metadata: students.metadata,
-            name: users.name,
-            email: users.email,
-            phone: users.phone,
-            sex: users.sex,
-            image: users.image,
-            currentClass: {
-                id: classes.id,
-                name: classes.name,
-                yearName: academicYears.yearName,
-                academicYearId: enrollments.academicYearId,
-            },
-            parents: sql<ParentInfo[]>`(
+  const [student] = await db
+    .select({
+      userId: students.userId,
+      studentNumber: students.studentNumber,
+      secretNumber: students.secretNumber,
+      seatingNumber: students.seatingNumber,
+      currentClassId: students.currentClassId,
+      status: students.status,
+      notes: students.notes,
+      stats: students.stats,
+      metadata: students.metadata,
+      name: users.name,
+      email: users.email,
+      phone: users.phone,
+      sex: users.sex,
+      image: users.image,
+      currentClass: {
+        id: classes.id,
+        name: classes.name,
+        yearName: academicYears.yearName,
+        academicYearId: enrollments.academicYearId,
+      },
+      parents: sql<ParentInfo[]>`(
                 SELECT COALESCE(JSON_AGG(JSON_BUILD_OBJECT(
                     'relationship', ps.relationship, 
                     'name', pu.name, 
@@ -410,35 +451,41 @@ export const getStudentByNumber = async (studentNumber: string) => {
                 FROM ${parentStudents} ps
                 JOIN ${users} pu ON ps.parent_id = pu.id
                 WHERE ps.student_id = ${students.userId}
-            )`
-        })
-        .from(students)
-        .innerJoin(users, eq(students.userId, users.id))
-        .leftJoin(classes, eq(students.currentClassId, classes.id))
-        .leftJoin(enrollments, and(eq(enrollments.studentId, students.userId), eq(enrollments.classId, students.currentClassId)))
-        .leftJoin(academicYears, eq(enrollments.academicYearId, academicYears.id))
-        .where(eq(students.studentNumber, studentNumber))
-        .orderBy(desc(academicYears.yearName))
-        .limit(1);
-    
-    if (student) {
-        const father = student.parents?.find(p => p.relationship === 'father');
-        const mother = student.parents?.find(p => p.relationship === 'mother');
+            )`,
+    })
+    .from(students)
+    .innerJoin(users, eq(students.userId, users.id))
+    .leftJoin(classes, eq(students.currentClassId, classes.id))
+    .leftJoin(
+      enrollments,
+      and(
+        eq(enrollments.studentId, students.userId),
+        eq(enrollments.classId, students.currentClassId),
+      ),
+    )
+    .leftJoin(academicYears, eq(enrollments.academicYearId, academicYears.id))
+    .where(eq(students.studentNumber, studentNumber))
+    .orderBy(desc(academicYears.yearName))
+    .limit(1);
 
-        const { parents, ...studentData } = student;
+  if (student) {
+    const father = student.parents?.find((p) => p.relationship === "father");
+    const mother = student.parents?.find((p) => p.relationship === "mother");
 
-        const enrichedStudent = {
-            ...studentData,
-            fatherName: father?.name || null,
-            fatherPhone: father?.phone || null,
-            motherName: mother?.name || null,
-            motherPhone: mother?.phone || null,
-        };
+    const { parents, ...studentData } = student;
 
-        await studentCache.set(cacheKey, enrichedStudent);
-        return enrichedStudent;
-    }
-    return student;
+    const enrichedStudent = {
+      ...studentData,
+      fatherName: father?.name || null,
+      fatherPhone: father?.phone || null,
+      motherName: mother?.name || null,
+      motherPhone: mother?.phone || null,
+    };
+
+    await studentCache.set(cacheKey, enrichedStudent);
+    return enrichedStudent;
+  }
+  return student;
 };
 
 export type CreateStudentParams = typeof students.$inferInsert;
@@ -449,303 +496,357 @@ export type CreateStudentParams = typeof students.$inferInsert;
  * - Digit (0-9): Replaced by a random digit [0-9]
  * - Letter (A-Z/a-z): Replaced by a random uppercase letter [A-Z]
  * - Other: Remains as a literal character
- * 
+ *
  * Uses cryptographically secure random generation for peak security.
  */
 export const generateSecretByPattern = (pattern: string): string => {
-    const digits = '0123456789';
-    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    let result = '';
-    
-    for (const char of pattern) {
-        if (/[0-9]/.test(char)) {
-            result += digits.charAt(randomInt(0, digits.length));
-        } else if (/[a-zA-Z]/.test(char)) {
-            result += letters.charAt(randomInt(0, letters.length));
-        } else {
-            result += char;
-        }
+  const digits = "0123456789";
+  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  let result = "";
+
+  for (const char of pattern) {
+    if (/[0-9]/.test(char)) {
+      result += digits.charAt(randomInt(0, digits.length));
+    } else if (/[a-zA-Z]/.test(char)) {
+      result += letters.charAt(randomInt(0, letters.length));
+    } else {
+      result += char;
     }
-    
-    return result;
-}
+  }
+
+  return result;
+};
 
 /**
  * Standard secret number generator.
  * Follows 2026 security guidelines using CSPRNG.
  */
 export const generateSecretNumber = (): string => {
-    // Generate 6 characters alphanumeric (e.g., 24A7F9)
-    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    let result = '';
-    for (let i = 0; i < 6; i++) {
-        result += chars.charAt(randomInt(0, chars.length));
-    }
-    return result;
-}
-
-export const generateNextStudentNumber = async (transaction?: any) => {
-    const currentYear = new Date().getFullYear();
-    const prefix = `STU-${currentYear}-`;
-    
-    const client = transaction || db;
-
-    const [lastStudent] = await client
-        .select({ studentNumber: students.studentNumber })
-        .from(students)
-        .where(ilike(students.studentNumber, `${prefix}%`))
-        .orderBy(desc(students.studentNumber))
-        .limit(1);
-    
-    let nextSeq = 1;
-    if (lastStudent) {
-        // Expected format: STU-2025-001
-        const parts = lastStudent.studentNumber.split('-');
-        if (parts.length >= 3) {
-            const lastSeq = parseInt(parts[2]);
-            if (!isNaN(lastSeq)) {
-                nextSeq = lastSeq + 1;
-            }
-        }
-    }
-    
-    return `${prefix}${nextSeq.toString().padStart(3, '0')}`;
-}
-
-export const createStudent = async (data: CreateStudentParams) => {
-    const [result] = await db.insert(students).values(data).returning();
-    return result;
+  // Generate 6 characters alphanumeric (e.g., 24A7F9)
+  const chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  let result = "";
+  for (let i = 0; i < 6; i++) {
+    result += chars.charAt(randomInt(0, chars.length));
+  }
+  return result;
 };
 
-export const updateStudent = async (userId: string, data: Partial<CreateStudentParams>) => {
-    const [result] = await db.update(students).set(data).where(eq(students.userId, userId)).returning();
-    await studentCache.delete(`user:v2:${userId}`);
-    if (result) await studentCache.delete(`number:${result.studentNumber}`);
-    return result;
+export const generateNextStudentNumber = async (transaction?: any) => {
+  const currentYear = new Date().getFullYear();
+  const prefix = `STU-${currentYear}-`;
+
+  const client = transaction || db;
+
+  const [lastStudent] = await client
+    .select({ studentNumber: students.studentNumber })
+    .from(students)
+    .where(ilike(students.studentNumber, `${prefix}%`))
+    .orderBy(desc(students.studentNumber))
+    .limit(1);
+
+  let nextSeq = 1;
+  if (lastStudent) {
+    // Expected format: STU-2025-001
+    const parts = lastStudent.studentNumber.split("-");
+    if (parts.length >= 3) {
+      const lastSeq = parseInt(parts[2]);
+      if (!isNaN(lastSeq)) {
+        nextSeq = lastSeq + 1;
+      }
+    }
+  }
+
+  return `${prefix}${nextSeq.toString().padStart(3, "0")}`;
+};
+
+export const createStudent = async (data: CreateStudentParams) => {
+  const [result] = await db.insert(students).values(data).returning();
+  return result;
+};
+
+export const updateStudent = async (
+  userId: string,
+  data: Partial<CreateStudentParams>,
+) => {
+  const [result] = await db
+    .update(students)
+    .set(data)
+    .where(eq(students.userId, userId))
+    .returning();
+  await studentCache.delete(`user:v2:${userId}`);
+  if (result) await studentCache.delete(`number:${result.studentNumber}`);
+  return result;
 };
 
 export const upsertStudent = async (data: any) => {
-    const { 
-        userId, name, image, email, phone, sex, studentNumber, 
-        secretNumber, seatingNumber, currentClassId, status, notes, 
-        stats, metadata, fatherName, fatherPhone, 
-        motherName, motherPhone 
-    } = data;
+  const {
+    userId,
+    name,
+    image,
+    email,
+    phone,
+    sex,
+    studentNumber,
+    secretNumber,
+    seatingNumber,
+    currentClassId,
+    status,
+    notes,
+    stats,
+    metadata,
+    fatherName,
+    fatherPhone,
+    motherName,
+    motherPhone,
+  } = data;
 
-    let targetUserId = userId;
+  let targetUserId = userId;
 
-    if (targetUserId) {
-        // Update user
-        await db.update(users).set({
-            name,
-            ...(image !== undefined ? { image } : {}),
-            email,
-            phone,
-            sex,
-            updatedAt: new Date(),
-        }).where(eq(users.id, targetUserId));
+  if (targetUserId) {
+    // Update user
+    await db
+      .update(users)
+      .set({
+        name,
+        ...(image !== undefined ? { image } : {}),
+        email,
+        phone,
+        sex,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, targetUserId));
 
-        // Update student record
-        await db.update(students).set({
-            studentNumber,
-            secretNumber,
-            seatingNumber,
-            currentClassId,
-            status,
-            notes,
-            stats,
-            metadata,
-        }).where(eq(students.userId, targetUserId));
+    // Update student record
+    await db
+      .update(students)
+      .set({
+        studentNumber,
+        secretNumber,
+        seatingNumber,
+        currentClassId,
+        status,
+        notes,
+        stats,
+        metadata,
+      })
+      .where(eq(students.userId, targetUserId));
 
-        // Handle parents for existing student
-        await db.transaction(async (tx) => {
-            if (fatherName) {
-                // Check if already has a father
-                const [existingFather] = await tx
-                    .select()
-                    .from(parentStudents)
-                    .where(and(eq(parentStudents.studentId, targetUserId), eq(parentStudents.relationship, 'father')))
-                    .limit(1);
+    // Handle parents for existing student
+    await db.transaction(async (tx) => {
+      if (fatherName) {
+        // Check if already has a father
+        const [existingFather] = await tx
+          .select()
+          .from(parentStudents)
+          .where(
+            and(
+              eq(parentStudents.studentId, targetUserId),
+              eq(parentStudents.relationship, "father"),
+            ),
+          )
+          .limit(1);
 
-                if (!existingFather) {
-                    const [fatherUser] = await tx
-                        .insert(users)
-                        .values({
-                            name: fatherName,
-                            phone: fatherPhone || null,
-                            role: "parent",
-                        })
-                        .returning({ id: users.id });
+        if (!existingFather) {
+          const [fatherUser] = await tx
+            .insert(users)
+            .values({
+              name: fatherName,
+              phone: fatherPhone || null,
+              role: "parent",
+            })
+            .returning({ id: users.id });
 
-                    if (fatherUser) {
-                        await tx.insert(parentStudents).values({
-                            parentId: fatherUser.id,
-                            studentId: targetUserId,
-                            relationship: "father",
-                            isPrimary: true,
-                        });
-                    }
-                } else {
-                    // Update father's info
-                    await tx.update(users).set({
-                        name: fatherName,
-                        phone: fatherPhone || null,
-                    }).where(eq(users.id, existingFather.parentId));
-                }
-            }
-
-            if (motherName) {
-                // Check if already has a mother
-                const [existingMother] = await tx
-                    .select()
-                    .from(parentStudents)
-                    .where(and(eq(parentStudents.studentId, targetUserId), eq(parentStudents.relationship, 'mother')))
-                    .limit(1);
-
-                if (!existingMother) {
-                    const [motherUser] = await tx
-                        .insert(users)
-                        .values({
-                            name: motherName,
-                            phone: motherPhone || null,
-                            role: "parent",
-                        })
-                        .returning({ id: users.id });
-
-                    if (motherUser) {
-                        await tx.insert(parentStudents).values({
-                            parentId: motherUser.id,
-                            studentId: targetUserId,
-                            relationship: "mother",
-                            isPrimary: !fatherName,
-                        });
-                    }
-                } else {
-                    // Update mother's info
-                    await tx.update(users).set({
-                        name: motherName,
-                        phone: motherPhone || null,
-                    }).where(eq(users.id, existingMother.parentId));
-                }
-            }
-        });
-
-        // Invalidate class caches as student counts likely changed
-        const classCache = new RedisCache("classes", 60 * 60);
-        await classCache.invalidate().catch(() => {});
-    } else {
-        // CHECK FOR DUPLICATE before creating (by name + sex)
-        const existingDuplicates = await findExistingStudentsByNameAndSex([
-            { name: name || '', sex: sex || 'unspecified' }
-        ]);
-
-        if (existingDuplicates.length > 0) {
-            const dup = existingDuplicates[0]!;
-            const dupClassName = dup.className || 'غير محدد';
-            const sexLabel = sex === 'male' ? 'ذكر' : sex === 'female' ? 'أنثى' : '';
-            throw new Error(
-                `الطالب "${name}"${sexLabel ? ` (${sexLabel})` : ''} مسجل بالفعل في الصف "${dupClassName}" برقم "${dup.studentNumber}". لا يمكن إضافته مرة أخرى.`
-            );
-        }
-
-        // Create new student
-        return db.transaction(async (tx) => {
-            const [newUser] = await tx.insert(users).values({
-                name,
-                ...(image ? { image } : {}),
-                email,
-                phone,
-                sex,
-                role: 'student',
-            }).returning();
-
-            if (!newUser) throw new Error("Failed to create user");
-            targetUserId = newUser.id;
-
-            // Generate numbers if not provided
-            const finalStudentNumber = studentNumber || await generateNextStudentNumber(tx);
-            const finalSecretNumber = secretNumber || generateSecretNumber();
-
-            await tx.insert(students).values({
-                userId: targetUserId,
-                studentNumber: finalStudentNumber,
-                secretNumber: finalSecretNumber,
-                seatingNumber,
-                currentClassId,
-                status,
-                notes,
-                stats,
-                metadata,
+          if (fatherUser) {
+            await tx.insert(parentStudents).values({
+              parentId: fatherUser.id,
+              studentId: targetUserId,
+              relationship: "father",
+              isPrimary: true,
             });
+          }
+        } else {
+          // Update father's info
+          await tx
+            .update(users)
+            .set({
+              name: fatherName,
+              phone: fatherPhone || null,
+            })
+            .where(eq(users.id, existingFather.parentId));
+        }
+      }
 
-            // Handle parents for new student
-            if (fatherName) {
-                const [fatherUser] = await tx
-                    .insert(users)
-                    .values({
-                        name: fatherName,
-                        phone: fatherPhone || null,
-                        role: "parent",
-                    })
-                    .returning({ id: users.id });
+      if (motherName) {
+        // Check if already has a mother
+        const [existingMother] = await tx
+          .select()
+          .from(parentStudents)
+          .where(
+            and(
+              eq(parentStudents.studentId, targetUserId),
+              eq(parentStudents.relationship, "mother"),
+            ),
+          )
+          .limit(1);
 
-                if (fatherUser) {
-                    await tx.insert(parentStudents).values({
-                        parentId: fatherUser.id,
-                        studentId: targetUserId,
-                        relationship: "father",
-                        isPrimary: true,
-                    });
-                }
-            }
+        if (!existingMother) {
+          const [motherUser] = await tx
+            .insert(users)
+            .values({
+              name: motherName,
+              phone: motherPhone || null,
+              role: "parent",
+            })
+            .returning({ id: users.id });
 
-            if (motherName) {
-                const [motherUser] = await tx
-                    .insert(users)
-                    .values({
-                        name: motherName,
-                        phone: motherPhone || null,
-                        role: "parent",
-                    })
-                    .returning({ id: users.id });
+          if (motherUser) {
+            await tx.insert(parentStudents).values({
+              parentId: motherUser.id,
+              studentId: targetUserId,
+              relationship: "mother",
+              isPrimary: !fatherName,
+            });
+          }
+        } else {
+          // Update mother's info
+          await tx
+            .update(users)
+            .set({
+              name: motherName,
+              phone: motherPhone || null,
+            })
+            .where(eq(users.id, existingMother.parentId));
+        }
+      }
+    });
 
-                if (motherUser) {
-                    await tx.insert(parentStudents).values({
-                        parentId: motherUser.id,
-                        studentId: targetUserId,
-                        relationship: "mother",
-                        isPrimary: !fatherName,
-                    });
-                }
-            }
+    // Invalidate class caches as student counts likely changed
+    const classCache = new RedisCache("classes", 60 * 60);
+    await classCache.invalidate().catch(() => {});
+  } else {
+    // CHECK FOR DUPLICATE before creating (by name + sex)
+    const existingDuplicates = await findExistingStudentsByNameAndSex([
+      { name: name || "", sex: sex || "unspecified" },
+    ]);
 
-            // Ensure enrollment if class is provided
-            if (currentClassId) {
-                const [currentYear] = await tx.select().from(academicYears).where(eq(academicYears.isCurrent, true)).limit(1);
-                if (currentYear) {
-                    await tx.insert(enrollments).values({
-                        studentId: targetUserId,
-                        classId: currentClassId,
-                        academicYearId: currentYear.id,
-                    }).onConflictDoNothing();
-                }
-            }
-
-            await studentCache.delete(`user:v2:${targetUserId}`);
-            return { id: targetUserId };
-        });
+    if (existingDuplicates.length > 0) {
+      const dup = existingDuplicates[0]!;
+      const dupClassName = dup.className || "غير محدد";
+      const sexLabel = sex === "male" ? "ذكر" : sex === "female" ? "أنثى" : "";
+      throw new Error(
+        `الطالب "${name}"${sexLabel ? ` (${sexLabel})` : ""} مسجل بالفعل في الصف "${dupClassName}" برقم "${dup.studentNumber}". لا يمكن إضافته مرة أخرى.`,
+      );
     }
 
-    await studentCache.delete(`user:v2:${targetUserId}`);
-    return { id: targetUserId };
+    // Create new student
+    return db.transaction(async (tx) => {
+      const [newUser] = await tx
+        .insert(users)
+        .values({
+          name,
+          ...(image ? { image } : {}),
+          email,
+          phone,
+          sex,
+          role: "student",
+        })
+        .returning();
+
+      if (!newUser) throw new Error("Failed to create user");
+      targetUserId = newUser.id;
+
+      // Generate numbers if not provided
+      const finalStudentNumber =
+        studentNumber || (await generateNextStudentNumber(tx));
+      const finalSecretNumber = secretNumber || generateSecretNumber();
+
+      await tx.insert(students).values({
+        userId: targetUserId,
+        studentNumber: finalStudentNumber,
+        secretNumber: finalSecretNumber,
+        seatingNumber,
+        currentClassId,
+        status,
+        notes,
+        stats,
+        metadata,
+      });
+
+      // Handle parents for new student
+      if (fatherName) {
+        const [fatherUser] = await tx
+          .insert(users)
+          .values({
+            name: fatherName,
+            phone: fatherPhone || null,
+            role: "parent",
+          })
+          .returning({ id: users.id });
+
+        if (fatherUser) {
+          await tx.insert(parentStudents).values({
+            parentId: fatherUser.id,
+            studentId: targetUserId,
+            relationship: "father",
+            isPrimary: true,
+          });
+        }
+      }
+
+      if (motherName) {
+        const [motherUser] = await tx
+          .insert(users)
+          .values({
+            name: motherName,
+            phone: motherPhone || null,
+            role: "parent",
+          })
+          .returning({ id: users.id });
+
+        if (motherUser) {
+          await tx.insert(parentStudents).values({
+            parentId: motherUser.id,
+            studentId: targetUserId,
+            relationship: "mother",
+            isPrimary: !fatherName,
+          });
+        }
+      }
+
+      // Ensure enrollment if class is provided
+      if (currentClassId) {
+        const [currentYear] = await tx
+          .select()
+          .from(academicYears)
+          .where(eq(academicYears.isCurrent, true))
+          .limit(1);
+        if (currentYear) {
+          await tx
+            .insert(enrollments)
+            .values({
+              studentId: targetUserId,
+              classId: currentClassId,
+              academicYearId: currentYear.id,
+            })
+            .onConflictDoNothing();
+        }
+      }
+
+      await studentCache.delete(`user:v2:${targetUserId}`);
+      return { id: targetUserId };
+    });
+  }
+
+  await studentCache.delete(`user:v2:${targetUserId}`);
+  return { id: targetUserId };
 };
 
 export const deleteStudent = async (userId: string) => {
-    // Usually we delete the user, and cascade deletes student.
-    // But if we delete just student profile:
-    await db.delete(students).where(eq(students.userId, userId));
-    await studentCache.delete(`user:v2:${userId}`);
-}
+  // Usually we delete the user, and cascade deletes student.
+  // But if we delete just student profile:
+  await db.delete(students).where(eq(students.userId, userId));
+  await studentCache.delete(`user:v2:${userId}`);
+};
 
 export type BulkImportResult = {
   summary: {
@@ -768,7 +869,7 @@ export type BulkImportResult = {
 };
 
 export const bulkImportStudents = async (
-  classId: number, 
+  classId: number,
   studentData: {
     studentNumber?: string;
     secretNumber?: string;
@@ -776,14 +877,14 @@ export const bulkImportStudents = async (
     name: string;
     phone?: string;
     email?: string;
-    sex?: 'male' | 'female' | 'unspecified';
+    sex?: "male" | "female" | "unspecified";
     metadata?: any;
     fatherName?: string;
     fatherPhone?: string;
     motherName?: string;
     motherPhone?: string;
   }[],
-  academicYearId?: number
+  academicYearId?: number,
 ): Promise<BulkImportResult> => {
   // 1. Get academic year
   let yearId = academicYearId;
@@ -806,25 +907,28 @@ export const bulkImportStudents = async (
   if (studentData.length === 0) return result;
 
   // 2. Pre-check for duplicates by name+sex (batch query)
-  const pairs = studentData.map(s => ({
+  const pairs = studentData.map((s) => ({
     name: s.name,
-    sex: (s.sex || 'unspecified') as string,
+    sex: (s.sex || "unspecified") as string,
   }));
   const existingByNameSex = await findExistingStudentsByNameAndSex(pairs);
 
   // Build lookup map: normalized "name|sex" → duplicate info
-  const duplicateMap = new Map<string, typeof existingByNameSex[0]>();
+  const duplicateMap = new Map<string, (typeof existingByNameSex)[0]>();
   for (const dup of existingByNameSex) {
-    const key = `${normalizeStudentName(dup.name || '')}|${(dup.sex || 'unspecified').toLowerCase()}`;
+    const key = `${normalizeStudentName(dup.name || "")}|${(dup.sex || "unspecified").toLowerCase()}`;
     duplicateMap.set(key, dup);
   }
 
   // 3. Also check for duplicates by studentNumber (if provided)
   const providedNumbers = studentData
-    .map(s => s.studentNumber)
+    .map((s) => s.studentNumber)
     .filter((n): n is string => !!n);
 
-  const existingByNumber = new Map<string, { userId: string; className: string | null }>(); 
+  const existingByNumber = new Map<
+    string,
+    { userId: string; className: string | null }
+  >();
   if (providedNumbers.length > 0) {
     const existingWithNumbers = await db
       .select({
@@ -837,17 +941,23 @@ export const bulkImportStudents = async (
       .where(inArray(students.studentNumber, providedNumbers));
 
     for (const s of existingWithNumbers) {
-      existingByNumber.set(s.studentNumber, { userId: s.userId, className: s.className });
+      existingByNumber.set(s.studentNumber, {
+        userId: s.userId,
+        className: s.className,
+      });
     }
   }
 
   // 4. Separate students: skip duplicates, collect new students
-  const studentsToAdd: { item: typeof studentData[0]; originalIndex: number }[] = [];
+  const studentsToAdd: {
+    item: (typeof studentData)[0];
+    originalIndex: number;
+  }[] = [];
   const seenInBatch = new Set<string>(); // Deduplicate within the same CSV
 
   for (let i = 0; i < studentData.length; i++) {
     const item = studentData[i]!;
-    const sex = (item.sex || 'unspecified').toLowerCase();
+    const sex = (item.sex || "unspecified").toLowerCase();
     const nameKey = `${normalizeStudentName(item.name)}|${sex}`;
 
     // Check duplicate by name+sex against DB
@@ -856,8 +966,8 @@ export const bulkImportStudents = async (
       result.summary.skipped++;
       result.skippedStudents.push({
         name: item.name,
-        reason: `مسجل بالفعل في الصف "${dupByName.className || 'غير محدد'}"`,
-        existingClass: dupByName.className || 'غير محدد',
+        reason: `مسجل بالفعل في الصف "${dupByName.className || "غير محدد"}"`,
+        existingClass: dupByName.className || "غير محدد",
         existingStudentNumber: dupByName.studentNumber,
       });
       continue;
@@ -870,7 +980,7 @@ export const bulkImportStudents = async (
       result.skippedStudents.push({
         name: item.name,
         reason: `رقم الطالب "${item.studentNumber}" مستخدم بالفعل`,
-        existingClass: dupByNum.className || 'غير محدد',
+        existingClass: dupByNum.className || "غير محدد",
         existingStudentNumber: item.studentNumber,
       });
       continue;
@@ -881,9 +991,9 @@ export const bulkImportStudents = async (
       result.summary.skipped++;
       result.skippedStudents.push({
         name: item.name,
-        reason: 'مكرر داخل نفس الملف',
-        existingClass: '-',
-        existingStudentNumber: '-',
+        reason: "مكرر داخل نفس الملف",
+        existingClass: "-",
+        existingStudentNumber: "-",
       });
       continue;
     }
@@ -897,18 +1007,22 @@ export const bulkImportStudents = async (
     try {
       await db.transaction(async (tx) => {
         // Create user
-        const [newUser] = await tx.insert(users).values({
-          name: item.name,
-          phone: item.phone || null,
-          email: item.email || null,
-          role: 'student',
-          sex: (item.sex || 'unspecified') as any,
-        }).returning();
+        const [newUser] = await tx
+          .insert(users)
+          .values({
+            name: item.name,
+            phone: item.phone || null,
+            email: item.email || null,
+            role: "student",
+            sex: (item.sex || "unspecified") as any,
+          })
+          .returning();
 
         if (!newUser) throw new Error("فشل إنشاء المستخدم");
 
         // Generate numbers if not provided
-        const finalStudentNumber = item.studentNumber || await generateNextStudentNumber(tx);
+        const finalStudentNumber =
+          item.studentNumber || (await generateNextStudentNumber(tx));
         const finalSecretNumber = item.secretNumber || generateSecretNumber();
 
         // Create student record
@@ -923,51 +1037,54 @@ export const bulkImportStudents = async (
 
         // Insert Parents if available
         if (item.fatherName) {
-           const [fatherUser] = await tx
-              .insert(users)
-              .values({
-                name: item.fatherName,
-                phone: item.fatherPhone || null,
-                role: "parent",
-              })
-              .returning({ id: users.id });
-              
-           if (fatherUser) {
-              await tx.insert(parentStudents).values({
-                 parentId: fatherUser.id,
-                 studentId: newUser.id,
-                 relationship: "father",
-                 isPrimary: true,
-              });
-           }
+          const [fatherUser] = await tx
+            .insert(users)
+            .values({
+              name: item.fatherName,
+              phone: item.fatherPhone || null,
+              role: "parent",
+            })
+            .returning({ id: users.id });
+
+          if (fatherUser) {
+            await tx.insert(parentStudents).values({
+              parentId: fatherUser.id,
+              studentId: newUser.id,
+              relationship: "father",
+              isPrimary: true,
+            });
+          }
         }
 
         if (item.motherName) {
-           const [motherUser] = await tx
-              .insert(users)
-              .values({
-                name: item.motherName,
-                phone: item.motherPhone || null,
-                role: "parent",
-              })
-              .returning({ id: users.id });
-              
-           if (motherUser) {
-              await tx.insert(parentStudents).values({
-                 parentId: motherUser.id,
-                 studentId: newUser.id,
-                 relationship: "mother",
-                 isPrimary: !item.fatherName,
-              });
-           }
+          const [motherUser] = await tx
+            .insert(users)
+            .values({
+              name: item.motherName,
+              phone: item.motherPhone || null,
+              role: "parent",
+            })
+            .returning({ id: users.id });
+
+          if (motherUser) {
+            await tx.insert(parentStudents).values({
+              parentId: motherUser.id,
+              studentId: newUser.id,
+              relationship: "mother",
+              isPrimary: !item.fatherName,
+            });
+          }
         }
 
         // Create enrollment
-        await tx.insert(enrollments).values({
-          studentId: newUser.id,
-          classId,
-          academicYearId: yearId!,
-        }).onConflictDoNothing();
+        await tx
+          .insert(enrollments)
+          .values({
+            studentId: newUser.id,
+            classId,
+            academicYearId: yearId!,
+          })
+          .onConflictDoNothing();
       });
 
       result.summary.added++;
@@ -976,7 +1093,7 @@ export const bulkImportStudents = async (
       result.failedStudents.push({
         rowNumber: originalIndex + 1,
         name: item.name,
-        error: (error as Error).message || 'خطأ غير معروف',
+        error: (error as Error).message || "خطأ غير معروف",
       });
     }
   }
@@ -991,24 +1108,24 @@ export const bulkImportStudents = async (
 };
 
 export const getStudentEnrollments = async (studentId: string) => {
-    return db
-        .select({
-            id: enrollments.id,
-            status: enrollments.status,
-            enrolledAt: enrollments.enrolledAt,
-            class: {
-                id: classes.id,
-                name: classes.name,
-            },
-            academicYear: {
-                id: academicYears.id,
-                name: academicYears.yearName,
-            }
-        })
-        .from(enrollments)
-        .innerJoin(classes, eq(enrollments.classId, classes.id))
-        .innerJoin(academicYears, eq(enrollments.academicYearId, academicYears.id))
-        .where(eq(enrollments.studentId, studentId));
+  return db
+    .select({
+      id: enrollments.id,
+      status: enrollments.status,
+      enrolledAt: enrollments.enrolledAt,
+      class: {
+        id: classes.id,
+        name: classes.name,
+      },
+      academicYear: {
+        id: academicYears.id,
+        name: academicYears.yearName,
+      },
+    })
+    .from(enrollments)
+    .innerJoin(classes, eq(enrollments.classId, classes.id))
+    .innerJoin(academicYears, eq(enrollments.academicYearId, academicYears.id))
+    .where(eq(enrollments.studentId, studentId));
 };
 
 /**
@@ -1049,7 +1166,9 @@ export const getStudentsParentsData = async (classId: number) => {
 
   return studentsDataRaw.map((s) => {
     const p = parentsDataRaw.filter((p) => p.studentId === s.studentId);
-    const father = p.find((p) => p.relationship === "father" || p.relationship === "parent");
+    const father = p.find(
+      (p) => p.relationship === "father" || p.relationship === "parent",
+    );
     const mother = p.find((p) => p.relationship === "mother");
     return {
       studentNumber: s.studentNumber,
@@ -1064,7 +1183,7 @@ export const getStudentsParentsData = async (classId: number) => {
       fatherPhone: father?.parentPhone || null,
       motherName: mother?.parentName || null,
       motherPhone: mother?.parentPhone || null,
-      metadata: s.studentId ? undefined : undefined // placeholder if needed downstream
+      metadata: s.studentId ? undefined : undefined, // placeholder if needed downstream
     };
   });
 };
@@ -1104,29 +1223,34 @@ export const regenerateSecretNumbers = async (params: {
     if (classId) {
       // Single class (including its sections/children)
       const targetClasses = await tx
-        .select({ id: classes.id, name: classes.name, sortOrder: classes.sortOrder })
+        .select({
+          id: classes.id,
+          name: classes.name,
+          sortOrder: classes.sortOrder,
+        })
         .from(classes)
-        .where(
-          or(
-            eq(classes.id, classId),
-            eq(classes.parentClassId, classId)
-          )
-        );
+        .where(or(eq(classes.id, classId), eq(classes.parentClassId, classId)));
       classGroups = targetClasses;
     } else {
       // All classes in the academic year
       const enrolledClasses = await tx
-        .select({ id: classes.id, name: classes.name, sortOrder: classes.sortOrder })
+        .select({
+          id: classes.id,
+          name: classes.name,
+          sortOrder: classes.sortOrder,
+        })
         .from(enrollments)
         .innerJoin(classes, eq(enrollments.classId, classes.id))
         .where(eq(enrollments.academicYearId, yearId))
         .groupBy(classes.id, classes.name, classes.sortOrder);
-      
+
       classGroups = enrolledClasses;
     }
 
     // Sort classes by hierarchy/defined order
-    classGroups.sort((a, b) => (a.sortOrder - b.sortOrder) || a.name.localeCompare(b.name));
+    classGroups.sort(
+      (a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name),
+    );
 
     let currentCounter = startFrom || 1;
     let totalProcessed = 0;
@@ -1140,31 +1264,32 @@ export const regenerateSecretNumbers = async (params: {
         .where(
           and(
             eq(enrollments.classId, group.id),
-            eq(enrollments.academicYearId, yearId)
-          )
+            eq(enrollments.academicYearId, yearId),
+          ),
         );
 
       if (classStudents.length === 0) continue;
 
       /**
        * ANONYMOUS SHUFFLING (2026 STANDARD):
-       * Shuffle students within the class range to ensure the teacher/student 
+       * Shuffle students within the class range to ensure the teacher/student
        * cannot predict the mapping based on alphabetical order.
        */
       const shuffled = [...classStudents].sort(() => Math.random() - 0.5);
 
       for (const student of shuffled) {
-        const secretValue = pattern 
-          ? generateSecretByPattern(pattern) 
+        const secretValue = pattern
+          ? generateSecretByPattern(pattern)
           : (currentCounter++).toString();
-        
-        await tx.update(students)
-          .set({ 
+
+        await tx
+          .update(students)
+          .set({
             secretNumber: secretValue,
-            updatedAt: new Date()
+            updatedAt: new Date(),
           } as any)
           .where(eq(students.userId, student.userId));
-        
+
         totalProcessed++;
       }
     }
@@ -1204,27 +1329,32 @@ export const regenerateSeatingNumbers = async (params: {
 
     if (classId) {
       const targetClasses = await tx
-        .select({ id: classes.id, name: classes.name, sortOrder: classes.sortOrder })
+        .select({
+          id: classes.id,
+          name: classes.name,
+          sortOrder: classes.sortOrder,
+        })
         .from(classes)
-        .where(
-          or(
-            eq(classes.id, classId),
-            eq(classes.parentClassId, classId)
-          )
-        );
+        .where(or(eq(classes.id, classId), eq(classes.parentClassId, classId)));
       classGroups = targetClasses;
     } else {
       const enrolledClasses = await tx
-        .select({ id: classes.id, name: classes.name, sortOrder: classes.sortOrder })
+        .select({
+          id: classes.id,
+          name: classes.name,
+          sortOrder: classes.sortOrder,
+        })
         .from(enrollments)
         .innerJoin(classes, eq(enrollments.classId, classes.id))
         .where(eq(enrollments.academicYearId, yearId))
         .groupBy(classes.id, classes.name, classes.sortOrder);
-      
+
       classGroups = enrolledClasses;
     }
 
-    classGroups.sort((a, b) => (a.sortOrder - b.sortOrder) || a.name.localeCompare(b.name));
+    classGroups.sort(
+      (a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name),
+    );
 
     let currentCounter = startFrom;
     let totalProcessed = 0;
@@ -1238,26 +1368,26 @@ export const regenerateSeatingNumbers = async (params: {
         .where(
           and(
             eq(enrollments.classId, group.id),
-            eq(enrollments.academicYearId, yearId)
-          )
+            eq(enrollments.academicYearId, yearId),
+          ),
         )
         .orderBy(asc(users.name));
 
       for (const student of classStudents) {
-        await tx.update(students)
-          .set({ 
+        await tx
+          .update(students)
+          .set({
             seatingNumber: currentCounter.toString(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
           } as any)
           .where(eq(students.userId, student.userId));
-        
+
         currentCounter++;
         totalProcessed++;
       }
     }
-    
+
     await studentCache.invalidate().catch(() => {});
     return { count: totalProcessed };
   });
 };
-

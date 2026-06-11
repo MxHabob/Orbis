@@ -1,10 +1,10 @@
 "use client";
 
-import { useClassParams } from "@/hooks/use-class-params";
 import { Button } from "@orbis/ui/button";
 import { Icons } from "@orbis/ui/icons";
 import { Sheet, SheetContent, SheetHeader } from "@orbis/ui/sheet";
 import React from "react";
+import { useClassParams } from "@/hooks/use-class-params";
 import { ClassForm } from "../forms/class-form";
 
 export function ClassCreateSheet() {

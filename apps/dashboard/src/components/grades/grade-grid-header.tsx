@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { Badge } from "@orbis/ui/badge";
 import {
   Select,
   SelectContent,
@@ -8,13 +8,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@orbis/ui/select";
-import { GradesActions } from "./grades-actions";
-import { GradesSearchFilter } from "./grades-search-filter";
+import { useEffect } from "react";
+import { useGradeFilterParams } from "@/hooks/use-grade-filter-params";
 import { useI18n } from "@/locales/client";
 import { useGradingStore } from "@/store/use-grading-store";
-import { useGradeFilterParams } from "@/hooks/use-grade-filter-params";
 import { HIJRI_MONTHS } from "@/utils/academic-calendar";
-import { Badge } from "@orbis/ui/badge";
+import { GradesActions } from "./grades-actions";
+import { GradesSearchFilter } from "./grades-search-filter";
 
 interface GradeGridHeaderProps {
   initialData: {
@@ -25,20 +25,25 @@ interface GradeGridHeaderProps {
   };
 }
 
-const months = HIJRI_MONTHS.map(m => ({ id: m.id, name: m.label }));
+const months = HIJRI_MONTHS.map((m) => ({ id: m.id, name: m.label }));
 
-export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps & { defaults?: { yearId?: number; termId?: number; month?: number } }) {
+export function GradeGridHeader({
+  initialData,
+  defaults,
+}: GradeGridHeaderProps & {
+  defaults?: { yearId?: number; termId?: number; month?: number };
+}) {
   const { filter, setFilter } = useGradeFilterParams();
   const { selectedClassId, selectedSubjectId, termId, month, yearId } = filter;
 
   const t = useI18n();
-  const { 
-    yearId: stYear, 
-    termId: stTerm, 
-    month: stMonth, 
-    classId: stClass, 
-    subjectId: stSubject, 
-    setFilters 
+  const {
+    yearId: stYear,
+    termId: stTerm,
+    month: stMonth,
+    classId: stClass,
+    subjectId: stSubject,
+    setFilters,
   } = useGradingStore();
 
   // Initialization: If URL is empty, load from Zustand (One-time sync)
@@ -50,11 +55,18 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
     if (yearId === null && state.yearId) updates.yearId = state.yearId;
     if (termId === null && state.termId) updates.termId = state.termId;
     if (month === null && state.month) updates.month = state.month;
-    if (selectedClassId === null && state.classId) updates.selectedClassId = state.classId;
-    if (selectedSubjectId === null && state.subjectId) updates.selectedSubjectId = state.subjectId;
-    
+    if (selectedClassId === null && state.classId)
+      updates.selectedClassId = state.classId;
+    if (selectedSubjectId === null && state.subjectId)
+      updates.selectedSubjectId = state.subjectId;
+
     // If everything is empty, use provided defaults
-    if (yearId === null && !state.yearId && defaults?.yearId && updates.yearId === undefined) {
+    if (
+      yearId === null &&
+      !state.yearId &&
+      defaults?.yearId &&
+      updates.yearId === undefined
+    ) {
       updates.yearId = defaults.yearId;
     }
 
@@ -64,8 +76,10 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
       if (updates.yearId) storeUpdates.yearId = updates.yearId;
       if (updates.termId) storeUpdates.termId = updates.termId;
       if (updates.month) storeUpdates.month = updates.month;
-      if (updates.selectedClassId) storeUpdates.classId = updates.selectedClassId;
-      if (updates.selectedSubjectId) storeUpdates.subjectId = updates.selectedSubjectId;
+      if (updates.selectedClassId)
+        storeUpdates.classId = updates.selectedClassId;
+      if (updates.selectedSubjectId)
+        storeUpdates.subjectId = updates.selectedSubjectId;
 
       updateFilter(storeUpdates);
 
@@ -84,7 +98,7 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
   return (
     <div className="flex flex-wrap items-center py-4 justify-between">
       <div className="flex gap-6">
-        <GradesSearchFilter/>
+        <GradesSearchFilter />
         <Select
           value={yearId?.toString() || ""}
           onValueChange={(val) => {
@@ -99,8 +113,12 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
           <SelectContent>
             {initialData.years.map((y) => (
               <SelectItem key={y.id} value={y.id.toString()}>
-                {y.yearName} 
-                {y.isCurrent && <Badge variant="secondary" className="ml-2">{t("education.current")}</Badge>}
+                {y.yearName}
+                {y.isCurrent && (
+                  <Badge variant="secondary" className="ml-2">
+                    {t("education.current")}
+                  </Badge>
+                )}
               </SelectItem>
             ))}
           </SelectContent>
@@ -150,11 +168,13 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
           value={termId?.toString() || ""}
           onValueChange={(val) => {
             const newTermId = parseInt(val);
-            
+
             // Auto-select first month of the new term
-            const activeTerm = initialData.terms.find(t => t.id === newTermId);
+            const activeTerm = initialData.terms.find(
+              (t) => t.id === newTermId,
+            );
             const newMonth = activeTerm?.name.includes("الاول") ? 1 : 5;
-            
+
             setFilter({ termId: newTermId, month: newMonth });
             updateFilter({ termId: newTermId, month: newMonth });
           }}
@@ -164,7 +184,7 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
           </SelectTrigger>
           <SelectContent>
             {initialData.terms
-              .filter(t => !yearId || t.academicYearId === yearId)
+              .filter((t) => !yearId || t.academicYearId === yearId)
               .map((t) => (
                 <SelectItem key={t.id} value={t.id.toString()}>
                   {t.name}
@@ -186,21 +206,27 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
           </SelectTrigger>
           <SelectContent>
             {months
-              .filter(m => {
+              .filter((m) => {
                 if (!termId) return true;
-                const activeTerm = initialData.terms.find(t => t.id === termId);
+                const activeTerm = initialData.terms.find(
+                  (t) => t.id === termId,
+                );
                 const isFirstTerm = activeTerm?.name.includes("الاول");
-                
-                const monthData = HIJRI_MONTHS.find(hm => hm.id === m.id);
-                return isFirstTerm ? monthData?.term === 1 : monthData?.term === 2;
+
+                const monthData = HIJRI_MONTHS.find((hm) => hm.id === m.id);
+                return isFirstTerm
+                  ? monthData?.term === 1
+                  : monthData?.term === 2;
               })
               .map((m) => (
                 <SelectItem key={m.id} value={m.id.toString()}>
                   <div className="flex items-center justify-between w-full gap-2">
                     <span>{m.name}</span>
-                    {HIJRI_MONTHS.find(hm => hm.id === m.id)?.isExam && (
+                    {HIJRI_MONTHS.find((hm) => hm.id === m.id)?.isExam && (
                       <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-medium">
-                        {m.id === 4 ? t("grades.midterm_exam") : t("grades.final_exam")}
+                        {m.id === 4
+                          ? t("grades.midterm_exam")
+                          : t("grades.final_exam")}
                       </span>
                     )}
                   </div>
@@ -210,7 +236,7 @@ export function GradeGridHeader({ initialData, defaults }: GradeGridHeaderProps 
         </Select>
       </div>
       <div className="flex gap-2">
-        <GradesActions/>
+        <GradesActions />
       </div>
     </div>
   );

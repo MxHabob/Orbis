@@ -1,9 +1,15 @@
-import { parseAsBoolean, parseAsString, parseAsStringEnum, parseAsInteger, useQueryStates } from "nuqs";
 import { useParams } from "next/navigation";
+import {
+  parseAsBoolean,
+  parseAsInteger,
+  parseAsString,
+  parseAsStringEnum,
+  useQueryStates,
+} from "nuqs";
 
 export function useStudentParams() {
   const pathParams = useParams();
-  
+
   const [queryStates, setQueryStates] = useQueryStates({
     studentId: parseAsString,
     deleteStudentId: parseAsString,
@@ -17,7 +23,6 @@ export function useStudentParams() {
     templateId: parseAsString,
     month: parseAsInteger,
   });
-
 
   return {
     ...queryStates,

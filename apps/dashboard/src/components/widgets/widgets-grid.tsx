@@ -1,8 +1,7 @@
 "use client";
 
-import { ErrorBoundary } from "@/components/error-boundary";
-import { useTRPC } from "@/trpc/client";
 import {
+  closestCenter,
   DndContext,
   type DragEndEvent,
   DragOverlay,
@@ -10,23 +9,24 @@ import {
   KeyboardSensor,
   PointerSensor,
   type UniqueIdentifier,
-  closestCenter,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
 import {
-  SortableContext,
   arrayMove,
   rectSortingStrategy,
+  SortableContext,
   sortableKeyboardCoordinates,
+  useSortable,
 } from "@dnd-kit/sortable";
-import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { AppRouter } from "@orbis/api/trpc/routers/_app";
 import { useMutation } from "@tanstack/react-query";
 import type { inferRouterOutputs } from "@trpc/server";
 import { useRef, useState } from "react";
 import { useOnClickOutside } from "usehooks-ts";
+import { ErrorBoundary } from "@/components/error-boundary";
+import { useTRPC } from "@/trpc/client";
 import { GrowthRateWidget } from "./growth-rate";
 import { VaultWidget } from "./vault";
 import { WidgetErrorFallback } from "./widget-error-fallback";
@@ -89,9 +89,7 @@ function SortableCard({
 }
 
 // Widget mapping to components
-const WIDGET_COMPONENTS: Record<WidgetType, React.ComponentType> = {
-
-};
+const WIDGET_COMPONENTS: Record<WidgetType, React.ComponentType> = {};
 
 export function WidgetsGrid() {
   const trpc = useTRPC();

@@ -1,16 +1,16 @@
-import { Suspense } from "react";
 import type { Metadata } from "next";
-import { GradeGridHeader } from "@/components/grades/grade-grid-header";
-import { GradeGridWrapper } from "@/components/grades/grade-grid-wrapper";
-import { ScrollableContent } from "@/components/scrollable-content";
-import { GradesSkeleton } from "@/components/tables/grades/skeleton";
-import { getInitialTableSettings } from "@/utils/columns";
+import type { SearchParams } from "nuqs";
+import { Suspense } from "react";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { ErrorFallback } from "@/components/error-fallback";
+import { GradeGridHeader } from "@/components/grades/grade-grid-header";
+import { GradeGridWrapper } from "@/components/grades/grade-grid-wrapper";
 import { GradesUploadZone } from "@/components/grades/grades-upload-zone";
-import { trpc, prefetch, HydrateClient, getQueryClient } from "@/trpc/server";
+import { ScrollableContent } from "@/components/scrollable-content";
+import { GradesSkeleton } from "@/components/tables/grades/skeleton";
 import { loadGradeFilterParams } from "@/hooks/use-grade-filter-params";
-import type { SearchParams } from "nuqs";
+import { getQueryClient, HydrateClient, prefetch, trpc } from "@/trpc/server";
+import { getInitialTableSettings } from "@/utils/columns";
 
 export const metadata: Metadata = {
   title: "Grade | Orbis",
@@ -35,22 +35,26 @@ export default async function GradesPage(props: Props) {
   const activeYearId = filter.yearId || currentYear?.id;
 
   const [classesResponse, terms] = await Promise.all([
-    queryClient.fetchQuery(trpc.classes.getAll.queryOptions({ academicYearId: activeYearId })),
-    activeYearId 
-      ? queryClient.fetchQuery(trpc.academic.getTerms.queryOptions({ yearId: activeYearId })) 
+    queryClient.fetchQuery(
+      trpc.classes.getAll.queryOptions({ academicYearId: activeYearId }),
+    ),
+    activeYearId
+      ? queryClient.fetchQuery(
+          trpc.academic.getTerms.queryOptions({ yearId: activeYearId }),
+        )
       : Promise.resolve([]),
   ]);
 
   const { selectedClassId, selectedSubjectId, termId, month, yearId } = filter;
   if (selectedClassId && selectedSubjectId && termId && month && yearId) {
     prefetch(
-      trpc.grades.getGridData.queryOptions({ 
-        classId: selectedClassId, 
-        subjectId: selectedSubjectId, 
-        termId, 
-        month, 
-        academicYearId: yearId 
-      })
+      trpc.grades.getGridData.queryOptions({
+        classId: selectedClassId,
+        subjectId: selectedSubjectId,
+        termId,
+        month,
+        academicYearId: yearId,
+      }),
     );
   }
 
@@ -66,10 +70,10 @@ export default async function GradesPage(props: Props) {
       name: t.name,
       academicYearId: t.academicYearId,
     })),
-    years: years.map((y: any) => ({ 
-      id: y.id, 
+    years: years.map((y: any) => ({
+      id: y.id,
       yearName: y.yearName,
-      isCurrent: y.isCurrent
+      isCurrent: y.isCurrent,
     })),
   };
 

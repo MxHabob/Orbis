@@ -4,7 +4,11 @@ import {
   updateAcademicTermSchema,
   updateAcademicYearSchema,
 } from "@api/schemas/academic";
-import { createTRPCRouter, protectedProcedure, adminProcedure } from "@api/trpc/init";
+import {
+  adminProcedure,
+  createTRPCRouter,
+  protectedProcedure,
+} from "@api/trpc/init";
 import {
   createAcademicTerm,
   createAcademicYear,
@@ -23,12 +27,14 @@ import { z } from "zod";
 export const academicRouter = createTRPCRouter({
   getYears: protectedProcedure
     .input(
-      z.object({
-        cursor: z.string().nullish(),
-        pageSize: z.number().optional(),
-        sort: z.array(z.string()).optional(),
-        activeOnly: z.boolean().optional(),
-      }).optional(),
+      z
+        .object({
+          cursor: z.string().nullish(),
+          pageSize: z.number().optional(),
+          sort: z.array(z.string()).optional(),
+          activeOnly: z.boolean().optional(),
+        })
+        .optional(),
     )
     .query(async () => {
       return getAcademicYears();

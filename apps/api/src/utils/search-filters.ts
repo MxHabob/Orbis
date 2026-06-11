@@ -25,7 +25,14 @@ const schema = z.object({
     )
     .describe("The type of the items to search for"),
   status: z
-    .enum(["active", "graduated", "transferred", "suspended", "auditor", "homeschooled"])
+    .enum([
+      "active",
+      "graduated",
+      "transferred",
+      "suspended",
+      "auditor",
+      "homeschooled",
+    ])
     .optional()
     .describe(
       "The status filter (e.g. 'active', 'graduated') for students or other entities.",

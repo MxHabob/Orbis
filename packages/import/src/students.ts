@@ -1,4 +1,4 @@
-import { users, students, parentStudents, enrollments } from "@orbis/db/schema";
+import { enrollments, parentStudents, students, users } from "@orbis/db/schema";
 
 // Map Arabic/English standard headers to our internal keys
 // This can be expanded based on UI requirements
@@ -33,7 +33,7 @@ export type StudentImportRow = {
 export async function processStudentsImport(
   db: any, // Using any for db to be agnostic, ideally should be PostgresJsDatabase<typeof schema>
   data: StudentImportRow[],
-  options: { classId: number; academicYearId: number }
+  options: { classId: number; academicYearId: number },
 ) {
   return await db.transaction(async (tx: any) => {
     const results = {
@@ -53,7 +53,7 @@ export async function processStudentsImport(
         for (const [key, value] of Object.entries(row)) {
           // Check if it's a known english key or known arabic key
           const mappedKey = ARABIC_MAPPING[key] || key;
-          
+
           if (STANDARD_COLUMNS.includes(mappedKey)) {
             normalizedRow[mappedKey] = value;
           } else {
@@ -80,7 +80,8 @@ export async function processStudentsImport(
           .returning({ id: users.id });
 
         // 3. Insert Student Profile + Metadata
-        const studentNum = normalizedRow.studentNumber || `STU-${Date.now()}-${i}`;
+        const studentNum =
+          normalizedRow.studentNumber || `STU-${Date.now()}-${i}`;
         await tx.insert(students).values({
           userId: studentUser.id,
           studentNumber: studentNum,
@@ -99,47 +100,47 @@ export async function processStudentsImport(
 
         // 5. Handle Father Mapping
         if (normalizedRow.fatherName) {
-           const [fatherUser] = await tx
-              .insert(users)
-              .values({
-                name: normalizedRow.fatherName,
-                phone: normalizedRow.fatherPhone || null,
-                role: "parent",
-              })
-              .returning({ id: users.id });
-              
-           await tx.insert(parentStudents).values({
-              parentId: fatherUser.id,
-              studentId: studentUser.id,
-              relationship: "father",
-              isPrimary: true,
-           });
+          const [fatherUser] = await tx
+            .insert(users)
+            .values({
+              name: normalizedRow.fatherName,
+              phone: normalizedRow.fatherPhone || null,
+              role: "parent",
+            })
+            .returning({ id: users.id });
+
+          await tx.insert(parentStudents).values({
+            parentId: fatherUser.id,
+            studentId: studentUser.id,
+            relationship: "father",
+            isPrimary: true,
+          });
         }
 
         // 6. Handle Mother Mapping
         if (normalizedRow.motherName) {
-           const [motherUser] = await tx
-              .insert(users)
-              .values({
-                name: normalizedRow.motherName,
-                phone: normalizedRow.motherPhone || null,
-                role: "parent",
-              })
-              .returning({ id: users.id });
-              
-           await tx.insert(parentStudents).values({
-              parentId: motherUser.id,
-              studentId: studentUser.id,
-              relationship: "mother",
-              isPrimary: !normalizedRow.fatherName, // Primary if no father
-           });
+          const [motherUser] = await tx
+            .insert(users)
+            .values({
+              name: normalizedRow.motherName,
+              phone: normalizedRow.motherPhone || null,
+              role: "parent",
+            })
+            .returning({ id: users.id });
+
+          await tx.insert(parentStudents).values({
+            parentId: motherUser.id,
+            studentId: studentUser.id,
+            relationship: "mother",
+            isPrimary: !normalizedRow.fatherName, // Primary if no father
+          });
         }
 
         results.importedCount++;
       } catch (error: any) {
         console.error(`Error processing row ${i + 2}:`, error);
         results.errors.push(`Row ${i + 2}: ${error.message}`);
-        // For strict integrity, one failure aborts everything. 
+        // For strict integrity, one failure aborts everything.
         // If you want to skip failures, handling it per row requires nested savepoints or just accepting some rows to fail silently while continuing the transaction (depends on DB capability).
         // Since we are throwing, it rolls back the entire transaction.
         throw error;

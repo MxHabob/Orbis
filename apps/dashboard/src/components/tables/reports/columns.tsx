@@ -1,9 +1,9 @@
 "use client";
 
+import type { RouterOutputs } from "@api/trpc/routers/_app";
 import { Avatar, AvatarFallback } from "@orbis/ui/avatar";
 import { Checkbox } from "@orbis/ui/checkbox";
 import { cn } from "@orbis/ui/cn";
-import type { RouterOutputs } from "@api/trpc/routers/_app";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ActionsMenu } from "./actions-menu";
 
@@ -57,11 +57,11 @@ export const columns: ColumnDef<ClassReport>[] = [
       const data = row.original;
       const name = data.name || "";
       const color = (data as any).color;
-      
+
       return (
         <div className="flex items-center gap-2 min-w-0">
           <Avatar className="size-5 flex-shrink-0">
-            <AvatarFallback 
+            <AvatarFallback
               className="text-[9px] font-medium"
               style={{ backgroundColor: color || "#e6e6e6" }}
             >
@@ -117,11 +117,7 @@ export const columns: ColumnDef<ClassReport>[] = [
     },
     cell: ({ row }) => {
       const count = row.original._count?.students ?? 0;
-      return (
-        <span className="truncate">
-          {count}
-        </span>
-      );
+      return <span className="truncate">{count}</span>;
     },
   },
   {
@@ -137,11 +133,7 @@ export const columns: ColumnDef<ClassReport>[] = [
     },
     cell: ({ row }) => {
       const count = row.original._count?.schedule ?? 0;
-      return (
-        <span className="truncate">
-          {count}
-        </span>
-      );
+      return <span className="truncate">{count}</span>;
     },
   },
   {

@@ -1,15 +1,14 @@
 "use client";
 
-import { useUpload } from "@/hooks/use-upload";
-import { useTRPC } from "@/trpc/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@orbis/ui/avatar";
 import { cn } from "@orbis/ui/cn";
 import { Icons } from "@orbis/ui/icons";
 import { stripSpecialCharacters } from "@orbis/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
-import { useRef, useState } from "react";
-import { forwardRef } from "react";
+import { forwardRef, useRef, useState } from "react";
+import { useUpload } from "@/hooks/use-upload";
+import { useTRPC } from "@/trpc/client";
 
 type Props = {
   userId: string;
@@ -23,7 +22,15 @@ type Props = {
 
 export const AvatarUpload = forwardRef<HTMLInputElement, Props>(
   (
-    { userId, avatarUrl: initialAvatarUrl, size = 65, onUpload, className, folder, skipUserUpdate },
+    {
+      userId,
+      avatarUrl: initialAvatarUrl,
+      size = 65,
+      onUpload,
+      className,
+      folder,
+      skipUserUpdate,
+    },
     ref,
   ) => {
     const [avatar, setAvatar] = useState(initialAvatarUrl);

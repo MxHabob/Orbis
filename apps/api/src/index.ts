@@ -1,31 +1,28 @@
 import { trpcServer } from "@hono/trpc-server";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { auth } from "@orbis/auth";
 import { Scalar } from "@scalar/hono-api-reference";
 import { cors } from "hono/cors";
 import { secureHeaders } from "hono/secure-headers";
+import { handleFileProxy } from "./routes/files";
+import { handleUpload } from "./routes/upload";
 import { createTRPCContext } from "./trpc/init";
 import { appRouter } from "./trpc/routers/_app";
-import { httpLogger } from "./utils/logger";
-import { auth } from "@orbis/auth";
 import type { HonoEnv } from "./utils/auth";
-import { handleUpload } from "./routes/upload";
-import { handleFileProxy } from "./routes/files";
+import { httpLogger } from "./utils/logger";
 
 const app = new OpenAPIHono<HonoEnv>();
 
 app.use(httpLogger());
 
-app.use(
-  "*",
-  async (c, next) => {
-    if (c.req.path.includes("/files/proxy")) {
-      return next();
-    }
-    return secureHeaders({
-      crossOriginResourcePolicy: "cross-origin",
-    })(c, next);
-  },
-);
+app.use("*", async (c, next) => {
+  if (c.req.path.includes("/files/proxy")) {
+    return next();
+  }
+  return secureHeaders({
+    crossOriginResourcePolicy: "cross-origin",
+  })(c, next);
+});
 
 app.use(
   "*",
@@ -95,8 +92,8 @@ app.use("*", async (c, next) => {
   // Fallback for background jobs/Puppeteer using Authorization header or custom header
   if (!session) {
     const authHeader = c.req.header("Authorization");
-    const sessionToken = authHeader?.startsWith("Bearer ") 
-      ? authHeader.substring(7) 
+    const sessionToken = authHeader?.startsWith("Bearer ")
+      ? authHeader.substring(7)
       : c.req.header("x-better-auth-session");
 
     if (sessionToken) {
@@ -154,10 +151,7 @@ app.get("/s/:code", async (c) => {
     .select()
     .from(shortLinks)
     .where(
-      and(
-        eq(shortLinks.code, code),
-        gt(shortLinks.expiresAt, new Date()),
-      ),
+      and(eq(shortLinks.code, code), gt(shortLinks.expiresAt, new Date())),
     );
 
   if (!link) {
@@ -224,7 +218,11 @@ app.openAPIRegistry.registerComponent("securitySchemes", "token", {
 
 app.get(
   "/",
-  Scalar({ url: "/openapi", pageTitle: "Orbis School API Docs", theme: "saturn" }),
+  Scalar({
+    url: "/openapi",
+    pageTitle: "Orbis School API Docs",
+    theme: "saturn",
+  }),
 );
 
 // Automatic Database Migrations and Seeding on Startup
@@ -246,8 +244,13 @@ async function initializeDatabase() {
       try {
         const fileDir = path.dirname(new URL(import.meta.url).pathname);
         // On Windows, URL pathname might look like /C:/path..., we strip leading slash
-        const cleanFileDir = process.platform === "win32" && fileDir.startsWith("/") ? fileDir.substring(1) : fileDir;
-        pathsToTry.push(path.resolve(cleanFileDir, "../../../packages/db/migrations"));
+        const cleanFileDir =
+          process.platform === "win32" && fileDir.startsWith("/")
+            ? fileDir.substring(1)
+            : fileDir;
+        pathsToTry.push(
+          path.resolve(cleanFileDir, "../../../packages/db/migrations"),
+        );
       } catch {}
 
       for (const p of pathsToTry) {
@@ -258,20 +261,27 @@ async function initializeDatabase() {
       }
 
       if (!migrationsFolder) {
-        console.error("❌ Could not find database migrations folder in any of the search paths:", pathsToTry);
+        console.error(
+          "❌ Could not find database migrations folder in any of the search paths:",
+          pathsToTry,
+        );
         return;
       }
 
       let retries = 5;
       while (retries > 0) {
         try {
-          console.log(`⏳ Connecting to database to apply migrations from: ${migrationsFolder}...`);
+          console.log(
+            `⏳ Connecting to database to apply migrations from: ${migrationsFolder}...`,
+          );
           await migrate(db, { migrationsFolder });
           console.log("✅ Database migrations applied successfully!");
 
           // Check if database needs seeding
           const { academicYears } = await import("@orbis/db/schema");
-          const result = await db.select({ count: sql`count(*)` }).from(academicYears);
+          const result = await db
+            .select({ count: sql`count(*)` })
+            .from(academicYears);
           const count = Number(result[0]?.count || 0);
 
           if (count === 0) {
@@ -281,14 +291,21 @@ async function initializeDatabase() {
             await seedDatabase();
             console.log("✅ Initial seed data applied successfully!");
           } else {
-            console.log("ℹ️ Database already contains data. Skipping initial seeding.");
+            console.log(
+              "ℹ️ Database already contains data. Skipping initial seeding.",
+            );
           }
           break;
         } catch (err) {
           retries--;
-          console.error(`❌ Migration/Seed attempt failed. Retries left: ${retries}`, err);
+          console.error(
+            `❌ Migration/Seed attempt failed. Retries left: ${retries}`,
+            err,
+          );
           if (retries === 0) {
-            console.error("🚨 Failed to initialize database after all retries. Continuing startup...");
+            console.error(
+              "🚨 Failed to initialize database after all retries. Continuing startup...",
+            );
           } else {
             await new Promise((resolve) => setTimeout(resolve, 3000));
           }

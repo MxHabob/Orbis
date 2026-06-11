@@ -1,9 +1,9 @@
 "use client";
 
-import { Category } from "@/components/category";
-import { SelectCategory } from "@/components/select-category";
 import { Popover, PopoverContent, PopoverTrigger } from "@orbis/ui/popover";
 import { useState } from "react";
+import { Category } from "@/components/category";
+import { SelectCategory } from "@/components/select-category";
 
 type Selected = {
   id: string;

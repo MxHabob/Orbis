@@ -1,7 +1,7 @@
 "use client";
 
-import { useI18n } from "@/locales/client";
 import { GraduationCap } from "lucide-react";
+import { useI18n } from "@/locales/client";
 
 export function HistoryEmptyState() {
   const t = useI18n();
@@ -15,9 +15,9 @@ export function HistoryEmptyState() {
         {(t as any)("promotions.no_history") || "سجل ترفيعات فارغ"}
       </h2>
       <p className="text-sm text-[#606060] max-w-sm text-center">
-        {(t as any)("promotions.no_history_desc") || "لا يوجد سجل للترفيعات لهذا الصف حتى الآن."}
+        {(t as any)("promotions.no_history_desc") ||
+          "لا يوجد سجل للترفيعات لهذا الصف حتى الآن."}
       </p>
     </div>
   );
 }
-

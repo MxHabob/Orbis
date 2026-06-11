@@ -1,9 +1,9 @@
 "use client";
 
-import { DocumentDetails } from "@/components/document-details";
-import { useDocumentParams } from "@/hooks/use-document-params";
 import { Sheet, SheetContent } from "@orbis/ui/sheet";
 import React from "react";
+import { DocumentDetails } from "@/components/document-details";
+import { useDocumentParams } from "@/hooks/use-document-params";
 
 export function DocumentSheet() {
   const { params, setParams } = useDocumentParams();

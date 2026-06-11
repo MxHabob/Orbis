@@ -1,9 +1,9 @@
 "use client";
 
-import { useTRPC } from "@/trpc/client";
 import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
 import { Spinner } from "@orbis/ui/spinner";
 import { useQuery } from "@tanstack/react-query";
+import { useTRPC } from "@/trpc/client";
 
 type Selected = {
   id: number;
@@ -24,15 +24,11 @@ export function SelectParentClass({
   hideLoading,
 }: Props) {
   const trpc = useTRPC();
-  const { data, isLoading } = useQuery(
-    trpc.classes.getAll.queryOptions({}),
-  );
+  const { data, isLoading } = useQuery(trpc.classes.getAll.queryOptions({}));
 
   const parentClasses =
     data?.data
-      ?.filter(
-        (cls) => !cls.parentClassId && !excludeIds.includes(cls.id),
-      )
+      ?.filter((cls) => !cls.parentClassId && !excludeIds.includes(cls.id))
       .map((cls) => ({
         id: cls.id.toString(),
         label: cls.name,
@@ -41,7 +37,7 @@ export function SelectParentClass({
   const selectedParent = parentId
     ? data?.data?.find((cls) => cls.id === parentId)
     : null;
-    
+
   const selectedValue = selectedParent
     ? { id: selectedParent.id.toString(), label: selectedParent.name }
     : undefined;

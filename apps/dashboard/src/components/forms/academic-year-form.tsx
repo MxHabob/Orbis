@@ -1,25 +1,34 @@
 "use client";
 
+import { createAcademicYearSchema } from "@api/schemas/academic";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Button } from "@orbis/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@orbis/ui/form";
+import { Input } from "@orbis/ui/input";
+import { Switch } from "@orbis/ui/switch";
+import { useToast } from "@orbis/ui/use-toast";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
-
+import { useForm } from "react-hook-form";
 import { useI18n } from "@/locales/client";
 import { useTRPC } from "@/trpc/client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { createAcademicYearSchema } from "@api/schemas/academic";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@orbis/ui/form";
-import { Input } from "@orbis/ui/input";
-import { Button } from "@orbis/ui/button";
-import { useToast } from "@orbis/ui/use-toast";
-import { Switch } from "@orbis/ui/switch";
 
 interface AcademicYearFormProps {
   initialData?: any;
   onSuccess?: () => void;
 }
 
-export function AcademicYearForm({ initialData, onSuccess }: AcademicYearFormProps) {
+export function AcademicYearForm({
+  initialData,
+  onSuccess,
+}: AcademicYearFormProps) {
   const t = useI18n();
   const trpc = useTRPC();
   const { toast } = useToast();
@@ -30,7 +39,9 @@ export function AcademicYearForm({ initialData, onSuccess }: AcademicYearFormPro
     defaultValues: initialData || {
       yearName: "",
       startDate: new Date().toISOString(),
-      endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
+      endDate: new Date(
+        new Date().setFullYear(new Date().getFullYear() + 1),
+      ).toISOString(),
       isCurrent: false,
     },
   });
@@ -51,13 +62,13 @@ export function AcademicYearForm({ initialData, onSuccess }: AcademicYearFormPro
         onSuccess?.();
       },
       onError: (error) => {
-        toast({ 
-          title: t("common.error"), 
+        toast({
+          title: t("common.error"),
           description: error.message,
-          variant: "destructive" 
+          variant: "destructive",
         });
       },
-    })
+    }),
   );
 
   const updateMutation = useMutation(
@@ -70,13 +81,13 @@ export function AcademicYearForm({ initialData, onSuccess }: AcademicYearFormPro
         onSuccess?.();
       },
       onError: (error) => {
-        toast({ 
-          title: t("common.error"), 
+        toast({
+          title: t("common.error"),
           description: error.message,
-          variant: "destructive" 
+          variant: "destructive",
         });
       },
-    })
+    }),
   );
 
   const isPending = createMutation.isPending || updateMutation.isPending;
@@ -117,7 +128,11 @@ export function AcademicYearForm({ initialData, onSuccess }: AcademicYearFormPro
               <FormItem>
                 <FormLabel>{t("common.start_date")}</FormLabel>
                 <FormControl>
-                  <Input type="date" {...field} value={field.value?.split('T')[0]} />
+                  <Input
+                    type="date"
+                    {...field}
+                    value={field.value?.split("T")[0]}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -130,7 +145,11 @@ export function AcademicYearForm({ initialData, onSuccess }: AcademicYearFormPro
               <FormItem>
                 <FormLabel>{t("common.end_date")}</FormLabel>
                 <FormControl>
-                  <Input type="date" {...field} value={field.value?.split('T')[0]} />
+                  <Input
+                    type="date"
+                    {...field}
+                    value={field.value?.split("T")[0]}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

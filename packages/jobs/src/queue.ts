@@ -43,7 +43,10 @@ export const jobQueue = hasRedis
 // Job Type Definitions
 // ============================================================
 
-export type JobType = "certificate-export" | "student-import" | "report-generation";
+export type JobType =
+  | "certificate-export"
+  | "student-import"
+  | "report-generation";
 
 export interface BaseJobData {
   userId: string;
@@ -59,7 +62,16 @@ export interface CertificateExportData extends BaseJobData {
 
 export interface ReportGenerationData extends BaseJobData {
   classId: number;
-  type: "monthly" | "half-yearly" | "final" | "attendance_sheet" | "students_parents_data" | "grades_grid" | "control_staff" | "teacher_grading" | "control_comparison";
+  type:
+    | "monthly"
+    | "half-yearly"
+    | "final"
+    | "attendance_sheet"
+    | "students_parents_data"
+    | "grades_grid"
+    | "control_staff"
+    | "teacher_grading"
+    | "control_comparison";
   month?: number;
   monthText?: string;
   format: "xlsx" | "csv";

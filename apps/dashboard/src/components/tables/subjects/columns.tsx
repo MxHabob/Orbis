@@ -21,7 +21,7 @@ export interface SubjectsTableMeta {
   setSearchValue?: Dispatch<SetStateAction<string>>;
 }
 
-export type Subject = RouterOutputs["subjects"]["getAll"]
+export type Subject = RouterOutputs["subjects"]["getAll"];
 
 export const columns: ColumnDef<any>[] = [
   {
@@ -34,9 +34,7 @@ export const columns: ColumnDef<any>[] = [
             className="size-3 rounded-sm border"
             style={{ backgroundColor: row.original?.color || "#e6e6e6" }}
           />
-          <span className="font-medium">
-            {row.getValue("name")}
-          </span>
+          <span className="font-medium">{row.getValue("name")}</span>
         </div>
       );
     },
@@ -45,14 +43,18 @@ export const columns: ColumnDef<any>[] = [
     header: "Code",
     accessorKey: "code",
     cell: ({ row }) => (
-      <span className="text-muted-foreground">{row.getValue("code") || "-"}</span>
+      <span className="text-muted-foreground">
+        {row.getValue("code") || "-"}
+      </span>
     ),
   },
   {
     header: "Order",
     accessorKey: "sortOrder",
     cell: ({ row }) => (
-      <span className="text-muted-foreground text-center inline-block w-8 border rounded-sm bg-secondary/50">{row.getValue("sortOrder")}</span>
+      <span className="text-muted-foreground text-center inline-block w-8 border rounded-sm bg-secondary/50">
+        {row.getValue("sortOrder")}
+      </span>
     ),
   },
   {
@@ -76,7 +78,9 @@ export const columns: ColumnDef<any>[] = [
               align="end"
               onClick={(e) => e.stopPropagation()}
             >
-              <DropdownMenuItem onClick={() => meta?.onEditSubject?.(row.original.id)}>
+              <DropdownMenuItem
+                onClick={() => meta?.onEditSubject?.(row.original.id)}
+              >
                 Edit
               </DropdownMenuItem>
               <DropdownMenuItem

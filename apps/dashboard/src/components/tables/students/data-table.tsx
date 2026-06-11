@@ -1,24 +1,10 @@
 "use client";
 
-import { VirtualRow } from "@/components/tables/core";
-import { useCustomerFilterParams } from "@/hooks/use-customer-filter-params";
-import { useStudentParams } from "@/hooks/use-student-params";
-import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
-import { useScrollHeader } from "@/hooks/use-scroll-header";
-import { useSortParams } from "@/hooks/use-sort-params";
-import { useStickyColumns } from "@/hooks/use-sticky-columns";
-import { useTableDnd } from "@/hooks/use-table-dnd";
-import { useTableScroll } from "@/hooks/use-table-scroll";
-import { useTableSettings } from "@/hooks/use-table-settings";
-import { useStudentsStore } from "@/store/students";
-import { useTRPC } from "@/trpc/client";
-import { STICKY_COLUMNS, SUMMARY_GRID_HEIGHTS } from "@/utils/table-configs";
-import type { TableSettings } from "@/utils/table-settings";
-import { DndContext, closestCenter } from "@dnd-kit/core";
+import { closestCenter, DndContext } from "@dnd-kit/core";
 import { Table, TableBody, TableCell, TableRow } from "@orbis/ui/table";
 import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { getCoreRowModel, useReactTable } from "@tanstack/react-table";
-import { type VirtualItem, useVirtualizer } from "@tanstack/react-virtual";
+import { useVirtualizer, type VirtualItem } from "@tanstack/react-virtual";
 import {
   useCallback,
   useDeferredValue,
@@ -26,6 +12,20 @@ import {
   useMemo,
   useRef,
 } from "react";
+import { VirtualRow } from "@/components/tables/core";
+import { useCustomerFilterParams } from "@/hooks/use-customer-filter-params";
+import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
+import { useScrollHeader } from "@/hooks/use-scroll-header";
+import { useSortParams } from "@/hooks/use-sort-params";
+import { useStickyColumns } from "@/hooks/use-sticky-columns";
+import { useStudentParams } from "@/hooks/use-student-params";
+import { useTableDnd } from "@/hooks/use-table-dnd";
+import { useTableScroll } from "@/hooks/use-table-scroll";
+import { useTableSettings } from "@/hooks/use-table-settings";
+import { useStudentsStore } from "@/store/students";
+import { useTRPC } from "@/trpc/client";
+import { STICKY_COLUMNS, SUMMARY_GRID_HEIGHTS } from "@/utils/table-configs";
+import type { TableSettings } from "@/utils/table-settings";
 import { columns } from "./columns";
 import { EmptyState, NoResults } from "./empty-states";
 import { DataTableHeader } from "./table-header";
@@ -66,7 +66,9 @@ export function DataTable({ initialSettings, id }: Props) {
       id,
       q: deferredSearch ?? undefined,
       sort: params.sort ?? undefined,
-      academicYearId: filter.academicYearId ? Number(filter.academicYearId) : undefined,
+      academicYearId: filter.academicYearId
+        ? Number(filter.academicYearId)
+        : undefined,
     },
     {
       getNextPageParam: (lastPage) => lastPage.meta.cursor,
@@ -104,7 +106,6 @@ export function DataTable({ initialSettings, id }: Props) {
     }),
     [handleDeleteStudent],
   );
-
 
   const table = useReactTable({
     data: tableData,
@@ -166,10 +167,9 @@ export function DataTable({ initialSettings, id }: Props) {
     threshold: 50,
   });
 
-
   if (!tableData.length) {
     return (
-      <div 
+      <div
         className="flex items-center justify-center border border-border bg-background"
         style={{ height: "calc(100vh - 420px + var(--header-offset, 0px))" }}
       >
@@ -179,7 +179,6 @@ export function DataTable({ initialSettings, id }: Props) {
   }
 
   const virtualItems = rowVirtualizer.getVirtualItems();
-
 
   return (
     <div className="relative">

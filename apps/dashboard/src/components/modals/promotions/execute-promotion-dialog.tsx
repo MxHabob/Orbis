@@ -1,6 +1,5 @@
 "use client";
 
-import { useI18n } from "@/locales/client";
 import { Alert, AlertDescription, AlertTitle } from "@orbis/ui/alert";
 import {
   AlertDialog,
@@ -13,6 +12,7 @@ import {
   AlertDialogTitle,
 } from "@orbis/ui/alert-dialog";
 import { AlertCircle, Loader2 } from "lucide-react";
+import { useI18n } from "@/locales/client";
 
 interface ExecutePromotionDialogProps {
   open: boolean;
@@ -44,25 +44,28 @@ export function ExecutePromotionDialog({
                 {t("promotions.confirm_execute", { count: studentCount })}
               </p>
 
-            <Alert className="bg-amber-500/20 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800 border-dashed">
-              <AlertCircle className="h-4 w-4 text-amber-500" />
-              <div className="flex items-center justify-between w-full">
-                <div>
-                  <AlertTitle className="text-amber-800 dark:text-amber-400">
-                     {t("common.confirm_action")}
-                  </AlertTitle>
-                  <AlertDescription className="text-amber-700 dark:text-amber-500">
-                    {t("promotions.irreversible_action")}
-                  </AlertDescription>
+              <Alert className="bg-amber-500/20 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800 border-dashed">
+                <AlertCircle className="h-4 w-4 text-amber-500" />
+                <div className="flex items-center justify-between w-full">
+                  <div>
+                    <AlertTitle className="text-amber-800 dark:text-amber-400">
+                      {t("common.confirm_action")}
+                    </AlertTitle>
+                    <AlertDescription className="text-amber-700 dark:text-amber-500">
+                      {t("promotions.irreversible_action")}
+                    </AlertDescription>
+                  </div>
                 </div>
-              </div>
-            </Alert>
+              </Alert>
             </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
 
         <AlertDialogFooter className="gap-2">
-          <AlertDialogCancel className="rounded-none h-8 text-xs" disabled={isLoading}>
+          <AlertDialogCancel
+            className="rounded-none h-8 text-xs"
+            disabled={isLoading}
+          >
             {t("common.cancel")}
           </AlertDialogCancel>
           <AlertDialogAction

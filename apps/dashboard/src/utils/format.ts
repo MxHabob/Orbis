@@ -52,7 +52,6 @@ export function formatSize(bytes: number | bigint | undefined | null): string {
   const unit: SizeUnit = SIZE_UNITS[unitIndex] ?? "byte";
   const value = b / 1024 ** unitIndex;
 
-
   try {
     return getFormatter(unit).format(value);
   } catch (error) {
@@ -145,7 +144,10 @@ export function calculateAvgBurnRate(data: BurnRateData[] | null) {
 export function formatAccountName({
   name = "",
   currency,
-}: { name?: string; currency?: string | null }) {
+}: {
+  name?: string;
+  currency?: string | null;
+}) {
   if (currency) {
     return `${name} (${currency})`;
   }

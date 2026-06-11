@@ -1,7 +1,5 @@
 "use client";
 
-import { useTRPC } from "@/trpc/client";
-import { useI18n } from "@/locales/client";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,6 +13,8 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { useI18n } from "@/locales/client";
+import { useTRPC } from "@/trpc/client";
 
 type Props = {
   id: string;
@@ -92,7 +92,9 @@ export function DeleteVaultFileDialog({
                     <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                     <div className="text-sm">
                       <p className="font-medium text-amber-700 dark:text-amber-300 mb-1">
-                        {t("vault.delete_warning_attachments", { count: attachmentCount })}
+                        {t("vault.delete_warning_attachments", {
+                          count: attachmentCount,
+                        })}
                       </p>
                     </div>
                   </div>
@@ -113,7 +115,9 @@ export function DeleteVaultFileDialog({
         </AlertDialogHeader>
 
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>{t("common.cancel")}</AlertDialogCancel>
+          <AlertDialogCancel disabled={isDeleting}>
+            {t("common.cancel")}
+          </AlertDialogCancel>
           <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
             {isDeleting ? (
               <div className="flex items-center gap-2">

@@ -1,13 +1,13 @@
 import {
+  boolean,
+  index,
+  integer,
+  jsonb,
+  smallint,
+  text,
+  timestamp,
   uuid,
   varchar,
-  text,
-  boolean,
-  timestamp,
-  integer,
-  smallint,
-  jsonb,
-  index,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm/sql";
 import { auditSchema } from "./types";
@@ -35,9 +35,8 @@ export const auditLog = auditSchema.table(
     entityId: uuid("entity_id"),
 
     // Changes (compact diff)
-    changes: jsonb("changes").$type<
-      Record<string, { old: unknown; new: unknown }>
-    >(),
+    changes:
+      jsonb("changes").$type<Record<string, { old: unknown; new: unknown }>>(),
 
     // Context
     description: text("description"),
@@ -79,25 +78,21 @@ export const auditLog = auditSchema.table(
     entityIdx: index("audit_entity_idx").on(
       t.entityType,
       t.entityId,
-      t.occurredAt
+      t.occurredAt,
     ),
     userIdx: index("audit_user_idx").on(t.userId, t.occurredAt),
     orgIdx: index("audit_org_idx").on(t.orgId, t.occurredAt),
-    actionIdx: index("audit_action_idx").on(
-      t.orgId,
-      t.action,
-      t.occurredAt
-    ),
+    actionIdx: index("audit_action_idx").on(t.orgId, t.action, t.occurredAt),
     failedIdx: index("audit_failed_idx")
       .on(t.orgId, t.status, t.occurredAt)
       .where(sql`${t.status} != 'success'`),
     securityIdx: index("audit_security_idx")
       .on(t.orgId, t.action, t.status)
       .where(
-        sql`${t.action} IN ('login', 'logout', 'delete', 'approve') AND ${t.status} = 'failed'`
+        sql`${t.action} IN ('login', 'logout', 'delete', 'approve') AND ${t.status} = 'failed'`,
       ),
     ttlIdx: index("audit_ttl_idx").on(t.occurredAt),
-  })
+  }),
 );
 
 // ============================================================
@@ -132,7 +127,7 @@ export const systemLog = auditSchema.table(
     orgLevelIdx: index("syslog_org_level_idx").on(
       t.orgId,
       t.level,
-      t.timestamp
+      t.timestamp,
     ),
     categoryIdx: index("syslog_category_idx").on(t.category, t.timestamp),
     errorIdx: index("syslog_error_idx")
@@ -143,7 +138,7 @@ export const systemLog = auditSchema.table(
     slowIdx: index("syslog_slow_idx")
       .on(t.endpoint, t.durationMs)
       .where(sql`${t.durationMs} > 1000`),
-  })
+  }),
 );
 
 // ============================================================
@@ -169,12 +164,16 @@ export const dataTransfers = auditSchema.table(
     failedRecords: integer("failed_records").default(0),
     skippedRecords: integer("skipped_records").default(0),
 
-    errorLog: jsonb("error_log").$type<
-      Array<{ row: number; field: string; error: string; value: unknown }>
-    >().default("[]"),
-    warningLog: jsonb("warning_log").$type<
-      Array<{ row: number; field: string; warning: string; value: unknown }>
-    >().default("[]"),
+    errorLog: jsonb("error_log")
+      .$type<
+        Array<{ row: number; field: string; error: string; value: unknown }>
+      >()
+      .default("[]"),
+    warningLog: jsonb("warning_log")
+      .$type<
+        Array<{ row: number; field: string; warning: string; value: unknown }>
+      >()
+      .default("[]"),
 
     status: varchar("status", { length: 20 }).default("pending").notNull(),
     startedAt: timestamp("started_at"),
@@ -200,5 +199,5 @@ export const dataTransfers = auditSchema.table(
     entityIdx: index("transfer_entity_idx").on(t.orgId, t.entityType),
     statusIdx: index("transfer_status_idx").on(t.orgId, t.status),
     userIdx: index("transfer_user_idx").on(t.initiatedBy),
-  })
+  }),
 );

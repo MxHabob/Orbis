@@ -1,9 +1,3 @@
-import { AppleSignIn } from "@/components/apple-sign-in";
-import { GithubSignIn } from "@/components/github-sign-in";
-import { GoogleSignIn } from "@/components/google-sign-in";
-import { LoginAccordion } from "@/components/login-accordion";
-import { UserAuthForm } from "@/components/user-auth-form";
-import { Cookies } from "@/utils/constants";
 import { auth } from "@orbis/auth";
 import { Zap } from "lucide-react";
 import type { Metadata } from "next";
@@ -11,6 +5,12 @@ import { cookies, headers } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { userAgent } from "next/server";
+import { AppleSignIn } from "@/components/apple-sign-in";
+import { GithubSignIn } from "@/components/github-sign-in";
+import { GoogleSignIn } from "@/components/google-sign-in";
+import { LoginAccordion } from "@/components/login-accordion";
+import { UserAuthForm } from "@/components/user-auth-form";
+import { Cookies } from "@/utils/constants";
 
 export const metadata: Metadata = {
   title: "Login | Orbis",
@@ -128,7 +128,9 @@ export default async function Page() {
           <div className="space-y-8 flex-1 flex flex-col justify-center">
             {/* Header */}
             <div className="text-center space-y-2">
-              <h1 className="text-lg mb-4 font-serif">Welcome to Orbis School</h1>
+              <h1 className="text-lg mb-4 font-serif">
+                Welcome to Orbis School
+              </h1>
               <p className="font-sans text-sm text-[#878787]">
                 Sign in or create an account
               </p>
@@ -154,7 +156,6 @@ export default async function Page() {
             {/* More Options Accordion */}
             <LoginAccordion>{moreSignInOptions}</LoginAccordion>
           </div>
-
 
           {/* Terms and Privacy Policy - Bottom aligned */}
           <div className="text-center mt-auto">

@@ -1,20 +1,23 @@
-import { createTRPCRouter, protectedProcedure, adminProcedure } from "@api/trpc/init";
-import { 
-  getTimeSlots, 
-  getClassSchedule, 
-  getTeacherSchedule, 
-  createTimeSlot, 
-  createScheduledLesson, 
-  updateScheduledLesson,
-  deleteScheduledLesson,
-  getScheduledLessonById
-} from "@orbis/db/queries";
-
-import { 
-  createTimeSlotSchema, 
+import {
   createScheduledLessonSchema,
-  updateScheduledLessonSchema 
+  createTimeSlotSchema,
+  updateScheduledLessonSchema,
 } from "@api/schemas/lessons";
+import {
+  adminProcedure,
+  createTRPCRouter,
+  protectedProcedure,
+} from "@api/trpc/init";
+import {
+  createScheduledLesson,
+  createTimeSlot,
+  deleteScheduledLesson,
+  getClassSchedule,
+  getScheduledLessonById,
+  getTeacherSchedule,
+  getTimeSlots,
+  updateScheduledLesson,
+} from "@orbis/db/queries";
 import { z } from "zod";
 
 export const lessonsRouter = createTRPCRouter({
@@ -67,4 +70,3 @@ export const lessonsRouter = createTRPCRouter({
       return deleteScheduledLesson(input.id);
     }),
 });
-

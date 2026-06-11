@@ -1,25 +1,24 @@
-
 import {
-  pgTable,
-  serial,
-  integer,
-  smallint,
-  varchar,
-  text,
   boolean,
-  timestamp,
   date,
-  time,
   index,
+  integer,
+  jsonb,
+  pgSchema,
+  pgTable,
+  primaryKey,
+  serial,
+  smallint,
+  text,
+  time,
+  timestamp,
   unique,
   uuid,
-  jsonb,
-  primaryKey,
-  pgSchema,
+  varchar,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm/sql";
+import { roleEnum, userStatusEnum } from "./enums";
 import { coreSchema } from "./types";
-import { userStatusEnum, roleEnum } from "./enums";
 
 // ============================================================
 // ORGANIZATIONS
@@ -45,31 +44,27 @@ export const organizations = coreSchema.table(
     maxStudents: smallint("max_students").default(5000).notNull(),
     maxStorageGb: smallint("max_storage_gb").default(100).notNull(),
 
-    settings: jsonb("settings")
-      .default("{}")
-      .$type<{
-        gradingSystem?: "percentage" | "gpa_4" | "gpa_5" | "letter";
-        passingGrade?: number;
-        maxGrade?: number;
-        allowLateRegistration?: boolean;
-        autoPromote?: boolean;
-        attendanceThreshold?: number;
-        behaviorPointsEnabled?: boolean;
-      }>(),
+    settings: jsonb("settings").default("{}").$type<{
+      gradingSystem?: "percentage" | "gpa_4" | "gpa_5" | "letter";
+      passingGrade?: number;
+      maxGrade?: number;
+      allowLateRegistration?: boolean;
+      autoPromote?: boolean;
+      attendanceThreshold?: number;
+      behaviorPointsEnabled?: boolean;
+    }>(),
 
-    features: jsonb("features")
-      .default("{}")
-      .$type<{
-        finance?: boolean;
-        transport?: boolean;
-        cafeteria?: boolean;
-        library?: boolean;
-        clinic?: boolean;
-        onlinePayments?: boolean;
-        parentPortal?: boolean;
-        teacherPortal?: boolean;
-        mobileApp?: boolean;
-      }>(),
+    features: jsonb("features").default("{}").$type<{
+      finance?: boolean;
+      transport?: boolean;
+      cafeteria?: boolean;
+      library?: boolean;
+      clinic?: boolean;
+      onlinePayments?: boolean;
+      parentPortal?: boolean;
+      teacherPortal?: boolean;
+      mobileApp?: boolean;
+    }>(),
 
     subscriptionPlan: varchar("subscription_plan", { length: 20 })
       .default("free")
@@ -96,13 +91,13 @@ export const organizations = coreSchema.table(
     activeIdx: index("org_active_idx").on(
       t.isActive,
       t.subscriptionPlan,
-      t.isDeleted
+      t.isDeleted,
     ),
     planExpiryIdx: index("org_plan_expiry_idx").on(
       t.subscriptionPlan,
-      t.subscriptionExpiresAt
+      t.subscriptionExpiresAt,
     ),
-  })
+  }),
 );
 
 // ============================================================
@@ -172,17 +167,15 @@ export const users = coreSchema.table(
     failedLogins: smallint("failed_logins").default(0),
     lockedUntil: timestamp("locked_until"),
 
-    prefs: jsonb("prefs")
-      .default("{}")
-      .$type<{
-        theme?: "light" | "dark" | "system";
-        lang?: "ar" | "en" | "fr";
-        rtl?: boolean;
-        notifications?: Record<string, boolean>;
-        dashboardLayout?: string[];
-        dateFormat?: string;
-        timezone?: string;
-      }>(),
+    prefs: jsonb("prefs").default("{}").$type<{
+      theme?: "light" | "dark" | "system";
+      lang?: "ar" | "en" | "fr";
+      rtl?: boolean;
+      notifications?: Record<string, boolean>;
+      dashboardLayout?: string[];
+      dateFormat?: string;
+      timezone?: string;
+    }>(),
 
     meta: jsonb("meta").default("{}").$type<Record<string, unknown>>(),
 
@@ -200,19 +193,15 @@ export const users = coreSchema.table(
 
     emailIdx: unique("user_email_idx")
       .on(t.orgId, t.email)
-      .where(
-        sql`${t.email} IS NOT NULL AND ${t.isDeleted} = false`
-      ),
+      .where(sql`${t.email} IS NOT NULL AND ${t.isDeleted} = false`),
 
     phoneIdx: unique("user_phone_idx")
       .on(t.orgId, t.phone)
-      .where(
-        sql`${t.phone} IS NOT NULL AND ${t.isDeleted} = false`
-      ),
+      .where(sql`${t.phone} IS NOT NULL AND ${t.isDeleted} = false`),
 
     nameSearchIdx: index("user_name_search_idx").using(
       "gin",
-      sql`to_tsvector('arabic', COALESCE(${t.fullName}, '') || ' ' || COALESCE(${t.nameAr}, '') || ' ' || COALESCE(${t.nameEn}, ''))`
+      sql`to_tsvector('arabic', COALESCE(${t.fullName}, '') || ' ' || COALESCE(${t.nameAr}, '') || ' ' || COALESCE(${t.nameEn}, ''))`,
     ),
 
     nationalIdIdx: index("user_national_id_idx")
@@ -221,14 +210,12 @@ export const users = coreSchema.table(
 
     statusLockIdx: index("user_status_lock_idx")
       .on(t.status, t.lockedUntil)
-      .where(
-        sql`${t.status} = 'suspended' OR ${t.lockedUntil} IS NOT NULL`
-      ),
+      .where(sql`${t.status} = 'suspended' OR ${t.lockedUntil} IS NOT NULL`),
 
     lastLoginIdx: index("user_last_login_idx")
       .on(t.orgId, t.lastLoginAt)
       .where(sql`${t.lastLoginAt} IS NOT NULL`),
-  })
+  }),
 );
 
 // ============================================================
@@ -242,7 +229,9 @@ export const userAccounts = coreSchema.table(
     userId: uuid("user_id").notNull(),
 
     provider: varchar("provider", { length: 20 }).notNull(),
-    providerAccountId: varchar("provider_account_id", { length: 255 }).notNull(),
+    providerAccountId: varchar("provider_account_id", {
+      length: 255,
+    }).notNull(),
 
     providerEmail: varchar("provider_email", { length: 254 }),
     providerName: varchar("provider_name", { length: 100 }),
@@ -263,11 +252,11 @@ export const userAccounts = coreSchema.table(
   (t) => ({
     providerUnique: unique("account_provider_unique").on(
       t.provider,
-      t.providerAccountId
+      t.providerAccountId,
     ),
     userIdx: index("account_user_idx").on(t.userId),
     providerIdx: index("account_provider_idx").on(t.provider, t.userId),
-  })
+  }),
 );
 
 // ============================================================
@@ -325,7 +314,7 @@ export const userSessions = coreSchema.table(
     userActiveIdx: index("session_user_active_idx")
       .on(t.userId, t.lastActiveAt)
       .where(sql`${t.isCurrent} = true`),
-  })
+  }),
 );
 
 // ============================================================
@@ -356,11 +345,11 @@ export const verifications = coreSchema.table(
   (t) => ({
     identifierTypeIdx: index("verify_identifier_type_idx").on(
       t.identifier,
-      t.type
+      t.type,
     ),
     userIdx: index("verify_user_idx").on(t.userId),
     expiresIdx: index("verify_expires_idx").on(t.expiresAt),
-  })
+  }),
 );
 
 // ============================================================
@@ -375,9 +364,7 @@ export const userRoles = coreSchema.table(
     role: roleEnum("role").notNull(),
     orgId: uuid("org_id").notNull(),
 
-    scopeType: varchar("scope_type", { length: 20 })
-      .default("org")
-      .notNull(),
+    scopeType: varchar("scope_type", { length: 20 }).default("org").notNull(),
     scopeId: uuid("scope_id"),
 
     validFrom: date("valid_from"),
@@ -393,17 +380,15 @@ export const userRoles = coreSchema.table(
       t.userId,
       t.role,
       t.scopeType,
-      t.scopeId
+      t.scopeId,
     ),
     userIdx: index("ur_user_idx").on(t.userId),
     scopeIdx: index("ur_scope_idx").on(t.scopeType, t.scopeId),
     orgRoleIdx: index("ur_org_role_idx").on(t.orgId, t.role),
     validIdx: index("ur_valid_idx")
       .on(t.validFrom, t.validUntil)
-      .where(
-        sql`${t.validUntil} IS NOT NULL AND ${t.validUntil} > NOW()`
-      ),
-  })
+      .where(sql`${t.validUntil} IS NOT NULL AND ${t.validUntil} > NOW()`),
+  }),
 );
 
 // ============================================================
@@ -435,7 +420,7 @@ export const permissions = coreSchema.table(
     codeIdx: index("perm_code_idx").on(t.code),
     moduleIdx: index("perm_module_idx").on(t.module, t.isActive),
     resourceIdx: index("perm_resource_idx").on(t.resource, t.action),
-  })
+  }),
 );
 
 export const rolePermissions = coreSchema.table(
@@ -444,20 +429,18 @@ export const rolePermissions = coreSchema.table(
     role: roleEnum("role").notNull(),
     permissionId: integer("permission_id").notNull(),
 
-    conditions: jsonb("conditions")
-      .default("{}")
-      .$type<{
-        ownOnly?: boolean;
-        scopeTypes?: string[];
-        classLevels?: string[];
-      }>(),
+    conditions: jsonb("conditions").default("{}").$type<{
+      ownOnly?: boolean;
+      scopeTypes?: string[];
+      classLevels?: string[];
+    }>(),
 
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (t) => ({
     pk: primaryKey({ columns: [t.role, t.permissionId] }),
     permissionIdx: index("rp_permission_idx").on(t.permissionId),
-  })
+  }),
 );
 
 export const userPermissions = coreSchema.table(
@@ -467,9 +450,7 @@ export const userPermissions = coreSchema.table(
     userId: uuid("user_id").notNull(),
     permissionId: integer("permission_id").notNull(),
 
-    grantType: varchar("grant_type", { length: 10 })
-      .default("allow")
-      .notNull(),
+    grantType: varchar("grant_type", { length: 10 }).default("allow").notNull(),
 
     conditions: jsonb("conditions").default("{}").$type<{
       scopeType?: string;
@@ -491,7 +472,7 @@ export const userPermissions = coreSchema.table(
     activeIdx: index("up_active_idx")
       .on(t.userId, t.isActive)
       .where(sql`${t.isActive} = true`),
-  })
+  }),
 );
 
 // ============================================================
@@ -505,10 +486,14 @@ export const notifications = coreSchema.table(
     orgId: uuid("org_id").notNull(),
 
     senderId: uuid("sender_id"),
-    senderType: varchar("sender_type", { length: 20 }).default("system").notNull(),
+    senderType: varchar("sender_type", { length: 20 })
+      .default("system")
+      .notNull(),
 
     recipientId: uuid("recipient_id").notNull(),
-    recipientType: varchar("recipient_type", { length: 20 }).default("user").notNull(),
+    recipientType: varchar("recipient_type", { length: 20 })
+      .default("user")
+      .notNull(),
 
     type: varchar("type", { length: 30 }).notNull(),
     priority: varchar("priority", { length: 10 }).default("normal").notNull(),
@@ -538,7 +523,9 @@ export const notifications = coreSchema.table(
     isArchived: boolean("is_archived").default(false).notNull(),
     archivedAt: timestamp("archived_at"),
 
-    deliveredChannels: jsonb("delivered_channels").$type<string[]>().default("[]"),
+    deliveredChannels: jsonb("delivered_channels")
+      .$type<string[]>()
+      .default("[]"),
     failedChannels: jsonb("failed_channels").$type<string[]>().default("[]"),
     deliveredAt: timestamp("delivered_at"),
 
@@ -561,9 +548,11 @@ export const notifications = coreSchema.table(
     enrollmentIdx: index("notif_enrollment_idx").on(t.enrollmentId),
     deliveryIdx: index("notif_delivery_idx")
       .on(t.orgId, t.deliveredAt)
-      .where(sql`${t.deliveredAt} IS NULL AND ${t.createdAt} < NOW() - INTERVAL '5 minutes'`),
+      .where(
+        sql`${t.deliveredAt} IS NULL AND ${t.createdAt} < NOW() - INTERVAL '5 minutes'`,
+      ),
     expiryIdx: index("notif_expiry_idx").on(t.expiresAt),
-  })
+  }),
 );
 
 export const notificationPreferences = coreSchema.table(
@@ -584,7 +573,9 @@ export const notificationPreferences = coreSchema.table(
     quietHoursStart: time("quiet_hours_start"),
     quietHoursEnd: time("quiet_hours_end"),
 
-    digestMode: varchar("digest_mode", { length: 20 }).default("immediate").notNull(),
+    digestMode: varchar("digest_mode", { length: 20 })
+      .default("immediate")
+      .notNull(),
 
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -592,7 +583,7 @@ export const notificationPreferences = coreSchema.table(
   (t) => ({
     unique: unique("notif_pref_unique_idx").on(t.userId, t.notificationType),
     userIdx: index("notif_pref_user_idx").on(t.userId),
-  })
+  }),
 );
 
 // ============================================================
@@ -613,13 +604,17 @@ export const documents = coreSchema.table(
     description: text("description"),
 
     type: varchar("type", { length: 20 }).default("file").notNull(),
-    visibility: varchar("visibility", { length: 20 }).default("private").notNull(),
+    visibility: varchar("visibility", { length: 20 })
+      .default("private")
+      .notNull(),
 
     size: integer("size"),
     mimeType: varchar("mime_type", { length: 100 }),
     extension: varchar("extension", { length: 20 }),
 
-    storageProvider: varchar("storage_provider", { length: 20 }).default("s3").notNull(),
+    storageProvider: varchar("storage_provider", { length: 20 })
+      .default("s3")
+      .notNull(),
     bucket: varchar("bucket", { length: 100 }),
     key: text("key").notNull(),
     url: text("url"),
@@ -629,7 +624,11 @@ export const documents = coreSchema.table(
     path: text("path"),
     depth: smallint("depth").default(0),
 
-    sharedWith: jsonb("shared_with").$type<Array<{ userId: string; permission: "read" | "write" | "admin" }>>().default("[]"),
+    sharedWith: jsonb("shared_with")
+      .$type<
+        Array<{ userId: string; permission: "read" | "write" | "admin" }>
+      >()
+      .default("[]"),
     shareLink: text("share_link"),
     shareLinkExpiresAt: timestamp("share_link_expires_at"),
     sharePassword: varchar("share_password", { length: 100 }),
@@ -638,9 +637,13 @@ export const documents = coreSchema.table(
     previousVersionId: uuid("previous_version_id"),
     isLatestVersion: boolean("is_latest_version").default(true).notNull(),
 
-    processingStatus: varchar("processing_status", { length: 20 }).default("completed"),
+    processingStatus: varchar("processing_status", { length: 20 }).default(
+      "completed",
+    ),
     ocrText: text("ocr_text"),
-    extractedData: jsonb("extracted_data").default("{}").$type<Record<string, unknown>>(),
+    extractedData: jsonb("extracted_data")
+      .default("{}")
+      .$type<Record<string, unknown>>(),
 
     isPinned: boolean("is_pinned").default(false).notNull(),
     isStarred: boolean("is_starred").default(false).notNull(),
@@ -665,8 +668,8 @@ export const documents = coreSchema.table(
     latestIdx: index("doc_latest_idx")
       .on(t.ownerId, t.isLatestVersion)
       .where(sql`${t.isLatestVersion} = true`),
-    shareLinkIdx: unique("doc_share_link_idx").on(t.shareLink).where(
-      sql`${t.shareLink} IS NOT NULL`
-    ),
-  })
+    shareLinkIdx: unique("doc_share_link_idx")
+      .on(t.shareLink)
+      .where(sql`${t.shareLink} IS NOT NULL`),
+  }),
 );

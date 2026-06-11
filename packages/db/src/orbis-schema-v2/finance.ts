@@ -1,21 +1,20 @@
 import {
+  boolean,
+  date,
+  index,
+  integer,
+  jsonb,
+  numeric,
+  serial,
+  smallint,
+  text,
+  timestamp,
+  unique,
   uuid,
   varchar,
-  text,
-  boolean,
-  timestamp,
-  date,
-  integer,
-  smallint,
-  numeric,
-  jsonb,
-  index,
-  unique,
-  serial,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm/sql";
-import { financeSchema } from "./types";
-import { moneyType, percentType } from "./types";
+import { financeSchema, moneyType, percentType } from "./types";
 
 // ============================================================
 // F1: LEDGER ACCOUNTS (Chart of Accounts)
@@ -55,12 +54,14 @@ export const ledgerAccounts = financeSchema.table(
     isControlAccount: boolean("is_control_account").default(false).notNull(),
 
     // ربط خارجي (بنوك، بوابات دفع)
-    externalRef: jsonb("external_ref").$type<{
-      bankIban?: string;
-      bankSwift?: string;
-      paymentGatewayId?: string;
-      erpCode?: string;
-    }>().default("{}"),
+    externalRef: jsonb("external_ref")
+      .$type<{
+        bankIban?: string;
+        bankSwift?: string;
+        paymentGatewayId?: string;
+        erpCode?: string;
+      }>()
+      .default("{}"),
 
     isActive: boolean("is_active").default(true).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -77,7 +78,7 @@ export const ledgerAccounts = financeSchema.table(
     cashIdx: index("ledger_cash_idx")
       .on(t.orgId, t.isCashAccount)
       .where(sql`${t.isCashAccount} = true`),
-  })
+  }),
 );
 
 // ============================================================
@@ -106,7 +107,9 @@ export const journalEntries = financeSchema.table(
 
     // العملة والتحويل
     currency: varchar("currency", { length: 3 }).default("SAR").notNull(),
-    exchangeRate: numeric("exchange_rate", { precision: 15, scale: 8 }).default("1"),
+    exchangeRate: numeric("exchange_rate", { precision: 15, scale: 8 }).default(
+      "1",
+    ),
     baseCurrencyAmount: moneyType("base_currency_amount"),
 
     // المصدر (أي نظام أتى منه)
@@ -151,12 +154,15 @@ export const journalEntries = financeSchema.table(
     sourceIdx: index("journal_source_idx").on(t.sourceType, t.sourceId),
     statusIdx: index("journal_status_idx").on(t.orgId, t.status),
     debitIdx: index("journal_debit_idx").on(t.debitAccountId, t.accountingDate),
-    creditIdx: index("journal_credit_idx").on(t.creditAccountId, t.accountingDate),
+    creditIdx: index("journal_credit_idx").on(
+      t.creditAccountId,
+      t.accountingDate,
+    ),
     unreconciledIdx: index("journal_unreconciled_idx")
       .on(t.orgId, t.isReconciled)
       .where(sql`${t.isReconciled} = false`),
     fiscalIdx: index("journal_fiscal_idx").on(t.fiscalPeriodId, t.status),
-  })
+  }),
 );
 
 // ============================================================
@@ -175,8 +181,8 @@ export const feeTemplates = financeSchema.table(
 
     // التصنيف الديناميكي (أي نص حر!)
     category: varchar("category", { length: 50 }).notNull(),
-    // tuition | registration | bus | uniform | housing | lab | 
-    // library | cafeteria | parking | insurance | visa | 
+    // tuition | registration | bus | uniform | housing | lab |
+    // library | cafeteria | parking | insurance | visa |
     // research_grant | equipment | conference | publication | ...
 
     // ربط بدفتر الأستاذ
@@ -187,49 +193,67 @@ export const feeTemplates = financeSchema.table(
     pricingType: varchar("pricing_type", { length: 20 }).notNull(),
     // fixed | per_unit | tiered | formula | percentage | custom_script
 
-    pricingConfig: jsonb("pricing_config").$type<{
-      // fixed: { amount: 50000 }
-      // per_unit: { unitPrice: 1000, unitField: "credit_hours" }
-      // tiered: { tiers: [{ max: 10, price: 1000 }, { max: 20, price: 900 }] }
-      // formula: { expression: "baseFee + (creditHours * rate) - discount" }
-      // percentage: { baseField: "tuitionAmount", percent: 10 }
-      // custom_script: { scriptId: "uuid", params: Record<string, unknown> }
-    }>().default("{}"),
+    pricingConfig: jsonb("pricing_config")
+      .$type<{
+        // fixed: { amount: 50000 }
+        // per_unit: { unitPrice: 1000, unitField: "credit_hours" }
+        // tiered: { tiers: [{ max: 10, price: 1000 }, { max: 20, price: 900 }] }
+        // formula: { expression: "baseFee + (creditHours * rate) - discount" }
+        // percentage: { baseField: "tuitionAmount", percent: 10 }
+        // custom_script: { scriptId: "uuid", params: Record<string, unknown> }
+      }>()
+      .default("{}"),
 
     // شروط التطبيق الديناميكية
-    applicabilityRules: jsonb("applicability_rules").$type<{
-      targetEntity: "enrollment" | "student" | "class" | "program" | "department" | "research_project";
-      conditions: Array<{
-        field: string;
-        operator: "eq" | "ne" | "gt" | "lt" | "in" | "not_in" | "between";
-        value: unknown;
-      }>;
-      effectiveDateRange?: { from: string; to: string };
-    }>().default("{}"),
+    applicabilityRules: jsonb("applicability_rules")
+      .$type<{
+        targetEntity:
+          | "enrollment"
+          | "student"
+          | "class"
+          | "program"
+          | "department"
+          | "research_project";
+        conditions: Array<{
+          field: string;
+          operator: "eq" | "ne" | "gt" | "lt" | "in" | "not_in" | "between";
+          value: unknown;
+        }>;
+        effectiveDateRange?: { from: string; to: string };
+      }>()
+      .default("{}"),
 
     // التكرار
-    frequency: varchar("frequency", { length: 20 }).default("one_time").notNull(),
-    // one_time | daily | weekly | monthly | termly | quarterly | yearly | 
+    frequency: varchar("frequency", { length: 20 })
+      .default("one_time")
+      .notNull(),
+    // one_time | daily | weekly | monthly | termly | quarterly | yearly |
     // per_semester | per_credit_hour | per_session | custom
 
-    frequencyConfig: jsonb("frequency_config").$type<{
-      billingDay?: number;
-      prorationEnabled?: boolean;
-      advanceBillingDays?: number;
-    }>().default("{}"),
+    frequencyConfig: jsonb("frequency_config")
+      .$type<{
+        billingDay?: number;
+        prorationEnabled?: boolean;
+        advanceBillingDays?: number;
+      }>()
+      .default("{}"),
 
     // الرسوم المتأخرة
-    lateFeeRules: jsonb("late_fee_rules").$type<{
-      type: "fixed" | "percentage" | "tiered" | "daily_compound";
-      amount?: number;
-      percentage?: number;
-      gracePeriodDays: number;
-      maxLateFee?: number;
-      dailyRate?: number;
-    }>().default("{}"),
+    lateFeeRules: jsonb("late_fee_rules")
+      .$type<{
+        type: "fixed" | "percentage" | "tiered" | "daily_compound";
+        amount?: number;
+        percentage?: number;
+        gracePeriodDays: number;
+        maxLateFee?: number;
+        dailyRate?: number;
+      }>()
+      .default("{}"),
 
     // الخصومات المسموحة
-    allowedDiscounts: jsonb("allowed_discounts").$type<string[]>().default("[]"),
+    allowedDiscounts: jsonb("allowed_discounts")
+      .$type<string[]>()
+      .default("[]"),
 
     // التحكم
     isMandatory: boolean("is_mandatory").default(false).notNull(),
@@ -244,7 +268,7 @@ export const feeTemplates = financeSchema.table(
     orgActiveIdx: index("fee_tpl_org_active_idx").on(t.orgId, t.isActive),
     categoryIdx: index("fee_tpl_category_idx").on(t.orgId, t.category),
     revenueIdx: index("fee_tpl_revenue_idx").on(t.revenueAccountId),
-  })
+  }),
 );
 
 // ============================================================
@@ -262,8 +286,8 @@ export const discountTemplates = financeSchema.table(
 
     // النوع
     type: varchar("type", { length: 30 }).notNull(),
-    // percentage | fixed_amount | sibling | staff | academic_merit | 
-    // need_based | early_payment | loyalty | volume | referral | 
+    // percentage | fixed_amount | sibling | staff | academic_merit |
+    // need_based | early_payment | loyalty | volume | referral |
     // sibling_cumulative | military | disability | custom_script
 
     // آلية الحساب
@@ -273,45 +297,49 @@ export const discountTemplates = financeSchema.table(
     value: integer("value").notNull(), // نسبة أو مبلغ ثابت
 
     // شروط التأهل الديناميكية
-    eligibilityRules: jsonb("eligibility_rules").$type<{
-      academic?: {
-        minGpa?: number;
-        maxGpa?: number;
-        minAttendanceRate?: number;
-        minGrade?: string;
-        program?: string[];
-        level?: string[];
-      };
-      financial?: {
-        familyIncomeMax?: number;
-        familyIncomeMin?: number;
-        previousPaymentsOnTime?: boolean;
-        totalPaidAmountMin?: number;
-      };
-      family?: {
-        siblingCountMin?: number;
-        siblingCountMax?: number;
-        siblingEnrolled?: boolean;
-        parentIsStaff?: boolean;
-        parentIsAlumni?: boolean;
-      };
-      temporal?: {
-        earlyPaymentDays?: number;
-        registrationBefore?: string;
-        validFrom?: string;
-        validUntil?: string;
-      };
-      customExpression?: string; // JS/Python expression
-    }>().default("{}"),
+    eligibilityRules: jsonb("eligibility_rules")
+      .$type<{
+        academic?: {
+          minGpa?: number;
+          maxGpa?: number;
+          minAttendanceRate?: number;
+          minGrade?: string;
+          program?: string[];
+          level?: string[];
+        };
+        financial?: {
+          familyIncomeMax?: number;
+          familyIncomeMin?: number;
+          previousPaymentsOnTime?: boolean;
+          totalPaidAmountMin?: number;
+        };
+        family?: {
+          siblingCountMin?: number;
+          siblingCountMax?: number;
+          siblingEnrolled?: boolean;
+          parentIsStaff?: boolean;
+          parentIsAlumni?: boolean;
+        };
+        temporal?: {
+          earlyPaymentDays?: number;
+          registrationBefore?: string;
+          validFrom?: string;
+          validUntil?: string;
+        };
+        customExpression?: string; // JS/Python expression
+      }>()
+      .default("{}"),
 
     // الحدود
-    limits: jsonb("limits").$type<{
-      maxDiscountAmount?: number;
-      maxRecipients?: number;
-      maxPerStudent?: number;
-      maxPerFamily?: number;
-      applicableFeeTypes?: string[];
-    }>().default("{}"),
+    limits: jsonb("limits")
+      .$type<{
+        maxDiscountAmount?: number;
+        maxRecipients?: number;
+        maxPerStudent?: number;
+        maxPerFamily?: number;
+        applicableFeeTypes?: string[];
+      }>()
+      .default("{}"),
 
     // الموافقة
     requiresApproval: boolean("requires_approval").default(false).notNull(),
@@ -331,7 +359,7 @@ export const discountTemplates = financeSchema.table(
     autoApplyIdx: index("disc_tpl_auto_apply_idx")
       .on(t.orgId, t.isAutoApply)
       .where(sql`${t.isAutoApply} = true AND ${t.isActive} = true`),
-  })
+  }),
 );
 
 // ============================================================
@@ -349,38 +377,44 @@ export const paymentPlans = financeSchema.table(
 
     // النوع
     type: varchar("type", { length: 30 }).notNull(),
-    // standard | installment | deferred | income_based | 
-    // scholarship_full | scholarship_partial | work_study | 
+    // standard | installment | deferred | income_based |
+    // scholarship_full | scholarship_partial | work_study |
     // corporate_sponsored | government_sponsored | custom
 
     // جدولة الأقساط
-    schedule: jsonb("schedule").$type<{
-      installments: Array<{
-        number: number;
-        percent: number;
-        dueDateOffsetDays: number;
-        minAmount?: number;
-        maxAmount?: number;
-      }>;
-      firstPaymentDate: "immediate" | "registration" | "custom";
-      customFirstDate?: string;
-    }>().notNull(),
+    schedule: jsonb("schedule")
+      .$type<{
+        installments: Array<{
+          number: number;
+          percent: number;
+          dueDateOffsetDays: number;
+          minAmount?: number;
+          maxAmount?: number;
+        }>;
+        firstPaymentDate: "immediate" | "registration" | "custom";
+        customFirstDate?: string;
+      }>()
+      .notNull(),
 
     // شروط التأهل
-    eligibilityRules: jsonb("eligibility_rules").$type<{
-      minTotalAmount?: number;
-      maxTotalAmount?: number;
-      allowedFeeTypes?: string[];
-      creditScoreMin?: number;
-      guarantorRequired?: boolean;
-    }>().default("{}"),
+    eligibilityRules: jsonb("eligibility_rules")
+      .$type<{
+        minTotalAmount?: number;
+        maxTotalAmount?: number;
+        allowedFeeTypes?: string[];
+        creditScoreMin?: number;
+        guarantorRequired?: boolean;
+      }>()
+      .default("{}"),
 
     // رسوم إضافية على الخطة
-    planFees: jsonb("plan_fees").$type<{
-      setupFee?: number;
-      processingFeePercent?: number;
-      lateFeeMultiplier?: number;
-    }>().default("{}"),
+    planFees: jsonb("plan_fees")
+      .$type<{
+        setupFee?: number;
+        processingFeePercent?: number;
+        lateFeeMultiplier?: number;
+      }>()
+      .default("{}"),
 
     isActive: boolean("is_active").default(true).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -388,7 +422,7 @@ export const paymentPlans = financeSchema.table(
   },
   (t) => ({
     orgTypeIdx: index("plan_org_type_idx").on(t.orgId, t.type, t.isActive),
-  })
+  }),
 );
 
 // ============================================================
@@ -416,11 +450,15 @@ export const studentFees = financeSchema.table(
     balance: moneyType("balance").notNull(),
 
     // خصومات مفصلة (تتبع كل خصم)
-    appliedDiscounts: jsonb("applied_discounts").$type<Array<{
-      discountTemplateId: string;
-      amount: number;
-      reason: string;
-    }>>().default("[]"),
+    appliedDiscounts: jsonb("applied_discounts")
+      .$type<
+        Array<{
+          discountTemplateId: string;
+          amount: number;
+          reason: string;
+        }>
+      >()
+      .default("[]"),
 
     // خطة الدفع المطبقة
     paymentPlanId: uuid("payment_plan_id"),
@@ -461,7 +499,7 @@ export const studentFees = financeSchema.table(
     enrollFeeIdx: unique("sf_enroll_tpl_install_idx").on(
       t.enrollmentId,
       t.feeTemplateId,
-      t.installmentNumber
+      t.installmentNumber,
     ),
     enrollIdx: index("sf_enroll_idx").on(t.enrollmentId),
     templateIdx: index("sf_template_idx").on(t.feeTemplateId),
@@ -481,9 +519,9 @@ export const studentFees = financeSchema.table(
     reminderIdx: index("sf_reminder_idx")
       .on(t.cycleId, t.reminderSent, t.dueDate)
       .where(
-        sql`${t.reminderSent} = false AND ${t.status} = 'pending' AND ${t.dueDate} <= NOW() + INTERVAL '3 days'`
+        sql`${t.reminderSent} = false AND ${t.status} = 'pending' AND ${t.dueDate} <= NOW() + INTERVAL '3 days'`,
       ),
-  })
+  }),
 );
 
 // ============================================================
@@ -517,12 +555,15 @@ export const studentDiscounts = financeSchema.table(
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
   (t) => ({
-    unique: unique("stud_disc_unique_idx").on(t.enrollmentId, t.discountTemplateId),
+    unique: unique("stud_disc_unique_idx").on(
+      t.enrollmentId,
+      t.discountTemplateId,
+    ),
     statusIdx: index("stud_disc_status_idx").on(t.status),
     pendingIdx: index("stud_disc_pending_idx")
       .on(t.status)
       .where(sql`${t.status} = 'pending'`),
-  })
+  }),
 );
 
 // ============================================================
@@ -540,11 +581,13 @@ export const payments = financeSchema.table(
 
     amount: moneyType("amount").notNull(),
     currency: varchar("currency", { length: 3 }).default("SAR").notNull(),
-    exchangeRate: numeric("exchange_rate", { precision: 15, scale: 8 }).default("1"),
+    exchangeRate: numeric("exchange_rate", { precision: 15, scale: 8 }).default(
+      "1",
+    ),
 
     // الطريقة (أي نص حر للمرونة)
     method: varchar("method", { length: 30 }).notNull(),
-    // cash | card | bank_transfer | cheque | online | mobile_money | 
+    // cash | card | bank_transfer | cheque | online | mobile_money |
     // installment | scholarship | crypto | barter | ...
 
     // المراجع
@@ -608,7 +651,7 @@ export const payments = financeSchema.table(
     refundIdx: index("pay_refund_idx")
       .on(t.orgId, t.isRefund)
       .where(sql`${t.isRefund} = true`),
-  })
+  }),
 );
 
 // ============================================================
@@ -662,7 +705,7 @@ export const treasuries = financeSchema.table(
     defaultIdx: index("treasury_default_idx")
       .on(t.orgId, t.isDefault)
       .where(sql`${t.isDefault} = true`),
-  })
+  }),
 );
 
 // ============================================================
@@ -687,7 +730,9 @@ export const treasuryTransactions = financeSchema.table(
 
     amount: moneyType("amount").notNull(),
     currency: varchar("currency", { length: 3 }).default("SAR").notNull(),
-    exchangeRate: numeric("exchange_rate", { precision: 15, scale: 8 }).default("1"),
+    exchangeRate: numeric("exchange_rate", { precision: 15, scale: 8 }).default(
+      "1",
+    ),
 
     // المراجع
     referenceType: varchar("reference_type", { length: 30 }),
@@ -707,7 +752,10 @@ export const treasuryTransactions = financeSchema.table(
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (t) => ({
-    treasuryIdx: index("trans_treasury_idx").on(t.treasuryId, t.transactionDate),
+    treasuryIdx: index("trans_treasury_idx").on(
+      t.treasuryId,
+      t.transactionDate,
+    ),
     journalIdx: index("trans_journal_idx").on(t.journalEntryId),
     typeIdx: index("trans_type_idx").on(t.orgId, t.type, t.category),
     dateIdx: index("trans_date_idx").on(t.orgId, t.transactionDate),
@@ -715,7 +763,7 @@ export const treasuryTransactions = financeSchema.table(
     approvedIdx: index("trans_approved_idx")
       .on(t.orgId, t.approvedBy)
       .where(sql`${t.approvedBy} IS NULL`),
-  })
+  }),
 );
 
 // ============================================================
@@ -730,7 +778,7 @@ export const financialEvents = financeSchema.table(
 
     // نوع الحدث
     eventType: varchar("event_type", { length: 50 }).notNull(),
-    // fee.generated | fee.due | fee.overdue | payment.received | 
+    // fee.generated | fee.due | fee.overdue | payment.received |
     // payment.failed | discount.applied | discount.expired |
     // refund.requested | refund.processed | account.reconciled |
     // budget.exceeded | forecast.updated | ...
@@ -761,13 +809,20 @@ export const financialEvents = financeSchema.table(
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (t) => ({
-    entityIdx: index("fin_event_entity_idx").on(t.entityType, t.entityId, t.createdAt),
+    entityIdx: index("fin_event_entity_idx").on(
+      t.entityType,
+      t.entityId,
+      t.createdAt,
+    ),
     typeIdx: index("fin_event_type_idx").on(t.orgId, t.eventType),
     statusIdx: index("fin_event_status_idx")
       .on(t.orgId, t.status)
       .where(sql`${t.status} = 'pending'`),
-    sequenceIdx: index("fin_event_sequence_idx").on(t.aggregateId, t.sequenceNumber),
-  })
+    sequenceIdx: index("fin_event_sequence_idx").on(
+      t.aggregateId,
+      t.sequenceNumber,
+    ),
+  }),
 );
 
 // ============================================================
@@ -782,18 +837,20 @@ export const financialReports = financeSchema.table(
 
     name: varchar("name", { length: 100 }).notNull(),
     type: varchar("type", { length: 30 }).notNull(),
-    // balance_sheet | income_statement | cash_flow | 
+    // balance_sheet | income_statement | cash_flow |
     // aging_report | collection_forecast | budget_variance |
     // fee_collection | discount_summary | custom
 
     // التكوين الديناميكي
-    config: jsonb("config").$type<{
-      dateRange: { from: string; to: string };
-      groupBy?: string[];
-      filters?: Record<string, unknown>;
-      columns?: Array<{ field: string; label: string; format: string }>;
-      chartType?: "table" | "bar" | "line" | "pie" | "pivot";
-    }>().notNull(),
+    config: jsonb("config")
+      .$type<{
+        dateRange: { from: string; to: string };
+        groupBy?: string[];
+        filters?: Record<string, unknown>;
+        columns?: Array<{ field: string; label: string; format: string }>;
+        chartType?: "table" | "bar" | "line" | "pie" | "pivot";
+      }>()
+      .notNull(),
 
     // الجدولة
     isScheduled: boolean("is_scheduled").default(false),
@@ -814,5 +871,5 @@ export const financialReports = financeSchema.table(
     scheduledIdx: index("fin_report_scheduled_idx")
       .on(t.orgId, t.isScheduled)
       .where(sql`${t.isScheduled} = true`),
-  })
+  }),
 );

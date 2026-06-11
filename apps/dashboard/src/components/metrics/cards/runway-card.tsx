@@ -1,5 +1,10 @@
 "use client";
 
+import NumberFlow from "@number-flow/react";
+import { cn } from "@orbis/ui/cn";
+import { useQuery } from "@tanstack/react-query";
+import { format, parseISO } from "date-fns";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { RunwayChart } from "@/components/charts/runway-chart";
 import { useLongPress } from "@/hooks/use-long-press";
 import { useMetricsCustomize } from "@/hooks/use-metrics-customize";
@@ -7,11 +12,6 @@ import { useUserQuery } from "@/hooks/use-user";
 import { useChatStore } from "@/store/chat";
 import { useTRPC } from "@/trpc/client";
 import { generateChartSelectionMessage } from "@/utils/chart-selection-message";
-import { cn } from "@orbis/ui/cn";
-import NumberFlow from "@number-flow/react";
-import { useQuery } from "@tanstack/react-query";
-import { format, parseISO } from "date-fns";
-import { useEffect, useMemo, useRef, useState } from "react";
 import { ShareMetricButton } from "../components/share-metric-button";
 
 interface RunwayCardProps {

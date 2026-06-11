@@ -8,9 +8,7 @@ export function EmptyState() {
         📊
       </div>
       <p className="font-medium text-lg">{t("grades.no_students")}</p>
-      <p className="text-sm">
-        {t("grades.no_students_description")}
-      </p>
+      <p className="text-sm">{t("grades.no_students_description")}</p>
     </div>
   );
 }

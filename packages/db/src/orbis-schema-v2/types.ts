@@ -1,7 +1,4 @@
-import {
-  pgSchema,
-  customType,
-} from "drizzle-orm/pg-core";
+import { customType, pgSchema } from "drizzle-orm/pg-core";
 
 // ============================================================
 // CUSTOM TYPES
@@ -13,7 +10,7 @@ export const moneyType = customType<{
   config: { precision?: number };
 }>({
   dataType(config) {
-    return `integer${config?.precision ? ` CHECK (VALUE >= 0 AND VALUE < ${Math.pow(10, config.precision + 2)})` : ""}`;
+    return `integer${config?.precision ? ` CHECK (VALUE >= 0 AND VALUE < ${10 ** (config.precision + 2)})` : ""}`;
   },
 });
 

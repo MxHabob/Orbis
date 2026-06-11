@@ -1,6 +1,5 @@
 "use client";
 
-import { useUserQuery } from "@/hooks/use-user";
 import { Button } from "@orbis/ui/button";
 import { Calendar } from "@orbis/ui/calendar";
 import { Icons } from "@orbis/ui/icons";
@@ -15,7 +14,8 @@ import {
 import { format, formatISO, parseISO } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
 import type { DateRange } from "react-day-picker";
-import { type PresetOption, getPresetOptions } from "../utils/date-presets";
+import { useUserQuery } from "@/hooks/use-user";
+import { getPresetOptions, type PresetOption } from "../utils/date-presets";
 
 interface MetricsDatePickerProps {
   from: string;

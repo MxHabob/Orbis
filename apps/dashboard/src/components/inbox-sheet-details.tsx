@@ -1,5 +1,11 @@
 "use client";
 
+import { Avatar, AvatarFallback, AvatarImageNext } from "@orbis/ui/avatar";
+import { Separator } from "@orbis/ui/separator";
+import { SheetHeader } from "@orbis/ui/sheet";
+import { Skeleton } from "@orbis/ui/skeleton";
+import { formatDate, getInitials } from "@orbis/utils/format";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { FileViewer } from "@/components/file-viewer";
 import { FormatAmount } from "@/components/format-amount";
 import { InboxActions } from "@/components/inbox/inbox-actions";
@@ -7,12 +13,6 @@ import { useInboxParams } from "@/hooks/use-inbox-params";
 import { useUserQuery } from "@/hooks/use-user";
 import { useTRPC } from "@/trpc/client";
 import { getWebsiteLogo } from "@/utils/logos";
-import { Avatar, AvatarFallback, AvatarImageNext } from "@orbis/ui/avatar";
-import { Separator } from "@orbis/ui/separator";
-import { SheetHeader } from "@orbis/ui/sheet";
-import { Skeleton } from "@orbis/ui/skeleton";
-import { formatDate, getInitials } from "@orbis/utils/format";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export function InboxSheetDetails() {
   const trpc = useTRPC();

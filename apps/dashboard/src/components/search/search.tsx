@@ -1,18 +1,6 @@
 "use client";
 
-import { FormatAmount } from "@/components/format-amount";
-import { useClassParams } from "@/hooks/use-class-params";
-import { useDocumentParams } from "@/hooks/use-document-params";
-import { useFileUrl } from "@/hooks/use-file-url";
-import { useReportExportParams } from "@/hooks/use-report-export-params";
-import { useStudentParams } from "@/hooks/use-student-params";
-import { useSubjectParams } from "@/hooks/use-subject-params";
-import { useTrackerParams } from "@/hooks/use-tracker-params";
-import { useUserQuery } from "@/hooks/use-user";
-import { downloadFile } from "@/lib/download";
-import { useSearchStore } from "@/store/search";
-import { useTRPC } from "@/trpc/client";
-import { Window, emit, invoke, listen } from "@orbis/desktop-client/core";
+import { emit, invoke, listen, Window } from "@orbis/desktop-client/core";
 import { isDesktopApp } from "@orbis/desktop-client/platform";
 import { Badge } from "@orbis/ui/badge";
 import {
@@ -28,13 +16,24 @@ import { Spinner } from "@orbis/ui/spinner";
 import { formatDate } from "@orbis/utils/format";
 import { useQuery } from "@tanstack/react-query";
 import { formatISO } from "date-fns";
-import { useI18n } from "@/locales/client";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
-import { useDebounceValue } from "usehooks-ts";
-import { useCopyToClipboard } from "usehooks-ts";
+import { useCopyToClipboard, useDebounceValue } from "usehooks-ts";
+import { FormatAmount } from "@/components/format-amount";
+import { useClassParams } from "@/hooks/use-class-params";
+import { useDocumentParams } from "@/hooks/use-document-params";
+import { useFileUrl } from "@/hooks/use-file-url";
+import { useReportExportParams } from "@/hooks/use-report-export-params";
+import { useStudentParams } from "@/hooks/use-student-params";
+import { useSubjectParams } from "@/hooks/use-subject-params";
+import { useTrackerParams } from "@/hooks/use-tracker-params";
+import { useUserQuery } from "@/hooks/use-user";
+import { downloadFile } from "@/lib/download";
+import { useI18n } from "@/locales/client";
+import { useSearchStore } from "@/store/search";
+import { useTRPC } from "@/trpc/client";
 import { FilePreviewIcon } from "../file-preview-icon";
 import { TrackerTimer } from "../tracker-timer";
 
@@ -98,7 +97,10 @@ function CopyButton({ path }: { path: string }) {
 function DownloadButton({
   href,
   filename,
-}: { href: string; filename?: string }) {
+}: {
+  href: string;
+  filename?: string;
+}) {
   const [isDownloading, setIsDownloading] = useState(false);
 
   const isFileDownload = href.includes("/files/download/file");
@@ -116,9 +118,7 @@ function DownloadButton({
   }
 
   const { url: authenticatedUrl, isLoading } = useFileUrl(
-    needsAuth
-      ? { type: "url", url: href }
-      : null,
+    needsAuth ? { type: "url", url: href } : null,
   );
 
   const handleDownload = async (e: React.MouseEvent) => {
@@ -329,7 +329,10 @@ const useSearchNavigation = () => {
 const SearchResultItemDisplay = ({
   item,
   dateFormat,
-}: { item: SearchItem; dateFormat?: string }) => {
+}: {
+  item: SearchItem;
+  dateFormat?: string;
+}) => {
   const nav = useSearchNavigation();
 
   let icon: ReactNode | undefined;
@@ -386,7 +389,9 @@ const SearchResultItemDisplay = ({
       case "student": {
         onSelect = () => nav.navigateToStudent({ studentId: item.id });
 
-        icon = <Icons.Customers className="size-4 dark:text-[#666] text-primary" />;
+        icon = (
+          <Icons.Customers className="size-4 dark:text-[#666] text-primary" />
+        );
         resultDisplay = (
           <div className="flex items-center w-full">
             <div className="flex-grow truncate flex gap-2 items-center">
@@ -423,7 +428,9 @@ const SearchResultItemDisplay = ({
       case "staff": {
         onSelect = () => nav.navigateToPath(`/staff?userId=${item.id}`);
 
-        icon = <Icons.Customers className="size-4 dark:text-[#666] text-primary" />;
+        icon = (
+          <Icons.Customers className="size-4 dark:text-[#666] text-primary" />
+        );
         resultDisplay = (
           <div className="flex items-center w-full">
             <div className="flex-grow truncate flex gap-2 items-center">
@@ -572,7 +579,6 @@ export function Search() {
 
     const unlistenPromise = listen("search-window-open", (event) => {
       const isOpen = event.payload as boolean;
-
     });
 
     // Cleanup function
@@ -580,8 +586,6 @@ export function Search() {
       unlistenPromise.then((unlisten) => unlisten());
     };
   });
-
-
 
   const [debouncedSearch, setDebouncedSearch] = useDebounceValue(
     "",
@@ -677,9 +681,7 @@ export function Search() {
     // Type assertion for searchResults from DB to ensure they have actions if needed,
     // or map them to include default actions. For now, assuming they come with 'type' and 'title'.
     const mappedSearchResults = searchResults
-      .filter(
-        (res) => res.type !== "inbox" && res.type !== "tracker_project",
-      )
+      .filter((res) => res.type !== "inbox" && res.type !== "tracker_project")
       .map((res) => ({
         ...res,
         action: () => {},
@@ -714,8 +716,6 @@ export function Search() {
       groups[groupKey].push(actionItem);
     }
 
-
-
     const allGroupKeysInOrder: string[] = [];
     const addedKeys = new Set<string>();
 
@@ -735,10 +735,7 @@ export function Search() {
       }
     }
     return orderedGroups;
-  }, [
-    combinedData,
-    debouncedSearch
-  ]);
+  }, [combinedData, debouncedSearch]);
 
   useEffect(() => {
     if (height.current && ref.current && !isDesktopApp()) {
@@ -789,9 +786,7 @@ export function Search() {
       <div className="px-2 global-search-list" ref={ref}>
         <CommandList ref={height} className="scrollbar-hide">
           {!isLoading && combinedData.length === 0 && debouncedSearch && (
-            <CommandEmpty>
-              {t("common.no_data")}
-            </CommandEmpty>
+            <CommandEmpty>{t("common.no_data")}</CommandEmpty>
           )}
           {!isLoading &&
             Object.entries(groupedData).map(([groupName, items]) => (
@@ -800,10 +795,7 @@ export function Search() {
                 heading={formatGroupName(groupName, t)}
               >
                 {items.map((item: SearchItem) => (
-                  <SearchResultItemDisplay
-                    key={item.id}
-                    item={item}
-                  />
+                  <SearchResultItemDisplay key={item.id} item={item} />
                 ))}
               </CommandGroup>
             ))}

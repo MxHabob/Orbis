@@ -1,10 +1,10 @@
 "use client";
 
-import { useStudentParams } from "@/hooks/use-student-params";
 import { Sheet, SheetContent } from "@orbis/ui/sheet";
-import React from "react";
-import { useTRPC } from "@/trpc/client";
 import { useQuery } from "@tanstack/react-query";
+import React from "react";
+import { useStudentParams } from "@/hooks/use-student-params";
+import { useTRPC } from "@/trpc/client";
 import { StudentForm } from "../forms/student-form";
 
 export function StudentDetailsSheet() {
@@ -14,9 +14,7 @@ export function StudentDetailsSheet() {
   const isOpen = Boolean(studentId && details);
 
   const { data: student } = useQuery({
-    ...trpc.students.getById.queryOptions(
-      { id: studentId! },
-    ),
+    ...trpc.students.getById.queryOptions({ id: studentId! }),
     enabled: isOpen,
   });
 
@@ -27,8 +25,8 @@ export function StudentDetailsSheet() {
     >
       <SheetContent style={{ maxWidth: 620 }} className="pb-4">
         <div className="mt-6">
-           {/* For now we reuse StudentForm, we can create a dedicated details view later */}
-           <StudentForm data={student} />
+          {/* For now we reuse StudentForm, we can create a dedicated details view later */}
+          <StudentForm data={student} />
         </div>
       </SheetContent>
     </Sheet>

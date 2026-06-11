@@ -4,13 +4,16 @@ import { userCache } from "@orbis/cache";
 import { eq, or } from "drizzle-orm";
 
 export const getStaffUsers = async (db: Database) => {
-  return db.select().from(users).where(
-    or(
-      eq(users.role, "admin"),
-      eq(users.role, "staff"),
-      eq(users.role, "teacher")
-    )
-  );
+  return db
+    .select()
+    .from(users)
+    .where(
+      or(
+        eq(users.role, "admin"),
+        eq(users.role, "staff"),
+        eq(users.role, "teacher"),
+      ),
+    );
 };
 
 export const getParentUsers = async (db: Database) => {
@@ -55,7 +58,7 @@ export const updateUser = async (db: Database, data: UpdateUserParams) => {
     .set(updateData)
     .where(eq(users.id, id))
     .returning();
-  
+
   // Invalidate auth user cache
   await userCache.invalidate(id);
 
@@ -77,10 +80,9 @@ export const getUserWithRoles = async (db: Database, id: string) => {
     employeeRoles: [],
   };
 };
-export const createUsers = async (db: Database, data: (typeof users.$inferInsert)[]) => {
-  return db
-    .insert(users)
-    .values(data)
-    .onConflictDoNothing()
-    .returning();
+export const createUsers = async (
+  db: Database,
+  data: (typeof users.$inferInsert)[],
+) => {
+  return db.insert(users).values(data).onConflictDoNothing().returning();
 };

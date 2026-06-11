@@ -1,10 +1,5 @@
 "use client";
 
-import { Portal } from "@/components/portal";
-import { useI18n } from "@/locales/client";
-import { Button } from "@orbis/ui/button";
-import { AnimatePresence, motion } from "framer-motion";
-import { Loader2, Save } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,7 +11,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@orbis/ui/alert-dialog";
+import { Button } from "@orbis/ui/button";
 import { cn } from "@orbis/ui/cn";
+import { AnimatePresence, motion } from "framer-motion";
+import { Loader2, Save } from "lucide-react";
+import { Portal } from "@/components/portal";
+import { useI18n } from "@/locales/client";
 
 interface GradesSaveBarProps {
   count: number;
@@ -58,10 +58,12 @@ export function GradesSaveBar({
               />
               <div className="relative h-12 justify-between items-center flex pl-4 pr-2">
                 <div className="flex items-center gap-2 px-4">
-                  <span 
+                  <span
                     className={cn(
                       "text-sm font-medium transition-colors duration-200",
-                      hasErrors ? "text-destructive font-bold" : "text-foreground"
+                      hasErrors
+                        ? "text-destructive font-bold"
+                        : "text-foreground",
                     )}
                   >
                     {t("grades.unsaved_changes", { count })}
@@ -83,13 +85,17 @@ export function GradesSaveBar({
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>{t("grades.discard_title")}</AlertDialogTitle>
+                        <AlertDialogTitle>
+                          {t("grades.discard_title")}
+                        </AlertDialogTitle>
                         <AlertDialogDescription>
                           {t("grades.discard_description", { count })}
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>{t("grades.keep_editing")}</AlertDialogCancel>
+                        <AlertDialogCancel>
+                          {t("grades.keep_editing")}
+                        </AlertDialogCancel>
                         <AlertDialogAction
                           onClick={onCancel}
                           className="bg-destructive text-destructive-foreground hover:bg-destructive/90"

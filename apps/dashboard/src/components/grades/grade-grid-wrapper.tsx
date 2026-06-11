@@ -1,26 +1,36 @@
 "use client";
 
-import { useTRPC } from "@/trpc/client";
-import { useEffect, useMemo, useState } from "react";
-import { GradeDataTable } from "@/components/tables/grades/data-table";
-import { GradesSkeleton } from "@/components/tables/grades/skeleton";
-import { AlertCircle, Plus, Settings2, Sparkles, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@orbis/ui/alert";
-import { useGradeFilterParams } from "@/hooks/use-grade-filter-params";
 import { Button } from "@orbis/ui/button";
 import { useToast } from "@orbis/ui/use-toast";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { GradesSaveBar } from "./grades-save-bar";
-import { useI18n } from "@/locales/client";
-import { useQueryStates, parseAsInteger, parseAsString } from "nuqs";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertCircle, Loader2, Plus, Settings2, Sparkles } from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
+import { parseAsInteger, parseAsString, useQueryStates } from "nuqs";
+import { useEffect, useMemo, useState } from "react";
 import { initializeAssessmentsAction } from "@/actions/assessments/initialize-assessments";
-import { useQueryClient } from "@tanstack/react-query";
+import { GradeDataTable } from "@/components/tables/grades/data-table";
+import { GradesSkeleton } from "@/components/tables/grades/skeleton";
+import { useGradeFilterParams } from "@/hooks/use-grade-filter-params";
+import { useI18n } from "@/locales/client";
+import { useTRPC } from "@/trpc/client";
 import { invalidateGradesDomain } from "@/utils/query-invalidation";
+import { GradesSaveBar } from "./grades-save-bar";
 
-export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) {
+export function GradeGridWrapper({
+  initialSettings,
+}: {
+  initialSettings: any;
+}) {
   const { filter } = useGradeFilterParams();
-  const { selectedClassId: classId, selectedSubjectId: subjectId, termId, month, yearId, q } = filter;
+  const {
+    selectedClassId: classId,
+    selectedSubjectId: subjectId,
+    termId,
+    month,
+    yearId,
+    q,
+  } = filter;
   const trpc = useTRPC();
   const { toast } = useToast();
   const t = useI18n();
@@ -32,26 +42,39 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
     initialize_termId: parseAsInteger,
     initialize_month: parseAsInteger,
   });
-  
-  const { execute: executeInitialize, status: initializeStatus } = useAction(initializeAssessmentsAction, {
-    onSuccess: () => {
-      toast({ title: t("grades.export_success"), description: "Standard items created.", variant: "success" });
-      queryClient.invalidateQueries({ 
-        queryKey: trpc.grades.getGridData.queryKey({ 
-          classId: classId!, 
-          subjectId: subjectId!, 
-          termId: termId!, 
-          month: month!, 
-          academicYearId: yearId! 
-        }) 
-      });
-    },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to create standard items.", variant: "destructive" });
-    }
-  });
 
-  const [pendingChanges, setPendingChanges] = useState<Record<string, number | null>>({});
+  const { execute: executeInitialize, status: initializeStatus } = useAction(
+    initializeAssessmentsAction,
+    {
+      onSuccess: () => {
+        toast({
+          title: t("grades.export_success"),
+          description: "Standard items created.",
+          variant: "success",
+        });
+        queryClient.invalidateQueries({
+          queryKey: trpc.grades.getGridData.queryKey({
+            classId: classId!,
+            subjectId: subjectId!,
+            termId: termId!,
+            month: month!,
+            academicYearId: yearId!,
+          }),
+        });
+      },
+      onError: () => {
+        toast({
+          title: "Error",
+          description: "Failed to create standard items.",
+          variant: "destructive",
+        });
+      },
+    },
+  );
+
+  const [pendingChanges, setPendingChanges] = useState<
+    Record<string, number | null>
+  >({});
 
   const gridInput =
     classId && subjectId && termId && month && yearId
@@ -79,8 +102,8 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
       },
       {
         enabled: !!(classId && subjectId && termId && month && yearId),
-      }
-    )
+      },
+    ),
   );
 
   const batchUpsertMutation = useMutation(
@@ -151,21 +174,25 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
       onSettled: async () => {
         await invalidateGradesDomain(queryClient, trpc, gridInput);
       },
-    })
+    }),
   );
 
-  const handleGradeChange = (studentId: string, assessmentItemId: number, value: number | null) => {
+  const handleGradeChange = (
+    studentId: string,
+    assessmentItemId: number,
+    value: number | null,
+  ) => {
     const key = `${studentId}:${assessmentItemId}`;
-    setPendingChanges(prev => ({
+    setPendingChanges((prev) => ({
       ...prev,
-      [key]: value
+      [key]: value,
     }));
   };
 
   const handleBulkFill = (assessmentItemId: number, value: number) => {
     if (!data) return;
     const newChanges = { ...pendingChanges };
-    data.students.forEach(student => {
+    data.students.forEach((student) => {
       const key = `${student.studentId}:${assessmentItemId}`;
       newChanges[key] = value;
     });
@@ -179,7 +206,7 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
   const handleClearColumn = (assessmentItemId: number) => {
     if (!data) return;
     const newChanges = { ...pendingChanges };
-    data.students.forEach(student => {
+    data.students.forEach((student) => {
       const key = `${student.studentId}:${assessmentItemId}`;
       newChanges[key] = null;
     });
@@ -196,8 +223,8 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
       const parts = key.split(":");
       const studentId = parts[0];
       const assessmentItemId = parseInt(parts[1]!);
-      
-      const item = data?.items.find(i => i.id === assessmentItemId);
+
+      const item = data?.items.find((i) => i.id === assessmentItemId);
       if (item && score !== null && score > Number(item.maxScore)) {
         invalidGrades.push(`${item.title}: ${score} > ${item.maxScore}`);
       }
@@ -212,7 +239,8 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
     if (invalidGrades.length > 0) {
       toast({
         title: "Invalid Grades",
-        description: "Some grades exceed the maximum score. Please correct them before saving.",
+        description:
+          "Some grades exceed the maximum score. Please correct them before saving.",
         variant: "destructive",
       });
       return;
@@ -229,7 +257,8 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
     return Object.entries(pendingChanges).some(([key, score]) => {
       const assessmentItemId = parseInt(key.split(":")[1]!);
       const item = data?.items.find((i) => i.id === assessmentItemId);
-      const isExceeding = item && score !== null && score > Number(item.maxScore);
+      const isExceeding =
+        item && score !== null && score > Number(item.maxScore);
       const isInvalidNumber = score !== null && isNaN(score);
       return isExceeding || isInvalidNumber;
     });
@@ -249,7 +278,7 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
     const filteredStudents = data.students.filter(
       (student) =>
         student.name?.toLowerCase().includes(lowerQ) ||
-        student.studentNumber?.toLowerCase().includes(lowerQ)
+        student.studentNumber?.toLowerCase().includes(lowerQ),
     );
 
     return {
@@ -261,9 +290,16 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
   if (!classId || !subjectId || !termId || !month || !yearId) {
     return (
       <div className="flex flex-col items-center justify-center py-10 px-6 border border-dashed rounded-xl bg-muted/2 text-muted-foreground animate-in fade-in duration-500">
-        <div className="h-16 w-16 rounded-full bg-muted/10 flex items-center justify-center mb-6 text-3xl">🔍</div>
-        <h2 className="font-medium text-lg text-foreground mb-2">Waiting for selection</h2>
-        <p className="text-sm text-[#606060] text-center max-w-md">Please select class, subject, and term from the filters above to display the grade sheet.</p>
+        <div className="h-16 w-16 rounded-full bg-muted/10 flex items-center justify-center mb-6 text-3xl">
+          🔍
+        </div>
+        <h2 className="font-medium text-lg text-foreground mb-2">
+          Waiting for selection
+        </h2>
+        <p className="text-sm text-[#606060] text-center max-w-md">
+          Please select class, subject, and term from the filters above to
+          display the grade sheet.
+        </p>
       </div>
     );
   }
@@ -288,72 +324,89 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
     if (students.length === 0 && !q) {
       return (
         <div className="flex flex-col items-center justify-center py-10 px-6 border border-dashed rounded-xl bg-muted/5 text-muted-foreground animate-in fade-in duration-500">
-           <div className="h-16 w-16 rounded-full bg-muted/10 flex items-center justify-center mb-6 text-3xl">
+          <div className="h-16 w-16 rounded-full bg-muted/10 flex items-center justify-center mb-6 text-3xl">
             👥
           </div>
-          <h2 className="font-medium text-lg text-foreground mb-2">No students enrolled in this class</h2>
+          <h2 className="font-medium text-lg text-foreground mb-2">
+            No students enrolled in this class
+          </h2>
           <p className="text-sm text-[#606060] max-w-sm text-center">
-            Make sure students are enrolled in this class for the selected academic year first.
+            Make sure students are enrolled in this class for the selected
+            academic year first.
           </p>
         </div>
       );
     }
 
     if (students.length === 0 && q) {
-       return (
+      return (
         <div className="flex flex-col items-center justify-center py-10 px-6 border border-dashed rounded-xl bg-muted/5 text-muted-foreground animate-in fade-in duration-300">
           <div className="h-12 w-12 rounded-full bg-muted/10 flex items-center justify-center mb-4 text-2xl">
             🔍
           </div>
-          <h2 className="font-medium text-lg text-foreground mb-2">No students found matching "{q}"</h2>
-          <p className="text-sm text-[#606060]">Try adjusting your search term</p>
+          <h2 className="font-medium text-lg text-foreground mb-2">
+            No students found matching "{q}"
+          </h2>
+          <p className="text-sm text-[#606060]">
+            Try adjusting your search term
+          </p>
         </div>
       );
     }
 
-    const currentMonthItems = items.filter(i => i.month === month);
+    const currentMonthItems = items.filter((i) => i.month === month);
 
     if (items.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center py-10 px-6 border border-dashed rounded-xl bg-muted/2 text-muted-foreground animate-in fade-in duration-500">
           <div className="h-16 w-16 rounded-full bg-muted/10 flex items-center justify-center mb-6">
-             <Settings2 className="h-8 w-8 text-foreground/60" />
+            <Settings2 className="h-8 w-8 text-foreground/60" />
           </div>
-          <h2 className="font-medium text-lg text-foreground mb-2">{t("grades.no_items")}</h2>
+          <h2 className="font-medium text-lg text-foreground mb-2">
+            {t("grades.no_items")}
+          </h2>
           <p className="text-sm text-[#606060] max-w-sm text-center mb-8">
             {t("grades.initialize_assessments_description")}
           </p>
           <div className="flex gap-3">
-             <Button
-                variant="outline"
-                className="px-6"
-                onClick={() => setModalParams({
+            <Button
+              variant="outline"
+              className="px-6"
+              onClick={() =>
+                setModalParams({
                   step: "initialize_assessments",
                   initialize_classId: classId,
                   initialize_subjectId: subjectId,
                   initialize_termId: termId,
                   initialize_month: month,
-                })}
-              >
-                {t("grades.add_item")}
-              </Button>
-              <Button
-                className="px-6 gap-2"
-                disabled={initializeStatus === "executing"}
-                onClick={() => executeInitialize({ 
-                   classId: classId!, 
-                   subjectId: subjectId!, 
-                   termId: termId!, 
-                   month: month! 
-                })}
-              >
-                {initializeStatus === "executing" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                {t("grades.create_default_items")}
-              </Button>
+                })
+              }
+            >
+              {t("grades.add_item")}
+            </Button>
+            <Button
+              className="px-6 gap-2"
+              disabled={initializeStatus === "executing"}
+              onClick={() =>
+                executeInitialize({
+                  classId: classId!,
+                  subjectId: subjectId!,
+                  termId: termId!,
+                  month: month!,
+                })
+              }
+            >
+              {initializeStatus === "executing" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+              {t("grades.create_default_items")}
+            </Button>
           </div>
           <p className="mt-10 text-xs text-[#606060] flex items-center gap-1.5 opacity-80">
-             <Plus className="h-3.5 w-3.5" />
-             {t("grades.standard_items_help")}
+            <Plus className="h-3.5 w-3.5" />
+            {t("grades.standard_items_help")}
           </p>
         </div>
       );
@@ -377,23 +430,27 @@ export function GradeGridWrapper({ initialSettings }: { initialSettings: any }) 
                 variant="outline"
                 size="sm"
                 disabled={initializeStatus === "executing"}
-                onClick={() => executeInitialize({ 
-                   classId: classId!, 
-                   subjectId: subjectId!, 
-                   termId: termId!, 
-                   month: month! 
-                })}
+                onClick={() =>
+                  executeInitialize({
+                    classId: classId!,
+                    subjectId: subjectId!,
+                    termId: termId!,
+                    month: month!,
+                  })
+                }
                 className="bg-white dark:bg-black border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/40 text-amber-900 dark:text-amber-200"
               >
-                {initializeStatus === "executing" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                {initializeStatus === "executing" ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : null}
                 {t("grades.create_default_items")}
               </Button>
             </div>
           </Alert>
         )}
-        <GradeDataTable 
-          initialSettings={initialSettings} 
-          data={filteredData as any} 
+        <GradeDataTable
+          initialSettings={initialSettings}
+          data={filteredData as any}
           pendingChanges={pendingChanges}
           onGradeChange={handleGradeChange}
           onBulkFill={handleBulkFill}

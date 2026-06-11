@@ -1,6 +1,6 @@
 "use client";
 
-import { useI18n } from "@/locales/client";
+import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
 import { cn } from "@orbis/ui/cn";
 import {
@@ -11,9 +11,9 @@ import {
 } from "@orbis/ui/dropdown-menu";
 import { DotsHorizontalIcon } from "@radix-ui/react-icons";
 import type { ColumnDef } from "@tanstack/react-table";
-import { ChevronDown, ChevronRight, Calendar } from "lucide-react";
+import { Calendar, ChevronDown, ChevronRight } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
-import { Badge } from "@orbis/ui/badge";
+import { useI18n } from "@/locales/client";
 
 export interface AcademicTableMeta {
   deleteYear: (id: number) => void;
@@ -98,18 +98,25 @@ export const columns: ColumnDef<any>[] = [
             </Button>
           )}
           {!hasTerms && !isTerm && <div className="w-4" />}
-          
-          <div className={cn(
-             "p-1 rounded-sm",
-             isTerm ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
-          )}>
+
+          <div
+            className={cn(
+              "p-1 rounded-sm",
+              isTerm
+                ? "bg-primary/10 text-primary"
+                : "bg-muted text-muted-foreground",
+            )}
+          >
             <Calendar className="size-3" />
           </div>
 
           <div className="flex items-center gap-2">
             <span className="font-medium">{name}</span>
             {!isTerm && row.original.isCurrent && (
-              <Badge variant="outline" className="text-[10px] py-0 h-4 bg-primary/10 text-primary border-primary/20">
+              <Badge
+                variant="outline"
+                className="text-[10px] py-0 h-4 bg-primary/10 text-primary border-primary/20"
+              >
                 {t("education.current")}
               </Badge>
             )}
@@ -154,19 +161,31 @@ export const columns: ColumnDef<any>[] = [
               align="end"
               onClick={(e) => e.stopPropagation()}
             >
-              <DropdownMenuItem onClick={() => isTerm ? meta?.onEditTerm?.(row.original.id) : meta?.onEditYear?.(row.original.id)}>
+              <DropdownMenuItem
+                onClick={() =>
+                  isTerm
+                    ? meta?.onEditTerm?.(row.original.id)
+                    : meta?.onEditYear?.(row.original.id)
+                }
+              >
                 {t("account.edit")}
               </DropdownMenuItem>
               {!isTerm && (
-                <DropdownMenuItem onClick={() => meta?.onCreateTerm?.(row.original.id)}>
+                <DropdownMenuItem
+                  onClick={() => meta?.onCreateTerm?.(row.original.id)}
+                >
                   {t("settings.add_term")}
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem
-                  className="text-destructive"
-                  onClick={() => isTerm ? meta?.deleteTerm?.(row.original.id) : meta?.deleteYear?.(row.original.id)}
-                >
-                  {t("common.delete")}
+                className="text-destructive"
+                onClick={() =>
+                  isTerm
+                    ? meta?.deleteTerm?.(row.original.id)
+                    : meta?.deleteYear?.(row.original.id)
+                }
+              >
+                {t("common.delete")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

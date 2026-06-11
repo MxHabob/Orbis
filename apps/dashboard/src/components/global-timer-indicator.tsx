@@ -1,9 +1,9 @@
 "use client";
 
-import { useGlobalTimerStatus } from "@/hooks/use-global-timer-status";
-import { secondsToHoursAndMinutes } from "@/utils/format";
 import { cn } from "@orbis/ui/cn";
 import { Icons } from "@orbis/ui/icons";
+import { useGlobalTimerStatus } from "@/hooks/use-global-timer-status";
+import { secondsToHoursAndMinutes } from "@/utils/format";
 
 interface GlobalTimerIndicatorProps {
   className?: string;

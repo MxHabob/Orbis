@@ -1,6 +1,6 @@
 import { RedisCache } from "./redis-client";
 
-const cache = new RedisCache("suggested-actions", 7 * 24 * 60 * 60); 
+const cache = new RedisCache("suggested-actions", 7 * 24 * 60 * 60);
 
 export interface SuggestedActionUsage {
   actionId: string;

@@ -1,27 +1,5 @@
 "use client";
 
-import { useI18n } from "@/locales/client";
-import { useTRPC } from "@/trpc/client";
-import { useToast } from "@orbis/ui/use-toast";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@orbis/ui/card";
-import { Button } from "@orbis/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@orbis/ui/form";
-import { Input } from "@orbis/ui/input";
-import { useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +10,24 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@orbis/ui/alert-dialog";
+import { Button } from "@orbis/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@orbis/ui/card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@orbis/ui/form";
+import { Input } from "@orbis/ui/input";
 import {
   Select,
   SelectContent,
@@ -39,10 +35,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@orbis/ui/select";
-import { Loader2, Users } from "lucide-react";
+import { useToast } from "@orbis/ui/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useZodForm } from "@/hooks/use-zod-form";
+import { Loader2, Users } from "lucide-react";
+import { useState } from "react";
 import { z } from "zod/v3";
+import { useZodForm } from "@/hooks/use-zod-form";
+import { useI18n } from "@/locales/client";
+import { useTRPC } from "@/trpc/client";
 
 const schema = z.object({
   classId: z.coerce.number().optional(),
@@ -55,9 +55,11 @@ export function ControlSeatingNumbers() {
   const { toast } = useToast();
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const classesQuery = useQuery(trpc.classes.getAll.queryOptions({
-    limit: 1000,
-  }));
+  const classesQuery = useQuery(
+    trpc.classes.getAll.queryOptions({
+      limit: 1000,
+    }),
+  );
 
   const form = useZodForm(schema, {
     defaultValues: {
@@ -113,7 +115,11 @@ export function ControlSeatingNumbers() {
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder={t("control.class_placeholder") || "All Classes"} />
+                            <SelectValue
+                              placeholder={
+                                t("control.class_placeholder") || "All Classes"
+                              }
+                            />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -197,4 +203,3 @@ export function ControlSeatingNumbers() {
     </>
   );
 }
-

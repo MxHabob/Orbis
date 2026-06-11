@@ -1,8 +1,8 @@
-import { useTRPC } from "@/trpc/client";
 import { Icons } from "@orbis/ui/icons";
 import { useQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { useRouter } from "next/navigation";
+import { useTRPC } from "@/trpc/client";
 import { BaseWidget } from "./base";
 import { WIDGET_POLLING_CONFIG } from "./widget-config";
 import { WidgetSkeleton } from "./widget-skeleton";

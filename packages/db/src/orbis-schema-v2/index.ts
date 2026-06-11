@@ -1,164 +1,153 @@
 // -----------------------------------------------------------
 // Types & Enums
 // -----------------------------------------------------------
-export {
-  coreSchema,
-  academicSchema,
-  financeSchema,
-  auditSchema,
-  moneyType,
-  scoreType,
-  percentType,
-  hijriDateType,
-} from "./types";
-
-export {
-  userStatusEnum,
-  roleEnum,
-  academicStatusEnum,
-  attendanceEnum,
-  paymentStatusEnum,
-  notificationChannelEnum,
-} from "./enums";
-
-// -----------------------------------------------------------
-// Core Schema Tables
-// -----------------------------------------------------------
-export {
-  organizations,
-  users,
-  userAccounts,
-  userSessions,
-  verifications,
-  userRoles,
-  permissions,
-  rolePermissions,
-  userPermissions,
-  notifications,
-  notificationPreferences,
-  documents,
-} from "./core";
 
 // -----------------------------------------------------------
 // Academic Schema Tables
 // -----------------------------------------------------------
 export {
   academicCycles,
-  orgUnits,
-  classes,
-  subjects,
-  classSubjects,
-  enrollments,
-  studentGuardians,
-  timeSlots,
-  scheduledLessons,
   assessments,
-  grades,
-  gradeHistory,
   attendanceDaily,
   attendanceSummary,
   behaviorRecords,
+  classes,
+  classSubjects,
+  enrollments,
+  gradeHistory,
+  grades,
+  orgUnits,
+  scheduledLessons,
+  studentGuardians,
+  subjects,
+  timeSlots,
 } from "./academic";
-
-// -----------------------------------------------------------
-// Finance Schema Tables
-// -----------------------------------------------------------
-export {
-  // Core Engine
-  ledgerAccounts,
-  journalEntries,
-  
-  // Rule Templates
-  feeTemplates,
-  discountTemplates,
-  paymentPlans,
-  
-  // Instances
-  studentFees,
-  studentDiscounts,
-  
-  // Payments & Treasury
-  payments,
-  treasuries,
-  treasuryTransactions,
-  
-  // Events & Reports
-  financialEvents,
-  financialReports,
-} from "./finance";
-
 // -----------------------------------------------------------
 // Audit Schema Tables
 // -----------------------------------------------------------
 export {
   auditLog,
-  systemLog,
   dataTransfers,
+  systemLog,
 } from "./audit";
 
+// -----------------------------------------------------------
+// Core Schema Tables
+// -----------------------------------------------------------
+export {
+  documents,
+  notificationPreferences,
+  notifications,
+  organizations,
+  permissions,
+  rolePermissions,
+  userAccounts,
+  userPermissions,
+  userRoles,
+  userSessions,
+  users,
+  verifications,
+} from "./core";
+export {
+  academicStatusEnum,
+  attendanceEnum,
+  notificationChannelEnum,
+  paymentStatusEnum,
+  roleEnum,
+  userStatusEnum,
+} from "./enums";
+
+// -----------------------------------------------------------
+// Finance Schema Tables
+// -----------------------------------------------------------
+export {
+  discountTemplates,
+  // Rule Templates
+  feeTemplates,
+  // Events & Reports
+  financialEvents,
+  financialReports,
+  journalEntries,
+  // Core Engine
+  ledgerAccounts,
+  paymentPlans,
+  // Payments & Treasury
+  payments,
+  studentDiscounts,
+  // Instances
+  studentFees,
+  treasuries,
+  treasuryTransactions,
+} from "./finance";
 // -----------------------------------------------------------
 // Relations
 // -----------------------------------------------------------
 export {
-  // Core
-  organizationsRelations,
-  usersRelations,
-  userAccountsRelations,
-  userSessionsRelations,
-  userRolesRelations,
-  permissionsRelations,
-  rolePermissionsRelations,
-  userPermissionsRelations,
-  
   // Academic
   academicCyclesRelations,
-  orgUnitsRelations,
-  classesRelations,
-  subjectsRelations,
-  classSubjectsRelations,
-  enrollmentsRelations,
-  studentGuardiansRelations,
-  timeSlotsRelations,
-  scheduledLessonsRelations,
   assessmentsRelations,
-  gradesRelations,
-  gradeHistoryRelations,
   attendanceDailyRelations,
   attendanceSummaryRelations,
-  behaviorRecordsRelations,
-  
-  // Finance
-  ledgerAccountsRelations,
-  journalEntriesRelations,
-  feeTemplatesRelations,
-  discountTemplatesRelations,
-  paymentPlansRelations,
-  studentFeesRelations,
-  studentDiscountsRelations,
-  paymentsRelations,
-  treasuriesRelations,
-  treasuryTransactionsRelations,
-  financialEventsRelations,
-  financialReportsRelations,
-  
-  // Notifications & Documents
-  notificationsRelations,
-  notificationPreferencesRelations,
-  documentsRelations,
-  
   // Audit
   auditLogRelations,
-  systemLogRelations,
+  behaviorRecordsRelations,
+  classesRelations,
+  classSubjectsRelations,
   dataTransfersRelations,
+  discountTemplatesRelations,
+  documentsRelations,
+  enrollmentsRelations,
+  feeTemplatesRelations,
+  financialEventsRelations,
+  financialReportsRelations,
+  gradeHistoryRelations,
+  gradesRelations,
+  journalEntriesRelations,
+  // Finance
+  ledgerAccountsRelations,
+  notificationPreferencesRelations,
+  // Notifications & Documents
+  notificationsRelations,
+  // Core
+  organizationsRelations,
+  orgUnitsRelations,
+  paymentPlansRelations,
+  paymentsRelations,
+  permissionsRelations,
+  rolePermissionsRelations,
+  scheduledLessonsRelations,
+  studentDiscountsRelations,
+  studentFeesRelations,
+  studentGuardiansRelations,
+  subjectsRelations,
+  systemLogRelations,
+  timeSlotsRelations,
+  treasuriesRelations,
+  treasuryTransactionsRelations,
+  userAccountsRelations,
+  userPermissionsRelations,
+  userRolesRelations,
+  userSessionsRelations,
+  usersRelations,
 } from "./relations";
+export {
+  academicSchema,
+  auditSchema,
+  coreSchema,
+  financeSchema,
+  hijriDateType,
+  moneyType,
+  percentType,
+  scoreType,
+} from "./types";
 
+import * as academic from "./academic";
+import * as audit from "./audit";
 // -----------------------------------------------------------
 // Schema Object for Drizzle Client
 // -----------------------------------------------------------
 import * as core from "./core";
-import * as academic from "./academic";
 import * as finance from "./finance";
-import * as audit from "./audit";
 
 export const schema = {
   // Core

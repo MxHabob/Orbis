@@ -1,15 +1,15 @@
 "use client";
 
-import { ErrorFallback } from "@/components/error-fallback";
-import { useNotifications } from "@/hooks/use-notifications";
 import { Button } from "@orbis/ui/button";
 import { Icons } from "@orbis/ui/icons";
 import { Popover, PopoverContent, PopoverTrigger } from "@orbis/ui/popover";
 import { ScrollArea } from "@orbis/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@orbis/ui/tabs";
-import { ErrorBoundary } from "@/components/error-boundary";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { ErrorBoundary } from "@/components/error-boundary";
+import { ErrorFallback } from "@/components/error-fallback";
+import { useNotifications } from "@/hooks/use-notifications";
 import { EmptyState } from "./empty-state";
 import { NotificationItem } from "./notification-item";
 

@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback } from "react";
-import { useTRPC } from "@/trpc/client";
 import { useToast } from "@orbis/ui/use-toast";
-import { useExportStore } from "@/store/export";
 import { useMutation } from "@tanstack/react-query";
+import { useCallback } from "react";
+import { useExportStore } from "@/store/export";
+import { useTRPC } from "@/trpc/client";
 
 /**
  * Hook for Bulk Certificate Export (2026 - Production Grade)
@@ -51,14 +51,12 @@ export function useBulkCertificateExport() {
         toast({
           title: "فشل بدء التصدير",
           description:
-            error instanceof Error
-              ? error.message
-              : "حدث خطأ غير متوقع",
+            error instanceof Error ? error.message : "حدث خطأ غير متوقع",
           variant: "error",
         });
         setIsExporting(false);
       },
-    })
+    }),
   );
 
   const exportCertificates = useCallback(
@@ -88,7 +86,7 @@ export function useBulkCertificateExport() {
         return { success: false };
       }
     },
-    [startExportMutation, setIsExporting, toast]
+    [startExportMutation, setIsExporting, toast],
   );
 
   return {

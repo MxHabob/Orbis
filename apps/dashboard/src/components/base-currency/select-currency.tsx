@@ -1,13 +1,13 @@
 "use client";
 
-import { SelectCurrency as SelectCurrencyBase } from "@/components/select-currency";
-import { useJobStatus } from "@/hooks/use-job-status";
-import { useTRPC } from "@/trpc/client";
 import { uniqueCurrencies } from "@orbis/location/currencies";
 import { Button } from "@orbis/ui/button";
 import { useToast } from "@orbis/ui/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
+import { SelectCurrency as SelectCurrencyBase } from "@/components/select-currency";
+import { useJobStatus } from "@/hooks/use-job-status";
+import { useTRPC } from "@/trpc/client";
 
 export function SelectCurrency() {
   const trpc = useTRPC();
@@ -17,7 +17,6 @@ export function SelectCurrency() {
   const [toastId, setToastId] = useState<string | null>(null);
   const toastIdRef = useRef<string | null>(null);
   const lastProgressRef = useRef<number | undefined>(undefined);
-
 
   // const updateBaseCurrencyMutation = useMutation(
   //   trpc.team.updateBaseCurrency.mutationOptions({
@@ -66,11 +65,11 @@ export function SelectCurrency() {
             duration: 7000,
             footer: (
               <Button
-                // onClick={() =>
-                //   updateBaseCurrencyMutation.mutate({
-                //     baseCurrency: baseCurrency.toUpperCase(),
-                //   })
-                // }
+              // onClick={() =>
+              //   updateBaseCurrencyMutation.mutate({
+              //     baseCurrency: baseCurrency.toUpperCase(),
+              //   })
+              // }
               >
                 Update
               </Button>

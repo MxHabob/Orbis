@@ -1,6 +1,5 @@
 "use client";
 
-import { useI18n } from "@/locales/client";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,6 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@orbis/ui/alert-dialog";
+import { useI18n } from "@/locales/client";
 
 interface RollbackConfirmDialogProps {
   open: boolean;

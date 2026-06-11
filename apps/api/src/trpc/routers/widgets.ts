@@ -1,9 +1,7 @@
-
-import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "../init";
 import { users } from "@orbis/db/schema";
 import { eq } from "drizzle-orm";
-
+import { z } from "zod";
+import { createTRPCRouter, protectedProcedure } from "../init";
 
 // Default School Metrics Widgets
 const DEFAULT_PRIMARY_WIDGETS = [
@@ -25,14 +23,17 @@ export const widgetsRouter = createTRPCRouter({
       where: eq(users.id, ctx.session.user.id),
     });
 
-    const preferences = (user?.metadata as any)?.widgets as {
-      primaryWidgets: string[];
-      availableWidgets: string[];
-    } | undefined;
+    const preferences = (user?.metadata as any)?.widgets as
+      | {
+          primaryWidgets: string[];
+          availableWidgets: string[];
+        }
+      | undefined;
 
     return {
       primaryWidgets: preferences?.primaryWidgets ?? DEFAULT_PRIMARY_WIDGETS,
-      availableWidgets: preferences?.availableWidgets ?? DEFAULT_AVAILABLE_WIDGETS,
+      availableWidgets:
+        preferences?.availableWidgets ?? DEFAULT_AVAILABLE_WIDGETS,
     };
   }),
 
@@ -41,7 +42,7 @@ export const widgetsRouter = createTRPCRouter({
       z.object({
         primaryWidgets: z.array(z.string()).optional(),
         availableWidgets: z.array(z.string()).optional(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const user = await ctx.db.query.users.findFirst({
@@ -56,16 +57,17 @@ export const widgetsRouter = createTRPCRouter({
 
       const newWidgets = {
         primaryWidgets: input.primaryWidgets ?? currentWidgets.primaryWidgets,
-        availableWidgets: input.availableWidgets ?? currentWidgets.availableWidgets,
+        availableWidgets:
+          input.availableWidgets ?? currentWidgets.availableWidgets,
       };
 
       await ctx.db
         .update(users)
         .set({
-            metadata: {
-                ...currentMetadata,
-                widgets: newWidgets
-            }
+          metadata: {
+            ...currentMetadata,
+            widgets: newWidgets,
+          },
         })
         .where(eq(users.id, ctx.session.user.id));
 

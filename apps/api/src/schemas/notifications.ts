@@ -1,9 +1,16 @@
 import { z } from "@hono/zod-openapi";
 
 export const notificationTypeEnum = z.enum([
-  'grade_published', 'new_assessment', 'attendance_alert', 'announcement', 
-  'message', 'parent_meeting', 'fee_reminder', 'account_action', 
-  'behavior_alert', 'system'
+  "grade_published",
+  "new_assessment",
+  "attendance_alert",
+  "announcement",
+  "message",
+  "parent_meeting",
+  "fee_reminder",
+  "account_action",
+  "behavior_alert",
+  "system",
 ]);
 
 export const notificationSchema = z.object({
@@ -64,10 +71,11 @@ export const notificationSchema = z.object({
   }),
 });
 
-export const createNotificationSchema = notificationSchema.omit({ 
-  id: true, 
-  createdAt: true, 
-  deliveredAt: true 
+export const createNotificationSchema = notificationSchema.omit({
+  id: true,
+  createdAt: true,
+  deliveredAt: true,
 });
-export const updateNotificationSchema = notificationSchema.partial().required({ id: true });
-
+export const updateNotificationSchema = notificationSchema
+  .partial()
+  .required({ id: true });
