@@ -8,7 +8,7 @@ import { db } from "./client";
 // ────────────────────────────────────────────────
 const isProduction = process.env.NODE_ENV === "production";
 
-if (isProduction) {
+if (isProduction && !process.env.BYPASS_SEED_PROD_CHECK) {
   console.error("❌ Seeding is prohibited in production environment");
   process.exit(1);
 }
@@ -137,16 +137,20 @@ async function seedClasses(yearId: number) {
 // ────────────────────────────────────────────────
 // Main Seeding Flow
 // ────────────────────────────────────────────────
+export async function seedDatabase(academicYear = "2025-2026") {
+  // 1. Academic Structure
+  const { yearId } = await seedAcademicStructure(academicYear);
+
+  // 2. Subjects
+  await seedSubjects();
+
+  // 3. Classes (Grades)
+  await seedClasses(yearId);
+}
+
 async function main() {
   try {
-    // 1. Academic Structure
-    const { yearId } = await seedAcademicStructure(academicYearInput);
-
-    // 2. Subjects
-    await seedSubjects();
-
-    // 3. Classes (Grades)
-    await seedClasses(yearId);
+    await seedDatabase(academicYearInput);
 
     console.log("\n" + "=".repeat(60));
     console.log("           Seeding completed successfully ✓");
@@ -158,4 +162,7 @@ async function main() {
   }
 }
 
-main();
+if (import.meta.main) {
+  main();
+}
+

@@ -23,10 +23,10 @@ RUN bun install
 # Copy full source and build
 COPY --from=builder /app/out/full/ .
 
-# Build-time environment variables
-ARG NEXT_PUBLIC_API_URL
-ARG NEXT_PUBLIC_URL
-ARG NEXT_PUBLIC_S3_PUBLIC_URL
+# Build-time environment variables (default to placeholders for runtime substitution)
+ARG NEXT_PUBLIC_API_URL=__NEXT_PUBLIC_API_URL_PLACEHOLDER__
+ARG NEXT_PUBLIC_URL=__NEXT_PUBLIC_URL_PLACEHOLDER__
+ARG NEXT_PUBLIC_S3_PUBLIC_URL=__NEXT_PUBLIC_S3_PUBLIC_URL_PLACEHOLDER__
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_URL=$NEXT_PUBLIC_URL
 ENV NEXT_PUBLIC_S3_PUBLIC_URL=$NEXT_PUBLIC_S3_PUBLIC_URL
@@ -56,4 +56,5 @@ EXPOSE 3001
 ENV PORT=3001
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["bun", "run", "apps/dashboard/server.js"]
+# At startup: substitute placeholders in compiled JS files with actual runtime values
+CMD ["/bin/sh", "-c", "find /app -type f -name '*.js' -o -name '*.html' | xargs sed -i \"s|__NEXT_PUBLIC_API_URL_PLACEHOLDER__|${NEXT_PUBLIC_API_URL}|g; s|__NEXT_PUBLIC_URL_PLACEHOLDER__|${NEXT_PUBLIC_URL}|g; s|__NEXT_PUBLIC_S3_PUBLIC_URL_PLACEHOLDER__|${NEXT_PUBLIC_S3_PUBLIC_URL}|g\" 2>/dev/null; bun run apps/dashboard/server.js"]

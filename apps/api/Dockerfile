@@ -36,6 +36,7 @@ RUN bun install
 
 # Copy the full source code
 COPY --from=builder /app/out/full/ .
+COPY --from=builder /app/packages/db/migrations /app/packages/db/migrations
 
 # Runner stage (same as installer to avoid another copy)
 FROM installer AS runner

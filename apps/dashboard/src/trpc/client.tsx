@@ -46,12 +46,21 @@ function getApiUrl(): string {
     return process.env.NEXT_PUBLIC_API_URL;
   }
   
-  // Default to localhost:3002 for development (API server port from package.json)
-  // API server runs on port 3002 in development mode
+  // For local or LAN network deployments (e.g. localhost, 192.168.x.x, 10.x.x.x, 172.x.x.x)
+  // we dynamically connect to port 3002 on the same host visited.
   if (typeof window !== "undefined") {
     const hostname = window.location.hostname;
-    if (hostname === "localhost" || hostname === "127.0.0.1") {
-      return "http://localhost:3002";
+    const protocol = window.location.protocol;
+    const isLocal =
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname.startsWith("192.168.") ||
+      hostname.startsWith("10.") ||
+      /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) ||
+      hostname.endsWith(".local");
+      
+    if (isLocal) {
+      return `${protocol}//${hostname}:3002`;
     }
   }
   

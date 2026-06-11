@@ -30,7 +30,8 @@
     "./utils/tax": "./src/utils/tax.ts",
     "./utils/blocklist": "./src/utils/blocklist.ts",
     "./utils/invoice-recurring": "./src/utils/invoice-recurring.ts",
-    "./queries/sessions": "./src/queries/sessions.ts"
+    "./queries/sessions": "./src/queries/sessions.ts",
+    "./seed": "./src/seed.ts"
   },
   "peerDependencies": {
     "drizzle-orm": "^0.45.1"

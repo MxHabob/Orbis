@@ -227,6 +227,82 @@ app.get(
   Scalar({ url: "/openapi", pageTitle: "Orbis School API Docs", theme: "saturn" }),
 );
 
+// Automatic Database Migrations and Seeding on Startup
+async function initializeDatabase() {
+  if (process.env.RUN_MIGRATIONS_ON_STARTUP === "true") {
+    try {
+      const { db } = await import("@orbis/db/client");
+      const { migrate } = await import("drizzle-orm/node-postgres/migrator");
+      const { sql } = await import("drizzle-orm");
+      const path = await import("path");
+      const fs = await import("fs");
+
+      let migrationsFolder = "";
+      const pathsToTry = [
+        path.resolve(process.cwd(), "packages/db/migrations"),
+        path.resolve(process.cwd(), "../../packages/db/migrations"),
+      ];
+
+      try {
+        const fileDir = path.dirname(new URL(import.meta.url).pathname);
+        // On Windows, URL pathname might look like /C:/path..., we strip leading slash
+        const cleanFileDir = process.platform === "win32" && fileDir.startsWith("/") ? fileDir.substring(1) : fileDir;
+        pathsToTry.push(path.resolve(cleanFileDir, "../../../packages/db/migrations"));
+      } catch {}
+
+      for (const p of pathsToTry) {
+        if (fs.existsSync(p)) {
+          migrationsFolder = p;
+          break;
+        }
+      }
+
+      if (!migrationsFolder) {
+        console.error("❌ Could not find database migrations folder in any of the search paths:", pathsToTry);
+        return;
+      }
+
+      let retries = 5;
+      while (retries > 0) {
+        try {
+          console.log(`⏳ Connecting to database to apply migrations from: ${migrationsFolder}...`);
+          await migrate(db, { migrationsFolder });
+          console.log("✅ Database migrations applied successfully!");
+
+          // Check if database needs seeding
+          const { academicYears } = await import("@orbis/db/schema");
+          const result = await db.select({ count: sql`count(*)` }).from(academicYears);
+          const count = Number(result[0]?.count || 0);
+
+          if (count === 0) {
+            console.log("🌱 Database is empty. Running initial seed data...");
+            process.env.BYPASS_SEED_PROD_CHECK = "true";
+            const { seedDatabase } = await import("@orbis/db/seed");
+            await seedDatabase();
+            console.log("✅ Initial seed data applied successfully!");
+          } else {
+            console.log("ℹ️ Database already contains data. Skipping initial seeding.");
+          }
+          break;
+        } catch (err) {
+          retries--;
+          console.error(`❌ Migration/Seed attempt failed. Retries left: ${retries}`, err);
+          if (retries === 0) {
+            console.error("🚨 Failed to initialize database after all retries. Continuing startup...");
+          } else {
+            await new Promise((resolve) => setTimeout(resolve, 3000));
+          }
+        }
+      }
+    } catch (e) {
+      console.error("🚨 Failed to setup automatic migrations/seeding:", e);
+    }
+  }
+}
+
+// Run async initialization
+initializeDatabase();
+
 export default {
   port: process.env.PORT ? Number.parseInt(process.env.PORT) : 3000,
   fetch: app.fetch,
