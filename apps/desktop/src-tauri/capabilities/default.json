@@ -32,9 +32,11 @@
   "remote": {
     "urls": [
       "http://localhost:3001/**",
+      "http://*:3001/**",
+      "http://*:3002/**",
       "https://beta.orbis.mulverse.com/**",
       "https://orbis.mulverse.com/**"
     ]
   },
-  "platforms": ["macOS"]
+  "platforms": ["linux", "macOS", "windows"]
 }
