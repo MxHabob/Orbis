@@ -132,6 +132,8 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3001
+      DATABASE_URL: postgresql://${DB_USER:-orbis}:${DB_PASSWORD:-orbis_local_2026}@postgres:5432/${DB_NAME:-orbis_db}
+      DATABASE_PRIMARY_URL: postgresql://${DB_USER:-orbis}:${DB_PASSWORD:-orbis_local_2026}@postgres:5432/${DB_NAME:-orbis_db}
       # Point to API using relative routing internally, and override client vars at startup
       NEXT_PUBLIC_API_URL: http://${SERVER_LAN_IP:-localhost}:3002
       NEXT_PUBLIC_URL: http://${SERVER_LAN_IP:-localhost}:3001

@@ -53,9 +53,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up QEMU (for multi-platform support if needed)
-        uses: docker/setup-qemu-action@v3
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -74,9 +71,9 @@ jobs:
           echo "owner_lower=${OWNER_LOWER}" >> $GITHUB_OUTPUT
           echo "tag_name=${{ github.ref_name }}" >> $GITHUB_OUTPUT
 
-      # Build & Push API Image
+      # Build & Push API Image (expected: ~200-300 MB)
       - name: Build and Push API Image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: apps/api/Dockerfile
@@ -84,12 +81,12 @@ jobs:
           tags: |
             ghcr.io/${{ steps.prep.outputs.owner_lower }}/orbis-api:${{ steps.prep.outputs.tag_name }}
             ghcr.io/${{ steps.prep.outputs.owner_lower }}/orbis-api:stable
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=orbis-api
+          cache-to: type=gha,mode=max,scope=orbis-api
 
-      # Build & Push Dashboard Image
+      # Build & Push Dashboard Image (expected: ~80-120 MB)
       - name: Build and Push Dashboard Image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: apps/dashboard/Dockerfile
@@ -97,12 +94,12 @@ jobs:
           tags: |
             ghcr.io/${{ steps.prep.outputs.owner_lower }}/orbis-dashboard:${{ steps.prep.outputs.tag_name }}
             ghcr.io/${{ steps.prep.outputs.owner_lower }}/orbis-dashboard:stable
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=orbis-dashboard
+          cache-to: type=gha,mode=max,scope=orbis-dashboard
 
-      # Build & Push Worker Image
+      # Build & Push Worker Image (expected: ~500-700 MB due to Chromium)
       - name: Build and Push Worker Image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: apps/workers/Dockerfile
@@ -110,16 +107,42 @@ jobs:
           tags: |
             ghcr.io/${{ steps.prep.outputs.owner_lower }}/orbis-worker:${{ steps.prep.outputs.tag_name }}
             ghcr.io/${{ steps.prep.outputs.owner_lower }}/orbis-worker:stable
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=orbis-worker
+          cache-to: type=gha,mode=max,scope=orbis-worker
+
+      # Verify image sizes are within expected bounds
+      - name: Verify Image Sizes
+        run: |
+          echo "📦 Checking built image sizes..."
+          echo ""
+
+          API_SIZE=$(docker manifest inspect ghcr.io/${{ steps.prep.outputs.owner_lower }}/orbis-api:${{ steps.prep.outputs.tag_name }} --verbose 2>/dev/null | jq '[.[] | .SchemaV2Manifest.layers[].size] | add // 0' 2>/dev/null || echo "0")
+          DASH_SIZE=$(docker manifest inspect ghcr.io/${{ steps.prep.outputs.owner_lower }}/orbis-dashboard:${{ steps.prep.outputs.tag_name }} --verbose 2>/dev/null | jq '[.[] | .SchemaV2Manifest.layers[].size] | add // 0' 2>/dev/null || echo "0")
+          WORKER_SIZE=$(docker manifest inspect ghcr.io/${{ steps.prep.outputs.owner_lower }}/orbis-worker:${{ steps.prep.outputs.tag_name }} --verbose 2>/dev/null | jq '[.[] | .SchemaV2Manifest.layers[].size] | add // 0' 2>/dev/null || echo "0")
+
+          echo "  orbis-api:        $(echo "$API_SIZE" | awk '{printf "%.0f MB", $1/1048576}')"
+          echo "  orbis-dashboard:  $(echo "$DASH_SIZE" | awk '{printf "%.0f MB", $1/1048576}')"
+          echo "  orbis-worker:     $(echo "$WORKER_SIZE" | awk '{printf "%.0f MB", $1/1048576}')"
+          echo ""
+
+          # Warn if API exceeds 500MB (should be ~200-300MB)
+          if [ "$API_SIZE" -gt 524288000 ] 2>/dev/null; then
+            echo "⚠️  WARNING: orbis-api is larger than 500MB — review Dockerfile"
+          fi
+
+          # Warn if Worker exceeds 1GB (should be ~500-700MB)
+          if [ "$WORKER_SIZE" -gt 1073741824 ] 2>/dev/null; then
+            echo "⚠️  WARNING: orbis-worker is larger than 1GB — review Dockerfile"
+          fi
 
       - name: Release Summary
         run: |
           echo "🚀 Version ${{ steps.prep.outputs.tag_name }} has been built and published successfully to GHCR!"
+          echo ""
           echo "Images released:"
-          echo " - ghcr.io/${{ steps.prep.outputs.owner_lower }}/orbis-api:${{ steps.prep.outputs.tag_name }}"
-          echo " - ghcr.io/${{ steps.prep.outputs.owner_lower }}/orbis-dashboard:${{ steps.prep.outputs.tag_name }}"
-          echo " - ghcr.io/${{ steps.prep.outputs.owner_lower }}/orbis-worker:${{ steps.prep.outputs.tag_name }}"
+          echo "  - ghcr.io/${{ steps.prep.outputs.owner_lower }}/orbis-api:${{ steps.prep.outputs.tag_name }}"
+          echo "  - ghcr.io/${{ steps.prep.outputs.owner_lower }}/orbis-dashboard:${{ steps.prep.outputs.tag_name }}"
+          echo "  - ghcr.io/${{ steps.prep.outputs.owner_lower }}/orbis-worker:${{ steps.prep.outputs.tag_name }}"
 
   release-desktop:
     name: Build & Release Desktop App

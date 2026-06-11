@@ -1,15 +1,69 @@
-# Rust build artifacts
-apps/desktop/src-tauri/target/
-apps/desktop/src-tauri/gen/
+# =============================================================================
+# Docker Build Context — Exclude unnecessary files to speed up builds
+# =============================================================================
 
-# Dependency directories
+# Dependency directories (already installed inside container)
 node_modules/
 **/node_modules/
 
-# Local configuration & build files
-.git/
-.github/
-.vscode/
+# Build outputs
 dist/
 .next/
+**/out/
+
+# Rust/Tauri (desktop app — not needed for server images)
+apps/desktop/
+apps/desktop/src-tauri/target/
+apps/desktop/src-tauri/gen/
+
+# Version control
+.git/
+.github/
+.gitignore
+.gitattributes
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local configuration & secrets
+.env
+.env.local
+.env.*.local
+
+# Logs
 *.log
+npm-debug.log*
+
+# Documentation
+docs/
+*.md
+LICENSE
+
+# CLI deployment folder (not needed in Docker build)
+cli/
+
+# Turbo cache
+.turbo/
+**/.turbo/
+
+# Docker files (prevent recursive context)
+docker-compose*.yml
+Dockerfile
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Package manager locks (we regenerate inside container)
+# Keep bun.lock for frozen installs if needed
+pnpm-lock.yaml
+
+# Test files
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+**/__tests__/

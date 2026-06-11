@@ -1,5 +1,5 @@
 # =============================================================================
-# Orbis School Server - Startup, Update, and Management CLI
+# Orbis School Server — Modern CLI Manager (Expo-Style UX)
 # =============================================================================
 # Usage: powershell -ExecutionPolicy Bypass -File start-school-server.ps1 [Action]
 # Supported Actions: start, stop, restart, update, status, config, menu
@@ -13,10 +13,31 @@ param (
 
 $ErrorActionPreference = "Stop"
 
-# Global script settings
-$LanIp = "localhost"
+# ─── Global Settings ─────────────────────────────────────────────────────────
+$script:LanIp = "localhost"
+$script:TotalStopwatch = $null
 
-# Helper to generate a random string of lowercase letters and numbers
+# ─── ANSI / Unicode Helpers ──────────────────────────────────────────────────
+# Ensure UTF-8 output for box-drawing and Unicode symbols
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+
+# ─── Color Palette ───────────────────────────────────────────────────────────
+$C = @{
+    Primary   = "Cyan"
+    Success   = "Green"
+    Warning   = "Yellow"
+    Error     = "Red"
+    Muted     = "DarkGray"
+    White     = "White"
+    Accent    = "Magenta"
+}
+
+# ─── Spinner Frames (Braille dots — same style as Expo/Ora) ──────────────────
+$script:SpinnerFrames = @('⠋','⠙','⠹','⠸','⠼','⠴','⠦','⠧','⠇','⠏')
+
+# ─── Utility Functions ───────────────────────────────────────────────────────
+
 function Get-RandomString($length) {
     $chars = "abcdefghijklmnopqrstuvwxyz0123456789"
     $bytes = New-Object Byte[] $length
@@ -28,7 +49,6 @@ function Get-RandomString($length) {
     return $result
 }
 
-# Helper to generate a secure random password with mixed case and digits
 function Get-RandomPassword($length) {
     $chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
     $bytes = New-Object Byte[] $length
@@ -40,24 +60,228 @@ function Get-RandomPassword($length) {
     return $result
 }
 
-# Print Banner
-function Print-Banner {
-    Write-Host ""
-    Write-Host "    .d88b.  d8888b. d8888b. d888888b .d8888." -ForegroundColor Cyan
-    Write-Host "   .8P  Y8. 88  '8D 88  '8D   '88'   88'  YP" -ForegroundColor Cyan
-    Write-Host "   88    88 88oobY' 88oooY'    88    '8bo.  " -ForegroundColor Cyan
-    Write-Host "   88    88 88'8b   88~~~b.    88      'Y8b." -ForegroundColor Cyan
-    Write-Host "   '8b  d8' 88 '88. 88   8D   .88.   db   8D" -ForegroundColor Cyan
-    Write-Host "    'Y88P'  88   YD Y8888P' Y888888P '8888Y'" -ForegroundColor Cyan
-    Write-Host ""
-    Write-Host "   ORBIS School Management Platform CLI" -ForegroundColor White
-    Write-Host "   Secure - Scalable - Intelligent [2026 Edition]" -ForegroundColor Gray
-    Write-Host ""
+function Format-Elapsed([System.Diagnostics.Stopwatch]$sw) {
+    $totalSec = $sw.Elapsed.TotalSeconds
+    if ($totalSec -lt 1) {
+        return "$([math]::Round($totalSec * 1000))ms"
+    } elseif ($totalSec -lt 60) {
+        return "$([math]::Round($totalSec, 1))s"
+    } else {
+        $min = [math]::Floor($totalSec / 60)
+        $sec = [math]::Round($totalSec % 60)
+        return "${min}m ${sec}s"
+    }
 }
 
-# Check System Prerequisites (Docker)
+function Write-Blank { Write-Host "" }
+
+# ─── UI Components ───────────────────────────────────────────────────────────
+
+function Print-Banner {
+    Write-Blank
+    Write-Host "  ╭──────────────────────────────────────────────╮" -ForegroundColor $C.Primary
+    Write-Host "  │                                              │" -ForegroundColor $C.Primary
+    Write-Host "  │" -NoNewline -ForegroundColor $C.Primary
+    Write-Host "        ◉  O R B I S" -NoNewline -ForegroundColor $C.White
+    Write-Host "                       │" -ForegroundColor $C.Primary
+    Write-Host "  │" -NoNewline -ForegroundColor $C.Primary
+    Write-Host "        School Management Platform" -NoNewline -ForegroundColor $C.Muted
+    Write-Host "       │" -ForegroundColor $C.Primary
+    Write-Host "  │" -NoNewline -ForegroundColor $C.Primary
+    Write-Host "        Secure · Scalable · Intelligent" -NoNewline -ForegroundColor $C.Muted
+    Write-Host "    │" -ForegroundColor $C.Primary
+    Write-Host "  │                                              │" -ForegroundColor $C.Primary
+    Write-Host "  ╰──────────────────────────────────────────────╯" -ForegroundColor $C.Primary
+    Write-Blank
+}
+
+function Print-StepHeader([int]$Current, [int]$Total, [string]$Title) {
+    Write-Blank
+    Write-Host "  ──────────────────────────────────────────────" -ForegroundColor $C.Muted
+    Write-Host "  Step $Current/$Total" -NoNewline -ForegroundColor $C.Accent
+    Write-Host " · " -NoNewline -ForegroundColor $C.Muted
+    Write-Host "$Title" -ForegroundColor $C.White
+    Write-Host "  ──────────────────────────────────────────────" -ForegroundColor $C.Muted
+    Write-Blank
+}
+
+function Write-TaskSuccess([string]$Message, [string]$Elapsed = "") {
+    if ($Elapsed) {
+        $padding = 48 - $Message.Length - 6
+        if ($padding -lt 1) { $padding = 1 }
+        $spaces = " " * $padding
+        Write-Host "    ✓ " -NoNewline -ForegroundColor $C.Success
+        Write-Host "$Message" -NoNewline -ForegroundColor $C.White
+        Write-Host "$spaces" -NoNewline
+        Write-Host "$Elapsed" -ForegroundColor $C.Muted
+    } else {
+        Write-Host "    ✓ " -NoNewline -ForegroundColor $C.Success
+        Write-Host "$Message" -ForegroundColor $C.White
+    }
+}
+
+function Write-TaskWarning([string]$Message) {
+    Write-Host "    ⚠ " -NoNewline -ForegroundColor $C.Warning
+    Write-Host "$Message" -ForegroundColor $C.Warning
+}
+
+function Write-TaskError([string]$Message) {
+    Write-Host "    ✗ " -NoNewline -ForegroundColor $C.Error
+    Write-Host "$Message" -ForegroundColor $C.Error
+}
+
+function Write-TaskInfo([string]$Message) {
+    Write-Host "    › " -NoNewline -ForegroundColor $C.Muted
+    Write-Host "$Message" -ForegroundColor $C.Muted
+}
+
+# ─── Spinner Execution ───────────────────────────────────────────────────────
+# Run a scriptblock in a background job while showing an animated spinner.
+# Returns: @{ Success = $bool; Output = $string; ExitCode = $int }
+
+function Invoke-WithSpinner {
+    param(
+        [string]$Message,
+        [scriptblock]$Action
+    )
+
+    $job = Start-Job -ScriptBlock $Action
+    $frameIdx = 0
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+
+    # Animate spinner while job is running
+    while ($job.State -eq 'Running') {
+        $frame = $script:SpinnerFrames[$frameIdx % $script:SpinnerFrames.Count]
+        $elapsed = Format-Elapsed $sw
+        $padding = 48 - $Message.Length - 6
+        if ($padding -lt 1) { $padding = 1 }
+        $spaces = " " * $padding
+        Write-Host "`r    $frame " -NoNewline -ForegroundColor $C.Primary
+        Write-Host "$Message" -NoNewline -ForegroundColor $C.White
+        Write-Host "$spaces" -NoNewline
+        Write-Host "$elapsed  " -NoNewline -ForegroundColor $C.Muted
+        Start-Sleep -Milliseconds 100
+        $frameIdx++
+    }
+
+    $sw.Stop()
+    $elapsed = Format-Elapsed $sw
+    $padding = 48 - $Message.Length - 6
+    if ($padding -lt 1) { $padding = 1 }
+    $spaces = " " * $padding
+
+    # Collect output and determine success
+    $output = ""
+    $jobFailed = $false
+    try {
+        $output = Receive-Job $job -ErrorAction SilentlyContinue 2>&1 | Out-String
+    } catch {
+        $output = $_.ToString()
+        $jobFailed = $true
+    }
+
+    if ($job.State -eq 'Failed') { $jobFailed = $true }
+    Remove-Job $job -Force -ErrorAction SilentlyContinue
+
+    if (-not $jobFailed) {
+        Write-Host "`r    ✓ " -NoNewline -ForegroundColor $C.Success
+        Write-Host "$Message" -NoNewline -ForegroundColor $C.White
+        Write-Host "$spaces" -NoNewline
+        Write-Host "$elapsed  " -ForegroundColor $C.Muted
+    } else {
+        Write-Host "`r    ✗ " -NoNewline -ForegroundColor $C.Error
+        Write-Host "$Message" -NoNewline -ForegroundColor $C.Error
+        Write-Host "$spaces" -NoNewline
+        Write-Host "$elapsed  " -ForegroundColor $C.Muted
+    }
+
+    return @{
+        Success  = (-not $jobFailed)
+        Output   = $output.Trim()
+        Elapsed  = $elapsed
+    }
+}
+
+# ─── Error Display ───────────────────────────────────────────────────────────
+
+function Show-ErrorBox {
+    param(
+        [string]$Title,
+        [string]$Details,
+        [string[]]$Fix
+    )
+
+    Write-Blank
+    Write-Host "  ╭──────────────────────────────────────────────╮" -ForegroundColor $C.Error
+    Write-Host "  │" -NoNewline -ForegroundColor $C.Error
+    Write-Host "  ✗  $Title" -NoNewline -ForegroundColor $C.Error
+    $tp = 46 - $Title.Length - 5
+    if ($tp -lt 1) { $tp = 1 }
+    Write-Host "$(" " * $tp)│" -ForegroundColor $C.Error
+    Write-Host "  ╰──────────────────────────────────────────────╯" -ForegroundColor $C.Error
+    Write-Blank
+
+    if ($Details) {
+        Write-Host "    What went wrong:" -ForegroundColor $C.Warning
+        Write-Host "      $Details" -ForegroundColor $C.White
+        Write-Blank
+    }
+
+    if ($Fix -and $Fix.Count -gt 0) {
+        Write-Host "    How to fix:" -ForegroundColor $C.Success
+        foreach ($step in $Fix) {
+            Write-Host "      $step" -ForegroundColor $C.White
+        }
+        Write-Blank
+    }
+}
+
+# ─── Success Summary ─────────────────────────────────────────────────────────
+
+function Show-SuccessSummary {
+    param([string]$TotalElapsed)
+
+    Write-Blank
+    Write-Host "  ╭──────────────────────────────────────────────╮" -ForegroundColor $C.Success
+    Write-Host "  │                                              │" -ForegroundColor $C.Success
+    Write-Host "  │" -NoNewline -ForegroundColor $C.Success
+    Write-Host "    ✓  ORBIS SERVER IS RUNNING" -NoNewline -ForegroundColor $C.Success
+    Write-Host "               │" -ForegroundColor $C.Success
+    Write-Host "  │                                              │" -ForegroundColor $C.Success
+    Write-Host "  ╰──────────────────────────────────────────────╯" -ForegroundColor $C.Success
+    Write-Blank
+
+    Write-Host "    Local Access" -ForegroundColor $C.White
+    Write-Host "    ├─ Dashboard    " -NoNewline -ForegroundColor $C.Muted
+    Write-Host "http://localhost:3001" -ForegroundColor $C.Primary
+    Write-Host "    ├─ API          " -NoNewline -ForegroundColor $C.Muted
+    Write-Host "http://localhost:3002" -ForegroundColor $C.Primary
+    Write-Host "    └─ Storage      " -NoNewline -ForegroundColor $C.Muted
+    Write-Host "http://localhost:9001" -ForegroundColor $C.Primary
+    Write-Blank
+
+    if ($script:LanIp -ne "localhost") {
+        Write-Host "    Network Access (LAN)" -ForegroundColor $C.White
+        Write-Host "    └─ Dashboard    " -NoNewline -ForegroundColor $C.Muted
+        Write-Host "http://$($script:LanIp):3001" -ForegroundColor $C.Primary
+        Write-Blank
+    }
+
+    if ($TotalElapsed) {
+        Write-Host "    Total startup time: " -NoNewline -ForegroundColor $C.Muted
+        Write-Host "$TotalElapsed" -ForegroundColor $C.Accent
+        Write-Blank
+    }
+}
+
+# ═════════════════════════════════════════════════════════════════════════════
+# CORE FUNCTIONS
+# ═════════════════════════════════════════════════════════════════════════════
+
+# ─── Prerequisites Check ─────────────────────────────────────────────────────
+
 function Confirm-Prerequisites {
-    Write-Host " [*] Checking System Prerequisites..." -ForegroundColor Yellow
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
     $oldEA = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
     try {
@@ -67,44 +291,52 @@ function Confirm-Prerequisites {
         $dockerExit = 1
     }
     $ErrorActionPreference = $oldEA
+    $sw.Stop()
 
     if ($dockerExit -ne 0) {
-        Write-Host "  [FAIL] Docker is not running. Start Docker Desktop and retry." -ForegroundColor Red
+        Write-TaskError "Docker is not running"
+        Show-ErrorBox `
+            "Docker Desktop Required" `
+            "Docker engine is not running or not installed." `
+            @(
+                "1. Install Docker Desktop from docker.com/products/docker-desktop",
+                "2. Start Docker Desktop and wait for it to initialize",
+                "3. Re-run this script"
+            )
         return $false
     }
-    Write-Host "  [OK] Docker engine is running." -ForegroundColor Green
+    Write-TaskSuccess "Docker engine is running" (Format-Elapsed $sw)
     return $true
 }
 
-# Detect Local Network IP
+# ─── LAN IP Detection ────────────────────────────────────────────────────────
+
 function Detect-LanIp {
-    Write-Host " [*] Detecting Local Network IP..." -ForegroundColor Yellow
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
     $detected = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object {
         $_.IPAddress -match "^192\.168\." -or
         $_.IPAddress -match "^10\." -or
         $_.IPAddress -match "^172\.(1[6-9]|2[0-9]|3[0-1])\."
     } | Select-Object -First 1).IPAddress
 
+    $sw.Stop()
+
     if (-not $detected) {
         $script:LanIp = "localhost"
-        Write-Host "  [WARN] No LAN IP found. Using 'localhost'." -ForegroundColor Yellow
+        Write-TaskWarning "No LAN IP found — using localhost"
     } else {
         $script:LanIp = $detected
-        Write-Host "  [OK] LAN IP: $script:LanIp" -ForegroundColor Green
+        Write-TaskSuccess "LAN IP detected: $script:LanIp" (Format-Elapsed $sw)
     }
 }
 
-# Initialize and Configure .env
-function Initialize-Environment {
-    if (-not (Confirm-Prerequisites)) {
-        Exit 1
-    }
-    Detect-LanIp
+# ─── Environment Configuration ───────────────────────────────────────────────
 
-    Write-Host " [*] Configuring Environment..." -ForegroundColor Yellow
+function Initialize-Environment {
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
 
     if (-not (Test-Path ".env")) {
-        Write-Host "  Creating .env from template..." -ForegroundColor Gray
+        Write-TaskInfo "Creating .env from template..."
         Copy-Item ".env.example" ".env"
 
         $bytes1 = New-Object Byte[] 32
@@ -114,13 +346,11 @@ function Initialize-Environment {
         $authSecret = [System.BitConverter]::ToString($bytes1).Replace("-", "").ToLower()
         $encryptSecret = [System.BitConverter]::ToString($bytes2).Replace("-", "").ToLower()
 
-        # Generate secure random database credentials with smart year prefix
         $year = (Get-Date).Year
         $dbUser = "orbis_user_" + (Get-RandomString 8)
         $dbPassword = Get-RandomPassword 24
         $dbName = "orbis_db_" + $year + "_" + (Get-RandomString 8)
 
-        # Generate secure random S3 storage credentials
         $storageAccessKey = "orbis_storage_" + (Get-RandomString 8)
         $storageSecretKey = Get-RandomPassword 24
 
@@ -134,7 +364,7 @@ function Initialize-Environment {
         $envContent = $envContent -replace "STORAGE_SECRET_KEY=rustfs_local_2026", "STORAGE_SECRET_KEY=$storageSecretKey"
 
         Set-Content -Path ".env" -Value $envContent
-        Write-Host "  [OK] Secrets and secure database/storage credentials auto-generated." -ForegroundColor Green
+        Write-TaskSuccess "Secrets auto-generated" ""
     }
 
     # Update dynamic values in .env
@@ -151,81 +381,17 @@ function Initialize-Environment {
         } elseif ($line.StartsWith("AUTH_TRUSTED_ORIGINS=")) {
             $newLines += "AUTH_TRUSTED_ORIGINS=http://localhost:3001,http://127.0.0.1:3001,http://$($script:LanIp):3001"
         } else {
-            if ($line.StartsWith("GHCR_USERNAME=") -and $line -like "*your_github_username_here*") {
-                Write-Host "  [WARN] GHCR_USERNAME not set. Edit .env with the correct username." -ForegroundColor Yellow
-            }
             $newLines += $line
         }
     }
     Set-Content -Path ".env" -Value $newLines
-    Write-Host "  [OK] Environment ready for $script:LanIp" -ForegroundColor Green
+
+    $sw.Stop()
+    Write-TaskSuccess "Environment configured" (Format-Elapsed $sw)
 }
 
-# Start Server
-function Start-Server {
-    Initialize-Environment
+# ─── Get .env Value ──────────────────────────────────────────────────────────
 
-    Write-Host "`n [*] Starting Docker Containers..." -ForegroundColor Yellow
-    $oldEA = $ErrorActionPreference
-    $ErrorActionPreference = "Continue"
-    $composeOutput = docker compose up -d 2>&1
-    $composeExit = $LASTEXITCODE
-    $ErrorActionPreference = $oldEA
-
-    $composeOutput | ForEach-Object {
-        $line = $_.ToString()
-        if ($line -match "Error|403|failed") {
-            Write-Host "  $line" -ForegroundColor Red
-        } else {
-            Write-Host "  $line" -ForegroundColor Gray
-        }
-    }
-
-    if ($composeExit -ne 0) {
-        Write-Host "`n  [FAIL] Docker Compose could not start all services." -ForegroundColor Red
-        $authError = $composeOutput | Where-Object { $_ -match "403 Forbidden" -or $_ -match "failed to resolve" }
-        if ($authError) {
-            Write-Host "`n  Private registry authentication required. Run:" -ForegroundColor Yellow
-            Write-Host "    docker login ghcr.io -u YOUR_GITHUB_USERNAME" -ForegroundColor Cyan
-        }
-        return
-    }
-
-    Write-Host "`n  Waiting for services to initialize..." -ForegroundColor Gray
-    Start-Sleep -Seconds 5
-
-    Write-Host "`n  =============================================================" -ForegroundColor Green
-    Write-Host "  ORBIS SCHOOL SERVER IS RUNNING" -ForegroundColor Green
-    Write-Host "  =============================================================" -ForegroundColor Green
-    Write-Host ""
-    Write-Host "  Local Access:" -ForegroundColor White
-    Write-Host "    Dashboard:  http://localhost:3001" -ForegroundColor Cyan
-    Write-Host "    API:        http://localhost:3002" -ForegroundColor Cyan
-    Write-Host "    Storage:    http://localhost:9001  (rustfsadmin / rustfs_local_2026)" -ForegroundColor Cyan
-    Write-Host ""
-    Write-Host "  LAN Access:" -ForegroundColor White
-    Write-Host "    Dashboard:  http://$($script:LanIp):3001" -ForegroundColor Cyan
-    Write-Host "  =============================================================" -ForegroundColor Green
-}
-
-# Stop Server
-function Stop-Server {
-    Write-Host " [*] Stopping Docker Containers..." -ForegroundColor Yellow
-    $oldEA = $ErrorActionPreference
-    $ErrorActionPreference = "Continue"
-    docker compose down 2>&1 | ForEach-Object { Write-Host "  $_" -ForegroundColor Gray }
-    $ErrorActionPreference = $oldEA
-    Write-Host "  [OK] Server stopped successfully." -ForegroundColor Green
-}
-
-# Restart Server
-function Restart-Server {
-    Write-Host " [*] Restarting Orbis Server..." -ForegroundColor Yellow
-    Stop-Server
-    Start-Server
-}
-
-# Get current setting from .env
 function Get-EnvValue($key) {
     if (Test-Path ".env") {
         $line = Get-Content ".env" | Where-Object { $_.StartsWith("$key=") }
@@ -236,20 +402,229 @@ function Get-EnvValue($key) {
     return $null
 }
 
-# Update Server Version & Pull
-function Update-Server {
-    if (-not (Confirm-Prerequisites)) {
-        Exit 1
+# ═════════════════════════════════════════════════════════════════════════════
+# SERVER ACTIONS
+# ═════════════════════════════════════════════════════════════════════════════
+
+# ─── Start Server ────────────────────────────────────────────────────────────
+
+function Start-Server {
+    $script:TotalStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+
+    # ── Step 1: Prerequisites ────────────────────────────────────────────────
+    Print-StepHeader 1 4 "Checking prerequisites"
+
+    if (-not (Confirm-Prerequisites)) { return }
+    Detect-LanIp
+
+    # ── Step 2: Environment ──────────────────────────────────────────────────
+    Print-StepHeader 2 4 "Configuring environment"
+
+    Initialize-Environment
+
+    # Check GHCR_USERNAME
+    $ghcrUser = Get-EnvValue "GHCR_USERNAME"
+    if (-not $ghcrUser -or $ghcrUser -eq "your_github_username_here") {
+        Write-TaskWarning "GHCR_USERNAME not set — edit .env with the correct username"
+    } else {
+        Write-TaskSuccess "Registry: ghcr.io/$ghcrUser"
     }
 
-    Write-Host " [*] Starting Orbis Update Procedure..." -ForegroundColor Yellow
-    
+    # ── Step 3: Pull Images ──────────────────────────────────────────────────
+    Print-StepHeader 3 4 "Pulling container images"
+
+    $pullResult = Invoke-WithSpinner "Pulling latest images from registry" {
+        docker compose pull --quiet 2>&1
+    }
+
+    if (-not $pullResult.Success) {
+        $output = $pullResult.Output
+        if ($output -match "403|Forbidden|unauthorized|denied") {
+            Show-ErrorBox `
+                "Registry Authentication Failed" `
+                "Access denied to private container registry (403 Forbidden)." `
+                @(
+                    "1. Run: docker login ghcr.io -u YOUR_GITHUB_USERNAME",
+                    "2. Enter your Personal Access Token (PAT) with read:packages scope",
+                    "3. Re-run this script"
+                )
+        } elseif ($output -match "not found|manifest unknown") {
+            Show-ErrorBox `
+                "Container Image Not Found" `
+                "The specified version could not be found in the registry." `
+                @(
+                    "1. Check ORBIS_VERSION in your .env file",
+                    "2. Verify the images exist at ghcr.io/$ghcrUser",
+                    "3. Try setting ORBIS_VERSION=stable"
+                )
+        } else {
+            Show-ErrorBox `
+                "Image Pull Failed" `
+                "Could not download container images." `
+                @(
+                    "Check your internet connection and try again.",
+                    "Run: docker compose pull  (for detailed output)"
+                )
+        }
+        return
+    }
+
+    # ── Step 4: Start Services ───────────────────────────────────────────────
+    Print-StepHeader 4 4 "Starting services"
+
+    $startResult = Invoke-WithSpinner "Starting Docker containers" {
+        docker compose up -d 2>&1
+    }
+
+    if (-not $startResult.Success) {
+        $output = $startResult.Output
+        if ($output -match "port is already allocated|address already in use") {
+            Show-ErrorBox `
+                "Port Conflict" `
+                "One or more required ports are already in use." `
+                @(
+                    "Check which ports are busy: netstat -ano | findstr :3001",
+                    "Stop conflicting services or change ports in docker-compose.yml",
+                    "Then re-run this script"
+                )
+        } else {
+            Show-ErrorBox `
+                "Failed to Start Services" `
+                "Docker Compose could not start all containers." `
+                @(
+                    "Run: docker compose up -d  (for detailed output)",
+                    "Check logs: docker compose logs"
+                )
+        }
+        return
+    }
+
+    # Wait for health checks
+    $healthResult = Invoke-WithSpinner "Waiting for services to be healthy" {
+        Start-Sleep -Seconds 6
+        # Quick health check
+        $maxWait = 30
+        $waited = 0
+        while ($waited -lt $maxWait) {
+            try {
+                $pg = docker exec orbis-postgres pg_isready -U orbis 2>&1
+                $rd = docker exec orbis-redis redis-cli ping 2>&1
+                if (($pg -match "accepting") -and ($rd -match "PONG")) {
+                    return "healthy"
+                }
+            } catch {}
+            Start-Sleep -Seconds 2
+            $waited += 2
+        }
+        return "timeout"
+    }
+
+    if ($healthResult.Output -match "timeout") {
+        Write-TaskWarning "Services may still be initializing — check status in a moment"
+    }
+
+    # ── Summary ──────────────────────────────────────────────────────────────
+    $script:TotalStopwatch.Stop()
+    Show-SuccessSummary (Format-Elapsed $script:TotalStopwatch)
+}
+
+# ─── Stop Server ─────────────────────────────────────────────────────────────
+
+function Stop-Server {
+    Print-StepHeader 1 1 "Stopping server"
+
+    $result = Invoke-WithSpinner "Stopping all containers" {
+        docker compose down 2>&1
+    }
+
+    if ($result.Success) {
+        Write-Blank
+        Write-Host "    ✓ " -NoNewline -ForegroundColor $C.Success
+        Write-Host "Server stopped successfully" -ForegroundColor $C.White
+        Write-Blank
+    } else {
+        Write-TaskError "Could not stop containers cleanly"
+        Write-TaskInfo "Run: docker compose down  (for detailed output)"
+        Write-Blank
+    }
+}
+
+# ─── Restart Server ──────────────────────────────────────────────────────────
+
+function Restart-Server {
+    $script:TotalStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+
+    Print-StepHeader 1 2 "Stopping current services"
+
+    $stopResult = Invoke-WithSpinner "Stopping containers" {
+        docker compose down 2>&1
+    }
+
+    if (-not $stopResult.Success) {
+        Write-TaskWarning "Could not stop containers cleanly — attempting restart anyway"
+    }
+
+    Print-StepHeader 2 2 "Starting services"
+
+    $startResult = Invoke-WithSpinner "Starting Docker containers" {
+        docker compose up -d 2>&1
+    }
+
+    if ($startResult.Success) {
+        # Quick wait for initialization
+        $healthResult = Invoke-WithSpinner "Waiting for services to be healthy" {
+            Start-Sleep -Seconds 5
+            $maxWait = 20
+            $waited = 0
+            while ($waited -lt $maxWait) {
+                try {
+                    $pg = docker exec orbis-postgres pg_isready -U orbis 2>&1
+                    $rd = docker exec orbis-redis redis-cli ping 2>&1
+                    if (($pg -match "accepting") -and ($rd -match "PONG")) {
+                        return "healthy"
+                    }
+                } catch {}
+                Start-Sleep -Seconds 2
+                $waited += 2
+            }
+            return "timeout"
+        }
+
+        Detect-LanIp
+        $script:TotalStopwatch.Stop()
+        Show-SuccessSummary (Format-Elapsed $script:TotalStopwatch)
+    } else {
+        Show-ErrorBox `
+            "Restart Failed" `
+            "Could not restart Docker containers." `
+            @(
+                "Run: docker compose up -d  (for detailed output)",
+                "Check logs: docker compose logs"
+            )
+    }
+}
+
+# ─── Update Server ───────────────────────────────────────────────────────────
+
+function Update-Server {
+    $script:TotalStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+
+    # ── Step 1: Prerequisites ────────────────────────────────────────────────
+    Print-StepHeader 1 3 "Checking prerequisites"
+
+    if (-not (Confirm-Prerequisites)) { return }
+
     $currentVersion = Get-EnvValue "ORBIS_VERSION"
     if (-not $currentVersion) { $currentVersion = "stable" }
-    
-    Write-Host "  Current Orbis Version: $currentVersion" -ForegroundColor Cyan
-    $newVersion = Read-Host "  Enter new Orbis version to deploy [Or press Enter to keep '$currentVersion']"
-    
+    Write-TaskInfo "Current version: $currentVersion"
+
+    # ── Version Prompt ───────────────────────────────────────────────────────
+    Write-Blank
+    Write-Host "    Enter new version " -NoNewline -ForegroundColor $C.White
+    Write-Host "[press Enter for '$currentVersion']" -NoNewline -ForegroundColor $C.Muted
+    Write-Host ": " -NoNewline -ForegroundColor $C.White
+    $newVersion = Read-Host
+
     if ($newVersion) {
         $envLines = Get-Content ".env"
         $newLines = @()
@@ -266,96 +641,263 @@ function Update-Server {
             $newLines += "ORBIS_VERSION=$newVersion"
         }
         Set-Content -Path ".env" -Value $newLines
-        Write-Host "  [OK] Version updated to $newVersion in .env" -ForegroundColor Green
+        Write-TaskSuccess "Version updated to $newVersion"
         $currentVersion = $newVersion
+    } else {
+        Write-TaskInfo "Keeping version: $currentVersion"
     }
 
-    Write-Host "`n  Pulling latest Docker images for version '$currentVersion' from GHCR..." -ForegroundColor Gray
-    $oldEA = $ErrorActionPreference
-    $ErrorActionPreference = "Continue"
-    docker compose pull 2>&1 | ForEach-Object { Write-Host "  $_" -ForegroundColor Gray }
-    
-    Write-Host "`n  Re-creating containers with updated images..." -ForegroundColor Gray
-    docker compose up -d --remove-orphans 2>&1 | ForEach-Object { Write-Host "  $_" -ForegroundColor Gray }
-    $ErrorActionPreference = $oldEA
+    # ── Step 2: Pull Images ──────────────────────────────────────────────────
+    Print-StepHeader 2 3 "Pulling updated images"
 
-    Write-Host "`n  [OK] Update successfully completed!" -ForegroundColor Green
+    $pullResult = Invoke-WithSpinner "Pulling version '$currentVersion' from registry" {
+        docker compose pull --quiet 2>&1
+    }
+
+    if (-not $pullResult.Success) {
+        $output = $pullResult.Output
+        if ($output -match "403|Forbidden|unauthorized|denied") {
+            Show-ErrorBox `
+                "Registry Authentication Failed" `
+                "Access denied when pulling updated images." `
+                @(
+                    "1. Run: docker login ghcr.io -u YOUR_GITHUB_USERNAME",
+                    "2. Enter your Personal Access Token (PAT)",
+                    "3. Re-run: start-school-server.ps1 update"
+                )
+        } else {
+            Show-ErrorBox `
+                "Pull Failed" `
+                "Could not download updated images." `
+                @(
+                    "Check your internet connection and try again.",
+                    "Verify version '$currentVersion' exists in the registry."
+                )
+        }
+        return
+    }
+
+    # ── Step 3: Redeploy ─────────────────────────────────────────────────────
+    Print-StepHeader 3 3 "Redeploying services"
+
+    $deployResult = Invoke-WithSpinner "Re-creating containers with updated images" {
+        docker compose up -d --remove-orphans 2>&1
+    }
+
+    if ($deployResult.Success) {
+        $script:TotalStopwatch.Stop()
+
+        Write-Blank
+        Write-Host "  ╭──────────────────────────────────────────────╮" -ForegroundColor $C.Success
+        Write-Host "  │" -NoNewline -ForegroundColor $C.Success
+        Write-Host "    ✓  UPDATE COMPLETED SUCCESSFULLY" -NoNewline -ForegroundColor $C.Success
+        Write-Host "          │" -ForegroundColor $C.Success
+        Write-Host "  ╰──────────────────────────────────────────────╯" -ForegroundColor $C.Success
+        Write-Blank
+        Write-Host "    Version: " -NoNewline -ForegroundColor $C.Muted
+        Write-Host "$currentVersion" -ForegroundColor $C.Accent
+        Write-Host "    Total time: " -NoNewline -ForegroundColor $C.Muted
+        Write-Host (Format-Elapsed $script:TotalStopwatch) -ForegroundColor $C.Accent
+        Write-Blank
+    } else {
+        Show-ErrorBox `
+            "Redeploy Failed" `
+            "Containers could not be updated." `
+            @(
+                "Run: docker compose up -d --remove-orphans  (for detailed output)",
+                "Check logs: docker compose logs"
+            )
+    }
 }
 
-# Show Containers Status
+# ─── Show Status ─────────────────────────────────────────────────────────────
+
 function Show-Status {
-    if (-not (Confirm-Prerequisites)) {
-        Exit 1
-    }
-    Write-Host " [*] Checking Containers Status..." -ForegroundColor Yellow
+    Print-StepHeader 1 2 "Container health"
+
+    if (-not (Confirm-Prerequisites)) { return }
+
     $oldEA = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
-    docker compose ps
+
+    # Get container status
+    $containers = docker compose ps --format "{{.Name}}|{{.Status}}|{{.Ports}}" 2>&1
     $ErrorActionPreference = $oldEA
 
-    Write-Host "`n [*] Testing local endpoints:" -ForegroundColor Yellow
-    
-    # Check Dashboard
-    try {
-        $resp = Invoke-WebRequest -Uri "http://localhost:3001" -Method Head -TimeoutSec 2 -ErrorAction Stop -UseBasicParsing
-        Write-Host "  Dashboard (3001): ONLINE (Status: $($resp.StatusCode))" -ForegroundColor Green
-    } catch {
-        Write-Host "  Dashboard (3001): OFFLINE ($($_.Exception.Message))" -ForegroundColor Red
+    if ($containers) {
+        foreach ($containerLine in $containers) {
+            $parts = $containerLine.ToString().Split("|")
+            if ($parts.Count -ge 2) {
+                $name = $parts[0].Trim()
+                $status = $parts[1].Trim()
+
+                # Determine icon based on status
+                if ($status -match "Up|running|healthy") {
+                    Write-Host "    ● " -NoNewline -ForegroundColor $C.Success
+                    Write-Host "$name" -NoNewline -ForegroundColor $C.White
+                    $sp = 30 - $name.Length
+                    if ($sp -lt 1) { $sp = 1 }
+                    Write-Host "$(" " * $sp)" -NoNewline
+                    Write-Host "$status" -ForegroundColor $C.Muted
+                } elseif ($status -match "Exit|stopped|dead") {
+                    Write-Host "    ○ " -NoNewline -ForegroundColor $C.Error
+                    Write-Host "$name" -NoNewline -ForegroundColor $C.Error
+                    $sp = 30 - $name.Length
+                    if ($sp -lt 1) { $sp = 1 }
+                    Write-Host "$(" " * $sp)" -NoNewline
+                    Write-Host "$status" -ForegroundColor $C.Muted
+                } else {
+                    Write-Host "    ◌ " -NoNewline -ForegroundColor $C.Warning
+                    Write-Host "$name" -NoNewline -ForegroundColor $C.Warning
+                    $sp = 30 - $name.Length
+                    if ($sp -lt 1) { $sp = 1 }
+                    Write-Host "$(" " * $sp)" -NoNewline
+                    Write-Host "$status" -ForegroundColor $C.Muted
+                }
+            }
+        }
+    } else {
+        Write-TaskWarning "No containers found — server may not be running"
     }
 
-    # Check API
+    # ── Step 2: Endpoint Tests ───────────────────────────────────────────────
+    Print-StepHeader 2 2 "Endpoint health"
+
+    # Dashboard
     try {
-        $resp = Invoke-WebRequest -Uri "http://localhost:3002/health" -Method Get -TimeoutSec 2 -ErrorAction Stop -UseBasicParsing
-        Write-Host "  API Health (3002): ONLINE ($($resp.Content.Trim()))" -ForegroundColor Green
+        $resp = Invoke-WebRequest -Uri "http://localhost:3001" -Method Head -TimeoutSec 3 -ErrorAction Stop -UseBasicParsing
+        Write-TaskSuccess "Dashboard (3001): Online — Status $($resp.StatusCode)"
     } catch {
-        Write-Host "  API Health (3002): OFFLINE ($($_.Exception.Message))" -ForegroundColor Red
+        Write-TaskError "Dashboard (3001): Offline"
     }
+
+    # API
+    try {
+        $resp = Invoke-WebRequest -Uri "http://localhost:3002/health" -Method Get -TimeoutSec 3 -ErrorAction Stop -UseBasicParsing
+        Write-TaskSuccess "API Health (3002): Online"
+    } catch {
+        Write-TaskError "API Health (3002): Offline"
+    }
+
+    # Storage
+    try {
+        $resp = Invoke-WebRequest -Uri "http://localhost:9001" -Method Head -TimeoutSec 3 -ErrorAction Stop -UseBasicParsing
+        Write-TaskSuccess "Storage Console (9001): Online"
+    } catch {
+        Write-TaskError "Storage Console (9001): Offline"
+    }
+
+    Write-Blank
 }
 
-# Show current configs
+# ─── Show Config ─────────────────────────────────────────────────────────────
+
 function Show-Config {
-    Write-Host " [*] Current configurations (.env):" -ForegroundColor Yellow
+    Print-StepHeader 1 1 "Current configuration"
+
     if (-not (Test-Path ".env")) {
-        Write-Host "  [WARN] .env file does not exist yet. Run start action to initialize it." -ForegroundColor Yellow
+        Write-TaskWarning ".env file not found — run start to initialize"
         return
     }
 
     $lines = Get-Content ".env"
+    $currentSection = ""
+
     foreach ($line in $lines) {
         $trimmed = $line.Trim()
-        if ($trimmed -and -not $trimmed.StartsWith("#")) {
-            # Hide sensitive keys
-            if ($trimmed -match "SECRET|PASSWORD|_KEY") {
-                $parts = $trimmed.Split("=", 2)
-                Write-Host "  $($parts[0])=********" -ForegroundColor Gray
+
+        # Section headers
+        if ($trimmed -match "^#\s*\d+\.\s*(.+)$") {
+            $currentSection = $Matches[1].Trim()
+            Write-Blank
+            Write-Host "    $currentSection" -ForegroundColor $C.Accent
+            Write-Host "    $("-" * $currentSection.Length)" -ForegroundColor $C.Muted
+            continue
+        }
+
+        # Skip other comments and empty lines
+        if (-not $trimmed -or $trimmed.StartsWith("#")) { continue }
+
+        # Key=Value pairs
+        if ($trimmed -match "^([^=]+)=(.*)$") {
+            $key = $Matches[1]
+            $value = $Matches[2]
+
+            # Mask sensitive values
+            if ($key -match "SECRET|PASSWORD|_KEY") {
+                $maskedValue = "••••••••"
             } else {
-                Write-Host "  $trimmed" -ForegroundColor Cyan
+                $maskedValue = $value
             }
+
+            Write-Host "      $key" -NoNewline -ForegroundColor $C.Muted
+            Write-Host " = " -NoNewline -ForegroundColor $C.Muted
+            Write-Host "$maskedValue" -ForegroundColor $C.White
         }
     }
+    Write-Blank
 }
 
-# Interactive Menu Loop
+# ═════════════════════════════════════════════════════════════════════════════
+# INTERACTIVE MENU
+# ═════════════════════════════════════════════════════════════════════════════
+
 function Show-InteractiveMenu {
     do {
         Clear-Host
         Print-Banner
-        Write-Host "  =============================================================" -ForegroundColor Green
-        Write-Host "                    ORBIS SERVER CLI MANAGER" -ForegroundColor Green
-        Write-Host "  =============================================================" -ForegroundColor Green
-        Write-Host "    1. Start Server (Check environment and launch)"
-        Write-Host "    2. Stop Server (Gracefully halt services)"
-        Write-Host "    3. Restart Server"
-        Write-Host "    4. Update Server (Pull latest images & deploy)"
-        Write-Host "    5. Check Status (Show health of containers)"
-        Write-Host "    6. View Configuration (.env settings)"
-        Write-Host "    7. Exit"
-        Write-Host "  =============================================================" -ForegroundColor Green
-        Write-Host ""
-        
-        $choice = Read-Host "  Select an option [1-7]"
-        Write-Host ""
-        
+
+        Write-Host "  ╭──────────────────────────────────────────────╮" -ForegroundColor $C.Muted
+        Write-Host "  │" -NoNewline -ForegroundColor $C.Muted
+        Write-Host "        ORBIS SERVER MANAGER" -NoNewline -ForegroundColor $C.White
+        Write-Host "                 │" -ForegroundColor $C.Muted
+        Write-Host "  ╰──────────────────────────────────────────────╯" -ForegroundColor $C.Muted
+        Write-Blank
+
+        # Menu items with icons
+        Write-Host "    [" -NoNewline -ForegroundColor $C.Muted
+        Write-Host "1" -NoNewline -ForegroundColor $C.Primary
+        Write-Host "]  ▶  " -NoNewline -ForegroundColor $C.Muted
+        Write-Host "Start Server" -ForegroundColor $C.White
+
+        Write-Host "    [" -NoNewline -ForegroundColor $C.Muted
+        Write-Host "2" -NoNewline -ForegroundColor $C.Primary
+        Write-Host "]  ■  " -NoNewline -ForegroundColor $C.Muted
+        Write-Host "Stop Server" -ForegroundColor $C.White
+
+        Write-Host "    [" -NoNewline -ForegroundColor $C.Muted
+        Write-Host "3" -NoNewline -ForegroundColor $C.Primary
+        Write-Host "]  ↻  " -NoNewline -ForegroundColor $C.Muted
+        Write-Host "Restart Server" -ForegroundColor $C.White
+
+        Write-Host "    [" -NoNewline -ForegroundColor $C.Muted
+        Write-Host "4" -NoNewline -ForegroundColor $C.Primary
+        Write-Host "]  ↓  " -NoNewline -ForegroundColor $C.Muted
+        Write-Host "Update Server" -ForegroundColor $C.White
+
+        Write-Host "    [" -NoNewline -ForegroundColor $C.Muted
+        Write-Host "5" -NoNewline -ForegroundColor $C.Primary
+        Write-Host "]  ◎  " -NoNewline -ForegroundColor $C.Muted
+        Write-Host "Check Status" -ForegroundColor $C.White
+
+        Write-Host "    [" -NoNewline -ForegroundColor $C.Muted
+        Write-Host "6" -NoNewline -ForegroundColor $C.Primary
+        Write-Host "]  ⚙  " -NoNewline -ForegroundColor $C.Muted
+        Write-Host "View Configuration" -ForegroundColor $C.White
+
+        Write-Host "    [" -NoNewline -ForegroundColor $C.Muted
+        Write-Host "7" -NoNewline -ForegroundColor $C.Primary
+        Write-Host "]  ✕  " -NoNewline -ForegroundColor $C.Muted
+        Write-Host "Exit" -ForegroundColor $C.Muted
+
+        Write-Blank
+        Write-Host "  ──────────────────────────────────────────────" -ForegroundColor $C.Muted
+        Write-Host "    Select an option " -NoNewline -ForegroundColor $C.White
+        Write-Host "[1-7]" -NoNewline -ForegroundColor $C.Accent
+        Write-Host ": " -NoNewline -ForegroundColor $C.White
+        $choice = Read-Host
+        Write-Blank
+
         switch ($choice) {
             "1" { Start-Server }
             "2" { Stop-Server }
@@ -363,18 +905,31 @@ function Show-InteractiveMenu {
             "4" { Update-Server }
             "5" { Show-Status }
             "6" { Show-Config }
-            "7" { Write-Host "  Goodbye!"; break }
-            default { Write-Host "  [ERROR] Invalid option, try again." -ForegroundColor Red }
+            "7" {
+                Write-Host "    ◉ " -NoNewline -ForegroundColor $C.Primary
+                Write-Host "Goodbye!" -ForegroundColor $C.White
+                Write-Blank
+                break
+            }
+            default {
+                Write-TaskError "Invalid option — please select 1-7"
+            }
         }
-        
+
         if ($choice -ne "7") {
-            Write-Host ""
-            Read-Host "  Press Enter to return to menu..."
+            Write-Blank
+            Write-Host "    Press " -NoNewline -ForegroundColor $C.Muted
+            Write-Host "Enter" -NoNewline -ForegroundColor $C.White
+            Write-Host " to return to menu..." -NoNewline -ForegroundColor $C.Muted
+            Read-Host
         }
     } while ($choice -ne "7")
 }
 
-# Execution Dispatcher
+# ═════════════════════════════════════════════════════════════════════════════
+# ENTRY POINT
+# ═════════════════════════════════════════════════════════════════════════════
+
 Clear-Host
 Print-Banner
 

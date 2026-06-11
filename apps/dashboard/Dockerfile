@@ -1,23 +1,23 @@
-# Base image with Bun
-FROM oven/bun:1.2.22 AS base
+# Base image with Bun (slim variant)
+FROM oven/bun:1.2.22-slim AS base
 
 # Install turbo CLI globally
 FROM base AS turbo-cli
 RUN bun add -g turbo
 
-# Builder stage
+# Builder stage — prune monorepo to dashboard-related packages
 FROM turbo-cli AS builder
 WORKDIR /app
 COPY . .
 RUN turbo prune @orbis/dashboard --docker
 
-# Installer stage
+# Installer stage — install deps and build Next.js
 FROM base AS installer
 WORKDIR /app
 
 # Copy pruned workspace
 COPY --from=builder /app/out/json/ .
-# Install dependencies
+# Install ALL dependencies (dev deps needed for build: tailwindcss, postcss, etc.)
 RUN bun install
 
 # Copy full source and build
@@ -34,7 +34,7 @@ ENV NODE_ENV=production
 
 RUN bun run build --filter=@orbis/dashboard
 
-# Runner stage - using Bun for compatibility with Bun-specific APIs (e.g. RedisClient)
+# Runner stage — uses slim image, only copies standalone output (no node_modules bloat)
 FROM oven/bun:1.2.22-slim AS runner
 WORKDIR /app
 
@@ -46,8 +46,7 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 USER nextjs
 
-# Copy standalone output from installer
-# Note: turbo prune puts things in out/full/apps/dashboard
+# Copy standalone output from installer (Next.js standalone includes only needed deps)
 COPY --from=installer --chown=nextjs:nodejs /app/apps/dashboard/.next/standalone ./
 COPY --from=installer --chown=nextjs:nodejs /app/apps/dashboard/.next/static ./apps/dashboard/.next/static
 COPY --from=installer --chown=nextjs:nodejs /app/apps/dashboard/public ./apps/dashboard/public
@@ -57,4 +56,4 @@ ENV PORT=3001
 ENV HOSTNAME="0.0.0.0"
 
 # At startup: substitute placeholders in compiled JS/HTML/JSON files with actual runtime values
-CMD ["/bin/sh", "-c", "find /app -type f -name '*.js' -o -name '*.html' -o -name '*.json' | xargs sed -i \"s|http://__NEXT_PUBLIC_API_URL_PLACEHOLDER__|${NEXT_PUBLIC_API_URL}|g; s|__NEXT_PUBLIC_API_URL_PLACEHOLDER__|${NEXT_PUBLIC_API_URL}|g; s|__NEXT_PUBLIC_URL_PLACEHOLDER__|${NEXT_PUBLIC_URL}|g; s|__NEXT_PUBLIC_S3_PUBLIC_URL_PLACEHOLDER__|${NEXT_PUBLIC_S3_PUBLIC_URL}|g\" 2>/dev/null; bun run apps/dashboard/server.js"]
+CMD ["/bin/sh", "-c", "find /app -type f \\( -name '*.js' -o -name '*.html' -o -name '*.json' \\) | xargs sed -i \"s|http://__NEXT_PUBLIC_API_URL_PLACEHOLDER__|${NEXT_PUBLIC_API_URL}|g; s|__NEXT_PUBLIC_API_URL_PLACEHOLDER__|${NEXT_PUBLIC_API_URL}|g; s|__NEXT_PUBLIC_URL_PLACEHOLDER__|${NEXT_PUBLIC_URL}|g; s|__NEXT_PUBLIC_S3_PUBLIC_URL_PLACEHOLDER__|${NEXT_PUBLIC_S3_PUBLIC_URL}|g\" 2>/dev/null; bun run apps/dashboard/server.js"]
