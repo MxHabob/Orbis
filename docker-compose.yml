@@ -49,7 +49,7 @@ services:
   worker:
     build:
       context: .
-      dockerfile: packages/jobs/Dockerfile
+      dockerfile: apps/workers/Dockerfile
     container_name: orbis-worker
     restart: unless-stopped
     env_file:

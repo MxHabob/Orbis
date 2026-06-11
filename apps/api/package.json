@@ -29,7 +29,7 @@
     "@orbis/location": "workspace:*",
     "@orbis/logger": "workspace:*",
     "@orbis/storage": "workspace:*",
-    "@orbis/jobs": "workspace:*",
+    "@orbis/workers": "workspace:*",
     "@orbis/utils": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.0.0",
     "@scalar/hono-api-reference": "^0.9.26",

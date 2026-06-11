@@ -151,7 +151,7 @@ export const gradesRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      const { jobQueue } = await import("@orbis/jobs/queue");
+      const { jobQueue } = await import("@orbis/workers/queue");
       const classIdNum =
         typeof input.classId === "string"
           ? parseInt(input.classId)
@@ -198,7 +198,7 @@ export const gradesRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      const { jobQueue } = await import("@orbis/jobs/queue");
+      const { jobQueue } = await import("@orbis/workers/queue");
 
       const job = await jobQueue.add("report-generation", {
         userId: ctx.session.user.id,

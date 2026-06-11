@@ -1,4 +1,4 @@
-import { startWorker } from "@orbis/jobs/worker";
+import { startWorker } from "@orbis/workers/worker";
 import { logger } from "@orbis/logger";
 
 /**

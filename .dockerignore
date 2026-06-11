@@ -1,0 +1,15 @@
+# Rust build artifacts
+apps/desktop/src-tauri/target/
+apps/desktop/src-tauri/gen/
+
+# Dependency directories
+node_modules/
+**/node_modules/
+
+# Local configuration & build files
+.git/
+.github/
+.vscode/
+dist/
+.next/
+*.log

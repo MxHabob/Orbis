@@ -28,11 +28,11 @@
         "@orbis/db": "workspace:*",
         "@orbis/encryption": "workspace:*",
         "@orbis/export": "workspace:*",
-        "@orbis/jobs": "workspace:*",
         "@orbis/location": "workspace:*",
         "@orbis/logger": "workspace:*",
         "@orbis/storage": "workspace:*",
         "@orbis/utils": "workspace:*",
+        "@orbis/workers": "workspace:*",
         "@scalar/hono-api-reference": "^0.9.26",
         "@sindresorhus/slugify": "^3.0.0",
         "@trpc/server": "^11.8.1",
@@ -175,6 +175,29 @@
         "vite": "^7.2.4",
       },
     },
+    "apps/workers": {
+      "name": "@orbis/workers",
+      "version": "1.0.0",
+      "dependencies": {
+        "@orbis/auth": "workspace:*",
+        "@orbis/db": "workspace:*",
+        "@orbis/export": "workspace:*",
+        "@orbis/logger": "workspace:*",
+        "@orbis/storage": "workspace:*",
+        "@orbis/utils": "workspace:*",
+        "archiver": "^7.0.1",
+        "bullmq": "^5.41.6",
+        "ioredis": "5.9.3",
+        "jszip": "^3.10.1",
+        "nanoid": "^5.0.9",
+        "pdf-lib": "^1.17.1",
+        "puppeteer": "^24.2.0",
+      },
+      "devDependencies": {
+        "@orbis/tsconfig": "workspace:*",
+        "typescript": "^5.7.3",
+      },
+    },
     "packages/auth": {
       "name": "@orbis/auth",
       "version": "1.0.0",
@@ -298,29 +321,6 @@
         "@orbis/tsconfig": "workspace:*",
         "@types/papaparse": "^5.5.2",
         "typescript": "^5.9.3",
-      },
-    },
-    "packages/jobs": {
-      "name": "@orbis/jobs",
-      "version": "1.0.0",
-      "dependencies": {
-        "@orbis/auth": "workspace:*",
-        "@orbis/db": "workspace:*",
-        "@orbis/export": "workspace:*",
-        "@orbis/logger": "workspace:*",
-        "@orbis/storage": "workspace:*",
-        "@orbis/utils": "workspace:*",
-        "archiver": "^7.0.1",
-        "bullmq": "^5.41.6",
-        "ioredis": "5.9.3",
-        "jszip": "^3.10.1",
-        "nanoid": "^5.0.9",
-        "pdf-lib": "^1.17.1",
-        "puppeteer": "^24.2.0",
-      },
-      "devDependencies": {
-        "@orbis/tsconfig": "workspace:*",
-        "typescript": "^5.7.3",
       },
     },
     "packages/location": {
@@ -943,8 +943,6 @@
 
     "@orbis/import": ["@orbis/import@workspace:packages/import"],
 
-    "@orbis/jobs": ["@orbis/jobs@workspace:packages/jobs"],
-
     "@orbis/location": ["@orbis/location@workspace:packages/location"],
 
     "@orbis/logger": ["@orbis/logger@workspace:packages/logger"],
@@ -958,6 +956,8 @@
     "@orbis/ui": ["@orbis/ui@workspace:packages/ui"],
 
     "@orbis/utils": ["@orbis/utils@workspace:packages/utils"],
+
+    "@orbis/workers": ["@orbis/workers@workspace:apps/workers"],
 
     "@pdf-lib/standard-fonts": ["@pdf-lib/standard-fonts@1.0.0", "", { "dependencies": { "pako": "^1.0.6" } }, "sha512-hU30BK9IUN/su0Mn9VdlVKsWBS6GyhVfqjwl1FjZN4TxP6cCw0jP2w7V3Hf5uX7M0AZJ16vey9yE0ny7Sa59ZA=="],
 

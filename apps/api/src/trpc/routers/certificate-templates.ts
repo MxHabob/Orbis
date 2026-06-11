@@ -134,7 +134,7 @@ export const certificateTemplateRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      const { JobService } = await import("@orbis/jobs/service");
+      const { JobService } = await import("@orbis/workers/service");
       const result = await JobService.triggerCertificateExport({
         ...input,
         userId: ctx.session.user.id,

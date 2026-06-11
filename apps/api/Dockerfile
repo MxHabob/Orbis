@@ -1,23 +1,18 @@
 # Base image with Bun
 FROM oven/bun:1.2.22 AS base
 
-# Install turbo CLI globally using Bun
-FROM base AS turbo-cli
+# Stage 1: Builder stage to prune the monorepo
+FROM base AS builder
 RUN bun add -g turbo
-
-# Builder stage
-FROM turbo-cli AS builder
 WORKDIR /app
-# Copy all files
 COPY . .
-# Use turbo CLI from Bun global install to prune workspaces
 RUN turbo prune @orbis/api --docker
 
-# Installer stage
+# Stage 2: Installer stage to compile native dependencies
 FROM base AS installer
 WORKDIR /app
 
-# Install build dependencies for native modules (canvas, etc.)
+# Install build-time dependencies needed for compiling canvas/native modules
 RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
@@ -29,26 +24,38 @@ RUN apt-get update && apt-get install -y \
     librsvg2-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# First install the dependencies (as they change less often)
+# Copy pruned json description for caching dependency installation
 COPY --from=builder /app/out/json/ .
-# Don't copy the lockfile, allow Bun to generate a fresh one
-RUN bun install
 
-# Copy the full source code
+# Install production dependencies and clean Bun cache
+RUN rm -f pnpm-lock.yaml bun.lock && bun install --production && rm -rf ~/.bun/install/cache
+
+# Copy pruned source files from builder
 COPY --from=builder /app/out/full/ .
-COPY --from=builder /app/packages/db/migrations /app/packages/db/migrations
 
-# Runner stage (same as installer to avoid another copy)
-FROM installer AS runner
+# Stage 3: Runner stage (clean, minimal runtime environment)
+FROM base AS runner
+WORKDIR /app
 
-# Set the API directory as working directory
+# Install only runtime dependencies for native modules
+RUN apt-get update && apt-get install -y \
+    libcairo2 \
+    libpango-1.0-0 \
+    libjpeg62-turbo \
+    libgif7 \
+    librsvg2-2 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy production node_modules and built code from installer stage
+COPY --from=installer /app/node_modules ./node_modules
+COPY --from=installer /app .
+COPY --from=builder /app/packages/db/migrations ./packages/db/migrations
+
+# Set working directory to the API sub-app
 WORKDIR /app/apps/api
 
-# Set environment variables
 ENV NODE_ENV=production
-
-# Expose the port the API runs on
 EXPOSE 3000
 
-# Run the API directly with Bun
 CMD ["bun", "run", "src/index.ts"]
+

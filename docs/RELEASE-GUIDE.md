@@ -138,7 +138,7 @@ Each release produces the following artifacts on GHCR:
 |-------|------|--------|
 | `ghcr.io/<username>/orbis-api` | `v1.0.2`, `stable` | `apps/api/Dockerfile` |
 | `ghcr.io/<username>/orbis-dashboard` | `v1.0.2`, `stable` | `apps/dashboard/Dockerfile` |
-| `ghcr.io/<username>/orbis-worker` | `v1.0.2`, `stable` | `packages/jobs/Dockerfile` |
+| `ghcr.io/<username>/orbis-worker` | `v1.0.2`, `stable` | `apps/workers/Dockerfile` |
 
 Plus a **Tauri desktop installer** for Windows (`.msi`) and macOS (`.dmg`) attached to the GitHub Release.
 

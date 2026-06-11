@@ -11,8 +11,8 @@
     "declaration": true,
     "declarationMap": true,
     "paths": {
-      "@db/*": ["../db/src/*"],
-      "@api/*": ["../../apps/api/src/*"]
+      "@db/*": ["../../packages/db/src/*"],
+      "@api/*": ["../api/src/*"]
     }
   },
   "include": ["src/**/*"],

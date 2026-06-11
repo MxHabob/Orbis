@@ -6,7 +6,7 @@
       "@/*": ["./src/*"],
       "@api/*": ["../api/src/*"],
       "@engine/*": ["../engine/src/*"],
-      "@jobs/*": ["../../packages/jobs/src/*"],
+      "@workers/*": ["../workers/src/*"],
       "@db/*": ["../../packages/db/src/*"]
     },
     "strict": true

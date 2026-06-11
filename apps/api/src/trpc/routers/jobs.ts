@@ -1,4 +1,4 @@
-import { jobQueue } from "@orbis/jobs/queue";
+import { jobQueue } from "@orbis/workers/queue";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import {

@@ -41,7 +41,7 @@ docker build -t $DashboardTagVersion -t $DashboardTagLatest -f apps/dashboard/Do
 Write-Host "`n📦 Step 4: Building Worker image (Background Jobs)..." -ForegroundColor Yellow
 $WorkerTagVersion = "ghcr.io/$($GithubUsername.ToLower())/orbis-worker:$Version"
 $WorkerTagLatest = "ghcr.io/$($GithubUsername.ToLower())/orbis-worker:latest"
-docker build -t $WorkerTagVersion -t $WorkerTagLatest -f packages/jobs/Dockerfile .
+docker build -t $WorkerTagVersion -t $WorkerTagLatest -f apps/workers/Dockerfile .
 
 # 5. Push Images to GHCR
 Write-Host "`n📤 Step 5: Pushing images to GitHub Container Registry..." -ForegroundColor Yellow
