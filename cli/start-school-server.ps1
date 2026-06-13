@@ -605,13 +605,20 @@ function Start-Server {
 
     # Wait for health checks
     $healthResult = Invoke-WithSpinner "Waiting for services to be healthy" {
+        $dbUser = "orbis"
+        if (Test-Path ".env") {
+            $line = Get-Content ".env" | Where-Object { $_.StartsWith("DB_USER=") }
+            if ($line) {
+                $dbUser = $line.Substring("DB_USER=".Length).Trim()
+            }
+        }
         Start-Sleep -Seconds 6
         # Quick health check
         $maxWait = 30
         $waited = 0
         while ($waited -lt $maxWait) {
             try {
-                $pg = docker exec orbis-postgres pg_isready -U orbis 2>&1
+                $pg = docker exec orbis-postgres pg_isready -U $dbUser 2>&1
                 $rd = docker exec orbis-redis redis-cli ping 2>&1
                 if (($pg -match "accepting") -and ($rd -match "PONG")) {
                     return "healthy"
@@ -689,12 +696,19 @@ function Restart-Server {
     if ($startResult.Success) {
         # Quick wait for initialization
         $healthResult = Invoke-WithSpinner "Waiting for services to be healthy" {
+            $dbUser = "orbis"
+            if (Test-Path ".env") {
+                $line = Get-Content ".env" | Where-Object { $_.StartsWith("DB_USER=") }
+                if ($line) {
+                    $dbUser = $line.Substring("DB_USER=".Length).Trim()
+                }
+            }
             Start-Sleep -Seconds 5
             $maxWait = 20
             $waited = 0
             while ($waited -lt $maxWait) {
                 try {
-                    $pg = docker exec orbis-postgres pg_isready -U orbis 2>&1
+                    $pg = docker exec orbis-postgres pg_isready -U $dbUser 2>&1
                     $rd = docker exec orbis-redis redis-cli ping 2>&1
                     if (($pg -match "accepting") -and ($rd -match "PONG")) {
                         return "healthy"

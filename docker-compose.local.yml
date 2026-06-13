@@ -76,8 +76,8 @@ services:
     container_name: orbis-rustfs
     restart: unless-stopped
     environment:
-      RUSTFS_ROOT_USER: rustfsadmin
-      RUSTFS_ROOT_PASSWORD: rustfs_local_2026
+      RUSTFS_ROOT_USER: ${STORAGE_ACCESS_KEY:-rustfsadmin}
+      RUSTFS_ROOT_PASSWORD: ${STORAGE_SECRET_KEY:-rustfs_local_2026}
     ports:
       - "9000:9000"   # S3 API
       - "9001:9001"   # Web Console (optional — access at http://localhost:9001)
@@ -85,7 +85,7 @@ services:
       - orbis_storage:/data
     command: server /data --console-address ":9001"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
       interval: 10s
       timeout: 5s
       retries: 5

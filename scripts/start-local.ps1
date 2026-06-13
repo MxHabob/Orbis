@@ -353,6 +353,15 @@ Print-StepHeader 5 6 "Setting up storage buckets"
 
 Start-Sleep -Seconds 3
 
+# Read storage credentials from .env (or use defaults)
+$storageUser = "rustfsadmin"
+$storagePass = "rustfs_local_2026"
+if (Test-Path $envFile) {
+    $envContent = Get-Content $envFile -Raw
+    if ($envContent -match 'STORAGE_ACCESS_KEY=(.+)') { $storageUser = $Matches[1].Trim() }
+    if ($envContent -match 'STORAGE_SECRET_KEY=(.+)') { $storagePass = $Matches[1].Trim() }
+}
+
 $buckets = @("vault", "avatars", "exports")
 foreach ($bucket in $buckets) {
     $sw = [System.Diagnostics.Stopwatch]::StartNew()
@@ -363,13 +372,13 @@ foreach ($bucket in $buckets) {
     } catch {
         try {
             Invoke-WebRequest -Uri "http://localhost:9000/$bucket" -Method Put -Headers @{
-                "Authorization" = "AWS rustfsadmin:rustfs_local_2026"
+                "Authorization" = "AWS ${storageUser}:${storagePass}"
             } -ErrorAction SilentlyContinue 2>&1 | Out-Null
             $sw.Stop()
             Write-TaskSuccess "Bucket '$bucket' created" (Format-Elapsed $sw)
         } catch {
             $sw.Stop()
-            Write-TaskWarning "Could not create bucket '$bucket' — create via http://localhost:9001"
+            Write-TaskWarning "Could not create bucket '$bucket' — will be auto-created on first upload"
         }
     }
 }
