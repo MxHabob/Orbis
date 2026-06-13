@@ -102,7 +102,7 @@ export const documentsRouter = createTRPCRouter({
       const descendants = await db.execute<{ key: string }>(sql`
         WITH RECURSIVE subordinates AS (
           SELECT id, key, parent_folder_id FROM documents 
-          WHERE id = ${input.id}::uuid AND user_id = ${session.user.id}::uuid
+          WHERE id = ${input.id}::uuid
           UNION
           SELECT e.id, e.key, e.parent_folder_id FROM documents e
           INNER JOIN subordinates s ON s.id = e.parent_folder_id
@@ -147,22 +147,20 @@ export const documentsRouter = createTRPCRouter({
   getSignedUrl: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ ctx: { session, db }, input }) => {
-      // 1. Verify ownership
+      // 1. Get document
       const [doc] = await db
         .select()
         .from(documents)
         .where(
-          and(
-            eq(documents.id, input.id),
-            eq(documents.userId, session.user.id),
-          ),
+          eq(documents.id, input.id)
         );
 
       if (!doc || !doc.key) {
         throw new TRPCError({ code: "NOT_FOUND" });
       }
 
-      const url = `${process.env.NEXT_PUBLIC_API_URL}/files/proxy?filePath=vault/${doc.key}`;
+      const baseUrl = process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002";
+      const url = `${baseUrl}/files/proxy?filePath=vault/${doc.key}`;
 
       return { url };
     }),

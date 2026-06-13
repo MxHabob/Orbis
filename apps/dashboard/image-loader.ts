@@ -17,18 +17,33 @@ export default function imageLoader({
     try {
       const url = new URL(src);
 
-      // Skip CDN optimization for localhost (local development)
-      if (url.hostname === "localhost" || url.hostname === "127.0.0.1") {
-        return src; // Return URL as-is for local development
+      const isLocal =
+        url.hostname === "localhost" ||
+        url.hostname === "127.0.0.1" ||
+        url.hostname.startsWith("192.168.") ||
+        url.hostname.startsWith("10.") ||
+        /^172\.(1[6-9]|2\d|3[01])\./.test(url.hostname) ||
+        url.hostname.endsWith(".local");
+
+      if (isLocal) {
+        return src; // Return URL as-is for local network
       }
 
       const params = url.searchParams.toString();
       const baseUrl = url.origin + url.pathname;
       return `${CDN_URL}/cdn-cgi/image/width=${width},quality=${quality}/${baseUrl}${params ? `?${params}` : ""}`;
     } catch {
-      // Fallback if URL parsing fails - check if it's localhost
-      if (src.includes("localhost") || src.includes("127.0.0.1")) {
-        return src; // Return URL as-is for local development
+      // Fallback if URL parsing fails - check if it's local/LAN
+      const isLocalSrc =
+        src.includes("localhost") ||
+        src.includes("127.0.0.1") ||
+        src.includes("192.168.") ||
+        src.includes("10.") ||
+        /172\.(1[6-9]|2\d|3[01])\./.test(src) ||
+        src.includes(".local");
+
+      if (isLocalSrc) {
+        return src; // Return URL as-is for local network
       }
       return `${CDN_URL}/cdn-cgi/image/width=${width},quality=${quality}/${src}`;
     }

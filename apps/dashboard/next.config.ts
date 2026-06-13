@@ -51,18 +51,7 @@ const config = {
     ignoreBuildErrors: true,
   },
   devIndicators: false,
-  async rewrites() {
-    return [
-      {
-        source: "/files/proxy",
-        destination: `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002"}/files/proxy`,
-      },
-      {
-        source: "/api/proxy",
-        destination: `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002"}/files/proxy`,
-      },
-    ];
-  },
+
   async headers() {
     return [
       {

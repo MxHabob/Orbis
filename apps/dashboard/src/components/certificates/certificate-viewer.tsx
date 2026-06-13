@@ -287,6 +287,8 @@ export function CertificateViewer({
   );
 }
 
+import { getFileProxyUrl } from "@/utils/files";
+
 /**
  * Normalize ANY image URL to go through the local API proxy.
  */
@@ -295,41 +297,9 @@ function normalizeImageUrl(src: string | undefined | null): string {
   const url = String(src).trim();
   if (!url) return "";
 
-  // 1. Data URIs -> passthrough
   if (url.startsWith("data:")) return url;
 
-  // 2. Already proxied -> prioritize same-origin relative path
-  // This allows the dashboard rewrite to handle the cross-origin fetch seamlessly
-  if (url.includes("/files/proxy") || url.includes("/api/proxy")) {
-    if (url.startsWith("http")) {
-      try {
-        const parsed = new URL(url);
-        return `/files/proxy${parsed.search}`;
-      } catch {
-        return url;
-      }
-    }
-    return url.startsWith("/") ? url : `/${url}`;
-  }
-
-  // 3. S3/HTTP URLs -> extract path and route through same-origin rewrite
-  if (url.startsWith("http")) {
-    try {
-      const parsed = new URL(url);
-      const rawPath = parsed.pathname.startsWith("/")
-        ? parsed.pathname.slice(1)
-        : parsed.pathname;
-      if (rawPath) {
-        return `/files/proxy?filePath=${encodeURIComponent(rawPath)}`;
-      }
-    } catch (e) {
-      /* fall through */
-    }
-    return url;
-  }
-
-  // 4. Raw file paths -> same-origin rewrite
-  return `/files/proxy?filePath=${encodeURIComponent(url)}`;
+  return getFileProxyUrl(url);
 }
 
 /**

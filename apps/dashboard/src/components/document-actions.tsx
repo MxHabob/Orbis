@@ -8,6 +8,7 @@ import { useCopyToClipboard } from "usehooks-ts";
 import { useDocumentParams } from "@/hooks/use-document-params";
 import { useFileUrl } from "@/hooks/use-file-url";
 import { downloadFile } from "@/lib/download";
+import { getFileProxyUrl } from "@/utils/files";
 import { useTRPC } from "@/trpc/client";
 
 type Props = {
@@ -31,7 +32,7 @@ export function DocumentActions({ showDelete = false, filePath, id }: Props) {
           documentId: (id || params.documentId) as string,
           url:
             !id && !params.documentId && filePath
-              ? `${process.env.NEXT_PUBLIC_API_URL}/files/proxy?filePath=vault/${filePath.join("/")}`
+              ? getFileProxyUrl(`vault/${filePath.join("/")}`)
               : undefined,
         }
       : null,

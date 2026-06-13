@@ -14,14 +14,14 @@ export const getD = async (
 ) => {
   const { q, offset = 0, pageSize = 20 } = filter;
 
-  const where = [eq(documents.userId, userId)];
+  const where = []; // Removed userId filter so all school users share files
 
   if (q) {
     where.push(ilike(documents.name, `%${q}%`));
   }
 
   const data = await db.query.documents.findMany({
-    where: and(...where),
+    where: where.length > 0 ? and(...where) : undefined,
     orderBy: [desc(documents.createdAt)],
     limit: pageSize,
     offset: offset,
@@ -38,7 +38,7 @@ export const createDocument = async (data: CreateDocumentParams) => {
 export const deleteDocument = async (id: string, userId: string) => {
   const [result] = await db
     .delete(documents)
-    .where(and(eq(documents.id, id), eq(documents.userId, userId)))
+    .where(eq(documents.id, id))
     .returning();
   return result;
 };
@@ -51,7 +51,7 @@ export const updateDocument = async (
   const [result] = await db
     .update(documents)
     .set({ ...data, updatedAt: new Date() })
-    .where(and(eq(documents.id, id), eq(documents.userId, userId)))
+    .where(eq(documents.id, id))
     .returning();
   return result;
 };

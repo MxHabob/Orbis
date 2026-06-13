@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useCopyToClipboard } from "usehooks-ts";
 import { useFileUrl } from "@/hooks/use-file-url";
 import { downloadFile } from "@/lib/download";
+import { getFileProxyUrl } from "@/utils/files";
 import { useTRPC } from "@/trpc/client";
 import { DeleteVaultFileDialog } from "./delete-vault-file-dialog";
 
@@ -30,7 +31,7 @@ export function VaultItemActions({ id, filePath, hideDelete }: Props) {
           documentId: id as string,
           url:
             !id && filePath
-              ? `${process.env.NEXT_PUBLIC_API_URL}/files/proxy?filePath=vault/${filePath.join("/")}`
+              ? getFileProxyUrl(`vault/${filePath.join("/")}`)
               : undefined,
         }
       : null,

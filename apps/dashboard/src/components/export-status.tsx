@@ -9,6 +9,8 @@ import { downloadFile } from "@/lib/download";
 import { useI18n } from "@/locales/client";
 import { useExportStore } from "@/store/export";
 
+import { getFileProxyUrl } from "@/utils/files";
+
 type ExportResult = {
   url: string; // Direct S3 URL from uploadFile result
   filePath: string;
@@ -35,7 +37,7 @@ function DownloadButton({
     if (!fullPath) return;
 
     // Use API proxy to handle authentication and avoid S3 AccessDenied
-    const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/files/proxy?filePath=vault/${fullPath}`;
+    const downloadUrl = getFileProxyUrl(`vault/${fullPath}`);
     const url = new URL(downloadUrl, window.location.origin);
     url.searchParams.set("download", "true");
 

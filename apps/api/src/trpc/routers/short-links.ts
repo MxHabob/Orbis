@@ -20,7 +20,8 @@ export const shortLinksRouter = createTRPCRouter({
       const expiresAt = new Date(Date.now() + input.expireIn * 1000);
 
       // The short link should point to our API redirector
-      const url = `${process.env.NEXT_PUBLIC_API_URL}/files/proxy?filePath=vault/${input.filePath}`;
+      const apiBaseUrl = process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002";
+      const url = `${apiBaseUrl}/files/proxy?filePath=vault/${input.filePath}`;
 
       const [link] = await db
         .insert(shortLinks)
@@ -40,11 +41,8 @@ export const shortLinksRouter = createTRPCRouter({
       }
 
       // We return the short URL that will be handled by our API redirector
-      const baseUrl =
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002";
-
       return {
-        shortUrl: `${baseUrl}/s/${code}`,
+        shortUrl: `${apiBaseUrl}/s/${code}`,
       };
     }),
 });

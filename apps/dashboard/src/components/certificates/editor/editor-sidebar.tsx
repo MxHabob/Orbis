@@ -66,6 +66,7 @@ import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { useEditorStore } from "@/store/certificate-editor";
 import { useTRPC } from "@/trpc/client";
+import { getFileProxyUrl } from "@/utils/files";
 import { EditorSidebarHeader } from "./editor-sidebar-header";
 
 type SidebarProps = {};
@@ -111,25 +112,14 @@ export function EditorSidebar({}: SidebarProps) {
       if (!files.length) return;
       setIsUploading(true);
       try {
+        const { uploadFileUnified } = await import("@/utils/files");
         await Promise.all(
           files.map(async (file) => {
-            const formData = new FormData();
-            formData.append("file", file);
-            formData.append("bucket", "vault");
-            formData.append(
-              "path",
-              `${session?.user.id || "anonymous"}/assets/${file.name}`,
-            );
-            const { getApiUrl } = await import("@/trpc/client");
-            const res = await fetch(
-              `${getApiUrl()}/api/upload`,
-              {
-                method: "POST",
-                body: formData,
-                credentials: "include",
-              },
-            );
-            const data = await res.json();
+            const data = await uploadFileUnified({
+              file,
+              bucket: "vault",
+              path: `${session?.user.id || "anonymous"}/assets/${file.name}`,
+            });
             await processDocumentMutation.mutateAsync([
               {
                 filePath: data.path.split("/"),
@@ -319,7 +309,7 @@ export function EditorSidebar({}: SidebarProps) {
               {globalAssets
                 .filter((a: any) => a.mimetype?.startsWith("image/"))
                 .map((asset: any) => {
-                  const imageUrl = `${process.env.NEXT_PUBLIC_API_URL}/files/proxy?filePath=vault/${asset.key}`;
+                  const imageUrl = getFileProxyUrl(`vault/${asset.key}`);
                   return (
                     <div
                       key={asset.id}

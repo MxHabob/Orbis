@@ -9,6 +9,7 @@ import { FileViewer } from "@/components/file-viewer";
 import { VaultRelatedFiles } from "@/components/vault/vault-related-files";
 import { useDocumentParams } from "@/hooks/use-document-params";
 import { useTRPC } from "@/trpc/client";
+import { getFileProxyUrl } from "@/utils/files";
 import { formatSize } from "@/utils/format";
 
 export function DocumentDetails() {
@@ -67,7 +68,7 @@ export function DocumentDetails() {
       <div className="h-full max-h-[763px] p-0 pb-4 overflow-hidden">
         <div className="flex flex-col flex-grow min-h-0 relative h-full w-full items-center justify-center">
           <FileViewer
-            url={`${process.env.NEXT_PUBLIC_API_URL}/files/proxy?filePath=vault/${(data?.pathTokens as string[])?.join("/")}`}
+            url={getFileProxyUrl(`vault/${(data?.pathTokens as string[])?.join("/")}`)}
             mimeType={data?.mimetype!}
             maxWidth={565}
           />
