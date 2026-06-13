@@ -40,13 +40,10 @@ function getQueryClient() {
 
 // Get API URL with fallback for development
 function getApiUrl(): string {
-  // Use environment variable if set
-  if (process.env.NEXT_PUBLIC_API_URL) {
-    return process.env.NEXT_PUBLIC_API_URL;
-  }
-
   // For local or LAN network deployments (e.g. localhost, 192.168.x.x, 10.x.x.x, 172.x.x.x)
-  // we dynamically connect to port 3002 on the same host visited.
+  // ALWAYS use the same hostname the user is visiting from.
+  // This ensures auth cookies (scoped to the visited domain) are always sent correctly,
+  // avoiding CORS / cross-origin cookie issues that cause 401 errors.
   if (typeof window !== "undefined") {
     const hostname = window.location.hostname;
     const protocol = window.location.protocol;
@@ -61,6 +58,11 @@ function getApiUrl(): string {
     if (isLocal) {
       return `${protocol}//${hostname}:3002`;
     }
+  }
+
+  // Use environment variable for non-local deployments (cloud / production)
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
   }
 
   // Production fallback

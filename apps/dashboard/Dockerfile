@@ -55,5 +55,8 @@ EXPOSE 3001
 ENV PORT=3001
 ENV HOSTNAME="0.0.0.0"
 
-# At startup: substitute placeholders in compiled JS/HTML/JSON files with actual runtime values
+# At startup: substitute placeholders in compiled JS/HTML/JSON files with actual runtime values.
+# When NEXT_PUBLIC_API_URL is empty, the placeholder is replaced with empty string
+# so client-side dynamic host detection activates automatically.
 CMD ["/bin/sh", "-c", "find /app -type f \\( -name '*.js' -o -name '*.html' -o -name '*.json' \\) | xargs sed -i \"s|http://__NEXT_PUBLIC_API_URL_PLACEHOLDER__|${NEXT_PUBLIC_API_URL}|g; s|__NEXT_PUBLIC_API_URL_PLACEHOLDER__|${NEXT_PUBLIC_API_URL}|g; s|__NEXT_PUBLIC_URL_PLACEHOLDER__|${NEXT_PUBLIC_URL}|g; s|__NEXT_PUBLIC_S3_PUBLIC_URL_PLACEHOLDER__|${NEXT_PUBLIC_S3_PUBLIC_URL}|g\" 2>/dev/null; bun run apps/dashboard/server.js"]
+
