@@ -20,7 +20,13 @@ export const getQueryClient = cache(makeQueryClient);
 
 // Get API URL with fallback for development
 function getApiUrl(): string {
-  // Use environment variable if set
+  // In production SSR, prefer internal Docker network URL (API_URL=http://api:3000)
+  // This avoids routing through the host LAN IP which may not be reachable from containers
+  if (process.env.API_URL) {
+    return process.env.API_URL;
+  }
+
+  // Use public-facing URL if set (used by client-side and fallback for SSR)
   if (process.env.NEXT_PUBLIC_API_URL) {
     const url = process.env.NEXT_PUBLIC_API_URL;
     if (process.env.NODE_ENV === "development") {

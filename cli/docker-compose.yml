@@ -134,11 +134,12 @@ services:
       PORT: 3001
       DATABASE_URL: postgresql://${DB_USER:-orbis}:${DB_PASSWORD:-orbis_local_2026}@postgres:5432/${DB_NAME:-orbis_db}
       DATABASE_PRIMARY_URL: postgresql://${DB_USER:-orbis}:${DB_PASSWORD:-orbis_local_2026}@postgres:5432/${DB_NAME:-orbis_db}
-      # Point to API using relative routing internally, and override client vars at startup
-      NEXT_PUBLIC_API_URL: http://${SERVER_LAN_IP:-localhost}:3002
+      # NEXT_PUBLIC_API_URL must be reachable from BOTH the browser AND the container (SSR).
+      # host.docker.internal resolves to the Docker host from inside containers.
+      NEXT_PUBLIC_API_URL: http://host.docker.internal:3002
       NEXT_PUBLIC_URL: http://${SERVER_LAN_IP:-localhost}:3001
       NEXT_PUBLIC_S3_PUBLIC_URL: http://${SERVER_LAN_IP:-localhost}:9000
-      # Server-side connection to API container
+      # Server-side connection to API container (internal Docker network)
       API_URL: http://api:3000
     ports:
       - "3001:3001"
