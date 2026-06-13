@@ -9,9 +9,17 @@ const I18nMiddleware = createI18nMiddleware({
 });
 
 export async function proxy(request: NextRequest) {
-  const session = await auth.api.getSession({
-    headers: request.headers,
-  });
+  let session = null;
+  try {
+    session = await auth.api.getSession({
+      headers: request.headers,
+    });
+  } catch (error) {
+    console.error(
+      "[Proxy/Middleware] Failed to fetch session from auth API:",
+      error,
+    );
+  }
 
   const response = I18nMiddleware(request);
   const url = new URL("/", request.url);

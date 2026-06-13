@@ -4,11 +4,19 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 
 function getApiUrl(): string {
-  if (process.env.BETTER_AUTH_URL && process.env.BETTER_AUTH_URL !== "http://" && process.env.BETTER_AUTH_URL !== "https://") {
-    return process.env.BETTER_AUTH_URL;
-  }
-  if (process.env.API_URL && process.env.API_URL !== "http://" && process.env.API_URL !== "https://") {
+  if (
+    process.env.API_URL &&
+    process.env.API_URL !== "http://" &&
+    process.env.API_URL !== "https://"
+  ) {
     return process.env.API_URL;
+  }
+  if (
+    process.env.BETTER_AUTH_URL &&
+    process.env.BETTER_AUTH_URL !== "http://" &&
+    process.env.BETTER_AUTH_URL !== "https://"
+  ) {
+    return process.env.BETTER_AUTH_URL;
   }
   return process.env.NODE_ENV === "production"
     ? "https://orbis-api.mulverse.com"

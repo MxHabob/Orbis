@@ -1,4 +1,4 @@
-# =============================================================================
+﻿# =============================================================================
 # Orbis School Server — Modern CLI Manager (Expo-Style UX)
 # =============================================================================
 # Usage: powershell -ExecutionPolicy Bypass -File start-school-server.ps1 [Action]
@@ -79,19 +79,87 @@ function Write-Blank { Write-Host "" }
 
 function Print-Banner {
     Write-Blank
-    Write-Host "  ╭──────────────────────────────────────────────╮" -ForegroundColor $C.Primary
-    Write-Host "  │                                              │" -ForegroundColor $C.Primary
-    Write-Host "  │" -NoNewline -ForegroundColor $C.Primary
-    Write-Host "        ◉  O R B I S" -NoNewline -ForegroundColor $C.White
-    Write-Host "                       │" -ForegroundColor $C.Primary
-    Write-Host "  │" -NoNewline -ForegroundColor $C.Primary
-    Write-Host "        School Management Platform" -NoNewline -ForegroundColor $C.Muted
-    Write-Host "       │" -ForegroundColor $C.Primary
-    Write-Host "  │" -NoNewline -ForegroundColor $C.Primary
-    Write-Host "        Secure · Scalable · Intelligent" -NoNewline -ForegroundColor $C.Muted
-    Write-Host "    │" -ForegroundColor $C.Primary
-    Write-Host "  │                                              │" -ForegroundColor $C.Primary
-    Write-Host "  ╰──────────────────────────────────────────────╯" -ForegroundColor $C.Primary
+
+    # Get OS Name
+    $osName = "Windows"
+    try {
+        $osName = (Get-CimInstance Win32_OperatingSystem).Caption
+        $osName = $osName -replace "Microsoft ", ""
+    } catch {
+        try {
+            $osName = [System.Environment]::OSVersion.VersionString
+        } catch {}
+    }
+
+    # Get Shell
+    $shell = "PowerShell " + $PSVersionTable.PSVersion.ToString()
+
+    # Get LAN IP
+    $lanIp = $script:LanIp
+
+    # Get Status
+    $statusText = "Stopped"
+    $statusColor = $C.Warning
+    if ($null -ne (Get-Command docker -ErrorAction SilentlyContinue)) {
+        $oldEA = $ErrorActionPreference
+        $ErrorActionPreference = "SilentlyContinue"
+        try {
+            docker info >$null 2>&1
+            if ($LASTEXITCODE -eq 0) {
+                $running = docker compose ps --services --filter "status=running" 2>&1
+                if ($running -and $running.Count -gt 0) {
+                    $statusText = "Running ($($running.Count) services)"
+                    $statusColor = $C.Success
+                } else {
+                    $statusText = "Online (Idle)"
+                    $statusColor = $C.Success
+                }
+            } else {
+                $statusText = "Docker Offline"
+                $statusColor = $C.Warning
+            }
+        } catch {
+            $statusText = "Error Checking"
+            $statusColor = $C.Error
+        }
+        $ErrorActionPreference = $oldEA
+    } else {
+        $statusText = "Docker Missing"
+        $statusColor = $C.Error
+    }
+
+    $cwd = (Get-Location).Path
+    if ($cwd.Length -gt 30) {
+        $cwd = "..." + $cwd.Substring($cwd.Length - 27)
+    }
+
+    # Logo rows (block style)
+    $logo = @(
+        "  ██████╗ ██████╗ ██████╗ ██╗███████╗",
+        " ██╔═══██╗██╔══██╗██╔══██╗██║██╔════╝",
+        " ██║   ██║██████╔╝██████╔╝██║███████╗",
+        " ██║   ██║██╔══██╗██╔══██╗██║╚════██║",
+        " ╚██████╔╝██║  ██║██████╔╝██║███████║",
+        "  ╚═════╝ ╚═╝  ╚═╝╚═════╝ ╚═╝╚══════╝"
+    )
+
+    # Info rows
+    $info = @(
+        @{ Label = "Platform"; Value = "Orbis School Server"; Color = $C.White },
+        @{ Label = "OS      "; Value = $osName; Color = $C.White },
+        @{ Label = "Shell   "; Value = $shell; Color = $C.White },
+        @{ Label = "LAN IP  "; Value = $lanIp; Color = $C.Primary },
+        @{ Label = "Status  "; Value = $statusText; Color = $statusColor },
+        @{ Label = "Location"; Value = $cwd; Color = $C.Muted }
+    )
+
+    for ($i = 0; $i -lt 6; $i++) {
+        Write-Host " $($logo[$i])" -NoNewline -ForegroundColor $C.Primary
+        Write-Host "   " -NoNewline
+        Write-Host "$($info[$i].Label) : " -NoNewline -ForegroundColor $C.Muted
+        Write-Host "$($info[$i].Value)" -ForegroundColor $info[$i].Color
+    }
+
     Write-Blank
 }
 
@@ -942,3 +1010,5 @@ switch ($Action) {
     "config"  { Show-Config }
     "menu"    { Show-InteractiveMenu }
 }
+
+
