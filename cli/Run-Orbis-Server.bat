@@ -1,8 +1,19 @@
 @echo off
 :: =============================================================================
-:: Orbis School Server Setup Launcher (Direct bat Wrapper)
+:: Orbis School Server Setup Launcher (with UAC Auto-Elevation)
 :: =============================================================================
 
+:: Check for Administrative privileges
+net session >nul 2>&1
+if %errorLevel% == 0 (
+    goto :run
+) else (
+    echo [Orbis Launcher] Requesting Administrative privileges...
+    powershell -Command "Start-Process '%~f0' -Verb RunAs"
+    exit /b
+)
+
+:run
 title Orbis School Server Launcher
 cd /d "%~dp0"
 cls

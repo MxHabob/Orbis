@@ -1,5 +1,5 @@
-﻿# =============================================================================
-# Orbis School Server — Modern CLI Manager (Expo-Style UX)
+# =============================================================================
+# Orbis School Server - Modern CLI Manager (Expo-Style UX)
 # =============================================================================
 # Usage: powershell -ExecutionPolicy Bypass -File start-school-server.ps1 [Action]
 # Supported Actions: start, stop, restart, update, status, config, menu
@@ -12,17 +12,18 @@ param (
 )
 
 $ErrorActionPreference = "Stop"
+Set-Location $PSScriptRoot
 
-# ─── Global Settings ─────────────────────────────────────────────────────────
+# --- Global Settings ---------------------------------------------------------
 $script:LanIp = "localhost"
 $script:TotalStopwatch = $null
 
-# ─── ANSI / Unicode Helpers ──────────────────────────────────────────────────
+# --- ANSI / Unicode Helpers --------------------------------------------------
 # Ensure UTF-8 output for box-drawing and Unicode symbols
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
 
-# ─── Color Palette ───────────────────────────────────────────────────────────
+# --- Color Palette -----------------------------------------------------------
 $C = @{
     Primary   = "Cyan"
     Success   = "Green"
@@ -33,10 +34,10 @@ $C = @{
     Accent    = "Magenta"
 }
 
-# ─── Spinner Frames (Braille dots — same style as Expo/Ora) ──────────────────
-$script:SpinnerFrames = @('⠋','⠙','⠹','⠸','⠼','⠴','⠦','⠧','⠇','⠏')
+# --- Spinner Frames (Braille dots - same style as Expo/Ora) ------------------
+$script:SpinnerFrames = @('+','x','+','x','+','x','+','x','+','x')
 
-# ─── Utility Functions ───────────────────────────────────────────────────────
+# --- Utility Functions -------------------------------------------------------
 
 function Get-RandomString($length) {
     $chars = "abcdefghijklmnopqrstuvwxyz0123456789"
@@ -75,7 +76,7 @@ function Format-Elapsed([System.Diagnostics.Stopwatch]$sw) {
 
 function Write-Blank { Write-Host "" }
 
-# ─── UI Components ───────────────────────────────────────────────────────────
+# --- UI Components -----------------------------------------------------------
 
 function Print-Banner {
     Write-Blank
@@ -133,14 +134,14 @@ function Print-Banner {
         $cwd = "..." + $cwd.Substring($cwd.Length - 27)
     }
 
-    # Logo rows (block style)
+    # Logo rows (simple ASCII block style for encoding safety)
     $logo = @(
-        "  ██████╗ ██████╗ ██████╗ ██╗███████╗",
-        " ██╔═══██╗██╔══██╗██╔══██╗██║██╔════╝",
-        " ██║   ██║██████╔╝██████╔╝██║███████╗",
-        " ██║   ██║██╔══██╗██╔══██╗██║╚════██║",
-        " ╚██████╔╝██║  ██║██████╔╝██║███████║",
-        "  ╚═════╝ ╚═╝  ╚═╝╚═════╝ ╚═╝╚══════╝"
+        "  ORBIS   ___  ____  ____ ___ ____  ",
+        "         / _ \|  _ \| __ )_ _/ ___| ",
+        "        | | | | |_) |  _ \| |\___ \ ",
+        "        | |_| |  _ <| |_) | | ___) |",
+        "         \___/|_| \_\____/___|____/ ",
+        "                                     "
     )
 
     # Info rows
@@ -167,7 +168,7 @@ function Print-StepHeader([int]$Current, [int]$Total, [string]$Title) {
     Write-Blank
     Write-Host "  ──────────────────────────────────────────────" -ForegroundColor $C.Muted
     Write-Host "  Step $Current/$Total" -NoNewline -ForegroundColor $C.Accent
-    Write-Host " · " -NoNewline -ForegroundColor $C.Muted
+    Write-Host " - " -NoNewline -ForegroundColor $C.Muted
     Write-Host "$Title" -ForegroundColor $C.White
     Write-Host "  ──────────────────────────────────────────────" -ForegroundColor $C.Muted
     Write-Blank
@@ -178,34 +179,36 @@ function Write-TaskSuccess([string]$Message, [string]$Elapsed = "") {
         $padding = 48 - $Message.Length - 6
         if ($padding -lt 1) { $padding = 1 }
         $spaces = " " * $padding
-        Write-Host "    ✓ " -NoNewline -ForegroundColor $C.Success
+        Write-Host "    [OK] " -NoNewline -ForegroundColor $C.Success
         Write-Host "$Message" -NoNewline -ForegroundColor $C.White
         Write-Host "$spaces" -NoNewline
         Write-Host "$Elapsed" -ForegroundColor $C.Muted
     } else {
-        Write-Host "    ✓ " -NoNewline -ForegroundColor $C.Success
+        Write-Host "    [OK] " -NoNewline -ForegroundColor $C.Success
         Write-Host "$Message" -ForegroundColor $C.White
     }
 }
 
 function Write-TaskWarning([string]$Message) {
-    Write-Host "    ⚠ " -NoNewline -ForegroundColor $C.Warning
+    Write-Host "    [!!] " -NoNewline -ForegroundColor $C.Warning
     Write-Host "$Message" -ForegroundColor $C.Warning
 }
 
 function Write-TaskError([string]$Message) {
-    Write-Host "    ✗ " -NoNewline -ForegroundColor $C.Error
+    Write-Host "    [XX] " -NoNewline -ForegroundColor $C.Error
     Write-Host "$Message" -ForegroundColor $C.Error
 }
 
 function Write-TaskInfo([string]$Message) {
-    Write-Host "    › " -NoNewline -ForegroundColor $C.Muted
+    Write-Host "    [..] " -NoNewline -ForegroundColor $C.Muted
     Write-Host "$Message" -ForegroundColor $C.Muted
 }
 
-# ─── Spinner Execution ───────────────────────────────────────────────────────
+# --- Spinner Execution -------------------------------------------------------
 # Run a scriptblock in a background job while showing an animated spinner.
-# Returns: @{ Success = $bool; Output = $string; ExitCode = $int }
+# The background job is initialized in $PSScriptRoot so docker compose can
+# find docker-compose.yml and .env relative paths correctly.
+# Returns: @{ Success = $bool; Output = $string; Elapsed = $string }
 
 function Invoke-WithSpinner {
     param(
@@ -213,7 +216,9 @@ function Invoke-WithSpinner {
         [scriptblock]$Action
     )
 
-    $job = Start-Job -ScriptBlock $Action
+    $currentPath = $PSScriptRoot
+    $initBlock = ([scriptblock]::Create("Set-Location '$currentPath'"))
+    $job = Start-Job -InitializationScript $initBlock -ScriptBlock $Action
     $frameIdx = 0
     $sw = [System.Diagnostics.Stopwatch]::StartNew()
 
@@ -248,16 +253,25 @@ function Invoke-WithSpinner {
         $jobFailed = $true
     }
 
-    if ($job.State -eq 'Failed') { $jobFailed = $true }
+    if ($job.State -eq 'Failed' -or ($job.ChildJobs -and $job.ChildJobs[0].Error.Count -gt 0)) {
+        $jobFailed = $true
+        # Capture error details from child jobs for diagnostics
+        if ($job.ChildJobs -and $job.ChildJobs[0].Error.Count -gt 0) {
+            $errorDetails = $job.ChildJobs[0].Error | ForEach-Object { $_.ToString() }
+            if (-not $output) {
+                $output = $errorDetails -join "`n"
+            }
+        }
+    }
     Remove-Job $job -Force -ErrorAction SilentlyContinue
 
     if (-not $jobFailed) {
-        Write-Host "`r    ✓ " -NoNewline -ForegroundColor $C.Success
+        Write-Host "`r    [OK] " -NoNewline -ForegroundColor $C.Success
         Write-Host "$Message" -NoNewline -ForegroundColor $C.White
         Write-Host "$spaces" -NoNewline
         Write-Host "$elapsed  " -ForegroundColor $C.Muted
     } else {
-        Write-Host "`r    ✗ " -NoNewline -ForegroundColor $C.Error
+        Write-Host "`r    [XX] " -NoNewline -ForegroundColor $C.Error
         Write-Host "$Message" -NoNewline -ForegroundColor $C.Error
         Write-Host "$spaces" -NoNewline
         Write-Host "$elapsed  " -ForegroundColor $C.Muted
@@ -270,7 +284,7 @@ function Invoke-WithSpinner {
     }
 }
 
-# ─── Error Display ───────────────────────────────────────────────────────────
+# --- Error Display -----------------------------------------------------------
 
 function Show-ErrorBox {
     param(
@@ -280,13 +294,13 @@ function Show-ErrorBox {
     )
 
     Write-Blank
-    Write-Host "  ╭──────────────────────────────────────────────╮" -ForegroundColor $C.Error
-    Write-Host "  │" -NoNewline -ForegroundColor $C.Error
-    Write-Host "  ✗  $Title" -NoNewline -ForegroundColor $C.Error
-    $tp = 46 - $Title.Length - 5
+    Write-Host "  +----------------------------------------------+" -ForegroundColor $C.Error
+    Write-Host "  |" -NoNewline -ForegroundColor $C.Error
+    Write-Host "  [XX]  $Title" -NoNewline -ForegroundColor $C.Error
+    $tp = 46 - $Title.Length - 7
     if ($tp -lt 1) { $tp = 1 }
-    Write-Host "$(" " * $tp)│" -ForegroundColor $C.Error
-    Write-Host "  ╰──────────────────────────────────────────────╯" -ForegroundColor $C.Error
+    Write-Host "$(" " * $tp)|" -ForegroundColor $C.Error
+    Write-Host "  +----------------------------------------------+" -ForegroundColor $C.Error
     Write-Blank
 
     if ($Details) {
@@ -304,33 +318,33 @@ function Show-ErrorBox {
     }
 }
 
-# ─── Success Summary ─────────────────────────────────────────────────────────
+# --- Success Summary ---------------------------------------------------------
 
 function Show-SuccessSummary {
     param([string]$TotalElapsed)
 
     Write-Blank
-    Write-Host "  ╭──────────────────────────────────────────────╮" -ForegroundColor $C.Success
-    Write-Host "  │                                              │" -ForegroundColor $C.Success
-    Write-Host "  │" -NoNewline -ForegroundColor $C.Success
-    Write-Host "    ✓  ORBIS SERVER IS RUNNING" -NoNewline -ForegroundColor $C.Success
-    Write-Host "               │" -ForegroundColor $C.Success
-    Write-Host "  │                                              │" -ForegroundColor $C.Success
-    Write-Host "  ╰──────────────────────────────────────────────╯" -ForegroundColor $C.Success
+    Write-Host "  +----------------------------------------------+" -ForegroundColor $C.Success
+    Write-Host "  |                                              |" -ForegroundColor $C.Success
+    Write-Host "  |" -NoNewline -ForegroundColor $C.Success
+    Write-Host "    [OK]  ORBIS SERVER IS RUNNING" -NoNewline -ForegroundColor $C.Success
+    Write-Host "            |" -ForegroundColor $C.Success
+    Write-Host "  |                                              |" -ForegroundColor $C.Success
+    Write-Host "  +----------------------------------------------+" -ForegroundColor $C.Success
     Write-Blank
 
     Write-Host "    Local Access" -ForegroundColor $C.White
-    Write-Host "    ├─ Dashboard    " -NoNewline -ForegroundColor $C.Muted
+    Write-Host "    +-- Dashboard    " -NoNewline -ForegroundColor $C.Muted
     Write-Host "http://localhost:3001" -ForegroundColor $C.Primary
-    Write-Host "    ├─ API          " -NoNewline -ForegroundColor $C.Muted
+    Write-Host "    +-- API          " -NoNewline -ForegroundColor $C.Muted
     Write-Host "http://localhost:3002" -ForegroundColor $C.Primary
-    Write-Host "    └─ Storage      " -NoNewline -ForegroundColor $C.Muted
+    Write-Host "    +-- Storage      " -NoNewline -ForegroundColor $C.Muted
     Write-Host "http://localhost:9001" -ForegroundColor $C.Primary
     Write-Blank
 
     if ($script:LanIp -ne "localhost") {
         Write-Host "    Network Access (LAN)" -ForegroundColor $C.White
-        Write-Host "    └─ Dashboard    " -NoNewline -ForegroundColor $C.Muted
+        Write-Host "    +-- Dashboard    " -NoNewline -ForegroundColor $C.Muted
         Write-Host "http://$($script:LanIp):3001" -ForegroundColor $C.Primary
         Write-Blank
     }
@@ -342,11 +356,11 @@ function Show-SuccessSummary {
     }
 }
 
-# ═════════════════════════════════════════════════════════════════════════════
+# =============================================================================
 # CORE FUNCTIONS
-# ═════════════════════════════════════════════════════════════════════════════
+# =============================================================================
 
-# ─── Prerequisites Check ─────────────────────────────────────────────────────
+# --- Prerequisites Check -----------------------------------------------------
 
 function Confirm-Prerequisites {
     $sw = [System.Diagnostics.Stopwatch]::StartNew()
@@ -377,7 +391,7 @@ function Confirm-Prerequisites {
     return $true
 }
 
-# ─── LAN IP Detection ────────────────────────────────────────────────────────
+# --- LAN IP Detection --------------------------------------------------------
 
 function Detect-LanIp {
     $sw = [System.Diagnostics.Stopwatch]::StartNew()
@@ -391,14 +405,14 @@ function Detect-LanIp {
 
     if (-not $detected) {
         $script:LanIp = "localhost"
-        Write-TaskWarning "No LAN IP found — using localhost"
+        Write-TaskWarning "No LAN IP found - using localhost"
     } else {
         $script:LanIp = $detected
         Write-TaskSuccess "LAN IP detected: $script:LanIp" (Format-Elapsed $sw)
     }
 }
 
-# ─── Environment Configuration ───────────────────────────────────────────────
+# --- Environment Configuration -----------------------------------------------
 
 function Initialize-Environment {
     $sw = [System.Diagnostics.Stopwatch]::StartNew()
@@ -458,7 +472,7 @@ function Initialize-Environment {
     Write-TaskSuccess "Environment configured" (Format-Elapsed $sw)
 }
 
-# ─── Get .env Value ──────────────────────────────────────────────────────────
+# --- Get .env Value ----------------------------------------------------------
 
 function Get-EnvValue($key) {
     if (Test-Path ".env") {
@@ -470,22 +484,22 @@ function Get-EnvValue($key) {
     return $null
 }
 
-# ═════════════════════════════════════════════════════════════════════════════
+# =============================================================================
 # SERVER ACTIONS
-# ═════════════════════════════════════════════════════════════════════════════
+# =============================================================================
 
-# ─── Start Server ────────────────────────────────────────────────────────────
+# --- Start Server ------------------------------------------------------------
 
 function Start-Server {
     $script:TotalStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
-    # ── Step 1: Prerequisites ────────────────────────────────────────────────
+    # -- Step 1: Prerequisites ------------------------------------------------
     Print-StepHeader 1 4 "Checking prerequisites"
 
     if (-not (Confirm-Prerequisites)) { return }
     Detect-LanIp
 
-    # ── Step 2: Environment ──────────────────────────────────────────────────
+    # -- Step 2: Environment --------------------------------------------------
     Print-StepHeader 2 4 "Configuring environment"
 
     Initialize-Environment
@@ -493,16 +507,19 @@ function Start-Server {
     # Check GHCR_USERNAME
     $ghcrUser = Get-EnvValue "GHCR_USERNAME"
     if (-not $ghcrUser -or $ghcrUser -eq "your_github_username_here") {
-        Write-TaskWarning "GHCR_USERNAME not set — edit .env with the correct username"
+        Write-TaskWarning "GHCR_USERNAME not set - edit .env with the correct username"
     } else {
         Write-TaskSuccess "Registry: ghcr.io/$ghcrUser"
     }
 
-    # ── Step 3: Pull Images ──────────────────────────────────────────────────
+    # -- Step 3: Pull Images --------------------------------------------------
     Print-StepHeader 3 4 "Pulling container images"
 
     $pullResult = Invoke-WithSpinner "Pulling latest images from registry" {
-        docker compose pull --quiet 2>&1
+        $ErrorActionPreference = "Continue"
+        $output = docker compose pull --quiet 2>&1
+        if ($LASTEXITCODE -ne 0) { throw "Docker compose pull failed (exit code $LASTEXITCODE): $output" }
+        $output
     }
 
     if (-not $pullResult.Success) {
@@ -510,7 +527,7 @@ function Start-Server {
         if ($output -match "403|Forbidden|unauthorized|denied") {
             Show-ErrorBox `
                 "Registry Authentication Failed" `
-                "Access denied to private container registry (403 Forbidden)." `
+                "Access denied to private container registry." `
                 @(
                     "1. Run: docker login ghcr.io -u YOUR_GITHUB_USERNAME",
                     "2. Enter your Personal Access Token (PAT) with read:packages scope",
@@ -533,15 +550,21 @@ function Start-Server {
                     "Check your internet connection and try again.",
                     "Run: docker compose pull  (for detailed output)"
                 )
+            if ($output) {
+                Write-TaskInfo "Details: $output"
+            }
         }
         return
     }
 
-    # ── Step 4: Start Services ───────────────────────────────────────────────
+    # -- Step 4: Start Services -----------------------------------------------
     Print-StepHeader 4 4 "Starting services"
 
     $startResult = Invoke-WithSpinner "Starting Docker containers" {
-        docker compose up -d 2>&1
+        $ErrorActionPreference = "Continue"
+        $output = docker compose up -d 2>&1
+        if ($LASTEXITCODE -ne 0) { throw "Docker compose up failed (exit code $LASTEXITCODE): $output" }
+        $output
     }
 
     if (-not $startResult.Success) {
@@ -563,6 +586,9 @@ function Start-Server {
                     "Run: docker compose up -d  (for detailed output)",
                     "Check logs: docker compose logs"
                 )
+            if ($output) {
+                Write-TaskInfo "Details: $output"
+            }
         }
         return
     }
@@ -588,36 +614,42 @@ function Start-Server {
     }
 
     if ($healthResult.Output -match "timeout") {
-        Write-TaskWarning "Services may still be initializing — check status in a moment"
+        Write-TaskWarning "Services may still be initializing - check status in a moment"
     }
 
-    # ── Summary ──────────────────────────────────────────────────────────────
+    # -- Summary --------------------------------------------------------------
     $script:TotalStopwatch.Stop()
     Show-SuccessSummary (Format-Elapsed $script:TotalStopwatch)
 }
 
-# ─── Stop Server ─────────────────────────────────────────────────────────────
+# --- Stop Server -------------------------------------------------------------
 
 function Stop-Server {
     Print-StepHeader 1 1 "Stopping server"
 
     $result = Invoke-WithSpinner "Stopping all containers" {
-        docker compose down 2>&1
+        $ErrorActionPreference = "Continue"
+        $output = docker compose down 2>&1
+        if ($LASTEXITCODE -ne 0) { throw "Docker compose down failed (exit code $LASTEXITCODE): $output" }
+        $output
     }
 
     if ($result.Success) {
         Write-Blank
-        Write-Host "    ✓ " -NoNewline -ForegroundColor $C.Success
+        Write-Host "    [OK] " -NoNewline -ForegroundColor $C.Success
         Write-Host "Server stopped successfully" -ForegroundColor $C.White
         Write-Blank
     } else {
         Write-TaskError "Could not stop containers cleanly"
         Write-TaskInfo "Run: docker compose down  (for detailed output)"
+        if ($result.Output) {
+            Write-TaskInfo "Details: $($result.Output)"
+        }
         Write-Blank
     }
 }
 
-# ─── Restart Server ──────────────────────────────────────────────────────────
+# --- Restart Server ----------------------------------------------------------
 
 function Restart-Server {
     $script:TotalStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
@@ -625,17 +657,23 @@ function Restart-Server {
     Print-StepHeader 1 2 "Stopping current services"
 
     $stopResult = Invoke-WithSpinner "Stopping containers" {
-        docker compose down 2>&1
+        $ErrorActionPreference = "Continue"
+        $output = docker compose down 2>&1
+        if ($LASTEXITCODE -ne 0) { throw "Docker compose down failed (exit code $LASTEXITCODE): $output" }
+        $output
     }
 
     if (-not $stopResult.Success) {
-        Write-TaskWarning "Could not stop containers cleanly — attempting restart anyway"
+        Write-TaskWarning "Could not stop containers cleanly - attempting restart anyway"
     }
 
     Print-StepHeader 2 2 "Starting services"
 
     $startResult = Invoke-WithSpinner "Starting Docker containers" {
-        docker compose up -d 2>&1
+        $ErrorActionPreference = "Continue"
+        $output = docker compose up -d 2>&1
+        if ($LASTEXITCODE -ne 0) { throw "Docker compose up failed (exit code $LASTEXITCODE): $output" }
+        $output
     }
 
     if ($startResult.Success) {
@@ -669,15 +707,18 @@ function Restart-Server {
                 "Run: docker compose up -d  (for detailed output)",
                 "Check logs: docker compose logs"
             )
+        if ($startResult.Output) {
+            Write-TaskInfo "Details: $($startResult.Output)"
+        }
     }
 }
 
-# ─── Update Server ───────────────────────────────────────────────────────────
+# --- Update Server -----------------------------------------------------------
 
 function Update-Server {
     $script:TotalStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
-    # ── Step 1: Prerequisites ────────────────────────────────────────────────
+    # -- Step 1: Prerequisites ------------------------------------------------
     Print-StepHeader 1 3 "Checking prerequisites"
 
     if (-not (Confirm-Prerequisites)) { return }
@@ -686,7 +727,7 @@ function Update-Server {
     if (-not $currentVersion) { $currentVersion = "stable" }
     Write-TaskInfo "Current version: $currentVersion"
 
-    # ── Version Prompt ───────────────────────────────────────────────────────
+    # -- Version Prompt -------------------------------------------------------
     Write-Blank
     Write-Host "    Enter new version " -NoNewline -ForegroundColor $C.White
     Write-Host "[press Enter for '$currentVersion']" -NoNewline -ForegroundColor $C.Muted
@@ -715,11 +756,14 @@ function Update-Server {
         Write-TaskInfo "Keeping version: $currentVersion"
     }
 
-    # ── Step 2: Pull Images ──────────────────────────────────────────────────
+    # -- Step 2: Pull Images --------------------------------------------------
     Print-StepHeader 2 3 "Pulling updated images"
 
     $pullResult = Invoke-WithSpinner "Pulling version '$currentVersion' from registry" {
-        docker compose pull --quiet 2>&1
+        $ErrorActionPreference = "Continue"
+        $output = docker compose pull --quiet 2>&1
+        if ($LASTEXITCODE -ne 0) { throw "Docker compose pull failed (exit code $LASTEXITCODE): $output" }
+        $output
     }
 
     if (-not $pullResult.Success) {
@@ -741,26 +785,32 @@ function Update-Server {
                     "Check your internet connection and try again.",
                     "Verify version '$currentVersion' exists in the registry."
                 )
+            if ($output) {
+                Write-TaskInfo "Details: $output"
+            }
         }
         return
     }
 
-    # ── Step 3: Redeploy ─────────────────────────────────────────────────────
+    # -- Step 3: Redeploy -----------------------------------------------------
     Print-StepHeader 3 3 "Redeploying services"
 
     $deployResult = Invoke-WithSpinner "Re-creating containers with updated images" {
-        docker compose up -d --remove-orphans 2>&1
+        $ErrorActionPreference = "Continue"
+        $output = docker compose up -d --remove-orphans 2>&1
+        if ($LASTEXITCODE -ne 0) { throw "Docker compose up failed (exit code $LASTEXITCODE): $output" }
+        $output
     }
 
     if ($deployResult.Success) {
         $script:TotalStopwatch.Stop()
 
         Write-Blank
-        Write-Host "  ╭──────────────────────────────────────────────╮" -ForegroundColor $C.Success
-        Write-Host "  │" -NoNewline -ForegroundColor $C.Success
-        Write-Host "    ✓  UPDATE COMPLETED SUCCESSFULLY" -NoNewline -ForegroundColor $C.Success
-        Write-Host "          │" -ForegroundColor $C.Success
-        Write-Host "  ╰──────────────────────────────────────────────╯" -ForegroundColor $C.Success
+        Write-Host "  +----------------------------------------------+" -ForegroundColor $C.Success
+        Write-Host "  |" -NoNewline -ForegroundColor $C.Success
+        Write-Host "    [OK]  UPDATE COMPLETED SUCCESSFULLY" -NoNewline -ForegroundColor $C.Success
+        Write-Host "       |" -ForegroundColor $C.Success
+        Write-Host "  +----------------------------------------------+" -ForegroundColor $C.Success
         Write-Blank
         Write-Host "    Version: " -NoNewline -ForegroundColor $C.Muted
         Write-Host "$currentVersion" -ForegroundColor $C.Accent
@@ -775,10 +825,13 @@ function Update-Server {
                 "Run: docker compose up -d --remove-orphans  (for detailed output)",
                 "Check logs: docker compose logs"
             )
+        if ($deployResult.Output) {
+            Write-TaskInfo "Details: $($deployResult.Output)"
+        }
     }
 }
 
-# ─── Show Status ─────────────────────────────────────────────────────────────
+# --- Show Status -------------------------------------------------------------
 
 function Show-Status {
     Print-StepHeader 1 2 "Container health"
@@ -789,33 +842,39 @@ function Show-Status {
     $ErrorActionPreference = "Continue"
 
     # Get container status
-    $containers = docker compose ps --format "{{.Name}}|{{.Status}}|{{.Ports}}" 2>&1
+    $containers = docker compose ps --format "table {{.Name}}\t{{.Status}}" 2>&1
     $ErrorActionPreference = $oldEA
 
     if ($containers) {
         foreach ($containerLine in $containers) {
-            $parts = $containerLine.ToString().Split("|")
+            $lineStr = $containerLine.ToString().Trim()
+
+            # Skip the header line
+            if ($lineStr -match "^NAME" -or -not $lineStr) { continue }
+
+            # Split by whitespace (tab-separated output)
+            $parts = $lineStr -split '\s{2,}', 2
             if ($parts.Count -ge 2) {
                 $name = $parts[0].Trim()
                 $status = $parts[1].Trim()
 
                 # Determine icon based on status
                 if ($status -match "Up|running|healthy") {
-                    Write-Host "    ● " -NoNewline -ForegroundColor $C.Success
+                    Write-Host "    [*] " -NoNewline -ForegroundColor $C.Success
                     Write-Host "$name" -NoNewline -ForegroundColor $C.White
                     $sp = 30 - $name.Length
                     if ($sp -lt 1) { $sp = 1 }
                     Write-Host "$(" " * $sp)" -NoNewline
                     Write-Host "$status" -ForegroundColor $C.Muted
                 } elseif ($status -match "Exit|stopped|dead") {
-                    Write-Host "    ○ " -NoNewline -ForegroundColor $C.Error
+                    Write-Host "    [o] " -NoNewline -ForegroundColor $C.Error
                     Write-Host "$name" -NoNewline -ForegroundColor $C.Error
                     $sp = 30 - $name.Length
                     if ($sp -lt 1) { $sp = 1 }
                     Write-Host "$(" " * $sp)" -NoNewline
                     Write-Host "$status" -ForegroundColor $C.Muted
                 } else {
-                    Write-Host "    ◌ " -NoNewline -ForegroundColor $C.Warning
+                    Write-Host "    [~] " -NoNewline -ForegroundColor $C.Warning
                     Write-Host "$name" -NoNewline -ForegroundColor $C.Warning
                     $sp = 30 - $name.Length
                     if ($sp -lt 1) { $sp = 1 }
@@ -825,16 +884,16 @@ function Show-Status {
             }
         }
     } else {
-        Write-TaskWarning "No containers found — server may not be running"
+        Write-TaskWarning "No containers found - server may not be running"
     }
 
-    # ── Step 2: Endpoint Tests ───────────────────────────────────────────────
+    # -- Step 2: Endpoint Tests -----------------------------------------------
     Print-StepHeader 2 2 "Endpoint health"
 
     # Dashboard
     try {
         $resp = Invoke-WebRequest -Uri "http://localhost:3001" -Method Head -TimeoutSec 3 -ErrorAction Stop -UseBasicParsing
-        Write-TaskSuccess "Dashboard (3001): Online — Status $($resp.StatusCode)"
+        Write-TaskSuccess "Dashboard (3001): Online - Status $($resp.StatusCode)"
     } catch {
         Write-TaskError "Dashboard (3001): Offline"
     }
@@ -858,13 +917,13 @@ function Show-Status {
     Write-Blank
 }
 
-# ─── Show Config ─────────────────────────────────────────────────────────────
+# --- Show Config -------------------------------------------------------------
 
 function Show-Config {
     Print-StepHeader 1 1 "Current configuration"
 
     if (-not (Test-Path ".env")) {
-        Write-TaskWarning ".env file not found — run start to initialize"
+        Write-TaskWarning ".env file not found - run start to initialize"
         return
     }
 
@@ -893,7 +952,7 @@ function Show-Config {
 
             # Mask sensitive values
             if ($key -match "SECRET|PASSWORD|_KEY") {
-                $maskedValue = "••••••••"
+                $maskedValue = "********"
             } else {
                 $maskedValue = $value
             }
@@ -906,56 +965,56 @@ function Show-Config {
     Write-Blank
 }
 
-# ═════════════════════════════════════════════════════════════════════════════
+# =============================================================================
 # INTERACTIVE MENU
-# ═════════════════════════════════════════════════════════════════════════════
+# =============================================================================
 
 function Show-InteractiveMenu {
     do {
         Clear-Host
         Print-Banner
 
-        Write-Host "  ╭──────────────────────────────────────────────╮" -ForegroundColor $C.Muted
-        Write-Host "  │" -NoNewline -ForegroundColor $C.Muted
+        Write-Host "  +----------------------------------------------+" -ForegroundColor $C.Muted
+        Write-Host "  |" -NoNewline -ForegroundColor $C.Muted
         Write-Host "        ORBIS SERVER MANAGER" -NoNewline -ForegroundColor $C.White
-        Write-Host "                 │" -ForegroundColor $C.Muted
-        Write-Host "  ╰──────────────────────────────────────────────╯" -ForegroundColor $C.Muted
+        Write-Host "                 |" -ForegroundColor $C.Muted
+        Write-Host "  +----------------------------------------------+" -ForegroundColor $C.Muted
         Write-Blank
 
-        # Menu items with icons
+        # Menu items with text icons
         Write-Host "    [" -NoNewline -ForegroundColor $C.Muted
         Write-Host "1" -NoNewline -ForegroundColor $C.Primary
-        Write-Host "]  ▶  " -NoNewline -ForegroundColor $C.Muted
+        Write-Host "]  >>  " -NoNewline -ForegroundColor $C.Muted
         Write-Host "Start Server" -ForegroundColor $C.White
 
         Write-Host "    [" -NoNewline -ForegroundColor $C.Muted
         Write-Host "2" -NoNewline -ForegroundColor $C.Primary
-        Write-Host "]  ■  " -NoNewline -ForegroundColor $C.Muted
+        Write-Host "]  []  " -NoNewline -ForegroundColor $C.Muted
         Write-Host "Stop Server" -ForegroundColor $C.White
 
         Write-Host "    [" -NoNewline -ForegroundColor $C.Muted
         Write-Host "3" -NoNewline -ForegroundColor $C.Primary
-        Write-Host "]  ↻  " -NoNewline -ForegroundColor $C.Muted
+        Write-Host "]  <>  " -NoNewline -ForegroundColor $C.Muted
         Write-Host "Restart Server" -ForegroundColor $C.White
 
         Write-Host "    [" -NoNewline -ForegroundColor $C.Muted
         Write-Host "4" -NoNewline -ForegroundColor $C.Primary
-        Write-Host "]  ↓  " -NoNewline -ForegroundColor $C.Muted
+        Write-Host "]  \/  " -NoNewline -ForegroundColor $C.Muted
         Write-Host "Update Server" -ForegroundColor $C.White
 
         Write-Host "    [" -NoNewline -ForegroundColor $C.Muted
         Write-Host "5" -NoNewline -ForegroundColor $C.Primary
-        Write-Host "]  ◎  " -NoNewline -ForegroundColor $C.Muted
+        Write-Host "]  ()  " -NoNewline -ForegroundColor $C.Muted
         Write-Host "Check Status" -ForegroundColor $C.White
 
         Write-Host "    [" -NoNewline -ForegroundColor $C.Muted
         Write-Host "6" -NoNewline -ForegroundColor $C.Primary
-        Write-Host "]  ⚙  " -NoNewline -ForegroundColor $C.Muted
+        Write-Host "]  {}  " -NoNewline -ForegroundColor $C.Muted
         Write-Host "View Configuration" -ForegroundColor $C.White
 
         Write-Host "    [" -NoNewline -ForegroundColor $C.Muted
         Write-Host "7" -NoNewline -ForegroundColor $C.Primary
-        Write-Host "]  ✕  " -NoNewline -ForegroundColor $C.Muted
+        Write-Host "]  x   " -NoNewline -ForegroundColor $C.Muted
         Write-Host "Exit" -ForegroundColor $C.Muted
 
         Write-Blank
@@ -974,13 +1033,13 @@ function Show-InteractiveMenu {
             "5" { Show-Status }
             "6" { Show-Config }
             "7" {
-                Write-Host "    ◉ " -NoNewline -ForegroundColor $C.Primary
+                Write-Host "    (*) " -NoNewline -ForegroundColor $C.Primary
                 Write-Host "Goodbye!" -ForegroundColor $C.White
                 Write-Blank
                 break
             }
             default {
-                Write-TaskError "Invalid option — please select 1-7"
+                Write-TaskError "Invalid option - please select 1-7"
             }
         }
 
@@ -994,9 +1053,9 @@ function Show-InteractiveMenu {
     } while ($choice -ne "7")
 }
 
-# ═════════════════════════════════════════════════════════════════════════════
+# =============================================================================
 # ENTRY POINT
-# ═════════════════════════════════════════════════════════════════════════════
+# =============================================================================
 
 Clear-Host
 Print-Banner
@@ -1010,5 +1069,3 @@ switch ($Action) {
     "config"  { Show-Config }
     "menu"    { Show-InteractiveMenu }
 }
-
-
