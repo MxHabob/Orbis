@@ -77,8 +77,9 @@ export function VaultUploadZone({ onUpload, children }: Props) {
             `${session?.user.id || "anonymous"}/${file.name}`,
           );
 
+          const { getApiUrl } = await import("@/trpc/client");
           const response = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/upload`,
+            `${getApiUrl()}/api/upload`,
             {
               method: "POST",
               body: formData,

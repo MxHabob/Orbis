@@ -39,7 +39,7 @@ function getQueryClient() {
 }
 
 // Get API URL with fallback for development
-function getApiUrl(): string {
+export function getApiUrl(): string {
   // For local or LAN network deployments (e.g. localhost, 192.168.x.x, 10.x.x.x, 172.x.x.x)
   // ALWAYS use the same hostname the user is visiting from.
   // This ensures auth cookies (scoped to the visited domain) are always sent correctly,

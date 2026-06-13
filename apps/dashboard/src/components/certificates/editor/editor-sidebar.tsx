@@ -120,8 +120,9 @@ export function EditorSidebar({}: SidebarProps) {
               "path",
               `${session?.user.id || "anonymous"}/assets/${file.name}`,
             );
+            const { getApiUrl } = await import("@/trpc/client");
             const res = await fetch(
-              `${process.env.NEXT_PUBLIC_API_URL}/api/upload`,
+              `${getApiUrl()}/api/upload`,
               {
                 method: "POST",
                 body: formData,

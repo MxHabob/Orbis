@@ -23,7 +23,8 @@ export function useDownloadInvoicesZip() {
 
     try {
       const zip = new JSZip();
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const { getApiUrl } = await import("@/trpc/client");
+      const apiUrl = getApiUrl();
 
       // Track used filenames to avoid duplicates
       const usedFilenames = new Set<string>();

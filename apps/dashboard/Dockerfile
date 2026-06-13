@@ -31,8 +31,10 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_URL=$NEXT_PUBLIC_URL
 ENV NEXT_PUBLIC_S3_PUBLIC_URL=$NEXT_PUBLIC_S3_PUBLIC_URL
 ENV NODE_ENV=production
+ENV NEXT_PRIVATE_WORKERS=2
 
 RUN bun run build --filter=@orbis/dashboard
+
 
 # Runner stage — uses slim image, only copies standalone output (no node_modules bloat)
 FROM oven/bun:1.2.22-slim AS runner
