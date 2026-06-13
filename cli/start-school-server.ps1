@@ -8,8 +8,14 @@
 param (
     [Parameter(Position=0)]
     [ValidateSet("start", "stop", "restart", "update", "status", "config", "menu")]
-    [string]$Action = "menu"
+    [string]$Action = "menu",
+
+    [Parameter(Mandatory=$false)]
+    [switch]$SkipPull
 )
+
+$script:SkipPull = $SkipPull
+
 
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
@@ -515,46 +521,50 @@ function Start-Server {
     # -- Step 3: Pull Images --------------------------------------------------
     Print-StepHeader 3 4 "Pulling container images"
 
-    $pullResult = Invoke-WithSpinner "Pulling latest images from registry" {
-        $ErrorActionPreference = "Continue"
-        $output = docker compose pull --quiet 2>&1
-        if ($LASTEXITCODE -ne 0) { throw "Docker compose pull failed (exit code $LASTEXITCODE): $output" }
-        $output
-    }
-
-    if (-not $pullResult.Success) {
-        $output = $pullResult.Output
-        if ($output -match "403|Forbidden|unauthorized|denied") {
-            Show-ErrorBox `
-                "Registry Authentication Failed" `
-                "Access denied to private container registry." `
-                @(
-                    "1. Run: docker login ghcr.io -u YOUR_GITHUB_USERNAME",
-                    "2. Enter your Personal Access Token (PAT) with read:packages scope",
-                    "3. Re-run this script"
-                )
-        } elseif ($output -match "not found|manifest unknown") {
-            Show-ErrorBox `
-                "Container Image Not Found" `
-                "The specified version could not be found in the registry." `
-                @(
-                    "1. Check ORBIS_VERSION in your .env file",
-                    "2. Verify the images exist at ghcr.io/$ghcrUser",
-                    "3. Try setting ORBIS_VERSION=stable"
-                )
-        } else {
-            Show-ErrorBox `
-                "Image Pull Failed" `
-                "Could not download container images." `
-                @(
-                    "Check your internet connection and try again.",
-                    "Run: docker compose pull  (for detailed output)"
-                )
-            if ($output) {
-                Write-TaskInfo "Details: $output"
-            }
+    if ($script:SkipPull) {
+        Write-TaskInfo "Skipping image pull (using local/cached images)..."
+    } else {
+        $pullResult = Invoke-WithSpinner "Pulling latest images from registry" {
+            $ErrorActionPreference = "Continue"
+            $output = docker compose pull --quiet 2>&1
+            if ($LASTEXITCODE -ne 0) { throw "Docker compose pull failed (exit code $LASTEXITCODE): $output" }
+            $output
         }
-        return
+
+        if (-not $pullResult.Success) {
+            $output = $pullResult.Output
+            if ($output -match "403|Forbidden|unauthorized|denied") {
+                Show-ErrorBox `
+                    "Registry Authentication Failed" `
+                    "Access denied to private container registry." `
+                    @(
+                        "1. Run: docker login ghcr.io -u YOUR_GITHUB_USERNAME",
+                        "2. Enter your Personal Access Token (PAT) with read:packages scope",
+                        "3. Re-run this script"
+                    )
+            } elseif ($output -match "not found|manifest unknown") {
+                Show-ErrorBox `
+                    "Container Image Not Found" `
+                    "The specified version could not be found in the registry." `
+                    @(
+                        "1. Check ORBIS_VERSION in your .env file",
+                        "2. Verify the images exist at ghcr.io/$ghcrUser",
+                        "3. Try setting ORBIS_VERSION=stable"
+                    )
+            } else {
+                Show-ErrorBox `
+                    "Image Pull Failed" `
+                    "Could not download container images." `
+                    @(
+                        "Check your internet connection and try again.",
+                        "Run: docker compose pull  (for detailed output)"
+                    )
+                if ($output) {
+                    Write-TaskInfo "Details: $output"
+                }
+            }
+            return
+        }
     }
 
     # -- Step 4: Start Services -----------------------------------------------

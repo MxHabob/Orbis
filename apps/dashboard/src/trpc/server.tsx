@@ -88,13 +88,10 @@ export const trpc = createTRPCOptionsProxy<AppRouter>({
               headers,
             });
           } catch (error) {
-            // Log error for debugging in development
-            if (process.env.NODE_ENV === "development") {
-              console.error(
-                `[tRPC Server] Failed to connect to API at ${url}:`,
-                error,
-              );
-            }
+            console.error(
+              `[tRPC Server] Failed to connect to API at ${url}:`,
+              error,
+            );
             throw error;
           }
         },
@@ -189,13 +186,10 @@ export async function getTRPCClient() {
               headers,
             });
           } catch (error) {
-            // Log error for debugging in development
-            if (process.env.NODE_ENV === "development") {
-              console.error(
-                `[tRPC Client] Failed to connect to API at ${url}:`,
-                error,
-              );
-            }
+            console.error(
+              `[tRPC Client] Failed to connect to API at ${url}:`,
+              error,
+            );
             throw error;
           }
         },
