@@ -16,6 +16,12 @@ use tauri::image::Image;
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use image;
 
+pub mod state;
+pub mod commands;
+pub mod features;
+
+use state::AppState;
+
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 struct AppConfig {
     server_url: String,
@@ -183,223 +189,6 @@ async fn check_for_updates(app: tauri::AppHandle) -> Result<(), String> {
     Ok(())
 }
 
-fn toggle_search_window(
-    app: &tauri::AppHandle,
-    search_state: &SearchWindowState,
-) -> Result<(), Box<dyn std::error::Error>> {
-    println!("🔍 === TOGGLE_SEARCH_WINDOW CALLED ===");
-
-    let is_search_enabled = {
-        let guard = search_state.lock().unwrap();
-        let value = *guard;
-        println!("🔍 Current search window state from lock: {}", value);
-        value
-    };
-
-    if !is_search_enabled {
-        println!("❌ Search window disabled, showing main window instead");
-        // Search is disabled, show main window
-        if let Some(main_window) = app.get_webview_window("main") {
-            main_window.show()?;
-            main_window.set_focus()?;
-        }
-        return Ok(());
-    }
-
-    println!("✅ Search window enabled, proceeding with search toggle");
-    // Search is enabled, proceed with search toggle
-    let search_window_label = "search";
-
-    println!("🔍 Looking for existing search window...");
-    if let Some(window) = app.get_webview_window(search_window_label) {
-        println!("🔍 Found existing search window");
-        if window.is_visible()? {
-            println!("🔍 Search window is visible, hiding it");
-            // Emit close event to search window
-            let _ = window.emit("search-window-open", false);
-            window.hide()?;
-        } else {
-            println!("🔍 Search window is hidden, showing it");
-            // Set always on top when showing
-            window.set_always_on_top(true)?;
-            position_window_on_current_monitor(app, &window)?;
-            window.show()?;
-            window.set_focus()?; // Focus the window so it can detect focus loss
-
-            // Emit open event to search window
-            let _ = window.emit("search-window-open", true);
-        }
-    } else {
-        println!("🔍 Search window doesn't exist, creating it now...");
-        // Create search window on-demand
-        let app_url = get_saved_url_or_env(app).unwrap_or_else(|| "http://localhost:3002".to_string());
-        let app_clone = app.clone();
-
-        // Use blocking approach for shortcut/tray handlers to ensure window is created
-        tauri::async_runtime::block_on(async move {
-            if let Ok(_) = create_preloaded_search_window(&app_clone, &app_url).await {
-                println!("✅ Search window created successfully via block_on");
-                // After creation, show it immediately
-                if let Some(window) = app_clone.get_webview_window("search") {
-                    let _ = window.set_always_on_top(true);
-                    let _ = position_window_on_current_monitor(&app_clone, &window);
-                    let _ = window.show();
-                    let _ = window.set_focus();
-                    let _ = window.emit("search-window-open", true);
-                    println!("✅ Search window shown successfully");
-                } else {
-                    println!("❌ Search window not found after creation");
-                }
-            } else {
-                println!("❌ Failed to create search window");
-            }
-        });
-    }
-
-    Ok(())
-}
-
-fn position_window_on_current_monitor(
-    app: &tauri::AppHandle,
-    window: &tauri::WebviewWindow,
-) -> Result<(), Box<dyn std::error::Error>> {
-    // Get cursor position to determine current monitor
-    if let Ok(cursor_position) = app.cursor_position() {
-        // Get all monitors
-        if let Ok(monitors) = app.available_monitors() {
-            // Find which monitor contains the cursor
-            let current_monitor = monitors.iter().find(|monitor| {
-                let pos = monitor.position();
-                let size = monitor.size();
-                cursor_position.x >= pos.x as f64
-                    && cursor_position.x < (pos.x + size.width as i32) as f64
-                    && cursor_position.y >= pos.y as f64
-                    && cursor_position.y < (pos.y + size.height as i32) as f64
-            });
-
-            if let Some(monitor) = current_monitor {
-                let monitor_size = monitor.size();
-                let monitor_position = monitor.position();
-
-                // Get the actual window size to ensure accurate centering
-                let window_size = window.outer_size().unwrap_or(tauri::PhysicalSize {
-                    width: 720,
-                    height: 450,
-                });
-
-                // Calculate center position on the monitor with slight offset for system UI
-                let center_x = monitor_position.x + (monitor_size.width as i32 / 2)
-                    - (window_size.width as i32 / 2);
-                let center_y = monitor_position.y + (monitor_size.height as i32 / 2)
-                    - (window_size.height as i32 / 2);
-
-                // Adjust for macOS menu bar (typically 25-30px) and other system UI
-                let center_y = center_y + 15; // Slight downward adjustment for menu bar
-
-                window.set_position(Position::Physical(PhysicalPosition {
-                    x: center_x,
-                    y: center_y,
-                }))?;
-
-                return Ok(());
-            }
-        }
-    }
-
-    // Fallback to default center if monitor detection fails
-    window.center()?;
-    Ok(())
-}
-
-async fn create_preloaded_search_window(
-    app: &tauri::AppHandle,
-    app_url: &str,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let search_window_label = "search";
-    let search_url = format!("{}/desktop/search", app_url);
-
-    let search_builder = WebviewWindowBuilder::new(
-        app,
-        search_window_label,
-        WebviewUrl::External(tauri::Url::parse(&search_url)?),
-    )
-    .title("Orbis Search")
-    .inner_size(720.0, 450.0)
-    .min_inner_size(720.0, 450.0)
-    .resizable(false)
-    .user_agent("Mozilla/5.0 (compatible; Orbis Desktop App)")
-    .transparent(true)
-    .decorations(false)
-    .visible(false) // Start hidden for preloading
-    .on_download(|_window, _event| {
-        println!("Search window download triggered!");
-        // Allow downloads from search window too
-        true
-    });
-
-    // Platform-specific styling
-    #[cfg(target_os = "macos")]
-    let search_builder = search_builder
-        .hidden_title(true)
-        .title_bar_style(TitleBarStyle::Overlay);
-
-    let search_window = search_builder.shadow(false).build()?;
-
-    // Position window on primary monitor (will be repositioned when shown)
-    search_window.center()?;
-
-    // Close requests are now handled via auth state changes and direct window management
-
-    // Handle window events - comprehensive auto-hide behavior
-    let window_clone = search_window.clone();
-    search_window.on_window_event(move |event| {
-        match event {
-            // Main case: window loses focus (click outside anywhere)
-            tauri::WindowEvent::Focused(false) => {
-                // Emit close event to search window
-                let _ = window_clone.emit("search-window-open", false);
-                // Turn off always on top and hide
-                let _ = window_clone.set_always_on_top(false);
-                let _ = window_clone.hide();
-            }
-            // Additional safety: if window somehow becomes invisible but should be hidden
-            tauri::WindowEvent::Resized(_) | tauri::WindowEvent::Moved(_) => {
-                // Check if still focused after these events, if not, hide
-                if let Ok(false) = window_clone.is_focused() {
-                    let _ = window_clone.emit("search-window-open", false);
-                    let _ = window_clone.set_always_on_top(false);
-                    let _ = window_clone.hide();
-                }
-            }
-            _ => {}
-        }
-    });
-
-    Ok(())
-}
-
-fn handle_deep_link_event(app_handle: &tauri::AppHandle, urls: Vec<String>) {
-    for url in &urls {
-        if url.starts_with("orbis://") {
-            // Extract the path from the deep link
-            let path = url.strip_prefix("orbis://").unwrap_or("");
-
-            // Remove any leading slashes
-            let clean_path = path.trim_start_matches('/');
-
-            // Get the main window and emit navigation event to frontend
-            if let Some(window) = app_handle.get_webview_window("main") {
-                // Emit event to frontend with just the path - frontend handles the full URL construction
-                if let Ok(_) = window.emit("deep-link-navigate", clean_path) {
-                    // Always show the window first, then bring it to front
-                    let _ = window.show();
-                    let _ = window.set_focus();
-                }
-            }
-        }
-    }
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -408,10 +197,87 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_process::init())
         .invoke_handler(tauri::generate_handler![
+            // Core window & update commands
             show_window,
             check_for_updates,
             get_saved_server_url,
-            save_server_url
+            save_server_url,
+
+            // Auth commands
+            commands::auth::register,
+            commands::auth::login,
+            commands::auth::validate_token,
+            commands::auth::logout,
+
+            // Users & organization commands
+            commands::users::get_organization,
+            commands::users::update_organization,
+            commands::users::get_users,
+            commands::users::get_user,
+            commands::users::create_user,
+            commands::users::update_user,
+            commands::users::delete_user,
+            commands::users::change_user_role,
+            commands::users::change_user_password,
+
+            // Academics commands
+            commands::academics::get_cycles,
+            commands::academics::get_cycle,
+            commands::academics::create_cycle,
+            commands::academics::update_cycle,
+            commands::academics::activate_cycle,
+            commands::academics::lock_cycle,
+            commands::academics::get_classes,
+            commands::academics::create_class,
+            commands::academics::update_class,
+            commands::academics::delete_class,
+
+            // Enrollments commands
+            commands::enrollments::get_enrollments,
+            commands::enrollments::get_enrollment,
+            commands::enrollments::create_enrollment,
+            commands::enrollments::withdraw_enrollment,
+            commands::enrollments::transfer_enrollment,
+            commands::enrollments::promote_students,
+
+            // Grades commands
+            commands::grades::get_grades,
+            commands::grades::submit_grade,
+            commands::grades::submit_grades_bulk,
+            commands::grades::update_grade,
+            commands::grades::get_report_card,
+            commands::grades::get_grade_analytics,
+
+            // Attendance commands
+            commands::attendance::get_attendance,
+            commands::attendance::record_attendance,
+            commands::attendance::record_bulk_attendance,
+            commands::attendance::get_attendance_report,
+            commands::attendance::get_attendance_analytics,
+
+            // Finance commands
+            commands::finance::get_ledger_accounts,
+            commands::finance::create_ledger_account,
+            commands::finance::get_treasuries,
+            commands::finance::create_treasury,
+            commands::finance::get_student_fees,
+            commands::finance::assign_student_fee,
+            commands::finance::get_payments,
+            commands::finance::record_payment,
+
+            // Misc commands
+            commands::misc::get_behavior_records,
+            commands::misc::submit_ai_behavior,
+            commands::misc::update_behavior_record,
+            commands::misc::delete_behavior_record,
+            commands::misc::get_notifications,
+            commands::misc::mark_notification_read,
+            commands::misc::get_org_units,
+            commands::misc::create_org_unit,
+            commands::misc::update_org_unit,
+            commands::misc::delete_org_unit,
+            commands::misc::get_dashboard_stats,
+            commands::misc::get_audit_logs,
         ])
         .setup(move |app| {
             // Add updater plugin conditionally for desktop
@@ -424,7 +290,15 @@ pub fn run() {
             let db_path = app_data_dir.join("orbis.db");
             let database_url = format!("sqlite://{}", db_path.to_string_lossy());
 
-            // 2. Start the embedded local Axum API server in the background
+            // 2. Initialize managed AppState with direct Rust access (embedded core)
+            let app_state = tauri::async_runtime::block_on(async {
+                AppState::init(&database_url)
+                    .await
+                    .expect("Failed to initialize database and AppState")
+            });
+            app.manage(Arc::new(app_state));
+
+            // 3. Start the embedded local Axum API server in the background
             let db_url_clone = database_url.clone();
             tauri::async_runtime::spawn(async move {
                 let _ = api_gateway::start_server(&db_url_clone, 3002).await;
@@ -442,8 +316,6 @@ pub fn run() {
             // Clone app_handle before it gets moved into closures
             let app_handle_for_deep_links = app_handle.clone();
             let app_handle_for_navigation = app_handle.clone();
-            
-            // Auth state is now accessed via managed state for consistency
 
             // Initialize global shortcuts
             {
@@ -460,20 +332,9 @@ pub fn run() {
                             if shortcut == &search_shortcut
                                 && event.state() == ShortcutState::Pressed
                             {
-                                println!("🔍 Global shortcut triggered - checking search state via managed state");
-                                // Get search state from managed state (same as commands use)
+                                println!("🔍 Global shortcut triggered - checking search state");
                                 if let Some(managed_search_state) = app_handle.try_state::<SearchWindowState>() {
-                                    let current_search_state = *managed_search_state.lock().unwrap();
-                                    println!("🔍 Shortcut: Search state from managed state: {}", current_search_state);
-                                    
-                                    // Use the same app_handle for both search state and toggle function
-                                    let result = toggle_search_window(app_handle, &managed_search_state);
-                                    match result {
-                                        Ok(_) => println!("🔍 Shortcut: toggle_search_window returned Ok"),
-                                        Err(e) => println!("🔍 Shortcut: toggle_search_window returned Err: {}", e)
-                                    }
-                                } else {
-                                    println!("❌ Failed to get managed search state for shortcut");
+                                    let _ = features::search::toggle_search_window(app_handle, &managed_search_state);
                                 }
                             }
                         })
@@ -493,7 +354,7 @@ pub fn run() {
             app_handle.deep_link().on_open_url(move |event| {
                 let url_strings: Vec<String> =
                     event.urls().iter().map(|url| url.to_string()).collect();
-                handle_deep_link_event(&app_handle_for_deep_links, url_strings);
+                features::deep_link::handle_deep_link(&app_handle_for_deep_links, url_strings);
             });
 
             let win_builder = WebviewWindowBuilder::new(
@@ -520,21 +381,17 @@ pub fn run() {
                 .disable_drag_drop_handler()
                 .on_download(|_window, _event| {
                     println!("Download triggered!");
-                    // Allow all downloads - they will go to default Downloads folder
                     true
                 })
                 .on_navigation(move |url: &tauri::Url| {
                     let url_str = url.as_str();
 
-                    // Always allow local tauri app pages
                     if url.scheme() == "tauri" || url.host_str() == Some("tauri.localhost") {
                         return true;
                     }
 
-                    // Get the saved server URL or fallback URL
                     let target_base = get_saved_url_or_env(&app_handle_for_navigation);
 
-                    // If we navigate to our own server, allow it
                     if let Some(base_url_str) = target_base {
                         if let Ok(base_url) = tauri::Url::parse(&base_url_str) {
                             if url.host() == base_url.host() {
@@ -543,7 +400,6 @@ pub fn run() {
                         }
                     }
 
-                    // Otherwise, if it's a different external domain, open in system browser
                     let is_http_or_https = url.scheme() == "http" || url.scheme() == "https";
                     if is_http_or_https {
                         let url_string = url_str.to_string();
@@ -565,16 +421,10 @@ pub fn run() {
             let app_handle_for_events = app_handle.clone();
             window.listen("search-window-enabled", move |event: tauri::Event| {
                 if let Ok(enabled) = serde_json::from_str::<bool>(&event.payload()) {
-                    println!("🔍 Event received: search-window-enabled = {}", enabled);
                     *search_state_for_events.lock().unwrap() = enabled;
-                    println!("🔍 Search window state updated to {}", enabled);
-                    
-                    // If search is disabled, clean up search window to prevent interference
                     if !enabled {
-                        println!("🔍 Search disabled, cleaning up search window");
                         if let Some(search_window) = app_handle_for_events.get_webview_window("search") {
                             let _ = search_window.close();
-                            println!("🔍 Search window closed and cleaned up");
                         }
                     }
                 }
@@ -583,12 +433,10 @@ pub fn run() {
             // Listen for search window close requests from the frontend
             let app_handle_for_close = app_handle.clone();
             window.listen("search-window-close-requested", move |_event| {
-                println!("🔍 Event received: search-window-close-requested");
                 if let Some(search_window) = app_handle_for_close.get_webview_window("search") {
                     let _ = search_window.emit("search-window-open", false);
                     let _ = search_window.set_always_on_top(false);
                     let _ = search_window.hide();
-                    println!("🔍 Search window closed via close request");
                 }
             });
 
@@ -597,7 +445,6 @@ pub fn run() {
             tauri::async_runtime::spawn(async move {
                 std::thread::sleep(std::time::Duration::from_secs(2));
 
-                // Check if window is still hidden after 2 seconds
                 if let Ok(is_visible) = window_clone.is_visible() {
                     if !is_visible {
                         let _ = window_clone.show();
@@ -606,15 +453,11 @@ pub fn run() {
                 }
             });
 
-            // Don't preload search window immediately - create it on first use instead
-            // This prevents interference with the login flow
-
             // Set the default app menu to restore the Orbis menu
             let app_menu = Menu::default(app.handle())?;
             app.set_menu(app_menu)?;
 
             // Setup simple system tray for search toggle only
-            // Load custom tray icon
             let tray_icon = {
                 let icon_bytes = include_bytes!("../icons/tray-icon.png");
                 let img = image::load_from_memory(icon_bytes).map_err(|e| format!("Failed to load tray icon: {}", e))?;
@@ -623,7 +466,6 @@ pub fn run() {
                 Image::new_owned(rgba.into_raw(), width, height)
             };
 
-            // Create tray menu
             let check_updates_item = MenuItem::with_id(app, "check_updates", "Check for Updates...", true, None::<&str>)?;
             let tray_menu = Menu::with_items(app, &[&check_updates_item])?;
 
@@ -632,9 +474,7 @@ pub fn run() {
                 .menu(&tray_menu)
                 .show_menu_on_left_click(false)
                 .on_menu_event(|app, event| {
-                    println!("🔧 Tray menu event triggered: {:?}", event.id);
                     if event.id == "check_updates" {
-                        println!("🔧 Calling check_for_updates...");
                         let app_handle = app.clone();
                         tauri::async_runtime::spawn(async move {
                             let _ = check_for_updates(app_handle).await;
@@ -643,7 +483,6 @@ pub fn run() {
                 })
                 .on_tray_icon_event(move |tray, event| {
                     match event {
-                        // Handle left clicks to toggle search window (keep existing behavior)
                         TrayIconEvent::Click {
                             button: MouseButton::Left,
                             button_state: MouseButtonState::Up,
@@ -651,7 +490,7 @@ pub fn run() {
                         } => {
                             let app_handle = tray.app_handle();
                             if let Some(managed_search_state) = app_handle.try_state::<SearchWindowState>() {
-                                let _ = toggle_search_window(app_handle, &managed_search_state);
+                                let _ = features::search::toggle_search_window(app_handle, &managed_search_state);
                             }
                         },
                         _ => {}
@@ -672,10 +511,7 @@ pub fn run() {
                 }
             }
             tauri::RunEvent::ExitRequested { api, .. } => {
-                // Prevent app from quitting to keep global shortcuts working
                 api.prevent_exit();
-                
-                // Hide all windows instead of quitting
                 if let Some(main_window) = app_handle.get_webview_window("main") {
                     let _ = main_window.hide();
                 }
