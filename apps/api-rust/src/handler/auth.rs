@@ -103,9 +103,10 @@ pub async fn get_me(
 )]
 pub async fn post_logout(
     State(service): State<Service>,
-    auth_header: Option<axum::http::HeaderValue>,
+    headers: axum::http::HeaderMap,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let auth_str = auth_header
+    let auth_str = headers
+        .get(header::AUTHORIZATION)
         .and_then(|v| v.to_str().ok())
         .ok_or_else(|| (StatusCode::BAD_REQUEST, Json(json!({ "success": false, "error": "missing authorization header" }))))?;
 

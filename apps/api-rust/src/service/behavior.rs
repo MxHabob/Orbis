@@ -161,7 +161,7 @@ impl super::Service {
         Ok(created_record)
     }
 
-    pub async fn get_behavior_records(&self, org_id: &str) -> Result<Vec<behavior_record::Model>, String> {
-        self.repo.get_behavior_records(org_id).await.map_err(|e| e.to_string())
+    pub async fn get_behavior_records(&self, org_id: &str, params: crate::handler::params::BehaviorParams) -> Result<Vec<behavior_record::Model>, String> {
+        self.repo.get_behavior_records(org_id, params).await.map_err(|e| e.to_string())
     }
 }

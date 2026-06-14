@@ -81,8 +81,8 @@ impl super::Service {
         Ok(created_n)
     }
 
-    pub async fn get_notifications(&self, user_id: &str) -> Result<Vec<notification::Model>, String> {
-        self.repo.get_notifications(user_id).await.map_err(|e| e.to_string())
+    pub async fn get_notifications(&self, user_id: &str, params: crate::handler::params::NotificationParams) -> Result<Vec<notification::Model>, String> {
+        self.repo.get_notifications(user_id, params).await.map_err(|e| e.to_string())
     }
 
     pub async fn mark_notification_read(&self, id: &str) -> Result<(), String> {

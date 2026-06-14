@@ -1,5 +1,5 @@
 use crate::entities::notification;
-use sea_orm::{entity::prelude::*, ActiveModelTrait, ActiveValue::Set, QueryFilter, EntityTrait, QueryOrder};
+use sea_orm::{entity::prelude::*, ActiveModelTrait, ActiveValue::Set, QueryFilter, EntityTrait, QueryOrder, QuerySelect};
 
 impl super::Repository {
     pub async fn create_notification(&self, n: notification::Model) -> Result<notification::Model, DbErr> {
@@ -19,12 +19,28 @@ impl super::Repository {
         active_model.insert(&self.db).await
     }
 
-    pub async fn get_notifications(&self, user_id: &str) -> Result<Vec<notification::Model>, DbErr> {
-        notification::Entity::find()
-            .filter(notification::Column::UserId.eq(user_id))
-            .order_by_desc(notification::Column::CreatedAt)
-            .all(&self.db)
-            .await
+    pub async fn get_notifications(
+        &self,
+        user_id: &str,
+        params: crate::handler::params::NotificationParams,
+    ) -> Result<Vec<notification::Model>, DbErr> {
+        let mut query = notification::Entity::find()
+            .filter(notification::Column::UserId.eq(user_id));
+
+        if let Some(read) = params.is_read {
+            query = query.filter(notification::Column::IsRead.eq(read));
+        }
+
+        query = query.order_by_desc(notification::Column::CreatedAt);
+
+        if let Some(limit) = params.limit {
+            query = query.limit(limit);
+        }
+        if let Some(offset) = params.offset {
+            query = query.offset(offset);
+        }
+
+        query.all(&self.db).await
     }
 
     pub async fn mark_notification_read(&self, id: &str) -> Result<u64, DbErr> {

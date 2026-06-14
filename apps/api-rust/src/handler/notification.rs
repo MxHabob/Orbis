@@ -1,5 +1,5 @@
 use axum::{
-    extract::{State, Path},
+    extract::{State, Path, Query},
     http::StatusCode,
     response::IntoResponse,
     Json,
@@ -17,9 +17,10 @@ use crate::middleware::AuthenticatedUser;
 )]
 pub async fn get_notifications(
     State(service): State<Service>,
+    Query(params): Query<crate::handler::params::NotificationParams>,
     AuthenticatedUser(user): AuthenticatedUser,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let notifications = service.get_notifications(&user.id).await
+    let notifications = service.get_notifications(&user.id, params).await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "success": false, "error": e }))))?;
 
     Ok((

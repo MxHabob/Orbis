@@ -35,7 +35,7 @@ pub struct Model {
     pub updated_at: String,
 }
 
-#[derive(Copy, Clone, Debug, DeriveRelation)]
+#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
     #[sea_orm(has_many = "super::user::Entity")]
     User,

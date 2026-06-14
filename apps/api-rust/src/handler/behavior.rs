@@ -1,5 +1,5 @@
 use axum::{
-    extract::{State, Json},
+    extract::{State, Json, Query},
     http::StatusCode,
     response::IntoResponse,
 };
@@ -54,9 +54,10 @@ pub async fn post_ai_behavior(
 )]
 pub async fn get_behavior(
     State(service): State<Service>,
+    Query(params): Query<crate::handler::params::BehaviorParams>,
     AuthenticatedUser(user): AuthenticatedUser,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let records = service.get_behavior_records(&user.org_id).await
+    let records = service.get_behavior_records(&user.org_id, params).await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "success": false, "error": e }))))?;
 
     Ok((

@@ -1,5 +1,5 @@
 use crate::entities::{behavior_record, audit_log};
-use sea_orm::{entity::prelude::*, ActiveModelTrait, ActiveValue::Set, QueryFilter, EntityTrait, QueryOrder};
+use sea_orm::{entity::prelude::*, ActiveModelTrait, ActiveValue::Set, QueryFilter, EntityTrait, QueryOrder, QuerySelect};
 
 impl super::Repository {
     pub async fn create_behavior_record(&self, b: behavior_record::Model) -> Result<behavior_record::Model, DbErr> {
@@ -44,12 +44,60 @@ impl super::Repository {
         active_model.insert(&self.db).await
     }
 
-    pub async fn get_behavior_records(&self, org_id: &str) -> Result<Vec<behavior_record::Model>, DbErr> {
-        behavior_record::Entity::find()
-            .filter(behavior_record::Column::OrgId.eq(org_id))
-            .order_by_desc(behavior_record::Column::CreatedAt)
-            .all(&self.db)
-            .await
+    pub async fn get_behavior_records(
+        &self,
+        org_id: &str,
+        params: crate::handler::params::BehaviorParams,
+    ) -> Result<Vec<behavior_record::Model>, DbErr> {
+        let mut query = behavior_record::Entity::find()
+            .filter(behavior_record::Column::OrgId.eq(org_id));
+
+        if let Some(ref student_id) = params.student_id {
+            if !student_id.trim().is_empty() {
+                let enrollment_ids = crate::entities::enrollment::Entity::find()
+                    .filter(crate::entities::enrollment::Column::StudentId.eq(student_id))
+                    .all(&self.db)
+                    .await?
+                    .into_iter()
+                    .map(|e| e.id)
+                    .collect::<Vec<String>>();
+                query = query.filter(behavior_record::Column::EnrollmentId.is_in(enrollment_ids));
+            }
+        }
+
+        if let Some(ref severity) = params.severity {
+            if !severity.trim().is_empty() {
+                query = query.filter(behavior_record::Column::Severity.eq(severity));
+            }
+        }
+
+        if let Some(ref status) = params.status {
+            if !status.trim().is_empty() {
+                query = query.filter(behavior_record::Column::Status.eq(status));
+            }
+        }
+
+        if let Some(ref search) = params.q {
+            if !search.trim().is_empty() {
+                let s = format!("%{}%", search);
+                query = query.filter(
+                    behavior_record::Column::Title.like(&s)
+                        .or(behavior_record::Column::Description.like(&s))
+                        .or(behavior_record::Column::ReportedBy.like(&s))
+                );
+            }
+        }
+
+        query = query.order_by_desc(behavior_record::Column::CreatedAt);
+
+        if let Some(limit) = params.limit {
+            query = query.limit(limit);
+        }
+        if let Some(offset) = params.offset {
+            query = query.offset(offset);
+        }
+
+        query.all(&self.db).await
     }
 
     // ── Audit Log ───────────────────────────────────────────────────

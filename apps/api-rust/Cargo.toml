@@ -19,6 +19,7 @@ serde_json = "1.0.120"
 bcrypt = "0.15.1"
 jsonwebtoken = "9.3.0"
 uuid = { version = "1.9.1", features = ["v4", "serde"] }
+chrono = { version = "0.4.38", features = ["serde"] }
 
 # Logs & Monitoring
 tracing = "0.1.40"
@@ -26,4 +27,4 @@ tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 tower-http = { version = "0.5.2", features = ["cors", "trace", "fs"] }
 
 # OpenAPI Specification Generation
-utoipa = { version = "4.2.3", features = ["axum"] }
+utoipa = { version = "4.2.3", features = ["axum_extras"] }

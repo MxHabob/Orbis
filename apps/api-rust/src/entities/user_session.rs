@@ -27,7 +27,7 @@ pub struct Model {
     pub created_at: String,
 }
 
-#[derive(Copy, Clone, Debug, DeriveRelation)]
+#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
     #[sea_orm(
         belongs_to = "super::user::Entity",

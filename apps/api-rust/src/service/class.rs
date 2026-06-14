@@ -5,8 +5,8 @@ use sea_orm::{DbErr, ConnectionTrait};
 use crate::entities::class;
 
 impl super::Service {
-    pub async fn get_classes(&self, org_id: &str) -> Result<Vec<class::Model>, String> {
-        self.repo.get_classes(org_id).await.map_err(|e| e.to_string())
+    pub async fn get_classes(&self, org_id: &str, params: crate::handler::params::ClassParams) -> Result<Vec<class::Model>, String> {
+        self.repo.get_classes(org_id, params).await.map_err(|e| e.to_string())
     }
 
     pub async fn create_class(

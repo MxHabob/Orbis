@@ -57,7 +57,7 @@ pub struct Model {
     pub created_by: Option<String>,
 }
 
-#[derive(Copy, Clone, Debug, DeriveRelation)]
+#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
     #[sea_orm(
         belongs_to = "super::organization::Entity",

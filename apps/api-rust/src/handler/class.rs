@@ -1,9 +1,9 @@
 use axum::{
-    extract::{State, Json},
+    extract::{State, Json, Query},
     http::StatusCode,
     response::IntoResponse,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use crate::service::Service;
 use crate::middleware::AuthenticatedUser;
@@ -25,9 +25,10 @@ pub struct CreateClassRequest {
 )]
 pub async fn get_classes(
     State(service): State<Service>,
+    Query(params): Query<crate::handler::params::ClassParams>,
     AuthenticatedUser(user): AuthenticatedUser,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let classes = service.get_classes(&user.org_id).await
+    let classes = service.get_classes(&user.org_id, params).await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "success": false, "error": e }))))?;
 
     Ok((

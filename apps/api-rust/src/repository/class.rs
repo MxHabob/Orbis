@@ -2,12 +2,26 @@ use crate::entities::{class, enrollment, academic_cycle};
 use sea_orm::{entity::prelude::*, ActiveModelTrait, ActiveValue::Set, QueryFilter, EntityTrait};
 
 impl super::Repository {
-    pub async fn get_classes(&self, org_id: &str) -> Result<Vec<class::Model>, DbErr> {
-        class::Entity::find()
+    pub async fn get_classes(&self, org_id: &str, params: crate::handler::params::ClassParams) -> Result<Vec<class::Model>, DbErr> {
+        let mut query = class::Entity::find()
             .filter(class::Column::OrgId.eq(org_id))
-            .filter(class::Column::IsDeleted.eq(0))
-            .all(&self.db)
-            .await
+            .filter(class::Column::IsDeleted.eq(0));
+
+        if let Some(ref search) = params.q {
+            if !search.trim().is_empty() {
+                let s = format!("%{}%", search);
+                query = query.filter(
+                    class::Column::Name.like(&s)
+                        .or(class::Column::Level.like(&s))
+                );
+            }
+        }
+
+        if let Some(active) = params.is_active {
+            query = query.filter(class::Column::IsActive.eq(active));
+        }
+
+        query.all(&self.db).await
     }
 
     pub async fn create_class(&self, c: class::Model) -> Result<class::Model, DbErr> {
@@ -37,8 +51,8 @@ impl super::Repository {
 
     pub async fn get_enrollment_by_student_id(&self, student_id: &str, cycle_id: &str) -> Result<Option<enrollment::Model>, DbErr> {
         enrollment::Entity::find()
-            .filter(enrollment::Column::StudentID.eq(student_id))
-            .filter(enrollment::Column::CycleID.eq(cycle_id))
+            .filter(enrollment::Column::StudentId.eq(student_id))
+            .filter(enrollment::Column::CycleId.eq(cycle_id))
             .filter(enrollment::Column::Status.eq("active"))
             .one(&self.db)
             .await
