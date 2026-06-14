@@ -1,0 +1,102 @@
+import type { Metadata } from "next";
+import type { SearchParams } from "nuqs";
+import { Suspense } from "react";
+import { ErrorBoundary } from "@/components/error-boundary";
+import { ErrorFallback } from "@/components/error-fallback";
+import { GradeGridHeader } from "@/components/grades/grade-grid-header";
+import { GradeGridWrapper } from "@/components/grades/grade-grid-wrapper";
+import { GradesUploadZone } from "@/components/grades/grades-upload-zone";
+import { ScrollableContent } from "@/components/scrollable-content";
+import { GradesSkeleton } from "@/components/tables/grades/skeleton";
+import { loadGradeFilterParams } from "@/hooks/use-grade-filter-params";
+import { getQueryClient, HydrateClient, prefetch, trpc } from "@/trpc/server";
+import { getInitialTableSettings } from "@/utils/columns";
+
+export const metadata: Metadata = {
+  title: "Grade | Orbis",
+};
+
+type Props = {
+  searchParams: Promise<SearchParams>;
+};
+
+export default async function GradesPage(props: Props) {
+  const searchParams = await props.searchParams;
+  const filter = loadGradeFilterParams(searchParams);
+  const queryClient = getQueryClient();
+
+  const [currentYear, years, subjects, initialSettings] = await Promise.all([
+    queryClient.fetchQuery(trpc.academic.getCurrentYear.queryOptions()),
+    queryClient.fetchQuery(trpc.academic.getYears.queryOptions()),
+    queryClient.fetchQuery(trpc.subjects.getAll.queryOptions()),
+    getInitialTableSettings("grades"),
+  ]);
+
+  const activeYearId = filter.yearId || currentYear?.id;
+
+  const [classesResponse, terms] = await Promise.all([
+    queryClient.fetchQuery(
+      trpc.classes.getAll.queryOptions({ academicYearId: activeYearId }),
+    ),
+    activeYearId
+      ? queryClient.fetchQuery(
+          trpc.academic.getTerms.queryOptions({ yearId: activeYearId }),
+        )
+      : Promise.resolve([]),
+  ]);
+
+  const { selectedClassId, selectedSubjectId, termId, month, yearId } = filter;
+  if (selectedClassId && selectedSubjectId && termId && month && yearId) {
+    prefetch(
+      trpc.grades.getGridData.queryOptions({
+        classId: selectedClassId,
+        subjectId: selectedSubjectId,
+        termId,
+        month,
+        academicYearId: yearId,
+      }),
+    );
+  }
+
+  const initialData = {
+    classes: classesResponse.data.map((c: any) => ({
+      id: c.id,
+      name: c.name,
+      division: c.division,
+    })),
+    subjects: subjects.map((s: any) => ({ id: s.id, name: s.name })),
+    terms: terms.map((t: any) => ({
+      id: t.id,
+      name: t.name,
+      academicYearId: t.academicYearId,
+    })),
+    years: years.map((y: any) => ({
+      id: y.id,
+      yearName: y.yearName,
+      isCurrent: y.isCurrent,
+    })),
+  };
+
+  const defaults = {
+    yearId: currentYear?.id,
+    termId: terms[0]?.id,
+    month: new Date().getMonth() + 1,
+  };
+
+  return (
+    <HydrateClient>
+      <ScrollableContent>
+        <GradesUploadZone>
+          <div className="flex flex-col gap-6" data-canvas-content>
+            <GradeGridHeader initialData={initialData} defaults={defaults} />
+            <ErrorBoundary fallback={<ErrorFallback />}>
+              <Suspense fallback={<GradesSkeleton />}>
+                <GradeGridWrapper initialSettings={initialSettings} />
+              </Suspense>
+            </ErrorBoundary>
+          </div>
+        </GradesUploadZone>
+      </ScrollableContent>
+    </HydrateClient>
+  );
+}

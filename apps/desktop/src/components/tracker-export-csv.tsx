@@ -1,0 +1,106 @@
+import { exportToCsv } from "@orbis/export";
+import { Button } from "@orbis/ui/button";
+import { Calendar } from "@orbis/ui/calendar";
+import {
+  DropdownMenuGroup,
+  DropdownMenuPortal,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+} from "@orbis/ui/dropdown-menu";
+import { useQueryClient } from "@tanstack/react-query";
+import { endOfMonth, format, parseISO, startOfMonth } from "date-fns";
+import React, { useState } from "react";
+import type { DateRange } from "react-day-picker";
+import { useUserQuery } from "@/hooks/use-user";
+import { useTRPC } from "@/trpc/client";
+import { secondsToHoursAndMinutes } from "@/utils/format";
+
+interface TrackerEntry {
+  date: string;
+  description?: string | null;
+  duration?: number | null;
+  assigned?: { full_name: string } | null;
+}
+
+type Props = {
+  name: string;
+  projectId: string;
+};
+
+export function TrackerExportCSV({ name, projectId }: Props) {
+  const trpc = useTRPC();
+  const { data: user } = useUserQuery();
+  const queryClient = useQueryClient();
+  const [date, setDate] = useState<DateRange | undefined>({
+    from: startOfMonth(new Date()),
+    to: endOfMonth(new Date()),
+  });
+
+  async function downloadCSV() {
+    if (!date?.from || !date?.to) return;
+
+    const queryOptions = trpc.trackerEntries.byRange.queryOptions({
+      from: date?.from?.toISOString(),
+      to: date?.to?.toISOString(),
+      projectId,
+    });
+
+    const data = await queryClient.fetchQuery(queryOptions);
+
+    const entries = Object.values(data?.result ?? {}).flat() as TrackerEntry[];
+
+    const formattedData = entries.map((item: TrackerEntry) => {
+      const formattedItem: Record<string, string | null> = {
+        Date: format(parseISO(item.date), user?.dateFormat ?? "P"),
+        Description: item.description ?? null,
+        Time: secondsToHoursAndMinutes(item.duration ?? 0),
+        Assigned: item.assigned?.full_name ?? null,
+      };
+
+      return formattedItem;
+    });
+
+    const totalTimeInSeconds = data?.meta?.totalDuration ?? 0;
+
+    const dataWithFooter = [
+      ...(formattedData ?? []),
+      {
+        Date: "Total Time",
+        Assigned: null,
+        Description: null,
+        Time: secondsToHoursAndMinutes(totalTimeInSeconds),
+      },
+    ];
+
+    exportToCsv(dataWithFooter, {
+      filename: `${name}.csv`,
+    });
+  }
+
+  return (
+    <DropdownMenuGroup>
+      <DropdownMenuSub>
+        <DropdownMenuSubTrigger>Export</DropdownMenuSubTrigger>
+        <DropdownMenuPortal>
+          <DropdownMenuSubContent>
+            <Calendar
+              mode="range"
+              selected={date}
+              onSelect={setDate}
+              disabled={(date) => date > new Date()}
+              defaultMonth={date?.from}
+              weekStartsOn={user?.weekStartsOnMonday ? 1 : 0}
+            />
+
+            <div className="p-4 space-y-4">
+              <Button onClick={downloadCSV} className="w-full" disabled={!date}>
+                Export
+              </Button>
+            </div>
+          </DropdownMenuSubContent>
+        </DropdownMenuPortal>
+      </DropdownMenuSub>
+    </DropdownMenuGroup>
+  );
+}

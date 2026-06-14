@@ -1,0 +1,109 @@
+/* 2026 Certificate Editor Design System Integration */
+
+/* Root tokens mapped to system variables */
+.certificate-editor-root {
+  --editor-bg: hsl(var(--background));
+  --panel-bg: hsl(
+    var(--background) /
+    0.85
+  ); /* Slightly transparent for depth */
+  --panel-border: hsl(var(--border));
+  --accent: hsl(var(--primary));
+  --accent-foreground: hsl(var(--primary-foreground));
+  --glass-blur: 12px;
+
+  font-family: inherit; /* Use global Inter */
+  background-color: var(--editor-bg);
+  color: hsl(var(--foreground));
+}
+
+/* Unified Glass Effect - Matches system overlays */
+.glass-panel {
+  background: var(--panel-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--panel-border);
+  box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Sidebar Specifics */
+.editor-sidebar-container {
+  width: 260px;
+  background-color: var(--editor-bg);
+  border-right: 1px solid var(--panel-border);
+}
+
+.tool-button {
+  @apply transition-all duration-200;
+  border: 1px solid transparent;
+}
+
+.tool-button:hover {
+  background-color: hsl(var(--accent) / 0.05);
+  border-color: hsl(var(--accent) / 0.1);
+}
+
+.tool-button.active {
+  background-color: hsl(var(--accent) / 0.1);
+  color: var(--accent);
+  border-color: hsl(var(--accent) / 0.2);
+}
+
+/* Canvas Styling */
+.canvas-grid {
+  pointer-events: none;
+  background-image: radial-gradient(
+    hsl(var(--border) / 0.5) 1px,
+    transparent 1px
+  );
+  background-size: 24px 24px;
+}
+
+/* Element Container */
+.editor-element-container {
+  @apply transition-shadow duration-200;
+}
+
+.editor-element-container:hover {
+  /* Subtle indicator when hovering unselected elements */
+}
+
+/* 2026 Selection UI - Syncing with globals.css .moveable-canva */
+.certificate-moveable-controls .moveable-line {
+  height: 1px !important;
+  background-color: var(--accent) !important;
+  opacity: 0.6;
+}
+
+.certificate-moveable-controls .moveable-control {
+  width: 10px !important;
+  height: 10px !important;
+  border-radius: 3px !important;
+  border: 1.5px solid var(--accent) !important;
+  background-color: #fff !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Scroll Smoothing */
+.editor-scroll-area [data-radix-scroll-area-viewport] {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.editor-scroll-area [data-radix-scroll-area-viewport]::-webkit-scrollbar {
+  display: none;
+}
+
+/* 2026 Floating Toolbar Styles */
+.floating-toolbar-wrapper {
+  background: hsl(var(--background) / 0.8);
+  backdrop-filter: blur(20px);
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+}
+
+/* Text Selection Glow */
+::selection {
+  background: hsl(var(--primary) / 0.2);
+  color: inherit;
+}

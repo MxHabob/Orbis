@@ -31,7 +31,7 @@ fn get_saved_url_or_env(app: &tauri::AppHandle) -> Option<String> {
         });
 
     if env == "development" || env == "dev" {
-        return Some("http://localhost:3001".to_string());
+        return Some("http://localhost:3002".to_string());
     } else if env == "staging" {
         return Some("https://beta.orbis.mulverse.com".to_string());
     } else if env == "production" || env == "prod" {
@@ -232,7 +232,7 @@ fn toggle_search_window(
     } else {
         println!("🔍 Search window doesn't exist, creating it now...");
         // Create search window on-demand
-        let app_url = get_saved_url_or_env(app).unwrap_or_else(|| "http://localhost:3001".to_string());
+        let app_url = get_saved_url_or_env(app).unwrap_or_else(|| "http://localhost:3002".to_string());
         let app_clone = app.clone();
 
         // Use blocking approach for shortcut/tray handlers to ensure window is created
@@ -418,14 +418,20 @@ pub fn run() {
             #[cfg(desktop)]
             app.handle().plugin(tauri_plugin_updater::Builder::new().build())?;
 
-            let saved_url = get_saved_url_or_env(app.handle());
-            let app_handle = app.handle().clone();
+            // 1. Initialize local SQLite database path in local AppData folder
+            let app_data_dir = app.path().app_data_dir().unwrap();
+            let _ = std::fs::create_dir_all(&app_data_dir);
+            let db_path = app_data_dir.join("orbis.db");
+            let database_url = format!("sqlite://{}", db_path.to_string_lossy());
 
-            let initial_url = if let Some(ref url) = saved_url {
-                WebviewUrl::External(tauri::Url::parse(url).unwrap())
-            } else {
-                WebviewUrl::App("index.html".into())
-            };
+            // 2. Start the embedded local Axum API server in the background
+            let db_url_clone = database_url.clone();
+            tauri::async_runtime::spawn(async move {
+                let _ = api_gateway::start_server(&db_url_clone, 3002).await;
+            });
+
+            let app_handle = app.handle().clone();
+            let initial_url = WebviewUrl::App("index.html".into());
 
             // Create shared search window state
             let search_state: SearchWindowState = Arc::new(Mutex::new(false));

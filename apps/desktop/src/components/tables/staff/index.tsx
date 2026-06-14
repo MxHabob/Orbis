@@ -1,0 +1,104 @@
+"use client";
+
+import { authClient } from "@orbis/auth/auth-client";
+import { Button } from "@orbis/ui/button";
+import { cn } from "@orbis/ui/cn";
+import { Dialog } from "@orbis/ui/dialog";
+import { Input } from "@orbis/ui/input";
+import { Table, TableBody, TableCell, TableRow } from "@orbis/ui/table";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import {
+  type ColumnFiltersState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+import * as React from "react";
+import { useState } from "react";
+import { InviteTeamMembersModal } from "@/components/modals/create-staff-users-modal";
+import { useStaffParams } from "@/hooks/use-staff-params";
+import { useTRPC } from "@/trpc/client";
+import { columns } from "./columns";
+
+export function DataTable() {
+  const { setParams } = useStaffParams();
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const trpc = useTRPC();
+  const [isOpen, onOpenChange] = useState(false);
+  const { data: session } = authClient.useSession();
+  const { data } = useSuspenseQuery({
+    ...trpc.user.getStaff.queryOptions(),
+  });
+
+  const table = useReactTable({
+    getRowId: (row) => row.id,
+    data: data ?? [],
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnFiltersChange: setColumnFilters,
+    state: {
+      columnFilters,
+    },
+    meta: {
+      setParams,
+      currentUser: data?.find((member) => member?.id === session?.user?.id),
+      totalOwners: data?.filter((member) => member?.role === "admin").length,
+    },
+  });
+
+  return (
+    <div className="w-full">
+      <div className="flex items-center pb-4 space-x-4">
+        <Input
+          className="flex-1"
+          placeholder="Search..."
+          value={(table.getColumn("user")?.getFilterValue() as string) ?? ""}
+          onChange={(event) =>
+            table.getColumn("user")?.setFilterValue(event.target.value)
+          }
+          autoComplete="off"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck="false"
+        />
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+          <Button onClick={() => onOpenChange(true)}>Create user</Button>
+          <InviteTeamMembersModal onOpenChange={onOpenChange} />
+        </Dialog>
+      </div>
+      <Table>
+        <TableBody>
+          {table.getRowModel().rows?.length ? (
+            table.getRowModel().rows.map((row) => (
+              <TableRow
+                key={row.id}
+                data-state={row.getIsSelected() && "selected"}
+                className="hover:bg-transparent"
+              >
+                {row.getAllCells().map((cell) => (
+                  <TableCell
+                    key={cell.id}
+                    className={cn(
+                      "border-r-[0px] py-4",
+                      cell.column.columnDef.meta?.className,
+                    )}
+                  >
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          ) : (
+            <TableRow className="hover:bg-transparent">
+              <TableCell colSpan={columns.length} className="h-24 text-center">
+                No results.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}

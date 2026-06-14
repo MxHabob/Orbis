@@ -3,6 +3,10 @@ name = "api-gateway"
 version = "2.0.0"
 edition = "2021"
 
+[lib]
+name = "api_gateway"
+path = "src/lib.rs"
+
 [[bin]]
 name = "api-gateway"
 path = "src/main.rs"
