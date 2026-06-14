@@ -1,0 +1,198 @@
+use crate::entities::{ledger_account, treasury, student_fee, payment};
+use sea_orm::{entity::prelude::*, ActiveModelTrait, ActiveValue::Set, QueryFilter, EntityTrait, QueryOrder};
+
+impl super::Repository {
+    // ── Ledger Accounts ──
+    pub async fn get_ledger_accounts(&self, org_id: &str) -> Result<Vec<ledger_account::Model>, DbErr> {
+        ledger_account::Entity::find()
+            .filter(ledger_account::Column::OrgId.eq(org_id))
+            .order_by_asc(ledger_account::Column::Code)
+            .all(&self.db)
+            .await
+    }
+
+    pub async fn create_ledger_account(&self, la: ledger_account::Model) -> Result<ledger_account::Model, DbErr> {
+        let active = ledger_account::ActiveModel {
+            id: Set(la.id),
+            org_id: Set(la.org_id),
+            code: Set(la.code),
+            name: Set(la.name),
+            name_ar: Set(la.name_ar),
+            item_type: Set(la.item_type),
+            sub_type: Set(la.sub_type),
+            parent_id: Set(la.parent_id),
+            path: Set(la.path),
+            depth: Set(la.depth),
+            currency: Set(la.currency),
+            opening_balance: Set(la.opening_balance),
+            current_balance: Set(la.current_balance),
+            is_bank_account: Set(la.is_bank_account),
+            is_cash_account: Set(la.is_cash_account),
+            is_control_account: Set(la.is_control_account),
+            external_ref: Set(la.external_ref),
+            is_active: Set(la.is_active),
+            created_at: Set(la.created_at),
+            updated_at: Set(la.updated_at),
+        };
+        active.insert(&self.db).await
+    }
+
+    // ── Treasuries ──
+    pub async fn get_treasuries(&self, org_id: &str) -> Result<Vec<treasury::Model>, DbErr> {
+        treasury::Entity::find()
+            .filter(treasury::Column::OrgId.eq(org_id))
+            .all(&self.db)
+            .await
+    }
+
+    pub async fn create_treasury(&self, t: treasury::Model) -> Result<treasury::Model, DbErr> {
+        let active = treasury::ActiveModel {
+            id: Set(t.id),
+            org_id: Set(t.org_id),
+            unit_id: Set(t.unit_id),
+            name: Set(t.name),
+            name_ar: Set(t.name_ar),
+            code: Set(t.code),
+            item_type: Set(t.item_type),
+            ledger_account_id: Set(t.ledger_account_id),
+            bank_name: Set(t.bank_name),
+            bank_branch: Set(t.bank_branch),
+            account_number: Set(t.account_number),
+            account_name: Set(t.account_name),
+            iban: Set(t.iban),
+            swift_code: Set(t.swift_code),
+            opening_balance: Set(t.opening_balance),
+            current_balance: Set(t.current_balance),
+            currency: Set(t.currency),
+            authorized_users: Set(t.authorized_users),
+            is_default: Set(t.is_default),
+            is_active: Set(t.is_active),
+            created_at: Set(t.created_at),
+            updated_at: Set(t.updated_at),
+        };
+        active.insert(&self.db).await
+    }
+
+    // ── Student Fees ──
+    pub async fn get_student_fees(&self, org_id: &str, enrollment_id: Option<&str>) -> Result<Vec<student_fee::Model>, DbErr> {
+        let mut query = student_fee::Entity::find()
+            .filter(student_fee::Column::OrgId.eq(org_id));
+        if let Some(enroll_id) = enrollment_id {
+            query = query.filter(student_fee::Column::EnrollmentId.eq(enroll_id));
+        }
+        query.all(&self.db).await
+    }
+
+    pub async fn get_student_fee_by_id(&self, id: &str) -> Result<Option<student_fee::Model>, DbErr> {
+        student_fee::Entity::find_by_id(id.to_string())
+            .one(&self.db)
+            .await
+    }
+
+    pub async fn create_student_fee(&self, sf: student_fee::Model) -> Result<student_fee::Model, DbErr> {
+        let active = student_fee::ActiveModel {
+            id: Set(sf.id),
+            org_id: Set(sf.org_id),
+            cycle_id: Set(sf.cycle_id),
+            enrollment_id: Set(sf.enrollment_id),
+            fee_template_id: Set(sf.fee_template_id),
+            original_amount: Set(sf.original_amount),
+            discount_amount: Set(sf.discount_amount),
+            late_fee_amount: Set(sf.late_fee_amount),
+            total_amount: Set(sf.total_amount),
+            paid_amount: Set(sf.paid_amount),
+            balance: Set(sf.balance),
+            applied_discounts: Set(sf.applied_discounts),
+            payment_plan_id: Set(sf.payment_plan_id),
+            status: Set(sf.status),
+            due_date: Set(sf.due_date),
+            is_overdue: Set(sf.is_overdue),
+            overdue_since: Set(sf.overdue_since),
+            overdue_days: Set(sf.overdue_days),
+            is_installment: Set(sf.is_installment),
+            parent_fee_id: Set(sf.parent_fee_id),
+            installment_number: Set(sf.installment_number),
+            total_installments: Set(sf.total_installments),
+            reminder_sent: Set(sf.reminder_sent),
+            reminder_sent_at: Set(sf.reminder_sent_at),
+            final_notice_sent: Set(sf.final_notice_sent),
+            final_notice_sent_at: Set(sf.final_notice_sent_at),
+            is_locked: Set(sf.is_locked),
+            locked_at: Set(sf.locked_at),
+            locked_by: Set(sf.locked_by),
+            notes: Set(sf.notes),
+            meta: Set(sf.meta),
+            created_at: Set(sf.created_at),
+            updated_at: Set(sf.updated_at),
+        };
+        active.insert(&self.db).await
+    }
+
+    pub async fn update_student_fee_balance(&self, id: &str, paid_amount: f64, status: &str) -> Result<student_fee::Model, DbErr> {
+        let fee = student_fee::Entity::find_by_id(id.to_string())
+            .one(&self.db)
+            .await?
+            .ok_or(DbErr::RecordNotFound("student fee not found".to_string()))?;
+        
+        let new_paid = fee.paid_amount + paid_amount;
+        let new_balance = fee.total_amount - new_paid;
+
+        let mut active: student_fee::ActiveModel = fee.into();
+        active.paid_amount = Set(new_paid);
+        active.balance = Set(new_balance);
+        active.status = Set(status.to_string());
+        active.updated_at = Set(chrono::Utc::now().to_rfc3339());
+
+        active.update(&self.db).await
+    }
+
+    // ── Payments ──
+    pub async fn get_payments(&self, org_id: &str, enrollment_id: Option<&str>) -> Result<Vec<payment::Model>, DbErr> {
+        let mut query = payment::Entity::find()
+            .filter(payment::Column::OrgId.eq(org_id));
+        if let Some(enroll_id) = enrollment_id {
+            query = query.filter(payment::Column::EnrollmentId.eq(enroll_id));
+        }
+        query.all(&self.db).await
+    }
+
+    pub async fn create_payment(&self, p: payment::Model) -> Result<payment::Model, DbErr> {
+        let active = payment::ActiveModel {
+            id: Set(p.id),
+            org_id: Set(p.org_id),
+            fee_id: Set(p.fee_id),
+            enrollment_id: Set(p.enrollment_id),
+            amount: Set(p.amount),
+            currency: Set(p.currency),
+            exchange_rate: Set(p.exchange_rate),
+            method: Set(p.method),
+            reference: Set(p.reference),
+            transaction_id: Set(p.transaction_id),
+            receipt_number: Set(p.receipt_number),
+            journal_entry_id: Set(p.journal_entry_id),
+            treasury_id: Set(p.treasury_id),
+            payer_name: Set(p.payer_name),
+            payer_phone: Set(p.payer_phone),
+            payer_relation: Set(p.payer_relation),
+            payer_id: Set(p.payer_id),
+            is_verified: Set(p.is_verified),
+            verified_by: Set(p.verified_by),
+            verified_at: Set(p.verified_at),
+            is_refund: Set(p.is_refund),
+            refund_amount: Set(p.refund_amount),
+            refund_reason: Set(p.refund_reason),
+            refund_approved_by: Set(p.refund_approved_by),
+            receipt_url: Set(p.receipt_url),
+            proof_url: Set(p.proof_url),
+            reconciled: Set(p.reconciled),
+            reconciled_at: Set(p.reconciled_at),
+            reconciled_by: Set(p.reconciled_by),
+            notes: Set(p.notes),
+            meta: Set(p.meta),
+            paid_at: Set(p.paid_at),
+            created_at: Set(p.created_at),
+            created_by: Set(p.created_by),
+        };
+        active.insert(&self.db).await
+    }
+}

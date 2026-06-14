@@ -1,9 +1,15 @@
-[package]
-name = "api-rust"
-version = "2.0.0"
-edition = "2021"
+[workspace]
+resolver = "2"
+members = [
+    "crates/shared-common",
+    "crates/core-domain",
+    "crates/infra-database",
+    "crates/infra-ai",
+    "crates/infra-notifications",
+    "crates/api-gateway",
+]
 
-[dependencies]
+[workspace.dependencies]
 # Web framework
 axum = "0.7.5"
 tokio = { version = "1.38", features = ["full"] }
@@ -34,3 +40,11 @@ axum-extra = { version = "0.9.4", features = ["multipart"] }
 
 # OpenAPI Specification Generation
 utoipa = { version = "4.2.3", features = ["axum_extras"] }
+
+# Inter-workspace dependencies
+shared-common = { path = "crates/shared-common" }
+core-domain = { path = "crates/core-domain" }
+infra-database = { path = "crates/infra-database" }
+infra-ai = { path = "crates/infra-ai" }
+infra-notifications = { path = "crates/infra-notifications" }
+api-gateway = { path = "crates/api-gateway" }

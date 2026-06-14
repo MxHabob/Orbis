@@ -1,0 +1,39 @@
+[package]
+name = "api-gateway"
+version = "2.0.0"
+edition = "2021"
+
+[[bin]]
+name = "api-gateway"
+path = "src/main.rs"
+
+[dependencies]
+core-domain = { workspace = true }
+infra-database = { workspace = true }
+infra-ai = { workspace = true }
+infra-notifications = { workspace = true }
+shared-common = { workspace = true }
+
+# Web Framework
+axum = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+tower-http = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+
+# Multipart Upload Support
+axum-extra = { version = "0.9.4", features = ["multipart"] }
+
+# OpenAPI Specification Generation
+utoipa = { version = "4.2.3", features = ["axum_extras"] }
+
+# Security/Auth
+bcrypt = "0.15.1"
+jsonwebtoken = "9.3.0"
+
+# Import/Export
+csv = "1.3"

@@ -1,0 +1,16 @@
+pub mod auth;
+pub mod class;
+pub mod behavior;
+pub mod notification;
+pub use core_domain::params;
+pub mod organization;
+pub mod user;
+pub mod academic_cycle;
+pub mod org_unit;
+pub mod enrollment;
+pub mod grade;
+pub mod attendance;
+pub mod dashboard;
+pub mod audit;
+pub mod import_export;
+pub mod finance;
