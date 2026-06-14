@@ -1,6 +1,6 @@
 "use client";
 
-import { isValidEmail, parseEmailList } from "@authen/utils";
+import { isValidEmail, parseEmailList } from "@orbis/utils";
 import { X } from "lucide-react";
 import * as React from "react";
 import { cn } from "../utils";

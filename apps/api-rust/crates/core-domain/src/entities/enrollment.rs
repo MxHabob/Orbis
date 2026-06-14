@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize, utoipa::ToSchema)]
 #[sea_orm(table_name = "enrollments")]
+#[schema(as = Enrollment)]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: String,

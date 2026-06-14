@@ -5,7 +5,7 @@
   "workspaces": [
     "packages/*",
     "apps/api-rust",
-    "apps/dashboard-spa",
+    "apps/dashboard",
     "apps/desktop"
   ],
   "scripts": {
@@ -16,8 +16,8 @@
     "dev": "turbo dev --parallel --continue",
     "test": "turbo test --parallel",
     "dev:api-go": "turbo dev --filter=@orbis/api-go",
-    "dev:dashboard-spa": "turbo dev --filter=@orbis/dashboard-spa",
-    "build:dashboard-spa": "turbo build --filter=@orbis/dashboard-spa",
+    "dev:dashboard": "turbo dev --filter=@orbis/dashboard",
+    "build:dashboard": "turbo build --filter=@orbis/dashboard",
     "dev:desktop": "turbo dev --filter=@orbis/desktop",
     "dev:desktop:staging": "turbo run tauri:staging --filter=@orbis/desktop",
     "dev:desktop:prod": "turbo run tauri:prod --filter=@orbis/desktop",

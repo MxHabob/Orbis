@@ -83,7 +83,7 @@ export function DashboardAnimation({
     if (showChart) {
       setSegmentProgress([0, 0, 0, 0, 0]);
       const segmentDuration = 0.18;
-      const timeouts: NodeJS.Timeout[] = [];
+      const timeouts: any[] = [];
       categoryData.forEach((_, index) => {
         const timeout = setTimeout(
           () => {

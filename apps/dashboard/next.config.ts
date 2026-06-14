@@ -1,5 +1,3 @@
-import { withSentryConfig } from "@sentry/nextjs";
-
 /** @type {import("next").NextConfig} */
 const isWindows = process.platform === "win32";
 
@@ -45,7 +43,7 @@ const config = {
       },
     ],
   },
-  transpilePackages: ["@orbis/ui", "@orbis/tailwind", "@orbis/api"],
+  transpilePackages: ["@orbis/ui", "@orbis/tailwind", "@orbis/sdk"],
   serverExternalPackages: ["@react-pdf/renderer", "pino"],
   typescript: {
     ignoreBuildErrors: true,
@@ -67,21 +65,4 @@ const config = {
   },
 };
 
-// Only apply Sentry configuration in production if SENTRY_AUTH_TOKEN is provided
-const isProduction = process.env.NODE_ENV === "production";
-const hasSentryToken = Boolean(process.env.SENTRY_AUTH_TOKEN);
-
-export default isProduction && hasSentryToken
-  ? withSentryConfig(config, {
-      org: process.env.SENTRY_ORG,
-      project: process.env.SENTRY_PROJECT,
-      authToken: process.env.SENTRY_AUTH_TOKEN,
-      telemetry: false,
-
-      // Only print logs for uploading source maps in CI
-      silent: !process.env.CI,
-
-      // Upload source maps for better stack traces
-      widenClientFileUpload: true,
-    })
-  : config;
+export default config;

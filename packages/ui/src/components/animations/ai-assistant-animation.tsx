@@ -1,6 +1,6 @@
 "use client";
 
-import { Icons } from "@authen/ui/icons";
+import { Icons } from "@orbis/ui/icons";
 import { motion } from "framer-motion";
 import type { ReactElement } from "react";
 import { useEffect, useRef, useState } from "react";

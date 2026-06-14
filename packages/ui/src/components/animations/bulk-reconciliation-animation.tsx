@@ -195,7 +195,7 @@ export function BulkReconciliationAnimation({
       }, 1200);
     }, 1000);
 
-    const reconcileTimers: NodeJS.Timeout[] = [];
+    const reconcileTimers: any[] = [];
     const checkedIndices = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 
     const allInReviewDoneTime = 2200 + 200;
@@ -233,7 +233,7 @@ export function BulkReconciliationAnimation({
     }, maxCheckTime + 100);
     reconcileTimers.push(actionBarTimer);
 
-    let _done: NodeJS.Timeout | undefined;
+    let _done: any;
     if (onComplete) {
       _done = setTimeout(() => {
         onComplete();

@@ -50,18 +50,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f202df86484c868dbad7eaa557ef785d5c66295e41b460ef922eca0723b842c"
 
 [[package]]
-name = "api-rust"
+name = "api-gateway"
 version = "2.0.0"
 dependencies = [
  "axum",
  "axum-extra",
  "bcrypt",
  "chrono",
+ "core-domain",
  "csv",
+ "infra-ai",
+ "infra-database",
+ "infra-notifications",
  "jsonwebtoken",
- "sea-orm",
  "serde",
  "serde_json",
+ "shared-common",
  "tokio",
  "tower-http",
  "tracing",
@@ -411,6 +415,24 @@ name = "const-oid"
 version = "0.9.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2459377285ad874054d797f3ccebf984978aa39129f6eafde5cdc8315b612f8"
+
+[[package]]
+name = "core-domain"
+version = "2.0.0"
+dependencies = [
+ "bcrypt",
+ "chrono",
+ "csv",
+ "jsonwebtoken",
+ "sea-orm",
+ "serde",
+ "serde_json",
+ "shared-common",
+ "tokio",
+ "tracing",
+ "utoipa",
+ "uuid",
+]
 
 [[package]]
 name = "core-foundation"
@@ -1100,6 +1122,40 @@ dependencies = [
  "hashbrown 0.17.1",
  "serde",
  "serde_core",
+]
+
+[[package]]
+name = "infra-ai"
+version = "2.0.0"
+dependencies = [
+ "core-domain",
+ "serde",
+ "shared-common",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "infra-database"
+version = "2.0.0"
+dependencies = [
+ "core-domain",
+ "sea-orm",
+ "serde",
+ "shared-common",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "infra-notifications"
+version = "2.0.0"
+dependencies = [
+ "core-domain",
+ "serde",
+ "shared-common",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -2198,6 +2254,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f40ca3c46823713e0d4209592e8d6e826aa57e928f09752619fc696c499637f6"
 dependencies = [
  "lazy_static",
+]
+
+[[package]]
+name = "shared-common"
+version = "2.0.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

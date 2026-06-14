@@ -16,17 +16,7 @@ pub struct CreateClassRequest {
     pub division: String,
 }
 
-#[derive(Serialize, Deserialize, utoipa::ToSchema)]
-pub struct UpdateClassRequest {
-    pub name: Option<String>,
-    pub name_ar: Option<String>,
-    pub level: Option<String>,
-    pub division: Option<String>,
-    pub capacity: Option<i32>,
-    pub color: Option<String>,
-    pub homeroom_teacher_id: Option<String>,
-    pub is_active: Option<i32>,
-}
+use crate::service::class::UpdateClassRequest;
 
 #[utoipa::path(get, path = "/api/classes", responses((status = 200, description = "Classes list retrieved successfully")))]
 pub async fn get_classes(

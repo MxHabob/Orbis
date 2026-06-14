@@ -1,6 +1,25 @@
 "use client";
 
-import { getPlanPricing, type PlanFeature } from "@authen/plans";
+export type PlanFeature = {
+  label: string;
+  tooltip?: string;
+};
+
+export function getPlanPricing(regionOrCurrency: string) {
+  const isEur = regionOrCurrency === "EUR" || regionOrCurrency === "EU" || regionOrCurrency === "Europe";
+  return {
+    currency: isEur ? "EUR" : "USD",
+    symbol: isEur ? "€" : "$",
+    starter: {
+      monthly: isEur ? 9 : 10,
+      yearly: isEur ? 7 : 8,
+    },
+    pro: {
+      monthly: isEur ? 29 : 30,
+      yearly: isEur ? 24 : 25,
+    },
+  };
+}
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { cn } from "../utils/cn";

@@ -19,6 +19,7 @@ pub struct Claims {
 
 #[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct LoginResponse {
+    #[schema(value_type = User)]
     pub user: user::Model,
     pub token: String,
     pub refresh_token: String,

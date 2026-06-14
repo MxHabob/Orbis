@@ -16,6 +16,14 @@ pub struct AIBehaviorSubmission {
     pub description: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
+pub struct UpdateBehaviorRequest {
+    pub status: Option<String>,
+    pub resolution_notes: Option<String>,
+    pub action_taken: Option<String>,
+    pub action_details: Option<String>,
+}
+
 impl super::Service {
     pub async fn submit_ai_behavior(&self, req: AIBehaviorSubmission) -> Result<behavior_record::Model, String> {
         // 1. Find student by ID or Email
@@ -164,14 +172,6 @@ impl super::Service {
     pub async fn get_behavior_records(&self, org_id: &str, params: crate::params::BehaviorParams) -> Result<Vec<behavior_record::Model>, String> {
         self.repo.get_behavior_records(org_id, params).await.map_err(|e| e.to_string())
     }
-
-#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
-pub struct UpdateBehaviorRequest {
-    pub status: Option<String>,
-    pub resolution_notes: Option<String>,
-    pub action_taken: Option<String>,
-    pub action_details: Option<String>,
-}
 
     pub async fn update_behavior_record(&self, id: &str, req: UpdateBehaviorRequest, reviewed_by: &str) -> Result<behavior_record::Model, String> {
         use sea_orm::{entity::prelude::*, ActiveModelTrait, ActiveValue::Set};

@@ -111,8 +111,8 @@ export function WidgetsAnimation({
     widgets.map((w) => w.id),
   );
 
-  const timeoutRefs = useRef<NodeJS.Timeout[]>([]);
-  const _intervalRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  const timeoutRefs = useRef<any[]>([]);
+  const _intervalRef = useRef<any>(undefined);
 
   const clearAllTimeouts = () => {
     timeoutRefs.current.forEach(clearTimeout);

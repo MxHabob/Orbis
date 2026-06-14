@@ -183,7 +183,7 @@ export function InvoicePaymentAnimation({
 
     const tableTimer = setTimeout(() => setShowTable(true), 500);
 
-    const flipTimers: NodeJS.Timeout[] = [];
+    const flipTimers: any[] = [];
     const invoiceCount = initialInvoices.length;
     const overdueIndices = [2, 7];
     const scheduledIndices = [1];

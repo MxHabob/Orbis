@@ -9,13 +9,7 @@ use crate::service::Service;
 use crate::service::behavior::AIBehaviorSubmission;
 use crate::middleware::AuthenticatedUser;
 
-#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
-pub struct UpdateBehaviorRequest {
-    pub status: Option<String>,
-    pub resolution_notes: Option<String>,
-    pub action_taken: Option<String>,
-    pub action_details: Option<String>,
-}
+use crate::service::behavior::UpdateBehaviorRequest;
 
 #[utoipa::path(post, path = "/api/ai/behavior", request_body = AIBehaviorSubmission, responses((status = 201, description = "AI behavior event processed successfully")))]
 pub async fn post_ai_behavior(
