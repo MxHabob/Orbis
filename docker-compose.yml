@@ -1,68 +1,31 @@
 services:
-  # -----------------------------------------------------------------------------
-  # API SERVICE (Backend)
-  # -----------------------------------------------------------------------------
-  api:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # GO API SERVICE (High-Performance Lightweight Backend with SQLite WAL)
+  # ─────────────────────────────────────────────────────────────────────────────
+  api-go:
     build:
       context: .
-      dockerfile: apps/api/Dockerfile
-    container_name: orbis-api
+      dockerfile: apps/api-go/Dockerfile
+    container_name: orbis-api-go
     restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      NODE_ENV: production
-      PORT: 3000
     ports:
-      - "3002:3000"
-    networks:
-      - dokploy-network
-
-  # -----------------------------------------------------------------------------
-  # DASHBOARD SERVICE (Frontend)
-  # -----------------------------------------------------------------------------
-  dashboard:
-    build:
-      context: .
-      dockerfile: apps/dashboard/Dockerfile
-      args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-        NEXT_PUBLIC_URL: ${NEXT_PUBLIC_URL}
-        NEXT_PUBLIC_S3_PUBLIC_URL: ${NEXT_PUBLIC_S3_PUBLIC_URL}
-    container_name: orbis-dashboard
-    restart: unless-stopped
-    env_file:
-      - .env
+      - "3002:3002"
+    volumes:
+      - orbis-db-data:/app/data
     environment:
-      NODE_ENV: production
-      PORT: 3000
-    depends_on:
-      - api
-    ports:
-      - "3001:3000"
+      - APP_ENV=production
+      - PORT=3002
+      - DATABASE_URL=file:/app/data/orbis.db?_journal_mode=WAL&_busy_timeout=5000&_foreign_keys=on
+      - JWT_SECRET=orbis-prod-super-secret-key-change-this
+      - JWT_EXPIRY_HOURS=24
+      - JWT_REFRESH_DAYS=30
     networks:
-      - dokploy-network
+      - orbis-network
 
-  # -----------------------------------------------------------------------------
-  # WORKER SERVICE (Background Jobs)
-  # -----------------------------------------------------------------------------
-  worker:
-    build:
-      context: .
-      dockerfile: apps/workers/Dockerfile
-    container_name: orbis-worker
-    restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      NODE_ENV: production
-      PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium
-      PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: "true"
-    depends_on:
-      - api
-    networks:
-      - dokploy-network
+volumes:
+  orbis-db-data:
+    driver: local
 
 networks:
-  dokploy-network:
-    external: true
+  orbis-network:
+    driver: bridge

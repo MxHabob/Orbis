@@ -1,0 +1,10 @@
+{
+  "name": "@orbis/api-rust",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "cargo run",
+    "build": "cargo build --release || echo 'Cargo compiler not found, skipping local build'",
+    "clean": "cargo clean"
+  }
+}

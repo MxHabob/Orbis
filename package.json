@@ -4,19 +4,20 @@
   "private": true,
   "workspaces": [
     "packages/*",
-    "apps/*"
+    "apps/api-rust",
+    "apps/dashboard-spa",
+    "apps/desktop"
   ],
   "scripts": {
+    "sdk:sync": "bun packages/sdk/scripts/generate-types.ts",
     "build": "turbo build",
     "clean": "git clean -xdf node_modules",
     "clean:workspaces": "turbo clean",
-    "dev": "turbo dev jobs --parallel --continue",
+    "dev": "turbo dev --parallel --continue",
     "test": "turbo test --parallel",
-    "start:dashboard": "turbo start --filter=@orbis/dashboard",
-    "dev:api": "turbo dev --filter=@orbis/api",
-    "dev:dashboard": "turbo dev --filter=@orbis/dashboard",
-    "build:dashboard": "turbo build --filter=@orbis/dashboard",
-    "seed": "bun packages/db/src/seed.ts",
+    "dev:api-go": "turbo dev --filter=@orbis/api-go",
+    "dev:dashboard-spa": "turbo dev --filter=@orbis/dashboard-spa",
+    "build:dashboard-spa": "turbo build --filter=@orbis/dashboard-spa",
     "dev:desktop": "turbo dev --filter=@orbis/desktop",
     "dev:desktop:staging": "turbo run tauri:staging --filter=@orbis/desktop",
     "dev:desktop:prod": "turbo run tauri:prod --filter=@orbis/desktop",
@@ -25,20 +26,16 @@
     "format": "biome format --write .",
     "lint": "turbo lint && manypkg check",
     "typecheck": "turbo typecheck",
-    "worker": "bun run apps/workers/src/worker.ts",
     "docker:up": "docker compose -f docker-compose.local.yml up -d",
     "docker:down": "docker compose -f docker-compose.local.yml down",
     "docker:reset": "docker compose -f docker-compose.local.yml down -v",
     "docker:logs": "docker compose -f docker-compose.local.yml logs -f",
-    "db:push": "cd packages/db && bunx drizzle-kit push",
-    "db:migrate": "cd packages/db && bunx drizzle-kit migrate",
     "setup:local": "powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1"
   },
   "dependencies": {
     "@biomejs/biome": "2.3.13",
     "@manypkg/cli": "^0.25.1",
     "@orbis/tsconfig": "workspace:*",
-    "drizzle-orm": "^0.45.2",
     "turbo": "^2.9.17",
     "typescript": "^5.9.3"
   },

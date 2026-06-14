@@ -1,0 +1,17 @@
+{
+  "name": "@orbis/import-export",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "devDependencies": {
+    "@orbis/tsconfig": "workspace:*",
+    "@types/node": "^24.10.1",
+    "typescript": "^5.9.3"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}

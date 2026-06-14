@@ -1,0 +1,434 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Orbis API Spec",
+    "version": "2.0.0"
+  },
+  "paths": {
+    "/api/auth/register": {
+      "post": {
+        "tags": ["auth"],
+        "operationId": "postRegister",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registration successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": { "$ref": "#/components/schemas/User" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": ["auth"],
+        "operationId": "postLogin",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": { "$ref": "#/components/schemas/LoginResponse" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "tags": ["auth"],
+        "operationId": "getMe",
+        "responses": {
+          "200": {
+            "description": "Me info retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": { "$ref": "#/components/schemas/User" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "tags": ["auth"],
+        "operationId": "postLogout",
+        "responses": {
+          "200": {
+            "description": "Logged out successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/classes": {
+      "get": {
+        "tags": ["class"],
+        "operationId": "getClasses",
+        "responses": {
+          "200": {
+            "description": "Classes list retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Class" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["class"],
+        "operationId": "postClasses",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateClassRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Class created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": { "$ref": "#/components/schemas/Class" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/behavior": {
+      "get": {
+        "tags": ["behavior"],
+        "operationId": "getBehavior",
+        "responses": {
+          "200": {
+            "description": "Behavior timeline list retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/BehaviorRecord" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/behavior": {
+      "post": {
+        "tags": ["behavior"],
+        "operationId": "postAiBehavior",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AIBehaviorSubmission"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "AI behavior event processed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": { "$ref": "#/components/schemas/BehaviorRecord" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications": {
+      "get": {
+        "tags": ["notification"],
+        "operationId": "getNotifications",
+        "responses": {
+          "200": {
+            "description": "User notifications feed retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Notification" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications/{id}/read": {
+      "post": {
+        "tags": ["notification"],
+        "operationId": "postMarkRead",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Notification ID to mark as read"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notification marked as read successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "RegisterRequest": {
+        "type": "object",
+        "required": ["email", "password", "full_name", "org_slug"],
+        "properties": {
+          "email": { "type": "string" },
+          "password": { "type": "string" },
+          "full_name": { "type": "string" },
+          "org_slug": { "type": "string" }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": { "type": "string" },
+          "password": { "type": "string" }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "required": ["user", "token", "refresh_token"],
+        "properties": {
+          "user": { "$ref": "#/components/schemas/User" },
+          "token": { "type": "string" },
+          "refresh_token": { "type": "string" }
+        }
+      },
+      "CreateClassRequest": {
+        "type": "object",
+        "required": ["name", "level"],
+        "properties": {
+          "name": { "type": "string" },
+          "name_ar": { "type": "string" },
+          "level": { "type": "string" },
+          "division": { "type": "string" }
+        }
+      },
+      "AIBehaviorSubmission": {
+        "type": "object",
+        "required": ["student_id", "behavior_type", "camera_id"],
+        "properties": {
+          "student_id": { "type": "string" },
+          "behavior_type": { "type": "string" },
+          "confidence": { "type": "number" },
+          "location": { "type": "string" },
+          "image_evidence": { "type": "string" },
+          "model_version": { "type": "string" },
+          "camera_id": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      },
+      "User": {
+        "type": "object",
+        "required": ["id", "org_id", "full_name", "primary_role", "status", "prefs", "meta", "is_deleted", "created_at", "updated_at"],
+        "properties": {
+          "id": { "type": "string" },
+          "org_id": { "type": "string" },
+          "email": { "type": "string" },
+          "email_verified": { "type": "integer" },
+          "email_verified_at": { "type": "string" },
+          "phone": { "type": "string" },
+          "phone_verified": { "type": "integer" },
+          "phone_verified_at": { "type": "string" },
+          "full_name": { "type": "string" },
+          "name_ar": { "type": "string" },
+          "name_en": { "type": "string" },
+          "avatar": { "type": "string" },
+          "primary_role": { "type": "string" },
+          "status": { "type": "string" },
+          "prefs": { "type": "string" },
+          "meta": { "type": "string" },
+          "is_deleted": { "type": "integer" },
+          "created_at": { "type": "string" },
+          "updated_at": { "type": "string" }
+        }
+      },
+      "Class": {
+        "type": "object",
+        "required": ["id", "org_id", "unit_id", "cycle_id", "name", "level", "is_active", "is_deleted", "created_at", "updated_at"],
+        "properties": {
+          "id": { "type": "string" },
+          "org_id": { "type": "string" },
+          "unit_id": { "type": "string" },
+          "cycle_id": { "type": "string" },
+          "name": { "type": "string" },
+          "name_ar": { "type": "string" },
+          "level": { "type": "string" },
+          "division": { "type": "string" },
+          "capacity": { "type": "integer" },
+          "current_students": { "type": "integer" },
+          "color": { "type": "string" },
+          "is_active": { "type": "integer" },
+          "is_deleted": { "type": "integer" },
+          "created_at": { "type": "string" },
+          "updated_at": { "type": "string" }
+        }
+      },
+      "BehaviorRecord": {
+        "type": "object",
+        "required": ["id", "org_id", "cycle_id", "enrollment_id", "behavior_type", "severity", "title", "description", "incident_date", "points", "reported_by", "parent_notified", "status", "is_private", "created_at", "updated_at"],
+        "properties": {
+          "id": { "type": "string" },
+          "org_id": { "type": "string" },
+          "cycle_id": { "type": "string" },
+          "enrollment_id": { "type": "string" },
+          "behavior_type": { "type": "string" },
+          "severity": { "type": "string" },
+          "title": { "type": "string" },
+          "title_ar": { "type": "string" },
+          "description": { "type": "string" },
+          "incident_date": { "type": "string" },
+          "incident_time": { "type": "string" },
+          "location": { "type": "string" },
+          "points": { "type": "integer" },
+          "reported_by": { "type": "string" },
+          "parent_notified": { "type": "integer" },
+          "evidence_urls": { "type": "string" },
+          "status": { "type": "string" },
+          "is_private": { "type": "integer" },
+          "ai_source": { "type": "string" },
+          "ai_confidence": { "type": "number" },
+          "camera_id": { "type": "string" },
+          "created_at": { "type": "string" },
+          "updated_at": { "type": "string" }
+        }
+      },
+      "Notification": {
+        "type": "object",
+        "required": ["id", "org_id", "user_id", "title", "message", "notification_type", "priority", "is_read", "created_at"],
+        "properties": {
+          "id": { "type": "string" },
+          "org_id": { "type": "string" },
+          "user_id": { "type": "string" },
+          "title": { "type": "string" },
+          "title_ar": { "type": "string" },
+          "message": { "type": "string" },
+          "message_ar": { "type": "string" },
+          "notification_type": { "type": "string" },
+          "priority": { "type": "string" },
+          "is_read": { "type": "integer" },
+          "created_at": { "type": "string" }
+        }
+      }
+    }
+  }
+}

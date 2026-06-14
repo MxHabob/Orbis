@@ -1,0 +1,23 @@
+{
+  "name": "@orbis/sdk",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@hey-api/client-fetch": "0.4.2"
+  },
+  "devDependencies": {
+    "@hey-api/openapi-ts": "^0.53.0",
+    "@orbis/tsconfig": "workspace:*",
+    "@types/node": "^24.10.1",
+    "typescript": "^5.9.3"
+  },
+  "scripts": {
+    "generate-types": "bun scripts/generate-types.ts",
+    "build:sdk": "openapi-ts",
+    "typecheck": "tsc --noEmit"
+  }
+}
