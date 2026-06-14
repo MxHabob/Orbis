@@ -164,4 +164,55 @@ impl super::Service {
     pub async fn get_behavior_records(&self, org_id: &str, params: crate::handler::params::BehaviorParams) -> Result<Vec<behavior_record::Model>, String> {
         self.repo.get_behavior_records(org_id, params).await.map_err(|e| e.to_string())
     }
+
+    pub async fn update_behavior_record(&self, id: &str, req: crate::handler::behavior::UpdateBehaviorRequest, reviewed_by: &str) -> Result<behavior_record::Model, String> {
+        use sea_orm::{entity::prelude::*, ActiveModelTrait, ActiveValue::Set};
+
+        let record = behavior_record::Entity::find_by_id(id.to_string())
+            .one(&self.repo.db)
+            .await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "behavior record not found".to_string())?;
+
+        let mut active: behavior_record::ActiveModel = record.into();
+
+        if let Some(status) = req.status {
+            active.status = Set(status.clone());
+            if status == "resolved" {
+                active.resolved_at = Set(Some(Utc::now().to_rfc3339()));
+                active.resolved_by = Set(Some(reviewed_by.to_string()));
+            }
+        }
+        if let Some(notes) = req.resolution_notes {
+            active.resolution_notes = Set(Some(notes));
+        }
+        if let Some(action) = req.action_taken {
+            active.action_taken = Set(Some(action));
+        }
+        if let Some(details) = req.action_details {
+            active.action_details = Set(Some(details));
+        }
+        active.reviewed_by = Set(Some(reviewed_by.to_string()));
+        active.reviewed_at = Set(Some(Utc::now().to_rfc3339()));
+        active.updated_at = Set(Utc::now().to_rfc3339());
+
+        active.update(&self.repo.db).await.map_err(|e| e.to_string())
+    }
+
+    pub async fn delete_behavior_record(&self, id: &str) -> Result<(), String> {
+        use sea_orm::{entity::prelude::*, ActiveModelTrait, ActiveValue::Set};
+
+        let record = behavior_record::Entity::find_by_id(id.to_string())
+            .one(&self.repo.db)
+            .await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "behavior record not found".to_string())?;
+
+        let mut active: behavior_record::ActiveModel = record.into();
+        active.status = Set("deleted".to_string());
+        active.updated_at = Set(Utc::now().to_rfc3339());
+
+        active.update(&self.repo.db).await.map_err(|e| e.to_string())?;
+        Ok(())
+    }
 }

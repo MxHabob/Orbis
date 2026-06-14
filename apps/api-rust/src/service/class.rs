@@ -1,8 +1,9 @@
 use uuid::Uuid;
 use chrono::Utc;
-use sea_orm::{DbErr, ConnectionTrait};
+use sea_orm::{entity::prelude::*, ActiveModelTrait, ActiveValue::Set, ConnectionTrait};
 
 use crate::entities::class;
+use crate::handler::class::UpdateClassRequest;
 
 impl super::Service {
     pub async fn get_classes(&self, org_id: &str, params: crate::handler::params::ClassParams) -> Result<Vec<class::Model>, String> {
@@ -56,5 +57,60 @@ impl super::Service {
         };
 
         self.repo.create_class(new_class).await.map_err(|e| e.to_string())
+    }
+
+    pub async fn update_class(&self, id: &str, req: UpdateClassRequest) -> Result<class::Model, String> {
+        let c = class::Entity::find_by_id(id.to_string())
+            .one(&self.repo.db)
+            .await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "class not found".to_string())?;
+
+        let mut active: class::ActiveModel = c.into();
+
+        if let Some(name) = req.name {
+            active.name = Set(name);
+        }
+        if let Some(name_ar) = req.name_ar {
+            active.name_ar = Set(Some(name_ar));
+        }
+        if let Some(level) = req.level {
+            active.level = Set(level);
+        }
+        if let Some(division) = req.division {
+            active.division = Set(Some(division));
+        }
+        if let Some(capacity) = req.capacity {
+            active.capacity = Set(Some(capacity));
+        }
+        if let Some(color) = req.color {
+            active.color = Set(Some(color));
+        }
+        if let Some(teacher_id) = req.homeroom_teacher_id {
+            active.homeroom_teacher_id = Set(Some(teacher_id));
+        }
+        if let Some(is_active) = req.is_active {
+            active.is_active = Set(is_active);
+        }
+        active.updated_at = Set(Utc::now().to_rfc3339());
+
+        active.update(&self.repo.db).await.map_err(|e| e.to_string())
+    }
+
+    pub async fn delete_class(&self, id: &str) -> Result<(), String> {
+        let c = class::Entity::find_by_id(id.to_string())
+            .one(&self.repo.db)
+            .await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "class not found".to_string())?;
+
+        let mut active: class::ActiveModel = c.into();
+        active.is_deleted = Set(1);
+        active.deleted_at = Set(Some(Utc::now().to_rfc3339()));
+        active.is_active = Set(0);
+        active.updated_at = Set(Utc::now().to_rfc3339());
+
+        active.update(&self.repo.db).await.map_err(|e| e.to_string())?;
+        Ok(())
     }
 }

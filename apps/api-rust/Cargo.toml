@@ -26,5 +26,11 @@ tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 tower-http = { version = "0.5.2", features = ["cors", "trace", "fs"] }
 
+# CSV Import/Export
+csv = "1.3"
+
+# Multipart Upload Support
+axum-extra = { version = "0.9.4", features = ["multipart"] }
+
 # OpenAPI Specification Generation
 utoipa = { version = "4.2.3", features = ["axum_extras"] }
