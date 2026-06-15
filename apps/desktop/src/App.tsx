@@ -30,10 +30,10 @@ export function App() {
           <I18nProvider>
             <AuthProvider>
               <ThemeProvider
-                attribute="class"
+                // attribute="class"
                 defaultTheme="system"
-                enableSystem
-                disableTransitionOnChange
+                // enableSystem
+                // disableTransitionOnChange
               >
                 <DesktopHeader />
                 <DesktopProvider />
