@@ -15,18 +15,6 @@ const icons = {
   "/promotions": () => <Icons.TrendingUp size={20} />,
 } as const;
 
-// Known menu base paths that should not be treated as chat IDs
-const KNOWN_MENU_PATHS = [
-  "/grades",
-  "/exams",
-  "/fees",
-  "/settings",
-  "/reports",
-  "/vault",
-  "/certificates",
-  "/promotions",
-];
-
 interface ItemProps {
   item: {
     path: string;
@@ -59,13 +47,11 @@ const ChildItem = ({
 
   return (
     <Link
-      prefetch
       to={child.path}
       onClick={() => onSelect?.()}
       className="block group/child"
     >
       <div className="relative">
-        {/* Child item text */}
         <div
           className={cn(
             "ms-[35px] me-[15px] h-[32px] flex items-center",
@@ -109,7 +95,6 @@ const Item = ({
   const { pathname } = useLocation();
   const hasChildren = item.children && item.children.length > 0;
 
-  // Children should be visible when: expanded sidebar AND this item is expanded
   const shouldShowChildren = isExpanded && isItemExpanded;
 
   const handleChevronClick = (e: React.MouseEvent) => {
@@ -120,14 +105,8 @@ const Item = ({
 
   return (
     <div className="group">
-      <Link
-        prefetch
-        to={item.path}
-        onClick={() => onSelect?.()}
-        className="group"
-      >
+      <Link to={item.path} onClick={() => onSelect?.()} className="group">
         <div className="relative">
-          {/* Background that expands */}
           <div
             className={cn(
               "border border-transparent h-[40px] transition-all duration-200 ease-&lsqb;cubic-bezier(0.4,0,0.2,1)&rsqb; ms-[15px] me-[15px]",
@@ -137,7 +116,6 @@ const Item = ({
             )}
           />
 
-          {/* Icon - always in same position from sidebar edge */}
           <div className="absolute top-0 start-[15px] w-[40px] h-[40px] flex items-center justify-center dark:text-[#666666] text-black group-hover:!text-primary pointer-events-none">
             <div className={cn(isActive && "dark:!text-white")}>
               <Icon />
@@ -175,7 +153,6 @@ const Item = ({
         </div>
       </Link>
 
-      {/* Children */}
       {hasChildren && (
         <div
           className={cn(
@@ -229,7 +206,9 @@ export function MainMenu({ onSelectAction, isExpanded = false }: Props) {
       name: t("menu.reports"),
       children: [
         { path: "/reports/academic", name: t("menu.academic_reports") },
+        { path: "/reports/financial", name: t("menu.financial_reports") },
         { path: "/reports/attendance", name: t("menu.attendance_reports") },
+        { path: "/reports/ministerial", name: t("menu.ministerial_reports") },
       ],
     },
     {
@@ -245,21 +224,16 @@ export function MainMenu({ onSelectAction, isExpanded = false }: Props) {
       name: t("menu.settings"),
       children: [
         { path: "/settings", name: t("menu.general") },
+        { path: "/settings/accounts", name: t("menu.bank_connections") },
         { path: "/settings/staff", name: t("menu.staff_teachers") },
         { path: "/settings/academic", name: t("settings.academic") },
         { path: "/settings/classes", name: t("menu.classes") },
         { path: "/settings/subjects", name: t("menu.subjects") },
+        { path: "/settings/promotions", name: t("menu.promotions") },
       ],
     },
   ];
 
-  // Check if current pathname is a known menu path (including sub-paths)
-  const pathnameWithoutQuery = pathname?.split("?")[0] || "";
-  const isKnownMenuPath = KNOWN_MENU_PATHS.some((knownPath) =>
-    pathnameWithoutQuery.startsWith(knownPath),
-  );
-
-  // Reset expanded item when sidebar expands/collapses
   useEffect(() => {
     setExpandedItem(null);
   }, [isExpanded]);
@@ -269,7 +243,6 @@ export function MainMenu({ onSelectAction, isExpanded = false }: Props) {
       <nav className="w-full">
         <div className="flex flex-col gap-2">
           {items.map((item) => {
-            // Check if current path matches item path or is a child of it
             const isActive =
               (pathname === "/" && item.path === "/") ||
               (pathname !== "/" && item.path.startsWith(`/${part}`));

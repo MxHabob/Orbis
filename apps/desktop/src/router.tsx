@@ -66,13 +66,7 @@ const CertificateCreatePage = lazy(
 const ExportCertificatePage = lazy(
   () => import("@/pages/export/certificate"),
 );
-const ExportCertificateBulkPage = lazy(
-  () => import("@/pages/export/certificate-bulk"),
-);
 const DesktopSearchPage = lazy(() => import("@/pages/desktop/search"));
-const CheckoutSuccessPage = lazy(
-  () => import("@/pages/desktop/checkout-success"),
-);
 const NotFoundPage = lazy(() => import("@/pages/not-found"));
 
 // ── Loading Fallback ───────────────────────────────────────────────────────
@@ -99,20 +93,10 @@ export function AppRouter() {
         {/* ── Export Routes (no sidebar, auth-guarded) ──── */}
         <Route element={<AuthGuard />}>
           <Route path="/export/certificate" element={<ExportCertificatePage />} />
-          <Route
-            path="/export/certificate/bulk"
-            element={<ExportCertificateBulkPage />}
-          />
         </Route>
 
         {/* ── Desktop-specific Routes ──────────────────── */}
         <Route path="/desktop/search" element={<DesktopSearchPage />} />
-        <Route element={<AuthGuard />}>
-          <Route
-            path="/desktop/checkout/success"
-            element={<CheckoutSuccessPage />}
-          />
-        </Route>
 
         {/* ── Editor Layout (full-screen, no sidebar) ──── */}
         <Route element={<AuthGuard />}>

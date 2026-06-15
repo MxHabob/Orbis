@@ -14,7 +14,7 @@ export function MobileMenu() {
           variant="outline"
           size="icon"
           onClick={() => setOpen(true)}
-          className="rounded-full w-8 h-8 items-center relative flex md:hidden"
+          className="rounded-full w-8 h-8 items-center relative hidden"
         >
           <Icons.Menu size={16} />
         </Button>

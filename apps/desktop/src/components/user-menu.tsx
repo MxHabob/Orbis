@@ -60,11 +60,11 @@ export function UserMenu({ onlySignOut }: Props) {
             <DropdownMenuSeparator />
 
             <DropdownMenuGroup>
-              <Link prefetch to="/account">
+              <Link to="/account">
                 <DropdownMenuItem className="text-xs">Account</DropdownMenuItem>
               </Link>
 
-              <Link prefetch to="/account/support">
+              <Link to="/account/support">
                 <DropdownMenuItem className="text-xs">Support</DropdownMenuItem>
               </Link>
             </DropdownMenuGroup>

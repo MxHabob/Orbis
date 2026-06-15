@@ -1,5 +1,4 @@
 import { cn } from "@orbis/ui/cn";
-import { Skeleton } from "@orbis/ui/skeleton";
 import { Tabs, TabsContent } from "@orbis/ui/tabs";
 import { useOverviewTab } from "@/hooks/use-overview-tab";
 import { usePrefetchMetrics } from "@/hooks/use-prefetch-metrics";
@@ -9,7 +8,7 @@ import { WidgetsHeader } from "./header";
 import { useIsCustomizing, WidgetProvider } from "./widget-provider";
 import { WidgetsGrid } from "./widgets-grid";
 
-function WidgetsContent() {
+function WidgetsContent({ weeklyCalendar: _weeklyCalendar }: { weeklyCalendar: boolean }) {
   const isCustomizing = useIsCustomizing();
   const { tab, setTab } = useOverviewTab();
 
@@ -40,10 +39,10 @@ interface WidgetsProps {
   weeklyCalendar: boolean;
 }
 
-export function Widgets({ initialPreferences }: WidgetsProps) {
+export function Widgets({ initialPreferences, weeklyCalendar }: WidgetsProps) {
   return (
     <WidgetProvider initialPreferences={initialPreferences}>
-      <WidgetsContent />
+      <WidgetsContent weeklyCalendar={weeklyCalendar} />
     </WidgetProvider>
   );
 }
