@@ -326,16 +326,19 @@ pub fn run() {
             .inner_size(1200.0, 750.0)
             .min_inner_size(900.0, 600.0)
             .user_agent("Mozilla/5.0 (compatible; Orbis Desktop App)")
-            .decorations(false)
             .visible(false)
-            .transparent(true)
             .center()
             .shadow(true);
 
             #[cfg(target_os = "macos")]
             let win_builder = win_builder
+                .decorations(false)
+                .transparent(false)
                 .hidden_title(true)
                 .title_bar_style(tauri::TitleBarStyle::Overlay);
+
+            #[cfg(not(target_os = "macos"))]
+            let win_builder = win_builder.decorations(true).transparent(false);
 
             let window = win_builder
                 .disable_drag_drop_handler()

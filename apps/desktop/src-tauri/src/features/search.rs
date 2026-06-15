@@ -24,16 +24,19 @@ pub async fn create_preloaded_search_window(
     .min_inner_size(720.0, 450.0)
     .resizable(false)
     .user_agent("Mozilla/5.0 (compatible; Orbis Desktop App)")
-    .transparent(true)
-    .decorations(false)
     .visible(false)
-    .shadow(false)
     .on_download(|_window, _event| true);
 
     #[cfg(target_os = "macos")]
     let builder = builder
+        .decorations(false)
+        .transparent(false)
+        .shadow(true)
         .hidden_title(true)
         .title_bar_style(TitleBarStyle::Overlay);
+
+    #[cfg(not(target_os = "macos"))]
+    let builder = builder.decorations(true).transparent(false).shadow(true);
 
     let search_window = builder.build()?;
     search_window.center()?;
