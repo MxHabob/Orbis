@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@orbis/ui/select";
 import { Monitor, Moon, Sun } from "lucide-react";
-import { useTheme } from "next-themes";
+import { useTheme } from "./theme-provider";
 import { useEffect, useState } from "react";
 
 type Theme = "dark" | "system" | "light";

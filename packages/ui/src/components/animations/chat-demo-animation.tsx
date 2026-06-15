@@ -2,7 +2,6 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
-import { useTheme } from "next-themes";
 import type { CSSProperties, ReactNode } from "react";
 import {
   useCallback,
@@ -525,14 +524,22 @@ const HIDE_SCROLLBAR_CSS = `
 `;
 
 function useIsDarkTheme() {
-  const { resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
+  const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    const checkTheme = () => {
+      setIsDark(document.documentElement.classList.contains("dark"));
+    };
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+    checkTheme();
+    return () => observer.disconnect();
   }, []);
 
-  return mounted && resolvedTheme === "dark";
+  return isDark;
 }
 
 const HOLD_LOCK_SCREEN = 200;

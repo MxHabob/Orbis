@@ -5,7 +5,7 @@ import { cn } from "@orbis/ui/cn";
 import { useQueryClient } from "@tanstack/react-query";
 import { lazy } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTheme } from "next-themes";
+import { useTheme } from "./theme-provider";
 import { useEffect, useState } from "react";
 import { useConnectParams } from "@/hooks/use-connect-params";
 import { useInitialConnectionStatus } from "@/hooks/use-initial-connection-status";
