@@ -32,6 +32,27 @@ pub enum Permission {
     // Subjects
     SubjectRead,
     SubjectWrite,
+    SubjectDelete,
+
+    // Schedule
+    ScheduleRead,
+    ScheduleWrite,
+    ScheduleDelete,
+
+    // Assessments
+    AssessmentRead,
+    AssessmentWrite,
+    AssessmentDelete,
+
+    // Guardians
+    GuardianRead,
+    GuardianWrite,
+    GuardianDelete,
+
+    // Documents
+    DocumentRead,
+    DocumentWrite,
+    DocumentDelete,
 
     // Enrollments
     EnrollmentRead,
@@ -130,7 +151,9 @@ impl AuthzService {
                 Permission::GradeRead | Permission::GradeWrite | Permission::GradeAnalytics | Permission::GradeReport |
                 Permission::AttendanceRead | Permission::AttendanceWrite | Permission::AttendanceAnalytics | Permission::AttendanceReport |
                 Permission::BehaviorRead | Permission::BehaviorWrite | Permission::BehaviorAI |
-                Permission::ClassRead | Permission::SubjectRead | Permission::NotificationRead | Permission::NotificationWrite |
+                Permission::ClassRead | Permission::SubjectRead | Permission::ScheduleRead |
+                Permission::AssessmentRead | Permission::DocumentRead |
+                Permission::NotificationRead | Permission::NotificationWrite |
                 Permission::UserRead | Permission::CycleRead | Permission::OrgUnitRead | Permission::EnrollmentRead |
                 Permission::OrganizationRead | Permission::DashboardRead => {
                     return Ok(());
@@ -143,6 +166,7 @@ impl AuthzService {
         if role == "student" || role == "parent" {
             match permission {
                 Permission::GradeRead | Permission::AttendanceRead | Permission::BehaviorRead |
+                Permission::ScheduleRead | Permission::AssessmentRead | Permission::DocumentRead |
                 Permission::NotificationRead | Permission::NotificationWrite | Permission::ClassRead |
                 Permission::UserRead | Permission::OrganizationRead => {
                     // ABAC: Ensure they can only access their own records

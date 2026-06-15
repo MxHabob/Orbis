@@ -12,3 +12,5 @@ pub mod assessments;
 pub mod documents;
 pub mod certificates;
 pub mod widgets;
+pub mod schedule;
+pub mod guardians;

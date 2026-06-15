@@ -1,6 +1,10 @@
+mod migrate;
+
 use std::time::Duration;
 use sea_orm::{ConnectOptions, Database, DatabaseConnection, DbErr, ConnectionTrait};
 use tracing::info;
+
+pub use migrate::run_migrations;
 
 pub async fn connect(database_url: &str) -> Result<DatabaseConnection, DbErr> {
     let mut opt = ConnectOptions::new(database_url.to_owned());
@@ -28,6 +32,9 @@ pub async fn connect(database_url: &str) -> Result<DatabaseConnection, DbErr> {
     ).await?;
     
     info!("🚀 SQLite WAL mode & performance pragmas successfully configured");
+
+    migrate::run_migrations(&db).await?;
+    info!("📦 Database schema migrations applied");
 
     Ok(db)
 }

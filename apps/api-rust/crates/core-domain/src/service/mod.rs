@@ -17,6 +17,11 @@ pub mod attendance_svc;
 pub mod dashboard;
 pub mod import_export;
 pub mod finance;
+pub mod schedule;
+pub mod subject;
+pub mod assessment;
+pub mod guardian;
+pub mod document;
 
 #[derive(Clone)]
 pub struct Service {

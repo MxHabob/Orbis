@@ -98,3 +98,35 @@ pub struct ExportParams {
     pub cycle_id: Option<String>,
     pub lang: Option<String>,
 }
+
+#[derive(Deserialize, Serialize, Debug, Clone, utoipa::ToSchema)]
+pub struct ScheduleParams {
+    pub cycle_id: Option<String>,
+    pub class_id: Option<String>,
+    pub teacher_id: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, utoipa::ToSchema)]
+pub struct ClassSubjectParams {
+    pub class_id: Option<String>,
+    pub cycle_id: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, utoipa::ToSchema)]
+pub struct AssessmentParams {
+    pub class_id: String,
+    pub subject_id: String,
+    pub cycle_id: String,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, utoipa::ToSchema)]
+pub struct GuardianParams {
+    pub student_id: Option<String>,
+    pub guardian_id: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, utoipa::ToSchema)]
+pub struct DocumentParams {
+    pub owner_id: Option<String>,
+    pub is_template: Option<i32>,
+}

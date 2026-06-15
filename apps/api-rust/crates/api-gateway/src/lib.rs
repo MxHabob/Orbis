@@ -108,6 +108,44 @@ use service::Service;
         handler::finance::post_student_fees,
         handler::finance::get_payments,
         handler::finance::post_payments,
+        // Subjects
+        handler::subject::get_subjects,
+        handler::subject::get_subject,
+        handler::subject::post_subjects,
+        handler::subject::put_subject,
+        handler::subject::delete_subject,
+        // Schedule
+        handler::schedule::get_time_slots,
+        handler::schedule::post_time_slots,
+        handler::schedule::put_time_slot,
+        handler::schedule::delete_time_slot,
+        handler::schedule::get_class_subjects,
+        handler::schedule::post_class_subjects,
+        handler::schedule::put_class_subject,
+        handler::schedule::delete_class_subject,
+        handler::schedule::get_lessons,
+        handler::schedule::get_lesson,
+        handler::schedule::post_lessons,
+        handler::schedule::put_lesson,
+        handler::schedule::delete_lesson,
+        handler::schedule::post_check_conflicts,
+        // Assessments
+        handler::assessment::get_assessments,
+        handler::assessment::get_assessment,
+        handler::assessment::post_assessments,
+        handler::assessment::put_assessment,
+        handler::assessment::delete_assessment,
+        // Guardians
+        handler::guardian::get_guardians,
+        handler::guardian::post_guardians,
+        handler::guardian::put_guardian,
+        handler::guardian::delete_guardian,
+        // Documents
+        handler::document::get_documents,
+        handler::document::get_document,
+        handler::document::post_documents,
+        handler::document::put_document,
+        handler::document::delete_document,
     ),
     components(
         schemas(
@@ -155,6 +193,29 @@ use service::Service;
             service::finance::CreateTreasuryRequest,
             service::finance::AssignStudentFeeRequest,
             service::finance::RecordPaymentRequest,
+            service::subject::CreateSubjectRequest,
+            service::subject::UpdateSubjectRequest,
+            service::schedule::CreateTimeSlotRequest,
+            service::schedule::UpdateTimeSlotRequest,
+            service::schedule::CreateClassSubjectRequest,
+            service::schedule::UpdateClassSubjectRequest,
+            service::schedule::CreateLessonRequest,
+            service::schedule::UpdateLessonRequest,
+            service::schedule::ScheduleConflict,
+            handler::schedule::ConflictCheckRequest,
+            service::assessment::CreateAssessmentRequest,
+            service::assessment::UpdateAssessmentRequest,
+            service::guardian::CreateGuardianLinkRequest,
+            service::guardian::UpdateGuardianLinkRequest,
+            service::document::CreateDocumentRequest,
+            service::document::UpdateDocumentRequest,
+            entities::subject::Model,
+            entities::time_slot::Model,
+            entities::class_subject::Model,
+            entities::scheduled_lesson::Model,
+            entities::assessment::Model,
+            entities::student_guardian::Model,
+            entities::document::Model,
             entities::organization::Model,
             entities::user::Model,
             entities::user_session::Model,
@@ -263,6 +324,21 @@ pub async fn start_server(database_url: &str, port: u16) -> Result<(), Box<dyn s
         .route("/api/finance/treasuries", get(handler::finance::get_treasuries).post(handler::finance::post_treasuries))
         .route("/api/finance/student-fees", get(handler::finance::get_student_fees).post(handler::finance::post_student_fees))
         .route("/api/finance/payments", get(handler::finance::get_payments).post(handler::finance::post_payments))
+        .route("/api/subjects", get(handler::subject::get_subjects).post(handler::subject::post_subjects))
+        .route("/api/subjects/:id", get(handler::subject::get_subject).put(handler::subject::put_subject).delete(handler::subject::delete_subject))
+        .route("/api/schedule/time-slots", get(handler::schedule::get_time_slots).post(handler::schedule::post_time_slots))
+        .route("/api/schedule/time-slots/:id", put(handler::schedule::put_time_slot).delete(handler::schedule::delete_time_slot))
+        .route("/api/schedule/class-subjects", get(handler::schedule::get_class_subjects).post(handler::schedule::post_class_subjects))
+        .route("/api/schedule/class-subjects/:id", put(handler::schedule::put_class_subject).delete(handler::schedule::delete_class_subject))
+        .route("/api/schedule/lessons", get(handler::schedule::get_lessons).post(handler::schedule::post_lessons))
+        .route("/api/schedule/lessons/:id", get(handler::schedule::get_lesson).put(handler::schedule::put_lesson).delete(handler::schedule::delete_lesson))
+        .route("/api/schedule/conflicts", post(handler::schedule::post_check_conflicts))
+        .route("/api/assessments", get(handler::assessment::get_assessments).post(handler::assessment::post_assessments))
+        .route("/api/assessments/:id", get(handler::assessment::get_assessment).put(handler::assessment::put_assessment).delete(handler::assessment::delete_assessment))
+        .route("/api/guardians", get(handler::guardian::get_guardians).post(handler::guardian::post_guardians))
+        .route("/api/guardians/:id", put(handler::guardian::put_guardian).delete(handler::guardian::delete_guardian))
+        .route("/api/documents", get(handler::document::get_documents).post(handler::document::post_documents))
+        .route("/api/documents/:id", get(handler::document::get_document).put(handler::document::put_document).delete(handler::document::delete_document))
         .with_state(service)
         .layer(cors);
 
@@ -288,7 +364,7 @@ async fn get_status() -> impl IntoResponse {
             "timestamp": chrono::Utc::now().to_rfc3339(),
             "version": "2.0.0",
             "engine": "Axum/Rust/SQLite (SeaORM) Embedded",
-            "endpoints": 52
+            "endpoints": 82
         })),
     )
 }

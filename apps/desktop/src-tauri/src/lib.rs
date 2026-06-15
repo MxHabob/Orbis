@@ -248,6 +248,30 @@ pub fn run() {
             // Widgets
             commands::widgets::get_widget_preferences,
             commands::widgets::update_widget_preferences,
+
+            // Schedule
+            commands::schedule::get_time_slots,
+            commands::schedule::create_time_slot,
+            commands::schedule::update_time_slot,
+            commands::schedule::delete_time_slot,
+            commands::schedule::get_class_subjects,
+            commands::schedule::create_class_subject,
+            commands::schedule::update_class_subject,
+            commands::schedule::delete_class_subject,
+            commands::schedule::get_class_schedule,
+            commands::schedule::get_teacher_schedule,
+            commands::schedule::get_lesson_by_id,
+            commands::schedule::create_lesson,
+            commands::schedule::update_lesson,
+            commands::schedule::delete_lesson,
+            commands::schedule::check_schedule_conflicts,
+
+            // Guardians
+            commands::guardians::get_guardians_by_student,
+            commands::guardians::get_students_by_guardian,
+            commands::guardians::create_guardian_link,
+            commands::guardians::update_guardian_link,
+            commands::guardians::delete_guardian_link,
         ])
         .setup(move |app| {
             // Add updater plugin conditionally for desktop

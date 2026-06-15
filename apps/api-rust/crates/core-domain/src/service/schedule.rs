@@ -1,0 +1,433 @@
+use uuid::Uuid;
+use chrono::Utc;
+use sea_orm::{entity::prelude::*, ActiveModelTrait, ActiveValue::Set, EntityTrait};
+
+use crate::entities::{time_slot, class_subject, scheduled_lesson};
+
+#[derive(serde::Serialize, serde::Deserialize, utoipa::ToSchema, Clone, Debug)]
+pub struct CreateTimeSlotRequest {
+    pub cycle_id: String,
+    pub slot_number: i32,
+    pub name: Option<String>,
+    pub name_ar: Option<String>,
+    pub start_time: String,
+    pub end_time: String,
+    pub duration_minutes: i32,
+    pub is_break: Option<i32>,
+    pub break_type: Option<String>,
+    pub applicable_days: Option<String>,
+    pub sort_order: Option<i32>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, utoipa::ToSchema, Clone, Debug)]
+pub struct UpdateTimeSlotRequest {
+    pub name: Option<String>,
+    pub name_ar: Option<String>,
+    pub start_time: Option<String>,
+    pub end_time: Option<String>,
+    pub duration_minutes: Option<i32>,
+    pub is_break: Option<i32>,
+    pub break_type: Option<String>,
+    pub applicable_days: Option<String>,
+    pub sort_order: Option<i32>,
+    pub is_active: Option<i32>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, utoipa::ToSchema, Clone, Debug)]
+pub struct CreateClassSubjectRequest {
+    pub class_id: String,
+    pub subject_id: String,
+    pub cycle_id: String,
+    pub primary_teacher_id: String,
+    pub assistant_teacher_id: Option<String>,
+    pub weekly_hours: Option<i32>,
+    pub theory_hours: Option<i32>,
+    pub practical_hours: Option<i32>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, utoipa::ToSchema, Clone, Debug)]
+pub struct UpdateClassSubjectRequest {
+    pub primary_teacher_id: Option<String>,
+    pub assistant_teacher_id: Option<String>,
+    pub weekly_hours: Option<i32>,
+    pub theory_hours: Option<i32>,
+    pub practical_hours: Option<i32>,
+    pub is_active: Option<i32>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, utoipa::ToSchema, Clone, Debug)]
+pub struct CreateLessonRequest {
+    pub cycle_id: String,
+    pub class_id: String,
+    pub class_subject_id: Option<String>,
+    pub subject_id: String,
+    pub teacher_id: String,
+    pub time_slot_id: String,
+    pub day_of_week: i32,
+    pub room_id: Option<String>,
+    pub room_name: Option<String>,
+    pub topic: Option<String>,
+    pub topic_ar: Option<String>,
+    pub homework: Option<String>,
+    pub notes: Option<String>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, utoipa::ToSchema, Clone, Debug)]
+pub struct UpdateLessonRequest {
+    pub teacher_id: Option<String>,
+    pub time_slot_id: Option<String>,
+    pub day_of_week: Option<i32>,
+    pub room_id: Option<String>,
+    pub room_name: Option<String>,
+    pub topic: Option<String>,
+    pub topic_ar: Option<String>,
+    pub homework: Option<String>,
+    pub notes: Option<String>,
+    pub status: Option<String>,
+    pub substitute_teacher_id: Option<String>,
+    pub substitution_reason: Option<String>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, utoipa::ToSchema, Clone, Debug)]
+pub struct ScheduleConflict {
+    pub lesson_id: String,
+    pub conflict_type: String,
+    pub message: String,
+}
+
+impl super::Service {
+    // ── Time Slots ───────────────────────────────────────────────────────────
+
+    pub async fn get_time_slots(
+        &self,
+        org_id: &str,
+        cycle_id: &str,
+    ) -> Result<Vec<time_slot::Model>, String> {
+        self.repo.get_time_slots(org_id, cycle_id).await.map_err(|e| e.to_string())
+    }
+
+    pub async fn create_time_slot(
+        &self,
+        org_id: &str,
+        req: CreateTimeSlotRequest,
+    ) -> Result<time_slot::Model, String> {
+        let now = Utc::now().to_rfc3339();
+        let slot = time_slot::Model {
+            id: Uuid::new_v4().to_string(),
+            org_id: org_id.to_string(),
+            cycle_id: req.cycle_id,
+            slot_number: req.slot_number,
+            name: req.name,
+            name_ar: req.name_ar,
+            start_time: req.start_time,
+            end_time: req.end_time,
+            duration_minutes: req.duration_minutes,
+            is_break: req.is_break.unwrap_or(0),
+            break_type: req.break_type,
+            applicable_days: req.applicable_days,
+            sort_order: req.sort_order,
+            is_active: 1,
+            created_at: now.clone(),
+            updated_at: now,
+        };
+        self.repo.insert_time_slot(slot).await.map_err(|e| e.to_string())
+    }
+
+    pub async fn update_time_slot(
+        &self,
+        id: &str,
+        req: UpdateTimeSlotRequest,
+    ) -> Result<time_slot::Model, String> {
+        let slot = self.repo.get_time_slot_by_id(id).await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "time slot not found".to_string())?;
+
+        let mut active: time_slot::ActiveModel = slot.into();
+        if let Some(v) = req.name { active.name = Set(Some(v)); }
+        if let Some(v) = req.name_ar { active.name_ar = Set(Some(v)); }
+        if let Some(v) = req.start_time { active.start_time = Set(v); }
+        if let Some(v) = req.end_time { active.end_time = Set(v); }
+        if let Some(v) = req.duration_minutes { active.duration_minutes = Set(v); }
+        if let Some(v) = req.is_break { active.is_break = Set(v); }
+        if let Some(v) = req.break_type { active.break_type = Set(Some(v)); }
+        if let Some(v) = req.applicable_days { active.applicable_days = Set(Some(v)); }
+        if let Some(v) = req.sort_order { active.sort_order = Set(Some(v)); }
+        if let Some(v) = req.is_active { active.is_active = Set(v); }
+        active.updated_at = Set(Utc::now().to_rfc3339());
+
+        active.update(&self.repo.db).await.map_err(|e| e.to_string())
+    }
+
+    pub async fn delete_time_slot(&self, id: &str) -> Result<(), String> {
+        let slot = self.repo.get_time_slot_by_id(id).await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "time slot not found".to_string())?;
+
+        let mut active: time_slot::ActiveModel = slot.into();
+        active.is_active = Set(0);
+        active.updated_at = Set(Utc::now().to_rfc3339());
+        active.update(&self.repo.db).await.map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
+    // ── Class Subjects ───────────────────────────────────────────────────────
+
+    pub async fn get_class_subjects(
+        &self,
+        class_id: Option<&str>,
+        cycle_id: Option<&str>,
+    ) -> Result<Vec<class_subject::Model>, String> {
+        self.repo.get_class_subjects(class_id, cycle_id).await.map_err(|e| e.to_string())
+    }
+
+    pub async fn create_class_subject(
+        &self,
+        req: CreateClassSubjectRequest,
+    ) -> Result<class_subject::Model, String> {
+        let existing = self.repo.find_class_subject(&req.class_id, &req.subject_id, &req.cycle_id).await
+            .map_err(|e| e.to_string())?;
+        if existing.is_some() {
+            return Err("class subject assignment already exists".to_string());
+        }
+
+        let now = Utc::now().to_rfc3339();
+        let cs = class_subject::Model {
+            id: Uuid::new_v4().to_string(),
+            class_id: req.class_id,
+            subject_id: req.subject_id,
+            cycle_id: req.cycle_id,
+            primary_teacher_id: req.primary_teacher_id,
+            assistant_teacher_id: req.assistant_teacher_id,
+            substitute_teacher_id: None,
+            grade_groups: None,
+            weekly_hours: req.weekly_hours,
+            theory_hours: req.theory_hours,
+            practical_hours: req.practical_hours,
+            assessment_config: None,
+            is_active: 1,
+            created_at: now.clone(),
+            updated_at: now,
+        };
+        self.repo.insert_class_subject(cs).await.map_err(|e| e.to_string())
+    }
+
+    pub async fn update_class_subject(
+        &self,
+        id: &str,
+        req: UpdateClassSubjectRequest,
+    ) -> Result<class_subject::Model, String> {
+        let cs = self.repo.get_class_subject_by_id(id).await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "class subject not found".to_string())?;
+
+        let mut active: class_subject::ActiveModel = cs.into();
+        if let Some(v) = req.primary_teacher_id { active.primary_teacher_id = Set(v); }
+        if let Some(v) = req.assistant_teacher_id { active.assistant_teacher_id = Set(Some(v)); }
+        if let Some(v) = req.weekly_hours { active.weekly_hours = Set(Some(v)); }
+        if let Some(v) = req.theory_hours { active.theory_hours = Set(Some(v)); }
+        if let Some(v) = req.practical_hours { active.practical_hours = Set(Some(v)); }
+        if let Some(v) = req.is_active { active.is_active = Set(v); }
+        active.updated_at = Set(Utc::now().to_rfc3339());
+
+        active.update(&self.repo.db).await.map_err(|e| e.to_string())
+    }
+
+    pub async fn delete_class_subject(&self, id: &str) -> Result<(), String> {
+        let cs = self.repo.get_class_subject_by_id(id).await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "class subject not found".to_string())?;
+
+        let mut active: class_subject::ActiveModel = cs.into();
+        active.is_active = Set(0);
+        active.updated_at = Set(Utc::now().to_rfc3339());
+        active.update(&self.repo.db).await.map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
+    // ── Scheduled Lessons ────────────────────────────────────────────────────
+
+    pub async fn get_class_schedule(
+        &self,
+        org_id: &str,
+        cycle_id: &str,
+        class_id: &str,
+    ) -> Result<Vec<scheduled_lesson::Model>, String> {
+        self.repo.get_scheduled_lessons(org_id, cycle_id, Some(class_id), None)
+            .await.map_err(|e| e.to_string())
+    }
+
+    pub async fn get_teacher_schedule(
+        &self,
+        org_id: &str,
+        cycle_id: &str,
+        teacher_id: &str,
+    ) -> Result<Vec<scheduled_lesson::Model>, String> {
+        self.repo.get_scheduled_lessons(org_id, cycle_id, None, Some(teacher_id))
+            .await.map_err(|e| e.to_string())
+    }
+
+    pub async fn get_lesson_by_id(&self, id: &str) -> Result<scheduled_lesson::Model, String> {
+        self.repo.get_scheduled_lesson_by_id(id).await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "lesson not found".to_string())
+    }
+
+    pub async fn check_schedule_conflicts(
+        &self,
+        org_id: &str,
+        cycle_id: &str,
+        time_slot_id: &str,
+        day_of_week: i32,
+        exclude_id: Option<&str>,
+        teacher_id: &str,
+        class_id: &str,
+        room_id: Option<&str>,
+    ) -> Result<Vec<ScheduleConflict>, String> {
+        let conflicts = self.repo.find_lesson_conflicts(
+            org_id, cycle_id, time_slot_id, day_of_week, exclude_id,
+            teacher_id, class_id, room_id,
+        ).await.map_err(|e| e.to_string())?;
+
+        Ok(conflicts.into_iter().map(|c| {
+            let conflict_type = if c.teacher_id == teacher_id {
+                "teacher"
+            } else if c.class_id == class_id {
+                "class"
+            } else {
+                "room"
+            };
+            let lesson_id = c.id.clone();
+            ScheduleConflict {
+                lesson_id,
+                conflict_type: conflict_type.to_string(),
+                message: format!("Conflict with lesson {} ({})", c.id, conflict_type),
+            }
+        }).collect())
+    }
+
+    pub async fn create_lesson(
+        &self,
+        org_id: &str,
+        req: CreateLessonRequest,
+    ) -> Result<scheduled_lesson::Model, String> {
+        let conflicts = self.check_schedule_conflicts(
+            org_id, &req.cycle_id, &req.time_slot_id, req.day_of_week, None,
+            &req.teacher_id, &req.class_id, req.room_id.as_deref(),
+        ).await?;
+        if !conflicts.is_empty() {
+            return Err(format!("schedule conflict: {}", conflicts[0].message));
+        }
+
+        let class_subject_id = match req.class_subject_id {
+            Some(id) => id,
+            None => {
+                let cs = self.repo.find_class_subject(&req.class_id, &req.subject_id, &req.cycle_id).await
+                    .map_err(|e| e.to_string())?;
+                match cs {
+                    Some(c) => c.id,
+                    None => {
+                        let created = self.create_class_subject(CreateClassSubjectRequest {
+                            class_id: req.class_id.clone(),
+                            subject_id: req.subject_id.clone(),
+                            cycle_id: req.cycle_id.clone(),
+                            primary_teacher_id: req.teacher_id.clone(),
+                            assistant_teacher_id: None,
+                            weekly_hours: None,
+                            theory_hours: None,
+                            practical_hours: None,
+                        }).await?;
+                        created.id
+                    }
+                }
+            }
+        };
+
+        let now = Utc::now().to_rfc3339();
+        let lesson = scheduled_lesson::Model {
+            id: Uuid::new_v4().to_string(),
+            org_id: org_id.to_string(),
+            cycle_id: req.cycle_id,
+            class_id: req.class_id,
+            class_subject_id,
+            subject_id: req.subject_id,
+            teacher_id: req.teacher_id,
+            substitute_teacher_id: None,
+            time_slot_id: req.time_slot_id,
+            day_of_week: req.day_of_week,
+            room_id: req.room_id,
+            room_name: req.room_name,
+            status: "scheduled".to_string(),
+            is_substituted: 0,
+            substitution_reason: None,
+            topic: req.topic,
+            topic_ar: req.topic_ar,
+            objectives: None,
+            materials: None,
+            homework: req.homework,
+            homework_due_date: None,
+            attendance_taken: 0,
+            attendance_taken_at: None,
+            attendance_taken_by: None,
+            attendance_method: None,
+            notes: req.notes,
+            cancellation_reason: None,
+            created_at: now.clone(),
+            updated_at: now,
+        };
+
+        self.repo.insert_scheduled_lesson(lesson).await.map_err(|e| e.to_string())
+    }
+
+    pub async fn update_lesson(
+        &self,
+        org_id: &str,
+        id: &str,
+        req: UpdateLessonRequest,
+    ) -> Result<scheduled_lesson::Model, String> {
+        let lesson = self.repo.get_scheduled_lesson_by_id(id).await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "lesson not found".to_string())?;
+
+        let teacher_id = req.teacher_id.as_ref().unwrap_or(&lesson.teacher_id);
+        let time_slot_id = req.time_slot_id.as_ref().unwrap_or(&lesson.time_slot_id);
+        let day_of_week = req.day_of_week.unwrap_or(lesson.day_of_week);
+        let room_id = req.room_id.as_ref().or(lesson.room_id.as_ref());
+
+        let conflicts = self.check_schedule_conflicts(
+            org_id, &lesson.cycle_id, time_slot_id, day_of_week, Some(id),
+            teacher_id, &lesson.class_id, room_id.map(|s| s.as_str()),
+        ).await?;
+        if !conflicts.is_empty() {
+            return Err(format!("schedule conflict: {}", conflicts[0].message));
+        }
+
+        let mut active: scheduled_lesson::ActiveModel = lesson.into();
+        if let Some(v) = req.teacher_id { active.teacher_id = Set(v); }
+        if let Some(v) = req.time_slot_id { active.time_slot_id = Set(v); }
+        if let Some(v) = req.day_of_week { active.day_of_week = Set(v); }
+        if let Some(v) = req.room_id { active.room_id = Set(Some(v)); }
+        if let Some(v) = req.room_name { active.room_name = Set(Some(v)); }
+        if let Some(v) = req.topic { active.topic = Set(Some(v)); }
+        if let Some(v) = req.topic_ar { active.topic_ar = Set(Some(v)); }
+        if let Some(v) = req.homework { active.homework = Set(Some(v)); }
+        if let Some(v) = req.notes { active.notes = Set(Some(v)); }
+        if let Some(v) = req.status { active.status = Set(v); }
+        if let Some(v) = req.substitute_teacher_id { active.substitute_teacher_id = Set(Some(v)); }
+        if let Some(v) = req.substitution_reason { active.substitution_reason = Set(Some(v)); }
+        active.updated_at = Set(Utc::now().to_rfc3339());
+
+        active.update(&self.repo.db).await.map_err(|e| e.to_string())
+    }
+
+    pub async fn delete_lesson(&self, id: &str) -> Result<(), String> {
+        let lesson = self.repo.get_scheduled_lesson_by_id(id).await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "lesson not found".to_string())?;
+
+        let mut active: scheduled_lesson::ActiveModel = lesson.into();
+        active.status = Set("cancelled".to_string());
+        active.updated_at = Set(Utc::now().to_rfc3339());
+        active.update(&self.repo.db).await.map_err(|e| e.to_string())?;
+        Ok(())
+    }
+}

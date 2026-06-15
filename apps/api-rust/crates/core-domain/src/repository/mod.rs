@@ -12,6 +12,11 @@ pub mod enrollment;
 pub mod grade;
 pub mod attendance;
 pub mod finance;
+pub mod schedule;
+pub mod subject;
+pub mod assessment;
+pub mod guardian;
+pub mod document;
 
 #[derive(Clone)]
 pub struct Repository {
