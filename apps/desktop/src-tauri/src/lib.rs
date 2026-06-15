@@ -418,7 +418,8 @@ pub fn run() {
             };
 
             let check_updates_item = MenuItem::with_id(app, "check_updates", "Check for Updates...", true, None::<&str>)?;
-            let tray_menu = Menu::with_items(app, &[&check_updates_item])?;
+            let exit_item = MenuItem::with_id(app, "exit", "Exit", true, None::<&str>)?;
+            let tray_menu = Menu::with_items(app, &[&check_updates_item, &exit_item])?;
 
             let _tray = TrayIconBuilder::new()
                 .icon(tray_icon)
@@ -430,6 +431,8 @@ pub fn run() {
                         tauri::async_runtime::spawn(async move {
                             let _ = check_for_updates(app_handle).await;
                         });
+                    } else if event.id == "exit" {
+                        app.exit(0);
                     }
                 })
                 .on_tray_icon_event(move |tray, event| {
@@ -461,13 +464,15 @@ pub fn run() {
                     let _ = main_window.set_focus();
                 }
             }
-            tauri::RunEvent::ExitRequested { api, .. } => {
-                api.prevent_exit();
-                if let Some(main_window) = app_handle.get_webview_window("main") {
-                    let _ = main_window.hide();
-                }
-                if let Some(search_window) = app_handle.get_webview_window("search") {
-                    let _ = search_window.hide();
+            tauri::RunEvent::ExitRequested { api, code, .. } => {
+                if code.is_none() {
+                    api.prevent_exit();
+                    if let Some(main_window) = app_handle.get_webview_window("main") {
+                        let _ = main_window.hide();
+                    }
+                    if let Some(search_window) = app_handle.get_webview_window("search") {
+                        let _ = search_window.hide();
+                    }
                 }
             }
             _ => {}
