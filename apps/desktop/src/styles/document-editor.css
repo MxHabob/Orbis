@@ -1,7 +1,6 @@
-/* 2026 Certificate Editor Design System Integration */
+/* Document editor design system */
 
-/* Root tokens mapped to system variables */
-.certificate-editor-root {
+.document-editor-root {
   --editor-bg: hsl(var(--background));
   --panel-bg: hsl(
     var(--background) /
@@ -69,13 +68,13 @@
 }
 
 /* 2026 Selection UI - Syncing with globals.css .moveable-canva */
-.certificate-moveable-controls .moveable-line {
+.document-moveable-controls .moveable-line {
   height: 1px !important;
   background-color: var(--accent) !important;
   opacity: 0.6;
 }
 
-.certificate-moveable-controls .moveable-control {
+.document-moveable-controls .moveable-control {
   width: 10px !important;
   height: 10px !important;
   border-radius: 3px !important;

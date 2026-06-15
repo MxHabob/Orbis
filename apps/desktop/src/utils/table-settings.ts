@@ -14,8 +14,7 @@ export type TableId =
   | "students"
   | "grades"
   | "classes"
-  | "reports"
-  | "certificates";
+  | "reports";
 
 /**
  * Settings for a single table
@@ -58,7 +57,6 @@ export const defaultHiddenColumns: Record<TableId, string[]> = {
   grades: [],
   classes: [],
   reports: [],
-  certificates: [],
 };
 
 /**

@@ -62,7 +62,7 @@ import {
 import type React from "react";
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { useEditorStore } from "@/store/certificate-editor";
+import { useEditorStore } from "@/store/document-editor";
 import { useTRPC } from "@/ipc/query-adapter";
 import { getFileProxyUrl } from "@/utils/files";
 import { EditorSidebarHeader } from "./editor-sidebar-header";
@@ -196,7 +196,7 @@ export function EditorSidebar({}: SidebarProps) {
     { key: "student_id", label: "الرقم الأكاديمي", icon: Hash },
     { key: "class_name", label: "اسم الفصل / الصف", icon: Grid2X2 },
     { key: "rank", label: "الترتيب العام (المركز)", icon: Trophy },
-    { key: "certificate_type", label: "نوع الشهادة / التقرير", icon: Award },
+    { key: "document_type", label: "نوع الوثيقة / التقرير", icon: Award },
     { key: "school_year", label: "العام الدراسي", icon: Hash },
     { key: "student_image", label: "صورة الطالب", icon: ImageIcon },
     {

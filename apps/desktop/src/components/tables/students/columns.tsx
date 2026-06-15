@@ -62,8 +62,8 @@ const ActionsCell = memo(
       onDelete?.(studentId);
     }, [studentId, onDelete]);
 
-    const handleViewCertificate = useCallback(() => {
-      setParams({ studentId: studentId, certificate: true });
+    const handleViewDetails = useCallback(() => {
+      setParams({ studentId: studentId, details: true });
     }, [studentId, setParams]);
 
     return (
@@ -80,8 +80,8 @@ const ActionsCell = memo(
               Edit student
             </DropdownMenuItem>
 
-            <DropdownMenuItem onClick={handleViewCertificate}>
-              View Certificate
+            <DropdownMenuItem onClick={handleViewDetails}>
+              View details
             </DropdownMenuItem>
 
             <DropdownMenuItem onClick={handleDelete} className="text-[#FF3638]">
@@ -118,7 +118,7 @@ export const columns: ColumnDef<Student>[] = [
         <div
           className="cursor-pointer hover:underline"
           onClick={() =>
-            setParams({ studentId: row.original.userId, certificate: true })
+            setParams({ studentId: row.original.userId, details: true })
           }
         >
           <NameCell name={row.original.name} image={row.original.image} />

@@ -9,7 +9,6 @@ import { LessonCreateSheet } from "@/components/sheets/lesson-create-sheet";
 import { LessonEditSheet } from "@/components/sheets/lesson-edit-sheet";
 import { LessonScheduleSheet } from "@/components/sheets/lesson-schedule-sheet";
 import { ReportsExportSheet } from "@/components/sheets/reports-export-sheet";
-import { StudentCertificateSheet } from "@/components/sheets/student-certificate-sheet";
 import { StudentCreateSheet } from "@/components/sheets/student-create-sheet";
 import { StudentDetailsSheet } from "@/components/sheets/student-details-sheet";
 import { StudentEditSheet } from "@/components/sheets/student-edit-sheet";
@@ -22,7 +21,6 @@ export function GlobalSheets() {
       <StudentCreateSheet />
       <StudentEditSheet />
       <StudentDetailsSheet />
-      <StudentCertificateSheet />
       <ClassCreateSheet />
       <ClassEditSheet />
       <SubjectCreateSheet />

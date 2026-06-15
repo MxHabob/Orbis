@@ -1,9 +1,9 @@
 import { cn } from "@orbis/ui/cn";
 import type React from "react";
 import { memo, useEffect, useRef, useState } from "react";
-import { useEditorStore } from "@/store/certificate-editor";
-import type { EditorElement as IEditorElement } from "@/types/certificate-editor";
-import { GradesTable } from "../grades-table";
+import { useEditorStore } from "@/store/document-editor";
+import type { EditorElement as IEditorElement } from "@/types/document-editor";
+import { GradesTable } from "./grades-table";
 
 interface Props {
   element: IEditorElement;

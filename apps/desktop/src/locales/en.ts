@@ -960,7 +960,7 @@ export default {
     financial_reports: "Financial Reports",
     attendance_reports: "Attendance Reports",
     ministerial_reports: "Ministerial Reports",
-    certificates: "Certificates",
+    templates: "Document Templates",
     vault: "Vault",
     control: "Control",
     settings: "Settings",

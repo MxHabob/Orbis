@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
-import type { EditorElement, EditorState } from "@/types/certificate-editor";
+import type { EditorElement, EditorState } from "@/types/document-editor";
 
 interface EditorActions {
   setName: (name: string) => void;

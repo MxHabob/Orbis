@@ -18,7 +18,7 @@ import {
   Type,
 } from "lucide-react";
 import React from "react";
-import { useEditorStore } from "@/store/certificate-editor";
+import { useEditorStore } from "@/store/document-editor";
 
 export function EditorFloatingToolbar() {
   const { addElement } = useEditorStore();

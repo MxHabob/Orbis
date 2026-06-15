@@ -1035,7 +1035,7 @@ export default {
     financial_reports: "تقارير مالية",
     attendance_reports: "تقارير الحضور",
     ministerial_reports: "تقارير وزارية",
-    certificates: "الشهادات",
+    templates: "قوالب الوثائق",
     vault: "الخزنة",
     control: "الكنترول",
     settings: "الإعدادات",

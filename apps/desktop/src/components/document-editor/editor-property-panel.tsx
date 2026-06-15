@@ -56,7 +56,7 @@ import {
 } from "lucide-react";
 import React, { useState } from "react";
 import { ColorPicker } from "@/components/color-picker";
-import { useEditorStore } from "@/store/certificate-editor";
+import { useEditorStore } from "@/store/document-editor";
 import { PAPER_PRESETS } from "./constants";
 
 interface PropertyPanelProps {

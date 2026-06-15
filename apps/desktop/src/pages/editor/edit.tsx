@@ -1,11 +1,11 @@
 import { useParams } from "react-router-dom";
-import { CertificateEditor } from "@/components/certificates/editor/certificate-editor";
+import { DocumentEditor } from "@/components/document-editor/document-editor";
 import { useTauriQuery } from "@/hooks/use-tauri-query";
 import { commands } from "@orbis/desktop-client/commands";
 import { queryKeys } from "@/lib/query-keys";
 import { Spinner } from "@orbis/ui/spinner";
 
-export default function CertificateEditorPage() {
+export default function DocumentEditorPage() {
   const { id } = useParams<{ id: string }>();
 
   const { data: template, isLoading } = useTauriQuery(
@@ -30,5 +30,5 @@ export default function CertificateEditorPage() {
     );
   }
 
-  return <CertificateEditor mode="edit" initialData={template} />;
+  return <DocumentEditor mode="edit" initialData={template} />;
 }

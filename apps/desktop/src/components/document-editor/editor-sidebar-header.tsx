@@ -25,7 +25,7 @@ import {
   Trash2,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { useEditorStore } from "@/store/certificate-editor";
+import { useEditorStore } from "@/store/document-editor";
 
 export function EditorSidebarHeader() {
   const { name, setName } = useEditorStore();

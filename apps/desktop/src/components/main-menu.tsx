@@ -11,7 +11,7 @@ const icons = {
   "/settings": () => <Icons.Settings size={20} />,
   "/vault": () => <Icons.Vault size={20} />,
   "/reports": () => <Icons.Customers size={20} />,
-  "/certificates": () => <Icons.Files size={20} />,
+  "/editor/create": () => <Icons.Files size={20} />,
   "/promotions": () => <Icons.TrendingUp size={20} />,
 } as const;
 
@@ -212,8 +212,8 @@ export function MainMenu({ onSelectAction, isExpanded = false }: Props) {
       ],
     },
     {
-      path: "/certificates",
-      name: t("menu.certificates"),
+      path: "/editor/create",
+      name: t("menu.templates"),
     },
     {
       path: "/vault",

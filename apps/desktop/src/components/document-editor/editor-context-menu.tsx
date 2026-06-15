@@ -23,7 +23,7 @@ import {
   Zap,
 } from "lucide-react";
 import type React from "react";
-import { useEditorStore } from "@/store/certificate-editor";
+import { useEditorStore } from "@/store/document-editor";
 
 interface Props {
   children: React.ReactNode;

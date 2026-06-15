@@ -3,14 +3,14 @@ import { useToast } from "@orbis/ui/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import React, { useCallback, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
-import { useEditorStore } from "@/store/certificate-editor";
+import { useEditorStore } from "@/store/document-editor";
 import { useTRPC } from "@/ipc/query-adapter";
-import type { EditorElement } from "@/types/certificate-editor";
+import type { EditorElement } from "@/types/document-editor";
 import { EditorCanvas } from "./editor-canvas";
 import { EditorFloatingToolbar } from "./editor-floating-toolbar";
 import { EditorPropertyPanel } from "./editor-property-panel";
 import { EditorSidebar } from "./editor-sidebar";
-import "@/styles/certificate-editor.css";
+import "@/styles/document-editor.css";
 
 interface Props {
   mode?: "edit" | "create";
@@ -28,7 +28,7 @@ interface Props {
   };
 }
 
-export function CertificateEditor({ initialData }: Props) {
+export function DocumentEditor({ initialData }: Props) {
   const {
     setElements,
     setCanvasConfig,
@@ -190,7 +190,7 @@ export function CertificateEditor({ initialData }: Props) {
   return (
     <div
       {...getRootProps()}
-      className="flex h-full w-full certificate-editor-root overflow-hidden font-sans outline-none text-white/90 bg-[#09090b]"
+      className="flex h-full w-full document-editor-root overflow-hidden font-sans outline-none text-white/90 bg-[#09090b]"
     >
       <input {...getInputProps()} />
 

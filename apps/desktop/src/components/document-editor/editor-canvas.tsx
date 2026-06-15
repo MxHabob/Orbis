@@ -1,7 +1,7 @@
 import { cn } from "@orbis/ui/cn";
 import React, { useMemo, useRef } from "react";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
-import { useEditorStore } from "@/store/certificate-editor";
+import { useEditorStore } from "@/store/document-editor";
 import { EditorContextMenu } from "./editor-context-menu";
 import { EditorElement } from "./editor-element";
 import { EditorSelectionManager } from "./editor-selection-manager";

@@ -2,7 +2,7 @@ import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import Moveable from "react-moveable";
 import Selecto from "react-selecto";
-import { useEditorStore } from "@/store/certificate-editor";
+import { useEditorStore } from "@/store/document-editor";
 
 interface Props {
   containerRef: React.RefObject<HTMLDivElement | null>;
@@ -120,7 +120,7 @@ export function EditorSelectionManager({ containerRef }: Props) {
         ref={moveableRef}
         target={targets}
         container={containerRef.current}
-        className="certificate-moveable-controls"
+        className="document-moveable-controls"
         draggable={true}
         resizable={true}
         rotatable={true}

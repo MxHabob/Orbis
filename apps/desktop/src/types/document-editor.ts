@@ -1,4 +1,4 @@
-import type { PAPER_PRESETS } from "../components/certificates/editor/constants"; // I will move PAPER_PRESETS to a shared place later if needed
+import type { PAPER_PRESETS } from "../components/document-editor/constants";
 
 export interface EditorElement {
   id: string;

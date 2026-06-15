@@ -1,9 +1,7 @@
 import { useParams } from "react-router-dom";
 import {
   parseAsBoolean,
-  parseAsInteger,
   parseAsString,
-  parseAsStringEnum,
   useQueryStates,
 } from "nuqs";
 
@@ -18,10 +16,6 @@ export function useStudentParams() {
     name: parseAsString,
     q: parseAsString,
     details: parseAsBoolean,
-    certificate: parseAsBoolean,
-    certificateType: parseAsStringEnum(["monthly", "half-yearly", "final"]),
-    templateId: parseAsString,
-    month: parseAsInteger,
   });
 
   return {

@@ -166,8 +166,8 @@ const formatGroupName = (name: string, t: any): string | null => {
       return t("menu.vault");
     case "report":
       return t("menu.reports");
-    case "certificate":
-      return t("menu.certificates");
+    case "template":
+      return t("menu.templates");
 
     default:
       return null;
@@ -592,10 +592,10 @@ export function Search() {
       action: () => nav.navigateToPath("/vault"),
     },
     {
-      id: "sc-view-certificates",
-      type: "certificate",
-      title: t("menu.certificates"),
-      action: () => nav.navigateToPath("/certificates"),
+      id: "sc-create-template",
+      type: "template",
+      title: t("menu.templates"),
+      action: () => nav.navigateToPath("/editor/create"),
     },
     {
       id: "sc-view-reports",
