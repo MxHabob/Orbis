@@ -3,25 +3,22 @@ use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, Position};
 use tauri::TitleBarStyle;
 use tauri::{WebviewUrl, WebviewWindowBuilder};
 
-/// Creates the floating search window on-demand and hides it.
-/// It will be shown/hidden via toggle_search_window.
+/// Creates the floating search window from bundled app assets (not an external URL).
 pub async fn create_preloaded_search_window(
     app: &AppHandle,
-    app_url: &str,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let label = "search";
-    let search_url = format!("{}/desktop/search", app_url);
 
     let builder = WebviewWindowBuilder::new(
         app,
         label,
-        WebviewUrl::External(tauri::Url::parse(&search_url)?),
+        WebviewUrl::App("index.html".into()),
     )
     .title("Orbis Search")
     .inner_size(720.0, 450.0)
     .min_inner_size(720.0, 450.0)
     .resizable(false)
-    .user_agent("Mozilla/5.0 (compatible; Orbis Desktop App)")
+    .user_agent("OrbisDesktop/1.0")
     .visible(false)
     .on_download(|_window, _event| true);
 
@@ -39,7 +36,6 @@ pub async fn create_preloaded_search_window(
     let search_window = builder.build()?;
     search_window.center()?;
 
-    // Auto-hide when focus is lost
     let window_clone = search_window.clone();
     search_window.on_window_event(move |event| {
         if let tauri::WindowEvent::Focused(false) = event {
@@ -112,12 +108,10 @@ pub fn toggle_search_window(
             let _ = w.emit("search-window-open", true);
         }
     } else {
-        // Lazy-create on first use
         let app_clone = app.clone();
 
         tauri::async_runtime::block_on(async move {
-            let url = "http://localhost:1420";
-            if create_preloaded_search_window(&app_clone, &url).await.is_ok() {
+            if create_preloaded_search_window(&app_clone).await.is_ok() {
                 if let Some(w) = app_clone.get_webview_window("search") {
                     let _ = w.set_always_on_top(true);
                     let _ = position_on_active_monitor(&app_clone, &w);

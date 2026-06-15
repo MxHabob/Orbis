@@ -325,7 +325,7 @@ pub fn run() {
             .title("Orbis")
             .inner_size(1200.0, 750.0)
             .min_inner_size(900.0, 600.0)
-            .user_agent("Mozilla/5.0 (compatible; Orbis Desktop App)")
+            .user_agent("OrbisDesktop/1.0")
             .visible(false)
             .center()
             .shadow(true);
