@@ -10,7 +10,7 @@ import { useLongPress } from "@/hooks/use-long-press";
 import { useMetricsCustomize } from "@/hooks/use-metrics-customize";
 import { useUserQuery } from "@/hooks/use-user";
 import { useChatStore } from "@/store/chat";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { generateChartSelectionMessage } from "@/utils/chart-selection-message";
 import { ShareMetricButton } from "../components/share-metric-button";
 

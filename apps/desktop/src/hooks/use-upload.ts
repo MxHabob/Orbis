@@ -1,6 +1,6 @@
-"use client";
-
 import { useCallback, useState } from "react";
+import { commands } from "@orbis/desktop-client/commands";
+import { getOrgId, getUserId } from "@/lib/session";
 
 type UploadOptions = {
   file: File;
@@ -20,26 +20,32 @@ export function useUpload() {
     async (options: UploadOptions): Promise<UploadResult> => {
       setIsLoading(true);
       try {
-        const { getApiUrl } = await import("@/trpc/client");
-        const apiUrl = getApiUrl();
-        const formData = new FormData();
-        formData.append("file", options.file);
-        formData.append("bucket", options.bucket);
-        formData.append("path", options.path.filter(Boolean).join("/"));
+        const orgId = getOrgId();
+        const userId = getUserId();
+        const relativePath = options.path.filter(Boolean).join("/");
+        const storageKey = [options.bucket, relativePath, options.file.name]
+          .filter(Boolean)
+          .join("/");
 
-        const res = await fetch(`${apiUrl}/api/upload`, {
-          method: "POST",
-          body: formData,
-          credentials: "include",
+        const doc = await commands.documents.create({
+          orgId,
+          ownerId: userId,
+          uploadedBy: userId,
+          name: options.file.name,
+          bucket: options.bucket,
+          key: storageKey,
+          path: storageKey,
+          size: options.file.size,
+          mimeType: options.file.type,
+          type: "file",
         });
 
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({ error: res.statusText }));
-          throw new Error(err.error ?? "Upload failed");
-        }
+        const url =
+          (doc as { url?: string }).url ??
+          (doc as { key?: string }).key ??
+          storageKey;
 
-        const data = (await res.json()) as UploadResult;
-        return data;
+        return { url, path: storageKey };
       } finally {
         setIsLoading(false);
       }

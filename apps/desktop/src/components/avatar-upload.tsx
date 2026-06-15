@@ -8,7 +8,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { forwardRef, useRef, useState } from "react";
 import { useUpload } from "@/hooks/use-upload";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 
 type Props = {
   userId: string;

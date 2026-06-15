@@ -3,7 +3,7 @@
 import NumberFlow from "@number-flow/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@orbis/ui/card";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 
 export function InactiveClients() {
   const trpc = useTRPC();

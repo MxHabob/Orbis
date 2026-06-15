@@ -4,7 +4,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@orbis/ui/sheet";
 import { useQuery } from "@tanstack/react-query";
 import { useAcademicParams } from "@/hooks/use-academic-params";
 import { useI18n } from "@/locales/client";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { AcademicTermForm } from "../forms/academic-term-form";
 import { AcademicYearForm } from "../forms/academic-year-form";
 

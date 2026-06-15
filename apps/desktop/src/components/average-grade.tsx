@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@orbis/ui/card";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { useCustomerFilterParams } from "@/hooks/use-customer-filter-params";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 
 export function AverageGrade() {
   const params = useParams();

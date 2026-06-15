@@ -1,6 +1,6 @@
 "use client";
 
-import { authClient } from "@orbis/auth/auth-client";
+import { authClient } from "@/lib/auth-client";
 import {
   useQueryClient,
   useSuspenseInfiniteQuery,
@@ -12,7 +12,7 @@ import { VaultItem } from "@/components/vault/vault-item";
 import { useDocumentFilterParams } from "@/hooks/use-document-filter-params";
 import { useDocumentParams } from "@/hooks/use-document-params";
 import { useRealtime } from "@/hooks/use-realtime";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { LoadMore } from "../load-more";
 import { NoResults } from "./empty-states";
 import { VaultGetStarted } from "./vault-get-started";

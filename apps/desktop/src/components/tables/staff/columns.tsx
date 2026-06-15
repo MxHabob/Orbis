@@ -1,4 +1,4 @@
-import type { RouterOutputs } from "@api/trpc/routers/_app";
+import type { RouterOutputs } from "@/ipc/query-adapter";
 import { Avatar, AvatarFallback, AvatarImageNext } from "@orbis/ui/avatar";
 import { Button } from "@orbis/ui/button";
 import {
@@ -20,7 +20,7 @@ import * as React from "react";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import "@tanstack/react-table";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 
 type TeamMember = RouterOutputs["user"]["getStaff"][number];
 

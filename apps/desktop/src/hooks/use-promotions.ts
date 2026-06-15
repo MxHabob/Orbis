@@ -10,7 +10,7 @@ import {
 import { useCallback, useState } from "react";
 import { usePromotionsParams } from "@/hooks/use-promotions-params";
 import { useI18n } from "@/locales/client";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 

@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Spinner } from "@orbis/ui/spinner";
 import { CertificateViewer } from "@/components/certificates/certificate-viewer";
-import { api } from "@/lib/tauri-api";
+import { commands } from "@orbis/desktop-client/commands";
 
 const HIJRI_MONTHS_NAMES: Record<number, string> = {
   1: "محرم",
@@ -80,15 +80,15 @@ export default function ExportCertificatePage() {
     queryKey: ["export-certificate-data", studentId, templateId, type, month],
     queryFn: async () => {
       // 1. Fetch enrollment by studentId (userId)
-      const enrollmentsList = await api.enrollments.getAll("", { student_id: studentId! });
+      const enrollmentsList = await commands.enrollments.getAll("", { student_id: studentId! });
       const enrollment = enrollmentsList?.[0];
       if (!enrollment) throw new Error("Enrollment not found");
 
       // 2. Fetch related details in parallel
       const [userResponse, classesList, templateResponse] = await Promise.all([
-        api.users.getUser(enrollment.student_id),
-        api.classes.getAll(""),
-        api.certificates.getById(templateId!),
+        commands.users.getUser(enrollment.student_id),
+        commands.classes.getAll(""),
+        commands.certificates.getById(templateId!),
       ]);
 
       const user = userResponse as any;

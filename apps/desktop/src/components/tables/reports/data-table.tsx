@@ -1,7 +1,7 @@
 "use client";
 
 import { closestCenter, DndContext } from "@dnd-kit/core";
-import { authClient } from "@orbis/auth/auth-client";
+import { authClient } from "@/lib/auth-client";
 import { Table, TableBody, TableCell, TableRow } from "@orbis/ui/table";
 import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { getCoreRowModel, useReactTable } from "@tanstack/react-table";
@@ -18,7 +18,7 @@ import { useTableDnd } from "@/hooks/use-table-dnd";
 import { useTableScroll } from "@/hooks/use-table-scroll";
 import { useTableSettings } from "@/hooks/use-table-settings";
 import { useReportStore } from "@/store/report";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { STICKY_COLUMNS, SUMMARY_GRID_HEIGHTS } from "@/utils/table-configs";
 import type { TableSettings } from "@/utils/table-settings";
 import { BottomBar } from "./bottom-bar";

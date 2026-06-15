@@ -24,7 +24,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import React from "react";
 import { LessonForm } from "@/components/forms/lesson-form";
 import { useLessonParams } from "@/hooks/use-lesson-params";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 
 export function LessonEditSheet() {
   const { setParams, update, lessonId } = useLessonParams();

@@ -15,7 +15,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check } from "lucide-react";
 import { useState } from "react";
 import { useTransactionTableContextOptional } from "@/components/tables/transactions/transaction-table-context";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 
 type Tag = {
   id: string;

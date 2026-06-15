@@ -19,7 +19,7 @@ import { useEffect, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useGradeFilterParams } from "@/hooks/use-grade-filter-params";
 import { useI18n } from "@/locales/client";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 
 interface FilterMenuItemProps {
   icon: (typeof Icons)[keyof typeof Icons];

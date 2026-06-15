@@ -33,7 +33,7 @@ import * as React from "react";
 import { FormatAmount } from "@/components/format-amount";
 import { useInvoiceParams } from "@/hooks/use-report-params";
 import { useUserQuery } from "@/hooks/use-user";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 
 const DAY_NAMES = [
   "Sunday",

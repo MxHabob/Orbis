@@ -16,7 +16,7 @@ import { z } from "zod/v3";
 import { InputColor } from "@/components/input-color";
 import { useSubjectParams } from "@/hooks/use-subject-params";
 import { useZodForm } from "@/hooks/use-zod-form";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { invalidateSubjectDomain } from "@/utils/query-invalidation";
 
 const formSchema = z.object({

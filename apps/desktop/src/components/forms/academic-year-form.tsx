@@ -18,7 +18,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useI18n } from "@/locales/client";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 
 interface AcademicYearFormProps {
   initialData?: any;

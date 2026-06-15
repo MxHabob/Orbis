@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { AssignedUser } from "@/components/assigned-user";
 import { useTransactionTableContextOptional } from "@/components/tables/transactions/transaction-table-context";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 
 type User = {
   id: string;

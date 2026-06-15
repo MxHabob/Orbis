@@ -21,7 +21,7 @@ import {
 } from "@tanstack/react-table";
 import React from "react";
 import { useSubjectParams } from "@/hooks/use-subject-params";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { columns, type SubjectsTableMeta } from "./columns";
 import { Header } from "./header";
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { authClient } from "@orbis/auth/auth-client";
+import { authClient } from "@/lib/auth-client";
 import { Button } from "@orbis/ui/button";
 import { cn } from "@orbis/ui/cn";
 import { Dialog } from "@orbis/ui/dialog";
@@ -18,7 +18,7 @@ import * as React from "react";
 import { useState } from "react";
 import { InviteTeamMembersModal } from "@/components/modals/create-staff-users-modal";
 import { useStaffParams } from "@/hooks/use-staff-params";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { columns } from "./columns";
 
 export function DataTable() {

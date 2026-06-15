@@ -13,7 +13,7 @@ import { GradeDataTable } from "@/components/tables/grades/data-table";
 import { GradesSkeleton } from "@/components/tables/grades/skeleton";
 import { useGradeFilterParams } from "@/hooks/use-grade-filter-params";
 import { useI18n } from "@/locales/client";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { invalidateGradesDomain } from "@/utils/query-invalidation";
 import { GradesSaveBar } from "./grades-save-bar";
 

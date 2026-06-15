@@ -21,7 +21,7 @@ import { Loader2, Printer } from "lucide-react";
 import React, { useState } from "react";
 import { useStudentParams } from "@/hooks/use-student-params";
 import { useCurrentLocale, useI18n } from "@/locales/client";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { HIJRI_MONTHS } from "@/utils/academic-calendar";
 import { CertificateViewer } from "../certificates/certificate-viewer";
 

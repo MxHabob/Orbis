@@ -22,7 +22,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import React from "react";
 import { useClassParams } from "@/hooks/use-class-params";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { type ClassesTableMeta, columns, flattenClasses } from "./columns";
 import { Header } from "./header";
 

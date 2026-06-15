@@ -25,7 +25,7 @@ import { TrackerProjectForm } from "@/components/forms/tracker-project-form";
 import { useLatestProjectId } from "@/hooks/use-latest-project-id";
 import { useTeamQuery } from "@/hooks/use-team";
 import { useTrackerParams } from "@/hooks/use-tracker-params";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 
 export function TrackerUpdateSheet() {
   const { data: team } = useTeamQuery();

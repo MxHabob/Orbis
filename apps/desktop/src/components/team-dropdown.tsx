@@ -1,6 +1,6 @@
 "use client";
 
-import { authClient } from "@orbis/auth/auth-client";
+import { authClient } from "@/lib/auth-client";
 import { Avatar, AvatarFallback, AvatarImageNext } from "@orbis/ui/avatar";
 import { Button } from "@orbis/ui/button";
 import { cn } from "@orbis/ui/cn";
@@ -19,7 +19,7 @@ import { useEffect, useRef, useState } from "react";
 import { useOnClickOutside } from "usehooks-ts";
 import { revalidateAfterTeamChange } from "@/actions/revalidate-action";
 import { useUserQuery } from "@/hooks/use-user";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 
 type Props = {
   isExpanded?: boolean;

@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { useTimerStore } from "@/store/timer";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 
 export function GlobalTimerProvider() {
   const trpc = useTRPC();

@@ -17,7 +17,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { authClient } from "@orbis/auth/auth-client";
+import { authClient } from "@/lib/auth-client";
 import { Button } from "@orbis/ui/button";
 import { cn } from "@orbis/ui/cn";
 import {
@@ -65,7 +65,7 @@ import type React from "react";
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { useEditorStore } from "@/store/certificate-editor";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { getFileProxyUrl } from "@/utils/files";
 import { EditorSidebarHeader } from "./editor-sidebar-header";
 

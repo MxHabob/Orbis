@@ -5,7 +5,7 @@ import { useToast } from "@orbis/ui/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Trash } from "lucide-react";
 import { useReportStore } from "@/store/report";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { BottomBar as CoreBottomBar } from "../core/bottom-bar";
 
 type Props = {

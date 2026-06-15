@@ -1,6 +1,6 @@
 "use client";
 
-// import { useTRPC } from "@/trpc/client";
+// import { useTRPC } from "@/ipc/query-adapter";
 import { TZDate } from "@date-fns/tz";
 import { useQuery } from "@tanstack/react-query";
 import {

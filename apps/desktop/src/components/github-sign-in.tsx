@@ -1,6 +1,6 @@
 "use client";
 
-import { authClient } from "@orbis/auth/auth-client";
+import { authClient } from "@/lib/auth-client";
 import { isDesktopApp } from "@orbis/desktop-client/platform";
 import { Icons } from "@orbis/ui/icons";
 import { SubmitButton } from "@orbis/ui/submit-button";

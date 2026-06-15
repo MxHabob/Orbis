@@ -1,6 +1,6 @@
 "use client";
 
-import type { RouterOutputs } from "@api/trpc/routers/_app";
+import type { RouterOutputs } from "@/ipc/query-adapter";
 import { uniqueCurrencies } from "@orbis/location/currencies";
 import { Collapsible, CollapsibleContent } from "@orbis/ui/collapsible";
 import { CurrencyInput } from "@orbis/ui/currency-input";
@@ -35,7 +35,7 @@ import { useLatestProjectId } from "@/hooks/use-latest-project-id";
 import { useTrackerParams } from "@/hooks/use-tracker-params";
 import { useUserQuery } from "@/hooks/use-user";
 import { useZodForm } from "@/hooks/use-zod-form";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 
 const formSchema = z.object({
   id: z.string().uuid().optional(),

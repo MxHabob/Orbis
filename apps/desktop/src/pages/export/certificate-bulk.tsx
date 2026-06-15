@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { CertificateViewer } from "@/components/certificates/certificate-viewer";
-import { api } from "@/lib/tauri-api";
+import { commands } from "@orbis/desktop-client/commands";
 
 const HIJRI_MONTHS_NAMES: Record<number, string> = {
   1: "محرم",
@@ -110,23 +110,23 @@ function BulkExportContent() {
     queryKey: ["bulk-export-certificate-data", studentIds, templateId, type, month],
     queryFn: async () => {
       // 1. Fetch template
-      const template = await api.certificates.getById(templateId!);
+      const template = await commands.certificates.getById(templateId!);
 
       // 2. Fetch all enrollments in parallel
       const enrollments = await Promise.all(
         studentIds.map(async (id) => {
-          const list = await api.enrollments.getAll("", { student_id: id });
+          const list = await commands.enrollments.getAll("", { student_id: id });
           return list?.[0];
         })
       );
       const activeEnrollments = enrollments.filter(Boolean);
 
       // 3. Fetch user info, classes and analytics in parallel
-      const classesList = await api.classes.getAll("");
+      const classesList = await commands.classes.getAll("");
       
       const mappedStudents = await Promise.all(
         activeEnrollments.map(async (enrollment) => {
-          const user = await api.users.getUser(enrollment.student_id);
+          const user = await commands.users.getUser(enrollment.student_id);
           const classObj = classesList?.find((c: any) => c.id === enrollment.class_id);
           
           return {

@@ -1,7 +1,7 @@
 import { useParams } from "react-router-dom";
 import { CertificateEditor } from "@/components/certificates/editor/certificate-editor";
 import { useTauriQuery } from "@/hooks/use-tauri-query";
-import { api } from "@/lib/tauri-api";
+import { commands } from "@orbis/desktop-client/commands";
 import { queryKeys } from "@/lib/query-keys";
 import { Spinner } from "@orbis/ui/spinner";
 
@@ -10,7 +10,7 @@ export default function CertificateEditorPage() {
 
   const { data: template, isLoading } = useTauriQuery(
     queryKeys.certificates.detail(id!),
-    () => api.certificates.getById(id!),
+    () => commands.certificates.getById(id!),
     { enabled: !!id }
   );
 

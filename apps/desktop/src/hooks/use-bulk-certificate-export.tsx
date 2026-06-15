@@ -4,7 +4,7 @@ import { useToast } from "@orbis/ui/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { useExportStore } from "@/store/export";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 
 /**
  * Hook for Bulk Certificate Export (2026 - Production Grade)

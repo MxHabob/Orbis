@@ -16,7 +16,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useExportStore } from "@/store/export";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import type { ClassReport } from "./columns";
 
 type Props = {

@@ -15,7 +15,7 @@
       "csp": null,
       "dangerousDisableAssetCspModification": true,
       "freezePrototype": false,
-      "capabilities": ["default"]
+      "capabilities": ["default", "desktop-capability"]
     }
   },
   "bundle": {

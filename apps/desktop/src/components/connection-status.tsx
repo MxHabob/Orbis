@@ -11,7 +11,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { BankLogo } from "@/components/bank-logo";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import {
   buildConnectionIssues,
   type ConnectionIssue,

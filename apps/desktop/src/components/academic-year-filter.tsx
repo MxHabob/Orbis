@@ -12,7 +12,7 @@ import { useLocation } from "react-router-dom";
 import { useClassesFilterParams } from "@/hooks/use-classes-filter-params";
 import { useCustomerFilterParams } from "@/hooks/use-customer-filter-params";
 import { useI18n } from "@/locales/client";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 
 export function AcademicYearFilter() {
   const trpc = useTRPC();

@@ -18,7 +18,7 @@ import { RevenueForecastChart } from "@/components/charts/revenue-forecast-chart
 import { RunwayChart } from "@/components/charts/runway-chart";
 import { StackedBarChart } from "@/components/charts/stacked-bar-chart";
 import type { ReportType } from "@/components/metrics/utils/chart-types";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { formatAmount } from "@/utils/format";
 
 interface Report {

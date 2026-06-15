@@ -1,7 +1,7 @@
 "use client";
 
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { TeamInvite } from "./team-invite";
 
 export function TeamInvites() {

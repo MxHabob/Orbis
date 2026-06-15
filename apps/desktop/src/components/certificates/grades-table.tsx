@@ -4,7 +4,7 @@ import { cn } from "@orbis/ui/cn";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 
 interface GradesTableProps {
   studentId?: string;

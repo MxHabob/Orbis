@@ -1,6 +1,6 @@
 "use client";
 
-import { authClient } from "@orbis/auth/auth-client";
+import { authClient } from "@/lib/auth-client";
 import {
   Card,
   CardContent,
@@ -24,7 +24,7 @@ import { useSearchParams } from "react-router-dom";
 import { z } from "zod/v3";
 import { useZodForm } from "@/hooks/use-zod-form";
 import { useI18n } from "@/locales/client";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 
 const formSchema = z
   .object({

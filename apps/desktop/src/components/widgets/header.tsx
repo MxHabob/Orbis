@@ -1,7 +1,7 @@
 "use client";
 
 import { TZDate } from "@date-fns/tz";
-import { authClient } from "@orbis/auth/auth-client";
+import { authClient } from "@/lib/auth-client";
 import { cn } from "@orbis/ui/cn";
 import { TabsList, TabsTrigger } from "@orbis/ui/tabs";
 import { useEffect, useState } from "react";

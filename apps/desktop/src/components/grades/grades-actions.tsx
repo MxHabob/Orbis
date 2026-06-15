@@ -32,7 +32,7 @@ import { useRef, useState } from "react";
 import { useGradeFilterParams } from "@/hooks/use-grade-filter-params";
 import { useI18n } from "@/locales/client";
 import { useExportStore } from "@/store/export";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { invalidateGradesDomain } from "@/utils/query-invalidation";
 
 export function GradesActions() {

@@ -2,7 +2,7 @@
 
 import { Spinner } from "@orbis/ui/spinner";
 import { useQuery } from "@tanstack/react-query";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { AssignedUser } from "./assigned-user";
 
 type User = {

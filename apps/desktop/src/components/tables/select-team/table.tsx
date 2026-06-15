@@ -1,6 +1,6 @@
 "use client";
 
-import type { RouterOutputs } from "@api/trpc/routers/_app";
+import type { RouterOutputs } from "@/ipc/query-adapter";
 import { Table, TableBody } from "@orbis/ui/table";
 import { TableRow } from "./table-row";
 

@@ -33,7 +33,7 @@ import {
 } from "@/hooks/use-ai-filter";
 import { useTrackerFilterParams } from "@/hooks/use-tracker-filter-params";
 import { useUserQuery } from "@/hooks/use-user";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { FilterList } from "./filter-list";
 
 const statusFilters = [

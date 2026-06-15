@@ -8,7 +8,7 @@ import { DocumentDetailsSkeleton } from "@/components/document-details-skeleton"
 import { FileViewer } from "@/components/file-viewer";
 import { VaultRelatedFiles } from "@/components/vault/vault-related-files";
 import { useDocumentParams } from "@/hooks/use-document-params";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { getFileProxyUrl } from "@/utils/files";
 import { formatSize } from "@/utils/format";
 

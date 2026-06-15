@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useChatActions, useChatId } from "@/hooks/use-chat-actions";
 import { useChatInterface } from "@/hooks/use-chat-interface";
 import { useMetricsFilter } from "@/hooks/use-metrics-filter";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { getPeriodLabel } from "@/utils/metrics-date-utils";
 import { BaseWidget } from "./base";
 import { WIDGET_POLLING_CONFIG } from "./widget-config";

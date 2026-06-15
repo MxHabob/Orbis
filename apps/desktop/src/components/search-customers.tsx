@@ -2,7 +2,7 @@
 
 import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
 import { useQuery } from "@tanstack/react-query";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 
 type Props = {
   onSelect: (id: string) => void;

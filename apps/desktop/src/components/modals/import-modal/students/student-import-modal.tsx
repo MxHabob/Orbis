@@ -16,7 +16,7 @@ import { parseAsBoolean, parseAsString, useQueryStates } from "nuqs";
 import { useEffect, useMemo, useState } from "react";
 import { useZodForm } from "@/hooks/use-zod-form";
 import { useI18n } from "@/locales/client";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { invalidateStudentDomain } from "@/utils/query-invalidation";
 import {
   ImportCsvContext,

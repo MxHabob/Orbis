@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { authClient } from "@orbis/auth/auth-client";
+import { authClient } from "@/lib/auth-client";
 import { cn } from "@orbis/ui/cn";
 import { Form, FormControl, FormField, FormItem } from "@orbis/ui/form";
 import { Input } from "@orbis/ui/input";

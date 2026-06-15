@@ -10,7 +10,7 @@ import { useSortParams } from "@/hooks/use-sort-params";
 import { useTableScroll } from "@/hooks/use-table-scroll";
 import { useTrackerFilterParams } from "@/hooks/use-tracker-filter-params";
 import { useUserQuery } from "@/hooks/use-user";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { DataTableHeader } from "./data-table-header";
 import { DataTableRow } from "./data-table-row";
 import { EmptyState, NoResults } from "./empty-states";

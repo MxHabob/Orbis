@@ -5,7 +5,7 @@ import { Skeleton } from "@orbis/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import React from "react";
 import { useLessonParams } from "@/hooks/use-lesson-params";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 
 const daysOfWeek = [
   { value: 0, label: "Sunday" },

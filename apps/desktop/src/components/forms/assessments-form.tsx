@@ -27,7 +27,7 @@ import { z } from "zod/v3";
 import { initializeAssessmentsAction } from "@/actions/assessments/initialize-assessments";
 import { useZodForm } from "@/hooks/use-zod-form";
 import { useI18n } from "@/locales/client";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { invalidateGradesDomain } from "@/utils/query-invalidation";
 
 const formSchema = z.object({

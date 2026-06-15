@@ -20,7 +20,7 @@ import {
 } from "nuqs";
 import { useState } from "react";
 import { useZodForm } from "@/hooks/use-zod-form";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { invalidateGradesDomain } from "@/utils/query-invalidation";
 import {
   type GradeImportFormData,

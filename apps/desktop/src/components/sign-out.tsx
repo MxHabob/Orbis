@@ -1,6 +1,6 @@
 "use client";
 
-import { authClient } from "@orbis/auth/auth-client";
+import { authClient } from "@/lib/auth-client";
 import { DropdownMenuItem } from "@orbis/ui/dropdown-menu";
 import { useNavigate } from "react-router-dom";
 

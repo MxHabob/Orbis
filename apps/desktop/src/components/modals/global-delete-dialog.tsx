@@ -8,7 +8,7 @@ import { useStaffParams } from "@/hooks/use-staff-params";
 import { useStudentParams } from "@/hooks/use-student-params";
 import { useSubjectParams } from "@/hooks/use-subject-params";
 import { useI18n } from "@/locales/client";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import {
   invalidateClassDomain,
   invalidateStudentDomain,

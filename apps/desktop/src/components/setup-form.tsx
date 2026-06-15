@@ -17,7 +17,7 @@ import { useRef, useState } from "react";
 import { z } from "zod/v3";
 import { useUserMutation } from "@/hooks/use-user";
 import { useZodForm } from "@/hooks/use-zod-form";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { AvatarUpload } from "./avatar-upload";
 
 const formSchema = z.object({

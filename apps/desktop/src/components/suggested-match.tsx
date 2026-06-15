@@ -1,6 +1,6 @@
 "use client";
 
-import type { RouterOutputs } from "@api/trpc/routers/_app";
+import type { RouterOutputs } from "@/ipc/query-adapter";
 import { Button } from "@orbis/ui/button";
 import { cn } from "@orbis/ui/cn";
 import { Icons } from "@orbis/ui/icons";
@@ -10,7 +10,7 @@ import { useToast } from "@orbis/ui/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useDocumentParams } from "@/hooks/use-document-params";
 import { useLocalStorage } from "@/hooks/use-local-storage";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { LocalStorageKeys } from "@/utils/constants";
 import { FilePreview } from "./file-preview";
 import { FormatAmount } from "./format-amount";

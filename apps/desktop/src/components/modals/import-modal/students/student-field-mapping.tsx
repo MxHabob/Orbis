@@ -20,7 +20,7 @@ import { Switch } from "@orbis/ui/switch";
 import { useQuery } from "@tanstack/react-query";
 import { Controller, useFieldArray } from "react-hook-form";
 import { useI18n } from "@/locales/client";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { type StudentImportFormData, useCsvContext } from "../shared/context";
 import { FieldRow } from "../shared/field-row";
 

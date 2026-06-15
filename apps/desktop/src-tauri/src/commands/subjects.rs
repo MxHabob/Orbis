@@ -98,7 +98,7 @@ pub async fn update_subject(
         active.color = Set(Some(color));
     }
     if let Some(sort_order) = request.sort_order {
-        active.sort_order = Set(sort_order);
+        active.sort_order = Set(Some(sort_order));
     }
     active.updated_at = Set(chrono::Utc::now().naive_utc().to_string());
 

@@ -9,6 +9,11 @@
     "tailwindcss": "^4.1.18"
   },
   "exports": {
+    ".": "./src/index.ts",
+    "./commands": "./src/commands.ts",
+    "./bindings": "./src/bindings.ts",
+    "./types": "./src/types.ts",
+    "./events": "./src/events.ts",
     "./platform": "./src/platform.ts",
     "./deep-links": "./src/platform.ts",
     "./desktop-variants": "./src/desktop-variants.ts",

@@ -1,6 +1,6 @@
 "use client";
 
-import type { RouterOutputs } from "@api/trpc/routers/_app";
+import type { RouterOutputs } from "@/ipc/query-adapter";
 import { cn } from "@orbis/ui/cn";
 import { useI18n } from "@/locales/client";
 

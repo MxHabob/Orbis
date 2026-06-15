@@ -1,6 +1,6 @@
 import { Widgets } from "@/components/widgets";
 import { useTauriQuery } from "@/hooks/use-tauri-query";
-import { api } from "@/lib/tauri-api";
+import { commands } from "@orbis/desktop-client/commands";
 import { queryKeys } from "@/lib/query-keys";
 import { useAuth } from "@/hooks/use-auth";
 import { Spinner } from "@orbis/ui/spinner";
@@ -11,7 +11,7 @@ export default function OverviewPage() {
 
   const { data: widgetPreferences, isLoading } = useTauriQuery(
     queryKeys.widgets.preferences(user?.id || ""),
-    () => api.widgets.getWidgetPreferences(user?.id || ""),
+    () => commands.widgets.getWidgetPreferences(user?.id || ""),
     { enabled: !!user?.id }
   );
 

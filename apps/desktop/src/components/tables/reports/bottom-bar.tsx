@@ -17,7 +17,7 @@ import { useMemo, useState } from "react";
 import { useBulkCertificateExport } from "@/hooks/use-bulk-certificate-export";
 import { useI18n } from "@/locales/client";
 import { useReportStore } from "@/store/report";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { HIJRI_MONTHS } from "@/utils/academic-calendar";
 import { BottomBar as CoreBottomBar } from "../core/bottom-bar";
 

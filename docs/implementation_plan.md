@@ -1,534 +1,418 @@
-# تحويل تطبيق Desktop من Next.js إلى Tauri أصيل - الخطة النهائية
+# إعادة هيكلة تطبيق Orbis Desktop — أفضل ممارسات 2026 (النسخة المُصحّحة)
 
-## القرارات المعتمدة
+## تشخيص المشاكل الحالية
 
-| القرار | الاختيار | السبب |
-|--------|---------|-------|
-| **الترجمة (i18n)** | `react-i18next` + namespace splitting | معيار الصناعة - تستخدمه Airbnb, Netflix, Uber, Shopify. أكبر ecosystem، دعم RTL ممتاز، lazy-loading |
-| **URL State** | `nuqs` مع `nuqs/adapters/react-router/v6` | أفضل ممارسة 2026 - type-safe, أداء فائق, debouncing مدمج, zero bundle overhead |
-| **المصادقة** | تحويل كامل لـ Tauri commands | `login` → `validate_token` → `logout` عبر IPC مباشر - صفر شبكة |
-| **أوامر Rust ناقصة** | إنشاء أوامر جديدة حيث لا يوجد مقابل | مطابقة الأسماء للموجود، إنشاء جديد للناقص |
-| **التصميم** | لا يتغير ملي متر واحد | نفس CSS, نفس classNames, نفس component tree |
+بعد تحليل المشروع بالكامل + دراسة ما تفعله التطبيقات العالمية الكبيرة فعلاً (Spacedrive, 1Password, Linear, VS Code)، إليك المشاكل الجوهرية مرتبة بالأهمية:
 
----
+### 🔴 مشاكل حرجة (Anti-Patterns)
 
-## خريطة مطابقة tRPC → Tauri Commands
+| # | المشكلة | الموقع | لماذا هي anti-pattern؟ |
+|---|---------|--------|----------------------|
+| 1 | **خادم Axum HTTP مضمّن** يعمل بالتوازي مع IPC | [lib.rs:333-335](file:///c:/Users/YZLPN3/Downloads/new/Orbis/apps/desktop/src-tauri/src/lib.rs#L333-L335) | يفتح منفذ شبكي (3002) داخل تطبيق desktop — ثغرة أمنية + تكرار وظيفي. Tauri مُصمّم لـ IPC فقط |
+| 2 | **محاكي tRPC بـ Proxy** — 235 سطر | [trpc/client.ts](file:///c:/Users/YZLPN3/Downloads/new/Orbis/apps/desktop/src/trpc/client.ts) | يبني واجهة tRPC وهمية فوق `invoke()` بدون type safety حقيقي |
+| 3 | **كل أنواع IPC = `unknown`** | [tauri-api.ts](file:///c:/Users/YZLPN3/Downloads/new/Orbis/apps/desktop/src/lib/tauri-api.ts) | 358 سطر من `invoke<unknown>` — لا أمان أنواع من Rust إلى TypeScript |
+| 4 | **`"use client"` في ~295 ملف** Vite | grep results | هذه directive لـ Next.js RSC. في Vite+Tauri لا معنى لها |
 
-### ✅ أوامر موجودة (تحتاج مطابقة أسماء فقط)
+### 🟡 مشاكل معمارية
 
-| tRPC Endpoint | Tauri Command الموجود | ملاحظات |
-|---------------|----------------------|---------|
-| `trpc.user.me` | `validate_token` | يرجع User model |
-| `trpc.user.update` | `update_user` | ✅ متطابق |
-| `trpc.students.getAll` | `get_enrollments` | الطلاب = enrollments في هذا النظام |
-| `trpc.students.getByClassId` | `get_enrollments` | مع `class_id` param |
-| `trpc.students.getById` | `get_enrollment` | ✅ متطابق |
-| `trpc.classes.getAll` | `get_classes` | ✅ متطابق |
-| `trpc.classes.getById` | استخدام `get_classes` مع filter | أو إنشاء أمر جديد |
-| `trpc.grades.getGridData` | `get_grades` | مع params مناسبة |
-| `trpc.grades.getClassStatistics` | `get_grade_analytics` | ✅ متطابق |
-| `trpc.academic.getCurrentYear` | `get_cycles` | مع `is_current: 1` |
-| `trpc.academic.getYears` | `get_cycles` | ✅ متطابق |
-| `trpc.reports.getSchoolMetrics` | `get_dashboard_stats` | ✅ متطابق |
-| `trpc.notifications.getAll` | `get_notifications` | ✅ متطابق |
-| `trpc.notifications.markRead` | `mark_notification_read` | ✅ متطابق |
-
-### 🆕 أوامر جديدة مطلوب إنشاؤها في Rust
-
-| tRPC Endpoint | Tauri Command جديد | Service Method المتاح |
-|---------------|-------------------|----------------------|
-| `trpc.subjects.getAll` | `get_subjects` | يحتاج إضافة في Service |
-| `trpc.subjects.getById` | `get_subject` | يحتاج إضافة في Service |
-| `trpc.subjects.create` | `create_subject` | يحتاج إضافة في Service |
-| `trpc.subjects.update` | `update_subject` | يحتاج إضافة في Service |
-| `trpc.subjects.delete` | `delete_subject` | يحتاج إضافة في Service |
-| `trpc.academic.getTerms` | `get_terms` | يحتاج (terms = cycles بنوع فرعي أو entity مستقل) |
-| `trpc.assessments.getByClass` | `get_assessments` | Entity موجود `assessment.rs` |
-| `trpc.assessments.create` | `create_assessment` | يحتاج إضافة |
-| `trpc.assessments.update` | `update_assessment` | يحتاج إضافة |
-| `trpc.certificates.getAll` | `get_certificates` | يحتاج Service جديد |
-| `trpc.certificates.getById` | `get_certificate` | يحتاج Service جديد |
-| `trpc.certificates.create` | `create_certificate` | يحتاج Service جديد |
-| `trpc.vault.getAll` | `get_documents` | Entity `document.rs` موجود |
-| `trpc.vault.getById` | `get_document` | يحتاج أمر |
-| `trpc.vault.create` | `create_document` | يحتاج أمر |
-| `trpc.vault.delete` | `delete_document` | يحتاج أمر |
-| `trpc.promotions.preview` | `preview_promotions` | يحتاج (يعتمد على `promote_students`) |
-| `trpc.promotions.execute` | `promote_students` | ✅ موجود |
-| `trpc.promotions.statistics` | `get_promotion_stats` | يحتاج إضافة |
-| `trpc.widgets.getWidgetPreferences` | `get_widget_preferences` | يحتاج إضافة (يمكن تخزينه محلياً) |
-| `trpc.widgets.updateWidgetPreferences` | `update_widget_preferences` | يحتاج إضافة |
-
-> [!IMPORTANT]
-> **إجمالي الأوامر الجديدة المطلوبة: ~20 أمر**  
-> بعضها يمكن تنفيذه كـ local storage في Tauri (مثل widget preferences)  
-> وبعضها يحتاج إضافة methods في `core-domain` Service layer
+| # | المشكلة | التفاصيل |
+|---|---------|----------|
+| 5 | **Layer-based structure** (145 component + 75 hook في مجلدات عملاقة) | الشركات الكبيرة تستخدم Feature-based modules |
+| 6 | **10 فحوصات `typeof window === "undefined"`** | أنماط SSR لا معنى لها في Tauri |
+| 7 | **`AuthContext` كـ Provider** | يمكن استبدالها بـ Zustand store بدون provider |
+| 8 | **`next-international` كـ dependency** | مكتبة Next.js، المستخدم فعلاً هو `react-i18next` |
 
 ---
 
-## مراحل التنفيذ المفصلة
-
-### المرحلة 1: البنية التحتية (Foundation) — لا تغيير تصميم
-
-#### [NEW] [src/main.tsx](file:///c:/Users/YZLPN3/Downloads/new/Orbis/apps/desktop/src/main.tsx)
-```tsx
-import React from "react";
-import ReactDOM from "react-dom/client";
-import { App } from "./App";
-import "@/styles/globals.css";
-import "@orbis/ui/globals.css";
-
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
-```
-
-#### [NEW] [src/App.tsx](file:///c:/Users/YZLPN3/Downloads/new/Orbis/apps/desktop/src/App.tsx)
-```tsx
-import { BrowserRouter } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { NuqsAdapter } from "nuqs/adapters/react-router/v6";
-import { ThemeProvider } from "@/components/theme-provider";
-import { AuthProvider } from "@/contexts/auth-context";
-import { I18nProvider } from "@/i18n/provider";
-import { AppRouter } from "./router";
-import { Toaster } from "@orbis/ui/toaster";
-import { DesktopProvider } from "@/components/desktop-provider";
-import { DesktopHeader } from "@/components/desktop-header";
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: { staleTime: 30_000, retry: 1 },
-  },
-});
-
-export function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <NuqsAdapter>
-          <I18nProvider>
-            <AuthProvider>
-              <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-                <DesktopHeader />
-                <DesktopProvider />
-                <AppRouter />
-                <Toaster />
-              </ThemeProvider>
-            </AuthProvider>
-          </I18nProvider>
-        </NuqsAdapter>
-      </BrowserRouter>
-    </QueryClientProvider>
-  );
-}
-```
-
-#### [NEW] [src/router.tsx](file:///c:/Users/YZLPN3/Downloads/new/Orbis/apps/desktop/src/router.tsx)
-تحويل هيكل Next.js App Router إلى React Router:
-
-```
-Next.js                              →  React Router
-─────────────────────────────────────────────────────
-[locale]/(public)/login/page.tsx     →  /login
-[locale]/(app)/(sidebar)/page.tsx    →  /
-[locale]/(app)/(sidebar)/grades/     →  /grades
-[locale]/(app)/(sidebar)/certificates/→  /certificates
-[locale]/(app)/(sidebar)/reports/    →  /reports
-[locale]/(app)/(sidebar)/reports/[Id]→  /reports/:id
-[locale]/(app)/(sidebar)/vault/      →  /vault
-[locale]/(app)/(sidebar)/account/    →  /account
-[locale]/(app)/(sidebar)/settings/   →  /settings/*
-[locale]/(app)/(editor)/certificates/→  /certificates/editor/:id
-[locale]/(app)/desktop/checkout/     →  /desktop/checkout
-[locale]/(app)/desktop/search/       →  /desktop/search
-[locale]/export/certificate/         →  /export/certificate
-```
-
-- Next.js Layouts (`layout.tsx`) → React Router `<Outlet>` مع wrapper components
-- Route Groups `(sidebar)`, `(editor)` → Nested Routes مع layout مختلف
-- `[locale]` → يُحذف (اللغة تُدار بـ i18n context, ليست في URL)
-
----
-
-### المرحلة 2: طبقة البيانات - Tauri Commands API
-
-#### [NEW] [src/lib/tauri-api.ts](file:///c:/Users/YZLPN3/Downloads/new/Orbis/apps/desktop/src/lib/tauri-api.ts)
-
-Type-safe wrapper حول كل Tauri commands:
-
-```typescript
-import { invoke } from "@tauri-apps/api/core";
-
-// ── Typed API namespace ──────────────────────────────
-export const api = {
-  auth: {
-    login: (email: string, password: string) =>
-      invoke<LoginResponse>("login", { request: { email, password } }),
-    register: (data: RegisterRequest) =>
-      invoke<UserModel>("register", { request: data }),
-    validateToken: (token: string) =>
-      invoke<UserModel>("validate_token", { token }),
-    logout: (token: string) =>
-      invoke<void>("logout", { token }),
-  },
-  
-  academics: {
-    getCycles: (orgId: string, params?: CycleParams) =>
-      invoke<AcademicCycle[]>("get_cycles", { orgId, params: params ?? {} }),
-    getCurrentCycle: (orgId: string) =>
-      invoke<AcademicCycle[]>("get_cycles", { orgId, params: { isCurrent: 1 } }),
-    // ...
-  },
-  
-  grades: {
-    getGrades: (orgId: string, params: GradeParams) =>
-      invoke<Grade[]>("get_grades", { orgId, params }),
-    submitGrade: (orgId: string, gradedBy: string, request: CreateGradeRequest) =>
-      invoke<Grade>("submit_grade", { orgId, gradedBy, request }),
-    // ...
-  },
-  // ... باقي الأقسام
-} as const;
-```
-
-#### [NEW] [src/hooks/use-tauri-query.ts](file:///c:/Users/YZLPN3/Downloads/new/Orbis/apps/desktop/src/hooks/use-tauri-query.ts)
-
-TanStack Query wrappers للـ caching والـ optimistic updates:
-
-```typescript
-import { useQuery, useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-
-// ── Query Keys Factory (enterprise pattern) ──────────
-export const queryKeys = {
-  auth: {
-    session: () => ["auth", "session"] as const,
-  },
-  grades: {
-    all: (orgId: string) => ["grades", orgId] as const,
-    grid: (params: GradeGridParams) => ["grades", "grid", params] as const,
-    analytics: (orgId: string, params: any) => ["grades", "analytics", orgId, params] as const,
-  },
-  classes: {
-    all: (orgId?: string) => ["classes", orgId] as const,
-    byId: (id: string) => ["classes", "detail", id] as const,
-  },
-  // ... type-safe query keys per domain
-} as const;
-```
-
-#### [MODIFY] [src/utils/query-invalidation.ts](file:///c:/Users/YZLPN3/Downloads/new/Orbis/apps/desktop/src/utils/query-invalidation.ts)
-- استبدال `trpc.*.queryKey()` بـ `queryKeys.*` المحلي
-
----
-
-### المرحلة 3: المصادقة (Auth) - Tauri Commands فقط
-
-#### [NEW] [src/contexts/auth-context.tsx](file:///c:/Users/YZLPN3/Downloads/new/Orbis/apps/desktop/src/contexts/auth-context.tsx)
-
-```typescript
-// Enterprise-grade auth context using Tauri IPC
-interface AuthState {
-  user: UserModel | null;
-  token: string | null;
-  isLoading: boolean;
-  isAuthenticated: boolean;
-}
-
-// Auto-validates token on mount via invoke("validate_token")
-// Stores token in localStorage (Tauri secure storage optional)
-// Provides: login(), logout(), user, isAuthenticated
-```
-
-#### [NEW] [src/hooks/use-auth.ts](file:///c:/Users/YZLPN3/Downloads/new/Orbis/apps/desktop/src/hooks/use-auth.ts)
-- يستبدل كل استخدامات `authClient` من `@orbis/auth/auth-client` (~26 ملف)
-- يستبدل كل استخدامات `auth.api.getSession()` من server (~3 ملفات)
-
-#### [NEW] [src/components/auth-guard.tsx](file:///c:/Users/YZLPN3/Downloads/new/Orbis/apps/desktop/src/components/auth-guard.tsx)
-- يستبدل server-side `redirect("/login")` بـ client-side guard
-- يغلف الـ routes المحمية
-
----
-
-### المرحلة 4: الترجمة (i18n) - react-i18next Enterprise Setup
-
-#### [NEW] [src/i18n/index.ts](file:///c:/Users/YZLPN3/Downloads/new/Orbis/apps/desktop/src/i18n/index.ts)
-
-```typescript
-import i18n from "i18next";
-import { initReactI18next } from "react-i18next";
-
-// Lazy-loaded namespaces (enterprise pattern - Airbnb/Netflix style)
-const resources = {
-  ar: { translation: () => import("@/locales/ar") },
-  en: { translation: () => import("@/locales/en") },
-};
-
-i18n.use(initReactI18next).init({
-  lng: localStorage.getItem("locale") || "ar",
-  fallbackLng: "en",
-  interpolation: { escapeValue: false },
-  react: { useSuspense: true },
-});
-```
-
-#### [NEW] [src/i18n/provider.tsx](file:///c:/Users/YZLPN3/Downloads/new/Orbis/apps/desktop/src/i18n/provider.tsx)
-
-#### [MODIFY] ملفات الترجمة الموجودة
-- [src/locales/ar.ts](file:///c:/Users/YZLPN3/Downloads/new/Orbis/apps/desktop/src/locales/ar.ts) → `ar.json` (تحويل format)
-- [src/locales/en.ts](file:///c:/Users/YZLPN3/Downloads/new/Orbis/apps/desktop/src/locales/en.ts) → `en.json` (تحويل format)
-
-#### تحويل الاستخدام في الكومبوننتس:
-```diff
-- import { useI18n } from "@/locales/client";
-- const t = useI18n();
-+ import { useTranslation } from "react-i18next";
-+ const { t } = useTranslation();
-```
-
-#### [DELETE] [src/locales/client.ts](file:///c:/Users/YZLPN3/Downloads/new/Orbis/apps/desktop/src/locales/client.ts)
-#### [DELETE] [src/locales/server.ts](file:///c:/Users/YZLPN3/Downloads/new/Orbis/apps/desktop/src/locales/server.ts)
-
----
-
-### المرحلة 5: تحويل الصفحات (Pages)
-
-**القاعدة لكل صفحة:**
-1. ❌ حذف `export const metadata` (Next.js SEO) → استبدال بـ `document.title = "..."` في `useEffect`
-2. ❌ حذف `async function Page` → تحويل لـ React component عادي
-3. ❌ حذف `HydrateClient` wrapper
-4. ❌ حذف `headers()`, `cookies()`, `redirect()`, `await params`
-5. ✅ إضافة `useTauriQuery()` بدل `queryClient.fetchQuery(trpc.*)`
-6. ✅ نفس JSX بالضبط — لا تغيير تصميم
-
-**مثال تحويل الصفحة الرئيسية:**
-
-```diff
-- import type { Metadata } from "next";
-- import type { SearchParams } from "nuqs";
-- import { getQueryClient, HydrateClient, trpc } from "@/trpc/server";
-+ import { useTauriQuery } from "@/hooks/use-tauri-query";
-+ import { useAuth } from "@/hooks/use-auth";
-
-- export const metadata: Metadata = { title: "Overview | Orbis" };
-
-- export default async function Page(props: Props) {
--   const searchParams = await props.searchParams;
--   const queryClient = getQueryClient();
--   const widgetPreferences = await queryClient.fetchQuery(
--     trpc.widgets.getWidgetPreferences.queryOptions()
--   );
-+ export default function OverviewPage() {
-+   const { user } = useAuth();
-+   const { data: widgetPreferences } = useTauriQuery(
-+     "get_widget_preferences", { userId: user.id }
-+   );
-
-    return (
--     <HydrateClient>
-        <Widgets
-          initialPreferences={widgetPreferences}
--         weeklyCalendar={weeklyCalendar}
-+         weeklyCalendar={localStorage.getItem("weeklyCalendar") === "true"}
-        />
--     </HydrateClient>
-    );
-  }
-```
-
----
-
-### المرحلة 6: تحويل الكومبوننتس
-
-#### 6A. استبدال `useTRPC()` (~50+ كومبوننت)
-
-كل كومبوننت يحتوي على:
-```typescript
-const trpc = useTRPC();
-const { data } = useQuery(trpc.X.Y.queryOptions(params));
-```
-يتحول إلى:
-```typescript
-const { data } = useTauriQuery(queryKeys.X.Y(params), () => api.X.Y(params));
-```
-
-#### 6B. استبدال `useAction` من `next-safe-action` (~10 ملفات)
-
-| ملف | الـ action الحالي | البديل |
-|-----|-----------------|--------|
-| [feedback-form.tsx](file:///c:/Users/YZLPN3/Downloads/new/Orbis/apps/desktop/src/components/feedback-form.tsx) | `useAction(sendFeedback)` | `useTauriMutation("submit_feedback")` |
-| [tracker-calendar-type.tsx](file:///c:/Users/YZLPN3/Downloads/new/Orbis/apps/desktop/src/components/tracker-calendar-type.tsx) | `useAction(changeCalendarType)` | Local state / localStorage |
-| [support-form.tsx](file:///c:/Users/YZLPN3/Downloads/new/Orbis/apps/desktop/src/components/support-form.tsx) | `useAction(sendSupport)` | `useTauriMutation("submit_support")` |
-| [grade-grid-wrapper.tsx](file:///c:/Users/YZLPN3/Downloads/new/Orbis/apps/desktop/src/components/grades/grade-grid-wrapper.tsx) | `useAction(saveGrades)` | `useTauriMutation("submit_grades_bulk")` |
-| [assessments-form.tsx](file:///c:/Users/YZLPN3/Downloads/new/Orbis/apps/desktop/src/components/forms/assessments-form.tsx) | `useAction(saveAssessment)` | `useTauriMutation("create_assessment")` |
-| + 5 ملفات أخرى | | |
-
-#### 6C. استبدال `authClient` (~26 ملف)
-
-```diff
-- import { authClient } from "@orbis/auth/auth-client";
-- const { data: session } = authClient.useSession();
-+ import { useAuth } from "@/hooks/use-auth";
-+ const { user } = useAuth();
-```
-
-#### 6D. تحويل `nuqs` adapter
-
-```diff
-// في App.tsx فقط - تغيير adapter واحد
-- import { NuqsAdapter } from "nuqs/adapters/next/app";
-+ import { NuqsAdapter } from "nuqs/adapters/react-router/v6";
-```
-
-> [!TIP]
-> جميع hooks الـ `nuqs` في [src/hooks/](file:///c:/Users/YZLPN3/Downloads/new/Orbis/apps/desktop/src/hooks) (~40+ ملف) **لا تحتاج تغيير!**
-> فقط الـ adapter في الـ root يتغير. الـ `useQueryState` و `useQueryStates` تعمل بنفس الطريقة.
-
----
-
-### المرحلة 7: أوامر Rust الجديدة + التنظيف
-
-#### [NEW] Rust commands to add in `src-tauri/src/commands/`:
-
-##### [NEW] `subjects.rs`
-```rust
-// get_subjects, get_subject, create_subject, update_subject, delete_subject
-```
-
-##### [NEW] `assessments.rs`  
-```rust
-// get_assessments, create_assessment, update_assessment, delete_assessment
-```
-
-##### [NEW] `documents.rs` (Vault)
-```rust
-// get_documents, get_document, create_document, delete_document, update_document
-```
-
-##### [NEW] `certificates.rs`
-```rust
-// get_certificates, get_certificate, create_certificate, update_certificate
-```
-
-##### [NEW] `widgets.rs` (Local Storage approach)
-```rust
-// get_widget_preferences, update_widget_preferences
-// يخزن في ملف JSON محلي بدلاً من database
-```
-
-##### [MODIFY] [commands/mod.rs](file:///c:/Users/YZLPN3/Downloads/new/Orbis/apps/desktop/src-tauri/src/commands/mod.rs)
-```diff
-  pub mod error;
-  pub mod auth;
-  pub mod users;
-  pub mod academics;
-  pub mod enrollments;
-  pub mod grades;
-  pub mod attendance;
-  pub mod finance;
-  pub mod misc;
-+ pub mod subjects;
-+ pub mod assessments;
-+ pub mod documents;
-+ pub mod certificates;
-+ pub mod widgets;
-```
-
-##### [MODIFY] [lib.rs](file:///c:/Users/YZLPN3/Downloads/new/Orbis/apps/desktop/src-tauri/src/lib.rs)
-- إضافة الأوامر الجديدة في `invoke_handler`
-
-#### التنظيف النهائي
-
-##### [DELETE] الملفات:
-```
-src/app/global-error.tsx                    ← Next.js global error
-src/app/[locale]/error.tsx                  ← Next.js error page
-src/app/[locale]/not-found.tsx              ← Next.js 404
-src/app/[locale]/layout.tsx                 ← Next.js root layout (يُنقل إلى App.tsx)
-src/app/[locale]/providers.tsx              ← يُنقل إلى App.tsx
-src/locales/client.ts                       ← next-international client
-src/locales/server.ts                       ← next-international server
-src/app/favicon.ico                         ← يُنقل إلى public/
-```
-
-##### [MODIFY] [package.json](file:///c:/Users/YZLPN3/Downloads/new/Orbis/apps/desktop/package.json)
-```diff
-  "dependencies": {
-+   "i18next": "^24.x",
-+   "react-i18next": "^15.x",
-+   "i18next-browser-languagedetector": "^8.x",
--   "@trpc/client": "^11.8.1",
--   "@trpc/server": "^11.9.0",
--   "@trpc/tanstack-react-query": "^11.8.1",
--   "next-international": "1.3.1",
--   "@orbis/auth": "workspace:*",         ← server-side auth
-    "next-themes": "^0.4.6",              ← يبقى (يعمل مع Vite بدون مشاكل)
-    "nuqs": "^2.8.3",                     ← يبقى (adapter يتغير فقط)
-  }
-```
-
----
-
-## ترتيب العمل (Execution Order)
+## ماذا تفعل التطبيقات العالمية الكبيرة فعلاً؟
 
 ```mermaid
-graph TD
-    A[المرحلة 1: Foundation<br/>main.tsx, App.tsx, router.tsx] --> B[المرحلة 2: Data Layer<br/>tauri-api.ts, query hooks]
-    B --> C[المرحلة 3: Auth<br/>auth-context, auth-guard]
-    C --> D[المرحلة 4: i18n<br/>react-i18next setup]
-    D --> E[المرحلة 5: Pages<br/>تحويل 20 صفحة]
-    E --> F[المرحلة 6: Components<br/>تحويل 50+ كومبوننت]
-    F --> G[المرحلة 7: Rust + Cleanup<br/>أوامر جديدة + تنظيف]
+graph LR
+    subgraph "Spacedrive / 1Password Pattern"
+        A["Rust Structs + Commands"] -->|"specta auto-gen"| B["bindings.ts<br/>(TypeScript Types)"]
+        B --> C["Typed invoke()"]
+        C --> D["TanStack Query Hooks"]
+        D --> E["React Components"]
+    end
+    subgraph "Orbis الحالي ❌"
+        F["Rust Commands"] -->|"manual unknown"| G["tauri-api.ts"]
+        G -->|"Proxy hack"| H["tRPC emulator"]
+        H --> I["Components"]
+    end
+    style B fill:#4ade80,stroke:#16a34a
+    style H fill:#ef4444,stroke:#dc2626
+```
+
+### المبادئ المعمارية من Spacedrive / 1Password / Linear:
+
+1. **`specta` / `tauri-specta`** — توليد أنواع TypeScript تلقائياً من Rust structs. **ليس أنواع يدوية**.
+2. **IPC فقط** — بدون خادم HTTP مضمّن. Tauri IPC أسرع وأأمن.
+3. **Feature-based modules** — ليس `components/` بـ 145 ملف، بل `features/grades/`, `features/certificates/`...
+4. **Tauri v2 Events** — اتصال ثنائي الاتجاه (Backend → Frontend) للإشعارات والمزامنة.
+5. **CQRS-lite** — فصل واضح: Queries (useQuery) vs Mutations (useMutation).
+6. **Minimal Provider tree** — لكن ليس "provider واحد" (كما قلت خطأً). الحد الأدنى الصحيح هو 3.
+
+---
+
+## التصحيحات على الخطة الأولى
+
+> [!WARNING]
+> ### تصحيح 1: لا يمكن اختزال Providers إلى واحد
+> قلت سابقاً "QueryClientProvider فقط" — هذا **خطأ**. الحد الأدنى الضروري:
+> - `QueryClientProvider` — مطلوب من TanStack Query
+> - `BrowserRouter` — مطلوب من react-router-dom
+> - `I18nextProvider` — مطلوب من react-i18next
+>
+> **ما يُحذف فعلاً**: `AuthProvider` (→ Zustand)، `NuqsAdapter`، `ThemeProvider` context (→ Zustand)
+
+> [!WARNING]
+> ### تصحيح 2: `nuqs` ليس مخصصاً لـ Next.js فقط
+> `nuqs` يدعم React Router v6/v7 رسمياً عبر adapters. التطبيق يستخدمه في **~40 hook** لإدارة URL params. **الإبقاء عليه أفضل** من إعادة كتابة 40 hook بـ `useSearchParams`.
+
+> [!IMPORTANT]
+> ### إضافة مهمة: `tauri-specta` لتوليد الأنواع تلقائياً
+> هذا هو **الفرق الأكبر** بين خطتي الأولى والممارسات الفعلية. بدل كتابة `ipc/types.ts` يدوياً، نستخدم `specta` لتوليد `bindings.ts` تلقائياً من Rust — كما يفعل Spacedrive.
+
+> [!IMPORTANT]
+> ### إضافة مهمة: حذف خادم Axum HTTP المضمّن
+> هذا anti-pattern لم أذكره في الخطة الأولى. التطبيق يشغّل خادم HTTP كامل على port 3002 بالتوازي مع IPC — وهذا تكرار وظيفي وثغرة أمنية.
+
+---
+
+## الخطة المُحدّثة
+
+### المرحلة 1: `tauri-specta` — Type Safety من Rust إلى TypeScript ⭐
+
+> هذا هو التغيير الأهم. بدله **كل شيء يتغير**.
+
+#### [MODIFY] [Cargo.toml](file:///c:/Users/YZLPN3/Downloads/new/Orbis/apps/desktop/src-tauri/Cargo.toml)
+إضافة `specta` و `tauri-specta`:
+```toml
+[dependencies]
+specta = { version = "=2.0.0-rc.25", features = ["derive", "function"] }
+tauri-specta = { version = "=2.0.0-rc.25", features = ["typescript"] }
+```
+
+#### [MODIFY] جميع Rust structs في `src-tauri/src/commands/`
+إضافة `#[derive(specta::Type)]` و `#[specta::specta]`:
+
+```rust
+// قبل
+#[tauri::command]
+fn get_classes(state: State<Arc<AppState>>, org_id: String) -> Result<Vec<serde_json::Value>, String> {
+    // ...
+}
+
+// بعد
+#[derive(Serialize, Deserialize, specta::Type)]
+pub struct Class {
+    pub id: String,
+    pub name: String,
+    pub level: String,
+    // ...
+}
+
+#[tauri::command]
+#[specta::specta]
+fn get_classes(state: State<Arc<AppState>>, org_id: String) -> Result<Vec<Class>, String> {
+    // ...
+}
+```
+
+#### [MODIFY] [lib.rs](file:///c:/Users/YZLPN3/Downloads/new/Orbis/apps/desktop/src-tauri/src/lib.rs)
+إضافة توليد bindings تلقائي:
+```rust
+#[cfg(debug_assertions)]
+{
+    tauri_specta::ts::builder()
+        .commands(tauri_specta::collect_commands![
+            // جميع الأوامر...
+        ])
+        .path("../src/bindings.ts")
+        .export_consts()
+        .build()
+        .expect("Failed to generate TypeScript bindings");
+}
+```
+
+#### [AUTO-GENERATED] `apps/desktop/src/bindings.ts`
+يُولّد تلقائياً عند كل `cargo build` في debug mode. يحتوي:
+- أنواع TypeScript مطابقة 1:1 لـ Rust structs
+- دوال `invoke` مكتوبة بالأنواع الكاملة
+- لا `unknown` أبداً
+
+**الملفات المتأثرة في Rust**: 15 ملف في `src-tauri/src/commands/`
+
+---
+
+### المرحلة 2: حذف خادم Axum HTTP المضمّن
+
+#### [MODIFY] [lib.rs](file:///c:/Users/YZLPN3/Downloads/new/Orbis/apps/desktop/src-tauri/src/lib.rs)
+حذف الأسطر 331-335:
+```rust
+// حذف هذا ❌
+let db_url_clone = database_url.clone();
+tauri::async_runtime::spawn(async move {
+    let _ = api_gateway::start_server(&db_url_clone, 3002).await;
+});
+```
+
+#### [MODIFY] [Cargo.toml](file:///c:/Users/YZLPN3/Downloads/new/Orbis/apps/desktop/src-tauri/Cargo.toml)
+حذف dependency:
+```diff
+-api-gateway = { package = "api-gateway", path = "../../api-rust/crates/api-gateway" }
+```
+
+#### [MODIFY] [tauri.conf.json](file:///c:/Users/YZLPN3/Downloads/new/Orbis/apps/desktop/src-tauri/tauri.conf.json) و capabilities
+حذف remote URLs التي كانت تشير لخادم HTTP المحلي (`localhost:3002`)
+
+#### [MODIFY] [auth-client.ts](file:///c:/Users/YZLPN3/Downloads/new/Orbis/apps/desktop/src/lib/auth-client.ts)
+تبسيط — لم يعد هناك حاجة لـ HTTP fallback. كل شيء عبر IPC.
+
+---
+
+### المرحلة 3: حذف محاكي tRPC واستبداله بـ bindings مولّدة
+
+#### [DELETE] `apps/desktop/src/trpc/` (المجلد بالكامل)
+محاكي tRPC بـ 235 سطر — يُستبدل بـ `bindings.ts` المولّد تلقائياً.
+
+#### [DELETE] `apps/desktop/src/lib/tauri-api.ts`
+طبقة `invoke<unknown>` بـ 358 سطر — يُستبدل بالـ bindings.
+
+#### [NEW] `apps/desktop/src/ipc/index.ts`
+تصدير مركزي لـ bindings + query hooks:
+```typescript
+// Re-export typed commands from auto-generated bindings
+export { commands } from '@/bindings';
+export type { Class, Enrollment, Grade, ... } from '@/bindings';
+```
+
+#### [NEW] `apps/desktop/src/ipc/query-keys.ts`
+Query key factory (نفس المحتوى الجيد الحالي، مُعاد تنظيمه).
+
+#### تحديث ~130 ملف يستخدم `useTRPC()` أو `api.*`
+```typescript
+// قبل ❌
+const trpc = useTRPC();
+const { data } = useQuery(trpc.classes.getAll.queryOptions());
+
+// بعد ✅ (مع specta bindings)
+import { commands } from '@/bindings';
+const { data } = useQuery({
+    queryKey: queryKeys.classes.all(orgId),
+    queryFn: () => commands.getClasses(orgId),
+});
 ```
 
 ---
 
-## ضمان عدم تغيير التصميم
+### المرحلة 4: تنظيم Feature-Based (اختياري لكن مُوصى به بشدة)
 
-> [!CAUTION]
-> **القاعدة الذهبية: الـ JSX و CSS لا يتغيران أبداً**
-> 
-> كل التغييرات هي في:
-> 1. **الـ imports** (من أين نجلب الدوال)
-> 2. **الـ data fetching** (كيف نجلب البيانات)  
-> 3. **الـ function signatures** (async server → sync client component)
-> 4. **الـ wrappers** (إزالة `HydrateClient`, `NuqsAdapter` adapter change)
->
-> **لا يتغير:**
-> - أي `className`
-> - أي CSS file
-> - أي JSX structure
-> - أي component tree hierarchy
-> - أي animation أو transition
+> [!IMPORTANT]
+> هذا تغيير هيكلي كبير. يمكن تأجيله للمرحلة التالية إذا أردت تقليل حجم التغيير.
+
+#### الهيكل الحالي (Layer-based) ❌:
+```
+src/
+  components/    → 145 ملف مسطّح!
+  hooks/         → 75 ملف مسطّح!
+  pages/
+  store/
+  lib/
+```
+
+#### الهيكل المقترح (Feature-based) ✅:
+```
+src/
+  features/
+    grades/
+      components/     → grade-grid, grade-actions, ...
+      hooks/          → use-grades, use-grade-filter-params
+      queries.ts      → useGrades(), useGradeAnalytics()
+      mutations.ts    → useSubmitGrade(), useSubmitGradesBulk()
+      store.ts        → grades zustand store
+    attendance/
+      components/
+      hooks/
+      queries.ts
+      mutations.ts
+    certificates/
+      ...
+    vault/
+      ...
+    finance/
+      ...
+    settings/
+      ...
+  shared/
+    components/       → error-boundary, portal, load-more
+    hooks/            → use-debounce, use-local-storage
+    utils/
+  app/
+    router.tsx
+    providers.tsx
+    App.tsx
+  ipc/
+    bindings.ts       → auto-generated
+    query-keys.ts
+    index.ts
+  store/
+    auth.ts           → Zustand
+    theme.ts          → Zustand
+```
 
 ---
 
-## Verification Plan
+### المرحلة 5: تبسيط Providers
 
-### Automated Tests
+#### [MODIFY] [App.tsx](file:///c:/Users/YZLPN3/Downloads/new/Orbis/apps/desktop/src/App.tsx)
+
+```tsx
+// قبل — 6 providers متداخلة ❌
+<QueryClientProvider>
+  <BrowserRouter>
+    <NuqsAdapter>
+      <I18nProvider>
+        <AuthProvider>          // ← حذف (→ Zustand)
+          <ThemeProvider>       // ← حذف (→ Zustand)
+            <DesktopHeader />
+            <DesktopProvider />
+            <AppRouter />
+            <Toaster />
+          </ThemeProvider>
+        </AuthProvider>
+      </I18nProvider>
+    </NuqsAdapter>
+  </BrowserRouter>
+</QueryClientProvider>
+
+// بعد — 4 providers (الحد الأدنى الضروري) ✅
+<QueryClientProvider client={queryClient}>
+  <BrowserRouter>
+    <NuqsAdapter>
+      <I18nProvider>
+        <DesktopShell />       // ← يحتوي header + provider + router + toaster
+      </I18nProvider>
+    </NuqsAdapter>
+  </BrowserRouter>
+</QueryClientProvider>
+```
+
+#### [DELETE] `apps/desktop/src/contexts/auth-context.tsx`
+#### [NEW] `apps/desktop/src/store/auth.ts` — Zustand store
+```typescript
+import { create } from 'zustand';
+import { commands } from '@/bindings';
+
+interface AuthState {
+  user: User | null;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  validateSession: () => Promise<void>;
+}
+
+export const useAuthStore = create<AuthState>((set) => ({
+  // ... direct IPC calls, no context needed
+}));
+```
+
+#### [DELETE] `apps/desktop/src/components/theme-provider.tsx` (Context)
+#### [NEW] `apps/desktop/src/store/theme.ts` — Zustand store
+Theme يُطبّق على DOM عبر `subscribe` في Zustand — لا يحتاج Provider.
+
+---
+
+### المرحلة 6: Tauri v2 Events (اتصال ثنائي الاتجاه)
+
+#### [NEW] `apps/desktop/src/ipc/events.ts`
+```typescript
+import { listen } from '@tauri-apps/api/event';
+
+// Backend → Frontend events (typed via specta)
+export function onSyncStatusChanged(handler: (status: SyncStatus) => void) {
+  return listen<SyncStatus>('sync-status-changed', (event) => handler(event.payload));
+}
+
+export function onNotificationReceived(handler: (notification: Notification) => void) {
+  return listen<Notification>('notification-received', (event) => handler(event.payload));
+}
+```
+
+#### [MODIFY] Rust backend
+إضافة `app.emit()` في المواقع المناسبة لدفع التحديثات بدل polling.
+
+---
+
+### المرحلة 7: تنظيف أنماط Next.js
+
+#### إزالة `"use client"` من ~295 ملف
 ```bash
-# 1. بناء Frontend
+# عملية آلية بسيطة
+```
+
+#### إزالة `typeof window === "undefined"` من ~10 ملفات
+هذه فحوصات SSR — في Tauri `window` موجود دائماً.
+
+#### حذف dependency `next-international` من package.json
+المستخدم فعلاً هو `react-i18next`.
+
+#### إزالة `@trpc/client`, `@trpc/server`, `@trpc/tanstack-react-query`
+
+---
+
+## مقارنة: الخطة الأولى vs الخطة المُصحّحة
+
+| النقطة | الخطة الأولى | المُصحّحة | السبب |
+|--------|-------------|-----------|-------|
+| Type Safety | كتابة `ipc/types.ts` يدوياً | **`specta` auto-generation** | الممارسة الفعلية لـ Spacedrive/1Password |
+| خادم HTTP المضمّن | لم أذكره | **حذفه** | anti-pattern أمني + تكرار وظيفي |
+| Providers | "واحد فقط" | **4 (الحد الأدنى)** | لا يمكن حذف BrowserRouter/I18next/QueryClient |
+| nuqs | "حذفه" | **الإبقاء عليه** | يدعم React Router رسمياً، مستخدم في ~40 hook |
+| هيكل الملفات | نفس Layer-based | **Feature-based** | ما تفعله الشركات الكبيرة فعلاً |
+| Tauri Events | لم أذكرها | **إضافتها** | اتصال ثنائي الاتجاه — ميزة أساسية في Tauri v2 |
+
+---
+
+## أسئلة مفتوحة
+
+> [!IMPORTANT]
+> **1. أولوية التنفيذ**: المرحلة 4 (Feature-based organization) هي الأكبر حجماً (~300 ملف يتحرك). هل تريد:
+> - **(أ)** تنفيذها ضمن هذه الهيكلة (تغيير شامل مرة واحدة)
+> - **(ب)** تأجيلها وتنفيذ المراحل 1-3 + 5-7 أولاً (أصغر حجماً، أقل مخاطرة)
+
+> [!IMPORTANT]
+> **2. حذف خادم Axum المضمّن**: هل هناك سبب لوجوده غير development mode؟ إذا كان يُستخدم في production أو كـ fallback، يجب فهم السبب قبل حذفه.
+
+> [!IMPORTANT]
+> **3. Rust structs الحالية**: الـ commands الحالية تُرجع `serde_json::Value` (أي JSON عام). لاستخدام `specta`، يجب تحويلها إلى structs مكتوبة بالأنواع. هذا تغيير في Rust backend — هل هذا مقبول؟
+
+> [!WARNING]
+> **4. حزمة `@orbis/desktop-client`**: بعد هذه التغييرات ستبقى فقط `platform.ts`. هل نبقيها كحزمة منفصلة أم ننقلها إلى `apps/desktop/src/lib/`؟
+
+---
+
+## خطة التحقق
+
+### اختبارات آلية
+```bash
+# التحقق من الأنواع (بعد specta generation)
+cd apps/desktop && npx tsc --noEmit
+
+# بناء Frontend
 cd apps/desktop && bun run build
 
-# 2. التأكد من إزالة كل بقايا Next.js
-grep -r "from \"next\"" src/ --include="*.tsx" --include="*.ts" | wc -l  # يجب = 0
-grep -r "from \"next/" src/ --include="*.tsx" --include="*.ts" | wc -l   # يجب = 0
-grep -r "next-international" src/ --include="*.tsx" --include="*.ts" | wc -l  # يجب = 0
-grep -r "next-safe-action" src/ --include="*.tsx" --include="*.ts" | wc -l   # يجب = 0
-grep -r "@/trpc" src/ --include="*.tsx" --include="*.ts" | wc -l  # يجب = 0
-grep -r "@orbis/auth\"" src/ --include="*.tsx" --include="*.ts" | wc -l  # يجب = 0
+# بناء Rust + توليد bindings
+cd apps/desktop/src-tauri && cargo build
 
-# 3. بناء Tauri
-cd src-tauri && cargo check
+# التأكد من عدم وجود tRPC imports متبقية
+grep -r "useTRPC\|@trpc\|trpc/" apps/desktop/src/
 ```
 
-### Manual Verification
-1. تشغيل `bun run tauri:dev`
-2. فتح صفحة Login → تسجيل دخول عبر Tauri command
-3. التنقل بين كل الصفحات (router يعمل)
-4. تغيير اللغة ar ↔ en (i18n يعمل)
-5. Dark/Light mode (theme يعمل)
-6. جلب بيانات من كل الأقسام (Tauri IPC يعمل)
-7. **مقارنة screenshots مع التصميم الأصلي - يجب تطابق 100%**
+### تحقق يدوي
+- تسجيل الدخول عبر IPC (بدون HTTP)
+- التنقل بين جميع الصفحات
+- Deep links (`orbis://...`)
+- Global shortcut (Shift+Alt+K)
+- System tray

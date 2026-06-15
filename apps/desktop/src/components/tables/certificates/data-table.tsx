@@ -16,7 +16,7 @@ import { useTableDnd } from "@/hooks/use-table-dnd";
 import { useTableScroll } from "@/hooks/use-table-scroll";
 import { useTableSettings } from "@/hooks/use-table-settings";
 import { useReportStore } from "@/store/report";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { STICKY_COLUMNS } from "@/utils/table-configs";
 import type { TableSettings } from "@/utils/table-settings";
 import { BottomBar } from "./bottom-bar";

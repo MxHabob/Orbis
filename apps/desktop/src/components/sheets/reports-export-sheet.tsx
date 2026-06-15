@@ -23,7 +23,7 @@ import React, { useState } from "react";
 import { useReportExportParams } from "@/hooks/use-report-export-params";
 import { useI18n } from "@/locales/client";
 import { useExportStore } from "@/store/export";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { HIJRI_MONTHS } from "@/utils/academic-calendar";
 
 export function ReportsExportSheet() {

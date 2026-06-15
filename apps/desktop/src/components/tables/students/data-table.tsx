@@ -23,7 +23,7 @@ import { useTableDnd } from "@/hooks/use-table-dnd";
 import { useTableScroll } from "@/hooks/use-table-scroll";
 import { useTableSettings } from "@/hooks/use-table-settings";
 import { useStudentsStore } from "@/store/students";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { STICKY_COLUMNS, SUMMARY_GRID_HEIGHTS } from "@/utils/table-configs";
 import type { TableSettings } from "@/utils/table-settings";
 import { columns } from "./columns";

@@ -8,7 +8,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { manualSyncTransactionsAction } from "@/actions/transactions/manual-sync-transactions-action";
 import { reconnectConnectionAction } from "@/actions/transactions/reconnect-connection-action";
 import { useSyncStatus } from "@/hooks/use-sync-status";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 
 type Provider = "gocardless" | "plaid" | "teller" | "enablebanking";
 

@@ -25,7 +25,7 @@ import { useEffect } from "react";
 import { z } from "zod/v3";
 import { useLessonParams } from "@/hooks/use-lesson-params";
 import { useZodForm } from "@/hooks/use-zod-form";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 
 const daysOfWeek = [
   { value: 0, label: "Sunday" },

@@ -9,7 +9,7 @@ import { useDocumentParams } from "@/hooks/use-document-params";
 import { useFileUrl } from "@/hooks/use-file-url";
 import { downloadFile } from "@/lib/download";
 import { getFileProxyUrl } from "@/utils/files";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 
 type Props = {
   showDelete?: boolean;

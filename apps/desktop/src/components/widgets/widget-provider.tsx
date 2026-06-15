@@ -1,16 +1,13 @@
 "use client";
 
-import type { AppRouter } from "@orbis/api/trpc/routers/_app";
-import type { inferRouterOutputs } from "@trpc/server";
 import { createContext, type ReactNode, useContext, useRef } from "react";
 import { useStore } from "zustand";
 import { devtools } from "zustand/middleware";
 import { useShallow } from "zustand/react/shallow";
 import { createStore } from "zustand/vanilla";
+import type { WidgetPreferenceItem } from "@/types/widgets";
 
-type RouterOutputs = inferRouterOutputs<AppRouter>;
-type WidgetPreferences = RouterOutputs["widgets"]["getWidgetPreferences"];
-type WidgetType = WidgetPreferences["primaryWidgets"][number];
+type WidgetType = WidgetPreferenceItem;
 
 interface WidgetState {
   // UI State

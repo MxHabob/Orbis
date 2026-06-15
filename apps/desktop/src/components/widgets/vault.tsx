@@ -2,7 +2,7 @@ import { Icons } from "@orbis/ui/icons";
 import { useQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { useNavigate } from "react-router-dom";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { BaseWidget } from "./base";
 import { WIDGET_POLLING_CONFIG } from "./widget-config";
 import { WidgetSkeleton } from "./widget-skeleton";

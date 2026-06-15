@@ -1,4 +1,4 @@
-import type { RouterOutputs } from "@/trpc/client";
+import type { RouterOutputs } from "@/ipc/query-adapter";
 import type { RowData } from "@tanstack/react-table";
 import type { Dispatch, SetStateAction } from "react";
 

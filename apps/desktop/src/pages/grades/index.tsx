@@ -10,7 +10,7 @@ import { ScrollableContent } from "@/components/scrollable-content";
 import { GradesSkeleton } from "@/components/tables/grades/skeleton";
 import { loadGradeFilterParams } from "@/hooks/use-grade-filter-params";
 import { getInitialTableSettings } from "@/utils/columns";
-import { api } from "@/lib/tauri-api";
+import { commands } from "@orbis/desktop-client/commands";
 import { Spinner } from "@orbis/ui/spinner";
 
 export default function GradesPage() {
@@ -26,16 +26,16 @@ export default function GradesPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["grades-page-init", filter.yearId],
     queryFn: async () => {
-      const currentYear = await api.academics.getCurrentYear("") as any;
-      const years = await api.academics.getYears("") as any[];
-      const subjects = await api.subjects.getAll("") as any[];
+      const currentYear = await commands.academics.getCurrentYear("") as any;
+      const years = await commands.academics.getYears("") as any[];
+      const subjects = await commands.subjects.getAll("") as any[];
       const initialSettings = await getInitialTableSettings("grades");
 
       const activeYearId = filter.yearId || currentYear?.id;
 
-      const classesResponse = await api.classes.getAll("", { academicYearId: activeYearId }) as any[];
+      const classesResponse = await commands.classes.getAll("", { academicYearId: activeYearId }) as any[];
       const terms = activeYearId
-        ? await api.academics.getTerms("", activeYearId) as any[]
+        ? await commands.academics.getTerms("", activeYearId) as any[]
         : [];
 
       const initialData = {

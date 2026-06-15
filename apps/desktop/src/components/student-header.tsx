@@ -31,7 +31,7 @@ import { useCustomerFilterParams } from "@/hooks/use-customer-filter-params";
 import { useStudentParams } from "@/hooks/use-student-params";
 import { useI18n } from "@/locales/client";
 import { useExportStore } from "@/store/export";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 
 function StudentSearchFilter() {
   const [input, setInput] = useState("");

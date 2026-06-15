@@ -1,6 +1,6 @@
 "use client";
 
-import type { RouterOutputs } from "@api/trpc/routers/_app";
+import type { RouterOutputs } from "@/ipc/query-adapter";
 import { TZDate, tz } from "@date-fns/tz";
 import { UTCDate } from "@date-fns/utc";
 import { cn } from "@orbis/ui/cn";
@@ -27,7 +27,7 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { useLatestProjectId } from "@/hooks/use-latest-project-id";
 import { useTrackerParams } from "@/hooks/use-tracker-params";
 import { useUserQuery } from "@/hooks/use-user";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { secondsToHoursAndMinutes } from "@/utils/format";
 import {
   calculateDuration,

@@ -13,7 +13,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Edit, Eye, Star, Trash } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import type { CertificateTemplate } from "./types";
 
 type Props = {

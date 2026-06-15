@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { useMetricsFilter } from "./use-metrics-filter";
 
 export function useSchoolMetrics() {

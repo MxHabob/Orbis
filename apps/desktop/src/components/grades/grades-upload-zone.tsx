@@ -1,6 +1,6 @@
 "use client";
 
-import { authClient } from "@orbis/auth/auth-client";
+import { authClient } from "@/lib/auth-client";
 import { cn } from "@orbis/ui/cn";
 import { useToast } from "@orbis/ui/use-toast";
 import { stripSpecialCharacters } from "@orbis/utils";
@@ -8,7 +8,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { usePendingUploadsStore } from "@/store/pending-uploads";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { resumableUpload } from "@/utils/upload";
 
 // Shared toast ID for coordinating between upload zone and data table

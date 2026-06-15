@@ -1,17 +1,17 @@
 import { Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { PromotionsClient } from "@/components/promotions/promotions-client";
-import { api } from "@/lib/tauri-api";
+import { commands } from "@orbis/desktop-client/commands";
 import { Spinner } from "@orbis/ui/spinner";
 
 export default function PromotionsSettingsPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["promotions-settings-init"],
     queryFn: async () => {
-      const currentYear = await api.academics.getCurrentYear("") as any;
-      const years = await api.academics.getYears("") as any[];
+      const currentYear = await commands.academics.getCurrentYear("") as any;
+      const years = await commands.academics.getYears("") as any[];
 
-      const classesResponse = await api.classes.getAll("", { academicYearId: currentYear?.id }) as any[];
+      const classesResponse = await commands.classes.getAll("", { academicYearId: currentYear?.id }) as any[];
 
       const initialData = {
         classes: (classesResponse || []).map((c: any) => ({

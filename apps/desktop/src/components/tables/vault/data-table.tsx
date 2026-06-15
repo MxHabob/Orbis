@@ -28,7 +28,7 @@ import { useTableSettings } from "@/hooks/use-table-settings";
 import { useUserQuery } from "@/hooks/use-user";
 import { useI18n } from "@/locales/client";
 import { useDocumentsStore } from "@/store/vault";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { STICKY_COLUMNS } from "@/utils/table-configs";
 import type { TableSettings } from "@/utils/table-settings";
 import { BottomBar } from "./bottom-bar";

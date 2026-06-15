@@ -4,7 +4,7 @@ import { Sheet, SheetContent } from "@orbis/ui/sheet";
 import { useQuery } from "@tanstack/react-query";
 import React from "react";
 import { useStudentParams } from "@/hooks/use-student-params";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { StudentForm } from "../forms/student-form";
 
 export function StudentDetailsSheet() {

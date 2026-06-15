@@ -12,7 +12,7 @@ import {
 } from "@tanstack/react-table";
 import { useState } from "react";
 import { useStaffParams } from "@/hooks/use-staff-params";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { columns } from "./columns";
 import { DataTableHeader } from "./table-header";
 

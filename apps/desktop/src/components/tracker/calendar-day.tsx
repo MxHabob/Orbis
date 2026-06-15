@@ -1,4 +1,4 @@
-// import type { RouterOutputs } from "@api/trpc/routers/_app";
+// import type { RouterOutputs } from "@/ipc/query-adapter";
 import { TZDate } from "@date-fns/tz";
 import { cn } from "@orbis/ui/cn";
 import { format, formatISO, isToday } from "date-fns";

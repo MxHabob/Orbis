@@ -3,7 +3,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { useMetricsFilter } from "@/hooks/use-metrics-filter";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 
 /**
  * Prefetches metrics data in the background after initial page load.

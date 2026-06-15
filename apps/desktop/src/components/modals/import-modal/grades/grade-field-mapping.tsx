@@ -11,7 +11,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { Controller } from "react-hook-form";
 import { useI18n } from "@/locales/client";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { type GradeImportFormData, useCsvContext } from "../shared/context";
 import { FieldRow } from "../shared/field-row";
 

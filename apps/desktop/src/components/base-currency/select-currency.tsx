@@ -7,7 +7,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { SelectCurrency as SelectCurrencyBase } from "@/components/select-currency";
 import { useJobStatus } from "@/hooks/use-job-status";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 
 export function SelectCurrency() {
   const trpc = useTRPC();

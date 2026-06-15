@@ -26,7 +26,7 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useUserQuery } from "@/hooks/use-user";
 import { useI18n } from "@/locales/client";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 
 export function DeleteTeam() {
   const [value, setValue] = useState("");

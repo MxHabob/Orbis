@@ -1,10 +1,10 @@
 "use client";
 
-import type { RouterOutputs } from "@api/trpc/routers/_app";
+import type { RouterOutputs } from "@/ipc/query-adapter";
 import { FilePreview } from "@/components/file-preview";
 import { useDocumentParams } from "@/hooks/use-document-params";
 import { useI18n } from "@/locales/client";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { isStaleProcessing } from "@/utils/document";
 
 const isMimeTypeSupportedForProcessing = (mimetype: string) => {

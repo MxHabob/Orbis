@@ -1,6 +1,6 @@
 "use client";
 
-import { authClient } from "@orbis/auth/auth-client";
+import { authClient } from "@/lib/auth-client";
 import { Avatar, AvatarFallback, AvatarImageNext } from "@orbis/ui/avatar";
 import {
   DropdownMenu,

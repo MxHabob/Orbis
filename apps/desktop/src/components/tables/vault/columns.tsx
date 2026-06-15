@@ -1,6 +1,6 @@
 "use client";
 
-import type { RouterOutputs } from "@api/trpc/routers/_app";
+import type { RouterOutputs } from "@/ipc/query-adapter";
 import { useDocumentFilterParams } from "@/hooks/use-document-filter-params";
 import { useDocumentParams } from "@/hooks/use-document-params";
 import { useFileUrl } from "@/hooks/use-file-url";

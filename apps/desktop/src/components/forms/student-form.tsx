@@ -1,6 +1,6 @@
 "use client";
 
-import type { RouterOutputs } from "@api/trpc/routers/_app";
+import type { RouterOutputs } from "@/ipc/query-adapter";
 import {
   Accordion,
   AccordionContent,
@@ -36,7 +36,7 @@ import { AvatarUpload } from "@/components/avatar-upload";
 import { useStudentParams } from "@/hooks/use-student-params";
 import { useZodForm } from "@/hooks/use-zod-form";
 import { useI18n } from "@/locales/client";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { invalidateStudentDomain } from "@/utils/query-invalidation";
 
 const formSchema = z.object({

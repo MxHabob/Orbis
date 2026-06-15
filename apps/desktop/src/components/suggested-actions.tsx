@@ -1,15 +1,11 @@
 "use client";
 
-import type { AppRouter } from "@orbis/api/trpc/routers/_app";
 import { cn } from "@orbis/ui/cn";
 import { Icons } from "@orbis/ui/icons";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
-import type { inferRouterOutputs } from "@trpc/server";
 import { useChatActions, useChatId } from "@/hooks/use-chat-actions";
 import { useChatInterface } from "@/hooks/use-chat-interface";
-import { useTRPC } from "@/trpc/client";
-
-type RouterOutputs = inferRouterOutputs<AppRouter>;
+import { useTRPC } from "@/ipc/query-adapter";
 
 export function SuggestedActions() {
   const { sendMessage } = useChatActions();

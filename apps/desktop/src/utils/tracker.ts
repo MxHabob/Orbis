@@ -1,4 +1,4 @@
-import type { RouterOutputs } from "@api/trpc/routers/_app";
+import type { RouterOutputs } from "@/ipc/query-adapter";
 import { tz } from "@date-fns/tz";
 import { UTCDate, utc } from "@date-fns/utc";
 import {

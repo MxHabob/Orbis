@@ -42,7 +42,7 @@ import { useState } from "react";
 import { z } from "zod/v3";
 import { useZodForm } from "@/hooks/use-zod-form";
 import { useI18n } from "@/locales/client";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 
 const schema = z.object({
   classId: z.coerce.number().optional(),

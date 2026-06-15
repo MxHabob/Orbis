@@ -1,13 +1,13 @@
 "use client";
 
-import { authClient } from "@orbis/auth/auth-client";
+import { authClient } from "@/lib/auth-client";
 import { cn } from "@orbis/ui/cn";
 import { useToast } from "@orbis/ui/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { type FileRejection, useDropzone } from "react-dropzone";
 import { useI18n } from "@/locales/client";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 
 type UploadResult = {
   filename: string;
@@ -77,7 +77,7 @@ export function VaultUploadZone({ onUpload, children }: Props) {
             `${session?.user.id || "anonymous"}/${file.name}`,
           );
 
-          const { getApiUrl } = await import("@/trpc/client");
+          const { getApiUrl } = await import("@/ipc/query-adapter");
           const response = await fetch(
             `${getApiUrl()}/api/upload`,
             {

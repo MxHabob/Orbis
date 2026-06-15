@@ -33,7 +33,7 @@ import React, { useState } from "react";
 import type { DateRange } from "react-day-picker";
 import { useInvoiceParams } from "@/hooks/use-report-params";
 import { useUserQuery } from "@/hooks/use-user";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 
 type Props = {
   projectId: string;

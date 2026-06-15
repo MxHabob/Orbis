@@ -8,7 +8,7 @@ import { useCopyToClipboard } from "usehooks-ts";
 import { useFileUrl } from "@/hooks/use-file-url";
 import { downloadFile } from "@/lib/download";
 import { getFileProxyUrl } from "@/utils/files";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { DeleteVaultFileDialog } from "./delete-vault-file-dialog";
 
 type Props = {

@@ -33,7 +33,7 @@ import { useUserQuery } from "@/hooks/use-user";
 import { downloadFile } from "@/lib/download";
 import { useI18n } from "@/locales/client";
 import { useSearchStore } from "@/store/search";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { FilePreviewIcon } from "../file-preview-icon";
 import { TrackerTimer } from "../tracker-timer";
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { authClient } from "@orbis/auth/auth-client";
+import { authClient } from "@/lib/auth-client";
 import { Calendar } from "@orbis/ui/calendar";
 import { cn } from "@orbis/ui/cn";
 import {
@@ -21,7 +21,7 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { FilterList } from "@/components/filter-list";
 import { useDocumentFilterParams } from "@/hooks/use-document-filter-params";
 import { useI18n } from "@/locales/client";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 
 export function VaultSearchFilter() {
   const inputRef = useRef<HTMLInputElement>(null);

@@ -231,9 +231,7 @@ export function MainMenu({ onSelectAction, isExpanded = false }: Props) {
       name: t("menu.reports"),
       children: [
         { path: "/reports/academic", name: t("menu.academic_reports") },
-        { path: "/reports/financial", name: t("menu.financial_reports") },
         { path: "/reports/attendance", name: t("menu.attendance_reports") },
-        { path: "/reports/ministerial", name: t("menu.ministerial_reports") },
       ],
     },
     {
@@ -249,12 +247,10 @@ export function MainMenu({ onSelectAction, isExpanded = false }: Props) {
       name: t("menu.settings"),
       children: [
         { path: "/settings", name: t("menu.general") },
-        { path: "/settings/accounts", name: t("menu.bank_connections") },
         { path: "/settings/staff", name: t("menu.staff_teachers") },
         { path: "/settings/academic", name: t("settings.academic") },
         { path: "/settings/classes", name: t("menu.classes") },
         { path: "/settings/subjects", name: t("menu.subjects") },
-        { path: "/settings/promotions", name: t("menu.promotions") },
       ],
     },
   ];

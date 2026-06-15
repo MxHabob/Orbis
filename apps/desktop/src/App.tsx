@@ -1,13 +1,9 @@
 import { BrowserRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NuqsAdapter } from "nuqs/adapters/react-router/v6";
-import { ThemeProvider } from "@/components/theme-provider";
-import { AuthProvider } from "@/contexts/auth-context";
 import { I18nProvider } from "@/i18n/provider";
-import { AppRouter } from "./router";
-import { Toaster } from "@orbis/ui/toaster";
-import { DesktopProvider } from "@/components/desktop-provider";
-import { DesktopHeader } from "@/components/desktop-header";
+import { ThemeProvider } from "@/components/theme-provider";
+import { DesktopShell } from "@/components/desktop-shell";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -28,19 +24,9 @@ export function App() {
       <BrowserRouter>
         <NuqsAdapter>
           <I18nProvider>
-            <AuthProvider>
-              <ThemeProvider
-                // attribute="class"
-                defaultTheme="system"
-                // enableSystem
-                // disableTransitionOnChange
-              >
-                <DesktopHeader />
-                <DesktopProvider />
-                <AppRouter />
-                <Toaster />
-              </ThemeProvider>
-            </AuthProvider>
+            <ThemeProvider defaultTheme="system">
+              <DesktopShell />
+            </ThemeProvider>
           </I18nProvider>
         </NuqsAdapter>
       </BrowserRouter>

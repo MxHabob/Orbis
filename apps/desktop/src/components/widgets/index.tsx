@@ -1,21 +1,17 @@
 "use client";
 
-import type { AppRouter } from "@orbis/api/trpc/routers/_app";
 import { cn } from "@orbis/ui/cn";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Tabs, TabsContent } from "@orbis/ui/tabs";
-import type { inferRouterOutputs } from "@trpc/server";
 import { Suspense } from "react";
 import { useOverviewTab } from "@/hooks/use-overview-tab";
 import { usePrefetchMetrics } from "@/hooks/use-prefetch-metrics";
+import type { WidgetPreferences } from "@/types/widgets";
 import { MetricsView } from "../metrics/metrics-view";
 import { TrackerCalendar } from "../tracker-calendar";
 import { WidgetsHeader } from "./header";
 import { useIsCustomizing, WidgetProvider } from "./widget-provider";
 import { WidgetsGrid } from "./widgets-grid";
-
-type RouterOutputs = inferRouterOutputs<AppRouter>;
-type WidgetPreferences = RouterOutputs["widgets"]["getWidgetPreferences"];
 
 function WidgetsContent({ weeklyCalendar }: { weeklyCalendar: boolean }) {
   const isCustomizing = useIsCustomizing();

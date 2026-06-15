@@ -25,7 +25,7 @@ import { Link } from "react-router-dom";
 import { useFieldArray, useWatch } from "react-hook-form";
 import { z } from "zod/v3";
 import { useZodForm } from "@/hooks/use-zod-form";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 
 const formSchema = z.object({
   invites: z.array(

@@ -11,7 +11,7 @@ import { FormatAmount } from "@/components/format-amount";
 import { InboxActions } from "@/components/inbox/inbox-actions";
 import { useInboxParams } from "@/hooks/use-inbox-params";
 import { useUserQuery } from "@/hooks/use-user";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { getWebsiteLogo } from "@/utils/logos";
 
 import { getFileProxyUrl } from "@/utils/files";

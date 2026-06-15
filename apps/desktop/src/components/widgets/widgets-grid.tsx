@@ -20,13 +20,12 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import type { AppRouter } from "@orbis/api/trpc/routers/_app";
 import { useMutation } from "@tanstack/react-query";
-import type { inferRouterOutputs } from "@trpc/server";
 import { useRef, useState } from "react";
 import { useOnClickOutside } from "usehooks-ts";
 import { ErrorBoundary } from "@/components/error-boundary";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
+import type { WidgetPreferenceItem } from "@/types/widgets";
 import { GrowthRateWidget } from "./growth-rate";
 import { VaultWidget } from "./vault";
 import { WidgetErrorFallback } from "./widget-error-fallback";
@@ -37,9 +36,7 @@ import {
   useWidgetActions,
 } from "./widget-provider";
 
-type RouterOutputs = inferRouterOutputs<AppRouter>;
-type WidgetPreferences = RouterOutputs["widgets"]["getWidgetPreferences"];
-type WidgetType = WidgetPreferences["primaryWidgets"][number];
+type WidgetType = WidgetPreferenceItem;
 
 const NUMBER_OF_WIDGETS = 8;
 

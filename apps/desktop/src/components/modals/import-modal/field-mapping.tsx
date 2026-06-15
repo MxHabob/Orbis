@@ -20,7 +20,7 @@ import {
 } from "@orbis/ui/tooltip";
 import { useQuery } from "@tanstack/react-query";
 import { Controller, useWatch } from "react-hook-form";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { mappableFields, useCsvContext } from "./context";
 
 export function FieldMapping() {

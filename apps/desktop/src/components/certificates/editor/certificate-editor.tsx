@@ -1,12 +1,12 @@
 "use client";
 
-import { authClient } from "@orbis/auth/auth-client";
+import { authClient } from "@/lib/auth-client";
 import { useToast } from "@orbis/ui/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import React, { useCallback, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import { useEditorStore } from "@/store/certificate-editor";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import type { EditorElement } from "@/types/certificate-editor";
 import { EditorCanvas } from "./editor-canvas";
 import { EditorFloatingToolbar } from "./editor-floating-toolbar";
@@ -81,7 +81,7 @@ export function CertificateEditor({ initialData }: Props) {
               `${session?.user.id || "anonymous"}/${file.name}`,
             );
 
-            const { getApiUrl } = await import("@/trpc/client");
+            const { getApiUrl } = await import("@/ipc/query-adapter");
             const response = await fetch(
               `${getApiUrl()}/api/upload`,
               {

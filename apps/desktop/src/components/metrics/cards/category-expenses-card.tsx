@@ -10,7 +10,7 @@ import {
 } from "@/components/charts/category-expense-donut-chart";
 import { useLongPress } from "@/hooks/use-long-press";
 import { useMetricsCustomize } from "@/hooks/use-metrics-customize";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { formatAmount } from "@/utils/format";
 import { ShareMetricButton } from "../components/share-metric-button";
 

@@ -24,7 +24,7 @@ import { InputColor } from "@/components/input-color";
 import { SelectParentClass } from "@/components/select-parent-class";
 import { useClassParams } from "@/hooks/use-class-params";
 import { useZodForm } from "@/hooks/use-zod-form";
-import { useTRPC } from "@/trpc/client";
+import { useTRPC } from "@/ipc/query-adapter";
 import { invalidateClassDomain } from "@/utils/query-invalidation";
 
 const classTypes = [
