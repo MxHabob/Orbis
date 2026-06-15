@@ -1,7 +1,7 @@
 use serde_json;
 use std::sync::{Arc, Mutex};
 use tauri::{
-    Emitter, Listener, Manager, PhysicalPosition, Position, WebviewUrl,
+    Emitter, Listener, Manager, WebviewUrl,
     WebviewWindowBuilder,
 };
 #[cfg(target_os = "macos")]

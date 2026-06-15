@@ -1,5 +1,5 @@
 use crate::entities::{user, organization, user_session};
-use sea_orm::{entity::prelude::*, ActiveModelTrait, ActiveValue::Set, QueryFilter, EntityTrait, QuerySelect};
+use sea_orm::{entity::prelude::*, ActiveModelTrait, ActiveValue::Set, QueryFilter, EntityTrait};
 
 impl super::Repository {
     pub async fn get_user_by_email(&self, email: &str) -> Result<Option<user::Model>, DbErr> {

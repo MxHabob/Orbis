@@ -3,8 +3,6 @@ use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, Position};
 use tauri::TitleBarStyle;
 use tauri::{WebviewUrl, WebviewWindowBuilder};
 
-use crate::state::AppState;
-
 /// Creates the floating search window on-demand and hides it.
 /// It will be shown/hidden via toggle_search_window.
 pub async fn create_preloaded_search_window(
@@ -116,11 +114,9 @@ pub fn toggle_search_window(
     } else {
         // Lazy-create on first use
         let app_clone = app.clone();
-        let state = app.state::<std::sync::Arc<AppState>>();
-        let _server_url = "http://localhost:3002".to_string(); // fallback only
 
         tauri::async_runtime::block_on(async move {
-            let url = format!("http://localhost:3002");
+            let url = "http://localhost:1420";
             if create_preloaded_search_window(&app_clone, &url).await.is_ok() {
                 if let Some(w) = app_clone.get_webview_window("search") {
                     let _ = w.set_always_on_top(true);

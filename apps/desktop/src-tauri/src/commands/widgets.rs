@@ -1,6 +1,6 @@
 use tauri::State;
 use std::sync::Arc;
-use sea_orm::{entity::prelude::*, ActiveModelTrait, ActiveValue::Set, EntityTrait};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, EntityTrait};
 use core_domain::entities::user;
 use crate::state::AppState;
 use super::error::{CmdResult, CommandError};

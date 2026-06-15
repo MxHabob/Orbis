@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use chrono::Utc;
 
-use crate::entities::{user, grade, attendance, enrollment};
+use crate::entities::{user, grade};
 
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct ImportResult {
@@ -38,7 +38,6 @@ impl super::Service {
         let name_col = find_col(&["full_name", "name", "الاسم الكامل", "الاسم"]);
         let email_col = find_col(&["email", "البريد الإلكتروني", "بريد"]);
         let nid_col = find_col(&["national_id", "الرقم الوطني", "هوية"]);
-        let class_col = find_col(&["class_name", "class", "اسم الصف", "الصف"]);
         let role_col = find_col(&["role", "الدور"]);
 
         if name_col.is_none() || email_col.is_none() {
@@ -479,7 +478,10 @@ impl super::Service {
     /// Export class report cards as CSV
     pub async fn export_report_cards_csv(&self, org_id: &str, class_id: &str, lang: &str) -> Result<String, String> {
         let enrollments = self.repo.get_enrollments_by_class(class_id).await
-            .map_err(|e| e.to_string())?;
+            .map_err(|e| e.to_string())?
+            .into_iter()
+            .filter(|enroll| enroll.org_id == org_id)
+            .collect::<Vec<_>>();
 
         let mut wtr = csv::Writer::from_writer(vec![]);
 

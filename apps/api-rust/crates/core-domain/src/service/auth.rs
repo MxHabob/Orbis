@@ -4,7 +4,6 @@ use jsonwebtoken::{encode, decode, Header, Validation, EncodingKey, DecodingKey}
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use chrono::Utc;
-use sea_orm::DbErr;
 
 use crate::entities::{user, organization, user_session};
 
@@ -255,7 +254,7 @@ impl super::Service {
 
     pub async fn validate_token(&self, token_str: &str) -> Result<user::Model, String> {
         // 1. Check session in database
-        let session = self.repo.get_session_by_token(token_str).await
+        self.repo.get_session_by_token(token_str).await
             .map_err(|e| e.to_string())?
             .ok_or_else(|| "session not found or inactive".to_string())?;
 
