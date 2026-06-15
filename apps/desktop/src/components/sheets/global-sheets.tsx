@@ -5,7 +5,6 @@ import { AcademicSheets } from "@/components/sheets/academic-sheets";
 import { ClassCreateSheet } from "@/components/sheets/class-create-sheet";
 import { ClassEditSheet } from "@/components/sheets/class-edit-sheet";
 import { DocumentSheet } from "@/components/sheets/document-sheet";
-import { EditRecurringSheet } from "@/components/sheets/edit-recurring-sheet";
 import { LessonCreateSheet } from "@/components/sheets/lesson-create-sheet";
 import { LessonEditSheet } from "@/components/sheets/lesson-edit-sheet";
 import { LessonScheduleSheet } from "@/components/sheets/lesson-schedule-sheet";

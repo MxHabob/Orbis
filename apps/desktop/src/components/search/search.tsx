@@ -26,7 +26,6 @@ import { useFileUrl } from "@/hooks/use-file-url";
 import { useReportExportParams } from "@/hooks/use-report-export-params";
 import { useStudentParams } from "@/hooks/use-student-params";
 import { useSubjectParams } from "@/hooks/use-subject-params";
-import { useTrackerParams } from "@/hooks/use-tracker-params";
 import { useUserQuery } from "@/hooks/use-user";
 import { downloadFile } from "@/lib/download";
 import { useI18n } from "@/locales/client";
@@ -223,7 +222,6 @@ const useSearchNavigation = () => {
   const { setParams: setStudentParams } = useStudentParams();
   const { setParams: setClassParams } = useClassParams();
   const { setParams: setSubjectParams } = useSubjectParams();
-  const { setParams: setTrackerParams } = useTrackerParams();
   const { setParams: setDocumentParams } = useDocumentParams();
   const { setParams: setReportExportParams } = useReportExportParams();
 
@@ -286,14 +284,6 @@ const useSearchNavigation = () => {
     navigateToSubject: (params: { subjectId: string }) => {
       return navigateWithParams(params, setSubjectParams);
     },
-    navigateToTracker: (params: {
-      projectId?: string;
-      update?: boolean;
-      create?: boolean;
-      selectedDate?: string;
-    }) => {
-      return navigateWithParams(params, setTrackerParams);
-    },
     navigateToPath: (path: string) => {
       return navigateToPath(path);
     },
@@ -309,15 +299,6 @@ const useSearchNavigation = () => {
     },
     createSubject: () => {
       return navigateWithParams({ createSubject: true }, setSubjectParams);
-    },
-    createProject: () => {
-      return navigateWithParams({ create: true }, setTrackerParams);
-    },
-    trackTime: () => {
-      return navigateWithParams(
-        { selectedDate: formatISO(new Date(), { representation: "date" }) },
-        setTrackerParams,
-      );
     },
   };
 };
