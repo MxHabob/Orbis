@@ -1,5 +1,3 @@
-"use client";
-
 import { Avatar, AvatarFallback, AvatarImageNext } from "@orbis/ui/avatar";
 import type { ColumnDef } from "@tanstack/react-table";
 import { memo } from "react";

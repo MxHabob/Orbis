@@ -1,5 +1,3 @@
-"use client";
-
 import { ScrollArea } from "@orbis/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader } from "@orbis/ui/sheet";
 import React from "react";

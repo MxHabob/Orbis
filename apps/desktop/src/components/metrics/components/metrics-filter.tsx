@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@orbis/ui/button";
 import { Calendar, CalendarDayButton } from "@orbis/ui/calendar";
 import { cn } from "@orbis/ui/cn";

@@ -1,5 +1,3 @@
-"use client";
-
 import { cn } from "@orbis/ui/cn";
 import { format, subMonths } from "date-fns";
 import { useMemo } from "react";

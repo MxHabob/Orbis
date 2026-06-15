@@ -1,5 +1,3 @@
-"use client";
-
 import NumberFlow from "@number-flow/react";
 import { cn } from "@orbis/ui/cn";
 import { useQuery } from "@tanstack/react-query";

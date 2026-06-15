@@ -3,10 +3,17 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "peerDependencies": {
+    "tailwindcss": "^4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "tailwindcss": {
+      "optional": true
+    }
+  },
   "dependencies": {
     "@tauri-apps/api": "^2.9.1",
-    "@tauri-apps/plugin-opener": "^2.5.3",
-    "tailwindcss": "^4.1.18"
+    "@tauri-apps/plugin-opener": "^2.5.3"
   },
   "exports": {
     ".": "./src/index.ts",
@@ -17,6 +24,7 @@
     "./platform": "./src/platform.ts",
     "./deep-links": "./src/platform.ts",
     "./desktop-variants": "./src/desktop-variants.ts",
+    "./desktop-variants.css": "./src/desktop-variants.css",
     "./core": "./src/core.ts"
   }
 }

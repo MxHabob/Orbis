@@ -1,5 +1,3 @@
-"use client";
-
 import type { BillableHoursResult } from "@orbis/db/queries";
 import {
   HoverCard,

@@ -1,5 +1,3 @@
-"use client";
-
 import { Calendar } from "@orbis/ui/calendar";
 import {
   Select,

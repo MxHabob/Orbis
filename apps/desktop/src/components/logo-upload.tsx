@@ -1,5 +1,3 @@
-"use client";
-
 import { Avatar, AvatarImage } from "@orbis/ui/avatar";
 import { Spinner } from "@orbis/ui/spinner";
 import { nanoid } from "nanoid";

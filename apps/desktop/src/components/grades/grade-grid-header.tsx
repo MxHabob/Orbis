@@ -1,5 +1,3 @@
-"use client";
-
 import { Badge } from "@orbis/ui/badge";
 import {
   Select,

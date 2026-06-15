@@ -1,5 +1,3 @@
-"use client";
-
 import { create } from "zustand";
 import type { PeriodOption } from "@/utils/metrics-date-utils";
 

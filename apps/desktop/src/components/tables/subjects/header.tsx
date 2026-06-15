@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import type { Table } from "@tanstack/react-table";

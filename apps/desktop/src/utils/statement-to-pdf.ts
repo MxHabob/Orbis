@@ -1,5 +1,3 @@
-"use client";
-
 export interface StatementPdfOptions {
   filename?: string;
   quality?: number;

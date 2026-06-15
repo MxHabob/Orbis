@@ -1,4 +1,3 @@
-import { ConnectionStatus } from "@/components/connection-status";
 import { NotificationCenter } from "@/components/notification-center";
 import { OpenSearchButton } from "@/components/search/open-search-button";
 import { UserMenu } from "@/components/user-menu";

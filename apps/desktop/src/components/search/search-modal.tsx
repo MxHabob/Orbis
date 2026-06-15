@@ -1,5 +1,3 @@
-"use client";
-
 import { Dialog, DialogContent } from "@orbis/ui/dialog";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useSearchStore } from "@/store/search";

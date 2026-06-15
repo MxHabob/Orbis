@@ -1,5 +1,3 @@
-"use client";
-
 import { Checkbox } from "@orbis/ui/checkbox";
 import { Label } from "@orbis/ui/label";
 import { useMutation, useQueryClient } from "@tanstack/react-query";

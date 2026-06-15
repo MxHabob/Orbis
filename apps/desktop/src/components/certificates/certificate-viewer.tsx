@@ -1,5 +1,3 @@
-"use client";
-
 import { cn } from "@orbis/ui/cn";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { EditorElement as IEditorElement } from "@/types/certificate-editor";

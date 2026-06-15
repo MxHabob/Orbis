@@ -1,5 +1,3 @@
-"use client";
-
 import {
   downloadBase64,
   exportToCsv,

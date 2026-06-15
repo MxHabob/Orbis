@@ -4,9 +4,8 @@
   "private": true,
   "sideEffects": false,
   "files": [
-    "tailwind.config.ts",
     "postcss.config.js",
-    "globals.css"
+    "src/globals.css"
   ],
   "scripts": {
     "clean": "rm -rf .turbo node_modules",
@@ -66,7 +65,6 @@
     "./multiple-selector": "./src/components/multiple-selector.tsx",
     "./table": "./src/components/table.tsx",
     "./tabs": "./src/components/tabs.tsx",
-    "./tailwind.config": "./tailwind.config.ts",
     "./theme": "./src/theme.ts",
     "./textarea": "./src/components/textarea.tsx",
     "./toast": "./src/components/toast.tsx",
@@ -151,7 +149,7 @@
     "react-hook-form": "^7.66.1",
     "recharts": "^3.6.0",
     "tailwind-merge": "3.4.0",
-    "tailwindcss": "^3.4.13",
+    "tailwindcss": "^4.3.1",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^1.1.2"
   },
@@ -168,7 +166,7 @@
     "@types/node": "^24.10.1",
     "@types/react": "19.2.7",
     "@types/react-dom": "19.2.3",
-    "autoprefixer": "^10.4.23",
+    "@tailwindcss/postcss": "^4.3.1",
     "next": "16.1.5",
     "next-themes": "^0.4.6",
     "react": "19.2.3",

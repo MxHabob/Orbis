@@ -1,5 +1,3 @@
-"use client";
-
 import { cn } from "@orbis/ui/cn";
 import { Icons } from "@orbis/ui/icons";
 import type React from "react";

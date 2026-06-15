@@ -1,5 +1,3 @@
-"use client";
-
 import { Window } from "@orbis/desktop-client/core";
 
 export function DesktopTrafficLight() {

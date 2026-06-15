@@ -1,5 +1,3 @@
-"use client";
-
 import { SheetHeader } from "@orbis/ui/sheet";
 import { formatDate } from "@orbis/utils/format";
 import { useQuery, useQueryClient } from "@tanstack/react-query";

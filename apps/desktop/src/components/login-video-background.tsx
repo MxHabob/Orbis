@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useRef, useState } from "react";
 import LoginTestimonials from "./login-testimonials";
 

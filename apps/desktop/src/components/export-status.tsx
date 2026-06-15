@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@orbis/ui/button";
 import { useToast } from "@orbis/ui/use-toast";
 import { useCallback, useEffect, useRef, useState } from "react";

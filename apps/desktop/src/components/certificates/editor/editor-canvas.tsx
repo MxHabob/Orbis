@@ -1,5 +1,3 @@
-"use client";
-
 import { cn } from "@orbis/ui/cn";
 import React, { useMemo, useRef } from "react";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";

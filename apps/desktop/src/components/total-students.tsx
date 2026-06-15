@@ -1,5 +1,3 @@
-"use client";
-
 import NumberFlow from "@number-flow/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@orbis/ui/card";
 import { useSuspenseQuery } from "@tanstack/react-query";

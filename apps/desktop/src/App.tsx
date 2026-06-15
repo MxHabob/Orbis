@@ -1,5 +1,5 @@
-import { BrowserRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter } from "react-router-dom";
 import { NuqsAdapter } from "nuqs/adapters/react-router/v6";
 import { I18nProvider } from "@/i18n/provider";
 import { ThemeProvider } from "@/components/theme-provider";

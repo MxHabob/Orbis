@@ -1,5 +1,3 @@
-"use client";
-
 import { Icons } from "@orbis/ui/icons";
 import { Input } from "@orbis/ui/input";
 import { useQueryState } from "nuqs";

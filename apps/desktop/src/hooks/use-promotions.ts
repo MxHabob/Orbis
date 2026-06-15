@@ -1,5 +1,3 @@
-"use client";
-
 import { useToast } from "@orbis/ui/use-toast";
 import {
   useMutation,

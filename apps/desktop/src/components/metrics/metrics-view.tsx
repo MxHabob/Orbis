@@ -1,5 +1,3 @@
-"use client";
-
 import { useParams } from "react-router-dom";
 import { useMemo, useRef } from "react";
 import { useOnClickOutside } from "usehooks-ts";

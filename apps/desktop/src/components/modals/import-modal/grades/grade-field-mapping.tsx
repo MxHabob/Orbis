@@ -1,5 +1,3 @@
-"use client";
-
 import { Label } from "@orbis/ui/label";
 import {
   Select,

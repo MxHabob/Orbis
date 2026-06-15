@@ -1,5 +1,3 @@
-"use client";
-
 import { usePromotions } from "@/hooks/use-promotions";
 import { ExecutePromotionDialog } from "../modals/promotions/execute-promotion-dialog";
 import { OverridePromotionModal } from "../modals/promotions/override-modal";

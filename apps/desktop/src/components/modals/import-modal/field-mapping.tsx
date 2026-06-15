@@ -1,5 +1,3 @@
-"use client";
-
 import { Icons } from "@orbis/ui/icons";
 import { Label } from "@orbis/ui/label";
 import {

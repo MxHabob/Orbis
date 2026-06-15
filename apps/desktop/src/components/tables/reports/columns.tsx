@@ -1,5 +1,3 @@
-"use client";
-
 import type { RouterOutputs } from "@/ipc/query-adapter";
 import { Avatar, AvatarFallback } from "@orbis/ui/avatar";
 import { Checkbox } from "@orbis/ui/checkbox";

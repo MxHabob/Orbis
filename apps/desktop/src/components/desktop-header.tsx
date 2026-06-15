@@ -1,5 +1,3 @@
-"use client";
-
 import { isDesktopApp } from "@orbis/desktop-client/platform";
 import { useLocation } from "react-router-dom";
 import { DesktopTrafficLight } from "./desktop-traffic-light";

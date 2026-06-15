@@ -1,5 +1,3 @@
-"use client";
-
 import { SheetHeader } from "@orbis/ui/sheet";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { VaultRelatedFilesSkeleton } from "./vault/vault-related-files-skeleton";

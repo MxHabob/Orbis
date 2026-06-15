@@ -1,5 +1,3 @@
-"use client";
-
 import { useNavigate } from "react-router-dom";
 import type { ReactNode } from "react";
 import { useInboxParams } from "@/hooks/use-inbox-params";

@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@orbis/ui/button";
 import { ArrowRight, RotateCcw, School } from "lucide-react";
 import { useI18n } from "@/locales/client";

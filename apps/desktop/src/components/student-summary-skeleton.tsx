@@ -1,5 +1,3 @@
-"use client";
-
 import { Card, CardContent, CardHeader, CardTitle } from "@orbis/ui/card";
 import { Skeleton } from "@orbis/ui/skeleton";
 

@@ -1,5 +1,3 @@
-"use client";
-
 import { downloadBase64 } from "@orbis/export";
 import { Button } from "@orbis/ui/button";
 import {

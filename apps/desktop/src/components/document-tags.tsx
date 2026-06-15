@@ -1,5 +1,3 @@
-"use client";
-
 import type { RouterOutputs } from "@/ipc/query-adapter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { VaultSelectTags } from "@/components/vault/vault-select-tags";

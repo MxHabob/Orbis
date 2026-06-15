@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@orbis/ui/button";
 import { Checkbox } from "@orbis/ui/checkbox";
 import { Icons } from "@orbis/ui/icons";

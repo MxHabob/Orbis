@@ -1,5 +1,3 @@
-"use client";
-
 import { Popover, PopoverContent, PopoverTrigger } from "@orbis/ui/popover";
 import { useState } from "react";
 import { Category } from "@/components/category";

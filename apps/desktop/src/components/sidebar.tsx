@@ -1,11 +1,8 @@
-"use client";
-
 import { cn } from "@orbis/ui/cn";
 import { Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { MainMenu } from "./main-menu";
-import { TeamDropdown } from "./team-dropdown";
 
 export function Sidebar() {
   const [isExpanded, setIsExpanded] = useState(false);

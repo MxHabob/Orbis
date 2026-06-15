@@ -1,5 +1,3 @@
-"use client";
-
 import { Sheet, SheetContent, SheetHeader } from "@orbis/ui/sheet";
 import React from "react";
 import { useLessonParams } from "@/hooks/use-lesson-params";

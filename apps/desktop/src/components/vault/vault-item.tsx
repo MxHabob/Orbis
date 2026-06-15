@@ -1,5 +1,3 @@
-"use client";
-
 import type { RouterOutputs } from "@/ipc/query-adapter";
 import { FilePreview } from "@/components/file-preview";
 import { useDocumentParams } from "@/hooks/use-document-params";

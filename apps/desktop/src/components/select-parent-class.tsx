@@ -1,5 +1,3 @@
-"use client";
-
 import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
 import { Spinner } from "@orbis/ui/spinner";
 import { useQuery } from "@tanstack/react-query";

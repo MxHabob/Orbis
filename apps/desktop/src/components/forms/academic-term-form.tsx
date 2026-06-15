@@ -1,6 +1,4 @@
-"use client";
-
-import { createAcademicTermSchema } from "@api/schemas/academic";
+import { createAcademicTermSchema } from "@/schemas/academic";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@orbis/ui/button";
 import {
@@ -14,11 +12,14 @@ import {
 import { Input } from "@orbis/ui/input";
 import { Switch } from "@orbis/ui/switch";
 import { useToast } from "@orbis/ui/use-toast";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useI18n } from "@/locales/client";
-import { useTRPC } from "@/ipc/query-adapter";
+import {
+  useAcademicYears,
+  useCreateAcademicTerm,
+  useUpdateAcademicTerm,
+} from "@/hooks/api/use-academics";
 
 interface AcademicTermFormProps {
   initialData?: any;
@@ -34,12 +35,9 @@ export function AcademicTermForm({
   onSuccess,
 }: AcademicTermFormProps) {
   const t = useI18n();
-  const trpc = useTRPC();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  // If termId is provided but no initialData, we might want to fetch (though usually years getYears includes terms)
-  // For simplicity, we'll assume the form is used either for create (yearId) or edit (initialData/termId)
+  const createMutation = useCreateAcademicTerm();
+  const updateMutation = useUpdateAcademicTerm();
 
   const form = useForm({
     resolver: zodResolver(createAcademicTermSchema),
@@ -53,10 +51,7 @@ export function AcademicTermForm({
   });
 
   // Fetch all years to find the specific term if it's an edit by ID
-  const { data: years } = useQuery({
-    ...trpc.academic.getYears.queryOptions(),
-    enabled: !!termId && !initialData,
-  });
+  const { data: years } = useAcademicYears();
 
   useEffect(() => {
     if (termId && years) {
@@ -78,55 +73,41 @@ export function AcademicTermForm({
 
   const isEdit = !!(initialData?.id || termId);
 
-  const createMutation = useMutation(
-    trpc.academic.createTerm.mutationOptions({
-      onSuccess: () => {
-        toast({ title: t("promotions.process_success") });
-        queryClient.invalidateQueries({
-          queryKey: trpc.academic.getYears.queryKey(),
-        });
-        onSuccess?.();
-      },
-      onError: (error) => {
-        toast({
-          title: t("common.error"),
-          description: error.message,
-          variant: "destructive",
-        });
-      },
-    }),
-  );
-
-  const updateMutation = useMutation(
-    trpc.academic.updateTerm.mutationOptions({
-      onSuccess: () => {
-        toast({ title: t("promotions.process_success") });
-        queryClient.invalidateQueries({
-          queryKey: trpc.academic.getYears.queryKey(),
-        });
-        onSuccess?.();
-      },
-      onError: (error) => {
-        toast({
-          title: t("common.error"),
-          description: error.message,
-          variant: "destructive",
-        });
-      },
-    }),
-  );
-
   const isPending = createMutation.isPending || updateMutation.isPending;
 
-  const onSubmit = (data: any) => {
+  const onSubmit = (data: Record<string, unknown>) => {
     const id = initialData?.id || termId;
     if (id) {
-      updateMutation.mutate({
-        ...data,
-        id,
-      });
+      updateMutation.mutate(
+        { cycleId: String(id), request: { ...data, id } },
+        {
+          onSuccess: () => {
+            toast({ title: t("promotions.process_success") });
+            onSuccess?.();
+          },
+          onError: (error) => {
+            toast({
+              title: t("common.error"),
+              description: error.message,
+              variant: "destructive",
+            });
+          },
+        },
+      );
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate(data, {
+        onSuccess: () => {
+          toast({ title: t("promotions.process_success") });
+          onSuccess?.();
+        },
+        onError: (error) => {
+          toast({
+            title: t("common.error"),
+            description: error.message,
+            variant: "destructive",
+          });
+        },
+      });
     }
   };
 

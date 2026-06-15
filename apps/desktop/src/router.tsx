@@ -1,15 +1,44 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, type ComponentType, type ReactNode } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
+import { AppErrorBoundary } from "@/components/app-error-boundary";
 import { AuthGuard } from "@/components/auth-guard";
+import LoginPage from "@/pages/login";
 
-// ── Layout Components ──────────────────────────────────────────────────────
-import { SidebarLayout } from "@/layouts/sidebar-layout";
-import { EditorLayout } from "@/layouts/editor-layout";
-import { AccountLayout } from "@/layouts/account-layout";
-import { SettingsLayout } from "@/layouts/settings-layout";
+function lazyLayout<T extends Record<string, ComponentType<object>>>(
+  factory: () => Promise<T>,
+  name: keyof T,
+) {
+  const Lazy = lazy(() =>
+    factory().then((mod) => ({ default: mod[name] as ComponentType<object> })),
+  );
+
+  return function LayoutRoute() {
+    return (
+      <Suspense fallback={<PageSkeleton />}>
+        <Lazy />
+      </Suspense>
+    );
+  };
+}
+
+const SidebarLayout = lazyLayout(
+  () => import("@/layouts/sidebar-layout"),
+  "SidebarLayout",
+);
+const EditorLayout = lazyLayout(
+  () => import("@/layouts/editor-layout"),
+  "EditorLayout",
+);
+const AccountLayout = lazyLayout(
+  () => import("@/layouts/account-layout"),
+  "AccountLayout",
+);
+const SettingsLayout = lazyLayout(
+  () => import("@/layouts/settings-layout"),
+  "SettingsLayout",
+);
 
 // ── Page Components (lazy-loaded for optimal performance) ──────────────────
-const LoginPage = lazy(() => import("@/pages/login"));
 const OverviewPage = lazy(() => import("@/pages/overview"));
 const GradesPage = lazy(() => import("@/pages/grades"));
 const CertificatesPage = lazy(() => import("@/pages/certificates"));
@@ -49,8 +78,11 @@ const NotFoundPage = lazy(() => import("@/pages/not-found"));
 // ── Loading Fallback ───────────────────────────────────────────────────────
 function PageSkeleton() {
   return (
-    <div className="flex items-center justify-center h-[calc(100vh-200px)]">
-      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+    <div
+      className="flex items-center justify-center bg-background"
+      style={{ minHeight: "100vh" }}
+    >
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
     </div>
   );
 }
@@ -58,8 +90,9 @@ function PageSkeleton() {
 // ── Router ─────────────────────────────────────────────────────────────────
 export function AppRouter() {
   return (
-    <Suspense fallback={<PageSkeleton />}>
-      <Routes>
+    <AppErrorBoundary>
+      <Suspense fallback={<PageSkeleton />}>
+        <Routes>
         {/* ── Public Routes ─────────────────────────────── */}
         <Route path="/login" element={<LoginPage />} />
 
@@ -153,5 +186,6 @@ export function AppRouter() {
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Suspense>
+    </AppErrorBoundary>
   );
 }

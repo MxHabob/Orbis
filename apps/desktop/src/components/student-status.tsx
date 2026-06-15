@@ -1,5 +1,3 @@
-"use client";
-
 import { cn } from "@orbis/ui/cn";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { useI18n } from "@/locales/client";

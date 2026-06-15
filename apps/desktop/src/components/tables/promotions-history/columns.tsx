@@ -1,5 +1,3 @@
-"use client";
-
 import { Badge } from "@orbis/ui/badge";
 import { createColumnHelper } from "@tanstack/react-table";
 import { format } from "date-fns";

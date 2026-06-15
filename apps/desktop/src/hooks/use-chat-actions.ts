@@ -1,5 +1,3 @@
-"use client";
-
 import { useChatInterface } from "@/hooks/use-chat-interface";
 import { useChatStore } from "@/store/chat";
 

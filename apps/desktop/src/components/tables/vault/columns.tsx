@@ -1,5 +1,3 @@
-"use client";
-
 import type { RouterOutputs } from "@/ipc/query-adapter";
 import { useDocumentFilterParams } from "@/hooks/use-document-filter-params";
 import { useDocumentParams } from "@/hooks/use-document-params";

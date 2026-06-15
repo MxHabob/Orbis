@@ -1,5 +1,3 @@
-"use client";
-
 import { authClient } from "@/lib/auth-client";
 import { Button } from "@orbis/ui/button";
 import { cn } from "@orbis/ui/cn";

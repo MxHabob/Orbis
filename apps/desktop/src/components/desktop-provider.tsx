@@ -1,5 +1,3 @@
-"use client";
-
 import { getCurrentWindow, invoke } from "@orbis/desktop-client/core";
 import {
   isDesktopApp,

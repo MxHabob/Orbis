@@ -1,5 +1,3 @@
-"use client";
-
 import type * as React from "react";
 import * as RechartsPrimitive from "recharts";
 import { commonChartConfig } from "./chart-utils";

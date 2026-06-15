@@ -1,5 +1,3 @@
-"use client";
-
 import { cn } from "@orbis/ui/cn";
 import { Icons } from "@orbis/ui/icons";
 import { motion } from "framer-motion";

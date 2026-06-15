@@ -1,5 +1,3 @@
-"use client";
-
 import NumberFlow from "@number-flow/react";
 import { useQuery } from "@tanstack/react-query";
 import { useTRPC } from "@/ipc/query-adapter";

@@ -1,12 +1,9 @@
-"use client";
-
 import type {
   ColumnOrderState,
   ColumnSizingState,
   VisibilityState,
 } from "@tanstack/react-table";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { updateTableSettingsAction } from "@/actions/update-table-settings-action";
 import {
   mergeWithDefaults,
   TABLE_SETTINGS_COOKIE,
@@ -94,11 +91,8 @@ export function useTableSettings({
             order: order,
           };
 
-          // Persist to server action (which sets the cookie)
-          await updateTableSettingsAction({
-            key: TABLE_SETTINGS_COOKIE,
-            data: allSettings,
-          });
+          // Persist to local cookie (desktop — no server action)
+          document.cookie = `${TABLE_SETTINGS_COOKIE}=${encodeURIComponent(JSON.stringify(allSettings))};path=/;max-age=31536000`;
         } catch (error) {
           console.error("Failed to persist table settings:", error);
         }

@@ -1,5 +1,3 @@
-"use client";
-
 import { useToast } from "@orbis/ui/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAcademicParams } from "@/hooks/use-academic-params";

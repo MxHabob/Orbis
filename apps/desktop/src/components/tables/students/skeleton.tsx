@@ -1,5 +1,3 @@
-"use client";
-
 import type { ColumnSizingState, VisibilityState } from "@tanstack/react-table";
 import { TableSkeleton } from "@/components/tables/core";
 import { columns } from "./columns";

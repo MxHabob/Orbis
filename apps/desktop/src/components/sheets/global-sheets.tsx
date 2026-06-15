@@ -1,5 +1,3 @@
-"use client";
-
 import { GlobalDeleteDialog } from "@/components/modals/global-delete-dialog";
 import { ImportModal } from "@/components/modals/import-modal";
 import { SearchModal } from "@/components/search/search-modal";
@@ -18,9 +16,6 @@ import { StudentDetailsSheet } from "@/components/sheets/student-details-sheet";
 import { StudentEditSheet } from "@/components/sheets/student-edit-sheet";
 import { SubjectCreateSheet } from "@/components/sheets/subject-create-sheet";
 import { SubjectEditSheet } from "@/components/sheets/subject-edit-sheet";
-import { TrackerCreateSheet } from "@/components/sheets/tracker-create-sheet";
-import { TrackerScheduleSheet } from "@/components/sheets/tracker-schedule-sheet";
-import { TrackerUpdateSheet } from "@/components/sheets/tracker-update-sheet";
 
 export function GlobalSheets() {
   return (

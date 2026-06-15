@@ -1,5 +1,3 @@
-"use client";
-
 import { Badge } from "@orbis/ui/badge";
 import { Checkbox } from "@orbis/ui/checkbox";
 import { cn } from "@orbis/ui/cn";

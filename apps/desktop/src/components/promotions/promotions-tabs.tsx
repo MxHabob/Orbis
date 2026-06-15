@@ -1,5 +1,3 @@
-"use client";
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@orbis/ui/tabs";
 import type { PromotionTab } from "@/hooks/use-promotions";
 import { useI18n } from "@/locales/client";

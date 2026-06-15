@@ -1,5 +1,3 @@
-"use client";
-
 import { Avatar, AvatarFallback, AvatarImageNext } from "@orbis/ui/avatar";
 import { Separator } from "@orbis/ui/separator";
 import { SheetHeader } from "@orbis/ui/sheet";

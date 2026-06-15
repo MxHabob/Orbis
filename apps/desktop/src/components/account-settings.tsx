@@ -1,5 +1,3 @@
-"use client";
-
 import { ChangeEmail } from "@/components/change-email";
 import { ChangeTheme } from "@/components/change-theme";
 import { DisplayName } from "@/components/display-name";

@@ -1,5 +1,3 @@
-"use client";
-
 import { parseFile } from "@orbis/import";
 import { cn } from "@orbis/ui/cn";
 import { Spinner } from "@orbis/ui/spinner";

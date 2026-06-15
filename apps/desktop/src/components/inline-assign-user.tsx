@@ -1,5 +1,3 @@
-"use client";
-
 import { Popover, PopoverContent, PopoverTrigger } from "@orbis/ui/popover";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";

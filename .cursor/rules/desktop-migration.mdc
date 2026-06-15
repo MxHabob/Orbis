@@ -1,0 +1,36 @@
+---
+description: Orbis Desktop — migrate/clean Next.js leftovers; follow AGENTS.md
+globs: apps/desktop/**/*
+alwaysApply: false
+---
+
+# Orbis Desktop migration
+
+**Read first:** `apps/desktop/AGENTS.md` (full playbook).
+
+`apps/desktop` is **Vite + Tauri v2 + React Router**, not Next.js.
+
+## Before editing
+
+1. Grep the file for: `"use client"`, `next/`, `useTRPC`, `@/actions/`, `next-safe-action`, `dynamic(`.
+2. Prefer `hooks/api/*` + `@orbis/desktop-client/commands` over `query-adapter` or server actions.
+3. Use `React.lazy` + `Suspense` — never `next/dynamic`.
+4. Keep layouts/routes lazy; do not eager-import heavy trees into `router.tsx`.
+5. Run `bun run build` in `apps/desktop` after each batch.
+
+## Replace
+
+| Legacy | Use |
+|--------|-----|
+| `useTRPC()` | `hooks/api/use-*.ts` |
+| `useAction` (next-safe-action) | `@/hooks/use-safe-action` + IPC |
+| `@/actions/*` | Rust `commands.*` or delete stub |
+| `next/link`, `useRouter` | `react-router-dom` |
+
+## Do not
+
+- Copy dashboard (Next.js) patterns verbatim.
+- Add Vite aliases for workspace packages — use `workspace:*` deps.
+- Reintroduce tRPC or embedded HTTP server.
+
+Unsupported features (banking, tracker billing, etc.) → `src/legacy/` + hide from router.

@@ -1,5 +1,3 @@
-"use client";
-
 import { authClient } from "@/lib/auth-client";
 import { isDesktopApp } from "@orbis/desktop-client/platform";
 import { Icons } from "@orbis/ui/icons";

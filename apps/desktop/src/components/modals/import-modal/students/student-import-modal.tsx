@@ -1,5 +1,3 @@
-"use client";
-
 import { parseFile } from "@orbis/import";
 import { AnimatedSizeContainer } from "@orbis/ui/animated-size-container";
 import {

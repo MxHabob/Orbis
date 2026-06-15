@@ -1,5 +1,3 @@
-"use client";
-
 
 import appIcon from "public/appicon.png";
 import { useEffect, useRef } from "react";

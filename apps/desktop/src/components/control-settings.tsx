@@ -1,5 +1,3 @@
-"use client";
-
 import { ControlSeatingNumbers } from "./control-seating-numbers";
 import { ControlSecretNumbers } from "./control-secret-numbers";
 export function ControlSettings() {

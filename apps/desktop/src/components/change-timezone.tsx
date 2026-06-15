@@ -1,5 +1,3 @@
-"use client";
-
 import { getTimezones } from "@orbis/location/timezones";
 import {
   Card,

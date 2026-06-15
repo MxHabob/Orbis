@@ -1,5 +1,3 @@
-"use client";
-
 import { cn } from "@orbis/ui/cn";
 import { Table, TableBody, TableCell, TableRow } from "@orbis/ui/table";
 import { useSuspenseQuery } from "@tanstack/react-query";

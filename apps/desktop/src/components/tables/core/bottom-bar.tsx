@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@orbis/ui/button";
 import { motion } from "framer-motion";
 import type { ReactNode } from "react";

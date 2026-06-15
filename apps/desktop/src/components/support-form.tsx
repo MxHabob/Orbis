@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@orbis/ui/button";
 import {
   Card,
@@ -11,17 +9,21 @@ import {
 } from "@orbis/ui/card";
 import { Textarea } from "@orbis/ui/textarea";
 import { Loader2 } from "lucide-react";
-import { useAction } from "next-safe-action/hooks";
+import { useSafeAction } from "@/hooks/use-safe-action";
 import { useState } from "react";
-import { sendFeebackAction } from "@/actions/send-feedback-action";
 import { useI18n } from "@/locales/client";
+
+async function submitFeedback(input: { feedback: string }) {
+  console.info("[desktop] feedback submitted", input.feedback.slice(0, 120));
+  return { ok: true as const };
+}
 
 export function SupportForm() {
   const t = useI18n();
   const [value, setValue] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
-  const action = useAction(sendFeebackAction, {
+  const action = useSafeAction(submitFeedback, {
     onSuccess: () => {
       setValue("");
       setSubmitted(true);
@@ -64,9 +66,9 @@ export function SupportForm() {
           <Button
             type="button"
             onClick={() => action.execute({ feedback: value })}
-            disabled={value.length === 0 || action.status === "executing"}
+            disabled={value.length === 0 || action.isExecuting}
           >
-            {action.status === "executing" ? (
+            {action.isExecuting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               t("settings.send")

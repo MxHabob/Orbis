@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@orbis/ui/button";
 import { FileQuestion } from "lucide-react";
 import { OpenReportsSheet } from "@/components/open-report-sheet";

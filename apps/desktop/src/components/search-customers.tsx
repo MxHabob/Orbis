@@ -1,5 +1,3 @@
-"use client";
-
 import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
 import { useQuery } from "@tanstack/react-query";
 import { useTRPC } from "@/ipc/query-adapter";

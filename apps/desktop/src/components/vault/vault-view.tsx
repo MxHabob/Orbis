@@ -1,5 +1,3 @@
-"use client";
-
 import { DataTable } from "@/components/tables/vault/data-table";
 import { useDocumentParams } from "@/hooks/use-document-params";
 import type { TableSettings } from "@/utils/table-settings";

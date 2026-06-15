@@ -1,5 +1,3 @@
-"use client";
-
 import { cn } from "@orbis/ui/cn";
 import { TableCell, TableRow } from "@orbis/ui/table";
 import { flexRender, type Row } from "@tanstack/react-table";

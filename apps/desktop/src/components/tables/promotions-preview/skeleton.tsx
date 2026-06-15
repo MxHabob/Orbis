@@ -1,5 +1,3 @@
-"use client";
-
 import { Skeleton } from "@orbis/ui/skeleton";
 import {
   Table,

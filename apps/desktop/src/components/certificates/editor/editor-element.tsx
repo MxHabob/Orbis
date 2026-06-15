@@ -1,5 +1,3 @@
-"use client";
-
 import { cn } from "@orbis/ui/cn";
 import type React from "react";
 import { memo, useEffect, useRef, useState } from "react";

@@ -1,5 +1,3 @@
-"use client";
-
 import { Spinner } from "@orbis/ui/spinner";
 import type { ForwardedRef } from "react";
 

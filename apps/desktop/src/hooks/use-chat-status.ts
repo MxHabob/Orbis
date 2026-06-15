@@ -1,5 +1,3 @@
-"use client";
-
 import type { ChatStatus, ToolUIPart, UIMessage } from "ai";
 import { useMemo } from "react";
 import { useArtifacts, useDataPart } from "@/hooks/use-chat-actions";

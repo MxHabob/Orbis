@@ -1,5 +1,3 @@
-"use client";
-
 import { Spinner } from "@orbis/ui/spinner";
 import { useQuery } from "@tanstack/react-query";
 import { useTRPC } from "@/ipc/query-adapter";

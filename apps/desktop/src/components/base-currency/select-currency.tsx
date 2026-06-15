@@ -1,5 +1,3 @@
-"use client";
-
 import { uniqueCurrencies } from "@orbis/location/currencies";
 import { Button } from "@orbis/ui/button";
 import { useToast } from "@orbis/ui/use-toast";

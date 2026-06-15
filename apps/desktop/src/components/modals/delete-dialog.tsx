@@ -1,5 +1,3 @@
-"use client";
-
 import { Alert, AlertDescription, AlertTitle } from "@orbis/ui/alert";
 import {
   AlertDialog,

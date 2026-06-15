@@ -1,5 +1,3 @@
-"use client";
-
 import { VaultActions } from "@/components/vault/vault-actions";
 import { VaultSearchFilter } from "@/components/vault/vault-search-filter";
 

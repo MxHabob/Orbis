@@ -1,5 +1,3 @@
-"use client";
-
 import { GraduationCap } from "lucide-react";
 import { useI18n } from "@/locales/client";
 

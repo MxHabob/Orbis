@@ -1,5 +1,3 @@
-"use client";
-
 import { emit, invoke, listen, Window } from "@orbis/desktop-client/core";
 import { isDesktopApp } from "@orbis/desktop-client/platform";
 import { Badge } from "@orbis/ui/badge";
@@ -35,7 +33,6 @@ import { useI18n } from "@/locales/client";
 import { useSearchStore } from "@/store/search";
 import { useTRPC } from "@/ipc/query-adapter";
 import { FilePreviewIcon } from "../file-preview-icon";
-import { TrackerTimer } from "../tracker-timer";
 
 interface SearchItem {
   id: string;
@@ -499,28 +496,6 @@ const SearchResultItemDisplay = ({
         );
         break;
       }
-      case "tracker_project": {
-        onSelect = () =>
-          nav.navigateToTracker({ projectId: item.id, update: true });
-
-        icon = null; // TrackerTimer will handle its own icon
-        resultDisplay = (
-          <div className="flex items-center w-full">
-            <div className="flex-grow min-w-0 -ml-[6px]">
-              <TrackerTimer
-                projectId={item.id}
-                projectName={item.data.name as string}
-                onClick={() =>
-                  nav.navigateToTracker({ projectId: item.id, update: true })
-                }
-                alwaysShowButton={true}
-              />
-            </div>
-          </div>
-        );
-        break;
-      }
-      case "inbox":
       case "tracker_project":
         return null;
       default:

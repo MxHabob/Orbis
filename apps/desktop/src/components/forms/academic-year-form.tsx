@@ -1,6 +1,4 @@
-"use client";
-
-import { createAcademicYearSchema } from "@api/schemas/academic";
+import { createAcademicYearSchema } from "@/schemas/academic";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@orbis/ui/button";
 import {
@@ -14,11 +12,13 @@ import {
 import { Input } from "@orbis/ui/input";
 import { Switch } from "@orbis/ui/switch";
 import { useToast } from "@orbis/ui/use-toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useI18n } from "@/locales/client";
-import { useTRPC } from "@/ipc/query-adapter";
+import {
+  useCreateAcademicYear,
+  useUpdateAcademicYear,
+} from "@/hooks/api/use-academics";
 
 interface AcademicYearFormProps {
   initialData?: any;
@@ -30,9 +30,9 @@ export function AcademicYearForm({
   onSuccess,
 }: AcademicYearFormProps) {
   const t = useI18n();
-  const trpc = useTRPC();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const createMutation = useCreateAcademicYear();
+  const updateMutation = useUpdateAcademicYear();
 
   const form = useForm({
     resolver: zodResolver(createAcademicYearSchema),
@@ -52,54 +52,40 @@ export function AcademicYearForm({
     }
   }, [initialData, form]);
 
-  const createMutation = useMutation(
-    trpc.academic.createYear.mutationOptions({
-      onSuccess: () => {
-        toast({ title: t("promotions.process_success") });
-        queryClient.invalidateQueries({
-          queryKey: trpc.academic.getYears.queryKey(),
-        });
-        onSuccess?.();
-      },
-      onError: (error) => {
-        toast({
-          title: t("common.error"),
-          description: error.message,
-          variant: "destructive",
-        });
-      },
-    }),
-  );
-
-  const updateMutation = useMutation(
-    trpc.academic.updateYear.mutationOptions({
-      onSuccess: () => {
-        toast({ title: t("promotions.process_success") });
-        queryClient.invalidateQueries({
-          queryKey: trpc.academic.getYears.queryKey(),
-        });
-        onSuccess?.();
-      },
-      onError: (error) => {
-        toast({
-          title: t("common.error"),
-          description: error.message,
-          variant: "destructive",
-        });
-      },
-    }),
-  );
-
   const isPending = createMutation.isPending || updateMutation.isPending;
 
-  const onSubmit = (data: any) => {
+  const onSubmit = (data: Record<string, unknown>) => {
     if (initialData?.id) {
-      updateMutation.mutate({
-        ...data,
-        id: initialData.id,
-      });
+      updateMutation.mutate(
+        { cycleId: String(initialData.id), request: { ...data, id: initialData.id } },
+        {
+          onSuccess: () => {
+            toast({ title: t("promotions.process_success") });
+            onSuccess?.();
+          },
+          onError: (error) => {
+            toast({
+              title: t("common.error"),
+              description: error.message,
+              variant: "destructive",
+            });
+          },
+        },
+      );
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate(data, {
+        onSuccess: () => {
+          toast({ title: t("promotions.process_success") });
+          onSuccess?.();
+        },
+        onError: (error) => {
+          toast({
+            title: t("common.error"),
+            description: error.message,
+            variant: "destructive",
+          });
+        },
+      });
     }
   };
 

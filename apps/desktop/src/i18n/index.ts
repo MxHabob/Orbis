@@ -16,7 +16,7 @@ i18n.use(initReactI18next).init({
     suffix: "}",
   },
   react: {
-    useSuspense: true,
+    useSuspense: false,
   },
 });
 

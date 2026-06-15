@@ -1,5 +1,3 @@
-"use client";
-
 import { useLocation } from "react-router-dom";
 import { type RefObject, useEffect, useRef } from "react";
 

@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@orbis/ui/button";
 import { cn } from "@orbis/ui/cn";
 import { Input } from "@orbis/ui/input";

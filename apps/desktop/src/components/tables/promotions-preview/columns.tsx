@@ -1,5 +1,3 @@
-"use client";
-
 import { Badge } from "@orbis/ui/badge";
 import { cn } from "@orbis/ui/cn";
 import { createColumnHelper } from "@tanstack/react-table";

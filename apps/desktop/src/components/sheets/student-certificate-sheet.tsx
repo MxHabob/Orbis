@@ -1,5 +1,3 @@
-"use client";
-
 import { generateCanvasPdf } from "@orbis/export";
 import { Button } from "@orbis/ui/button";
 import { cn } from "@orbis/ui/cn";

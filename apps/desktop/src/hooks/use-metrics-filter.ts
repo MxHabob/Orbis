@@ -1,5 +1,3 @@
-"use client";
-
 import { useQueryStates } from "nuqs";
 import { parseAsString } from "nuqs/server";
 import { useEffect, useMemo } from "react";

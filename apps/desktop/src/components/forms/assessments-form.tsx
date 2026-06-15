@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@orbis/ui/button";
 import {
   Form,
@@ -20,11 +18,15 @@ import { SubmitButton } from "@orbis/ui/submit-button";
 import { useToast } from "@orbis/ui/use-toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Sparkles, X } from "lucide-react";
-import { useAction } from "next-safe-action/hooks";
 import { useMemo, useState } from "react";
 import { useFieldArray } from "react-hook-form";
 import { z } from "zod/v3";
-import { initializeAssessmentsAction } from "@/actions/assessments/initialize-assessments";
+import {
+  useCreateAssessment,
+  useDeleteAssessment,
+  useInitializeAssessments,
+  useUpdateAssessment,
+} from "@/hooks/api/use-enrollments";
 import { useZodForm } from "@/hooks/use-zod-form";
 import { useI18n } from "@/locales/client";
 import { useTRPC } from "@/ipc/query-adapter";
@@ -130,27 +132,14 @@ export function AssessmentsForm({
 
   const [isSaving, setIsSaving] = useState(false);
 
-  const createMutation = useMutation(trpc.assessments.create.mutationOptions());
-  const updateMutation = useMutation(trpc.assessments.update.mutationOptions());
-  const deleteMutation = useMutation(trpc.assessments.delete.mutationOptions());
-
-  const { execute: executeInitialize, status: initializeStatus } = useAction(
-    initializeAssessmentsAction,
-    {
-      onSuccess: () => {
-        toast({
-          title: "Success!",
-          description: "Standard items created.",
-          variant: "success",
-        });
-        refetch();
-        void invalidateGradesDomain(queryClient, trpc, gradeGridInput);
-        queryClient.invalidateQueries({
-          queryKey: trpc.assessments.getByClass.queryKey(),
-        });
-      },
-    },
-  );
+  const createMutation = useCreateAssessment();
+  const updateMutation = useUpdateAssessment();
+  const deleteMutation = useDeleteAssessment();
+  const {
+    mutate: executeInitialize,
+    isPending: initializePending,
+  } = useInitializeAssessments();
+  const initializeStatus = initializePending ? "executing" : "idle";
 
   const onSubmit = form.handleSubmit(async (data) => {
     setIsSaving(true);
@@ -266,7 +255,27 @@ export function AssessmentsForm({
             type="button"
             className="text-[11px] text-muted-foreground p-0 h-auto font-normal hover:bg-transparent"
             onClick={() =>
-              executeInitialize({ classId, subjectId, termId, month })
+              executeInitialize(
+                { classId, subjectId, termId, month },
+                {
+                  onSuccess: () => {
+                    toast({
+                      title: "Success!",
+                      description: "Standard items created.",
+                      variant: "success",
+                    });
+                    refetch();
+                    void invalidateGradesDomain(
+                      queryClient,
+                      trpc,
+                      gradeGridInput,
+                    );
+                    queryClient.invalidateQueries({
+                      queryKey: trpc.assessments.getByClass.queryKey(),
+                    });
+                  },
+                },
+              )
             }
             disabled={initializeStatus === "executing"}
           >

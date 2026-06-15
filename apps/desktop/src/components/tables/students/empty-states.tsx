@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@orbis/ui/button";
 import { useCustomerParams } from "@/hooks/use-customer-params";
 

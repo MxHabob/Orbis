@@ -333,10 +333,13 @@ pub fn run() {
             .title("Orbis")
             .inner_size(1200.0, 750.0)
             .min_inner_size(900.0, 600.0)
-            .user_agent("OrbisDesktop/1.0")
+            .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 OrbisDesktop/1.0")
             .visible(false)
             .center()
             .shadow(true);
+
+            #[cfg(debug_assertions)]
+            let win_builder = win_builder.devtools(true);
 
             #[cfg(target_os = "macos")]
             let win_builder = win_builder

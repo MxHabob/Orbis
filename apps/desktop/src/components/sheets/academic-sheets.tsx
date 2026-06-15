@@ -1,5 +1,3 @@
-"use client";
-
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@orbis/ui/sheet";
 import { useQuery } from "@tanstack/react-query";
 import { useAcademicParams } from "@/hooks/use-academic-params";

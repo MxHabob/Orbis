@@ -1,5 +1,3 @@
-"use client";
-
 import { memo } from "react";
 import { useUserQuery } from "@/hooks/use-user";
 import { formatAmount } from "@/utils/format";

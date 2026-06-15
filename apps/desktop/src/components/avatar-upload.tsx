@@ -1,5 +1,3 @@
-"use client";
-
 import { Avatar, AvatarFallback, AvatarImage } from "@orbis/ui/avatar";
 import { cn } from "@orbis/ui/cn";
 import { Icons } from "@orbis/ui/icons";

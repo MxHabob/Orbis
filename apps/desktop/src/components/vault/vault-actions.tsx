@@ -1,5 +1,3 @@
-"use client";
-
 import { VaultViewSwitch } from "@/components/vault/vault-view-switch";
 import { VaultUploadButton } from "./vault-upload-button";
 

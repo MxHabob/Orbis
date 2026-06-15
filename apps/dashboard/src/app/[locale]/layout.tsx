@@ -1,6 +1,6 @@
+import "@/styles/tailwind.css";
 import "@/styles/globals.css";
 import { cn } from "@orbis/ui/cn";
-import "@orbis/ui/globals.css";
 import { Toaster } from "@orbis/ui/toaster";
 import type { Metadata } from "next";
 import { Hedvig_Letters_Sans, Hedvig_Letters_Serif } from "next/font/google";

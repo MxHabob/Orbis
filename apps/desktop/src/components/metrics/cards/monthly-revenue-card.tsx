@@ -1,5 +1,3 @@
-"use client";
-
 import { cn } from "@orbis/ui/cn";
 import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";

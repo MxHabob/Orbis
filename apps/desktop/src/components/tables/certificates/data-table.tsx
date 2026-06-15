@@ -1,5 +1,3 @@
-"use client";
-
 import { closestCenter, DndContext } from "@dnd-kit/core";
 import { Table, TableBody, TableCell, TableRow } from "@orbis/ui/table";
 import { useSuspenseQuery } from "@tanstack/react-query";

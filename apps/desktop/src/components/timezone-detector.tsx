@@ -1,5 +1,3 @@
-"use client";
-
 import { authClient } from "@/lib/auth-client";
 import { useEffect, useRef } from "react";
 import { useUserMutation } from "@/hooks/use-user";

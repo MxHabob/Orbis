@@ -129,3 +129,100 @@ export function useUpdateWidgetPreferences() {
     },
   });
 }
+
+export function useAcademicYear(cycleId: string) {
+  return useSuspenseQuery({
+    queryKey: queryKeys.cycles.detail(cycleId),
+    queryFn: () => commands.academics.getCycle(cycleId),
+  });
+}
+
+export function useCreateAcademicYear() {
+  const qc = useQueryClient();
+  const orgId = getOrgId();
+  return useMutation({
+    mutationFn: (request: JsonRecord) =>
+      commands.academics.createCycle(orgId, request),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.cycles.all(orgId) });
+      qc.invalidateQueries({ queryKey: queryKeys.cycles.current(orgId) });
+    },
+  });
+}
+
+export function useUpdateAcademicYear() {
+  const qc = useQueryClient();
+  const orgId = getOrgId();
+  return useMutation({
+    mutationFn: ({
+      cycleId,
+      request,
+    }: {
+      cycleId: string;
+      request: JsonRecord;
+    }) => commands.academics.updateCycle(cycleId, request),
+    onSuccess: (_, { cycleId }) => {
+      qc.invalidateQueries({ queryKey: queryKeys.cycles.all(orgId) });
+      qc.invalidateQueries({ queryKey: queryKeys.cycles.detail(cycleId) });
+      qc.invalidateQueries({ queryKey: queryKeys.cycles.current(orgId) });
+    },
+  });
+}
+
+export function useDeleteAcademicYear() {
+  const qc = useQueryClient();
+  const orgId = getOrgId();
+  return useMutation({
+    mutationFn: (cycleId: string) => commands.academics.lockCycle(cycleId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.cycles.all(orgId) });
+      qc.invalidateQueries({ queryKey: queryKeys.cycles.current(orgId) });
+    },
+  });
+}
+
+export function useCreateAcademicTerm() {
+  const qc = useQueryClient();
+  const orgId = getOrgId();
+  return useMutation({
+    mutationFn: (request: JsonRecord) =>
+      commands.academics.createCycle(orgId, { ...request, cycle_type: "term" }),
+    onSuccess: (_, request) => {
+      const yearId = String(request.parent_id ?? request.academicYearId ?? "");
+      if (yearId) {
+        qc.invalidateQueries({ queryKey: queryKeys.cycles.terms(yearId) });
+      }
+      qc.invalidateQueries({ queryKey: queryKeys.cycles.all(orgId) });
+    },
+  });
+}
+
+export function useUpdateAcademicTerm() {
+  const qc = useQueryClient();
+  const orgId = getOrgId();
+  return useMutation({
+    mutationFn: ({
+      cycleId,
+      request,
+    }: {
+      cycleId: string;
+      request: JsonRecord;
+    }) => commands.academics.updateCycle(cycleId, request),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["cycles", "terms"] });
+      qc.invalidateQueries({ queryKey: queryKeys.cycles.all(orgId) });
+    },
+  });
+}
+
+export function useDeleteAcademicTerm() {
+  const qc = useQueryClient();
+  const orgId = getOrgId();
+  return useMutation({
+    mutationFn: (cycleId: string) => commands.academics.lockCycle(cycleId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["cycles", "terms"] });
+      qc.invalidateQueries({ queryKey: queryKeys.cycles.all(orgId) });
+    },
+  });
+}

@@ -1,5 +1,3 @@
-"use client";
-
 import { useCallback } from "react";
 import { useSortParams } from "@/hooks/use-sort-params";
 

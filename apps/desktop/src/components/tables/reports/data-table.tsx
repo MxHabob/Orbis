@@ -1,5 +1,3 @@
-"use client";
-
 import { closestCenter, DndContext } from "@dnd-kit/core";
 import { authClient } from "@/lib/auth-client";
 import { Table, TableBody, TableCell, TableRow } from "@orbis/ui/table";

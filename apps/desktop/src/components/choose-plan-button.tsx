@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@orbis/ui/button";
 import { useState } from "react";
 import { ChoosePlanModal } from "./modals/choose-plan-modal";

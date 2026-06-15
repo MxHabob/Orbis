@@ -1,5 +1,3 @@
-"use client";
-
 import { Sheet, SheetContent } from "@orbis/ui/sheet";
 import React from "react";
 import { DocumentDetails } from "@/components/document-details";

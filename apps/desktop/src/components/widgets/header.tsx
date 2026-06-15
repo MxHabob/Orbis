@@ -1,5 +1,3 @@
-"use client";
-
 import { TZDate } from "@date-fns/tz";
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@orbis/ui/cn";

@@ -1,5 +1,3 @@
-"use client";
-
 // DnD Kit Imports
 import {
   closestCenter,

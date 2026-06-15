@@ -1,5 +1,3 @@
-"use client";
-
 import { cn } from "@orbis/ui/cn";
 import { Link } from "react-router-dom";
 import { useLocation } from "react-router-dom";

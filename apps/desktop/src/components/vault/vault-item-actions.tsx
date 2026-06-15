@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@orbis/ui/button";
 import { Icons } from "@orbis/ui/icons";
 import { useMutation } from "@tanstack/react-query";

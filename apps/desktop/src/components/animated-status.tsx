@@ -1,5 +1,3 @@
-"use client";
-
 import { TextShimmer } from "@orbis/ui/text-shimmer";
 import { AnimatePresence, motion } from "framer-motion";
 import type { IconComponent } from "@/lib/tool-config";

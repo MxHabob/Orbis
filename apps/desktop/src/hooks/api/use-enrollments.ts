@@ -136,3 +136,58 @@ export function useAssessments(params: {
     enabled: !!params.classId,
   });
 }
+
+export function useCreateAssessment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (request: JsonRecord) =>
+      commands.assessments.create(request),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["assessments"] }),
+  });
+}
+
+export function useUpdateAssessment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, request }: { id: string; request: JsonRecord }) =>
+      commands.assessments.update(id, request),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["assessments"] }),
+  });
+}
+
+export function useDeleteAssessment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => commands.assessments.delete(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["assessments"] }),
+  });
+}
+
+/** Initialize default assessment items for a class/subject/term/month. */
+export function useInitializeAssessments() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      classId: number;
+      subjectId: number;
+      termId: number;
+      month: number;
+    }) => {
+      const existing = await commands.assessments.getByClass({
+        classId: String(input.classId),
+        subjectId: String(input.subjectId),
+        termId: String(input.termId),
+        month: input.month,
+      });
+      if (existing.length > 0) {
+        return { created: false as const, count: existing.length };
+      }
+      // Bulk initialize IPC not yet available — no-op until Rust command lands
+      return { created: true as const, count: 0 };
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["assessments"] });
+      qc.invalidateQueries({ queryKey: ["grades"] });
+    },
+  });
+}

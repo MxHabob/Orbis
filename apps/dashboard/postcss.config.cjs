@@ -1,2 +1,5 @@
-// @ts-expect-error - No types for postcss
-module.exports = require("@authen/ui/postcss");
+module.exports = {
+  plugins: {
+    "@tailwindcss/postcss": {},
+  },
+};

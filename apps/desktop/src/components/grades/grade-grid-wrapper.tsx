@@ -1,16 +1,13 @@
-"use client";
-
 import { Alert, AlertDescription, AlertTitle } from "@orbis/ui/alert";
 import { Button } from "@orbis/ui/button";
 import { useToast } from "@orbis/ui/use-toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, Loader2, Plus, Settings2, Sparkles } from "lucide-react";
-import { useAction } from "next-safe-action/hooks";
 import { parseAsInteger, parseAsString, useQueryStates } from "nuqs";
 import { useEffect, useMemo, useState } from "react";
-import { initializeAssessmentsAction } from "@/actions/assessments/initialize-assessments";
 import { GradeDataTable } from "@/components/tables/grades/data-table";
 import { GradesSkeleton } from "@/components/tables/grades/skeleton";
+import { useInitializeAssessments } from "@/hooks/api/use-enrollments";
 import { useGradeFilterParams } from "@/hooks/use-grade-filter-params";
 import { useI18n } from "@/locales/client";
 import { useTRPC } from "@/ipc/query-adapter";
@@ -43,34 +40,44 @@ export function GradeGridWrapper({
     initialize_month: parseAsInteger,
   });
 
-  const { execute: executeInitialize, status: initializeStatus } = useAction(
-    initializeAssessmentsAction,
-    {
-      onSuccess: () => {
-        toast({
-          title: t("grades.export_success"),
-          description: "Standard items created.",
-          variant: "success",
-        });
-        queryClient.invalidateQueries({
-          queryKey: trpc.grades.getGridData.queryKey({
-            classId: classId!,
-            subjectId: subjectId!,
-            termId: termId!,
-            month: month!,
-            academicYearId: yearId!,
-          }),
-        });
+  const {
+    mutate: executeInitialize,
+    isPending: initializePending,
+  } = useInitializeAssessments();
+
+  const initializeStatus = initializePending ? "executing" : "idle";
+
+  const runInitialize = () => {
+    if (!classId || !subjectId || !termId || !month) return;
+    executeInitialize(
+      { classId, subjectId, termId, month },
+      {
+        onSuccess: () => {
+          toast({
+            title: t("grades.export_success"),
+            description: "Standard items created.",
+            variant: "success",
+          });
+          queryClient.invalidateQueries({
+            queryKey: trpc.grades.getGridData.queryKey({
+              classId: classId!,
+              subjectId: subjectId!,
+              termId: termId!,
+              month: month!,
+              academicYearId: yearId!,
+            }),
+          });
+        },
+        onError: () => {
+          toast({
+            title: "Error",
+            description: "Failed to create standard items.",
+            variant: "destructive",
+          });
+        },
       },
-      onError: () => {
-        toast({
-          title: "Error",
-          description: "Failed to create standard items.",
-          variant: "destructive",
-        });
-      },
-    },
-  );
+    );
+  };
 
   const [pendingChanges, setPendingChanges] = useState<
     Record<string, number | null>
@@ -387,14 +394,7 @@ export function GradeGridWrapper({
             <Button
               className="px-6 gap-2"
               disabled={initializeStatus === "executing"}
-              onClick={() =>
-                executeInitialize({
-                  classId: classId!,
-                  subjectId: subjectId!,
-                  termId: termId!,
-                  month: month!,
-                })
-              }
+              onClick={runInitialize}
             >
               {initializeStatus === "executing" ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

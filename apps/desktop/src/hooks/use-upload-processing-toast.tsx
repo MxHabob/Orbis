@@ -1,5 +1,3 @@
-"use client";
-
 import NumberFlow from "@number-flow/react";
 import { toast } from "@orbis/ui/use-toast";
 import { useCallback, useEffect, useRef } from "react";
