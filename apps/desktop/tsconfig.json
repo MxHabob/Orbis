@@ -22,7 +22,8 @@
 
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@orbis/auth/*": ["./src/lib/*"]
     }
   },
   "include": ["src"],

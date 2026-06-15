@@ -7,3 +7,8 @@ pub mod grades;
 pub mod attendance;
 pub mod finance;
 pub mod misc;
+pub mod subjects;
+pub mod assessments;
+pub mod documents;
+pub mod certificates;
+pub mod widgets;

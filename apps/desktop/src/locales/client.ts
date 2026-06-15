@@ -1,18 +1,32 @@
-"use client";
+import { useTranslation } from "react-i18next";
+import { ReactNode } from "react";
 
-import { createI18nClient } from "next-international/client";
-
-// NOTE: Also update middleware.ts to support locale
 export const languages = ["en", "ar"];
 
-export const {
-  useScopedI18n,
-  I18nProviderClient,
-  useCurrentLocale,
-  useChangeLocale,
-  useI18n,
-} = createI18nClient({
-  en: () => import("./en"),
-  ar: () => import("./ar"),
-  // sv: () => import("./sv"),
-});
+export function useI18n() {
+  const { t } = useTranslation();
+  return t;
+}
+
+export function useCurrentLocale() {
+  const { i18n } = useTranslation();
+  return (i18n.language || "ar") as "ar" | "en";
+}
+
+export function useChangeLocale() {
+  const { i18n } = useTranslation();
+  return (locale: "ar" | "en") => {
+    i18n.changeLanguage(locale);
+  };
+}
+
+export function useScopedI18n(scope: string) {
+  const { t } = useTranslation();
+  return (key: string, params?: any) => {
+    return t(`${scope}.${key}`, params);
+  };
+}
+
+export function I18nProviderClient({ children }: { children: ReactNode }) {
+  return <>{children}</>;
+}

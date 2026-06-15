@@ -129,7 +129,7 @@ export function DesktopProvider() {
         console.log("🧹 Deep link listener cleaned up");
       }
     };
-  }, [router]);
+  }, [navigate]);
 
   // Add desktop navigation listener
   useEffect(() => {
@@ -233,7 +233,7 @@ export function DesktopProvider() {
         console.log("🧹 Desktop params navigation listener cleaned up");
       }
     };
-  }, [router]);
+  }, [navigate]);
 
   return null;
 }

@@ -278,6 +278,36 @@ pub fn run() {
             commands::misc::delete_org_unit,
             commands::misc::get_dashboard_stats,
             commands::misc::get_audit_logs,
+
+            // Subjects
+            commands::subjects::get_subjects,
+            commands::subjects::get_subject,
+            commands::subjects::create_subject,
+            commands::subjects::update_subject,
+            commands::subjects::delete_subject,
+
+            // Assessments
+            commands::assessments::get_assessments,
+            commands::assessments::create_assessment,
+            commands::assessments::update_assessment,
+            commands::assessments::delete_assessment,
+
+            // Documents
+            commands::documents::get_documents,
+            commands::documents::get_document,
+            commands::documents::create_document,
+            commands::documents::delete_document,
+
+            // Certificates
+            commands::certificates::get_certificates,
+            commands::certificates::get_certificate,
+            commands::certificates::create_certificate,
+            commands::certificates::update_certificate,
+            commands::certificates::delete_certificate,
+
+            // Widgets
+            commands::widgets::get_widget_preferences,
+            commands::widgets::update_widget_preferences,
         ])
         .setup(move |app| {
             // Add updater plugin conditionally for desktop
