@@ -247,17 +247,21 @@ pub fn run() {
             app.handle().plugin(tauri_plugin_updater::Builder::new().build())?;
 
             // 1. Initialize local SQLite database path in local AppData folder
-            let app_data_dir = app.path().app_data_dir().unwrap();
-            let _ = std::fs::create_dir_all(&app_data_dir);
+            let app_data_dir = app
+                .path()
+                .app_data_dir()
+                .map_err(|e| format!("Failed to resolve app data dir: {e}"))?;
+            std::fs::create_dir_all(&app_data_dir)
+                .map_err(|e| format!("Failed to create app data dir {:?}: {e}", app_data_dir))?;
             let db_path = app_data_dir.join("orbis.db");
-            let database_url = format!("sqlite://{}", db_path.to_string_lossy());
+            let database_url = state::sqlite_database_url(&db_path);
 
             // 2. Initialize managed AppState with direct Rust access (embedded core)
             let app_state = tauri::async_runtime::block_on(async {
                 AppState::init(&database_url)
                     .await
-                    .expect("Failed to initialize database and AppState")
-            });
+                    .map_err(|e| format!("Database init failed for {:?}: {e}", db_path))
+            })?;
             app.manage(Arc::new(app_state));
 
             let app_handle = app.handle().clone();

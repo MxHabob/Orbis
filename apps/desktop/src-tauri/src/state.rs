@@ -6,6 +6,17 @@ use core_domain::{
     service::Service,
 };
 
+/// Build a SeaORM/sqlx-compatible SQLite URL from an absolute filesystem path.
+/// Windows paths must use forward slashes and the `sqlite:///C:/...` form.
+pub fn sqlite_database_url(db_path: &std::path::Path) -> String {
+    let path = db_path.to_string_lossy().replace('\\', "/");
+    if path.starts_with('/') {
+        format!("sqlite://{path}?mode=rwc")
+    } else {
+        format!("sqlite:///{path}?mode=rwc")
+    }
+}
+
 /// Shared application state passed to all Tauri commands.
 /// Wraps the full Service layer for direct, zero-network access.
 #[derive(Clone)]
