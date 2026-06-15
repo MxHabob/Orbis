@@ -69,16 +69,14 @@ export function FilePreview({
                 width: fixedSize.width,
                 height: fixedSize.height,
                 sizes: `${fixedSize.width}px`,
-                unoptimized: true,
               }
-            : {: true,
-              })}
+            : {})}
           className={cn(
             "object-cover object-top border border-border dark:border-none w-full h-full",
             imageLoading ? "opacity-0" : "opacity-100",
           )}
-          loading={lazy ? "lazy" : "eager"}={!lazy}
-          onLoadingComplete={() => setImageLoading(false)}
+          loading={lazy ? "lazy" : "eager"}
+          onLoad={() => setImageLoading(false)}
           onError={() => {
             setImageError(true);
             setImageLoading(false);
