@@ -130,6 +130,14 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_fs::init())
+        .on_page_load(|webview, payload| {
+            if payload.event() == tauri::webview::PageLoadEvent::Finished
+                && webview.label() == "main"
+            {
+                let _ = webview.show();
+                let _ = webview.set_focus();
+            }
+        })
         .invoke_handler(tauri::generate_handler![
             // Core window & update commands
             show_window,
@@ -348,6 +356,12 @@ pub fn run() {
                 })
                 .on_navigation(move |url: &tauri::Url| {
                     if url.scheme() == "tauri" || url.host_str() == Some("tauri.localhost") {
+                        return true;
+                    }
+
+                    // Allow Vite dev server during `tauri dev`
+                    #[cfg(debug_assertions)]
+                    if matches!(url.host_str(), Some("localhost") | Some("127.0.0.1")) {
                         return true;
                     }
 
