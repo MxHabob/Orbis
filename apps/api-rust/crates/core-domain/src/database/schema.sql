@@ -687,7 +687,7 @@ CREATE TABLE IF NOT EXISTS data_transfers (
 -- ── Schedule Solver (Timefold integration) ──────────────────────────────────
 -- Data flow: time_slots + class_subjects + rooms + teacher_availability
 --            → schedule_solve_jobs (async) → scheduled_lessons (result)
--- Timefold is the solver engine; these tables are the persistent domain model.
+-- Timefold is the solver engine and these tables are the persistent domain model.
 
 -- Canonical room resource (classes.room_id, scheduled_lessons.room_id → rooms.id)
 CREATE TABLE IF NOT EXISTS rooms (

@@ -69,16 +69,24 @@ while ((m = tableRegex.exec(src)) !== null) {
 let sql = "-- Orbis SQLite Schema (auto-generated)\nPRAGMA foreign_keys=ON;\n\n";
 
 for (const table of tables) {
+  const pkCols = table.columns.filter((c) => c.isPrimaryKey);
   const colDefs = table.columns
     .map((c) => {
       const colName = c.name === "type" ? '"type"' : c.name;
       let def = `${colName} ${mapSql(c)}`;
-      if (c.isPrimaryKey) def += " PRIMARY KEY";
+      if (c.isPrimaryKey && pkCols.length === 1) def += " PRIMARY KEY";
       else if (!c.isNullable) def += " NOT NULL";
       return `  ${def}`;
     })
     .join(",\n");
-  sql += `CREATE TABLE IF NOT EXISTS ${table.name} (\n${colDefs}\n);\n\n`;
+
+  let pkConstraint = "";
+  if (pkCols.length > 1) {
+    const pkNames = pkCols.map((c) => c.name === "type" ? '"type"' : c.name).join(", ");
+    pkConstraint = `,\n  PRIMARY KEY (${pkNames})`;
+  }
+
+  sql += `CREATE TABLE IF NOT EXISTS ${table.name} (\n${colDefs}${pkConstraint}\n);\n\n`;
 }
 
 const out = path.resolve(
