@@ -8,6 +8,12 @@
     "apps/dashboard",
     "apps/desktop"
   ],
+  "catalog": {
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "typescript": "^5.9.3",
+    "date-fns": "^4.1.0"
+  },
   "scripts": {
     "sdk:sync": "bun packages/sdk/scripts/generate-types.ts",
     "build": "turbo build",

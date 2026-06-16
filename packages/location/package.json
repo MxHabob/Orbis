@@ -19,6 +19,7 @@
     "./timezones": "./src/timezones.ts"
   },
   "devDependencies": {
+    "next": "16.1.5",
     "typescript": "^5.9.3"
   }
 }
