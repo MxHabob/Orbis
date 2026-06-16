@@ -90,6 +90,30 @@ services:
       timeout: 5s
       retries: 5
 
+  # ---------------------------------------------------------------------------
+  # Timefold Solver — Isolated compute sidecar (CPU-intensive scheduling)
+  # ---------------------------------------------------------------------------
+  solver-service:
+    build:
+      context: ./apps/solver-service
+      dockerfile: Dockerfile
+    container_name: orbis-solver
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      JAVA_OPTS: "-Xms256m -Xmx768m -XX:+UseG1GC"
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1G
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8081/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 # =============================================================================
 # Persistent Volumes — Data survives container restarts
 # =============================================================================

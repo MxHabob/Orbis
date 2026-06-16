@@ -39,7 +39,6 @@ impl super::Repository {
             current_students: Set(c.current_students),
             room_id: Set(c.room_id),
             color: Set(c.color),
-            schedule_template: Set(c.schedule_template),
             is_active: Set(c.is_active),
             is_deleted: Set(c.is_deleted),
             deleted_at: Set(c.deleted_at),

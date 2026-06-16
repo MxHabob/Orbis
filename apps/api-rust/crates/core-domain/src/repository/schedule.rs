@@ -1,5 +1,16 @@
-use crate::entities::{time_slot, class_subject, scheduled_lesson};
-use sea_orm::{entity::prelude::*, ActiveModelTrait, ActiveValue::Set, QueryFilter, EntityTrait, QueryOrder};
+use crate::entities::{time_slot, class_subject, scheduled_lesson, schedule_solve_job, room, teacher_availability};
+use sea_orm::{entity::prelude::*, ActiveModelTrait, ActiveValue::Set, QueryFilter, EntityTrait, QueryOrder, sea_query::Expr};
+
+#[derive(Debug, Clone, Default)]
+pub struct RoomUpdate {
+    pub name: Option<String>,
+    pub name_ar: Option<String>,
+    pub capacity: Option<i32>,
+    pub room_type: Option<String>,
+    pub building: Option<String>,
+    pub floor: Option<i32>,
+    pub is_active: Option<i32>,
+}
 
 impl super::Repository {
     // ── Time Slots ───────────────────────────────────────────────────────────
@@ -152,7 +163,6 @@ impl super::Repository {
             time_slot_id: Set(lesson.time_slot_id),
             day_of_week: Set(lesson.day_of_week),
             room_id: Set(lesson.room_id),
-            room_name: Set(lesson.room_name),
             status: Set(lesson.status),
             is_substituted: Set(lesson.is_substituted),
             substitution_reason: Set(lesson.substitution_reason),
@@ -216,5 +226,201 @@ impl super::Repository {
         }
 
         Ok(conflicts)
+    }
+
+    pub async fn get_all_scheduled_lessons_for_cycle(
+        &self,
+        org_id: &str,
+        cycle_id: &str,
+    ) -> Result<Vec<scheduled_lesson::Model>, DbErr> {
+        scheduled_lesson::Entity::find()
+            .filter(scheduled_lesson::Column::OrgId.eq(org_id))
+            .filter(scheduled_lesson::Column::CycleId.eq(cycle_id))
+            .filter(scheduled_lesson::Column::Status.ne("cancelled"))
+            .order_by_asc(scheduled_lesson::Column::DayOfWeek)
+            .order_by_asc(scheduled_lesson::Column::TimeSlotId)
+            .all(&self.db)
+            .await
+    }
+
+    pub async fn cancel_lessons_for_cycle(
+        &self,
+        org_id: &str,
+        cycle_id: &str,
+    ) -> Result<u64, DbErr> {
+        use sea_orm::{ColumnTrait, QueryFilter};
+        let now = chrono::Utc::now().to_rfc3339();
+        let result = scheduled_lesson::Entity::update_many()
+            .col_expr(scheduled_lesson::Column::Status, Expr::value("cancelled"))
+            .col_expr(scheduled_lesson::Column::UpdatedAt, Expr::value(now))
+            .filter(scheduled_lesson::Column::OrgId.eq(org_id))
+            .filter(scheduled_lesson::Column::CycleId.eq(cycle_id))
+            .filter(scheduled_lesson::Column::Status.ne("cancelled"))
+            .exec(&self.db)
+            .await?;
+        Ok(result.rows_affected)
+    }
+
+    pub async fn get_class_subjects_for_classes(
+        &self,
+        class_ids: &[String],
+        cycle_id: &str,
+    ) -> Result<Vec<class_subject::Model>, DbErr> {
+        if class_ids.is_empty() {
+            return Ok(vec![]);
+        }
+        class_subject::Entity::find()
+            .filter(class_subject::Column::CycleId.eq(cycle_id))
+            .filter(class_subject::Column::IsActive.eq(1))
+            .filter(class_subject::Column::ClassId.is_in(class_ids.to_vec()))
+            .all(&self.db)
+            .await
+    }
+
+    // ── Rooms (canonical scheduling resource — see schema comment) ───────────
+
+    pub async fn get_rooms(&self, org_id: &str) -> Result<Vec<room::Model>, DbErr> {
+        room::Entity::find()
+            .filter(room::Column::OrgId.eq(org_id))
+            .filter(room::Column::IsActive.eq(1))
+            .order_by_asc(room::Column::Name)
+            .all(&self.db)
+            .await
+    }
+
+    pub async fn get_room_by_id(&self, id: &str) -> Result<Option<room::Model>, DbErr> {
+        room::Entity::find_by_id(id.to_string()).one(&self.db).await
+    }
+
+    pub async fn insert_room(&self, model: room::Model) -> Result<room::Model, DbErr> {
+        let active = room::ActiveModel {
+            id: Set(model.id),
+            org_id: Set(model.org_id),
+            name: Set(model.name),
+            name_ar: Set(model.name_ar),
+            capacity: Set(model.capacity),
+            room_type: Set(model.room_type),
+            building: Set(model.building),
+            floor: Set(model.floor),
+            is_active: Set(model.is_active),
+            created_at: Set(model.created_at),
+            updated_at: Set(model.updated_at),
+        };
+        active.insert(&self.db).await
+    }
+
+    pub async fn update_room(&self, id: &str, req: RoomUpdate) -> Result<room::Model, DbErr> {
+        let existing = room::Entity::find_by_id(id.to_string())
+            .one(&self.db)
+            .await?
+            .ok_or(DbErr::RecordNotFound("room not found".to_string()))?;
+
+        let mut active: room::ActiveModel = existing.into();
+        if let Some(v) = req.name { active.name = Set(v); }
+        if let Some(v) = req.name_ar { active.name_ar = Set(Some(v)); }
+        if let Some(v) = req.capacity { active.capacity = Set(Some(v)); }
+        if let Some(v) = req.room_type { active.room_type = Set(v); }
+        if let Some(v) = req.building { active.building = Set(Some(v)); }
+        if let Some(v) = req.floor { active.floor = Set(Some(v)); }
+        if let Some(v) = req.is_active { active.is_active = Set(v); }
+        active.updated_at = Set(chrono::Utc::now().to_rfc3339());
+        active.update(&self.db).await
+    }
+
+    pub async fn soft_delete_room(&self, id: &str) -> Result<(), DbErr> {
+        let existing = room::Entity::find_by_id(id.to_string())
+            .one(&self.db)
+            .await?
+            .ok_or(DbErr::RecordNotFound("room not found".to_string()))?;
+
+        let mut active: room::ActiveModel = existing.into();
+        active.is_active = Set(0);
+        active.updated_at = Set(chrono::Utc::now().to_rfc3339());
+        active.update(&self.db).await?;
+        Ok(())
+    }
+
+    // ── Teacher availability (unavailability records for solver) ───────────────
+
+    pub async fn get_teacher_unavailability(
+        &self,
+        org_id: &str,
+        cycle_id: &str,
+    ) -> Result<Vec<teacher_availability::Model>, DbErr> {
+        teacher_availability::Entity::find()
+            .filter(teacher_availability::Column::OrgId.eq(org_id))
+            .filter(teacher_availability::Column::CycleId.eq(cycle_id))
+            .filter(teacher_availability::Column::IsAvailable.eq(0))
+            .all(&self.db)
+            .await
+    }
+
+    // ── Solve jobs ───────────────────────────────────────────────────────────
+
+    pub async fn insert_solve_job(
+        &self,
+        job: schedule_solve_job::Model,
+    ) -> Result<schedule_solve_job::Model, DbErr> {
+        let active = schedule_solve_job::ActiveModel {
+            id: Set(job.id),
+            org_id: Set(job.org_id),
+            cycle_id: Set(job.cycle_id),
+            mode: Set(job.mode),
+            status: Set(job.status),
+            problem_snapshot: Set(job.problem_snapshot),
+            best_solution: Set(job.best_solution),
+            score: Set(job.score),
+            lessons_created: Set(job.lessons_created),
+            error_message: Set(job.error_message),
+            created_by: Set(job.created_by),
+            started_at: Set(job.started_at),
+            completed_at: Set(job.completed_at),
+            created_at: Set(job.created_at),
+            updated_at: Set(job.updated_at),
+        };
+        active.insert(&self.db).await
+    }
+
+    pub async fn get_solve_job_by_id(
+        &self,
+        id: &str,
+    ) -> Result<Option<schedule_solve_job::Model>, DbErr> {
+        schedule_solve_job::Entity::find_by_id(id.to_string()).one(&self.db).await
+    }
+
+    pub async fn get_solve_jobs(
+        &self,
+        org_id: &str,
+        cycle_id: Option<&str>,
+    ) -> Result<Vec<schedule_solve_job::Model>, DbErr> {
+        let mut query = schedule_solve_job::Entity::find()
+            .filter(schedule_solve_job::Column::OrgId.eq(org_id))
+            .order_by_desc(schedule_solve_job::Column::CreatedAt);
+
+        if let Some(cyc) = cycle_id {
+            query = query.filter(schedule_solve_job::Column::CycleId.eq(cyc));
+        }
+
+        query.all(&self.db).await
+    }
+
+    pub async fn update_solve_job(
+        &self,
+        job: schedule_solve_job::Model,
+    ) -> Result<schedule_solve_job::Model, DbErr> {
+        let mut active: schedule_solve_job::ActiveModel = job.into();
+        active.updated_at = Set(chrono::Utc::now().to_rfc3339());
+        active.update(&self.db).await
+    }
+
+    pub async fn count_active_solve_jobs(&self, org_id: &str) -> Result<u64, DbErr> {
+        schedule_solve_job::Entity::find()
+            .filter(schedule_solve_job::Column::OrgId.eq(org_id))
+            .filter(
+                schedule_solve_job::Column::Status
+                    .is_in(["pending", "running"]),
+            )
+            .count(&self.db)
+            .await
     }
 }

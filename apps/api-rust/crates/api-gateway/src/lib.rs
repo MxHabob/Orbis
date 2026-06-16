@@ -129,6 +129,16 @@ use service::Service;
         handler::schedule::put_lesson,
         handler::schedule::delete_lesson,
         handler::schedule::post_check_conflicts,
+        // Schedule Solver
+        handler::schedule_solve::post_schedule_solve,
+        handler::schedule_solve::get_schedule_solve_jobs,
+        handler::schedule_solve::get_schedule_solve_job,
+        handler::schedule_solve::delete_schedule_solve_job,
+        handler::schedule_solve::post_apply_schedule_solve,
+        handler::room::get_rooms,
+        handler::room::post_rooms,
+        handler::room::put_room,
+        handler::room::delete_room,
         // Assessments
         handler::assessment::get_assessments,
         handler::assessment::get_assessment,
@@ -203,6 +213,13 @@ use service::Service;
             service::schedule::UpdateLessonRequest,
             service::schedule::ScheduleConflict,
             handler::schedule::ConflictCheckRequest,
+            service::schedule_solver::StartSolveRequest,
+            service::schedule_solver::SolveJobResponse,
+            infra_scheduler::SolveMode,
+            service::room::CreateRoomRequest,
+            service::room::UpdateRoomRequest,
+            entities::room::Model,
+            entities::schedule_solve_job::Model,
             service::assessment::CreateAssessmentRequest,
             service::assessment::UpdateAssessmentRequest,
             service::guardian::CreateGuardianLinkRequest,
@@ -213,6 +230,7 @@ use service::Service;
             entities::time_slot::Model,
             entities::class_subject::Model,
             entities::scheduled_lesson::Model,
+            service::schedule::ScheduledLessonView,
             entities::assessment::Model,
             entities::student_guardian::Model,
             entities::document::Model,
@@ -333,6 +351,11 @@ pub async fn start_server(database_url: &str, port: u16) -> Result<(), Box<dyn s
         .route("/api/schedule/lessons", get(handler::schedule::get_lessons).post(handler::schedule::post_lessons))
         .route("/api/schedule/lessons/:id", get(handler::schedule::get_lesson).put(handler::schedule::put_lesson).delete(handler::schedule::delete_lesson))
         .route("/api/schedule/conflicts", post(handler::schedule::post_check_conflicts))
+        .route("/api/schedule/solve", get(handler::schedule_solve::get_schedule_solve_jobs).post(handler::schedule_solve::post_schedule_solve))
+        .route("/api/schedule/solve/:id", get(handler::schedule_solve::get_schedule_solve_job).delete(handler::schedule_solve::delete_schedule_solve_job))
+        .route("/api/schedule/solve/:id/apply", post(handler::schedule_solve::post_apply_schedule_solve))
+        .route("/api/schedule/rooms", get(handler::room::get_rooms).post(handler::room::post_rooms))
+        .route("/api/schedule/rooms/:id", put(handler::room::put_room).delete(handler::room::delete_room))
         .route("/api/assessments", get(handler::assessment::get_assessments).post(handler::assessment::post_assessments))
         .route("/api/assessments/:id", get(handler::assessment::get_assessment).put(handler::assessment::put_assessment).delete(handler::assessment::delete_assessment))
         .route("/api/guardians", get(handler::guardian::get_guardians).post(handler::guardian::post_guardians))

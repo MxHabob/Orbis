@@ -215,6 +215,7 @@ CREATE TABLE IF NOT EXISTS student_guardians (
   updated_at TEXT NOT NULL
 );
 
+-- School day periods (REQUIRED by Timefold — defines when lessons can be placed)
 CREATE TABLE IF NOT EXISTS time_slots (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL,
@@ -246,7 +247,6 @@ CREATE TABLE IF NOT EXISTS scheduled_lessons (
   time_slot_id TEXT NOT NULL,
   day_of_week INTEGER NOT NULL,
   room_id TEXT,
-  room_name TEXT,
   status TEXT NOT NULL,
   is_substituted INTEGER NOT NULL,
   substitution_reason TEXT,
@@ -683,4 +683,61 @@ CREATE TABLE IF NOT EXISTS data_transfers (
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
+
+-- ── Schedule Solver (Timefold integration) ──────────────────────────────────
+-- Data flow: time_slots + class_subjects + rooms + teacher_availability
+--            → schedule_solve_jobs (async) → scheduled_lessons (result)
+-- Timefold is the solver engine; these tables are the persistent domain model.
+
+-- Canonical room resource (classes.room_id, scheduled_lessons.room_id → rooms.id)
+CREATE TABLE IF NOT EXISTS rooms (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  name_ar TEXT,
+  capacity INTEGER,
+  room_type TEXT NOT NULL DEFAULT 'classroom',
+  building TEXT,
+  floor INTEGER,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS teacher_availability (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL,
+  teacher_id TEXT NOT NULL,
+  cycle_id TEXT NOT NULL,
+  day_of_week INTEGER NOT NULL,
+  time_slot_id TEXT NOT NULL,
+  is_available INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  UNIQUE(org_id, teacher_id, cycle_id, day_of_week, time_slot_id)
+);
+
+CREATE TABLE IF NOT EXISTS schedule_solve_jobs (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL,
+  cycle_id TEXT NOT NULL,
+  mode TEXT NOT NULL,
+  status TEXT NOT NULL,
+  problem_snapshot TEXT,
+  best_solution TEXT,
+  score TEXT,
+  lessons_created INTEGER NOT NULL DEFAULT 0,
+  error_message TEXT,
+  created_by TEXT,
+  started_at TEXT,
+  completed_at TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_solve_jobs_org_cycle ON schedule_solve_jobs(org_id, cycle_id);
+CREATE INDEX IF NOT EXISTS idx_solve_jobs_status ON schedule_solve_jobs(status);
+CREATE INDEX IF NOT EXISTS idx_rooms_org ON rooms(org_id);
+CREATE INDEX IF NOT EXISTS idx_teacher_avail ON teacher_availability(org_id, teacher_id, cycle_id);
+CREATE INDEX IF NOT EXISTS idx_lessons_conflict ON scheduled_lessons(org_id, cycle_id, time_slot_id, day_of_week, status);
 

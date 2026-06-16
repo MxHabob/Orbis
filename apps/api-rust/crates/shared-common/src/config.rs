@@ -8,6 +8,7 @@ pub struct Config {
     pub jwt_secret: String,
     pub jwt_expiry_hours: i64,
     pub jwt_refresh_days: i64,
+    pub solver_service_url: Option<String>,
 }
 
 impl Config {
@@ -28,6 +29,7 @@ impl Config {
             .ok()
             .and_then(|d| d.parse().ok())
             .unwrap_or(7);
+        let solver_service_url = env::var("SOLVER_SERVICE_URL").ok();
 
         Config {
             env,
@@ -36,6 +38,7 @@ impl Config {
             jwt_secret,
             jwt_expiry_hours,
             jwt_refresh_days,
+            solver_service_url,
         }
     }
 }

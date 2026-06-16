@@ -6,6 +6,7 @@ members = [
     "crates/infra-database",
     "crates/infra-ai",
     "crates/infra-notifications",
+    "crates/infra-scheduler",
     "crates/api-gateway",
 ]
 
@@ -47,4 +48,10 @@ core-domain = { path = "crates/core-domain" }
 infra-database = { path = "crates/infra-database" }
 infra-ai = { path = "crates/infra-ai" }
 infra-notifications = { path = "crates/infra-notifications" }
+infra-scheduler = { path = "crates/infra-scheduler" }
 api-gateway = { path = "crates/api-gateway" }
+
+# HTTP client (solver sidecar)
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+async-trait = "0.1"
+thiserror = "1.0"

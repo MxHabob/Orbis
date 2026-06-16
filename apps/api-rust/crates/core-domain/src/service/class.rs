@@ -58,7 +58,6 @@ impl super::Service {
             current_students: Some(0),
             room_id: None,
             color: Some("#6366f1".to_string()),
-            schedule_template: None,
             is_active: 1,
             is_deleted: 0,
             deleted_at: None,

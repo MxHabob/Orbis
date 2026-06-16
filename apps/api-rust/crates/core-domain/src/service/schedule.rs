@@ -65,7 +65,6 @@ pub struct CreateLessonRequest {
     pub time_slot_id: String,
     pub day_of_week: i32,
     pub room_id: Option<String>,
-    pub room_name: Option<String>,
     pub topic: Option<String>,
     pub topic_ar: Option<String>,
     pub homework: Option<String>,
@@ -78,7 +77,6 @@ pub struct UpdateLessonRequest {
     pub time_slot_id: Option<String>,
     pub day_of_week: Option<i32>,
     pub room_id: Option<String>,
-    pub room_name: Option<String>,
     pub topic: Option<String>,
     pub topic_ar: Option<String>,
     pub homework: Option<String>,
@@ -95,7 +93,99 @@ pub struct ScheduleConflict {
     pub message: String,
 }
 
+/// Lesson with room name resolved from `rooms` table (not stored redundantly).
+#[derive(serde::Serialize, serde::Deserialize, utoipa::ToSchema, Clone, Debug)]
+pub struct ScheduledLessonView {
+    pub id: String,
+    pub org_id: String,
+    pub cycle_id: String,
+    pub class_id: String,
+    pub class_subject_id: String,
+    pub subject_id: String,
+    pub teacher_id: String,
+    pub substitute_teacher_id: Option<String>,
+    pub time_slot_id: String,
+    pub day_of_week: i32,
+    pub room_id: Option<String>,
+    pub room_name: Option<String>,
+    pub status: String,
+    pub is_substituted: i32,
+    pub substitution_reason: Option<String>,
+    pub topic: Option<String>,
+    pub topic_ar: Option<String>,
+    pub homework: Option<String>,
+    pub notes: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+impl ScheduledLessonView {
+    fn from_model(lesson: scheduled_lesson::Model, room_name: Option<String>) -> Self {
+        Self {
+            id: lesson.id,
+            org_id: lesson.org_id,
+            cycle_id: lesson.cycle_id,
+            class_id: lesson.class_id,
+            class_subject_id: lesson.class_subject_id,
+            subject_id: lesson.subject_id,
+            teacher_id: lesson.teacher_id,
+            substitute_teacher_id: lesson.substitute_teacher_id,
+            time_slot_id: lesson.time_slot_id,
+            day_of_week: lesson.day_of_week,
+            room_id: lesson.room_id,
+            room_name,
+            status: lesson.status,
+            is_substituted: lesson.is_substituted,
+            substitution_reason: lesson.substitution_reason,
+            topic: lesson.topic,
+            topic_ar: lesson.topic_ar,
+            homework: lesson.homework,
+            notes: lesson.notes,
+            created_at: lesson.created_at,
+            updated_at: lesson.updated_at,
+        }
+    }
+}
+
 impl super::Service {
+    async fn to_lesson_views(
+        &self,
+        lessons: Vec<scheduled_lesson::Model>,
+    ) -> Result<Vec<ScheduledLessonView>, String> {
+        let mut room_names = std::collections::HashMap::new();
+        for lesson in &lessons {
+            if let Some(rid) = &lesson.room_id {
+                if !room_names.contains_key(rid) {
+                    if let Some(room) = self
+                        .repo
+                        .get_room_by_id(rid)
+                        .await
+                        .map_err(|e| e.to_string())?
+                    {
+                        room_names.insert(rid.clone(), room.name);
+                    }
+                }
+            }
+        }
+
+        Ok(lessons
+            .into_iter()
+            .map(|l| {
+                let room_name = l
+                    .room_id
+                    .as_ref()
+                    .and_then(|id| room_names.get(id))
+                    .cloned();
+                ScheduledLessonView::from_model(l, room_name)
+            })
+            .collect())
+    }
+
+    async fn to_lesson_view(&self, lesson: scheduled_lesson::Model) -> Result<ScheduledLessonView, String> {
+        let views = self.to_lesson_views(vec![lesson]).await?;
+        Ok(views.into_iter().next().expect("lesson view"))
+    }
+
     // ── Time Slots ───────────────────────────────────────────────────────────
 
     pub async fn get_time_slots(
@@ -251,9 +341,13 @@ impl super::Service {
         org_id: &str,
         cycle_id: &str,
         class_id: &str,
-    ) -> Result<Vec<scheduled_lesson::Model>, String> {
-        self.repo.get_scheduled_lessons(org_id, cycle_id, Some(class_id), None)
-            .await.map_err(|e| e.to_string())
+    ) -> Result<Vec<ScheduledLessonView>, String> {
+        let lessons = self
+            .repo
+            .get_scheduled_lessons(org_id, cycle_id, Some(class_id), None)
+            .await
+            .map_err(|e| e.to_string())?;
+        self.to_lesson_views(lessons).await
     }
 
     pub async fn get_teacher_schedule(
@@ -261,15 +355,23 @@ impl super::Service {
         org_id: &str,
         cycle_id: &str,
         teacher_id: &str,
-    ) -> Result<Vec<scheduled_lesson::Model>, String> {
-        self.repo.get_scheduled_lessons(org_id, cycle_id, None, Some(teacher_id))
-            .await.map_err(|e| e.to_string())
+    ) -> Result<Vec<ScheduledLessonView>, String> {
+        let lessons = self
+            .repo
+            .get_scheduled_lessons(org_id, cycle_id, None, Some(teacher_id))
+            .await
+            .map_err(|e| e.to_string())?;
+        self.to_lesson_views(lessons).await
     }
 
-    pub async fn get_lesson_by_id(&self, id: &str) -> Result<scheduled_lesson::Model, String> {
-        self.repo.get_scheduled_lesson_by_id(id).await
+    pub async fn get_lesson_by_id(&self, id: &str) -> Result<ScheduledLessonView, String> {
+        let lesson = self
+            .repo
+            .get_scheduled_lesson_by_id(id)
+            .await
             .map_err(|e| e.to_string())?
-            .ok_or_else(|| "lesson not found".to_string())
+            .ok_or_else(|| "lesson not found".to_string())?;
+        self.to_lesson_view(lesson).await
     }
 
     pub async fn check_schedule_conflicts(
@@ -288,38 +390,16 @@ impl super::Service {
             teacher_id, class_id, room_id,
         ).await.map_err(|e| e.to_string())?;
 
-        Ok(conflicts.into_iter().map(|c| {
-            let conflict_type = if c.teacher_id == teacher_id {
-                "teacher"
-            } else if c.class_id == class_id {
-                "class"
-            } else {
-                "room"
-            };
-            let lesson_id = c.id.clone();
-            ScheduleConflict {
-                lesson_id,
-                conflict_type: conflict_type.to_string(),
-                message: format!("Conflict with lesson {} ({})", c.id, conflict_type),
-            }
-        }).collect())
+        Ok(super::schedule_common::map_lesson_conflicts(conflicts, teacher_id, class_id))
     }
 
     pub async fn create_lesson(
         &self,
         org_id: &str,
         req: CreateLessonRequest,
-    ) -> Result<scheduled_lesson::Model, String> {
-        let conflicts = self.check_schedule_conflicts(
-            org_id, &req.cycle_id, &req.time_slot_id, req.day_of_week, None,
-            &req.teacher_id, &req.class_id, req.room_id.as_deref(),
-        ).await?;
-        if !conflicts.is_empty() {
-            return Err(format!("schedule conflict: {}", conflicts[0].message));
-        }
-
-        let class_subject_id = match req.class_subject_id {
-            Some(id) => id,
+    ) -> Result<ScheduledLessonView, String> {
+        let class_subject_id = match &req.class_subject_id {
+            Some(id) => id.clone(),
             None => {
                 let cs = self.repo.find_class_subject(&req.class_id, &req.subject_id, &req.cycle_id).await
                     .map_err(|e| e.to_string())?;
@@ -342,40 +422,9 @@ impl super::Service {
             }
         };
 
-        let now = Utc::now().to_rfc3339();
-        let lesson = scheduled_lesson::Model {
-            id: Uuid::new_v4().to_string(),
-            org_id: org_id.to_string(),
-            cycle_id: req.cycle_id,
-            class_id: req.class_id,
-            class_subject_id,
-            subject_id: req.subject_id,
-            teacher_id: req.teacher_id,
-            substitute_teacher_id: None,
-            time_slot_id: req.time_slot_id,
-            day_of_week: req.day_of_week,
-            room_id: req.room_id,
-            room_name: req.room_name,
-            status: "scheduled".to_string(),
-            is_substituted: 0,
-            substitution_reason: None,
-            topic: req.topic,
-            topic_ar: req.topic_ar,
-            objectives: None,
-            materials: None,
-            homework: req.homework,
-            homework_due_date: None,
-            attendance_taken: 0,
-            attendance_taken_at: None,
-            attendance_taken_by: None,
-            attendance_method: None,
-            notes: req.notes,
-            cancellation_reason: None,
-            created_at: now.clone(),
-            updated_at: now,
-        };
-
-        self.repo.insert_scheduled_lesson(lesson).await.map_err(|e| e.to_string())
+        let placement = super::schedule_common::LessonPlacement::from_create_request(req, class_subject_id);
+        let lesson = self.persist_lesson(org_id, placement, None).await?;
+        self.to_lesson_view(lesson).await
     }
 
     pub async fn update_lesson(
@@ -383,7 +432,7 @@ impl super::Service {
         org_id: &str,
         id: &str,
         req: UpdateLessonRequest,
-    ) -> Result<scheduled_lesson::Model, String> {
+    ) -> Result<ScheduledLessonView, String> {
         let lesson = self.repo.get_scheduled_lesson_by_id(id).await
             .map_err(|e| e.to_string())?
             .ok_or_else(|| "lesson not found".to_string())?;
@@ -401,12 +450,23 @@ impl super::Service {
             return Err(format!("schedule conflict: {}", conflicts[0].message));
         }
 
+        if let Some(rid) = &req.room_id {
+            let exists = self
+                .repo
+                .get_room_by_id(rid)
+                .await
+                .map_err(|e| e.to_string())?
+                .is_some();
+            if !exists {
+                return Err(format!("room not found: {rid}"));
+            }
+        }
+
         let mut active: scheduled_lesson::ActiveModel = lesson.into();
         if let Some(v) = req.teacher_id { active.teacher_id = Set(v); }
         if let Some(v) = req.time_slot_id { active.time_slot_id = Set(v); }
         if let Some(v) = req.day_of_week { active.day_of_week = Set(v); }
         if let Some(v) = req.room_id { active.room_id = Set(Some(v)); }
-        if let Some(v) = req.room_name { active.room_name = Set(Some(v)); }
         if let Some(v) = req.topic { active.topic = Set(Some(v)); }
         if let Some(v) = req.topic_ar { active.topic_ar = Set(Some(v)); }
         if let Some(v) = req.homework { active.homework = Set(Some(v)); }
@@ -416,7 +476,8 @@ impl super::Service {
         if let Some(v) = req.substitution_reason { active.substitution_reason = Set(Some(v)); }
         active.updated_at = Set(Utc::now().to_rfc3339());
 
-        active.update(&self.repo.db).await.map_err(|e| e.to_string())
+        let updated = active.update(&self.repo.db).await.map_err(|e| e.to_string())?;
+        self.to_lesson_view(updated).await
     }
 
     pub async fn delete_lesson(&self, id: &str) -> Result<(), String> {

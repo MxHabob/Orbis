@@ -1,6 +1,7 @@
 use std::sync::Arc;
 use crate::config::Config;
 use crate::repository::Repository;
+use infra_scheduler::{NoOpScheduleSolver, RemoteTimefoldSolver, ScheduleSolver};
 
 pub mod auth;
 pub mod authz;
@@ -18,6 +19,9 @@ pub mod dashboard;
 pub mod import_export;
 pub mod finance;
 pub mod schedule;
+pub mod schedule_common;
+pub mod schedule_solver;
+pub mod room;
 pub mod subject;
 pub mod assessment;
 pub mod guardian;
@@ -28,6 +32,7 @@ pub struct Service {
     pub repo: Arc<Repository>,
     pub cfg: Arc<Config>,
     pub authz: Arc<authz::AuthzService>,
+    pub(crate) scheduler: Arc<dyn ScheduleSolver>,
 }
 
 use chrono::Utc;
@@ -35,10 +40,16 @@ use serde_json::json;
 
 impl Service {
     pub fn new(repo: Repository, cfg: Config) -> Self {
+        let scheduler: Arc<dyn ScheduleSolver> = match &cfg.solver_service_url {
+            Some(url) if !url.is_empty() => Arc::new(RemoteTimefoldSolver::new(url.clone())),
+            _ => Arc::new(NoOpScheduleSolver),
+        };
+
         Self {
             repo: Arc::new(repo),
             cfg: Arc::new(cfg),
             authz: Arc::new(authz::AuthzService::new()),
+            scheduler,
         }
     }
 

@@ -3,7 +3,7 @@ use std::sync::Arc;
 use core_domain::service::schedule::{
     CreateTimeSlotRequest, UpdateTimeSlotRequest,
     CreateClassSubjectRequest, UpdateClassSubjectRequest,
-    CreateLessonRequest, UpdateLessonRequest,
+    CreateLessonRequest, UpdateLessonRequest, ScheduledLessonView,
 };
 use crate::state::AppState;
 use super::error::{CmdResult, CommandError};
@@ -93,7 +93,7 @@ pub async fn get_class_schedule(
     org_id: String,
     cycle_id: String,
     class_id: String,
-) -> CmdResult<Vec<core_domain::entities::scheduled_lesson::Model>> {
+) -> CmdResult<Vec<ScheduledLessonView>> {
     state.service.get_class_schedule(&org_id, &cycle_id, &class_id).await
         .map_err(|e| CommandError::new(e))
 }
@@ -104,7 +104,7 @@ pub async fn get_teacher_schedule(
     org_id: String,
     cycle_id: String,
     teacher_id: String,
-) -> CmdResult<Vec<core_domain::entities::scheduled_lesson::Model>> {
+) -> CmdResult<Vec<ScheduledLessonView>> {
     state.service.get_teacher_schedule(&org_id, &cycle_id, &teacher_id).await
         .map_err(|e| CommandError::new(e))
 }
@@ -113,7 +113,7 @@ pub async fn get_teacher_schedule(
 pub async fn get_lesson_by_id(
     state: State<'_, Arc<AppState>>,
     id: String,
-) -> CmdResult<core_domain::entities::scheduled_lesson::Model> {
+) -> CmdResult<ScheduledLessonView> {
     state.service.get_lesson_by_id(&id).await
         .map_err(|e| CommandError::new(e))
 }
@@ -123,7 +123,7 @@ pub async fn create_lesson(
     state: State<'_, Arc<AppState>>,
     org_id: String,
     request: CreateLessonRequest,
-) -> CmdResult<core_domain::entities::scheduled_lesson::Model> {
+) -> CmdResult<ScheduledLessonView> {
     state.service.create_lesson(&org_id, request).await
         .map_err(|e| CommandError::new(e))
 }
@@ -134,7 +134,7 @@ pub async fn update_lesson(
     org_id: String,
     id: String,
     request: UpdateLessonRequest,
-) -> CmdResult<core_domain::entities::scheduled_lesson::Model> {
+) -> CmdResult<ScheduledLessonView> {
     state.service.update_lesson(&org_id, &id, request).await
         .map_err(|e| CommandError::new(e))
 }

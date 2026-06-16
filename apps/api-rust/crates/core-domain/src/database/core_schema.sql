@@ -166,7 +166,6 @@ CREATE TABLE IF NOT EXISTS classes (
   current_students INTEGER,
   room_id TEXT,
   color TEXT,
-  schedule_template TEXT,
   is_active INTEGER NOT NULL,
   is_deleted INTEGER NOT NULL,
   deleted_at TEXT,

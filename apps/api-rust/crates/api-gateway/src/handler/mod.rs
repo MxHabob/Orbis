@@ -15,6 +15,8 @@ pub mod audit;
 pub mod import_export;
 pub mod finance;
 pub mod schedule;
+pub mod schedule_solve;
+pub mod room;
 pub mod subject;
 pub mod assessment;
 pub mod guardian;
