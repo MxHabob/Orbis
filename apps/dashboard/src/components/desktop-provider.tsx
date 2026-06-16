@@ -125,8 +125,17 @@ export function DesktopProvider() {
     // Cleanup function
     return () => {
       if (cleanup) {
-        cleanup();
-        console.log("🧹 Deep link listener cleaned up");
+        try {
+          const result = cleanup() as any;
+          if (result instanceof Promise) {
+            result.catch((error) => {
+              console.warn("Failed to cleanup deep link listener:", error);
+            });
+          }
+          console.log("🧹 Deep link listener cleaned up");
+        } catch (error) {
+          console.warn("Failed to cleanup deep link listener synchronously:", error);
+        }
       }
     };
   }, [router]);
@@ -225,12 +234,30 @@ export function DesktopProvider() {
     // Cleanup function
     return () => {
       if (unlistenNavigation) {
-        unlistenNavigation();
-        console.log("🧹 Desktop navigation listener cleaned up");
+        try {
+          const result = unlistenNavigation() as any;
+          if (result instanceof Promise) {
+            result.catch((error) => {
+              console.warn("Failed to cleanup desktop navigation listener:", error);
+            });
+          }
+          console.log("🧹 Desktop navigation listener cleaned up");
+        } catch (error) {
+          console.warn("Failed to cleanup desktop navigation listener synchronously:", error);
+        }
       }
       if (unlistenParamsNavigation) {
-        unlistenParamsNavigation();
-        console.log("🧹 Desktop params navigation listener cleaned up");
+        try {
+          const result = unlistenParamsNavigation() as any;
+          if (result instanceof Promise) {
+            result.catch((error) => {
+              console.warn("Failed to cleanup desktop params navigation listener:", error);
+            });
+          }
+          console.log("🧹 Desktop params navigation listener cleaned up");
+        } catch (error) {
+          console.warn("Failed to cleanup desktop params navigation listener synchronously:", error);
+        }
       }
     };
   }, [router]);

@@ -583,9 +583,20 @@ export function Search() {
 
     // Cleanup function
     return () => {
-      unlistenPromise.then((unlisten) => unlisten());
+      unlistenPromise.then((unlisten) => {
+        try {
+          const result = unlisten();
+          if (result instanceof Promise) {
+            result.catch((error) => {
+              console.warn("Failed to cleanup search listener:", error);
+            });
+          }
+        } catch (error) {
+          console.warn("Failed to cleanup search listener synchronously:", error);
+        }
+      });
     };
-  });
+  }, []);
 
   const [debouncedSearch, setDebouncedSearch] = useDebounceValue(
     "",

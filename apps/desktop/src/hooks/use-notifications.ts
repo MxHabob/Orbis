@@ -83,7 +83,20 @@ export function useNotifications() {
     }).then((fn) => {
       unlisten = fn;
     });
-    return () => unlisten?.();
+    return () => {
+      if (unlisten) {
+        try {
+          const result = unlisten() as any;
+          if (result instanceof Promise) {
+            result.catch((error) => {
+              console.warn("Failed to cleanup notification listener:", error);
+            });
+          }
+        } catch (error) {
+          console.warn("Failed to cleanup notification listener synchronously:", error);
+        }
+      }
+    };
   }, [queryClient, userId]);
 
   const updateStatusMutation = useMutation(
