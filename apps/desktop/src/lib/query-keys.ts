@@ -162,4 +162,36 @@ export const queryKeys = {
   invoiceTemplates: {
     all: () => ["invoiceTemplates"] as const,
   },
+
+  // ── Schedule ────────────────────────────────────────────────────────────
+  schedule: {
+    all: () => ["schedule"] as const,
+    timeSlots: (orgId: string, cycleId: string) =>
+      ["schedule", "timeSlots", orgId, cycleId] as const,
+    classSubjects: (classId?: string, cycleId?: string) =>
+      ["schedule", "classSubjects", classId, cycleId] as const,
+    classSchedule: (
+      orgId: string,
+      cycleId: string,
+      classId: string,
+    ) => ["schedule", "classSchedule", orgId, cycleId, classId] as const,
+    teacherSchedule: (
+      orgId: string,
+      cycleId: string,
+      teacherId: string,
+    ) =>
+      ["schedule", "teacherSchedule", orgId, cycleId, teacherId] as const,
+    lesson: (lessonId: string) =>
+      ["schedule", "lesson", lessonId] as const,
+    conflicts: (params?: Record<string, unknown>) =>
+      ["schedule", "conflicts", params] as const,
+  },
+
+  // ── Guardians ───────────────────────────────────────────────────────────
+  guardians: {
+    byStudent: (studentId: string) =>
+      ["guardians", "byStudent", studentId] as const,
+    byGuardian: (guardianId: string) =>
+      ["guardians", "byGuardian", guardianId] as const,
+  },
 } as const;

@@ -38,3 +38,12 @@ export type Notification = JsonRecord;
 export type Organization = JsonRecord;
 export type DashboardStats = JsonRecord;
 export type GradeAnalytics = JsonRecord;
+
+// ── Schedule ─────────────────────────────────────────────────────────────────
+export type TimeSlot = JsonRecord;
+export type ClassSubject = JsonRecord;
+export type ScheduledLesson = JsonRecord;
+export type ScheduleConflict = JsonRecord;
+
+// ── Guardians ────────────────────────────────────────────────────────────────
+export type GuardianLink = JsonRecord;

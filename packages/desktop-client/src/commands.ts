@@ -6,14 +6,19 @@ import { invoke } from "./core";
 import type {
   Certificate,
   Class,
+  ClassSubject,
   DashboardStats,
   Document,
   Enrollment,
   Grade,
   GradeAnalytics,
+  GuardianLink,
   JsonRecord,
   LoginResponse,
+  ScheduleConflict,
+  ScheduledLesson,
   Subject,
+  TimeSlot,
   User,
 } from "./types";
 
@@ -347,6 +352,104 @@ export const commands = {
         userId,
         preferences,
       }),
+  },
+
+  schedule: {
+    // ── Time Slots ──────────────────────────────────────────────────────────
+    getTimeSlots: (orgId: string, cycleId: string) =>
+      invoke<TimeSlot[]>("get_time_slots", { orgId, cycleId }),
+
+    createTimeSlot: (orgId: string, request: JsonRecord) =>
+      invoke<TimeSlot>("create_time_slot", { orgId, request }),
+
+    updateTimeSlot: (id: string, request: JsonRecord) =>
+      invoke<TimeSlot>("update_time_slot", { id, request }),
+
+    deleteTimeSlot: (id: string) =>
+      invoke<void>("delete_time_slot", { id }),
+
+    // ── Class Subjects ─────────────────────────────────────────────────────
+    getClassSubjects: (classId?: string, cycleId?: string) =>
+      invoke<ClassSubject[]>("get_class_subjects", { classId, cycleId }),
+
+    createClassSubject: (request: JsonRecord) =>
+      invoke<ClassSubject>("create_class_subject", { request }),
+
+    updateClassSubject: (id: string, request: JsonRecord) =>
+      invoke<ClassSubject>("update_class_subject", { id, request }),
+
+    deleteClassSubject: (id: string) =>
+      invoke<void>("delete_class_subject", { id }),
+
+    // ── Lessons & Schedule Views ───────────────────────────────────────────
+    getClassSchedule: (orgId: string, cycleId: string, classId: string) =>
+      invoke<ScheduledLesson[]>("get_class_schedule", {
+        orgId,
+        cycleId,
+        classId,
+      }),
+
+    getTeacherSchedule: (
+      orgId: string,
+      cycleId: string,
+      teacherId: string,
+    ) =>
+      invoke<ScheduledLesson[]>("get_teacher_schedule", {
+        orgId,
+        cycleId,
+        teacherId,
+      }),
+
+    getLessonById: (id: string) =>
+      invoke<ScheduledLesson>("get_lesson_by_id", { id }),
+
+    createLesson: (orgId: string, request: JsonRecord) =>
+      invoke<ScheduledLesson>("create_lesson", { orgId, request }),
+
+    updateLesson: (orgId: string, id: string, request: JsonRecord) =>
+      invoke<ScheduledLesson>("update_lesson", { orgId, id, request }),
+
+    deleteLesson: (id: string) =>
+      invoke<void>("delete_lesson", { id }),
+
+    // ── Conflict Check ─────────────────────────────────────────────────────
+    checkConflicts: (params: {
+      orgId: string;
+      cycleId: string;
+      timeSlotId: string;
+      dayOfWeek: number;
+      teacherId: string;
+      classId: string;
+      roomId?: string;
+      excludeId?: string;
+    }) =>
+      invoke<ScheduleConflict[]>("check_schedule_conflicts", {
+        orgId: params.orgId,
+        cycleId: params.cycleId,
+        timeSlotId: params.timeSlotId,
+        dayOfWeek: params.dayOfWeek,
+        teacherId: params.teacherId,
+        classId: params.classId,
+        roomId: params.roomId,
+        excludeId: params.excludeId,
+      }),
+  },
+
+  guardians: {
+    getByStudent: (studentId: string) =>
+      invoke<GuardianLink[]>("get_guardians_by_student", { studentId }),
+
+    getStudentsByGuardian: (guardianId: string) =>
+      invoke<GuardianLink[]>("get_students_by_guardian", { guardianId }),
+
+    createLink: (request: JsonRecord) =>
+      invoke<GuardianLink>("create_guardian_link", { request }),
+
+    updateLink: (id: string, request: JsonRecord) =>
+      invoke<GuardianLink>("update_guardian_link", { id, request }),
+
+    deleteLink: (id: string) =>
+      invoke<void>("delete_guardian_link", { id }),
   },
 
   window: {
