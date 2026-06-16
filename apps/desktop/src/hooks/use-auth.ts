@@ -88,9 +88,17 @@ export const authClient = {
         }
         return { data: null, error: new Error("Authentication failed") };
       } catch (err) {
+        let message = "An unknown error occurred";
+        if (err instanceof Error) {
+          message = err.message;
+        } else if (err && typeof err === "object" && "message" in err) {
+          message = String((err as any).message);
+        } else {
+          message = String(err);
+        }
         return {
           data: null,
-          error: err instanceof Error ? err : new Error(String(err)),
+          error: new Error(message),
         };
       }
     },

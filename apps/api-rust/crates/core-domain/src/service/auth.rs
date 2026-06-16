@@ -20,6 +20,7 @@ pub struct Claims {
 pub struct LoginResponse {
     #[schema(value_type = User)]
     pub user: user::Model,
+    #[serde(rename = "access_token")]
     pub token: String,
     pub refresh_token: String,
 }
