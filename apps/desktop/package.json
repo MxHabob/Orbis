@@ -26,6 +26,7 @@
     "@tauri-apps/plugin-updater": "^2.9.0",
     "@tauri-apps/plugin-upload": "~2",
     "@orbis/desktop-client": "workspace:*",
+    "@orbis/excel-grid": "workspace:*",
     "@orbis/export": "workspace:*",
     "@orbis/import": "workspace:*",
     "@orbis/location": "workspace:*",
