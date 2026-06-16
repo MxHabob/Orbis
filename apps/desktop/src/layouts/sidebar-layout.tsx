@@ -12,7 +12,7 @@ export function SidebarLayout() {
   return (
     <div className="relative">
       <Sidebar />
-      <div className="ms-[70px] pb-4">
+      <div className="ms-17.5 pb-4">
         <Header />
         <div className="px-4 md:px-8">
           <Outlet />

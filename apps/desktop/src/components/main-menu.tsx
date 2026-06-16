@@ -1,8 +1,7 @@
 import { cn } from "@orbis/ui/cn";
 import { Icons } from "@orbis/ui/icons";
-import { Link } from "react-router-dom";
-import { useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { useI18n } from "@/locales/client";
 
 const icons = {
@@ -54,7 +53,7 @@ const ChildItem = ({
       <div className="relative">
         <div
           className={cn(
-            "ms-[35px] me-[15px] h-[32px] flex items-center",
+            "ms-8.75 me-3.75 h-8 flex items-center",
             "border-s border-border ps-3",
             "transition-all duration-200 ease-out",
             showChild
@@ -109,21 +108,21 @@ const Item = ({
         <div className="relative">
           <div
             className={cn(
-              "border border-transparent h-[40px] transition-all duration-200 ease-&lsqb;cubic-bezier(0.4,0,0.2,1)&rsqb; ms-[15px] me-[15px]",
+              "border border-transparent h-10 transition-all duration-200 ease-&lsqb;cubic-bezier(0.4,0,0.2,1)&rsqb; ms-3.75 me-3.75",
               isActive &&
                 "bg-accent border-border text-accent-foreground shadow-sm",
-              isExpanded ? "w-[calc(100%-30px)]" : "w-[40px]",
+              isExpanded ? "w-[calc(100%-30px)]" : "w-10",
             )}
           />
 
-          <div className="absolute top-0 start-[15px] w-[40px] h-[40px] flex items-center justify-center text-muted-foreground group-hover:!text-primary pointer-events-none">
-            <div className={cn(isActive && "dark:!text-white")}>
+          <div className="absolute top-0 inset-s-3.75 w-10 h-10 flex items-center justify-center text-muted-foreground group-hover:text-primary! pointer-events-none">
+            <div className={cn(isActive && "dark:text-white!")}>
               <Icon />
             </div>
           </div>
 
           {isExpanded && (
-            <div className="absolute top-0 start-[55px] end-[4px] h-[40px] flex items-center pointer-events-none">
+            <div className="absolute top-0 inset-s-13.75 inset-e-1 h-10 flex items-center pointer-events-none">
               <span
                 className={cn(
                   "text-sm font-medium transition-opacity duration-200 ease-in-out text-muted-foreground group-hover:text-primary",
