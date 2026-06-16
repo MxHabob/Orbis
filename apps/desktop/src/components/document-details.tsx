@@ -75,7 +75,7 @@ export function DocumentDetails() {
 
       <div>
         {data?.createdAt && (
-          <p className="text-sm text-[#878787] mb-4 line-clamp-2">
+          <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
             {formatDate(data.createdAt)}
           </p>
         )}

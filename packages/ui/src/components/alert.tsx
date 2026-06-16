@@ -3,14 +3,14 @@ import * as React from "react";
 import { cn } from "../utils";
 
 const alertVariants = cva(
-  "relative w-full border p-4 [&>svg~*]:pl-7 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-foreground",
+  "relative w-full [&>svg~*]:pl-7 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-foreground",
   {
     variants: {
       variant: {
-        default: "bg-background text-foreground",
-        destructive:
-          "border-destructive/50 text-destructive dark:border-destructive [&>svg]:text-destructive",
-        warning: "dark:border-[#4a2800] dark:bg-[#1f1400]",
+        default: "alert-brand-info",
+        destructive: "alert-brand-error [&>svg]:text-destructive",
+        warning: "alert-brand-warning",
+        success: "alert-brand-success",
       },
     },
     defaultVariants: {

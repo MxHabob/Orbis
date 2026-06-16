@@ -54,11 +54,11 @@ export function WidgetsHeader() {
       <div>
         <h1 className="text-[30px] font-serif leading-normal mb-1">
           <span>{greeting} </span>
-          <span className="text-[#666666]">
+          <span className="text-muted-foreground">
             {session?.user?.name?.split(" ")[0]},
           </span>
         </h1>
-        <p className="text-[#666666] text-[14px]">
+        <p className="text-muted-foreground text-[14px]">
           {isCustomizing
             ? t("widgets.customizing_description")
             : t("widgets.normal_description")}
@@ -70,25 +70,17 @@ export function WidgetsHeader() {
           <Customize />
         </div>
         <MetricsFilter />
-        <div className="ms-2 relative flex items-stretch bg-[#f7f7f7] dark:bg-[#131313] w-fit">
-          <TabsList className="flex items-stretch h-auto p-0 bg-transparent">
+        <div className="ms-2 relative flex items-stretch w-fit">
+          <TabsList className="flex items-stretch h-auto">
             <TabsTrigger
               value="overview"
-              className={cn(
-                "group relative flex items-center gap-1.5 px-3 py-1.5 text-[14px] transition-all whitespace-nowrap border border-transparent h-9 min-h-9",
-                "text-[#707070] hover:text-black bg-[#f7f7f7] dark:text-[#666666] dark:hover:text-white dark:bg-[#131313] mb-0 relative z-[1]",
-                "data-[state=active]:text-black data-[state=active]:bg-[#e6e6e6] dark:data-[state=active]:text-white dark:data-[state=active]:bg-[#1d1d1d] data-[state=active]:mb-[-1px] data-[state=active]:z-10",
-              )}
+              className="px-3 py-1.5 text-[14px] h-9 min-h-9"
             >
               {t("widgets.overview")}
             </TabsTrigger>
             <TabsTrigger
               value="calendar"
-              className={cn(
-                "group relative flex items-center gap-1.5 px-3 py-1.5 text-[14px] transition-all whitespace-nowrap border border-transparent h-9 min-h-9",
-                "text-[#707070] hover:text-black bg-[#f7f7f7] dark:text-[#666666] dark:hover:text-white dark:bg-[#131313] mb-0 relative z-[1]",
-                "data-[state=active]:text-black data-[state=active]:bg-[#e6e6e6] dark:data-[state=active]:text-white dark:data-[state=active]:bg-[#1d1d1d] data-[state=active]:mb-[-1px] data-[state=active]:z-10",
-              )}
+              className="px-3 py-1.5 text-[14px] h-9 min-h-9"
             >
               {t("widgets.calendar")}
             </TabsTrigger>

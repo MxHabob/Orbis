@@ -22,7 +22,7 @@ export const columns: ColumnDef<ClassReport>[] = [
       sticky: true,
       skeleton: { type: "checkbox" },
       className:
-        "w-[50px] min-w-[50px] md:sticky md:inset-inline-start-0 bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-20 justify-center !border-inline-end !border-border p-0",
+        "w-[50px] min-w-[50px] md:sticky md:inset-inline-start-0 bg-background group-hover:bg-muted/50 z-20 justify-center !border-inline-end !border-border p-0",
     },
     cell: ({ row }) => (
       <Checkbox
@@ -49,7 +49,7 @@ export const columns: ColumnDef<ClassReport>[] = [
       skeleton: { type: "avatar-text", width: "w-32" },
       sortField: "name",
       className:
-        "w-[250px] min-w-[180px] md:sticky md:inset-inline-start-[50px] bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-20 !border-inline-end !border-border",
+        "w-[250px] min-w-[180px] md:sticky md:inset-inline-start-[50px] bg-background group-hover:bg-muted/50 z-20 !border-inline-end !border-border",
     },
     cell: ({ row }) => {
       const data = row.original;
@@ -165,7 +165,7 @@ export const columns: ColumnDef<ClassReport>[] = [
       sticky: true,
       skeleton: { type: "icon" },
       className:
-        "w-[100px] min-w-[80px] md:sticky md:inset-inline-end-0 bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-30 justify-center !border-inline-start !border-border",
+        "w-[100px] min-w-[80px] md:sticky md:inset-inline-end-0 bg-background group-hover:bg-muted/50 z-30 justify-center !border-inline-start !border-border",
     },
     cell: ({ row }) => {
       return <ActionsMenu row={row.original} />;

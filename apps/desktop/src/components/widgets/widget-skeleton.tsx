@@ -36,7 +36,7 @@ export function WidgetSkeleton({
   return (
     <div
       className={cn(
-        "dark:bg-[#0c0c0c] border dark:border-[#1d1d1d] p-4 h-[210px] flex flex-col justify-between",
+        "card-tactile h-[210px] flex flex-col justify-between",
         className,
       )}
     >
@@ -44,8 +44,8 @@ export function WidgetSkeleton({
         {/* Header - title and icon are shown immediately */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <span className="text-[#666666]">{icon}</span>
-            <h3 className="text-xs text-[#666666] font-medium">{title}</h3>
+            <span className="text-muted-foreground">{icon}</span>
+            <h3 className="text-xs text-muted-foreground font-medium">{title}</h3>
           </div>
         </div>
 

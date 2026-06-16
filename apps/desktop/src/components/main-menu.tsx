@@ -55,7 +55,7 @@ const ChildItem = ({
         <div
           className={cn(
             "ms-[35px] me-[15px] h-[32px] flex items-center",
-            "border-s border-[#e6e6e6] dark:border-[#1d1d1d] ps-3",
+            "border-s border-border ps-3",
             "transition-all duration-200 ease-out",
             showChild
               ? "opacity-100 translate-x-0"
@@ -70,7 +70,7 @@ const ChildItem = ({
           <span
             className={cn(
               "text-xs font-medium transition-colors duration-200",
-              "text-[#888] group-hover/child:text-primary",
+              "text-muted-foreground group-hover/child:text-primary",
               "whitespace-nowrap overflow-hidden",
               isActive && "text-primary",
             )}
@@ -111,12 +111,12 @@ const Item = ({
             className={cn(
               "border border-transparent h-[40px] transition-all duration-200 ease-&lsqb;cubic-bezier(0.4,0,0.2,1)&rsqb; ms-[15px] me-[15px]",
               isActive &&
-                "bg-[#f7f7f7] dark:bg-[#131313] border-[#e6e6e6] dark:border-[#1d1d1d]",
+                "bg-accent border-border text-accent-foreground shadow-sm",
               isExpanded ? "w-[calc(100%-30px)]" : "w-[40px]",
             )}
           />
 
-          <div className="absolute top-0 start-[15px] w-[40px] h-[40px] flex items-center justify-center dark:text-[#666666] text-black group-hover:!text-primary pointer-events-none">
+          <div className="absolute top-0 start-[15px] w-[40px] h-[40px] flex items-center justify-center text-muted-foreground group-hover:!text-primary pointer-events-none">
             <div className={cn(isActive && "dark:!text-white")}>
               <Icon />
             </div>
@@ -126,7 +126,7 @@ const Item = ({
             <div className="absolute top-0 start-[55px] end-[4px] h-[40px] flex items-center pointer-events-none">
               <span
                 className={cn(
-                  "text-sm font-medium transition-opacity duration-200 ease-in-out text-[#666] group-hover:text-primary",
+                  "text-sm font-medium transition-opacity duration-200 ease-in-out text-muted-foreground group-hover:text-primary",
                   "whitespace-nowrap overflow-hidden",
                   hasChildren ? "pe-2" : "",
                   isActive && "text-primary",
@@ -140,7 +140,7 @@ const Item = ({
                   onClick={handleChevronClick}
                   className={cn(
                     "w-8 h-8 flex items-center justify-center transition-all duration-200 ms-auto me-3",
-                    "text-[#888] hover:text-primary pointer-events-auto",
+                    "text-muted-foreground hover:text-primary pointer-events-auto",
                     isActive && "text-primary/60",
                     shouldShowChildren && "rotate-180",
                   )}

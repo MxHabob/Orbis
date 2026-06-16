@@ -110,7 +110,7 @@ export const columns: ColumnDef<Student>[] = [
       skeleton: { type: "avatar-text", width: "w-32" },
       headerLabel: "Name",
       className:
-        "w-[250px] min-w-[200px] md:sticky md:left-0 bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-20",
+        "w-[250px] min-w-[200px] md:sticky md:left-0 bg-background group-hover:bg-muted/50 z-20",
     },
     cell: ({ row }) => {
       const { setParams } = useStudentParams();
@@ -233,7 +233,7 @@ export const columns: ColumnDef<Student>[] = [
       skeleton: { type: "icon" },
       headerLabel: "Actions",
       className:
-        "text-right sticky right-0 bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-30 justify-center !border-l !border-border",
+        "text-right sticky right-0 bg-background group-hover:bg-muted/50 z-30 justify-center !border-l !border-border",
     },
     cell: ({ row, table }) => (
       <ActionsCell

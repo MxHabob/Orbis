@@ -134,7 +134,7 @@ export function VaultItem({ data, small }: Props) {
   return (
     <div
       className={cn(
-        "h-72 border relative flex text-muted-foreground p-4 flex-col gap-3 hover:bg-muted dark:hover:bg-[#141414] transition-colors duration-200 group cursor-pointer",
+        "h-72 border relative flex text-muted-foreground p-4 flex-col gap-3 hover:bg-muted transition-colors duration-200 group cursor-pointer",
         small && "h-48",
       )}
       onClick={() => {

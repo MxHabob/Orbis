@@ -14,7 +14,7 @@ export function VaultGetStarted() {
             </h2>
           </div>
 
-          <p className="pb-6 text-sm text-[#878787]">
+          <p className="pb-6 text-sm text-muted-foreground">
             {t("vault.get_started_description")}
           </p>
 

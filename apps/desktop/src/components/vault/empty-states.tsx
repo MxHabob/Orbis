@@ -14,7 +14,7 @@ export function NoResults() {
         <Icons.Transactions2 className="mb-4" />
         <div className="text-center mb-6 space-y-2">
           <h2 className="font-medium text-lg">{t("vault.no_results_title")}</h2>
-          <p className="text-[#606060] text-sm">
+          <p className="text-muted-foreground text-sm">
             {t("vault.no_results_description")}
           </p>
         </div>

@@ -9,7 +9,7 @@ export function EmptyState() {
       <div className="flex flex-col items-center">
         <div className="text-center mb-6 space-y-2">
           <h2 className="font-medium text-lg">No students</h2>
-          <p className="text-[#606060] text-sm">
+          <p className="text-muted-foreground text-sm">
             You haven't created any students yet. <br />
             Go ahead and create your first one.
           </p>
@@ -38,7 +38,7 @@ export function NoResults() {
       <div className="flex flex-col items-center">
         <div className="text-center mb-6 space-y-2">
           <h2 className="font-medium text-lg">No results</h2>
-          <p className="text-[#606060] text-sm">
+          <p className="text-muted-foreground text-sm">
             Try another search, or adjusting the filters
           </p>
         </div>

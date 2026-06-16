@@ -190,7 +190,7 @@ export function VaultUploadZone({ onUpload, children }: Props) {
           <div className="flex flex-col items-center justify-center gap-2">
             <p className="text-sm">{t("vault.drag_drop")}</p>
 
-            <span className="text-xs text-[#878787]">
+            <span className="text-xs text-muted-foreground">
               {t("vault.max_size")}
             </span>
           </div>

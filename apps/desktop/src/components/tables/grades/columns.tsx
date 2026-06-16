@@ -95,7 +95,7 @@ export const createGradeColumns = (
         skeleton: { type: "avatar-text", width: "w-40" },
         headerLabel: "grades.student_name",
         className:
-          "w-[250px] min-w-[200px] md:sticky md:inset-inline-start-0 bg-background group-hover:bg-[#F2F1EF] group-hover:dark:bg-[#0f0f0f] z-20 !border-inline-end !border-border",
+          "w-[250px] min-w-[200px] md:sticky md:inset-inline-start-0 bg-background group-hover:bg-muted/50 z-20 !border-inline-end !border-border",
       },
       cell: ({ row }) => (
         <StudentNameCell name={row.original.name} image={row.original.image} />
