@@ -114,20 +114,20 @@ const customFetchers: Record<string, (params: unknown) => Promise<unknown>> = {
     });
     return (analytics as JsonRecord)?.topStudents ?? [];
   },
-  "certificateTemplates.getById": async (params) => {
+  "documentTemplates.getById": async (params) => {
     const id = (params as { id?: string })?.id ?? params;
-    return commands.certificates.getById(String(id));
+    return commands.documentTemplates.getById(String(id));
   },
-  "certificateTemplates.list": async () => commands.certificates.getAll(),
-  "certificateTemplates.upsert": async (params) => {
+  "documentTemplates.list": async () => commands.documentTemplates.getAll(),
+  "documentTemplates.upsert": async (params) => {
     const p = params as JsonRecord;
     const id = p?.id;
-    if (id) return commands.certificates.update(String(id), p);
-    return commands.certificates.create(p);
+    if (id) return commands.documentTemplates.update(String(id), p);
+    return commands.documentTemplates.create(p);
   },
-  "certificateTemplates.delete": async (params) => {
+  "documentTemplates.delete": async (params) => {
     const id = (params as { id?: string })?.id ?? params;
-    return commands.certificates.delete(String(id));
+    return commands.documentTemplates.delete(String(id));
   },
   "notifications.list": async (params) => {
     const userId = getUserId();
@@ -162,7 +162,7 @@ async function runQuery(domain: string, method: string, params?: unknown) {
       "auth",
       "assessments",
       "documents",
-      "certificates",
+      "documentTemplates",
       "widgets",
       "notifications",
       "window",
@@ -211,7 +211,7 @@ async function runMutation(domain: string, method: string, variables: unknown) {
       "auth",
       "assessments",
       "documents",
-      "certificates",
+      "documentTemplates",
       "widgets",
       "notifications",
     ];

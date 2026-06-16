@@ -102,11 +102,11 @@ export const queryKeys = {
       ["documents", "detail", documentId] as const,
   },
 
-  // ── Certificates ────────────────────────────────────────────────────────
-  certificates: {
-    all: () => ["certificates"] as const,
-    detail: (certificateId: string) =>
-      ["certificates", "detail", certificateId] as const,
+  // ── Document Templates ──────────────────────────────────────────────────
+  documentTemplates: {
+    all: (entityType?: string) => ["documentTemplates", entityType] as const,
+    detail: (id: string) =>
+      ["documentTemplates", "detail", id] as const,
   },
 
   // ── Reports ─────────────────────────────────────────────────────────────

@@ -46,4 +46,6 @@ pub mod financial_event;
 pub mod financial_report;
 pub mod system_log;
 pub mod data_transfer;
+pub mod report_definition;
+pub mod document_template;
 

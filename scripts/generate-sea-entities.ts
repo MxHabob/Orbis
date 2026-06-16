@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 
 // Define the absolute path for target Rust entities folder
-const targetDir = path.resolve(__dirname, "../apps/api-rust/src/entities");
+const targetDir = path.resolve(__dirname, "../apps/api-rust/crates/core-domain/src/entities");
 
 interface Column {
   name: string;
@@ -802,6 +802,44 @@ const tables: Table[] = [
       { name: "initiated_by", type: "uuid", isNullable: true },
       { name: "config", type: "jsonb", isNullable: true },
       { name: "mapping", type: "jsonb", isNullable: true },
+      { name: "created_at", type: "timestamp", isNullable: false },
+      { name: "updated_at", type: "timestamp", isNullable: false },
+    ]
+  },
+  {
+    name: "report_definitions",
+    structName: "ReportDefinition",
+    columns: [
+      { name: "id", type: "uuid", isNullable: false, isPrimaryKey: true },
+      { name: "org_id", type: "uuid", isNullable: false },
+      { name: "name", type: "varchar", isNullable: false },
+      { name: "name_ar", type: "varchar", isNullable: true },
+      { name: "description", type: "text", isNullable: true },
+      { name: "base_entity", type: "varchar", isNullable: false },
+      { name: "columns", type: "jsonb", isNullable: false },
+      { name: "joins", type: "jsonb", isNullable: true },
+      { name: "default_filters", type: "jsonb", isNullable: true },
+      { name: "group_by", type: "varchar", isNullable: true },
+      { name: "sort_by", type: "varchar", isNullable: true },
+      { name: "is_system", type: "boolean", isNullable: false },
+      { name: "created_at", type: "timestamp", isNullable: false },
+      { name: "updated_at", type: "timestamp", isNullable: false },
+    ]
+  },
+  {
+    name: "document_templates",
+    structName: "DocumentTemplate",
+    columns: [
+      { name: "id", type: "uuid", isNullable: false, isPrimaryKey: true },
+      { name: "org_id", type: "uuid", isNullable: false },
+      { name: "name", type: "varchar", isNullable: false },
+      { name: "entity_type", type: "varchar", isNullable: false },
+      { name: "layout_type", type: "varchar", isNullable: false },
+      { name: "content", type: "text", isNullable: false },
+      { name: "page_size", type: "varchar", isNullable: false },
+      { name: "orientation", type: "varchar", isNullable: false },
+      { name: "margins", type: "jsonb", isNullable: false },
+      { name: "is_default", type: "boolean", isNullable: false },
       { name: "created_at", type: "timestamp", isNullable: false },
       { name: "updated_at", type: "timestamp", isNullable: false },
     ]

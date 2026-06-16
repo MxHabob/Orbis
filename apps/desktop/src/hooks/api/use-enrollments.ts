@@ -100,17 +100,17 @@ export function useDocuments(params?: JsonRecord) {
   });
 }
 
-export function useCertificates() {
+export function useDocumentTemplates(entityType?: string) {
   return useQuery({
-    queryKey: queryKeys.certificates.all(),
-    queryFn: () => commands.certificates.getAll(),
+    queryKey: queryKeys.documentTemplates.all(entityType),
+    queryFn: () => commands.documentTemplates.getAll(entityType),
   });
 }
 
-export function useCertificate(id: string) {
+export function useDocumentTemplate(id: string) {
   return useQuery({
-    queryKey: queryKeys.certificates.detail(id),
-    queryFn: () => commands.certificates.getById(id),
+    queryKey: queryKeys.documentTemplates.detail(id),
+    queryFn: () => commands.documentTemplates.getById(id),
     enabled: !!id,
   });
 }

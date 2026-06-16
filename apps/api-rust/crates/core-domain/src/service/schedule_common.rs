@@ -159,6 +159,7 @@ impl super::Service {
             time_slot_id: placement.time_slot_id,
             day_of_week: placement.day_of_week,
             room_id: placement.room_id,
+            room_name: None,
             status: "scheduled".to_string(),
             is_substituted: 0,
             substitution_reason: None,

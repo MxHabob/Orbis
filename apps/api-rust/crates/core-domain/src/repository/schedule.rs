@@ -163,6 +163,7 @@ impl super::Repository {
             time_slot_id: Set(lesson.time_slot_id),
             day_of_week: Set(lesson.day_of_week),
             room_id: Set(lesson.room_id),
+            room_name: Set(lesson.room_name),
             status: Set(lesson.status),
             is_substituted: Set(lesson.is_substituted),
             substitution_reason: Set(lesson.substitution_reason),

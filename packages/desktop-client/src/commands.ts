@@ -4,7 +4,7 @@
  */
 import { invoke } from "./core";
 import type {
-  Certificate,
+  DocumentTemplate,
   Class,
   ClassSubject,
   DashboardStats,
@@ -329,18 +329,18 @@ export const commands = {
     delete: (id: string) => invoke<void>("delete_document", { id }),
   },
 
-  certificates: {
-    getAll: () => invoke<Certificate[]>("get_certificates"),
+  documentTemplates: {
+    getAll: (entityType?: string) => invoke<DocumentTemplate[]>("get_document_templates", { entityType }),
 
-    getById: (id: string) => invoke<Certificate>("get_certificate", { id }),
+    getById: (id: string) => invoke<DocumentTemplate>("get_document_template", { id }),
 
     create: (request: JsonRecord) =>
-      invoke<Certificate>("create_certificate", { request }),
+      invoke<DocumentTemplate>("create_document_template", { request }),
 
     update: (id: string, request: JsonRecord) =>
-      invoke<Certificate>("update_certificate", { id, request }),
+      invoke<DocumentTemplate>("update_document_template", { id, request }),
 
-    delete: (id: string) => invoke<void>("delete_certificate", { id }),
+    delete: (id: string) => invoke<void>("delete_document_template", { id }),
   },
 
   widgets: {

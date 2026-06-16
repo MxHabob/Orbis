@@ -238,12 +238,12 @@ pub fn run() {
             commands::documents::create_document,
             commands::documents::delete_document,
 
-            // Certificates
-            commands::certificates::get_certificates,
-            commands::certificates::get_certificate,
-            commands::certificates::create_certificate,
-            commands::certificates::update_certificate,
-            commands::certificates::delete_certificate,
+            // Document Templates
+            commands::document_templates::get_document_templates,
+            commands::document_templates::get_document_template,
+            commands::document_templates::create_document_template,
+            commands::document_templates::update_document_template,
+            commands::document_templates::delete_document_template,
 
             // Widgets
             commands::widgets::get_widget_preferences,

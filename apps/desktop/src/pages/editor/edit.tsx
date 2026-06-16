@@ -9,8 +9,8 @@ export default function DocumentEditorPage() {
   const { id } = useParams<{ id: string }>();
 
   const { data: template, isLoading } = useTauriQuery(
-    queryKeys.certificates.detail(id!),
-    () => commands.certificates.getById(id!),
+    queryKeys.documentTemplates.detail(id!),
+    () => commands.documentTemplates.getById(id!),
     { enabled: !!id }
   );
 

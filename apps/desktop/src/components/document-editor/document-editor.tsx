@@ -126,11 +126,11 @@ export function DocumentEditor({ initialData }: Props) {
   });
 
   const upsertTemplate = useMutation(
-    trpc.certificateTemplates.upsert.mutationOptions({
+    trpc.documentTemplates.upsert.mutationOptions({
       onSuccess: () => {
         toast({ title: "Template saved" });
         queryClient.invalidateQueries(
-          trpc.certificateTemplates.list.queryFilter(),
+          trpc.documentTemplates.list.queryFilter(),
         );
       },
       onError: (error) => {

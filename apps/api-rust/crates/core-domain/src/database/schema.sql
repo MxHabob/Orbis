@@ -51,10 +51,11 @@ CREATE TABLE IF NOT EXISTS permissions (
 );
 
 CREATE TABLE IF NOT EXISTS role_permissions (
-  role TEXT PRIMARY KEY,
-  permission_id INTEGER PRIMARY KEY,
+  role TEXT NOT NULL,
+  permission_id INTEGER NOT NULL,
   conditions TEXT,
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (role, permission_id)
 );
 
 CREATE TABLE IF NOT EXISTS user_permissions (
@@ -215,7 +216,6 @@ CREATE TABLE IF NOT EXISTS student_guardians (
   updated_at TEXT NOT NULL
 );
 
--- School day periods (REQUIRED by Timefold — defines when lessons can be placed)
 CREATE TABLE IF NOT EXISTS time_slots (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL,
@@ -247,6 +247,7 @@ CREATE TABLE IF NOT EXISTS scheduled_lessons (
   time_slot_id TEXT NOT NULL,
   day_of_week INTEGER NOT NULL,
   room_id TEXT,
+  room_name TEXT,
   status TEXT NOT NULL,
   is_substituted INTEGER NOT NULL,
   substitution_reason TEXT,
@@ -684,60 +685,35 @@ CREATE TABLE IF NOT EXISTS data_transfers (
   updated_at TEXT NOT NULL
 );
 
--- ── Schedule Solver (Timefold integration) ──────────────────────────────────
--- Data flow: time_slots + class_subjects + rooms + teacher_availability
---            → schedule_solve_jobs (async) → scheduled_lessons (result)
--- Timefold is the solver engine and these tables are the persistent domain model.
-
--- Canonical room resource (classes.room_id, scheduled_lessons.room_id → rooms.id)
-CREATE TABLE IF NOT EXISTS rooms (
+CREATE TABLE IF NOT EXISTS report_definitions (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL,
   name TEXT NOT NULL,
   name_ar TEXT,
-  capacity INTEGER,
-  room_type TEXT NOT NULL DEFAULT 'classroom',
-  building TEXT,
-  floor INTEGER,
-  is_active INTEGER NOT NULL DEFAULT 1,
+  description TEXT,
+  base_entity TEXT NOT NULL,
+  columns TEXT NOT NULL,
+  joins TEXT,
+  default_filters TEXT,
+  group_by TEXT,
+  sort_by TEXT,
+  is_system INTEGER NOT NULL,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS teacher_availability (
+CREATE TABLE IF NOT EXISTS document_templates (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL,
-  teacher_id TEXT NOT NULL,
-  cycle_id TEXT NOT NULL,
-  day_of_week INTEGER NOT NULL,
-  time_slot_id TEXT NOT NULL,
-  is_available INTEGER NOT NULL DEFAULT 1,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL,
-  UNIQUE(org_id, teacher_id, cycle_id, day_of_week, time_slot_id)
-);
-
-CREATE TABLE IF NOT EXISTS schedule_solve_jobs (
-  id TEXT PRIMARY KEY,
-  org_id TEXT NOT NULL,
-  cycle_id TEXT NOT NULL,
-  mode TEXT NOT NULL,
-  status TEXT NOT NULL,
-  problem_snapshot TEXT,
-  best_solution TEXT,
-  score TEXT,
-  lessons_created INTEGER NOT NULL DEFAULT 0,
-  error_message TEXT,
-  created_by TEXT,
-  started_at TEXT,
-  completed_at TEXT,
+  name TEXT NOT NULL,
+  entity_type TEXT NOT NULL,
+  layout_type TEXT NOT NULL,
+  content TEXT NOT NULL,
+  page_size TEXT NOT NULL,
+  orientation TEXT NOT NULL,
+  margins TEXT NOT NULL,
+  is_default INTEGER NOT NULL,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
-
-CREATE INDEX IF NOT EXISTS idx_solve_jobs_org_cycle ON schedule_solve_jobs(org_id, cycle_id);
-CREATE INDEX IF NOT EXISTS idx_solve_jobs_status ON schedule_solve_jobs(status);
-CREATE INDEX IF NOT EXISTS idx_rooms_org ON rooms(org_id);
-CREATE INDEX IF NOT EXISTS idx_teacher_avail ON teacher_availability(org_id, teacher_id, cycle_id);
-CREATE INDEX IF NOT EXISTS idx_lessons_conflict ON scheduled_lessons(org_id, cycle_id, time_slot_id, day_of_week, status);
 
