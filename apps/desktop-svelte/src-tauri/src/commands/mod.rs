@@ -1,0 +1,16 @@
+pub mod error;
+pub mod auth;
+pub mod users;
+pub mod academics;
+pub mod enrollments;
+pub mod grades;
+pub mod attendance;
+pub mod finance;
+pub mod misc;
+pub mod subjects;
+pub mod assessments;
+pub mod documents;
+pub mod document_templates;
+pub mod widgets;
+pub mod schedule;
+pub mod guardians;

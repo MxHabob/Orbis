@@ -1,0 +1,47 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "build": {
+    "frontendDist": "../build",
+    "devUrl": "http://localhost:1520",
+    "beforeDevCommand": "bun run dev",
+    "beforeBuildCommand": "bun run build"
+  },
+  "productName": "Orbis",
+  "identifier": "com.mulverse.orbis.svelte",
+  "app": {
+    "macOSPrivateApi": true,
+    "withGlobalTauri": true,
+    "security": {
+      "csp": null,
+      "dangerousDisableAssetCspModification": true,
+      "freezePrototype": false,
+      "capabilities": ["default", "desktop-capability"]
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "createUpdaterArtifacts": false,
+    "icon": [
+      "icons/production/32x32.png",
+      "icons/production/128x128.png",
+      "icons/production/128x128@2x.png",
+      "icons/production/icon.icns",
+      "icons/production/icon.ico"
+    ]
+  },
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": ["orbis"]
+      }
+    },
+    "updater": {
+      "active": true,
+      "endpoints": [
+        "https://releases.mulverse.com/{{target}}/{{current_version}}"
+      ],
+      "pubkey": "dW51c2VkdW51c2VkdW51c2VkdW51c2VkdW51c2VkdW51c2VkdW51c2VkdW51c2Vk"
+    }
+  }
+}
