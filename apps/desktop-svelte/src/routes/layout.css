@@ -1,2 +1,1 @@
-/* Layout entry point — imports the unified design system. */
-@import "../app.css";
+@import "@orbis/ui-svelte/globals.css";

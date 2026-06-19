@@ -37,20 +37,25 @@
 		"tailwindcss": "^4"
 	},
 	"dependencies": {
-		"bits-ui": "^2.16.3",
-		"tailwind-variants": "^3.2.2",
+		"@fontsource-variable/rubik": "^5.2.8",
 		"@internationalized/date": "^3.12.0",
-		"lucide-svelte": "^0.460.0",
-		"clsx": "^2",
-		"tailwind-merge": "^3.4",
+		"@orbis/utils": "workspace:*",
+		"bits-ui": "^2.16.3",
 		"class-variance-authority": "^0.7",
+		"clsx": "^2.1.1",
+		"lucide-svelte": "^0.460.0",
 		"svelte-sonner": "^1",
-		"tailwindcss-animate": "^1.0.7",
-		"@orbis/utils": "workspace:*"
+		"tailwind-merge": "^3.6.0",
+		"tailwind-variants": "^3.2.2",
+		"tailwindcss-animate": "^1.0.7"
 	},
 	"devDependencies": {
+		"@lucide/svelte": "^1.21.0",
+		"paneforge": "^1.0.2",
+		"shadcn-svelte": "^1.3.0",
 		"svelte": "^5.56.1",
 		"tailwindcss": "^4.3.0",
+		"tw-animate-css": "^1.4.0",
 		"typescript": "^6.0.3"
 	}
 }

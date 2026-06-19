@@ -1,27 +1,95 @@
 @import "tailwindcss";
+@import "@fontsource-variable/rubik";
+@import "tw-animate-css";
 
-@plugin "tailwindcss-animate";
+@custom-variant dark (&:is(.dark *));
 
 /* ============================================================
-   @orbis/ui-svelte — S.C.R.A.P.S. Design System (Tailwind CSS v4)
-   ────────────────────────────────────────────────────────────
-   Inspired by Sentry's S.C.R.A.P.S. design language:
-   Standardized Collection of Reusable Assets & Patterns.
-
-   Deep purple midnight palette · Electric lime accents
-   Tactile depth: buttons lift, inputs sink, cards have presence.
-
-   Consuming apps MUST import this file via:
-     @import "@orbis/ui-svelte/globals.css";
+   @orbis/ui-svelte — S.C.R.A.P.S. Design System
    ============================================================ */
 
-@theme {
-  /* ── Font Family ────────────────────────────────────────── */
-  --font-sans:  "Rubik", "var(--font-hedvig-sans)", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-mono:  "JetBrains Mono", "Fira Code", "var(--font-hedvig-sans)", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-  --font-serif: "var(--font-hedvig-serif)", Georgia, Cambria, "Times New Roman", Times, serif;
+:root {
+  --radius: 0.5rem;
 
-  /* ── Border Radius ──────────────────────────────────────── */
+  /* Light Mode — Sentry S.C.R.A.P.S. */
+  --background:        oklch(0.97 0.01 300);
+  --foreground:        oklch(0.15 0.04 280);
+  --card:              oklch(0.95 0.015 300);
+  --card-foreground:   oklch(0.15 0.04 280);
+  --popover:           oklch(0.97 0.02 300);
+  --popover-foreground:oklch(0.15 0.04 280);
+  --primary:           oklch(0.52 0.12 280);
+  --primary-foreground:oklch(1 0 0);
+  --secondary:         oklch(0.93 0.02 300);
+  --secondary-foreground:oklch(0.15 0.04 280);
+  --muted:             oklch(0.92 0.015 300);
+  --muted-foreground:  oklch(0.55 0.03 280);
+  --accent:            oklch(0.94 0.015 300);
+  --accent-foreground: oklch(0.15 0.04 280);
+  --destructive:       oklch(0.65 0.18 15);
+  --destructive-foreground:oklch(1 0 0);
+  --border:            oklch(0.88 0.015 300);
+  --input:             oklch(0.90 0.015 300);
+  --ring:              oklch(0.52 0.12 280);
+
+  --chart-1: oklch(0.52 0.12 280);
+  --chart-2: oklch(0.55 0.03 280);
+  --chart-3: oklch(0.45 0.05 280);
+  --chart-4: oklch(0.60 0.10 100);
+  --chart-5: oklch(0.65 0.15 80);
+
+  --sidebar:              oklch(0.97 0.01 300);
+  --sidebar-foreground:   oklch(0.15 0.04 280);
+  --sidebar-primary:      oklch(0.52 0.12 280);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent:       oklch(0.93 0.02 300);
+  --sidebar-accent-foreground: oklch(0.15 0.04 280);
+  --sidebar-border:       oklch(0.88 0.015 300);
+  --sidebar-ring:         oklch(0.52 0.12 280);
+}
+
+.dark {
+  --background:        oklch(0.08 0.01 280);
+  --foreground:        oklch(0.95 0 0);
+  --card:              oklch(0.12 0.01 280);
+  --card-foreground:   oklch(0.95 0 0);
+  --popover:           oklch(0.14 0.01 280);
+  --popover-foreground:oklch(0.95 0 0);
+  --primary:           oklch(0.60 0.12 280);
+  --primary-foreground:oklch(1 0 0);
+  --secondary:         oklch(0.16 0.01 280);
+  --secondary-foreground:oklch(0.95 0 0);
+  --muted:             oklch(0.15 0.01 280);
+  --muted-foreground:  oklch(0.55 0 0);
+  --accent:            oklch(0.18 0.01 280);
+  --accent-foreground: oklch(0.95 0 0);
+  --destructive:       oklch(0.55 0.18 15);
+  --destructive-foreground:oklch(1 0 0);
+  --border:            oklch(0.18 0.01 280);
+  --input:             oklch(0.14 0.01 280);
+  --ring:              oklch(0.60 0.12 280);
+
+  --chart-1: oklch(0.95 0 0);
+  --chart-2: oklch(0.55 0 0);
+  --chart-3: oklch(0.60 0.10 100);
+  --chart-4: oklch(0.65 0.15 80);
+  --chart-5: oklch(0.55 0.18 15);
+
+  --sidebar:              oklch(0.10 0.01 280);
+  --sidebar-foreground:   oklch(0.95 0 0);
+  --sidebar-primary:      oklch(0.60 0.12 280);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent:       oklch(0.16 0.01 280);
+  --sidebar-accent-foreground: oklch(0.95 0 0);
+  --sidebar-border:       oklch(0.18 0.01 280);
+  --sidebar-ring:         oklch(0.60 0.12 280);
+}
+
+@theme inline {
+  --font-sans:  "Rubik", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono:  "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-serif: Georgia, Cambria, "Times New Roman", Times, serif;
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -29,410 +97,296 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
 
-  /* ── Core Colors (Light Mode — Warm Purple Tints) ────────── */
-  --color-background:        hsl(270 15% 97%);
-  --color-foreground:        hsl(265 40% 12%);
+  --color-background:        var(--background);
+  --color-foreground:        var(--foreground);
+  --color-card:              var(--card);
+  --color-card-foreground:   var(--card-foreground);
+  --color-popover:           var(--popover);
+  --color-popover-foreground:var(--popover-foreground);
+  --color-primary:           var(--primary);
+  --color-primary-foreground:var(--primary-foreground);
+  --color-secondary:         var(--secondary);
+  --color-secondary-foreground:var(--secondary-foreground);
+  --color-muted:             var(--muted);
+  --color-muted-foreground:  var(--muted-foreground);
+  --color-accent:            var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive:       var(--destructive);
+  --color-destructive-foreground:var(--destructive-foreground);
+  --color-border:            var(--border);
+  --color-input:             var(--input);
+  --color-ring:              var(--ring);
 
-  --color-card:              hsl(270 18% 95%);
-  --color-card-foreground:   hsl(265 40% 12%);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
 
-  --color-popover:           hsl(270 20% 97%);
-  --color-popover-foreground:hsl(265 40% 12%);
+  --color-sidebar:              var(--sidebar);
+  --color-sidebar-foreground:   var(--sidebar-foreground);
+  --color-sidebar-primary:      var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent:       var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border:       var(--sidebar-border);
+  --color-sidebar-ring:         var(--sidebar-ring);
 
-  /* Primary: Sentry Violet */
-  --color-primary:           hsl(248 50% 56%);
-  --color-primary-foreground:hsl(0 0% 100%);
+  /* Brand Palette */
+  --color-brand-purple:       oklch(0.52 0.12 280);
+  --color-brand-purple-light: oklch(0.60 0.12 280);
+  --color-brand-purple-dark:  oklch(0.40 0.10 280);
+  --color-brand-lime:         oklch(0.85 0.20 120);
+  --color-brand-lime-dark:    oklch(0.65 0.18 120);
+  --color-brand-pink:         oklch(0.75 0.20 10);
+  --color-brand-pink-light:   oklch(0.85 0.15 10);
+  --color-brand-violet:       oklch(0.15 0.04 280);
+  --color-brand-indigo:       oklch(0.18 0.05 280);
+  --color-brand-rose:         oklch(0.60 0.20 15);
 
-  --color-secondary:         hsl(270 12% 90%);
-  --color-secondary-foreground:hsl(265 30% 15%);
+  /* Animations */
+  --animate-shimmer: shimmer 2.5s linear infinite;
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-caret-blink: caret-blink 1.25s ease-out infinite;
+  --animate-glow-pulse: glow-pulse 2s ease-in-out infinite;
 
-  --color-muted:             hsl(270 10% 91%);
-  --color-muted-foreground:  hsl(265 15% 45%);
-
-  --color-accent:            hsl(270 10% 93%);
-  --color-accent-foreground: hsl(265 30% 15%);
-
-  --color-destructive:       hsl(340 70% 60%);
-  --color-destructive-foreground:hsl(0 0% 100%);
-
-  --color-border:            hsl(270 8% 85%);
-  --color-input:             hsl(270 10% 88%);
-  --color-ring:              hsl(248 50% 56%);
-
-  /* ── Brand Palette — S.C.R.A.P.S. ──────────────────────── */
-  --color-brand-purple:       hsl(248 50% 56%);
-  --color-brand-purple-light: hsl(248 55% 65%);
-  --color-brand-purple-dark:  hsl(248 50% 40%);
-  --color-brand-lime:         hsl(80 85% 62%);
-  --color-brand-lime-dark:    hsl(80 70% 45%);
-  --color-brand-pink:         hsl(340 93% 73%);
-  --color-brand-pink-light:   hsl(340 90% 80%);
-  --color-brand-violet:       hsl(267 40% 10%);
-  --color-brand-indigo:       hsl(267 38% 14%);
-  --color-brand-rose:         hsl(340 75% 55%);
-
-  /* ── Chart Colors (Light) ───────────────────────────────── */
-  --color-chart-grid:        hsl(270 8% 88%);
-  --color-chart-axis:        hsl(265 15% 45%);
-  --color-chart-reference:   hsl(270 8% 88%);
-  --color-chart-ref-label:   hsl(265 15% 45%);
-  --color-chart-actual:      hsl(248 50% 56%);
-  --color-chart-forecast:    hsl(265 15% 45%);
-  --color-chart-cursor:      hsl(248 50% 56%);
-  --color-chart-pattern-bg:  hsl(270 15% 97%);
-  --color-chart-pattern:     hsl(265 15% 55%);
-  --color-chart-bar:         hsl(248 50% 56%);
-  --color-chart-bar-2:       hsl(248 50% 56% / 0.3);
-  --color-chart-grad-start:  hsl(248 55% 65%);
-  --color-chart-grad-end:    hsl(248 50% 45%);
-  --color-chart-line-2:      hsl(80 85% 45%);
-
-  /* ── Animations ─────────────────────────────────────────── */
-  --animate-shimmer:         shimmer 2.5s linear infinite;
-  --animate-accordion-down:  accordion-down 0.2s ease-out;
-  --animate-accordion-up:    accordion-up 0.2s ease-out;
-  --animate-caret-blink:     caret-blink 1.25s ease-out infinite;
-  --animate-jiggle:          jiggle 0.3s ease-in-out;
-  --animate-scroll:          scroll var(--animation-duration, 40s) var(--animation-direction, forwards) linear infinite;
-  --animate-move-vertical:   moveVertical 30s ease infinite;
-  --animate-move-horizontal: moveHorizontal 40s ease infinite;
-  --animate-move-circle:     moveInCircle 20s ease infinite;
-  --animate-move-circle-rev: moveInCircle 20s reverse infinite;
-  --animate-move-circle-slow:moveInCircle 40s linear infinite;
-  --animate-webgl-scale:     webgl-scale-in-fade 0.5s ease-out forwards;
-  --animate-slide-effect:    slide-effect 1.3s ease-in-out infinite;
-  --animate-dialog-overlay-show: dialog-overlay-show 0.15s ease-out;
-  --animate-dialog-overlay-hide: dialog-overlay-hide 0.15s ease-in;
-  --animate-dialog-content-show: dialog-content-show 0.2s ease-out;
-  --animate-dialog-content-hide: dialog-content-hide 0.2s ease-in;
-  --animate-ellipsis:        ellipsis steps(4, end) 900ms infinite;
-  --animate-glow-pulse:      glow-pulse 2s ease-in-out infinite;
-
-  /* ── Breakpoints ────────────────────────────────────────── */
-  --breakpoint-3xl: 1800px;
+  @keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+  @keyframes accordion-down {
+    from { height: 0; }
+    to   { height: var(--radix-accordion-content-height); }
+  }
+  @keyframes accordion-up {
+    from { height: var(--radix-accordion-content-height); }
+    to   { height: 0; }
+  }
+  @keyframes caret-blink {
+    0%, 70%, 100% { opacity: 1; }
+    20%, 50%      { opacity: 0; }
+  }
+  @keyframes glow-pulse {
+    0%, 100% { box-shadow: 0 0 15px -5px oklch(0.52 0.12 280 / 0.3); }
+    50%      { box-shadow: 0 0 25px -5px oklch(0.52 0.12 280 / 0.5); }
+  }
 }
-
-/* ============================================================
-   DARK MODE — Soft Dark (Calm Neutral)
-   ============================================================ */
-
-.dark {
-  /* ── Soft Dark Gray (not pure black) ───────────────────── */
-  --color-background:        hsl(240 6% 7%);
-  --color-foreground:        hsl(0 0% 95%);
-
-  --color-card:              hsl(240 5% 10%);
-  --color-card-foreground:   hsl(0 0% 95%);
-
-  --color-popover:           hsl(240 5% 12%);
-  --color-popover-foreground:hsl(0 0% 95%);
-
-  /* Primary stays Violet in dark mode too */
-  --color-primary:           hsl(248 50% 60%);
-  --color-primary-foreground:hsl(0 0% 100%);
-
-  --color-secondary:         hsl(240 4% 14%);
-  --color-secondary-foreground:hsl(0 0% 95%);
-
-  --color-muted:             hsl(240 4% 13%);
-  --color-muted-foreground:  hsl(0 0% 50%);
-
-  --color-accent:            hsl(240 4% 15%);
-  --color-accent-foreground: hsl(0 0% 95%);
-
-  --color-destructive:       hsl(0 62% 55%);
-  --color-destructive-foreground:hsl(0 0% 100%);
-
-  --color-border:            hsl(240 4% 16%);
-  --color-input:             hsl(240 4% 12%);
-  --color-ring:              hsl(248 50% 60%);
-
-  /* Chart Colors (Dark — Neutral + Violet accents) */
-  --color-chart-grid:        hsl(240 4% 14%);
-  --color-chart-axis:        hsl(0 0% 45%);
-  --color-chart-reference:   hsl(240 4% 18%);
-  --color-chart-ref-label:   hsl(0 0% 50%);
-  --color-chart-actual:      hsl(0 0% 95%);
-  --color-chart-forecast:    hsl(0 0% 55%);
-  --color-chart-cursor:      hsl(0 0% 60%);
-  --color-chart-pattern-bg:  hsl(240 6% 7%);
-  --color-chart-pattern:     hsl(0 0% 35%);
-  --color-chart-bar:         hsl(0 0% 90%);
-  --color-chart-bar-2:       hsl(248 50% 60% / 0.3);
-  --color-chart-grad-start:  hsl(248 55% 65%);
-  --color-chart-grad-end:    hsl(0 0% 90%);
-  --color-chart-line-2:      hsl(248 55% 65%);
-}
-
-/* ============================================================
-   BASE LAYER
-   ============================================================ */
 
 @layer base {
-  :root {
-    --radius: 0.5rem;
-  }
-
   * {
     @apply border-border;
   }
-
   body {
     font-family: var(--font-sans);
     @apply bg-background text-foreground antialiased;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-
   html {
     scroll-behavior: smooth;
   }
-
   :focus-visible {
     @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+  button {
+    cursor: pointer;
   }
 }
 
 /* ============================================================
-   S.C.R.A.P.S. TACTILE DESIGN SYSTEM
-   ──────────────────────────────────────────────────────────
-   Philosophy: Elements convey their function through depth.
-   • Buttons LIFT above the surface — they protrude and
-     invite interaction. On hover they rise higher; on press
-     they recess flush with the surface.
-   • Inputs SINK into the surface — they are recessed wells
-     that invite content to be placed inside them.
-   • Cards have PRESENCE — subtle elevation and borders
-     give them a sense of floating above the background.
+   S.C.R.A.P.S. TACTILE COMPONENTS
    ============================================================ */
 
-/* ── Tactile Button (Base) ─────────────────────────────────
-   Buttons stand taller than the surface. On hover they lift
-   further; on press they sink flush.                         */
 @utility btn-tactile {
   @apply relative inline-flex items-center justify-center gap-2 px-4 py-2.5
          rounded-md font-medium text-sm transition-all duration-150 ease-out;
   box-shadow:
-    0 2px 0 0 hsl(270 8% 75%),
-    0 1px 3px 0 hsl(267 30% 30% / 0.08);
+    0 2px 0 0 oklch(0.75 0.015 300),
+    0 1px 3px 0 oklch(0.30 0.05 280 / 0.08);
 
   &:hover {
     transform: translateY(-2px);
     box-shadow:
-      0 4px 0 0 hsl(270 8% 75%),
-      0 4px 8px -2px hsl(267 30% 30% / 0.12);
+      0 4px 0 0 oklch(0.75 0.015 300),
+      0 4px 8px -2px oklch(0.30 0.05 280 / 0.12);
   }
-
   &:active {
     transform: translateY(1px);
-    box-shadow: 0 0 0 0 hsl(270 8% 75%);
+    box-shadow: 0 0 0 0 oklch(0.75 0.015 300);
   }
 }
 
-/* Primary: Sentry Violet button with deep purple shadow */
 .btn-tactile-primary {
   @apply btn-tactile bg-primary text-primary-foreground;
   box-shadow:
-    0 2px 0 0 hsl(248 50% 35%),
-    0 1px 3px 0 hsl(248 50% 25% / 0.25);
-
+    0 2px 0 0 oklch(0.35 0.10 280),
+    0 1px 3px 0 oklch(0.25 0.10 280 / 0.25);
   &:hover {
     box-shadow:
-      0 4px 0 0 hsl(248 50% 35%),
-      0 6px 12px -2px hsl(248 50% 25% / 0.3);
+      0 4px 0 0 oklch(0.35 0.10 280),
+      0 6px 12px -2px oklch(0.25 0.10 280 / 0.3);
   }
-
   &:active {
-    box-shadow: 0 0 0 0 hsl(248 50% 35%);
+    box-shadow: 0 0 0 0 oklch(0.35 0.10 280);
   }
 }
 
-/* Destructive: Pink-rose shadow for danger actions */
 .btn-tactile-destructive {
   @apply btn-tactile bg-destructive text-destructive-foreground;
   box-shadow:
-    0 2px 0 0 hsl(340 70% 40%),
-    0 1px 3px 0 hsl(340 70% 30% / 0.25);
-
+    0 2px 0 0 oklch(0.40 0.18 15),
+    0 1px 3px 0 oklch(0.30 0.18 15 / 0.25);
   &:hover {
     box-shadow:
-      0 4px 0 0 hsl(340 70% 40%),
-      0 6px 12px -2px hsl(340 70% 30% / 0.3);
+      0 4px 0 0 oklch(0.40 0.18 15),
+      0 6px 12px -2px oklch(0.30 0.18 15 / 0.3);
   }
-
   &:active {
-    box-shadow: 0 0 0 0 hsl(340 70% 40%);
+    box-shadow: 0 0 0 0 oklch(0.40 0.18 15);
   }
 }
 
-/* Ghost: No elevation, subtle hover */
 .btn-tactile-ghost {
   @apply btn-tactile bg-transparent text-foreground hover:bg-accent;
   box-shadow: none;
-
-  &:hover {
-    transform: none;
-    box-shadow: none;
-  }
+  &:hover { transform: none; box-shadow: none; }
 }
 
-/* Lime: Electric lime CTA button — high visibility */
 .btn-tactile-lime {
   @apply btn-tactile text-sm font-semibold;
-  background-color: hsl(80 85% 62%);
-  color: hsl(267 40% 10%);
+  background-color: oklch(0.85 0.20 120);
+  color: oklch(0.15 0.04 280);
   box-shadow:
-    0 2px 0 0 hsl(80 70% 38%),
-    0 1px 3px 0 hsl(80 70% 25% / 0.3);
-
+    0 2px 0 0 oklch(0.65 0.18 120),
+    0 1px 3px 0 oklch(0.50 0.18 120 / 0.3);
   &:hover {
-    background-color: hsl(80 85% 67%);
+    background-color: oklch(0.88 0.20 120);
     box-shadow:
-      0 4px 0 0 hsl(80 70% 38%),
-      0 6px 12px -2px hsl(80 70% 25% / 0.35);
+      0 4px 0 0 oklch(0.65 0.18 120),
+      0 6px 12px -2px oklch(0.50 0.18 120 / 0.35);
   }
-
   &:active {
-    background-color: hsl(80 85% 58%);
-    box-shadow: 0 0 0 0 hsl(80 70% 38%);
+    background-color: oklch(0.82 0.20 120);
+    box-shadow: 0 0 0 0 oklch(0.65 0.18 120);
   }
 }
 
-/* ── Dark mode tactile overrides ───────────────────────── */
 .dark .btn-tactile {
   box-shadow:
-    0 2px 0 0 hsl(267 30% 8%),
-    0 1px 3px 0 hsl(0 0% 0% / 0.3);
-
+    0 2px 0 0 oklch(0.08 0.04 280),
+    0 1px 3px 0 oklch(0 0 0 / 0.3);
   &:hover {
     box-shadow:
-      0 4px 0 0 hsl(267 30% 8%),
-      0 6px 12px -2px hsl(0 0% 0% / 0.4);
+      0 4px 0 0 oklch(0.08 0.04 280),
+      0 6px 12px -2px oklch(0 0 0 / 0.4);
   }
-
   &:active {
-    box-shadow: 0 0 0 0 hsl(267 30% 8%);
+    box-shadow: 0 0 0 0 oklch(0.08 0.04 280);
   }
 }
 
 .dark .btn-tactile-primary {
   box-shadow:
-    0 2px 0 0 hsl(248 50% 30%),
-    0 1px 4px 0 hsl(248 50% 20% / 0.5);
-
+    0 2px 0 0 oklch(0.30 0.10 280),
+    0 1px 4px 0 oklch(0.20 0.10 280 / 0.5);
   &:hover {
     box-shadow:
-      0 4px 0 0 hsl(248 50% 30%),
-      0 6px 16px -2px hsl(248 50% 40% / 0.35);
+      0 4px 0 0 oklch(0.30 0.10 280),
+      0 6px 16px -2px oklch(0.40 0.12 280 / 0.35);
   }
-
   &:active {
-    box-shadow: 0 0 0 0 hsl(248 50% 30%);
+    box-shadow: 0 0 0 0 oklch(0.30 0.10 280);
   }
 }
 
 .dark .btn-tactile-destructive {
   box-shadow:
-    0 2px 0 0 hsl(340 70% 30%),
-    0 1px 4px 0 hsl(340 70% 20% / 0.5);
-
+    0 2px 0 0 oklch(0.30 0.18 15),
+    0 1px 4px 0 oklch(0.20 0.18 15 / 0.5);
   &:hover {
     box-shadow:
-      0 4px 0 0 hsl(340 70% 30%),
-      0 6px 16px -2px hsl(340 70% 35% / 0.35);
+      0 4px 0 0 oklch(0.30 0.18 15),
+      0 6px 16px -2px oklch(0.35 0.18 15 / 0.35);
   }
-
   &:active {
-    box-shadow: 0 0 0 0 hsl(340 70% 30%);
+    box-shadow: 0 0 0 0 oklch(0.30 0.18 15);
   }
 }
 
 .dark .btn-tactile-lime {
   box-shadow:
-    0 2px 0 0 hsl(80 70% 30%),
-    0 1px 4px 0 hsl(80 70% 20% / 0.5);
-
+    0 2px 0 0 oklch(0.50 0.18 120),
+    0 1px 4px 0 oklch(0.40 0.18 120 / 0.5);
   &:hover {
     box-shadow:
-      0 4px 0 0 hsl(80 70% 30%),
-      0 6px 16px -2px hsl(80 85% 50% / 0.25);
+      0 4px 0 0 oklch(0.50 0.18 120),
+      0 6px 16px -2px oklch(0.70 0.20 120 / 0.25);
   }
-
   &:active {
-    box-shadow: 0 0 0 0 hsl(80 70% 30%);
+    box-shadow: 0 0 0 0 oklch(0.50 0.18 120);
   }
 }
 
-/* ── Sunken Input ───────────────────────────────────────── 
-   Inputs sink INTO the surface. They are recessed wells
-   that invite text to be placed inside.                    */
-.input-sunken {
+@utility input-sunken {
   @apply w-full rounded-md border border-input bg-background px-3 py-2.5
          text-sm text-foreground placeholder:text-muted-foreground
          transition-all duration-150;
   box-shadow:
-    inset 0 2px 4px 0 hsl(267 30% 30% / 0.06),
-    inset 0 1px 2px 0 hsl(267 30% 30% / 0.04);
-
+    inset 0 2px 4px 0 oklch(0.30 0.05 280 / 0.06),
+    inset 0 1px 2px 0 oklch(0.30 0.05 280 / 0.04);
   &:focus {
     @apply border-ring ring-1 ring-ring;
     box-shadow:
-      inset 0 2px 4px 0 hsl(267 30% 30% / 0.06),
-      inset 0 1px 2px 0 hsl(267 30% 30% / 0.04),
-      0 0 0 1px hsl(248 50% 56% / 0.15),
-      0 0 12px -3px hsl(248 50% 56% / 0.1);
+      inset 0 2px 4px 0 oklch(0.30 0.05 280 / 0.06),
+      inset 0 1px 2px 0 oklch(0.30 0.05 280 / 0.04),
+      0 0 0 1px oklch(0.52 0.12 280 / 0.15),
+      0 0 12px -3px oklch(0.52 0.12 280 / 0.1);
   }
 }
 
 .dark .input-sunken {
   box-shadow:
-    inset 0 3px 6px 0 hsl(0 0% 0% / 0.35),
-    inset 0 1px 2px 0 hsl(0 0% 0% / 0.2);
-
+    inset 0 3px 6px 0 oklch(0 0 0 / 0.35),
+    inset 0 1px 2px 0 oklch(0 0 0 / 0.2);
   &:focus {
     box-shadow:
-      inset 0 3px 6px 0 hsl(0 0% 0% / 0.35),
-      inset 0 1px 2px 0 hsl(0 0% 0% / 0.2),
-      0 0 0 1px hsl(248 50% 56% / 0.25),
-      0 0 16px -4px hsl(248 50% 56% / 0.15);
+      inset 0 3px 6px 0 oklch(0 0 0 / 0.35),
+      inset 0 1px 2px 0 oklch(0 0 0 / 0.2),
+      0 0 0 1px oklch(0.60 0.12 280 / 0.25),
+      0 0 16px -4px oklch(0.60 0.12 280 / 0.15);
   }
 }
 
-/* ── Tactile Card ───────────────────────────────────────── 
-   Cards float above the surface with subtle elevation.
-   On hover they lift slightly for interactive cards.       */
-.card-tactile {
+@utility card-tactile {
   @apply rounded-lg border border-border bg-card p-6;
   box-shadow:
-    0 0 0 1px hsl(267 30% 30% / 0.04),
-    0 1px 3px 0 hsl(267 30% 30% / 0.08),
-    0 2px 6px -1px hsl(267 30% 30% / 0.05);
+    0 0 0 1px oklch(0.30 0.05 280 / 0.04),
+    0 1px 3px 0 oklch(0.30 0.05 280 / 0.08),
+    0 2px 6px -1px oklch(0.30 0.05 280 / 0.05);
   transition: box-shadow 0.2s ease, transform 0.2s ease;
-
   &:hover {
     box-shadow:
-      0 0 0 1px hsl(267 30% 30% / 0.06),
-      0 4px 8px -1px hsl(267 30% 30% / 0.1),
-      0 6px 16px -4px hsl(267 30% 30% / 0.06);
+      0 0 0 1px oklch(0.30 0.05 280 / 0.06),
+      0 4px 8px -1px oklch(0.30 0.05 280 / 0.1),
+      0 6px 16px -4px oklch(0.30 0.05 280 / 0.06);
     transform: translateY(-1px);
   }
 }
 
 .dark .card-tactile {
   box-shadow:
-    0 0 0 1px hsl(248 50% 56% / 0.06),
-    0 1px 3px 0 hsl(0 0% 0% / 0.4),
-    0 2px 8px -2px hsl(0 0% 0% / 0.3);
-
+    0 0 0 1px oklch(0.52 0.12 280 / 0.06),
+    0 1px 3px 0 oklch(0 0 0 / 0.4),
+    0 2px 8px -2px oklch(0 0 0 / 0.3);
   &:hover {
     box-shadow:
-      0 0 0 1px hsl(248 50% 56% / 0.1),
-      0 4px 8px -1px hsl(0 0% 0% / 0.5),
-      0 8px 20px -4px hsl(0 0% 0% / 0.35);
+      0 0 0 1px oklch(0.52 0.12 280 / 0.1),
+      0 4px 8px -1px oklch(0 0 0 / 0.5),
+      0 8px 20px -4px oklch(0 0 0 / 0.35);
   }
 }
 
-/* ── Badge / Tag ────────────────────────────────────────── */
 @utility badge-brand {
   @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
          border transition-colors duration-150;
@@ -452,25 +406,24 @@
 
 .badge-brand-lime {
   @apply badge-brand border-transparent;
-  background-color: hsl(80 85% 62% / 0.15);
-  color: hsl(80 70% 40%);
-  border-color: hsl(80 85% 62% / 0.25);
+  background-color: oklch(0.85 0.20 120 / 0.15);
+  color: oklch(0.65 0.18 120);
+  border-color: oklch(0.85 0.20 120 / 0.25);
 }
 
 .dark .badge-brand-lime {
-  background-color: hsl(80 85% 62% / 0.12);
-  color: hsl(80 85% 70%);
-  border-color: hsl(80 85% 62% / 0.2);
+  background-color: oklch(0.85 0.20 120 / 0.12);
+  color: oklch(0.85 0.20 120);
+  border-color: oklch(0.85 0.20 120 / 0.2);
 }
 
 .badge-brand-brand {
   @apply badge-brand border-transparent;
-  background: linear-gradient(135deg, hsl(248 50% 56% / 0.15), hsl(267 38% 14% / 0.15));
-  color: hsl(248 55% 65%);
-  border-color: hsl(248 50% 56% / 0.2);
+  background: linear-gradient(135deg, oklch(0.52 0.12 280 / 0.15), oklch(0.18 0.05 280 / 0.15));
+  color: oklch(0.60 0.12 280);
+  border-color: oklch(0.52 0.12 280 / 0.2);
 }
 
-/* ── Alert / Banner ─────────────────────────────────────── */
 @utility alert-brand {
   @apply relative rounded-lg border p-4 text-sm;
 }
@@ -491,11 +444,9 @@
   @apply alert-brand border-emerald-500/20 bg-emerald-500/5 text-emerald-700 dark:text-emerald-400;
 }
 
-/* ── Navigation Item ──────────────────────────────────────── */
 @utility nav-item {
   @apply flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium
          text-muted-foreground transition-colors duration-150;
-
   &:hover {
     @apply bg-accent text-accent-foreground;
   }
@@ -505,30 +456,26 @@
   @apply nav-item bg-primary/10 text-primary;
 }
 
-/* ── Separator ──────────────────────────────────────────── */
 .separator {
   @apply h-px w-full bg-border;
 }
 
-/* ── Tooltip ────────────────────────────────────────────── */
 .tooltip {
   @apply z-50 overflow-hidden rounded-md border bg-popover px-3 py-1.5
          text-xs text-popover-foreground shadow-md;
 }
 
-/* ── Skeleton / Shimmer ─────────────────────────────────── */
 .skeleton {
   @apply relative overflow-hidden rounded-md bg-muted;
-
   &::after {
     content: "";
     @apply absolute inset-0;
     background: linear-gradient(
       90deg,
       transparent 0%,
-      hsl(248 50% 56% / 0.06) 40%,
-      hsl(248 50% 56% / 0.12) 50%,
-      hsl(248 50% 56% / 0.06) 60%,
+      oklch(0.52 0.12 280 / 0.06) 40%,
+      oklch(0.52 0.12 280 / 0.12) 50%,
+      oklch(0.52 0.12 280 / 0.06) 60%,
       transparent 100%
     );
     background-size: 200% 100%;
@@ -540,178 +487,47 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    hsl(248 50% 56% / 0.08) 40%,
-    hsl(248 50% 56% / 0.16) 50%,
-    hsl(248 50% 56% / 0.08) 60%,
+    oklch(0.60 0.12 280 / 0.08) 40%,
+    oklch(0.60 0.12 280 / 0.16) 50%,
+    oklch(0.60 0.12 280 / 0.08) 60%,
     transparent 100%
   );
 }
 
-/* ============================================================
-   UTILITIES
-   ============================================================ */
-
 @layer utilities {
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
 
-  .text-balance {
-    text-wrap: balance;
-  }
-
-  /* Gradient text: Purple → Lime (S.C.R.A.P.S. signature) */
   .text-gradient-brand {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, hsl(248 50% 56%), hsl(80 85% 62%));
+    background-image: linear-gradient(135deg, oklch(0.52 0.12 280), oklch(0.85 0.20 120));
   }
 
-  /* Glassmorphism with purple tint */
   .glass {
     @apply bg-background/80 backdrop-blur-md;
-    border: 1px solid hsl(267 20% 50% / 0.15);
+    border: 1px solid oklch(0.30 0.05 280 / 0.15);
   }
 
   .dark .glass {
     @apply bg-background/70;
-    border: 1px solid hsl(248 50% 56% / 0.12);
+    border: 1px solid oklch(0.52 0.12 280 / 0.12);
   }
 
-  /* Glow effects */
   .glow-primary {
-    box-shadow: 0 0 20px -5px hsl(248 50% 56% / 0.35),
-                0 0 40px -10px hsl(248 50% 56% / 0.15);
+    box-shadow: 0 0 20px -5px oklch(0.52 0.12 280 / 0.35),
+                0 0 40px -10px oklch(0.52 0.12 280 / 0.15);
   }
 
   .glow-lime {
-    box-shadow: 0 0 20px -5px hsl(80 85% 62% / 0.35),
-                0 0 40px -10px hsl(80 85% 62% / 0.15);
+    box-shadow: 0 0 20px -5px oklch(0.85 0.20 120 / 0.35),
+                0 0 40px -10px oklch(0.85 0.20 120 / 0.15);
   }
 
   .glow-destructive {
-    box-shadow: 0 0 20px -5px hsl(340 70% 60% / 0.35),
-                0 0 40px -10px hsl(340 70% 60% / 0.15);
+    box-shadow: 0 0 20px -5px oklch(0.65 0.18 15 / 0.35),
+                0 0 40px -10px oklch(0.65 0.18 15 / 0.15);
   }
-
-  .loading-ellipsis::after {
-    overflow: hidden;
-    display: inline-block;
-    vertical-align: bottom;
-    animation: ellipsis steps(4, end) 900ms infinite;
-    content: "\2026";
-    width: 0px;
-  }
-}
-
-/* ============================================================
-   KEYFRAMES
-   ============================================================ */
-
-@keyframes shimmer {
-  0%   { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-@keyframes accordion-down {
-  from { height: 0; }
-  to   { height: var(--radix-accordion-content-height); }
-}
-
-@keyframes accordion-up {
-  from { height: var(--radix-accordion-content-height); }
-  to   { height: 0; }
-}
-
-@keyframes jiggle {
-  0%, 100% { transform: rotate(-4deg); }
-  50%      { transform: rotate(4deg); }
-}
-
-@keyframes caret-blink {
-  0%, 70%, 100% { opacity: 1; }
-  20%, 50%      { opacity: 0; }
-}
-
-@keyframes scroll {
-  to { transform: translate(calc(-50% - 0.5rem)); }
-}
-
-@keyframes moveVertical {
-  0%   { transform: translateY(-50%); }
-  50%  { transform: translateY(50%); }
-  100% { transform: translateY(-50%); }
-}
-
-@keyframes moveHorizontal {
-  0%   { transform: translateX(-50%) translateY(-10%); }
-  50%  { transform: translateX(50%) translateY(10%); }
-  100% { transform: translateX(-50%) translateY(-10%); }
-}
-
-@keyframes moveInCircle {
-  0%   { transform: rotate(0deg); }
-  50%  { transform: rotate(180deg); }
-  100% { transform: rotate(360deg); }
-}
-
-@keyframes webgl-scale-in-fade {
-  0%   { opacity: 0; transform: scale(0.7); }
-  100% { opacity: 1; transform: scale(1); }
-}
-
-@keyframes slide-effect {
-  0%   { left: 0%; }
-  50%  { left: calc(100% - 80px); }
-  100% { left: 0%; }
-}
-
-@keyframes dialog-overlay-show {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-@keyframes dialog-overlay-hide {
-  from { opacity: 1; }
-  to   { opacity: 0; }
-}
-
-@keyframes dialog-content-show {
-  from { opacity: 0; transform: translate(-50%, -50%) scale(0.97); }
-  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-}
-
-@keyframes dialog-content-hide {
-  from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-  to   { opacity: 0; transform: translate(-50%, -50%) scale(0.97); }
-}
-
-@keyframes ellipsis {
-  to { width: 1.25em; }
-}
-
-@keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 15px -5px hsl(248 50% 56% / 0.3); }
-  50%      { box-shadow: 0 0 25px -5px hsl(248 50% 56% / 0.5); }
-}
-
-/* ============================================================
-   THIRD-PARTY OVERRIDES
-   ============================================================ */
-
-.rdp-tbody .rdp-button {
-  border-radius: 100%;
-}
-
-.aria-selected\:text-accent-foreground[aria-selected="true"] {
-  border-radius: 0px;
-}
-
-[type="search"]::-webkit-search-cancel-button,
-[type="search"]::-webkit-search-decoration {
-  -webkit-appearance: none;
-  appearance: none;
 }
