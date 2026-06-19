@@ -54,8 +54,10 @@ are persisted to localStorage.
 	}
 
 	// Panel preferred widths (in rem)
-	let leftPreferredWidth = $state(pxToRem(leftWidth.default));
-	let rightPreferredWidth = $state(pxToRem(rightWidth.default));
+	const initialLeftWidth = leftWidth.default;
+	const initialRightWidth = rightWidth.default;
+	let leftPreferredWidth = $state(pxToRem(initialLeftWidth));
+	let rightPreferredWidth = $state(pxToRem(initialRightWidth));
 
 	// Panel DOM refs
 	let leftDiv = $state<HTMLDivElement>();

@@ -23,7 +23,9 @@ export default defineConfig(({ mode }) => {
 							? undefined
 							: true,
 				},
-				adapter: adapter(),
+				adapter: adapter({
+					fallback: "index.html",
+				}),
 			}),
 			paraglideVitePlugin({
 				project: "./project.inlang",

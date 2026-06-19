@@ -1,2 +1,2 @@
-@import "tailwindcss";
+/* Layout entry point — imports the unified design system. */
 @import "../app.css";

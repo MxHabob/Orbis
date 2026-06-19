@@ -21,17 +21,17 @@ and an animated active indicator bar.
 
 	let { orgId, disabled = false }: { orgId: string; disabled?: boolean } = $props();
 
-	const navItems = [
+	const navItems = $derived([
 		{ href: `/${orgId}`, icon: LayoutDashboard, label: 'Overview', match: 'exact' },
 		{ href: `/${orgId}/students`, icon: Users, label: 'Students', match: 'prefix' },
 		{ href: `/${orgId}/academics`, icon: BookOpen, label: 'Academics', match: 'prefix' },
 		{ href: `/${orgId}/finance`, icon: Wallet, label: 'Finance', match: 'prefix' },
 		{ href: `/${orgId}/reports`, icon: BarChart3, label: 'Reports', match: 'prefix' },
-	] as const;
+	] as const);
 
-	const bottomItems = [
+	const bottomItems = $derived([
 		{ href: `/${orgId}/settings`, icon: Settings, label: 'Settings', match: 'prefix' },
-	] as const;
+	] as const);
 
 	function isActive(href: string, match: 'exact' | 'prefix'): boolean {
 		const pathname = page.url.pathname;
