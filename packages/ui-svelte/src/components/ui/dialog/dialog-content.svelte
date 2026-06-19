@@ -5,8 +5,8 @@
 	import * as Dialog from "./index.js";
 	import { cn, type WithoutChildrenOrChild } from "../../../utils.js";
 	import type { ComponentProps } from "svelte";
-	import { Button } from "$lib/components/ui/button/index.js";
-	import XIcon from '@lucide/svelte/icons/x';
+	import { Button } from "../button/index.js";
+	import { X as XIcon } from "lucide-svelte";
 
 	let {
 		ref = $bindable(null),

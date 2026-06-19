@@ -6,6 +6,7 @@ and an animated active indicator bar.
 -->
 <script lang="ts">
 	import { page } from '$app/state';
+	import { Avatar, AvatarFallback, AvatarImage } from '@orbis/ui-svelte';
 	import { cn } from '@orbis/ui-svelte/utils';
 	import {
 		LayoutDashboard,
@@ -14,10 +15,10 @@ and an animated active indicator bar.
 		Wallet,
 		BarChart3,
 		Settings,
-		User,
 		MessageSquare,
 	} from 'lucide-svelte';
 	import { slide } from 'svelte/transition';
+	import { authStore } from '$lib/stores';
 
 	let { orgId, disabled = false }: { orgId: string; disabled?: boolean } = $props();
 
@@ -32,6 +33,15 @@ and an animated active indicator bar.
 	const bottomItems = $derived([
 		{ href: `/${orgId}/settings`, icon: Settings, label: 'Settings', match: 'prefix' },
 	] as const);
+
+	const userInitials = $derived(
+		(authStore.user?.full_name ?? 'User')
+			.split(/\s+/)
+			.filter(Boolean)
+			.slice(0, 2)
+			.map((part) => part[0]?.toUpperCase() ?? '')
+			.join('') || 'U'
+	);
 
 	function isActive(href: string, match: 'exact' | 'prefix'): boolean {
 		const pathname = page.url.pathname;
@@ -92,6 +102,22 @@ and an animated active indicator bar.
 				aria-label="Feedback"
 			>
 				<MessageSquare size={16} strokeWidth={1.8} />
+			</button>
+		</div>
+
+		<div class="sidebar-item-wrap sidebar-user-wrap">
+			<button
+				class="sidebar-user-btn"
+				title={authStore.user?.full_name ?? 'Account'}
+				aria-label="Account"
+			>
+				<Avatar class="sidebar-avatar">
+					<AvatarImage
+						src={authStore.user?.avatar ?? undefined}
+						alt={authStore.user?.full_name ?? 'User'}
+					/>
+					<AvatarFallback>{userInitials}</AvatarFallback>
+				</Avatar>
 			</button>
 		</div>
 	</div>
@@ -168,6 +194,24 @@ and an animated active indicator bar.
 
 	.sidebar-btn-ghost:hover {
 		opacity: 0.7;
+	}
+
+	.sidebar-user-wrap {
+		margin-top: 2px;
+	}
+
+	.sidebar-user-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0;
+		background: transparent;
+		border: none;
+	}
+
+	.sidebar-avatar {
+		width: 36px;
+		height: 36px;
 	}
 
 	.disabled {
