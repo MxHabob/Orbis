@@ -5,6 +5,7 @@ Left zone (actions) | Center zone (selector) | Right zone (actions).
 Both left and right use flex-basis: 0 so center stays perfectly centered.
 -->
 <script lang="ts">
+	import { Button } from '@orbis/ui-svelte/button';
 	import {
 		DropdownMenu,
 		DropdownMenuContent,
@@ -43,7 +44,7 @@ Both left and right use flex-basis: 0 so center stays perfectly centered.
 </script>
 
 <div
-	class="grid h-[var(--header-height)] shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-3 px-[14px]"
+	class="grid h-13 shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-3 px-[14px]"
 	class:pt-1={isDesktop}
 	data-tauri-drag-region={isDesktop || undefined}
 >
@@ -52,15 +53,17 @@ Both left and right use flex-basis: 0 so center stays perfectly centered.
 		class="flex min-w-0 items-center justify-start gap-2"
 		data-tauri-drag-region={isDesktop || undefined}
 	>
-		<button
-			class="inline-flex h-8 items-center gap-1.5 rounded-[var(--radius-button)] border border-border bg-background px-2.5 text-[12px] text-muted-foreground transition-colors hover:border-border hover:bg-accent"
+		<Button
+			variant="outline"
+			size="sm"
+			class="h-8 gap-1.5 px-2.5 text-[12px] text-muted-foreground"
 			title="Search (⌘K)"
 			aria-label="Search"
 		>
 			<Search size={15} strokeWidth={2} />
 			<span class="whitespace-nowrap">Search...</span>
-			<kbd class="ml-2 inline-flex h-[18px] items-center rounded-[4px] border border-border bg-muted px-1 font-mono text-[10px] text-muted-foreground">⌘K</kbd>
-		</button>
+			<kbd class="ml-2 inline-flex h-4.5 items-center rounded border border-border bg-muted px-1 font-mono text-[10px] text-muted-foreground">⌘K</kbd>
+		</Button>
 	</div>
 
 	<!-- Center Zone -->
@@ -69,13 +72,17 @@ Both left and right use flex-basis: 0 so center stays perfectly centered.
 		data-tauri-drag-region={isDesktop || undefined}
 	>
 		<DropdownMenu>
-			<DropdownMenuTrigger
-				class="inline-flex h-8 max-w-full items-center gap-1.5 whitespace-nowrap rounded-[var(--radius-button)] border border-transparent px-2.5 text-[12px] font-semibold text-foreground transition-colors hover:border-border hover:bg-accent"
-				title="Switch organization"
-			>
-				<School size={15} strokeWidth={2} class="text-muted-foreground" />
-				<span class="truncate">{orgName}</span>
-				<ChevronDown size={12} strokeWidth={2} class="shrink-0 text-muted-foreground opacity-60" />
+			<DropdownMenuTrigger asChild>
+				<Button
+					variant="ghost"
+					size="sm"
+					class="max-w-full gap-1.5 px-2.5 text-[12px] font-semibold"
+					title="Switch organization"
+				>
+					<School size={15} strokeWidth={2} class="text-muted-foreground" />
+					<span class="truncate">{orgName}</span>
+					<ChevronDown size={12} strokeWidth={2} class="shrink-0 text-muted-foreground opacity-60" />
+				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="center" sideOffset={8} class="w-56">
 				<DropdownMenuItem class="cursor-pointer">
@@ -100,12 +107,13 @@ Both left and right use flex-basis: 0 so center stays perfectly centered.
 		class="flex min-w-0 items-center justify-end gap-2"
 		data-tauri-drag-region={isDesktop || undefined}
 	>
-		<button
-			class="inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-button)] text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+		<Button
+			variant="ghost"
+			size="icon"
 			title="Notifications"
 			aria-label="Notifications"
 		>
 			<Bell size={15} strokeWidth={2} />
-		</button>
+		</Button>
 	</div>
 </div>

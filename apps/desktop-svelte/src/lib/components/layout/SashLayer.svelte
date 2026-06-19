@@ -10,15 +10,6 @@ Inspired by GitButler's SashLayer pattern.
 	let { children }: { children: Snippet } = $props();
 </script>
 
-<div class="sash-layer">
+<div class="relative flex h-full w-full">
 	{@render children()}
 </div>
-
-<style>
-	.sash-layer {
-		display: flex;
-		position: relative;
-		width: 100%;
-		height: 100%;
-	}
-</style>

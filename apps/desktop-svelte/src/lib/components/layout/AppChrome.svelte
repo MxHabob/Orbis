@@ -33,41 +33,12 @@ Follows GitButler's "Chrome Shell" pattern:
 	} = $props();
 </script>
 
-<div class="chrome">
+<div class="flex h-screen max-w-full flex-1 flex-col bg-muted">
 	<AppHeader {orgId} {orgName} />
-	<div class="chrome-body">
+	<div class="grid flex-1 grid-flow-col grid-cols-[auto_minmax(0,1fr)] overflow-hidden">
 		<AppSidebar {orgId} />
-		<div class="chrome-content">
+		<div class="flex min-w-0 items-stretch overflow-hidden px-3.5 pb-3.5 box-border">
 			{@render children()}
 		</div>
 	</div>
 </div>
-
-<style>
-	.chrome {
-		display: flex;
-		flex: 1;
-		flex-direction: column;
-		max-width: 100%;
-		height: 100vh;
-		background-color: var(--chrome-bg);
-	}
-
-	.chrome-body {
-		display: grid;
-		grid-template-columns: auto minmax(0, 1fr);
-		grid-auto-flow: column;
-		flex: 1 1 0%;
-		overflow: hidden;
-	}
-
-	.chrome-content {
-		display: flex;
-		min-width: 0;
-		align-items: stretch;
-		padding-inline: 14px;
-		padding-block-end: 14px;
-		overflow: hidden;
-		box-sizing: border-box;
-	}
-</style>

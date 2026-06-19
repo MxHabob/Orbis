@@ -5,8 +5,9 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { authStore } from '$lib/stores';
-	import { Input } from '@orbis/ui-svelte/input';
 	import { Button } from '@orbis/ui-svelte/button';
+	import { Card } from '@orbis/ui-svelte/card';
+	import { Input } from '@orbis/ui-svelte/input';
 	import { Zap, Eye, EyeOff, Loader2 } from 'lucide-svelte';
 
 	let email = $state('');
@@ -58,8 +59,8 @@
 
 	<!-- Login Form -->
 	<div class="w-full flex-1 flex flex-col items-center justify-center p-8 lg:p-12 pb-6">
-		<div class="w-full max-w-md flex flex-col flex-1 justify-center min-h-[500px]">
-			<div class="space-y-8 flex-1 flex flex-col justify-center">
+		<Card class="w-full max-w-md flex min-h-[500px] flex-col justify-center">
+			<div class="space-y-8 flex-1 flex flex-col justify-center p-6 sm:p-8">
 				<!-- Header -->
 				<div class="text-center space-y-2">
 					<h1 class="text-lg mb-4 font-serif">
@@ -103,9 +104,11 @@
 									disabled={isLoading}
 									class="pr-10"
 								/>
-								<button
+								<Button
 									type="button"
-									class="absolute right-2 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center text-muted-foreground hover:text-foreground rounded transition-colors"
+									variant="ghost"
+									size="icon"
+									class="absolute right-2 top-1/2 -translate-y-1/2"
 									onclick={() => (showPassword = !showPassword)}
 									aria-label={showPassword ? 'Hide password' : 'Show password'}
 								>
@@ -114,7 +117,7 @@
 									{:else}
 										<Eye size={14} strokeWidth={2} />
 									{/if}
-								</button>
+								</Button>
 							</div>
 						</div>
 
@@ -157,6 +160,6 @@
 					</a>
 				</p>
 			</div>
-		</div>
+		</Card>
 	</div>
 </div>

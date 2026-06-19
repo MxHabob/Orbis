@@ -54,10 +54,8 @@ are persisted to localStorage.
 	}
 
 	// Panel preferred widths (in rem)
-	const initialLeftWidth = leftWidth.default;
-	const initialRightWidth = rightWidth.default;
-	let leftPreferredWidth = $state(pxToRem(initialLeftWidth));
-	let rightPreferredWidth = $state(pxToRem(initialRightWidth));
+	let leftPreferredWidth = $state(pxToRem(leftWidth.default));
+	let rightPreferredWidth = $state(pxToRem(rightWidth.default));
 
 	// Panel DOM refs
 	let leftDiv = $state<HTMLDivElement>();
@@ -79,15 +77,15 @@ are persisted to localStorage.
 </script>
 
 <SashLayer>
-	<div class="main-viewport">
+	<div class="relative flex h-full w-full flex-1 items-stretch gap-2">
 		{#if left}
 			<div
-				class="left-section"
+				class="relative flex h-full shrink-0 flex-col"
 				bind:this={leftDiv}
 				style:width="{finalLeftWidth}rem"
 				style:min-width="{leftMinWidth}rem"
 			>
-				<div class="section-content panel-border">
+				<div class="flex h-full flex-col overflow-hidden panel-border">
 					{@render left()}
 				</div>
 				<Resizer
@@ -102,13 +100,13 @@ are persisted to localStorage.
 			</div>
 		{/if}
 
-		<div class="main-section panel-border" class:no-left={!left}>
+		<div class="relative flex h-full min-w-0 flex-1 flex-col overflow-hidden panel-border" class:no-left={!left}>
 			{@render middle()}
 		</div>
 
 		{#if right}
 			<div
-				class="right-section"
+				class="relative flex h-full shrink-0 flex-col"
 				bind:this={rightDiv}
 				style:width="{finalRightWidth}rem"
 				style:min-width="{rightMinWidth}rem"
@@ -122,59 +120,10 @@ are persisted to localStorage.
 					persistId="viewport-{name}-right"
 					onWidth={(w) => (rightPreferredWidth = w)}
 				/>
-				<div class="section-content panel-border">
+				<div class="flex h-full flex-col overflow-hidden panel-border">
 					{@render right()}
 				</div>
 			</div>
 		{/if}
 	</div>
 </SashLayer>
-
-<style>
-	.main-viewport {
-		display: flex;
-		position: relative;
-		flex: 1;
-		align-items: stretch;
-		width: 100%;
-		height: 100%;
-		gap: 8px;
-	}
-
-	.left-section {
-		display: flex;
-		position: relative;
-		flex-shrink: 0;
-		flex-direction: column;
-		height: 100%;
-	}
-
-	.section-content {
-		display: flex;
-		flex-direction: column;
-		height: 100%;
-		overflow: hidden;
-	}
-
-	.main-section {
-		display: flex;
-		position: relative;
-		flex: 1;
-		flex-direction: column;
-		height: 100%;
-		min-width: 0;
-		overflow: hidden;
-	}
-
-	.main-section.no-left {
-		/* No gap offset needed */
-	}
-
-	.right-section {
-		display: flex;
-		position: relative;
-		flex-shrink: 0;
-		flex-direction: column;
-		height: 100%;
-	}
-</style>

@@ -130,6 +130,7 @@ Inspired by GitButler's Resizer component.
 	class:right={direction === 'right'}
 	class:left={direction === 'left'}
 	class:dragging={isDragging}
+	class:cursor-col-resize={isDragging}
 	onpointerdown={onPointerDown}
 	ondblclick={onDoubleClick}
 >
@@ -140,7 +141,7 @@ Inspired by GitButler's Resizer component.
 	.resizer {
 		position: absolute;
 		top: 0;
-		z-index: var(--z-lifted, 2);
+		z-index: 2;
 		width: 10px;
 		height: 100%;
 		touch-action: none;
@@ -167,16 +168,16 @@ Inspired by GitButler's Resizer component.
 		width: 2px;
 		transform: translateX(-50%);
 		border-radius: 1px;
-		background-color: var(--resizer-idle);
-		transition: background-color var(--transition-medium);
+		background-color: transparent;
+		transition: background-color 0.15s ease;
 	}
 
 	.resizer:hover .resizer-line {
-		background-color: var(--resizer-hover);
+		background-color: hsl(260 70% 50% / 0.3);
 	}
 
 	.resizer.dragging .resizer-line,
 	.resizer:active .resizer-line {
-		background-color: var(--resizer-active);
+		background-color: hsl(260 70% 50% / 0.6);
 	}
 </style>
