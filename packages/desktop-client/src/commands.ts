@@ -36,8 +36,7 @@ export const commands = {
       org_slug: string;
     }) => invoke<User>("register", { request: data }),
 
-    validateToken: (token: string) =>
-      invoke<User>("validate_token", { token }),
+    validateToken: (token: string) => invoke<User>("validate_token", { token }),
 
     logout: (token: string) => invoke<void>("logout", { token }),
   },
@@ -74,8 +73,7 @@ export const commands = {
     getCycles: (orgId: string, params?: JsonRecord) =>
       invoke<JsonRecord[]>("get_cycles", { orgId, params: params ?? {} }),
 
-    getCycle: (cycleId: string) =>
-      invoke<JsonRecord>("get_cycle", { cycleId }),
+    getCycle: (cycleId: string) => invoke<JsonRecord>("get_cycle", { cycleId }),
 
     createCycle: (orgId: string, request: JsonRecord) =>
       invoke<JsonRecord>("create_cycle", { orgId, request }),
@@ -105,9 +103,7 @@ export const commands = {
       invoke<JsonRecord[]>("get_cycles", {
         orgId,
         params: { cycle_type: "term" },
-      }).then((cycles) =>
-        cycles.filter((c) => c.parent_id === yearId),
-      ),
+      }).then((cycles) => cycles.filter((c) => c.parent_id === yearId)),
   },
 
   classes: {
@@ -230,11 +226,7 @@ export const commands = {
     submitAI: (request: JsonRecord) =>
       invoke<JsonRecord>("submit_ai_behavior", { request }),
 
-    updateRecord: (
-      recordId: string,
-      reviewedBy: string,
-      request: JsonRecord,
-    ) =>
+    updateRecord: (recordId: string, reviewedBy: string, request: JsonRecord) =>
       invoke<JsonRecord>("update_behavior_record", {
         recordId,
         reviewedBy,
@@ -280,8 +272,7 @@ export const commands = {
   },
 
   subjects: {
-    getAll: (orgId: string) =>
-      invoke<Subject[]>("get_subjects", { orgId }),
+    getAll: (orgId: string) => invoke<Subject[]>("get_subjects", { orgId }),
 
     getById: (id: string) => invoke<Subject>("get_subject", { id }),
 
@@ -330,9 +321,11 @@ export const commands = {
   },
 
   documentTemplates: {
-    getAll: (entityType?: string) => invoke<DocumentTemplate[]>("get_document_templates", { entityType }),
+    getAll: (entityType?: string) =>
+      invoke<DocumentTemplate[]>("get_document_templates", { entityType }),
 
-    getById: (id: string) => invoke<DocumentTemplate>("get_document_template", { id }),
+    getById: (id: string) =>
+      invoke<DocumentTemplate>("get_document_template", { id }),
 
     create: (request: JsonRecord) =>
       invoke<DocumentTemplate>("create_document_template", { request }),
@@ -365,8 +358,7 @@ export const commands = {
     updateTimeSlot: (id: string, request: JsonRecord) =>
       invoke<TimeSlot>("update_time_slot", { id, request }),
 
-    deleteTimeSlot: (id: string) =>
-      invoke<void>("delete_time_slot", { id }),
+    deleteTimeSlot: (id: string) => invoke<void>("delete_time_slot", { id }),
 
     // ── Class Subjects ─────────────────────────────────────────────────────
     getClassSubjects: (classId?: string, cycleId?: string) =>
@@ -389,11 +381,7 @@ export const commands = {
         classId,
       }),
 
-    getTeacherSchedule: (
-      orgId: string,
-      cycleId: string,
-      teacherId: string,
-    ) =>
+    getTeacherSchedule: (orgId: string, cycleId: string, teacherId: string) =>
       invoke<ScheduledLesson[]>("get_teacher_schedule", {
         orgId,
         cycleId,
@@ -409,8 +397,7 @@ export const commands = {
     updateLesson: (orgId: string, id: string, request: JsonRecord) =>
       invoke<ScheduledLesson>("update_lesson", { orgId, id, request }),
 
-    deleteLesson: (id: string) =>
-      invoke<void>("delete_lesson", { id }),
+    deleteLesson: (id: string) => invoke<void>("delete_lesson", { id }),
 
     // ── Conflict Check ─────────────────────────────────────────────────────
     checkConflicts: (params: {
@@ -448,8 +435,7 @@ export const commands = {
     updateLink: (id: string, request: JsonRecord) =>
       invoke<GuardianLink>("update_guardian_link", { id, request }),
 
-    deleteLink: (id: string) =>
-      invoke<void>("delete_guardian_link", { id }),
+    deleteLink: (id: string) => invoke<void>("delete_guardian_link", { id }),
   },
 
   window: {

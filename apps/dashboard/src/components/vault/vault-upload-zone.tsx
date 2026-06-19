@@ -78,14 +78,11 @@ export function VaultUploadZone({ onUpload, children }: Props) {
           );
 
           const { getApiUrl } = await import("@/trpc/client");
-          const response = await fetch(
-            `${getApiUrl()}/api/upload`,
-            {
-              method: "POST",
-              body: formData,
-              credentials: "include",
-            },
-          );
+          const response = await fetch(`${getApiUrl()}/api/upload`, {
+            method: "POST",
+            body: formData,
+            credentials: "include",
+          });
 
           if (!response.ok) throw new Error("Upload failed");
 

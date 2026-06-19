@@ -1,148 +1,152 @@
 <script lang="ts">
-	import { Skeleton } from "@orbis/ui-svelte";
-	import { onMount } from "svelte";
-	import { commands } from "$lib/services/ipc";
-	import DragIndicator from "../components/drag-indicator.svelte";
+import { Skeleton } from "@orbis/ui-svelte";
+import { onMount } from "svelte";
+import { commands } from "$lib/services/ipc";
+import DragIndicator from "../components/drag-indicator.svelte";
 
-	let {
-		orgId,
-		selectedClass = "all",
-		selectedTerm = "all",
-		period = "this-year",
-		isEditing = false
-	}: {
-		orgId: string;
-		selectedClass: string;
-		selectedTerm: string;
-		period: string;
-		isEditing?: boolean;
-	} = $props();
+let {
+  orgId,
+  selectedClass = "all",
+  selectedTerm = "all",
+  period = "this-year",
+  isEditing = false,
+}: {
+  orgId: string;
+  selectedClass: string;
+  selectedTerm: string;
+  period: string;
+  isEditing?: boolean;
+} = $props();
 
-	let stats = $state<any>(null);
-	let isLoading = $state(true);
+let stats = $state<any>(null);
+let isLoading = $state(true);
 
-	async function loadData() {
-		isLoading = true;
-		try {
-			const params: any = {};
-			if (selectedClass !== "all") params.class_id = selectedClass;
-			if (selectedTerm !== "all") params.cycle_id = selectedTerm;
+async function loadData() {
+  isLoading = true;
+  try {
+    const params: any = {};
+    if (selectedClass !== "all") params.class_id = selectedClass;
+    if (selectedTerm !== "all") params.cycle_id = selectedTerm;
 
-			const res = await commands.grades.getAnalytics(orgId, params);
-			if (res && res.grade_distribution) {
-				stats = res;
-			} else {
-				// Fallback mock data if none exists in database
-				stats = {
-					class_average: 78.4,
-					pass_rate: 94.2,
-					grade_distribution: {
-						a_plus: 8,
-						a: 14,
-						b_plus: 22,
-						b: 18,
-						c_plus: 15,
-						c: 9,
-						d_plus: 6,
-						d: 4,
-						f: 2
-					}
-				};
-			}
-		} catch (e) {
-			console.error("Error loading grade analytics:", e);
-		} finally {
-			isLoading = false;
-		}
-	}
+    const res = await commands.grades.getAnalytics(orgId, params);
+    if (res && res.grade_distribution) {
+      stats = res;
+    } else {
+      // Fallback mock data if none exists in database
+      stats = {
+        class_average: 78.4,
+        pass_rate: 94.2,
+        grade_distribution: {
+          a_plus: 8,
+          a: 14,
+          b_plus: 22,
+          b: 18,
+          c_plus: 15,
+          c: 9,
+          d_plus: 6,
+          d: 4,
+          f: 2,
+        },
+      };
+    }
+  } catch (e) {
+    console.error("Error loading grade analytics:", e);
+  } finally {
+    isLoading = false;
+  }
+}
 
-	$effect(() => {
-		if (orgId || selectedClass || selectedTerm || period) {
-			loadData();
-		}
-	});
+$effect(() => {
+  if (orgId || selectedClass || selectedTerm || period) {
+    loadData();
+  }
+});
 
-	// Map distribution to an array of items
-	const distributionArray = $derived.by(() => {
-		if (!stats?.grade_distribution) return [];
-		const dist = stats.grade_distribution;
-		return [
-			{ name: "A+", value: dist.a_plus ?? 0 },
-			{ name: "A", value: dist.a ?? 0 },
-			{ name: "B+", value: dist.b_plus ?? 0 },
-			{ name: "B", value: dist.b ?? 0 },
-			{ name: "C+", value: dist.c_plus ?? 0 },
-			{ name: "C", value: dist.c ?? 0 },
-			{ name: "D+", value: dist.d_plus ?? 0 },
-			{ name: "D", value: dist.d ?? 0 },
-			{ name: "F", value: dist.f ?? 0 }
-		];
-	});
+// Map distribution to an array of items
+const distributionArray = $derived.by(() => {
+  if (!stats?.grade_distribution) return [];
+  const dist = stats.grade_distribution;
+  return [
+    { name: "A+", value: dist.a_plus ?? 0 },
+    { name: "A", value: dist.a ?? 0 },
+    { name: "B+", value: dist.b_plus ?? 0 },
+    { name: "B", value: dist.b ?? 0 },
+    { name: "C+", value: dist.c_plus ?? 0 },
+    { name: "C", value: dist.c ?? 0 },
+    { name: "D+", value: dist.d_plus ?? 0 },
+    { name: "D", value: dist.d ?? 0 },
+    { name: "F", value: dist.f ?? 0 },
+  ];
+});
 
-	// SVG calculation
-	const width = 500;
-	const height = 200;
-	const padding = { left: 30, right: 10, top: 25, bottom: 25 };
+// SVG calculation
+const width = 500;
+const height = 200;
+const padding = { left: 30, right: 10, top: 25, bottom: 25 };
 
-	const maxValue = $derived(Math.max(1, ...distributionArray.map((d) => d.value)));
-	const chartWidth = $derived(width - padding.left - padding.right);
-	const chartHeight = $derived(height - padding.top - padding.bottom);
-	const barWidth = $derived(Math.max(5, (chartWidth / distributionArray.length) - 12));
+const maxValue = $derived(
+  Math.max(1, ...distributionArray.map((d) => d.value)),
+);
+const chartWidth = $derived(width - padding.left - padding.right);
+const chartHeight = $derived(height - padding.top - padding.bottom);
+const barWidth = $derived(
+  Math.max(5, chartWidth / distributionArray.length - 12),
+);
 
-	const bars = $derived.by(() => {
-		return distributionArray.map((item, idx) => {
-			const xStep = chartWidth / distributionArray.length;
-			const x = padding.left + idx * xStep + (xStep - barWidth) / 2;
-			const pct = item.value / maxValue;
-			const h = pct * chartHeight;
-			const y = height - padding.bottom - h;
-			return { x, y, width: barWidth, height: h, item };
-		});
-	});
+const bars = $derived.by(() => {
+  return distributionArray.map((item, idx) => {
+    const xStep = chartWidth / distributionArray.length;
+    const x = padding.left + idx * xStep + (xStep - barWidth) / 2;
+    const pct = item.value / maxValue;
+    const h = pct * chartHeight;
+    const y = height - padding.bottom - h;
+    return { x, y, width: barWidth, height: h, item };
+  });
+});
 
-	// Interactive Hover State
-	let hoveredIndex = $state<number | null>(null);
-	let tooltipPos = $state<{ x: number; y: number } | null>(null);
+// Interactive Hover State
+let hoveredIndex = $state<number | null>(null);
+let tooltipPos = $state<{ x: number; y: number } | null>(null);
 
-	function handleMouseMove(e: MouseEvent & { currentTarget: SVGSVGElement }) {
-		if (bars.length === 0) return;
-		const rect = e.currentTarget.getBoundingClientRect();
-		const containerRect = e.currentTarget.parentElement!.getBoundingClientRect();
-		
-		const localX = e.clientX - containerRect.left;
-		const localY = e.clientY - containerRect.top;
-		tooltipPos = { x: localX, y: localY };
+function handleMouseMove(e: MouseEvent & { currentTarget: SVGSVGElement }) {
+  if (bars.length === 0) return;
+  const rect = e.currentTarget.getBoundingClientRect();
+  const containerRect = e.currentTarget.parentElement!.getBoundingClientRect();
 
-		const mouseSVGX = ((e.clientX - rect.left) / rect.width) * width;
-		
-		let closestIdx: number | null = null;
-		bars.forEach((bar, idx) => {
-			const barLeft = bar.x - 6;
-			const barRight = bar.x + bar.width + 6;
-			if (mouseSVGX >= barLeft && mouseSVGX <= barRight) {
-				closestIdx = idx;
-			}
-		});
+  const localX = e.clientX - containerRect.left;
+  const localY = e.clientY - containerRect.top;
+  tooltipPos = { x: localX, y: localY };
 
-		if (closestIdx === null) {
-			let minDiff = Infinity;
-			bars.forEach((bar, idx) => {
-				const center = bar.x + bar.width / 2;
-				const diff = Math.abs(center - mouseSVGX);
-				if (diff < minDiff) {
-					minDiff = diff;
-					closestIdx = idx;
-				}
-			});
-		}
+  const mouseSVGX = ((e.clientX - rect.left) / rect.width) * width;
 
-		hoveredIndex = closestIdx;
-	}
+  let closestIdx: number | null = null;
+  bars.forEach((bar, idx) => {
+    const barLeft = bar.x - 6;
+    const barRight = bar.x + bar.width + 6;
+    if (mouseSVGX >= barLeft && mouseSVGX <= barRight) {
+      closestIdx = idx;
+    }
+  });
 
-	function handleMouseLeave() {
-		hoveredIndex = null;
-		tooltipPos = null;
-	}
+  if (closestIdx === null) {
+    let minDiff = Infinity;
+    bars.forEach((bar, idx) => {
+      const center = bar.x + bar.width / 2;
+      const diff = Math.abs(center - mouseSVGX);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestIdx = idx;
+      }
+    });
+  }
+
+  hoveredIndex = closestIdx;
+}
+
+function handleMouseLeave() {
+  hoveredIndex = null;
+  tooltipPos = null;
+}
 </script>
 
 <div class="card-tactile flex flex-col h-full relative group min-h-[460px]">

@@ -1,193 +1,222 @@
 <script lang="ts">
-	import { Skeleton } from "@orbis/ui-svelte";
-	import { onMount } from "svelte";
-	import { commands } from "$lib/services/ipc";
-	import { formatAmount } from "@orbis/utils/format";
-	import DragIndicator from "../components/drag-indicator.svelte";
+import { Skeleton } from "@orbis/ui-svelte";
+import { onMount } from "svelte";
+import { commands } from "$lib/services/ipc";
+import { formatAmount } from "@orbis/utils/format";
+import DragIndicator from "../components/drag-indicator.svelte";
 
-	let {
-		orgId,
-		selectedClass = "all",
-		selectedTerm = "all",
-		period = "this-year",
-		isEditing = false
-	}: {
-		orgId: string;
-		selectedClass: string;
-		selectedTerm: string;
-		period: string;
-		isEditing?: boolean;
-	} = $props();
+let {
+  orgId,
+  selectedClass = "all",
+  selectedTerm = "all",
+  period = "this-year",
+  isEditing = false,
+}: {
+  orgId: string;
+  selectedClass: string;
+  selectedTerm: string;
+  period: string;
+  isEditing?: boolean;
+} = $props();
 
-	let data = $state<any[]>([]);
-	let totalCollected = $state(0);
-	let totalPending = $state(0);
-	let isLoading = $state(true);
+let data = $state<any[]>([]);
+let totalCollected = $state(0);
+let totalPending = $state(0);
+let isLoading = $state(true);
 
-	async function loadData() {
-		isLoading = true;
-		try {
-			// Query payments
-			const payments = await commands.finance.getPayments(orgId);
-			// Query student fees to see outstanding fees
-			const studentFees = await commands.finance.getStudentFees(orgId);
+async function loadData() {
+  isLoading = true;
+  try {
+    // Query payments
+    const payments = await commands.finance.getPayments(orgId);
+    // Query student fees to see outstanding fees
+    const studentFees = await commands.finance.getStudentFees(orgId);
 
-			if (payments && payments.length > 0) {
-				// Parse payments and outstanding student fees by month
-				const monthsMap: Record<string, { collected: number; pending: number }> = {};
-				
-				// Collected payments
-				for (const p of payments) {
-					const dateStr = (p.payment_date || p.created_at || "") as string;
-					if (!dateStr) continue;
-					const monthKey = dateStr.substring(0, 7); // yyyy-mm
-					if (!monthsMap[monthKey]) {
-						monthsMap[monthKey] = { collected: 0, pending: 0 };
-					}
-					monthsMap[monthKey].collected += Number(p.amount || 0);
-				}
+    if (payments && payments.length > 0) {
+      // Parse payments and outstanding student fees by month
+      const monthsMap: Record<string, { collected: number; pending: number }> =
+        {};
 
-				// Outstanding / Pending fees
-				if (studentFees) {
-					for (const f of studentFees) {
-						if (f.status === "unpaid" || f.status === "partially_paid") {
-							const dateStr = (f.due_date || f.created_at || "") as string;
-							if (!dateStr) continue;
-							const monthKey = dateStr.substring(0, 7);
-							if (!monthsMap[monthKey]) {
-								monthsMap[monthKey] = { collected: 0, pending: 0 };
-							}
-							const unpaid = Number(f.amount || 0) - Number(f.paid_amount || 0);
-							monthsMap[monthKey].pending += Math.max(0, unpaid);
-						}
-					}
-				}
+      // Collected payments
+      for (const p of payments) {
+        const dateStr = (p.payment_date || p.created_at || "") as string;
+        if (!dateStr) continue;
+        const monthKey = dateStr.substring(0, 7); // yyyy-mm
+        if (!monthsMap[monthKey]) {
+          monthsMap[monthKey] = { collected: 0, pending: 0 };
+        }
+        monthsMap[monthKey].collected += Number(p.amount || 0);
+      }
 
-				const sortedMonths = Object.keys(monthsMap).sort().slice(-6); // last 6 months
-				totalCollected = 0;
-				totalPending = 0;
-				data = sortedMonths.map((m) => {
-					const vals = monthsMap[m]!;
-					totalCollected += vals.collected;
-					totalPending += vals.pending;
-					// Get month short name
-					const monthIndex = Number(m.split("-")[1]) - 1;
-					const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-					return {
-						month: monthNames[monthIndex] || m,
-						collected: vals.collected,
-						pending: vals.pending
-					};
-				});
-			} else {
-				// Mock data fallback
-				data = [
-					{ month: "Oct", collected: 24000, pending: 8000 },
-					{ month: "Nov", collected: 32000, pending: 12000 },
-					{ month: "Dec", collected: 18000, pending: 4000 },
-					{ month: "Jan", collected: 45000, pending: 15000 },
-					{ month: "Feb", collected: 38000, pending: 10000 },
-					{ month: "Mar", collected: 29000, pending: 6000 }
-				];
-				totalCollected = 186000;
-				totalPending = 55000;
-			}
-		} catch (e) {
-			console.error("Error loading finance reports:", e);
-		} finally {
-			isLoading = false;
-		}
-	}
+      // Outstanding / Pending fees
+      if (studentFees) {
+        for (const f of studentFees) {
+          if (f.status === "unpaid" || f.status === "partially_paid") {
+            const dateStr = (f.due_date || f.created_at || "") as string;
+            if (!dateStr) continue;
+            const monthKey = dateStr.substring(0, 7);
+            if (!monthsMap[monthKey]) {
+              monthsMap[monthKey] = { collected: 0, pending: 0 };
+            }
+            const unpaid = Number(f.amount || 0) - Number(f.paid_amount || 0);
+            monthsMap[monthKey].pending += Math.max(0, unpaid);
+          }
+        }
+      }
 
-	$effect(() => {
-		if (orgId || selectedClass || selectedTerm || period) {
-			loadData();
-		}
-	});
+      const sortedMonths = Object.keys(monthsMap).sort().slice(-6); // last 6 months
+      totalCollected = 0;
+      totalPending = 0;
+      data = sortedMonths.map((m) => {
+        const vals = monthsMap[m]!;
+        totalCollected += vals.collected;
+        totalPending += vals.pending;
+        // Get month short name
+        const monthIndex = Number(m.split("-")[1]) - 1;
+        const monthNames = [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+        ];
+        return {
+          month: monthNames[monthIndex] || m,
+          collected: vals.collected,
+          pending: vals.pending,
+        };
+      });
+    } else {
+      // Mock data fallback
+      data = [
+        { month: "Oct", collected: 24000, pending: 8000 },
+        { month: "Nov", collected: 32000, pending: 12000 },
+        { month: "Dec", collected: 18000, pending: 4000 },
+        { month: "Jan", collected: 45000, pending: 15000 },
+        { month: "Feb", collected: 38000, pending: 10000 },
+        { month: "Mar", collected: 29000, pending: 6000 },
+      ];
+      totalCollected = 186000;
+      totalPending = 55000;
+    }
+  } catch (e) {
+    console.error("Error loading finance reports:", e);
+  } finally {
+    isLoading = false;
+  }
+}
 
-	// SVG layout dimensions
-	const width = 500;
-	const height = 200;
-	const padding = { left: 50, right: 15, top: 25, bottom: 25 };
+$effect(() => {
+  if (orgId || selectedClass || selectedTerm || period) {
+    loadData();
+  }
+});
 
-	const maxVal = $derived(Math.max(1000, ...data.map((d) => Math.max(d.collected, d.pending))));
-	const chartWidth = $derived(width - padding.left - padding.right);
-	const chartHeight = $derived(height - padding.top - padding.bottom);
-	const groupWidth = $derived(chartWidth / (data.length || 1));
-	const barWidth = $derived(Math.max(4, (groupWidth - 16) / 2));
+// SVG layout dimensions
+const width = 500;
+const height = 200;
+const padding = { left: 50, right: 15, top: 25, bottom: 25 };
 
-	const bars = $derived.by(() => {
-		return data.map((item, idx) => {
-			const xCol = padding.left + idx * groupWidth + (groupWidth - 2 * barWidth - 4) / 2;
-			const xPend = xCol + barWidth + 4;
-			
-			const pctCol = item.collected / maxVal;
-			const hCol = pctCol * chartHeight;
-			const yCol = height - padding.bottom - hCol;
+const maxVal = $derived(
+  Math.max(1000, ...data.map((d) => Math.max(d.collected, d.pending))),
+);
+const chartWidth = $derived(width - padding.left - padding.right);
+const chartHeight = $derived(height - padding.top - padding.bottom);
+const groupWidth = $derived(chartWidth / (data.length || 1));
+const barWidth = $derived(Math.max(4, (groupWidth - 16) / 2));
 
-			const pctPend = item.pending / maxVal;
-			const hPend = pctPend * chartHeight;
-			const yPend = height - padding.bottom - hPend;
+const bars = $derived.by(() => {
+  return data.map((item, idx) => {
+    const xCol =
+      padding.left + idx * groupWidth + (groupWidth - 2 * barWidth - 4) / 2;
+    const xPend = xCol + barWidth + 4;
 
-			return {
-				month: item.month,
-				col: { x: xCol, y: yCol, width: barWidth, height: hCol, val: item.collected },
-				pend: { x: xPend, y: yPend, width: barWidth, height: hPend, val: item.pending }
-			};
-		});
-	});
+    const pctCol = item.collected / maxVal;
+    const hCol = pctCol * chartHeight;
+    const yCol = height - padding.bottom - hCol;
 
-	// Interactive Hover State
-	let hoveredIndex = $state<number | null>(null);
-	let tooltipPos = $state<{ x: number; y: number } | null>(null);
+    const pctPend = item.pending / maxVal;
+    const hPend = pctPend * chartHeight;
+    const yPend = height - padding.bottom - hPend;
 
-	function handleMouseMove(e: MouseEvent & { currentTarget: SVGSVGElement }) {
-		if (bars.length === 0) return;
-		const rect = e.currentTarget.getBoundingClientRect();
-		const containerRect = e.currentTarget.parentElement!.getBoundingClientRect();
-		
-		const localX = e.clientX - containerRect.left;
-		const localY = e.clientY - containerRect.top;
-		tooltipPos = { x: localX, y: localY };
+    return {
+      month: item.month,
+      col: {
+        x: xCol,
+        y: yCol,
+        width: barWidth,
+        height: hCol,
+        val: item.collected,
+      },
+      pend: {
+        x: xPend,
+        y: yPend,
+        width: barWidth,
+        height: hPend,
+        val: item.pending,
+      },
+    };
+  });
+});
 
-		const mouseSVGX = ((e.clientX - rect.left) / rect.width) * width;
-		
-		let closestIdx: number | null = null;
-		bars.forEach((bar, idx) => {
-			const colLeft = bar.col.x - 6;
-			const pendRight = bar.pend.x + bar.pend.width + 6;
-			if (mouseSVGX >= colLeft && mouseSVGX <= pendRight) {
-				closestIdx = idx;
-			}
-		});
+// Interactive Hover State
+let hoveredIndex = $state<number | null>(null);
+let tooltipPos = $state<{ x: number; y: number } | null>(null);
 
-		if (closestIdx === null) {
-			let minDiff = Infinity;
-			bars.forEach((bar, idx) => {
-				const center = (bar.col.x + bar.pend.x + bar.col.width) / 2;
-				const diff = Math.abs(center - mouseSVGX);
-				if (diff < minDiff) {
-					minDiff = diff;
-					closestIdx = idx;
-				}
-			});
-		}
+function handleMouseMove(e: MouseEvent & { currentTarget: SVGSVGElement }) {
+  if (bars.length === 0) return;
+  const rect = e.currentTarget.getBoundingClientRect();
+  const containerRect = e.currentTarget.parentElement!.getBoundingClientRect();
 
-		hoveredIndex = closestIdx;
-	}
+  const localX = e.clientX - containerRect.left;
+  const localY = e.clientY - containerRect.top;
+  tooltipPos = { x: localX, y: localY };
 
-	function handleMouseLeave() {
-		hoveredIndex = null;
-		tooltipPos = null;
-	}
+  const mouseSVGX = ((e.clientX - rect.left) / rect.width) * width;
 
-	// Formatter helper
-	function formatVal(val: number) {
-		if (val >= 1000) {
-			return `${Math.round(val / 100) / 10}k`;
-		}
-		return String(val);
-	}
+  let closestIdx: number | null = null;
+  bars.forEach((bar, idx) => {
+    const colLeft = bar.col.x - 6;
+    const pendRight = bar.pend.x + bar.pend.width + 6;
+    if (mouseSVGX >= colLeft && mouseSVGX <= pendRight) {
+      closestIdx = idx;
+    }
+  });
+
+  if (closestIdx === null) {
+    let minDiff = Infinity;
+    bars.forEach((bar, idx) => {
+      const center = (bar.col.x + bar.pend.x + bar.col.width) / 2;
+      const diff = Math.abs(center - mouseSVGX);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestIdx = idx;
+      }
+    });
+  }
+
+  hoveredIndex = closestIdx;
+}
+
+function handleMouseLeave() {
+  hoveredIndex = null;
+  tooltipPos = null;
+}
+
+// Formatter helper
+function formatVal(val: number) {
+  if (val >= 1000) {
+    return `${Math.round(val / 100) / 10}k`;
+  }
+  return String(val);
+}
 </script>
 
 <div class="card-tactile flex flex-col h-full relative group min-h-[460px]">

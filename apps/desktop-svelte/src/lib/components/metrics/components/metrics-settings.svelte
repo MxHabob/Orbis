@@ -1,21 +1,21 @@
 <script lang="ts">
-	import { Button } from "@orbis/ui-svelte/button";
-	import { Settings, Check } from "lucide-svelte";
-	import MetricsFilter from "./metrics-filter.svelte";
+import { Button } from "@orbis/ui-svelte/button";
+import { Settings, Check } from "lucide-svelte";
+import MetricsFilter from "./metrics-filter.svelte";
 
-	let {
-		orgId,
-		isEditing = $bindable(false),
-		period = $bindable("this-year"),
-		selectedTerm = $bindable("all"),
-		selectedClass = $bindable("all")
-	}: {
-		orgId: string;
-		isEditing: boolean;
-		period: string;
-		selectedTerm: string;
-		selectedClass: string;
-	} = $props();
+let {
+  orgId,
+  isEditing = $bindable(false),
+  period = $bindable("this-year"),
+  selectedTerm = $bindable("all"),
+  selectedClass = $bindable("all"),
+}: {
+  orgId: string;
+  isEditing: boolean;
+  period: string;
+  selectedTerm: string;
+  selectedClass: string;
+} = $props();
 </script>
 
 <div class="flex items-center justify-between w-full border-b border-border/40 pb-4 mb-6 pt-2 select-none">

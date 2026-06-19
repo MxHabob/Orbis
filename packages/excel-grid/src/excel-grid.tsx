@@ -1,19 +1,54 @@
 import * as React from "react";
 import { useMemo, useRef, useCallback } from "react";
-import { Table, TableBody, TableCell, TableRow, TableHead, TableHeader } from "@orbis/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableRow,
+  TableHead,
+  TableHeader,
+} from "@orbis/ui/table";
 import { Button } from "@orbis/ui/button";
 import { cn } from "@orbis/ui/cn";
 import { Icons } from "@orbis/ui/icons";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@orbis/ui/tooltip";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@orbis/ui/dropdown-menu";
-import { flexRender, type Header, type Table as ReactTable, type Cell, type Row } from "@tanstack/react-table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@orbis/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@orbis/ui/dropdown-menu";
+import {
+  flexRender,
+  type Header,
+  type Table as ReactTable,
+  type Cell,
+  type Row,
+} from "@tanstack/react-table";
 import { useVirtualizer, type VirtualItem } from "@tanstack/react-virtual";
 import { closestCenter, DndContext } from "@dnd-kit/core";
-import { horizontalListSortingStrategy, SortableContext, useSortable } from "@dnd-kit/sortable";
+import {
+  horizontalListSortingStrategy,
+  SortableContext,
+  useSortable,
+} from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, MoreHorizontal, Zap, Eraser, Trash2 } from "lucide-react";
+import {
+  GripVertical,
+  MoreHorizontal,
+  Zap,
+  Eraser,
+  Trash2,
+} from "lucide-react";
 
-import { useStickyColumns, type StickyColumnConfig } from "./hooks/use-sticky-columns";
+import {
+  useStickyColumns,
+  type StickyColumnConfig,
+} from "./hooks/use-sticky-columns";
 import { useTableDnd } from "./hooks/use-table-dnd";
 import { useTableScroll } from "./hooks/use-table-scroll";
 
@@ -83,10 +118,7 @@ interface ResizeHandleProps<TData> {
   className?: string;
 }
 
-function ResizeHandle<TData>({
-  header,
-  className,
-}: ResizeHandleProps<TData>) {
+function ResizeHandle<TData>({ header, className }: ResizeHandleProps<TData>) {
   if (!header.column.getCanResize()) {
     return null;
   }
@@ -271,7 +303,11 @@ function DataTableHeader<TData>({
 
                     {columnId.startsWith("assessment-") && (
                       <div className="absolute right-0 opacity-0 group-hover/header-cell:opacity-100 transition-opacity">
-                        <AssessmentBulkActions header={header} table={table} t={t} />
+                        <AssessmentBulkActions
+                          header={header}
+                          table={table}
+                          t={t}
+                        />
                       </div>
                     )}
                   </div>
@@ -304,7 +340,9 @@ function renderHeaderContent<TData>(
     return (
       <div className="flex items-center justify-between w-full overflow-hidden">
         <div className="min-w-0 overflow-hidden">
-          <span className="font-semibold">{t("grades.student_name") || "Student Name"}</span>
+          <span className="font-semibold">
+            {t("grades.student_name") || "Student Name"}
+          </span>
         </div>
         {tableScroll?.isScrollable && (
           <HorizontalPagination
@@ -342,9 +380,7 @@ function AssessmentBulkActions<TData>({
   const columnId = header.column.id;
   const assessmentId = parseInt(columnId.replace("assessment-", ""));
 
-  const assessmentItem = meta?.items?.find(
-    (i: any) => i.id === assessmentId,
-  );
+  const assessmentItem = meta?.items?.find((i: any) => i.id === assessmentId);
   if (!assessmentItem) return null;
 
   const maxScore = Number(assessmentItem.maxScore);
@@ -524,15 +560,15 @@ export interface ExcelGridProps<TData> {
   height?: string;
   stickyColumns?: StickyColumnConfig[];
   nonReorderableColumns?: Set<string>;
-  
+
   // Custom Translations Callback
   t?: (key: string, options?: any) => string;
-  
+
   // Excel Specific Events
   onPaste?: (
     pastedText: string,
     startRowIndex: number,
-    startColIndex: number
+    startColIndex: number,
   ) => void;
 }
 
@@ -545,7 +581,7 @@ export function ExcelGrid<TData>({
   onPaste,
 }: ExcelGridProps<TData>) {
   const parentRef = useRef<HTMLDivElement>(null);
-  
+
   const { columnVisibility, columnSizing, columnOrder } = table.getState();
 
   // Use the sticky columns hook
@@ -577,71 +613,85 @@ export function ExcelGrid<TData>({
   const virtualItems = rowVirtualizer.getVirtualItems();
 
   // 1. Keyboard Arrow Navigation and Enter Key Delegation
-  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    const target = e.target as HTMLElement;
-    if (target.tagName !== "INPUT") return;
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName !== "INPUT") return;
 
-    const { key } = e;
-    const row = parseInt(target.getAttribute("data-row") || "-1");
-    const col = parseInt(target.getAttribute("data-col") || "-1");
-    if (row === -1 || col === -1) return;
+      const { key } = e;
+      const row = parseInt(target.getAttribute("data-row") || "-1");
+      const col = parseInt(target.getAttribute("data-col") || "-1");
+      if (row === -1 || col === -1) return;
 
-    const focusInput = (r: number, c: number) => {
-      const nextInput = parentRef.current?.querySelector(
-        `input[data-row="${r}"][data-col="${c}"]`,
-      ) as HTMLInputElement;
-      if (nextInput) {
-        nextInput.focus();
-        nextInput.select();
-      }
-    };
+      const focusInput = (r: number, c: number) => {
+        const nextInput = parentRef.current?.querySelector(
+          `input[data-row="${r}"][data-col="${c}"]`,
+        ) as HTMLInputElement;
+        if (nextInput) {
+          nextInput.focus();
+          nextInput.select();
+        }
+      };
 
-    if (key === "Enter" || key === "ArrowDown") {
-      e.preventDefault();
-      focusInput(row + 1, col);
-    } else if (key === "ArrowUp") {
-      e.preventDefault();
-      focusInput(row - 1, col);
-    } else if (key === "ArrowRight") {
-      const input = target as HTMLInputElement;
-      if (input.selectionEnd === input.value.length) {
-        focusInput(row, col + 1);
+      if (key === "Enter" || key === "ArrowDown") {
+        e.preventDefault();
+        focusInput(row + 1, col);
+      } else if (key === "ArrowUp") {
+        e.preventDefault();
+        focusInput(row - 1, col);
+      } else if (key === "ArrowRight") {
+        const input = target as HTMLInputElement;
+        if (input.selectionEnd === input.value.length) {
+          focusInput(row, col + 1);
+        }
+      } else if (key === "ArrowLeft") {
+        const input = target as HTMLInputElement;
+        if (input.selectionStart === 0) {
+          focusInput(row, col - 1);
+        }
       }
-    } else if (key === "ArrowLeft") {
-      const input = target as HTMLInputElement;
-      if (input.selectionStart === 0) {
-        focusInput(row, col - 1);
-      }
-    }
-  }, []);
+    },
+    [],
+  );
 
   // 2. Clipboard Paste Handler Delegation
-  const handlePasteEvent = useCallback((e: React.ClipboardEvent<HTMLDivElement>) => {
-    const target = e.target as HTMLElement;
-    if (target.tagName !== "INPUT") return;
+  const handlePasteEvent = useCallback(
+    (e: React.ClipboardEvent<HTMLDivElement>) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName !== "INPUT") return;
 
-    const row = parseInt(target.getAttribute("data-row") || "-1");
-    const col = parseInt(target.getAttribute("data-col") || "-1");
-    if (row === -1 || col === -1) return;
+      const row = parseInt(target.getAttribute("data-row") || "-1");
+      const col = parseInt(target.getAttribute("data-col") || "-1");
+      if (row === -1 || col === -1) return;
 
-    e.preventDefault();
-    const pastedText = e.clipboardData.getData("text");
-    
-    if (onPaste) {
-      onPaste(pastedText, row, col);
-    }
-  }, [onPaste]);
+      e.preventDefault();
+      const pastedText = e.clipboardData.getData("text");
+
+      if (onPaste) {
+        onPaste(pastedText, row, col);
+      }
+    },
+    [onPaste],
+  );
 
   return (
-    <div className="relative" onKeyDown={handleKeyDown} onPaste={handlePasteEvent}>
+    <div
+      className="relative"
+      onKeyDown={handleKeyDown}
+      onPaste={handlePasteEvent}
+    >
       <div className="w-full">
         <div
           ref={(el) => {
             if (parentRef) {
-              (parentRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+              (
+                parentRef as React.MutableRefObject<HTMLDivElement | null>
+              ).current = el;
             }
             if (tableScroll.containerRef) {
-              (tableScroll.containerRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+              (
+                tableScroll.containerRef as React.MutableRefObject<HTMLDivElement | null>
+              ).current = el;
             }
           }}
           className="overflow-auto overscroll-none border-l border-r border-b border-border scrollbar-hide"

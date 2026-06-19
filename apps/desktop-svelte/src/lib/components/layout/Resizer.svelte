@@ -19,107 +19,107 @@ Inspired by GitButler's Resizer component.
 ```
 -->
 <script lang="ts">
-	let {
-		viewport,
-		direction,
-		minWidth,
-		maxWidth,
-		defaultValue,
-		persistId,
-		onWidth,
-	}: {
-		viewport: HTMLElement | undefined;
-		direction: 'left' | 'right';
-		minWidth: number;
-		maxWidth: number;
-		defaultValue: number;
-		persistId?: string;
-		onWidth?: (widthRem: number) => void;
-	} = $props();
+let {
+  viewport,
+  direction,
+  minWidth,
+  maxWidth,
+  defaultValue,
+  persistId,
+  onWidth,
+}: {
+  viewport: HTMLElement | undefined;
+  direction: "left" | "right";
+  minWidth: number;
+  maxWidth: number;
+  defaultValue: number;
+  persistId?: string;
+  onWidth?: (widthRem: number) => void;
+} = $props();
 
-	let isDragging = $state(false);
-	let startX = 0;
-	let startWidth = 0;
-	let dragTarget: HTMLElement | null = null;
+let isDragging = $state(false);
+let startX = 0;
+let startWidth = 0;
+let dragTarget: HTMLElement | null = null;
 
-	// Restore persisted width on mount
-	$effect(() => {
-		if (!persistId) return;
-		const stored = localStorage.getItem(`resizer:${persistId}`);
-		if (stored) {
-			const val = parseFloat(stored);
-			if (!isNaN(val) && val >= minWidth && val <= maxWidth) {
-				onWidth?.(val);
-			}
-		}
-	});
+// Restore persisted width on mount
+$effect(() => {
+  if (!persistId) return;
+  const stored = localStorage.getItem(`resizer:${persistId}`);
+  if (stored) {
+    const val = parseFloat(stored);
+    if (!isNaN(val) && val >= minWidth && val <= maxWidth) {
+      onWidth?.(val);
+    }
+  }
+});
 
-	function pxToRem(px: number): number {
-		const base = parseFloat(getComputedStyle(document.documentElement).fontSize);
-		return px / base;
-	}
+function pxToRem(px: number): number {
+  const base = parseFloat(getComputedStyle(document.documentElement).fontSize);
+  return px / base;
+}
 
-	function onPointerDown(e: PointerEvent) {
-		if (!viewport) return;
-		e.preventDefault();
-		isDragging = true;
-		startX = e.clientX;
-		startWidth = viewport.getBoundingClientRect().width;
+function onPointerDown(e: PointerEvent) {
+  if (!viewport) return;
+  e.preventDefault();
+  isDragging = true;
+  startX = e.clientX;
+  startWidth = viewport.getBoundingClientRect().width;
 
-		dragTarget = e.currentTarget as HTMLElement;
-		dragTarget.setPointerCapture(e.pointerId);
+  dragTarget = e.currentTarget as HTMLElement;
+  dragTarget.setPointerCapture(e.pointerId);
 
-		document.body.style.cursor = 'ew-resize';
-		document.body.style.userSelect = 'none';
-	}
+  document.body.style.cursor = "ew-resize";
+  document.body.style.userSelect = "none";
+}
 
-	function isRtl(): boolean {
-		return document.documentElement.dir === 'rtl';
-	}
+function isRtl(): boolean {
+  return document.documentElement.dir === "rtl";
+}
 
-	function onPointerMove(e: PointerEvent) {
-		if (!isDragging || !viewport) return;
+function onPointerMove(e: PointerEvent) {
+  if (!isDragging || !viewport) return;
 
-		const effectiveDirection = isRtl()
-			? direction === 'left'
-				? 'right'
-				: 'left'
-			: direction;
-		const delta =
-			effectiveDirection === 'right' ? e.clientX - startX : startX - e.clientX;
-		const newWidthPx = startWidth + delta;
-		const newWidthRem = pxToRem(newWidthPx);
-		const clamped = Math.max(minWidth, Math.min(maxWidth, newWidthRem));
+  const effectiveDirection = isRtl()
+    ? direction === "left"
+      ? "right"
+      : "left"
+    : direction;
+  const delta =
+    effectiveDirection === "right" ? e.clientX - startX : startX - e.clientX;
+  const newWidthPx = startWidth + delta;
+  const newWidthRem = pxToRem(newWidthPx);
+  const clamped = Math.max(minWidth, Math.min(maxWidth, newWidthRem));
 
-		onWidth?.(clamped);
-	}
+  onWidth?.(clamped);
+}
 
-	function onPointerUp(e: PointerEvent) {
-		if (!isDragging) return;
-		isDragging = false;
+function onPointerUp(e: PointerEvent) {
+  if (!isDragging) return;
+  isDragging = false;
 
-		document.body.style.cursor = '';
-		document.body.style.userSelect = '';
+  document.body.style.cursor = "";
+  document.body.style.userSelect = "";
 
-		if (dragTarget && dragTarget.hasPointerCapture(e.pointerId)) {
-			dragTarget.releasePointerCapture(e.pointerId);
-		}
-		dragTarget = null;
+  if (dragTarget && dragTarget.hasPointerCapture(e.pointerId)) {
+    dragTarget.releasePointerCapture(e.pointerId);
+  }
+  dragTarget = null;
 
-		// Persist final width
-		if (persistId && viewport) {
-			const currentRem = pxToRem(viewport.getBoundingClientRect().width);
-			const clamped = Math.max(minWidth, Math.min(maxWidth, currentRem));
-			localStorage.setItem(`resizer:${persistId}`, String(clamped));
-		}
-	}
+  // Persist final width
+  if (persistId && viewport) {
+    const currentRem = pxToRem(viewport.getBoundingClientRect().width);
+    const clamped = Math.max(minWidth, Math.min(maxWidth, currentRem));
+    localStorage.setItem(`resizer:${persistId}`, String(clamped));
+  }
+}
 
-	function onDoubleClick() {
-		onWidth?.(defaultValue);
-		if (persistId) {
-			localStorage.setItem(`resizer:${persistId}`, String(defaultValue));
-		}
-	}
+function onDoubleClick() {
+  onWidth?.(defaultValue);
+  if (persistId) {
+    localStorage.setItem(`resizer:${persistId}`, String(defaultValue));
+  }
+}
 </script>
 
 <svelte:window on:pointermove={onPointerMove} on:pointerup={onPointerUp} />

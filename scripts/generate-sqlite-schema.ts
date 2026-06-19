@@ -42,8 +42,7 @@ const src = fs.readFileSync(
 
 // Extract table definitions via regex
 const tables: Table[] = [];
-const tableRegex =
-  /name:\s*"([^"]+)"[\s\S]*?columns:\s*\[([\s\S]*?)\]\s*\}/g;
+const tableRegex = /name:\s*"([^"]+)"[\s\S]*?columns:\s*\[([\s\S]*?)\]\s*\}/g;
 let m: RegExpExecArray | null;
 while ((m = tableRegex.exec(src)) !== null) {
   const name = m[1];
@@ -66,7 +65,8 @@ while ((m = tableRegex.exec(src)) !== null) {
   }
 }
 
-let sql = "-- Orbis SQLite Schema (auto-generated)\nPRAGMA foreign_keys=ON;\n\n";
+let sql =
+  "-- Orbis SQLite Schema (auto-generated)\nPRAGMA foreign_keys=ON;\n\n";
 
 for (const table of tables) {
   const pkCols = table.columns.filter((c) => c.isPrimaryKey);
@@ -82,7 +82,9 @@ for (const table of tables) {
 
   let pkConstraint = "";
   if (pkCols.length > 1) {
-    const pkNames = pkCols.map((c) => c.name === "type" ? '"type"' : c.name).join(", ");
+    const pkNames = pkCols
+      .map((c) => (c.name === "type" ? '"type"' : c.name))
+      .join(", ");
     pkConstraint = `,\n  PRIMARY KEY (${pkNames})`;
   }
 

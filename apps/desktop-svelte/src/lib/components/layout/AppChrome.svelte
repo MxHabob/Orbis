@@ -18,19 +18,19 @@ Follows GitButler's "Chrome Shell" pattern:
   └──┴───────────────────────────────┘
 -->
 <script lang="ts">
-	import AppHeader from './AppHeader.svelte';
-	import AppSidebar from './AppSidebar.svelte';
-	import type { Snippet } from 'svelte';
+import AppHeader from "./AppHeader.svelte";
+import AppSidebar from "./AppSidebar.svelte";
+import type { Snippet } from "svelte";
 
-	let {
-		orgId,
-		orgName,
-		children,
-	}: {
-		orgId: string;
-		orgName?: string;
-		children: Snippet;
-	} = $props();
+let {
+  orgId,
+  orgName,
+  children,
+}: {
+  orgId: string;
+  orgName?: string;
+  children: Snippet;
+} = $props();
 </script>
 
 <div class="flex h-screen max-w-full flex-1 flex-col bg-background mx-1">

@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { Skeleton } from "@orbis/ui-svelte";
+import { Skeleton } from "@orbis/ui-svelte";
 
-	let { type = "summary" }: { type?: "summary" | "cards" } = $props();
+let { type = "summary" }: { type?: "summary" | "cards" } = $props();
 </script>
 
 {#if type === "summary"}

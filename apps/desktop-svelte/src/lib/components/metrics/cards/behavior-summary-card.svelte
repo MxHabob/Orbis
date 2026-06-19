@@ -1,89 +1,89 @@
 <script lang="ts">
-	import { Skeleton } from "@orbis/ui-svelte";
-	import { onMount } from "svelte";
-	import { commands } from "$lib/services/ipc";
-	import DragIndicator from "../components/drag-indicator.svelte";
+import { Skeleton } from "@orbis/ui-svelte";
+import { onMount } from "svelte";
+import { commands } from "$lib/services/ipc";
+import DragIndicator from "../components/drag-indicator.svelte";
 
-	let {
-		orgId,
-		selectedClass = "all",
-		selectedTerm = "all",
-		period = "this-year",
-		isEditing = false
-	}: {
-		orgId: string;
-		selectedClass: string;
-		selectedTerm: string;
-		period: string;
-		isEditing?: boolean;
-	} = $props();
+let {
+  orgId,
+  selectedClass = "all",
+  selectedTerm = "all",
+  period = "this-year",
+  isEditing = false,
+}: {
+  orgId: string;
+  selectedClass: string;
+  selectedTerm: string;
+  period: string;
+  isEditing?: boolean;
+} = $props();
 
-	let summary = $state<any>(null);
-	let isLoading = $state(true);
+let summary = $state<any>(null);
+let isLoading = $state(true);
 
-	// Interactive Hover State
-	let hoveredIndex = $state<number | null>(null);
+// Interactive Hover State
+let hoveredIndex = $state<number | null>(null);
 
-	async function loadData() {
-		isLoading = true;
-		try {
-			// Query stats to extract behavior details
-			const res = await commands.dashboard.getStats(orgId);
-			if (res && res.behavior_summary) {
-				summary = res.behavior_summary;
-			} else {
-				// Fallback mock data
-				summary = {
-					total_records: 48,
-					critical_count: 5,
-					major_count: 15,
-					minor_count: 28
-				};
-			}
-		} catch (e) {
-			console.error("Error loading behavior reports:", e);
-		} finally {
-			isLoading = false;
-		}
-	}
+async function loadData() {
+  isLoading = true;
+  try {
+    // Query stats to extract behavior details
+    const res = await commands.dashboard.getStats(orgId);
+    if (res && res.behavior_summary) {
+      summary = res.behavior_summary;
+    } else {
+      // Fallback mock data
+      summary = {
+        total_records: 48,
+        critical_count: 5,
+        major_count: 15,
+        minor_count: 28,
+      };
+    }
+  } catch (e) {
+    console.error("Error loading behavior reports:", e);
+  } finally {
+    isLoading = false;
+  }
+}
 
-	$effect(() => {
-		if (orgId || selectedClass || selectedTerm || period) {
-			loadData();
-		}
-	});
+$effect(() => {
+  if (orgId || selectedClass || selectedTerm || period) {
+    loadData();
+  }
+});
 
-	// Donut variables
-	const r = 55;
-	const circumference = 2 * Math.PI * r; // ~345.57
+// Donut variables
+const r = 55;
+const circumference = 2 * Math.PI * r; // ~345.57
 
-	const segments = $derived.by(() => {
-		if (!summary) return [];
-		const critical = summary.critical_count ?? 0;
-		const major = summary.major_count ?? 0;
-		const minor = summary.minor_count ?? 0;
-		const total = critical + major + minor || 1;
+const segments = $derived.by(() => {
+  if (!summary) return [];
+  const critical = summary.critical_count ?? 0;
+  const major = summary.major_count ?? 0;
+  const minor = summary.minor_count ?? 0;
+  const total = critical + major + minor || 1;
 
-		const dataList = [
-			{ name: "Critical", value: critical, color: "var(--color-destructive)" },
-			{ name: "Major", value: major, color: "oklch(0.65 0.15 80)" },
-			{ name: "Minor", value: minor, color: "var(--color-primary)" }
-		];
+  const dataList = [
+    { name: "Critical", value: critical, color: "var(--color-destructive)" },
+    { name: "Major", value: major, color: "oklch(0.65 0.15 80)" },
+    { name: "Minor", value: minor, color: "var(--color-primary)" },
+  ];
 
-		let accumulatedPercent = 0;
-		return dataList.map((d) => {
-			const percent = d.value / total;
-			const dashArray = `${percent * circumference} ${circumference}`;
-			const dashOffset = -accumulatedPercent * circumference;
-			accumulatedPercent += percent;
-			return {
-				...d,
-				percent: Math.round(percent * 100),
-				dashArray,
-				dashOffset
-			};
-		});
-	});
+  let accumulatedPercent = 0;
+  return dataList.map((d) => {
+    const percent = d.value / total;
+    const dashArray = `${percent * circumference} ${circumference}`;
+    const dashOffset = -accumulatedPercent * circumference;
+    accumulatedPercent += percent;
+    return {
+      ...d,
+      percent: Math.round(percent * 100),
+      dashArray,
+      dashOffset,
+    };
+  });
+});
 </script>
 
 <div class="card-tactile flex flex-col h-full relative group min-h-[460px]">

@@ -1,5 +1,5 @@
 export interface UploadOptions {
-  method?: 'POST' | 'PUT';
+  method?: "POST" | "PUT";
   headers?: Record<string, string>;
   fieldName?: string; // for multipart POST uploads
   extraFields?: Record<string, string>; // for multipart uploads
@@ -14,17 +14,17 @@ export class OrbisStorageUploader {
   static upload(
     url: string,
     fileData: File | Blob | ArrayBuffer | string, // can accept base64 string or file buffer
-    options: UploadOptions = {}
+    options: UploadOptions = {},
   ): Promise<{ success: boolean; data: any }> {
     return new Promise((resolve, reject) => {
-      const method = options.method || 'POST';
+      const method = options.method || "POST";
       const headers = options.headers || {};
-      const fieldName = options.fieldName || 'file';
+      const fieldName = options.fieldName || "file";
       const extraFields = options.extraFields || {};
       const onProgress = options.onProgress;
 
       // Check if XMLHttpRequest is available (Browser / React Native / Tauri)
-      if (typeof XMLHttpRequest !== 'undefined') {
+      if (typeof XMLHttpRequest !== "undefined") {
         const xhr = new XMLHttpRequest();
         xhr.open(method, url, true);
 
@@ -53,19 +53,23 @@ export class OrbisStorageUploader {
             }
             resolve({ success: true, data: parsed });
           } else {
-            reject(new Error(`Upload failed with status: ${xhr.status} ${xhr.statusText}`));
+            reject(
+              new Error(
+                `Upload failed with status: ${xhr.status} ${xhr.statusText}`,
+              ),
+            );
           }
         };
 
         xhr.onerror = () => {
-          reject(new Error('Network error occurred during file upload.'));
+          reject(new Error("Network error occurred during file upload."));
         };
 
         // Determine body format (Multipart Form vs Raw Binary)
-        if (method === 'POST' && !(fileData instanceof ArrayBuffer)) {
+        if (method === "POST" && !(fileData instanceof ArrayBuffer)) {
           // Use FormData for standard Multipart upload
           const formData = new FormData();
-          
+
           // Append extra fields
           for (const [key, value] of Object.entries(extraFields)) {
             formData.append(key, value);
@@ -74,10 +78,13 @@ export class OrbisStorageUploader {
           // Append file
           if (fileData instanceof File || fileData instanceof Blob) {
             formData.append(fieldName, fileData);
-          } else if (typeof fileData === 'string' && fileData.startsWith('data:')) {
+          } else if (
+            typeof fileData === "string" &&
+            fileData.startsWith("data:")
+          ) {
             // Handle Base64 URL representation
             const parsedBlob = this.dataURItoBlob(fileData);
-            formData.append(fieldName, parsedBlob, 'upload_file');
+            formData.append(fieldName, parsedBlob, "upload_file");
           } else {
             formData.append(fieldName, fileData);
           }
@@ -86,7 +93,7 @@ export class OrbisStorageUploader {
         } else {
           // Raw binary PUT upload (commonly used for direct S3 presigned URLs)
           let sendData: any = fileData;
-          if (typeof fileData === 'string' && fileData.startsWith('data:')) {
+          if (typeof fileData === "string" && fileData.startsWith("data:")) {
             sendData = this.dataURItoBlob(fileData);
           }
           xhr.send(sendData);
@@ -96,14 +103,17 @@ export class OrbisStorageUploader {
         const fetchHeaders = new Headers(headers);
         let body: any;
 
-        if (method === 'POST') {
+        if (method === "POST") {
           const formData = new FormData();
           for (const [key, value] of Object.entries(extraFields)) {
             formData.append(key, value);
           }
           if (fileData instanceof Blob) {
             formData.append(fieldName, fileData);
-          } else if (typeof fileData === 'string' && fileData.startsWith('data:')) {
+          } else if (
+            typeof fileData === "string" &&
+            fileData.startsWith("data:")
+          ) {
             formData.append(fieldName, this.dataURItoBlob(fileData));
           } else {
             const blob = new Blob([fileData as any]);
@@ -126,7 +136,11 @@ export class OrbisStorageUploader {
               if (onProgress) onProgress(100);
               resolve({ success: true, data: parsed });
             } else {
-              reject(new Error(`Upload failed with status: ${response.status} ${response.statusText}`));
+              reject(
+                new Error(
+                  `Upload failed with status: ${response.status} ${response.statusText}`,
+                ),
+              );
             }
           })
           .catch((err) => {
@@ -140,9 +154,9 @@ export class OrbisStorageUploader {
    * Helper to convert base64 data URIs into binary Blobs.
    */
   private static dataURItoBlob(dataURI: string): Blob {
-    const parts = dataURI.split(',');
+    const parts = dataURI.split(",");
     const byteString = atob(parts[1]!);
-    const mimeString = parts[0]!.split(':')[1]!.split(';')[0]!;
+    const mimeString = parts[0]!.split(":")[1]!.split(";")[0]!;
     const ab = new ArrayBuffer(byteString.length);
     const ia = new Uint8Array(ab);
     for (let i = 0; i < byteString.length; i++) {

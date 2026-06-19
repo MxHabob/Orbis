@@ -1,14 +1,14 @@
 <script lang="ts">
-	import { DropdownMenu as DropdownMenuPrimitive } from "bits-ui";
-	import { Check as CheckIcon } from "lucide-svelte";
-	import { cn, type WithoutChild } from "../../../utils.js";
+import { DropdownMenu as DropdownMenuPrimitive } from "bits-ui";
+import { Check as CheckIcon } from "lucide-svelte";
+import { cn, type WithoutChild } from "../../../utils.js";
 
-	let {
-		ref = $bindable(null),
-		class: className,
-		children: childrenProp,
-		...restProps
-	}: WithoutChild<DropdownMenuPrimitive.RadioItemProps> = $props();
+let {
+  ref = $bindable(null),
+  class: className,
+  children: childrenProp,
+  ...restProps
+}: WithoutChild<DropdownMenuPrimitive.RadioItemProps> = $props();
 </script>
 
 <DropdownMenuPrimitive.RadioItem

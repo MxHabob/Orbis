@@ -3,10 +3,10 @@
   Renders the Midday-style widgets dashboard.
 -->
 <script lang="ts">
-	import OverviewView from '$lib/components/widgets/index.svelte';
-	import type { LayoutData } from './$types';
+import OverviewView from "$lib/components/widgets/index.svelte";
+import type { LayoutData } from "./$types";
 
-	let { data }: { data: LayoutData } = $props();
+let { data }: { data: LayoutData } = $props();
 </script>
 
 <svelte:head>

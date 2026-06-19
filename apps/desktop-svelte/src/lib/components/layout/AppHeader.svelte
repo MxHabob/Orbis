@@ -5,42 +5,42 @@ Left zone (actions) | Center zone (selector) | Right zone (actions).
 Both left and right use flex-basis: 0 so center stays perfectly centered.
 -->
 <script lang="ts">
-	import { Button } from '@orbis/ui-svelte/button';
-	import {
-		DropdownMenu,
-		DropdownMenuContent,
-		DropdownMenuItem,
-		DropdownMenuSeparator,
-		DropdownMenuTrigger,
-	} from '@orbis/ui-svelte/dropdown-menu';
-	import {
-		Search,
-		Bell,
-		School,
-		ChevronDown,
-		UserCircle,
-		LogOut,
-	} from 'lucide-svelte';
-	import { authStore } from '$lib/stores';
-	import { isDesktopApp } from '$lib/services/ipc';
+import { Button } from "@orbis/ui-svelte/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@orbis/ui-svelte/dropdown-menu";
+import {
+  Search,
+  Bell,
+  School,
+  ChevronDown,
+  UserCircle,
+  LogOut,
+} from "lucide-svelte";
+import { authStore } from "$lib/stores";
+import { isDesktopApp } from "$lib/services/ipc";
 
-	let {
-		orgId,
-		orgName = 'Orbis School',
-	}: {
-		orgId: string;
-		orgName?: string;
-	} = $props();
+let {
+  orgId,
+  orgName = "Orbis School",
+}: {
+  orgId: string;
+  orgName?: string;
+} = $props();
 
-	const isDesktop = isDesktopApp();
-	const userInitials = $derived(
-		(authStore.user?.full_name ?? 'User')
-			.split(/\s+/)
-			.filter(Boolean)
-			.slice(0, 2)
-			.map((part) => part[0]?.toUpperCase() ?? '')
-			.join('') || 'U'
-	);
+const isDesktop = isDesktopApp();
+const userInitials = $derived(
+  (authStore.user?.full_name ?? "User")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("") || "U",
+);
 </script>
 
 <div

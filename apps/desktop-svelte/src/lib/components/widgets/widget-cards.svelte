@@ -1,26 +1,38 @@
 <script lang="ts">
-	let { stats, orgId }: { stats: any; orgId: string } = $props();
+let { stats, orgId }: { stats: any; orgId: string } = $props();
 
-	const studentVal = $derived(String(stats?.total_students ?? 0));
-	const studentDetail = $derived(`across ${stats?.total_classes ?? 0} active classes`);
+const studentVal = $derived(String(stats?.total_students ?? 0));
+const studentDetail = $derived(
+  `across ${stats?.total_classes ?? 0} active classes`,
+);
 
-	const attendanceVal = $derived(`${stats?.attendance_overview?.present_rate ?? 0}%`);
-	const attendanceDetail = $derived(
-		`Late: ${stats?.attendance_overview?.late_rate ?? 0}% | Absent: ${stats?.attendance_overview?.absent_rate ?? 0}%`
-	);
+const attendanceVal = $derived(
+  `${stats?.attendance_overview?.present_rate ?? 0}%`,
+);
+const attendanceDetail = $derived(
+  `Late: ${stats?.attendance_overview?.late_rate ?? 0}% | Absent: ${stats?.attendance_overview?.absent_rate ?? 0}%`,
+);
 
-	const classesVal = $derived(String(stats?.total_classes ?? 0));
-	const classesDetail = $derived(`Managed by ${stats?.total_teachers ?? 0} teachers`);
+const classesVal = $derived(String(stats?.total_classes ?? 0));
+const classesDetail = $derived(
+  `Managed by ${stats?.total_teachers ?? 0} teachers`,
+);
 
-	const behaviorPoints = $derived(stats?.behavior_summary?.net_points ?? 0);
-	const behaviorVal = $derived(`${behaviorPoints > 0 ? "+" : ""}${behaviorPoints}`);
-	const behaviorDetail = $derived(`${stats?.behavior_summary?.critical_count ?? 0} critical incidents`);
+const behaviorPoints = $derived(stats?.behavior_summary?.net_points ?? 0);
+const behaviorVal = $derived(
+  `${behaviorPoints > 0 ? "+" : ""}${behaviorPoints}`,
+);
+const behaviorDetail = $derived(
+  `${stats?.behavior_summary?.critical_count ?? 0} critical incidents`,
+);
 
-	const staffVal = $derived(String(stats?.total_staff ?? 0));
-	const staffDetail = $derived("Supporting administrative roles");
+const staffVal = $derived(String(stats?.total_staff ?? 0));
+const staffDetail = $derived("Supporting administrative roles");
 
-	const enrollmentVal = $derived(`${stats?.enrollment_rate ?? 0}%`);
-	const enrollmentDetail = $derived(`Total enrolled: ${stats?.total_enrollments ?? 0}`);
+const enrollmentVal = $derived(`${stats?.enrollment_rate ?? 0}%`);
+const enrollmentDetail = $derived(
+  `Total enrolled: ${stats?.total_enrollments ?? 0}`,
+);
 </script>
 
 {#snippet card(label: string, href: string, value: string, detail?: string)}

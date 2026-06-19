@@ -5,57 +5,93 @@ Follows GitButler's AppSidebar pattern: icons-only, top nav + bottom actions,
 and an animated active indicator bar.
 -->
 <script lang="ts">
-	import { page } from '$app/state';
-	import { Button } from '@orbis/ui-svelte/button';
-	import {
-		Avatar,
-		AvatarFallback,
-		AvatarImage,
-		Tooltip,
-		TooltipContent,
-		TooltipProvider,
-		TooltipTrigger,
-	} from '@orbis/ui-svelte';
-	import {
-		LayoutDashboard,
-		Users,
-		BookOpen,
-		Wallet,
-		BarChart3,
-		Settings,
-		MessageSquare,
-	} from 'lucide-svelte';
-	import { authStore } from '$lib/stores';
+import { page } from "$app/state";
+import { Button } from "@orbis/ui-svelte/button";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@orbis/ui-svelte";
+import {
+  LayoutDashboard,
+  Users,
+  BookOpen,
+  Wallet,
+  BarChart3,
+  Settings,
+  MessageSquare,
+} from "lucide-svelte";
+import { authStore } from "$lib/stores";
 
-	let { orgId, disabled = false }: { orgId: string; disabled?: boolean } = $props();
+let { orgId, disabled = false }: { orgId: string; disabled?: boolean } =
+  $props();
 
-	const navItems = $derived([
-		{ href: `/${orgId}`, icon: LayoutDashboard, label: 'Overview', match: 'exact' },
-		{ href: `/${orgId}/reports`, icon: BarChart3, label: 'Reports', match: 'exact' },
-		{ href: `/${orgId}/students`, icon: Users, label: 'Students', match: 'prefix' },
-		{ href: `/${orgId}/academics`, icon: BookOpen, label: 'Academics', match: 'prefix' },
-		{ href: `/${orgId}/finance`, icon: Wallet, label: 'Finance', match: 'prefix' },
-		{ href: `/${orgId}/settings`, icon: Settings, label: 'Settings', match: 'prefix' },
-	] as const);
+const navItems = $derived([
+  {
+    href: `/${orgId}`,
+    icon: LayoutDashboard,
+    label: "Overview",
+    match: "exact",
+  },
+  {
+    href: `/${orgId}/reports`,
+    icon: BarChart3,
+    label: "Reports",
+    match: "exact",
+  },
+  {
+    href: `/${orgId}/students`,
+    icon: Users,
+    label: "Students",
+    match: "prefix",
+  },
+  {
+    href: `/${orgId}/academics`,
+    icon: BookOpen,
+    label: "Academics",
+    match: "prefix",
+  },
+  {
+    href: `/${orgId}/finance`,
+    icon: Wallet,
+    label: "Finance",
+    match: "prefix",
+  },
+  {
+    href: `/${orgId}/settings`,
+    icon: Settings,
+    label: "Settings",
+    match: "prefix",
+  },
+] as const);
 
-	const bottomItems = $derived([
-		{ href: `/${orgId}/settings`, icon: Settings, label: 'Settings', match: 'prefix' },
-	] as const);
+const bottomItems = $derived([
+  {
+    href: `/${orgId}/settings`,
+    icon: Settings,
+    label: "Settings",
+    match: "prefix",
+  },
+] as const);
 
-	const userInitials = $derived(
-		(authStore.user?.full_name ?? 'User')
-			.split(/\s+/)
-			.filter(Boolean)
-			.slice(0, 2)
-			.map((part) => part[0]?.toUpperCase() ?? '')
-			.join('') || 'U'
-	);
+const userInitials = $derived(
+  (authStore.user?.full_name ?? "User")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("") || "U",
+);
 
-	function isActive(href: string, match: 'exact' | 'prefix'): boolean {
-		const pathname = page.url.pathname;
-		if (match === 'exact') return pathname === href;
-		return pathname.startsWith(href);
-	}
+function isActive(href: string, match: "exact" | "prefix"): boolean {
+  const pathname = page.url.pathname;
+  if (match === "exact") return pathname === href;
+  return pathname.startsWith(href);
+}
 </script>
 
 <TooltipProvider delayDuration={150}>

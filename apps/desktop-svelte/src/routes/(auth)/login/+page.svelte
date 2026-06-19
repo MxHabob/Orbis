@@ -3,39 +3,40 @@
   Redesigned to match the old desktop React application layout and design.
 -->
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { authStore } from '$lib/stores';
-	import { Button } from '@orbis/ui-svelte/button';
-	import { Card } from '@orbis/ui-svelte/card';
-	import { Input } from '@orbis/ui-svelte/input';
-	import { Zap, Eye, EyeOff, Loader2 } from 'lucide-svelte';
+import { goto } from "$app/navigation";
+import { authStore } from "$lib/stores";
+import { Button } from "@orbis/ui-svelte/button";
+import { Card } from "@orbis/ui-svelte/card";
+import { Input } from "@orbis/ui-svelte/input";
+import { Zap, Eye, EyeOff, Loader2 } from "lucide-svelte";
 
-	let email = $state('');
-	let password = $state('');
-	let showPassword = $state(false);
-	let error = $state<string | null>(null);
-	let isLoading = $state(false);
+let email = $state("");
+let password = $state("");
+let showPassword = $state(false);
+let error = $state<string | null>(null);
+let isLoading = $state(false);
 
-	async function handleSubmit(e: SubmitEvent) {
-		e.preventDefault();
-		if (!email || !password) {
-			error = 'Please fill in all fields';
-			return;
-		}
+async function handleSubmit(e: SubmitEvent) {
+  e.preventDefault();
+  if (!email || !password) {
+    error = "Please fill in all fields";
+    return;
+  }
 
-		isLoading = true;
-		error = null;
+  isLoading = true;
+  error = null;
 
-		try {
-			await authStore.login(email, password);
-			const orgId = authStore.orgId;
-			goto(`/${orgId}`);
-		} catch (err) {
-			error = err instanceof Error ? err.message : 'Login failed. Please try again.';
-		} finally {
-			isLoading = false;
-		}
-	}
+  try {
+    await authStore.login(email, password);
+    const orgId = authStore.orgId;
+    goto(`/${orgId}`);
+  } catch (err) {
+    error =
+      err instanceof Error ? err.message : "Login failed. Please try again.";
+  } finally {
+    isLoading = false;
+  }
+}
 </script>
 
 <svelte:head>

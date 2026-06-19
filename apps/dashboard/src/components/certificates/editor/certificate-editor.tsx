@@ -82,14 +82,11 @@ export function CertificateEditor({ initialData }: Props) {
             );
 
             const { getApiUrl } = await import("@/trpc/client");
-            const response = await fetch(
-              `${getApiUrl()}/api/upload`,
-              {
-                method: "POST",
-                body: formData,
-                credentials: "include",
-              },
-            );
+            const response = await fetch(`${getApiUrl()}/api/upload`, {
+              method: "POST",
+              body: formData,
+              credentials: "include",
+            });
 
             if (!response.ok) throw new Error("Upload failed");
             const data = await response.json();

@@ -3,20 +3,20 @@
   Restores auth from localStorage on first load.
 -->
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { authStore } from '$lib/stores';
-	import { onMount } from 'svelte';
-	import { Loader2 } from 'lucide-svelte';
+import { goto } from "$app/navigation";
+import { authStore } from "$lib/stores";
+import { onMount } from "svelte";
+import { Loader2 } from "lucide-svelte";
 
-	onMount(() => {
-		authStore.restore();
+onMount(() => {
+  authStore.restore();
 
-		if (authStore.isAuthenticated && authStore.orgId) {
-			goto(`/${authStore.orgId}`, { replaceState: true });
-		} else {
-			goto('/login', { replaceState: true });
-		}
-	});
+  if (authStore.isAuthenticated && authStore.orgId) {
+    goto(`/${authStore.orgId}`, { replaceState: true });
+  } else {
+    goto("/login", { replaceState: true });
+  }
+});
 </script>
 
 <svelte:head>

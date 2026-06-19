@@ -4,13 +4,13 @@
 
 export { commands } from "@orbis/desktop-client/commands";
 export {
-	isDesktopApp,
-	listenForDeepLinks,
-	createDeepLink,
+  isDesktopApp,
+  listenForDeepLinks,
+  createDeepLink,
 } from "@orbis/desktop-client/platform";
 export type {
-	User,
-	LoginResponse,
-	JsonRecord,
-	CommandError,
+  User,
+  LoginResponse,
+  JsonRecord,
+  CommandError,
 } from "@orbis/desktop-client/types";

@@ -48,7 +48,10 @@ export function getFileProxyUrl(filePath: string): string {
     // If it's a direct S3 URL, rewrite it to go through our proxy
     try {
       const url = new URL(filePath);
-      if (url.pathname.includes("/vault/") || url.pathname.includes("/avatars/")) {
+      if (
+        url.pathname.includes("/vault/") ||
+        url.pathname.includes("/avatars/")
+      ) {
         const cleanPath = url.pathname.replace(/^\/+/, "");
         const baseUrl = getUnifiedApiUrl();
         return `${baseUrl}/files/proxy?filePath=${encodeURIComponent(cleanPath)}`;

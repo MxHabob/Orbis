@@ -134,7 +134,10 @@ export function DesktopProvider() {
           }
           console.log("🧹 Deep link listener cleaned up");
         } catch (error) {
-          console.warn("Failed to cleanup deep link listener synchronously:", error);
+          console.warn(
+            "Failed to cleanup deep link listener synchronously:",
+            error,
+          );
         }
       }
     };
@@ -238,12 +241,18 @@ export function DesktopProvider() {
           const result = unlistenNavigation() as any;
           if (result instanceof Promise) {
             result.catch((error) => {
-              console.warn("Failed to cleanup desktop navigation listener:", error);
+              console.warn(
+                "Failed to cleanup desktop navigation listener:",
+                error,
+              );
             });
           }
           console.log("🧹 Desktop navigation listener cleaned up");
         } catch (error) {
-          console.warn("Failed to cleanup desktop navigation listener synchronously:", error);
+          console.warn(
+            "Failed to cleanup desktop navigation listener synchronously:",
+            error,
+          );
         }
       }
       if (unlistenParamsNavigation) {
@@ -251,12 +260,18 @@ export function DesktopProvider() {
           const result = unlistenParamsNavigation() as any;
           if (result instanceof Promise) {
             result.catch((error) => {
-              console.warn("Failed to cleanup desktop params navigation listener:", error);
+              console.warn(
+                "Failed to cleanup desktop params navigation listener:",
+                error,
+              );
             });
           }
           console.log("🧹 Desktop params navigation listener cleaned up");
         } catch (error) {
-          console.warn("Failed to cleanup desktop params navigation listener synchronously:", error);
+          console.warn(
+            "Failed to cleanup desktop params navigation listener synchronously:",
+            error,
+          );
         }
       }
     };

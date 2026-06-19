@@ -1,23 +1,23 @@
 <script lang="ts">
-	import { X } from "lucide-svelte";
-	import { onMount } from "svelte";
-	import { fly } from "svelte/transition";
+import { X } from "lucide-svelte";
+import { onMount } from "svelte";
+import { fly } from "svelte/transition";
 
-	let dismissed = $state(true); // Default to true to prevent hydration mismatch/flash
-	let mounted = $state(false);
+let dismissed = $state(true); // Default to true to prevent hydration mismatch/flash
+let mounted = $state(false);
 
-	onMount(() => {
-		const saved = localStorage.getItem("orbis_desktop_banner_dismissed");
-		dismissed = saved === "true";
-		mounted = true;
-	});
+onMount(() => {
+  const saved = localStorage.getItem("orbis_desktop_banner_dismissed");
+  dismissed = saved === "true";
+  mounted = true;
+});
 
-	function handleDismiss(e: MouseEvent) {
-		e.preventDefault();
-		e.stopPropagation();
-		dismissed = true;
-		localStorage.setItem("orbis_desktop_banner_dismissed", "true");
-	}
+function handleDismiss(e: MouseEvent) {
+  e.preventDefault();
+  e.stopPropagation();
+  dismissed = true;
+  localStorage.setItem("orbis_desktop_banner_dismissed", "true");
+}
 </script>
 
 {#if mounted && !dismissed}

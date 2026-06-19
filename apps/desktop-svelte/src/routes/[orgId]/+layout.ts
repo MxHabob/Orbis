@@ -1,5 +1,5 @@
-import type { LayoutLoad } from './$types';
+import type { LayoutLoad } from "./$types";
 
 export const load: LayoutLoad = ({ params }) => {
-	return { orgId: params.orgId };
+  return { orgId: params.orgId };
 };

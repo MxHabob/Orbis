@@ -73,61 +73,61 @@ export function InboxSheetDetails() {
               <div className="relative">
                 <Avatar className="size-9 border">
                   <AvatarImageNext
-                     src={logoUrl}
-                     alt={data.website || ""}
-                     width={36}
-                     height={36}
-                     quality={100}
-                   />
-                   <AvatarFallback className="text-[9px] font-medium">
-                     {data.website ? getInitials(data.website) : ""}
-                   </AvatarFallback>
-                 </Avatar>
-               </div>
-             )}
- 
-             <div className="grid gap-1 select-text">
-               <div className="font-semibold">
-                 {isProcessing ? (
-                   <Skeleton className="h-3 w-[120px] mb-1" />
-                 ) : (
-                   data.displayName
-                 )}
-               </div>
-               <div className="line-clamp-1 text-xs">
-                 {isProcessing && !data.currency && (
-                   <Skeleton className="h-3 w-[50px]" />
-                 )}
-                 {data.currency && data.amount != null && (
-                   <FormatAmount amount={data.amount} currency={data.currency} />
-                 )}
-               </div>
-             </div>
-           </div>
-           <div className="grid gap-1 ml-auto text-right">
-             <div className="text-xs text-muted-foreground select-text">
-               {isProcessing && !data.date && (
-                 <Skeleton className="h-3 w-[50px]" />
-               )}
-               {data.date && formatDate(data.date, user?.dateFormat)}
-             </div>
-           </div>
-         </div>
-       </div>
- 
-       <Separator className="mb-4" />
- 
-       {/* Document preview */}
-       <div className="flex-1 mb-4 overflow-hidden relative">
-         {data?.filePath && (
-           <div className="h-full flex items-center justify-center">
-             <FileViewer
-               mimeType={data.contentType}
-               url={getFileProxyUrl(`vault/${data.filePath.join("/")}`)}
-               maxWidth={565}
-             />
-           </div>
-         )}
+                    src={logoUrl}
+                    alt={data.website || ""}
+                    width={36}
+                    height={36}
+                    quality={100}
+                  />
+                  <AvatarFallback className="text-[9px] font-medium">
+                    {data.website ? getInitials(data.website) : ""}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
+            )}
+
+            <div className="grid gap-1 select-text">
+              <div className="font-semibold">
+                {isProcessing ? (
+                  <Skeleton className="h-3 w-[120px] mb-1" />
+                ) : (
+                  data.displayName
+                )}
+              </div>
+              <div className="line-clamp-1 text-xs">
+                {isProcessing && !data.currency && (
+                  <Skeleton className="h-3 w-[50px]" />
+                )}
+                {data.currency && data.amount != null && (
+                  <FormatAmount amount={data.amount} currency={data.currency} />
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="grid gap-1 ml-auto text-right">
+            <div className="text-xs text-muted-foreground select-text">
+              {isProcessing && !data.date && (
+                <Skeleton className="h-3 w-[50px]" />
+              )}
+              {data.date && formatDate(data.date, user?.dateFormat)}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <Separator className="mb-4" />
+
+      {/* Document preview */}
+      <div className="flex-1 mb-4 overflow-hidden relative">
+        {data?.filePath && (
+          <div className="h-full flex items-center justify-center">
+            <FileViewer
+              mimeType={data.contentType}
+              url={getFileProxyUrl(`vault/${data.filePath.join("/")}`)}
+              maxWidth={565}
+            />
+          </div>
+        )}
 
         <div className="absolute bottom-4 z-10 left-4 right-4">
           <InboxActions data={data} key={data.id} />

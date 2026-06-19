@@ -12,8 +12,7 @@ const buttonVariants = cva(
         destructive: "btn-tactile-destructive",
         outline:
           "btn-tactile border border-border bg-transparent hover:bg-accent text-foreground",
-        secondary:
-          "btn-tactile bg-secondary text-secondary-foreground",
+        secondary: "btn-tactile bg-secondary text-secondary-foreground",
         ghost: "btn-tactile-ghost",
         link: "text-primary underline-offset-4 hover:underline",
       },

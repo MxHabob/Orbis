@@ -3,14 +3,14 @@
 // Manages sidebar, panel widths, and global loading state.
 
 class UIStore {
-	globalLoading = $state(false);
+  globalLoading = $state(false);
 
-	// Panel resize preferences are persisted via Resizer component
-	// to localStorage with `resizer:{persistId}` keys.
+  // Panel resize preferences are persisted via Resizer component
+  // to localStorage with `resizer:{persistId}` keys.
 
-	setGlobalLoading(loading: boolean) {
-		this.globalLoading = loading;
-	}
+  setGlobalLoading(loading: boolean) {
+    this.globalLoading = loading;
+  }
 }
 
 export const uiStore = new UIStore();

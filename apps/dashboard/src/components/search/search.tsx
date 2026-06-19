@@ -592,7 +592,10 @@ export function Search() {
             });
           }
         } catch (error) {
-          console.warn("Failed to cleanup search listener synchronously:", error);
+          console.warn(
+            "Failed to cleanup search listener synchronously:",
+            error,
+          );
         }
       });
     };

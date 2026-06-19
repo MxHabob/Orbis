@@ -1,28 +1,28 @@
 <script lang="ts">
-	import type { Pathname } from '$app/types';
-	import { resolve } from '$app/paths';
-	import { page } from '$app/state';
-	import { locales, localizeHref } from '$lib/paraglide/runtime';
-	import { themeStore } from '$lib/stores';
-	import { isDesktopApp } from '$lib/services/ipc';
-	import { Toaster } from 'svelte-sonner';
-	import { onMount } from 'svelte';
-	import './layout.css';
-	import favicon from '$lib/assets/favicon.svg';
+import type { Pathname } from "$app/types";
+import { resolve } from "$app/paths";
+import { page } from "$app/state";
+import { locales, localizeHref } from "$lib/paraglide/runtime";
+import { themeStore } from "$lib/stores";
+import { isDesktopApp } from "$lib/services/ipc";
+import { Toaster } from "svelte-sonner";
+import { onMount } from "svelte";
+import "./layout.css";
+import favicon from "$lib/assets/favicon.svg";
 
-	let { children } = $props();
+let { children } = $props();
 
-	// Apply theme on mount
-	$effect(() => {
-		themeStore.applyToDOM();
-	});
+// Apply theme on mount
+$effect(() => {
+  themeStore.applyToDOM();
+});
 
-	// Add desktop class to html element for Tauri shell styling
-	onMount(() => {
-		if (isDesktopApp()) {
-			document.documentElement.classList.add('desktop');
-		}
-	});
+// Add desktop class to html element for Tauri shell styling
+onMount(() => {
+  if (isDesktopApp()) {
+    document.documentElement.classList.add("desktop");
+  }
+});
 </script>
 
 <svelte:head>

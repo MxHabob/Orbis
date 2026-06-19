@@ -1,141 +1,146 @@
 <script lang="ts">
-	import { authStore } from "$lib/stores";
-	import { onMount, onDestroy } from "svelte";
-	import { fly } from "svelte/transition";
-	import { quadOut } from "svelte/easing";
+import { authStore } from "$lib/stores";
+import { onMount, onDestroy } from "svelte";
+import { fly } from "svelte/transition";
+import { quadOut } from "svelte/easing";
 
-	let { type, stats, orgId }: { type?: "greeting" | "summary" | "both"; stats?: any; orgId: string } = $props();
+let {
+  type,
+  stats,
+  orgId,
+}: { type?: "greeting" | "summary" | "both"; stats?: any; orgId: string } =
+  $props();
 
-	// Greeting Logic
-	function getTimeBasedGreeting(): string {
-		const hour = new Date().getHours();
-		if (hour >= 5 && hour < 12) return "Good morning";
-		if (hour >= 12 && hour < 17) return "Good afternoon";
-		return "Good evening";
-	}
+// Greeting Logic
+function getTimeBasedGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return "Good morning";
+  if (hour >= 12 && hour < 17) return "Good afternoon";
+  return "Good evening";
+}
 
-	let greeting = $state(getTimeBasedGreeting());
-	let greetingInterval: any;
+let greeting = $state(getTimeBasedGreeting());
+let greetingInterval: any;
 
-	onMount(() => {
-		greetingInterval = setInterval(() => {
-			greeting = getTimeBasedGreeting();
-		}, 60000);
-	});
+onMount(() => {
+  greetingInterval = setInterval(() => {
+    greeting = getTimeBasedGreeting();
+  }, 60000);
+});
 
-	onDestroy(() => {
-		if (greetingInterval) clearInterval(greetingInterval);
-	});
+onDestroy(() => {
+  if (greetingInterval) clearInterval(greetingInterval);
+});
 
-	const firstName = $derived(authStore.user?.full_name?.split(" ")[0]);
+const firstName = $derived(authStore.user?.full_name?.split(" ")[0]);
 
-	// Ticker / Insights Logic
-	let index = $state(0);
-	let progress = $state(0);
-	let isHovered = $state(false);
+// Ticker / Insights Logic
+let index = $state(0);
+let progress = $state(0);
+let isHovered = $state(false);
 
-	const TICK_DURATION = 6000;
-	let start = $state(Date.now());
-	let elapsedOnPause = $state(0);
-	let rafId: number;
+const TICK_DURATION = 6000;
+let start = $state(Date.now());
+let elapsedOnPause = $state(0);
+let rafId: number;
 
-	type Insight = {
-		key: string;
-		before: string;
-		link: string;
-		after: string;
-		href: string;
-	};
+type Insight = {
+  key: string;
+  before: string;
+  link: string;
+  after: string;
+  href: string;
+};
 
-	const insights = $derived.by<Insight[]>(() => {
-		if (!stats) return [];
-		return [
-			{
-				key: "students",
-				before: "You have ",
-				link: `${stats.total_students} students`,
-				after: ` currently enrolled in the system.`,
-				href: `/${orgId}/students`
-			},
-			{
-				key: "attendance",
-				before: "Today's average attendance rate sits at ",
-				link: `${stats.attendance_overview?.present_rate ?? 0}%`,
-				after: `, with ${stats.attendance_overview?.late_rate ?? 0}% marked late.`,
-				href: `/${orgId}/reports`
-			},
-			{
-				key: "classes",
-				before: "There are ",
-				link: `${stats.total_classes} active classes`,
-				after: ` being managed by ${stats.total_teachers} teachers.`,
-				href: `/${orgId}/academics`
-			},
-			{
-				key: "behavior",
-				before: "There are ",
-				link: `${stats.behavior_summary?.total_records ?? 0} behavior records`,
-				after: `, with ${stats.behavior_summary?.critical_count ?? 0} critical incidents.`,
-				href: `/${orgId}/students`
-			},
-			{
-				key: "staff",
-				before: "A total of ",
-				link: `${stats.total_staff} staff members`,
-				after: " supporting organizational operations.",
-				href: `/${orgId}/settings`
-			}
-		];
-	});
+const insights = $derived.by<Insight[]>(() => {
+  if (!stats) return [];
+  return [
+    {
+      key: "students",
+      before: "You have ",
+      link: `${stats.total_students} students`,
+      after: ` currently enrolled in the system.`,
+      href: `/${orgId}/students`,
+    },
+    {
+      key: "attendance",
+      before: "Today's average attendance rate sits at ",
+      link: `${stats.attendance_overview?.present_rate ?? 0}%`,
+      after: `, with ${stats.attendance_overview?.late_rate ?? 0}% marked late.`,
+      href: `/${orgId}/reports`,
+    },
+    {
+      key: "classes",
+      before: "There are ",
+      link: `${stats.total_classes} active classes`,
+      after: ` being managed by ${stats.total_teachers} teachers.`,
+      href: `/${orgId}/academics`,
+    },
+    {
+      key: "behavior",
+      before: "There are ",
+      link: `${stats.behavior_summary?.total_records ?? 0} behavior records`,
+      after: `, with ${stats.behavior_summary?.critical_count ?? 0} critical incidents.`,
+      href: `/${orgId}/students`,
+    },
+    {
+      key: "staff",
+      before: "A total of ",
+      link: `${stats.total_staff} staff members`,
+      after: " supporting organizational operations.",
+      href: `/${orgId}/settings`,
+    },
+  ];
+});
 
-	function goTo(i: number) {
-		if (insights.length <= 1) return;
-		const next = i % insights.length;
-		if (next === index) return;
-		index = next;
-		progress = 0;
-		start = Date.now();
-		elapsedOnPause = 0;
-	}
+function goTo(i: number) {
+  if (insights.length <= 1) return;
+  const next = i % insights.length;
+  if (next === index) return;
+  index = next;
+  progress = 0;
+  start = Date.now();
+  elapsedOnPause = 0;
+}
 
-	function tick() {
-		if (isHovered) {
-			rafId = requestAnimationFrame(tick);
-			return;
-		}
+function tick() {
+  if (isHovered) {
+    rafId = requestAnimationFrame(tick);
+    return;
+  }
 
-		const elapsed = elapsedOnPause + (Date.now() - start);
-		const pct = Math.min(elapsed / TICK_DURATION, 1);
-		progress = pct;
+  const elapsed = elapsedOnPause + (Date.now() - start);
+  const pct = Math.min(elapsed / TICK_DURATION, 1);
+  progress = pct;
 
-		if (pct >= 1) {
-			index = (index + 1) % insights.length;
-			progress = 0;
-			start = Date.now();
-			elapsedOnPause = 0;
-		}
+  if (pct >= 1) {
+    index = (index + 1) % insights.length;
+    progress = 0;
+    start = Date.now();
+    elapsedOnPause = 0;
+  }
 
-		rafId = requestAnimationFrame(tick);
-	}
+  rafId = requestAnimationFrame(tick);
+}
 
-	$effect(() => {
-		if (insights.length > 1 && !rafId) {
-			rafId = requestAnimationFrame(tick);
-		}
-		return () => {
-			if (rafId) cancelAnimationFrame(rafId);
-		};
-	});
+$effect(() => {
+  if (insights.length > 1 && !rafId) {
+    rafId = requestAnimationFrame(tick);
+  }
+  return () => {
+    if (rafId) cancelAnimationFrame(rafId);
+  };
+});
 
-	function handleMouseEnter() {
-		isHovered = true;
-		elapsedOnPause += Date.now() - start;
-	}
+function handleMouseEnter() {
+  isHovered = true;
+  elapsedOnPause += Date.now() - start;
+}
 
-	function handleMouseLeave() {
-		isHovered = false;
-		start = Date.now();
-	}
+function handleMouseLeave() {
+  isHovered = false;
+  start = Date.now();
+}
 </script>
 
 {#if type === "greeting" || type === "both" || !type}

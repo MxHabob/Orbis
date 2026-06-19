@@ -33,7 +33,6 @@ export function useTableSettings({
   initialSettings,
   defaultHiddenColumns = [],
 }: UseTableSettingsProps): UseTableSettingsReturn {
-  
   // Merge defaults
   const getDefaultSettings = (): TableSettings => {
     const visibility: VisibilityState = {};
@@ -48,8 +47,10 @@ export function useTableSettings({
   };
 
   const defaults = getDefaultSettings();
-  
-  const mergeWithDefaults = (saved: Partial<TableSettings> | undefined): TableSettings => {
+
+  const mergeWithDefaults = (
+    saved: Partial<TableSettings> | undefined,
+  ): TableSettings => {
     const settings = {
       columns: saved?.columns ?? defaults.columns,
       sizing: saved?.sizing ?? defaults.sizing,

@@ -1,7 +1,7 @@
-import * as generated from './generated';
-import { client } from './generated';
+import * as generated from "./generated";
+import { client } from "./generated";
 
-export * from './generated';
+export * from "./generated";
 
 export const sdk = {
   client,
@@ -92,7 +92,8 @@ export const sdk = {
     exportStudents: generated.HandlerImportExportService.getExportStudents,
     exportGrades: generated.HandlerImportExportService.getExportGrades,
     exportAttendance: generated.HandlerImportExportService.getExportAttendance,
-    exportReportCards: generated.HandlerImportExportService.getExportReportCards,
+    exportReportCards:
+      generated.HandlerImportExportService.getExportReportCards,
   },
   finance: {
     getLedgerAccounts: generated.HandlerFinanceService.getLedgerAccounts,
@@ -103,5 +104,5 @@ export const sdk = {
     assignStudentFee: generated.HandlerFinanceService.postStudentFees,
     getPayments: generated.HandlerFinanceService.getPayments,
     recordPayment: generated.HandlerFinanceService.postPayments,
-  }
+  },
 };

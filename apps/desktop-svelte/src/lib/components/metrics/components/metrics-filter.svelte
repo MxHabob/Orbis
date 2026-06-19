@@ -1,74 +1,80 @@
 <script lang="ts">
-	import { Button } from "@orbis/ui-svelte/button";
-	import {
-		DropdownMenu,
-		DropdownMenuContent,
-		DropdownMenuGroup,
-		DropdownMenuLabel,
-		DropdownMenuRadioGroup,
-		DropdownMenuRadioItem,
-		DropdownMenuSeparator,
-		DropdownMenuTrigger
-	} from "@orbis/ui-svelte/dropdown-menu";
-	import { Filter, ChevronDown } from "lucide-svelte";
-	import { onMount } from "svelte";
-	import { commands } from "$lib/services/ipc";
+import { Button } from "@orbis/ui-svelte/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@orbis/ui-svelte/dropdown-menu";
+import { Filter, ChevronDown } from "lucide-svelte";
+import { onMount } from "svelte";
+import { commands } from "$lib/services/ipc";
 
-	let {
-		orgId,
-		period = $bindable("this-year"),
-		selectedTerm = $bindable("all"),
-		selectedClass = $bindable("all")
-	}: {
-		orgId: string;
-		period: string;
-		selectedTerm: string;
-		selectedClass: string;
-	} = $props();
+let {
+  orgId,
+  period = $bindable("this-year"),
+  selectedTerm = $bindable("all"),
+  selectedClass = $bindable("all"),
+}: {
+  orgId: string;
+  period: string;
+  selectedTerm: string;
+  selectedClass: string;
+} = $props();
 
-	// Loaded Options
-	let terms = $state<any[]>([]);
-	let classes = $state<any[]>([]);
+// Loaded Options
+let terms = $state<any[]>([]);
+let classes = $state<any[]>([]);
 
-	async function loadOptions() {
-		try {
-			// Load Terms (Cycles of type 'term')
-			const cycles = await commands.academics.getCycles(orgId, { cycle_type: "term" });
-			terms = cycles || [];
+async function loadOptions() {
+  try {
+    // Load Terms (Cycles of type 'term')
+    const cycles = await commands.academics.getCycles(orgId, {
+      cycle_type: "term",
+    });
+    terms = cycles || [];
 
-			// Load Classes
-			const cl = await commands.classes.getAll(orgId);
-			classes = cl || [];
-		} catch (e) {
-			console.error("Error loading filter options:", e);
-		}
-	}
+    // Load Classes
+    const cl = await commands.classes.getAll(orgId);
+    classes = cl || [];
+  } catch (e) {
+    console.error("Error loading filter options:", e);
+  }
+}
 
-	onMount(() => {
-		loadOptions();
-	});
+onMount(() => {
+  loadOptions();
+});
 
-	// Get Labels for indicators
-	const periodLabel = $derived(() => {
-		switch (period) {
-			case "3-months": return "3 months";
-			case "6-months": return "6 months";
-			case "this-year": return "This year";
-			default: return "All time";
-		}
-	});
+// Get Labels for indicators
+const periodLabel = $derived(() => {
+  switch (period) {
+    case "3-months":
+      return "3 months";
+    case "6-months":
+      return "6 months";
+    case "this-year":
+      return "This year";
+    default:
+      return "All time";
+  }
+});
 
-	const termName = $derived(() => {
-		if (selectedTerm === "all") return "All Terms";
-		const term = terms.find((t) => t.id === selectedTerm);
-		return term ? term.name : "Selected Term";
-	});
+const termName = $derived(() => {
+  if (selectedTerm === "all") return "All Terms";
+  const term = terms.find((t) => t.id === selectedTerm);
+  return term ? term.name : "Selected Term";
+});
 
-	const className = $derived(() => {
-		if (selectedClass === "all") return "All Classes";
-		const c = classes.find((i) => i.id === selectedClass);
-		return c ? c.name : "Selected Class";
-	});
+const className = $derived(() => {
+  if (selectedClass === "all") return "All Classes";
+  const c = classes.find((i) => i.id === selectedClass);
+  return c ? c.name : "Selected Class";
+});
 </script>
 
 <div class="flex items-center gap-2">

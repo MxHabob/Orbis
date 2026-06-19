@@ -1,4 +1,4 @@
-import { SCHEMAS, ImportSchema } from './schemas';
+import { SCHEMAS, ImportSchema } from "./schemas";
 
 export interface ParseResult<T> {
   data: T[];
@@ -9,7 +9,10 @@ export class OrbisCSVParser {
   /**
    * Parse a CSV string into strongly-typed objects based on a registered schema.
    */
-  static parse<T>(csvText: string, schemaKey: 'student' | 'grades'): ParseResult<T> {
+  static parse<T>(
+    csvText: string,
+    schemaKey: "student" | "grades",
+  ): ParseResult<T> {
     const schema = SCHEMAS[schemaKey];
     if (!schema) {
       return { data: [], errors: [`Schema "${schemaKey}" is not registered.`] };
@@ -21,11 +24,11 @@ export class OrbisCSVParser {
     // Clean up carriage returns and split into lines
     const lines = csvText
       .split(/\r?\n/)
-      .map(line => line.trim())
-      .filter(line => line.length > 0);
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
 
     if (lines.length === 0) {
-      return { data: [], errors: ['CSV file is empty.'] };
+      return { data: [], errors: ["CSV file is empty."] };
     }
 
     // Parse header row
@@ -51,7 +54,9 @@ export class OrbisCSVParser {
       if (foundIndex !== -1) {
         headerIndexMap[field.key] = foundIndex;
       } else if (field.required) {
-        errors.push(`Missing required column header: "${field.label}" (or "${field.labelAr || ''}")`);
+        errors.push(
+          `Missing required column header: "${field.label}" (or "${field.labelAr || ""}")`,
+        );
       }
     }
 
@@ -63,9 +68,9 @@ export class OrbisCSVParser {
     for (let rowIndex = 1; rowIndex < lines.length; rowIndex++) {
       const line = lines[rowIndex]!;
       const cells = this.parseCSVLine(line);
-      
+
       // Skip empty lines
-      if (cells.length === 0 || (cells.length === 1 && cells[0] === '')) {
+      if (cells.length === 0 || (cells.length === 1 && cells[0] === "")) {
         continue;
       }
 
@@ -74,11 +79,13 @@ export class OrbisCSVParser {
 
       for (const field of schema.fields) {
         const colIndex = headerIndexMap[field.key];
-        
+
         // If optional field index is missing
         if (colIndex === undefined || colIndex >= cells.length) {
           if (field.required) {
-            errors.push(`Row ${rowIndex + 1}: Missing required field "${field.label}"`);
+            errors.push(
+              `Row ${rowIndex + 1}: Missing required field "${field.label}"`,
+            );
             rowValid = false;
           } else {
             rowObj[field.key] = null;
@@ -88,9 +95,11 @@ export class OrbisCSVParser {
 
         const rawValue = cells[colIndex]!.trim();
 
-        if (rawValue === '') {
+        if (rawValue === "") {
           if (field.required) {
-            errors.push(`Row ${rowIndex + 1}: Required field "${field.label}" is empty`);
+            errors.push(
+              `Row ${rowIndex + 1}: Required field "${field.label}" is empty`,
+            );
             rowValid = false;
           } else {
             rowObj[field.key] = null;
@@ -100,18 +109,22 @@ export class OrbisCSVParser {
 
         // Validate type
         let parsedValue: any = rawValue;
-        if (field.type === 'number') {
+        if (field.type === "number") {
           const num = Number(rawValue);
           if (isNaN(num)) {
-            errors.push(`Row ${rowIndex + 1}: Column "${field.label}" must be a valid number (got "${rawValue}")`);
+            errors.push(
+              `Row ${rowIndex + 1}: Column "${field.label}" must be a valid number (got "${rawValue}")`,
+            );
             rowValid = false;
           } else {
             parsedValue = num;
           }
-        } else if (field.type === 'email') {
+        } else if (field.type === "email") {
           const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
           if (!emailRegex.test(rawValue)) {
-            errors.push(`Row ${rowIndex + 1}: Column "${field.label}" must be a valid email (got "${rawValue}")`);
+            errors.push(
+              `Row ${rowIndex + 1}: Column "${field.label}" must be a valid email (got "${rawValue}")`,
+            );
             rowValid = false;
           }
         }
@@ -132,33 +145,37 @@ export class OrbisCSVParser {
   /**
    * Generate a CSV string from an array of objects and specific keys.
    */
-  static generate<T>(data: T[], schemaKey: 'student' | 'grades', language: 'en' | 'ar' = 'en'): string {
+  static generate<T>(
+    data: T[],
+    schemaKey: "student" | "grades",
+    language: "en" | "ar" = "en",
+  ): string {
     const schema = SCHEMAS[schemaKey];
     if (!schema) {
       throw new Error(`Schema "${schemaKey}" is not registered.`);
     }
 
-    const headers = schema.fields.map(f => {
-      if (language === 'ar' && f.labelAr) {
+    const headers = schema.fields.map((f) => {
+      if (language === "ar" && f.labelAr) {
         return this.escapeCSVCell(f.labelAr);
       }
       return this.escapeCSVCell(f.label);
     });
 
-    const csvLines = [headers.join(',')];
+    const csvLines = [headers.join(",")];
 
     for (const row of data) {
-      const lineCells = schema.fields.map(field => {
+      const lineCells = schema.fields.map((field) => {
         const val = (row as any)[field.key];
         if (val === undefined || val === null) {
-          return '';
+          return "";
         }
         return this.escapeCSVCell(String(val));
       });
-      csvLines.push(lineCells.join(','));
+      csvLines.push(lineCells.join(","));
     }
 
-    return csvLines.join('\n');
+    return csvLines.join("\n");
   }
 
   /**
@@ -166,7 +183,7 @@ export class OrbisCSVParser {
    */
   private static parseCSVLine(line: string): string[] {
     const result: string[] = [];
-    let currentCell = '';
+    let currentCell = "";
     let inQuotes = false;
 
     for (let i = 0; i < line.length; i++) {
@@ -175,10 +192,10 @@ export class OrbisCSVParser {
       if (char === '"') {
         // Toggle quotes flag
         inQuotes = !inQuotes;
-      } else if (char === ',' && !inQuotes) {
+      } else if (char === "," && !inQuotes) {
         // Cell boundary
         result.push(currentCell);
-        currentCell = '';
+        currentCell = "";
       } else {
         currentCell += char;
       }
@@ -191,7 +208,7 @@ export class OrbisCSVParser {
    * Helper to escape special characters in CSV cell output.
    */
   private static escapeCSVCell(value: string): string {
-    if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+    if (value.includes(",") || value.includes('"') || value.includes("\n")) {
       const escaped = value.replace(/"/g, '""');
       return `"${escaped}"`;
     }

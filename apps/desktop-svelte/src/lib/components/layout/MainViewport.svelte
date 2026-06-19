@@ -21,59 +21,61 @@ are persisted to localStorage.
 ```
 -->
 <script lang="ts">
-	import Resizer from './Resizer.svelte';
-	import SashLayer from './SashLayer.svelte';
-	import type { Snippet } from 'svelte';
+import Resizer from "./Resizer.svelte";
+import SashLayer from "./SashLayer.svelte";
+import type { Snippet } from "svelte";
 
-	type PanelSize = {
-		default: number;
-		min: number;
-	};
+type PanelSize = {
+  default: number;
+  min: number;
+};
 
-	let {
-		name,
-		left,
-		leftWidth,
-		middle,
-		right,
-		rightWidth = { default: 0, min: 0 },
-	}: {
-		name: string;
-		left?: Snippet;
-		leftWidth: PanelSize;
-		middle: Snippet;
-		right?: Snippet;
-		rightWidth?: PanelSize;
-	} = $props();
+let {
+  name,
+  left,
+  leftWidth,
+  middle,
+  right,
+  rightWidth = { default: 0, min: 0 },
+}: {
+  name: string;
+  left?: Snippet;
+  leftWidth: PanelSize;
+  middle: Snippet;
+  right?: Snippet;
+  rightWidth?: PanelSize;
+} = $props();
 
-	// Convert px to rem using root font-size
-	function pxToRem(px: number): number {
-		if (typeof document === 'undefined') return px / 16;
-		const base = parseFloat(getComputedStyle(document.documentElement).fontSize);
-		return px / base;
-	}
+// Convert px to rem using root font-size
+function pxToRem(px: number): number {
+  if (typeof document === "undefined") return px / 16;
+  const base = parseFloat(getComputedStyle(document.documentElement).fontSize);
+  return px / base;
+}
 
-	// Panel preferred widths (in rem)
-	let leftPreferredWidth = $state(pxToRem(leftWidth.default));
-	let rightPreferredWidth = $state(pxToRem(rightWidth.default));
+// Panel preferred widths (in rem)
+let leftPreferredWidth = $state(pxToRem(leftWidth.default));
+let rightPreferredWidth = $state(pxToRem(rightWidth.default));
 
-	// Panel DOM refs
-	let leftDiv = $state<HTMLDivElement>();
-	let rightDiv = $state<HTMLDivElement>();
+// Panel DOM refs
+let leftDiv = $state<HTMLDivElement>();
+let rightDiv = $state<HTMLDivElement>();
 
-	// Computed constraints (in rem)
-	const leftMinWidth = $derived(pxToRem(leftWidth.min));
-	const leftMaxWidth = $derived(pxToRem(leftWidth.min * 3));
-	const rightMinWidth = $derived(right ? pxToRem(rightWidth.min) : 0);
-	const rightMaxWidth = $derived(right ? pxToRem(rightWidth.min * 3) : 0);
+// Computed constraints (in rem)
+const leftMinWidth = $derived(pxToRem(leftWidth.min));
+const leftMaxWidth = $derived(pxToRem(leftWidth.min * 3));
+const rightMinWidth = $derived(right ? pxToRem(rightWidth.min) : 0);
+const rightMaxWidth = $derived(right ? pxToRem(rightWidth.min * 3) : 0);
 
-	// Final computed widths
-	const finalLeftWidth = $derived(
-		left ? Math.max(leftMinWidth, Math.min(leftMaxWidth, leftPreferredWidth)) : 0
-	);
-	const finalRightWidth = $derived(
-		right ? Math.max(rightMinWidth, Math.min(rightMaxWidth, rightPreferredWidth)) : 0
-	);
+// Final computed widths
+const finalLeftWidth = $derived(
+  left ? Math.max(leftMinWidth, Math.min(leftMaxWidth, leftPreferredWidth)) : 0,
+);
+const finalRightWidth = $derived(
+  right
+    ? Math.max(rightMinWidth, Math.min(rightMaxWidth, rightPreferredWidth))
+    : 0,
+);
 </script>
 
 <SashLayer>

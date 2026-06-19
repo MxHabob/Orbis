@@ -2,7 +2,10 @@ import * as fs from "fs";
 import * as path from "path";
 
 // Define the absolute path for target Rust entities folder
-const targetDir = path.resolve(__dirname, "../apps/api-rust/crates/core-domain/src/entities");
+const targetDir = path.resolve(
+  __dirname,
+  "../apps/api-rust/crates/core-domain/src/entities",
+);
 
 interface Column {
   name: string;
@@ -41,7 +44,7 @@ const tables: Table[] = [
       { name: "meta", type: "jsonb", isNullable: true },
       { name: "created_at", type: "timestamp", isNullable: false },
       { name: "updated_at", type: "timestamp", isNullable: false },
-    ]
+    ],
   },
   {
     name: "user_roles",
@@ -58,7 +61,7 @@ const tables: Table[] = [
       { name: "is_primary", type: "boolean", isNullable: false },
       { name: "assigned_by", type: "uuid", isNullable: true },
       { name: "assigned_at", type: "timestamp", isNullable: false },
-    ]
+    ],
   },
   {
     name: "permissions",
@@ -77,17 +80,22 @@ const tables: Table[] = [
       { name: "is_system", type: "boolean", isNullable: false },
       { name: "is_active", type: "boolean", isNullable: false },
       { name: "created_at", type: "timestamp", isNullable: false },
-    ]
+    ],
   },
   {
     name: "role_permissions",
     structName: "RolePermission",
     columns: [
       { name: "role", type: "varchar", isNullable: false, isPrimaryKey: true },
-      { name: "permission_id", type: "integer", isNullable: false, isPrimaryKey: true },
+      {
+        name: "permission_id",
+        type: "integer",
+        isNullable: false,
+        isPrimaryKey: true,
+      },
       { name: "conditions", type: "jsonb", isNullable: true },
       { name: "created_at", type: "timestamp", isNullable: false },
-    ]
+    ],
   },
   {
     name: "user_permissions",
@@ -104,7 +112,7 @@ const tables: Table[] = [
       { name: "granted_by", type: "uuid", isNullable: true },
       { name: "granted_at", type: "timestamp", isNullable: false },
       { name: "is_active", type: "boolean", isNullable: false },
-    ]
+    ],
   },
   {
     name: "verifications",
@@ -122,7 +130,7 @@ const tables: Table[] = [
       { name: "ip_address", type: "varchar", isNullable: true },
       { name: "user_agent", type: "text", isNullable: true },
       { name: "created_at", type: "timestamp", isNullable: false },
-    ]
+    ],
   },
   {
     name: "notification_preferences",
@@ -142,7 +150,7 @@ const tables: Table[] = [
       { name: "digest_mode", type: "varchar", isNullable: false },
       { name: "created_at", type: "timestamp", isNullable: false },
       { name: "updated_at", type: "timestamp", isNullable: false },
-    ]
+    ],
   },
   {
     name: "documents",
@@ -186,7 +194,7 @@ const tables: Table[] = [
       { name: "deleted_at", type: "timestamp", isNullable: true },
       { name: "created_at", type: "timestamp", isNullable: false },
       { name: "updated_at", type: "timestamp", isNullable: false },
-    ]
+    ],
   },
   // ─────────────────────────────────────────────────────────────────────────────
   // ACADEMIC SCHEMA TABLES
@@ -220,7 +228,7 @@ const tables: Table[] = [
       { name: "is_active", type: "boolean", isNullable: false },
       { name: "created_at", type: "timestamp", isNullable: false },
       { name: "updated_at", type: "timestamp", isNullable: false },
-    ]
+    ],
   },
   {
     name: "class_subjects",
@@ -241,7 +249,7 @@ const tables: Table[] = [
       { name: "is_active", type: "boolean", isNullable: false },
       { name: "created_at", type: "timestamp", isNullable: false },
       { name: "updated_at", type: "timestamp", isNullable: false },
-    ]
+    ],
   },
   {
     name: "student_guardians",
@@ -269,7 +277,7 @@ const tables: Table[] = [
       { name: "notes", type: "text", isNullable: true },
       { name: "created_at", type: "timestamp", isNullable: false },
       { name: "updated_at", type: "timestamp", isNullable: false },
-    ]
+    ],
   },
   {
     name: "time_slots",
@@ -291,7 +299,7 @@ const tables: Table[] = [
       { name: "is_active", type: "boolean", isNullable: false },
       { name: "created_at", type: "timestamp", isNullable: false },
       { name: "updated_at", type: "timestamp", isNullable: false },
-    ]
+    ],
   },
   {
     name: "scheduled_lessons",
@@ -326,7 +334,7 @@ const tables: Table[] = [
       { name: "cancellation_reason", type: "text", isNullable: true },
       { name: "created_at", type: "timestamp", isNullable: false },
       { name: "updated_at", type: "timestamp", isNullable: false },
-    ]
+    ],
   },
   {
     name: "assessments",
@@ -361,7 +369,7 @@ const tables: Table[] = [
       { name: "created_by", type: "uuid", isNullable: false },
       { name: "created_at", type: "timestamp", isNullable: false },
       { name: "updated_at", type: "timestamp", isNullable: false },
-    ]
+    ],
   },
   {
     name: "grade_history",
@@ -380,7 +388,7 @@ const tables: Table[] = [
       { name: "change_type", type: "varchar", isNullable: false },
       { name: "snapshot", type: "jsonb", isNullable: true },
       { name: "created_at", type: "timestamp", isNullable: false },
-    ]
+    ],
   },
   {
     name: "attendance_daily",
@@ -413,7 +421,7 @@ const tables: Table[] = [
       { name: "notes", type: "text", isNullable: true },
       { name: "created_at", type: "timestamp", isNullable: false },
       { name: "updated_at", type: "timestamp", isNullable: false },
-    ]
+    ],
   },
   {
     name: "attendance_summary",
@@ -431,7 +439,7 @@ const tables: Table[] = [
       { name: "attendance_rate", type: "double", isNullable: true },
       { name: "created_at", type: "timestamp", isNullable: false },
       { name: "updated_at", type: "timestamp", isNullable: false },
-    ]
+    ],
   },
   // ─────────────────────────────────────────────────────────────────────────────
   // FINANCE SCHEMA TABLES
@@ -460,7 +468,7 @@ const tables: Table[] = [
       { name: "is_active", type: "boolean", isNullable: false },
       { name: "created_at", type: "timestamp", isNullable: false },
       { name: "updated_at", type: "timestamp", isNullable: false },
-    ]
+    ],
   },
   {
     name: "journal_entries",
@@ -496,7 +504,7 @@ const tables: Table[] = [
       { name: "approved_at", type: "timestamp", isNullable: true },
       { name: "created_by", type: "uuid", isNullable: true },
       { name: "created_at", type: "timestamp", isNullable: false },
-    ]
+    ],
   },
   {
     name: "fee_templates",
@@ -522,7 +530,7 @@ const tables: Table[] = [
       { name: "sort_order", type: "integer", isNullable: true },
       { name: "created_at", type: "timestamp", isNullable: false },
       { name: "updated_at", type: "timestamp", isNullable: false },
-    ]
+    ],
   },
   {
     name: "discount_templates",
@@ -545,7 +553,7 @@ const tables: Table[] = [
       { name: "is_active", type: "boolean", isNullable: false },
       { name: "created_at", type: "timestamp", isNullable: false },
       { name: "updated_at", type: "timestamp", isNullable: false },
-    ]
+    ],
   },
   {
     name: "payment_plans",
@@ -562,7 +570,7 @@ const tables: Table[] = [
       { name: "is_active", type: "boolean", isNullable: false },
       { name: "created_at", type: "timestamp", isNullable: false },
       { name: "updated_at", type: "timestamp", isNullable: false },
-    ]
+    ],
   },
   {
     name: "student_fees",
@@ -601,7 +609,7 @@ const tables: Table[] = [
       { name: "meta", type: "jsonb", isNullable: true },
       { name: "created_at", type: "timestamp", isNullable: false },
       { name: "updated_at", type: "timestamp", isNullable: false },
-    ]
+    ],
   },
   {
     name: "student_discounts",
@@ -622,7 +630,7 @@ const tables: Table[] = [
       { name: "approval_notes", type: "text", isNullable: true },
       { name: "created_at", type: "timestamp", isNullable: false },
       { name: "updated_at", type: "timestamp", isNullable: false },
-    ]
+    ],
   },
   {
     name: "payments",
@@ -662,7 +670,7 @@ const tables: Table[] = [
       { name: "paid_at", type: "timestamp", isNullable: false },
       { name: "created_at", type: "timestamp", isNullable: false },
       { name: "created_by", type: "uuid", isNullable: true },
-    ]
+    ],
   },
   {
     name: "treasuries",
@@ -690,7 +698,7 @@ const tables: Table[] = [
       { name: "is_active", type: "boolean", isNullable: false },
       { name: "created_at", type: "timestamp", isNullable: false },
       { name: "updated_at", type: "timestamp", isNullable: false },
-    ]
+    ],
   },
   {
     name: "treasury_transactions",
@@ -715,7 +723,7 @@ const tables: Table[] = [
       { name: "approved_at", type: "timestamp", isNullable: true },
       { name: "transaction_date", type: "date", isNullable: false },
       { name: "created_at", type: "timestamp", isNullable: false },
-    ]
+    ],
   },
   {
     name: "financial_events",
@@ -731,7 +739,7 @@ const tables: Table[] = [
       { name: "aggregate_id", type: "uuid", isNullable: true },
       { name: "status", type: "varchar", isNullable: false },
       { name: "created_at", type: "timestamp", isNullable: false },
-    ]
+    ],
   },
   {
     name: "financial_reports",
@@ -750,7 +758,7 @@ const tables: Table[] = [
       { name: "generated_by", type: "uuid", isNullable: true },
       { name: "generated_at", type: "timestamp", isNullable: true },
       { name: "created_at", type: "timestamp", isNullable: false },
-    ]
+    ],
   },
   // ─────────────────────────────────────────────────────────────────────────────
   // AUDIT SCHEMA TABLES
@@ -774,7 +782,7 @@ const tables: Table[] = [
       { name: "memory_usage_mb", type: "integer", isNullable: true },
       { name: "cpu_usage_percent", type: "integer", isNullable: true },
       { name: "timestamp", type: "timestamp", isNullable: false },
-    ]
+    ],
   },
   {
     name: "data_transfers",
@@ -804,7 +812,7 @@ const tables: Table[] = [
       { name: "mapping", type: "jsonb", isNullable: true },
       { name: "created_at", type: "timestamp", isNullable: false },
       { name: "updated_at", type: "timestamp", isNullable: false },
-    ]
+    ],
   },
   {
     name: "report_definitions",
@@ -824,7 +832,7 @@ const tables: Table[] = [
       { name: "is_system", type: "boolean", isNullable: false },
       { name: "created_at", type: "timestamp", isNullable: false },
       { name: "updated_at", type: "timestamp", isNullable: false },
-    ]
+    ],
   },
   {
     name: "document_templates",
@@ -842,8 +850,8 @@ const tables: Table[] = [
       { name: "is_default", type: "boolean", isNullable: false },
       { name: "created_at", type: "timestamp", isNullable: false },
       { name: "updated_at", type: "timestamp", isNullable: false },
-    ]
-  }
+    ],
+  },
 ];
 
 function mapRustType(col: Column): string {
@@ -895,14 +903,17 @@ function generateRustFile(table: Table): string {
     if (col.name === "type") {
       extraAttr = `    #[sea_orm(column_name = "type")]\n`;
     }
-    
+
     // Rust naming format: snake_case matches JavaScript camelCase in SeaORM, but we write it direct snake_case
     const rustFieldName = col.name === "type" ? "item_type" : col.name;
-    
+
     fields += `${primaryKeyAttr}${extraAttr}    pub ${rustFieldName}: ${rustType},\n`;
   }
 
-  const moduleName = table.name === "data_transfers" ? "data_transfer" : table.name.replace(/s$/, "");
+  const moduleName =
+    table.name === "data_transfers"
+      ? "data_transfer"
+      : table.name.replace(/s$/, "");
 
   return `use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -926,7 +937,10 @@ for (const table of tables) {
   let moduleName = table.name;
   if (moduleName === "data_transfers") {
     moduleName = "data_transfer";
-  } else if (moduleName.endsWith("_entries") || moduleName === "journal_entries") {
+  } else if (
+    moduleName.endsWith("_entries") ||
+    moduleName === "journal_entries"
+  ) {
     moduleName = moduleName.replace(/_entries$/, "_entry");
   } else if (moduleName.endsWith("treasuries") || moduleName === "treasuries") {
     moduleName = moduleName.replace(/treasuries$/, "treasury");
@@ -937,7 +951,7 @@ for (const table of tables) {
   const filePath = path.join(targetDir, `${moduleName}.rs`);
   fs.writeFileSync(filePath, code, "utf-8");
   console.log(`✅ Generated: ${filePath}`);
-  
+
   modExports += `pub mod ${moduleName};\n`;
 }
 
