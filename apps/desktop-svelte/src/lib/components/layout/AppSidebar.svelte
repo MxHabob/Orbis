@@ -131,7 +131,8 @@ and an animated active indicator bar.
 		justify-content: space-between;
 		width: var(--sidebar-width);
 		height: 100%;
-		padding: 12px 12px 12px 0;
+		padding-block: 12px;
+		padding-inline: 0 12px;
 		flex-shrink: 0;
 		box-sizing: border-box;
 	}

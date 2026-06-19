@@ -73,10 +73,20 @@ Inspired by GitButler's Resizer component.
 		document.body.style.userSelect = 'none';
 	}
 
+	function isRtl(): boolean {
+		return document.documentElement.dir === 'rtl';
+	}
+
 	function onPointerMove(e: PointerEvent) {
 		if (!isDragging || !viewport) return;
 
-		const delta = direction === 'right' ? e.clientX - startX : startX - e.clientX;
+		const effectiveDirection = isRtl()
+			? direction === 'left'
+				? 'right'
+				: 'left'
+			: direction;
+		const delta =
+			effectiveDirection === 'right' ? e.clientX - startX : startX - e.clientX;
 		const newWidthPx = startWidth + delta;
 		const newWidthRem = pxToRem(newWidthPx);
 		const clamped = Math.max(minWidth, Math.min(maxWidth, newWidthRem));
@@ -142,11 +152,11 @@ Inspired by GitButler's Resizer component.
 	}
 
 	.resizer.right {
-		right: -5px;
+		inset-inline-end: -5px;
 	}
 
 	.resizer.left {
-		left: -5px;
+		inset-inline-start: -5px;
 	}
 
 	.resizer-line {
