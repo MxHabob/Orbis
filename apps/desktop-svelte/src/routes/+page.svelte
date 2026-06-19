@@ -24,7 +24,7 @@
 </svelte:head>
 
 <div class="loading-root">
-	<Loader2 size={20} strokeWidth={2} class="spin" />
+	<Loader2 size={20} strokeWidth={2} />
 </div>
 
 <style>

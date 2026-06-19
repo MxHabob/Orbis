@@ -74,7 +74,7 @@
 				<div class="space-y-3 flex flex-col items-center justify-center w-full">
 					<form class="w-full space-y-4" onsubmit={handleSubmit}>
 						{#if error}
-							<div class="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-xs text-destructive animate-fly-in">
+							<div class="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-xs text-destructive">
 								<span>{error}</span>
 							</div>
 						{/if}
@@ -124,7 +124,7 @@
 							disabled={isLoading}
 						>
 							{#if isLoading}
-								<Loader2 size={14} strokeWidth={2} class="animate-spin mr-1" />
+								<Loader2 size={14} strokeWidth={2} class="mr-1" />
 								Signing in...
 							{:else}
 								Sign In

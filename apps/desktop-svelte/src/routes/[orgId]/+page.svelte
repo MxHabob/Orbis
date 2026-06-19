@@ -83,12 +83,12 @@
 
 	{#snippet middle()}
 		<div class="flex flex-col h-full p-5 gap-5 overflow-y-auto bg-background">
-			<div class="flex flex-col gap-1 animate-fly-in">
+			<div class="flex flex-col gap-1">
 				<h1 class="text-xl font-bold text-foreground">Welcome back</h1>
 				<p class="text-xs text-muted-foreground">Here's what's happening at your school today.</p>
 			</div>
 
-			<div class="grid grid-cols-2 gap-3 animate-fly-in" style="animation-delay: 0.05s">
+			<div class="grid grid-cols-2 gap-3">
 				<Card class="col-span-2 flex flex-col border border-border shadow-sm rounded-xl overflow-hidden bg-card">
 					<CardHeader class="flex flex-row items-center justify-between p-3.5 border-b border-border bg-muted/20">
 						<CardTitle class="text-xs font-semibold text-foreground">Attendance Overview</CardTitle>
