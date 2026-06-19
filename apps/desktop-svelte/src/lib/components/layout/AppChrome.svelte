@@ -56,6 +56,7 @@ Follows GitButler's "Chrome Shell" pattern:
 	.chrome-body {
 		display: grid;
 		grid-template-columns: auto minmax(0, 1fr);
+		grid-auto-flow: column;
 		flex: 1 1 0%;
 		overflow: hidden;
 	}
@@ -67,5 +68,6 @@ Follows GitButler's "Chrome Shell" pattern:
 		padding-inline: 14px;
 		padding-block-end: 14px;
 		overflow: hidden;
+		box-sizing: border-box;
 	}
 </style>

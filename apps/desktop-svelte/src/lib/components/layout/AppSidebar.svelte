@@ -131,8 +131,9 @@ and an animated active indicator bar.
 		justify-content: space-between;
 		width: var(--sidebar-width);
 		height: 100%;
-		padding: 0 12px 12px 12px;
+		padding: 12px 12px 12px 0;
 		flex-shrink: 0;
+		box-sizing: border-box;
 	}
 
 	.sidebar-top,
@@ -152,13 +153,14 @@ and an animated active indicator bar.
 
 	.active-indicator {
 		position: absolute;
-		left: -4px;
+		inset-inline-start: 0;
 		top: 50%;
-		width: 10px;
-		height: 16px;
-		transform: translate(-50%, -50%);
-		border-radius: var(--radius-m);
+		width: 4px;
+		height: 32px;
+		transform: translateY(-50%);
+		border-radius: 999px;
 		background-color: var(--active-indicator);
+		pointer-events: none;
 	}
 
 	.sidebar-btn {
