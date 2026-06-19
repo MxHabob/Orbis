@@ -33,11 +33,11 @@ Follows GitButler's "Chrome Shell" pattern:
 	} = $props();
 </script>
 
-<div class="flex h-screen max-w-full flex-1 flex-col bg-muted">
+<div class="flex h-screen max-w-full flex-1 flex-col bg-background mx-1">
 	<AppHeader {orgId} {orgName} />
 	<div class="grid flex-1 grid-flow-col grid-cols-[auto_minmax(0,1fr)] overflow-hidden">
 		<AppSidebar {orgId} />
-		<div class="flex min-w-0 items-stretch overflow-hidden px-3.5 pb-3.5 box-border">
+		<div class="flex min-w-0 items-stretch overflow-hidden px-3.5 pb-3.5">
 			{@render children()}
 		</div>
 	</div>

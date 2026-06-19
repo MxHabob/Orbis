@@ -85,7 +85,7 @@ are persisted to localStorage.
 				style:width="{finalLeftWidth}rem"
 				style:min-width="{leftMinWidth}rem"
 			>
-				<div class="flex h-full flex-col overflow-hidden panel-border">
+				<div class="flex h-full flex-col overflow-hidden">
 					{@render left()}
 				</div>
 				<Resizer
@@ -100,7 +100,7 @@ are persisted to localStorage.
 			</div>
 		{/if}
 
-		<div class="relative flex h-full min-w-0 flex-1 flex-col overflow-hidden panel-border" class:no-left={!left}>
+		<div class="relative flex h-full min-w-0 flex-1 flex-col overflow-hidden" class:no-left={!left}>
 			{@render middle()}
 		</div>
 
@@ -120,7 +120,7 @@ are persisted to localStorage.
 					persistId="viewport-{name}-right"
 					onWidth={(w) => (rightPreferredWidth = w)}
 				/>
-				<div class="flex h-full flex-col overflow-hidden panel-border">
+				<div class="flex h-full flex-col overflow-hidden">
 					{@render right()}
 				</div>
 			</div>
