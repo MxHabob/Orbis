@@ -6,7 +6,15 @@ and an animated active indicator bar.
 -->
 <script lang="ts">
 	import { page } from '$app/state';
-	import { Avatar, AvatarFallback, AvatarImage } from '@orbis/ui-svelte';
+	import {
+		Avatar,
+		AvatarFallback,
+		AvatarImage,
+		Tooltip,
+		TooltipContent,
+		TooltipProvider,
+		TooltipTrigger,
+	} from '@orbis/ui-svelte';
 	import { cn } from '@orbis/ui-svelte/utils';
 	import {
 		LayoutDashboard,
@@ -50,78 +58,92 @@ and an animated active indicator bar.
 	}
 </script>
 
-<div class="sidebar">
-	<div class="sidebar-top">
-		{#each navItems as item (item.href)}
-			<div class="sidebar-item-wrap">
-				{#if isActive(item.href, item.match)}
-					<div class="active-indicator" in:slide={{ axis: 'x', duration: 150 }}></div>
-				{/if}
-				<a
-					href={item.href}
-					class={cn(
-						'sidebar-btn',
-						isActive(item.href, item.match) && 'sidebar-btn-active'
-					)}
-					title={item.label}
-					aria-label={item.label}
-					aria-current={isActive(item.href, item.match) ? 'page' : undefined}
-					class:disabled
-				>
-					<item.icon size={18} strokeWidth={1.8} />
-				</a>
-			</div>
-		{/each}
-	</div>
-
-	<div class="sidebar-bottom">
-		{#each bottomItems as item (item.href)}
-			<div class="sidebar-item-wrap">
-				{#if isActive(item.href, item.match)}
-					<div class="active-indicator" in:slide={{ axis: 'x', duration: 150 }}></div>
-				{/if}
-				<a
-					href={item.href}
-					class={cn(
-						'sidebar-btn',
-						isActive(item.href, item.match) && 'sidebar-btn-active'
-					)}
-					title={item.label}
-					aria-label={item.label}
-					class:disabled
-				>
-					<item.icon size={18} strokeWidth={1.8} />
-				</a>
-			</div>
-		{/each}
-
-		<div class="sidebar-item-wrap">
-			<button
-				class="sidebar-btn sidebar-btn-ghost"
-				title="Feedback"
-				aria-label="Feedback"
-			>
-				<MessageSquare size={16} strokeWidth={1.8} />
-			</button>
+<TooltipProvider delayDuration={150}>
+	<div class="sidebar">
+		<div class="sidebar-top">
+			{#each navItems as item (item.href)}
+				<div class="sidebar-item-wrap">
+					{#if isActive(item.href, item.match)}
+						<div class="active-indicator" in:slide={{ axis: 'x', duration: 150 }}></div>
+					{/if}
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<a
+								href={item.href}
+								class={cn(
+									'sidebar-btn',
+									isActive(item.href, item.match) && 'sidebar-btn-active'
+								)}
+								aria-label={item.label}
+								aria-current={isActive(item.href, item.match) ? 'page' : undefined}
+								class:disabled
+							>
+								<item.icon size={18} strokeWidth={1.8} />
+							</a>
+						</TooltipTrigger>
+						<TooltipContent side="right" sideOffset={10}>{item.label}</TooltipContent>
+					</Tooltip>
+				</div>
+			{/each}
 		</div>
 
-		<div class="sidebar-item-wrap sidebar-user-wrap">
-			<button
-				class="sidebar-user-btn"
-				title={authStore.user?.full_name ?? 'Account'}
-				aria-label="Account"
-			>
-				<Avatar >
-					<AvatarImage
-						src={authStore.user?.avatar ?? undefined}
-						alt={authStore.user?.full_name ?? 'User'}
-					/>
-					<AvatarFallback>{userInitials}</AvatarFallback>
-				</Avatar>
-			</button>
+		<div class="sidebar-bottom">
+			{#each bottomItems as item (item.href)}
+				<div class="sidebar-item-wrap">
+					{#if isActive(item.href, item.match)}
+						<div class="active-indicator" in:slide={{ axis: 'x', duration: 150 }}></div>
+					{/if}
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<a
+								href={item.href}
+								class={cn(
+									'sidebar-btn',
+									isActive(item.href, item.match) && 'sidebar-btn-active'
+								)}
+								aria-label={item.label}
+								class:disabled
+							>
+								<item.icon size={18} strokeWidth={1.8} />
+							</a>
+						</TooltipTrigger>
+						<TooltipContent side="right" sideOffset={10}>{item.label}</TooltipContent>
+					</Tooltip>
+				</div>
+			{/each}
+
+			<div class="sidebar-item-wrap">
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<button class="sidebar-btn sidebar-btn-ghost" aria-label="Feedback">
+							<MessageSquare size={16} strokeWidth={1.8} />
+						</button>
+					</TooltipTrigger>
+					<TooltipContent side="right" sideOffset={10}>Feedback</TooltipContent>
+				</Tooltip>
+			</div>
+
+			<div class="sidebar-item-wrap sidebar-user-wrap">
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<button class="sidebar-user-btn" aria-label="Account">
+							<Avatar>
+								<AvatarImage
+									src={authStore.user?.avatar ?? undefined}
+									alt={authStore.user?.full_name ?? 'User'}
+								/>
+								<AvatarFallback>{userInitials}</AvatarFallback>
+							</Avatar>
+						</button>
+					</TooltipTrigger>
+					<TooltipContent side="right" sideOffset={10}>
+						{authStore.user?.full_name ?? 'Account'}
+					</TooltipContent>
+				</Tooltip>
+			</div>
 		</div>
 	</div>
-</div>
+</TooltipProvider>
 
 <style>
 	.sidebar {
