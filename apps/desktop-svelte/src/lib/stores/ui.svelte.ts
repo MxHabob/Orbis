@@ -1,18 +1,12 @@
 // ── UI Store ─────────────────────────────────────────────────────────
-// Svelte 5 Runes-based UI state (sidebar, modals, loading).
+// Svelte 5 Runes-based UI state for layout management.
+// Manages sidebar, panel widths, and global loading state.
 
 class UIStore {
-	sidebarOpen = $state(true);
-	sidebarCollapsed = $state(false);
 	globalLoading = $state(false);
 
-	toggleSidebar() {
-		this.sidebarOpen = !this.sidebarOpen;
-	}
-
-	collapseSidebar() {
-		this.sidebarCollapsed = !this.sidebarCollapsed;
-	}
+	// Panel resize preferences are persisted via Resizer component
+	// to localStorage with `resizer:{persistId}` keys.
 
 	setGlobalLoading(loading: boolean) {
 		this.globalLoading = loading;

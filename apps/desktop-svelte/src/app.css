@@ -1,1 +1,175 @@
 @import "tailwindcss";
+
+/* ── Layout Design Tokens ─────────────────────────────────────────────
+ * Inspired by GitButler's variable system.
+ * Single source of truth for all layout-specific values.
+ */
+:root {
+	/* ── Radii ── */
+	--radius-s: 6px;
+	--radius-m: 8px;
+	--radius-ml: 10px;
+	--radius-l: 12px;
+	--radius-button: 8px;
+
+	/* ── Sizing ── */
+	--size-button: 30px;
+	--size-tag: 22px;
+	--size-icon: 20px;
+	--sidebar-width: 60px;
+	--header-height: 52px;
+
+	/* ── Transitions ── */
+	--transition-fast: 0.06s ease;
+	--transition-medium: 0.15s ease;
+	--transition-slow: 0.25s ease;
+
+	/* ── Z-index ── */
+	--z-ground: 1;
+	--z-lifted: 2;
+	--z-floating: 3;
+	--z-modal: 4;
+	--z-tooltip: 5;
+	--z-blocker: 9999;
+
+	/* ── Layout-specific colors (light) ── */
+	--chrome-bg: hsl(var(--muted));
+	--panel-bg: hsl(var(--background));
+	--panel-border: hsl(var(--border));
+	--active-indicator: hsl(var(--primary));
+	--resizer-idle: transparent;
+	--resizer-hover: hsl(var(--primary) / 0.3);
+	--resizer-active: hsl(var(--primary) / 0.6);
+}
+
+.dark {
+	--chrome-bg: hsl(var(--muted));
+	--panel-bg: hsl(var(--background));
+	--panel-border: hsl(var(--border));
+	--resizer-hover: hsl(var(--primary) / 0.4);
+	--resizer-active: hsl(var(--primary) / 0.7);
+}
+
+/* ── Desktop App Shell ────────────────────────────────────────────────
+ * Styles for the Tauri desktop window chrome.
+ * Ported from apps/desktop globals.css.
+ */
+html,
+body {
+	height: 100%;
+	margin: 0;
+	padding: 0;
+}
+
+*:focus {
+	outline: none;
+}
+
+html.desktop {
+	background: transparent !important;
+	user-select: none;
+	-webkit-user-select: none;
+	overscroll-behavior: none !important;
+	border-radius: var(--radius-ml);
+	overflow: hidden;
+	height: 100vh;
+	width: 100vw;
+	position: fixed;
+	top: 0;
+	left: 0;
+	-webkit-touch-callout: none;
+	-webkit-tap-highlight-color: transparent;
+}
+
+html.desktop body {
+	position: relative;
+	background: hsl(var(--background)) !important;
+	overscroll-behavior: none !important;
+	box-sizing: border-box;
+	height: 100vh;
+	width: 100%;
+	overflow: hidden;
+}
+
+/* Subtle window border */
+html.desktop body::before {
+	content: "";
+	position: fixed;
+	inset: 0;
+	border: 0.5px solid rgba(0, 0, 0, 0.15);
+	border-radius: var(--radius-ml);
+	z-index: 100;
+	pointer-events: none;
+}
+
+html.desktop.dark body::before {
+	border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Hide scrollbars in desktop mode */
+html.desktop ::-webkit-scrollbar {
+	display: none;
+}
+
+html.desktop {
+	scrollbar-width: none;
+}
+
+/* Default cursor in desktop mode */
+.desktop div,
+.desktop a,
+.desktop button {
+	cursor: default !important;
+}
+
+/* ── Utility Patterns ─────────────────────────────────────────────────
+ * Shared visual patterns used across layout components.
+ */
+.dotted-pattern {
+	background-image: radial-gradient(
+		circle at 1px 1px,
+		hsl(var(--border) / 0.4) 0.5px,
+		transparent 0
+	);
+	background-size: 6px 6px;
+}
+
+.panel-border {
+	border: 1px solid var(--panel-border);
+	border-radius: var(--radius-ml);
+	overflow: hidden;
+}
+
+/* ── Animations ───────────────────────────────────────────────────────*/
+@keyframes fly-in {
+	from {
+		transform: translateY(6px);
+		opacity: 0;
+	}
+	to {
+		transform: translateY(0);
+		opacity: 1;
+	}
+}
+
+@keyframes fade-in {
+	from { opacity: 0; }
+	to { opacity: 1; }
+}
+
+@keyframes scale-in {
+	from { transform: scale(0.96); opacity: 0; }
+	to { transform: scale(1); opacity: 1; }
+}
+
+.animate-fly-in {
+	animation: fly-in 0.25s ease-out forwards;
+}
+
+.animate-fade-in {
+	animation: fade-in 0.15s ease-out forwards;
+}
+
+.animate-scale-in {
+	animation: scale-in 0.2s cubic-bezier(0.34, 1.35, 0.7, 1) forwards;
+}

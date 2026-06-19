@@ -4,7 +4,9 @@
 	import { page } from '$app/state';
 	import { locales, localizeHref } from '$lib/paraglide/runtime';
 	import { themeStore } from '$lib/stores';
+	import { isDesktopApp } from '$lib/services/ipc';
 	import { Toaster } from 'svelte-sonner';
+	import { onMount } from 'svelte';
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
 
@@ -13,6 +15,13 @@
 	// Apply theme on mount
 	$effect(() => {
 		themeStore.applyToDOM();
+	});
+
+	// Add desktop class to html element for Tauri shell styling
+	onMount(() => {
+		if (isDesktopApp()) {
+			document.documentElement.classList.add('desktop');
+		}
 	});
 </script>
 
