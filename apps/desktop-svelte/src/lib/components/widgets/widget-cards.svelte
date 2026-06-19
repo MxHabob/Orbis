@@ -26,13 +26,13 @@
 {#snippet card(label: string, href: string, value: string, detail?: string)}
 	<a
 		{href}
-		class="h-full border p-5 flex flex-col justify-between transition-all duration-300 bg-white border-[#e6e6e6] hover:bg-[#f7f7f7] hover:border-[#d0d0d0] dark:bg-[#0c0c0c] dark:border-[#1d1d1d] dark:hover:bg-[#0f0f0f] dark:hover:border-[#222222] cursor-pointer group min-h-[110px] rounded-xl shadow-sm"
+		class="card-tactile h-full flex flex-col justify-between cursor-pointer group min-h-[110px] !p-5"
 	>
-		<span class="text-xs text-muted-foreground">{label}</span>
+		<span class="text-xs text-muted-foreground font-sans">{label}</span>
 		<div class="mt-3">
-			<span class="text-xl font-medium tracking-tight">{value}</span>
+			<span class="text-xl font-semibold tracking-tight font-sans">{value}</span>
 			{#if detail}
-				<div class="text-[10px] text-muted-foreground mt-1">{detail}</div>
+				<div class="text-[10px] text-muted-foreground mt-1 font-sans">{detail}</div>
 			{/if}
 		</div>
 	</a>
