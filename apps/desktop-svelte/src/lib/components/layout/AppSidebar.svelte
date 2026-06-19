@@ -16,7 +16,6 @@ and an animated active indicator bar.
 		TooltipProvider,
 		TooltipTrigger,
 	} from '@orbis/ui-svelte';
-	import { cn } from '@orbis/ui-svelte/utils';
 	import {
 		LayoutDashboard,
 		Users,
@@ -60,7 +59,7 @@ and an animated active indicator bar.
 
 <TooltipProvider delayDuration={150}>
 	<div class="flex h-full w-15 shrink-0 flex-col items-center justify-between py-3">
-		<div class="flex flex-col gap-1">
+		<div class="flex flex-col gap-3">
 			{#each navItems as item (item.href)}
 				<div class="flex">
 					<Tooltip>
@@ -80,7 +79,7 @@ and an animated active indicator bar.
 			{/each}
 		</div>
 
-		<div class="flex flex-col gap-2">
+		<div class="flex flex-col gap-3">
 			{#each bottomItems as item (item.href)}
 				<div class="flex">
 					<Tooltip>
@@ -109,24 +108,22 @@ and an animated active indicator bar.
 				</Tooltip>
 			</div>
 
-			<div class="flex">
-				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button variant="ghost" aria-label="Account">
-							<Avatar>
-								<AvatarImage
-									src={authStore.user?.avatar ?? undefined}
-									alt={authStore.user?.full_name ?? 'User'}
-								/>
-								<AvatarFallback>{userInitials}</AvatarFallback>
-							</Avatar>
-						</Button>
-					</TooltipTrigger>
-					<TooltipContent side="right" sideOffset={10}>
-						{authStore.user?.full_name ?? 'Account'}
-					</TooltipContent>
-				</Tooltip>
-			</div>
+			<Tooltip>
+			  <TooltipTrigger asChild>
+				<Button variant="ghost" aria-label="Account">
+				 <Avatar>
+					<AvatarImage
+						src={authStore.user?.avatar ?? undefined}
+						alt={authStore.user?.full_name ?? 'User'}
+					/>
+					<AvatarFallback>{userInitials}</AvatarFallback>
+				 </Avatar>
+				</Button>
+			   </TooltipTrigger>
+			  <TooltipContent side="right" sideOffset={10}>
+					{authStore.user?.full_name ?? 'Account'}
+				</TooltipContent>
+			</Tooltip>
 		</div>
 	</div>
 </TooltipProvider>
