@@ -40,6 +40,7 @@ Inspired by GitButler's Resizer component.
 	let isDragging = $state(false);
 	let startX = 0;
 	let startWidth = 0;
+	let dragTarget: HTMLElement | null = null;
 
 	// Restore persisted width on mount
 	$effect(() => {
@@ -65,10 +66,10 @@ Inspired by GitButler's Resizer component.
 		startX = e.clientX;
 		startWidth = viewport.getBoundingClientRect().width;
 
-		const target = e.currentTarget as HTMLElement;
-		target.setPointerCapture(e.pointerId);
+		dragTarget = e.currentTarget as HTMLElement;
+		dragTarget.setPointerCapture(e.pointerId);
 
-		document.body.style.cursor = 'col-resize';
+		document.body.style.cursor = 'ew-resize';
 		document.body.style.userSelect = 'none';
 	}
 
@@ -90,8 +91,10 @@ Inspired by GitButler's Resizer component.
 		document.body.style.cursor = '';
 		document.body.style.userSelect = '';
 
-		const target = e.currentTarget as HTMLElement;
-		target.releasePointerCapture(e.pointerId);
+		if (dragTarget && dragTarget.hasPointerCapture(e.pointerId)) {
+			dragTarget.releasePointerCapture(e.pointerId);
+		}
+		dragTarget = null;
 
 		// Persist final width
 		if (persistId && viewport) {
@@ -109,6 +112,8 @@ Inspired by GitButler's Resizer component.
 	}
 </script>
 
+<svelte:window on:pointermove={onPointerMove} on:pointerup={onPointerUp} />
+
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
 	class="resizer"
@@ -116,8 +121,6 @@ Inspired by GitButler's Resizer component.
 	class:left={direction === 'left'}
 	class:dragging={isDragging}
 	onpointerdown={onPointerDown}
-	onpointermove={onPointerMove}
-	onpointerup={onPointerUp}
 	ondblclick={onDoubleClick}
 >
 	<div class="resizer-line"></div>
@@ -128,17 +131,22 @@ Inspired by GitButler's Resizer component.
 		position: absolute;
 		top: 0;
 		z-index: var(--z-lifted, 2);
-		width: 6px;
+		width: 10px;
 		height: 100%;
-		cursor: col-resize;
+		touch-action: none;
+		cursor: ew-resize;
+	}
+
+	:global(.desktop) .resizer {
+		cursor: ew-resize !important;
 	}
 
 	.resizer.right {
-		right: -3px;
+		right: -5px;
 	}
 
 	.resizer.left {
-		left: -3px;
+		left: -5px;
 	}
 
 	.resizer-line {
