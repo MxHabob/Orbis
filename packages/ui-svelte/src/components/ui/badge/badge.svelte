@@ -10,6 +10,8 @@
 				destructive: "bg-destructive/10 [a]:hover:bg-destructive/20 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 text-destructive dark:bg-destructive/20",
 				outline: "border-border text-foreground [a]:hover:bg-muted [a]:hover:text-muted-foreground",
 				ghost: "hover:bg-muted hover:text-muted-foreground dark:hover:bg-muted/50",
+				lime: "bg-brand-lime/15 text-brand-lime-dark border-brand-lime/25 dark:bg-brand-lime/12 dark:text-brand-lime dark:border-brand-lime/20",
+				brand: "bg-brand-purple/10 text-brand-purple border-brand-purple/20 dark:bg-brand-purple/15 dark:text-brand-purple-light dark:border-brand-purple/25",
 				link: "text-primary underline-offset-4 hover:underline",
 			},
 		},

@@ -12,6 +12,7 @@
 				secondary: "btn-tactile bg-secondary text-secondary-foreground",
 				ghost: "btn-tactile-ghost",
 				destructive: "btn-tactile-destructive",
+				lime: "btn-tactile-lime",
 				link: "text-primary underline-offset-4 hover:underline",
 			},
 			size: {

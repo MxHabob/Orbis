@@ -3,22 +3,22 @@
 @plugin "tailwindcss-animate";
 
 /* ============================================================
-   @orbis/ui-svelte — Design System (Tailwind CSS v4)
+   @orbis/ui-svelte — S.C.R.A.P.S. Design System (Tailwind CSS v4)
    ────────────────────────────────────────────────────────────
-   Single source of truth for all design tokens used by
-   @orbis/ui-svelte components.
+   Inspired by Sentry's S.C.R.A.P.S. design language:
+   Standardized Collection of Reusable Assets & Patterns.
+
+   Deep purple midnight palette · Electric lime accents
+   Tactile depth: buttons lift, inputs sink, cards have presence.
 
    Consuming apps MUST import this file via:
      @import "@orbis/ui-svelte/globals.css";
-
-   Tactile design language: buttons lift, inputs sink,
-   cards have depth, everything is alive.
    ============================================================ */
 
 @theme {
   /* ── Font Family ────────────────────────────────────────── */
-  --font-sans:  "var(--font-hedvig-sans)", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-mono:  "var(--font-hedvig-sans)", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --font-sans:  "Rubik", "var(--font-hedvig-sans)", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono:  "JetBrains Mono", "Fira Code", "var(--font-hedvig-sans)", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   --font-serif: "var(--font-hedvig-serif)", Georgia, Cambria, "Times New Roman", Times, serif;
 
   /* ── Border Radius ──────────────────────────────────────── */
@@ -29,61 +29,63 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
 
-  /* ── Core Colors (Light Mode) ───────────────────────────── */
-  --color-background:        hsl(0 0% 100%);
-  --color-foreground:        hsl(0 0% 7%);
+  /* ── Core Colors (Light Mode — Warm Purple Tints) ────────── */
+  --color-background:        hsl(270 15% 97%);
+  --color-foreground:        hsl(265 40% 12%);
 
-  --color-card:              hsl(45 18% 96%);
-  --color-card-foreground:   hsl(240 10% 3.9%);
+  --color-card:              hsl(270 18% 95%);
+  --color-card-foreground:   hsl(265 40% 12%);
 
-  --color-popover:           hsl(45 18% 96%);
-  --color-popover-foreground:hsl(240 10% 3.9%);
+  --color-popover:           hsl(270 20% 97%);
+  --color-popover-foreground:hsl(265 40% 12%);
 
-  /* Primary: Purple-Indigo brand accent */
-  --color-primary:           hsl(260 70% 50%);
-  --color-primary-foreground:hsl(0 0% 98%);
+  /* Primary: Sentry Violet */
+  --color-primary:           hsl(248 50% 56%);
+  --color-primary-foreground:hsl(0 0% 100%);
 
-  --color-secondary:         hsl(40 11% 89%);
-  --color-secondary-foreground:hsl(240 5.9% 10%);
+  --color-secondary:         hsl(270 12% 90%);
+  --color-secondary-foreground:hsl(265 30% 15%);
 
-  --color-muted:             hsl(40 11% 89%);
-  --color-muted-foreground:  hsl(240 3.8% 46.1%);
+  --color-muted:             hsl(270 10% 91%);
+  --color-muted-foreground:  hsl(265 15% 45%);
 
-  --color-accent:            hsl(40 10% 94%);
-  --color-accent-foreground: hsl(240 5.9% 10%);
+  --color-accent:            hsl(270 10% 93%);
+  --color-accent-foreground: hsl(265 30% 15%);
 
-  --color-destructive:       hsl(0 84.2% 60.2%);
-  --color-destructive-foreground:hsl(0 0% 98%);
+  --color-destructive:       hsl(340 70% 60%);
+  --color-destructive-foreground:hsl(0 0% 100%);
 
-  --color-border:            hsl(45 5% 85%);
-  --color-input:             hsl(240 5.9% 90%);
-  --color-ring:              hsl(260 70% 50%);
+  --color-border:            hsl(270 8% 85%);
+  --color-input:             hsl(270 10% 88%);
+  --color-ring:              hsl(248 50% 56%);
 
-  /* ── Brand Palette ──────────────────────────────────────── */
-  --color-brand-purple:      hsl(260 70% 50%);
-  --color-brand-purple-light:hsl(260 70% 60%);
-  --color-brand-purple-dark: hsl(260 70% 40%);
-  --color-brand-pink:        hsl(320 80% 60%);
-  --color-brand-pink-light:  hsl(320 80% 70%);
-  --color-brand-violet:      hsl(270 60% 55%);
-  --color-brand-indigo:      hsl(240 50% 45%);
-  --color-brand-rose:        hsl(340 75% 55%);
+  /* ── Brand Palette — S.C.R.A.P.S. ──────────────────────── */
+  --color-brand-purple:       hsl(248 50% 56%);
+  --color-brand-purple-light: hsl(248 55% 65%);
+  --color-brand-purple-dark:  hsl(248 50% 40%);
+  --color-brand-lime:         hsl(80 85% 62%);
+  --color-brand-lime-dark:    hsl(80 70% 45%);
+  --color-brand-pink:         hsl(340 93% 73%);
+  --color-brand-pink-light:   hsl(340 90% 80%);
+  --color-brand-violet:       hsl(267 40% 10%);
+  --color-brand-indigo:       hsl(267 38% 14%);
+  --color-brand-rose:         hsl(340 75% 55%);
 
   /* ── Chart Colors (Light) ───────────────────────────────── */
-  --color-chart-grid:        #e6e6e6;
-  --color-chart-axis:        #707070;
-  --color-chart-reference:   #e6e6e6;
-  --color-chart-ref-label:   #707070;
-  --color-chart-actual:      #000000;
-  --color-chart-forecast:    #666666;
-  --color-chart-cursor:      #666666;
-  --color-chart-pattern-bg:  white;
-  --color-chart-pattern:     #707070;
-  --color-chart-bar:         #000000;
-  --color-chart-bar-2:       #6666664d;
-  --color-chart-grad-start:  #707070;
-  --color-chart-grad-end:    #000000;
-  --color-chart-line-2:      #666666;
+  --color-chart-grid:        hsl(270 8% 88%);
+  --color-chart-axis:        hsl(265 15% 45%);
+  --color-chart-reference:   hsl(270 8% 88%);
+  --color-chart-ref-label:   hsl(265 15% 45%);
+  --color-chart-actual:      hsl(248 50% 56%);
+  --color-chart-forecast:    hsl(265 15% 45%);
+  --color-chart-cursor:      hsl(248 50% 56%);
+  --color-chart-pattern-bg:  hsl(270 15% 97%);
+  --color-chart-pattern:     hsl(265 15% 55%);
+  --color-chart-bar:         hsl(248 50% 56%);
+  --color-chart-bar-2:       hsl(248 50% 56% / 0.3);
+  --color-chart-grad-start:  hsl(248 55% 65%);
+  --color-chart-grad-end:    hsl(248 50% 45%);
+  --color-chart-line-2:      hsl(80 85% 45%);
 
   /* ── Animations ─────────────────────────────────────────── */
   --animate-shimmer:         shimmer 2.5s linear infinite;
@@ -104,59 +106,62 @@
   --animate-dialog-content-show: dialog-content-show 0.2s ease-out;
   --animate-dialog-content-hide: dialog-content-hide 0.2s ease-in;
   --animate-ellipsis:        ellipsis steps(4, end) 900ms infinite;
+  --animate-glow-pulse:      glow-pulse 2s ease-in-out infinite;
 
   /* ── Breakpoints ────────────────────────────────────────── */
   --breakpoint-3xl: 1800px;
 }
 
 /* ============================================================
-   DARK MODE
+   DARK MODE — S.C.R.A.P.S. Deep Purple Midnight
    ============================================================ */
 
 .dark {
-  --color-background:        hsl(0 0% 5%);
-  --color-foreground:        hsl(0 0% 98%);
+  /* ── Deep Purple Midnight (not pure black) ──────────────── */
+  --color-background:        hsl(267 40% 10%);
+  --color-foreground:        hsl(270 20% 95%);
 
-  --color-card:              hsl(0 0% 7%);
-  --color-card-foreground:   hsl(0 0% 98%);
+  --color-card:              hsl(267 38% 14%);
+  --color-card-foreground:   hsl(270 20% 95%);
 
-  --color-popover:           hsl(0 0% 7%);
-  --color-popover-foreground:hsl(0 0% 98%);
+  --color-popover:           hsl(267 35% 16%);
+  --color-popover-foreground:hsl(270 20% 95%);
 
-  --color-primary:           hsl(0 0% 98%);
-  --color-primary-foreground:hsl(240 5.9% 10%);
+  /* Primary stays Sentry Violet in dark mode too */
+  --color-primary:           hsl(248 50% 56%);
+  --color-primary-foreground:hsl(0 0% 100%);
 
-  --color-secondary:         hsl(0 0% 7%);
-  --color-secondary-foreground:hsl(0 0% 98%);
+  --color-secondary:         hsl(267 30% 18%);
+  --color-secondary-foreground:hsl(270 20% 95%);
 
-  --color-muted:             hsl(0 0% 11%);
-  --color-muted-foreground:  hsl(240 5% 64.9%);
+  --color-muted:             hsl(267 25% 16%);
+  --color-muted-foreground:  hsl(270 15% 55%);
 
-  --color-accent:            hsl(0 0% 11%);
-  --color-accent-foreground: hsl(0 0% 98%);
+  --color-accent:            hsl(267 28% 19%);
+  --color-accent-foreground: hsl(270 20% 95%);
 
-  --color-destructive:       hsl(359 100% 61%);
+  --color-destructive:       hsl(340 70% 60%);
   --color-destructive-foreground:hsl(0 0% 100%);
 
-  --color-border:            hsl(0 0% 11%);
-  --color-input:             hsl(0 0% 11%);
-  --color-ring:              hsl(240 4.9% 83.9%);
+  --color-border:            hsl(267 20% 20%);
+  --color-input:             hsl(267 25% 15%);
+  --color-ring:              hsl(248 50% 56%);
 
-  /* Chart Colors (Dark) */
-  --color-chart-grid:        #1d1d1d;
-  --color-chart-axis:        #666666;
-  --color-chart-reference:   #333333;
-  --color-chart-ref-label:   #666666;
-  --color-chart-actual:      #ffffff;
-  --color-chart-forecast:    #999999;
-  --color-chart-cursor:      #999999;
-  --color-chart-pattern-bg:  #0c0c0c;
-  --color-chart-pattern:     #666666;
-  --color-chart-bar:         white;
-  --color-chart-bar-2:       #6666664d;
-  --color-chart-grad-start:  #666666;
-  --color-chart-grad-end:    #ffffff;
-  --color-chart-line-2:      #999999;
+  /* Chart Colors (Dark — Purple + Lime) */
+  --color-chart-grid:        hsl(267 25% 16%);
+  --color-chart-axis:        hsl(270 15% 45%);
+  --color-chart-reference:   hsl(267 20% 22%);
+  --color-chart-ref-label:   hsl(270 15% 50%);
+  --color-chart-actual:      hsl(80 85% 62%);
+  --color-chart-forecast:    hsl(248 55% 65%);
+  --color-chart-cursor:      hsl(80 85% 62%);
+  --color-chart-pattern-bg:  hsl(267 40% 10%);
+  --color-chart-pattern:     hsl(270 15% 40%);
+  --color-chart-bar:         hsl(80 85% 62%);
+  --color-chart-bar-2:       hsl(248 50% 56% / 0.3);
+  --color-chart-grad-start:  hsl(248 55% 65%);
+  --color-chart-grad-end:    hsl(80 85% 62%);
+  --color-chart-line-2:      hsl(248 55% 65%);
 }
 
 /* ============================================================
@@ -189,58 +194,78 @@
 }
 
 /* ============================================================
-   TACTILE DESIGN SYSTEM
-   Buttons lift on hover, inputs sink, cards have depth.
+   S.C.R.A.P.S. TACTILE DESIGN SYSTEM
+   ──────────────────────────────────────────────────────────
+   Philosophy: Elements convey their function through depth.
+   • Buttons LIFT above the surface — they protrude and
+     invite interaction. On hover they rise higher; on press
+     they recess flush with the surface.
+   • Inputs SINK into the surface — they are recessed wells
+     that invite content to be placed inside them.
+   • Cards have PRESENCE — subtle elevation and borders
+     give them a sense of floating above the background.
    ============================================================ */
 
-/* ============================================================
-   TACTILE DESIGN SYSTEM
-   Buttons lift on hover, inputs sink, cards have depth.
-   ============================================================ */
-
-/* ── Tactile Button ─────────────────────────────────────── */
+/* ── Tactile Button (Base) ─────────────────────────────────
+   Buttons stand taller than the surface. On hover they lift
+   further; on press they sink flush.                         */
 @utility btn-tactile {
   @apply relative inline-flex items-center justify-center gap-2 px-4 py-2.5
          rounded-md font-medium text-sm transition-all duration-150 ease-out;
-  box-shadow: 0 2px 0 0 hsl(45 5% 75%);
+  box-shadow:
+    0 2px 0 0 hsl(270 8% 75%),
+    0 1px 3px 0 hsl(267 30% 30% / 0.08);
 
   &:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 0 0 hsl(45 5% 75%);
+    transform: translateY(-2px);
+    box-shadow:
+      0 4px 0 0 hsl(270 8% 75%),
+      0 4px 8px -2px hsl(267 30% 30% / 0.12);
   }
 
   &:active {
     transform: translateY(1px);
-    box-shadow: 0 0 0 0 hsl(45 5% 75%);
+    box-shadow: 0 0 0 0 hsl(270 8% 75%);
   }
 }
 
+/* Primary: Sentry Violet button with deep purple shadow */
 .btn-tactile-primary {
   @apply btn-tactile bg-primary text-primary-foreground;
-  box-shadow: 0 2px 0 0 hsl(260 70% 35%);
+  box-shadow:
+    0 2px 0 0 hsl(248 50% 35%),
+    0 1px 3px 0 hsl(248 50% 25% / 0.25);
 
   &:hover {
-    box-shadow: 0 4px 0 0 hsl(260 70% 35%);
+    box-shadow:
+      0 4px 0 0 hsl(248 50% 35%),
+      0 6px 12px -2px hsl(248 50% 25% / 0.3);
   }
 
   &:active {
-    box-shadow: 0 0 0 0 hsl(260 70% 35%);
+    box-shadow: 0 0 0 0 hsl(248 50% 35%);
   }
 }
 
+/* Destructive: Pink-rose shadow for danger actions */
 .btn-tactile-destructive {
   @apply btn-tactile bg-destructive text-destructive-foreground;
-  box-shadow: 0 2px 0 0 hsl(0 84% 45%);
+  box-shadow:
+    0 2px 0 0 hsl(340 70% 40%),
+    0 1px 3px 0 hsl(340 70% 30% / 0.25);
 
   &:hover {
-    box-shadow: 0 4px 0 0 hsl(0 84% 45%);
+    box-shadow:
+      0 4px 0 0 hsl(340 70% 40%),
+      0 6px 12px -2px hsl(340 70% 30% / 0.3);
   }
 
   &:active {
-    box-shadow: 0 0 0 0 hsl(0 84% 45%);
+    box-shadow: 0 0 0 0 hsl(340 70% 40%);
   }
 }
 
+/* Ghost: No elevation, subtle hover */
 .btn-tactile-ghost {
   @apply btn-tactile bg-transparent text-foreground hover:bg-accent;
   box-shadow: none;
@@ -251,56 +276,159 @@
   }
 }
 
-/* ── Sunken Input ───────────────────────────────────────── */
+/* Lime: Electric lime CTA button — high visibility */
+.btn-tactile-lime {
+  @apply btn-tactile text-sm font-semibold;
+  background-color: hsl(80 85% 62%);
+  color: hsl(267 40% 10%);
+  box-shadow:
+    0 2px 0 0 hsl(80 70% 38%),
+    0 1px 3px 0 hsl(80 70% 25% / 0.3);
+
+  &:hover {
+    background-color: hsl(80 85% 67%);
+    box-shadow:
+      0 4px 0 0 hsl(80 70% 38%),
+      0 6px 12px -2px hsl(80 70% 25% / 0.35);
+  }
+
+  &:active {
+    background-color: hsl(80 85% 58%);
+    box-shadow: 0 0 0 0 hsl(80 70% 38%);
+  }
+}
+
+/* ── Dark mode tactile overrides ───────────────────────── */
+.dark .btn-tactile {
+  box-shadow:
+    0 2px 0 0 hsl(267 30% 8%),
+    0 1px 3px 0 hsl(0 0% 0% / 0.3);
+
+  &:hover {
+    box-shadow:
+      0 4px 0 0 hsl(267 30% 8%),
+      0 6px 12px -2px hsl(0 0% 0% / 0.4);
+  }
+
+  &:active {
+    box-shadow: 0 0 0 0 hsl(267 30% 8%);
+  }
+}
+
+.dark .btn-tactile-primary {
+  box-shadow:
+    0 2px 0 0 hsl(248 50% 30%),
+    0 1px 4px 0 hsl(248 50% 20% / 0.5);
+
+  &:hover {
+    box-shadow:
+      0 4px 0 0 hsl(248 50% 30%),
+      0 6px 16px -2px hsl(248 50% 40% / 0.35);
+  }
+
+  &:active {
+    box-shadow: 0 0 0 0 hsl(248 50% 30%);
+  }
+}
+
+.dark .btn-tactile-destructive {
+  box-shadow:
+    0 2px 0 0 hsl(340 70% 30%),
+    0 1px 4px 0 hsl(340 70% 20% / 0.5);
+
+  &:hover {
+    box-shadow:
+      0 4px 0 0 hsl(340 70% 30%),
+      0 6px 16px -2px hsl(340 70% 35% / 0.35);
+  }
+
+  &:active {
+    box-shadow: 0 0 0 0 hsl(340 70% 30%);
+  }
+}
+
+.dark .btn-tactile-lime {
+  box-shadow:
+    0 2px 0 0 hsl(80 70% 30%),
+    0 1px 4px 0 hsl(80 70% 20% / 0.5);
+
+  &:hover {
+    box-shadow:
+      0 4px 0 0 hsl(80 70% 30%),
+      0 6px 16px -2px hsl(80 85% 50% / 0.25);
+  }
+
+  &:active {
+    box-shadow: 0 0 0 0 hsl(80 70% 30%);
+  }
+}
+
+/* ── Sunken Input ───────────────────────────────────────── 
+   Inputs sink INTO the surface. They are recessed wells
+   that invite text to be placed inside.                    */
 .input-sunken {
   @apply w-full rounded-md border border-input bg-background px-3 py-2.5
          text-sm text-foreground placeholder:text-muted-foreground
-         transition-colors duration-150;
-  box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.04);
+         transition-all duration-150;
+  box-shadow:
+    inset 0 2px 4px 0 hsl(267 30% 30% / 0.06),
+    inset 0 1px 2px 0 hsl(267 30% 30% / 0.04);
 
   &:focus {
     @apply border-ring ring-1 ring-ring;
-    box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.04), 0 0 0 1px hsl(260 70% 50% / 0.15);
+    box-shadow:
+      inset 0 2px 4px 0 hsl(267 30% 30% / 0.06),
+      inset 0 1px 2px 0 hsl(267 30% 30% / 0.04),
+      0 0 0 1px hsl(248 50% 56% / 0.15),
+      0 0 12px -3px hsl(248 50% 56% / 0.1);
   }
 }
 
 .dark .input-sunken {
-  box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.25);
+  box-shadow:
+    inset 0 3px 6px 0 hsl(0 0% 0% / 0.35),
+    inset 0 1px 2px 0 hsl(0 0% 0% / 0.2);
 
   &:focus {
-    box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.25), 0 0 0 1px hsl(240 5% 84% / 0.15);
+    box-shadow:
+      inset 0 3px 6px 0 hsl(0 0% 0% / 0.35),
+      inset 0 1px 2px 0 hsl(0 0% 0% / 0.2),
+      0 0 0 1px hsl(248 50% 56% / 0.25),
+      0 0 16px -4px hsl(248 50% 56% / 0.15);
   }
 }
 
-/* ── Tactile Card ───────────────────────────────────────── */
+/* ── Tactile Card ───────────────────────────────────────── 
+   Cards float above the surface with subtle elevation.
+   On hover they lift slightly for interactive cards.       */
 .card-tactile {
   @apply rounded-lg border border-border bg-card p-6;
   box-shadow:
-    0 0 0 1px rgb(0 0 0 / 0.03),
-    0 1px 3px 0 rgb(0 0 0 / 0.08),
-    0 1px 2px -1px rgb(0 0 0 / 0.04);
+    0 0 0 1px hsl(267 30% 30% / 0.04),
+    0 1px 3px 0 hsl(267 30% 30% / 0.08),
+    0 2px 6px -1px hsl(267 30% 30% / 0.05);
   transition: box-shadow 0.2s ease, transform 0.2s ease;
 
   &:hover {
     box-shadow:
-      0 0 0 1px rgb(0 0 0 / 0.04),
-      0 4px 6px -1px rgb(0 0 0 / 0.08),
-      0 2px 4px -2px rgb(0 0 0 / 0.04);
+      0 0 0 1px hsl(267 30% 30% / 0.06),
+      0 4px 8px -1px hsl(267 30% 30% / 0.1),
+      0 6px 16px -4px hsl(267 30% 30% / 0.06);
     transform: translateY(-1px);
   }
 }
 
 .dark .card-tactile {
   box-shadow:
-    0 0 0 1px rgb(255 255 255 / 0.04),
-    0 1px 3px 0 rgb(0 0 0 / 0.3),
-    0 1px 2px -1px rgb(0 0 0 / 0.2);
+    0 0 0 1px hsl(248 50% 56% / 0.06),
+    0 1px 3px 0 hsl(0 0% 0% / 0.4),
+    0 2px 8px -2px hsl(0 0% 0% / 0.3);
 
   &:hover {
     box-shadow:
-      0 0 0 1px rgb(255 255 255 / 0.06),
-      0 4px 6px -1px rgb(0 0 0 / 0.4),
-      0 2px 4px -2px rgb(0 0 0 / 0.3);
+      0 0 0 1px hsl(248 50% 56% / 0.1),
+      0 4px 8px -1px hsl(0 0% 0% / 0.5),
+      0 8px 20px -4px hsl(0 0% 0% / 0.35);
   }
 }
 
@@ -320,6 +448,26 @@
 
 .badge-brand-destructive {
   @apply badge-brand bg-destructive/10 text-destructive border-destructive/20;
+}
+
+.badge-brand-lime {
+  @apply badge-brand border-transparent;
+  background-color: hsl(80 85% 62% / 0.15);
+  color: hsl(80 70% 40%);
+  border-color: hsl(80 85% 62% / 0.25);
+}
+
+.dark .badge-brand-lime {
+  background-color: hsl(80 85% 62% / 0.12);
+  color: hsl(80 85% 70%);
+  border-color: hsl(80 85% 62% / 0.2);
+}
+
+.badge-brand-brand {
+  @apply badge-brand border-transparent;
+  background: linear-gradient(135deg, hsl(248 50% 56% / 0.15), hsl(267 38% 14% / 0.15));
+  color: hsl(248 55% 65%);
+  border-color: hsl(248 50% 56% / 0.2);
 }
 
 /* ── Alert / Banner ─────────────────────────────────────── */
@@ -378,12 +526,25 @@
     background: linear-gradient(
       90deg,
       transparent 0%,
-      hsl(var(--color-background) / 0.4) 50%,
+      hsl(248 50% 56% / 0.06) 40%,
+      hsl(248 50% 56% / 0.12) 50%,
+      hsl(248 50% 56% / 0.06) 60%,
       transparent 100%
     );
     background-size: 200% 100%;
     animation: shimmer 2.5s linear infinite;
   }
+}
+
+.dark .skeleton::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(248 50% 56% / 0.08) 40%,
+    hsl(248 50% 56% / 0.16) 50%,
+    hsl(248 50% 56% / 0.08) 60%,
+    transparent 100%
+  );
 }
 
 /* ============================================================
@@ -403,14 +564,37 @@
     text-wrap: balance;
   }
 
+  /* Gradient text: Purple → Lime (S.C.R.A.P.S. signature) */
   .text-gradient-brand {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, hsl(260 70% 50%), hsl(320 80% 60%));
+    background-image: linear-gradient(135deg, hsl(248 50% 56%), hsl(80 85% 62%));
   }
 
+  /* Glassmorphism with purple tint */
   .glass {
     @apply bg-background/80 backdrop-blur-md;
-    border: 1px solid hsl(var(--color-border) / 0.5);
+    border: 1px solid hsl(267 20% 50% / 0.15);
+  }
+
+  .dark .glass {
+    @apply bg-background/70;
+    border: 1px solid hsl(248 50% 56% / 0.12);
+  }
+
+  /* Glow effects */
+  .glow-primary {
+    box-shadow: 0 0 20px -5px hsl(248 50% 56% / 0.35),
+                0 0 40px -10px hsl(248 50% 56% / 0.15);
+  }
+
+  .glow-lime {
+    box-shadow: 0 0 20px -5px hsl(80 85% 62% / 0.35),
+                0 0 40px -10px hsl(80 85% 62% / 0.15);
+  }
+
+  .glow-destructive {
+    box-shadow: 0 0 20px -5px hsl(340 70% 60% / 0.35),
+                0 0 40px -10px hsl(340 70% 60% / 0.15);
   }
 
   .loading-ellipsis::after {
@@ -507,6 +691,11 @@
 
 @keyframes ellipsis {
   to { width: 1.25em; }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 15px -5px hsl(248 50% 56% / 0.3); }
+  50%      { box-shadow: 0 0 25px -5px hsl(248 50% 56% / 0.5); }
 }
 
 /* ============================================================
