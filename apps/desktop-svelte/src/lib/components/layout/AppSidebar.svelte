@@ -6,7 +6,7 @@ and an animated active indicator bar.
 -->
 <script lang="ts">
 	import { page } from '$app/state';
-	import { cn } from '@orbis/ui-svelte/utils';
+	import { cn } from '../../../../../../packages/ui-svelte/utils';
 	import {
 		LayoutDashboard,
 		Users,

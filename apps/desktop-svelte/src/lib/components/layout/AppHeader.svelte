@@ -5,7 +5,7 @@ Left zone (actions) | Center zone (selector) | Right zone (actions).
 Both left and right use flex-basis: 0 so center stays perfectly centered.
 -->
 <script lang="ts">
-	import { cn } from '@orbis/ui-svelte/utils';
+	import { cn } from '../../../../../../packages/ui-svelte/utils';
 	import { Search, Bell, Plus, School } from 'lucide-svelte';
 	import { authStore } from '$lib/stores';
 	import { isDesktopApp } from '$lib/services/ipc';
