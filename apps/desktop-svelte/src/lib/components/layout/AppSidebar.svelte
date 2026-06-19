@@ -111,7 +111,7 @@ and an animated active indicator bar.
 				title={authStore.user?.full_name ?? 'Account'}
 				aria-label="Account"
 			>
-				<Avatar class="sidebar-avatar">
+				<Avatar >
 					<AvatarImage
 						src={authStore.user?.avatar ?? undefined}
 						alt={authStore.user?.full_name ?? 'User'}
@@ -131,8 +131,7 @@ and an animated active indicator bar.
 		justify-content: space-between;
 		width: var(--sidebar-width);
 		height: 100%;
-		padding-block: 12px;
-		padding-inline: 0 12px;
+		padding: 12px 0;
 		flex-shrink: 0;
 		box-sizing: border-box;
 	}
@@ -150,26 +149,30 @@ and an animated active indicator bar.
 
 	.sidebar-item-wrap {
 		position: relative;
+		display: flex;
+		justify-content: center;
+		width: 100%;
 	}
 
 	.active-indicator {
 		position: absolute;
 		inset-inline-start: 0;
 		top: 50%;
-		width: 4px;
-		height: 32px;
+		width: 3px;
+		height: 28px;
 		transform: translateY(-50%);
 		border-radius: 999px;
 		background-color: var(--active-indicator);
 		pointer-events: none;
+		z-index: 1;
 	}
 
 	.sidebar-btn {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 36px;
-		height: 36px;
+		width: 40px;
+		height: 40px;
 		border-radius: var(--radius-ml);
 		color: hsl(var(--muted-foreground));
 		border: 1px solid transparent;
@@ -207,14 +210,23 @@ and an animated active indicator bar.
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		width: 40px;
+		height: 40px;
 		padding: 0;
 		background: transparent;
 		border: none;
+		border-radius: var(--radius-ml);
+		cursor: pointer;
+	}
+
+	.sidebar-user-btn:hover {
+		background-color: hsl(var(--accent));
 	}
 
 	.sidebar-avatar {
 		width: 36px;
 		height: 36px;
+		flex-shrink: 0;
 	}
 
 	.disabled {
