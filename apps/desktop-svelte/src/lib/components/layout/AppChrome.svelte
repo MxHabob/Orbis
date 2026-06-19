@@ -54,17 +54,18 @@ Follows GitButler's "Chrome Shell" pattern:
 	}
 
 	.chrome-body {
-		display: flex;
-		flex-grow: 1;
-		height: 100%;
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		flex: 1 1 0%;
 		overflow: hidden;
 	}
 
 	.chrome-content {
 		display: flex;
-		flex-grow: 1;
+		min-width: 0;
 		align-items: stretch;
-		padding: 0 14px 14px 0;
+		padding-inline: 14px;
+		padding-block-end: 14px;
 		overflow: hidden;
 	}
 </style>

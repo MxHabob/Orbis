@@ -43,13 +43,13 @@ Both left and right use flex-basis: 0 so center stays perfectly centered.
 </script>
 
 <div
-	class="flex h-[var(--header-height)] shrink-0 items-center justify-between gap-3 px-[14px]"
+	class="grid h-[var(--header-height)] shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-3 px-[14px]"
 	class:pt-1={isDesktop}
 	data-tauri-drag-region={isDesktop || undefined}
 >
 	<!-- Left Zone -->
 	<div
-		class="flex min-w-max flex-1 basis-0 items-center gap-2"
+		class="flex min-w-0 items-center justify-start gap-2"
 		data-tauri-drag-region={isDesktop || undefined}
 	>
 		<button
@@ -65,12 +65,12 @@ Both left and right use flex-basis: 0 so center stays perfectly centered.
 
 	<!-- Center Zone -->
 	<div
-		class="flex min-w-0 shrink overflow-hidden"
+		class="flex min-w-0 justify-center overflow-hidden"
 		data-tauri-drag-region={isDesktop || undefined}
 	>
 		<DropdownMenu>
 			<DropdownMenuTrigger
-				class="inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-[var(--radius-button)] border border-transparent px-2.5 text-[12px] font-semibold text-foreground transition-colors hover:border-border hover:bg-accent"
+				class="inline-flex h-8 max-w-full items-center gap-1.5 whitespace-nowrap rounded-[var(--radius-button)] border border-transparent px-2.5 text-[12px] font-semibold text-foreground transition-colors hover:border-border hover:bg-accent"
 				title="Switch organization"
 			>
 				<School size={15} strokeWidth={2} class="text-muted-foreground" />
@@ -97,11 +97,11 @@ Both left and right use flex-basis: 0 so center stays perfectly centered.
 
 	<!-- Right Zone -->
 	<div
-		class="flex min-w-max flex-1 basis-0 items-center justify-end gap-2"
+		class="flex min-w-0 items-center justify-end gap-2"
 		data-tauri-drag-region={isDesktop || undefined}
 	>
 		<button
-			class="inline-flex h-8 w-8 items-center justify-center  text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+			class="inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-button)] text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
 			title="Notifications"
 			aria-label="Notifications"
 		>
