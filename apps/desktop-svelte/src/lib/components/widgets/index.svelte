@@ -33,12 +33,12 @@
 	});
 </script>
 
-<div class="mt-2 pb-16 flex flex-col justify-center min-h-[calc(100vh-120px)] max-w-3xl mx-auto w-full select-none">
+<div class="flex flex-col justify-center min-h-[calc(100vh-120px)] max-w-3xl mx-auto w-full select-none">
 	{#if isLoading}
 		<div class="flex flex-col items-center text-center pt-6 pb-10 w-full">
 			<WelcomeSection type="greeting" {orgId} />
 			<div class="mt-3 w-full">
-				<OverviewSkeleton type="summary" />
+				<OverviewSkeleton type="summary"/>
 			</div>
 		</div>
 		<QuickActions {orgId} />

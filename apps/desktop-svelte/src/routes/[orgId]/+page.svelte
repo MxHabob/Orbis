@@ -13,7 +13,7 @@
 	<title>Dashboard | Orbis</title>
 </svelte:head>
 
-<div class="h-full w-full overflow-y-auto bg-background px-4">
+<div class="h-full w-full ">
 	<OverviewView orgId={data.orgId} />
 </div>
 
