@@ -18,11 +18,21 @@ import {
   Bell,
   School,
   ChevronDown,
+  ChevronLeft,
   UserCircle,
   LogOut,
 } from "lucide-svelte";
-import { authStore } from "$lib/stores";
+import { authStore, studentsStore } from "$lib/stores";
 import { isDesktopApp } from "$lib/services/ipc";
+import { page } from "$app/state";
+import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbSeparator,
+  BreadcrumbPage,
+} from "@orbis/ui-svelte/breadcrumb";
 
 let {
   orgId,
@@ -41,6 +51,52 @@ const userInitials = $derived(
     .map((part) => part[0]?.toUpperCase() ?? "")
     .join("") || "U",
 );
+
+// Breadcrumb items generator based on active route
+const breadcrumbs = $derived.by(() => {
+  const pathname = page.url.pathname;
+  const currentOrgId = orgId || page.params.orgId || "";
+  const studentId = page.params.studentId;
+  
+  const items: { label: string; href?: string }[] = [];
+  
+  // Base dashboard link
+  items.push({ label: "الرئيسية", href: `/${currentOrgId}` });
+  
+  if (pathname.includes("/reports")) {
+    items.push({ label: "التقارير", href: `/${currentOrgId}/reports` });
+  } else if (pathname.includes("/students")) {
+    items.push({ label: "الطلاب", href: `/${currentOrgId}/students` });
+    
+    if (pathname.includes("/students/new")) {
+      items.push({ label: "طالب جديد" });
+    } else if (studentId) {
+      const student = studentsStore.list.find((s) => s.id === studentId);
+      const studentName = student?.full_name || student?.name_ar || "ملف الطالب";
+      items.push({ label: studentName, href: `/${currentOrgId}/students/${studentId}` });
+      
+      if (pathname.includes("/edit")) {
+        items.push({ label: "تعديل البيانات" });
+      } else if (pathname.includes("/grades")) {
+        items.push({ label: "الدرجات" });
+      } else if (pathname.includes("/fees")) {
+        items.push({ label: "الرسوم" });
+      } else if (pathname.includes("/attendance")) {
+        items.push({ label: "الحضور" });
+      } else if (pathname.includes("/behavior")) {
+        items.push({ label: "السلوك" });
+      }
+    }
+  } else if (pathname.includes("/academics")) {
+    items.push({ label: "الأكاديميات", href: `/${currentOrgId}/academics` });
+  } else if (pathname.includes("/finance")) {
+    items.push({ label: "المالية", href: `/${currentOrgId}/finance` });
+  } else if (pathname.includes("/settings")) {
+    items.push({ label: "الإعدادات", href: `/${currentOrgId}/settings` });
+  }
+  
+  return items;
+});
 </script>
 
 <div
@@ -50,13 +106,13 @@ const userInitials = $derived(
 >
 	<!-- Left Zone -->
 	<div
-		class="flex min-w-0 items-center justify-start gap-2"
+		class="flex min-w-0 items-center justify-start gap-4"
 		data-tauri-drag-region={isDesktop || undefined}
 	>
 		<Button
 			variant="outline"
 			size="sm"
-			class="h-8 gap-1.5 px-2.5 text-[12px] text-muted-foreground"
+			class="h-8 gap-1.5 px-2.5 text-[12px] text-muted-foreground shrink-0"
 			title="Search (⌘K)"
 			aria-label="Search"
 		>
@@ -64,6 +120,30 @@ const userInitials = $derived(
 			<span class="whitespace-nowrap">Search...</span>
 			<kbd class="ml-2 inline-flex h-4.5 items-center rounded border border-border bg-muted px-1 font-mono text-[10px] text-muted-foreground">⌘K</kbd>
 		</Button>
+
+		<!-- Breadcrumb -->
+		<Breadcrumb>
+			<BreadcrumbList class="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground select-none">
+				{#each breadcrumbs as item, index}
+					<BreadcrumbItem>
+						{#if item.href && index < breadcrumbs.length - 1}
+							<BreadcrumbLink href={item.href} class="hover:text-foreground transition-colors duration-150 truncate max-w-[120px]">
+								{item.label}
+							</BreadcrumbLink>
+						{:else}
+							<BreadcrumbPage class="text-foreground font-semibold truncate max-w-[120px]">
+								{item.label}
+							</BreadcrumbPage>
+						{/if}
+					</BreadcrumbItem>
+					{#if index < breadcrumbs.length - 1}
+						<BreadcrumbSeparator class="opacity-40">
+							<ChevronLeft size={11} />
+						</BreadcrumbSeparator>
+					{/if}
+				{/each}
+			</BreadcrumbList>
+		</Breadcrumb>
 	</div>
 
 	<!-- Center Zone -->

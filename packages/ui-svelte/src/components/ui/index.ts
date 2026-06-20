@@ -24,3 +24,5 @@ export * from "./table/index.js";
 export * from "./tabs/index.js";
 export * from "./textarea/index.js";
 export * from "./tooltip/index.js";
+export * from "./breadcrumb/index.js";
+export * from "./calendar/index.js";
