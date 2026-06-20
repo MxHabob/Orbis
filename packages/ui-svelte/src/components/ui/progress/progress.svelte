@@ -14,7 +14,7 @@ let {
 <ProgressPrimitive.Root
 	bind:ref
 	data-slot="progress"
-	class={cn("bg-muted h-1 rounded-full relative flex w-full items-center overflow-x-hidden shadow-[inset_0_1px_2px_0_hsl(267_30%_30%/0.08)] dark:shadow-[inset_0_1px_2px_0_hsl(0_0%_0%/0.3)]", className)}
+	class={cn("bg-muted h-1 rounded-full relative flex w-full items-center overflow-x-hidden shadow-[inset_0_1px_2px_0_oklch(0.3_0.05_280_/_0.08)] dark:shadow-[inset_0_1px_2px_0_oklch(0_0_0_/_0.3)]", className)}
 	{value}
 	{max}
 	{...restProps}
@@ -22,6 +22,6 @@ let {
 	<div
 		data-slot="progress-indicator"
 		class="size-full flex-1 rounded-full transition-all"
-		style="transform: translateX(-{100 - (100 * (value ?? 0)) / (max ?? 1)}%); background: linear-gradient(90deg, hsl(248 50% 56%), hsl(80 85% 62%));"
+		style="transform: translateX(-{100 - (100 * (value ?? 0)) / (max ?? 1)}%); background: linear-gradient(90deg, var(--color-primary), var(--color-brand-lime));"
 	></div>
 </ProgressPrimitive.Root>

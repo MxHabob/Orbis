@@ -66,19 +66,19 @@
   --sidebar-ring: oklch(0.58 0.1 285);
 
   /* Brand Palette */
-  --color-brand-purple: oklch(0.58 0.1 285);
-  --color-brand-purple-light: oklch(0.68 0.1 285);
-  --color-brand-purple-dark: oklch(0.46 0.1 285);
+  --brand-purple: oklch(0.58 0.1 285);
+  --brand-purple-light: oklch(0.68 0.1 285);
+  --brand-purple-dark: oklch(0.46 0.1 285);
 
-  --color-brand-lime: oklch(0.75 0.08 145);
-  --color-brand-lime-dark: oklch(0.62 0.08 145);
+  --brand-lime: oklch(0.75 0.08 145);
+  --brand-lime-dark: oklch(0.62 0.08 145);
 
-  --color-brand-pink: oklch(0.7 0.12 15);
-  --color-brand-pink-light: oklch(0.82 0.08 15);
+  --brand-pink: oklch(0.7 0.12 15);
+  --brand-pink-light: oklch(0.82 0.08 15);
 
-  --color-brand-violet: oklch(0.23 0 0);
-  --color-brand-indigo: oklch(0.6 0.08 250);
-  --color-brand-rose: oklch(0.65 0.16 25);
+  --brand-violet: oklch(0.23 0 0);
+  --brand-indigo: oklch(0.6 0.08 250);
+  --brand-rose: oklch(0.65 0.16 25);
 }
 .dark {
   /* Base */
@@ -136,19 +136,19 @@
   --sidebar-ring: oklch(0.7 0.1 285);
 
   /* Brand Palette */
-  --color-brand-purple: oklch(0.7 0.1 285);
-  --color-brand-purple-light: oklch(0.78 0.1 285);
-  --color-brand-purple-dark: oklch(0.58 0.1 285);
+  --brand-purple: oklch(0.7 0.1 285);
+  --brand-purple-light: oklch(0.78 0.1 285);
+  --brand-purple-dark: oklch(0.58 0.1 285);
 
-  --color-brand-lime: oklch(0.78 0.08 145);
-  --color-brand-lime-dark: oklch(0.66 0.08 145);
+  --brand-lime: oklch(0.78 0.08 145);
+  --brand-lime-dark: oklch(0.66 0.08 145);
 
-  --color-brand-pink: oklch(0.74 0.12 15);
-  --color-brand-pink-light: oklch(0.84 0.08 15);
+  --brand-pink: oklch(0.74 0.12 15);
+  --brand-pink-light: oklch(0.84 0.08 15);
 
-  --color-brand-violet: oklch(0.92 0 0);
-  --color-brand-indigo: oklch(0.72 0.08 250);
-  --color-brand-rose: oklch(0.68 0.16 25);
+  --brand-violet: oklch(0.92 0 0);
+  --brand-indigo: oklch(0.72 0.08 250);
+  --brand-rose: oklch(0.68 0.16 25);
 }
 
 @theme inline {
@@ -222,19 +222,19 @@
 
   /* Brand Palette */
 
-  --color-brand-purple: var(--color-brand-purple);
-  --color-brand-purple-light: var(--color-brand-purple-light);
-  --color-brand-purple-dark: var(--color-brand-purple-dark);
+  --color-brand-purple: var(--brand-purple);
+  --color-brand-purple-light: var(--brand-purple-light);
+  --color-brand-purple-dark: var(--brand-purple-dark);
 
-  --color-brand-lime: var(--color-brand-lime);
-  --color-brand-lime-dark: var(--color-brand-lime-dark);
+  --color-brand-lime: var(--brand-lime);
+  --color-brand-lime-dark: var(--brand-lime-dark);
 
-  --color-brand-pink: var(--color-brand-pink);
-  --color-brand-pink-light: var(--color-brand-pink-light);
+  --color-brand-pink: var(--brand-pink);
+  --color-brand-pink-light: var(--brand-pink-light);
 
-  --color-brand-violet: var(--color-brand-violet);
-  --color-brand-indigo: var(--color-brand-indigo);
-  --color-brand-rose: var(--color-brand-rose);
+  --color-brand-violet: var(--brand-violet);
+  --color-brand-indigo: var(--brand-indigo);
+  --color-brand-rose: var(--brand-rose);
 
   /* Animations */
   --animate-shimmer: shimmer 2.5s linear infinite;
@@ -480,15 +480,18 @@
     0 0 0 1px oklch(0.3 0.05 280 / 0.04),
     0 1px 3px 0 oklch(0.3 0.05 280 / 0.08),
     0 2px 6px -1px oklch(0.3 0.05 280 / 0.05);
-  transition:
-    box-shadow 0.2s ease,
-    transform 0.2s ease;
-  &:hover {
-    box-shadow:
-      0 0 0 1px oklch(0.3 0.05 280 / 0.06),
-      0 4px 8px -1px oklch(0.3 0.05 280 / 0.1),
-      0 6px 16px -4px oklch(0.3 0.05 280 / 0.06);
-    transform: translateY(-1px);
+  
+  &:not([data-slot="dialog-content"]):not([data-slot="alert-dialog-content"]) {
+    transition:
+      box-shadow 0.2s ease,
+      transform 0.2s ease;
+    &:hover {
+      box-shadow:
+        0 0 0 1px oklch(0.3 0.05 280 / 0.06),
+        0 4px 8px -1px oklch(0.3 0.05 280 / 0.1),
+        0 6px 16px -4px oklch(0.3 0.05 280 / 0.06);
+      transform: translateY(-1px);
+    }
   }
 }
 
@@ -497,11 +500,14 @@
     0 0 0 1px oklch(0.52 0.12 280 / 0.06),
     0 1px 3px 0 oklch(0 0 0 / 0.4),
     0 2px 8px -2px oklch(0 0 0 / 0.3);
-  &:hover {
-    box-shadow:
-      0 0 0 1px oklch(0.52 0.12 280 / 0.1),
-      0 4px 8px -1px oklch(0 0 0 / 0.5),
-      0 8px 20px -4px oklch(0 0 0 / 0.35);
+  
+  &:not([data-slot="dialog-content"]):not([data-slot="alert-dialog-content"]) {
+    &:hover {
+      box-shadow:
+        0 0 0 1px oklch(0.52 0.12 280 / 0.1),
+        0 4px 8px -1px oklch(0 0 0 / 0.5),
+        0 8px 20px -4px oklch(0 0 0 / 0.35);
+    }
   }
 }
 
