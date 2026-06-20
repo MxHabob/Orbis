@@ -31,7 +31,7 @@ onMount(() => {
 </svelte:head>
 
 {@render children()}
-<Toaster richColors position="top-center" />
+<Toaster position="bottom-center" expand={true} duration={5000} closeButton={true} />
 
 <!-- Hidden locale links for paraglide -->
 <div style="display:none">
