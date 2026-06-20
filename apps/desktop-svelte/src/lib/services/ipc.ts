@@ -13,4 +13,5 @@ export type {
   LoginResponse,
   JsonRecord,
   CommandError,
+  Enrollment,
 } from "@orbis/desktop-client/types";

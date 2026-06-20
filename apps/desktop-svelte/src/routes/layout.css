@@ -1,1 +1,33 @@
 @import "@orbis/ui-svelte/globals.css";
+
+html, body {
+  overflow: hidden !important;
+  height: 100vh !important;
+  width: 100vw !important;
+  margin: 0;
+  padding: 0;
+}
+
+/* Enforce dark-mode scrollbars and styling in Tauri/WebView2 */
+:root, html {
+  color-scheme: light dark;
+}
+
+html.dark {
+  color-scheme: dark !important;
+}
+
+html:not(.dark) {
+  color-scheme: light !important;
+}
+
+/* Hide all scrollbars globally while keeping scroll functionality active */
+::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  display: none !important;
+}
+
+* {
+  -ms-overflow-style: none !important; /* IE and Edge */
+  scrollbar-width: none !important; /* Firefox */
+}
