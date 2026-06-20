@@ -149,7 +149,7 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 			{#each navItems as item (item.href)}
 				<div class="flex">
 					<Tooltip>
-						<TooltipTrigger asChild>
+						<TooltipTrigger>
 							<Button
 								href={localizeHref(item.href)}
 								variant={isActive(item.href, item.match) ? 'default' : 'ghost'}
@@ -158,7 +158,7 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 								aria-label={item.label}
 								aria-current={isActive(item.href, item.match) ? 'page' : undefined}
 							>
-								<item.icon class="size-[18px]" strokeWidth={1.8} />
+								<item.icon size={18} strokeWidth={1.5} />
 							</Button>
 						</TooltipTrigger>
 						<TooltipContent side="right" sideOffset={12}>{item.label}</TooltipContent>
@@ -171,7 +171,7 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 			{#each bottomItems as item (item.href)}
 				<div class="flex">
 					<Tooltip>
-						<TooltipTrigger asChild>
+						<TooltipTrigger>
 							<Button
 								href={localizeHref(item.href)}
 								variant="lime"
@@ -179,7 +179,7 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 								class="rounded-[10px]"
 								aria-label={item.label}
 							>
-								<item.icon class="size-[18px]" strokeWidth={1.8} />
+								<item.icon size={18} strokeWidth={1.8} />
 							</Button>
 						</TooltipTrigger>
 						<TooltipContent side="right" sideOffset={10}>{item.label}</TooltipContent>
@@ -189,14 +189,14 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 
 			<div class="flex">
 				<Tooltip>
-					<TooltipTrigger asChild>
+					<TooltipTrigger>
 						<Button
 							variant="ghost"
 							size="icon"
 							class="rounded-[10px]"
 							aria-label={m.nav_feedback()}
 						>
-							<MessageSquare class="size-[16px]" strokeWidth={1.8} />
+							<MessageSquare size={16} strokeWidth={1.8} />
 						</Button>
 					</TooltipTrigger>
 					<TooltipContent side="right" sideOffset={10}>{m.nav_feedback()}</TooltipContent>

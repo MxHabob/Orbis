@@ -123,8 +123,7 @@ function handleSelect(id: string) {
           <Button
             variant="outline"
             size="icon"
-            class="rounded-[10px] {activeColors.bg} font-bold text-white font-sans text-sm outline-none select-none cursor-pointer btn-3d-custom"
-            style="--shadow-color: {activeColors.shadow};"
+            class="{activeColors.bg} font-bold font-sans text-sm select-none cursor-pointer"
             aria-label={orgNameDisplay}
           >
             {orgInitials}
