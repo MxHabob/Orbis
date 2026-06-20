@@ -33,10 +33,10 @@ import {
 import { onMount } from "svelte";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
-import { getLocale } from "$lib/paraglide/runtime";
+import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate, formatPercent } from "$lib/i18n-utils";
 
-let { studentId, onClose }: { studentId: string; onClose: () => void } =
+let { studentId, orgId, onClose }: { studentId: string; orgId: string; onClose: () => void } =
   $props();
 
 // Local reactivity for student data and stats
@@ -148,7 +148,7 @@ async function handleWithdraw() {
 		<div class="flex items-center justify-between p-4 border-b border-border bg-card">
 			<div class="flex items-center gap-2">
 				<Button
-					href="/{authStore.orgId}/students/{studentId}/grades"
+					href={localizeHref(`/${orgId}/students/${studentId}/grades`)}
 					variant="ghost"
 					size="icon"
 					class="h-7 w-7 text-muted-foreground hover:text-foreground"
@@ -157,7 +157,7 @@ async function handleWithdraw() {
 					<ExternalLink size={14} />
 				</Button>
 				<Button
-					href="/{authStore.orgId}/students/{studentId}/edit"
+					href={localizeHref(`/${orgId}/students/${studentId}/edit`)}
 					variant="ghost"
 					size="icon"
 					class="h-7 w-7 text-muted-foreground hover:text-foreground"

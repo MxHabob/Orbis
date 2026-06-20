@@ -136,6 +136,7 @@ const hasActiveFilters = $derived(
 		<div class="h-full border-l border-border bg-card/45 flex flex-col overflow-hidden">
 			<StudentInspector 
 				studentId={studentsStore.selectedId!} 
+				orgId={data.orgId}
 				onClose={() => studentsStore.selectedId = null} 
 			/>
 		</div>
