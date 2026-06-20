@@ -54,15 +54,78 @@ impl super::Service {
         &self,
         org_id: &str,
         params: crate::params::EnrollmentParams,
-    ) -> Result<Vec<enrollment::Model>, String> {
-        self.repo.get_enrollments(org_id, params).await
-            .map_err(|e| e.to_string())
+    ) -> Result<Vec<serde_json::Value>, String> {
+        use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
+        use crate::entities::user;
+        use std::collections::HashMap;
+
+        // 1. Fetch raw enrollments
+        let enrollments = self.repo.get_enrollments(org_id, params).await
+            .map_err(|e| e.to_string())?;
+
+        // 2. Fetch user details for each unique student_id
+        let student_ids: Vec<String> = enrollments
+            .iter()
+            .map(|e| e.student_id.clone())
+            .collect();
+
+        let mut users_map = HashMap::new();
+        if !student_ids.is_empty() {
+            let users = user::Entity::find()
+                .filter(user::Column::Id.is_in(student_ids))
+                .filter(user::Column::IsDeleted.eq(0))
+                .all(&self.repo.db)
+                .await
+                .map_err(|e| e.to_string())?;
+
+            for u in users {
+                users_map.insert(u.id.clone(), u);
+            }
+        }
+
+        // 3. Merge user details into enrollments as JSON values
+        let mut merged = Vec::new();
+        for e in enrollments {
+            let mut val = serde_json::to_value(&e).map_err(|e| e.to_string())?;
+            if let Some(obj) = val.as_object_mut() {
+                if let Some(u) = users_map.get(&e.student_id) {
+                    obj.insert("full_name".to_string(), serde_json::Value::String(u.full_name.clone()));
+                    obj.insert("name_ar".to_string(), serde_json::to_value(&u.name_ar).unwrap_or(serde_json::Value::Null));
+                    obj.insert("name_en".to_string(), serde_json::to_value(&u.name_en).unwrap_or(serde_json::Value::Null));
+                    obj.insert("email".to_string(), serde_json::to_value(&u.email).unwrap_or(serde_json::Value::Null));
+                    obj.insert("phone_number".to_string(), serde_json::to_value(&u.phone).unwrap_or(serde_json::Value::Null));
+                    obj.insert("avatar".to_string(), serde_json::to_value(&u.avatar).unwrap_or(serde_json::Value::Null));
+                    obj.insert("birth_date".to_string(), serde_json::to_value(&u.date_of_birth).unwrap_or(serde_json::Value::Null));
+                    obj.insert("address".to_string(), serde_json::to_value(&u.address).unwrap_or(serde_json::Value::Null));
+                }
+            }
+            merged.push(val);
+        }
+
+        Ok(merged)
     }
 
-    pub async fn get_enrollment(&self, enrollment_id: &str) -> Result<enrollment::Model, String> {
-        self.repo.get_enrollment_by_id(enrollment_id).await
+    pub async fn get_enrollment(&self, enrollment_id: &str) -> Result<serde_json::Value, String> {
+
+        let enrollment = self.repo.get_enrollment_by_id(enrollment_id).await
             .map_err(|e| e.to_string())?
-            .ok_or_else(|| "enrollment not found".to_string())
+            .ok_or_else(|| "enrollment not found".to_string())?;
+
+        let mut val = serde_json::to_value(&enrollment).map_err(|e| e.to_string())?;
+        if let Some(obj) = val.as_object_mut() {
+            if let Some(u) = self.repo.get_user_by_id(&enrollment.student_id).await.map_err(|e| e.to_string())? {
+                obj.insert("full_name".to_string(), serde_json::Value::String(u.full_name.clone()));
+                obj.insert("name_ar".to_string(), serde_json::to_value(&u.name_ar).unwrap_or(serde_json::Value::Null));
+                obj.insert("name_en".to_string(), serde_json::to_value(&u.name_en).unwrap_or(serde_json::Value::Null));
+                obj.insert("email".to_string(), serde_json::to_value(&u.email).unwrap_or(serde_json::Value::Null));
+                obj.insert("phone_number".to_string(), serde_json::to_value(&u.phone).unwrap_or(serde_json::Value::Null));
+                obj.insert("avatar".to_string(), serde_json::to_value(&u.avatar).unwrap_or(serde_json::Value::Null));
+                obj.insert("birth_date".to_string(), serde_json::to_value(&u.date_of_birth).unwrap_or(serde_json::Value::Null));
+                obj.insert("address".to_string(), serde_json::to_value(&u.address).unwrap_or(serde_json::Value::Null));
+            }
+        }
+
+        Ok(val)
     }
 
     pub async fn create_enrollment(&self, org_id: &str, req: CreateEnrollmentRequest) -> Result<enrollment::Model, String> {

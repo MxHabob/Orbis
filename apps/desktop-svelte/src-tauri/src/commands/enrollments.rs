@@ -1,5 +1,6 @@
 use tauri::State;
 use std::sync::Arc;
+use serde_json;
 
 use core_domain::{
     entities::enrollment,
@@ -18,7 +19,7 @@ pub async fn get_enrollments(
     state: State<'_, Arc<AppState>>,
     org_id: String,
     params: EnrollmentParams,
-) -> CmdResult<Vec<enrollment::Model>> {
+) -> CmdResult<Vec<serde_json::Value>> {
     state
         .service
         .get_enrollments(&org_id, params)
@@ -30,7 +31,7 @@ pub async fn get_enrollments(
 pub async fn get_enrollment(
     state: State<'_, Arc<AppState>>,
     enrollment_id: String,
-) -> CmdResult<enrollment::Model> {
+) -> CmdResult<serde_json::Value> {
     state
         .service
         .get_enrollment(&enrollment_id)
