@@ -97,6 +97,7 @@ impl super::Service {
                     obj.insert("avatar".to_string(), serde_json::to_value(&u.avatar).unwrap_or(serde_json::Value::Null));
                     obj.insert("birth_date".to_string(), serde_json::to_value(&u.date_of_birth).unwrap_or(serde_json::Value::Null));
                     obj.insert("address".to_string(), serde_json::to_value(&u.address).unwrap_or(serde_json::Value::Null));
+                    obj.insert("sex".to_string(), serde_json::to_value(&u.sex).unwrap_or(serde_json::Value::Null));
                 }
             }
             merged.push(val);
@@ -122,6 +123,7 @@ impl super::Service {
                 obj.insert("avatar".to_string(), serde_json::to_value(&u.avatar).unwrap_or(serde_json::Value::Null));
                 obj.insert("birth_date".to_string(), serde_json::to_value(&u.date_of_birth).unwrap_or(serde_json::Value::Null));
                 obj.insert("address".to_string(), serde_json::to_value(&u.address).unwrap_or(serde_json::Value::Null));
+                obj.insert("sex".to_string(), serde_json::to_value(&u.sex).unwrap_or(serde_json::Value::Null));
             }
         }
 

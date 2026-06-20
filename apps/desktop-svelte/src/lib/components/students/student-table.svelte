@@ -1,8 +1,7 @@
 <!--
 @component StudentTable
 Renders the list of students using the DataTable infrastructure.
-Migrated from inline HTML to declarative Column Definitions.
-Supports virtualization, sorting, column resize, export, and persistence.
+Matches the column layout and styling of the React dashboard precisely.
 -->
 <script lang="ts">
 import { DataTable, type ColumnDef, type CellContext } from "$lib/components/table";
@@ -11,6 +10,7 @@ import { studentsStore } from "$lib/stores/students.svelte";
 import type { Enrollment } from "$lib/services/ipc";
 import { ArrowUpRight, GraduationCap } from "lucide-svelte";
 import * as m from "$lib/paraglide/messages";
+import { formatDate } from "$lib/i18n-utils";
 
 let { students }: { students: Enrollment[] } = $props();
 
@@ -30,7 +30,7 @@ const columns: ColumnDef<Enrollment>[] = [
 		accessorKey: "full_name",
 		size: 250,
 		minSize: 200,
-		maxSize: 450,
+		maxSize: 400,
 		sticky: true,
 		sortable: true,
 		skeleton: { type: "avatar-text", width: "w-32" },
@@ -40,7 +40,7 @@ const columns: ColumnDef<Enrollment>[] = [
 		id: "studentNumber",
 		header: m.table_student_number(),
 		accessorKey: "student_number",
-		size: 140,
+		size: 150,
 		minSize: 100,
 		maxSize: 200,
 		sortable: true,
@@ -52,34 +52,44 @@ const columns: ColumnDef<Enrollment>[] = [
 		id: "class",
 		header: m.table_class(),
 		accessorFn: (row) => getClassName(String(row.class_id)),
-		size: 160,
-		minSize: 120,
-		maxSize: 250,
+		size: 150,
+		minSize: 100,
+		maxSize: 200,
 		sortable: true,
 		skeleton: { type: "text", width: "w-24" },
-	},
-	{
-		id: "email",
-		header: m.table_email(),
-		accessorKey: "email",
-		size: 200,
-		minSize: 150,
-		maxSize: 350,
-		sortable: true,
-		skeleton: { type: "text", width: "w-32" },
-		className: "font-mono text-muted-foreground",
-		cell: emailCell,
 	},
 	{
 		id: "status",
 		header: m.table_status(),
 		accessorKey: "status",
 		size: 120,
-		minSize: 90,
+		minSize: 100,
 		maxSize: 150,
 		sortable: true,
 		skeleton: { type: "badge", width: "w-16" },
 		cell: statusCell,
+	},
+	{
+		id: "sex",
+		header: m.form_sex(),
+		accessorKey: "sex",
+		size: 100,
+		minSize: 80,
+		maxSize: 120,
+		sortable: true,
+		skeleton: { type: "text", width: "w-12" },
+		cell: sexCell,
+	},
+	{
+		id: "enrollmentDate",
+		header: "Enrolled At",
+		accessorKey: "enrollment_date",
+		size: 150,
+		minSize: 120,
+		maxSize: 200,
+		sortable: true,
+		skeleton: { type: "text", width: "w-24" },
+		cell: enrollmentDateCell,
 	},
 ];
 </script>
@@ -105,11 +115,9 @@ const columns: ColumnDef<Enrollment>[] = [
 {/snippet}
 
 {#snippet studentNumberCell(ctx: CellContext<Enrollment>)}
-	<span class="text-xs">{ctx.row.student_number || ctx.row.id || '-'}</span>
-{/snippet}
-
-{#snippet emailCell(ctx: CellContext<Enrollment>)}
-	<span class="text-xs">{ctx.row.email || '-'}</span>
+	<span class="inline-flex items-center rounded-md border border-border px-2 py-0.5 text-[10px] font-mono font-medium text-foreground bg-background">
+		{ctx.row.student_number || ctx.row.id || '-'}
+	</span>
 {/snippet}
 
 {#snippet statusCell(ctx: CellContext<Enrollment>)}
@@ -123,6 +131,30 @@ const columns: ColumnDef<Enrollment>[] = [
 	{/if}
 {/snippet}
 
+{#snippet sexCell(ctx: CellContext<Enrollment>)}
+	{@const sex = String(ctx.row.sex || '').toLowerCase()}
+	<span class="capitalize text-xs">
+		{#if sex === 'male'}
+			{m.form_male()}
+		{:else if sex === 'female'}
+			{m.form_female()}
+		{:else}
+			{ctx.row.sex || '-'}
+		{/if}
+	</span>
+{/snippet}
+
+{#snippet enrollmentDateCell(ctx: CellContext<Enrollment>)}
+	{@const date = ctx.row.enrollment_date as string | undefined}
+	<span class="text-xs text-muted-foreground">
+		{#if date}
+			{formatDate(date)}
+		{:else}
+			-
+		{/if}
+	</span>
+{/snippet}
+
 <!-- ── DataTable ─────────────────────────────────────────────────── -->
 
 <DataTable
@@ -134,8 +166,8 @@ const columns: ColumnDef<Enrollment>[] = [
 	enableSorting={true}
 	enableSelection={false}
 	enableVirtualization={students.length > 100}
-	enableExport={true}
-	enableColumnToggle={true}
+	enableExport={false}
+	enableColumnToggle={false}
 	enablePersistence={true}
 	onRowClick={(row) => studentsStore.selectedId = String(row.id)}
 >
