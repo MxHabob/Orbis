@@ -223,18 +223,19 @@
 
   /* Brand Palette */
 
-  --color-brand-purple: oklch(0.58 0.10 285);
-  --color-brand-purple-light: oklch(0.68 0.10 285);
-  --color-brand-purple-dark: oklch(0.46 0.10 285);
+  --color-brand-purple: var(--color-brand-purple);
+  --color-brand-purple-light: var(--color-brand-purple-light);
+  --color-brand-purple-dark: var(--color-brand-purple-dark);
 
-  --color-brand-lime: oklch(0.75 0.08 145);
-  --color-brand-lime-dark: oklch(0.62 0.08 145);
+  --color-brand-lime: var(--color-brand-lime);
+  --color-brand-lime-dark: var(--color-brand-lime-dark);
 
-  --color-brand-pink: oklch(0.70 0.12 15);
-  --color-brand-pink-light: oklch(0.82 0.08 15);
+  --color-brand-pink: var(--color-brand-pink);
+  --color-brand-pink-light: var(--color-brand-pink-light);
 
-  --color-brand-indigo: oklch(0.60 0.08 250);
-  --color-brand-rose: oklch(0.65 0.16 25);
+  --color-brand-violet: var(--color-brand-violet);
+  --color-brand-indigo: var(--color-brand-indigo);
+  --color-brand-rose: var(--color-brand-rose);
 
   /* Animations */
   --animate-shimmer: shimmer 2.5s linear infinite;
