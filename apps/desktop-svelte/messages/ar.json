@@ -355,5 +355,10 @@
   "metrics_academic_term": "الفصل الدراسي",
   "metrics_all_terms": "كل الفصول",
   "metrics_class_grade": "الصف / الفصل",
-  "metrics_all_classes": "كل الفصول"
+  "metrics_all_classes": "كل الفصول",
+
+  "header_switch_theme": "تغيير المظهر",
+  "theme_light": "فاتح",
+  "theme_dark": "داكن",
+  "theme_system": "تلقائي"
 }

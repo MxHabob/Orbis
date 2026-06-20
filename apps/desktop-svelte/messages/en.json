@@ -355,5 +355,10 @@
   "metrics_academic_term": "Academic Term",
   "metrics_all_terms": "All Terms",
   "metrics_class_grade": "Grade / Class",
-  "metrics_all_classes": "All Classes"
+  "metrics_all_classes": "All Classes",
+
+  "header_switch_theme": "Switch Theme",
+  "theme_light": "Light",
+  "theme_dark": "Dark",
+  "theme_system": "System"
 }

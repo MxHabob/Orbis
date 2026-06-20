@@ -23,8 +23,11 @@ import {
   UserCircle,
   LogOut,
   Languages,
+  Sun,
+  Moon,
+  Monitor,
 } from "lucide-svelte";
-import { authStore, studentsStore } from "$lib/stores";
+import { authStore, studentsStore, themeStore } from "$lib/stores";
 import { isDesktopApp } from "$lib/services/ipc";
 import { page } from "$app/state";
 import { goto } from "$app/navigation";
@@ -229,6 +232,53 @@ function switchLanguage(locale: "ar" | "en") {
 				<DropdownMenuItem class="cursor-pointer flex items-center justify-between" onSelect={() => switchLanguage("en")}>
 					<span>{m.header_language_en()}</span>
 					{#if getLocale() === "en"}
+						<span class="h-1.5 w-1.5 rounded-full bg-primary"></span>
+					{/if}
+				</DropdownMenuItem>
+			</DropdownMenuContent>
+		</DropdownMenu>
+
+		<!-- Theme Switcher Dropdown -->
+		<DropdownMenu>
+			<DropdownMenuTrigger>
+				<Button
+					variant="ghost"
+					size="icon"
+					class="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0"
+					title={m.header_switch_theme()}
+				>
+					{#if themeStore.resolved === "light"}
+						<Sun size={15} strokeWidth={2} />
+					{:else}
+						<Moon size={15} strokeWidth={2} />
+					{/if}
+				</Button>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent align="end" sideOffset={8} class="w-36">
+				<DropdownMenuItem class="cursor-pointer flex items-center justify-between" onSelect={() => themeStore.set("light")}>
+					<span class="flex items-center gap-2">
+						<Sun size={13} />
+						<span>{m.theme_light()}</span>
+					</span>
+					{#if themeStore.current === "light"}
+						<span class="h-1.5 w-1.5 rounded-full bg-primary"></span>
+					{/if}
+				</DropdownMenuItem>
+				<DropdownMenuItem class="cursor-pointer flex items-center justify-between" onSelect={() => themeStore.set("dark")}>
+					<span class="flex items-center gap-2">
+						<Moon size={13} />
+						<span>{m.theme_dark()}</span>
+					</span>
+					{#if themeStore.current === "dark"}
+						<span class="h-1.5 w-1.5 rounded-full bg-primary"></span>
+					{/if}
+				</DropdownMenuItem>
+				<DropdownMenuItem class="cursor-pointer flex items-center justify-between" onSelect={() => themeStore.set("system")}>
+					<span class="flex items-center gap-2">
+						<Monitor size={13} />
+						<span>{m.theme_system()}</span>
+					</span>
+					{#if themeStore.current === "system"}
 						<span class="h-1.5 w-1.5 rounded-full bg-primary"></span>
 					{/if}
 				</DropdownMenuItem>
