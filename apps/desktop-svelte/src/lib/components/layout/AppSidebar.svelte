@@ -150,15 +150,25 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 				<div class="flex">
 					<Tooltip>
 						<TooltipTrigger asChild>
-							<Button
-								href={localizeHref(item.href)}
-								variant={isActive(item.href, item.match) ? 'default' : 'ghost'}
-								class="rounded-[10px] h-9 w-9 p-0 flex items-center justify-center shrink-0"
-								aria-label={item.label}
-								aria-current={isActive(item.href, item.match) ? 'page' : undefined}
-							>
-								<item.icon size={18} strokeWidth={1.8} />
-							</Button>
+							{#if isActive(item.href, item.match)}
+								<a
+									href={localizeHref(item.href)}
+									class="flex h-9 w-9 items-center justify-center rounded-[10px] bg-primary text-primary-foreground select-none transition-transform active:translate-y-[1px] cursor-pointer"
+									style="box-shadow: 0 2px 0 0 oklch(0.35 0.1 280), 0 0 0 1px oklch(0.35 0.1 280);"
+									aria-label={item.label}
+									aria-current="page"
+								>
+									<item.icon size={18} strokeWidth={1.8} />
+								</a>
+							{:else}
+								<a
+									href={localizeHref(item.href)}
+									class="flex h-9 w-9 items-center justify-center rounded-[10px] text-muted-foreground hover:bg-accent hover:text-foreground select-none transition-colors duration-150 cursor-pointer"
+									aria-label={item.label}
+								>
+									<item.icon size={18} strokeWidth={1.8} />
+								</a>
+							{/if}
 						</TooltipTrigger>
 						<TooltipContent side="right" sideOffset={12}>{item.label}</TooltipContent>
 					</Tooltip>
@@ -171,14 +181,14 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 				<div class="flex">
 					<Tooltip>
 						<TooltipTrigger asChild>
-							<Button
+							<a
 								href={localizeHref(item.href)}
-								variant="lime"
-								class="rounded-[10px] h-9 w-9 p-0 flex items-center justify-center shrink-0"
+								class="flex h-9 w-9 items-center justify-center rounded-[10px] bg-[#84cc16] text-[#150428] select-none transition-transform active:translate-y-[1px] cursor-pointer"
+								style="box-shadow: 0 2px 0 0 oklch(0.65 0.18 120), 0 0 0 1px oklch(0.65 0.18 120);"
 								aria-label={item.label}
 							>
 								<item.icon size={18} strokeWidth={1.8} />
-							</Button>
+							</a>
 						</TooltipTrigger>
 						<TooltipContent side="right" sideOffset={10}>{item.label}</TooltipContent>
 					</Tooltip>
@@ -188,9 +198,12 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 			<div class="flex">
 				<Tooltip>
 					<TooltipTrigger asChild>
-						<Button variant="ghost" class="sidebar-btn sidebar-btn-ghost rounded-[10px] h-9 w-9 p-0 flex items-center justify-center shrink-0" aria-label={m.nav_feedback()}>
+						<button
+							class="flex h-9 w-9 items-center justify-center rounded-[10px] text-muted-foreground hover:bg-accent hover:text-foreground select-none transition-colors duration-150 cursor-pointer"
+							aria-label={m.nav_feedback()}
+						>
 							<MessageSquare size={16} strokeWidth={1.8} />
-						</Button>
+						</button>
 					</TooltipTrigger>
 					<TooltipContent side="right" sideOffset={10}>{m.nav_feedback()}</TooltipContent>
 				</Tooltip>
