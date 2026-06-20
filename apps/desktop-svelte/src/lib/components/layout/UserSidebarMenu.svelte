@@ -1,4 +1,5 @@
 <script lang="ts">
+import { Button } from "@orbis/ui-svelte/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,9 +49,10 @@ async function handleLogout() {
     <div class="flex">
       <Tooltip>
         <TooltipTrigger asChild>
-          <button
-            class="flex h-9 w-9 items-center justify-center rounded-[10px] bg-[#9c27b0] font-bold text-white transition-transform active:translate-y-[2px] font-sans text-sm outline-none select-none cursor-pointer"
-            style="box-shadow: 0 3px 0 0 #1b001a, 0 0 0 1px #1b001a;"
+          <Button
+            size="icon"
+            class="rounded-[10px] bg-[#9c27b0] font-bold text-white font-sans text-sm outline-none select-none cursor-pointer btn-3d-custom"
+            style="--shadow-color: #1b001a;"
             aria-label={m.nav_account()}
           >
             {#if authStore.user?.avatar}
@@ -62,7 +64,7 @@ async function handleLogout() {
             {:else}
               {userInitials}
             {/if}
-          </button>
+          </Button>
         </TooltipTrigger>
         <TooltipContent side="right" sideOffset={10}>
           {authStore.user?.full_name ?? m.nav_account()}

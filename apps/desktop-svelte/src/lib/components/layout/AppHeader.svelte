@@ -1,9 +1,5 @@
-<!--
-@component AppHeader
-Three-zone header bar following GitButler's AppHeader pattern.
-Left zone (actions) | Center zone (selector) | Right zone (actions).
--->
 <script lang="ts">
+import { Button } from "@orbis/ui-svelte/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -140,12 +136,14 @@ const breadcrumbs = $derived.by(() => {
 		<!-- Monitors Dropdown -->
 		<DropdownMenu>
 			<DropdownMenuTrigger class="outline-none">
-				<button
-					class="flex h-8 items-center gap-1.5 rounded-[8px] border border-zinc-200 bg-white px-3 font-semibold text-xs text-foreground shadow-[0_2px_0_0_#e4e4e7] hover:bg-zinc-50 active:translate-y-[1.5px] active:shadow-none transition-all dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-[0_2px_0_0_#27272a] dark:hover:bg-zinc-800 shrink-0 cursor-pointer select-none"
+				<Button
+					variant="outline"
+					size="sm"
+					class="font-semibold text-xs text-foreground bg-white hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800 shadow-[0_2px_0_0_#e4e4e7] dark:shadow-[0_2px_0_0_#27272a] rounded-[8px] px-3 gap-1.5"
 				>
 					<span>0 Monitors</span>
-					<ChevronDown size={14} class="opacity-60" />
-				</button>
+					<ChevronDown class="size-[14px] opacity-60" />
+				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end" sideOffset={8} class="w-48 p-1 z-50">
 				<div class="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Monitors</div>
@@ -155,46 +153,54 @@ const breadcrumbs = $derived.by(() => {
 		</DropdownMenu>
 
 		<!-- Play Button -->
-		<button
-			class="flex h-8 w-8 items-center justify-center rounded-[8px] border border-zinc-200 bg-white shadow-[0_2px_0_0_#e4e4e7] hover:bg-zinc-50 active:translate-y-[1.5px] active:shadow-none transition-all dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-[0_2px_0_0_#27272a] dark:hover:bg-zinc-800 shrink-0 cursor-pointer select-none"
+		<Button
+			variant="outline"
+			size="icon-sm"
+			class="bg-white hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800 shadow-[0_2px_0_0_#e4e4e7] dark:shadow-[0_2px_0_0_#27272a] rounded-[8px]"
 			title="Play"
 		>
-			<Play size={14} class="fill-current text-foreground stroke-[2px]" />
-		</button>
+			<Play class="size-[14px] fill-current text-foreground stroke-[2px]" />
+		</Button>
 
 		<!-- Search Button -->
-		<button
-			class="flex h-8 items-center gap-2 rounded-[8px] border border-zinc-200 bg-white px-3 font-semibold text-xs text-foreground shadow-[0_2px_0_0_#e4e4e7] hover:bg-zinc-50 active:translate-y-[1.5px] active:shadow-none transition-all dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-[0_2px_0_0_#27272a] dark:hover:bg-zinc-800 shrink-0 cursor-pointer select-none"
+		<Button
+			variant="outline"
+			size="sm"
+			class="font-semibold text-xs text-foreground bg-white hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800 shadow-[0_2px_0_0_#e4e4e7] dark:shadow-[0_2px_0_0_#27272a] rounded-[8px] px-3 gap-2"
 			title={m.header_search_title()}
 			aria-label="Search"
 		>
-			<Search size={14} class="text-muted-foreground stroke-[2px]" />
+			<Search class="size-[14px] text-muted-foreground stroke-[2px]" />
 			<span class="whitespace-nowrap">{m.header_search()}</span>
 			<kbd class="ml-1 rounded border border-zinc-200 bg-zinc-50 px-1 py-0.5 font-mono text-[9px] font-medium text-zinc-400 dark:border-zinc-800 dark:bg-zinc-850 dark:text-zinc-500">{m.header_search_shortcut()}</kbd>
-		</button>
+		</Button>
 
 		<!-- Ask Seer Button -->
-		<button
-			class="flex h-8 items-center gap-2 rounded-[8px] border border-zinc-200 bg-white px-3 font-semibold text-xs text-foreground shadow-[0_2px_0_0_#e4e4e7] hover:bg-zinc-50 active:translate-y-[1.5px] active:shadow-none transition-all dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-[0_2px_0_0_#27272a] dark:hover:bg-zinc-800 shrink-0 cursor-pointer select-none"
+		<Button
+			variant="outline"
+			size="sm"
+			class="font-semibold text-xs text-foreground bg-white hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800 shadow-[0_2px_0_0_#e4e4e7] dark:shadow-[0_2px_0_0_#27272a] rounded-[8px] px-3 gap-2"
 			title="Ask Seer"
 			aria-label="Ask Seer"
 		>
-			<svg class="h-3.5 w-3.5 text-foreground shrink-0 stroke-[2px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+			<svg class="size-[14px] text-foreground shrink-0 stroke-[2px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M12 3l8.5 14.7a1 1 0 0 1-.9 1.3H4.4a1 1 0 0 1-.9-1.3L12 3z" />
 				<path d="M12 15a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" />
 			</svg>
 			<span class="whitespace-nowrap">Ask Seer</span>
 			<kbd class="ml-1 rounded border border-zinc-200 bg-zinc-50 px-1 py-0.5 font-mono text-[9px] font-medium text-zinc-400 dark:border-zinc-800 dark:bg-zinc-850 dark:text-zinc-500">Ctrl /</kbd>
-		</button>
+		</Button>
 
 		<!-- Megaphone Button -->
-		<button
-			class="flex h-8 w-8 items-center justify-center rounded-[8px] border border-zinc-200 bg-white shadow-[0_2px_0_0_#e4e4e7] hover:bg-zinc-50 active:translate-y-[1.5px] active:shadow-none transition-all dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-[0_2px_0_0_#27272a] dark:hover:bg-zinc-800 shrink-0 cursor-pointer select-none"
+		<Button
+			variant="outline"
+			size="icon-sm"
+			class="bg-white hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800 shadow-[0_2px_0_0_#e4e4e7] dark:shadow-[0_2px_0_0_#27272a] rounded-[8px]"
 			title="What's New"
 			aria-label="What's new"
 		>
-			<Megaphone size={14} class="text-foreground stroke-[2px]" />
-		</button>
+			<Megaphone class="size-[14px] text-foreground stroke-[2px]" />
+		</Button>
 	</div>
 </div>
 

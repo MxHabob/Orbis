@@ -698,8 +698,8 @@ async function handleSave() {
   <!-- Sticky/Fixed Footer Action Buttons Row at the bottom of the page -->
   <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-border bg-card/10 shrink-0 bg-background/95 backdrop-blur-xs">
     <Button 
-      variant="ghost" 
-      class="btn-tactile text-xs h-9 px-5" 
+      variant="outline" 
+      class="text-xs h-9 px-5" 
       onclick={() => goto(localizeHref(`/${orgId}/students`))}
       disabled={isSaving}
     >
@@ -707,7 +707,7 @@ async function handleSave() {
     </Button>
     <Button 
       variant="lime" 
-      class="btn-tactile-lime text-xs h-9 px-6 gap-1.5" 
+      class="text-xs h-9 px-6 gap-1.5" 
       onclick={handleSave}
       disabled={isSaving}
     >

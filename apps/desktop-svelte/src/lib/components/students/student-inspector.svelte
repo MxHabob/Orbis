@@ -242,7 +242,7 @@ async function handleWithdraw() {
 						</Select>
 						<div class="flex gap-2 justify-end mt-1">
 							<Button variant="ghost" size="sm" class="h-7 text-[10px]" onclick={() => isTransferring = false}>{m.inspector_cancel()}</Button>
-							<Button variant="default" size="sm" class="h-7 btn-tactile text-[10px]" onclick={handleTransfer} disabled={isProcessing}>{m.inspector_confirm_transfer()}</Button>
+							<Button variant="default" size="sm" class="h-7 text-[10px]" onclick={handleTransfer} disabled={isProcessing}>{m.inspector_confirm_transfer()}</Button>
 						</div>
 					</div>
 				{:else if isWithdrawing}
@@ -257,14 +257,14 @@ async function handleWithdraw() {
 						/>
 						<div class="flex gap-2 justify-end mt-1">
 							<Button variant="ghost" size="sm" class="h-7 text-[10px]" onclick={() => isWithdrawing = false}>{m.inspector_cancel()}</Button>
-							<Button variant="destructive" size="sm" class="h-7 btn-tactile-destructive text-[10px]" onclick={handleWithdraw} disabled={isProcessing}>{m.inspector_confirm_withdraw()}</Button>
+							<Button variant="destructive" size="sm" class="h-7 text-[10px]" onclick={handleWithdraw} disabled={isProcessing}>{m.inspector_confirm_withdraw()}</Button>
 						</div>
 					</div>
 				{:else}
 					<div class="grid grid-cols-2 gap-2">
 						<Button
-							variant="ghost"
-							class="btn-tactile text-center justify-center"
+							variant="outline"
+							class="text-center justify-center font-medium"
 							onclick={() => isTransferring = true}
 							disabled={String(student.status).toLowerCase() === 'withdrawn'}
 						>
@@ -272,8 +272,8 @@ async function handleWithdraw() {
 							{m.inspector_transfer_class()}
 						</Button>
 						<Button
-							variant="ghost"
-							class="btn-tactile-destructive text-center justify-center"
+							variant="destructive"
+							class="text-center justify-center font-medium"
 							onclick={() => isWithdrawing = true}
 							disabled={String(student.status).toLowerCase() === 'withdrawn'}
 						>

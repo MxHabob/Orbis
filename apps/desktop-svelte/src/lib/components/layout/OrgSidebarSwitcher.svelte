@@ -115,13 +115,14 @@ function handleSelect(id: string) {
     <div class="flex">
       <Tooltip>
         <TooltipTrigger asChild>
-          <button
-            class="flex h-9 w-9 items-center justify-center rounded-[10px] {activeColors.bg} font-bold text-white transition-transform active:translate-y-[2px] font-sans text-sm outline-none select-none cursor-pointer"
-            style="box-shadow: 0 3px 0 0 {activeColors.shadow}, 0 0 0 1px {activeColors.shadow};"
+          <Button
+            size="icon"
+            class=" {activeColors.bg} font-bold"
+            style="--shadow-color: {activeColors.shadow};"
             aria-label={orgNameDisplay}
           >
             {orgInitials}
-          </button>
+          </Button>
         </TooltipTrigger>
         <TooltipContent side="right" sideOffset={12}>
           {orgNameDisplay}

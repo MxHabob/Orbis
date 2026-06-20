@@ -162,7 +162,7 @@ function isActive(tabHref: string) {
         <Button
           href={localizeHref(tab.href)}
           variant={isActive(tab.href) ? 'default' : 'ghost'}
-          class="text-xs font-semibold px-4 py-1.5 h-auto transition-all duration-150 cursor-pointer {isActive(tab.href) ? 'btn-tactile-primary' : 'btn-tactile-ghost'}"
+          class="text-xs font-semibold px-4 py-1.5 h-auto transition-all duration-150 cursor-pointer"
         >
           <tab.icon size={13} class="me-1.5" />
           {tab.label}

@@ -96,7 +96,7 @@ async function handleAISummarize() {
 			</div>
 			<Button
 				variant="lime"
-				class="btn-tactile-lime text-[10px] h-7 px-2.5"
+				class="text-[10px] h-7 px-2.5"
 				onclick={handleAISummarize}
 				disabled={isGeneratingAI}
 			>
@@ -118,7 +118,7 @@ async function handleAISummarize() {
 	<div class="flex flex-col gap-2">
 		<div class="flex items-center justify-between px-1">
 			<span class="font-bold text-[10px] text-muted-foreground uppercase tracking-wider">{m.behavior_records_title()}</span>
-			<Button variant="ghost" class="btn-tactile text-[10px] h-7 px-2" onclick={() => toast.info(m.behavior_add_record_coming_soon())}>
+			<Button variant="outline" class="text-[10px] h-7 px-2" onclick={() => toast.info(m.behavior_add_record_coming_soon())}>
 				<Plus size={12} class="me-1" />
 				{m.behavior_add_record()}
 			</Button>

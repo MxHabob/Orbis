@@ -90,8 +90,8 @@ const hasActiveFilters = $derived(
 
 					<div class="flex items-center gap-2">
 						<Button
-							variant="ghost"
-							class="btn-tactile text-xs h-9 px-3"
+							variant="outline"
+							class="text-xs h-9 px-3"
 							onclick={() => toast.info(m.students_export_coming_soon())}
 						>
 							<Download size={13} class="me-1.5" />
@@ -99,7 +99,7 @@ const hasActiveFilters = $derived(
 						</Button>
 						<Button 
 							variant="lime" 
-							class="btn-tactile-lime text-xs h-9 px-3" 
+							class="text-xs h-9 px-3" 
 							onclick={() => goto(localizeHref(`/${data.orgId}/students/new`))}
 						>
 							<Plus size={14} class="me-1.5" />
@@ -121,7 +121,7 @@ const hasActiveFilters = $derived(
 					{:else if studentsStore.error}
 						<div class="h-full w-full flex flex-col items-center justify-center p-6 text-center gap-3">
 							<p class="text-xs text-destructive font-semibold">{m.students_load_error({ error: studentsStore.error })}</p>
-							<Button variant="ghost" class="btn-tactile text-xs" onclick={() => studentsStore.load(data.orgId)}>{m.students_retry()}</Button>
+							<Button variant="outline" class="text-xs" onclick={() => studentsStore.load(data.orgId)}>{m.students_retry()}</Button>
 						</div>
 					{:else}
 						<StudentTable students={studentsStore.filteredList} />
