@@ -73,12 +73,16 @@ const hasActiveFilters = $derived(
 		<!-- Middle Panel: Directory datagrid -->
 		{#snippet middle()}
 			<div class="h-full flex flex-col p-6 overflow-hidden gap-4">
-				<!-- Header section -->
 				<div class="flex items-center justify-between shrink-0">
-					<div class="flex flex-col text-right">
-						<h1 class="text-xl font-bold tracking-tight text-gradient-brand">دليل الطلاب</h1>
-						<p class="text-[10px] text-muted-foreground">إدارة شؤون وقيد الطلاب والصفوف المعتمدة في المؤسسة.</p>
-					</div>
+				<div class="relative w-full max-w-sm shrink-0">
+					<Search class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+					<input
+						type="text"
+						placeholder="البحث بالاسم، الرقم الأكاديمي..."
+						class="input-sunken ps-9 text-xs py-2"
+						bind:value={studentsStore.searchQuery}
+					/>
+				</div>
 
 					<div class="flex items-center gap-2">
 						<Button
@@ -98,17 +102,6 @@ const hasActiveFilters = $derived(
 							طالب جديد
 						</Button>
 					</div>
-				</div>
-
-				<!-- Search input row -->
-				<div class="relative w-full max-w-sm shrink-0">
-					<Search class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-					<input
-						type="text"
-						placeholder="البحث بالاسم، الرقم الأكاديمي..."
-						class="input-sunken ps-9 text-xs py-2"
-						bind:value={studentsStore.searchQuery}
-					/>
 				</div>
 
 				<!-- Student Grid -->
