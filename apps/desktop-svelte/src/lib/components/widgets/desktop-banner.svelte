@@ -2,6 +2,7 @@
 import { X } from "lucide-svelte";
 import { onMount } from "svelte";
 import { fly } from "svelte/transition";
+import * as m from "$lib/paraglide/messages";
 
 let dismissed = $state(true); // Default to true to prevent hydration mismatch/flash
 let mounted = $state(false);
@@ -76,12 +77,13 @@ function handleDismiss(e: MouseEvent) {
 
 			<div class="block p-4 select-none">
 				<h3 class="text-xs font-semibold mb-1 tracking-wide">
-					Orbis Native Shell Enabled
+					{m.banner_title()}
 				</h3>
 				<p class="text-[10px] text-muted-foreground leading-normal">
-					Supercharged desktop environment. Keyboard shortcuts (⌘K) and local database queries are fully operational.
+					{m.banner_description()}
 				</p>
 			</div>
 		</div>
 	</div>
 {/if}
+

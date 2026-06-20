@@ -15,12 +15,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@orbis/ui-svelte";
 import { studentsStore } from "$lib/stores/students.svelte";
 import type { Enrollment } from "$lib/services/ipc";
 import { ArrowUpRight, GraduationCap } from "lucide-svelte";
+import * as m from "$lib/paraglide/messages";
 
 let { students }: { students: Enrollment[] } = $props();
 
 function getClassName(classId: string): string {
   const cls = studentsStore.classes.find((c) => c.id === classId);
-  return cls ? String(cls.name || cls.name_ar || classId) : "غير مسجل";
+  return cls ? String(cls.name || cls.name_ar || classId) : m.table_not_enrolled();
 }
 
 function handleSelect(studentId: string) {
@@ -33,19 +34,19 @@ function handleSelect(studentId: string) {
 		<div class="h-full w-full flex flex-col items-center justify-center p-12 text-center text-muted-foreground gap-3">
 			<GraduationCap size={32} class="text-muted-foreground/30" />
 			<div class="flex flex-col gap-1">
-				<p class="text-xs font-semibold">لم يتم العثور على طلاب</p>
-				<p class="text-[10px] text-muted-foreground/80">جرب تعديل الفلاتر أو شريط البحث في الأعلى.</p>
+				<p class="text-xs font-semibold">{m.table_no_students()}</p>
+				<p class="text-[10px] text-muted-foreground/80">{m.table_no_students_hint()}</p>
 			</div>
 		</div>
 	{:else}
 		<Table class="text-xs">
 			<TableHeader class="bg-card sticky top-0 z-10">
 				<TableRow class="hover:bg-transparent">
-					<TableHead class="text-right">الطالب</TableHead>
-					<TableHead class="text-right">الرقم الأكاديمي</TableHead>
-					<TableHead class="text-right">الصف</TableHead>
-					<TableHead class="text-right">البريد الإلكتروني</TableHead>
-					<TableHead class="text-right">الحالة</TableHead>
+					<TableHead class="text-start">{m.table_student()}</TableHead>
+					<TableHead class="text-start">{m.table_student_number()}</TableHead>
+					<TableHead class="text-start">{m.table_class()}</TableHead>
+					<TableHead class="text-start">{m.table_email()}</TableHead>
+					<TableHead class="text-start">{m.table_status()}</TableHead>
 					<TableHead class="text-center w-12"></TableHead>
 				</TableRow>
 			</TableHeader>
@@ -61,10 +62,10 @@ function handleSelect(studentId: string) {
 								<Avatar class="h-8 w-8 ring-1 ring-border">
 									<AvatarImage src={student.avatar ? String(student.avatar) : undefined} alt={student.full_name ? String(student.full_name) : ''} />
 									<AvatarFallback class="bg-primary/5 text-primary text-[10px] font-bold">
-										{String(student.full_name || "ط").slice(0, 1)}
+										{String(student.full_name || "S").slice(0, 1)}
 									</AvatarFallback>
 								</Avatar>
-								<div class="flex flex-col text-right">
+								<div class="flex flex-col text-start">
 									<span class="font-bold text-foreground">{student.full_name || student.name_ar || ''}</span>
 									{#if student.name_en}
 										<span class="text-[10px] text-muted-foreground font-mono">{student.name_en}</span>
@@ -72,16 +73,16 @@ function handleSelect(studentId: string) {
 								</div>
 							</div>
 						</TableCell>
-						<TableCell class="font-mono text-right">{student.student_number || student.id || '-'}</TableCell>
-						<TableCell class="text-right">{getClassName(String(student.class_id))}</TableCell>
-						<TableCell class="text-right font-mono text-muted-foreground">{student.email || '-'}</TableCell>
-						<TableCell class="text-right">
+						<TableCell class="font-mono text-start">{student.student_number || student.id || '-'}</TableCell>
+						<TableCell class="text-start">{getClassName(String(student.class_id))}</TableCell>
+						<TableCell class="text-start font-mono text-muted-foreground">{student.email || '-'}</TableCell>
+						<TableCell class="text-start">
 							{#if String(student.status).toLowerCase() === 'active'}
-								<span class="badge-brand-lime py-0.5 px-2 text-[10px]">نشط</span>
+								<span class="badge-brand-lime py-0.5 px-2 text-[10px]">{m.status_active()}</span>
 							{:else if String(student.status).toLowerCase() === 'withdrawn'}
-								<span class="badge-brand-destructive py-0.5 px-2 text-[10px]">منسحب</span>
+								<span class="badge-brand-destructive py-0.5 px-2 text-[10px]">{m.status_withdrawn()}</span>
 							{:else}
-								<span class="badge-brand-default py-0.5 px-2 text-[10px]">{student.status || 'غير محدد'}</span>
+								<span class="badge-brand-default py-0.5 px-2 text-[10px]">{student.status || m.status_undefined()}</span>
 							{/if}
 						</TableCell>
 						<TableCell class="text-center">
@@ -95,3 +96,4 @@ function handleSelect(studentId: string) {
 		</Table>
 	{/if}
 </div>
+

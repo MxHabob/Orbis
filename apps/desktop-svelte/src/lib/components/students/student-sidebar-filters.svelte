@@ -11,6 +11,8 @@ import {
   ShieldAlert,
   ListFilter,
 } from "lucide-svelte";
+import * as m from "$lib/paraglide/messages";
+import { formatNumber } from "$lib/i18n-utils";
 
 // Helper to count students matching a criteria
 function getCountByClass(classId: string): number {
@@ -28,7 +30,7 @@ function getCountByStatus(status: string): number {
 <div class="flex flex-col gap-6 w-full text-xs">
 	<!-- Status Filters Group -->
 	<div class="flex flex-col gap-1.5">
-		<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2">الحالة الأكاديمية</span>
+		<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2">{m.filter_academic_status()}</span>
 		
 		<button
 			class="flex items-center justify-between px-3 py-2 rounded-lg text-start transition-all duration-150 cursor-pointer"
@@ -38,10 +40,10 @@ function getCountByStatus(status: string): number {
 		>
 			<div class="flex items-center gap-2">
 				<ListFilter size={14} />
-				<span>الكل</span>
+				<span>{m.filter_all()}</span>
 			</div>
 			<span class="text-[10px] px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground font-mono">
-				{getCountByStatus('all')}
+				{formatNumber(getCountByStatus('all'))}
 			</span>
 		</button>
 
@@ -53,10 +55,10 @@ function getCountByStatus(status: string): number {
 		>
 			<div class="flex items-center gap-2">
 				<ShieldCheck size={14} class="text-emerald-500" />
-				<span>الطلاب النشطين</span>
+				<span>{m.filter_active()}</span>
 			</div>
 			<span class="text-[10px] px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground font-mono">
-				{getCountByStatus('active')}
+				{formatNumber(getCountByStatus('active'))}
 			</span>
 		</button>
 
@@ -68,17 +70,17 @@ function getCountByStatus(status: string): number {
 		>
 			<div class="flex items-center gap-2">
 				<ShieldAlert size={14} class="text-amber-500" />
-				<span>الطلاب المنسحبين</span>
+				<span>{m.filter_withdrawn()}</span>
 			</div>
 			<span class="text-[10px] px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground font-mono">
-				{getCountByStatus('withdrawn')}
+				{formatNumber(getCountByStatus('withdrawn'))}
 			</span>
 		</button>
 	</div>
 
 	<!-- Classes Filters Group -->
 	<div class="flex flex-col gap-1.5">
-		<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2">الصفوف الدراسية</span>
+		<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2">{m.filter_classes()}</span>
 
 		<button
 			class="flex items-center justify-between px-3 py-2 rounded-lg text-start transition-all duration-150 cursor-pointer"
@@ -88,12 +90,12 @@ function getCountByStatus(status: string): number {
 		>
 			<div class="flex items-center gap-2">
 				<Users size={14} />
-				<span>كل الصفوف</span>
+				<span>{m.filter_all_classes()}</span>
 			</div>
 		</button>
 
 		{#if studentsStore.classes.length === 0}
-			<p class="text-[11px] text-muted-foreground px-2 italic mt-1">لا توجد صفوف مسجلة حالياً.</p>
+			<p class="text-[11px] text-muted-foreground px-2 italic mt-1">{m.filter_no_classes()}</p>
 		{:else}
 			{#each studentsStore.classes as cls (cls.id)}
 				{@const count = getCountByClass(String(cls.id))}
@@ -109,7 +111,7 @@ function getCountByStatus(status: string): number {
 					</div>
 					{#if count > 0}
 						<span class="text-[10px] px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground font-mono">
-							{count}
+							{formatNumber(count)}
 						</span>
 					{/if}
 				</button>
@@ -117,3 +119,4 @@ function getCountByStatus(status: string): number {
 		{/if}
 	</div>
 </div>
+

@@ -16,6 +16,8 @@ import StudentTable from "$lib/components/students/student-table.svelte";
 import StudentInspector from "$lib/components/students/student-inspector.svelte";
 import { toast } from "svelte-sonner";
 import { goto } from "$app/navigation";
+import * as m from "$lib/paraglide/messages";
+import { localizeHref } from "$lib/paraglide/runtime";
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -41,7 +43,7 @@ const hasActiveFilters = $derived(
 </script>
 
 <svelte:head>
-	<title>دليل الطلاب | Orbis</title>
+	<title>{m.page_title_students()}</title>
 </svelte:head>
 
 <div class="h-full w-full flex flex-col overflow-hidden bg-background">
@@ -55,14 +57,14 @@ const hasActiveFilters = $derived(
 		{#snippet left()}
 			<div class="h-full border-r border-border bg-card/20 p-4 flex flex-col gap-4 overflow-y-auto scrollbar-hide">
 				<div class="flex items-center justify-between">
-					<span class="font-bold text-[10px] text-muted-foreground uppercase tracking-wider">لوحة التصفية</span>
+					<span class="font-bold text-[10px] text-muted-foreground uppercase tracking-wider">{m.students_filter_panel()}</span>
 					{#if hasActiveFilters}
 						<Button 
 							variant="ghost" 
 							size="icon" 
 							class="h-6 w-6 text-muted-foreground hover:text-foreground" 
 							onclick={clearFilters}
-							title="مسح التصفية"
+							title={m.students_clear_filters()}
 						>
 							<FilterX size={13} />
 						</Button>
@@ -80,7 +82,7 @@ const hasActiveFilters = $derived(
 					<Search class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
 					<Input
 						type="text"
-						placeholder="البحث بالاسم، الرقم الأكاديمي..."
+						placeholder={m.students_search_placeholder()}
 						class="input-sunken ps-9 text-xs py-2"
 						bind:value={studentsStore.searchQuery}
 					/>
@@ -90,18 +92,18 @@ const hasActiveFilters = $derived(
 						<Button
 							variant="ghost"
 							class="btn-tactile text-xs h-9 px-3"
-							onclick={() => toast.info("ميزة التصدير قيد التحضير")}
+							onclick={() => toast.info(m.students_export_coming_soon())}
 						>
 							<Download size={13} class="me-1.5" />
-							تصدير
+							{m.students_export()}
 						</Button>
 						<Button 
 							variant="lime" 
 							class="btn-tactile-lime text-xs h-9 px-3" 
-							onclick={() => goto(`/${data.orgId}/students/new`)}
+							onclick={() => goto(localizeHref(`/${data.orgId}/students/new`))}
 						>
 							<Plus size={14} class="me-1.5" />
-							طالب جديد
+							{m.students_new()}
 						</Button>
 					</div>
 				</div>
@@ -118,8 +120,8 @@ const hasActiveFilters = $derived(
 						</div>
 					{:else if studentsStore.error}
 						<div class="h-full w-full flex flex-col items-center justify-center p-6 text-center gap-3">
-							<p class="text-xs text-destructive font-semibold">فشل تحميل البيانات: {studentsStore.error}</p>
-							<Button variant="ghost" class="btn-tactile text-xs" onclick={() => studentsStore.load(data.orgId)}>إعادة المحاولة</Button>
+							<p class="text-xs text-destructive font-semibold">{m.students_load_error({ error: studentsStore.error })}</p>
+							<Button variant="ghost" class="btn-tactile text-xs" onclick={() => studentsStore.load(data.orgId)}>{m.students_retry()}</Button>
 						</div>
 					{:else}
 						<StudentTable students={studentsStore.filteredList} />
@@ -140,3 +142,4 @@ const hasActiveFilters = $derived(
 	{/snippet}
 
 </div>
+

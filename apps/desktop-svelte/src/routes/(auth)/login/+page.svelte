@@ -9,6 +9,8 @@ import { Button } from "@orbis/ui-svelte/button";
 import { Card } from "@orbis/ui-svelte/card";
 import { Input } from "@orbis/ui-svelte/input";
 import { Zap, Eye, EyeOff, Loader2 } from "lucide-svelte";
+import * as m from "$lib/paraglide/messages";
+import { localizeHref } from "$lib/paraglide/runtime";
 
 let email = $state("");
 let password = $state("");
@@ -19,7 +21,7 @@ let isLoading = $state(false);
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   if (!email || !password) {
-    error = "Please fill in all fields";
+    error = m.login_fill_all_fields();
     return;
   }
 
@@ -29,10 +31,10 @@ async function handleSubmit(e: SubmitEvent) {
   try {
     await authStore.login(email, password);
     const orgId = authStore.orgId;
-    goto(`/${orgId}`);
+    goto(localizeHref(`/${orgId}`));
   } catch (err) {
     error =
-      err instanceof Error ? err.message : "Login failed. Please try again.";
+      err instanceof Error ? err.message : m.login_failed();
   } finally {
     isLoading = false;
   }
@@ -40,7 +42,7 @@ async function handleSubmit(e: SubmitEvent) {
 </script>
 
 <svelte:head>
-	<title>Login — Orbis</title>
+	<title>{m.login_title()}</title>
 </svelte:head>
 
 <div class="min-h-screen bg-background flex relative w-screen">
@@ -48,7 +50,7 @@ async function handleSubmit(e: SubmitEvent) {
 	<nav class="fixed top-0 left-0 right-0 z-50 w-full pointer-events-none">
 		<div class="relative py-3 xl:py-4 px-4 sm:px-4 md:px-4 lg:px-4 xl:px-6 2xl:px-8 flex items-center">
 			<a
-				href="/"
+				href={localizeHref("/")}
 				class="flex items-center gap-2 hover:opacity-80 active:opacity-80 transition-opacity duration-200 pointer-events-auto"
 			>
 				<div class="w-6 h-6">
@@ -65,10 +67,10 @@ async function handleSubmit(e: SubmitEvent) {
 				<!-- Header -->
 				<div class="text-center space-y-2">
 					<h1 class="text-lg mb-4 font-serif">
-						Welcome to Orbis School
+						{m.login_welcome()}
 					</h1>
 					<p class="font-sans text-sm text-muted-foreground">
-						Sign in or create an account
+						{m.login_subtitle()}
 					</p>
 				</div>
 
@@ -85,7 +87,7 @@ async function handleSubmit(e: SubmitEvent) {
 							<Input
 								id="email"
 								type="email"
-								placeholder="Email address"
+								placeholder={m.login_email_placeholder()}
 								bind:value={email}
 								required
 								autocomplete="email"
@@ -98,7 +100,7 @@ async function handleSubmit(e: SubmitEvent) {
 								<Input
 									id="password"
 									type={showPassword ? 'text' : 'password'}
-									placeholder="Password"
+									placeholder={m.login_password_placeholder()}
 									bind:value={password}
 									required
 									autocomplete="current-password"
@@ -111,7 +113,7 @@ async function handleSubmit(e: SubmitEvent) {
 									size="icon"
 									class="absolute right-2 top-1/2 -translate-y-1/2"
 									onclick={() => (showPassword = !showPassword)}
-									aria-label={showPassword ? 'Hide password' : 'Show password'}
+									aria-label={showPassword ? m.login_hide_password() : m.login_show_password()}
 								>
 									{#if showPassword}
 										<EyeOff size={14} strokeWidth={2} />
@@ -129,9 +131,9 @@ async function handleSubmit(e: SubmitEvent) {
 						>
 							{#if isLoading}
 								<Loader2 size={14} strokeWidth={2} class="mr-1" />
-								Signing in...
+								{m.login_submitting()}
 							{:else}
-								Sign In
+								{m.login_submit()}
 							{/if}
 						</Button>
 					</form>
@@ -141,26 +143,27 @@ async function handleSubmit(e: SubmitEvent) {
 			<!-- Terms and Privacy Policy - Bottom aligned -->
 			<div class="text-center mt-auto pt-8">
 				<p class="font-sans text-xs text-muted-foreground">
-					By signing in you agree to our{' '}
+					{m.login_terms_prefix()}{' '}
 					<a
 						href="https://orbis.ai/terms"
 						class="text-muted-foreground hover:text-primary transition-colors underline"
 						target="_blank"
 						rel="noreferrer"
 					>
-						Terms of service
+						{m.login_terms_of_service()}
 					</a>{' '}
-					&{' '}
+					{m.login_and()}{' '}
 					<a
 						href="https://orbis.ai/policy"
 						class="text-muted-foreground hover:text-primary transition-colors underline"
 						target="_blank"
 						rel="noreferrer"
 					>
-						Privacy policy
+						{m.login_privacy_policy()}
 					</a>
 				</p>
 			</div>
 		</Card>
 	</div>
 </div>
+

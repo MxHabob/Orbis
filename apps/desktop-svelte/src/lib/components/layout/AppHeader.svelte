@@ -244,4 +244,3 @@ function switchLanguage(locale: "ar" | "en") {
 		</Button>
 	</div>
 </div>
-</div>

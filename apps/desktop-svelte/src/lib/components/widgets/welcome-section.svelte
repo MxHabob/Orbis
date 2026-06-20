@@ -3,6 +3,8 @@ import { authStore } from "$lib/stores";
 import { onMount, onDestroy } from "svelte";
 import { fly } from "svelte/transition";
 import { quadOut } from "svelte/easing";
+import * as m from "$lib/paraglide/messages";
+import { localizeHref } from "$lib/paraglide/runtime";
 
 let {
   type,
@@ -12,24 +14,23 @@ let {
   $props();
 
 // Greeting Logic
-function getTimeBasedGreeting(): string {
-  const hour = new Date().getHours();
-  if (hour >= 5 && hour < 12) return "Good morning";
-  if (hour >= 12 && hour < 17) return "Good afternoon";
-  return "Good evening";
-}
-
-let greeting = $state(getTimeBasedGreeting());
+let hourState = $state(new Date().getHours());
 let greetingInterval: any;
 
 onMount(() => {
   greetingInterval = setInterval(() => {
-    greeting = getTimeBasedGreeting();
+    hourState = new Date().getHours();
   }, 60000);
 });
 
 onDestroy(() => {
   if (greetingInterval) clearInterval(greetingInterval);
+});
+
+const greeting = $derived.by(() => {
+  if (hourState >= 5 && hourState < 12) return m.greeting_morning();
+  if (hourState >= 12 && hourState < 17) return m.greeting_afternoon();
+  return m.greeting_evening();
 });
 
 const firstName = $derived(authStore.user?.full_name?.split(" ")[0]);
@@ -54,40 +55,65 @@ type Insight = {
 
 const insights = $derived.by<Insight[]>(() => {
   if (!stats) return [];
+
+  const studentLink = m.insight_students_link({ count: stats.total_students });
+  const studentParts = m.insight_students({ link: "||LINK||" }).split("||LINK||");
+
+  const attendanceLink = m.insight_attendance_link({ rate: stats.attendance_overview?.present_rate ?? 0 });
+  const attendanceParts = m.insight_attendance({
+    link: "||LINK||",
+    lateRate: stats.attendance_overview?.late_rate ?? 0
+  }).split("||LINK||");
+
+  const classLink = m.insight_classes_link({ count: stats.total_classes });
+  const classParts = m.insight_classes({
+    link: "||LINK||",
+    teacherCount: stats.total_teachers
+  }).split("||LINK||");
+
+  const behaviorLink = m.insight_behavior_link({ count: stats.behavior_summary?.total_records ?? 0 });
+  const behaviorParts = m.insight_behavior({
+    link: "||LINK||",
+    criticalCount: stats.behavior_summary?.critical_count ?? 0
+  }).split("||LINK||");
+
+  const staffLink = m.insight_staff_link({ count: stats.total_staff });
+  const staffParts = m.insight_staff({ link: "||LINK||" }).split("||LINK||");
+
   return [
     {
       key: "students",
-      before: "You have ",
-      link: `${stats.total_students} students`,
-      after: ` currently enrolled in the system.`,
+      before: studentParts[0] ?? "",
+      link: studentLink,
+      after: studentParts[1] ?? "",
       href: `/${orgId}/students`,
     },
     {
       key: "attendance",
-      before: "Today's average attendance rate sits at ",
-      link: `${stats.attendance_overview?.present_rate ?? 0}%`,
-      after: `, with ${stats.attendance_overview?.late_rate ?? 0}% marked late.`,
+      before: attendanceParts[0] ?? "",
+      link: attendanceLink,
+      after: attendanceParts[1] ?? "",
       href: `/${orgId}/reports`,
     },
     {
       key: "classes",
-      before: "There are ",
-      link: `${stats.total_classes} active classes`,
-      after: ` being managed by ${stats.total_teachers} teachers.`,
+      before: classParts[0] ?? "",
+      link: classLink,
+      after: classParts[1] ?? "",
       href: `/${orgId}/academics`,
     },
     {
       key: "behavior",
-      before: "There are ",
-      link: `${stats.behavior_summary?.total_records ?? 0} behavior records`,
-      after: `, with ${stats.behavior_summary?.critical_count ?? 0} critical incidents.`,
+      before: behaviorParts[0] ?? "",
+      link: behaviorLink,
+      after: behaviorParts[1] ?? "",
       href: `/${orgId}/students`,
     },
     {
       key: "staff",
-      before: "A total of ",
-      link: `${stats.total_staff} staff members`,
-      after: " supporting organizational operations.",
+      before: staffParts[0] ?? "",
+      link: staffLink,
+      after: staffParts[1] ?? "",
       href: `/${orgId}/settings`,
     },
   ];
@@ -172,7 +198,7 @@ function handleMouseLeave() {
 						<span class="text-muted-foreground text-sm leading-relaxed text-center">
 							{current.before}
 							{#if current.link}
-								<a href={current.href} class="border-b border-dashed border-[#878787]/30 hover:text-foreground transition-colors font-medium">
+								<a href={localizeHref(current.href)} class="border-b border-dashed border-[#878787]/30 hover:text-foreground transition-colors font-medium">
 									{current.link}
 								</a>
 							{/if}
@@ -189,7 +215,7 @@ function handleMouseLeave() {
 					<button
 						type="button"
 						class="group/bar relative cursor-pointer py-2 -my-2 focus:outline-none"
-						aria-label="Show insight {i + 1}"
+						aria-label={m.insight_show_number({ number: i + 1 })}
 						onclick={() => goTo(i)}
 						onmouseenter={() => goTo(i)}
 					>
@@ -205,3 +231,4 @@ function handleMouseLeave() {
 		{/if}
 	</div>
 {/if}
+

@@ -26,6 +26,8 @@ import {
   MessageSquare,
 } from "lucide-svelte";
 import { authStore } from "$lib/stores";
+import * as m from "$lib/paraglide/messages";
+import { deLocalizeUrl, localizeHref } from "$lib/paraglide/runtime";
 
 let { orgId, disabled = false }: { orgId: string; disabled?: boolean } =
   $props();
@@ -34,37 +36,37 @@ const navItems = $derived([
   {
     href: `/${orgId}`,
     icon: LayoutDashboard,
-    label: "Overview",
+    label: m.nav_overview(),
     match: "exact",
   },
   {
     href: `/${orgId}/reports`,
     icon: BarChart3,
-    label: "Reports",
+    label: m.nav_reports(),
     match: "exact",
   },
   {
     href: `/${orgId}/students`,
     icon: Users,
-    label: "Students",
+    label: m.nav_students(),
     match: "prefix",
   },
   {
     href: `/${orgId}/academics`,
     icon: BookOpen,
-    label: "Academics",
+    label: m.nav_academics(),
     match: "prefix",
   },
   {
     href: `/${orgId}/finance`,
     icon: Wallet,
-    label: "Finance",
+    label: m.nav_finance(),
     match: "prefix",
   },
   {
     href: `/${orgId}/settings`,
     icon: Settings,
-    label: "Settings",
+    label: m.nav_settings(),
     match: "prefix",
   },
 ] as const);
@@ -73,7 +75,7 @@ const bottomItems = $derived([
   {
     href: `/${orgId}/settings`,
     icon: Settings,
-    label: "Settings",
+    label: m.nav_settings(),
     match: "prefix",
   },
 ] as const);
@@ -88,9 +90,9 @@ const userInitials = $derived(
 );
 
 function isActive(href: string, match: "exact" | "prefix"): boolean {
-  const pathname = page.url.pathname;
-  if (match === "exact") return pathname === href;
-  return pathname.startsWith(href);
+  const unlocalizedPathname = deLocalizeUrl(page.url).pathname;
+  if (match === "exact") return unlocalizedPathname === href;
+  return unlocalizedPathname.startsWith(href);
 }
 </script>
 
@@ -102,7 +104,7 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 					<Tooltip>
 						<TooltipTrigger asChild>
 							<Button
-								href={item.href}
+								href={localizeHref(item.href)}
 								variant={isActive(item.href, item.match) ? 'default' : 'ghost'}
 								aria-label={item.label}
 								aria-current={isActive(item.href, item.match) ? 'page' : undefined}
@@ -122,7 +124,7 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 					<Tooltip>
 						<TooltipTrigger asChild>
 							<Button
-								href={item.href}
+								href={localizeHref(item.href)}
 								variant="lime"
 								aria-label={item.label}
 							>
@@ -137,17 +139,17 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 			<div class="flex">
 				<Tooltip>
 					<TooltipTrigger asChild>
-						<Button variant="ghost" size="icon" class="sidebar-btn sidebar-btn-ghost" aria-label="Feedback">
+						<Button variant="ghost" size="icon" class="sidebar-btn sidebar-btn-ghost" aria-label={m.nav_feedback()}>
 							<MessageSquare size={16} strokeWidth={1.8} />
 						</Button>
 					</TooltipTrigger>
-					<TooltipContent side="right" sideOffset={10}>Feedback</TooltipContent>
+					<TooltipContent side="right" sideOffset={10}>{m.nav_feedback()}</TooltipContent>
 				</Tooltip>
 			</div>
 
 			<Tooltip>
 			  <TooltipTrigger asChild>
-				<Button variant="ghost" aria-label="Account">
+				<Button variant="ghost" aria-label={m.nav_account()}>
 				 <Avatar>
 					<AvatarImage
 						src={authStore.user?.avatar ?? undefined}
@@ -158,7 +160,7 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 				</Button>
 			   </TooltipTrigger>
 			  <TooltipContent side="right" sideOffset={10}>
-					{authStore.user?.full_name ?? 'Account'}
+					{authStore.user?.full_name ?? m.nav_account()}
 				</TooltipContent>
 			</Tooltip>
 		</div>

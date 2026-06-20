@@ -29,6 +29,8 @@ import {
   CheckSquare,
   Square,
 } from "lucide-svelte";
+import * as m from "$lib/paraglide/messages";
+import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 
 let { studentId, orgId }: { studentId?: string; orgId: string } = $props();
 
@@ -49,20 +51,20 @@ let address = $state("");
 const currentYear = new Date().getFullYear();
 const yearsList = Array.from({ length: 47 }, (_, i) => currentYear - i);
 const daysList = Array.from({ length: 31 }, (_, i) => String(i + 1));
-const monthsList = [
-  { value: "1", label: "يناير (1)" },
-  { value: "2", label: "فبراير (2)" },
-  { value: "3", label: "مارس (3)" },
-  { value: "4", label: "أبريل (4)" },
-  { value: "5", label: "مايو (5)" },
-  { value: "6", label: "يونيو (6)" },
-  { value: "7", label: "يوليو (7)" },
-  { value: "8", label: "أغسطس (8)" },
-  { value: "9", label: "سبتمبر (9)" },
-  { value: "10", label: "أكتوبر (10)" },
-  { value: "11", label: "نوفمبر (11)" },
-  { value: "12", label: "ديسمبر (12)" },
-];
+const monthsList = $derived([
+  { value: "1", label: m.form_month_1() },
+  { value: "2", label: m.form_month_2() },
+  { value: "3", label: m.form_month_3() },
+  { value: "4", label: m.form_month_4() },
+  { value: "5", label: m.form_month_5() },
+  { value: "6", label: m.form_month_6() },
+  { value: "7", label: m.form_month_7() },
+  { value: "8", label: m.form_month_8() },
+  { value: "9", label: m.form_month_9() },
+  { value: "10", label: m.form_month_10() },
+  { value: "11", label: m.form_month_11() },
+  { value: "12", label: m.form_month_12() },
+]);
 
 let birthDay = $state("");
 let birthMonth = $state("");
@@ -91,23 +93,23 @@ let governorate = $state("");
 const selectedClassName = $derived(
   studentsStore.classes.find((c) => String(c.id) === classId)?.name ||
     studentsStore.classes.find((c) => String(c.id) === classId)?.name_ar ||
-    "اختر الصف الدراسي",
+    m.form_select_class(),
 );
 
 // Document checklist
-const docTypes = [
-  { id: "birth_certificate", label: "شهادة الميلاد" },
-  { id: "national_id", label: "البطاقة الشخصية" },
-  { id: "grade_1", label: "شهادة أول" },
-  { id: "grade_2", label: "شهادة ثاني" },
-  { id: "grade_3", label: "شهادة ثالث" },
-  { id: "grade_4", label: "شهادة رابع" },
-  { id: "grade_5", label: "شهادة خامس" },
-  { id: "grade_6", label: "شهادة سادس" },
-  { id: "grade_7", label: "شهادة سابع" },
-  { id: "grade_8", label: "شهادة ثامن" },
-  { id: "grade_9", label: "شهادة تاسع" },
-];
+const docTypes = $derived([
+  { id: "birth_certificate", label: m.form_doc_birth_certificate() },
+  { id: "national_id", label: m.form_doc_national_id() },
+  { id: "grade_1", label: m.form_doc_grade_1() },
+  { id: "grade_2", label: m.form_doc_grade_2() },
+  { id: "grade_3", label: m.form_doc_grade_3() },
+  { id: "grade_4", label: m.form_doc_grade_4() },
+  { id: "grade_5", label: m.form_doc_grade_5() },
+  { id: "grade_6", label: m.form_doc_grade_6() },
+  { id: "grade_7", label: m.form_doc_grade_7() },
+  { id: "grade_8", label: m.form_doc_grade_8() },
+  { id: "grade_9", label: m.form_doc_grade_9() },
+]);
 let submittedDocs = $state<string[]>([]);
 
 let isSaving = $state(false);
@@ -178,7 +180,7 @@ async function loadStudentData() {
     }
   } catch (e) {
     console.error("Error loading student edit data:", e);
-    toast.error("حدث خطأ أثناء تحميل بيانات الطالب للتعديل");
+    toast.error(m.form_error_load());
   }
 }
 
@@ -192,15 +194,15 @@ function toggleDoc(docId: string) {
 
 async function handleSave() {
   if (!nameAr.trim()) {
-    toast.error("يرجى إدخال اسم الطالب الكامل بالعربية");
+    toast.error(m.form_error_name_required());
     return;
   }
   if (!classId) {
-    toast.error("يرجى اختيار الصف الدراسي");
+    toast.error(m.form_error_class_required());
     return;
   }
   if (!birthDate) {
-    toast.error("يرجى إدخال تاريخ ميلاد الطالب");
+    toast.error(m.form_error_birth_required());
     return;
   }
 
@@ -229,7 +231,7 @@ async function handleSave() {
         (s) => s.id === studentId,
       );
       if (!originalStudent) {
-        throw new Error("سجل قيد الطالب غير موجود");
+        throw new Error(m.form_error_enrollment_not_found());
       }
       targetStudentId = String(originalStudent.student_id);
 
@@ -243,7 +245,7 @@ async function handleSave() {
         });
       }
 
-      toast.success("تم تحديث بيانات الطالب بنجاح");
+      toast.success(m.form_success_update());
     } else {
       // Create new student user first
       const tempEmail = email.trim() || `stu.${Date.now()}@orbis.local`;
@@ -297,7 +299,7 @@ async function handleSave() {
       };
 
       studentsStore.list = [mergedEnrollment, ...studentsStore.list];
-      toast.success("تم تسجيل الطالب الجديد بنجاح");
+      toast.success(m.form_success_create());
     }
 
     // Save/Update Father & Mother details (via Guardian link)
@@ -362,17 +364,17 @@ async function handleSave() {
     }
 
     // Navigate back to directory
-    goto(`/${orgId}/students`);
+    goto(localizeHref(`/${orgId}/students`));
   } catch (e: any) {
     console.error("Save error:", e);
-    toast.error("فشل الحفظ: " + (e.message || String(e)));
+    toast.error(m.form_error_save({ error: e.message || String(e) }));
   } finally {
     isSaving = false;
   }
 }
 </script>
 
-<div class="h-full flex flex-col overflow-hidden bg-background text-right" dir="rtl">
+<div class="h-full flex flex-col overflow-hidden bg-background text-start" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
   <!-- Form Body Scroll Container -->
   <div class="flex-1 overflow-y-auto p-6 scrollbar-hide">
     <div class="w-full space-y-8 pb-6">
@@ -381,16 +383,16 @@ async function handleSave() {
       <div class="bg-card/40 border border-border/80 rounded-xl p-6 space-y-6">
         <div class="flex items-center gap-2 border-b border-border pb-3">
           <User class="text-primary h-4.5 w-4.5" />
-          <h2 class="text-sm font-bold text-foreground">معلومات الطالب/ة</h2>
+          <h2 class="text-sm font-bold text-foreground">{m.form_student_info()}</h2>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
           <div class="flex flex-col gap-1.5 sm:col-span-2 md:col-span-3 lg:col-span-2">
-            <Label class="text-[10px] font-semibold text-muted-foreground" for="nameAr">الاسم الكامل لطالب/ة <span class="text-destructive">*</span></Label>
+            <Label class="text-[10px] font-semibold text-muted-foreground" for="nameAr">{m.form_full_name_ar()} <span class="text-destructive">{m.form_required()}</span></Label>
             <Input 
               id="nameAr"
               type="text" 
-              placeholder="الاسم الثلاثي أو الرباعي كما هو مسجل في الهوية" 
+              placeholder={m.form_full_name_ar_placeholder()} 
               class="font-bold text-xs" 
               bind:value={nameAr}
               autocomplete="off"
@@ -399,11 +401,11 @@ async function handleSave() {
 
           <!-- الاسم بالإنجليزية -->
           <div class="flex flex-col gap-1.5 sm:col-span-2 md:col-span-3 lg:col-span-2">
-            <Label class="text-[10px] font-semibold text-muted-foreground" for="nameEn">الاسم الكامل باللغة الإنجليزية (اختياري)</Label>
+            <Label class="text-[10px] font-semibold text-muted-foreground" for="nameEn">{m.form_full_name_en()}</Label>
             <Input 
               id="nameEn"
               type="text" 
-              placeholder="Full name in English" 
+              placeholder={m.form_full_name_en_placeholder()} 
               class="text-xs font-mono text-left" 
               dir="ltr"
               bind:value={nameEn}
@@ -413,16 +415,16 @@ async function handleSave() {
 
           <!-- تاريخ الميلاد -->
           <div class="flex flex-col gap-1.5 sm:col-span-2 lg:col-span-1">
-            <Label class="text-[10px] font-semibold text-muted-foreground">تاريخ الميلاد <span class="text-destructive">*</span></Label>
-            <div class="grid grid-cols-3 gap-1.5" dir="rtl">
+            <Label class="text-[10px] font-semibold text-muted-foreground">{m.form_birth_date()} <span class="text-destructive">{m.form_required()}</span></Label>
+            <div class="grid grid-cols-3 gap-1.5" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
               <!-- اليوم -->
               <Select bind:value={birthDay} type="single">
-                <SelectTrigger class="w-full h-8 text-xs text-right flex items-center justify-between border border-input/60 px-2" id="birthDaySelect">
-                  <span class="truncate">{birthDay || "اليوم"}</span>
+                <SelectTrigger class="w-full h-8 text-xs text-start flex items-center justify-between border border-input/60 px-2" id="birthDaySelect">
+                  <span class="truncate">{birthDay || m.form_day()}</span>
                 </SelectTrigger>
-                <SelectContent class="text-right max-h-48 overflow-y-auto" align="end">
+                <SelectContent class="text-start max-h-48 overflow-y-auto" align="end">
                   {#each daysList as dy}
-                    <SelectItem value={dy} class="text-xs text-right justify-start">
+                    <SelectItem value={dy} class="text-xs text-start justify-start">
                       {dy}
                     </SelectItem>
                   {/each}
@@ -431,12 +433,12 @@ async function handleSave() {
 
               <!-- الشهر -->
               <Select bind:value={birthMonth} type="single">
-                <SelectTrigger class="w-full h-8 text-xs text-right flex items-center justify-between border border-input/60 px-2" id="birthMonthSelect">
-                  <span class="truncate">{monthsList.find(m => m.value === birthMonth)?.label || "الشهر"}</span>
+                <SelectTrigger class="w-full h-8 text-xs text-start flex items-center justify-between border border-input/60 px-2" id="birthMonthSelect">
+                  <span class="truncate">{monthsList.find(m => m.value === birthMonth)?.label || m.form_month()}</span>
                 </SelectTrigger>
-                <SelectContent class="text-right max-h-48 overflow-y-auto" align="end">
+                <SelectContent class="text-start max-h-48 overflow-y-auto" align="end">
                   {#each monthsList as mo}
-                    <SelectItem value={mo.value} class="text-xs text-right justify-start">
+                    <SelectItem value={mo.value} class="text-xs text-start justify-start">
                       {mo.label}
                     </SelectItem>
                   {/each}
@@ -445,12 +447,12 @@ async function handleSave() {
 
               <!-- السنة -->
               <Select bind:value={birthYear} type="single">
-                <SelectTrigger class="w-full h-8 text-xs text-right flex items-center justify-between border border-input/60 px-2" id="birthYearSelect">
-                  <span class="truncate">{birthYear || "السنة"}</span>
+                <SelectTrigger class="w-full h-8 text-xs text-start flex items-center justify-between border border-input/60 px-2" id="birthYearSelect">
+                  <span class="truncate">{birthYear || m.form_year()}</span>
                 </SelectTrigger>
-                <SelectContent class="text-right max-h-48 overflow-y-auto" align="end">
+                <SelectContent class="text-start max-h-48 overflow-y-auto" align="end">
                   {#each yearsList as yr}
-                    <SelectItem value={String(yr)} class="text-xs text-right justify-start">
+                    <SelectItem value={String(yr)} class="text-xs text-start justify-start">
                       {yr}
                     </SelectItem>
                   {/each}
@@ -461,35 +463,35 @@ async function handleSave() {
 
           <!-- الجنس -->
           <div class="flex flex-col gap-1.5">
-            <Label class="text-[10px] font-semibold text-muted-foreground">الجنس <span class="text-destructive">*</span></Label>
+            <Label class="text-[10px] font-semibold text-muted-foreground">{m.form_sex()} <span class="text-destructive">{m.form_required()}</span></Label>
             <div class="flex gap-2 items-center h-8">
               <Button
                 variant="ghost"
                 class="flex-1 flex items-center justify-center gap-2 border rounded-lg text-xs h-8 cursor-pointer transition-all duration-150 {sex === 'male' ? 'border-primary bg-primary/5 font-semibold text-primary' : 'border-border bg-card/20 text-muted-foreground'}"
                 onclick={() => sex = 'male'}
               >
-                <span>ذكر</span>
+                <span>{m.form_male()}</span>
               </Button>
               <Button 
                 variant="ghost"
                 class="flex-1 flex items-center justify-center gap-2 border rounded-lg text-xs h-8 cursor-pointer transition-all duration-150 {sex === 'female' ? 'border-primary bg-primary/5 font-semibold text-primary' : 'border-border bg-card/20 text-muted-foreground'}"
                 onclick={() => sex = 'female'}
               >
-                <span>أنثى</span>
+                <span>{m.form_female()}</span>
               </Button>
             </div>
           </div>
 
           <!-- الصف الدراسي المطلوب -->
           <div class="flex flex-col gap-1.5">
-            <Label class="text-[10px] font-semibold text-muted-foreground" for="classSelect">الصف الدراسي المطلوب قيده فيه <span class="text-destructive">*</span></Label>
+            <Label class="text-[10px] font-semibold text-muted-foreground" for="classSelect">{m.form_target_class()} <span class="text-destructive">{m.form_required()}</span></Label>
             <Select bind:value={classId} type="single">
-              <SelectTrigger class="w-full h-8 text-xs text-right flex items-center justify-between border border-input/60" id="classSelect">
+              <SelectTrigger class="w-full h-8 text-xs text-start flex items-center justify-between border border-input/60" id="classSelect">
                 <span>{selectedClassName}</span>
               </SelectTrigger>
-              <SelectContent class="text-right" align="end">
+              <SelectContent class="text-start" align="end">
                 {#each studentsStore.classes as cls (cls.id)}
-                  <SelectItem value={String(cls.id)} class="text-xs text-right justify-start">
+                  <SelectItem value={String(cls.id)} class="text-xs text-start justify-start">
                     {cls.name || cls.name_ar}
                   </SelectItem>
                 {/each}
@@ -499,11 +501,11 @@ async function handleSave() {
 
           <!-- الرقم الأكاديمي -->
           <div class="flex flex-col gap-1.5">
-            <Label class="text-[10px] font-semibold text-muted-foreground" for="studentNumber">الرقم الأكاديمي للطالب (إن وجد)</Label>
+            <Label class="text-[10px] font-semibold text-muted-foreground" for="studentNumber">{m.form_student_number()}</Label>
             <Input 
               id="studentNumber"
               type="text" 
-              placeholder="رقم القيد الأكاديمي" 
+              placeholder={m.form_student_number_placeholder()} 
               class="text-xs" 
               bind:value={studentNumber}
             />
@@ -511,11 +513,11 @@ async function handleSave() {
 
           <!-- اسم الأب / ولي الأمر -->
           <div class="flex flex-col gap-1.5 sm:col-span-2 md:col-span-2 lg:col-span-2">
-            <Label class="text-[10px] font-semibold text-muted-foreground" for="guardianName">اسم الأب الكامل (ولي الأمر)</Label>
+            <Label class="text-[10px] font-semibold text-muted-foreground" for="guardianName">{m.form_father_name()}</Label>
             <Input 
               id="guardianName"
               type="text" 
-              placeholder="اسم الأب الكامل" 
+              placeholder={m.form_father_name_placeholder()} 
               class="text-xs font-semibold" 
               bind:value={guardianName}
             />
@@ -523,11 +525,11 @@ async function handleSave() {
 
           <!-- رقم هاتف الأب -->
           <div class="flex flex-col gap-1.5">
-            <Label class="text-[10px] font-semibold text-muted-foreground" for="guardianPhone">رقم هاتف الأب</Label>
+            <Label class="text-[10px] font-semibold text-muted-foreground" for="guardianPhone">{m.form_father_phone()}</Label>
             <Input 
               id="guardianPhone"
               type="tel" 
-              placeholder="رقم الهاتف" 
+              placeholder={m.form_phone_placeholder()} 
               class="text-xs font-mono text-left" 
               dir="ltr"
               bind:value={guardianPhone}
@@ -536,11 +538,11 @@ async function handleSave() {
 
           <!-- عمل الأب -->
           <div class="flex flex-col gap-1.5">
-            <Label class="text-[10px] font-semibold text-muted-foreground" for="fatherJob">عمل الأب</Label>
+            <Label class="text-[10px] font-semibold text-muted-foreground" for="fatherJob">{m.form_father_job()}</Label>
             <Input 
               id="fatherJob"
               type="text" 
-              placeholder="الوظيفة / المهنة" 
+              placeholder={m.form_job_placeholder()} 
               class="text-xs" 
               bind:value={fatherJob}
             />
@@ -548,11 +550,11 @@ async function handleSave() {
 
           <!-- اسم الأم -->
           <div class="flex flex-col gap-1.5 sm:col-span-2 md:col-span-2 lg:col-span-2">
-            <Label class="text-[10px] font-semibold text-muted-foreground" for="motherName">اسم الأم الكامل</Label>
+            <Label class="text-[10px] font-semibold text-muted-foreground" for="motherName">{m.form_mother_name()}</Label>
             <Input 
               id="motherName"
               type="text" 
-              placeholder="اسم الأم الكامل" 
+              placeholder={m.form_mother_name_placeholder()} 
               class="text-xs" 
               bind:value={motherName}
             />
@@ -560,11 +562,11 @@ async function handleSave() {
 
           <!-- رقم هاتف الأم -->
           <div class="flex flex-col gap-1.5">
-            <Label class="text-[10px] font-semibold text-muted-foreground" for="motherPhone">رقم هاتف الأم</Label>
+            <Label class="text-[10px] font-semibold text-muted-foreground" for="motherPhone">{m.form_mother_phone()}</Label>
             <Input 
               id="motherPhone"
               type="tel" 
-              placeholder="رقم الهاتف" 
+              placeholder={m.form_phone_placeholder()} 
               class="text-xs font-mono text-left" 
               dir="ltr"
               bind:value={motherPhone}
@@ -573,11 +575,11 @@ async function handleSave() {
 
           <!-- عمل الأم -->
           <div class="flex flex-col gap-1.5">
-            <Label class="text-[10px] font-semibold text-muted-foreground" for="motherJob">عمل الأم</Label>
+            <Label class="text-[10px] font-semibold text-muted-foreground" for="motherJob">{m.form_mother_job()}</Label>
             <Input 
               id="motherJob"
               type="text" 
-              placeholder="الوظيفة / المهنة" 
+              placeholder={m.form_job_placeholder()} 
               class="text-xs" 
               bind:value={motherJob}
             />
@@ -585,11 +587,11 @@ async function handleSave() {
 
           <!-- المدرسة السابقة -->
           <div class="flex flex-col gap-1.5">
-            <Label class="text-[10px] font-semibold text-muted-foreground" for="previousSchool">المدرسة السابقة</Label>
+            <Label class="text-[10px] font-semibold text-muted-foreground" for="previousSchool">{m.form_previous_school()}</Label>
             <Input 
               id="previousSchool"
               type="text" 
-              placeholder="اسم المدرسة السابقة" 
+              placeholder={m.form_previous_school_placeholder()} 
               class="text-xs" 
               bind:value={previousSchool}
             />
@@ -597,11 +599,11 @@ async function handleSave() {
 
           <!-- المديرية -->
           <div class="flex flex-col gap-1.5">
-            <Label class="text-[10px] font-semibold text-muted-foreground" for="district">المديرية</Label>
+            <Label class="text-[10px] font-semibold text-muted-foreground" for="district">{m.form_district()}</Label>
             <Input 
               id="district"
               type="text" 
-              placeholder="اسم المديرية" 
+              placeholder={m.form_district_placeholder()} 
               class="text-xs" 
               bind:value={district}
             />
@@ -609,11 +611,11 @@ async function handleSave() {
 
           <!-- المحافظة -->
           <div class="flex flex-col gap-1.5">
-            <Label class="text-[10px] font-semibold text-muted-foreground" for="governorate">المحافظة</Label>
+            <Label class="text-[10px] font-semibold text-muted-foreground" for="governorate">{m.form_governorate()}</Label>
             <Input 
               id="governorate"
               type="text" 
-              placeholder="اسم المحافظة" 
+              placeholder={m.form_governorate_placeholder()} 
               class="text-xs" 
               bind:value={governorate}
             />
@@ -621,11 +623,11 @@ async function handleSave() {
 
           <!-- هاتف الطالب -->
           <div class="flex flex-col gap-1.5">
-            <Label class="text-[10px] font-semibold text-muted-foreground" for="phone">رقم هاتف الطالب (إن وجد)</Label>
+            <Label class="text-[10px] font-semibold text-muted-foreground" for="phone">{m.form_student_phone()}</Label>
             <Input 
               id="phone"
               type="tel" 
-              placeholder="رقم الهاتف الخاص بالطالب" 
+              placeholder={m.form_student_phone_placeholder()} 
               class="text-xs font-mono text-left" 
               dir="ltr"
               bind:value={phone}
@@ -634,7 +636,7 @@ async function handleSave() {
 
           <!-- البريد الإلكتروني -->
           <div class="flex flex-col gap-1.5">
-            <Label class="text-[10px] font-semibold text-muted-foreground" for="email">البريد الإلكتروني للطالب (اختياري)</Label>
+            <Label class="text-[10px] font-semibold text-muted-foreground" for="email">{m.form_student_email()}</Label>
             <Input 
               id="email"
               type="email" 
@@ -647,11 +649,11 @@ async function handleSave() {
 
           <!-- السكن / العنوان الحالي -->
           <div class="flex flex-col gap-1.5 sm:col-span-2 md:col-span-2 lg:col-span-3">
-            <Label class="text-[10px] font-semibold text-muted-foreground" for="address">العنوان الحالي / السكن</Label>
+            <Label class="text-[10px] font-semibold text-muted-foreground" for="address">{m.form_address()}</Label>
             <Input 
               id="address"
               type="text" 
-              placeholder="المحافظة - المديرية - الحارة / الشارع" 
+              placeholder={m.form_address_placeholder()} 
               class="text-xs" 
               bind:value={address}
             />
@@ -663,10 +665,10 @@ async function handleSave() {
       <div class="bg-card/40 border border-border/80 rounded-xl p-6 space-y-6">
         <div class="flex items-center gap-2 border-b border-border pb-3">
           <FileText class="text-primary h-4.5 w-4.5" />
-          <h2 class="text-sm font-bold text-foreground">بيانات الوثائق المرفقة والمستلمة</h2>
+          <h2 class="text-sm font-bold text-foreground">{m.form_documents_title()}</h2>
         </div>
 
-        <p class="text-[10px] text-muted-foreground">قم بتحديد الوثائق والشهادات الدراسية التي تم تسليمها من قبل الطالب لإلحاقها بملفه الأكاديمي:</p>
+        <p class="text-[10px] text-muted-foreground">{m.form_documents_hint()}</p>
 
         <!-- Dynamic Grid Checklist matching the paper form layout -->
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
@@ -674,7 +676,7 @@ async function handleSave() {
             {@const isChecked = submittedDocs.includes(doc.id)}
             <Button
               variant="ghost"
-              class="flex items-center justify-between p-3 h-auto border rounded-lg cursor-pointer text-right text-xs transition-all duration-150 {isChecked ? 'border-primary bg-primary/5 text-foreground' : 'border-border bg-card/25 text-muted-foreground'}"
+              class="flex items-center justify-between p-3 h-auto border rounded-lg cursor-pointer text-start text-xs transition-all duration-150 {isChecked ? 'border-primary bg-primary/5 text-foreground' : 'border-border bg-card/25 text-muted-foreground'}"
               onclick={() => toggleDoc(doc.id)}
             >
               <span class="font-medium">{doc.label}</span>
@@ -698,10 +700,10 @@ async function handleSave() {
     <Button 
       variant="ghost" 
       class="btn-tactile text-xs h-9 px-5" 
-      onclick={() => goto(`/${orgId}/students`)}
+      onclick={() => goto(localizeHref(`/${orgId}/students`))}
       disabled={isSaving}
     >
-      إلغاء
+      {m.form_cancel()}
     </Button>
     <Button 
       variant="lime" 
@@ -710,7 +712,8 @@ async function handleSave() {
       disabled={isSaving}
     >
       <Save size={14} />
-      {isSaving ? "جاري الحفظ..." : "حفظ البيانات"}
+      {isSaving ? m.form_saving() : m.form_save()}
     </Button>
   </div>
 </div>
+
