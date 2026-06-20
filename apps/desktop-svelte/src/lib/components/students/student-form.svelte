@@ -10,12 +10,15 @@ import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
 import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui-svelte/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@orbis/ui-svelte/popover";
+import { Calendar } from "@orbis/ui-svelte/calendar";
+import { DateFormatter, type DateValue, getLocalTimeZone, parseDate } from "@internationalized/date";
 import { studentsStore, authStore } from "$lib/stores";
 import { commands } from "$lib/services/ipc";
 import { onMount } from "svelte";
 import { toast } from "svelte-sonner";
 import { 
-  ArrowRight, Save, User, FileText, Sparkles, AlertCircle, CheckSquare, Square
+  ArrowRight, Save, User, FileText, Sparkles, AlertCircle, CheckSquare, Square, Calendar as CalendarIcon
 } from "lucide-svelte";
 
 let { studentId, orgId }: { studentId?: string; orgId: string } = $props();
@@ -32,6 +35,20 @@ let studentNumber = $state("");
 let email = $state("");
 let phone = $state("");
 let address = $state("");
+
+// Date picker reactive value
+const df = new DateFormatter("ar-SA", {
+  dateStyle: "long"
+});
+let birthDateValue = $state<DateValue | undefined>(undefined);
+
+$effect(() => {
+  if (birthDateValue) {
+    birthDate = birthDateValue.toString();
+  } else {
+    birthDate = "";
+  }
+});
 
 // Parent & Location details
 let motherName = $state("");
@@ -86,6 +103,13 @@ async function loadStudentData() {
       nameAr = String(student.full_name || student.name_ar || "");
       nameEn = String(student.name_en || "");
       birthDate = student.birth_date ? String(student.birth_date).slice(0, 10) : "";
+      if (birthDate) {
+        try {
+          birthDateValue = parseDate(birthDate);
+        } catch (e) {
+          console.error("Error parsing birth date:", e);
+        }
+      }
       sex = String(student.sex || "male");
       classId = String(student.class_id || "");
       studentNumber = String(student.student_number || "");
@@ -310,7 +334,7 @@ async function handleSave() {
 <div class="h-full flex flex-col overflow-hidden bg-background text-right" dir="rtl">
   <!-- Form Body Scroll Container -->
   <div class="flex-1 overflow-y-auto p-6 scrollbar-hide">
-    <div class="w-full space-y-8 pb-12">
+    <div class="w-full space-y-8 pb-6">
       
       <!-- Section 1: معلومات الطالب/ة -->
       <div class="bg-card/40 border border-border/80 rounded-xl p-6 space-y-6">
@@ -325,9 +349,9 @@ async function handleSave() {
           <p>يرجى الانتباه على اسم الطالب وتاريخ الميلاد الصحيح للطالب لكي لا توجد عقبات في المستقبل.</p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
           <!-- الاسم الكامل -->
-          <div class="flex flex-col gap-1.5 md:col-span-2">
+          <div class="flex flex-col gap-1.5 sm:col-span-2 md:col-span-3 lg:col-span-2">
             <Label class="text-[10px] font-semibold text-muted-foreground" for="nameAr">الاسم الكامل لطالب/ة <span class="text-destructive">*</span></Label>
             <Input 
               id="nameAr"
@@ -339,7 +363,7 @@ async function handleSave() {
           </div>
 
           <!-- الاسم بالإنجليزية -->
-          <div class="flex flex-col gap-1.5 md:col-span-2">
+          <div class="flex flex-col gap-1.5 sm:col-span-2 md:col-span-3 lg:col-span-2">
             <Label class="text-[10px] font-semibold text-muted-foreground" for="nameEn">الاسم الكامل باللغة الإنجليزية (اختياري)</Label>
             <Input 
               id="nameEn"
@@ -353,19 +377,37 @@ async function handleSave() {
 
           <!-- تاريخ الميلاد -->
           <div class="flex flex-col gap-1.5">
-            <Label class="text-[10px] font-semibold text-muted-foreground" for="birthDate">تاريخ الميلاد <span class="text-destructive">*</span></Label>
-            <Input 
-              id="birthDate"
-              type="date" 
-              class="text-xs" 
-              bind:value={birthDate}
-            />
+            <Label class="text-[10px] font-semibold text-muted-foreground" for="birthDateBtn">تاريخ الميلاد <span class="text-destructive">*</span></Label>
+            <Popover>
+              <PopoverTrigger>
+                {#snippet child({ props })}
+                  <Button
+                    id="birthDateBtn"
+                    variant="outline"
+                    class="w-full justify-between text-right font-normal h-8 text-xs border border-input/60 hover:bg-muted/40 {!birthDateValue ? 'text-muted-foreground' : 'text-foreground'}"
+                    {...props}
+                  >
+                    <span class="truncate">
+                      {#if birthDateValue}
+                        {df.format(birthDateValue.toDate(getLocalTimeZone()))}
+                      {:else}
+                        اختر تاريخ الميلاد
+                      {/if}
+                    </span>
+                    <CalendarIcon size={14} class="text-muted-foreground mr-2" />
+                  </Button>
+                {/snippet}
+              </PopoverTrigger>
+              <PopoverContent class="w-auto p-0" align="start">
+                <Calendar bind:value={birthDateValue as any} initialFocus locale="ar-SA" />
+              </PopoverContent>
+            </Popover>
           </div>
 
           <!-- الجنس -->
           <div class="flex flex-col gap-1.5">
             <Label class="text-[10px] font-semibold text-muted-foreground">الجنس <span class="text-destructive">*</span></Label>
-            <div class="flex gap-4 items-center h-9">
+            <div class="flex gap-2 items-center h-8">
               <button 
                 type="button"
                 class="flex-1 flex items-center justify-center gap-2 border rounded-lg text-xs h-8 cursor-pointer transition-all duration-150 {sex === 'male' ? 'border-primary bg-primary/5 font-semibold text-primary' : 'border-border bg-card/20 text-muted-foreground'}"
@@ -383,26 +425,43 @@ async function handleSave() {
             </div>
           </div>
 
-          <!-- اسم الأم -->
-          <div class="flex flex-col gap-1.5 md:col-span-2">
-            <Label class="text-[10px] font-semibold text-muted-foreground" for="motherName">اسم الأم الكامل</Label>
+          <!-- الصف الدراسي المطلوب -->
+          <div class="flex flex-col gap-1.5">
+            <Label class="text-[10px] font-semibold text-muted-foreground" for="classSelect">الصف الدراسي المطلوب قيده فيه <span class="text-destructive">*</span></Label>
+            <Select bind:value={classId} type="single">
+              <SelectTrigger class="w-full h-8 text-xs text-right flex items-center justify-between border border-input/60" id="classSelect">
+                <span>{selectedClassName}</span>
+              </SelectTrigger>
+              <SelectContent class="text-right" align="end">
+                {#each studentsStore.classes as cls (cls.id)}
+                  <SelectItem value={String(cls.id)} class="text-xs text-right justify-start">
+                    {cls.name || cls.name_ar}
+                  </SelectItem>
+                {/each}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <!-- الرقم الأكاديمي -->
+          <div class="flex flex-col gap-1.5">
+            <Label class="text-[10px] font-semibold text-muted-foreground" for="studentNumber">الرقم الأكاديمي للطالب (إن وجد)</Label>
             <Input 
-              id="motherName"
+              id="studentNumber"
               type="text" 
-              placeholder="اسم الأم الكامل" 
+              placeholder="رقم القيد الأكاديمي" 
               class="text-xs" 
-              bind:value={motherName}
+              bind:value={studentNumber}
             />
           </div>
 
           <!-- اسم الأب / ولي الأمر -->
-          <div class="flex flex-col gap-1.5 md:col-span-2">
+          <div class="flex flex-col gap-1.5 sm:col-span-2 md:col-span-2 lg:col-span-2">
             <Label class="text-[10px] font-semibold text-muted-foreground" for="guardianName">اسم الأب الكامل (ولي الأمر)</Label>
             <Input 
               id="guardianName"
               type="text" 
               placeholder="اسم الأب الكامل" 
-              class="text-xs" 
+              class="text-xs font-semibold" 
               bind:value={guardianName}
             />
           </div>
@@ -420,6 +479,30 @@ async function handleSave() {
             />
           </div>
 
+          <!-- عمل الأب -->
+          <div class="flex flex-col gap-1.5">
+            <Label class="text-[10px] font-semibold text-muted-foreground" for="fatherJob">عمل الأب</Label>
+            <Input 
+              id="fatherJob"
+              type="text" 
+              placeholder="الوظيفة / المهنة" 
+              class="text-xs" 
+              bind:value={fatherJob}
+            />
+          </div>
+
+          <!-- اسم الأم -->
+          <div class="flex flex-col gap-1.5 sm:col-span-2 md:col-span-2 lg:col-span-2">
+            <Label class="text-[10px] font-semibold text-muted-foreground" for="motherName">اسم الأم الكامل</Label>
+            <Input 
+              id="motherName"
+              type="text" 
+              placeholder="اسم الأم الكامل" 
+              class="text-xs" 
+              bind:value={motherName}
+            />
+          </div>
+
           <!-- رقم هاتف الأم -->
           <div class="flex flex-col gap-1.5">
             <Label class="text-[10px] font-semibold text-muted-foreground" for="motherPhone">رقم هاتف الأم</Label>
@@ -430,18 +513,6 @@ async function handleSave() {
               class="text-xs font-mono text-left" 
               dir="ltr"
               bind:value={motherPhone}
-            />
-          </div>
-
-          <!-- عمل الأب -->
-          <div class="flex flex-col gap-1.5">
-            <Label class="text-[10px] font-semibold text-muted-foreground" for="fatherJob">عمل الأب</Label>
-            <Input 
-              id="fatherJob"
-              type="text" 
-              placeholder="الوظيفة / المهنة" 
-              class="text-xs" 
-              bind:value={fatherJob}
             />
           </div>
 
@@ -469,23 +540,6 @@ async function handleSave() {
             />
           </div>
 
-          <!-- الصف الدراسي المطلوب -->
-          <div class="flex flex-col gap-1.5">
-            <Label class="text-[10px] font-semibold text-muted-foreground" for="classSelect">الصف الدراسي المطلوب قيده فيه <span class="text-destructive">*</span></Label>
-            <Select bind:value={classId} type="single">
-              <SelectTrigger class="w-full h-8 text-xs text-right flex items-center justify-between" id="classSelect">
-                <span>{selectedClassName}</span>
-              </SelectTrigger>
-              <SelectContent class="text-right" align="end">
-                {#each studentsStore.classes as cls (cls.id)}
-                  <SelectItem value={String(cls.id)} class="text-xs text-right justify-start">
-                    {cls.name || cls.name_ar}
-                  </SelectItem>
-                {/each}
-              </SelectContent>
-            </Select>
-          </div>
-
           <!-- المديرية -->
           <div class="flex flex-col gap-1.5">
             <Label class="text-[10px] font-semibold text-muted-foreground" for="district">المديرية</Label>
@@ -510,31 +564,6 @@ async function handleSave() {
             />
           </div>
 
-          <!-- البريد الإلكتروني -->
-          <div class="flex flex-col gap-1.5">
-            <Label class="text-[10px] font-semibold text-muted-foreground" for="email">البريد الإلكتروني للطالب (اختياري)</Label>
-            <Input 
-              id="email"
-              type="email" 
-              placeholder="student@example.com" 
-              class="text-xs font-mono text-left" 
-              dir="ltr"
-              bind:value={email}
-            />
-          </div>
-
-          <!-- الرقم الأكاديمي -->
-          <div class="flex flex-col gap-1.5">
-            <Label class="text-[10px] font-semibold text-muted-foreground" for="studentNumber">الرقم الأكاديمي للطالب (إن وجد)</Label>
-            <Input 
-              id="studentNumber"
-              type="text" 
-              placeholder="رقم القيد الأكاديمي" 
-              class="text-xs" 
-              bind:value={studentNumber}
-            />
-          </div>
-
           <!-- هاتف الطالب -->
           <div class="flex flex-col gap-1.5">
             <Label class="text-[10px] font-semibold text-muted-foreground" for="phone">رقم هاتف الطالب (إن وجد)</Label>
@@ -548,8 +577,21 @@ async function handleSave() {
             />
           </div>
 
+          <!-- البريد الإلكتروني -->
+          <div class="flex flex-col gap-1.5">
+            <Label class="text-[10px] font-semibold text-muted-foreground" for="email">البريد الإلكتروني للطالب (اختياري)</Label>
+            <Input 
+              id="email"
+              type="email" 
+              placeholder="student@example.com" 
+              class="text-xs font-mono text-left" 
+              dir="ltr"
+              bind:value={email}
+            />
+          </div>
+
           <!-- السكن / العنوان الحالي -->
-          <div class="flex flex-col gap-1.5 md:col-span-2">
+          <div class="flex flex-col gap-1.5 sm:col-span-2 md:col-span-2 lg:col-span-3">
             <Label class="text-[10px] font-semibold text-muted-foreground" for="address">العنوان الحالي / السكن</Label>
             <Input 
               id="address"
@@ -572,7 +614,7 @@ async function handleSave() {
         <p class="text-[10px] text-muted-foreground">قم بتحديد الوثائق والشهادات الدراسية التي تم تسليمها من قبل الطالب لإلحاقها بملفه الأكاديمي:</p>
 
         <!-- Dynamic Grid Checklist matching the paper form layout -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
           {#each docTypes as doc (doc.id)}
             {@const isChecked = submittedDocs.includes(doc.id)}
             <button
@@ -592,28 +634,28 @@ async function handleSave() {
           {/each}
         </div>
       </div>
-
-      <!-- Action Buttons Row at the bottom of the form -->
-      <div class="flex items-center justify-end gap-3 pt-6 border-t border-border mt-8 shrink-0">
-        <Button 
-          variant="ghost" 
-          class="btn-tactile text-xs h-9 px-5" 
-          onclick={() => goto(`/${orgId}/students`)}
-          disabled={isSaving}
-        >
-          إلغاء
-        </Button>
-        <Button 
-          variant="lime" 
-          class="btn-tactile-lime text-xs h-9 px-6 gap-1.5" 
-          onclick={handleSave}
-          disabled={isSaving}
-        >
-          <Save size={14} />
-          {isSaving ? "جاري الحفظ..." : "حفظ البيانات"}
-        </Button>
-      </div>
       
     </div>
+  </div>
+
+  <!-- Sticky/Fixed Footer Action Buttons Row at the bottom of the page -->
+  <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-border bg-card/10 shrink-0 bg-background/95 backdrop-blur-xs">
+    <Button 
+      variant="ghost" 
+      class="btn-tactile text-xs h-9 px-5" 
+      onclick={() => goto(`/${orgId}/students`)}
+      disabled={isSaving}
+    >
+      إلغاء
+    </Button>
+    <Button 
+      variant="lime" 
+      class="btn-tactile-lime text-xs h-9 px-6 gap-1.5" 
+      onclick={handleSave}
+      disabled={isSaving}
+    >
+      <Save size={14} />
+      {isSaving ? "جاري الحفظ..." : "حفظ البيانات"}
+    </Button>
   </div>
 </div>

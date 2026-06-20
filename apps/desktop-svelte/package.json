@@ -19,6 +19,7 @@
     "tauri:build:prod": "tauri build"
   },
   "dependencies": {
+    "@internationalized/date": "^3.12.0",
     "@orbis/desktop-client": "workspace:*",
     "@orbis/ui-svelte": "workspace:*",
     "@orbis/utils": "workspace:*",
