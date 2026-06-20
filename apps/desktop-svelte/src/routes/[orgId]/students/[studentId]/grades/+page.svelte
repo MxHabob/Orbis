@@ -14,6 +14,8 @@ import {
   TableRow,
 } from "@orbis/ui-svelte";
 import { Progress } from "@orbis/ui-svelte";
+import { Button } from "@orbis/ui-svelte/button";
+import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { GraduationCap, Award, Calendar, RefreshCcw } from "lucide-svelte";
 import { onMount } from "svelte";
 
@@ -54,26 +56,28 @@ function getGradeColor(score: number): string {
 			<h2 class="text-sm font-bold">الدرجات الحالية والتقييمات</h2>
 			<p class="text-[10px] text-muted-foreground">تفاصيل درجات الطالب المكتسبة في المواد الدراسية المختلفة خلال الدورة الحالية.</p>
 		</div>
-		<button 
-			class="h-7 w-7 rounded-md border border-border flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+		<Button 
+			variant="outline"
+			size="icon-sm"
+			class="h-7 w-7 text-muted-foreground hover:text-foreground"
 			onclick={loadGrades}
 			title="تحديث البيانات"
 		>
 			<RefreshCcw size={12} class={isLoading ? 'animate-spin' : ''} />
-		</button>
+		</Button>
 	</div>
 
 	{#if isLoading}
 		<div class="flex flex-col gap-3 py-6">
-			<div class="skeleton h-12 w-full"></div>
-			<div class="skeleton h-10 w-full"></div>
-			<div class="skeleton h-10 w-full"></div>
+			<Skeleton class="h-12 w-full" />
+			<Skeleton class="h-10 w-full" />
+			<Skeleton class="h-10 w-full" />
 		</div>
 	{:else if error}
 		<div class="flex flex-col items-center justify-center p-8 border border-destructive/20 bg-destructive/5 rounded-xl text-destructive text-center gap-2">
 			<h3 class="font-semibold text-xs">فشل تحميل كشف الدرجات</h3>
 			<p class="text-[10px] text-muted-foreground">{error}</p>
-			<button onclick={loadGrades} class="text-[10px] underline cursor-pointer mt-2 hover:text-foreground">إعادة المحاولة</button>
+			<Button variant="link" onclick={loadGrades} class="text-[10px] underline cursor-pointer mt-2 hover:text-foreground">إعادة المحاولة</Button>
 		</div>
 	{:else if !report || !report.grades || report.grades.length === 0}
 		<div class="flex flex-col items-center justify-center p-12 text-center text-muted-foreground border border-dashed border-border rounded-xl bg-card/10 gap-3">

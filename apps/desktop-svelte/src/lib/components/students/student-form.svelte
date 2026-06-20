@@ -15,18 +15,6 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@orbis/ui-svelte/popover";
-import { Calendar } from "@orbis/ui-svelte/calendar";
-import {
-  DateFormatter,
-  type DateValue,
-  getLocalTimeZone,
-  parseDate,
-} from "@internationalized/date";
 import { studentsStore, authStore } from "$lib/stores";
 import { commands } from "$lib/services/ipc";
 import { onMount } from "svelte";
@@ -40,7 +28,6 @@ import {
   AlertCircle,
   CheckSquare,
   Square,
-  Calendar as CalendarIcon,
 } from "lucide-svelte";
 
 let { studentId, orgId }: { studentId?: string; orgId: string } = $props();
@@ -58,15 +45,32 @@ let email = $state("");
 let phone = $state("");
 let address = $state("");
 
-// Date picker reactive value
-const df = new DateFormatter("ar-SA", {
-  dateStyle: "long",
-});
-let birthDateValue = $state<DateValue | undefined>(undefined);
+// Date picker options and reactive values
+const currentYear = new Date().getFullYear();
+const yearsList = Array.from({ length: 47 }, (_, i) => currentYear - i);
+const daysList = Array.from({ length: 31 }, (_, i) => String(i + 1));
+const monthsList = [
+  { value: "1", label: "يناير (1)" },
+  { value: "2", label: "فبراير (2)" },
+  { value: "3", label: "مارس (3)" },
+  { value: "4", label: "أبريل (4)" },
+  { value: "5", label: "مايو (5)" },
+  { value: "6", label: "يونيو (6)" },
+  { value: "7", label: "يوليو (7)" },
+  { value: "8", label: "أغسطس (8)" },
+  { value: "9", label: "سبتمبر (9)" },
+  { value: "10", label: "أكتوبر (10)" },
+  { value: "11", label: "نوفمبر (11)" },
+  { value: "12", label: "ديسمبر (12)" },
+];
+
+let birthDay = $state("");
+let birthMonth = $state("");
+let birthYear = $state("");
 
 $effect(() => {
-  if (birthDateValue) {
-    birthDate = birthDateValue.toString();
+  if (birthDay && birthMonth && birthYear) {
+    birthDate = `${birthYear}-${birthMonth.padStart(2, "0")}-${birthDay.padStart(2, "0")}`;
   } else {
     birthDate = "";
   }
@@ -128,10 +132,11 @@ async function loadStudentData() {
         ? String(student.birth_date).slice(0, 10)
         : "";
       if (birthDate) {
-        try {
-          birthDateValue = parseDate(birthDate);
-        } catch (e) {
-          console.error("Error parsing birth date:", e);
+        const parts = birthDate.split("-");
+        if (parts.length === 3) {
+          birthYear = parts[0];
+          birthMonth = String(parseInt(parts[1], 10));
+          birthDay = String(parseInt(parts[2], 10));
         }
       }
       sex = String(student.sex || "male");
@@ -379,14 +384,7 @@ async function handleSave() {
           <h2 class="text-sm font-bold text-foreground">معلومات الطالب/ة</h2>
         </div>
 
-        <!-- Alert Note -->
-        <div class="flex items-start gap-2.5 bg-primary/5 border border-primary/10 rounded-lg p-3 text-[11px] text-muted-foreground leading-relaxed">
-          <AlertCircle class="text-primary h-4 w-4 shrink-0 mt-0.5" />
-          <p>يرجى الانتباه على اسم الطالب وتاريخ الميلاد الصحيح للطالب لكي لا توجد عقبات في المستقبل.</p>
-        </div>
-
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-          <!-- الاسم الكامل -->
           <div class="flex flex-col gap-1.5 sm:col-span-2 md:col-span-3 lg:col-span-2">
             <Label class="text-[10px] font-semibold text-muted-foreground" for="nameAr">الاسم الكامل لطالب/ة <span class="text-destructive">*</span></Label>
             <Input 
@@ -395,6 +393,7 @@ async function handleSave() {
               placeholder="الاسم الثلاثي أو الرباعي كما هو مسجل في الهوية" 
               class="font-bold text-xs" 
               bind:value={nameAr}
+              autocomplete="off"
             />
           </div>
 
@@ -408,56 +407,76 @@ async function handleSave() {
               class="text-xs font-mono text-left" 
               dir="ltr"
               bind:value={nameEn}
+              autocomplete="off"
             />
           </div>
 
           <!-- تاريخ الميلاد -->
-          <div class="flex flex-col gap-1.5">
-            <Label class="text-[10px] font-semibold text-muted-foreground" for="birthDateBtn">تاريخ الميلاد <span class="text-destructive">*</span></Label>
-            <Popover>
-              <PopoverTrigger>
-                {#snippet child({ props })}
-                  <Button
-                    id="birthDateBtn"
-                    variant="outline"
-                    class="w-full justify-between text-right font-normal h-8 text-xs border border-input/60 hover:bg-muted/40 {!birthDateValue ? 'text-muted-foreground' : 'text-foreground'}"
-                    {...props}
-                  >
-                    <span class="truncate">
-                      {#if birthDateValue}
-                        {df.format(birthDateValue.toDate(getLocalTimeZone()))}
-                      {:else}
-                        اختر تاريخ الميلاد
-                      {/if}
-                    </span>
-                    <CalendarIcon size={14} class="text-muted-foreground mr-2" />
-                  </Button>
-                {/snippet}
-              </PopoverTrigger>
-              <PopoverContent class="w-auto p-0" align="start">
-                <Calendar bind:value={birthDateValue as any} initialFocus locale="ar-SA" />
-              </PopoverContent>
-            </Popover>
+          <div class="flex flex-col gap-1.5 sm:col-span-2 lg:col-span-1">
+            <Label class="text-[10px] font-semibold text-muted-foreground">تاريخ الميلاد <span class="text-destructive">*</span></Label>
+            <div class="grid grid-cols-3 gap-1.5" dir="rtl">
+              <!-- اليوم -->
+              <Select bind:value={birthDay} type="single">
+                <SelectTrigger class="w-full h-8 text-xs text-right flex items-center justify-between border border-input/60 px-2" id="birthDaySelect">
+                  <span class="truncate">{birthDay || "اليوم"}</span>
+                </SelectTrigger>
+                <SelectContent class="text-right max-h-48 overflow-y-auto" align="end">
+                  {#each daysList as dy}
+                    <SelectItem value={dy} class="text-xs text-right justify-start">
+                      {dy}
+                    </SelectItem>
+                  {/each}
+                </SelectContent>
+              </Select>
+
+              <!-- الشهر -->
+              <Select bind:value={birthMonth} type="single">
+                <SelectTrigger class="w-full h-8 text-xs text-right flex items-center justify-between border border-input/60 px-2" id="birthMonthSelect">
+                  <span class="truncate">{monthsList.find(m => m.value === birthMonth)?.label || "الشهر"}</span>
+                </SelectTrigger>
+                <SelectContent class="text-right max-h-48 overflow-y-auto" align="end">
+                  {#each monthsList as mo}
+                    <SelectItem value={mo.value} class="text-xs text-right justify-start">
+                      {mo.label}
+                    </SelectItem>
+                  {/each}
+                </SelectContent>
+              </Select>
+
+              <!-- السنة -->
+              <Select bind:value={birthYear} type="single">
+                <SelectTrigger class="w-full h-8 text-xs text-right flex items-center justify-between border border-input/60 px-2" id="birthYearSelect">
+                  <span class="truncate">{birthYear || "السنة"}</span>
+                </SelectTrigger>
+                <SelectContent class="text-right max-h-48 overflow-y-auto" align="end">
+                  {#each yearsList as yr}
+                    <SelectItem value={String(yr)} class="text-xs text-right justify-start">
+                      {yr}
+                    </SelectItem>
+                  {/each}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <!-- الجنس -->
           <div class="flex flex-col gap-1.5">
             <Label class="text-[10px] font-semibold text-muted-foreground">الجنس <span class="text-destructive">*</span></Label>
             <div class="flex gap-2 items-center h-8">
-              <button 
-                type="button"
+              <Button
+                variant="ghost"
                 class="flex-1 flex items-center justify-center gap-2 border rounded-lg text-xs h-8 cursor-pointer transition-all duration-150 {sex === 'male' ? 'border-primary bg-primary/5 font-semibold text-primary' : 'border-border bg-card/20 text-muted-foreground'}"
                 onclick={() => sex = 'male'}
               >
                 <span>ذكر</span>
-              </button>
-              <button 
-                type="button"
+              </Button>
+              <Button 
+                variant="ghost"
                 class="flex-1 flex items-center justify-center gap-2 border rounded-lg text-xs h-8 cursor-pointer transition-all duration-150 {sex === 'female' ? 'border-primary bg-primary/5 font-semibold text-primary' : 'border-border bg-card/20 text-muted-foreground'}"
                 onclick={() => sex = 'female'}
               >
                 <span>أنثى</span>
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -653,9 +672,9 @@ async function handleSave() {
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
           {#each docTypes as doc (doc.id)}
             {@const isChecked = submittedDocs.includes(doc.id)}
-            <button
-              type="button"
-              class="flex items-center justify-between p-3 border rounded-lg cursor-pointer text-right text-xs transition-all duration-150 {isChecked ? 'border-primary bg-primary/5 text-foreground' : 'border-border bg-card/25 text-muted-foreground'}"
+            <Button
+              variant="ghost"
+              class="flex items-center justify-between p-3 h-auto border rounded-lg cursor-pointer text-right text-xs transition-all duration-150 {isChecked ? 'border-primary bg-primary/5 text-foreground' : 'border-border bg-card/25 text-muted-foreground'}"
               onclick={() => toggleDoc(doc.id)}
             >
               <span class="font-medium">{doc.label}</span>
@@ -666,7 +685,7 @@ async function handleSave() {
                   <Square size={16} class="opacity-50" />
                 {/if}
               </span>
-            </button>
+            </Button>
           {/each}
         </div>
       </div>

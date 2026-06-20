@@ -7,6 +7,8 @@ and right detailed student inspector.
 import { onMount } from "svelte";
 import MainViewport from "$lib/components/layout/MainViewport.svelte";
 import { Button } from "@orbis/ui-svelte/button";
+import { Input } from "@orbis/ui-svelte/input";
+import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { Plus, Search, FilterX, Download } from "lucide-svelte";
 import { studentsStore } from "$lib/stores";
 import StudentSidebarFilters from "$lib/components/students/student-sidebar-filters.svelte";
@@ -76,7 +78,7 @@ const hasActiveFilters = $derived(
 				<div class="flex items-center justify-between shrink-0">
 				<div class="relative w-full max-w-sm shrink-0">
 					<Search class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-					<input
+					<Input
 						type="text"
 						placeholder="البحث بالاسم، الرقم الأكاديمي..."
 						class="input-sunken ps-9 text-xs py-2"
@@ -108,11 +110,11 @@ const hasActiveFilters = $derived(
 				<div class="flex-1 min-h-0 bg-card rounded-lg border border-border overflow-hidden">
 					{#if studentsStore.isLoading}
 						<div class="h-full w-full p-4 flex flex-col gap-3">
-							<div class="skeleton h-10 w-full"></div>
-							<div class="skeleton h-8 w-full"></div>
-							<div class="skeleton h-8 w-full"></div>
-							<div class="skeleton h-8 w-full"></div>
-							<div class="skeleton h-8 w-full"></div>
+							<Skeleton class="h-10 w-full" />
+							<Skeleton class="h-8 w-full" />
+							<Skeleton class="h-8 w-full" />
+							<Skeleton class="h-8 w-full" />
+							<Skeleton class="h-8 w-full" />
 						</div>
 					{:else if studentsStore.error}
 						<div class="h-full w-full flex flex-col items-center justify-center p-6 text-center gap-3">

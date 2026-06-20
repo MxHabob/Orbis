@@ -7,6 +7,7 @@ Includes a Passport Sidebar and navigation pills.
 import { page } from "$app/state";
 import { Button } from "@orbis/ui-svelte/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@orbis/ui-svelte";
+import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import {
   ArrowRight,
   GraduationCap,
@@ -244,9 +245,9 @@ function isActive(tabHref: string) {
 			</div>
 		{:else}
 			<div class="w-72 border-e border-border bg-card/10 flex flex-col p-5 gap-3 shrink-0">
-				<div class="skeleton h-20 w-20 rounded-full mx-auto"></div>
-				<div class="skeleton h-5 w-40 mx-auto mt-2"></div>
-				<div class="skeleton h-12 w-full mt-4"></div>
+				<Skeleton class="h-20 w-20 rounded-full mx-auto" />
+				<Skeleton class="h-5 w-40 mx-auto mt-2" />
+				<Skeleton class="h-12 w-full mt-4" />
 			</div>
 		{/if}
 

@@ -8,6 +8,13 @@ import { authStore } from "$lib/stores";
 import { commands } from "$lib/services/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@orbis/ui-svelte";
+import { Input } from "@orbis/ui-svelte/input";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui-svelte/select";
 import {
   X,
   ExternalLink,
@@ -44,6 +51,13 @@ let isTransferring = $state(false);
 let isWithdrawing = $state(false);
 let selectedNewClassId = $state("");
 let withdrawReason = $state("");
+
+const selectedClassName = $derived(
+  studentsStore.classes.find((c) => String(c.id) === selectedNewClassId)?.name ||
+    studentsStore.classes.find((c) => String(c.id) === selectedNewClassId)?.name_ar ||
+    "اختر الصف الجديد",
+);
+
 
 // Fetch student stats when studentId changes
 $effect(() => {
@@ -211,16 +225,18 @@ async function handleWithdraw() {
 				{#if isTransferring}
 					<div class="bg-card border border-border p-3 rounded-lg flex flex-col gap-2">
 						<span class="font-semibold text-[10px]">اختر الصف الجديد</span>
-						<select
-							class="input-sunken text-xs py-1.5"
-							bind:value={selectedNewClassId}
-							disabled={isProcessing}
-						>
-							<option value="">-- اختر فصلاً --</option>
-							{#each studentsStore.classes.filter(c => c.id !== student.class_id) as cls (cls.id)}
-								<option value={cls.id}>{cls.name || cls.name_ar || cls.id}</option>
-							{/each}
-						</select>
+						<Select bind:value={selectedNewClassId} type="single" disabled={isProcessing}>
+							<SelectTrigger class="w-full h-8 text-xs text-right flex items-center justify-between border border-input/60" id="classSelect">
+								<span>{selectedClassName}</span>
+							</SelectTrigger>
+							<SelectContent class="text-right" align="end">
+								{#each studentsStore.classes.filter(c => c.id !== student.class_id) as cls (cls.id)}
+									<SelectItem value={String(cls.id)} class="text-xs text-right justify-start">
+										{cls.name || cls.name_ar || cls.id}
+									</SelectItem>
+								{/each}
+							</SelectContent>
+						</Select>
 						<div class="flex gap-2 justify-end mt-1">
 							<Button variant="ghost" size="sm" class="h-7 text-[10px]" onclick={() => isTransferring = false}>إلغاء</Button>
 							<Button variant="default" size="sm" class="h-7 btn-tactile text-[10px]" onclick={handleTransfer} disabled={isProcessing}>تأكيد النقل</Button>
@@ -229,7 +245,7 @@ async function handleWithdraw() {
 				{:else if isWithdrawing}
 					<div class="bg-card border border-border p-3 rounded-lg flex flex-col gap-2">
 						<span class="font-semibold text-[10px]">أدخل سبب الانسحاب</span>
-						<input
+						<Input
 							type="text"
 							placeholder="سبب الانسحاب..."
 							class="input-sunken text-xs py-1.5"

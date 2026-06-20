@@ -13,6 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from "@orbis/ui-svelte";
+import { Button } from "@orbis/ui-svelte/button";
+import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import {
   CreditCard,
   Wallet,
@@ -91,14 +93,14 @@ async function loadFinance() {
 
 	{#if isLoading}
 		<div class="flex flex-col gap-3">
-			<div class="skeleton h-12 w-full"></div>
-			<div class="skeleton h-12 w-full"></div>
+			<Skeleton class="h-12 w-full" />
+			<Skeleton class="h-12 w-full" />
 		</div>
 	{:else if error}
 		<div class="flex flex-col items-center justify-center p-8 border border-destructive/20 bg-destructive/5 rounded-xl text-destructive text-center gap-2">
 			<h3 class="font-semibold text-xs">فشل تحميل التفاصيل المالية</h3>
 			<p class="text-[10px] text-muted-foreground">{error}</p>
-			<button onclick={loadFinance} class="text-[10px] underline cursor-pointer mt-2 hover:text-foreground">إعادة المحاولة</button>
+			<Button variant="link" onclick={loadFinance} class="text-[10px] underline cursor-pointer mt-2 hover:text-foreground">إعادة المحاولة</Button>
 		</div>
 	{:else}
 		<!-- Assigned Fees List -->
