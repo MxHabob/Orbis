@@ -245,7 +245,7 @@ function isActive(tabHref: string) {
 						<div class="space-y-1">
 							<span class="text-muted-foreground text-[9px] block">{m.detail_birth_date_label()}</span>
 							<span class="font-semibold text-foreground">
-								{formatDate(student.birth_date)}
+								{formatDate(student.birth_date as string)}
 							</span>
 						</div>
 					{/if}

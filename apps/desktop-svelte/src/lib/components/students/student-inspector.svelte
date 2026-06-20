@@ -305,7 +305,7 @@ async function handleWithdraw() {
 					{/if}
 					<div class="flex items-center gap-2">
 						<Calendar size={12} class="text-muted-foreground" />
-						<span>{m.inspector_registered_on({ date: formatDate(student.created_at) })}</span>
+						<span>{m.inspector_registered_on({ date: formatDate(student.created_at as string) })}</span>
 					</div>
 				</div>
 			</div>

@@ -29,7 +29,7 @@ import { isDesktopApp } from "$lib/services/ipc";
 import { page } from "$app/state";
 import { goto } from "$app/navigation";
 import * as m from "$lib/paraglide/messages";
-import { getLocale, localizeHref } from "$lib/paraglide/runtime";
+import { getLocale, localizeHref, setLocale } from "$lib/paraglide/runtime";
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -78,7 +78,7 @@ const breadcrumbs = $derived.by(() => {
     } else if (studentId) {
       const student = studentsStore.list.find((s) => s.id === studentId);
       const studentName =
-        student?.full_name || student?.name_ar || m.breadcrumb_student_profile();
+        (student?.full_name as string) || (student?.name_ar as string) || m.breadcrumb_student_profile();
       items.push({
         label: studentName,
         href: `/${currentOrgId}/students/${studentId}`,
@@ -109,7 +109,8 @@ const breadcrumbs = $derived.by(() => {
 
 function switchLanguage(locale: "ar" | "en") {
   const newPath = localizeHref(page.url.pathname, { locale });
-  goto(newPath);
+  setLocale(locale, { reload: false });
+  window.location.href = newPath;
 }
 </script>
 
@@ -219,13 +220,13 @@ function switchLanguage(locale: "ar" | "en") {
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end" sideOffset={8} class="w-36">
-				<DropdownMenuItem class="cursor-pointer flex items-center justify-between" onclick={() => switchLanguage("ar")}>
+				<DropdownMenuItem class="cursor-pointer flex items-center justify-between" onSelect={() => switchLanguage("ar")}>
 					<span>{m.header_language_ar()}</span>
 					{#if getLocale() === "ar"}
 						<span class="h-1.5 w-1.5 rounded-full bg-primary"></span>
 					{/if}
 				</DropdownMenuItem>
-				<DropdownMenuItem class="cursor-pointer flex items-center justify-between" onclick={() => switchLanguage("en")}>
+				<DropdownMenuItem class="cursor-pointer flex items-center justify-between" onSelect={() => switchLanguage("en")}>
 					<span>{m.header_language_en()}</span>
 					{#if getLocale() === "en"}
 						<span class="h-1.5 w-1.5 rounded-full bg-primary"></span>
