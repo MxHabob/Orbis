@@ -19,12 +19,17 @@ import {
   School,
   ChevronDown,
   ChevronLeft,
+  ChevronRight,
   UserCircle,
   LogOut,
+  Languages,
 } from "lucide-svelte";
 import { authStore, studentsStore } from "$lib/stores";
 import { isDesktopApp } from "$lib/services/ipc";
 import { page } from "$app/state";
+import { goto } from "$app/navigation";
+import * as m from "$lib/paraglide/messages";
+import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -61,46 +66,51 @@ const breadcrumbs = $derived.by(() => {
   const items: { label: string; href?: string }[] = [];
 
   // Base dashboard link
-  items.push({ label: "الرئيسية", href: `/${currentOrgId}` });
+  items.push({ label: m.breadcrumb_home(), href: `/${currentOrgId}` });
 
   if (pathname.includes("/reports")) {
-    items.push({ label: "التقارير", href: `/${currentOrgId}/reports` });
+    items.push({ label: m.breadcrumb_reports(), href: `/${currentOrgId}/reports` });
   } else if (pathname.includes("/students")) {
-    items.push({ label: "الطلاب", href: `/${currentOrgId}/students` });
+    items.push({ label: m.breadcrumb_students(), href: `/${currentOrgId}/students` });
 
     if (pathname.includes("/students/new")) {
-      items.push({ label: "طالب جديد" });
+      items.push({ label: m.breadcrumb_new_student() });
     } else if (studentId) {
       const student = studentsStore.list.find((s) => s.id === studentId);
       const studentName =
-        student?.full_name || student?.name_ar || "ملف الطالب";
+        student?.full_name || student?.name_ar || m.breadcrumb_student_profile();
       items.push({
         label: studentName,
         href: `/${currentOrgId}/students/${studentId}`,
       });
 
       if (pathname.includes("/edit")) {
-        items.push({ label: "تعديل البيانات" });
+        items.push({ label: m.breadcrumb_edit_data() });
       } else if (pathname.includes("/grades")) {
-        items.push({ label: "الدرجات" });
+        items.push({ label: m.breadcrumb_grades() });
       } else if (pathname.includes("/fees")) {
-        items.push({ label: "الرسوم" });
+        items.push({ label: m.breadcrumb_fees() });
       } else if (pathname.includes("/attendance")) {
-        items.push({ label: "الحضور" });
+        items.push({ label: m.breadcrumb_attendance() });
       } else if (pathname.includes("/behavior")) {
-        items.push({ label: "السلوك" });
+        items.push({ label: m.breadcrumb_behavior() });
       }
     }
   } else if (pathname.includes("/academics")) {
-    items.push({ label: "الأكاديميات", href: `/${currentOrgId}/academics` });
+    items.push({ label: m.breadcrumb_academics(), href: `/${currentOrgId}/academics` });
   } else if (pathname.includes("/finance")) {
-    items.push({ label: "المالية", href: `/${currentOrgId}/finance` });
+    items.push({ label: m.breadcrumb_finance(), href: `/${currentOrgId}/finance` });
   } else if (pathname.includes("/settings")) {
-    items.push({ label: "الإعدادات", href: `/${currentOrgId}/settings` });
+    items.push({ label: m.breadcrumb_settings(), href: `/${currentOrgId}/settings` });
   }
 
   return items;
 });
+
+function switchLanguage(locale: "ar" | "en") {
+  const newPath = localizeHref(page.url.pathname, { locale });
+  goto(newPath);
+}
 </script>
 
 <div
@@ -117,12 +127,12 @@ const breadcrumbs = $derived.by(() => {
 			variant="outline"
 			size="sm"
 			class="h-8 gap-1.5 px-2.5 text-[12px] text-muted-foreground shrink-0"
-			title="Search (⌘K)"
+			title={m.header_search_title()}
 			aria-label="Search"
 		>
 			<Search size={15} strokeWidth={2} />
-			<span class="whitespace-nowrap">Search...</span>
-			<kbd class="ml-2 inline-flex h-4.5 items-center rounded border border-border bg-muted px-1 font-mono text-[10px] text-muted-foreground">⌘K</kbd>
+			<span class="whitespace-nowrap">{m.header_search()}</span>
+			<kbd class="ml-2 inline-flex h-4.5 items-center rounded border border-border bg-muted px-1 font-mono text-[10px] text-muted-foreground">{m.header_search_shortcut()}</kbd>
 		</Button>
 
 		<!-- Breadcrumb -->
@@ -142,7 +152,11 @@ const breadcrumbs = $derived.by(() => {
 					</BreadcrumbItem>
 					{#if index < breadcrumbs.length - 1}
 						<BreadcrumbSeparator class="opacity-40">
-							<ChevronLeft size={11} />
+							{#if getLocale() === "ar"}
+								<ChevronLeft size={11} />
+							{:else}
+								<ChevronRight size={11} />
+							{/if}
 						</BreadcrumbSeparator>
 					{/if}
 				{/each}
@@ -156,12 +170,12 @@ const breadcrumbs = $derived.by(() => {
 		data-tauri-drag-region={isDesktop || undefined}
 	>
 		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
+			<DropdownMenuTrigger >
 				<Button
 					variant="ghost"
 					size="sm"
 					class="max-w-full gap-1.5 px-2.5 text-[12px] font-semibold"
-					title="Switch organization"
+					title={m.header_switch_org()}
 				>
 					<School size={15} strokeWidth={2} class="text-muted-foreground" />
 					<span class="truncate">{orgName}</span>
@@ -176,11 +190,11 @@ const breadcrumbs = $derived.by(() => {
 				<DropdownMenuSeparator />
 				<DropdownMenuItem class="cursor-pointer">
 					<School size={14} strokeWidth={1.8} />
-					<span>Switch organization</span>
+					<span>{m.header_switch_org()}</span>
 				</DropdownMenuItem>
 				<DropdownMenuItem class="cursor-pointer text-destructive focus:text-destructive">
 					<LogOut size={14} strokeWidth={1.8} />
-					<span>Logout</span>
+					<span>{m.header_logout()}</span>
 				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>
@@ -191,13 +205,43 @@ const breadcrumbs = $derived.by(() => {
 		class="flex min-w-0 items-center justify-end gap-2"
 		data-tauri-drag-region={isDesktop || undefined}
 	>
+		<!-- Language Switcher Dropdown -->
+		<DropdownMenu>
+			<DropdownMenuTrigger>
+				<Button
+					variant="ghost"
+					size="sm"
+					class="gap-1.5 px-2.5 h-8 text-[12px] font-semibold text-muted-foreground hover:text-foreground"
+					title={m.header_switch_language()}
+				>
+					<Languages size={15} strokeWidth={2} class="text-muted-foreground" />
+					<span class="uppercase font-mono">{getLocale()}</span>
+				</Button>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent align="end" sideOffset={8} class="w-36">
+				<DropdownMenuItem class="cursor-pointer flex items-center justify-between" onclick={() => switchLanguage("ar")}>
+					<span>{m.header_language_ar()}</span>
+					{#if getLocale() === "ar"}
+						<span class="h-1.5 w-1.5 rounded-full bg-primary"></span>
+					{/if}
+				</DropdownMenuItem>
+				<DropdownMenuItem class="cursor-pointer flex items-center justify-between" onclick={() => switchLanguage("en")}>
+					<span>{m.header_language_en()}</span>
+					{#if getLocale() === "en"}
+						<span class="h-1.5 w-1.5 rounded-full bg-primary"></span>
+					{/if}
+				</DropdownMenuItem>
+			</DropdownMenuContent>
+		</DropdownMenu>
+
 		<Button
 			variant="ghost"
 			size="icon"
-			title="Notifications"
-			aria-label="Notifications"
+			title={m.header_notifications()}
+			aria-label={m.header_notifications()}
 		>
 			<Bell size={15} strokeWidth={2} />
 		</Button>
 	</div>
+</div>
 </div>
