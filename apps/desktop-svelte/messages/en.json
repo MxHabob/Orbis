@@ -360,5 +360,18 @@
   "header_switch_theme": "Switch Theme",
   "theme_light": "Light",
   "theme_dark": "Dark",
-  "theme_system": "System"
+  "theme_system": "System",
+  "switcher_filter_orgs": "Filter Organizations",
+  "switcher_reset": "Reset",
+  "switcher_search_placeholder": "Search...",
+  "switcher_create_org": "Create Organization",
+  "switcher_help": "Filter and select the active organization",
+  "switcher_new_org_title": "Create New Organization",
+  "switcher_new_org_placeholder": "Organization name...",
+  "switcher_no_results": "No organizations found",
+  "switcher_open_browser": "Open in browser",
+  "switcher_settings": "Settings",
+  "switcher_star": "Star organization",
+  "switcher_cancel": "Cancel",
+  "switcher_create": "Create"
 }

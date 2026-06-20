@@ -360,5 +360,18 @@
   "header_switch_theme": "تغيير المظهر",
   "theme_light": "فاتح",
   "theme_dark": "داكن",
-  "theme_system": "تلقائي"
+  "theme_system": "تلقائي",
+  "switcher_filter_orgs": "تصفية المنظمات",
+  "switcher_reset": "إعادة تعيين",
+  "switcher_search_placeholder": "بحث...",
+  "switcher_create_org": "إضافة منظمة",
+  "switcher_help": "تصفية واختيار المنظمة النشطة",
+  "switcher_new_org_title": "إنشاء منظمة جديدة",
+  "switcher_new_org_placeholder": "اسم المنظمة الجديدة...",
+  "switcher_no_results": "لا توجد نتائج",
+  "switcher_open_browser": "افتح في المتصفح",
+  "switcher_settings": "الإعدادات",
+  "switcher_star": "تمييز بنجمة",
+  "switcher_cancel": "إلغاء",
+  "switcher_create": "إنشاء"
 }

@@ -41,6 +41,7 @@ import {
   BreadcrumbSeparator,
   BreadcrumbPage,
 } from "@orbis/ui-svelte/breadcrumb";
+import OrgSwitcher from "./OrgSwitcher.svelte";
 
 let {
   orgId,
@@ -173,35 +174,7 @@ function switchLanguage(locale: "ar" | "en") {
 		class="flex min-w-0 justify-center overflow-hidden"
 		data-tauri-drag-region={isDesktop || undefined}
 	>
-		<DropdownMenu>
-			<DropdownMenuTrigger >
-				<Button
-					variant="ghost"
-					size="sm"
-					class="max-w-full gap-1.5 px-2.5 text-[12px] font-semibold"
-					title={m.header_switch_org()}
-				>
-					<School size={15} strokeWidth={2} class="text-muted-foreground" />
-					<span class="truncate">{orgName}</span>
-					<ChevronDown size={12} strokeWidth={2} class="shrink-0 text-muted-foreground opacity-60" />
-				</Button>
-			</DropdownMenuTrigger>
-			<DropdownMenuContent align="center" sideOffset={8} class="w-56">
-				<DropdownMenuItem class="cursor-pointer">
-					<UserCircle size={14} strokeWidth={1.8} />
-					<span>{orgName}</span>
-				</DropdownMenuItem>
-				<DropdownMenuSeparator />
-				<DropdownMenuItem class="cursor-pointer">
-					<School size={14} strokeWidth={1.8} />
-					<span>{m.header_switch_org()}</span>
-				</DropdownMenuItem>
-				<DropdownMenuItem class="cursor-pointer text-destructive focus:text-destructive">
-					<LogOut size={14} strokeWidth={1.8} />
-					<span>{m.header_logout()}</span>
-				</DropdownMenuItem>
-			</DropdownMenuContent>
-		</DropdownMenu>
+		<OrgSwitcher {orgId} {orgName} />
 	</div>
 
 	<!-- Right Zone -->
