@@ -23,6 +23,8 @@ import {
   AlertCircle,
 } from "lucide-svelte";
 import { onMount } from "svelte";
+import * as m from "$lib/paraglide/messages";
+import { formatCurrency, formatDate } from "$lib/i18n-utils";
 
 const orgId = $derived(page.params.orgId);
 const studentId = $derived(page.params.studentId);
@@ -63,28 +65,28 @@ async function loadFinance() {
 }
 </script>
 
-<div class="flex flex-col gap-6 text-xs text-right">
+<div class="flex flex-col gap-6 text-xs text-start">
 	<!-- Summary Statistics cards -->
 	<div class="grid grid-cols-3 gap-3 shrink-0">
 		<div class="border border-border bg-card/45 p-4 rounded-xl flex items-center justify-between shadow-sm">
 			<div class="flex flex-col">
-				<span class="text-[9px] text-muted-foreground">إجمالي الرسوم المترتبة</span>
-				<span class="text-sm font-bold mt-0.5 text-foreground">{totalFees.toLocaleString()} ر.س</span>
+				<span class="text-[9px] text-muted-foreground">{m.fees_total_fees()}</span>
+				<span class="text-sm font-bold mt-0.5 text-foreground">{formatCurrency(totalFees)}</span>
 			</div>
 			<Wallet size={16} class="text-primary" />
 		</div>
 		<div class="border border-border bg-card/45 p-4 rounded-xl flex items-center justify-between shadow-sm">
 			<div class="flex flex-col">
-				<span class="text-[9px] text-muted-foreground">إجمالي المبالغ المدفوعة</span>
-				<span class="text-sm font-bold mt-0.5 text-emerald-500">{totalPaid.toLocaleString()} ر.س</span>
+				<span class="text-[9px] text-muted-foreground">{m.fees_total_paid()}</span>
+				<span class="text-sm font-bold mt-0.5 text-emerald-500">{formatCurrency(totalPaid)}</span>
 			</div>
 			<CheckCircle2 size={16} class="text-emerald-500" />
 		</div>
 		<div class="border border-border bg-card/45 p-4 rounded-xl flex items-center justify-between shadow-sm">
 			<div class="flex flex-col">
-				<span class="text-[9px] text-muted-foreground">الرصيد المستحق (المتبقي)</span>
+				<span class="text-[9px] text-muted-foreground">{m.fees_balance_due()}</span>
 				<span class="text-sm font-bold mt-0.5" class:text-destructive={balanceDue > 0} class:text-emerald-500={balanceDue <= 0}>
-					{balanceDue.toLocaleString()} ر.س
+					{formatCurrency(balanceDue)}
 				</span>
 			</div>
 			<AlertCircle size={16} class={balanceDue > 0 ? 'text-destructive' : 'text-emerald-500'} />
@@ -98,39 +100,39 @@ async function loadFinance() {
 		</div>
 	{:else if error}
 		<div class="flex flex-col items-center justify-center p-8 border border-destructive/20 bg-destructive/5 rounded-xl text-destructive text-center gap-2">
-			<h3 class="font-semibold text-xs">فشل تحميل التفاصيل المالية</h3>
+			<h3 class="font-semibold text-xs">{m.fees_error_title()}</h3>
 			<p class="text-[10px] text-muted-foreground">{error}</p>
-			<Button variant="link" onclick={loadFinance} class="text-[10px] underline cursor-pointer mt-2 hover:text-foreground">إعادة المحاولة</Button>
+			<Button variant="link" onclick={loadFinance} class="text-[10px] underline cursor-pointer mt-2 hover:text-foreground">{m.error_retry()}</Button>
 		</div>
 	{:else}
 		<!-- Assigned Fees List -->
 		<div class="flex flex-col gap-2">
-			<span class="font-bold text-[10px] text-muted-foreground uppercase tracking-wider px-1">الرسوم المستحقة المقيدة</span>
+			<span class="font-bold text-[10px] text-muted-foreground uppercase tracking-wider px-1">{m.fees_assigned_title()}</span>
 			
 			{#if fees.length === 0}
 				<div class="border border-dashed border-border rounded-lg p-6 text-center text-muted-foreground bg-card/5">
-					لا توجد رسوم مسجلة على هذا الطالب حالياً.
+					{m.fees_no_fees()}
 				</div>
 			{:else}
 				<div class="border border-border rounded-lg bg-card overflow-hidden">
 					<Table>
 						<TableHeader>
 							<TableRow class="hover:bg-transparent">
-								<TableHead class="text-right">وصف الرسم</TableHead>
-								<TableHead class="text-right">الحساب المالي</TableHead>
-								<TableHead class="text-right">التاريخ المقيد</TableHead>
-								<TableHead class="text-right">المبلغ</TableHead>
+								<TableHead class="text-start">{m.fees_col_description()}</TableHead>
+								<TableHead class="text-start">{m.fees_col_ledger()}</TableHead>
+								<TableHead class="text-start">{m.fees_col_date()}</TableHead>
+								<TableHead class="text-start">{m.fees_col_amount()}</TableHead>
 							</TableRow>
 						</TableHeader>
 						<TableBody>
 							{#each fees as fee (fee.id)}
 								<TableRow class="hover:bg-accent/10">
-									<TableCell class="font-bold text-foreground">{fee.description || 'رسوم دراسية'}</TableCell>
-									<TableCell class="text-muted-foreground">{fee.ledger_account_name || fee.ledger_account_id || '-'}</TableCell>
-									<TableCell class="font-mono text-muted-foreground">
-										{fee.created_at ? new Date(String(fee.created_at)).toLocaleDateString('ar-SA') : '-'}
+									<TableCell class="font-bold text-foreground text-start">{fee.description || m.fees_default_description()}</TableCell>
+									<TableCell class="text-muted-foreground text-start">{fee.ledger_account_name || fee.ledger_account_id || '-'}</TableCell>
+									<TableCell class="font-mono text-muted-foreground text-start">
+										{formatDate(fee.created_at) || '-'}
 									</TableCell>
-									<TableCell class="font-bold font-mono">{(Number(fee.amount || 0)).toLocaleString()} ر.س</TableCell>
+									<TableCell class="font-bold font-mono text-start">{formatCurrency(Number(fee.amount || 0))}</TableCell>
 								</TableRow>
 							{/each}
 						</TableBody>
@@ -141,32 +143,32 @@ async function loadFinance() {
 
 		<!-- Payments History -->
 		<div class="flex flex-col gap-2">
-			<span class="font-bold text-[10px] text-muted-foreground uppercase tracking-wider px-1">سجل سندات القبض (المدفوعات)</span>
+			<span class="font-bold text-[10px] text-muted-foreground uppercase tracking-wider px-1">{m.fees_payments_title()}</span>
 
 			{#if payments.length === 0}
 				<div class="border border-dashed border-border rounded-lg p-6 text-center text-muted-foreground bg-card/5">
-					لم يتم سداد أي مبالغ حتى الآن.
+					{m.fees_no_payments()}
 				</div>
 			{:else}
 				<div class="border border-border rounded-lg bg-card overflow-hidden">
 					<Table>
 						<TableHeader>
 							<TableRow class="hover:bg-transparent">
-								<TableHead class="text-right">رقم السند</TableHead>
-								<TableHead class="text-right">طريقة السداد</TableHead>
-								<TableHead class="text-right">تاريخ الدفع</TableHead>
-								<TableHead class="text-right">المبلغ المدفوع</TableHead>
+								<TableHead class="text-start">{m.fees_col_receipt()}</TableHead>
+								<TableHead class="text-start">{m.fees_col_method()}</TableHead>
+								<TableHead class="text-start">{m.fees_col_pay_date()}</TableHead>
+								<TableHead class="text-start">{m.fees_col_paid_amount()}</TableHead>
 							</TableRow>
 						</TableHeader>
 						<TableBody>
 							{#each payments as pay (pay.id)}
 								<TableRow class="hover:bg-accent/10">
-									<TableCell class="font-bold text-foreground font-mono">#{pay.receipt_number || pay.id.slice(0, 8)}</TableCell>
-									<TableCell class="text-muted-foreground">{pay.payment_method || 'نقدي'}</TableCell>
-									<TableCell class="font-mono text-muted-foreground">
-										{pay.created_at ? new Date(String(pay.created_at)).toLocaleDateString('ar-SA') : '-'}
+									<TableCell class="font-bold text-foreground font-mono text-start">#{pay.receipt_number || pay.id.slice(0, 8)}</TableCell>
+									<TableCell class="text-muted-foreground text-start">{pay.payment_method || m.fees_default_method()}</TableCell>
+									<TableCell class="font-mono text-muted-foreground text-start">
+										{formatDate(pay.created_at) || '-'}
 									</TableCell>
-									<TableCell class="font-bold text-emerald-500 font-mono">{(Number(pay.amount || 0)).toLocaleString()} ر.س</TableCell>
+									<TableCell class="font-bold text-emerald-500 font-mono text-start">{formatCurrency(Number(pay.amount || 0))}</TableCell>
 								</TableRow>
 							{/each}
 						</TableBody>
@@ -176,3 +178,4 @@ async function loadFinance() {
 		</div>
 	{/if}
 </div>
+

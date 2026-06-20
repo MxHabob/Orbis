@@ -5,15 +5,15 @@
 <script lang="ts">
 import OverviewView from "$lib/components/widgets/index.svelte";
 import type { LayoutData } from "./$types";
+import * as m from "$lib/paraglide/messages";
 
 let { data }: { data: LayoutData } = $props();
 </script>
 
 <svelte:head>
-	<title>Dashboard | Orbis</title>
+	<title>{m.page_title_dashboard()}</title>
 </svelte:head>
 
 <div class="h-full w-full ">
 	<OverviewView orgId={data.orgId} />
 </div>
-

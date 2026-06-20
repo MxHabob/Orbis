@@ -2,8 +2,10 @@
 import { Skeleton } from "@orbis/ui-svelte";
 import { onMount } from "svelte";
 import { commands } from "$lib/services/ipc";
-import { formatAmount } from "@orbis/utils/format";
 import DragIndicator from "../components/drag-indicator.svelte";
+import * as m from "$lib/paraglide/messages";
+import { getLocale } from "$lib/paraglide/runtime";
+import { formatCurrency } from "$lib/i18n-utils";
 
 let {
   orgId,
@@ -67,42 +69,37 @@ async function loadData() {
       const sortedMonths = Object.keys(monthsMap).sort().slice(-6); // last 6 months
       totalCollected = 0;
       totalPending = 0;
-      data = sortedMonths.map((m) => {
-        const vals = monthsMap[m]!;
+      data = sortedMonths.map((mon) => {
+        const vals = monthsMap[mon]!;
         totalCollected += vals.collected;
         totalPending += vals.pending;
-        // Get month short name
-        const monthIndex = Number(m.split("-")[1]) - 1;
-        const monthNames = [
-          "Jan",
-          "Feb",
-          "Mar",
-          "Apr",
-          "May",
-          "Jun",
-          "Jul",
-          "Aug",
-          "Sep",
-          "Oct",
-          "Nov",
-          "Dec",
-        ];
+        // Get month short name dynamically based on locale
+        const year = Number(mon.split("-")[0]);
+        const monthIndex = Number(mon.split("-")[1]) - 1;
+        const dateObj = new Date(year, monthIndex, 1);
+        const formattedMonth = new Intl.DateTimeFormat(getLocale(), { month: "short" }).format(dateObj);
+
         return {
-          month: monthNames[monthIndex] || m,
+          month: formattedMonth,
           collected: vals.collected,
           pending: vals.pending,
         };
       });
     } else {
       // Mock data fallback
-      data = [
-        { month: "Oct", collected: 24000, pending: 8000 },
-        { month: "Nov", collected: 32000, pending: 12000 },
-        { month: "Dec", collected: 18000, pending: 4000 },
-        { month: "Jan", collected: 45000, pending: 15000 },
-        { month: "Feb", collected: 38000, pending: 10000 },
-        { month: "Mar", collected: 29000, pending: 6000 },
-      ];
+      const mockMonths = ["Oct", "Nov", "Dec", "Jan", "Feb", "Mar"];
+      data = mockMonths.map((mName, idx) => {
+        // Approximate mock dates for display
+        const dateObj = new Date(2025, 9 + idx, 1);
+        const formattedMonth = new Intl.DateTimeFormat(getLocale(), { month: "short" }).format(dateObj);
+        const collectedVals = [24000, 32000, 18000, 45000, 38000, 29000];
+        const pendingVals = [8000, 12000, 4000, 15000, 10000, 6000];
+        return {
+          month: formattedMonth,
+          collected: collectedVals[idx]!,
+          pending: pendingVals[idx]!,
+        };
+      });
       totalCollected = 186000;
       totalPending = 55000;
     }
@@ -234,8 +231,8 @@ function formatVal(val: number) {
 	{:else}
 		<div class="mb-4 min-h-[100px]">
 			<div class="flex items-start justify-between h-7">
-				<h3 class="text-sm font-normal text-muted-foreground">
-					Tuition Fee Collection
+				<h3 class="text-sm font-normal text-muted-foreground text-start">
+					{m.reports_fee_collection_title()}
 				</h3>
 				{#if isEditing}
 					<div>
@@ -243,12 +240,12 @@ function formatVal(val: number) {
 					</div>
 				{/if}
 			</div>
-			<div class="flex items-baseline gap-3 mt-1">
+			<div class="flex items-baseline gap-3 mt-1 text-start">
 				<p class="text-3xl font-semibold tracking-tight">
-					{formatAmount({ amount: totalCollected, currency: "SAR", locale: "en-US", maximumFractionDigits: 0 })}
+					{formatCurrency(totalCollected)}
 				</p>
 				<span class="text-xs text-muted-foreground">
-					Pending: <span class="text-foreground font-semibold">{formatAmount({ amount: totalPending, currency: "SAR", locale: "en-US", maximumFractionDigits: 0 })}</span>
+					{m.reports_fee_pending_label()} <span class="text-foreground font-semibold">{formatCurrency(totalPending)}</span>
 				</span>
 			</div>
 		</div>
@@ -341,21 +338,21 @@ function formatVal(val: number) {
 						class="absolute z-30 p-3 text-[10px] font-sans border bg-white dark:bg-[#0c0c0c] border-gray-200 dark:border-[#1d1d1d] text-black dark:text-white rounded shadow-md pointer-events-none transition-all duration-75 flex flex-col gap-1 min-w-[130px]"
 						style="left: {tooltipPos.x + 12}px; top: {tooltipPos.y - 65}px;"
 					>
-						<span class="text-gray-500 dark:text-[#666666] font-medium">{activeBar.month}</span>
+						<span class="text-gray-500 dark:text-[#666666] font-medium text-start">{activeBar.month}</span>
 						<div class="flex flex-col gap-0.5">
 							<div class="flex items-center justify-between gap-4">
-								<span class="text-[#84cc16]">Collected:</span>
-								<span class="font-semibold">{formatAmount({ amount: activeBar.col.val, currency: "SAR", locale: "en-US", maximumFractionDigits: 0 })}</span>
+								<span class="text-[#84cc16] text-start">{m.reports_fee_collected_label()}</span>
+								<span class="font-semibold text-start">{formatCurrency(activeBar.col.val)}</span>
 							</div>
 							<div class="flex items-center justify-between gap-4">
-								<span class="text-[#9ca3af] dark:text-[#9ca3af]">Pending:</span>
-								<span class="font-semibold">{formatAmount({ amount: activeBar.pend.val, currency: "SAR", locale: "en-US", maximumFractionDigits: 0 })}</span>
+								<span class="text-[#9ca3af] dark:text-[#9ca3af] text-start">{m.reports_fee_pending_label()}</span>
+								<span class="font-semibold text-start">{formatCurrency(activeBar.pend.val)}</span>
 							</div>
 						</div>
 					</div>
 				{/if}
 			{:else}
-				<div class="text-xs text-muted-foreground">No financial records found.</div>
+				<div class="text-xs text-muted-foreground">{m.reports_no_finance()}</div>
 			{/if}
 		</div>
 	{/if}

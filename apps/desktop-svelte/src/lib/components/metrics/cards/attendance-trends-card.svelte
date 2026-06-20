@@ -3,6 +3,8 @@ import { Skeleton } from "@orbis/ui-svelte";
 import { onMount } from "svelte";
 import { commands } from "$lib/services/ipc";
 import DragIndicator from "../components/drag-indicator.svelte";
+import * as m from "$lib/paraglide/messages";
+import { getLocale } from "$lib/paraglide/runtime";
 
 let {
   orgId,
@@ -175,8 +177,8 @@ function handleMouseLeave() {
 	{:else}
 		<div class="mb-4 min-h-[100px]">
 			<div class="flex items-start justify-between h-7">
-				<h3 class="text-sm font-normal text-muted-foreground">
-					Average Attendance Rate
+				<h3 class="text-sm font-normal text-muted-foreground text-start">
+					{m.reports_attendance_trends_title()}
 				</h3>
 				{#if isEditing}
 					<div>
@@ -184,7 +186,7 @@ function handleMouseLeave() {
 					</div>
 				{/if}
 			</div>
-			<p class="text-3xl font-semibold tracking-tight mt-1">
+			<p class="text-3xl font-semibold tracking-tight mt-1 text-start">
 				{overallRate}%
 			</p>
 		</div>
@@ -280,11 +282,11 @@ function handleMouseLeave() {
 						style="left: {tooltipPos.x + 12}px; top: {tooltipPos.y - 45}px;"
 					>
 						<span class="text-gray-500 dark:text-[#666666]">{activePt.raw.date}</span>
-						<span class="font-semibold">Rate: {activePt.raw.rate}%</span>
+						<span class="font-semibold">{m.reports_attendance_rate_tooltip({ rate: String(activePt.raw.rate) })}</span>
 					</div>
 				{/if}
 			{:else}
-				<div class="text-xs text-muted-foreground">No attendance records found.</div>
+				<div class="text-xs text-muted-foreground">{m.reports_no_attendance()}</div>
 			{/if}
 		</div>
 	{/if}

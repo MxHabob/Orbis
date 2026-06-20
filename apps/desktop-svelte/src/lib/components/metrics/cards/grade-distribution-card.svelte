@@ -3,6 +3,7 @@ import { Skeleton } from "@orbis/ui-svelte";
 import { onMount } from "svelte";
 import { commands } from "$lib/services/ipc";
 import DragIndicator from "../components/drag-indicator.svelte";
+import * as m from "$lib/paraglide/messages";
 
 let {
   orgId,
@@ -164,8 +165,8 @@ function handleMouseLeave() {
 	{:else}
 		<div class="mb-4 min-h-[100px]">
 			<div class="flex items-start justify-between h-7">
-				<h3 class="text-sm font-normal text-muted-foreground">
-					Grade Distribution
+				<h3 class="text-sm font-normal text-muted-foreground text-start">
+					{m.reports_grade_distribution_title()}
 				</h3>
 				{#if isEditing}
 					<div>
@@ -173,12 +174,12 @@ function handleMouseLeave() {
 					</div>
 				{/if}
 			</div>
-			<div class="flex items-baseline gap-3 mt-1">
+			<div class="flex items-baseline gap-3 mt-1 text-start">
 				<p class="text-3xl font-semibold tracking-tight">
 					{stats?.class_average ?? 0}%
 				</p>
 				<span class="text-xs text-muted-foreground">
-					Pass Rate: <span class="text-foreground font-semibold">{stats?.pass_rate ?? 0}%</span>
+					{m.reports_pass_rate({ rate: String(stats?.pass_rate ?? 0) })}
 				</span>
 			</div>
 		</div>
@@ -263,12 +264,12 @@ function handleMouseLeave() {
 						class="absolute z-30 p-2 text-[10px] font-sans border bg-white dark:bg-[#0c0c0c] border-gray-200 dark:border-[#1d1d1d] text-black dark:text-white rounded shadow-md pointer-events-none transition-all duration-75 flex flex-col gap-0.5"
 						style="left: {tooltipPos.x + 12}px; top: {tooltipPos.y - 45}px;"
 					>
-						<span class="text-gray-500 dark:text-[#666666]">Grade {activeBar.item.name}</span>
-						<span class="font-semibold">{activeBar.item.value} Students</span>
+						<span class="text-gray-500 dark:text-[#666666] text-start">{m.reports_grade_label({ grade: activeBar.item.name })}</span>
+						<span class="font-semibold text-start">{m.reports_students_count({ count: String(activeBar.item.value) })}</span>
 					</div>
 				{/if}
 			{:else}
-				<div class="text-xs text-muted-foreground">No grades data found.</div>
+				<div class="text-xs text-muted-foreground">{m.reports_no_grades()}</div>
 			{/if}
 		</div>
 	{/if}

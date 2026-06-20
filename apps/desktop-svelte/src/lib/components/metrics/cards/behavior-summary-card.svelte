@@ -3,6 +3,7 @@ import { Skeleton } from "@orbis/ui-svelte";
 import { onMount } from "svelte";
 import { commands } from "$lib/services/ipc";
 import DragIndicator from "../components/drag-indicator.svelte";
+import * as m from "$lib/paraglide/messages";
 
 let {
   orgId,
@@ -65,9 +66,9 @@ const segments = $derived.by(() => {
   const total = critical + major + minor || 1;
 
   const dataList = [
-    { name: "Critical", value: critical, color: "var(--color-destructive)" },
-    { name: "Major", value: major, color: "oklch(0.65 0.15 80)" },
-    { name: "Minor", value: minor, color: "var(--color-primary)" },
+    { name: "Critical", label: m.reports_behavior_critical(), value: critical, color: "var(--color-destructive)" },
+    { name: "Major", label: m.reports_behavior_major(), value: major, color: "oklch(0.65 0.15 80)" },
+    { name: "Minor", label: m.reports_behavior_minor(), value: minor, color: "var(--color-primary)" },
   ];
 
   let accumulatedPercent = 0;
@@ -98,8 +99,8 @@ const segments = $derived.by(() => {
 	{:else}
 		<div class="mb-4 min-h-[100px]">
 			<div class="flex items-start justify-between h-7">
-				<h3 class="text-sm font-normal text-muted-foreground">
-					Behavioral Incidents Severity
+				<h3 class="text-sm font-normal text-muted-foreground text-start">
+					{m.reports_behavior_severity_title()}
 				</h3>
 				{#if isEditing}
 					<div>
@@ -107,8 +108,8 @@ const segments = $derived.by(() => {
 					</div>
 				{/if}
 			</div>
-			<p class="text-3xl font-semibold tracking-tight mt-1">
-				{summary?.total_records ?? 0} <span class="text-xs text-muted-foreground font-normal">total incidents</span>
+			<p class="text-3xl font-semibold tracking-tight mt-1 text-start">
+				{summary?.total_records ?? 0} <span class="text-xs text-muted-foreground font-normal">{m.reports_total_incidents({ count: '' })}</span>
 			</p>
 		</div>
 
@@ -149,11 +150,11 @@ const segments = $derived.by(() => {
 
 					<!-- Donut Hole Labels -->
 					{#if hoveredIndex === null}
-						<text x="120" y="96" text-anchor="middle" class="text-[10px] fill-muted-foreground font-semibold uppercase tracking-wider">Total</text>
+						<text x="120" y="96" text-anchor="middle" class="text-[10px] fill-muted-foreground font-semibold uppercase tracking-wider">{m.reports_behavior_total()}</text>
 						<text x="120" y="118" text-anchor="middle" class="text-xl font-bold fill-foreground tracking-tight">{summary.total_records}</text>
 					{:else}
 						{@const seg = segments[hoveredIndex]}
-						<text x="120" y="96" text-anchor="middle" class="text-[10px] font-bold uppercase tracking-wider" fill={seg.color}>{seg.name}</text>
+						<text x="120" y="96" text-anchor="middle" class="text-[10px] font-bold uppercase tracking-wider" fill={seg.color}>{seg.label}</text>
 						<text x="120" y="118" text-anchor="middle" class="text-xl font-bold fill-foreground tracking-tight">{seg.percent}%</text>
 					{/if}
 
@@ -171,14 +172,14 @@ const segments = $derived.by(() => {
 								<circle cx="0" cy="0" r="5" fill={seg.color} />
 								
 								<!-- Label and Description -->
-								<text x="15" y="4" class="text-xs font-semibold fill-foreground">{seg.name}</text>
-								<text x="95" y="4" class="text-xs fill-muted-foreground">{seg.value} records ({seg.percent}%)</text>
+								<text x="15" y="4" class="text-xs font-semibold fill-foreground text-start">{seg.label}</text>
+								<text x="95" y="4" class="text-xs fill-muted-foreground text-start">{seg.value} {m.reports_incident_unit()} ({seg.percent}%)</text>
 							</g>
 						{/each}
 					</g>
 				</svg>
 			{:else}
-				<div class="text-xs text-muted-foreground">No behavior logs found.</div>
+				<div class="text-xs text-muted-foreground">{m.reports_no_behavior()}</div>
 			{/if}
 		</div>
 	{/if}
