@@ -4,7 +4,13 @@ Renders the left panel filtering list including status items and classes list.
 -->
 <script lang="ts">
 import { studentsStore } from "$lib/stores/students.svelte";
-import { Users, GraduationCap, ShieldCheck, ShieldAlert, ListFilter } from "lucide-svelte";
+import {
+  Users,
+  GraduationCap,
+  ShieldCheck,
+  ShieldAlert,
+  ListFilter,
+} from "lucide-svelte";
 
 // Helper to count students matching a criteria
 function getCountByClass(classId: string): number {
@@ -13,7 +19,9 @@ function getCountByClass(classId: string): number {
 
 function getCountByStatus(status: string): number {
   if (status === "all") return studentsStore.list.length;
-  return studentsStore.list.filter((s) => String(s.status || "").toLowerCase() === status).length;
+  return studentsStore.list.filter(
+    (s) => String(s.status || "").toLowerCase() === status,
+  ).length;
 }
 </script>
 

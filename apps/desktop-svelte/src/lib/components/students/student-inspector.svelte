@@ -8,19 +8,31 @@ import { authStore } from "$lib/stores";
 import { commands } from "$lib/services/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@orbis/ui-svelte";
-import { 
-  X, ExternalLink, RefreshCw, LogOut, Phone, Mail, 
-  MapPin, Calendar, CreditCard, Award, UserMinus, ShieldCheck, Edit2
+import {
+  X,
+  ExternalLink,
+  RefreshCw,
+  LogOut,
+  Phone,
+  Mail,
+  MapPin,
+  Calendar,
+  CreditCard,
+  Award,
+  UserMinus,
+  ShieldCheck,
+  Edit2,
 } from "lucide-svelte";
 import { onMount } from "svelte";
 import { toast } from "svelte-sonner";
 
-let { studentId, onClose }: { studentId: string; onClose: () => void } = $props();
+let { studentId, onClose }: { studentId: string; onClose: () => void } =
+  $props();
 
 // Local reactivity for student data and stats
 const student = $derived(studentsStore.list.find((s) => s.id === studentId));
 const currentClass = $derived(
-  student ? studentsStore.classes.find((c) => c.id === student.class_id) : null
+  student ? studentsStore.classes.find((c) => c.id === student.class_id) : null,
 );
 
 let balanceDue = $state<string>("جاري التحميل...");
@@ -50,16 +62,23 @@ async function fetchStats() {
     // Fetch finances
     const fees = await commands.finance.getStudentFees(orgId, studentId);
     const payments = await commands.finance.getPayments(orgId, studentId);
-    
+
     const totalFees = fees.reduce((sum, f) => sum + Number(f.amount || 0), 0);
-    const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+    const totalPaid = payments.reduce(
+      (sum, p) => sum + Number(p.amount || 0),
+      0,
+    );
     const diff = totalFees - totalPaid;
     balanceDue = diff <= 0 ? "لا توجد مستحقات" : `${diff.toLocaleString()} ر.س`;
 
     // Fetch grades report card summary
     const report = await commands.grades.getReportCard(studentId);
     if (report && Array.isArray(report.grades)) {
-      const avg = report.grades.reduce((sum: number, g: any) => sum + Number(g.score || 0), 0) / (report.grades.length || 1);
+      const avg =
+        report.grades.reduce(
+          (sum: number, g: any) => sum + Number(g.score || 0),
+          0,
+        ) / (report.grades.length || 1);
       gradeSummary = `${avg.toFixed(1)}%`;
     } else {
       gradeSummary = "لا توجد درجات";
@@ -78,7 +97,9 @@ async function handleTransfer() {
     toast.success("تم نقل الطالب بنجاح");
     isTransferring = false;
   } catch (e) {
-    toast.error("فشل نقل الطالب: " + (e instanceof Error ? e.message : String(e)));
+    toast.error(
+      "فشل نقل الطالب: " + (e instanceof Error ? e.message : String(e)),
+    );
   } finally {
     isProcessing = false;
   }
@@ -95,7 +116,9 @@ async function handleWithdraw() {
     toast.success("تم تسجيل انسحاب الطالب بنجاح");
     isWithdrawing = false;
   } catch (e) {
-    toast.error("فشل تسجيل الانسحاب: " + (e instanceof Error ? e.message : String(e)));
+    toast.error(
+      "فشل تسجيل الانسحاب: " + (e instanceof Error ? e.message : String(e)),
+    );
   } finally {
     isProcessing = false;
   }

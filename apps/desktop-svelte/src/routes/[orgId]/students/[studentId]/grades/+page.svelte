@@ -5,8 +5,13 @@ Renders the subject grades and overall report card analytics for a student.
 <script lang="ts">
 import { page } from "$app/state";
 import { commands } from "$lib/services/ipc";
-import { 
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@orbis/ui-svelte";
 import { Progress } from "@orbis/ui-svelte";
 import { GraduationCap, Award, Calendar, RefreshCcw } from "lucide-svelte";

@@ -6,10 +6,22 @@ Renders behavior incident records, teacher notes, and AI-assisted behavior insig
 import { page } from "$app/state";
 import { commands } from "$lib/services/ipc";
 import { Button } from "@orbis/ui-svelte/button";
-import { 
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@orbis/ui-svelte";
-import { ShieldCheck, ShieldAlert, Sparkles, BrainCircuit, RefreshCw, Plus } from "lucide-svelte";
+import {
+  ShieldCheck,
+  ShieldAlert,
+  Sparkles,
+  BrainCircuit,
+  RefreshCw,
+  Plus,
+} from "lucide-svelte";
 import { onMount } from "svelte";
 import { toast } from "svelte-sonner";
 
@@ -32,7 +44,9 @@ async function loadBehavior() {
   error = null;
   try {
     if (!orgId || !studentId) return;
-    records = await commands.behavior.getRecords(orgId, { enrollment_id: studentId });
+    records = await commands.behavior.getRecords(orgId, {
+      enrollment_id: studentId,
+    });
   } catch (e) {
     error = e instanceof Error ? e.message : String(e);
   } finally {
@@ -47,13 +61,18 @@ async function handleAISummarize() {
     // Invoke behavior AI submit command with context
     const aiRes = await commands.behavior.submitAI({
       enrollment_id: studentId,
-      org_id: orgId
+      org_id: orgId,
     });
-    aiSummary = String(aiRes.summary || aiRes.analysis || "الطالب يظهر انضباطاً ممتازاً وتفاعلاً إيجابياً في الحصص الدراسية. يوصى بمواصلة تشجيعه للمحافظة على مستواه العلمي المتميز.");
+    aiSummary = String(
+      aiRes.summary ||
+        aiRes.analysis ||
+        "الطالب يظهر انضباطاً ممتازاً وتفاعلاً إيجابياً في الحصص الدراسية. يوصى بمواصلة تشجيعه للمحافظة على مستواه العلمي المتميز.",
+    );
     toast.success("تم توليد التلخيص الذكي بنجاح");
   } catch (e) {
     // Fallback beautiful analysis
-    aiSummary = "الطالب يظهر سلوكاً منضبطاً جداً بشكل عام. مشاركته في الأنشطة المدرسية متميزة ولا توجد عليه أي مخالفات سلوكية مقيدة في السجل حتى تاريخه.";
+    aiSummary =
+      "الطالب يظهر سلوكاً منضبطاً جداً بشكل عام. مشاركته في الأنشطة المدرسية متميزة ولا توجد عليه أي مخالفات سلوكية مقيدة في السجل حتى تاريخه.";
     toast.success("تم توليد التلخيص الذكي بنجاح");
   } finally {
     isGeneratingAI = false;

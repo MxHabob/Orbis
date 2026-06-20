@@ -7,8 +7,14 @@ Includes a Passport Sidebar and navigation pills.
 import { page } from "$app/state";
 import { Button } from "@orbis/ui-svelte/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@orbis/ui-svelte";
-import { 
-  ArrowRight, GraduationCap, Wallet, UserCheck, ShieldAlert, PhoneCall, Edit2
+import {
+  ArrowRight,
+  GraduationCap,
+  Wallet,
+  UserCheck,
+  ShieldAlert,
+  PhoneCall,
+  Edit2,
 } from "lucide-svelte";
 import { studentsStore } from "$lib/stores";
 import { commands } from "$lib/services/ipc";
@@ -25,7 +31,7 @@ const currentPath = $derived(page.url.pathname);
 // Find active student in the store
 const student = $derived(studentsStore.list.find((s) => s.id === studentId));
 const currentClass = $derived(
-  student ? studentsStore.classes.find((c) => c.id === student.class_id) : null
+  student ? studentsStore.classes.find((c) => c.id === student.class_id) : null,
 );
 
 let balanceDue = $state<string>("جاري التحميل...");
@@ -58,14 +64,21 @@ async function fetchDetailStats() {
     const fees = await commands.finance.getStudentFees(orgId, studentId);
     const payments = await commands.finance.getPayments(orgId, studentId);
     const totalFees = fees.reduce((sum, f) => sum + Number(f.amount || 0), 0);
-    const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+    const totalPaid = payments.reduce(
+      (sum, p) => sum + Number(p.amount || 0),
+      0,
+    );
     const diff = totalFees - totalPaid;
     balanceDue = diff <= 0 ? "لا توجد مستحقات" : `${diff.toLocaleString()} ر.س`;
 
     // Fetch grades
     const report = await commands.grades.getReportCard(studentId);
     if (report && Array.isArray(report.grades)) {
-      const avg = report.grades.reduce((sum: number, g: any) => sum + Number(g.score || 0), 0) / (report.grades.length || 1);
+      const avg =
+        report.grades.reduce(
+          (sum: number, g: any) => sum + Number(g.score || 0),
+          0,
+        ) / (report.grades.length || 1);
       gradeSummary = `${avg.toFixed(1)}%`;
     } else {
       gradeSummary = "لا توجد درجات";
@@ -87,10 +100,30 @@ async function fetchDetailStats() {
 
 // Navigation sub-tabs
 const tabs = $derived([
-  { id: "grades", label: "الدرجات والتقييمات", icon: GraduationCap, href: `/${orgId}/students/${studentId}/grades` },
-  { id: "fees", label: "الشؤون المالية", icon: Wallet, href: `/${orgId}/students/${studentId}/fees` },
-  { id: "attendance", label: "الحضور والغياب", icon: UserCheck, href: `/${orgId}/students/${studentId}/attendance` },
-  { id: "behavior", label: "السلوك والانضباط", icon: ShieldAlert, href: `/${orgId}/students/${studentId}/behavior` }
+  {
+    id: "grades",
+    label: "الدرجات والتقييمات",
+    icon: GraduationCap,
+    href: `/${orgId}/students/${studentId}/grades`,
+  },
+  {
+    id: "fees",
+    label: "الشؤون المالية",
+    icon: Wallet,
+    href: `/${orgId}/students/${studentId}/fees`,
+  },
+  {
+    id: "attendance",
+    label: "الحضور والغياب",
+    icon: UserCheck,
+    href: `/${orgId}/students/${studentId}/attendance`,
+  },
+  {
+    id: "behavior",
+    label: "السلوك والانضباط",
+    icon: ShieldAlert,
+    href: `/${orgId}/students/${studentId}/behavior`,
+  },
 ]);
 
 function isActive(tabHref: string) {

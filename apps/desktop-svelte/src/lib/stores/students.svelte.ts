@@ -25,7 +25,9 @@ class StudentsStore {
       if (this.searchQuery) {
         const query = this.searchQuery.toLowerCase().trim();
         const fullName = String(student.full_name || "").toLowerCase();
-        const studentNumber = String(student.student_number || "").toLowerCase();
+        const studentNumber = String(
+          student.student_number || "",
+        ).toLowerCase();
         const email = String(student.email || "").toLowerCase();
         matchesSearch =
           fullName.includes(query) ||
@@ -88,7 +90,7 @@ class StudentsStore {
   // Optimistic UI Class Transfer
   async transfer(enrollmentId: string, newClassId: string) {
     const originalList = [...this.list];
-    
+
     // Optimistically update local state
     const index = this.list.findIndex((s) => s.id === enrollmentId);
     if (index !== -1) {
@@ -96,7 +98,9 @@ class StudentsStore {
     }
 
     try {
-      await commands.enrollments.transfer(enrollmentId, { new_class_id: newClassId });
+      await commands.enrollments.transfer(enrollmentId, {
+        new_class_id: newClassId,
+      });
     } catch (e) {
       // Rollback on failure
       this.list = originalList;

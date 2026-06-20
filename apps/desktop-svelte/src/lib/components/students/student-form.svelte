@@ -9,16 +9,38 @@ import { goto } from "$app/navigation";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
-import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui-svelte/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@orbis/ui-svelte/popover";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui-svelte/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@orbis/ui-svelte/popover";
 import { Calendar } from "@orbis/ui-svelte/calendar";
-import { DateFormatter, type DateValue, getLocalTimeZone, parseDate } from "@internationalized/date";
+import {
+  DateFormatter,
+  type DateValue,
+  getLocalTimeZone,
+  parseDate,
+} from "@internationalized/date";
 import { studentsStore, authStore } from "$lib/stores";
 import { commands } from "$lib/services/ipc";
 import { onMount } from "svelte";
 import { toast } from "svelte-sonner";
-import { 
-  ArrowRight, Save, User, FileText, Sparkles, AlertCircle, CheckSquare, Square, Calendar as CalendarIcon
+import {
+  ArrowRight,
+  Save,
+  User,
+  FileText,
+  Sparkles,
+  AlertCircle,
+  CheckSquare,
+  Square,
+  Calendar as CalendarIcon,
 } from "lucide-svelte";
 
 let { studentId, orgId }: { studentId?: string; orgId: string } = $props();
@@ -38,7 +60,7 @@ let address = $state("");
 
 // Date picker reactive value
 const df = new DateFormatter("ar-SA", {
-  dateStyle: "long"
+  dateStyle: "long",
 });
 let birthDateValue = $state<DateValue | undefined>(undefined);
 
@@ -63,9 +85,9 @@ let governorate = $state("");
 
 // Derived selected class name for UI Select component
 const selectedClassName = $derived(
-  studentsStore.classes.find(c => String(c.id) === classId)?.name || 
-  studentsStore.classes.find(c => String(c.id) === classId)?.name_ar || 
-  "اختر الصف الدراسي"
+  studentsStore.classes.find((c) => String(c.id) === classId)?.name ||
+    studentsStore.classes.find((c) => String(c.id) === classId)?.name_ar ||
+    "اختر الصف الدراسي",
 );
 
 // Document checklist
@@ -80,7 +102,7 @@ const docTypes = [
   { id: "grade_6", label: "شهادة سادس" },
   { id: "grade_7", label: "شهادة سابع" },
   { id: "grade_8", label: "شهادة ثامن" },
-  { id: "grade_9", label: "شهادة تاسع" }
+  { id: "grade_9", label: "شهادة تاسع" },
 ];
 let submittedDocs = $state<string[]>([]);
 
@@ -98,11 +120,13 @@ onMount(async () => {
 
 async function loadStudentData() {
   try {
-    const student = studentsStore.list.find(s => s.id === studentId);
+    const student = studentsStore.list.find((s) => s.id === studentId);
     if (student) {
       nameAr = String(student.full_name || student.name_ar || "");
       nameEn = String(student.name_en || "");
-      birthDate = student.birth_date ? String(student.birth_date).slice(0, 10) : "";
+      birthDate = student.birth_date
+        ? String(student.birth_date).slice(0, 10)
+        : "";
       if (birthDate) {
         try {
           birthDateValue = parseDate(birthDate);
@@ -122,14 +146,16 @@ async function loadStudentData() {
     const guardianLinks = await commands.guardians.getByStudent(studentId!);
     if (guardianLinks && guardianLinks.length > 0) {
       const link = guardianLinks[0];
-      const guardianUser = await commands.users.getUser(String(link.guardian_id));
+      const guardianUser = await commands.users.getUser(
+        String(link.guardian_id),
+      );
       if (guardianUser) {
         guardianName = String(guardianUser.full_name || "");
         guardianPhone = String(guardianUser.phone || "");
       }
-      
+
       fatherJob = String(link.occupation || "");
-      
+
       if (link.notes) {
         try {
           const parsed = JSON.parse(String(link.notes));
@@ -153,7 +179,7 @@ async function loadStudentData() {
 
 function toggleDoc(docId: string) {
   if (submittedDocs.includes(docId)) {
-    submittedDocs = submittedDocs.filter(d => d !== docId);
+    submittedDocs = submittedDocs.filter((d) => d !== docId);
   } else {
     submittedDocs = [...submittedDocs, docId];
   }
@@ -187,14 +213,16 @@ async function handleSave() {
       sex: sex,
       date_of_birth: birthDate,
       address: address.trim() || null,
-      status: "active"
+      status: "active",
     };
 
     let targetStudentId = ""; // User ID
     let targetEnrollmentId = studentId || "";
 
     if (isEditMode) {
-      const originalStudent = studentsStore.list.find(s => s.id === studentId);
+      const originalStudent = studentsStore.list.find(
+        (s) => s.id === studentId,
+      );
       if (!originalStudent) {
         throw new Error("سجل قيد الطالب غير موجود");
       }
@@ -202,10 +230,12 @@ async function handleSave() {
 
       // Update student user details
       await commands.users.updateUser(targetStudentId, studentUserData);
-      
+
       // If class has changed, invoke transfer command
       if (originalStudent.class_id !== classId) {
-        await commands.enrollments.transfer(studentId!, { new_class_id: classId });
+        await commands.enrollments.transfer(studentId!, {
+          new_class_id: classId,
+        });
       }
 
       toast.success("تم تحديث بيانات الطالب بنجاح");
@@ -221,28 +251,32 @@ async function handleSave() {
         sex: sex,
         phone: phone.trim() || null,
         national_id: null,
-        date_of_birth: birthDate
+        date_of_birth: birthDate,
       };
 
-      const studentUser = await commands.users.createUser(orgId, createdBy, userRequest);
+      const studentUser = await commands.users.createUser(
+        orgId,
+        createdBy,
+        userRequest,
+      );
       targetStudentId = studentUser.id;
 
       // Update extra fields not supported in CreateUserRequest directly
       await commands.users.updateUser(studentUser.id, {
         name_en: nameEn.trim() || null,
-        address: address.trim() || null
+        address: address.trim() || null,
       });
 
       // Create new student enrollment
       const enrollmentRequest = {
         student_id: studentUser.id,
         class_id: classId,
-        enrollment_type: "regular"
+        enrollment_type: "regular",
       };
-      
+
       const res = await commands.enrollments.create(orgId, enrollmentRequest);
       targetEnrollmentId = String(res.id);
-      
+
       // Merge details for optimistic UI updates in store list
       const mergedEnrollment = {
         ...res,
@@ -254,9 +288,9 @@ async function handleSave() {
         phone_number: studentUser.phone,
         avatar: studentUser.avatar,
         birth_date: studentUser.date_of_birth,
-        address: studentUser.address
+        address: studentUser.address,
       };
-      
+
       studentsStore.list = [mergedEnrollment, ...studentsStore.list];
       toast.success("تم تسجيل الطالب الجديد بنجاح");
     }
@@ -270,26 +304,28 @@ async function handleSave() {
         previous_school: previousSchool.trim(),
         district: district.trim(),
         governorate: governorate.trim(),
-        documents: submittedDocs
+        documents: submittedDocs,
       });
 
       // 1. Create/Get Guardian User for Father
-      const guardianLinks = isEditMode ? await commands.guardians.getByStudent(targetEnrollmentId) : [];
-      
+      const guardianLinks = isEditMode
+        ? await commands.guardians.getByStudent(targetEnrollmentId)
+        : [];
+
       if (guardianLinks && guardianLinks.length > 0) {
         const link = guardianLinks[0];
         // Update father user details
         await commands.users.updateUser(String(link.guardian_id), {
           full_name: guardianName.trim(),
           name_ar: guardianName.trim(),
-          phone: guardianPhone.trim() || null
+          phone: guardianPhone.trim() || null,
         });
 
         // Update link
         await commands.guardians.updateLink(String(link.id), {
           relationship: "father",
           occupation: fatherJob.trim() || null,
-          notes: notesMetadata
+          notes: notesMetadata,
         });
       } else {
         // Create new Father/Guardian User
@@ -303,7 +339,7 @@ async function handleSave() {
           phone: guardianPhone.trim() || null,
           sex: "male",
           national_id: null,
-          date_of_birth: null
+          date_of_birth: null,
         });
 
         // Create link
@@ -315,7 +351,7 @@ async function handleSave() {
           is_primary: 1,
           is_emergency_contact: 1,
           occupation: fatherJob.trim() || null,
-          notes: notesMetadata
+          notes: notesMetadata,
         });
       }
     }

@@ -5,10 +5,21 @@ Renders assigned fees, payment receipts history, and balance due summary.
 <script lang="ts">
 import { page } from "$app/state";
 import { commands } from "$lib/services/ipc";
-import { 
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@orbis/ui-svelte";
-import { CreditCard, Wallet, Calendar, CheckCircle2, AlertCircle } from "lucide-svelte";
+import {
+  CreditCard,
+  Wallet,
+  Calendar,
+  CheckCircle2,
+  AlertCircle,
+} from "lucide-svelte";
 import { onMount } from "svelte";
 
 const orgId = $derived(page.params.orgId);
@@ -19,8 +30,12 @@ let payments = $state<any[]>([]);
 let isLoading = $state(true);
 let error = $state<string | null>(null);
 
-let totalFees = $derived(fees.reduce((sum, f) => sum + Number(f.amount || 0), 0));
-let totalPaid = $derived(payments.reduce((sum, p) => sum + Number(p.amount || 0), 0));
+let totalFees = $derived(
+  fees.reduce((sum, f) => sum + Number(f.amount || 0), 0),
+);
+let totalPaid = $derived(
+  payments.reduce((sum, p) => sum + Number(p.amount || 0), 0),
+);
 let balanceDue = $derived(totalFees - totalPaid);
 
 onMount(() => {
@@ -34,7 +49,7 @@ async function loadFinance() {
     if (!orgId || !studentId) return;
     const [feesRes, paymentsRes] = await Promise.all([
       commands.finance.getStudentFees(orgId, studentId),
-      commands.finance.getPayments(orgId, studentId)
+      commands.finance.getPayments(orgId, studentId),
     ]);
     fees = feesRes;
     payments = paymentsRes;

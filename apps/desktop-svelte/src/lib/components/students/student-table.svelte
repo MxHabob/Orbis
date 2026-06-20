@@ -3,8 +3,13 @@
 Renders the list of students in a high-density, interactive data table.
 -->
 <script lang="ts">
-import { 
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@orbis/ui-svelte";
 import { Avatar, AvatarFallback, AvatarImage } from "@orbis/ui-svelte";
 import { studentsStore } from "$lib/stores/students.svelte";

@@ -32,9 +32,9 @@ function clearFilters() {
 }
 
 const hasActiveFilters = $derived(
-  studentsStore.selectedClassId !== null || 
-  studentsStore.statusFilter !== "active" || 
-  studentsStore.searchQuery !== ""
+  studentsStore.selectedClassId !== null ||
+    studentsStore.statusFilter !== "active" ||
+    studentsStore.searchQuery !== "",
 );
 </script>
 

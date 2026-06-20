@@ -57,24 +57,28 @@ const breadcrumbs = $derived.by(() => {
   const pathname = page.url.pathname;
   const currentOrgId = orgId || page.params.orgId || "";
   const studentId = page.params.studentId;
-  
+
   const items: { label: string; href?: string }[] = [];
-  
+
   // Base dashboard link
   items.push({ label: "الرئيسية", href: `/${currentOrgId}` });
-  
+
   if (pathname.includes("/reports")) {
     items.push({ label: "التقارير", href: `/${currentOrgId}/reports` });
   } else if (pathname.includes("/students")) {
     items.push({ label: "الطلاب", href: `/${currentOrgId}/students` });
-    
+
     if (pathname.includes("/students/new")) {
       items.push({ label: "طالب جديد" });
     } else if (studentId) {
       const student = studentsStore.list.find((s) => s.id === studentId);
-      const studentName = student?.full_name || student?.name_ar || "ملف الطالب";
-      items.push({ label: studentName, href: `/${currentOrgId}/students/${studentId}` });
-      
+      const studentName =
+        student?.full_name || student?.name_ar || "ملف الطالب";
+      items.push({
+        label: studentName,
+        href: `/${currentOrgId}/students/${studentId}`,
+      });
+
       if (pathname.includes("/edit")) {
         items.push({ label: "تعديل البيانات" });
       } else if (pathname.includes("/grades")) {
@@ -94,7 +98,7 @@ const breadcrumbs = $derived.by(() => {
   } else if (pathname.includes("/settings")) {
     items.push({ label: "الإعدادات", href: `/${currentOrgId}/settings` });
   }
-  
+
   return items;
 });
 </script>

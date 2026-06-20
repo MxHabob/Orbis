@@ -5,8 +5,13 @@ Renders attendance rates, present/absent stats, and detailed logs history.
 <script lang="ts">
 import { page } from "$app/state";
 import { commands } from "$lib/services/ipc";
-import { 
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@orbis/ui-svelte";
 import { Calendar, UserCheck, AlertCircle, Clock, Ban } from "lucide-svelte";
 import { onMount } from "svelte";

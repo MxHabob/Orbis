@@ -23,7 +23,7 @@
   --popover-foreground: oklch(0.23 0 0);
 
   /* Brand */
-  --primary: oklch(0.58 0.10 285);
+  --primary: oklch(0.58 0.1 285);
   --primary-foreground: oklch(1 0 0);
 
   /* Neutral */
@@ -41,43 +41,43 @@
   --destructive-foreground: oklch(1 0 0);
 
   /* Inputs */
-  --border: oklch(0.90 0 0);
+  --border: oklch(0.9 0 0);
   --input: oklch(0.94 0 0);
-  --ring: oklch(0.58 0.10 285);
+  --ring: oklch(0.58 0.1 285);
 
   /* Charts */
-  --chart-1: oklch(0.58 0.10 285);
+  --chart-1: oklch(0.58 0.1 285);
   --chart-2: oklch(0.68 0.08 250);
   --chart-3: oklch(0.74 0.08 145);
-  --chart-4: oklch(0.82 0.10 85);
+  --chart-4: oklch(0.82 0.1 85);
   --chart-5: oklch(0.65 0.16 25);
 
   /* Sidebar */
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.23 0 0);
 
-  --sidebar-primary: oklch(0.58 0.10 285);
+  --sidebar-primary: oklch(0.58 0.1 285);
   --sidebar-primary-foreground: oklch(1 0 0);
 
   --sidebar-accent: oklch(0.965 0 0);
   --sidebar-accent-foreground: oklch(0.23 0 0);
 
-  --sidebar-border: oklch(0.90 0 0);
-  --sidebar-ring: oklch(0.58 0.10 285);
+  --sidebar-border: oklch(0.9 0 0);
+  --sidebar-ring: oklch(0.58 0.1 285);
 
   /* Brand Palette */
-  --color-brand-purple: oklch(0.58 0.10 285);
-  --color-brand-purple-light: oklch(0.68 0.10 285);
-  --color-brand-purple-dark: oklch(0.46 0.10 285);
+  --color-brand-purple: oklch(0.58 0.1 285);
+  --color-brand-purple-light: oklch(0.68 0.1 285);
+  --color-brand-purple-dark: oklch(0.46 0.1 285);
 
   --color-brand-lime: oklch(0.75 0.08 145);
   --color-brand-lime-dark: oklch(0.62 0.08 145);
 
-  --color-brand-pink: oklch(0.70 0.12 15);
+  --color-brand-pink: oklch(0.7 0.12 15);
   --color-brand-pink-light: oklch(0.82 0.08 15);
 
   --color-brand-violet: oklch(0.23 0 0);
-  --color-brand-indigo: oklch(0.60 0.08 250);
+  --color-brand-indigo: oklch(0.6 0.08 250);
   --color-brand-rose: oklch(0.65 0.16 25);
 }
 .dark {
@@ -89,19 +89,19 @@
   --card: oklch(0.28 0 0);
   --card-foreground: oklch(0.92 0 0);
 
-  --popover: oklch(0.30 0 0);
+  --popover: oklch(0.3 0 0);
   --popover-foreground: oklch(0.92 0 0);
 
   /* Brand */
-  --primary: oklch(0.70 0.10 285);
+  --primary: oklch(0.7 0.1 285);
   --primary-foreground: oklch(1 0 0);
 
   /* Neutral */
   --secondary: oklch(0.32 0 0);
   --secondary-foreground: oklch(0.92 0 0);
 
-  --muted: oklch(0.30 0 0);
-  --muted-foreground: oklch(0.70 0 0);
+  --muted: oklch(0.3 0 0);
+  --muted-foreground: oklch(0.7 0 0);
 
   --accent: oklch(0.34 0 0);
   --accent-foreground: oklch(0.92 0 0);
@@ -113,32 +113,32 @@
   /* Inputs */
   --border: oklch(0.38 0 0);
   --input: oklch(0.34 0 0);
-  --ring: oklch(0.70 0.10 285);
+  --ring: oklch(0.7 0.1 285);
 
   /* Charts */
-  --chart-1: oklch(0.70 0.10 285);
+  --chart-1: oklch(0.7 0.1 285);
   --chart-2: oklch(0.72 0.08 250);
   --chart-3: oklch(0.76 0.08 145);
-  --chart-4: oklch(0.84 0.10 85);
+  --chart-4: oklch(0.84 0.1 85);
   --chart-5: oklch(0.68 0.16 25);
 
   /* Sidebar */
   --sidebar: oklch(0.26 0 0);
   --sidebar-foreground: oklch(0.92 0 0);
 
-  --sidebar-primary: oklch(0.70 0.10 285);
+  --sidebar-primary: oklch(0.7 0.1 285);
   --sidebar-primary-foreground: oklch(1 0 0);
 
   --sidebar-accent: oklch(0.32 0 0);
   --sidebar-accent-foreground: oklch(0.92 0 0);
 
   --sidebar-border: oklch(0.38 0 0);
-  --sidebar-ring: oklch(0.70 0.10 285);
+  --sidebar-ring: oklch(0.7 0.1 285);
 
   /* Brand Palette */
-  --color-brand-purple: oklch(0.70 0.10 285);
-  --color-brand-purple-light: oklch(0.78 0.10 285);
-  --color-brand-purple-dark: oklch(0.58 0.10 285);
+  --color-brand-purple: oklch(0.7 0.1 285);
+  --color-brand-purple-light: oklch(0.78 0.1 285);
+  --color-brand-purple-dark: oklch(0.58 0.1 285);
 
   --color-brand-lime: oklch(0.78 0.08 145);
   --color-brand-lime-dark: oklch(0.66 0.08 145);
@@ -161,8 +161,7 @@
     "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo,
     Consolas, monospace;
 
-  --font-serif:
-    Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-serif: Georgia, Cambria, "Times New Roman", Times, serif;
 
   /* Radius */
   --radius-sm: calc(var(--radius) - 4px);
