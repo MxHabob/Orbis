@@ -1,16 +1,11 @@
 <!--
 @component StudentTable
-Renders the list of students in a high-density, interactive data table.
+Renders the list of students using the DataTable infrastructure.
+Migrated from inline HTML to declarative Column Definitions.
+Supports virtualization, sorting, column resize, export, and persistence.
 -->
 <script lang="ts">
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@orbis/ui-svelte";
+import { DataTable, type ColumnDef, type CellContext } from "$lib/components/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@orbis/ui-svelte";
 import { studentsStore } from "$lib/stores/students.svelte";
 import type { Enrollment } from "$lib/services/ipc";
@@ -19,81 +14,144 @@ import * as m from "$lib/paraglide/messages";
 
 let { students }: { students: Enrollment[] } = $props();
 
+// ── Helpers ────────────────────────────────────────────────────────
+
 function getClassName(classId: string): string {
-  const cls = studentsStore.classes.find((c) => c.id === classId);
-  return cls ? String(cls.name || cls.name_ar || classId) : m.table_not_enrolled();
+	const cls = studentsStore.classes.find((c) => c.id === classId);
+	return cls ? String(cls.name || cls.name_ar || classId) : m.table_not_enrolled();
 }
 
-function handleSelect(studentId: string) {
-  studentsStore.selectedId = studentId;
-}
+// ── Column Definitions ─────────────────────────────────────────────
+
+const columns: ColumnDef<Enrollment>[] = [
+	{
+		id: "name",
+		header: m.table_student(),
+		accessorKey: "full_name",
+		size: 250,
+		minSize: 200,
+		maxSize: 450,
+		sticky: true,
+		sortable: true,
+		skeleton: { type: "avatar-text", width: "w-32" },
+		cell: nameCell,
+	},
+	{
+		id: "studentNumber",
+		header: m.table_student_number(),
+		accessorKey: "student_number",
+		size: 140,
+		minSize: 100,
+		maxSize: 200,
+		sortable: true,
+		skeleton: { type: "text", width: "w-20" },
+		className: "font-mono",
+		cell: studentNumberCell,
+	},
+	{
+		id: "class",
+		header: m.table_class(),
+		accessorFn: (row) => getClassName(String(row.class_id)),
+		size: 160,
+		minSize: 120,
+		maxSize: 250,
+		sortable: true,
+		skeleton: { type: "text", width: "w-24" },
+	},
+	{
+		id: "email",
+		header: m.table_email(),
+		accessorKey: "email",
+		size: 200,
+		minSize: 150,
+		maxSize: 350,
+		sortable: true,
+		skeleton: { type: "text", width: "w-32" },
+		className: "font-mono text-muted-foreground",
+		cell: emailCell,
+	},
+	{
+		id: "status",
+		header: m.table_status(),
+		accessorKey: "status",
+		size: 120,
+		minSize: 90,
+		maxSize: 150,
+		sortable: true,
+		skeleton: { type: "badge", width: "w-16" },
+		cell: statusCell,
+	},
+];
 </script>
 
-<div class="w-full h-full overflow-auto scrollbar-hide select-none">
-	{#if students.length === 0}
-		<div class="h-full w-full flex flex-col items-center justify-center p-12 text-center text-muted-foreground gap-3">
+<!-- ── Custom Cell Snippets ──────────────────────────────────────── -->
+
+{#snippet nameCell(ctx: CellContext<Enrollment>)}
+	{@const student = ctx.row}
+	<div class="flex items-center gap-2.5">
+		<Avatar class="h-7 w-7 ring-1 ring-border flex-shrink-0">
+			<AvatarImage src={student.avatar ? String(student.avatar) : undefined} alt={student.full_name ? String(student.full_name) : ''} />
+			<AvatarFallback class="bg-primary/5 text-primary text-[9px] font-bold">
+				{String(student.full_name || "S").slice(0, 1)}
+			</AvatarFallback>
+		</Avatar>
+		<div class="flex flex-col text-start min-w-0">
+			<span class="text-xs font-bold text-foreground truncate">{student.full_name || student.name_ar || ''}</span>
+			{#if student.name_en}
+				<span class="text-[10px] text-muted-foreground font-mono truncate">{student.name_en}</span>
+			{/if}
+		</div>
+	</div>
+{/snippet}
+
+{#snippet studentNumberCell(ctx: CellContext<Enrollment>)}
+	<span class="text-xs">{ctx.row.student_number || ctx.row.id || '-'}</span>
+{/snippet}
+
+{#snippet emailCell(ctx: CellContext<Enrollment>)}
+	<span class="text-xs">{ctx.row.email || '-'}</span>
+{/snippet}
+
+{#snippet statusCell(ctx: CellContext<Enrollment>)}
+	{@const status = String(ctx.row.status || '').toLowerCase()}
+	{#if status === 'active'}
+		<span class="badge-brand-lime py-0.5 px-2 text-[10px]">{m.status_active()}</span>
+	{:else if status === 'withdrawn'}
+		<span class="badge-brand-destructive py-0.5 px-2 text-[10px]">{m.status_withdrawn()}</span>
+	{:else}
+		<span class="badge-brand-default py-0.5 px-2 text-[10px]">{ctx.row.status || m.status_undefined()}</span>
+	{/if}
+{/snippet}
+
+<!-- ── DataTable ─────────────────────────────────────────────────── -->
+
+<DataTable
+	{columns}
+	data={students}
+	tableId="students"
+	getRowId={(s) => String(s.id)}
+	height="100%"
+	enableSorting={true}
+	enableSelection={false}
+	enableVirtualization={students.length > 100}
+	enableExport={true}
+	enableColumnToggle={true}
+	enablePersistence={true}
+	onRowClick={(row) => studentsStore.selectedId = String(row.id)}
+>
+	{#snippet empty()}
+		<div class="flex flex-col items-center justify-center gap-3 text-muted-foreground">
 			<GraduationCap size={32} class="text-muted-foreground/30" />
-			<div class="flex flex-col gap-1">
+			<div class="flex flex-col gap-1 text-center">
 				<p class="text-xs font-semibold">{m.table_no_students()}</p>
 				<p class="text-[10px] text-muted-foreground/80">{m.table_no_students_hint()}</p>
 			</div>
 		</div>
-	{:else}
-		<Table class="text-xs">
-			<TableHeader class="bg-card sticky top-0 z-10">
-				<TableRow class="hover:bg-transparent">
-					<TableHead class="text-start">{m.table_student()}</TableHead>
-					<TableHead class="text-start">{m.table_student_number()}</TableHead>
-					<TableHead class="text-start">{m.table_class()}</TableHead>
-					<TableHead class="text-start">{m.table_email()}</TableHead>
-					<TableHead class="text-start">{m.table_status()}</TableHead>
-					<TableHead class="text-center w-12"></TableHead>
-				</TableRow>
-			</TableHeader>
-			<TableBody>
-				{#each students as student (student.id)}
-					{@const isSelected = studentsStore.selectedId === student.id}
-					<TableRow
-						class="cursor-pointer transition-colors duration-150 {isSelected ? 'bg-primary/5 hover:bg-primary/8' : 'hover:bg-accent/40'}"
-						onclick={() => handleSelect(String(student.id))}
-					>
-						<TableCell class="font-medium">
-							<div class="flex items-center gap-3">
-								<Avatar class="h-8 w-8 ring-1 ring-border">
-									<AvatarImage src={student.avatar ? String(student.avatar) : undefined} alt={student.full_name ? String(student.full_name) : ''} />
-									<AvatarFallback class="bg-primary/5 text-primary text-[10px] font-bold">
-										{String(student.full_name || "S").slice(0, 1)}
-									</AvatarFallback>
-								</Avatar>
-								<div class="flex flex-col text-start">
-									<span class="font-bold text-foreground">{student.full_name || student.name_ar || ''}</span>
-									{#if student.name_en}
-										<span class="text-[10px] text-muted-foreground font-mono">{student.name_en}</span>
-									{/if}
-								</div>
-							</div>
-						</TableCell>
-						<TableCell class="font-mono text-start">{student.student_number || student.id || '-'}</TableCell>
-						<TableCell class="text-start">{getClassName(String(student.class_id))}</TableCell>
-						<TableCell class="text-start font-mono text-muted-foreground">{student.email || '-'}</TableCell>
-						<TableCell class="text-start">
-							{#if String(student.status).toLowerCase() === 'active'}
-								<span class="badge-brand-lime py-0.5 px-2 text-[10px]">{m.status_active()}</span>
-							{:else if String(student.status).toLowerCase() === 'withdrawn'}
-								<span class="badge-brand-destructive py-0.5 px-2 text-[10px]">{m.status_withdrawn()}</span>
-							{:else}
-								<span class="badge-brand-default py-0.5 px-2 text-[10px]">{student.status || m.status_undefined()}</span>
-							{/if}
-						</TableCell>
-						<TableCell class="text-center">
-							<div class="flex items-center justify-center text-muted-foreground/60 hover:text-primary transition-colors">
-								<ArrowUpRight size={14} />
-							</div>
-						</TableCell>
-					</TableRow>
-				{/each}
-			</TableBody>
-		</Table>
-	{/if}
-</div>
+	{/snippet}
 
+	{#snippet rowActions({ row })}
+		<div class="flex items-center justify-center text-muted-foreground/60 hover:text-primary transition-colors">
+			<ArrowUpRight size={14} />
+		</div>
+	{/snippet}
+</DataTable>
