@@ -81,15 +81,20 @@ let projects = $derived.by(() => {
 });
 
 function getOrgColors(name: string) {
-  const safeName = name || "Orbis";
+  const safeName = (name || "Orbis").toLowerCase();
   const colors = [
-    { bg: "bg-[#ec407a]", shadow: "#3b071e" }, // Pink
+    { bg: "bg-[#e91e63]", shadow: "#3b071e" }, // Pink (matching screenshot)
     { bg: "bg-[#9c27b0]", shadow: "#1b001a" }, // Purple
     { bg: "bg-[#2563eb]", shadow: "#1e3a8a" }, // Blue
     { bg: "bg-[#059669]", shadow: "#064e3b" }, // Emerald
     { bg: "bg-[#7c3aed]", shadow: "#2e1065" }, // Violet
     { bg: "bg-[#d97706]", shadow: "#78350f" }, // Amber
   ];
+  
+  if (safeName.includes("authen") || safeName.includes("orbis")) {
+    return colors[0];
+  }
+  
   let hash = 0;
   for (let i = 0; i < safeName.length; i++) {
     hash = safeName.charCodeAt(i) + ((hash << 5) - hash);
@@ -114,10 +119,11 @@ function handleSelect(id: string) {
   <DropdownMenuTrigger class="outline-none">
     <div class="flex">
       <Tooltip>
-        <TooltipTrigger asChild>
+        <TooltipTrigger>
           <Button
+            variant="outline"
             size="icon"
-            class=" {activeColors.bg} font-bold"
+            class="rounded-[10px] {activeColors.bg} font-bold text-white font-sans text-sm outline-none select-none cursor-pointer btn-3d-custom"
             style="--shadow-color: {activeColors.shadow};"
             aria-label={orgNameDisplay}
           >

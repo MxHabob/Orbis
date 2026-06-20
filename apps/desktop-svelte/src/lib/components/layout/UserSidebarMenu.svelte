@@ -48,11 +48,12 @@ async function handleLogout() {
   <DropdownMenuTrigger class="outline-none">
     <div class="flex">
       <Tooltip>
-        <TooltipTrigger asChild>
+        <TooltipTrigger>
           <Button
+            variant="outline"
             size="icon"
-            class="rounded-[10px] bg-[#9c27b0] font-bold text-white font-sans text-sm outline-none select-none cursor-pointer btn-3d-custom"
-            style="--shadow-color: #1b001a;"
+            class="rounded-[10px] bg-[#b02a87] font-bold text-white font-sans text-sm outline-none select-none cursor-pointer btn-3d-custom"
+            style="--shadow-color: #4a0438;"
             aria-label={m.nav_account()}
           >
             {#if authStore.user?.avatar}
@@ -72,13 +73,13 @@ async function handleLogout() {
       </Tooltip>
     </div>
   </DropdownMenuTrigger>
-
+ 
   <DropdownMenuPortal>
     <DropdownMenuContent align="end" side="right" sideOffset={12} class="w-64 p-1 z-50 bg-popover border border-border shadow-md rounded-md select-none overflow-visible">
       <!-- Header info -->
       <div class="flex items-center gap-3 px-3 py-2.5 border-b border-border/50">
         <div
-          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#9c27b0] font-bold text-white text-xs"
+          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#b02a87] font-bold text-white text-xs"
         >
           {#if authStore.user?.avatar}
             <img
