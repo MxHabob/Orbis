@@ -33,11 +33,11 @@ let {
 } = $props();
 </script>
 
-<div class="flex h-screen max-w-full flex-1 flex-col bg-background mx-1">
-	<AppHeader {orgId} {orgName} />
-	<div class="grid flex-1 grid-flow-col grid-cols-[auto_minmax(0,1fr)] overflow-hidden">
-		<AppSidebar {orgId} />
-		<div class="flex min-w-0 items-stretch overflow-hidden px-3.5 pb-3.5">
+<div class="flex h-screen max-w-full bg-background mx-1">
+	<AppSidebar {orgId} {orgName} />
+	<div class="flex flex-1 flex-col overflow-hidden">
+		<AppHeader {orgId} {orgName} />
+		<div class="flex flex-1 min-w-0 items-stretch overflow-hidden px-3.5 pb-3.5">
 			{@render children()}
 		</div>
 	</div>

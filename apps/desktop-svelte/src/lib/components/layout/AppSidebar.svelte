@@ -26,11 +26,48 @@ import {
   MessageSquare,
 } from "lucide-svelte";
 import { authStore } from "$lib/stores";
+import OrgSidebarSwitcher from "./OrgSidebarSwitcher.svelte";
+import UserSidebarMenu from "./UserSidebarMenu.svelte";
 import * as m from "$lib/paraglide/messages";
 import { deLocalizeUrl, localizeHref } from "$lib/paraglide/runtime";
 
-let { orgId, disabled = false }: { orgId: string; disabled?: boolean } =
-  $props();
+let {
+  orgId,
+  orgName: initialOrgName = "Orbis School",
+  disabled = false,
+}: {
+  orgId: string;
+  orgName?: string;
+  disabled?: boolean;
+} = $props();
+
+let localOrgName = $state("");
+
+$effect(() => {
+  if (initialOrgName && initialOrgName !== "Orbis School") {
+    localOrgName = initialOrgName;
+    return;
+  }
+  const storedCustom = localStorage.getItem("orbis_custom_orgs");
+  if (storedCustom) {
+    try {
+      const customProjects = JSON.parse(storedCustom);
+      const match = customProjects.find((p: any) => p.id === orgId);
+      if (match) {
+        localOrgName = match.label;
+        return;
+      }
+    } catch {}
+  }
+  if (orgId) {
+    localOrgName = orgId.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+  } else {
+    localOrgName = "Orbis School";
+  }
+});
+
+const orgNameDisplay = $derived(localOrgName || initialOrgName || "Orbis School");
+
 
 const navItems = $derived([
   {
@@ -82,11 +119,16 @@ const bottomItems = $derived([
 
 const userInitials = $derived(
   (authStore.user?.full_name ?? "User")
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("") || "U",
+    .trim()
+    .charAt(0)
+    .toUpperCase() || "U"
+);
+
+const orgInitials = $derived(
+  orgNameDisplay
+    .trim()
+    .charAt(0)
+    .toUpperCase() || "O"
 );
 
 function isActive(href: string, match: "exact" | "prefix"): boolean {
@@ -98,7 +140,12 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 
 <TooltipProvider delayDuration={150}>
 	<div class="flex h-full w-15 shrink-0 flex-col items-center justify-between py-3">
-		<div class="flex flex-col gap-3">
+		<div class="flex flex-col items-center gap-3">
+			<OrgSidebarSwitcher {orgId} orgName={orgNameDisplay} />
+
+			<!-- Divider -->
+			<div class="w-8 h-px bg-border/60 my-1 self-center"></div>
+
 			{#each navItems as item (item.href)}
 				<div class="flex">
 					<Tooltip>
@@ -106,6 +153,7 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 							<Button
 								href={localizeHref(item.href)}
 								variant={isActive(item.href, item.match) ? 'default' : 'ghost'}
+								class="rounded-[10px] h-9 w-9 p-0 flex items-center justify-center shrink-0"
 								aria-label={item.label}
 								aria-current={isActive(item.href, item.match) ? 'page' : undefined}
 							>
@@ -126,6 +174,7 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 							<Button
 								href={localizeHref(item.href)}
 								variant="lime"
+								class="rounded-[10px] h-9 w-9 p-0 flex items-center justify-center shrink-0"
 								aria-label={item.label}
 							>
 								<item.icon size={18} strokeWidth={1.8} />
@@ -139,7 +188,7 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 			<div class="flex">
 				<Tooltip>
 					<TooltipTrigger asChild>
-						<Button variant="ghost" size="icon" class="sidebar-btn sidebar-btn-ghost" aria-label={m.nav_feedback()}>
+						<Button variant="ghost" class="sidebar-btn sidebar-btn-ghost rounded-[10px] h-9 w-9 p-0 flex items-center justify-center shrink-0" aria-label={m.nav_feedback()}>
 							<MessageSquare size={16} strokeWidth={1.8} />
 						</Button>
 					</TooltipTrigger>
@@ -147,22 +196,7 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 				</Tooltip>
 			</div>
 
-			<Tooltip>
-			  <TooltipTrigger asChild>
-				<Button variant="ghost" aria-label={m.nav_account()}>
-				 <Avatar>
-					<AvatarImage
-						src={authStore.user?.avatar ?? undefined}
-						alt={authStore.user?.full_name ?? 'User'}
-					/>
-					<AvatarFallback>{userInitials}</AvatarFallback>
-				 </Avatar>
-				</Button>
-			   </TooltipTrigger>
-			  <TooltipContent side="right" sideOffset={10}>
-					{authStore.user?.full_name ?? m.nav_account()}
-				</TooltipContent>
-			</Tooltip>
+			<UserSidebarMenu {orgId} />
 		</div>
 	</div>
 </TooltipProvider>
