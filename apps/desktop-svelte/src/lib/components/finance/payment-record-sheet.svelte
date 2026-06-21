@@ -61,7 +61,7 @@ async function loadDropdownData() {
     }
     if (treasuryList.length > 0) {
       selectedTreasuryId = String(treasuryList[0].id);
-      currency = treasuryList[0].currency || "YER";
+      currency = String((treasuryList[0] as any).currency || "YER");
     }
   } catch (e) {
     console.error("Error loading dropdown data for payment-record-sheet:", e);

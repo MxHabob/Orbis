@@ -44,7 +44,7 @@ async function loadLedgerAccounts() {
   isLoadingLedgers = true;
   try {
     const list = await commands.finance.getLedgerAccounts(orgId);
-    ledgers = list.filter(l => l.item_type.toLowerCase() === 'asset' || l.is_bank_account === 1 || l.is_cash_account === 1);
+    ledgers = list.filter((l: any) => String(l.item_type || "").toLowerCase() === 'asset' || l.is_bank_account === 1 || l.is_cash_account === 1);
     if (ledgers.length > 0) {
       selectedLedgerId = ledgers[0].id;
     }

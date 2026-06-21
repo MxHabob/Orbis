@@ -78,8 +78,8 @@ async function checkScheduleConflict() {
       roomId: formRoom || undefined,
     });
     if (conflicts && conflicts.length > 0) {
-      const first = conflicts[0];
-      conflictError = m.lesson_sheet_conflict_err({ type: first.conflict_type });
+      const first = conflicts[0] as any;
+      conflictError = m.lesson_sheet_conflict_err({ type: String(first.conflict_type || "") });
     }
   } catch (e) {
     console.warn("Conflict check bypassed:", e);
