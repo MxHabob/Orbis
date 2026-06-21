@@ -44,6 +44,7 @@ export type TimeSlot = JsonRecord;
 export type ClassSubject = JsonRecord;
 export type ScheduledLesson = JsonRecord;
 export type ScheduleConflict = JsonRecord;
+export type SolveJob = JsonRecord;
 
 // ── Guardians ────────────────────────────────────────────────────────────────
 export type GuardianLink = JsonRecord;

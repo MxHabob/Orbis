@@ -420,6 +420,22 @@ export const commands = {
         roomId: params.roomId,
         excludeId: params.excludeId,
       }),
+
+    // ── Solver & AI Scheduler ────────────────────────────────────────────────
+    startSolve: (orgId: string, userId: string, req: { cycle_id: string; mode: string }) =>
+      invoke<JsonRecord>("start_schedule_solve", { orgId, userId, req }),
+
+    getSolveJob: (orgId: string, jobId: string) =>
+      invoke<JsonRecord>("get_schedule_solve_job", { orgId, jobId }),
+
+    listSolveJobs: (orgId: string, cycleId?: string) =>
+      invoke<JsonRecord[]>("list_schedule_solve_jobs", { orgId, cycleId }),
+
+    cancelSolve: (orgId: string, jobId: string) =>
+      invoke<JsonRecord>("cancel_schedule_solve", { orgId, jobId }),
+
+    applySolve: (orgId: string, jobId: string) =>
+      invoke<JsonRecord>("apply_schedule_solve", { orgId, jobId }),
   },
 
   guardians: {

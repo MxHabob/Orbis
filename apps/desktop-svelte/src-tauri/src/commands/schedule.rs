@@ -165,3 +165,55 @@ pub async fn check_schedule_conflicts(
         exclude_id.as_deref(), &teacher_id, &class_id, room_id.as_deref(),
     ).await.map_err(|e| CommandError::new(e))
 }
+
+#[tauri::command]
+pub async fn start_schedule_solve(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    user_id: String,
+    req: core_domain::service::schedule_solver::StartSolveRequest,
+) -> CmdResult<core_domain::service::schedule_solver::SolveJobResponse> {
+    state.service.start_schedule_solve(&org_id, &user_id, req).await
+        .map_err(|e| CommandError::new(e))
+}
+
+#[tauri::command]
+pub async fn get_schedule_solve_job(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    job_id: String,
+) -> CmdResult<core_domain::service::schedule_solver::SolveJobResponse> {
+    state.service.get_schedule_solve_job(&org_id, &job_id).await
+        .map_err(|e| CommandError::new(e))
+}
+
+#[tauri::command]
+pub async fn list_schedule_solve_jobs(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    cycle_id: Option<String>,
+) -> CmdResult<Vec<core_domain::service::schedule_solver::SolveJobResponse>> {
+    state.service.list_schedule_solve_jobs(&org_id, cycle_id.as_deref()).await
+        .map_err(|e| CommandError::new(e))
+}
+
+#[tauri::command]
+pub async fn cancel_schedule_solve(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    job_id: String,
+) -> CmdResult<core_domain::service::schedule_solver::SolveJobResponse> {
+    state.service.cancel_schedule_solve(&org_id, &job_id).await
+        .map_err(|e| CommandError::new(e))
+}
+
+#[tauri::command]
+pub async fn apply_schedule_solve(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    job_id: String,
+) -> CmdResult<core_domain::service::schedule_solver::SolveJobResponse> {
+    state.service.apply_schedule_solve(&org_id, &job_id).await
+        .map_err(|e| CommandError::new(e))
+}
+

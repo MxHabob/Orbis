@@ -10,13 +10,13 @@ import { commands } from "$lib/services/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { 
-  Plus, Calendar, Clock, MapPin, User, BookOpen, 
-  X, Trash2
+  Plus, Clock, MapPin, User, X
 } from "lucide-svelte";
 import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
 import LessonCreateSheet from "$lib/components/academics/lesson-create-sheet.svelte";
+import SchedulerAiPanel from "$lib/components/academics/scheduler-ai-panel.svelte";
 import * as m from "$lib/paraglide/messages";
 
 let { data }: { data: { orgId: string } } = $props();
@@ -42,6 +42,14 @@ let isModalOpen = $state(false);
 let activeDay = $state<number>(1); // 1 = Sunday
 let activeSlotId = $state<string>("");
 
+// Solver & AI Scheduling State
+let activeJob = $state<any>(null);
+let previewDraft = $state(false);
+
+// Drag & Drop State
+let draggedLesson = $state<any>(null);
+let dragOverCell = $state<{ day: number; slotId: string } | null>(null);
+
 const weekdays = $derived([
   { value: 1, label: m.schedule_page_day_sun() },
   { value: 2, label: m.schedule_page_day_mon() },
@@ -57,6 +65,36 @@ const defaultTimeSlots = [
   { name: "4th Period", name_ar: "الحصة الرابعة", start_time: "10:30", end_time: "11:15" },
   { name: "5th Period", name_ar: "الحصة الخامسة", start_time: "11:30", end_time: "12:15" },
 ];
+
+// Derived state to map and filter draft assignments for preview
+const draftLessonsInGrid = $derived.by(() => {
+  if (!previewDraft || !activeJob || !activeJob.best_solution) return [];
+  try {
+    const solution = JSON.parse(activeJob.best_solution);
+    const assignments = solution.assignments || [];
+    return assignments
+      .filter((a: any) => {
+        if (viewMode === "class") {
+          return String(a.class_id) === String(selectedClassId);
+        } else {
+          return String(a.teacher_id) === String(selectedTeacherId);
+        }
+      })
+      .map((a: any) => ({
+        id: a.id,
+        class_id: a.class_id,
+        subject_id: a.subject_id,
+        teacher_id: a.teacher_id,
+        time_slot_id: a.time_slot_id,
+        day_of_week: a.day_of_week,
+        room: a.room_id || null,
+        isDraft: true
+      }));
+  } catch (e) {
+    console.error("Error parsing draft solution:", e);
+    return [];
+  }
+});
 
 // Load everything
 async function initializeSchedule() {
@@ -142,6 +180,88 @@ async function loadScheduleLessons() {
   }
 }
 
+// Drag & Drop Handlers
+function handleDragStart(e: DragEvent, lesson: any) {
+  if (lesson.isDraft) {
+    e.preventDefault();
+    return;
+  }
+  draggedLesson = lesson;
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", lesson.id);
+  }
+}
+
+function handleDragOver(e: DragEvent, day: number, slotId: string) {
+  e.preventDefault();
+  if (draggedLesson) {
+    dragOverCell = { day, slotId };
+  }
+}
+
+function handleDragLeave() {
+  dragOverCell = null;
+}
+
+async function handleDrop(e: DragEvent, targetDay: number, targetSlotId: string) {
+  e.preventDefault();
+  dragOverCell = null;
+  
+  if (!draggedLesson) return;
+  const lesson = draggedLesson;
+  draggedLesson = null;
+  
+  if (Number(lesson.day_of_week) === targetDay && String(lesson.time_slot_id) === String(targetSlotId)) {
+    return;
+  }
+  
+  try {
+    toast.loading(getLocale() === "ar" ? "جاري التحقق من وجود تضاربات..." : "Checking for conflicts...");
+    const conflicts = await commands.schedule.checkConflicts({
+      orgId: data.orgId,
+      cycleId: activeCycleId,
+      timeSlotId: targetSlotId,
+      dayOfWeek: targetDay,
+      teacherId: lesson.teacher_id,
+      classId: lesson.class_id,
+      roomId: lesson.room_id || undefined,
+      excludeId: lesson.id
+    });
+    
+    toast.dismiss();
+    
+    if (conflicts && conflicts.length > 0) {
+      const first = conflicts[0] as any;
+      const type = String(first.conflict_type || "");
+      let arMsg = `لا يمكن نقل الحصة لوجود تضارب: `;
+      if (type === "teacher") arMsg += "المعلم مشغول في هذا الوقت.";
+      else if (type === "class") arMsg += "الصف لديه حصة أخرى في هذا الوقت.";
+      else if (type === "room") arMsg += "القاعة/الغرفة مشغولة في هذا الوقت.";
+      else arMsg += first.message || "";
+      
+      const enMsg = `Cannot move lesson: ${first.message || "conflict detected."}`;
+      toast.error(getLocale() === "ar" ? arMsg : enMsg, { duration: 5000 });
+      return;
+    }
+    
+    toast.loading(getLocale() === "ar" ? "جاري نقل الحصة..." : "Moving lesson...");
+    await commands.schedule.updateLesson(data.orgId, lesson.id, {
+      teacher_id: lesson.teacher_id,
+      time_slot_id: targetSlotId,
+      day_of_week: targetDay,
+      room_id: lesson.room_id || undefined,
+    });
+    
+    toast.dismiss();
+    toast.success(getLocale() === "ar" ? "تم نقل الحصة بنجاح!" : "Lesson moved successfully!");
+    await loadScheduleLessons();
+  } catch (err: any) {
+    toast.dismiss();
+    toast.error(err instanceof Error ? err.message : String(err));
+  }
+}
+
 onMount(() => {
   if (data.orgId) {
     initializeSchedule();
@@ -150,13 +270,17 @@ onMount(() => {
 
 // Reactively reload schedule lessons when filters change
 $effect(() => {
-  if (selectedClassId || selectedTeacherId || viewMode) {
+  if (selectedClassId || selectedTeacherId || viewMode || activeCycleId) {
     loadScheduleLessons();
   }
 });
 
 // Get lesson inside cell
 function getLessonInCell(day: number, slotId: string) {
+  if (previewDraft) {
+    const draft = draftLessonsInGrid.find((l: any) => Number(l.day_of_week) === day && String(l.time_slot_id) === String(slotId));
+    if (draft) return draft;
+  }
   return lessons.find((l) => Number(l.day_of_week) === day && String(l.time_slot_id) === String(slotId));
 }
 
@@ -202,145 +326,190 @@ function openScheduler(day: number, slotId: string) {
 </script>
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6">
-	<!-- Timetable Header Filter Controls -->
-	<div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-card/25 p-4 rounded-xl border border-border/80 shrink-0 select-none">
-		<div class="flex items-center gap-3">
-			<span class="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-				{m.schedule_page_view_by()}
-			</span>
-			<div class="flex p-0.5 rounded-lg bg-muted border border-border/60">
-				<button 
-					class="text-[10px] font-bold px-3 py-1.5 rounded-md transition-all duration-150 cursor-pointer {viewMode === 'class' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}"
-					onclick={() => viewMode = 'class'}
-				>
-					{m.schedule_page_class()}
-				</button>
-				<button 
-					class="text-[10px] font-bold px-3 py-1.5 rounded-md transition-all duration-150 cursor-pointer {viewMode === 'teacher' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}"
-					onclick={() => viewMode = 'teacher'}
-				>
-					{m.schedule_page_teacher()}
-				</button>
-			</div>
-		</div>
+	<!-- Layout Grid: Main Content Column + AI Scheduler Column -->
+	<div class="flex flex-col lg:flex-row gap-6 items-start w-full">
+		
+		<!-- Main Schedule Panel Column -->
+		<div class="flex-1 min-w-0 w-full flex flex-col gap-6">
+			<!-- Timetable Header Filter Controls -->
+			<div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-card/25 p-4 rounded-xl border border-border/80 shrink-0 select-none">
+				<div class="flex items-center gap-3">
+					<span class="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+						{m.schedule_page_view_by()}
+					</span>
+					<div class="flex p-0.5 rounded-lg bg-muted border border-border/60">
+						<button 
+							class="text-[10px] font-bold px-3 py-1.5 rounded-md transition-all duration-150 cursor-pointer {viewMode === 'class' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}"
+							onclick={() => viewMode = 'class'}
+						>
+							{m.schedule_page_class()}
+						</button>
+						<button 
+							class="text-[10px] font-bold px-3 py-1.5 rounded-md transition-all duration-150 cursor-pointer {viewMode === 'teacher' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}"
+							onclick={() => viewMode = 'teacher'}
+						>
+							{m.schedule_page_teacher()}
+						</button>
+					</div>
+				</div>
 
-		<!-- Selector Box -->
-		<div class="flex items-center gap-3">
-			{#if viewMode === 'class'}
-				<span class="text-xs text-muted-foreground">{m.schedule_page_sel_class()}</span>
-				<select 
-					bind:value={selectedClassId} 
-					class="bg-background text-foreground border border-border rounded-md px-3 py-1.5 text-xs focus:ring-1 focus:ring-ring outline-none"
-				>
-					{#each classes as cls (cls.id)}
-						<option value={String(cls.id)}>{cls.name_ar || cls.name}</option>
-					{/each}
-				</select>
+				<!-- Selector Box -->
+				<div class="flex items-center gap-3">
+					{#if viewMode === 'class'}
+						<span class="text-xs text-muted-foreground">{m.schedule_page_sel_class()}</span>
+						<select 
+							bind:value={selectedClassId} 
+							class="bg-background text-foreground border border-border rounded-md px-3 py-1.5 text-xs focus:ring-1 focus:ring-ring outline-none"
+						>
+							{#each classes as cls (cls.id)}
+								<option value={String(cls.id)}>{cls.name_ar || cls.name}</option>
+							{/each}
+						</select>
+					{:else}
+						<span class="text-xs text-muted-foreground">{m.schedule_page_sel_teacher()}</span>
+						<select 
+							bind:value={selectedTeacherId} 
+							class="bg-background text-foreground border border-border rounded-md px-3 py-1.5 text-xs focus:ring-1 focus:ring-ring outline-none"
+						>
+							{#each teachers as teach (teach.id)}
+								<option value={String(teach.id)}>{teach.full_name}</option>
+							{/each}
+						</select>
+					{/if}
+				</div>
+			</div>
+
+			<!-- Timetable Grid Content -->
+			{#if isLoading}
+				<div class="flex-1 w-full p-4 flex flex-col gap-3 bg-card border border-border rounded-lg">
+					<Skeleton class="h-10 w-full" />
+					<Skeleton class="h-20 w-full" />
+					<Skeleton class="h-20 w-full" />
+				</div>
+			{:else if error}
+				<div class="flex flex-col items-center justify-center p-8 border border-destructive/20 bg-destructive/5 rounded-xl text-center gap-3">
+					<p class="text-xs text-destructive font-semibold">{m.schedule_page_error()}</p>
+					<p class="text-xs text-muted-foreground">{error}</p>
+					<Button variant="outline" class="text-xs" onclick={initializeSchedule}>{m.error_retry()}</Button>
+				</div>
 			{:else}
-				<span class="text-xs text-muted-foreground">{m.schedule_page_sel_teacher()}</span>
-				<select 
-					bind:value={selectedTeacherId} 
-					class="bg-background text-foreground border border-border rounded-md px-3 py-1.5 text-xs focus:ring-1 focus:ring-ring outline-none"
-				>
-					{#each teachers as teach (teach.id)}
-						<option value={String(teach.id)}>{teach.full_name}</option>
-					{/each}
-				</select>
+				<!-- Weekly Schedule Matrix -->
+				<div class="flex-1 overflow-x-auto min-h-0 border border-border rounded-xl bg-card/10" in:fade={{ duration: 200 }}>
+					<table class="w-full border-collapse text-xs select-none min-w-[700px] h-full table-fixed">
+						<thead>
+							<tr class="bg-card border-b border-border">
+								<!-- Time Slots Column Header -->
+								<th class="p-3 font-bold text-muted-foreground uppercase text-[10px] border-r border-border text-center w-36">
+									{m.schedule_page_col_period()}
+								</th>
+								<!-- Weekdays Column Headers -->
+								{#each weekdays as day (day.value)}
+									<th class="p-3 font-bold text-muted-foreground uppercase text-[10px] text-center border-r border-border last:border-r-0">
+										{day.label}
+									</th>
+								{/each}
+							</tr>
+						</thead>
+						<tbody>
+							{#each timeSlots as slot (slot.id)}
+								<tr class="border-b border-border last:border-b-0 hover:bg-card/5">
+									<!-- Period Info Cell -->
+									<td class="p-3 border-r border-border font-medium text-center bg-card/20 flex flex-col justify-center items-center gap-1.5 h-24">
+										<span class="font-bold text-foreground">{getLocale() === "ar" ? (slot.name_ar || slot.name) : (slot.name || slot.name_ar)}</span>
+										<span class="text-[9px] text-muted-foreground font-mono bg-background px-1.5 py-0.5 rounded border border-border/80 flex items-center gap-1">
+											<Clock size={8} />
+											<span>{slot.start_time} - {slot.end_time}</span>
+										</span>
+									</td>
+
+									<!-- Days Cells -->
+									{#each weekdays as day (day.value)}
+										{@const lesson = getLessonInCell(day.value, slot.id)}
+										<td 
+											class="p-2 border-r border-border last:border-r-0 text-center align-middle h-24 relative group transition-colors duration-150
+												{dragOverCell?.day === day.value && dragOverCell?.slotId === slot.id ? 'bg-primary/10 border-primary border-dashed border-2' : ''}"
+											ondragover={(e) => handleDragOver(e, day.value, slot.id)}
+											ondragleave={handleDragLeave}
+											ondrop={(e) => handleDrop(e, day.value, slot.id)}
+										>
+											{#if lesson}
+												<!-- Scheduled Lesson Card -->
+												<div 
+													draggable={!lesson.isDraft}
+													ondragstart={(e) => handleDragStart(e, lesson)}
+													class="card-tactile p-2 rounded-lg flex flex-col justify-between items-center text-center h-full group/card relative transition-all duration-200
+														{lesson.isDraft 
+															? 'border-dashed border-purple-500/50 bg-purple-500/5 select-none opacity-85 cursor-not-allowed' 
+															: 'bg-primary/5 border border-primary/20 cursor-grab active:cursor-grabbing hover:shadow-sm'}"
+												>
+													<!-- Draft indicator -->
+													{#if lesson.isDraft}
+														<span class="absolute top-1 left-1 bg-purple-500 text-white text-[7px] font-bold px-1 rounded uppercase tracking-wider scale-90 origin-top-left">
+															{getLocale() === "ar" ? "مسودة" : "Draft"}
+														</span>
+													{/if}
+
+													<!-- Close icon to delete -->
+													{#if !lesson.isDraft}
+														<button 
+															onclick={() => handleDeleteLesson(lesson.id)}
+															class="absolute top-1 right-1 opacity-0 group-hover/card:opacity-100 h-4 w-4 text-destructive hover:bg-destructive/10 rounded flex items-center justify-center transition-opacity duration-150 cursor-pointer"
+															title={m.schedule_page_delete_title()}
+														>
+															<X size={10} />
+														</button>
+													{/if}
+													
+													<div class="flex flex-col items-center gap-1 mt-0.5">
+														<span class="font-bold text-foreground text-[10px] leading-tight line-clamp-1">
+															{getSubjectName(lesson.subject_id)}
+														</span>
+														<span class="text-[9px] text-muted-foreground leading-tight flex items-center gap-0.5">
+															<User size={8} />
+															<span class="line-clamp-1">{viewMode === 'class' ? getTeacherName(lesson.teacher_id) : getClassName(lesson.class_id)}</span>
+														</span>
+													</div>
+													{#if lesson.room}
+														<span class="text-[8px] font-mono text-muted-foreground bg-background px-1 py-0.2 rounded border border-border/60 flex items-center gap-0.5">
+															<MapPin size={7} />
+															<span>{lesson.room}</span>
+														</span>
+													{/if}
+												</div>
+											{:else}
+												<!-- Empty Cell (Offer scheduling in Class mode) -->
+												<button 
+													onclick={() => openScheduler(day.value, slot.id)}
+													class="w-full h-full border border-dashed border-transparent hover:border-primary/20 hover:bg-primary/5 rounded-lg flex items-center justify-center text-muted-foreground/0 hover:text-primary transition-all duration-150 cursor-pointer"
+												>
+													<Plus size={16} />
+												</button>
+											{/if}
+										</td>
+									{/each}
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
 			{/if}
 		</div>
+
+		<!-- AI Auto-Scheduler Sidebar Panel (Fixed Side) -->
+		{#if !isLoading && !error}
+			<SchedulerAiPanel
+				orgId={data.orgId}
+				cycleId={activeCycleId}
+				selectedClassId={selectedClassId}
+				selectedTeacherId={selectedTeacherId}
+				viewMode={viewMode}
+				subjects={subjects}
+				bind:previewDraft={previewDraft}
+				bind:activeJob={activeJob}
+				onApply={loadScheduleLessons}
+			/>
+		{/if}
 	</div>
-
-	<!-- Timetable Grid Content -->
-	{#if isLoading}
-		<div class="flex-1 w-full p-4 flex flex-col gap-3 bg-card border border-border rounded-lg">
-			<Skeleton class="h-10 w-full" />
-			<Skeleton class="h-20 w-full" />
-			<Skeleton class="h-20 w-full" />
-		</div>
-	{:else if error}
-		<div class="flex flex-col items-center justify-center p-8 border border-destructive/20 bg-destructive/5 rounded-xl text-center gap-3">
-			<p class="text-xs text-destructive font-semibold">{m.schedule_page_error()}</p>
-			<p class="text-xs text-muted-foreground">{error}</p>
-			<Button variant="outline" class="text-xs" onclick={initializeSchedule}>{m.error_retry()}</Button>
-		</div>
-	{:else}
-		<!-- Weekly Schedule Matrix -->
-		<div class="flex-1 overflow-x-auto min-h-0 border border-border rounded-xl bg-card/10" in:fade={{ duration: 200 }}>
-			<table class="w-full border-collapse text-xs select-none min-w-[700px] h-full table-fixed">
-				<thead>
-					<tr class="bg-card border-b border-border">
-						<!-- Time Slots Column Header -->
-						<th class="p-3 font-bold text-muted-foreground uppercase text-[10px] border-r border-border text-center w-36">
-							{m.schedule_page_col_period()}
-						</th>
-						<!-- Weekdays Column Headers -->
-						{#each weekdays as day (day.value)}
-							<th class="p-3 font-bold text-muted-foreground uppercase text-[10px] text-center border-r border-border last:border-r-0">
-								{day.label}
-							</th>
-						{/each}
-					</tr>
-				</thead>
-				<tbody>
-					{#each timeSlots as slot (slot.id)}
-						<tr class="border-b border-border last:border-b-0 hover:bg-card/5">
-							<!-- Period Info Cell -->
-							<td class="p-3 border-r border-border font-medium text-center bg-card/20 flex flex-col justify-center items-center gap-1.5 h-24">
-								<span class="font-bold text-foreground">{getLocale() === "ar" ? (slot.name_ar || slot.name) : (slot.name || slot.name_ar)}</span>
-								<span class="text-[9px] text-muted-foreground font-mono bg-background px-1.5 py-0.5 rounded border border-border/80 flex items-center gap-1">
-									<Clock size={8} />
-									<span>{slot.start_time} - {slot.end_time}</span>
-								</span>
-							</td>
-
-							<!-- Days Cells -->
-							{#each weekdays as day (day.value)}
-								{@const lesson = getLessonInCell(day.value, slot.id)}
-								<td class="p-2 border-r border-border last:border-r-0 text-center align-middle h-24 relative group">
-									{#if lesson}
-										<!-- Scheduled Lesson Card -->
-										<div class="card-tactile bg-primary/5 border border-primary/20 p-2 rounded-lg flex flex-col justify-between items-center text-center h-full group/card relative">
-											<!-- Close icon to delete -->
-											<button 
-												onclick={() => handleDeleteLesson(lesson.id)}
-												class="absolute top-1 right-1 opacity-0 group-hover/card:opacity-100 h-4 w-4 text-destructive hover:bg-destructive/10 rounded flex items-center justify-center transition-opacity duration-150"
-												title={m.schedule_page_delete_title()}
-											>
-												<X size={10} />
-											</button>
-											<div class="flex flex-col items-center gap-1 mt-0.5">
-												<span class="font-bold text-foreground text-[10px] leading-tight line-clamp-1">
-													{getSubjectName(lesson.subject_id)}
-												</span>
-												<span class="text-[9px] text-muted-foreground leading-tight flex items-center gap-0.5">
-													<User size={8} />
-													<span class="line-clamp-1">{viewMode === 'class' ? getTeacherName(lesson.teacher_id) : getClassName(lesson.class_id)}</span>
-												</span>
-											</div>
-											{#if lesson.room}
-												<span class="text-[8px] font-mono text-muted-foreground bg-background px-1 py-0.2 rounded border border-border/60 flex items-center gap-0.5">
-													<MapPin size={7} />
-													<span>{lesson.room}</span>
-												</span>
-											{/if}
-										</div>
-									{:else}
-										<!-- Empty Cell (Offer scheduling in Class mode) -->
-										<button 
-											onclick={() => openScheduler(day.value, slot.id)}
-											class="w-full h-full border border-dashed border-transparent hover:border-primary/20 hover:bg-primary/5 rounded-lg flex items-center justify-center text-muted-foreground/0 hover:text-primary transition-all duration-150 cursor-pointer"
-										>
-											<Plus size={16} />
-										</button>
-									{/if}
-								</td>
-							{/each}
-						</tr>
-					{/each}
-				</tbody>
-			</table>
-		</div>
-	{/if}
 </div>
 
 <!-- Lesson Scheduling Side Sheet -->

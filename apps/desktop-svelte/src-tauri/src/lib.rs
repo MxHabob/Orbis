@@ -265,6 +265,11 @@ pub fn run() {
             commands::schedule::update_lesson,
             commands::schedule::delete_lesson,
             commands::schedule::check_schedule_conflicts,
+            commands::schedule::start_schedule_solve,
+            commands::schedule::get_schedule_solve_job,
+            commands::schedule::list_schedule_solve_jobs,
+            commands::schedule::cancel_schedule_solve,
+            commands::schedule::apply_schedule_solve,
 
             // Guardians
             commands::guardians::get_guardians_by_student,
