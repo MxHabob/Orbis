@@ -34,12 +34,15 @@ class SolveJobManager {
             bestSolution = ProblemMapper.toSolution(problem, timetable),
         )
 
-        solverManager.solveAndListen(
-            jobId,
-            { timetable },
-            { best -> onBestSolution(jobId, problem, best) },
-            { _, _ -> onSolveComplete(jobId) },
-        )
+        solverManager.solveBuilder()
+            .withProblemId(jobId)
+            .withProblemFinder { timetable }
+            .withBestSolutionConsumer { best -> onBestSolution(jobId, problem, best) }
+            .withFinalBestSolutionConsumer { _ -> onSolveComplete(jobId) }
+            .withExceptionHandler { _, throwable ->
+                log.error("Solving failed for job $jobId", throwable)
+            }
+            .run()
 
         log.infof("Started solve job %s with %d assignments", jobId, problem.assignments.size)
         return true
