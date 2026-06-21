@@ -717,3 +717,46 @@ CREATE TABLE IF NOT EXISTS document_templates (
   updated_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS rooms (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  name_ar TEXT,
+  capacity INTEGER,
+  room_type TEXT NOT NULL,
+  building TEXT,
+  floor INTEGER,
+  is_active INTEGER NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS teacher_availability (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL,
+  teacher_id TEXT NOT NULL,
+  cycle_id TEXT NOT NULL,
+  day_of_week INTEGER NOT NULL,
+  time_slot_id TEXT NOT NULL,
+  is_available INTEGER NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS schedule_solve_jobs (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL,
+  cycle_id TEXT NOT NULL,
+  mode TEXT NOT NULL,
+  status TEXT NOT NULL,
+  problem_snapshot TEXT,
+  best_solution TEXT,
+  score TEXT,
+  lessons_created INTEGER NOT NULL,
+  error_message TEXT,
+  created_by TEXT,
+  started_at TEXT,
+  completed_at TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);

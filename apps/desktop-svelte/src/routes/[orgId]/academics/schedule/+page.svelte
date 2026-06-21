@@ -148,7 +148,12 @@ async function setupTimeSlots() {
   
   if (slots.length === 0) {
     // Create standard time slots so database is initialized
-    for (const ts of defaultTimeSlots) {
+    for (let i = 0; i < defaultTimeSlots.length; i++) {
+      const ts = defaultTimeSlots[i];
+      // Calculate duration from start/end time
+      const [sh, sm] = ts.start_time.split(":").map(Number);
+      const [eh, em] = ts.end_time.split(":").map(Number);
+      const durationMinutes = (eh * 60 + em) - (sh * 60 + sm);
       try {
         await commands.schedule.createTimeSlot(data.orgId, {
           name: ts.name,
@@ -156,6 +161,9 @@ async function setupTimeSlots() {
           start_time: ts.start_time,
           end_time: ts.end_time,
           cycle_id: activeCycleId,
+          slot_number: i + 1,
+          duration_minutes: durationMinutes,
+          is_break: 0,
         });
       } catch (err) {
         console.warn("Failed creating DB slot, fallback to mock usage", err);
@@ -165,6 +173,7 @@ async function setupTimeSlots() {
   }
   timeSlots = slots.length > 0 ? slots : defaultTimeSlots.map((ts, i) => ({ ...ts, id: `mock_ts_${i}` }));
 }
+
 
 async function loadScheduleLessons() {
   if (!activeCycleId) return;
