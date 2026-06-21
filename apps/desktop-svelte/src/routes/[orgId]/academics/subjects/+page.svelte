@@ -1,0 +1,193 @@
+<!--
+@component AcademicsSubjectsPage
+Lists all academic subjects with themed visual icons, credit hours,
+and triggers the subject creation side sheet.
+-->
+<script lang="ts">
+import { onMount } from "svelte";
+import { commands } from "$lib/services/ipc";
+import { Button } from "@orbis/ui-svelte/button";
+import { Input } from "@orbis/ui-svelte/input";
+import { Skeleton } from "@orbis/ui-svelte/skeleton";
+import { 
+  Plus, BookOpen, Calculator, FlaskConical, Languages, 
+  Atom, Palette, Heart, Award, Search 
+} from "lucide-svelte";
+import { toast } from "svelte-sonner";
+import { getLocale } from "$lib/paraglide/runtime";
+import { fade } from "svelte/transition";
+import SubjectCreateSheet from "$lib/components/academics/subject-create-sheet.svelte";
+
+let { data }: { data: { orgId: string } } = $props();
+const isAr = $derived(getLocale() === "ar");
+
+// State
+let subjects = $state<any[]>([]);
+let isLoading = $state(true);
+let error = $state<string | null>(null);
+let searchQuery = $state("");
+
+// Sheet trigger state
+let isModalOpen = $state(false);
+
+// Load data
+async function loadData() {
+  isLoading = true;
+  error = null;
+  try {
+    const list = await commands.subjects.getAll(data.orgId);
+    subjects = list;
+  } catch (e) {
+    error = e instanceof Error ? e.message : String(e);
+    toast.error(isAr ? "فشل تحميل المواد" : "Failed to load subjects");
+  } finally {
+    isLoading = false;
+  }
+}
+
+onMount(() => {
+  if (data.orgId) {
+    loadData();
+  }
+});
+
+// Derived filtered subjects
+const filteredSubjects = $derived(
+  subjects.filter((sub) => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase().trim();
+    return (
+      String(sub.name || "").toLowerCase().includes(query) ||
+      String(sub.name_ar || "").toLowerCase().includes(query) ||
+      String(sub.code || "").toLowerCase().includes(query)
+    );
+  })
+);
+
+// Map subjects to a themed icon and class
+function getSubjectTheme(nameStr: string) {
+  const nameLower = nameStr.toLowerCase();
+  if (nameLower.includes("math") || nameLower.includes("رياض") || nameLower.includes("حساب")) {
+    return { icon: Calculator, bg: "bg-blue-500/10 text-blue-500 border-blue-500/20" };
+  }
+  if (nameLower.includes("science") || nameLower.includes("علوم") || nameLower.includes("phys") || nameLower.includes("chem")) {
+    return { icon: FlaskConical, bg: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" };
+  }
+  if (nameLower.includes("english") || nameLower.includes("انجليزي") || nameLower.includes("lang") || nameLower.includes("فرنسي") || nameLower.includes("french")) {
+    return { icon: Languages, bg: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20" };
+  }
+  if (nameLower.includes("islam") || nameLower.includes("دين") || nameLower.includes("قرآن") || nameLower.includes("تربية اسلامية")) {
+    return { icon: Heart, bg: "bg-amber-500/10 text-amber-500 border-amber-500/20" };
+  }
+  if (nameLower.includes("art") || nameLower.includes("فنية" ) || nameLower.includes("رسم")) {
+    return { icon: Palette, bg: "bg-pink-500/10 text-pink-500 border-pink-500/20" };
+  }
+  if (nameLower.includes("computer") || nameLower.includes("حاسب") || nameLower.includes("تقنية")) {
+    return { icon: Atom, bg: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20" };
+  }
+  return { icon: BookOpen, bg: "bg-primary/10 text-primary border-primary/20" };
+}
+</script>
+
+<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6">
+	<!-- Header & Search Controls -->
+	<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 font-sans">
+		<h2 class="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
+			<span>{isAr ? "المواد الدراسية المسجلة" : "Academic Subjects"}</span>
+			{#if !isLoading}
+				<span class="text-[10px] px-1.5 py-0.5 rounded bg-muted font-mono text-muted-foreground">
+					{subjects.length}
+				</span>
+			{/if}
+		</h2>
+
+		<div class="flex items-center gap-2 shrink-0">
+			<!-- Search -->
+			<div class="relative w-full sm:w-60">
+				<Search class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+				<Input
+					type="text"
+					placeholder={isAr ? "البحث عن مادة..." : "Search subjects..."}
+					class="input-sunken ps-9 text-xs py-1.5 w-full"
+					bind:value={searchQuery}
+				/>
+			</div>
+
+			<!-- Add button -->
+			<Button variant="lime" class="text-xs h-9 px-3 shrink-0" onclick={() => isModalOpen = true}>
+				<Plus size={14} class={isAr ? 'ml-1.5' : 'mr-1.5'} />
+				{isAr ? "إضافة مادة" : "Add Subject"}
+			</Button>
+		</div>
+	</div>
+
+	<!-- Main Subject View Content -->
+	{#if isLoading}
+		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+			<Skeleton class="h-28 w-full" />
+			<Skeleton class="h-28 w-full" />
+			<Skeleton class="h-28 w-full" />
+			<Skeleton class="h-28 w-full" />
+		</div>
+	{:else if error}
+		<div class="flex flex-col items-center justify-center p-8 border border-destructive/20 bg-destructive/5 rounded-xl text-center gap-3">
+			<p class="text-xs text-destructive font-semibold">{isAr ? "حدث خطأ أثناء تحميل المواد" : "Error loading subjects"}</p>
+			<p class="text-xs text-muted-foreground">{error}</p>
+			<Button variant="outline" class="text-xs" onclick={loadData}>{isAr ? "إعادة المحاولة" : "Retry"}</Button>
+		</div>
+	{:else if filteredSubjects.length === 0}
+		<div class="flex flex-col items-center justify-center py-16 text-muted-foreground border border-border border-dashed rounded-xl gap-4">
+			<BookOpen size={48} class="text-muted-foreground/30" />
+			<div class="flex flex-col gap-1 text-center">
+				<p class="text-xs font-semibold">{isAr ? "لا توجد مواد مطابقة" : "No matching subjects found"}</p>
+				<p class="text-[10px] text-muted-foreground/80">
+					{searchQuery ? (isAr ? "جرب تعديل كلمة البحث." : "Try adjusting your search filter.") : (isAr ? "ابدأ بإضافة أول مادة دراسية للمدرسة." : "Start by adding your first school subject.")}
+				</p>
+			</div>
+			{#if !searchQuery}
+				<Button variant="lime" class="text-xs mt-2" onclick={() => isModalOpen = true}>
+					{isAr ? "إضافة مادة" : "Add Subject"}
+				</Button>
+			{/if}
+		</div>
+	{:else}
+		<!-- Subjects Grid -->
+		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" in:fade={{ duration: 200 }}>
+			{#each filteredSubjects as sub (sub.id)}
+				{@const theme = getSubjectTheme(sub.name || sub.name_ar || "")}
+				<div class="card-tactile bg-card flex items-start gap-4 p-4 h-28 select-none group relative transition-all duration-150">
+					<!-- Subject Icon Block -->
+					<div class="h-12 w-12 rounded-lg border flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-105 {theme.bg}">
+						<theme.icon size={22} />
+					</div>
+
+					<!-- Subject Text Info -->
+					<div class="flex flex-col text-start justify-between h-full flex-1 min-w-0">
+						<div class="flex flex-col">
+							<span class="text-xs font-bold text-foreground truncate group-hover:text-primary transition-colors">
+								{sub.name_ar || sub.name || sub.id}
+							</span>
+							{#if sub.name && sub.name_ar}
+								<span class="text-[9px] text-muted-foreground font-mono truncate">{sub.name}</span>
+							{/if}
+						</div>
+
+						<div class="flex items-center justify-between text-[9px] text-muted-foreground mt-1.5 border-t border-border/40 pt-1.5">
+							<span class="px-1.5 py-0.2 rounded border border-border bg-background font-mono">
+								{sub.code || `SUB-${String(sub.id).slice(0, 3).toUpperCase()}`}
+							</span>
+							<span class="flex items-center gap-1">
+								<Award size={9} />
+								<span>{isAr ? `الحصص: ${sub.credit_hours || 3}` : `Periods: ${sub.credit_hours || 3}`}</span>
+							</span>
+						</div>
+					</div>
+				</div>
+			{/each}
+		</div>
+	{/if}
+</div>
+
+<!-- Subject Creation Side Sheet Component -->
+<SubjectCreateSheet bind:open={isModalOpen} orgId={data.orgId} onSuccess={loadData} />
+
