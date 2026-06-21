@@ -121,7 +121,7 @@ async function initializeSchedule() {
     ]);
     classes = classList;
     subjects = subjectList;
-    teachers = userList.filter((u: any) => u.role === "teacher" || u.role === "admin" || u.role === "super_admin");
+    teachers = userList.filter((u: any) => u.primary_role === "teacher" || u.primary_role === "admin" || u.primary_role === "super_admin");
 
     if (classes.length > 0) {
       selectedClassId = String(classes[0].id);
@@ -302,7 +302,7 @@ function getSubjectName(subjectId: string) {
 // Get teacher name
 function getTeacherName(teacherId: string) {
   const teach = teachers.find((t) => String(t.id) === String(teacherId));
-  return teach ? teach.full_name : m.schedule_page_no_teacher();
+  return teach ? (getLocale() === "ar" ? (teach.name_ar || teach.full_name) : teach.full_name) : m.schedule_page_no_teacher();
 }
 
 // Get class name
@@ -381,7 +381,7 @@ function openScheduler(day: number, slotId: string) {
 							class="bg-background text-foreground border border-border rounded-md px-3 py-1.5 text-xs focus:ring-1 focus:ring-ring outline-none"
 						>
 							{#each teachers as teach (teach.id)}
-								<option value={String(teach.id)}>{teach.full_name}</option>
+								<option value={String(teach.id)}>{getLocale() === "ar" ? (teach.name_ar || teach.full_name) : teach.full_name}</option>
 							{/each}
 						</select>
 					{/if}

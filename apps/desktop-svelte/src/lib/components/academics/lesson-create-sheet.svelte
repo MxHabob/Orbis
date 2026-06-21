@@ -176,7 +176,7 @@ async function handleSubmit(e: SubmitEvent) {
 				>
 					<option value="">{m.lesson_option_no_teacher()}</option>
 					{#each teachers as teach (teach.id)}
-						<option value={String(teach.id)}>{teach.full_name}</option>
+						<option value={String(teach.id)}>{getLocale() === "ar" ? (teach.name_ar || teach.full_name) : teach.full_name}</option>
 					{/each}
 				</select>
 			</div>
