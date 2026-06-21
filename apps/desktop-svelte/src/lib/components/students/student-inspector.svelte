@@ -181,7 +181,7 @@ async function handleWithdraw() {
 		<!-- Main Profile Section -->
 		<div class="flex-1 overflow-y-auto p-5 flex flex-col gap-6 scrollbar-hide select-none">
 			<div class="flex flex-col items-center text-center gap-3">
-				<Avatar class="h-16 w-16 ring-2 ring-primary/10 glow-primary">
+				<Avatar class="h-16 w-16 ring-2 ring-primary/20">
 					<AvatarImage src={student.avatar ? String(student.avatar) : undefined} alt={student.full_name ? String(student.full_name) : ''} />
 					<AvatarFallback class="bg-primary/5 text-primary text-lg font-bold">
 						{String(student.full_name || "S").slice(0, 1)}
