@@ -23,7 +23,7 @@ class Timetable {
     var days: List<Int> = listOf(0, 1, 2, 3, 4, 5, 6)
 
     @PlanningEntityCollectionProperty
-    var assignments: List<LessonAssignment> = emptyList()
+    var assignments: List<@JvmSuppressWildcards LessonAssignment> = emptyList()
 
     @ProblemFactCollectionProperty
     var unavailableSlots: List<TeacherUnavailability> = emptyList()

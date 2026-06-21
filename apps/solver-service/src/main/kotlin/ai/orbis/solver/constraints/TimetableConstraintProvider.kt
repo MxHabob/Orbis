@@ -22,9 +22,9 @@ class TimetableConstraintProvider : ConstraintProvider {
     private fun teacherConflict(factory: ConstraintFactory): Constraint =
         factory.forEachUniquePair(
             LessonAssignment::class.java,
-            Joiners.equal(LessonAssignment::getTeacherId),
-            Joiners.equal(LessonAssignment::getTimeSlot),
-            Joiners.equal(LessonAssignment::getDayOfWeek),
+            Joiners.equal(LessonAssignment::teacherId),
+            Joiners.equal(LessonAssignment::timeSlot),
+            Joiners.equal(LessonAssignment::dayOfWeek),
         )
             .penalize(HardSoftScore.ONE_HARD)
             .asConstraint("Teacher conflict")
@@ -32,9 +32,9 @@ class TimetableConstraintProvider : ConstraintProvider {
     private fun classConflict(factory: ConstraintFactory): Constraint =
         factory.forEachUniquePair(
             LessonAssignment::class.java,
-            Joiners.equal(LessonAssignment::getClassId),
-            Joiners.equal(LessonAssignment::getTimeSlot),
-            Joiners.equal(LessonAssignment::getDayOfWeek),
+            Joiners.equal(LessonAssignment::classId),
+            Joiners.equal(LessonAssignment::timeSlot),
+            Joiners.equal(LessonAssignment::dayOfWeek),
         )
             .penalize(HardSoftScore.ONE_HARD)
             .asConstraint("Class conflict")
@@ -42,9 +42,9 @@ class TimetableConstraintProvider : ConstraintProvider {
     private fun roomConflict(factory: ConstraintFactory): Constraint =
         factory.forEachUniquePair(
             LessonAssignment::class.java,
-            Joiners.equal(LessonAssignment::getRoom),
-            Joiners.equal(LessonAssignment::getTimeSlot),
-            Joiners.equal(LessonAssignment::getDayOfWeek),
+            Joiners.equal(LessonAssignment::room),
+            Joiners.equal(LessonAssignment::timeSlot),
+            Joiners.equal(LessonAssignment::dayOfWeek),
         )
             .filter { a, b -> a.room != null && b.room != null }
             .penalize(HardSoftScore.ONE_HARD)
@@ -70,8 +70,8 @@ class TimetableConstraintProvider : ConstraintProvider {
         factory.forEach(LessonAssignment::class.java)
             .join(
                 TeacherUnavailability::class.java,
-                Joiners.equal(LessonAssignment::getTeacherId, TeacherUnavailability::getTeacherId),
-                Joiners.equal(LessonAssignment::getDayOfWeek, TeacherUnavailability::getDayOfWeek),
+                Joiners.equal(LessonAssignment::teacherId, TeacherUnavailability::teacherId),
+                Joiners.equal(LessonAssignment::dayOfWeek, TeacherUnavailability::dayOfWeek),
                 Joiners.filtering { assignment, unavail ->
                     assignment.timeSlot?.id == unavail.timeSlotId
                 },
