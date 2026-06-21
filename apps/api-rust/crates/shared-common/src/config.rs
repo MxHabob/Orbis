@@ -29,7 +29,10 @@ impl Config {
             .ok()
             .and_then(|d| d.parse().ok())
             .unwrap_or(7);
-        let solver_service_url = env::var("SOLVER_SERVICE_URL").ok();
+        let solver_service_url = env::var("SOLVER_SERVICE_URL")
+            .ok()
+            .filter(|s| !s.is_empty())
+            .or_else(|| Some("http://localhost:8081".to_string()));
 
         Config {
             env,
