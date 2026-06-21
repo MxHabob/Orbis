@@ -150,14 +150,14 @@ const breadcrumbs = $derived.by(() => {
 			variant="outline"
 			size="sm"
 			class="font-semibold text-xs text-foreground px-3 gap-2"
-			title="Ask Seer"
-			aria-label="Ask Seer"
+			title="Ask Orbis"
+			aria-label="Ask Orbis"
 		>
 			<svg width="14" height="14" class="text-foreground shrink-0 stroke-[2px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M12 3l8.5 14.7a1 1 0 0 1-.9 1.3H4.4a1 1 0 0 1-.9-1.3L12 3z" />
 				<path d="M12 15a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" />
 			</svg>
-			<span class="whitespace-nowrap">Ask Seer</span>
+			<span class="whitespace-nowrap">Ask Orbis</span>
 			<kbd class="ml-1 rounded px-1 py-0.5 font-mono text-[9px] font-medium text-zinc-400">Ctrl /</kbd>
 		</Button>
 
