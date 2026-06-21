@@ -433,7 +433,7 @@ function openScheduler(day: number, slotId: string) {
 		</div>
 
 		<!-- AI Auto-Scheduler Sidebar Panel (Fixed Side) -->
-		<!-- {#if !isLoading && !error}
+		{#if !isLoading && !error}
 			<SchedulerAiPanel
 				orgId={data.orgId}
 				cycleId={activeCycleId}
@@ -445,7 +445,7 @@ function openScheduler(day: number, slotId: string) {
 				bind:activeJob={activeJob}
 				onApply={loadScheduleLessons}
 			/>
-		{/if} -->
+		{/if}
 	</div>
 </div>
 
