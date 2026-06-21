@@ -11,7 +11,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuPortal,
 } from "@orbis/ui-svelte/dropdown-menu";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@orbis/ui-svelte";
+import { Tooltip, TooltipContent, TooltipTrigger, Avatar, AvatarFallback, AvatarImage } from "@orbis/ui-svelte";
 import { goto } from "$app/navigation";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { onMount } from "svelte";
@@ -120,14 +120,18 @@ function handleSelect(id: string) {
     <div class="flex">
       <Tooltip>
         <TooltipTrigger>
-          <Button
-            variant="outline"
-            size="icon"
-            class="{activeColors.bg} font-bold font-sans text-sm select-none cursor-pointer"
+          <button
+            type="button"
+            class="w-8 h-8 rounded-md {activeColors.bg} outline-none select-none cursor-pointer btn-tactile p-0 border-none flex items-center justify-center relative"
+            style="--btn-shadow: {activeColors.shadow};"
             aria-label={orgNameDisplay}
           >
-            {orgInitials}
-          </Button>
+            <Avatar class="h-full w-full rounded-md bg-transparent">
+              <AvatarFallback class="bg-transparent text-white font-bold text-sm">
+                {orgInitials}
+              </AvatarFallback>
+            </Avatar>
+          </button>
         </TooltipTrigger>
         <TooltipContent side="right" sideOffset={12}>
           {orgNameDisplay}
@@ -139,12 +143,14 @@ function handleSelect(id: string) {
   <DropdownMenuContent align="start" side="right" sideOffset={12} class="w-56 p-1 z-50 bg-popover border border-border shadow-md rounded-md select-none overflow-visible">
     <!-- Header info -->
     <div class="flex items-center gap-3 px-3 py-2.5 border-b border-border/50">
-      <div
-        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] {activeColors.bg} font-bold text-white text-xs"
+      <Avatar
+        class="h-8 w-8 rounded-[8px] {activeColors.bg} font-bold text-white text-xs"
         style="box-shadow: 0 2px 0 0 {activeColors.shadow}, 0 0 0 1px {activeColors.shadow};"
       >
-        {orgInitials}
-      </div>
+        <AvatarFallback class="{activeColors.bg} text-white font-bold text-xs">
+          {orgInitials}
+        </AvatarFallback>
+      </Avatar>
       <div class="flex flex-col min-w-0 leading-tight">
         <span class="text-xs font-bold uppercase tracking-wider text-foreground truncate">{orgNameDisplay}</span>
         <span class="text-[9px] text-muted-foreground uppercase font-semibold">{projects.length} {projects.length === 1 ? 'Project' : 'Projects'}</span>
@@ -183,12 +189,14 @@ function handleSelect(id: string) {
             {#each projects as project}
               {@const projColors = getOrgColors(project.label)}
               <DropdownMenuItem class="cursor-pointer flex items-center gap-2 px-3 py-1.5 text-xs text-foreground hover:bg-accent rounded" onclick={() => handleSelect(project.id)}>
-                <div
-                  class="flex h-5 w-5 shrink-0 items-center justify-center rounded-[6px] {projColors.bg} font-bold text-white text-[9px]"
+                <Avatar
+                  class="h-5 w-5 rounded-[6px] {projColors.bg} font-bold text-white text-[9px]"
                   style="box-shadow: 0 1.5px 0 0 {projColors.shadow}, 0 0 0 0.5px {projColors.shadow};"
                 >
-                  {(project.label || "O").charAt(0).toUpperCase()}
-                </div>
+                  <AvatarFallback class="{projColors.bg} text-white font-bold text-[9px]">
+                    {(project.label || "O").charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
                 <span class="truncate font-medium">{project.label}</span>
               </DropdownMenuItem>
             {/each}

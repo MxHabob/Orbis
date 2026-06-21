@@ -7,7 +7,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuPortal,
 } from "@orbis/ui-svelte/dropdown-menu";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@orbis/ui-svelte";
+import { Tooltip, TooltipContent, TooltipTrigger, Avatar, AvatarFallback, AvatarImage } from "@orbis/ui-svelte";
 import { goto } from "$app/navigation";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { authStore } from "$lib/stores";
@@ -49,23 +49,19 @@ async function handleLogout() {
     <div class="flex">
       <Tooltip>
         <TooltipTrigger>
-          <Button
-            variant="outline"
-            size="icon"
-            class="rounded-[10px] bg-[#b02a87] font-bold text-white font-sans text-sm outline-none select-none cursor-pointer btn-3d-custom"
-            style="--shadow-color: #4a0438;"
+          <button
+            type="button"
+            class="w-8 h-8 rounded-[10px] bg-[#b02a87] outline-none select-none cursor-pointer btn-tactile p-0 border-none flex items-center justify-center relative"
+            style="--btn-shadow: #4a0438;"
             aria-label={m.nav_account()}
           >
-            {#if authStore.user?.avatar}
-              <img
-                src={authStore.user.avatar}
-                alt={authStore.user.full_name ?? 'User'}
-                class="h-full w-full object-cover rounded-[10px]"
-              />
-            {:else}
-              {userInitials}
-            {/if}
-          </Button>
+            <Avatar class="h-full w-full rounded-[10px] bg-transparent">
+              <AvatarImage src={authStore.user?.avatar ? String(authStore.user.avatar) : undefined} alt={authStore.user?.full_name ?? 'User'} class="object-cover" />
+              <AvatarFallback class="bg-transparent text-white font-bold text-sm">
+                {userInitials}
+              </AvatarFallback>
+            </Avatar>
+          </button>
         </TooltipTrigger>
         <TooltipContent side="right" sideOffset={10}>
           {authStore.user?.full_name ?? m.nav_account()}
@@ -78,19 +74,12 @@ async function handleLogout() {
     <DropdownMenuContent align="end" side="right" sideOffset={12} class="w-64 p-1 z-50 bg-popover border border-border shadow-md rounded-md select-none overflow-visible">
       <!-- Header info -->
       <div class="flex items-center gap-3 px-3 py-2.5 border-b border-border/50">
-        <div
-          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#b02a87] font-bold text-white text-xs"
-        >
-          {#if authStore.user?.avatar}
-            <img
-              src={authStore.user.avatar}
-              alt={authStore.user.full_name ?? 'User'}
-              class="h-full w-full object-cover rounded-full"
-            />
-          {:else}
+        <Avatar class="h-8 w-8 rounded-full">
+          <AvatarImage src={authStore.user?.avatar ? String(authStore.user.avatar) : undefined} alt={authStore.user?.full_name ?? 'User'} class="object-cover" />
+          <AvatarFallback class="bg-[#b02a87] text-white font-bold text-xs">
             {userInitials}
-          {/if}
-        </div>
+          </AvatarFallback>
+        </Avatar>
         <div class="flex flex-col min-w-0 leading-tight">
           <span class="text-xs font-bold text-foreground truncate">{displayName}</span>
           <span class="text-[9px] text-muted-foreground truncate font-semibold text-start">{displayEmail}</span>
