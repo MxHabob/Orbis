@@ -109,9 +109,9 @@ const hasActiveFilters = $derived(
 				</div>
 
 				<!-- Student Grid -->
-				<div class="flex-1 min-h-0 bg-card rounded-lg border border-border overflow-hidden">
+				<div class="flex-1 min-h-0 flex flex-col">
 					{#if studentsStore.isLoading}
-						<div class="h-full w-full p-4 flex flex-col gap-3">
+						<div class="h-full w-full p-4 flex flex-col gap-3 bg-card border border-border rounded-lg">
 							<Skeleton class="h-10 w-full" />
 							<Skeleton class="h-8 w-full" />
 							<Skeleton class="h-8 w-full" />
@@ -119,7 +119,7 @@ const hasActiveFilters = $derived(
 							<Skeleton class="h-8 w-full" />
 						</div>
 					{:else if studentsStore.error}
-						<div class="h-full w-full flex flex-col items-center justify-center p-6 text-center gap-3">
+						<div class="h-full w-full flex flex-col items-center justify-center p-6 text-center gap-3 bg-card border border-border rounded-lg">
 							<p class="text-xs text-destructive font-semibold">{m.students_load_error({ error: studentsStore.error })}</p>
 							<Button variant="outline" class="text-xs" onclick={() => studentsStore.load(data.orgId)}>{m.students_retry()}</Button>
 						</div>
