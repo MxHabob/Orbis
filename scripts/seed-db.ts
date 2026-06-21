@@ -397,6 +397,48 @@ try {
 
   // Asset Ledger Accounts
   const ledgerAccounts = [
+    // --- Asset Parent Accounts ---
+    {
+      id: "ledger-1100-parent",
+      code: "1100",
+      name: "Cash and Cash Equivalents",
+      name_ar: "النقدية بالصناديق وشبه النقدية",
+      type: "asset",
+      sub_type: "cash",
+      is_cash: 0,
+      is_bank: 0,
+      is_control: 1,
+      currency: "YER",
+      parent_id: null,
+    },
+    {
+      id: "ledger-1200-parent",
+      code: "1200",
+      name: "Cash at Banks",
+      name_ar: "النقدية بالبنوك المحلية والأجنبية",
+      type: "asset",
+      sub_type: "bank",
+      is_cash: 0,
+      is_bank: 0,
+      is_control: 1,
+      currency: "YER",
+      parent_id: null,
+    },
+    {
+      id: "ledger-1300-parent",
+      code: "1300",
+      name: "Receivables & Accounts Receivable",
+      name_ar: "حسابات المدينين والذمم المدينة للطلاب",
+      type: "asset",
+      sub_type: "receivable",
+      is_cash: 0,
+      is_bank: 0,
+      is_control: 1,
+      currency: "YER",
+      parent_id: null,
+    },
+
+    // --- Asset Leaf Accounts ---
     {
       id: "ledger-1101-safe-main",
       code: "1101",
@@ -408,6 +450,7 @@ try {
       is_bank: 0,
       is_control: 0,
       currency: "YER",
+      parent_id: "ledger-1100-parent",
     },
     {
       id: "ledger-1102-safe-petty",
@@ -420,6 +463,7 @@ try {
       is_bank: 0,
       is_control: 0,
       currency: "YER",
+      parent_id: "ledger-1100-parent",
     },
     {
       id: "ledger-1201-bank-kuraimi",
@@ -432,6 +476,7 @@ try {
       is_bank: 1,
       is_control: 0,
       currency: "YER",
+      parent_id: "ledger-1200-parent",
     },
     {
       id: "ledger-1202-bank-tadhamon",
@@ -444,6 +489,7 @@ try {
       is_bank: 1,
       is_control: 0,
       currency: "YER",
+      parent_id: "ledger-1200-parent",
     },
     {
       id: "ledger-1203-bank-usd",
@@ -456,6 +502,7 @@ try {
       is_bank: 1,
       is_control: 0,
       currency: "USD",
+      parent_id: "ledger-1200-parent",
     },
     {
       id: "ledger-1204-bank-sar",
@@ -468,6 +515,7 @@ try {
       is_bank: 1,
       is_control: 0,
       currency: "SAR",
+      parent_id: "ledger-1200-parent",
     },
     {
       id: "ledger-1301-ar-tuition",
@@ -480,6 +528,7 @@ try {
       is_bank: 0,
       is_control: 1,
       currency: "YER",
+      parent_id: "ledger-1300-parent",
     },
     {
       id: "ledger-1302-ar-bus",
@@ -492,9 +541,24 @@ try {
       is_bank: 0,
       is_control: 1,
       currency: "YER",
+      parent_id: "ledger-1300-parent",
     },
 
-    // Liabilities
+    // --- Liability Parent Accounts ---
+    {
+      id: "ledger-2000-parent",
+      code: "2000",
+      name: "Current Liabilities",
+      name_ar: "الالتزامات والخصوم المتداولة للمدرسة",
+      type: "liability",
+      sub_type: "payable",
+      is_cash: 0,
+      is_bank: 0,
+      is_control: 1,
+      currency: "YER",
+      parent_id: null,
+    },
+    // --- Liability Leaf Accounts ---
     {
       id: "ledger-2101-liab-deferred",
       code: "2101",
@@ -506,6 +570,7 @@ try {
       is_bank: 0,
       is_control: 0,
       currency: "YER",
+      parent_id: "ledger-2000-parent",
     },
     {
       id: "ledger-2201-liab-ap",
@@ -518,6 +583,7 @@ try {
       is_bank: 0,
       is_control: 1,
       currency: "YER",
+      parent_id: "ledger-2000-parent",
     },
     {
       id: "ledger-2301-liab-wages",
@@ -530,9 +596,24 @@ try {
       is_bank: 0,
       is_control: 0,
       currency: "YER",
+      parent_id: "ledger-2000-parent",
     },
 
-    // Equity
+    // --- Equity Parent Accounts ---
+    {
+      id: "ledger-3000-parent",
+      code: "3000",
+      name: "Equity & Capital",
+      name_ar: "رأس المال وحقوق الملكية والتأسيس",
+      type: "equity",
+      sub_type: "capital",
+      is_cash: 0,
+      is_bank: 0,
+      is_control: 1,
+      currency: "YER",
+      parent_id: null,
+    },
+    // --- Equity Leaf Accounts ---
     {
       id: "ledger-3101-eq-capital",
       code: "3101",
@@ -544,6 +625,7 @@ try {
       is_bank: 0,
       is_control: 0,
       currency: "YER",
+      parent_id: "ledger-3000-parent",
     },
     {
       id: "ledger-3201-eq-retained",
@@ -556,9 +638,50 @@ try {
       is_bank: 0,
       is_control: 0,
       currency: "YER",
+      parent_id: "ledger-3000-parent",
     },
 
-    // Revenues
+    // --- Revenue Parent Accounts ---
+    {
+      id: "ledger-4100-parent",
+      code: "4100",
+      name: "Tuition Fees Income",
+      name_ar: "إيرادات الرسوم الدراسية والتعليمية للمراحل",
+      type: "revenue",
+      sub_type: "income",
+      is_cash: 0,
+      is_bank: 0,
+      is_control: 1,
+      currency: "YER",
+      parent_id: null,
+    },
+    {
+      id: "ledger-4200-parent",
+      code: "4200",
+      name: "Other Services & Sales Revenue",
+      name_ar: "إيرادات خدمات النقل والمبيعات والزي",
+      type: "revenue",
+      sub_type: "income",
+      is_cash: 0,
+      is_bank: 0,
+      is_control: 1,
+      currency: "YER",
+      parent_id: null,
+    },
+    {
+      id: "ledger-4300-parent",
+      code: "4300",
+      name: "Activities & Labs Income",
+      name_ar: "إيرادات الأنشطة والمعامل وتقنية المعلومات",
+      type: "revenue",
+      sub_type: "income",
+      is_cash: 0,
+      is_bank: 0,
+      is_control: 1,
+      currency: "YER",
+      parent_id: null,
+    },
+    // --- Revenue Leaf Accounts ---
     {
       id: "ledger-4101-rev-kg",
       code: "4101",
@@ -570,6 +693,7 @@ try {
       is_bank: 0,
       is_control: 0,
       currency: "YER",
+      parent_id: "ledger-4100-parent",
     },
     {
       id: "ledger-4102-rev-primary",
@@ -582,6 +706,7 @@ try {
       is_bank: 0,
       is_control: 0,
       currency: "YER",
+      parent_id: "ledger-4100-parent",
     },
     {
       id: "ledger-4103-rev-middle",
@@ -594,6 +719,7 @@ try {
       is_bank: 0,
       is_control: 0,
       currency: "YER",
+      parent_id: "ledger-4100-parent",
     },
     {
       id: "ledger-4104-rev-high",
@@ -606,6 +732,7 @@ try {
       is_bank: 0,
       is_control: 0,
       currency: "YER",
+      parent_id: "ledger-4100-parent",
     },
     {
       id: "ledger-4201-rev-bus",
@@ -618,6 +745,7 @@ try {
       is_bank: 0,
       is_control: 0,
       currency: "YER",
+      parent_id: "ledger-4200-parent",
     },
     {
       id: "ledger-4202-rev-uniform",
@@ -630,6 +758,7 @@ try {
       is_bank: 0,
       is_control: 0,
       currency: "YER",
+      parent_id: "ledger-4200-parent",
     },
     {
       id: "ledger-4301-rev-activities",
@@ -642,9 +771,63 @@ try {
       is_bank: 0,
       is_control: 0,
       currency: "YER",
+      parent_id: "ledger-4300-parent",
     },
 
-    // Expenses
+    // --- Expense Parent Accounts ---
+    {
+      id: "ledger-5100-parent",
+      code: "5100",
+      name: "Academic & Staff Salaries",
+      name_ar: "مصروفات الرواتب والأجور الأكاديمية والإدارية",
+      type: "expense",
+      sub_type: "cost_of_sales",
+      is_cash: 0,
+      is_bank: 0,
+      is_control: 1,
+      currency: "YER",
+      parent_id: null,
+    },
+    {
+      id: "ledger-5200-parent",
+      code: "5200",
+      name: "Operating & Overhead Expenses",
+      name_ar: "المصروفات التشغيلية والخدمية والإيجارات",
+      type: "expense",
+      sub_type: "overhead",
+      is_cash: 0,
+      is_bank: 0,
+      is_control: 1,
+      currency: "YER",
+      parent_id: null,
+    },
+    {
+      id: "ledger-5300-parent",
+      code: "5300",
+      name: "Maintenance & Facility Supplies",
+      name_ar: "مصاريف صيانة المباني والمنشآت والمستلزمات",
+      type: "expense",
+      sub_type: "overhead",
+      is_cash: 0,
+      is_bank: 0,
+      is_control: 1,
+      currency: "YER",
+      parent_id: null,
+    },
+    {
+      id: "ledger-5400-parent",
+      code: "5400",
+      name: "Marketing & Public Relations",
+      name_ar: "مصاريف التسويق والإعلانات والعلاقات العامة",
+      type: "expense",
+      sub_type: "marketing",
+      is_cash: 0,
+      is_bank: 0,
+      is_control: 1,
+      currency: "YER",
+      parent_id: null,
+    },
+    // --- Expense Leaf Accounts ---
     {
       id: "ledger-5101-exp-salaries-aca",
       code: "5101",
@@ -656,6 +839,7 @@ try {
       is_bank: 0,
       is_control: 0,
       currency: "YER",
+      parent_id: "ledger-5100-parent",
     },
     {
       id: "ledger-5102-exp-salaries-adm",
@@ -668,6 +852,7 @@ try {
       is_bank: 0,
       is_control: 0,
       currency: "YER",
+      parent_id: "ledger-5100-parent",
     },
     {
       id: "ledger-5201-exp-rent",
@@ -680,6 +865,7 @@ try {
       is_bank: 0,
       is_control: 0,
       currency: "YER",
+      parent_id: "ledger-5200-parent",
     },
     {
       id: "ledger-5202-exp-utilities",
@@ -692,6 +878,7 @@ try {
       is_bank: 0,
       is_control: 0,
       currency: "YER",
+      parent_id: "ledger-5200-parent",
     },
     {
       id: "ledger-5203-exp-erp",
@@ -704,6 +891,7 @@ try {
       is_bank: 0,
       is_control: 0,
       currency: "YER",
+      parent_id: "ledger-5200-parent",
     },
     {
       id: "ledger-5301-exp-maintenance",
@@ -716,6 +904,7 @@ try {
       is_bank: 0,
       is_control: 0,
       currency: "YER",
+      parent_id: "ledger-5300-parent",
     },
     {
       id: "ledger-5401-exp-marketing",
@@ -728,13 +917,16 @@ try {
       is_bank: 0,
       is_control: 0,
       currency: "YER",
+      parent_id: "ledger-5400-parent",
     },
   ];
 
   ledgerAccounts.forEach((acc) => {
+    const parentId = acc.parent_id || null;
+    const depth = parentId ? 2 : 1;
     db.prepare(`
       INSERT INTO ledger_accounts (id, org_id, code, name, name_ar, type, sub_type, parent_id, path, depth, currency, opening_balance, current_balance, is_bank_account, is_cash_account, is_control_account, is_active, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, 1, ?, 0.0, 0.0, ?, ?, ?, 1, datetime('now'), datetime('now'))
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0.0, 0.0, ?, ?, ?, 1, datetime('now'), datetime('now'))
     `).run(
       acc.id,
       orgId,
@@ -743,7 +935,9 @@ try {
       acc.name_ar,
       acc.type,
       acc.sub_type,
+      parentId,
       acc.code,
+      depth,
       acc.currency,
       acc.is_bank,
       acc.is_cash,

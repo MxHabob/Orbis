@@ -16,6 +16,7 @@ import {
   BarChart3,
   Compass,
   ChevronRight,
+  ClipboardList,
 } from "lucide-svelte";
 import MainViewport from "$lib/components/layout/MainViewport.svelte";
 import type { Snippet } from "svelte";
@@ -86,6 +87,11 @@ const navItems = $derived([
     label: m.finance_layout_nav_treasuries(),
     icon: Landmark,
     badge: treasuriesCount > 0 ? treasuriesCount : null,
+  },
+  {
+    path: "ledger",
+    label: m.finance_layout_nav_ledger ? m.finance_layout_nav_ledger() : "كشف الحساب",
+    icon: ClipboardList,
   },
   {
     path: "reports",
