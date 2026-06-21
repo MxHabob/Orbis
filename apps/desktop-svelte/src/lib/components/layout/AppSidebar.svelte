@@ -24,6 +24,9 @@ import {
   BarChart3,
   Settings,
   MessageSquare,
+  Zap,
+  Radio,
+  MoreHorizontal,
 } from "lucide-svelte";
 import { authStore } from "$lib/stores";
 import OrgSidebarSwitcher from "./OrgSidebarSwitcher.svelte";
@@ -100,9 +103,6 @@ const navItems = $derived([
     label: m.nav_finance(),
     match: "prefix",
   },
-] as const);
-
-const bottomItems = $derived([
   {
     href: `/${orgId}/settings`,
     icon: Settings,
@@ -133,12 +133,12 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 </script>
 
 <TooltipProvider delayDuration={150}>
-	<div class="flex h-full w-15 shrink-0 flex-col items-center justify-between py-3">
+	<div class="flex h-full w-15 shrink-0 flex-col items-center justify-between py-3  select-none">
 		<div class="flex flex-col items-center gap-3">
 			<OrgSidebarSwitcher {orgId} orgName={orgNameDisplay} />
 
 			<!-- Divider -->
-			<div class="w-8 h-px bg-border/60 my-1 self-center"></div>
+			<div class="w-8 h-px bg-slate-200/80 dark:bg-zinc-800 my-1 self-center"></div>
 
 			{#each navItems as item (item.href)}
 				<div class="flex">
@@ -152,7 +152,7 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 								aria-label={item.label}
 								aria-current={isActive(item.href, item.match) ? 'page' : undefined}
 							>
-								<item.icon size={18} strokeWidth={1.5} />
+								<item.icon size={20} strokeWidth={1.8} />
 							</Button>
 						</TooltipTrigger>
 						<TooltipContent side="right" sideOffset={12}>{item.label}</TooltipContent>
@@ -161,25 +161,37 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 			{/each}
 		</div>
 
-		<div class="flex flex-col gap-3">
-			{#each bottomItems as item (item.href)}
-				<div class="flex">
-					<Tooltip>
-						<TooltipTrigger>
-							<Button
-								href={localizeHref(item.href)}
-								variant="lime"
-								size="icon"
-								class="rounded-[10px]"
-								aria-label={item.label}
-							>
-								<item.icon size={18} strokeWidth={1.8} />
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent side="right" sideOffset={10}>{item.label}</TooltipContent>
-					</Tooltip>
-				</div>
-			{/each}
+		<div class="flex flex-col gap-2 items-center w-full">
+			<div class="flex flex-col items-center w-8 gap-1 overflow-hidden">
+				<Button variant="outline" size="icon" class="w-full h-8 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-zinc-800/60 relative border-b border-[#f1f5f9] dark:border-zinc-800 cursor-pointer">
+					<div class="relative">
+						<div class="w-[20px] h-[20px] rounded-full border border-[#6366f1] dark:border-indigo-400 text-[#6366f1] dark:text-indigo-400 flex items-center justify-center text-[9px] font-bold">
+							7
+						</div>
+						<span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-[#6366f1] border border-white dark:border-zinc-900"></span>
+					</div>
+				</Button>
+
+				<Button variant="outline" size="icon"  class="w-full h-8 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-zinc-800/60 relative border-b border-[#f1f5f9] dark:border-zinc-800 cursor-pointer">
+					<div class="relative">
+						<div class="w-[20px] h-[20px] rounded-full border border-slate-800 dark:border-zinc-400 text-slate-800 dark:text-zinc-400 flex items-center justify-center">
+							<Zap size={10} strokeWidth={2} />
+						</div>
+						<span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-[#6366f1] border border-white dark:border-zinc-900"></span>
+					</div>
+				</Button>
+				<Button variant="outline" size="icon"  class="w-full h-8 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-zinc-800/60 relative border-b border-[#f1f5f9] dark:border-zinc-800 cursor-pointer">
+					<div class="relative">
+						<div class="w-[20px] h-[20px] rounded-full border border-slate-800 dark:border-zinc-400 text-slate-800 dark:text-zinc-400 flex items-center justify-center">
+							<Radio size={10} strokeWidth={2} />
+						</div>
+						<span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-[#6366f1] border border-white dark:border-zinc-900"></span>
+					</div>
+				</Button>
+				<Button variant="outline" size="icon"  class="w-full h-8 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-zinc-800/60 cursor-pointer">
+					<MoreHorizontal size={14} class="text-slate-600 dark:text-zinc-400" />
+				</Button>
+			</div>
 
 			<UserSidebarMenu {orgId} />
 		</div>
