@@ -6,7 +6,7 @@ export const tabsListVariants = tv({
   variants: {
     variant: {
       default:
-        "cn-tabs-list-variant-default bg-muted shadow-[inset_0_1px_2px_0_oklch(0.3_0.05_280_/_0.06)] dark:shadow-[inset_0_1px_3px_0_oklch(0_0_0_/_0.3)]",
+        "cn-tabs-list-variant-default bg-muted shadow-[inset_0_1px_2px_0_oklch(0.3_0.03_285_/_0.06)] dark:shadow-[inset_0_1px_3px_0_oklch(0_0_0_/_0.25)]",
       line: "cn-tabs-list-variant-line gap-1 bg-transparent",
     },
   },

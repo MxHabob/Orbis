@@ -20,8 +20,8 @@ let {
 	data-size={size}
 	class={cn(
 		"data-checked:bg-primary data-unchecked:bg-input focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 dark:data-unchecked:bg-input/80 shrink-0 rounded-full border border-transparent focus-visible:ring-3 aria-invalid:ring-3 data-[size=default]:h-[18.4px] data-[size=default]:w-[32px] data-[size=sm]:h-[14px] data-[size=sm]:w-[24px] peer group/switch relative inline-flex items-center transition-all outline-none after:absolute after:-inset-x-3 after:-inset-y-2 data-disabled:cursor-not-allowed data-disabled:opacity-50",
-		"data-unchecked:shadow-[inset_0_2px_4px_0_oklch(0.3_0.05_280_/_0.15)] dark:data-unchecked:shadow-[inset_0_2px_4px_0_oklch(0_0_0_/_0.4)]",
-		"data-checked:shadow-[0_0_8px_-2px_var(--color-primary)] dark:data-checked:shadow-[0_0_10px_-2px_var(--color-primary)]",
+		"data-unchecked:shadow-[inset_0_2px_4px_0_oklch(0.3_0.03_285_/_0.15)] dark:data-unchecked:shadow-[inset_0_2px_4px_0_oklch(0_0_0_/_0.35)]",
+		"data-checked:shadow-[0_0_6px_-2px_var(--color-primary)] dark:data-checked:shadow-[0_0_8px_-2px_var(--color-primary)]",
 		className
 	)}
 	{...restProps}

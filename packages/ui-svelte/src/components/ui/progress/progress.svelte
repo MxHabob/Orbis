@@ -14,7 +14,7 @@ let {
 <ProgressPrimitive.Root
 	bind:ref
 	data-slot="progress"
-	class={cn("bg-muted h-1 rounded-full relative flex w-full items-center overflow-x-hidden shadow-[inset_0_1px_2px_0_oklch(0.3_0.05_280_/_0.08)] dark:shadow-[inset_0_1px_2px_0_oklch(0_0_0_/_0.3)]", className)}
+	class={cn("bg-muted h-1 rounded-full relative flex w-full items-center overflow-x-hidden shadow-[inset_0_1px_2px_0_oklch(0.3_0.03_285_/_0.06)] dark:shadow-[inset_0_1px_2px_0_oklch(0_0_0_/_0.25)]", className)}
 	{value}
 	{max}
 	{...restProps}
