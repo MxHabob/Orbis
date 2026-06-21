@@ -6,7 +6,7 @@ type Theme = "light" | "dark" | "system";
 class ThemeStore {
   current = $state<Theme>("system");
 
-  resolved = $derived<"light" | "dark">(() => {
+  resolved = $derived.by<"light" | "dark">(() => {
     if (this.current !== "system") return this.current;
     if (typeof window === "undefined") return "light";
     return window.matchMedia("(prefers-color-scheme: dark)").matches
