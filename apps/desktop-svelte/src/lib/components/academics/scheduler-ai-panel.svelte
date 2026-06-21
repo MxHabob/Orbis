@@ -9,9 +9,15 @@ import { Button } from "@orbis/ui-svelte/button";
 import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
-import { 
-  Sparkles, Cpu, Clock, Square, CheckCircle2, 
-  AlertCircle, History, BookOpen 
+import {
+  Sparkles,
+  Cpu,
+  Clock,
+  Square,
+  CheckCircle2,
+  AlertCircle,
+  History,
+  BookOpen,
 } from "lucide-svelte";
 import { authStore } from "$lib/stores/auth.svelte";
 import Resizer from "$lib/components/layout/Resizer.svelte";
@@ -79,7 +85,10 @@ $effect(() => {
 async function loadClassSubjects() {
   if (!selectedClassId || !cycleId) return;
   try {
-    const list = await commands.schedule.getClassSubjects(selectedClassId, cycleId);
+    const list = await commands.schedule.getClassSubjects(
+      selectedClassId,
+      cycleId,
+    );
     classSubjects = list;
   } catch (e) {
     console.error("Error loading class subjects in panel:", e);
@@ -88,7 +97,11 @@ async function loadClassSubjects() {
 
 function getSubjectName(subjectId: string) {
   const sub = subjects.find((s) => String(s.id) === String(subjectId));
-  return sub ? (sub.name_ar || sub.name) : (getLocale() === "ar" ? "مادة غير معروفة" : "Unknown Subject");
+  return sub
+    ? sub.name_ar || sub.name
+    : getLocale() === "ar"
+      ? "مادة غير معروفة"
+      : "Unknown Subject";
 }
 
 async function adjustSubjectHours(csId: string, delta: number) {
@@ -96,15 +109,19 @@ async function adjustSubjectHours(csId: string, delta: number) {
   if (!cs) return;
   const currentHours = cs.weekly_hours || 0;
   const newHours = Math.max(0, currentHours + delta);
-  
+
   try {
     isUpdatingSubjectHours = true;
     await commands.schedule.updateClassSubject(csId, {
-      weekly_hours: newHours
+      weekly_hours: newHours,
     });
     await loadClassSubjects();
     onApply(); // Notify parent to refresh schedule grid
-    toast.success(getLocale() === "ar" ? "تم تحديث الساعات بنجاح" : "Weekly hours updated successfully");
+    toast.success(
+      getLocale() === "ar"
+        ? "تم تحديث الساعات بنجاح"
+        : "Weekly hours updated successfully",
+    );
   } catch (e) {
     toast.error(e instanceof Error ? e.message : String(e));
   } finally {
@@ -117,9 +134,11 @@ async function loadSolveJobs() {
   try {
     const list = await commands.schedule.listSolveJobs(orgId, cycleId);
     solveJobs = list;
-    
+
     // Auto-resume polling if any job is running in background
-    const running = list.find((j: any) => j.status === "pending" || j.status === "running");
+    const running = list.find(
+      (j: any) => j.status === "pending" || j.status === "running",
+    );
     if (running) {
       activeJob = running;
       isSolving = true;
@@ -136,16 +155,20 @@ async function triggerSolving() {
   solveError = null;
   activeJob = null;
   previewDraft = false;
-  
+
   try {
     const userId = authStore.userId || "desktop_user";
     const req = {
       cycle_id: cycleId,
-      mode: solverMode
+      mode: solverMode,
     };
     const job = await commands.schedule.startSolve(orgId, userId, req);
     activeJob = job;
-    toast.success(getLocale() === "ar" ? "تم بدء الجدولة التلقائية في الخلفية" : "Started auto-scheduling in the background");
+    toast.success(
+      getLocale() === "ar"
+        ? "تم بدء الجدولة التلقائية في الخلفية"
+        : "Started auto-scheduling in the background",
+    );
     startPollingJob(String(job.id));
   } catch (e) {
     isSolving = false;
@@ -157,7 +180,7 @@ async function triggerSolving() {
 async function startPollingJob(jobId: string) {
   if (pollingInterval) clearInterval(pollingInterval);
   if (elapsedTimer) clearInterval(elapsedTimer);
-  
+
   solveError = null;
   timeElapsed = 0;
   elapsedTimer = setInterval(() => {
@@ -168,16 +191,28 @@ async function startPollingJob(jobId: string) {
     try {
       const job = await commands.schedule.getSolveJob(orgId, jobId);
       activeJob = job;
-      
-      if (job.status === "completed" || job.status === "failed" || job.status === "cancelled") {
+
+      if (
+        job.status === "completed" ||
+        job.status === "failed" ||
+        job.status === "cancelled"
+      ) {
         stopPolling();
         isSolving = false;
         await loadSolveJobs();
         if (job.status === "completed") {
-          toast.success(getLocale() === "ar" ? "اكتملت عملية الجدولة التلقائية بنجاح!" : "Timetable optimization completed successfully!");
+          toast.success(
+            getLocale() === "ar"
+              ? "اكتملت عملية الجدولة التلقائية بنجاح!"
+              : "Timetable optimization completed successfully!",
+          );
           previewDraft = true;
         } else if (job.status === "failed") {
-          solveError = (job.error_message as string) || (getLocale() === "ar" ? "فشلت عملية الجدولة" : "Optimization job failed");
+          solveError =
+            (job.error_message as string) ||
+            (getLocale() === "ar"
+              ? "فشلت عملية الجدولة"
+              : "Optimization job failed");
           toast.error(solveError);
         }
       }
@@ -205,7 +240,11 @@ async function cancelSolving() {
     activeJob = job;
     stopPolling();
     isSolving = false;
-    toast.info(getLocale() === "ar" ? "تم إلغاء الجدولة التلقائية" : "Optimization job cancelled");
+    toast.info(
+      getLocale() === "ar"
+        ? "تم إلغاء الجدولة التلقائية"
+        : "Optimization job cancelled",
+    );
     await loadSolveJobs();
   } catch (e) {
     toast.error(e instanceof Error ? e.message : String(e));
@@ -215,12 +254,18 @@ async function cancelSolving() {
 async function applySolving() {
   if (!activeJob) return;
   try {
-    toast.loading(getLocale() === "ar" ? "جاري تطبيق الجدول..." : "Applying timetable...");
+    toast.loading(
+      getLocale() === "ar" ? "جاري تطبيق الجدول..." : "Applying timetable...",
+    );
     await commands.schedule.applySolve(orgId, activeJob.id);
     activeJob = null;
     previewDraft = false;
     toast.dismiss();
-    toast.success(getLocale() === "ar" ? "تم تطبيق الجدول وحفظه بنجاح!" : "Timetable applied and saved successfully!");
+    toast.success(
+      getLocale() === "ar"
+        ? "تم تطبيق الجدول وحفظه بنجاح!"
+        : "Timetable applied and saved successfully!",
+    );
     onApply();
     await loadSolveJobs();
   } catch (e) {
@@ -232,13 +277,17 @@ async function applySolving() {
 function discardDraft() {
   activeJob = null;
   previewDraft = false;
-  toast.info(getLocale() === "ar" ? "تم تجاهل مسودة الجدول المقترح" : "Draft timetable discarded");
+  toast.info(
+    getLocale() === "ar"
+      ? "تم تجاهل مسودة الجدول المقترح"
+      : "Draft timetable discarded",
+  );
 }
 
 function formatTime(seconds: number): string {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
-  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
 }
 </script>
 

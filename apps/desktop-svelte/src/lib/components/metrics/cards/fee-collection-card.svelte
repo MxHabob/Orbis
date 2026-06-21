@@ -77,7 +77,9 @@ async function loadData() {
         const year = Number(mon.split("-")[0]);
         const monthIndex = Number(mon.split("-")[1]) - 1;
         const dateObj = new Date(year, monthIndex, 1);
-        const formattedMonth = new Intl.DateTimeFormat(getLocale(), { month: "short" }).format(dateObj);
+        const formattedMonth = new Intl.DateTimeFormat(getLocale(), {
+          month: "short",
+        }).format(dateObj);
 
         return {
           month: formattedMonth,
@@ -91,7 +93,9 @@ async function loadData() {
       data = mockMonths.map((mName, idx) => {
         // Approximate mock dates for display
         const dateObj = new Date(2025, 9 + idx, 1);
-        const formattedMonth = new Intl.DateTimeFormat(getLocale(), { month: "short" }).format(dateObj);
+        const formattedMonth = new Intl.DateTimeFormat(getLocale(), {
+          month: "short",
+        }).format(dateObj);
         const collectedVals = [24000, 32000, 18000, 45000, 38000, 29000];
         const pendingVals = [8000, 12000, 4000, 15000, 10000, 6000];
         return {

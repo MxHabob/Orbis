@@ -6,19 +6,19 @@
 import type { StickyColumnConfig } from "./table-types.js";
 
 export interface StickyColumnsOptions {
-	/** Which columns are sticky and their widths */
-	stickyColumns: StickyColumnConfig[];
-	/** Current column visibility state */
-	columnVisibility?: Record<string, boolean>;
+  /** Which columns are sticky and their widths */
+  stickyColumns: StickyColumnConfig[];
+  /** Current column visibility state */
+  columnVisibility?: Record<string, boolean>;
 }
 
 export interface StickyColumnsState {
-	/** Get inline style for a column (contains --stick-start CSS variable) */
-	getStickyStyle: (columnId: string) => Record<string, string>;
-	/** Get CSS class string for a column */
-	getStickyClass: (columnId: string, baseClass?: string) => string;
-	/** Check if a column is configured as sticky */
-	isSticky: (columnId: string) => boolean;
+  /** Get inline style for a column (contains --stick-start CSS variable) */
+  getStickyStyle: (columnId: string) => Record<string, string>;
+  /** Get CSS class string for a column */
+  getStickyClass: (columnId: string, baseClass?: string) => string;
+  /** Check if a column is configured as sticky */
+  isSticky: (columnId: string) => boolean;
 }
 
 /**
@@ -42,57 +42,59 @@ export interface StickyColumnsState {
  * >
  * ```
  */
-export function createStickyColumns(options: StickyColumnsOptions): StickyColumnsState {
-	const stickyIds = new Set(options.stickyColumns.map((c) => c.id));
+export function createStickyColumns(
+  options: StickyColumnsOptions,
+): StickyColumnsState {
+  const stickyIds = new Set(options.stickyColumns.map((c) => c.id));
 
-	// ── Derived: Cumulative Positions ────────────────────────────────
+  // ── Derived: Cumulative Positions ────────────────────────────────
 
-	const positions = $derived.by(() => {
-		const vis = options.columnVisibility ?? {};
-		const result: Record<string, number> = {};
-		let offset = 0;
+  const positions = $derived.by(() => {
+    const vis = options.columnVisibility ?? {};
+    const result: Record<string, number> = {};
+    let offset = 0;
 
-		for (const col of options.stickyColumns) {
-			// Only count visible columns
-			if (vis[col.id] === false) continue;
-			result[col.id] = offset;
-			offset += col.width;
-		}
+    for (const col of options.stickyColumns) {
+      // Only count visible columns
+      if (vis[col.id] === false) continue;
+      result[col.id] = offset;
+      offset += col.width;
+    }
 
-		return result;
-	});
+    return result;
+  });
 
-	// ── Public API ──────────────────────────────────────────────────
+  // ── Public API ──────────────────────────────────────────────────
 
-	function getStickyStyle(columnId: string): Record<string, string> {
-		const pos = positions[columnId];
-		if (pos === undefined) return {};
-		return { "--stick-start": `${pos}px` };
-	}
+  function getStickyStyle(columnId: string): Record<string, string> {
+    const pos = positions[columnId];
+    if (pos === undefined) return {};
+    return { "--stick-start": `${pos}px` };
+  }
 
-	function getStickyClass(columnId: string, baseClass?: string): string {
-		const parts: string[] = [];
-		if (baseClass) parts.push(baseClass);
+  function getStickyClass(columnId: string, baseClass?: string): string {
+    const parts: string[] = [];
+    if (baseClass) parts.push(baseClass);
 
-		if (stickyIds.has(columnId)) {
-			parts.push(
-				"sticky",
-				"inset-inline-start-[var(--stick-start)]",
-				"z-10",
-				"bg-background",
-			);
-		}
+    if (stickyIds.has(columnId)) {
+      parts.push(
+        "sticky",
+        "inset-inline-start-[var(--stick-start)]",
+        "z-10",
+        "bg-background",
+      );
+    }
 
-		return parts.join(" ");
-	}
+    return parts.join(" ");
+  }
 
-	function isSticky(columnId: string): boolean {
-		return stickyIds.has(columnId);
-	}
+  function isSticky(columnId: string): boolean {
+    return stickyIds.has(columnId);
+  }
 
-	return {
-		getStickyStyle,
-		getStickyClass,
-		isSticky,
-	};
+  return {
+    getStickyStyle,
+    getStickyClass,
+    isSticky,
+  };
 }

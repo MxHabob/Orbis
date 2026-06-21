@@ -9,12 +9,20 @@ import { onMount } from "svelte";
 import { commands } from "$lib/services/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { deLocalizeUrl, localizeHref, getLocale } from "$lib/paraglide/runtime";
-import { Wallet, CreditCard, Landmark, BarChart3, Compass, ChevronRight } from "lucide-svelte";
+import {
+  Wallet,
+  CreditCard,
+  Landmark,
+  BarChart3,
+  Compass,
+  ChevronRight,
+} from "lucide-svelte";
 import MainViewport from "$lib/components/layout/MainViewport.svelte";
 import type { Snippet } from "svelte";
 import * as m from "$lib/paraglide/messages";
 
-let { data, children }: { data: { orgId: string }; children: Snippet } = $props();
+let { data, children }: { data: { orgId: string }; children: Snippet } =
+  $props();
 
 // Sidebar live statistics
 let unpaidFeesCount = $state(0);
@@ -26,7 +34,9 @@ async function loadSidebarStats() {
       commands.finance.getStudentFees(data.orgId),
       commands.finance.getTreasuries(data.orgId),
     ]);
-    unpaidFeesCount = feeList.filter(f => f.status === "unpaid" || f.status === "partially_paid").length;
+    unpaidFeesCount = feeList.filter(
+      (f) => f.status === "unpaid" || f.status === "partially_paid",
+    ).length;
     treasuriesCount = treasuryList.length;
   } catch (e) {
     console.error("Error loading sidebar stats:", e);

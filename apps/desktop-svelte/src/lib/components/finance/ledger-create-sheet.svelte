@@ -7,20 +7,23 @@ Uses the shared @orbis/ui-svelte/sheet component.
 import { commands } from "$lib/services/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
-import { 
-  Sheet, SheetContent, SheetHeader, SheetTitle 
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
 } from "@orbis/ui-svelte/sheet";
 import { Landmark } from "lucide-svelte";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 
-let { 
-  open = $bindable(false), 
-  orgId, 
-  onSuccess 
-}: { 
-  open: boolean; 
-  orgId: string; 
+let {
+  open = $bindable(false),
+  orgId,
+  onSuccess,
+}: {
+  open: boolean;
+  orgId: string;
   onSuccess: () => void;
 } = $props();
 
@@ -29,7 +32,9 @@ let isSubmitting = $state(false);
 let name = $state("");
 let nameAr = $state("");
 let code = $state("");
-let accountType = $state<"revenue" | "expense" | "asset" | "liability">("revenue");
+let accountType = $state<"revenue" | "expense" | "asset" | "liability">(
+  "revenue",
+);
 let currency = $state("YER");
 let description = $state("");
 
@@ -63,7 +68,7 @@ async function handleSubmit(e: SubmitEvent) {
     await commands.finance.createLedgerAccount(orgId, request);
     toast.success(m.ledger_toast_success());
     open = false;
-    
+
     // Reset form fields
     name = "";
     nameAr = "";

@@ -9,9 +9,17 @@ import { commands } from "$lib/services/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import { 
-  Plus, BookOpen, Calculator, FlaskConical, Languages, 
-  Atom, Palette, Heart, Award, Search 
+import {
+  Plus,
+  BookOpen,
+  Calculator,
+  FlaskConical,
+  Languages,
+  Atom,
+  Palette,
+  Heart,
+  Award,
+  Search,
 } from "lucide-svelte";
 import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
@@ -57,33 +65,85 @@ const filteredSubjects = $derived(
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase().trim();
     return (
-      String(sub.name || "").toLowerCase().includes(query) ||
-      String(sub.name_ar || "").toLowerCase().includes(query) ||
-      String(sub.code || "").toLowerCase().includes(query)
+      String(sub.name || "")
+        .toLowerCase()
+        .includes(query) ||
+      String(sub.name_ar || "")
+        .toLowerCase()
+        .includes(query) ||
+      String(sub.code || "")
+        .toLowerCase()
+        .includes(query)
     );
-  })
+  }),
 );
 
 // Map subjects to a themed icon and class
 function getSubjectTheme(nameStr: string) {
   const nameLower = nameStr.toLowerCase();
-  if (nameLower.includes("math") || nameLower.includes("رياض") || nameLower.includes("حساب")) {
-    return { icon: Calculator, bg: "bg-blue-500/10 text-blue-500 border-blue-500/20" };
+  if (
+    nameLower.includes("math") ||
+    nameLower.includes("رياض") ||
+    nameLower.includes("حساب")
+  ) {
+    return {
+      icon: Calculator,
+      bg: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+    };
   }
-  if (nameLower.includes("science") || nameLower.includes("علوم") || nameLower.includes("phys") || nameLower.includes("chem")) {
-    return { icon: FlaskConical, bg: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" };
+  if (
+    nameLower.includes("science") ||
+    nameLower.includes("علوم") ||
+    nameLower.includes("phys") ||
+    nameLower.includes("chem")
+  ) {
+    return {
+      icon: FlaskConical,
+      bg: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+    };
   }
-  if (nameLower.includes("english") || nameLower.includes("انجليزي") || nameLower.includes("lang") || nameLower.includes("فرنسي") || nameLower.includes("french")) {
-    return { icon: Languages, bg: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20" };
+  if (
+    nameLower.includes("english") ||
+    nameLower.includes("انجليزي") ||
+    nameLower.includes("lang") ||
+    nameLower.includes("فرنسي") ||
+    nameLower.includes("french")
+  ) {
+    return {
+      icon: Languages,
+      bg: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
+    };
   }
-  if (nameLower.includes("islam") || nameLower.includes("دين") || nameLower.includes("قرآن") || nameLower.includes("تربية اسلامية")) {
-    return { icon: Heart, bg: "bg-amber-500/10 text-amber-500 border-amber-500/20" };
+  if (
+    nameLower.includes("islam") ||
+    nameLower.includes("دين") ||
+    nameLower.includes("قرآن") ||
+    nameLower.includes("تربية اسلامية")
+  ) {
+    return {
+      icon: Heart,
+      bg: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+    };
   }
-  if (nameLower.includes("art") || nameLower.includes("فنية" ) || nameLower.includes("رسم")) {
-    return { icon: Palette, bg: "bg-pink-500/10 text-pink-500 border-pink-500/20" };
+  if (
+    nameLower.includes("art") ||
+    nameLower.includes("فنية") ||
+    nameLower.includes("رسم")
+  ) {
+    return {
+      icon: Palette,
+      bg: "bg-pink-500/10 text-pink-500 border-pink-500/20",
+    };
   }
-  if (nameLower.includes("computer") || nameLower.includes("حاسب") || nameLower.includes("تقنية")) {
-    return { icon: Atom, bg: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20" };
+  if (
+    nameLower.includes("computer") ||
+    nameLower.includes("حاسب") ||
+    nameLower.includes("تقنية")
+  ) {
+    return {
+      icon: Atom,
+      bg: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20",
+    };
   }
   return { icon: BookOpen, bg: "bg-primary/10 text-primary border-primary/20" };
 }

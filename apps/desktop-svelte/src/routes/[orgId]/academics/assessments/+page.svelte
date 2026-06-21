@@ -9,9 +9,15 @@ import { onMount } from "svelte";
 import { commands } from "$lib/services/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import { 
-  Plus, Award, Percent, Calendar, CheckSquare, 
-  Trash2, AlertCircle, FileText
+import {
+  Plus,
+  Award,
+  Percent,
+  Calendar,
+  CheckSquare,
+  Trash2,
+  AlertCircle,
+  FileText,
 } from "lucide-svelte";
 import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
@@ -52,7 +58,9 @@ async function loadFilters() {
     subjects = subjectList;
     cycles = cycleList;
 
-    const active = cycleList.find((c) => c.is_current === 1 || c.is_current === true) || cycleList[0];
+    const active =
+      cycleList.find((c) => c.is_current === 1 || c.is_current === true) ||
+      cycleList[0];
     if (active) {
       activeCycleId = String(active.id);
     }
@@ -105,7 +113,7 @@ $effect(() => {
 
 // Compute KPI weights
 const totalWeight = $derived(
-  assessments.reduce((sum, ass) => sum + Number(ass.weight || 0), 0)
+  assessments.reduce((sum, ass) => sum + Number(ass.weight || 0), 0),
 );
 
 // Delete assessment
@@ -132,8 +140,10 @@ function getAssessmentTypeLabel(typeStr: string) {
 function getAssessmentTypeColor(typeStr: string) {
   const t = String(typeStr).toLowerCase();
   if (t === "exam") return "bg-rose-500/10 text-rose-500 border-rose-500/20";
-  if (t === "quiz") return "bg-purple-500/10 text-purple-500 border-purple-500/20";
-  if (t === "homework") return "bg-blue-500/10 text-blue-500 border-blue-500/20";
+  if (t === "quiz")
+    return "bg-purple-500/10 text-purple-500 border-purple-500/20";
+  if (t === "homework")
+    return "bg-blue-500/10 text-blue-500 border-blue-500/20";
   return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
 }
 </script>

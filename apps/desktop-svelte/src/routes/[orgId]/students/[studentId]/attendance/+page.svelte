@@ -46,18 +46,33 @@ function getStatusBadge(status: string) {
   switch (norm) {
     case "present":
     case "حاضر":
-      return { label: m.attendance_status_present(), class: "badge-brand-lime" };
+      return {
+        label: m.attendance_status_present(),
+        class: "badge-brand-lime",
+      };
     case "absent":
     case "غائب":
-      return { label: m.attendance_status_absent(), class: "badge-brand-destructive" };
+      return {
+        label: m.attendance_status_absent(),
+        class: "badge-brand-destructive",
+      };
     case "late":
     case "متأخر":
-      return { label: m.attendance_status_late(), class: "badge-brand-default" };
+      return {
+        label: m.attendance_status_late(),
+        class: "badge-brand-default",
+      };
     case "excused":
     case "مستأذن":
-      return { label: m.attendance_status_excused(), class: "badge-brand-primary" };
+      return {
+        label: m.attendance_status_excused(),
+        class: "badge-brand-primary",
+      };
     default:
-      return { label: status || m.attendance_status_unknown(), class: "badge-brand-default" };
+      return {
+        label: status || m.attendance_status_unknown(),
+        class: "badge-brand-default",
+      };
   }
 }
 </script>

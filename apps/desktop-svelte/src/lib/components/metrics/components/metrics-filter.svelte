@@ -70,14 +70,18 @@ const termName = $derived(() => {
   if (selectedTerm === "all") return m.metrics_all_terms();
   const term = terms.find((t) => t.id === selectedTerm);
   if (!term) return m.metrics_all_terms();
-  return getLocale() === "ar" && term.name_ar ? term.name_ar : (term.name || term.name_en || term.name_ar || '');
+  return getLocale() === "ar" && term.name_ar
+    ? term.name_ar
+    : term.name || term.name_en || term.name_ar || "";
 });
 
 const className = $derived(() => {
   if (selectedClass === "all") return m.metrics_all_classes();
   const c = classes.find((i) => i.id === selectedClass);
   if (!c) return m.metrics_all_classes();
-  return getLocale() === "ar" && c.name_ar ? c.name_ar : (c.name || c.name_en || c.name_ar || '');
+  return getLocale() === "ar" && c.name_ar
+    ? c.name_ar
+    : c.name || c.name_en || c.name_ar || "";
 });
 </script>
 

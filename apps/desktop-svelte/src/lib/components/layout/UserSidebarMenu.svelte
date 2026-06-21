@@ -7,7 +7,14 @@ import {
   DropdownMenuTrigger,
   DropdownMenuPortal,
 } from "@orbis/ui-svelte/dropdown-menu";
-import { Tooltip, TooltipContent, TooltipTrigger, Avatar, AvatarFallback, AvatarImage } from "@orbis/ui-svelte";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@orbis/ui-svelte";
 import { goto } from "$app/navigation";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { authStore } from "$lib/stores";
@@ -20,18 +27,15 @@ let {
 } = $props();
 
 const userInitials = $derived(
-  (authStore.user?.full_name ?? "User")
-    .trim()
-    .charAt(0)
-    .toUpperCase() || "U"
+  (authStore.user?.full_name ?? "User").trim().charAt(0).toUpperCase() || "U",
 );
 
 const displayName = $derived(
-  (authStore.user?.full_name ?? "User").toUpperCase()
+  (authStore.user?.full_name ?? "User").toUpperCase(),
 );
 
 const displayEmail = $derived(
-  (authStore.user?.email ?? "no-email@orbis.ai").toUpperCase()
+  (authStore.user?.email ?? "no-email@orbis.ai").toUpperCase(),
 );
 
 function handleNavigate(path: string) {

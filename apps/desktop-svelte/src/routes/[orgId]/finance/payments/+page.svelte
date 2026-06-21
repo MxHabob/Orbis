@@ -7,13 +7,25 @@ Allows launching PaymentRecordSheet.
 <script lang="ts">
 import { onMount } from "svelte";
 import { commands } from "$lib/services/ipc";
-import { 
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@orbis/ui-svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import { Plus, CreditCard, Search, Calendar, FileText, ClipboardList } from "lucide-svelte";
+import {
+  Plus,
+  CreditCard,
+  Search,
+  Calendar,
+  FileText,
+  ClipboardList,
+} from "lucide-svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate } from "$lib/i18n-utils";
 import { fade } from "svelte/transition";
@@ -56,7 +68,7 @@ onMount(() => {
 
 // Derived Filtered List
 const filteredPayments = $derived.by(() => {
-  return payments.filter(p => {
+  return payments.filter((p) => {
     // 1. Search Query
     let matchesSearch = true;
     if (searchQuery) {
@@ -64,7 +76,10 @@ const filteredPayments = $derived.by(() => {
       const studentName = String(p.student_name || "").toLowerCase();
       const studentNum = String(p.student_number || "").toLowerCase();
       const receipt = String(p.receipt_number || p.id || "").toLowerCase();
-      matchesSearch = studentName.includes(q) || studentNum.includes(q) || receipt.includes(q);
+      matchesSearch =
+        studentName.includes(q) ||
+        studentNum.includes(q) ||
+        receipt.includes(q);
     }
 
     // 2. Method
@@ -86,7 +101,7 @@ const stats = $derived.by(() => {
   }
   return {
     total,
-    count: filteredPayments.length
+    count: filteredPayments.length,
   };
 });
 
@@ -100,8 +115,10 @@ function getMethodLabel(methodStr: string) {
 
 function getMethodBadgeClass(methodStr: string) {
   const methodLower = String(methodStr).toLowerCase();
-  if (methodLower === "cash") return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
-  if (methodLower === "bank transfer") return "bg-blue-500/10 text-blue-500 border-blue-500/20";
+  if (methodLower === "cash")
+    return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
+  if (methodLower === "bank transfer")
+    return "bg-blue-500/10 text-blue-500 border-blue-500/20";
   return "bg-purple-500/10 text-purple-500 border-purple-500/20";
 }
 </script>

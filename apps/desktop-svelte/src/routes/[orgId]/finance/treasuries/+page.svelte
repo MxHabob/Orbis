@@ -8,12 +8,24 @@ Triggers TreasuryCreateSheet and LedgerCreateSheet.
 <script lang="ts">
 import { onMount } from "svelte";
 import { commands } from "$lib/services/ipc";
-import { 
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@orbis/ui-svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import { Plus, Landmark, Wallet, Layers, ShieldAlert, Award } from "lucide-svelte";
+import {
+  Plus,
+  Landmark,
+  Wallet,
+  Layers,
+  ShieldAlert,
+  Award,
+} from "lucide-svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency } from "$lib/i18n-utils";
 import { fade } from "svelte/transition";
@@ -59,7 +71,7 @@ onMount(() => {
 
 // Calculations
 const totalTreasuryBalance = $derived(
-  treasuries.reduce((sum, t) => sum + Number(t.balance || 0), 0)
+  treasuries.reduce((sum, t) => sum + Number(t.balance || 0), 0),
 );
 
 function getLedgerTypeLabel(typeStr: string) {
@@ -73,7 +85,8 @@ function getLedgerTypeLabel(typeStr: string) {
 
 function getLedgerTypeBadgeClass(typeStr: string) {
   const t = String(typeStr).toLowerCase();
-  if (t === "revenue") return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
+  if (t === "revenue")
+    return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
   if (t === "expense") return "bg-rose-500/10 text-rose-500 border-rose-500/20";
   if (t === "asset") return "bg-blue-500/10 text-blue-500 border-blue-500/20";
   return "bg-purple-500/10 text-purple-500 border-purple-500/20";

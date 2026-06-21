@@ -7,13 +7,26 @@ Allows triggering FeeAssignSheet to bill a student.
 <script lang="ts">
 import { onMount } from "svelte";
 import { commands } from "$lib/services/ipc";
-import { 
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@orbis/ui-svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import { Plus, Wallet, Search, FilterX, HelpCircle, Calendar, CheckSquare } from "lucide-svelte";
+import {
+  Plus,
+  Wallet,
+  Search,
+  FilterX,
+  HelpCircle,
+  Calendar,
+  CheckSquare,
+} from "lucide-svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate } from "$lib/i18n-utils";
 import { fade } from "svelte/transition";
@@ -56,7 +69,7 @@ onMount(() => {
 
 // Derived Filtered List
 const filteredFees = $derived.by(() => {
-  return fees.filter(f => {
+  return fees.filter((f) => {
     // 1. Search Query
     let matchesSearch = true;
     if (searchQuery) {
@@ -64,9 +77,10 @@ const filteredFees = $derived.by(() => {
       const studentName = String(f.student_name || "").toLowerCase();
       const studentNum = String(f.student_number || "").toLowerCase();
       const desc = String(f.description || "").toLowerCase();
-      matchesSearch = studentName.includes(q) || studentNum.includes(q) || desc.includes(q);
+      matchesSearch =
+        studentName.includes(q) || studentNum.includes(q) || desc.includes(q);
     }
-    
+
     // 2. Status
     let matchesStatus = true;
     if (statusFilter !== "all") {
@@ -89,14 +103,16 @@ const stats = $derived.by(() => {
   return {
     invoiced,
     collected,
-    due: Math.max(0, invoiced - collected)
+    due: Math.max(0, invoiced - collected),
   };
 });
 
 function getStatusBadgeClass(statusStr: string) {
   const s = String(statusStr).toLowerCase();
-  if (s === "paid") return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
-  if (s === "partially_paid") return "bg-amber-500/10 text-amber-500 border-amber-500/20";
+  if (s === "paid")
+    return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
+  if (s === "partially_paid")
+    return "bg-amber-500/10 text-amber-500 border-amber-500/20";
   return "bg-rose-500/10 text-rose-500 border-rose-500/20";
 }
 

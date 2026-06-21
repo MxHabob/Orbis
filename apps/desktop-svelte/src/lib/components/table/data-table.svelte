@@ -20,96 +20,102 @@ Usage:
 -->
 <script lang="ts" generics="T">
 import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-	createTableState,
-	createVirtualList,
-	createStickyColumns,
-	createTablePersistence,
-	type ColumnDef,
-	type TableConfig,
-	type SortDirection,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  createTableState,
+  createVirtualList,
+  createStickyColumns,
+  createTablePersistence,
+  type ColumnDef,
+  type TableConfig,
+  type SortDirection,
 } from "@orbis/ui-svelte";
 import { Skeleton } from "@orbis/ui-svelte";
 import { cn } from "@orbis/ui-svelte/utils";
 import { onMount, type Snippet } from "svelte";
-import { ArrowUp, ArrowDown, GripVertical, Columns3, Download } from "lucide-svelte";
+import {
+  ArrowUp,
+  ArrowDown,
+  GripVertical,
+  Columns3,
+  Download,
+} from "lucide-svelte";
 import { TABLE_CONFIGS, type TableId } from "$lib/config/table-configs";
 
 // ── Props ──────────────────────────────────────────────────────────
 
 interface Props {
-	/** Column definitions */
-	columns: ColumnDef<T>[];
-	/** Source data */
-	data: T[];
-	/** Table identifier for config lookup and persistence */
-	tableId: TableId;
-	/** Custom table config (overrides registry) */
-	config?: TableConfig;
-	/** Extract unique row ID */
-	getRowId?: (row: T) => string;
-	/** Height of the table container */
-	height?: string;
+  /** Column definitions */
+  columns: ColumnDef<T>[];
+  /** Source data */
+  data: T[];
+  /** Table identifier for config lookup and persistence */
+  tableId: TableId;
+  /** Custom table config (overrides registry) */
+  config?: TableConfig;
+  /** Extract unique row ID */
+  getRowId?: (row: T) => string;
+  /** Height of the table container */
+  height?: string;
 
-	// Feature flags
-	enableSorting?: boolean;
-	enableFiltering?: boolean;
-	enableSelection?: boolean;
-	enableResizing?: boolean;
-	enableVirtualization?: boolean;
-	enableExport?: boolean;
-	enableColumnToggle?: boolean;
-	enablePersistence?: boolean;
+  // Feature flags
+  enableSorting?: boolean;
+  enableFiltering?: boolean;
+  enableSelection?: boolean;
+  enableResizing?: boolean;
+  enableVirtualization?: boolean;
+  enableExport?: boolean;
+  enableColumnToggle?: boolean;
+  enablePersistence?: boolean;
 
-	// Loading / Empty
-	loading?: boolean;
-	skeletonRows?: number;
+  // Loading / Empty
+  loading?: boolean;
+  skeletonRows?: number;
 
-	// Callbacks
-	onRowClick?: (row: T, index: number) => void;
-	onSelectionChange?: (selectedIds: Set<string>) => void;
-	onSortChange?: (column: string | null, direction: SortDirection) => void;
+  // Callbacks
+  onRowClick?: (row: T, index: number) => void;
+  onSelectionChange?: (selectedIds: Set<string>) => void;
+  onSortChange?: (column: string | null, direction: SortDirection) => void;
 
-	// Snippets
-	toolbar?: Snippet;
-	bulkActions?: Snippet<[{ count: number; clear: () => void }]>;
-	empty?: Snippet;
-	rowActions?: Snippet<[{ row: T }]>;
+  // Snippets
+  toolbar?: Snippet;
+  bulkActions?: Snippet<[{ count: number; clear: () => void }]>;
+  empty?: Snippet;
+  rowActions?: Snippet<[{ row: T }]>;
 }
 
 let {
-	columns,
-	data,
-	tableId,
-	config,
-	getRowId,
-	height = "calc(100vh - 200px)",
+  columns,
+  data,
+  tableId,
+  config,
+  getRowId,
+  height = "calc(100vh - 200px)",
 
-	enableSorting = true,
-	enableFiltering = true,
-	enableSelection = false,
-	enableResizing = true,
-	enableVirtualization = true,
-	enableExport = true,
-	enableColumnToggle = true,
-	enablePersistence = true,
+  enableSorting = true,
+  enableFiltering = true,
+  enableSelection = false,
+  enableResizing = true,
+  enableVirtualization = true,
+  enableExport = true,
+  enableColumnToggle = true,
+  enablePersistence = true,
 
-	loading = false,
-	skeletonRows = 15,
+  loading = false,
+  skeletonRows = 15,
 
-	onRowClick,
-	onSelectionChange,
-	onSortChange,
+  onRowClick,
+  onSelectionChange,
+  onSortChange,
 
-	toolbar,
-	bulkActions,
-	empty,
-	rowActions,
+  toolbar,
+  bulkActions,
+  empty,
+  rowActions,
 }: Props = $props();
 
 // ── Config ─────────────────────────────────────────────────────────
@@ -119,47 +125,51 @@ const tableConfig = $derived(config ?? TABLE_CONFIGS[tableId]);
 // ── Persistence ────────────────────────────────────────────────────
 
 const persistence = enablePersistence
-	? createTablePersistence({ tableId })
-	: null;
+  ? createTablePersistence({ tableId })
+  : null;
 
 // ── Table State ────────────────────────────────────────────────────
 
 const table = createTableState<T>({
-	data,
-	columns,
-	getRowId,
-	config: tableConfig,
-	enableSorting,
-	enableFiltering,
-	enableColumnResizing: enableResizing,
-	enableRowSelection: enableSelection,
-	initialColumnVisibility: persistence?.columnVisibility,
-	initialColumnSizing: persistence?.columnSizing,
-	initialColumnOrder: persistence?.columnOrder,
-	initialSorting: persistence?.sorting,
-	onSortingChange: (s) => onSortChange?.(s.column, s.direction),
-	onSelectionChange,
+  data,
+  columns,
+  getRowId,
+  config: tableConfig,
+  enableSorting,
+  enableFiltering,
+  enableColumnResizing: enableResizing,
+  enableRowSelection: enableSelection,
+  initialColumnVisibility: persistence?.columnVisibility,
+  initialColumnSizing: persistence?.columnSizing,
+  initialColumnOrder: persistence?.columnOrder,
+  initialSorting: persistence?.sorting,
+  onSortingChange: (s) => onSortChange?.(s.column, s.direction),
+  onSelectionChange,
 });
 
 // Sync data changes from parent
-$effect(() => { table.data = data; });
-$effect(() => { table.columns = columns; });
+$effect(() => {
+  table.data = data;
+});
+$effect(() => {
+  table.columns = columns;
+});
 
 // Sync state to persistence
 $effect(() => {
-	if (persistence) {
-		persistence.columnVisibility = table.columnVisibility;
-		persistence.columnSizing = table.columnSizing;
-		persistence.columnOrder = table.columnOrder;
-		persistence.sorting = table.sorting;
-	}
+  if (persistence) {
+    persistence.columnVisibility = table.columnVisibility;
+    persistence.columnSizing = table.columnSizing;
+    persistence.columnOrder = table.columnOrder;
+    persistence.sorting = table.sorting;
+  }
 });
 
 // ── Sticky Columns ─────────────────────────────────────────────────
 
 const sticky = createStickyColumns({
-	stickyColumns: tableConfig?.stickyColumns ?? [],
-	columnVisibility: table.columnVisibility,
+  stickyColumns: tableConfig?.stickyColumns ?? [],
+  columnVisibility: table.columnVisibility,
 });
 
 // ── Virtualization ─────────────────────────────────────────────────
@@ -167,19 +177,21 @@ const sticky = createStickyColumns({
 let containerEl: HTMLDivElement | undefined = $state();
 
 const virtual = enableVirtualization
-	? createVirtualList({
-			get count() { return table.rowCount; },
-			estimateSize: tableConfig?.rowHeight ?? 45,
-			overscan: 12,
-			getScrollElement: () => containerEl ?? null,
-		})
-	: null;
+  ? createVirtualList({
+      get count() {
+        return table.rowCount;
+      },
+      estimateSize: tableConfig?.rowHeight ?? 45,
+      overscan: 12,
+      getScrollElement: () => containerEl ?? null,
+    })
+  : null;
 
 onMount(() => {
-	if (virtual && containerEl) {
-		(virtual as any).attach();
-		return () => (virtual as any).detach();
-	}
+  if (virtual && containerEl) {
+    (virtual as any).attach();
+    return () => (virtual as any).detach();
+  }
 });
 
 // ── Column Toggle State ────────────────────────────────────────────
@@ -193,40 +205,40 @@ let resizeStartX = $state(0);
 let resizeStartWidth = $state(0);
 
 function startResize(event: PointerEvent, columnId: string) {
-	event.preventDefault();
-	event.stopPropagation();
-	resizingColumnId = columnId;
-	resizeStartX = event.clientX;
-	resizeStartWidth = table.getColumnSize(columnId);
+  event.preventDefault();
+  event.stopPropagation();
+  resizingColumnId = columnId;
+  resizeStartX = event.clientX;
+  resizeStartWidth = table.getColumnSize(columnId);
 
-	const onMove = (e: PointerEvent) => {
-		if (!resizingColumnId) return;
-		// Use logical direction: in RTL, moving left increases width
-		const dir = document.documentElement.dir === "rtl" ? -1 : 1;
-		const delta = (e.clientX - resizeStartX) * dir;
-		table.setColumnSize(resizingColumnId, resizeStartWidth + delta);
-	};
+  const onMove = (e: PointerEvent) => {
+    if (!resizingColumnId) return;
+    // Use logical direction: in RTL, moving left increases width
+    const dir = document.documentElement.dir === "rtl" ? -1 : 1;
+    const delta = (e.clientX - resizeStartX) * dir;
+    table.setColumnSize(resizingColumnId, resizeStartWidth + delta);
+  };
 
-	const onUp = () => {
-		resizingColumnId = null;
-		document.removeEventListener("pointermove", onMove);
-		document.removeEventListener("pointerup", onUp);
-	};
+  const onUp = () => {
+    resizingColumnId = null;
+    document.removeEventListener("pointermove", onMove);
+    document.removeEventListener("pointerup", onUp);
+  };
 
-	document.addEventListener("pointermove", onMove);
-	document.addEventListener("pointerup", onUp);
+  document.addEventListener("pointermove", onMove);
+  document.addEventListener("pointerup", onUp);
 }
 
 // ── Export ──────────────────────────────────────────────────────────
 
 async function handleExport(format: "csv" | "json") {
-	const { exportTableData } = await import("@orbis/ui-svelte");
-	await exportTableData({
-		data: table.processedRows,
-		columns: table.visibleColumns,
-		format,
-		filename: tableId,
-	});
+  const { exportTableData } = await import("@orbis/ui-svelte");
+  await exportTableData({
+    data: table.processedRows,
+    columns: table.visibleColumns,
+    format,
+    filename: tableId,
+  });
 }
 
 // ── Computed helpers ───────────────────────────────────────────────
@@ -235,12 +247,14 @@ const rowHeight = $derived(tableConfig?.rowHeight ?? 45);
 const rows = $derived(table.processedRows);
 
 function getSortIcon(columnId: string): SortDirection | null {
-	if (table.sorting.column !== columnId) return null;
-	return table.sorting.direction;
+  if (table.sorting.column !== columnId) return null;
+  return table.sorting.direction;
 }
 
 function styleObj(obj: Record<string, string>): string {
-	return Object.entries(obj).map(([k, v]) => `${k}:${v}`).join(";");
+  return Object.entries(obj)
+    .map(([k, v]) => `${k}:${v}`)
+    .join(";");
 }
 </script>
 

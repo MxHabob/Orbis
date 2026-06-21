@@ -7,20 +7,23 @@ Uses the shared @orbis/ui-svelte/sheet component.
 import { commands } from "$lib/services/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
-import { 
-  Sheet, SheetContent, SheetHeader, SheetTitle 
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
 } from "@orbis/ui-svelte/sheet";
 import { Landmark } from "lucide-svelte";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 
-let { 
-  open = $bindable(false), 
-  orgId, 
-  onSuccess 
-}: { 
-  open: boolean; 
-  orgId: string; 
+let {
+  open = $bindable(false),
+  orgId,
+  onSuccess,
+}: {
+  open: boolean;
+  orgId: string;
   onSuccess: () => void;
 } = $props();
 
@@ -44,7 +47,12 @@ async function loadLedgerAccounts() {
   isLoadingLedgers = true;
   try {
     const list = await commands.finance.getLedgerAccounts(orgId);
-    ledgers = list.filter((l: any) => String(l.item_type || "").toLowerCase() === 'asset' || l.is_bank_account === 1 || l.is_cash_account === 1);
+    ledgers = list.filter(
+      (l: any) =>
+        String(l.item_type || "").toLowerCase() === "asset" ||
+        l.is_bank_account === 1 ||
+        l.is_cash_account === 1,
+    );
     if (ledgers.length > 0) {
       selectedLedgerId = ledgers[0].id;
     }
@@ -84,13 +92,14 @@ async function handleSubmit(e: SubmitEvent) {
       item_type: treasuryType,
       ledger_account_id: selectedLedgerId,
       currency: currency.trim().toUpperCase(),
-      bank_name: treasuryType === "bank" ? (bankName || undefined) : undefined,
-      account_number: treasuryType === "bank" ? (accountNumber || undefined) : undefined,
+      bank_name: treasuryType === "bank" ? bankName || undefined : undefined,
+      account_number:
+        treasuryType === "bank" ? accountNumber || undefined : undefined,
     };
     await commands.finance.createTreasury(orgId, request);
     toast.success(m.treasury_toast_success());
     open = false;
-    
+
     // Reset form fields
     name = "";
     nameAr = "";

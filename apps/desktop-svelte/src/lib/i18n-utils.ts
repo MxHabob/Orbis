@@ -4,11 +4,16 @@ import { getLocale } from "$lib/paraglide/runtime";
  * Formats a currency amount to the current locale's format.
  * Defaults to YER.
  */
-export function formatCurrency(amount: number | null | undefined, currency: string = "YER"): string {
+export function formatCurrency(
+  amount: number | null | undefined,
+  currency: string = "YER",
+): string {
   if (amount === null || amount === undefined) return "";
   const lang = getLocale();
   // Clean up currency code if it has modifiers
-  const cleanCurrency = String(currency || "YER").trim().toUpperCase();
+  const cleanCurrency = String(currency || "YER")
+    .trim()
+    .toUpperCase();
   try {
     return new Intl.NumberFormat(lang === "ar" ? "ar-YE" : "en-US", {
       style: "currency",

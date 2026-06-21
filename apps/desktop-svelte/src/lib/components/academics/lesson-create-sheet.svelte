@@ -7,8 +7,11 @@ Uses the shared @orbis/ui-svelte/sheet component and integrates real-time confli
 import { commands } from "$lib/services/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
-import { 
-  Sheet, SheetContent, SheetHeader, SheetTitle 
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
 } from "@orbis/ui-svelte/sheet";
 import { ShieldAlert, Calendar, X } from "lucide-svelte";
 import { toast } from "svelte-sonner";
@@ -16,19 +19,19 @@ import { getLocale } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
 import * as m from "$lib/paraglide/messages";
 
-let { 
-  open = $bindable(false), 
-  orgId, 
+let {
+  open = $bindable(false),
+  orgId,
   cycleId,
   classId,
   dayOfWeek,
   timeSlotId,
   subjects = [],
   teachers = [],
-  onSuccess 
-}: { 
-  open: boolean; 
-  orgId: string; 
+  onSuccess,
+}: {
+  open: boolean;
+  orgId: string;
   cycleId: string;
   classId: string;
   dayOfWeek: number;
@@ -79,7 +82,9 @@ async function checkScheduleConflict() {
     });
     if (conflicts && conflicts.length > 0) {
       const first = conflicts[0] as any;
-      conflictError = m.lesson_sheet_conflict_err({ type: String(first.conflict_type || "") });
+      conflictError = m.lesson_sheet_conflict_err({
+        type: String(first.conflict_type || ""),
+      });
     }
   } catch (e) {
     console.warn("Conflict check bypassed:", e);
@@ -108,7 +113,7 @@ async function handleSubmit(e: SubmitEvent) {
     await commands.schedule.createLesson(orgId, request);
     toast.success(m.lesson_toast_success());
     open = false;
-    
+
     // Reset fields
     formSubjectId = "";
     formTeacherId = "";

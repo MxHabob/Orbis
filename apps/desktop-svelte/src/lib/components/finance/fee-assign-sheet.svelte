@@ -8,21 +8,24 @@ import { onMount } from "svelte";
 import { commands } from "$lib/services/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
-import { 
-  Sheet, SheetContent, SheetHeader, SheetTitle 
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
 } from "@orbis/ui-svelte/sheet";
 import { Wallet } from "lucide-svelte";
 import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 
-let { 
-  open = $bindable(false), 
-  orgId, 
-  onSuccess 
-}: { 
-  open: boolean; 
-  orgId: string; 
+let {
+  open = $bindable(false),
+  orgId,
+  onSuccess,
+}: {
+  open: boolean;
+  orgId: string;
   onSuccess: () => void;
 } = $props();
 
@@ -49,8 +52,9 @@ async function loadDropdownData() {
     ]);
     students = studentList;
     ledgers = ledgerList;
-    
-    if (studentList.length > 0) selectedEnrollmentId = String(studentList[0].id);
+
+    if (studentList.length > 0)
+      selectedEnrollmentId = String(studentList[0].id);
     if (ledgerList.length > 0) selectedLedgerId = String(ledgerList[0].id);
   } catch (e) {
     console.error("Error loading dropdown data for fee-assign-sheet:", e);
@@ -93,7 +97,7 @@ async function handleSubmit(e: SubmitEvent) {
     await commands.finance.assignStudentFee(orgId, request);
     toast.success(m.fee_toast_success());
     open = false;
-    
+
     // Reset form
     amount = null;
     description = "";

@@ -9,12 +9,20 @@ import { onMount } from "svelte";
 import { commands } from "$lib/services/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { deLocalizeUrl, localizeHref, getLocale } from "$lib/paraglide/runtime";
-import { GraduationCap, BookOpen, Calendar, Award, Compass, ChevronRight } from "lucide-svelte";
+import {
+  GraduationCap,
+  BookOpen,
+  Calendar,
+  Award,
+  Compass,
+  ChevronRight,
+} from "lucide-svelte";
 import MainViewport from "$lib/components/layout/MainViewport.svelte";
 import type { Snippet } from "svelte";
 import * as m from "$lib/paraglide/messages";
 
-let { data, children }: { data: { orgId: string }; children: Snippet } = $props();
+let { data, children }: { data: { orgId: string }; children: Snippet } =
+  $props();
 
 // Sidebar live statistics
 let classesCount = $state(0);

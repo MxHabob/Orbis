@@ -7,20 +7,23 @@ Uses the shared @orbis/ui-svelte/sheet component.
 import { commands } from "$lib/services/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
-import { 
-  Sheet, SheetContent, SheetHeader, SheetTitle 
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
 } from "@orbis/ui-svelte/sheet";
 import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 
-let { 
-  open = $bindable(false), 
-  orgId, 
-  onSuccess 
-}: { 
-  open: boolean; 
-  orgId: string; 
+let {
+  open = $bindable(false),
+  orgId,
+  onSuccess,
+}: {
+  open: boolean;
+  orgId: string;
   onSuccess: () => void;
 } = $props();
 
@@ -50,7 +53,7 @@ async function handleSubmit(e: SubmitEvent) {
     await commands.classes.create(orgId, request);
     toast.success(m.class_toast_success());
     open = false;
-    
+
     // Reset fields
     name = "";
     nameAr = "";

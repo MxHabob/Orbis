@@ -7,22 +7,25 @@ Uses the shared @orbis/ui-svelte/sheet component.
 import { commands } from "$lib/services/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
-import { 
-  Sheet, SheetContent, SheetHeader, SheetTitle 
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
 } from "@orbis/ui-svelte/sheet";
 import { Award } from "lucide-svelte";
 import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 
-let { 
-  open = $bindable(false), 
+let {
+  open = $bindable(false),
   classId,
   subjectId,
   cycleId,
-  onSuccess 
-}: { 
-  open: boolean; 
+  onSuccess,
+}: {
+  open: boolean;
   classId: string;
   subjectId: string;
   cycleId: string;
@@ -58,7 +61,7 @@ async function handleSubmit(e: SubmitEvent) {
     await commands.assessments.create(request);
     toast.success(m.assessment_toast_success());
     open = false;
-    
+
     // Reset fields
     name = "";
     nameAr = "";

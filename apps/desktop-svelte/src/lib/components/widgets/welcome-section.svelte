@@ -57,25 +57,37 @@ const insights = $derived.by<Insight[]>(() => {
   if (!stats) return [];
 
   const studentLink = m.insight_students_link({ count: stats.total_students });
-  const studentParts = m.insight_students({ link: "||LINK||" }).split("||LINK||");
+  const studentParts = m
+    .insight_students({ link: "||LINK||" })
+    .split("||LINK||");
 
-  const attendanceLink = m.insight_attendance_link({ rate: stats.attendance_overview?.present_rate ?? 0 });
-  const attendanceParts = m.insight_attendance({
-    link: "||LINK||",
-    lateRate: stats.attendance_overview?.late_rate ?? 0
-  }).split("||LINK||");
+  const attendanceLink = m.insight_attendance_link({
+    rate: stats.attendance_overview?.present_rate ?? 0,
+  });
+  const attendanceParts = m
+    .insight_attendance({
+      link: "||LINK||",
+      lateRate: stats.attendance_overview?.late_rate ?? 0,
+    })
+    .split("||LINK||");
 
   const classLink = m.insight_classes_link({ count: stats.total_classes });
-  const classParts = m.insight_classes({
-    link: "||LINK||",
-    teacherCount: stats.total_teachers
-  }).split("||LINK||");
+  const classParts = m
+    .insight_classes({
+      link: "||LINK||",
+      teacherCount: stats.total_teachers,
+    })
+    .split("||LINK||");
 
-  const behaviorLink = m.insight_behavior_link({ count: stats.behavior_summary?.total_records ?? 0 });
-  const behaviorParts = m.insight_behavior({
-    link: "||LINK||",
-    criticalCount: stats.behavior_summary?.critical_count ?? 0
-  }).split("||LINK||");
+  const behaviorLink = m.insight_behavior_link({
+    count: stats.behavior_summary?.total_records ?? 0,
+  });
+  const behaviorParts = m
+    .insight_behavior({
+      link: "||LINK||",
+      criticalCount: stats.behavior_summary?.critical_count ?? 0,
+    })
+    .split("||LINK||");
 
   const staffLink = m.insight_staff_link({ count: stats.total_staff });
   const staffParts = m.insight_staff({ link: "||LINK||" }).split("||LINK||");

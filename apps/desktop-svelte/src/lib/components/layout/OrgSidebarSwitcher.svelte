@@ -11,7 +11,14 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuPortal,
 } from "@orbis/ui-svelte/dropdown-menu";
-import { Tooltip, TooltipContent, TooltipTrigger, Avatar, AvatarFallback, AvatarImage } from "@orbis/ui-svelte";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@orbis/ui-svelte";
 import { goto } from "$app/navigation";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { onMount } from "svelte";
@@ -25,7 +32,9 @@ let {
 } = $props();
 
 let localOrgName = $state("");
-let customProjects = $state<{ id: string; label: string; logoType: string }[]>([]);
+let customProjects = $state<{ id: string; label: string; logoType: string }[]>(
+  [],
+);
 
 $effect(() => {
   if (initialOrgName && initialOrgName !== "Orbis School") {
@@ -44,19 +53,21 @@ $effect(() => {
     } catch {}
   }
   if (orgId) {
-    localOrgName = orgId.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+    localOrgName = orgId
+      .split("-")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
   } else {
     localOrgName = "Orbis School";
   }
 });
 
-const orgNameDisplay = $derived(localOrgName || initialOrgName || "Orbis School");
+const orgNameDisplay = $derived(
+  localOrgName || initialOrgName || "Orbis School",
+);
 
 const orgInitials = $derived(
-  orgNameDisplay
-    .trim()
-    .charAt(0)
-    .toUpperCase() || "O"
+  orgNameDisplay.trim().charAt(0).toUpperCase() || "O",
 );
 
 onMount(() => {
@@ -90,11 +101,11 @@ function getOrgColors(name: string) {
     { bg: "bg-[#7c3aed]", shadow: "#2e1065" }, // Violet
     { bg: "bg-[#d97706]", shadow: "#78350f" }, // Amber
   ];
-  
+
   if (safeName.includes("authen") || safeName.includes("orbis")) {
     return colors[0];
   }
-  
+
   let hash = 0;
   for (let i = 0; i < safeName.length; i++) {
     hash = safeName.charCodeAt(i) + ((hash << 5) - hash);
@@ -112,7 +123,6 @@ function handleNavigate(path: string) {
 function handleSelect(id: string) {
   goto(localizeHref(`/${id}`));
 }
-
 </script>
 
 <DropdownMenu>

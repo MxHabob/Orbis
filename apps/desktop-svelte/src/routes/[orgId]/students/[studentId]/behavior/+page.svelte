@@ -71,14 +71,15 @@ async function handleAISummarize() {
         aiRes.analysis ||
         (getLocale() === "ar"
           ? "الطالب يظهر انضباطاً ممتازاً وتفاعلاً إيجابياً في الحصص الدراسية. يوصى بمواصلة تشجيعه للمحافظة على مستواه العلمي المتميز."
-          : "The student shows excellent discipline and positive engagement in classes. It is recommended to continue encouraging them to maintain their outstanding academic performance.")
+          : "The student shows excellent discipline and positive engagement in classes. It is recommended to continue encouraging them to maintain their outstanding academic performance."),
     );
     toast.success(m.behavior_ai_success());
   } catch (e) {
     // Fallback beautiful analysis
-    aiSummary = getLocale() === "ar"
-      ? "الطالب يظهر سلوكاً منضبطاً جداً بشكل عام. مشاركته في الأنشطة المدرسية متميزة ولا توجد عليه أي مخالفات سلوكية مقيدة في السجل حتى تاريخه."
-      : "The student generally shows very disciplined behavior. Their participation in school activities is outstanding, and there are no recorded behavioral violations in the log to date.";
+    aiSummary =
+      getLocale() === "ar"
+        ? "الطالب يظهر سلوكاً منضبطاً جداً بشكل عام. مشاركته في الأنشطة المدرسية متميزة ولا توجد عليه أي مخالفات سلوكية مقيدة في السجل حتى تاريخه."
+        : "The student generally shows very disciplined behavior. Their participation in school activities is outstanding, and there are no recorded behavioral violations in the log to date.";
     toast.success(m.behavior_ai_success());
   } finally {
     isGeneratingAI = false;

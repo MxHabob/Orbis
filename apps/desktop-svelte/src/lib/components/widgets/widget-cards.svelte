@@ -7,30 +7,32 @@ let { stats, orgId }: { stats: any; orgId: string } = $props();
 
 const studentVal = $derived(formatNumber(stats?.total_students ?? 0));
 const studentDetail = $derived(
-  m.card_detail_across_classes({ count: stats?.total_classes ?? 0 })
+  m.card_detail_across_classes({ count: stats?.total_classes ?? 0 }),
 );
 
 const attendanceVal = $derived(
-  formatPercent(stats?.attendance_overview?.present_rate ?? 0)
+  formatPercent(stats?.attendance_overview?.present_rate ?? 0),
 );
 const attendanceDetail = $derived(
   m.card_detail_late_absent({
     lateRate: stats?.attendance_overview?.late_rate ?? 0,
     absentRate: stats?.attendance_overview?.absent_rate ?? 0,
-  })
+  }),
 );
 
 const classesVal = $derived(formatNumber(stats?.total_classes ?? 0));
 const classesDetail = $derived(
-  m.card_detail_managed_by({ count: stats?.total_teachers ?? 0 })
+  m.card_detail_managed_by({ count: stats?.total_teachers ?? 0 }),
 );
 
 const behaviorPoints = $derived(stats?.behavior_summary?.net_points ?? 0);
 const behaviorVal = $derived(
-  `${behaviorPoints > 0 ? "+" : ""}${formatNumber(behaviorPoints)}`
+  `${behaviorPoints > 0 ? "+" : ""}${formatNumber(behaviorPoints)}`,
 );
 const behaviorDetail = $derived(
-  m.card_detail_critical_incidents({ count: stats?.behavior_summary?.critical_count ?? 0 })
+  m.card_detail_critical_incidents({
+    count: stats?.behavior_summary?.critical_count ?? 0,
+  }),
 );
 
 const staffVal = $derived(formatNumber(stats?.total_staff ?? 0));
@@ -38,7 +40,7 @@ const staffDetail = $derived(m.card_detail_admin_roles());
 
 const enrollmentVal = $derived(formatPercent(stats?.enrollment_rate ?? 0));
 const enrollmentDetail = $derived(
-  m.card_detail_total_enrolled({ count: stats?.total_enrollments ?? 0 })
+  m.card_detail_total_enrolled({ count: stats?.total_enrollments ?? 0 }),
 );
 </script>
 

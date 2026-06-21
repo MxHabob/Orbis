@@ -63,14 +63,18 @@ $effect(() => {
     } catch {}
   }
   if (orgId) {
-    localOrgName = orgId.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+    localOrgName = orgId
+      .split("-")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
   } else {
     localOrgName = "Orbis School";
   }
 });
 
-const orgNameDisplay = $derived(localOrgName || initialOrgName || "Orbis School");
-
+const orgNameDisplay = $derived(
+  localOrgName || initialOrgName || "Orbis School",
+);
 
 const navItems = $derived([
   {
@@ -112,17 +116,11 @@ const navItems = $derived([
 ] as const);
 
 const userInitials = $derived(
-  (authStore.user?.full_name ?? "User")
-    .trim()
-    .charAt(0)
-    .toUpperCase() || "U"
+  (authStore.user?.full_name ?? "User").trim().charAt(0).toUpperCase() || "U",
 );
 
 const orgInitials = $derived(
-  orgNameDisplay
-    .trim()
-    .charAt(0)
-    .toUpperCase() || "O"
+  orgNameDisplay.trim().charAt(0).toUpperCase() || "O",
 );
 
 function isActive(href: string, match: "exact" | "prefix"): boolean {

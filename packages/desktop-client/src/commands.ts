@@ -422,8 +422,11 @@ export const commands = {
       }),
 
     // ── Solver & AI Scheduler ────────────────────────────────────────────────
-    startSolve: (orgId: string, userId: string, req: { cycle_id: string; mode: string }) =>
-      invoke<JsonRecord>("start_schedule_solve", { orgId, userId, req }),
+    startSolve: (
+      orgId: string,
+      userId: string,
+      req: { cycle_id: string; mode: string },
+    ) => invoke<JsonRecord>("start_schedule_solve", { orgId, userId, req }),
 
     getSolveJob: (orgId: string, jobId: string) =>
       invoke<JsonRecord>("get_schedule_solve_job", { orgId, jobId }),

@@ -10,9 +10,15 @@ import { commands } from "$lib/services/ipc";
 import { Card } from "@orbis/ui-svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import { 
-  Wallet, CreditCard, Landmark, BarChart3, 
-  ArrowRight, ShieldCheck, TrendingUp, HelpCircle 
+import {
+  Wallet,
+  CreditCard,
+  Landmark,
+  BarChart3,
+  ArrowRight,
+  ShieldCheck,
+  TrendingUp,
+  HelpCircle,
 } from "lucide-svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency } from "$lib/i18n-utils";
@@ -29,7 +35,9 @@ let treasuryAssets = $state(0);
 let error = $state<string | null>(null);
 
 const balanceDue = $derived(Math.max(0, totalFees - totalPaid));
-const collectionRate = $derived(totalFees > 0 ? Math.round((totalPaid / totalFees) * 100) : 0);
+const collectionRate = $derived(
+  totalFees > 0 ? Math.round((totalPaid / totalFees) * 100) : 0,
+);
 
 async function loadOverview() {
   isLoading = true;
@@ -43,7 +51,10 @@ async function loadOverview() {
 
     totalFees = fees.reduce((sum, f) => sum + Number(f.amount || 0), 0);
     totalPaid = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
-    treasuryAssets = treasuries.reduce((sum, t) => sum + Number(t.balance || 0), 0);
+    treasuryAssets = treasuries.reduce(
+      (sum, t) => sum + Number(t.balance || 0),
+      0,
+    );
   } catch (e) {
     console.error("Error loading finance overview:", e);
     error = e instanceof Error ? e.message : String(e);

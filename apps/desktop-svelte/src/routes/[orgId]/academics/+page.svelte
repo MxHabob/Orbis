@@ -7,9 +7,15 @@ Provides cards linking to sub-sections and brief stats.
 import { onMount } from "svelte";
 import { commands } from "$lib/services/ipc";
 import { Button } from "@orbis/ui-svelte/button";
-import { 
-  GraduationCap, BookOpen, Calendar, Award, 
-  ArrowRight, ShieldCheck, Milestone, Compass 
+import {
+  GraduationCap,
+  BookOpen,
+  Calendar,
+  Award,
+  ArrowRight,
+  ShieldCheck,
+  Milestone,
+  Compass,
 } from "lucide-svelte";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { fade, scale } from "svelte/transition";
@@ -34,7 +40,9 @@ async function loadOverview() {
     classesCount = classList.length;
     subjectsCount = subjectList.length;
 
-    const active = cycleList.find((c) => c.is_current === 1 || c.is_current === true) || cycleList[0];
+    const active =
+      cycleList.find((c) => c.is_current === 1 || c.is_current === true) ||
+      cycleList[0];
     if (active) {
       currentCycleName = String(active.name_ar || active.name || "");
     }

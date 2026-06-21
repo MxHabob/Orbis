@@ -66,9 +66,24 @@ const segments = $derived.by(() => {
   const total = critical + major + minor || 1;
 
   const dataList = [
-    { name: "Critical", label: m.reports_behavior_critical(), value: critical, color: "var(--color-destructive)" },
-    { name: "Major", label: m.reports_behavior_major(), value: major, color: "oklch(0.65 0.15 80)" },
-    { name: "Minor", label: m.reports_behavior_minor(), value: minor, color: "var(--color-primary)" },
+    {
+      name: "Critical",
+      label: m.reports_behavior_critical(),
+      value: critical,
+      color: "var(--color-destructive)",
+    },
+    {
+      name: "Major",
+      label: m.reports_behavior_major(),
+      value: major,
+      color: "oklch(0.65 0.15 80)",
+    },
+    {
+      name: "Minor",
+      label: m.reports_behavior_minor(),
+      value: minor,
+      color: "var(--color-primary)",
+    },
   ];
 
   let accumulatedPercent = 0;

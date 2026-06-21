@@ -4,7 +4,11 @@ Renders the list of students using the DataTable infrastructure.
 Matches the column layout and styling of the React dashboard precisely.
 -->
 <script lang="ts">
-import { DataTable, type ColumnDef, type CellContext } from "$lib/components/table";
+import {
+  DataTable,
+  type ColumnDef,
+  type CellContext,
+} from "$lib/components/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@orbis/ui-svelte";
 import { studentsStore } from "$lib/stores/students.svelte";
 import type { Enrollment } from "$lib/services/ipc";
@@ -17,80 +21,82 @@ let { students }: { students: Enrollment[] } = $props();
 // ── Helpers ────────────────────────────────────────────────────────
 
 function getClassName(classId: string): string {
-	const cls = studentsStore.classes.find((c) => c.id === classId);
-	return cls ? String(cls.name || cls.name_ar || classId) : m.table_not_enrolled();
+  const cls = studentsStore.classes.find((c) => c.id === classId);
+  return cls
+    ? String(cls.name || cls.name_ar || classId)
+    : m.table_not_enrolled();
 }
 
 // ── Column Definitions ─────────────────────────────────────────────
 
 const columns: ColumnDef<Enrollment>[] = [
-	{
-		id: "name",
-		header: m.table_student(),
-		accessorKey: "full_name",
-		size: 250,
-		minSize: 200,
-		maxSize: 400,
-		sticky: true,
-		sortable: true,
-		skeleton: { type: "avatar-text", width: "w-32" },
-		cell: nameCell,
-	},
-	{
-		id: "studentNumber",
-		header: m.table_student_number(),
-		accessorKey: "student_number",
-		size: 150,
-		minSize: 100,
-		maxSize: 200,
-		sortable: true,
-		skeleton: { type: "text", width: "w-20" },
-		className: "font-mono",
-		cell: studentNumberCell,
-	},
-	{
-		id: "class",
-		header: m.table_class(),
-		accessorFn: (row) => getClassName(String(row.class_id)),
-		size: 150,
-		minSize: 100,
-		maxSize: 200,
-		sortable: true,
-		skeleton: { type: "text", width: "w-24" },
-	},
-	{
-		id: "status",
-		header: m.table_status(),
-		accessorKey: "status",
-		size: 120,
-		minSize: 100,
-		maxSize: 150,
-		sortable: true,
-		skeleton: { type: "badge", width: "w-16" },
-		cell: statusCell,
-	},
-	{
-		id: "sex",
-		header: m.form_sex(),
-		accessorKey: "sex",
-		size: 100,
-		minSize: 80,
-		maxSize: 120,
-		sortable: true,
-		skeleton: { type: "text", width: "w-12" },
-		cell: sexCell,
-	},
-	{
-		id: "enrollmentDate",
-		header: "Enrolled At",
-		accessorKey: "enrollment_date",
-		size: 150,
-		minSize: 120,
-		maxSize: 200,
-		sortable: true,
-		skeleton: { type: "text", width: "w-24" },
-		cell: enrollmentDateCell,
-	},
+  {
+    id: "name",
+    header: m.table_student(),
+    accessorKey: "full_name",
+    size: 250,
+    minSize: 200,
+    maxSize: 400,
+    sticky: true,
+    sortable: true,
+    skeleton: { type: "avatar-text", width: "w-32" },
+    cell: nameCell,
+  },
+  {
+    id: "studentNumber",
+    header: m.table_student_number(),
+    accessorKey: "student_number",
+    size: 150,
+    minSize: 100,
+    maxSize: 200,
+    sortable: true,
+    skeleton: { type: "text", width: "w-20" },
+    className: "font-mono",
+    cell: studentNumberCell,
+  },
+  {
+    id: "class",
+    header: m.table_class(),
+    accessorFn: (row) => getClassName(String(row.class_id)),
+    size: 150,
+    minSize: 100,
+    maxSize: 200,
+    sortable: true,
+    skeleton: { type: "text", width: "w-24" },
+  },
+  {
+    id: "status",
+    header: m.table_status(),
+    accessorKey: "status",
+    size: 120,
+    minSize: 100,
+    maxSize: 150,
+    sortable: true,
+    skeleton: { type: "badge", width: "w-16" },
+    cell: statusCell,
+  },
+  {
+    id: "sex",
+    header: m.form_sex(),
+    accessorKey: "sex",
+    size: 100,
+    minSize: 80,
+    maxSize: 120,
+    sortable: true,
+    skeleton: { type: "text", width: "w-12" },
+    cell: sexCell,
+  },
+  {
+    id: "enrollmentDate",
+    header: "Enrolled At",
+    accessorKey: "enrollment_date",
+    size: 150,
+    minSize: 120,
+    maxSize: 200,
+    sortable: true,
+    skeleton: { type: "text", width: "w-24" },
+    cell: enrollmentDateCell,
+  },
 ];
 </script>
 

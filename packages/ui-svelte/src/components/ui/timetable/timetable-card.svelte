@@ -1,173 +1,140 @@
 <script lang="ts">
-  import { User, MapPin, X } from "lucide-svelte";
-  import { fade } from "svelte/transition";
+import { X } from "lucide-svelte";
+import { fade } from "svelte/transition";
 
-  let {
-    lesson,
-    viewMode = "class",
-    locale = "ar",
-    getSubjectName,
-    getTeacherName,
-    getClassName,
-    subjectColor = "#9ca3af",
-    onDelete,
-    ondragstart,
-  }: {
-    lesson: any;
-    viewMode: "class" | "teacher";
-    locale: string;
-    getSubjectName: (id: string) => string;
-    getTeacherName: (id: string) => string;
-    getClassName: (id: string) => string;
-    subjectColor?: string;
-    onDelete: (id: string) => void;
-    ondragstart?: (e: DragEvent) => void;
-  } = $props();
+let {
+  lesson,
+  viewMode = "class",
+  locale = "ar",
+  getSubjectName,
+  getTeacherName,
+  getClassName,
+  subjectColor = "#a855f7", // Purple is default to match Tech Conference
+  onDelete,
+  ondragstart,
+}: {
+  lesson: any;
+  viewMode: "class" | "teacher";
+  locale: string;
+  getSubjectName: (id: string) => string;
+  getTeacherName: (id: string) => string;
+  getClassName: (id: string) => string;
+  subjectColor?: string;
+  onDelete: (id: string) => void;
+  ondragstart?: (e: DragEvent) => void;
+} = $props();
 
-  const isDraft = $derived(!!lesson.isDraft);
-  const roomName = $derived(lesson.room_name || lesson.room || null);
+const isDraft = $derived(!!lesson.isDraft);
+const subjectName = $derived(getSubjectName(lesson.subject_id));
+
+// Format times nicely
+const timeStr = $derived(
+  lesson.time_slot_start && lesson.time_slot_end
+    ? `${lesson.time_slot_start} - ${lesson.time_slot_end}`
+    : "",
+);
 </script>
 
-<!-- Timetable Lesson Card component with dynamic 3D tactile styling -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div 
   draggable={!isDraft}
   {ondragstart}
   style="--subject-color: {subjectColor};"
-  class="relative overflow-hidden w-full h-full pt-2.5 pb-2.5 pe-2.5 ps-4.5 flex flex-col justify-between items-center text-center select-none group transition-all duration-200
-    {isDraft ? 'timetable-card-draft' : 'timetable-card-tactile cursor-grab active:cursor-grabbing'}"
+  class="relative overflow-hidden w-full h-full p-2.5 flex flex-col justify-between items-start text-start select-none group transition-all duration-150 rounded-lg border
+    {isDraft ? 'timetable-card-draft' : 'timetable-card-tech cursor-grab active:cursor-grabbing'}"
   in:fade={{ duration: 150 }}
 >
-  <!-- Dynamic 3D colored vertical bar on the start edge -->
-  <div class="absolute top-0 bottom-0 start-0 w-1.5 bg-[var(--subject-color)] shadow-[inset_-1px_0_1.5px_rgba(0,0,0,0.15)] opacity-95"></div>
-
-  <!-- Draft Overlay Indicator -->
-  {#if isDraft}
-    <span class="absolute top-1.5 start-3 bg-purple-500/10 text-purple-600 dark:text-purple-400 text-[8px] font-bold px-1 py-0.2 rounded border border-purple-500/20 scale-90 origin-top-left uppercase tracking-wider font-mono">
-      {locale === "ar" ? "مسودة" : "Draft"}
-    </span>
-  {/if}
-
   <!-- Delete Quick-Action Button -->
   {#if !isDraft}
     <button 
       type="button"
-      onclick={() => onDelete(lesson.id)}
-      class="absolute top-1.5 end-1.5 opacity-0 group-hover:opacity-100 h-4.5 w-4.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded flex items-center justify-center transition-all duration-150 cursor-pointer border border-transparent hover:border-destructive/10"
+      onclick={(e) => { e.stopPropagation(); onDelete(lesson.id); }}
+      class="absolute top-1.5 end-1.5 opacity-0 group-hover:opacity-100 h-4.5 w-4.5 text-[var(--text-color)] hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded flex items-center justify-center transition-all duration-150 cursor-pointer border border-transparent"
       title={locale === "ar" ? "حذف الحصة" : "Delete lesson"}
     >
       <X size={10} />
     </button>
   {/if}
 
-  <!-- Content Details -->
-  <div class="flex flex-col items-center gap-1 w-full mt-2.5">
-    <!-- Subject Name -->
-    <span class="font-bold text-foreground text-[10px] leading-tight line-clamp-1 tracking-wide">
-      {getSubjectName(lesson.subject_id)}
-    </span>
-    
-    <!-- User/Class Label -->
-    <span class="text-[9px] text-muted-foreground leading-tight flex items-center justify-center gap-0.5 w-full">
-      <User size={8} class="text-muted-foreground/75" />
-      <span class="line-clamp-1 font-medium">
-        {viewMode === "class" ? getTeacherName(lesson.teacher_id) : getClassName(lesson.class_id)}
+  <!-- Tech-Conference layout: Header row with small colored dot and title -->
+  <div class="flex flex-col gap-1 w-full pr-3">
+    <div class="flex items-center gap-1.5 w-full">
+      <!-- Colored circle dot on the left -->
+      <div class="w-1.5 h-1.5 rounded-full bg-[var(--subject-color)] shrink-0"></div>
+      
+      <!-- Event Name -->
+      <span class="font-bold text-[11px] md:text-[11.5px] leading-tight text-[var(--text-color)] tracking-wide line-clamp-1">
+        {subjectName}
       </span>
+    </div>
+    
+    <!-- Time range -->
+    {#if timeStr}
+      <span class="text-[9px] md:text-[9.5px] font-semibold text-[var(--text-color)] opacity-85 leading-none font-mono pl-3">
+        {timeStr}
+      </span>
+    {/if}
+
+    <!-- Auxiliary Info (Teacher/Class) -->
+    <span class="text-[8px] md:text-[8.5px] text-[var(--text-color)] opacity-60 line-clamp-1 mt-0.5 pl-3">
+      {viewMode === "class" ? getTeacherName(lesson.teacher_id) : getClassName(lesson.class_id)}
+      {#if lesson.room_name || lesson.room}
+        • {lesson.room_name || lesson.room}
+      {/if}
     </span>
   </div>
-
-  <!-- Room Number / Location Badge -->
-  {#if roomName}
-    <span class="text-[8px] font-mono font-semibold text-muted-foreground bg-muted/60 border border-border/80 px-1.5 py-0.5 rounded flex items-center gap-0.5 mt-1.5 shrink-0 max-w-full">
-      <MapPin size={7} class="text-muted-foreground/75" />
-      <span class="line-clamp-1">{roomName}</span>
-    </span>
-  {/if}
 </div>
 
 <style>
-  .timetable-card-tactile {
-    position: relative;
-    border-radius: 0.5rem; /* rounded-lg */
-    border: 1px solid var(--border-color);
+  /* Styled exactly to match the Tech Conference pill layout */
+  .timetable-card-tech {
     background-color: var(--bg-color);
-    --shadow-color: color-mix(in srgb, var(--subject-color) 75%, black 25%);
-    --bg-color: color-mix(in srgb, var(--subject-color) 6%, var(--card) 94%);
-    --border-color: color-mix(in srgb, var(--subject-color) 25%, var(--border) 75%);
-    --glow-color: color-mix(in srgb, var(--subject-color) 15%, transparent);
-
-    /* 3D button effect */
-    transform: translateY(-1.5px);
-    box-shadow:
-      0 3px 0 0 var(--shadow-color),
-      0 1px 3px 0 rgba(0, 0, 0, 0.08);
+    border-color: var(--border-color);
+    --bg-color: color-mix(in srgb, var(--subject-color) 10%, #ffffff 90%);
+    --border-color: color-mix(in srgb, var(--subject-color) 12%, #ffffff 88%);
+    --text-color: color-mix(in srgb, var(--subject-color) 85%, #000000 15%);
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
   }
 
-  .timetable-card-tactile:hover {
-    transform: translateY(-3.5px);
-    background-color: color-mix(in srgb, var(--subject-color) 9%, var(--card) 91%);
-    border-color: color-mix(in srgb, var(--subject-color) 40%, var(--border) 60%);
-    box-shadow:
-      0 5px 0 0 var(--shadow-color),
-      0 6px 12px -2px var(--glow-color),
-      0 4px 6px -1px rgba(0, 0, 0, 0.06);
+  .timetable-card-tech:hover {
+    --bg-color: color-mix(in srgb, var(--subject-color) 14%, #ffffff 86%);
+    --border-color: color-mix(in srgb, var(--subject-color) 20%, #ffffff 80%);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04);
+    transform: translateY(-0.5px);
   }
 
-  .timetable-card-tactile:active {
-    transform: translateY(1.5px);
-    box-shadow:
-      0 0 0 0 var(--shadow-color),
-      0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  /* Support dark-mode */
+  :global(.dark) .timetable-card-tech {
+    --bg-color: color-mix(in srgb, var(--subject-color) 14%, #1e1e2e 86%);
+    --border-color: color-mix(in srgb, var(--subject-color) 25%, #1e1e2e 75%);
+    --text-color: color-mix(in srgb, var(--subject-color) 90%, #ffffff 10%);
+    box-shadow: none;
   }
 
-  /* Dark mode overrides */
-  :global(.dark) .timetable-card-tactile {
-    --shadow-color: color-mix(in srgb, var(--subject-color) 40%, black 60%);
-    --bg-color: color-mix(in srgb, var(--subject-color) 9%, var(--card) 91%);
-    --border-color: color-mix(in srgb, var(--subject-color) 30%, var(--border) 70%);
-    --glow-color: color-mix(in srgb, var(--subject-color) 25%, transparent);
-    
-    box-shadow:
-      0 3px 0 0 var(--shadow-color),
-      0 1px 4px 0 rgba(0, 0, 0, 0.3);
+  :global(.dark) .timetable-card-tech:hover {
+    --bg-color: color-mix(in srgb, var(--subject-color) 20%, #1e1e2e 80%);
   }
 
-  :global(.dark) .timetable-card-tactile:hover {
-    background-color: color-mix(in srgb, var(--subject-color) 12%, var(--card) 88%);
-    border-color: color-mix(in srgb, var(--subject-color) 45%, var(--border) 55%);
-    box-shadow:
-      0 5px 0 0 var(--shadow-color),
-      0 8px 16px -2px var(--glow-color),
-      0 4px 8px -2px rgba(0, 0, 0, 0.2);
-  }
-
-  :global(.dark) .timetable-card-tactile:active {
-    box-shadow:
-      0 0 0 0 var(--shadow-color),
-      0 1px 2px 0 rgba(0, 0, 0, 0.2);
-  }
-
-  /* Draft layout rules */
+  /* Draft styling */
   .timetable-card-draft {
-    position: relative;
-    border-radius: 0.5rem;
-    border: 1px dashed var(--border-color);
     background-color: var(--bg-color);
-    opacity: 0.85;
-    cursor: not-allowed;
+    border-color: var(--border-color);
+    border-style: dashed;
+    opacity: 0.8;
+    --bg-color: color-mix(in srgb, var(--subject-color) 5%, #ffffff 95%);
+    --border-color: color-mix(in srgb, var(--subject-color) 25%, #ffffff 75%);
+    --text-color: color-mix(in srgb, var(--subject-color) 70%, #000000 30%);
     animation: draft-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    --bg-color: color-mix(in srgb, var(--subject-color) 4%, transparent);
-    --border-color: color-mix(in srgb, var(--subject-color) 40%, transparent);
   }
 
   @keyframes draft-pulse {
-    0%, 100% { opacity: 0.85; }
-    50% { opacity: 0.45; }
+    0%, 100% { opacity: 0.8; }
+    50% { opacity: 0.4; }
   }
 
-  /* Dark mode overrides for draft */
   :global(.dark) .timetable-card-draft {
-    --bg-color: color-mix(in srgb, var(--subject-color) 8%, transparent);
-    --border-color: color-mix(in srgb, var(--subject-color) 50%, transparent);
+    --bg-color: color-mix(in srgb, var(--subject-color) 8%, #1e1e2e 92%);
+    --border-color: color-mix(in srgb, var(--subject-color) 35%, #1e1e2e 65%);
+    --text-color: color-mix(in srgb, var(--subject-color) 85%, #ffffff 15%);
   }
 </style>

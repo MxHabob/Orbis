@@ -50,16 +50,24 @@ const breadcrumbs = $derived.by(() => {
   items.push({ label: m.breadcrumb_home(), href: `/${currentOrgId}` });
 
   if (pathname.includes("/reports")) {
-    items.push({ label: m.breadcrumb_reports(), href: `/${currentOrgId}/reports` });
+    items.push({
+      label: m.breadcrumb_reports(),
+      href: `/${currentOrgId}/reports`,
+    });
   } else if (pathname.includes("/students")) {
-    items.push({ label: m.breadcrumb_students(), href: `/${currentOrgId}/students` });
+    items.push({
+      label: m.breadcrumb_students(),
+      href: `/${currentOrgId}/students`,
+    });
 
     if (pathname.includes("/students/new")) {
       items.push({ label: m.breadcrumb_new_student() });
     } else if (studentId) {
       const student = studentsStore.list.find((s) => s.id === studentId);
       const studentName =
-        (student?.full_name as string) || (student?.name_ar as string) || m.breadcrumb_student_profile();
+        (student?.full_name as string) ||
+        (student?.name_ar as string) ||
+        m.breadcrumb_student_profile();
       items.push({
         label: studentName,
         href: `/${currentOrgId}/students/${studentId}`,
@@ -78,11 +86,20 @@ const breadcrumbs = $derived.by(() => {
       }
     }
   } else if (pathname.includes("/academics")) {
-    items.push({ label: m.breadcrumb_academics(), href: `/${currentOrgId}/academics` });
+    items.push({
+      label: m.breadcrumb_academics(),
+      href: `/${currentOrgId}/academics`,
+    });
   } else if (pathname.includes("/finance")) {
-    items.push({ label: m.breadcrumb_finance(), href: `/${currentOrgId}/finance` });
+    items.push({
+      label: m.breadcrumb_finance(),
+      href: `/${currentOrgId}/finance`,
+    });
   } else if (pathname.includes("/settings")) {
-    items.push({ label: m.breadcrumb_settings(), href: `/${currentOrgId}/settings` });
+    items.push({
+      label: m.breadcrumb_settings(),
+      href: `/${currentOrgId}/settings`,
+    });
   }
 
   return items;

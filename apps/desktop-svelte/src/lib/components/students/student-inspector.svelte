@@ -23,15 +23,16 @@ import * as m from "$lib/paraglide/messages";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate, formatPercent } from "$lib/i18n-utils";
 
-let { studentId, orgId, onClose }: { studentId: string; orgId: string; onClose: () => void } =
-  $props();
+let {
+  studentId,
+  orgId,
+  onClose,
+}: { studentId: string; orgId: string; onClose: () => void } = $props();
 
 const student = $derived(studentsStore.list.find((s) => s.id === studentId));
 
-
 let balanceDue = $state<string>(m.loading());
 let gradeSummary = $state<string>(m.loading());
-
 
 $effect(() => {
   if (studentId) {
@@ -75,8 +76,6 @@ async function fetchStats() {
     gradeSummary = m.loading_no_grades();
   }
 }
-
-
 </script>
 
 {#if student}

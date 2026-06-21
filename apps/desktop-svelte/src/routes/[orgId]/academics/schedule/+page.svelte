@@ -1,6 +1,6 @@
 <!--
 @component AcademicsSchedulePage
-Displays the weekly academic schedule grid (Sunday to Thursday),
+Displays the weekly academic schedule grid,
 allows selecting classes or teachers, scheduling lessons, and deleting scheduled lessons.
 Triggers the LessonCreateSheet for scheduling lessons.
 -->
@@ -9,9 +9,7 @@ import { onMount } from "svelte";
 import { commands } from "$lib/services/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import { 
-  Plus, Clock, MapPin, User, X
-} from "lucide-svelte";
+import { Plus, Clock, MapPin, User, X } from "lucide-svelte";
 import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
@@ -47,8 +45,6 @@ let activeSlotId = $state<string>("");
 let activeJob = $state<any>(null);
 let previewDraft = $state(false);
 
-
-
 const weekdays = $derived([
   { value: 1, label: m.schedule_page_day_sun() },
   { value: 2, label: m.schedule_page_day_mon() },
@@ -58,11 +54,36 @@ const weekdays = $derived([
 ]);
 
 const defaultTimeSlots = [
-  { name: "1st Period", name_ar: "الحصة الأولى", start_time: "08:00", end_time: "08:45" },
-  { name: "2nd Period", name_ar: "الحصة الثانية", start_time: "08:45", end_time: "09:30" },
-  { name: "3rd Period", name_ar: "الحصة الثالثة", start_time: "09:45", end_time: "10:30" },
-  { name: "4th Period", name_ar: "الحصة الرابعة", start_time: "10:30", end_time: "11:15" },
-  { name: "5th Period", name_ar: "الحصة الخامسة", start_time: "11:30", end_time: "12:15" },
+  {
+    name: "1st Period",
+    name_ar: "الحصة الأولى",
+    start_time: "08:00",
+    end_time: "08:45",
+  },
+  {
+    name: "2nd Period",
+    name_ar: "الحصة الثانية",
+    start_time: "08:45",
+    end_time: "09:30",
+  },
+  {
+    name: "3rd Period",
+    name_ar: "الحصة الثالثة",
+    start_time: "09:45",
+    end_time: "10:30",
+  },
+  {
+    name: "4th Period",
+    name_ar: "الحصة الرابعة",
+    start_time: "10:30",
+    end_time: "11:15",
+  },
+  {
+    name: "5th Period",
+    name_ar: "الحصة الخامسة",
+    start_time: "11:30",
+    end_time: "12:15",
+  },
 ];
 
 // Derived state to map and filter draft assignments for preview
@@ -87,7 +108,7 @@ const draftLessonsInGrid = $derived.by(() => {
         time_slot_id: a.time_slot_id,
         day_of_week: a.day_of_week,
         room: a.room_id || null,
-        isDraft: true
+        isDraft: true,
       }));
   } catch (e) {
     console.error("Error parsing draft solution:", e);
@@ -105,7 +126,9 @@ async function initializeSchedule() {
     cycles = cycleList;
 
     // Take active cycle or fallback
-    const active = cycleList.find((c) => c.is_current === 1 || c.is_current === true) || cycleList[0];
+    const active =
+      cycleList.find((c) => c.is_current === 1 || c.is_current === true) ||
+      cycleList[0];
     if (active) {
       activeCycleId = String(active.id);
     } else {
@@ -120,7 +143,12 @@ async function initializeSchedule() {
     ]);
     classes = classList;
     subjects = subjectList;
-    teachers = userList.filter((u: any) => u.primary_role === "teacher" || u.primary_role === "admin" || u.primary_role === "super_admin");
+    teachers = userList.filter(
+      (u: any) =>
+        u.primary_role === "teacher" ||
+        u.primary_role === "admin" ||
+        u.primary_role === "super_admin",
+    );
 
     if (classes.length > 0) {
       selectedClassId = String(classes[0].id);
@@ -144,15 +172,14 @@ async function initializeSchedule() {
 async function setupTimeSlots() {
   if (!activeCycleId) return;
   let slots = await commands.schedule.getTimeSlots(data.orgId, activeCycleId);
-  
+
   if (slots.length === 0) {
     // Create standard time slots so database is initialized
     for (let i = 0; i < defaultTimeSlots.length; i++) {
       const ts = defaultTimeSlots[i];
-      // Calculate duration from start/end time
       const [sh, sm] = ts.start_time.split(":").map(Number);
       const [eh, em] = ts.end_time.split(":").map(Number);
-      const durationMinutes = (eh * 60 + em) - (sh * 60 + sm);
+      const durationMinutes = eh * 60 + em - (sh * 60 + sm);
       try {
         await commands.schedule.createTimeSlot(data.orgId, {
           name: ts.name,
@@ -170,27 +197,45 @@ async function setupTimeSlots() {
     }
     slots = await commands.schedule.getTimeSlots(data.orgId, activeCycleId);
   }
-  timeSlots = slots.length > 0 ? slots : defaultTimeSlots.map((ts, i) => ({ ...ts, id: `mock_ts_${i}` }));
+  timeSlots =
+    slots.length > 0
+      ? slots
+      : defaultTimeSlots.map((ts, i) => ({ ...ts, id: `mock_ts_${i}` }));
 }
-
 
 async function loadScheduleLessons() {
   if (!activeCycleId) return;
   lessons = [];
   try {
     if (viewMode === "class" && selectedClassId) {
-      lessons = await commands.schedule.getClassSchedule(data.orgId, activeCycleId, selectedClassId);
+      lessons = await commands.schedule.getClassSchedule(
+        data.orgId,
+        activeCycleId,
+        selectedClassId,
+      );
     } else if (viewMode === "teacher" && selectedTeacherId) {
-      lessons = await commands.schedule.getTeacherSchedule(data.orgId, activeCycleId, selectedTeacherId);
+      lessons = await commands.schedule.getTeacherSchedule(
+        data.orgId,
+        activeCycleId,
+        selectedTeacherId,
+      );
     }
   } catch (e) {
     console.error("Error loading schedule lessons:", e);
   }
 }
 
-async function handleMoveLesson(lesson: any, targetDay: number, targetSlotId: string) {
+async function handleMoveLesson(
+  lesson: any,
+  targetDay: number,
+  targetSlotId: string,
+) {
   try {
-    toast.loading(getLocale() === "ar" ? "جاري التحقق من وجود تضاربات..." : "Checking for conflicts...");
+    toast.loading(
+      getLocale() === "ar"
+        ? "جاري التحقق من وجود تضاربات..."
+        : "Checking for conflicts...",
+    );
     const conflicts = await commands.schedule.checkConflicts({
       orgId: data.orgId,
       cycleId: activeCycleId,
@@ -199,11 +244,11 @@ async function handleMoveLesson(lesson: any, targetDay: number, targetSlotId: st
       teacherId: lesson.teacher_id,
       classId: lesson.class_id,
       roomId: lesson.room_id || undefined,
-      excludeId: lesson.id
+      excludeId: lesson.id,
     });
-    
+
     toast.dismiss();
-    
+
     if (conflicts && conflicts.length > 0) {
       const first = conflicts[0] as any;
       const type = String(first.conflict_type || "");
@@ -212,22 +257,28 @@ async function handleMoveLesson(lesson: any, targetDay: number, targetSlotId: st
       else if (type === "class") arMsg += "الصف لديه حصة أخرى في هذا الوقت.";
       else if (type === "room") arMsg += "القاعة/الغرفة مشغولة في هذا الوقت.";
       else arMsg += first.message || "";
-      
+
       const enMsg = `Cannot move lesson: ${first.message || "conflict detected."}`;
       toast.error(getLocale() === "ar" ? arMsg : enMsg, { duration: 5000 });
       return;
     }
-    
-    toast.loading(getLocale() === "ar" ? "جاري نقل الحصة..." : "Moving lesson...");
+
+    toast.loading(
+      getLocale() === "ar" ? "جاري نقل الحصة..." : "Moving lesson...",
+    );
     await commands.schedule.updateLesson(data.orgId, lesson.id, {
       teacher_id: lesson.teacher_id,
       time_slot_id: targetSlotId,
       day_of_week: targetDay,
       room_id: lesson.room_id || undefined,
     });
-    
+
     toast.dismiss();
-    toast.success(getLocale() === "ar" ? "تم نقل الحصة بنجاح!" : "Lesson moved successfully!");
+    toast.success(
+      getLocale() === "ar"
+        ? "تم نقل الحصة بنجاح!"
+        : "Lesson moved successfully!",
+    );
     await loadScheduleLessons();
   } catch (err: any) {
     toast.dismiss();
@@ -248,33 +299,30 @@ $effect(() => {
   }
 });
 
-
-
-// Get labels
 function getSubjectName(subjectId: string) {
   const sub = subjects.find((s) => String(s.id) === String(subjectId));
-  return sub ? (sub.name_ar || sub.name) : m.schedule_page_unknown_subject();
+  return sub ? sub.name_ar || sub.name : m.schedule_page_unknown_subject();
 }
 
-// Get teacher name
 function getTeacherName(teacherId: string) {
   const teach = teachers.find((t) => String(t.id) === String(teacherId));
-  return teach ? (getLocale() === "ar" ? (teach.name_ar || teach.full_name) : teach.full_name) : m.schedule_page_no_teacher();
+  return teach
+    ? getLocale() === "ar"
+      ? teach.name_ar || teach.full_name
+      : teach.full_name
+    : m.schedule_page_no_teacher();
 }
 
-// Get class name
 function getClassName(classId: string) {
   const cls = classes.find((c) => String(c.id) === String(classId));
-  return cls ? (cls.name_ar || cls.name) : m.schedule_page_unknown_class();
+  return cls ? cls.name_ar || cls.name : m.schedule_page_unknown_class();
 }
 
-// Get subject color
 function getSubjectColor(subjectId: string) {
   const sub = subjects.find((s) => String(s.id) === String(subjectId));
   return sub ? sub.color : "#9ca3af";
 }
 
-// Delete Scheduled Lesson
 async function handleDeleteLesson(lessonId: string) {
   if (!confirm(m.schedule_page_confirm_delete())) return;
   try {

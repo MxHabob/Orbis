@@ -60,7 +60,9 @@ function getStudentCount(classId: string): number {
 const totalClassesCount = $derived(classes.length);
 const totalStudentsCount = $derived(students.length);
 const averageClassSize = $derived(
-  totalClassesCount > 0 ? Math.round(totalStudentsCount / totalClassesCount) : 0,
+  totalClassesCount > 0
+    ? Math.round(totalStudentsCount / totalClassesCount)
+    : 0,
 );
 </script>
 

@@ -9,20 +9,23 @@ import { commands } from "$lib/services/ipc";
 import { authStore } from "$lib/stores";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
-import { 
-  Sheet, SheetContent, SheetHeader, SheetTitle 
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
 } from "@orbis/ui-svelte/sheet";
 import { CreditCard } from "lucide-svelte";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 
-let { 
-  open = $bindable(false), 
-  orgId, 
-  onSuccess 
-}: { 
-  open: boolean; 
-  orgId: string; 
+let {
+  open = $bindable(false),
+  orgId,
+  onSuccess,
+}: {
+  open: boolean;
+  orgId: string;
   onSuccess: () => void;
 } = $props();
 
@@ -55,7 +58,7 @@ async function loadDropdownData() {
     ]);
     students = studentList;
     treasuries = treasuryList;
-    
+
     if (studentList.length > 0) {
       selectedEnrollmentId = String(studentList[0].id);
     }
@@ -75,14 +78,18 @@ async function loadStudentFees(enrollId: string) {
   isLoadingFees = true;
   try {
     const list = await commands.finance.getStudentFees(orgId, enrollId);
-    fees = list.filter(f => f.status !== 'paid');
+    fees = list.filter((f) => f.status !== "paid");
     if (fees.length > 0) {
       selectedFeeId = String(fees[0].id);
       amount = Number(fees[0].balance || fees[0].total_amount || 0);
     } else {
       selectedFeeId = "";
       amount = null;
-      toast.info(m.attendance_status_unknown() === "غير محدد" ? "لا توجد رسوم مستحقة غير مدفوعة لهذا الطالب" : "No outstanding unpaid fees for this student");
+      toast.info(
+        m.attendance_status_unknown() === "غير محدد"
+          ? "لا توجد رسوم مستحقة غير مدفوعة لهذا الطالب"
+          : "No outstanding unpaid fees for this student",
+      );
     }
   } catch (e) {
     console.error("Error loading student fees:", e);
@@ -108,7 +115,7 @@ $effect(() => {
 // Reactively set amount when fee selection changes
 $effect(() => {
   if (selectedFeeId) {
-    const selectedFee = fees.find(f => String(f.id) === selectedFeeId);
+    const selectedFee = fees.find((f) => String(f.id) === selectedFeeId);
     if (selectedFee) {
       amount = Number(selectedFee.balance || selectedFee.total_amount || 0);
     }
@@ -144,7 +151,12 @@ async function handleSubmit(e: SubmitEvent) {
     const request = {
       fee_id: selectedFeeId,
       amount: Number(amount),
-      method: paymentMethod === "Cash" ? "cash" : paymentMethod === "Bank Transfer" ? "bank_transfer" : "card",
+      method:
+        paymentMethod === "Cash"
+          ? "cash"
+          : paymentMethod === "Bank Transfer"
+            ? "bank_transfer"
+            : "card",
       reference: referenceNumber || undefined,
       notes: notes || undefined,
       treasury_id: selectedTreasuryId,
@@ -153,7 +165,7 @@ async function handleSubmit(e: SubmitEvent) {
     await commands.finance.recordPayment(orgId, createdBy, request);
     toast.success(m.payment_toast_success());
     open = false;
-    
+
     // Reset form
     amount = null;
     receiptNumber = "";

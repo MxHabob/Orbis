@@ -33,8 +33,7 @@ async function handleSubmit(e: SubmitEvent) {
     const orgId = authStore.orgId;
     goto(localizeHref(`/${orgId}`));
   } catch (err) {
-    error =
-      err instanceof Error ? err.message : m.login_failed();
+    error = err instanceof Error ? err.message : m.login_failed();
   } finally {
     isLoading = false;
   }
