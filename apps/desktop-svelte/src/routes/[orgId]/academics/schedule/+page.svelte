@@ -268,6 +268,12 @@ function getClassName(classId: string) {
   return cls ? (cls.name_ar || cls.name) : m.schedule_page_unknown_class();
 }
 
+// Get subject color
+function getSubjectColor(subjectId: string) {
+  const sub = subjects.find((s) => String(s.id) === String(subjectId));
+  return sub ? sub.color : "#9ca3af";
+}
+
 // Delete Scheduled Lesson
 async function handleDeleteLesson(lessonId: string) {
   if (!confirm(m.schedule_page_confirm_delete())) return;
@@ -370,6 +376,7 @@ function openScheduler(day: number, slotId: string) {
 					{getSubjectName}
 					{getTeacherName}
 					{getClassName}
+					{getSubjectColor}
 					onCellClick={openScheduler}
 					onDeleteLesson={handleDeleteLesson}
 					onMoveLesson={handleMoveLesson}

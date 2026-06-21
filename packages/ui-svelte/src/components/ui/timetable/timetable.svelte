@@ -14,6 +14,7 @@
     getSubjectName,
     getTeacherName,
     getClassName,
+    getSubjectColor,
     onCellClick,
     onDeleteLesson,
     onMoveLesson,
@@ -28,6 +29,7 @@
     getSubjectName: (id: string) => string;
     getTeacherName: (id: string) => string;
     getClassName: (id: string) => string;
+    getSubjectColor: (id: string) => string;
     onCellClick: (day: number, slotId: string) => void;
     onDeleteLesson: (id: string) => void;
     onMoveLesson: (lesson: any, targetDay: number, targetSlotId: string) => void;
@@ -151,6 +153,7 @@
                 {getSubjectName} 
                 {getTeacherName} 
                 {getClassName} 
+                subjectColor={getSubjectColor(lesson.subject_id)}
                 onDelete={onDeleteLesson}
                 ondragstart={(e) => handleDragStart(e, lesson)}
               />
