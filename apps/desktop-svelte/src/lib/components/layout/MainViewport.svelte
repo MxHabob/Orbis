@@ -206,4 +206,8 @@ function getFallbackLabel(viewportName: string, side: "left" | "right"): string 
 		text-orientation: mixed;
 		transform: rotate(180deg);
 	}
+
+	:global(.resizer-dragging) {
+		transition: none !important;
+	}
 </style>

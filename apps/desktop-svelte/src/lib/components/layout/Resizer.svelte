@@ -75,6 +75,7 @@ function onPointerDown(e: PointerEvent) {
 
   document.body.style.cursor = "ew-resize";
   document.body.style.userSelect = "none";
+  viewport.classList.add("resizer-dragging");
 }
 
 function isRtl(): boolean {
@@ -115,6 +116,10 @@ function onPointerUp(e: PointerEvent) {
     dragTarget.releasePointerCapture(e.pointerId);
   }
   dragTarget = null;
+
+  if (viewport) {
+    viewport.classList.remove("resizer-dragging");
+  }
 
   // Persist final width
   if (persistId && viewport) {

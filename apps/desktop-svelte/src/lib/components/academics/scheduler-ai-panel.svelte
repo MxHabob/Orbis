@@ -294,17 +294,9 @@ function formatTime(seconds: number): string {
 <div 
 	bind:this={panelEl}
 	style="width: {preferredWidth}rem; min-width: {preferredWidth > 3 ? minWidth : 3}rem; max-width: {maxWidth}rem;"
-	class="relative shrink-0 bg-card/65 backdrop-blur-md select-none transition-all duration-200"
+	class="relative shrink-0 bg-card/65 backdrop-blur-md select-none transition-all duration-200 border-s border-border/80 flex flex-col"
 	class:p-4={preferredWidth > 3}
-	class:border={preferredWidth > 3}
-	class:border-border={preferredWidth > 3}
-	class:rounded-xl={preferredWidth > 3}
-	class:flex={preferredWidth > 3}
-	class:flex-col={preferredWidth > 3}
 	class:gap-4={preferredWidth > 3}
-	class:mt-6={preferredWidth > 3}
-	class:lg:mt-0={preferredWidth > 3}
-	class:lg:ms-6={preferredWidth > 3}
 	in:fade={{ duration: 250 }}
 >
 	<!-- Resizer Component inside the sidebar (always rendered so we can drag it open) -->
@@ -321,7 +313,7 @@ function formatTime(seconds: number): string {
 
 	{#if preferredWidth <= 3}
 		<!-- Collapsed vertical strip -->
-		<div class="h-full w-full flex flex-col items-center py-4 bg-card/30 border-l border-border/80 select-none">
+		<div class="h-full w-full flex flex-col items-center py-4 bg-card/30 select-none">
 			<button
 				type="button"
 				class="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground cursor-pointer transition-colors duration-150 mb-4"
@@ -607,5 +599,9 @@ function formatTime(seconds: number): string {
 		writing-mode: vertical-rl;
 		text-orientation: mixed;
 		transform: rotate(180deg);
+	}
+
+	:global(.resizer-dragging) {
+		transition: none !important;
 	}
 </style>

@@ -345,13 +345,11 @@ function openScheduler(day: number, slotId: string) {
 }
 </script>
 
-<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6">
-	<!-- Layout Grid: Main Content Column + AI Scheduler Column -->
-	<div class="flex flex-col lg:flex-row items-stretch w-full">
-		
-		<!-- Main Schedule Panel Column -->
-		<div class="flex-1 min-w-0 w-full flex flex-col gap-6">
-			<!-- Timetable Header Filter Controls -->
+<div class="h-full w-full flex flex-col lg:flex-row items-stretch overflow-hidden">
+	
+	<!-- Main Schedule Panel Column -->
+	<div class="flex-1 min-w-0 w-full flex flex-col p-6 gap-6 overflow-y-auto">
+		<!-- Timetable Header Filter Controls -->
 			<div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-card/25 p-4 rounded-xl border border-border/80 shrink-0 select-none">
 				<div class="flex items-center gap-3">
 					<span class="text-xs font-bold text-muted-foreground uppercase tracking-wider">
@@ -446,7 +444,6 @@ function openScheduler(day: number, slotId: string) {
 				onApply={loadScheduleLessons}
 			/>
 		{/if}
-	</div>
 </div>
 
 <!-- Lesson Scheduling Side Sheet -->
