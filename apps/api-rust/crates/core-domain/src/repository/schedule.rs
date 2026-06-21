@@ -409,8 +409,23 @@ impl super::Repository {
         &self,
         job: schedule_solve_job::Model,
     ) -> Result<schedule_solve_job::Model, DbErr> {
-        let mut active: schedule_solve_job::ActiveModel = job.into();
-        active.updated_at = Set(chrono::Utc::now().to_rfc3339());
+        let active = schedule_solve_job::ActiveModel {
+            id: Set(job.id),
+            org_id: Set(job.org_id),
+            cycle_id: Set(job.cycle_id),
+            mode: Set(job.mode),
+            status: Set(job.status),
+            problem_snapshot: Set(job.problem_snapshot),
+            best_solution: Set(job.best_solution),
+            score: Set(job.score),
+            lessons_created: Set(job.lessons_created),
+            error_message: Set(job.error_message),
+            created_by: Set(job.created_by),
+            started_at: Set(job.started_at),
+            completed_at: Set(job.completed_at),
+            created_at: Set(job.created_at),
+            updated_at: Set(chrono::Utc::now().to_rfc3339()),
+        };
         active.update(&self.db).await
     }
 
