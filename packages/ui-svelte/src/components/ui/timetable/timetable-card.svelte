@@ -1,38 +1,33 @@
 <script lang="ts">
-import { X } from "lucide-svelte";
-import { fade } from "svelte/transition";
+  import { fade } from "svelte/transition";
 
-let {
-  lesson,
-  viewMode = "class",
-  locale = "ar",
-  getSubjectName,
-  getTeacherName,
-  getClassName,
-  subjectColor = "#a855f7", // Purple is default to match Tech Conference
-  onDelete,
-  ondragstart,
-}: {
-  lesson: any;
-  viewMode: "class" | "teacher";
-  locale: string;
-  getSubjectName: (id: string) => string;
-  getTeacherName: (id: string) => string;
-  getClassName: (id: string) => string;
-  subjectColor?: string;
-  onDelete: (id: string) => void;
-  ondragstart?: (e: DragEvent) => void;
-} = $props();
+  let {
+    lesson,
+    viewMode = "class",
+    locale = "ar",
+    getSubjectName,
+    getTeacherName,
+    getClassName,
+    subjectColor = "#a855f7",
+    ondragstart,
+  }: {
+    lesson: any;
+    viewMode: "class" | "teacher";
+    locale: string;
+    getSubjectName: (id: string) => string;
+    getTeacherName: (id: string) => string;
+    getClassName: (id: string) => string;
+    subjectColor?: string;
+    ondragstart?: (e: DragEvent) => void;
+  } = $props();
 
-const isDraft = $derived(!!lesson.isDraft);
-const subjectName = $derived(getSubjectName(lesson.subject_id));
-
-// Format times nicely
-const timeStr = $derived(
-  lesson.time_slot_start && lesson.time_slot_end
-    ? `${lesson.time_slot_start} - ${lesson.time_slot_end}`
-    : "",
-);
+  const isDraft = $derived(!!lesson.isDraft);
+  const subjectName = $derived(getSubjectName(lesson.subject_id));
+  
+  // Format times nicely
+  const timeStr = $derived(lesson.time_slot_start && lesson.time_slot_end 
+    ? `${lesson.time_slot_start} - ${lesson.time_slot_end}` 
+    : "");
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -40,91 +35,106 @@ const timeStr = $derived(
   draggable={!isDraft}
   {ondragstart}
   style="--subject-color: {subjectColor};"
-  class="relative overflow-hidden w-full h-full p-2.5 flex flex-col justify-between items-start text-start select-none group transition-all duration-150 rounded-lg border
-    {isDraft ? 'timetable-card-draft' : 'timetable-card-tech cursor-grab active:cursor-grabbing'}"
+  class="relative overflow-hidden w-full h-full p-2.5 flex flex-row items-stretch justify-between gap-2.5 select-none transition-all duration-150 rounded-lg border
+    {isDraft ? 'timetable-card-draft' : 'timetable-card-tech-premium cursor-grab active:cursor-grabbing'}"
   in:fade={{ duration: 150 }}
 >
-  <!-- Delete Quick-Action Button -->
-  {#if !isDraft}
-    <button 
-      type="button"
-      onclick={(e) => { e.stopPropagation(); onDelete(lesson.id); }}
-      class="absolute top-1.5 end-1.5 opacity-0 group-hover:opacity-100 h-4.5 w-4.5 text-[var(--text-color)] hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded flex items-center justify-center transition-all duration-150 cursor-pointer border border-transparent"
-      title={locale === "ar" ? "حذف الحصة" : "Delete lesson"}
-    >
-      <X size={10} />
-    </button>
-  {/if}
-
-  <!-- Tech-Conference layout: Header row with small colored dot and title -->
-  <div class="flex flex-col gap-1 w-full pr-3">
-    <div class="flex items-center gap-1.5 w-full">
-      <!-- Colored circle dot on the left -->
-      <div class="w-1.5 h-1.5 rounded-full bg-[var(--subject-color)] shrink-0"></div>
-      
-      <!-- Event Name -->
-      <span class="font-bold text-[11px] md:text-[11.5px] leading-tight text-[var(--text-color)] tracking-wide line-clamp-1">
+  
+  <!-- Flex layout places children according to language direction -->
+  {#if locale === "ar"}
+    <!-- RTL Layout: Text on Right, Thin Stripe on Left -->
+    <div class="flex-1 flex flex-col justify-center items-start text-start gap-0.5 min-w-0">
+      <span class="font-bold text-[11px] md:text-[11.5px] leading-tight text-[var(--text-color)] tracking-wide line-clamp-2">
         {subjectName}
       </span>
-    </div>
-    
-    <!-- Time range -->
-    {#if timeStr}
-      <span class="text-[9px] md:text-[9.5px] font-semibold text-[var(--text-color)] opacity-85 leading-none font-mono pl-3">
-        {timeStr}
-      </span>
-    {/if}
-
-    <!-- Auxiliary Info (Teacher/Class) -->
-    <span class="text-[8px] md:text-[8.5px] text-[var(--text-color)] opacity-60 line-clamp-1 mt-0.5 pl-3">
-      {viewMode === "class" ? getTeacherName(lesson.teacher_id) : getClassName(lesson.class_id)}
-      {#if lesson.room_name || lesson.room}
-        • {lesson.room_name || lesson.room}
+      {#if timeStr}
+        <span class="text-[9px] md:text-[9.5px] font-semibold text-[var(--text-color)] opacity-80 leading-none font-mono">
+          {timeStr}
+        </span>
       {/if}
-    </span>
-  </div>
+      <span class="text-[8px] md:text-[8.5px] text-[var(--text-color)] opacity-60 line-clamp-1 mt-0.5">
+        {viewMode === "class" ? getTeacherName(lesson.teacher_id) : getClassName(lesson.class_id)}
+        {#if lesson.room_name || lesson.room}
+          • {lesson.room_name || lesson.room}
+        {/if}
+      </span>
+    </div>
+    <div class="timetable-color-block"></div>
+  {:else}
+    <!-- LTR Layout: Thin Stripe on Left, Text on Right -->
+    <div class="timetable-color-block"></div>
+    <div class="flex-1 flex flex-col justify-center items-start text-start gap-0.5 min-w-0">
+      <span class="font-bold text-[11px] md:text-[11.5px] leading-tight text-[var(--text-color)] tracking-wide line-clamp-2">
+        {subjectName}
+      </span>
+      {#if timeStr}
+        <span class="text-[9px] md:text-[9.5px] font-semibold text-[var(--text-color)] opacity-80 leading-none font-mono">
+          {timeStr}
+        </span>
+      {/if}
+      <span class="text-[8px] md:text-[8.5px] text-[var(--text-color)] opacity-60 line-clamp-1 mt-0.5">
+        {viewMode === "class" ? getTeacherName(lesson.teacher_id) : getClassName(lesson.class_id)}
+        {#if lesson.room_name || lesson.room}
+          • {lesson.room_name || lesson.room}
+        {/if}
+      </span>
+    </div>
+  {/if}
+
 </div>
 
 <style>
-  /* Styled exactly to match the Tech Conference pill layout */
-  .timetable-card-tech {
-    background-color: var(--bg-color);
-    border-color: var(--border-color);
-    --bg-color: color-mix(in srgb, var(--subject-color) 10%, #ffffff 90%);
-    --border-color: color-mix(in srgb, var(--subject-color) 12%, #ffffff 88%);
-    --text-color: color-mix(in srgb, var(--subject-color) 85%, #000000 15%);
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
+  /* Premium Flat Card styling */
+  .timetable-card-tech-premium {
+    background-color: #ffffff;
+    border-color: #e5e7eb;
+    --text-color: #1f2937;
+    box-shadow: none; /* No shadow/glow */
   }
 
-  .timetable-card-tech:hover {
-    --bg-color: color-mix(in srgb, var(--subject-color) 14%, #ffffff 86%);
-    --border-color: color-mix(in srgb, var(--subject-color) 20%, #ffffff 80%);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04);
-    transform: translateY(-0.5px);
-  }
-
-  /* Support dark-mode */
-  :global(.dark) .timetable-card-tech {
-    --bg-color: color-mix(in srgb, var(--subject-color) 14%, #1e1e2e 86%);
-    --border-color: color-mix(in srgb, var(--subject-color) 25%, #1e1e2e 75%);
-    --text-color: color-mix(in srgb, var(--subject-color) 90%, #ffffff 10%);
+  .timetable-card-tech-premium:hover {
+    background-color: #f9fafb;
+    border-color: #d1d5db;
     box-shadow: none;
   }
 
-  :global(.dark) .timetable-card-tech:hover {
-    --bg-color: color-mix(in srgb, var(--subject-color) 20%, #1e1e2e 80%);
+  /* Support dark-mode correctly */
+  :global(.dark) .timetable-card-tech-premium {
+    background-color: #18181b;
+    border-color: #27272a;
+    --text-color: #f4f4f5;
+    box-shadow: none;
+  }
+
+  :global(.dark) .timetable-card-tech-premium:hover {
+    background-color: #1c1c1f;
+    border-color: #3f3f46;
+    box-shadow: none;
+  }
+
+  /* Flat Color Block (the thin vertical line) - static, clean, no shadows/glows */
+  .timetable-color-block {
+    width: 4px;
+    border-radius: 9999px;
+    flex-shrink: 0;
+    background-color: var(--subject-color);
   }
 
   /* Draft styling */
   .timetable-card-draft {
-    background-color: var(--bg-color);
-    border-color: var(--border-color);
+    background-color: #f9fafb;
+    border-color: #d1d5db;
     border-style: dashed;
     opacity: 0.8;
-    --bg-color: color-mix(in srgb, var(--subject-color) 5%, #ffffff 95%);
-    --border-color: color-mix(in srgb, var(--subject-color) 25%, #ffffff 75%);
-    --text-color: color-mix(in srgb, var(--subject-color) 70%, #000000 30%);
+    --text-color: #4b5563;
     animation: draft-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .timetable-card-draft .timetable-color-block {
+    opacity: 0.5;
+    background-color: var(--subject-color);
+    box-shadow: none;
+    border: 1px dashed var(--subject-color);
   }
 
   @keyframes draft-pulse {
@@ -133,8 +143,8 @@ const timeStr = $derived(
   }
 
   :global(.dark) .timetable-card-draft {
-    --bg-color: color-mix(in srgb, var(--subject-color) 8%, #1e1e2e 92%);
-    --border-color: color-mix(in srgb, var(--subject-color) 35%, #1e1e2e 65%);
-    --text-color: color-mix(in srgb, var(--subject-color) 85%, #ffffff 15%);
+    background-color: #18181b;
+    border-color: #3f3f46;
+    --text-color: #a1a1aa;
   }
 </style>
