@@ -100,12 +100,6 @@ const navItems = $derived([
     label: m.nav_finance(),
     match: "prefix",
   },
-  {
-    href: `/${orgId}/settings`,
-    icon: Settings,
-    label: m.nav_settings(),
-    match: "prefix",
-  },
 ] as const);
 
 const bottomItems = $derived([
@@ -186,22 +180,6 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 					</Tooltip>
 				</div>
 			{/each}
-
-			<div class="flex">
-				<Tooltip>
-					<TooltipTrigger>
-						<Button
-							variant="ghost"
-							size="icon"
-							class="rounded-[10px]"
-							aria-label={m.nav_feedback()}
-						>
-							<MessageSquare size={16} strokeWidth={1.8} />
-						</Button>
-					</TooltipTrigger>
-					<TooltipContent side="right" sideOffset={10}>{m.nav_feedback()}</TooltipContent>
-				</Tooltip>
-			</div>
 
 			<UserSidebarMenu {orgId} />
 		</div>
