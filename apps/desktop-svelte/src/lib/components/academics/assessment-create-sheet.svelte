@@ -13,6 +13,7 @@ import {
 import { Award } from "lucide-svelte";
 import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
+import * as m from "$lib/paraglide/messages";
 
 let { 
   open = $bindable(false), 
@@ -28,8 +29,6 @@ let {
   onSuccess: () => void;
 } = $props();
 
-const isAr = $derived(getLocale() === "ar");
-
 // Form state
 let isSubmitting = $state(false);
 let name = $state("");
@@ -41,7 +40,7 @@ let assessmentType = $state<"exam" | "quiz" | "homework" | "classwork">("exam");
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   if (!nameAr && !name) {
-    toast.error(isAr ? "الرجاء إدخال اسم التقييم" : "Please enter assessment name");
+    toast.error(m.assessment_toast_error_name());
     return;
   }
   isSubmitting = true;
@@ -57,7 +56,7 @@ async function handleSubmit(e: SubmitEvent) {
       type: assessmentType,
     };
     await commands.assessments.create(request);
-    toast.success(isAr ? "تم إضافة التقييم بنجاح" : "Assessment added successfully");
+    toast.success(m.assessment_toast_success());
     open = false;
     
     // Reset fields
@@ -69,7 +68,7 @@ async function handleSubmit(e: SubmitEvent) {
 
     onSuccess();
   } catch (e) {
-    toast.error(isAr ? "خطأ أثناء إضافة التقييم" : "Error creating assessment");
+    toast.error(m.assessment_toast_error_submit());
   } finally {
     isSubmitting = false;
   }
@@ -81,10 +80,10 @@ async function handleSubmit(e: SubmitEvent) {
 		<SheetHeader class="pb-4 border-b border-border shrink-0 select-none text-start">
 			<SheetTitle class="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
 				<Award size={14} class="text-primary" />
-				<span>{isAr ? "إضافة تقييم جديد" : "New Curriculum Assessment"}</span>
+				<span>{m.assessment_sheet_title()}</span>
 			</SheetTitle>
 			<p class="text-[10px] text-muted-foreground mt-0.5">
-				{isAr ? "يرجى تحديد تفاصيل الاختبار أو الواجب المراد إضافته." : "Create an exam, test, quiz or assignment record."}
+				{m.assessment_sheet_subtitle()}
 			</p>
 		</SheetHeader>
 
@@ -93,13 +92,13 @@ async function handleSubmit(e: SubmitEvent) {
 			<!-- Name (Arabic) -->
 			<div class="flex flex-col gap-1.5 text-start">
 				<label for="ass_name_ar" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-					{isAr ? "عنوان التقييم (بالعربية) *" : "Assessment Title (Arabic) *"}
+					{m.assessment_label_name_ar()}
 				</label>
 				<Input 
 					id="ass_name_ar"
 					type="text" 
 					bind:value={nameAr}
-					placeholder={isAr ? "مثال: اختبار الرياضيات الفتري" : "e.g., Midterm Mathematics Exam"}
+					placeholder={m.assessment_placeholder_name_ar()}
 					class="input-sunken text-xs py-1.5"
 					required
 				/>
@@ -108,7 +107,7 @@ async function handleSubmit(e: SubmitEvent) {
 			<!-- Name (English) -->
 			<div class="flex flex-col gap-1.5 text-start">
 				<label for="ass_name_en" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-					{isAr ? "عنوان التقييم (بالإنجليزية)" : "Assessment Title (English)"}
+					{m.assessment_label_name_en()}
 				</label>
 				<Input 
 					id="ass_name_en"
@@ -122,17 +121,17 @@ async function handleSubmit(e: SubmitEvent) {
 			<!-- Assessment Type -->
 			<div class="flex flex-col gap-1.5 text-start">
 				<label for="ass_type" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-					{isAr ? "تصنيف التقييم" : "Assessment Category"}
+					{m.assessment_label_type()}
 				</label>
 				<select 
 					id="ass_type"
 					bind:value={assessmentType}
 					class="bg-background text-foreground border border-border rounded-md px-3 py-1.5 text-xs focus:ring-1 focus:ring-ring outline-none"
 				>
-					<option value="exam">{isAr ? "اختبار نهائي / فتري" : "Final / Midterm Exam"}</option>
-					<option value="quiz">{isAr ? "اختبار قصير (Quiz)" : "Short Quiz"}</option>
-					<option value="homework">{isAr ? "واجب منزلي" : "Homework Assignment"}</option>
-					<option value="classwork">{isAr ? "مشاركة / نشاط صفي" : "Classwork Activity"}</option>
+					<option value="exam">{m.assessment_option_exam()}</option>
+					<option value="quiz">{m.assessment_option_quiz()}</option>
+					<option value="homework">{m.assessment_option_homework()}</option>
+					<option value="classwork">{m.assessment_option_classwork()}</option>
 				</select>
 			</div>
 
@@ -141,7 +140,7 @@ async function handleSubmit(e: SubmitEvent) {
 				<!-- Max Score -->
 				<div class="flex flex-col gap-1.5 text-start">
 					<label for="ass_max" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-						{isAr ? "الدرجة القصوى" : "Max Score"}
+						{m.assessment_label_max()}
 					</label>
 					<Input 
 						id="ass_max"
@@ -156,7 +155,7 @@ async function handleSubmit(e: SubmitEvent) {
 				<!-- Weight -->
 				<div class="flex flex-col gap-1.5 text-start">
 					<label for="ass_weight" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-						{isAr ? "الوزن النسبي (%)" : "Weight Percentage (%)"}
+						{m.assessment_label_weight()}
 					</label>
 					<Input 
 						id="ass_weight"
@@ -178,7 +177,7 @@ async function handleSubmit(e: SubmitEvent) {
 					onclick={() => open = false}
 					disabled={isSubmitting}
 				>
-					{isAr ? "إلغاء" : "Cancel"}
+					{m.assessment_button_cancel()}
 				</Button>
 				<Button 
 					type="submit" 
@@ -186,7 +185,7 @@ async function handleSubmit(e: SubmitEvent) {
 					class="text-xs h-9 px-4 font-semibold"
 					disabled={isSubmitting}
 				>
-					{isSubmitting ? (isAr ? "جاري الحفظ..." : "Saving...") : (isAr ? "إضافة التقييم" : "Add Assessment")}
+					{isSubmitting ? m.assessment_toast_saving() : m.assessment_button_save()}
 				</Button>
 			</div>
 		</form>

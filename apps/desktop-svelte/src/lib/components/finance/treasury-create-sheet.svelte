@@ -12,7 +12,7 @@ import {
 } from "@orbis/ui-svelte/sheet";
 import { Landmark } from "lucide-svelte";
 import { toast } from "svelte-sonner";
-import { getLocale } from "$lib/paraglide/runtime";
+import * as m from "$lib/paraglide/messages";
 
 let { 
   open = $bindable(false), 
@@ -23,8 +23,6 @@ let {
   orgId: string; 
   onSuccess: () => void;
 } = $props();
-
-const isAr = $derived(getLocale() === "ar");
 
 // Form state
 let isSubmitting = $state(false);
@@ -46,7 +44,6 @@ async function loadLedgerAccounts() {
   isLoadingLedgers = true;
   try {
     const list = await commands.finance.getLedgerAccounts(orgId);
-    // Filter to asset accounts
     ledgers = list.filter(l => l.item_type.toLowerCase() === 'asset' || l.is_bank_account === 1 || l.is_cash_account === 1);
     if (ledgers.length > 0) {
       selectedLedgerId = ledgers[0].id;
@@ -58,7 +55,6 @@ async function loadLedgerAccounts() {
   }
 }
 
-// Reload when opened
 $effect(() => {
   if (open && orgId) {
     loadLedgerAccounts();
@@ -68,15 +64,15 @@ $effect(() => {
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   if (!nameAr && !name) {
-    toast.error(isAr ? "الرجاء إدخال اسم الخزينة" : "Please enter treasury name");
+    toast.error(m.treasury_toast_error_name());
     return;
   }
   if (!selectedLedgerId) {
-    toast.error(isAr ? "الرجاء اختيار الحساب الدفتري المرتبط" : "Please select associated ledger account");
+    toast.error(m.treasury_toast_error_ledger());
     return;
   }
   if (!currency || currency.trim().length !== 3) {
-    toast.error(isAr ? "الرجاء إدخال رمز عملة صحيح من 3 أحرف" : "Please enter a valid 3-letter currency code");
+    toast.error(m.treasury_toast_error_currency());
     return;
   }
 
@@ -92,7 +88,7 @@ async function handleSubmit(e: SubmitEvent) {
       account_number: treasuryType === "bank" ? (accountNumber || undefined) : undefined,
     };
     await commands.finance.createTreasury(orgId, request);
-    toast.success(isAr ? "تم إنشاء الخزينة بنجاح" : "Treasury created successfully");
+    toast.success(m.treasury_toast_success());
     open = false;
     
     // Reset form fields
@@ -108,11 +104,8 @@ async function handleSubmit(e: SubmitEvent) {
 
     onSuccess();
   } catch (e) {
-    toast.error(
-      isAr 
-        ? `خطأ أثناء إنشاء الخزينة: ${e instanceof Error ? e.message : String(e)}`
-        : `Error creating treasury: ${e instanceof Error ? e.message : String(e)}`
-    );
+    const errorMsg = e instanceof Error ? e.message : String(e);
+    toast.error(m.treasury_toast_error_submit({ error: errorMsg }));
   } finally {
     isSubmitting = false;
   }
@@ -124,10 +117,10 @@ async function handleSubmit(e: SubmitEvent) {
 		<SheetHeader class="pb-4 border-b border-border shrink-0 select-none text-start">
 			<SheetTitle class="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
 				<Landmark size={14} class="text-primary" />
-				<span>{isAr ? "إنشاء خزينة جديدة" : "New Treasury safe / Bank"}</span>
+				<span>{m.treasury_sheet_title()}</span>
 			</SheetTitle>
 			<p class="text-[10px] text-muted-foreground mt-0.5">
-				{isAr ? "عرف صندوق نقدي أو حساب مصرفي لتلقي وإيداع متحصلات المدرسة." : "Add a physical cash register vault or institutional bank account."}
+				{m.treasury_sheet_subtitle()}
 			</p>
 		</SheetHeader>
 
@@ -136,13 +129,13 @@ async function handleSubmit(e: SubmitEvent) {
 			<!-- Name (Arabic) -->
 			<div class="flex flex-col gap-1.5 text-start">
 				<label for="treas_name_ar" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-					{isAr ? "اسم الخزينة (بالعربية) *" : "Treasury Name (Arabic) *"}
+					{m.treasury_label_name_ar()}
 				</label>
 				<Input 
 					id="treas_name_ar"
 					type="text" 
 					bind:value={nameAr}
-					placeholder={isAr ? "مثال: الصندوق الرئيسي للمدرسة" : "e.g., School Main Safe Box"}
+					placeholder={m.treasury_placeholder_name_ar()}
 					class="input-sunken text-xs py-1.5"
 					required
 					disabled={isSubmitting}
@@ -152,7 +145,7 @@ async function handleSubmit(e: SubmitEvent) {
 			<!-- Name (English) -->
 			<div class="flex flex-col gap-1.5 text-start">
 				<label for="treas_name_en" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-					{isAr ? "اسم الخزينة (بالإنجليزية)" : "Treasury Name (English)"}
+					{m.treasury_label_name_en()}
 				</label>
 				<Input 
 					id="treas_name_en"
@@ -167,7 +160,7 @@ async function handleSubmit(e: SubmitEvent) {
 			<!-- Type Selection -->
 			<div class="flex flex-col gap-1.5 text-start">
 				<label for="treas_type" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-					{isAr ? "تصنيف الحساب" : "Treasury Category"}
+					{m.treasury_label_type()}
 				</label>
 				<select 
 					id="treas_type"
@@ -175,15 +168,15 @@ async function handleSubmit(e: SubmitEvent) {
 					class="bg-background text-foreground border border-border rounded-md px-3 py-1.5 text-xs focus:ring-1 focus:ring-ring outline-none"
 					disabled={isSubmitting}
 				>
-					<option value="cash">{isAr ? "نقدي (كاش)" : "Physical Cashbox / Safe"}</option>
-					<option value="bank">{isAr ? "حساب مصرفي / بنك" : "Bank Account"}</option>
+					<option value="cash">{m.attendance_status_unknown() === "غير محدد" ? "نقدي (كاش)" : "Physical Cashbox"}</option>
+					<option value="bank">{m.attendance_status_unknown() === "غير محدد" ? "حساب مصرفي / بنك" : "Bank Account"}</option>
 				</select>
 			</div>
 
 			<!-- Associated Ledger Account Select -->
 			<div class="flex flex-col gap-1.5 text-start">
 				<label for="treas_ledger" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-					{isAr ? "الحساب الدفتري المرتبط (أصول) *" : "Associated Ledger Account (Asset) *"}
+					{m.treasury_label_ledger()}
 				</label>
 				<select 
 					id="treas_ledger"
@@ -192,7 +185,7 @@ async function handleSubmit(e: SubmitEvent) {
 					disabled={isLoadingLedgers || isSubmitting}
 				>
 					{#if isLoadingLedgers}
-						<option>{isAr ? "جاري تحميل الحسابات..." : "Loading ledger accounts..."}</option>
+						<option>{m.loading()}</option>
 					{:else}
 						{#each ledgers as l (l.id)}
 							<option value={String(l.id)}>{l.name_ar || l.name} ({l.code})</option>
@@ -204,7 +197,7 @@ async function handleSubmit(e: SubmitEvent) {
 			<!-- Currency Selection -->
 			<div class="flex flex-col gap-1.5 text-start">
 				<label for="treas_currency" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-					{isAr ? "العملة *" : "Currency *"}
+					{m.treasury_label_currency()}
 				</label>
 				<div class="flex gap-2">
 					<Input 
@@ -237,13 +230,13 @@ async function handleSubmit(e: SubmitEvent) {
 				<!-- Bank Name -->
 				<div class="flex flex-col gap-1.5 text-start">
 					<label for="treas_bank_name" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-						{isAr ? "اسم البنك" : "Bank Name"}
+						{m.treasury_label_bank_name()}
 					</label>
 					<Input 
 						id="treas_bank_name"
 						type="text" 
 						bind:value={bankName}
-						placeholder={isAr ? "مثال: بنك الكريمي الإسلامي" : "e.g., Kuraimi Islamic Bank"}
+						placeholder={m.treasury_placeholder_bank_name()}
 						class="input-sunken text-xs py-1.5"
 						disabled={isSubmitting}
 					/>
@@ -252,7 +245,7 @@ async function handleSubmit(e: SubmitEvent) {
 				<!-- Account Number -->
 				<div class="flex flex-col gap-1.5 text-start">
 					<label for="treas_acc_num" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-						{isAr ? "رقم الحساب" : "Account Number"}
+						{m.treasury_label_acc_num()}
 					</label>
 					<Input 
 						id="treas_acc_num"
@@ -274,7 +267,7 @@ async function handleSubmit(e: SubmitEvent) {
 					onclick={() => open = false}
 					disabled={isSubmitting}
 				>
-					{isAr ? "إلغاء" : "Cancel"}
+					{m.treasury_button_cancel()}
 				</Button>
 				<Button 
 					type="submit" 
@@ -282,7 +275,7 @@ async function handleSubmit(e: SubmitEvent) {
 					class="text-xs h-9 px-4 font-semibold"
 					disabled={isSubmitting || isLoadingLedgers}
 				>
-					{isSubmitting ? (isAr ? "جاري الإنشاء..." : "Creating...") : (isAr ? "إنشاء الخزينة" : "Create Treasury")}
+					{isSubmitting ? m.loading() : m.treasury_button_create()}
 				</Button>
 			</div>
 		</form>

@@ -18,10 +18,9 @@ import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate } from "$lib/i18n-utils";
 import { fade } from "svelte/transition";
 import FeeAssignSheet from "$lib/components/finance/fee-assign-sheet.svelte";
+import * as m from "$lib/paraglide/messages";
 
 let { data }: { data: { orgId: string } } = $props();
-
-const isAr = $derived(getLocale() === "ar");
 
 // State
 let fees = $state<any[]>([]);
@@ -103,9 +102,9 @@ function getStatusBadgeClass(statusStr: string) {
 
 function getStatusLabel(statusStr: string) {
   const s = String(statusStr).toLowerCase();
-  if (s === "paid") return isAr ? "مدفوع بالكامل" : "Fully Paid";
-  if (s === "partially_paid") return isAr ? "مدفوع جزئياً" : "Partially Paid";
-  return isAr ? "غير مدفوع" : "Unpaid";
+  if (s === "paid") return m.fees_status_paid();
+  if (s === "partially_paid") return m.fees_status_partially_paid();
+  return m.fees_status_unpaid();
 }
 </script>
 
@@ -114,10 +113,10 @@ function getStatusLabel(statusStr: string) {
 	<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shrink-0 select-none">
 		<div class="text-start">
 			<h2 class="text-sm font-bold text-foreground uppercase tracking-wider">
-				{isAr ? "سجل رسوم الطلاب" : "Student Billing & Fees"}
+				{m.fees_page_title()}
 			</h2>
 			<p class="text-[10px] text-muted-foreground mt-0.5">
-				{isAr ? "إدارة ومتابعة الفواتير والرسوم المستحقة على طلاب المدرسة." : "Manage and audit issued bills, tuition fees, and payment status."}
+				{m.fees_page_subtitle()}
 			</p>
 		</div>
 
@@ -126,8 +125,8 @@ function getStatusLabel(statusStr: string) {
 			class="text-xs h-9 px-3 shrink-0" 
 			onclick={() => isSheetOpen = true}
 		>
-			<Plus size={14} class={isAr ? 'ml-1.5' : 'mr-1.5'} />
-			{isAr ? "إسناد رسم جديد" : "Assign New Fee"}
+			<Plus size={14} class={getLocale() === "ar" ? 'ml-1.5' : 'mr-1.5'} />
+			{m.fees_assign_button()}
 		</Button>
 	</div>
 
@@ -138,7 +137,7 @@ function getStatusLabel(statusStr: string) {
 			<div class="card-tactile bg-card/40 flex items-center justify-between p-4 h-20 select-none">
 				<div class="flex flex-col gap-1 text-start">
 					<span class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
-						{isAr ? "إجمالي المبلغ المفوتر" : "Invoiced (Filtered)"}
+						{m.fees_total_invoiced()}
 					</span>
 					<span class="text-base font-bold text-foreground font-mono">{formatCurrency(stats.invoiced, "YER")}</span>
 				</div>
@@ -151,7 +150,7 @@ function getStatusLabel(statusStr: string) {
 			<div class="card-tactile bg-card/40 flex items-center justify-between p-4 h-20 select-none">
 				<div class="flex flex-col gap-1 text-start">
 					<span class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
-						{isAr ? "إجمالي المبلغ المحصل" : "Collected (Filtered)"}
+						{m.fees_total_collected()}
 					</span>
 					<span class="text-base font-bold text-emerald-500 font-mono">{formatCurrency(stats.collected, "YER")}</span>
 				</div>
@@ -164,7 +163,7 @@ function getStatusLabel(statusStr: string) {
 			<div class="card-tactile bg-card/40 flex items-center justify-between p-4 h-20 select-none">
 				<div class="flex flex-col gap-1 text-start">
 					<span class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
-						{isAr ? "المستحقات المعلقة" : "Balance Due (Filtered)"}
+						{m.fees_total_due()}
 					</span>
 					<span class="text-base font-bold text-rose-500 font-mono">{formatCurrency(stats.due, "YER")}</span>
 				</div>
@@ -183,7 +182,7 @@ function getStatusLabel(statusStr: string) {
 				<Search class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
 				<Input
 					type="text"
-					placeholder={isAr ? "البحث باسم الطالب أو رقم الطالب..." : "Search by student name or number..."}
+					placeholder={m.fees_search_placeholder()}
 					class="input-sunken ps-9 text-xs py-1.5"
 					bind:value={searchQuery}
 				/>
@@ -192,16 +191,16 @@ function getStatusLabel(statusStr: string) {
 			<!-- Status selector -->
 			<div class="flex items-center gap-2 text-start">
 				<span class="text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-					{isAr ? "حالة الدفع:" : "Status:"}
+					{m.fees_filter_status()}
 				</span>
 				<select 
 					bind:value={statusFilter}
 					class="bg-background text-foreground border border-border rounded-md px-3 py-1.5 text-xs focus:ring-1 focus:ring-ring outline-none min-w-32"
 				>
-					<option value="all">{isAr ? "جميع الحالات" : "All Statuses"}</option>
-					<option value="unpaid">{isAr ? "غير مدفوع" : "Unpaid"}</option>
-					<option value="partially_paid">{isAr ? "مدفوع جزئياً" : "Partially Paid"}</option>
-					<option value="paid">{isAr ? "مدفوع بالكامل" : "Fully Paid"}</option>
+					<option value="all">{m.fees_filter_status_all()}</option>
+					<option value="unpaid">{m.fees_status_unpaid()}</option>
+					<option value="partially_paid">{m.fees_status_partially_paid()}</option>
+					<option value="paid">{m.fees_status_paid()}</option>
 				</select>
 			</div>
 		</div>
@@ -216,21 +215,21 @@ function getStatusLabel(statusStr: string) {
 		</div>
 	{:else if error}
 		<div class="flex flex-col items-center justify-center py-16 text-destructive border border-destructive/20 bg-destructive/5 rounded-xl gap-2">
-			<h3 class="font-semibold text-xs">{isAr ? "خطأ في تحميل الفواتير" : "Error loading billing statements"}</h3>
+			<h3 class="font-semibold text-xs">{m.fees_error_loading()}</h3>
 			<p class="text-[10px] text-muted-foreground">{error}</p>
-			<Button variant="outline" onclick={loadFees} class="text-[10px] mt-2">{isAr ? "إعادة المحاولة" : "Retry"}</Button>
+			<Button variant="outline" onclick={loadFees} class="text-[10px] mt-2">{m.error_retry()}</Button>
 		</div>
 	{:else if filteredFees.length === 0}
 		<div class="flex flex-col items-center justify-center py-16 text-muted-foreground border border-border border-dashed rounded-xl gap-4 bg-card/10 select-none">
 			<Wallet size={48} class="text-muted-foreground/30" />
 			<div class="flex flex-col gap-1 text-center">
-				<p class="text-xs font-semibold">{isAr ? "لا توجد رسوم مسجلة" : "No billing records found"}</p>
+				<p class="text-xs font-semibold">{m.fees_empty_title()}</p>
 				<p class="text-[10px] text-muted-foreground/80">
-					{isAr ? "لا توجد أي رسوم أو فواتير مطابقة لخيارات الفرز الحالية." : "There are no invoiced fees matching the active search parameters."}
+					{m.fees_empty_desc()}
 				</p>
 			</div>
 			<Button variant="lime" class="text-xs mt-2" onclick={() => isSheetOpen = true}>
-				{isAr ? "إسناد رسم جديد" : "Assign New Fee"}
+				{m.fees_assign_button()}
 			</Button>
 		</div>
 	{:else}
@@ -239,19 +238,19 @@ function getStatusLabel(statusStr: string) {
 			<Table>
 				<TableHeader>
 					<TableRow class="hover:bg-transparent">
-						<TableHead class="text-start">{isAr ? "الوصف" : "Description"}</TableHead>
-						<TableHead class="text-start">{isAr ? "الطالب" : "Student"}</TableHead>
-						<TableHead class="text-start">{isAr ? "الحساب الدفتري" : "Ledger Account"}</TableHead>
-						<TableHead class="text-start">{isAr ? "تاريخ الاستحقاق" : "Due Date"}</TableHead>
-						<TableHead class="text-start">{isAr ? "حالة السداد" : "Status"}</TableHead>
-						<TableHead class="text-start">{isAr ? "المبلغ المستحق" : "Amount"}</TableHead>
+						<TableHead class="text-start">{m.fees_col_description()}</TableHead>
+						<TableHead class="text-start">{m.fees_col_student()}</TableHead>
+						<TableHead class="text-start">{m.fees_col_ledger()}</TableHead>
+						<TableHead class="text-start">{m.fees_col_due_date()}</TableHead>
+						<TableHead class="text-start">{m.fees_col_status()}</TableHead>
+						<TableHead class="text-start">{m.fees_col_amount()}</TableHead>
 					</TableRow>
 				</TableHeader>
 				<TableBody>
 					{#each filteredFees as fee (fee.id)}
 						<TableRow class="hover:bg-accent/10">
 							<TableCell class="font-bold text-foreground max-w-[200px] truncate">
-								{fee.description || (isAr ? "رسوم دراسية عامة" : "General Tuition Fee")}
+								{fee.description || m.fees_default_description()}
 							</TableCell>
 							<TableCell class="font-medium text-foreground">
 								<div class="flex flex-col">

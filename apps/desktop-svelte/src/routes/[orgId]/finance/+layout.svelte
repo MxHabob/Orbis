@@ -12,10 +12,9 @@ import { deLocalizeUrl, localizeHref, getLocale } from "$lib/paraglide/runtime";
 import { Wallet, CreditCard, Landmark, BarChart3, Compass, ChevronRight } from "lucide-svelte";
 import MainViewport from "$lib/components/layout/MainViewport.svelte";
 import type { Snippet } from "svelte";
+import * as m from "$lib/paraglide/messages";
 
 let { data, children }: { data: { orgId: string }; children: Snippet } = $props();
-
-const isAr = $derived(getLocale() === "ar");
 
 // Sidebar live statistics
 let unpaidFeesCount = $state(0);
@@ -58,29 +57,29 @@ function isActive(pathSegment: string): boolean {
 const navItems = $derived([
   {
     path: "",
-    label: isAr ? "نظرة عامة" : "Overview",
+    label: m.finance_layout_nav_overview(),
     icon: Compass,
   },
   {
     path: "fees",
-    label: isAr ? "رسوم الطلاب" : "Student Fees",
+    label: m.finance_layout_nav_fees(),
     icon: Wallet,
     badge: unpaidFeesCount > 0 ? unpaidFeesCount : null,
   },
   {
     path: "payments",
-    label: isAr ? "سجل المدفوعات" : "Payments",
+    label: m.finance_layout_nav_payments(),
     icon: CreditCard,
   },
   {
     path: "treasuries",
-    label: isAr ? "الحسابات والخزائن" : "Treasuries & Accounts",
+    label: m.finance_layout_nav_treasuries(),
     icon: Landmark,
     badge: treasuriesCount > 0 ? treasuriesCount : null,
   },
   {
     path: "reports",
-    label: isAr ? "التقارير المالية" : "Financial Reports",
+    label: m.finance_layout_nav_reports(),
     icon: BarChart3,
   },
 ]);
@@ -96,10 +95,10 @@ const navItems = $derived([
 			<div class="h-full border-r border-border bg-card/20 p-4 flex flex-col gap-4 overflow-y-auto scrollbar-hide select-none">
 				<div class="flex flex-col gap-0.5 text-start px-2 py-1.5">
 					<span class="font-bold text-[10px] text-muted-foreground uppercase tracking-wider">
-						{isAr ? "الحسابات والمالية" : "Finance Panel"}
+						{m.finance_layout_panel_title()}
 					</span>
 					<span class="text-[9px] text-muted-foreground line-clamp-1">
-						{isAr ? "إدارة الرسوم والمتحصلات" : "Ledgers, Fees & Treasuries"}
+						{m.finance_layout_panel_desc()}
 					</span>
 				</div>
 

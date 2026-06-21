@@ -12,6 +12,7 @@ import {
 } from "@orbis/ui-svelte/sheet";
 import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
+import * as m from "$lib/paraglide/messages";
 
 let { 
   open = $bindable(false), 
@@ -22,8 +23,6 @@ let {
   orgId: string; 
   onSuccess: () => void;
 } = $props();
-
-const isAr = $derived(getLocale() === "ar");
 
 // Form state
 let isSubmitting = $state(false);
@@ -36,7 +35,7 @@ let capacity = $state<number>(30);
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   if (!nameAr && !name) {
-    toast.error(isAr ? "الرجاء إدخال اسم الفصل" : "Please enter class name");
+    toast.error(m.class_toast_error_name());
     return;
   }
   isSubmitting = true;
@@ -49,7 +48,7 @@ async function handleSubmit(e: SubmitEvent) {
       capacity: capacity ? Number(capacity) : 30,
     };
     await commands.classes.create(orgId, request);
-    toast.success(isAr ? "تم إنشاء الفصل بنجاح" : "Class created successfully");
+    toast.success(m.class_toast_success());
     open = false;
     
     // Reset fields
@@ -61,11 +60,8 @@ async function handleSubmit(e: SubmitEvent) {
 
     onSuccess();
   } catch (e) {
-    toast.error(
-      isAr 
-        ? `خطأ أثناء إنشاء الفصل: ${e instanceof Error ? e.message : String(e)}`
-        : `Error creating class: ${e instanceof Error ? e.message : String(e)}`
-    );
+    const errorMsg = e instanceof Error ? e.message : String(e);
+    toast.error(m.class_toast_error_submit({ error: errorMsg }));
   } finally {
     isSubmitting = false;
   }
@@ -76,10 +72,10 @@ async function handleSubmit(e: SubmitEvent) {
 	<SheetContent class="w-full sm:max-w-md bg-card border-l border-border/80 flex flex-col h-full overflow-hidden text-xs">
 		<SheetHeader class="pb-4 border-b border-border shrink-0 select-none text-start">
 			<SheetTitle class="text-sm font-bold text-foreground uppercase tracking-wider">
-				{isAr ? "إنشاء فصل دراسي جديد" : "Create New Academic Class"}
+				{m.class_sheet_title()}
 			</SheetTitle>
 			<p class="text-[10px] text-muted-foreground mt-0.5">
-				{isAr ? "يرجى تعبئة الحقول التالية لتعريف الفصل الدراسي." : "Fill in the details to add a new class section."}
+				{m.class_sheet_subtitle()}
 			</p>
 		</SheetHeader>
 
@@ -88,13 +84,13 @@ async function handleSubmit(e: SubmitEvent) {
 			<!-- Name (Arabic) -->
 			<div class="flex flex-col gap-1.5 text-start">
 				<label for="name_ar" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-					{isAr ? "اسم الفصل (بالعربية) *" : "Class Name (Arabic) *"}
+					{m.class_label_name_ar()}
 				</label>
 				<Input 
 					id="name_ar"
 					type="text" 
 					bind:value={nameAr}
-					placeholder={isAr ? "مثال: الصف الأول أ" : "e.g., Grade 1 A"}
+					placeholder={m.class_placeholder_name_ar()}
 					class="input-sunken text-xs py-1.5"
 					required
 				/>
@@ -103,7 +99,7 @@ async function handleSubmit(e: SubmitEvent) {
 			<!-- Name (English) -->
 			<div class="flex flex-col gap-1.5 text-start">
 				<label for="name_en" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-					{isAr ? "اسم الفصل (بالإنجليزية)" : "Class Name (English)"}
+					{m.class_label_name_en()}
 				</label>
 				<Input 
 					id="name_en"
@@ -119,7 +115,7 @@ async function handleSubmit(e: SubmitEvent) {
 				<!-- Class Code -->
 				<div class="flex flex-col gap-1.5 text-start">
 					<label for="code" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-						{isAr ? "رمز الفصل" : "Class Code"}
+						{m.class_label_code()}
 					</label>
 					<Input 
 						id="code"
@@ -133,7 +129,7 @@ async function handleSubmit(e: SubmitEvent) {
 				<!-- Grade Level -->
 				<div class="flex flex-col gap-1.5 text-start">
 					<label for="grade" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-						{isAr ? "المستوى الدراسي" : "Grade Level"}
+						{m.class_label_grade()}
 					</label>
 					<Input 
 						id="grade"
@@ -148,7 +144,7 @@ async function handleSubmit(e: SubmitEvent) {
 			<!-- Capacity -->
 			<div class="flex flex-col gap-1.5 text-start">
 				<label for="capacity" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-					{isAr ? "الاستيعاب الأقصى (عدد الطلاب)" : "Max Capacity (Student Limit)"}
+					{m.class_label_capacity()}
 				</label>
 				<Input 
 					id="capacity"
@@ -169,7 +165,7 @@ async function handleSubmit(e: SubmitEvent) {
 					onclick={() => open = false}
 					disabled={isSubmitting}
 				>
-					{isAr ? "إلغاء" : "Cancel"}
+					{m.class_button_cancel()}
 				</Button>
 				<Button 
 					type="submit" 
@@ -177,7 +173,7 @@ async function handleSubmit(e: SubmitEvent) {
 					class="text-xs h-9 px-4 font-semibold"
 					disabled={isSubmitting}
 				>
-					{isSubmitting ? (isAr ? "جاري الحفظ..." : "Saving...") : (isAr ? "حفظ الفصل" : "Save Class")}
+					{isSubmitting ? m.class_toast_saving() : m.class_button_save()}
 				</Button>
 			</div>
 		</form>

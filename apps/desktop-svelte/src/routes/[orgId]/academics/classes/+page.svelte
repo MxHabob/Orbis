@@ -13,9 +13,9 @@ import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
 import ClassCreateSheet from "$lib/components/academics/class-create-sheet.svelte";
+import * as m from "$lib/paraglide/messages";
 
 let { data }: { data: { orgId: string } } = $props();
-const isAr = $derived(getLocale() === "ar");
 
 // State
 let classes = $state<any[]>([]);
@@ -39,7 +39,7 @@ async function loadData() {
     students = studentData;
   } catch (e) {
     error = e instanceof Error ? e.message : String(e);
-    toast.error(isAr ? "فشل تحميل البيانات" : "Failed to load data");
+    toast.error(m.classes_load_error());
   } finally {
     isLoading = false;
   }
@@ -72,7 +72,7 @@ const averageClassSize = $derived(
 			<div class="card-tactile bg-card/40 flex items-center justify-between p-4">
 				<div class="flex flex-col gap-1 text-start">
 					<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-						{isAr ? "إجمالي الفصول" : "Total Classes"}
+						{m.classes_total_classes()}
 					</span>
 					<span class="text-2xl font-bold text-foreground font-mono">{totalClassesCount}</span>
 				</div>
@@ -85,7 +85,7 @@ const averageClassSize = $derived(
 			<div class="card-tactile bg-card/40 flex items-center justify-between p-4">
 				<div class="flex flex-col gap-1 text-start">
 					<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-						{isAr ? "الطلاب المقيدين" : "Enrolled Students"}
+						{m.classes_enrolled_students()}
 					</span>
 					<span class="text-2xl font-bold text-foreground font-mono">{totalStudentsCount}</span>
 				</div>
@@ -98,7 +98,7 @@ const averageClassSize = $derived(
 			<div class="card-tactile bg-card/40 flex items-center justify-between p-4">
 				<div class="flex flex-col gap-1 text-start">
 					<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-						{isAr ? "متوسط حجم الفصل" : "Average Class Size"}
+						{m.classes_avg_size()}
 					</span>
 					<span class="text-2xl font-bold text-foreground font-mono">{averageClassSize}</span>
 				</div>
@@ -112,7 +112,7 @@ const averageClassSize = $derived(
 	<!-- Header Area -->
 	<div class="flex items-center justify-between font-sans">
 		<h2 class="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
-			<span>{isAr ? "الفصول الدراسية النشطة" : "Active Classes"}</span>
+			<span>{m.classes_active_classes()}</span>
 			{#if !isLoading}
 				<span class="text-[10px] px-1.5 py-0.5 rounded bg-muted font-mono text-muted-foreground">
 					{classes.length}
@@ -121,8 +121,8 @@ const averageClassSize = $derived(
 		</h2>
 
 		<Button variant="lime" class="text-xs h-9 px-3" onclick={() => isModalOpen = true}>
-			<Plus size={14} class={isAr ? 'ml-1.5' : 'mr-1.5'} />
-			{isAr ? "فصل جديد" : "New Class"}
+			<Plus size={14} class={getLocale() === "ar" ? 'ml-1.5' : 'mr-1.5'} />
+			{m.classes_new_class()}
 		</Button>
 	</div>
 
@@ -136,19 +136,19 @@ const averageClassSize = $derived(
 		</div>
 	{:else if error}
 		<div class="flex flex-col items-center justify-center p-8 border border-destructive/20 bg-destructive/5 rounded-xl text-center gap-3">
-			<p class="text-xs text-destructive font-semibold">{isAr ? "حدث خطأ أثناء تحميل الفصول" : "Error loading classes"}</p>
+			<p class="text-xs text-destructive font-semibold">{m.classes_load_error()}</p>
 			<p class="text-xs text-muted-foreground">{error}</p>
-			<Button variant="outline" class="text-xs" onclick={loadData}>{isAr ? "إعادة المحاولة" : "Retry"}</Button>
+			<Button variant="outline" class="text-xs" onclick={loadData}>{m.error_retry()}</Button>
 		</div>
 	{:else if classes.length === 0}
 		<div class="flex flex-col items-center justify-center py-16 text-muted-foreground border border-border border-dashed rounded-xl gap-4">
 			<GraduationCap size={48} class="text-muted-foreground/30" />
 			<div class="flex flex-col gap-1 text-center">
-				<p class="text-xs font-semibold">{isAr ? "لا توجد فصول دراسية" : "No classes registered yet"}</p>
-				<p class="text-[10px] text-muted-foreground/80">{isAr ? "ابدأ بإضافة أول فصل لمدرستك باستخدام الزر أعلاه." : "Start by adding your first class using the button above."}</p>
+				<p class="text-xs font-semibold">{m.classes_empty_title()}</p>
+				<p class="text-[10px] text-muted-foreground/80">{m.classes_empty_desc()}</p>
 			</div>
 			<Button variant="lime" class="text-xs mt-2" onclick={() => isModalOpen = true}>
-				{isAr ? "إضافة فصل" : "Add Class"}
+				{m.classes_add_class()}
 			</Button>
 		</div>
 	{:else}
@@ -179,7 +179,7 @@ const averageClassSize = $derived(
 						<div class="flex items-center justify-between text-[10px]">
 							<span class="text-muted-foreground flex items-center gap-1">
 								<Users size={10} />
-								<span>{isAr ? `${count} طالب` : `${count} students`}</span>
+								<span>{m.classes_students_count({ count })}</span>
 							</span>
 							<span class="font-mono {ratio >= 100 ? 'text-destructive font-bold' : 'text-muted-foreground'}">
 								{count}/{limit} ({ratio}%)
@@ -197,11 +197,11 @@ const averageClassSize = $derived(
 					<!-- Class Footer -->
 					<div class="flex items-center justify-between border-t border-border/60 pt-2 text-[9px] text-muted-foreground">
 						<span>
-							{isAr ? `المستوى الدراسي: ${cls.grade_level || 'غير محدد'}` : `Grade Level: ${cls.grade_level || 'N/A'}`}
+							{m.classes_grade_level_label({ level: cls.grade_level || 'N/A' })}
 						</span>
 						{#if ratio >= 100}
 							<span class="text-destructive font-bold uppercase text-[8px] tracking-wider px-1 py-0.2 rounded border border-destructive/20 bg-destructive/5">
-								{isAr ? "ممتلئ" : "Full"}
+								{m.classes_status_full()}
 							</span>
 						{/if}
 					</div>
@@ -213,4 +213,3 @@ const averageClassSize = $derived(
 
 <!-- Class Creation Side Sheet Component -->
 <ClassCreateSheet bind:open={isModalOpen} orgId={data.orgId} onSuccess={loadData} />
-

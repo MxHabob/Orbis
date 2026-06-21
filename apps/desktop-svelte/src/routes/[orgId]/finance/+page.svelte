@@ -17,10 +17,9 @@ import {
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency } from "$lib/i18n-utils";
 import { fade } from "svelte/transition";
+import * as m from "$lib/paraglide/messages";
 
 let { data }: { data: { orgId: string } } = $props();
-
-const isAr = $derived(getLocale() === "ar");
 
 // State
 let isLoading = $state(true);
@@ -69,12 +68,10 @@ onMount(() => {
 			</div>
 			<div class="flex flex-col gap-0.5">
 				<h1 class="text-sm font-bold text-foreground uppercase tracking-wider">
-					{isAr ? "لوحة الإدارة المالية" : "Financial Management Hub"}
+					{m.finance_overview_title()}
 				</h1>
 				<p class="text-[10px] text-muted-foreground">
-					{isAr 
-						? "نظرة عامة على المدفوعات والرسوم الدراسية وحسابات الخزينة للمدرسة." 
-						: "Monitor school collections, invoice details, due balances, and treasury statements."}
+					{m.finance_overview_subtitle()}
 				</p>
 			</div>
 		</div>
@@ -93,9 +90,9 @@ onMount(() => {
 		</div>
 	{:else if error}
 		<div class="flex flex-col items-center justify-center py-16 text-destructive border border-destructive/20 bg-destructive/5 rounded-xl gap-2">
-			<h3 class="font-semibold text-xs">{isAr ? "فشل تحميل البيانات المالية" : "Failed to load financial records"}</h3>
+			<h3 class="font-semibold text-xs">{m.finance_overview_error()}</h3>
 			<p class="text-[10px] text-muted-foreground">{error}</p>
-			<Button variant="outline" onclick={loadOverview} class="text-[10px] mt-2">{isAr ? "إعادة المحاولة" : "Retry"}</Button>
+			<Button variant="outline" onclick={loadOverview} class="text-[10px] mt-2">{m.error_retry()}</Button>
 		</div>
 	{:else}
 		<!-- Main Content Grid -->
@@ -106,7 +103,7 @@ onMount(() => {
 				<div class="card-tactile bg-card/40 flex items-center justify-between p-4 h-24 select-none">
 					<div class="flex flex-col gap-1 text-start">
 						<span class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
-							{isAr ? "إجمالي الرسوم المفوترة" : "Total Fees Invoiced"}
+							{m.finance_overview_total_invoiced()}
 						</span>
 						<span class="text-xl font-bold font-mono text-foreground">{formatCurrency(totalFees)}</span>
 					</div>
@@ -119,7 +116,7 @@ onMount(() => {
 				<div class="card-tactile bg-card/40 flex items-center justify-between p-4 h-24 select-none">
 					<div class="flex flex-col gap-1 text-start">
 						<span class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
-							{isAr ? "المدفوعات والمحصلات" : "Total Collected"}
+							{m.finance_overview_total_collected()}
 						</span>
 						<span class="text-xl font-bold font-mono text-emerald-500">{formatCurrency(totalPaid)}</span>
 					</div>
@@ -132,7 +129,7 @@ onMount(() => {
 				<div class="card-tactile bg-card/40 flex items-center justify-between p-4 h-24 select-none">
 					<div class="flex flex-col gap-1 text-start">
 						<span class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
-							{isAr ? "المستحقات المتبقية" : "Outstanding Balance"}
+							{m.finance_overview_outstanding()}
 						</span>
 						<span class="text-xl font-bold font-mono text-rose-500">{formatCurrency(balanceDue)}</span>
 					</div>
@@ -145,7 +142,7 @@ onMount(() => {
 				<div class="card-tactile bg-card/40 flex items-center justify-between p-4 h-24 select-none">
 					<div class="flex flex-col gap-1 text-start">
 						<span class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
-							{isAr ? "أصول الخزينة والبنك" : "Treasury Balance"}
+							{m.finance_overview_treasury_bal()}
 						</span>
 						<span class="text-xl font-bold font-mono text-foreground">{formatCurrency(treasuryAssets)}</span>
 					</div>
@@ -160,16 +157,16 @@ onMount(() => {
 				<!-- Collection progress bar -->
 				<div class="card-tactile bg-card lg:col-span-2 p-6 flex flex-col gap-4 text-start">
 					<h3 class="text-xs font-bold text-foreground uppercase tracking-wider">
-						{isAr ? "نسبة تحصيل الرسوم" : "Fee Collection Performance"}
+						{m.finance_overview_performance_title()}
 					</h3>
 					
 					<div class="flex items-end justify-between mt-2 select-none">
 						<div class="flex flex-col">
-							<span class="text-[9px] text-muted-foreground">{isAr ? "النسبة المحصلة" : "Collection Ratio"}</span>
+							<span class="text-[9px] text-muted-foreground">{m.finance_overview_ratio()}</span>
 							<span class="text-2xl font-bold font-mono text-emerald-500">{collectionRate}%</span>
 						</div>
 						<div class="flex flex-col text-end font-mono">
-							<span class="text-[9px] text-muted-foreground">{isAr ? "الهدف" : "Target"}</span>
+							<span class="text-[9px] text-muted-foreground">{m.finance_overview_target()}</span>
 							<span class="text-xs font-semibold">100%</span>
 						</div>
 					</div>
@@ -182,11 +179,11 @@ onMount(() => {
 					<div class="flex items-center gap-3 pt-2 text-[9px] text-muted-foreground border-t border-border/50 mt-2 select-none">
 						<span class="flex items-center gap-1">
 							<span class="h-2 w-2 rounded-full bg-emerald-500"></span>
-							{isAr ? "المحصل" : "Collected"}: {formatCurrency(totalPaid)}
+							{m.finance_overview_collected()}: {formatCurrency(totalPaid)}
 						</span>
 						<span class="flex items-center gap-1">
 							<span class="h-2 w-2 rounded-full bg-rose-500"></span>
-							{isAr ? "المتبقي" : "Outstanding"}: {formatCurrency(balanceDue)}
+							{m.finance_overview_outstanding_label()}: {formatCurrency(balanceDue)}
 						</span>
 					</div>
 				</div>
@@ -194,23 +191,23 @@ onMount(() => {
 				<!-- Quick shortcuts / health summary -->
 				<div class="card-tactile bg-card p-6 flex flex-col gap-4 text-start">
 					<h3 class="text-xs font-bold text-foreground uppercase tracking-wider">
-						{isAr ? "حالة التدفق النقدي" : "Cash Flow Diagnostics"}
+						{m.finance_overview_diagnostics_title()}
 					</h3>
 
 					<div class="flex flex-col gap-3 my-auto">
 						<div class="flex items-start gap-2.5">
 							<ShieldCheck size={14} class="text-emerald-500 shrink-0 mt-0.5" />
 							<div class="flex flex-col">
-								<span class="text-[10px] font-semibold text-foreground">{isAr ? "الأصول النقدية آمنة" : "Treasury Safeguards Active"}</span>
-								<span class="text-[8px] text-muted-foreground">{isAr ? "تمت مطابقة حسابات الخزينة مع سجلات العمليات." : "All ledger account deposits match physical treasury records."}</span>
+								<span class="text-[10px] font-semibold text-foreground">{m.finance_overview_diag1_title()}</span>
+								<span class="text-[8px] text-muted-foreground">{m.finance_overview_diag1_desc()}</span>
 							</div>
 						</div>
 
 						<div class="flex items-start gap-2.5">
 							<TrendingUp size={14} class="text-primary shrink-0 mt-0.5" />
 							<div class="flex flex-col">
-								<span class="text-[10px] font-semibold text-foreground">{isAr ? "أداء التحصيلات هذا الشهر" : "Monthly Recovery Growth"}</span>
-								<span class="text-[8px] text-muted-foreground">{isAr ? "ارتفاع ملحوظ في سداد الأقساط مقارنة بالعام الفائت." : "Collections showing a steady upward trajectory from prior term."}</span>
+								<span class="text-[10px] font-semibold text-foreground">{m.finance_overview_diag2_title()}</span>
+								<span class="text-[8px] text-muted-foreground">{m.finance_overview_diag2_desc()}</span>
 							</div>
 						</div>
 					</div>

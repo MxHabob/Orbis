@@ -17,9 +17,9 @@ import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
 import AssessmentCreateSheet from "$lib/components/academics/assessment-create-sheet.svelte";
+import * as m from "$lib/paraglide/messages";
 
 let { data }: { data: { orgId: string } } = $props();
-const isAr = $derived(getLocale() === "ar");
 
 // State
 let classes = $state<any[]>([]);
@@ -110,22 +110,22 @@ const totalWeight = $derived(
 
 // Delete assessment
 async function handleDeleteAssessment(id: string) {
-  if (!confirm(isAr ? "هل أنت متأكد من حذف هذا التقييم؟" : "Are you sure you want to delete this assessment?")) return;
+  if (!confirm(m.assessments_page_confirm_delete())) return;
   try {
     await commands.assessments.delete(id);
-    toast.success(isAr ? "تم حذف التقييم" : "Assessment deleted");
+    toast.success(m.assessments_page_success_delete());
     await loadAssessments();
   } catch (e) {
-    toast.error(isAr ? "فشل حذف التقييم" : "Failed to delete assessment");
+    toast.error(m.assessments_page_error_delete());
   }
 }
 
 function getAssessmentTypeLabel(typeStr: string) {
   const t = String(typeStr).toLowerCase();
-  if (t === "exam") return isAr ? "اختبار نهائي" : "Final Exam";
-  if (t === "quiz") return isAr ? "اختبار قصير" : "Quiz";
-  if (t === "homework") return isAr ? "واجب منزلي" : "Homework";
-  if (t === "classwork") return isAr ? "مشاركة صفية" : "Classwork";
+  if (t === "exam") return m.assessments_type_exam();
+  if (t === "quiz") return m.assessments_type_quiz();
+  if (t === "homework") return m.assessments_type_homework();
+  if (t === "classwork") return m.assessments_type_classwork();
   return typeStr;
 }
 
@@ -145,7 +145,7 @@ function getAssessmentTypeColor(typeStr: string) {
 			<!-- Class Selector -->
 			<div class="flex flex-col sm:flex-row sm:items-center gap-2 text-start">
 				<span class="text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-					{isAr ? "الفصل الدراسي:" : "Class:"}
+					{m.assessments_page_class()}
 				</span>
 				<select 
 					bind:value={selectedClassId} 
@@ -160,13 +160,13 @@ function getAssessmentTypeColor(typeStr: string) {
 			<!-- Subject Selector -->
 			<div class="flex flex-col sm:flex-row sm:items-center gap-2 text-start">
 				<span class="text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-					{isAr ? "المادة الدراسية:" : "Subject:"}
+					{m.assessments_page_subject()}
 				</span>
 				<select 
 					bind:value={selectedSubjectId} 
 					class="bg-background text-foreground border border-border rounded-md px-3 py-1.5 text-xs focus:ring-1 focus:ring-ring outline-none min-w-44"
 				>
-					<option value="">{isAr ? "جميع المواد" : "All Subjects"}</option>
+					<option value="">{m.assessments_page_all_subjects()}</option>
 					{#each subjects as sub (sub.id)}
 						<option value={String(sub.id)}>{sub.name_ar || sub.name}</option>
 					{/each}
@@ -181,8 +181,8 @@ function getAssessmentTypeColor(typeStr: string) {
 			onclick={() => isModalOpen = true}
 			disabled={classes.length === 0}
 		>
-			<Plus size={14} class={isAr ? 'ml-1.5' : 'mr-1.5'} />
-			{isAr ? "تقييم جديد" : "New Assessment"}
+			<Plus size={14} class={getLocale() === "ar" ? 'ml-1.5' : 'mr-1.5'} />
+			{m.assessments_page_new_button()}
 		</Button>
 	</div>
 
@@ -193,7 +193,7 @@ function getAssessmentTypeColor(typeStr: string) {
 			<div class="card-tactile bg-card/40 flex items-center justify-between p-4 h-20 select-none">
 				<div class="flex flex-col gap-1 text-start">
 					<span class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
-						{isAr ? "عدد التقييمات" : "Total Assessments"}
+						{m.assessments_page_total_count()}
 					</span>
 					<span class="text-xl font-bold text-foreground font-mono">{assessments.length}</span>
 				</div>
@@ -206,7 +206,7 @@ function getAssessmentTypeColor(typeStr: string) {
 			<div class="card-tactile bg-card/40 flex items-center justify-between p-4 h-20 select-none">
 				<div class="flex flex-col gap-1 text-start">
 					<span class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
-						{isAr ? "إجمالي وزن الدرجات" : "Total Term Weight"}
+						{m.assessments_page_total_weight()}
 					</span>
 					<span class="text-xl font-bold font-mono {totalWeight > 100 ? 'text-destructive' : 'text-foreground'}">
 						{totalWeight}% / 100%
@@ -224,19 +224,17 @@ function getAssessmentTypeColor(typeStr: string) {
 						<CheckSquare size={16} />
 					</div>
 					<div class="flex flex-col min-w-0">
-						<span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">{isAr ? "الدرجات متطابقة" : "Weight Complete"}</span>
-						<span class="text-[9px] text-muted-foreground line-clamp-1">{isAr ? "مجموع الأوزان يعادل 100% للترم" : "Weights sum perfectly to 100%"}</span>
+						<span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">{m.assessments_page_weight_complete_title()}</span>
+						<span class="text-[9px] text-muted-foreground line-clamp-1">{m.assessments_page_weight_complete_desc()}</span>
 					</div>
 				{:else}
 					<div class="h-9 w-9 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
 						<AlertCircle size={16} />
 					</div>
 					<div class="flex flex-col min-w-0">
-						<span class="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">{isAr ? "تنبيه توزيع الأوزان" : "Weight Discrepancy"}</span>
+						<span class="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">{m.assessments_page_weight_alert_title()}</span>
 						<span class="text-[9px] text-muted-foreground line-clamp-1">
-							{isAr 
-								? `مجموع الأوزان ${totalWeight}% ولا يعادل 100%` 
-								: `Current sum is ${totalWeight}% instead of 100%`}
+							{m.assessments_page_weight_alert_desc({ weight: totalWeight })}
 						</span>
 					</div>
 				{/if}
@@ -254,13 +252,13 @@ function getAssessmentTypeColor(typeStr: string) {
 		<div class="flex flex-col items-center justify-center py-16 text-muted-foreground border border-border border-dashed rounded-xl gap-4">
 			<Award size={48} class="text-muted-foreground/30" />
 			<div class="flex flex-col gap-1 text-center">
-				<p class="text-xs font-semibold">{isAr ? "لا توجد تقييمات مسجلة" : "No assessments listed"}</p>
+				<p class="text-xs font-semibold">{m.assessments_page_empty_title()}</p>
 				<p class="text-[10px] text-muted-foreground/80">
-					{isAr ? "لا يوجد اختبار أو واجب مضاف لهذا التحديد حالياً." : "No exams, homework, or classwork recorded for this selection."}
+					{m.assessments_page_empty_desc()}
 				</p>
 			</div>
 			<Button variant="lime" class="text-xs mt-2" onclick={() => isModalOpen = true} disabled={classes.length === 0}>
-				{isAr ? "تقييم جديد" : "New Assessment"}
+				{m.assessments_page_new_button()}
 			</Button>
 		</div>
 	{:else}
@@ -283,7 +281,7 @@ function getAssessmentTypeColor(typeStr: string) {
 						<button 
 							onclick={() => handleDeleteAssessment(ass.id)}
 							class="text-muted-foreground/40 hover:text-destructive h-5 w-5 rounded flex items-center justify-center hover:bg-destructive/5 duration-100 shrink-0"
-							title={isAr ? "حذف التقييم" : "Delete Assessment"}
+							title={m.assessments_page_delete_title()}
 						>
 							<Trash2 size={11} />
 						</button>
@@ -293,7 +291,7 @@ function getAssessmentTypeColor(typeStr: string) {
 					<div class="flex items-center gap-3 my-2.5">
 						<!-- Max score badge -->
 						<div class="flex flex-col text-start">
-							<span class="text-[8px] uppercase tracking-wider text-muted-foreground">{isAr ? "الدرجة القصوى" : "Max Score"}</span>
+							<span class="text-[8px] uppercase tracking-wider text-muted-foreground">{m.assessments_page_max_score()}</span>
 							<span class="font-bold text-foreground font-mono">{ass.max_score || 100}</span>
 						</div>
 
@@ -302,7 +300,7 @@ function getAssessmentTypeColor(typeStr: string) {
 
 						<!-- Weight badge -->
 						<div class="flex flex-col text-start">
-							<span class="text-[8px] uppercase tracking-wider text-muted-foreground">{isAr ? "الوزن النسبي" : "Weight"}</span>
+							<span class="text-[8px] uppercase tracking-wider text-muted-foreground">{m.assessments_page_weight()}</span>
 							<span class="font-bold text-foreground font-mono">{ass.weight || 15}%</span>
 						</div>
 					</div>
@@ -332,4 +330,3 @@ function getAssessmentTypeColor(typeStr: string) {
 	cycleId={activeCycleId}
 	onSuccess={loadAssessments}
 />
-

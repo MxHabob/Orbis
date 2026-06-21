@@ -17,9 +17,9 @@ import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
 import SubjectCreateSheet from "$lib/components/academics/subject-create-sheet.svelte";
+import * as m from "$lib/paraglide/messages";
 
 let { data }: { data: { orgId: string } } = $props();
-const isAr = $derived(getLocale() === "ar");
 
 // State
 let subjects = $state<any[]>([]);
@@ -39,7 +39,7 @@ async function loadData() {
     subjects = list;
   } catch (e) {
     error = e instanceof Error ? e.message : String(e);
-    toast.error(isAr ? "فشل تحميل المواد" : "Failed to load subjects");
+    toast.error(m.subjects_toast_load_error());
   } finally {
     isLoading = false;
   }
@@ -93,7 +93,7 @@ function getSubjectTheme(nameStr: string) {
 	<!-- Header & Search Controls -->
 	<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 font-sans">
 		<h2 class="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
-			<span>{isAr ? "المواد الدراسية المسجلة" : "Academic Subjects"}</span>
+			<span>{m.subjects_registered_title()}</span>
 			{#if !isLoading}
 				<span class="text-[10px] px-1.5 py-0.5 rounded bg-muted font-mono text-muted-foreground">
 					{subjects.length}
@@ -107,7 +107,7 @@ function getSubjectTheme(nameStr: string) {
 				<Search class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
 				<Input
 					type="text"
-					placeholder={isAr ? "البحث عن مادة..." : "Search subjects..."}
+					placeholder={m.subjects_search_placeholder()}
 					class="input-sunken ps-9 text-xs py-1.5 w-full"
 					bind:value={searchQuery}
 				/>
@@ -115,8 +115,8 @@ function getSubjectTheme(nameStr: string) {
 
 			<!-- Add button -->
 			<Button variant="lime" class="text-xs h-9 px-3 shrink-0" onclick={() => isModalOpen = true}>
-				<Plus size={14} class={isAr ? 'ml-1.5' : 'mr-1.5'} />
-				{isAr ? "إضافة مادة" : "Add Subject"}
+				<Plus size={14} class={getLocale() === "ar" ? 'ml-1.5' : 'mr-1.5'} />
+				{m.subjects_add_subject()}
 			</Button>
 		</div>
 	</div>
@@ -131,22 +131,22 @@ function getSubjectTheme(nameStr: string) {
 		</div>
 	{:else if error}
 		<div class="flex flex-col items-center justify-center p-8 border border-destructive/20 bg-destructive/5 rounded-xl text-center gap-3">
-			<p class="text-xs text-destructive font-semibold">{isAr ? "حدث خطأ أثناء تحميل المواد" : "Error loading subjects"}</p>
+			<p class="text-xs text-destructive font-semibold">{m.subjects_load_error()}</p>
 			<p class="text-xs text-muted-foreground">{error}</p>
-			<Button variant="outline" class="text-xs" onclick={loadData}>{isAr ? "إعادة المحاولة" : "Retry"}</Button>
+			<Button variant="outline" class="text-xs" onclick={loadData}>{m.error_retry()}</Button>
 		</div>
 	{:else if filteredSubjects.length === 0}
 		<div class="flex flex-col items-center justify-center py-16 text-muted-foreground border border-border border-dashed rounded-xl gap-4">
 			<BookOpen size={48} class="text-muted-foreground/30" />
 			<div class="flex flex-col gap-1 text-center">
-				<p class="text-xs font-semibold">{isAr ? "لا توجد مواد مطابقة" : "No matching subjects found"}</p>
+				<p class="text-xs font-semibold">{m.subjects_empty_title()}</p>
 				<p class="text-[10px] text-muted-foreground/80">
-					{searchQuery ? (isAr ? "جرب تعديل كلمة البحث." : "Try adjusting your search filter.") : (isAr ? "ابدأ بإضافة أول مادة دراسية للمدرسة." : "Start by adding your first school subject.")}
+					{searchQuery ? m.subjects_empty_desc_search() : m.subjects_empty_desc_general()}
 				</p>
 			</div>
 			{#if !searchQuery}
 				<Button variant="lime" class="text-xs mt-2" onclick={() => isModalOpen = true}>
-					{isAr ? "إضافة مادة" : "Add Subject"}
+					{m.subjects_add_subject()}
 				</Button>
 			{/if}
 		</div>
@@ -178,7 +178,7 @@ function getSubjectTheme(nameStr: string) {
 							</span>
 							<span class="flex items-center gap-1">
 								<Award size={9} />
-								<span>{isAr ? `الحصص: ${sub.credit_hours || 3}` : `Periods: ${sub.credit_hours || 3}`}</span>
+								<span>{m.subjects_periods_count({ count: sub.credit_hours || 3 })}</span>
 							</span>
 						</div>
 					</div>
@@ -190,4 +190,3 @@ function getSubjectTheme(nameStr: string) {
 
 <!-- Subject Creation Side Sheet Component -->
 <SubjectCreateSheet bind:open={isModalOpen} orgId={data.orgId} onSuccess={loadData} />
-

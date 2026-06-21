@@ -19,10 +19,9 @@ import { formatCurrency } from "$lib/i18n-utils";
 import { fade } from "svelte/transition";
 import TreasuryCreateSheet from "$lib/components/finance/treasury-create-sheet.svelte";
 import LedgerCreateSheet from "$lib/components/finance/ledger-create-sheet.svelte";
+import * as m from "$lib/paraglide/messages";
 
 let { data }: { data: { orgId: string } } = $props();
-
-const isAr = $derived(getLocale() === "ar");
 
 // State
 let treasuries = $state<any[]>([]);
@@ -65,10 +64,10 @@ const totalTreasuryBalance = $derived(
 
 function getLedgerTypeLabel(typeStr: string) {
   const t = String(typeStr).toLowerCase();
-  if (t === "revenue") return isAr ? "إيرادات" : "Revenue";
-  if (t === "expense") return isAr ? "مصروفات" : "Expense";
-  if (t === "asset") return isAr ? "أصول" : "Asset";
-  if (t === "liability") return isAr ? "التزامات" : "Liability";
+  if (t === "revenue") return m.finance_type_revenue();
+  if (t === "expense") return m.finance_type_expense();
+  if (t === "asset") return m.finance_type_asset();
+  if (t === "liability") return m.finance_type_liability();
   return typeStr;
 }
 
@@ -82,8 +81,8 @@ function getLedgerTypeBadgeClass(typeStr: string) {
 
 function getTreasuryTypeLabel(typeStr: string) {
   const t = String(typeStr).toLowerCase();
-  if (t === "bank") return isAr ? "حساب مصرفي" : "Bank Account";
-  return isAr ? "صندوق كاش" : "Physical Cashbox";
+  if (t === "bank") return m.treasury_type_bank();
+  return m.treasury_type_cash();
 }
 </script>
 
@@ -91,10 +90,10 @@ function getTreasuryTypeLabel(typeStr: string) {
 	<!-- Header Title -->
 	<div class="text-start select-none">
 		<h2 class="text-sm font-bold text-foreground uppercase tracking-wider">
-			{isAr ? "إدارة الخزائن والحسابات الدفترية" : "Treasuries & Ledger Accounts"}
+			{m.finance_page_title()}
 		</h2>
 		<p class="text-[10px] text-muted-foreground mt-0.5">
-			{isAr ? "تهيئة الصناديق وحسابات تصنيف الرسوم لتنظيم تدفق الموارد المالية." : "Configure money vaults, bank destinations, and accounting code definitions."}
+			{m.finance_page_subtitle()}
 		</p>
 	</div>
 
@@ -106,9 +105,9 @@ function getTreasuryTypeLabel(typeStr: string) {
 		</div>
 	{:else if error}
 		<div class="flex flex-col items-center justify-center py-16 text-destructive border border-destructive/20 bg-destructive/5 rounded-xl gap-2">
-			<h3 class="font-semibold text-xs">{isAr ? "خطأ في تحميل الحسابات" : "Error loading financial records"}</h3>
+			<h3 class="font-semibold text-xs">{m.finance_error_loading()}</h3>
 			<p class="text-[10px] text-muted-foreground">{error}</p>
-			<Button variant="outline" onclick={loadData} class="text-[10px] mt-2">{isAr ? "إعادة المحاولة" : "Retry"}</Button>
+			<Button variant="outline" onclick={loadData} class="text-[10px] mt-2">{m.error_retry()}</Button>
 		</div>
 	{:else}
 		<div class="grid grid-cols-1 lg:grid-cols-2 gap-6" in:fade={{ duration: 150 }}>
@@ -118,12 +117,10 @@ function getTreasuryTypeLabel(typeStr: string) {
 					<div class="flex flex-col">
 						<h3 class="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
 							<Landmark size={13} class="text-primary" />
-							<span>{isAr ? "خزائن المدرسة والبنوك" : "Treasury Vaults"}</span>
+							<span>{m.finance_vaults_title()}</span>
 						</h3>
 						<span class="text-[8px] text-muted-foreground mt-0.5">
-							{isAr 
-								? `إجمالي الرصيد المتوفر: ${formatCurrency(totalTreasuryBalance, "YER")}` 
-								: `Total Cash Assets: ${formatCurrency(totalTreasuryBalance, "YER")}`}
+							{m.finance_total_cash_assets({ balance: formatCurrency(totalTreasuryBalance, "YER") })}
 						</span>
 					</div>
 					
@@ -132,25 +129,25 @@ function getTreasuryTypeLabel(typeStr: string) {
 						class="text-[10px] h-7 px-2"
 						onclick={() => isTreasurySheetOpen = true}
 					>
-						<Plus size={12} class={isAr ? 'ml-1' : 'mr-1'} />
-						{isAr ? "خزينة جديدة" : "New Treasury"}
+						<Plus size={12} class={getLocale() === "ar" ? 'ml-1' : 'mr-1'} />
+						{m.finance_new_treasury_button()}
 					</Button>
 				</div>
 
 				{#if treasuries.length === 0}
 					<div class="flex-1 flex flex-col items-center justify-center py-12 text-muted-foreground border border-dashed border-border rounded-lg bg-card/10 select-none">
 						<Landmark size={32} class="text-muted-foreground/30 mb-2" />
-						<span class="text-[10px]">{isAr ? "لا توجد صناديق مضافة" : "No treasuries created yet."}</span>
+						<span class="text-[10px]">{m.finance_no_treasuries()}</span>
 					</div>
 				{:else}
 					<div class="overflow-x-auto">
 						<Table>
 							<TableHeader>
 								<TableRow class="hover:bg-transparent">
-									<TableHead class="text-start">{isAr ? "الرمز" : "Code"}</TableHead>
-									<TableHead class="text-start">{isAr ? "الاسم" : "Name"}</TableHead>
-									<TableHead class="text-start">{isAr ? "النوع" : "Category"}</TableHead>
-									<TableHead class="text-start">{isAr ? "الرصيد المتوفر" : "Current Balance"}</TableHead>
+									<TableHead class="text-start">{m.finance_col_code()}</TableHead>
+									<TableHead class="text-start">{m.finance_col_name()}</TableHead>
+									<TableHead class="text-start">{m.finance_col_category()}</TableHead>
+									<TableHead class="text-start">{m.finance_col_balance()}</TableHead>
 								</TableRow>
 							</TableHeader>
 							<TableBody>
@@ -174,10 +171,10 @@ function getTreasuryTypeLabel(typeStr: string) {
 					<div class="flex flex-col">
 						<h3 class="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
 							<Layers size={13} class="text-primary" />
-							<span>{isAr ? "دليل الحسابات الفئوية" : "Ledger Accounts Chart"}</span>
+							<span>{m.finance_ledger_chart_title()}</span>
 						</h3>
 						<span class="text-[8px] text-muted-foreground mt-0.5">
-							{isAr ? `${ledgers.length} بند مالي معرف` : `${ledgers.length} financial ledger charts defined`}
+							{m.finance_ledger_accounts_count({ count: ledgers.length })}
 						</span>
 					</div>
 					
@@ -186,24 +183,24 @@ function getTreasuryTypeLabel(typeStr: string) {
 						class="text-[10px] h-7 px-2"
 						onclick={() => isLedgerSheetOpen = true}
 					>
-						<Plus size={12} class={isAr ? 'ml-1' : 'mr-1'} />
-						{isAr ? "حساب جديد" : "New Account"}
+						<Plus size={12} class={getLocale() === "ar" ? 'ml-1' : 'mr-1'} />
+						{m.finance_new_ledger_button()}
 					</Button>
 				</div>
 
 				{#if ledgers.length === 0}
 					<div class="flex-1 flex flex-col items-center justify-center py-12 text-muted-foreground border border-dashed border-border rounded-lg bg-card/10 select-none">
 						<Layers size={32} class="text-muted-foreground/30 mb-2" />
-						<span class="text-[10px]">{isAr ? "لا توجد فئات حسابات مضافة" : "No ledger accounts created yet."}</span>
+						<span class="text-[10px]">{m.finance_no_ledgers()}</span>
 					</div>
 				{:else}
 					<div class="overflow-x-auto">
 						<Table>
 							<TableHeader>
 								<TableRow class="hover:bg-transparent">
-									<TableHead class="text-start">{isAr ? "الرمز" : "Code"}</TableHead>
-									<TableHead class="text-start">{isAr ? "اسم البند" : "Account Name"}</TableHead>
-									<TableHead class="text-start">{isAr ? "التصنيف الدفتري" : "Type"}</TableHead>
+									<TableHead class="text-start">{m.finance_col_code()}</TableHead>
+									<TableHead class="text-start">{m.finance_col_name()}</TableHead>
+									<TableHead class="text-start">{m.finance_col_type()}</TableHead>
 								</TableRow>
 							</TableHeader>
 							<TableBody>

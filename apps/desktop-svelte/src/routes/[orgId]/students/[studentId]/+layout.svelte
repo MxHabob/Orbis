@@ -32,7 +32,6 @@ let { children }: { children: Snippet } = $props();
 
 const orgId = $derived(page.params.orgId);
 const studentId = $derived(page.params.studentId);
-const isAr = $derived(getLocale() === "ar");
 
 // Find active student in the store
 const student = $derived(studentsStore.list.find((s) => s.id === studentId));
@@ -52,7 +51,7 @@ function isActive(tabHref: string) {
 }
 </script>
 
-<div class="h-full w-full flex flex-col overflow-hidden bg-background" dir={isAr ? "rtl" : "ltr"}>
+<div class="h-full w-full flex flex-col overflow-hidden bg-background" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
   <!-- Main Header Block (Name, class, actions, tabs) -->
   <div class="border-b border-border/50 bg-card/15 shrink-0 flex flex-col select-none">
     <!-- Top Row: Student info & actions -->
@@ -65,7 +64,7 @@ function isActive(tabHref: string) {
           class="h-8 w-8 hover:bg-accent/80 cursor-pointer shrink-0"
           title={m.detail_back_to_directory()}
         >
-          {#if isAr}
+          {#if getLocale() === "ar"}
             <ArrowRight class="h-4 w-4" />
           {:else}
             <ArrowLeft class="h-4 w-4" />
@@ -131,20 +130,20 @@ function isActive(tabHref: string) {
             variant="outline"
             size="sm"
             class="h-8 text-[11px] gap-1.5"
-            onclick={() => toast.info(isAr ? "ميزة نقل الفصل قيد التحضير" : "Transfer Class coming soon")}
+            onclick={() => toast.info(m.student_layout_transfer_coming_soon())}
           >
             <Users size={12} />
-            {isAr ? "نقل الصف" : "Transfer Class"}
+            {m.student_layout_transfer_class()}
           </Button>
 
           <Button
             variant="outline"
             size="sm"
             class="h-8 text-[11px] gap-1.5 text-destructive hover:bg-destructive/5 hover:text-destructive"
-            onclick={() => toast.info(isAr ? "ميزة تسجيل الانسحاب قيد التحضير" : "Withdraw Student coming soon")}
+            onclick={() => toast.info(m.student_layout_withdraw_coming_soon())}
           >
             <ShieldAlert size={12} />
-            {isAr ? "تسجيل انسحاب" : "Record Withdrawal"}
+            {m.student_layout_withdraw_student()}
           </Button>
         </div>
       {/if}

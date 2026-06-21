@@ -12,6 +12,7 @@ import {
 } from "@orbis/ui-svelte/sheet";
 import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
+import * as m from "$lib/paraglide/messages";
 
 let { 
   open = $bindable(false), 
@@ -23,8 +24,6 @@ let {
   onSuccess: () => void;
 } = $props();
 
-const isAr = $derived(getLocale() === "ar");
-
 // Form state
 let isSubmitting = $state(false);
 let name = $state("");
@@ -35,7 +34,7 @@ let creditHours = $state<number>(3);
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   if (!nameAr && !name) {
-    toast.error(isAr ? "الرجاء إدخال اسم المادة" : "Please enter subject name");
+    toast.error(m.subject_toast_error_name());
     return;
   }
   isSubmitting = true;
@@ -47,7 +46,7 @@ async function handleSubmit(e: SubmitEvent) {
       credit_hours: creditHours ? Number(creditHours) : 3,
     };
     await commands.subjects.create(orgId, request);
-    toast.success(isAr ? "تم إنشاء المادة بنجاح" : "Subject created successfully");
+    toast.success(m.subject_toast_success());
     open = false;
     
     // Reset fields
@@ -58,11 +57,8 @@ async function handleSubmit(e: SubmitEvent) {
 
     onSuccess();
   } catch (e) {
-    toast.error(
-      isAr 
-        ? `خطأ أثناء إنشاء المادة: ${e instanceof Error ? e.message : String(e)}`
-        : `Error creating subject: ${e instanceof Error ? e.message : String(e)}`
-    );
+    const errorMsg = e instanceof Error ? e.message : String(e);
+    toast.error(m.subject_toast_error_submit({ error: errorMsg }));
   } finally {
     isSubmitting = false;
   }
@@ -73,10 +69,10 @@ async function handleSubmit(e: SubmitEvent) {
 	<SheetContent class="w-full sm:max-w-md bg-card border-l border-border/80 flex flex-col h-full overflow-hidden text-xs">
 		<SheetHeader class="pb-4 border-b border-border shrink-0 select-none text-start">
 			<SheetTitle class="text-sm font-bold text-foreground uppercase tracking-wider">
-				{isAr ? "إضافة مادة دراسية جديدة" : "Add New Subject"}
+				{m.subject_sheet_title()}
 			</SheetTitle>
 			<p class="text-[10px] text-muted-foreground mt-0.5">
-				{isAr ? "يرجى تعبئة الحقول التالية لتعريف المادة التعليمية الجديدة." : "Fill in the details to add a new curriculum subject."}
+				{m.subject_sheet_subtitle()}
 			</p>
 		</SheetHeader>
 
@@ -85,13 +81,13 @@ async function handleSubmit(e: SubmitEvent) {
 			<!-- Name (Arabic) -->
 			<div class="flex flex-col gap-1.5 text-start">
 				<label for="sub_name_ar" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-					{isAr ? "اسم المادة (بالعربية) *" : "Subject Name (Arabic) *"}
+					{m.subject_label_name_ar()}
 				</label>
 				<Input 
 					id="sub_name_ar"
 					type="text" 
 					bind:value={nameAr}
-					placeholder={isAr ? "مثال: الرياضيات" : "e.g., Mathematics"}
+					placeholder={m.subject_placeholder_name_ar()}
 					class="input-sunken text-xs py-1.5"
 					required
 				/>
@@ -100,7 +96,7 @@ async function handleSubmit(e: SubmitEvent) {
 			<!-- Name (English) -->
 			<div class="flex flex-col gap-1.5 text-start">
 				<label for="sub_name_en" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-					{isAr ? "اسم المادة (بالإنجليزية)" : "Subject Name (English)"}
+					{m.subject_label_name_en()}
 				</label>
 				<Input 
 					id="sub_name_en"
@@ -114,7 +110,7 @@ async function handleSubmit(e: SubmitEvent) {
 			<!-- Subject Code -->
 			<div class="flex flex-col gap-1.5 text-start">
 				<label for="sub_code" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-					{isAr ? "رمز المادة" : "Subject Code"}
+					{m.subject_label_code()}
 				</label>
 				<Input 
 					id="sub_code"
@@ -128,7 +124,7 @@ async function handleSubmit(e: SubmitEvent) {
 			<!-- Credit Hours -->
 			<div class="flex flex-col gap-1.5 text-start">
 				<label for="sub_weight" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-					{isAr ? "عدد الحصص الأسبوعية" : "Weekly Lesson Periods"}
+					{m.subject_label_periods()}
 				</label>
 				<Input 
 					id="sub_weight"
@@ -149,7 +145,7 @@ async function handleSubmit(e: SubmitEvent) {
 					onclick={() => open = false}
 					disabled={isSubmitting}
 				>
-					{isAr ? "إلغاء" : "Cancel"}
+					{m.subject_button_cancel()}
 				</Button>
 				<Button 
 					type="submit" 
@@ -157,7 +153,7 @@ async function handleSubmit(e: SubmitEvent) {
 					class="text-xs h-9 px-4 font-semibold"
 					disabled={isSubmitting}
 				>
-					{isSubmitting ? (isAr ? "جاري الحفظ..." : "Saving...") : (isAr ? "حفظ المادة" : "Save Subject")}
+					{isSubmitting ? m.subject_toast_saving() : m.subject_button_save()}
 				</Button>
 			</div>
 		</form>

@@ -14,6 +14,7 @@ import {
 import { Wallet } from "lucide-svelte";
 import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
+import * as m from "$lib/paraglide/messages";
 
 let { 
   open = $bindable(false), 
@@ -24,8 +25,6 @@ let {
   orgId: string; 
   onSuccess: () => void;
 } = $props();
-
-const isAr = $derived(getLocale() === "ar");
 
 // State
 let isSubmitting = $state(false);
@@ -70,15 +69,15 @@ $effect(() => {
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   if (!selectedEnrollmentId) {
-    toast.error(isAr ? "الرجاء اختيار الطالب" : "Please select a student");
+    toast.error(m.fee_toast_error_student());
     return;
   }
   if (!selectedLedgerId) {
-    toast.error(isAr ? "الرجاء اختيار البند المالي" : "Please select a ledger account");
+    toast.error(m.fee_toast_error_ledger());
     return;
   }
   if (!amount || amount <= 0) {
-    toast.error(isAr ? "الرجاء إدخال مبلغ صحيح" : "Please enter a valid amount");
+    toast.error(m.fee_toast_error_amount());
     return;
   }
 
@@ -92,7 +91,7 @@ async function handleSubmit(e: SubmitEvent) {
       due_date: dueDate || undefined,
     };
     await commands.finance.assignStudentFee(orgId, request);
-    toast.success(isAr ? "تم إسناد الرسم بنجاح" : "Fee assigned successfully");
+    toast.success(m.fee_toast_success());
     open = false;
     
     // Reset form
@@ -102,11 +101,8 @@ async function handleSubmit(e: SubmitEvent) {
 
     onSuccess();
   } catch (e) {
-    toast.error(
-      isAr 
-        ? `خطأ أثناء إسناد الرسم: ${e instanceof Error ? e.message : String(e)}`
-        : `Error assigning fee: ${e instanceof Error ? e.message : String(e)}`
-    );
+    const errorMsg = e instanceof Error ? e.message : String(e);
+    toast.error(m.fee_toast_error_submit({ error: errorMsg }));
   } finally {
     isSubmitting = false;
   }
@@ -118,10 +114,10 @@ async function handleSubmit(e: SubmitEvent) {
 		<SheetHeader class="pb-4 border-b border-border shrink-0 select-none text-start">
 			<SheetTitle class="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
 				<Wallet size={14} class="text-primary" />
-				<span>{isAr ? "إسناد رسم جديد لطالب" : "Assign Fee to Student"}</span>
+				<span>{m.fee_sheet_title()}</span>
 			</SheetTitle>
 			<p class="text-[10px] text-muted-foreground mt-0.5">
-				{isAr ? "اختر الطالب والبند المالي وحدد المبلغ المطلوب للفوترة." : "Bill a student by selecting their account and entering the fee details."}
+				{m.fee_sheet_subtitle()}
 			</p>
 		</SheetHeader>
 
@@ -130,7 +126,7 @@ async function handleSubmit(e: SubmitEvent) {
 			<!-- Student Select -->
 			<div class="flex flex-col gap-1.5 text-start">
 				<label for="fee_student" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-					{isAr ? "طالب *" : "Student *"}
+					{m.fee_label_student()}
 				</label>
 				<select 
 					id="fee_student"
@@ -139,7 +135,7 @@ async function handleSubmit(e: SubmitEvent) {
 					disabled={isLoadingDropdowns || isSubmitting}
 				>
 					{#if isLoadingDropdowns}
-						<option>{isAr ? "جاري تحميل قائمة الطلاب..." : "Loading students..."}</option>
+						<option>{m.fee_dropdown_loading_students()}</option>
 					{:else}
 						{#each students as s (s.id)}
 							<option value={String(s.id)}>{s.full_name || s.student_number || s.id}</option>
@@ -151,7 +147,7 @@ async function handleSubmit(e: SubmitEvent) {
 			<!-- Ledger Account Select -->
 			<div class="flex flex-col gap-1.5 text-start">
 				<label for="fee_ledger" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-					{isAr ? "البند المالي / الحساب *" : "Ledger Account *"}
+					{m.fee_label_ledger()}
 				</label>
 				<select 
 					id="fee_ledger"
@@ -160,7 +156,7 @@ async function handleSubmit(e: SubmitEvent) {
 					disabled={isLoadingDropdowns || isSubmitting}
 				>
 					{#if isLoadingDropdowns}
-						<option>{isAr ? "جاري تحميل الحسابات..." : "Loading ledger accounts..."}</option>
+						<option>{m.fee_dropdown_loading_ledgers()}</option>
 					{:else}
 						{#each ledgers as l (l.id)}
 							<option value={String(l.id)}>{l.name_ar || l.name || l.code}</option>
@@ -172,7 +168,7 @@ async function handleSubmit(e: SubmitEvent) {
 			<!-- Fee Amount -->
 			<div class="flex flex-col gap-1.5 text-start">
 				<label for="fee_amount" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-					{isAr ? "المبلغ *" : "Amount *"}
+					{m.fee_label_amount()}
 				</label>
 				<Input 
 					id="fee_amount"
@@ -190,7 +186,7 @@ async function handleSubmit(e: SubmitEvent) {
 			<!-- Due Date -->
 			<div class="flex flex-col gap-1.5 text-start">
 				<label for="fee_due" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-					{isAr ? "تاريخ الاستحقاق" : "Due Date"}
+					{m.fee_label_due()}
 				</label>
 				<Input 
 					id="fee_due"
@@ -204,13 +200,13 @@ async function handleSubmit(e: SubmitEvent) {
 			<!-- Description -->
 			<div class="flex flex-col gap-1.5 text-start">
 				<label for="fee_desc" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-					{isAr ? "تفاصيل إضافية / الوصف" : "Description / Memo"}
+					{m.fee_label_desc()}
 				</label>
 				<Input 
 					id="fee_desc"
 					type="text" 
 					bind:value={description}
-					placeholder={isAr ? "مثال: القسط الأول للرسوم الدراسية" : "e.g., First tuition term payment"}
+					placeholder={m.fee_placeholder_desc()}
 					class="input-sunken text-xs py-1.5"
 					disabled={isSubmitting}
 				/>
@@ -225,7 +221,7 @@ async function handleSubmit(e: SubmitEvent) {
 					onclick={() => open = false}
 					disabled={isSubmitting}
 				>
-					{isAr ? "إلغاء" : "Cancel"}
+					{m.fee_button_cancel()}
 				</Button>
 				<Button 
 					type="submit" 
@@ -233,7 +229,7 @@ async function handleSubmit(e: SubmitEvent) {
 					class="text-xs h-9 px-4 font-semibold"
 					disabled={isSubmitting || isLoadingDropdowns}
 				>
-					{isSubmitting ? (isAr ? "جاري الإسناد..." : "Assigning...") : (isAr ? "إسناد الرسم" : "Assign Fee")}
+					{isSubmitting ? m.fee_toast_assigning() : m.fee_button_assign()}
 				</Button>
 			</div>
 		</form>

@@ -12,7 +12,7 @@ import {
 } from "@orbis/ui-svelte/sheet";
 import { Landmark } from "lucide-svelte";
 import { toast } from "svelte-sonner";
-import { getLocale } from "$lib/paraglide/runtime";
+import * as m from "$lib/paraglide/messages";
 
 let { 
   open = $bindable(false), 
@@ -23,8 +23,6 @@ let {
   orgId: string; 
   onSuccess: () => void;
 } = $props();
-
-const isAr = $derived(getLocale() === "ar");
 
 // Form state
 let isSubmitting = $state(false);
@@ -38,15 +36,15 @@ let description = $state("");
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   if (!nameAr && !name) {
-    toast.error(isAr ? "الرجاء إدخال اسم الحساب" : "Please enter ledger account name");
+    toast.error(m.ledger_toast_error_name());
     return;
   }
   if (!code) {
-    toast.error(isAr ? "الرجاء إدخال رمز الحساب" : "Please enter account code");
+    toast.error(m.ledger_toast_error_code());
     return;
   }
   if (!currency || currency.trim().length !== 3) {
-    toast.error(isAr ? "الرجاء إدخال رمز عملة صحيح من 3 أحرف" : "Please enter a valid 3-letter currency code");
+    toast.error(m.ledger_toast_error_currency());
     return;
   }
 
@@ -63,7 +61,7 @@ async function handleSubmit(e: SubmitEvent) {
       parent_id: undefined,
     };
     await commands.finance.createLedgerAccount(orgId, request);
-    toast.success(isAr ? "تم إنشاء الحساب الدفتري بنجاح" : "Ledger account created successfully");
+    toast.success(m.ledger_toast_success());
     open = false;
     
     // Reset form fields
@@ -76,11 +74,8 @@ async function handleSubmit(e: SubmitEvent) {
 
     onSuccess();
   } catch (e) {
-    toast.error(
-      isAr 
-        ? `خطأ أثناء إنشاء الحساب: ${e instanceof Error ? e.message : String(e)}`
-        : `Error creating ledger account: ${e instanceof Error ? e.message : String(e)}`
-    );
+    const errorMsg = e instanceof Error ? e.message : String(e);
+    toast.error(m.ledger_toast_error_submit({ error: errorMsg }));
   } finally {
     isSubmitting = false;
   }
@@ -92,10 +87,10 @@ async function handleSubmit(e: SubmitEvent) {
 		<SheetHeader class="pb-4 border-b border-border shrink-0 select-none text-start">
 			<SheetTitle class="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
 				<Landmark size={14} class="text-primary" />
-				<span>{isAr ? "إنشاء حساب دفتري جديد" : "New Ledger Account"}</span>
+				<span>{m.ledger_sheet_title()}</span>
 			</SheetTitle>
 			<p class="text-[10px] text-muted-foreground mt-0.5">
-				{isAr ? "عرف فئة لتصنيف الإيرادات أو المصروفات الخاصة بالمدرسة في شجرة الحسابات." : "Define classification accounts for tuition income, operational costs, etc."}
+				{m.ledger_sheet_subtitle()}
 			</p>
 		</SheetHeader>
 
@@ -104,13 +99,13 @@ async function handleSubmit(e: SubmitEvent) {
 			<!-- Name (Arabic) -->
 			<div class="flex flex-col gap-1.5 text-start">
 				<label for="led_name_ar" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-					{isAr ? "اسم الحساب (بالعربية) *" : "Account Name (Arabic) *"}
+					{m.ledger_label_name_ar()}
 				</label>
 				<Input 
 					id="led_name_ar"
 					type="text" 
 					bind:value={nameAr}
-					placeholder={isAr ? "مثال: إيرادات الرسوم الدراسية" : "e.g., Tuition Fee Revenue"}
+					placeholder={m.ledger_placeholder_name_ar()}
 					class="input-sunken text-xs py-1.5"
 					required
 					disabled={isSubmitting}
@@ -120,7 +115,7 @@ async function handleSubmit(e: SubmitEvent) {
 			<!-- Name (English) -->
 			<div class="flex flex-col gap-1.5 text-start">
 				<label for="led_name_en" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-					{isAr ? "اسم الحساب (بالإنجليزية)" : "Account Name (English)"}
+					{m.ledger_label_name_en()}
 				</label>
 				<Input 
 					id="led_name_en"
@@ -135,7 +130,7 @@ async function handleSubmit(e: SubmitEvent) {
 			<!-- Code -->
 			<div class="flex flex-col gap-1.5 text-start">
 				<label for="led_code" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-					{isAr ? "رمز الحساب (فريد) *" : "Account Code (Unique) *"}
+					{m.ledger_label_code()}
 				</label>
 				<Input 
 					id="led_code"
@@ -151,7 +146,7 @@ async function handleSubmit(e: SubmitEvent) {
 			<!-- Currency Selection -->
 			<div class="flex flex-col gap-1.5 text-start">
 				<label for="led_currency" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-					{isAr ? "العملة *" : "Currency *"}
+					{m.ledger_label_currency()}
 				</label>
 				<div class="flex gap-2">
 					<Input 
@@ -182,7 +177,7 @@ async function handleSubmit(e: SubmitEvent) {
 			<!-- Account Type Selection -->
 			<div class="flex flex-col gap-1.5 text-start">
 				<label for="led_type" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-					{isAr ? "نوع الحساب" : "Account Type"}
+					{m.ledger_label_type()}
 				</label>
 				<select 
 					id="led_type"
@@ -190,23 +185,23 @@ async function handleSubmit(e: SubmitEvent) {
 					class="bg-background text-foreground border border-border rounded-md px-3 py-1.5 text-xs focus:ring-1 focus:ring-ring outline-none"
 					disabled={isSubmitting}
 				>
-					<option value="revenue">{isAr ? "إيرادات" : "Revenue / Income"}</option>
-					<option value="expense">{isAr ? "مصروفات" : "Expense"}</option>
-					<option value="asset">{isAr ? "أصول" : "Asset"}</option>
-					<option value="liability">{isAr ? "خصوم / التزامات" : "Liability"}</option>
+					<option value="revenue">{m.finance_type_revenue()}</option>
+					<option value="expense">{m.finance_type_expense()}</option>
+					<option value="asset">{m.finance_type_asset()}</option>
+					<option value="liability">{m.finance_type_liability()}</option>
 				</select>
 			</div>
 
 			<!-- Description -->
 			<div class="flex flex-col gap-1.5 text-start">
 				<label for="led_desc" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-					{isAr ? "تفاصيل إضافية / الوصف" : "Description / Memo"}
+					{m.ledger_label_description()}
 				</label>
 				<Input 
 					id="led_desc"
 					type="text" 
 					bind:value={description}
-					placeholder={isAr ? "أية تفاصيل إضافية" : "Optional description of the ledger"}
+					placeholder={m.ledger_placeholder_description()}
 					class="input-sunken text-xs py-1.5"
 					disabled={isSubmitting}
 				/>
@@ -221,7 +216,7 @@ async function handleSubmit(e: SubmitEvent) {
 					onclick={() => open = false}
 					disabled={isSubmitting}
 				>
-					{isAr ? "إلغاء" : "Cancel"}
+					{m.ledger_button_cancel()}
 				</Button>
 				<Button 
 					type="submit" 
@@ -229,7 +224,7 @@ async function handleSubmit(e: SubmitEvent) {
 					class="text-xs h-9 px-4 font-semibold"
 					disabled={isSubmitting}
 				>
-					{isSubmitting ? (isAr ? "جاري الإنشاء..." : "Creating...") : (isAr ? "إنشاء الحساب" : "Create Account")}
+					{isSubmitting ? m.loading() : m.ledger_button_create()}
 				</Button>
 			</div>
 		</form>

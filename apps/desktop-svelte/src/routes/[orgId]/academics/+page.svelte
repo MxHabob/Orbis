@@ -13,9 +13,9 @@ import {
 } from "lucide-svelte";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { fade, scale } from "svelte/transition";
+import * as m from "$lib/paraglide/messages";
 
 let { data }: { data: { orgId: string } } = $props();
-const isAr = $derived(getLocale() === "ar");
 
 // State
 let classesCount = $state(0);
@@ -54,43 +54,35 @@ onMount(() => {
 const cards = $derived([
   {
     path: "classes",
-    title: isAr ? "الفصول الدراسية" : "Classes",
-    desc: isAr 
-      ? "إدارة الفصول الدراسية، متابعة سعة الطلاب والامتلاء ونسب الحضور والغياب اليومية." 
-      : "Manage school sections, track capacity utilization, and review attendance stats.",
+    title: m.academics_overview_card_classes_title(),
+    desc: m.academics_overview_card_classes_desc(),
     icon: GraduationCap,
     color: "bg-blue-500/10 text-blue-500 border-blue-500/20",
-    badge: isAr ? `${classesCount} فصل` : `${classesCount} classes`,
+    badge: m.academics_overview_card_classes_badge({ count: classesCount }),
   },
   {
     path: "subjects",
-    title: isAr ? "المواد الدراسية" : "Subjects",
-    desc: isAr 
-      ? "تحديد المقررات التعليمية والمواد الأكاديمية ورمز كل مقرر وتوزيع الحصص الأسبوعية." 
-      : "Define school subjects, curriculum codes, and configure weekly period allocations.",
+    title: m.academics_overview_card_subjects_title(),
+    desc: m.academics_overview_card_subjects_desc(),
     icon: BookOpen,
     color: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
-    badge: isAr ? `${subjectsCount} مادة` : `${subjectsCount} subjects`,
+    badge: m.academics_overview_card_subjects_badge({ count: subjectsCount }),
   },
   {
     path: "schedule",
-    title: isAr ? "الجدول الدراسي" : "Weekly Schedule",
-    desc: isAr 
-      ? "جدولة الحصص للفصول والمعلمين على مدار الأسبوع مع فحص ذكي للتعارض والأخطاء." 
-      : "Assign lessons to classes and teachers across week slots with automated conflict checks.",
+    title: m.academics_overview_card_schedule_title(),
+    desc: m.academics_overview_card_schedule_desc(),
     icon: Calendar,
     color: "bg-purple-500/10 text-purple-500 border-purple-500/20",
-    badge: isAr ? "مخطط تفاعلي" : "Interactive Planner",
+    badge: m.academics_overview_card_schedule_badge(),
   },
   {
     path: "assessments",
-    title: isAr ? "الامتحانات والتقييمات" : "Assessments",
-    desc: isAr 
-      ? "إنشاء ملفات الاختبارات والواجبات وإدارة وتوزيع الأوزان النسبية لدرجات الترم." 
-      : "Define quizzes, midterms, and homework grades while balancing scoring weights.",
+    title: m.academics_overview_card_assessments_title(),
+    desc: m.academics_overview_card_assessments_desc(),
     icon: Award,
     color: "bg-amber-500/10 text-amber-500 border-amber-500/20",
-    badge: isAr ? "رصد الدرجات" : "Grade Register",
+    badge: m.academics_overview_card_assessments_badge(),
   },
 ]);
 </script>
@@ -107,12 +99,10 @@ const cards = $derived([
 			</div>
 			<div class="flex flex-col">
 				<h2 class="text-sm font-bold text-foreground uppercase tracking-wider">
-					{isAr ? "مرحباً بك في البوابة الأكاديمية" : "Academics Hub Dashboard"}
+					{m.academics_overview_title()}
 				</h2>
 				<p class="text-[10px] text-muted-foreground mt-0.5 max-w-lg">
-					{isAr 
-						? "هنا يمكنك تخطيط فصولك وجداولك وإعدادات المواد بالإضافة إلى رصد درجات الطلاب وتقييماتهم بشكل متكامل." 
-						: "Easily design your classes, manage curriculums, organize class timetables, and monitor academic records."}
+					{m.academics_overview_subtitle()}
 				</p>
 			</div>
 		</div>
@@ -121,7 +111,7 @@ const cards = $derived([
 		{#if currentCycleName}
 			<div class="shrink-0 flex items-center gap-2 bg-background/50 border border-border px-3 py-1.5 rounded-lg text-[10px]">
 				<Milestone size={13} class="text-primary" />
-				<span class="font-bold text-muted-foreground">{isAr ? "الفترة النشطة:" : "Active Cycle:"}</span>
+				<span class="font-bold text-muted-foreground">{m.academics_overview_active_cycle()}</span>
 				<span class="font-bold text-foreground">{currentCycleName}</span>
 			</div>
 		{/if}
@@ -157,7 +147,7 @@ const cards = $derived([
 						variant="ghost"
 						class="text-[10px] font-bold text-primary group-hover:underline h-7.5 px-3 flex items-center gap-1 cursor-pointer"
 					>
-						<span>{isAr ? "دخول القسم" : "Open Section"}</span>
+						<span>{m.academics_overview_open_section()}</span>
 						<ArrowRight size={11} class="transition-transform group-hover:translate-x-1" />
 					</Button>
 				</div>

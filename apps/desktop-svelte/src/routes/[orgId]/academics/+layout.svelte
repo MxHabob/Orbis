@@ -12,10 +12,9 @@ import { deLocalizeUrl, localizeHref, getLocale } from "$lib/paraglide/runtime";
 import { GraduationCap, BookOpen, Calendar, Award, Compass, ChevronRight } from "lucide-svelte";
 import MainViewport from "$lib/components/layout/MainViewport.svelte";
 import type { Snippet } from "svelte";
+import * as m from "$lib/paraglide/messages";
 
 let { data, children }: { data: { orgId: string }; children: Snippet } = $props();
-
-const isAr = $derived(getLocale() === "ar");
 
 // Sidebar live statistics
 let classesCount = $state(0);
@@ -58,29 +57,29 @@ function isActive(pathSegment: string): boolean {
 const navItems = $derived([
   {
     path: "",
-    label: isAr ? "نظرة عامة" : "Overview",
+    label: m.academics_layout_nav_overview(),
     icon: Compass,
   },
   {
     path: "classes",
-    label: isAr ? "الفصول الدراسية" : "Classes",
+    label: m.academics_layout_nav_classes(),
     icon: GraduationCap,
     badge: classesCount > 0 ? classesCount : null,
   },
   {
     path: "subjects",
-    label: isAr ? "المواد الدراسية" : "Subjects",
+    label: m.academics_layout_nav_subjects(),
     icon: BookOpen,
     badge: subjectsCount > 0 ? subjectsCount : null,
   },
   {
     path: "schedule",
-    label: isAr ? "الجدول الدراسي" : "Schedule",
+    label: m.academics_layout_nav_schedule(),
     icon: Calendar,
   },
   {
     path: "assessments",
-    label: isAr ? "الامتحانات والدرجات" : "Assessments",
+    label: m.academics_layout_nav_assessments(),
     icon: Award,
   },
 ]);
@@ -94,17 +93,6 @@ const navItems = $derived([
 		<!-- Left Resizable Panel: Vertical Secondary Sidebar -->
 		{#snippet left()}
 			<div class="h-full border-r border-border bg-card/20 p-4 flex flex-col gap-4 overflow-y-auto scrollbar-hide select-none">
-				<div class="flex flex-col gap-0.5 text-start px-2 py-1.5">
-					<span class="font-bold text-[10px] text-muted-foreground uppercase tracking-wider">
-						{isAr ? "الشؤون الأكاديمية" : "Academics Panel"}
-					</span>
-					<span class="text-[9px] text-muted-foreground line-clamp-1">
-						{isAr ? "إدارة وتخطيط المدرسة" : "Curriculums & Timetables"}
-					</span>
-				</div>
-
-				<!-- Separator -->
-				<div class="h-px bg-border/60 w-full"></div>
 
 				<!-- Vertical Links List -->
 				<div class="flex flex-col gap-1 w-full text-xs">

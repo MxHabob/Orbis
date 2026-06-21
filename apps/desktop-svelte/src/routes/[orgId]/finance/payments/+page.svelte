@@ -18,10 +18,9 @@ import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate } from "$lib/i18n-utils";
 import { fade } from "svelte/transition";
 import PaymentRecordSheet from "$lib/components/finance/payment-record-sheet.svelte";
+import * as m from "$lib/paraglide/messages";
 
 let { data }: { data: { orgId: string } } = $props();
-
-const isAr = $derived(getLocale() === "ar");
 
 // State
 let payments = $state<any[]>([]);
@@ -92,17 +91,17 @@ const stats = $derived.by(() => {
 });
 
 function getMethodLabel(methodStr: string) {
-  const m = String(methodStr).toLowerCase();
-  if (m === "cash") return isAr ? "نقدي" : "Cash";
-  if (m === "bank transfer") return isAr ? "تحويل بنكي" : "Bank Transfer";
-  if (m === "card") return isAr ? "بطاقة" : "Card";
+  const methodLower = String(methodStr).toLowerCase();
+  if (methodLower === "cash") return m.payments_status_cash();
+  if (methodLower === "bank transfer") return m.payments_status_bank();
+  if (methodLower === "card") return m.payments_status_card();
   return methodStr;
 }
 
 function getMethodBadgeClass(methodStr: string) {
-  const m = String(methodStr).toLowerCase();
-  if (m === "cash") return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
-  if (m === "bank transfer") return "bg-blue-500/10 text-blue-500 border-blue-500/20";
+  const methodLower = String(methodStr).toLowerCase();
+  if (methodLower === "cash") return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
+  if (methodLower === "bank transfer") return "bg-blue-500/10 text-blue-500 border-blue-500/20";
   return "bg-purple-500/10 text-purple-500 border-purple-500/20";
 }
 </script>
@@ -112,10 +111,10 @@ function getMethodBadgeClass(methodStr: string) {
 	<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shrink-0 select-none">
 		<div class="text-start">
 			<h2 class="text-sm font-bold text-foreground uppercase tracking-wider">
-				{isAr ? "سجل المقبوضات والمدفوعات" : "Payments Register"}
+				{m.payments_title()}
 			</h2>
 			<p class="text-[10px] text-muted-foreground mt-0.5">
-				{isAr ? "متابعة وتدقيق إيصالات الدفع المقيدة في صناديق وحسابات المدرسة." : "Review registered payment entries, receipt notes, and transaction methods."}
+				{m.payments_subtitle()}
 			</p>
 		</div>
 
@@ -124,8 +123,8 @@ function getMethodBadgeClass(methodStr: string) {
 			class="text-xs h-9 px-3 shrink-0" 
 			onclick={() => isSheetOpen = true}
 		>
-			<Plus size={14} class={isAr ? 'ml-1.5' : 'mr-1.5'} />
-			{isAr ? "تسجيل دفعة واردة" : "Record Payment"}
+			<Plus size={14} class={getLocale() === "ar" ? 'ml-1.5' : 'mr-1.5'} />
+			{m.payments_record_button()}
 		</Button>
 	</div>
 
@@ -136,7 +135,7 @@ function getMethodBadgeClass(methodStr: string) {
 			<div class="card-tactile bg-card/40 flex items-center justify-between p-4 h-20 select-none">
 				<div class="flex flex-col gap-1 text-start">
 					<span class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
-						{isAr ? "إجمالي المحصل (المحدد)" : "Total Collected (Filtered)"}
+						{m.payments_total_collected()}
 					</span>
 					<span class="text-base font-bold text-emerald-500 font-mono">{formatCurrency(stats.total, "YER")}</span>
 				</div>
@@ -149,9 +148,11 @@ function getMethodBadgeClass(methodStr: string) {
 			<div class="card-tactile bg-card/40 flex items-center justify-between p-4 h-20 select-none">
 				<div class="flex flex-col gap-1 text-start">
 					<span class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
-						{isAr ? "عدد المعاملات (المحدد)" : "Transactions Count (Filtered)"}
+						{m.payments_count()}
 					</span>
-					<span class="text-base font-bold text-foreground font-mono">{stats.count}</span>
+					<span class="text-base font-bold text-foreground font-mono">
+						{m.payments_count_value({ count: stats.count })}
+					</span>
 				</div>
 				<div class="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
 					<ClipboardList size={14} />
@@ -168,7 +169,7 @@ function getMethodBadgeClass(methodStr: string) {
 				<Search class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
 				<Input
 					type="text"
-					placeholder={isAr ? "البحث برقم الإيصال أو اسم الطالب..." : "Search receipt code or student name..."}
+					placeholder={m.payments_search_placeholder()}
 					class="input-sunken ps-9 text-xs py-1.5"
 					bind:value={searchQuery}
 				/>
@@ -177,16 +178,16 @@ function getMethodBadgeClass(methodStr: string) {
 			<!-- Method selector -->
 			<div class="flex items-center gap-2 text-start">
 				<span class="text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-					{isAr ? "طريقة الدفع:" : "Method:"}
+					{m.payments_filter_method()}
 				</span>
 				<select 
 					bind:value={methodFilter}
 					class="bg-background text-foreground border border-border rounded-md px-3 py-1.5 text-xs focus:ring-1 focus:ring-ring outline-none min-w-32"
 				>
-					<option value="all">{isAr ? "جميع الطرق" : "All Methods"}</option>
-					<option value="Cash">{isAr ? "نقدي" : "Cash"}</option>
-					<option value="Bank Transfer">{isAr ? "تحويل بنكي" : "Bank Transfer"}</option>
-					<option value="Card">{isAr ? "بطاقة دفع" : "Card"}</option>
+					<option value="all">{m.payments_filter_method_all()}</option>
+					<option value="Cash">{m.payments_status_cash()}</option>
+					<option value="Bank Transfer">{m.payments_status_bank()}</option>
+					<option value="Card">{m.payments_filter_method_card()}</option>
 				</select>
 			</div>
 		</div>
@@ -201,21 +202,21 @@ function getMethodBadgeClass(methodStr: string) {
 		</div>
 	{:else if error}
 		<div class="flex flex-col items-center justify-center py-16 text-destructive border border-destructive/20 bg-destructive/5 rounded-xl gap-2">
-			<h3 class="font-semibold text-xs">{isAr ? "خطأ في تحميل سجل المدفوعات" : "Error loading payment log"}</h3>
+			<h3 class="font-semibold text-xs">{m.payments_error_loading()}</h3>
 			<p class="text-[10px] text-muted-foreground">{error}</p>
-			<Button variant="outline" onclick={loadPayments} class="text-[10px] mt-2">{isAr ? "إعادة المحاولة" : "Retry"}</Button>
+			<Button variant="outline" onclick={loadPayments} class="text-[10px] mt-2">{m.error_retry()}</Button>
 		</div>
 	{:else if filteredPayments.length === 0}
 		<div class="flex flex-col items-center justify-center py-16 text-muted-foreground border border-border border-dashed rounded-xl gap-4 bg-card/10 select-none">
 			<CreditCard size={48} class="text-muted-foreground/30" />
 			<div class="flex flex-col gap-1 text-center">
-				<p class="text-xs font-semibold">{isAr ? "لا توجد مقبوضات مسجلة" : "No payment logs found"}</p>
+				<p class="text-xs font-semibold">{m.payments_no_payments()}</p>
 				<p class="text-[10px] text-muted-foreground/80">
-					{isAr ? "لا توجد دفعات مطابقة لخيارات الفرز الحالية." : "There are no received payments matching the active search parameters."}
+					{m.payments_no_payments_desc()}
 				</p>
 			</div>
 			<Button variant="lime" class="text-xs mt-2" onclick={() => isSheetOpen = true}>
-				{isAr ? "تسجيل دفعة جديدة" : "Record Payment"}
+				{m.payments_record_button()}
 			</Button>
 		</div>
 	{:else}
@@ -224,12 +225,12 @@ function getMethodBadgeClass(methodStr: string) {
 			<Table>
 				<TableHeader>
 					<TableRow class="hover:bg-transparent">
-						<TableHead class="text-start">{isAr ? "رقم الإيصال" : "Receipt #"}</TableHead>
-						<TableHead class="text-start">{isAr ? "الطالب" : "Student"}</TableHead>
-						<TableHead class="text-start">{isAr ? "طريقة الدفع" : "Method"}</TableHead>
-						<TableHead class="text-start">{isAr ? "تاريخ الدفع" : "Payment Date"}</TableHead>
-						<TableHead class="text-start">{isAr ? "الخزينة المستلمة" : "Treasury Safe"}</TableHead>
-						<TableHead class="text-start">{isAr ? "المبلغ المدفوع" : "Amount Paid"}</TableHead>
+						<TableHead class="text-start">{m.payments_col_receipt()}</TableHead>
+						<TableHead class="text-start">{m.payments_col_student()}</TableHead>
+						<TableHead class="text-start">{m.payments_col_method()}</TableHead>
+						<TableHead class="text-start">{m.payments_col_date()}</TableHead>
+						<TableHead class="text-start">{m.payments_col_treasury()}</TableHead>
+						<TableHead class="text-start">{m.payments_col_amount()}</TableHead>
 					</TableRow>
 				</TableHeader>
 				<TableBody>

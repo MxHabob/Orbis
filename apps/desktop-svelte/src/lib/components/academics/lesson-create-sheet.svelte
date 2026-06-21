@@ -14,6 +14,7 @@ import { ShieldAlert, Calendar, X } from "lucide-svelte";
 import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
+import * as m from "$lib/paraglide/messages";
 
 let { 
   open = $bindable(false), 
@@ -37,8 +38,6 @@ let {
   onSuccess: () => void;
 } = $props();
 
-const isAr = $derived(getLocale() === "ar");
-
 // Form state
 let isSubmitting = $state(false);
 let formSubjectId = $state("");
@@ -50,11 +49,11 @@ let conflictError = $state<string | null>(null);
 let isCheckingConflict = $state(false);
 
 const weekdays = $derived([
-  { value: 1, label: isAr ? "الأحد" : "Sunday" },
-  { value: 2, label: isAr ? "الأثنين" : "Monday" },
-  { value: 3, label: isAr ? "الثلاثاء" : "Tuesday" },
-  { value: 4, label: isAr ? "الأربعاء" : "Wednesday" },
-  { value: 5, label: isAr ? "الخميس" : "Thursday" },
+  { value: 1, label: m.schedule_page_day_sun() },
+  { value: 2, label: m.schedule_page_day_mon() },
+  { value: 3, label: m.schedule_page_day_tue() },
+  { value: 4, label: m.schedule_page_day_wed() },
+  { value: 5, label: m.schedule_page_day_thu() },
 ]);
 
 // Check conflict when teacher, room or subject selection changes
@@ -80,9 +79,7 @@ async function checkScheduleConflict() {
     });
     if (conflicts && conflicts.length > 0) {
       const first = conflicts[0];
-      conflictError = isAr 
-        ? `تعارض: المعلم أو الغرفة محجوزة بالفعل في هذا الوقت! (${first.conflict_type})`
-        : `Conflict detected: Teacher or Room already booked! (${first.conflict_type})`;
+      conflictError = m.lesson_sheet_conflict_err({ type: first.conflict_type });
     }
   } catch (e) {
     console.warn("Conflict check bypassed:", e);
@@ -94,7 +91,7 @@ async function checkScheduleConflict() {
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   if (!formSubjectId) {
-    toast.error(isAr ? "الرجاء اختيار المادة" : "Please select subject");
+    toast.error(m.lesson_toast_error_subject());
     return;
   }
   isSubmitting = true;
@@ -109,7 +106,7 @@ async function handleSubmit(e: SubmitEvent) {
       room: formRoom || undefined,
     };
     await commands.schedule.createLesson(orgId, request);
-    toast.success(isAr ? "تم إدراج الحصة بنجاح" : "Lesson scheduled successfully");
+    toast.success(m.lesson_toast_success());
     open = false;
     
     // Reset fields
@@ -120,7 +117,7 @@ async function handleSubmit(e: SubmitEvent) {
 
     onSuccess();
   } catch (e) {
-    toast.error(isAr ? "فشل جدولة الحصة" : "Failed to schedule lesson");
+    toast.error(m.lesson_toast_error());
   } finally {
     isSubmitting = false;
   }
@@ -132,12 +129,10 @@ async function handleSubmit(e: SubmitEvent) {
 		<SheetHeader class="pb-4 border-b border-border shrink-0 select-none text-start">
 			<SheetTitle class="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
 				<Calendar size={14} class="text-primary" />
-				<span>{isAr ? "جدولة حصة دراسية" : "Schedule Curricular Lesson"}</span>
+				<span>{m.lesson_sheet_title()}</span>
 			</SheetTitle>
 			<p class="text-[10px] text-muted-foreground mt-0.5">
-				{isAr 
-					? `إدراج حصة جديدة يوم ${weekdays.find(w => w.value === dayOfWeek)?.label}`
-					: `Schedule a new lesson on ${weekdays.find(w => w.value === dayOfWeek)?.label}`}
+				{m.lesson_sheet_subtitle_prefix()}{weekdays.find(w => w.value === dayOfWeek)?.label}
 			</p>
 		</SheetHeader>
 
@@ -154,7 +149,7 @@ async function handleSubmit(e: SubmitEvent) {
 			<!-- Subject Selector -->
 			<div class="flex flex-col gap-1.5 text-start">
 				<label for="sched_sub" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-					{isAr ? "المادة الدراسية *" : "Select Subject *"}
+					{m.lesson_label_subject()}
 				</label>
 				<select 
 					id="sched_sub"
@@ -162,7 +157,7 @@ async function handleSubmit(e: SubmitEvent) {
 					class="bg-background text-foreground border border-border rounded-md px-3 py-1.5 text-xs focus:ring-1 focus:ring-ring outline-none"
 					required
 				>
-					<option value="">{isAr ? "-- اختر المادة --" : "-- Select Subject --"}</option>
+					<option value="">{m.lesson_option_select_subject()}</option>
 					{#each subjects as sub (sub.id)}
 						<option value={String(sub.id)}>{sub.name_ar || sub.name}</option>
 					{/each}
@@ -172,14 +167,14 @@ async function handleSubmit(e: SubmitEvent) {
 			<!-- Teacher Selector -->
 			<div class="flex flex-col gap-1.5 text-start">
 				<label for="sched_teach" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-					{isAr ? "المعلم المشرف" : "Select Teacher"}
+					{m.lesson_label_teacher()}
 				</label>
 				<select 
 					id="sched_teach"
 					bind:value={formTeacherId}
 					class="bg-background text-foreground border border-border rounded-md px-3 py-1.5 text-xs focus:ring-1 focus:ring-ring outline-none"
 				>
-					<option value="">{isAr ? "-- بدون معلم (اختياري) --" : "-- No Teacher (Optional) --"}</option>
+					<option value="">{m.lesson_option_no_teacher()}</option>
 					{#each teachers as teach (teach.id)}
 						<option value={String(teach.id)}>{teach.full_name}</option>
 					{/each}
@@ -189,7 +184,7 @@ async function handleSubmit(e: SubmitEvent) {
 			<!-- Room Number -->
 			<div class="flex flex-col gap-1.5 text-start">
 				<label for="sched_room" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-					{isAr ? "رقم الفصل / الغرفة" : "Classroom Room / Location"}
+					{m.lesson_label_room()}
 				</label>
 				<Input 
 					id="sched_room"
@@ -209,7 +204,7 @@ async function handleSubmit(e: SubmitEvent) {
 					onclick={() => open = false}
 					disabled={isSubmitting}
 				>
-					{isAr ? "إلغاء" : "Cancel"}
+					{m.lesson_button_cancel()}
 				</Button>
 				<Button 
 					type="submit" 
@@ -217,7 +212,7 @@ async function handleSubmit(e: SubmitEvent) {
 					class="text-xs h-9 px-4 font-semibold"
 					disabled={isSubmitting || !!conflictError}
 				>
-					{isSubmitting ? (isAr ? "جاري الحفظ..." : "Saving...") : (isAr ? "إدراج الحصة" : "Schedule")}
+					{isSubmitting ? m.lesson_toast_saving() : m.lesson_button_save()}
 				</Button>
 			</div>
 		</form>
