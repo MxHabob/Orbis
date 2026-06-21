@@ -39,20 +39,20 @@ try {
   }
 
   // Ensure default admin user exists
-  const existingUser = db.query("SELECT id FROM users WHERE primary_role = 'admin' LIMIT 1").get() as { id: string } | null;
-  if (!existingUser) {
-    console.log("Creating default admin user...");
-    const adminId = crypto.randomUUID();
-    db.prepare(`
-      INSERT INTO users (id, org_id, email, email_verified, phone_verified, mfa_enabled, full_name, name_ar, primary_role, status, prefs, meta, is_deleted, created_at, updated_at)
-      VALUES (?, ?, 'admin@orbis.edu', 1, 0, 0, 'Admin User', 'مدير النظام', 'admin', 'active', '{}', '{}', 0, datetime('now'), datetime('now'))
-    `).run(adminId, orgId);
+  db.prepare("DELETE FROM user_roles WHERE role = 'admin' AND org_id = ?").run(orgId);
+  db.prepare("DELETE FROM users WHERE primary_role = 'admin' AND org_id = ?").run(orgId);
 
-    db.prepare(`
-      INSERT INTO user_roles (id, user_id, role, org_id, scope_type, is_primary, assigned_at)
-      VALUES (?, ?, 'admin', ?, 'org', 1, datetime('now'))
-    `).run(crypto.randomUUID(), adminId, orgId);
-  }
+  console.log("Creating default admin user...");
+  const adminId = crypto.randomUUID();
+  db.prepare(`
+    INSERT INTO users (id, org_id, email, email_verified, phone_verified, mfa_enabled, password_hash, full_name, name_ar, primary_role, status, prefs, meta, is_deleted, created_at, updated_at)
+    VALUES (?, ?, 'admin@orbis.edu', 1, 0, 0, '$2b$10$13i4/z492q2VOq9MHm2kLe7BuFJ02ZsBWvSII68bp3cE7SeoPM1r.', 'Admin User', 'مدير النظام', 'admin', 'active', '{}', '{}', 0, datetime('now'), datetime('now'))
+  `).run(adminId, orgId);
+
+  db.prepare(`
+    INSERT INTO user_roles (id, user_id, role, org_id, scope_type, is_primary, assigned_at)
+    VALUES (?, ?, 'admin', ?, 'org', 1, datetime('now'))
+  `).run(crypto.randomUUID(), adminId, orgId);
 
   // 1. Create Academic Cycle (Hijri 1447)
   const cycleId = "cycle-1447";
