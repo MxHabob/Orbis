@@ -49,16 +49,28 @@ let isLoading = $state(true);
 let error = $state<string | null>(null);
 
 // Filter states
-let activeTab = $state<"all" | "single" | "custom">("all");
+let activeTab = $state<"all" | "single">("all");
 let selectedAccountId = $state<string>("");
 let selectedCurrency = $state<string>("all");
 let periodFilter = $state<string>("all");
 let customStartDate = $state<string>(new Date().toISOString().split("T")[0]);
 let movementFilter = $state<string>("all"); // 'all' or 'active' (with movements)
 let debtorCreditorFilter = $state<string>("all"); // 'all', 'debtor', 'creditor'
-let showAllCurrenciesInNotes = $state<boolean>(false);
 
-// Tree state for Custom Tab
+// Additional dynamic filter states matching screenshot options
+let detailedBalance = $state(true);
+let noOpeningBalance = $state(false);
+let minBalance = $state(false);
+let groupByDay = $state(false);
+let reportType = $state<"totals" | "balances">("balances");
+let groupByDoc = $state(true);
+let historyType = $state<"current" | "historical">("current");
+let hideEquivalent = $state(false);
+let inLocalEquivalent = $state(false);
+let paymentRequest = $state(false);
+let englishReport = $state(false);
+
+// Tree state
 let expandedCategories = $state<Record<string, boolean>>({
   asset: true,
   liability: false,
@@ -70,8 +82,55 @@ let expandedAccounts = $state<Record<string, boolean>>({});
 let selectedTreeAccountIds = $state<Set<string>>(new Set());
 let isCoadTreeExpanded = $state(true);
 
-// Sidebar layout state
-let isTreeSidebarOpen = $derived(activeTab === "custom");
+// Synced inputs for dual-combobox
+let accountCodeQuery = $state("");
+let accountNameQuery = $state("");
+let isCodeDropdownOpen = $state(false);
+let isNameDropdownOpen = $state(false);
+
+const searchedAccountsByCode = $derived.by(() => {
+  const q = accountCodeQuery.toLowerCase().trim();
+  if (!q) return ledgers;
+  return ledgers.filter((l) => String(l.code).includes(q));
+});
+
+const searchedAccountsByName = $derived.by(() => {
+  const q = accountNameQuery.toLowerCase().trim();
+  if (!q) return ledgers;
+  return ledgers.filter(
+    (l) =>
+      String(l.name_ar || "").toLowerCase().includes(q) ||
+      String(l.name || "").toLowerCase().includes(q)
+  );
+});
+
+function selectAccount(acc: any) {
+  selectedAccountId = acc.id;
+  accountCodeQuery = String(acc.code);
+  accountNameQuery = acc.name_ar || acc.name;
+  isCodeDropdownOpen = false;
+  isNameDropdownOpen = false;
+}
+
+function resetQueries() {
+  const active = ledgers.find((l) => l.id === selectedAccountId);
+  if (active) {
+    accountCodeQuery = String(active.code);
+    accountNameQuery = active.name_ar || active.name;
+  } else {
+    accountCodeQuery = "";
+    accountNameQuery = "";
+  }
+}
+
+function handleWindowClick(event: MouseEvent) {
+  const target = event.target as HTMLElement;
+  if (!target.closest('.combobox-container')) {
+    isCodeDropdownOpen = false;
+    isNameDropdownOpen = false;
+    resetQueries();
+  }
+}
 
 async function loadData() {
   isLoading = true;
@@ -91,6 +150,8 @@ async function loadData() {
 
     if (ledgerList.length > 0) {
       selectedAccountId = ledgerList[0].id;
+      accountCodeQuery = String(ledgerList[0].code);
+      accountNameQuery = ledgerList[0].name_ar || ledgerList[0].name;
     }
 
     // Default select all accounts in tree selection
@@ -108,21 +169,6 @@ async function loadData() {
 onMount(() => {
   if (data.orgId) {
     loadData();
-
-    // Load template preference if saved
-    const savedTemplate = localStorage.getItem(`orbis_ledger_template_${data.orgId}`);
-    if (savedTemplate) {
-      try {
-        const filters = JSON.parse(savedTemplate);
-        if (filters.selectedCurrency) selectedCurrency = filters.selectedCurrency;
-        if (filters.periodFilter) periodFilter = filters.periodFilter;
-        if (filters.movementFilter) movementFilter = filters.movementFilter;
-        if (filters.debtorCreditorFilter) debtorCreditorFilter = filters.debtorCreditorFilter;
-        if (filters.showAllCurrenciesInNotes !== undefined) showAllCurrenciesInNotes = filters.showAllCurrenciesInNotes;
-      } catch (err) {
-        console.error("Error parsing saved ledger template", err);
-      }
-    }
   }
 });
 
@@ -250,6 +296,318 @@ const calculatedLedgerRows = $derived.by(() => {
 
   // Convert map to list
   return Object.values(result);
+});
+
+// Selected Account Row derived state
+const selectedAccountRow = $derived.by(() => {
+  return calculatedLedgerRows.find(r => r.id === selectedAccountId);
+});
+
+// Arabic spelling helper
+function arabicNumberToWords(num: number): string {
+  if (num === 0) return "صفر";
+  
+  const integerPart = Math.floor(num);
+  const decimalPart = Math.round((num - integerPart) * 100);
+
+  const ones = ["", "واحد", "اثنان", "ثلاثة", "أربعة", "خمسة", "ستة", "سبعة", "ثمانية", "تسعة", "عشرة", "أحد عشر", "اثنا عشر", "ثلاثة عشر", "أربعة عشر", "خمسة عشر", "ستة عشر", "سبعة عشر", "ثمانية عشر", "تسعة عشر"];
+  const tens = ["", "", "عشرون", "ثلاثون", "أربعون", "خمسون", "ستون", "سبعون", "ثمانون", "تسعون"];
+  const hundreds = ["", "مائة", "مائتان", "ثلاثمائة", "أربعمائة", "خمسمائة", "ستمائة", "سبعمائة", "ثمانمائة", "تسعمائة"];
+
+  function convertGroup(n: number): string {
+    let parts = [];
+    const h = Math.floor(n / 100);
+    const remainder = n % 100;
+    
+    if (h > 0) parts.push(hundreds[h]);
+    
+    if (remainder > 0) {
+      if (remainder < 20) {
+        parts.push(ones[remainder]);
+      } else {
+        const o = remainder % 10;
+        const t = Math.floor(remainder / 10);
+        if (o > 0) {
+          parts.push(`${ones[o]} و ${tens[t]}`);
+        } else {
+          parts.push(tens[t]);
+        }
+      }
+    }
+    return parts.join(" و ");
+  }
+
+  let parts = [];
+  let temp = integerPart;
+
+  const billions = Math.floor(temp / 1000000000);
+  temp %= 1000000000;
+  if (billions > 0) {
+    parts.push(billions === 1 ? "مليار" : billions === 2 ? "ملياران" : `${convertGroup(billions)} مليارات`);
+  }
+
+  const millions = Math.floor(temp / 1000000);
+  temp %= 1000000;
+  if (millions > 0) {
+    parts.push(millions === 1 ? "مليون" : millions === 2 ? "مليونان" : `${convertGroup(millions)} ملايين`);
+  }
+
+  const thousands = Math.floor(temp / 1000);
+  temp %= 1000;
+  if (thousands > 0) {
+    parts.push(thousands === 1 ? "ألف" : thousands === 2 ? "ألفان" : `${convertGroup(thousands)} آلاف`);
+  }
+
+  if (temp > 0) {
+    parts.push(convertGroup(temp));
+  }
+
+  let arabicString = parts.join(" و ");
+
+  if (decimalPart > 0) {
+    arabicString += ` و ${convertGroup(decimalPart)} جزءاً من المائة`;
+  }
+
+  return arabicString;
+}
+
+// Currency Summary Rows derived state (for Single Account, All Currencies)
+const currencySummaryRows = $derived.by(() => {
+  const row = selectedAccountRow;
+  if (!row) return [];
+
+  const list = [];
+  
+  // YER Row
+  if (row.debit_yer > 0 || row.credit_yer > 0) {
+    list.push({
+      currency: "ريال يمني",
+      debit: row.debit_yer,
+      credit: row.credit_yer,
+      rate: 1.0,
+      debit_eq: row.debit_yer,
+      credit_eq: row.credit_yer,
+      notes: "رصيد الحساب بالريال اليمني",
+    });
+  }
+  
+  // SAR Row
+  if (row.debit_sar > 0 || row.credit_sar > 0) {
+    const rate = 139.8;
+    list.push({
+      currency: "سعودي",
+      debit: row.debit_sar,
+      credit: row.credit_sar,
+      rate: rate,
+      debit_eq: row.debit_sar * rate,
+      credit_eq: row.credit_sar * rate,
+      notes: `رصيد الحساب بالسعودي (سعر الصرف ${rate})`,
+    });
+  }
+
+  // USD Row
+  if (row.debit_usd > 0 || row.credit_usd > 0) {
+    const rate = 530.2;
+    list.push({
+      currency: "دولار",
+      debit: row.debit_usd,
+      credit: row.credit_usd,
+      rate: rate,
+      debit_eq: row.debit_usd * rate,
+      credit_eq: row.credit_usd * rate,
+      notes: `رصيد الحساب بالدولار (سعر الصرف ${rate})`,
+    });
+  }
+
+  // AED Row
+  if (row.debit_aed > 0 || row.credit_aed > 0) {
+    const rate = 144.1;
+    list.push({
+      currency: "درهم",
+      debit: row.debit_aed,
+      credit: row.credit_aed,
+      rate: rate,
+      debit_eq: row.debit_aed * rate,
+      credit_eq: row.credit_aed * rate,
+      notes: `رصيد الحساب بالدرهم (سعر الصرف ${rate})`,
+    });
+  }
+
+  return list;
+});
+
+const summaryTotals = $derived.by(() => {
+  let totDebEq = 0;
+  let totCredEq = 0;
+  for (const r of currencySummaryRows) {
+    totDebEq += r.debit_eq;
+    totCredEq += r.credit_eq;
+  }
+  const balance = totDebEq - totCredEq;
+  return {
+    debit_eq: totDebEq,
+    credit_eq: totCredEq,
+    balance: Math.abs(balance),
+    balance_type: balance >= 0 ? "debtor" : "creditor", // مدين أو دائن
+  };
+});
+
+const balanceText = $derived.by(() => {
+  const tot = summaryTotals;
+  const label = tot.balance_type === "debtor" ? "الرصيد عليكم " : "الرصيد لكم ";
+  return label + arabicNumberToWords(tot.balance);
+});
+
+// Detailed Transaction Ledger (for Single Account, Specific Currency)
+const ledgerTransactions = $derived.by(() => {
+  if (activeTab !== "single" || !selectedAccountId || selectedCurrency === "all") {
+    return [];
+  }
+
+  const acc = ledgers.find((l) => l.id === selectedAccountId);
+  if (!acc) return [];
+
+  const list: any[] = [];
+  const targetCurr = selectedCurrency.toUpperCase();
+
+  // 1. Add opening balance if any
+  const ob = Number(acc.opening_balance || 0);
+  if (ob > 0 && String(acc.currency).toUpperCase() === targetCurr) {
+    const isDebitType = acc.item_type === "asset" || acc.item_type === "expense";
+    list.push({
+      date: "2026-06-01",
+      document: "رصيد سابق",
+      number: "-",
+      description: "رصيد أول المدة",
+      debit: isDebitType ? ob : 0,
+      credit: isDebitType ? 0 : ob,
+      status: "verified",
+    });
+  }
+
+  // Find if this account is the Student Tuition Receivables account
+  const isAR = acc.code === "1301" || String(acc.name_ar).includes("ذمم") || String(acc.name).toLowerCase().includes("receivable");
+
+  // 2. Add Fees (Debit AR, Credit Revenue)
+  if (targetCurr === "YER") { // Fees are in YER
+    if (isAR) {
+      // Debit Student Receivables
+      for (const fee of fees) {
+        list.push({
+          date: String(fee.created_at || "2026-06-22").split("T")[0],
+          document: "سند قيد بسيط",
+          number: fee.id.slice(0, 8),
+          description: fee.notes || `رسوم دراسية مستحقة - كود القالب ${fee.fee_template_id}`,
+          debit: Number(fee.total_amount || 0),
+          credit: 0,
+          status: "verified",
+        });
+      }
+    } else if (acc.item_type === "revenue") {
+      // Credit Revenue Account
+      for (const fee of fees) {
+        if (fee.fee_template_id === acc.id) {
+          list.push({
+            date: String(fee.created_at || "2026-06-22").split("T")[0],
+            document: "سند قيد بسيط",
+            number: fee.id.slice(0, 8),
+            description: fee.notes || "إثبات إيرادات رسوم دراسية مستحقة",
+            debit: 0,
+            credit: Number(fee.total_amount || 0),
+            status: "verified",
+          });
+        }
+      }
+    }
+  }
+
+  // 3. Add Payments (Debit Treasury, Credit AR)
+  for (const pay of payments) {
+    const payCurr = String(pay.currency || "YER").toUpperCase();
+    if (payCurr !== targetCurr) continue;
+
+    const amount = Number(pay.amount || 0);
+
+    if (isAR) {
+      // Credit AR
+      list.push({
+        date: String(pay.paid_at || "2026-06-22").split("T")[0],
+        document: "سند قبض",
+        number: pay.receipt_number || pay.id.slice(0, 8),
+        description: pay.notes || `دفعة رسوم مسددة من الطالب - مرجع ${pay.reference || ''}`,
+        debit: 0,
+        credit: amount,
+        status: pay.is_verified === 1 ? "verified" : "pending",
+      });
+    } else {
+      // Check if this is the treasury ledger account
+      const treasury = treasuries.find((t) => t.ledger_account_id === acc.id);
+      if (treasury && pay.treasury_id === treasury.id) {
+        // Debit Treasury
+        list.push({
+          date: String(pay.paid_at || "2026-06-22").split("T")[0],
+          document: "سند قبض",
+          number: pay.receipt_number || pay.id.slice(0, 8),
+          description: pay.notes || `مقبوضات الرسوم الدراسية - دفعة ${pay.payer_name || ''}`,
+          debit: amount,
+          credit: 0,
+          status: pay.is_verified === 1 ? "verified" : "pending",
+        });
+      }
+    }
+  }
+
+  // Sort by date
+  list.sort((a, b) => a.date.localeCompare(b.date));
+
+  // Compute running balance
+  let runningBalance = 0;
+  const isDebitNormal = acc.item_type === "asset" || acc.item_type === "expense";
+  
+  // In computed entries:
+  let cumulativeBalance = 0; // represent as Credit - Debit
+  const entries = list.map((item) => {
+    if (isDebitNormal) {
+      cumulativeBalance += (item.debit - item.credit);
+    } else {
+      cumulativeBalance += (item.credit - item.debit);
+    }
+    
+    return {
+      ...item,
+      balance: Math.abs(cumulativeBalance),
+      balance_label: cumulativeBalance >= 0 ? "له" : "عليه",
+    };
+  });
+
+  return entries;
+});
+
+// Detailed transactions totals
+const detailedTotals = $derived.by(() => {
+  let totDeb = 0;
+  let totCred = 0;
+  for (const r of ledgerTransactions) {
+    totDeb += r.debit;
+    totCred += r.credit;
+  }
+  
+  const acc = ledgers.find((l) => l.id === selectedAccountId);
+  const isDebitNormal = acc ? (acc.item_type === "asset" || acc.item_type === "expense") : true;
+  
+  let netBalance = 0;
+  if (isDebitNormal) {
+    netBalance = totDeb - totCred;
+  } else {
+    netBalance = totCred - totDeb;
+  }
+  
+  return {
+    debit: totDeb,
+    credit: totCred,
+    balance: Math.abs(netBalance),
+    balance_label: netBalance >= 0 ? "له" : "عليه",
+  };
 });
 
 // Categorized tree representation of all accounts (used for Custom Selection sidebar)
@@ -467,18 +825,43 @@ const totals = $derived.by(() => {
   };
 });
 
-// Actions
-function saveTemplate() {
-  const filters = {
-    selectedCurrency,
-    periodFilter,
-    movementFilter,
-    debtorCreditorFilter,
-    showAllCurrenciesInNotes,
+// Derived rows for Table A2 (All Accounts, Specific Currency)
+const tableA2Rows = $derived.by(() => {
+  if (activeTab !== "all" || selectedCurrency === "all") return [];
+  const curr = selectedCurrency.toUpperCase();
+  return filteredLedgerRows.map(row => {
+    let deb = 0, cred = 0;
+    if (curr === "YER") { deb = row.debit_yer; cred = row.credit_yer; }
+    else if (curr === "SAR") { deb = row.debit_sar; cred = row.credit_sar; }
+    else if (curr === "USD") { deb = row.debit_usd; cred = row.credit_usd; }
+    else if (curr === "AED") { deb = row.debit_aed; cred = row.credit_aed; }
+    
+    const isDebitNormal = row.item_type === "asset" || row.item_type === "expense";
+    let bal = isDebitNormal ? (deb - cred) : (cred - deb);
+    return {
+      ...row,
+      debit: deb,
+      credit: cred,
+      balance: Math.abs(bal),
+      balance_label: bal >= 0 ? "له" : "عليه",
+    };
+  });
+});
+
+const tableA2Totals = $derived.by(() => {
+  let deb = 0, cred = 0;
+  for (const r of tableA2Rows) {
+    deb += r.debit;
+    cred += r.credit;
+  }
+  const diff = deb - cred;
+  return {
+    debit: deb,
+    credit: cred,
+    balance: Math.abs(diff),
+    balance_label: diff >= 0 ? "له" : "عليه",
   };
-  localStorage.setItem(`orbis_ledger_template_${data.orgId}`, JSON.stringify(filters));
-  toast.success(getLocale() === "ar" ? "تم حفظ قالب كشف الحساب بنجاح!" : "Ledger statement template saved successfully!");
-}
+});
 
 function handlePrint() {
   window.print();
@@ -489,62 +872,20 @@ function exitPage() {
 }
 </script>
 
+<svelte:window onclick={handleWindowClick} />
+
 <div class="h-full w-full overflow-hidden flex flex-col font-sans bg-background text-foreground" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
   
-  <!-- Page Header -->
-  <div class="p-5 border-b border-border bg-card/30 flex items-center justify-between shrink-0 no-print select-none">
-    <div class="text-start">
-      <h2 class="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
-        <FileText size={16} class="text-primary" />
-        <span>{m.ledger_title()}</span>
-      </h2>
-      <p class="text-[10px] text-muted-foreground mt-0.5">
-        {m.ledger_subtitle()}
-      </p>
-    </div>
 
-    <!-- Mode Selector Tabs -->
-    <div class="flex border border-border bg-muted/50 rounded-lg p-0.5 text-[10px] font-bold">
-      <button
-        onclick={() => activeTab = "all"}
-        class="px-3 py-1 rounded-md transition-all duration-150 {activeTab === 'all' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
-      >
-        {m.ledger_tab_all()}
-      </button>
-      <button
-        onclick={() => activeTab = "single"}
-        class="px-3 py-1 rounded-md transition-all duration-150 {activeTab === 'single' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
-      >
-        {m.ledger_tab_one()}
-      </button>
-      <button
-        onclick={() => activeTab = "custom"}
-        class="px-3 py-1 rounded-md transition-all duration-150 {activeTab === 'custom' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
-      >
-        {m.ledger_tab_custom()}
-      </button>
-    </div>
-  </div>
 
   <!-- Main Filter Controls Box -->
   <div class="p-5 bg-card/15 border-b border-border/80 grid grid-cols-1 lg:grid-cols-4 gap-6 shrink-0 no-print select-none text-start">
     
     <!-- Right Side (Renders on right in RTL): Accounts Tree Selection Box (spans 1 column) -->
     <div 
-      class="bg-background border border-border rounded-lg p-3 flex flex-col overflow-hidden shadow-sm lg:col-span-1 self-start"
+      class="bg-background border border-border rounded-lg p-3 flex flex-col overflow-hidden shadow-sm lg:col-span-1 self-start font-sans"
       style="height: 220px; max-height: 220px;"
     >
-      <!-- Tree Header -->
-      <div class="flex items-center justify-between border-b border-border pb-1.5 mb-2 shrink-0">
-        <h3 class="text-[10px] font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
-          <FolderOpen size={12} class="text-primary" />
-          <span>{m.ledger_tree_title()}</span>
-        </h3>
-        <span class="text-[8px] px-1 rounded bg-muted font-bold text-muted-foreground border border-border/40">
-          {selectedTreeAccountIds.size} / {calculatedLedgerRows.length}
-        </span>
-      </div>
-
       <!-- Scrollable Tree content -->
       <div class="flex-1 overflow-y-auto flex flex-col gap-2.5 text-[10px]">
         {#snippet renderNodes(nodes, depth)}
@@ -613,7 +954,7 @@ function exitPage() {
                 <ChevronDown size={12} class="text-muted-foreground" />
                 <FolderOpen size={12} class="text-primary" />
               {:else}
-                <ChevronRight size={12} class="text-muted-foreground {getLocale() === 'ar' ? 'rotate-180' : ''}" />
+                <ChevronRight size={12} class="text-muted-foreground {getLocale() === "ar" ? "rotate-180" : ""}" />
                 <Folder size={12} class="text-primary" />
               {/if}
               <span>{getLocale() === "ar" ? "الشجرة المحاسبية" : "Chart of Accounts"}</span>
@@ -660,7 +1001,7 @@ function exitPage() {
                         <ChevronDown size={12} class="text-muted-foreground" />
                         <FolderOpen size={12} class="text-primary" />
                       {:else}
-                        <ChevronRight size={12} class="text-muted-foreground {getLocale() === 'ar' ? 'rotate-180' : ''}" />
+                        <ChevronRight size={12} class="text-muted-foreground {getLocale() === "ar" ? "rotate-180" : ""}" />
                         <Folder size={12} class="text-primary" />
                       {/if}
                       <span>{getLocale() === "ar" ? cat.name_ar : cat.name_en}</span>
@@ -703,48 +1044,134 @@ function exitPage() {
     </div>
 
     <!-- Left Side (Renders on left in RTL): Filter inputs (spans 3 columns) -->
-    <div class="lg:col-span-3 flex flex-col gap-4 justify-between">
-      <div class="flex flex-wrap gap-4 items-center">
-        <!-- 1. Account Dropdown (Enabled only for 'single' mode) -->
-        <div class="flex flex-col gap-1 text-[10px] font-bold text-muted-foreground uppercase">
-          <span>{m.ledger_tab_one()}</span>
-          <select
-            bind:value={selectedAccountId}
-            disabled={activeTab !== "single" || isLoading}
-            class="bg-background text-foreground border border-border rounded-md px-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-ring min-w-56 disabled:opacity-50"
+    <div class="lg:col-span-3 flex flex-col gap-4 justify-between bg-card/5 border border-border/50 rounded-xl p-4 shadow-inner">
+      
+      <!-- Mode Tabs and Top Status Indicator -->
+      <div class="flex items-center justify-between border-b border-border/60 pb-3">
+        <!-- Mode Tabs -->
+        <div class="flex border border-border bg-muted/50 rounded-lg p-0.5 text-[10px] font-bold">
+          <button
+            onclick={() => activeTab = "single"}
+            class="px-5 py-1.5 rounded-md transition-all duration-150 {activeTab === 'single' ? 'bg-primary text-primary-foreground shadow-sm font-bold' : 'text-muted-foreground hover:text-foreground font-semibold'}"
           >
-            {#if isLoading}
-              <option>{m.loading()}</option>
-            {:else}
-              {#each ledgers as l (l.id)}
-                <option value={l.id}>{l.code} - {l.name_ar || l.name}</option>
-              {/each}
-            {/if}
-          </select>
+            {m.ledger_tab_one()}
+          </button>
+          <button
+            onclick={() => activeTab = "all"}
+            class="px-5 py-1.5 rounded-md transition-all duration-150 {activeTab === 'all' ? 'bg-primary text-primary-foreground shadow-sm font-bold' : 'text-muted-foreground hover:text-foreground font-semibold'}"
+          >
+            {m.ledger_tab_all()}
+          </button>
+        </div>
+        
+        <!-- Toggle Status -->
+        <span class="text-[10px] text-muted-foreground/80 font-bold bg-muted/40 border border-border/30 px-3 py-1 rounded-md">
+          {activeTab === 'single' ? 'حساب واحد مفعل' : 'كافة الحسابات مفعله'}
+        </span>
+      </div>
+
+      <div class="flex flex-col gap-4 w-full">
+        
+        <!-- Row 1: Code and Name comboboxes side-by-side -->
+        <div class="flex gap-4 w-full">
+          <!-- Name combobox selector -->
+          <div class="flex-1 flex flex-col gap-1 text-[9px] font-bold text-muted-foreground combobox-container relative font-sans">
+            <span>اسم الحساب</span>
+            <div class="relative">
+              <input
+                type="text"
+                placeholder="ابحث بالاسم المكتوب لتصفية الشجرة..."
+                bind:value={accountNameQuery}
+                onfocus={() => isNameDropdownOpen = true}
+                disabled={activeTab !== "single" || isLoading}
+                class="w-full bg-background text-foreground border border-border rounded-md px-3 py-1 text-[11px] font-sans outline-none focus:ring-1 focus:ring-ring disabled:opacity-50 text-start cursor-pointer"
+              />
+              {#if isNameDropdownOpen && activeTab === "single" && !isLoading}
+                <div class="absolute z-50 left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-popover border border-border rounded-md shadow-lg flex flex-col p-1 text-[10px]" transition:fade={{ duration: 80 }}>
+                  {#if searchedAccountsByName.length === 0}
+                    <span class="text-[10px] text-muted-foreground p-2 text-center">لا توجد حسابات مطابقة</span>
+                  {:else}
+                    {#each searchedAccountsByName as acc (acc.id)}
+                      <button
+                        type="button"
+                        onclick={() => selectAccount(acc)}
+                        class="w-full text-start px-2 py-1 rounded hover:bg-accent hover:text-accent-foreground font-sans {selectedAccountId === acc.id ? 'bg-primary/10 text-primary font-bold' : 'text-foreground'}"
+                      >
+                        {acc.code} - {acc.name_ar || acc.name}
+                      </button>
+                    {/each}
+                  {/if}
+                </div>
+              {/if}
+            </div>
+          </div>
+
+          <!-- Code Search Combobox (shrunk) -->
+          <div class="flex flex-col gap-1 text-[9px] font-bold text-muted-foreground combobox-container relative w-1/4 max-w-[160px] min-w-[100px]">
+            <span>كود الحساب</span>
+            <div class="relative">
+              <input
+                type="text"
+                placeholder="الكود..."
+                bind:value={accountCodeQuery}
+                onfocus={() => isCodeDropdownOpen = true}
+                disabled={activeTab !== "single" || isLoading}
+                class="w-full bg-background text-foreground border border-border rounded-md px-2.5 py-1 text-[11px] font-mono outline-none focus:ring-1 focus:ring-ring disabled:opacity-50 text-start cursor-pointer"
+              />
+              {#if isCodeDropdownOpen && activeTab === "single" && !isLoading}
+                <div class="absolute z-50 left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-popover border border-border rounded-md shadow-lg flex flex-col p-1 text-[10px]" transition:fade={{ duration: 80 }}>
+                  {#if searchedAccountsByCode.length === 0}
+                    <span class="text-[10px] text-muted-foreground p-2 text-center">لا توجد حسابات</span>
+                  {:else}
+                    {#each searchedAccountsByCode as acc (acc.id)}
+                      <button
+                        type="button"
+                        onclick={() => selectAccount(acc)}
+                        class="w-full text-start px-2 py-1 rounded hover:bg-accent hover:text-accent-foreground font-mono {selectedAccountId === acc.id ? 'bg-primary/10 text-primary font-bold' : 'text-foreground'}"
+                      >
+                        {acc.code}
+                      </button>
+                    {/each}
+                  {/if}
+                </div>
+              {/if}
+            </div>
+          </div>
         </div>
 
-        <!-- 2. Currency Selector -->
-        <div class="flex flex-col gap-1 text-[10px] font-bold text-muted-foreground uppercase">
-          <span>{m.ledger_currency()}</span>
-          <select
-            bind:value={selectedCurrency}
-            class="bg-background text-foreground border border-border rounded-md px-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-ring min-w-32"
-          >
-            <option value="all">{m.ledger_all_currencies()}</option>
-            <option value="YER">YER (ريال يمني)</option>
-            <option value="SAR">SAR (سعودي)</option>
-            <option value="USD">USD (دولار)</option>
-            <option value="AED">AED (درهم)</option>
-          </select>
-        </div>
+        <!-- Row 2: Currency, Date, and Period Selectors -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- Currency Selector -->
+          <div class="flex flex-col gap-1 text-[9px] font-bold text-muted-foreground">
+            <span>{m.ledger_currency()}</span>
+            <select
+              bind:value={selectedCurrency}
+              class="bg-background text-foreground border border-border rounded-md px-2.5 py-1 text-[11px] outline-none focus:ring-1 focus:ring-ring font-sans w-full"
+            >
+              <option value="all">&lt;&lt;كافة العملات&gt;&gt;</option>
+              <option value="YER">YER (ريال يمني)</option>
+              <option value="SAR">SAR (سعودي)</option>
+              <option value="USD">USD (دولار)</option>
+              <option value="AED">AED (درهم)</option>
+            </select>
+          </div>
 
-        <!-- 3. Period selector & Date picker -->
-        <div class="flex flex-col gap-1 text-[10px] font-bold text-muted-foreground uppercase">
-          <span>{m.metrics_period()}</span>
-          <div class="flex gap-2">
+          <!-- Date picker -->
+          <div class="flex flex-col gap-1 text-[9px] font-bold text-muted-foreground">
+            <span>{selectedCurrency === "all" ? "حتى يوم" : "خلال يوم"}</span>
+            <Input
+              type="date"
+              bind:value={customStartDate}
+              class="input-sunken py-1 px-2.5 text-[11px] w-full"
+            />
+          </div>
+          
+          <!-- Period Selector -->
+          <div class="flex flex-col gap-1 text-[9px] font-bold text-muted-foreground">
+            <span>{m.metrics_period()}</span>
             <select
               bind:value={periodFilter}
-              class="bg-background text-foreground border border-border rounded-md px-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-ring min-w-28"
+              class="bg-background text-foreground border border-border rounded-md px-2.5 py-1 text-[11px] outline-none focus:ring-1 focus:ring-ring font-sans w-full"
             >
               <option value="all">{m.ledger_period_all()}</option>
               <option value="day">{m.ledger_period()}</option>
@@ -752,60 +1179,56 @@ function exitPage() {
               <option value="month">{m.ledger_period_month()}</option>
               <option value="year">{m.ledger_period_year()}</option>
             </select>
-            <Input
-              type="date"
-              bind:value={customStartDate}
-              class="input-sunken py-1 px-2.5 text-xs w-36"
-            />
           </div>
         </div>
-
-        <!-- 4. Account Type Filters -->
-        <div class="flex flex-col gap-1 text-[10px] font-bold text-muted-foreground uppercase">
-          <span>حالة الحركة</span>
-          <select
-            bind:value={movementFilter}
-            class="bg-background text-foreground border border-border rounded-md px-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-ring min-w-32"
-          >
-            <option value="all">كافة الحسابات</option>
-            <option value="active">المتحركة أرصدتهم</option>
-          </select>
-        </div>
-
-        <!-- 5. Balance Type -->
-        <div class="flex flex-col gap-1 text-[10px] font-bold text-muted-foreground uppercase">
-          <span>نوع الرصيد</span>
-          <select
-            bind:value={debtorCreditorFilter}
-            class="bg-background text-foreground border border-border rounded-md px-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-ring min-w-32"
-          >
-            <option value="all">المدينون والدائنون</option>
-            <option value="debtor">المدينون فقط</option>
-            <option value="creditor">الدائنون فقط</option>
-          </select>
-        </div>
       </div>
+    </div>
+  </div>
 
-      <!-- Template Save and Checkbox Row -->
-      <div class="flex items-center gap-4 border-t border-border/30 pt-3 select-none">
-        <label class="flex items-center gap-2 text-xs font-medium cursor-pointer select-none">
-          <input
-            type="checkbox"
-            bind:checked={showAllCurrenciesInNotes}
-            class="rounded border-border bg-background text-primary focus:ring-1 focus:ring-ring cursor-pointer h-4 w-4"
-          />
-          <span>{m.ledger_show_notes_balance()}</span>
-        </label>
+  <!-- Unified Toolbar Row under Filter Box -->
+  <div class="p-3 border-b border-border bg-card/35 flex justify-between items-center shrink-0 no-print select-none px-5">
+    <!-- Exit button on the left -->
+    <Button
+      variant="ghost"
+      class="text-xs h-9 px-5 border border-border flex items-center gap-2 bg-gradient-to-b hover:from-muted/20 hover:to-muted/30 font-bold text-red-500 hover:text-red-600 rounded-md shadow-sm"
+      onclick={exitPage}
+    >
+      <LogOut size={13} class={getLocale() === "ar" ? 'rotate-180' : ''} />
+      <span>{m.ledger_action_exit()}</span>
+    </Button>
 
-        <Button
-          variant="ghost"
-          class="text-[10px] h-8 px-3 border border-border flex items-center gap-1.5 font-bold"
-          onclick={saveTemplate}
-        >
-          <Save size={12} class="text-primary" />
-          <span>{m.ledger_save_template()}</span>
-        </Button>
-      </div>
+    <!-- Toolbar controls and Print actions -->
+    <div class="flex items-center gap-3">
+      <!-- 1. Print Selected -->
+      <Button
+        variant="ghost"
+        class="text-xs h-9 px-4 border border-border flex items-center gap-2 bg-gradient-to-b hover:from-muted/20 hover:to-muted/30 font-bold rounded-md shadow-sm"
+        onclick={handlePrint}
+      >
+        <Printer size={13} />
+        <span>{m.ledger_action_print_selected()}</span>
+      </Button>
+
+      <!-- 2. Print -->
+      <Button
+        variant="ghost"
+        class="text-xs h-9 px-4 border border-border flex items-center gap-2 bg-gradient-to-b hover:from-muted/20 hover:to-muted/30 font-bold rounded-md shadow-sm"
+        onclick={handlePrint}
+      >
+        <Printer size={13} />
+        <span>{m.ledger_action_print()}</span>
+      </Button>
+
+      <!-- 3. View / Show (Main Green Action) -->
+      <Button
+        variant="lime"
+        class="text-xs h-9 px-6 flex items-center gap-2 font-black bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-md shadow-md shadow-emerald-500/10 min-w-28 justify-center"
+        onclick={loadData}
+        disabled={isLoading}
+      >
+        <RotateCw size={13} class={isLoading ? 'animate-spin' : ''} />
+        <span>{m.ledger_action_view()}</span>
+      </Button>
     </div>
   </div>
 
@@ -839,181 +1262,358 @@ function exitPage() {
           <Button variant="outline" onclick={loadData} class="text-[10px] mt-2">{m.error_retry()}</Button>
         </div>
       {:else}
-        <!-- Excel Grid Sheet Ledger -->
-        <div class="border border-border rounded-xl bg-card/30 overflow-hidden min-w-[900px] print-table" in:fade={{ duration: 150 }}>
-          <Table class="border-collapse w-full">
-            <TableHeader class="bg-card">
-              <!-- Top Currency Header Row -->
-              <TableRow class="hover:bg-transparent border-b border-border/80">
-                <TableHead rowspan="2" class="w-10 border-r border-border/60 text-center font-bold text-foreground">*</TableHead>
-                <TableHead colspan="2" class="border-r border-border/60 text-center font-bold text-foreground bg-primary/5">ريال يمني</TableHead>
-                <TableHead colspan="2" class="border-r border-border/60 text-center font-bold text-foreground bg-emerald-500/5">سعودي</TableHead>
-                <TableHead colspan="2" class="border-r border-border/60 text-center font-bold text-foreground bg-blue-500/5">دولار</TableHead>
-                <TableHead colspan="2" class="border-r border-border/60 text-center font-bold text-foreground bg-purple-500/5">درهم</TableHead>
-                <TableHead rowspan="2" class="border-r border-border/60 text-start font-bold text-foreground">{m.ledger_col_name()}</TableHead>
-                <TableHead rowspan="2" class="border-r border-border/60 text-center font-bold text-foreground w-28">{m.ledger_col_code()}</TableHead>
-                <TableHead rowspan="2" class="text-start font-bold text-foreground w-64">{m.ledger_col_notes()}</TableHead>
-              </TableRow>
-              <!-- Sub-columns Debit / Credit -->
-              <TableRow class="hover:bg-transparent border-b border-border/80 text-[9px] font-bold">
-                <TableHead class="text-center border-r border-border/40 w-24 text-red-500">{m.ledger_col_debit()}</TableHead>
-                <TableHead class="text-center border-r border-border/60 w-24 text-emerald-500">{m.ledger_col_credit()}</TableHead>
-                <TableHead class="text-center border-r border-border/40 w-24 text-red-500">{m.ledger_col_debit()}</TableHead>
-                <TableHead class="text-center border-r border-border/60 w-24 text-emerald-500">{m.ledger_col_credit()}</TableHead>
-                <TableHead class="text-center border-r border-border/40 w-24 text-red-500">{m.ledger_col_debit()}</TableHead>
-                <TableHead class="text-center border-r border-border/60 w-24 text-emerald-500">{m.ledger_col_credit()}</TableHead>
-                <TableHead class="text-center border-r border-border/40 w-24 text-red-500">{m.ledger_col_debit()}</TableHead>
-                <TableHead class="text-center border-r border-border/60 w-24 text-emerald-500">{m.ledger_col_credit()}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {#each filteredLedgerRows as row, index (row.id)}
-                <TableRow class="hover:bg-accent/10 border-b border-border/40 text-[10px] leading-normal font-medium">
-                  <TableCell class="border-r border-border/40 text-center text-muted-foreground font-mono">{index + 1}</TableCell>
+        {#if activeTab === "all"}
+          {#if selectedCurrency === "all"}
+            <!-- Excel Grid Sheet Ledger -->
+            <div class="border border-border rounded-xl bg-card/30 overflow-hidden min-w-[900px] print-table" in:fade={{ duration: 150 }}>
+              <Table class="border-collapse w-full">
+                <TableHeader class="bg-card">
+                  <!-- Top Currency Header Row -->
+                  <TableRow class="hover:bg-transparent border-b border-border/80">
+                    <TableHead rowspan="2" class="w-10 border-r border-border/60 text-center font-bold text-foreground">*</TableHead>
+                    <TableHead colspan="2" class="border-r border-border/60 text-center font-bold text-foreground bg-primary/5">ريال يمني</TableHead>
+                    <TableHead colspan="2" class="border-r border-border/60 text-center font-bold text-foreground bg-emerald-500/5">سعودي</TableHead>
+                    <TableHead colspan="2" class="border-r border-border/60 text-center font-bold text-foreground bg-blue-500/5">دولار</TableHead>
+                    <TableHead colspan="2" class="border-r border-border/60 text-center font-bold text-foreground bg-purple-500/5">درهم</TableHead>
+                    <TableHead rowspan="2" class="border-r border-border/60 text-start font-bold text-foreground">{m.ledger_col_name()}</TableHead>
+                    <TableHead rowspan="2" class="border-r border-border/60 text-center font-bold text-foreground w-28">{m.ledger_col_code()}</TableHead>
+                    <TableHead rowspan="2" class="text-start font-bold text-foreground w-64">{m.ledger_col_notes()}</TableHead>
+                  </TableRow>
+                  <!-- Sub-columns Debit / Credit -->
+                  <TableRow class="hover:bg-transparent border-b border-border/80 text-[9px] font-bold">
+                    <TableHead class="text-center border-r border-border/40 w-24 text-red-500">{m.ledger_col_debit()}</TableHead>
+                    <TableHead class="text-center border-r border-border/60 w-24 text-emerald-500">{m.ledger_col_credit()}</TableHead>
+                    <TableHead class="text-center border-r border-border/40 w-24 text-red-500">{m.ledger_col_debit()}</TableHead>
+                    <TableHead class="text-center border-r border-border/60 w-24 text-emerald-500">{m.ledger_col_credit()}</TableHead>
+                    <TableHead class="text-center border-r border-border/40 w-24 text-red-500">{m.ledger_col_debit()}</TableHead>
+                    <TableHead class="text-center border-r border-border/60 w-24 text-emerald-500">{m.ledger_col_credit()}</TableHead>
+                    <TableHead class="text-center border-r border-border/40 w-24 text-red-500">{m.ledger_col_debit()}</TableHead>
+                    <TableHead class="text-center border-r border-border/60 w-24 text-emerald-500">{m.ledger_col_credit()}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {#each filteredLedgerRows as row, index (row.id)}
+                    <TableRow class="hover:bg-accent/10 border-b border-border/40 text-[10px] leading-normal font-medium">
+                      <TableCell class="border-r border-border/40 text-center text-muted-foreground font-mono">{index + 1}</TableCell>
+                      
+                      <!-- YER -->
+                      <TableCell class="border-r border-border/40 text-center font-mono {row.debit_yer > 0 ? 'text-foreground font-semibold' : 'text-muted-foreground/30'}">
+                        {row.debit_yer > 0 ? formatCurrency(row.debit_yer, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
+                      </TableCell>
+                      <TableCell class="border-r border-border/60 text-center font-mono {row.credit_yer > 0 ? 'text-foreground font-semibold' : 'text-muted-foreground/30'}">
+                        {row.credit_yer > 0 ? formatCurrency(row.credit_yer, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
+                      </TableCell>
+                      
+                      <!-- SAR -->
+                      <TableCell class="border-r border-border/40 text-center font-mono {row.debit_sar > 0 ? 'text-foreground font-semibold' : 'text-muted-foreground/30'}">
+                        {row.debit_sar > 0 ? formatCurrency(row.debit_sar, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
+                      </TableCell>
+                      <TableCell class="border-r border-border/60 text-center font-mono {row.credit_sar > 0 ? 'text-foreground font-semibold' : 'text-muted-foreground/30'}">
+                        {row.credit_sar > 0 ? formatCurrency(row.credit_sar, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
+                      </TableCell>
+    
+                      <!-- USD -->
+                      <TableCell class="border-r border-border/40 text-center font-mono {row.debit_usd > 0 ? 'text-foreground font-semibold' : 'text-muted-foreground/30'}">
+                        {row.debit_usd > 0 ? formatCurrency(row.debit_usd, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
+                      </TableCell>
+                      <TableCell class="border-r border-border/60 text-center font-mono {row.credit_usd > 0 ? 'text-foreground font-semibold' : 'text-muted-foreground/30'}">
+                        {row.credit_usd > 0 ? formatCurrency(row.credit_usd, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
+                      </TableCell>
+    
+                      <!-- AED -->
+                      <TableCell class="border-r border-border/40 text-center font-mono {row.debit_aed > 0 ? 'text-foreground font-semibold' : 'text-muted-foreground/30'}">
+                        {row.debit_aed > 0 ? formatCurrency(row.debit_aed, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
+                      </TableCell>
+                      <TableCell class="border-r border-border/60 text-center font-mono {row.credit_aed > 0 ? 'text-foreground font-semibold' : 'text-muted-foreground/30'}">
+                        {row.credit_aed > 0 ? formatCurrency(row.credit_aed, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
+                      </TableCell>
+    
+                      <!-- Name and Code -->
+                      <TableCell class="border-r border-border/40 text-start font-semibold text-foreground">{row.name_ar}</TableCell>
+                      <TableCell class="border-r border-border/40 text-center font-mono text-foreground font-bold">{row.code}</TableCell>
+                      
+                      <!-- Notes -->
+                      <TableCell class="text-start text-muted-foreground select-text text-[9px] line-clamp-1 py-1 truncate">
+                        {row.notes || "-"}
+                      </TableCell>
+                    </TableRow>
+                  {/each}
+                </TableBody>
+    
+                <!-- Table Footer Totals -->
+                <tfoot>
+                  <TableRow class="bg-card hover:bg-transparent font-bold font-mono text-[10px] border-t-2 border-border/90">
+                    <TableCell class="border-r border-border/40 text-center text-foreground">Σ</TableCell>
+                    
+                    <!-- YER Total -->
+                    <TableCell class="border-r border-border/40 text-center text-red-500 font-bold">
+                      {totals.debY > 0 ? formatCurrency(totals.debY, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
+                    </TableCell>
+                    <TableCell class="border-r border-border/60 text-center text-emerald-500 font-bold">
+                      {totals.credY > 0 ? formatCurrency(totals.credY, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
+                    </TableCell>
+    
+                    <!-- SAR Total -->
+                    <TableCell class="border-r border-border/40 text-center text-red-500 font-bold">
+                      {totals.debS > 0 ? formatCurrency(totals.debS, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
+                    </TableCell>
+                    <TableCell class="border-r border-border/60 text-center text-emerald-500 font-bold">
+                      {totals.credS > 0 ? formatCurrency(totals.credS, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
+                    </TableCell>
+    
+                    <!-- USD Total -->
+                    <TableCell class="border-r border-border/40 text-center text-red-500 font-bold">
+                      {totals.debU > 0 ? formatCurrency(totals.debU, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
+                    </TableCell>
+                    <TableCell class="border-r border-border/60 text-center text-emerald-500 font-bold">
+                      {totals.credU > 0 ? formatCurrency(totals.credU, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
+                    </TableCell>
+    
+                    <!-- AED Total -->
+                    <TableCell class="border-r border-border/40 text-center text-red-500 font-bold">
+                      {totals.debA > 0 ? formatCurrency(totals.debA, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
+                    </TableCell>
+                    <TableCell class="border-r border-border/60 text-center text-emerald-500 font-bold">
+                      {totals.credA > 0 ? formatCurrency(totals.credA, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
+                    </TableCell>
+    
+                    <TableCell class="border-r border-border/40 text-start text-foreground uppercase tracking-wider text-[9px]">{getLocale() === "ar" ? "الإجـمــالي" : "Grand Total"}</TableCell>
+                    <TableCell class="border-r border-border/40 text-center text-foreground font-bold">-</TableCell>
+                    <TableCell class="text-start text-muted-foreground">-</TableCell>
+                  </TableRow>
+                </tfoot>
+              </Table>
+            </div>
+          {:else}
+            <!-- Table A2: Single-currency Ledger Grid for All Accounts -->
+            <div class="border border-border rounded-xl bg-card/30 overflow-hidden min-w-[900px] print-table" in:fade={{ duration: 150 }}>
+              <Table class="border-collapse w-full">
+                <TableHeader class="bg-card">
+                  <TableRow class="hover:bg-transparent border-b border-border/80 text-[10px] font-bold text-foreground">
+                    <TableHead class="w-10 border-r border-border/60 text-center font-bold">*</TableHead>
+                    <TableHead class="text-center border-r border-border/60 w-28 text-red-500">{m.ledger_col_debit()}</TableHead>
+                    <TableHead class="text-center border-r border-border/60 w-28 text-emerald-500">{m.ledger_col_credit()}</TableHead>
+                    <TableHead class="text-center border-r border-border/60 w-32 font-bold">{getLocale() === "ar" ? "الرصيد" : "Balance"}</TableHead>
+                    <TableHead class="text-start border-r border-border/60 font-bold">{m.ledger_col_name()}</TableHead>
+                    <TableHead class="text-center border-r border-border/60 w-28 font-bold">{m.ledger_col_code()}</TableHead>
+                    <TableHead class="text-start font-bold w-64">{m.ledger_col_notes()}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {#each tableA2Rows as row, index (row.id)}
+                    <TableRow class="hover:bg-accent/10 border-b border-border/40 text-[10px] leading-normal font-medium">
+                      <TableCell class="border-r border-border/40 text-center text-muted-foreground font-mono">{index + 1}</TableCell>
+                      <TableCell class="border-r border-border/40 text-center font-mono {row.debit > 0 ? 'text-foreground font-semibold' : 'text-muted-foreground/30'}">
+                        {row.debit > 0 ? formatCurrency(row.debit, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
+                      </TableCell>
+                      <TableCell class="border-r border-border/60 text-center font-mono {row.credit > 0 ? 'text-foreground font-semibold' : 'text-muted-foreground/30'}">
+                        {row.credit > 0 ? formatCurrency(row.credit, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
+                      </TableCell>
+                      <TableCell class="border-r border-border/60 text-center font-mono font-bold text-foreground">
+                        {formatCurrency(row.balance, "").replace(/YER|USD|SAR|AED/g, '')} <span class="text-[9px] text-muted-foreground/80 font-sans">{row.balance_label}</span>
+                      </TableCell>
+                      <TableCell class="border-r border-border/40 text-start font-semibold text-foreground">{row.name_ar}</TableCell>
+                      <TableCell class="border-r border-border/40 text-center font-mono text-foreground font-bold">{row.code}</TableCell>
+                      <TableCell class="text-start text-muted-foreground select-text text-[9px] line-clamp-1 py-1 truncate">
+                        {row.notes || "-"}
+                      </TableCell>
+                    </TableRow>
+                  {/each}
+                </TableBody>
+                <tfoot>
+                  <TableRow class="bg-card hover:bg-transparent font-bold font-mono text-[10px] border-t-2 border-border/90">
+                    <TableCell class="border-r border-border/40 text-center text-foreground">Σ</TableCell>
+                    <TableCell class="border-r border-border/40 text-center text-red-500 font-bold">
+                      {tableA2Totals.debit > 0 ? formatCurrency(tableA2Totals.debit, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
+                    </TableCell>
+                    <TableCell class="border-r border-border/60 text-center text-emerald-500 font-bold">
+                      {tableA2Totals.credit > 0 ? formatCurrency(tableA2Totals.credit, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
+                    </TableCell>
+                    <TableCell class="border-r border-border/60 text-center text-foreground font-bold">
+                      {formatCurrency(tableA2Totals.balance, "").replace(/YER|USD|SAR|AED/g, '')} <span class="text-[9px] text-muted-foreground font-sans">{tableA2Totals.balance_label}</span>
+                    </TableCell>
+                    <TableCell class="border-r border-border/40 text-start text-foreground uppercase tracking-wider text-[9px]">{getLocale() === "ar" ? "الإجـمــالي" : "Grand Total"}</TableCell>
+                    <TableCell class="border-r border-border/40 text-center text-foreground font-bold">-</TableCell>
+                    <TableCell class="text-start text-muted-foreground">-</TableCell>
+                  </TableRow>
+                </tfoot>
+              </Table>
+            </div>
+          {/if}
+        {:else}
+          <!-- Single Account View Swapped Layout -->
+          <div class="border border-border rounded-xl bg-card/30 overflow-hidden min-w-[900px] print-table" in:fade={{ duration: 150 }}>
+            {#if selectedCurrency === "all"}
+              <!-- Table B: Currency Summary Grid -->
+              <Table class="border-collapse w-full">
+                <TableHeader class="bg-card">
+                  <TableRow class="hover:bg-transparent border-b border-border/80 text-[10px] font-bold text-foreground">
+                    <TableHead class="w-12 text-center font-bold border-r border-border/60">*</TableHead>
+                    <TableHead colspan="2" class="text-center font-bold border-r border-border/60">{getLocale() === "ar" ? "المبلـغ" : "Amount"}</TableHead>
+                    <TableHead class="text-center font-bold border-r border-border/60 w-32">{getLocale() === "ar" ? "الالعملة" : "Currency"}</TableHead>
+                    <TableHead colspan="2" class="text-center font-bold border-r border-border/60">{getLocale() === "ar" ? "المقابل بالريال اليمني" : "Equivalent in YER"}</TableHead>
+                    <TableHead class="text-start font-bold">{getLocale() === "ar" ? "البيان" : "Description"}</TableHead>
+                  </TableRow>
+                  <TableRow class="hover:bg-transparent border-b border-border/80 text-[9px] font-bold">
+                    <TableHead class="border-r border-border/60 text-center">-</TableHead>
+                    <TableHead class="text-center border-r border-border/45 text-red-500 w-24">{m.ledger_col_debit()}</TableHead>
+                    <TableHead class="text-center border-r border-border/60 text-emerald-500 w-24">{m.ledger_col_credit()}</TableHead>
+                    <TableHead class="border-r border-border/60 text-center">-</TableHead>
+                    <TableHead class="text-center border-r border-border/45 text-red-500 w-28">{m.ledger_col_debit()}</TableHead>
+                    <TableHead class="text-center border-r border-border/60 text-emerald-500 w-28">{m.ledger_col_credit()}</TableHead>
+                    <TableHead class="text-start">-</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {#each currencySummaryRows as row, index}
+                    <TableRow class="hover:bg-accent/10 border-b border-border/40 text-[10px] leading-normal font-medium">
+                      <TableCell class="border-r border-border/40 text-center text-muted-foreground font-mono">{index + 1}</TableCell>
+                      
+                      <!-- Original Amount -->
+                      <TableCell class="border-r border-border/40 text-center font-mono {row.debit > 0 ? 'text-foreground font-semibold' : 'text-muted-foreground/30'}">
+                        {row.debit > 0 ? formatCurrency(row.debit, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
+                      </TableCell>
+                      <TableCell class="border-r border-border/60 text-center font-mono {row.credit > 0 ? 'text-foreground font-semibold' : 'text-muted-foreground/30'}">
+                        {row.credit > 0 ? formatCurrency(row.credit, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
+                      </TableCell>
+                      
+                      <!-- Currency -->
+                      <TableCell class="border-r border-border/60 text-center font-semibold text-foreground">{row.currency}</TableCell>
+                      
+                      <!-- Equivalent Amount YER -->
+                      <TableCell class="border-r border-border/40 text-center font-mono {row.debit_eq > 0 ? 'text-foreground font-semibold' : 'text-muted-foreground/30'}">
+                        {row.debit_eq > 0 ? formatCurrency(row.debit_eq, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
+                      </TableCell>
+                      <TableCell class="border-r border-border/60 text-center font-mono {row.credit_eq > 0 ? 'text-foreground font-semibold' : 'text-muted-foreground/30'}">
+                        {row.credit_eq > 0 ? formatCurrency(row.credit_eq, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
+                      </TableCell>
+                      
+                      <!-- Notes -->
+                      <TableCell class="text-start text-muted-foreground font-medium">{row.notes}</TableCell>
+                    </TableRow>
+                  {/each}
+                </TableBody>
+                <tfoot>
+                  <!-- Equivalent Totals -->
+                  <TableRow class="bg-card hover:bg-transparent font-bold font-mono text-[10px] border-t-2 border-border/90">
+                    <TableCell class="border-r border-border/40 text-center text-foreground font-semibold">Σ</TableCell>
+                    <TableCell class="border-r border-border/40 text-center text-muted-foreground/40">-</TableCell>
+                    <TableCell class="border-r border-border/60 text-center text-muted-foreground/40">-</TableCell>
+                    <TableCell class="border-r border-border/60 text-center text-foreground font-bold">{getLocale() === "ar" ? "الإجـمــالي" : "Total"}</TableCell>
+                    <TableCell class="border-r border-border/40 text-center text-red-500 font-bold">
+                      {summaryTotals.debit_eq > 0 ? formatCurrency(summaryTotals.debit_eq, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
+                    </TableCell>
+                    <TableCell class="border-r border-border/60 text-center text-emerald-500 font-bold">
+                      {summaryTotals.credit_eq > 0 ? formatCurrency(summaryTotals.credit_eq, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
+                    </TableCell>
+                    <TableCell class="text-start text-muted-foreground">-</TableCell>
+                  </TableRow>
                   
-                  <!-- YER -->
-                  <TableCell class="border-r border-border/40 text-center font-mono {row.debit_yer > 0 ? 'text-foreground font-semibold' : 'text-muted-foreground/30'}">
-                    {row.debit_yer > 0 ? formatCurrency(row.debit_yer, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
-                  </TableCell>
-                  <TableCell class="border-r border-border/60 text-center font-mono {row.credit_yer > 0 ? 'text-foreground font-semibold' : 'text-muted-foreground/30'}">
-                    {row.credit_yer > 0 ? formatCurrency(row.credit_yer, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
-                  </TableCell>
-                  
-                  <!-- SAR -->
-                  <TableCell class="border-r border-border/40 text-center font-mono {row.debit_sar > 0 ? 'text-foreground font-semibold' : 'text-muted-foreground/30'}">
-                    {row.debit_sar > 0 ? formatCurrency(row.debit_sar, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
-                  </TableCell>
-                  <TableCell class="border-r border-border/60 text-center font-mono {row.credit_sar > 0 ? 'text-foreground font-semibold' : 'text-muted-foreground/30'}">
-                    {row.credit_sar > 0 ? formatCurrency(row.credit_sar, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
-                  </TableCell>
-
-                  <!-- USD -->
-                  <TableCell class="border-r border-border/40 text-center font-mono {row.debit_usd > 0 ? 'text-foreground font-semibold' : 'text-muted-foreground/30'}">
-                    {row.debit_usd > 0 ? formatCurrency(row.debit_usd, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
-                  </TableCell>
-                  <TableCell class="border-r border-border/60 text-center font-mono {row.credit_usd > 0 ? 'text-foreground font-semibold' : 'text-muted-foreground/30'}">
-                    {row.credit_usd > 0 ? formatCurrency(row.credit_usd, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
-                  </TableCell>
-
-                  <!-- AED -->
-                  <TableCell class="border-r border-border/40 text-center font-mono {row.debit_aed > 0 ? 'text-foreground font-semibold' : 'text-muted-foreground/30'}">
-                    {row.debit_aed > 0 ? formatCurrency(row.debit_aed, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
-                  </TableCell>
-                  <TableCell class="border-r border-border/60 text-center font-mono {row.credit_aed > 0 ? 'text-foreground font-semibold' : 'text-muted-foreground/30'}">
-                    {row.credit_aed > 0 ? formatCurrency(row.credit_aed, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
-                  </TableCell>
-
-                  <!-- Name and Code -->
-                  <TableCell class="border-r border-border/40 text-start font-semibold text-foreground">{row.name_ar}</TableCell>
-                  <TableCell class="border-r border-border/40 text-center font-mono text-foreground font-bold">{row.code}</TableCell>
-                  
-                  <!-- Notes -->
-                  <TableCell class="text-start text-muted-foreground select-text text-[9px] line-clamp-1 py-1 truncate">
-                    {showAllCurrenciesInNotes 
-                      ? `${row.notes || ''} (YER: ${row.debit_yer - row.credit_yer} | USD: ${row.debit_usd - row.credit_usd})` 
-                      : (row.notes || "-")}
-                  </TableCell>
-                </TableRow>
-              {/each}
-            </TableBody>
-
-            <!-- Table Footer Totals -->
-            <tfoot>
-              <TableRow class="bg-card hover:bg-transparent font-bold font-mono text-[10px] border-t-2 border-border/90">
-                <TableCell class="border-r border-border/40 text-center text-foreground">Σ</TableCell>
-                
-                <!-- YER Total -->
-                <TableCell class="border-r border-border/40 text-center text-red-500 font-bold">
-                  {totals.debY > 0 ? formatCurrency(totals.debY, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
-                </TableCell>
-                <TableCell class="border-r border-border/60 text-center text-emerald-500 font-bold">
-                  {totals.credY > 0 ? formatCurrency(totals.credY, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
-                </TableCell>
-
-                <!-- SAR Total -->
-                <TableCell class="border-r border-border/40 text-center text-red-500 font-bold">
-                  {totals.debS > 0 ? formatCurrency(totals.debS, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
-                </TableCell>
-                <TableCell class="border-r border-border/60 text-center text-emerald-500 font-bold">
-                  {totals.credS > 0 ? formatCurrency(totals.credS, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
-                </TableCell>
-
-                <!-- USD Total -->
-                <TableCell class="border-r border-border/40 text-center text-red-500 font-bold">
-                  {totals.debU > 0 ? formatCurrency(totals.debU, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
-                </TableCell>
-                <TableCell class="border-r border-border/60 text-center text-emerald-500 font-bold">
-                  {totals.credU > 0 ? formatCurrency(totals.credU, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
-                </TableCell>
-
-                <!-- AED Total -->
-                <TableCell class="border-r border-border/40 text-center text-red-500 font-bold">
-                  {totals.debA > 0 ? formatCurrency(totals.debA, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
-                </TableCell>
-                <TableCell class="border-r border-border/60 text-center text-emerald-500 font-bold">
-                  {totals.credA > 0 ? formatCurrency(totals.credA, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
-                </TableCell>
-
-                <TableCell class="border-r border-border/40 text-start text-foreground uppercase tracking-wider text-[9px]">{getLocale() === "ar" ? "الإجـمــالي" : "Grand Total"}</TableCell>
-                <TableCell class="border-r border-border/40 text-center text-foreground font-bold">-</TableCell>
-                <TableCell class="text-start text-muted-foreground">-</TableCell>
-              </TableRow>
-            </tfoot>
-          </Table>
-        </div>
+                  <!-- Net Balance Row -->
+                  <TableRow class="bg-card hover:bg-transparent font-bold font-mono text-[10px] border-t border-border/50">
+                    <TableCell class="border-r border-border/40 text-center text-foreground font-semibold">♣</TableCell>
+                    <TableCell class="border-r border-border/40 text-center text-muted-foreground/40">-</TableCell>
+                    <TableCell class="border-r border-border/60 text-center text-muted-foreground/40">-</TableCell>
+                    <TableCell class="border-r border-border/60 text-center text-foreground font-bold">{getLocale() === "ar" ? "الرصيـد" : "Balance"}</TableCell>
+                    
+                    <!-- Net Debit -->
+                    <TableCell class="border-r border-border/40 text-center text-red-500 font-bold">
+                      {summaryTotals.balance_type === "debtor" ? formatCurrency(summaryTotals.balance, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
+                    </TableCell>
+                    <!-- Net Credit -->
+                    <TableCell class="border-r border-border/60 text-center text-emerald-500 font-bold">
+                      {summaryTotals.balance_type === "creditor" ? formatCurrency(summaryTotals.balance, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
+                    </TableCell>
+                    
+                    <!-- Arabic spelled numbers -->
+                    <TableCell class="text-start font-medium text-primary text-[9px] font-sans px-3">
+                      {balanceText}
+                    </TableCell>
+                  </TableRow>
+                </tfoot>
+              </Table>
+            {:else}
+              <!-- Table C: Detailed Transaction Ledger -->
+              <Table class="border-collapse w-full">
+                <TableHeader class="bg-card">
+                  <TableRow class="hover:bg-transparent border-b border-border/80 text-[10px] font-bold text-foreground">
+                    <TableHead class="w-28 text-center text-red-500 border-r border-border/60">{m.ledger_col_debit()}</TableHead>
+                    <TableHead class="w-28 text-center text-emerald-500 border-r border-border/60">{m.ledger_col_credit()}</TableHead>
+                    <TableHead class="w-36 text-center text-foreground border-r border-border/60">{getLocale() === "ar" ? "الرصيد" : "Balance"}</TableHead>
+                    <TableHead class="w-20 text-center text-foreground border-r border-border/60">{getLocale() === "ar" ? "حالته" : "Status"}</TableHead>
+                    <TableHead class="w-28 text-center text-foreground border-r border-border/60">{getLocale() === "ar" ? "التاريخ" : "Date"}</TableHead>
+                    <TableHead class="w-32 text-center text-foreground border-r border-border/60">{getLocale() === "ar" ? "المستند" : "Voucher"}</TableHead>
+                    <TableHead class="w-24 text-center text-foreground border-r border-border/60">{getLocale() === "ar" ? "رقمه" : "No."}</TableHead>
+                    <TableHead class="text-start text-foreground">{getLocale() === "ar" ? "البيان" : "Description"}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {#if ledgerTransactions.length === 0}
+                    <TableRow>
+                      <TableCell colspan="8" class="text-center py-10 text-muted-foreground text-xs font-semibold">لا توجد قيود أو حركات مطابقة لهذا الحساب بالفترة المحددة</TableCell>
+                    </TableRow>
+                  {:else}
+                    {#each ledgerTransactions as row}
+                      <TableRow class="hover:bg-accent/10 border-b border-border/40 text-[10px] leading-normal font-medium">
+                        <!-- Debit -->
+                        <TableCell class="border-r border-border/40 text-center font-mono text-red-500/90 font-semibold">
+                          {row.debit > 0 ? formatCurrency(row.debit, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
+                        </TableCell>
+                        <!-- Credit -->
+                        <TableCell class="border-r border-border/60 text-center font-mono text-emerald-500/90 font-semibold">
+                          {row.credit > 0 ? formatCurrency(row.credit, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
+                        </TableCell>
+                        <!-- Balance -->
+                        <TableCell class="border-r border-border/60 text-center font-mono font-bold text-foreground">
+                          {formatCurrency(row.balance, "").replace(/YER|USD|SAR|AED/g, '')} <span class="text-[9px] text-muted-foreground/80 font-sans">{row.balance_label}</span>
+                        </TableCell>
+                        <!-- Status -->
+                        <TableCell class="border-r border-border/60 text-center text-emerald-500 text-[9px] font-sans">✓</TableCell>
+                        <!-- Date -->
+                        <TableCell class="border-r border-border/60 text-center font-mono text-muted-foreground text-[9px]">{row.date}</TableCell>
+                        <!-- Document -->
+                        <TableCell class="border-r border-border/60 text-center text-foreground font-semibold text-[9px]">{row.document}</TableCell>
+                        <!-- Number -->
+                        <TableCell class="border-r border-border/60 text-center font-mono text-muted-foreground text-[9px]">{row.number}</TableCell>
+                        <!-- Description -->
+                        <TableCell class="text-start text-foreground select-text font-medium text-[9px] line-clamp-1 py-1 truncate">{row.description}</TableCell>
+                      </TableRow>
+                    {/each}
+                  {/if}
+                </TableBody>
+                <tfoot>
+                  <TableRow class="bg-card hover:bg-transparent font-bold font-mono text-[10px] border-t-2 border-border/90">
+                    <!-- Total Debit -->
+                    <TableCell class="border-r border-border/40 text-center text-red-500 font-bold">
+                      {detailedTotals.debit > 0 ? formatCurrency(detailedTotals.debit, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
+                    </TableCell>
+                    <!-- Total Credit -->
+                    <TableCell class="border-r border-border/60 text-center text-emerald-500 font-bold">
+                      {detailedTotals.credit > 0 ? formatCurrency(detailedTotals.credit, "").replace(/YER|USD|SAR|AED/g, '') : "0"}
+                    </TableCell>
+                    <!-- Net Balance -->
+                    <TableCell class="border-r border-border/60 text-center text-foreground font-bold">
+                      {formatCurrency(detailedTotals.balance, "").replace(/YER|USD|SAR|AED/g, '')} <span class="text-[9px] text-muted-foreground font-sans">{detailedTotals.balance_label}</span>
+                    </TableCell>
+                    <TableCell class="border-r border-border/60 text-center text-muted-foreground/40">-</TableCell>
+                    <TableCell class="border-r border-border/60 text-center text-muted-foreground/40">-</TableCell>
+                    <TableCell class="border-r border-border/60 text-center text-foreground uppercase tracking-wider text-[9px]">{getLocale() === "ar" ? "الإجـمــالي" : "Grand Total"}</TableCell>
+                    <TableCell class="border-r border-border/60 text-center text-muted-foreground/40">-</TableCell>
+                    <TableCell class="text-start text-muted-foreground font-sans text-[9px] px-3 font-medium text-primary">
+                      {getLocale() === "ar" ? "صافي رصيد كشف الحساب التفصيلي الموضح" : "Net detailed account ledger balance summary"}
+                    </TableCell>
+                  </TableRow>
+                </tfoot>
+              </Table>
+            {/if}
+          </div>
+        {/if}
       {/if}
     </div>
 
 
   </div>
 
-  <!-- Bottom Action Panel Button Row -->
-  <div class="p-4 border-t border-border bg-card/25 flex justify-between items-center shrink-0 no-print select-none">
-    
-    <!-- Left actions (Exit) -->
-    <Button
-      variant="ghost"
-      class="text-xs h-9 px-4 border border-border flex items-center gap-2 bg-gradient-to-b hover:from-muted/20 hover:to-muted/30 font-semibold"
-      onclick={exitPage}
-    >
-      <LogOut size={13} class={getLocale() === "ar" ? 'rotate-180' : ''} />
-      <span>{m.ledger_action_exit()}</span>
-    </Button>
-
-    <!-- Right actions (View / Prints) -->
-    <div class="flex gap-3">
-      <!-- 1. Print Selected -->
-      <Button
-        variant="ghost"
-        class="text-xs h-9 px-4 border border-border flex items-center gap-2 bg-gradient-to-b hover:from-muted/20 hover:to-muted/30 font-semibold"
-        onclick={handlePrint}
-      >
-        <Printer size={13} />
-        <span>{m.ledger_action_print_selected()}</span>
-      </Button>
-
-      <!-- 2. Print -->
-      <Button
-        variant="ghost"
-        class="text-xs h-9 px-4 border border-border flex items-center gap-2 bg-gradient-to-b hover:from-muted/20 hover:to-muted/30 font-semibold"
-        onclick={handlePrint}
-      >
-        <Printer size={13} />
-        <span>{m.ledger_action_print()}</span>
-      </Button>
-
-      <!-- 3. Show / Refresh (Main Action) -->
-      <Button
-        variant="lime"
-        class="text-xs h-9 px-5 flex items-center gap-2 font-bold bg-gradient-to-b from-brand-lime to-brand-lime/80 shadow-sm"
-        onclick={loadData}
-        disabled={isLoading}
-      >
-        <RotateCw size={13} class={isLoading ? 'animate-spin' : ''} />
-        <span>{m.ledger_action_view()}</span>
-      </Button>
-    </div>
-  </div>
 </div>
 
 <style>
