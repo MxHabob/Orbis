@@ -317,7 +317,7 @@ function formatTime(seconds: number): string {
 			</span>
 		</div>
 		<span class="text-[9px] font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded-full uppercase tracking-wider">
-			Timefold v2.0
+			Orbis AI v1.0
 		</span>
 	</div>
 

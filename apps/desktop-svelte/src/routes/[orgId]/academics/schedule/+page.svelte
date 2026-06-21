@@ -347,7 +347,7 @@ function openScheduler(day: number, slotId: string) {
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6">
 	<!-- Layout Grid: Main Content Column + AI Scheduler Column -->
-	<div class="flex flex-col lg:flex-row gap-6 items-start w-full">
+	<div class="flex flex-col lg:flex-row gap-6 items-stretch w-full">
 		
 		<!-- Main Schedule Panel Column -->
 		<div class="flex-1 min-w-0 w-full flex flex-col gap-6">
@@ -433,7 +433,7 @@ function openScheduler(day: number, slotId: string) {
 		</div>
 
 		<!-- AI Auto-Scheduler Sidebar Panel (Fixed Side) -->
-		{#if !isLoading && !error}
+		<!-- {#if !isLoading && !error}
 			<SchedulerAiPanel
 				orgId={data.orgId}
 				cycleId={activeCycleId}
@@ -445,7 +445,7 @@ function openScheduler(day: number, slotId: string) {
 				bind:activeJob={activeJob}
 				onApply={loadScheduleLessons}
 			/>
-		{/if}
+		{/if} -->
 	</div>
 </div>
 
