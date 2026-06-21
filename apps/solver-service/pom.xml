@@ -55,6 +55,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jackson-kotlin</artifactId>
+            <version>${quarkus.platform.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
