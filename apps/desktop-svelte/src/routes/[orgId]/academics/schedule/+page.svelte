@@ -17,6 +17,7 @@ import { getLocale } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
 import LessonCreateSheet from "$lib/components/academics/lesson-create-sheet.svelte";
 import SchedulerAiPanel from "$lib/components/academics/scheduler-ai-panel.svelte";
+import { Timetable } from "@orbis/ui-svelte/timetable";
 import * as m from "$lib/paraglide/messages";
 
 let { data }: { data: { orgId: string } } = $props();
@@ -46,9 +47,7 @@ let activeSlotId = $state<string>("");
 let activeJob = $state<any>(null);
 let previewDraft = $state(false);
 
-// Drag & Drop State
-let draggedLesson = $state<any>(null);
-let dragOverCell = $state<{ day: number; slotId: string } | null>(null);
+
 
 const weekdays = $derived([
   { value: 1, label: m.schedule_page_day_sun() },
@@ -189,42 +188,7 @@ async function loadScheduleLessons() {
   }
 }
 
-// Drag & Drop Handlers
-function handleDragStart(e: DragEvent, lesson: any) {
-  if (lesson.isDraft) {
-    e.preventDefault();
-    return;
-  }
-  draggedLesson = lesson;
-  if (e.dataTransfer) {
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", lesson.id);
-  }
-}
-
-function handleDragOver(e: DragEvent, day: number, slotId: string) {
-  e.preventDefault();
-  if (draggedLesson) {
-    dragOverCell = { day, slotId };
-  }
-}
-
-function handleDragLeave() {
-  dragOverCell = null;
-}
-
-async function handleDrop(e: DragEvent, targetDay: number, targetSlotId: string) {
-  e.preventDefault();
-  dragOverCell = null;
-  
-  if (!draggedLesson) return;
-  const lesson = draggedLesson;
-  draggedLesson = null;
-  
-  if (Number(lesson.day_of_week) === targetDay && String(lesson.time_slot_id) === String(targetSlotId)) {
-    return;
-  }
-  
+async function handleMoveLesson(lesson: any, targetDay: number, targetSlotId: string) {
   try {
     toast.loading(getLocale() === "ar" ? "جاري التحقق من وجود تضاربات..." : "Checking for conflicts...");
     const conflicts = await commands.schedule.checkConflicts({
@@ -284,14 +248,7 @@ $effect(() => {
   }
 });
 
-// Get lesson inside cell
-function getLessonInCell(day: number, slotId: string) {
-  if (previewDraft) {
-    const draft = draftLessonsInGrid.find((l: any) => Number(l.day_of_week) === day && String(l.time_slot_id) === String(slotId));
-    if (draft) return draft;
-  }
-  return lessons.find((l) => Number(l.day_of_week) === day && String(l.time_slot_id) === String(slotId));
-}
+
 
 // Get labels
 function getSubjectName(subjectId: string) {
@@ -402,105 +359,21 @@ function openScheduler(day: number, slotId: string) {
 					<Button variant="outline" class="text-xs" onclick={initializeSchedule}>{m.error_retry()}</Button>
 				</div>
 			{:else}
-				<!-- Weekly Schedule Matrix -->
-				<div class="flex-1 overflow-x-auto min-h-0 border border-border rounded-xl bg-card/10" in:fade={{ duration: 200 }}>
-					<table class="w-full border-collapse text-xs select-none min-w-[700px] h-full table-fixed">
-						<thead>
-							<tr class="bg-card border-b border-border">
-								<!-- Time Slots Column Header -->
-								<th class="p-3 font-bold text-muted-foreground uppercase text-[10px] border-r border-border text-center w-36">
-									{m.schedule_page_col_period()}
-								</th>
-								<!-- Weekdays Column Headers -->
-								{#each weekdays as day (day.value)}
-									<th class="p-3 font-bold text-muted-foreground uppercase text-[10px] text-center border-r border-border last:border-r-0">
-										{day.label}
-									</th>
-								{/each}
-							</tr>
-						</thead>
-						<tbody>
-							{#each timeSlots as slot (slot.id)}
-								<tr class="border-b border-border last:border-b-0 hover:bg-card/5">
-									<!-- Period Info Cell -->
-									<td class="p-3 border-r border-border font-medium text-center bg-card/20 flex flex-col justify-center items-center gap-1.5 h-24">
-										<span class="font-bold text-foreground">{getLocale() === "ar" ? (slot.name_ar || slot.name) : (slot.name || slot.name_ar)}</span>
-										<span class="text-[9px] text-muted-foreground font-mono bg-background px-1.5 py-0.5 rounded border border-border/80 flex items-center gap-1">
-											<Clock size={8} />
-											<span>{slot.start_time} - {slot.end_time}</span>
-										</span>
-									</td>
-
-									<!-- Days Cells -->
-									{#each weekdays as day (day.value)}
-										{@const lesson = getLessonInCell(day.value, slot.id)}
-										<td 
-											class="p-2 border-r border-border last:border-r-0 text-center align-middle h-24 relative group transition-colors duration-150
-												{dragOverCell?.day === day.value && dragOverCell?.slotId === slot.id ? 'bg-primary/10 border-primary border-dashed border-2' : ''}"
-											ondragover={(e) => handleDragOver(e, day.value, slot.id)}
-											ondragleave={handleDragLeave}
-											ondrop={(e) => handleDrop(e, day.value, slot.id)}
-										>
-											{#if lesson}
-												<!-- Scheduled Lesson Card -->
-												<div 
-													draggable={!lesson.isDraft}
-													ondragstart={(e) => handleDragStart(e, lesson)}
-													class="card-tactile p-2 rounded-lg flex flex-col justify-between items-center text-center h-full group/card relative transition-all duration-200
-														{lesson.isDraft 
-															? 'border-dashed border-purple-500/50 bg-purple-500/5 select-none opacity-85 cursor-not-allowed' 
-															: 'bg-primary/5 border border-primary/20 cursor-grab active:cursor-grabbing hover:shadow-sm'}"
-												>
-													<!-- Draft indicator -->
-													{#if lesson.isDraft}
-														<span class="absolute top-1 left-1 bg-purple-500 text-white text-[7px] font-bold px-1 rounded uppercase tracking-wider scale-90 origin-top-left">
-															{getLocale() === "ar" ? "مسودة" : "Draft"}
-														</span>
-													{/if}
-
-													<!-- Close icon to delete -->
-													{#if !lesson.isDraft}
-														<button 
-															onclick={() => handleDeleteLesson(lesson.id)}
-															class="absolute top-1 right-1 opacity-0 group-hover/card:opacity-100 h-4 w-4 text-destructive hover:bg-destructive/10 rounded flex items-center justify-center transition-opacity duration-150 cursor-pointer"
-															title={m.schedule_page_delete_title()}
-														>
-															<X size={10} />
-														</button>
-													{/if}
-													
-													<div class="flex flex-col items-center gap-1 mt-0.5">
-														<span class="font-bold text-foreground text-[10px] leading-tight line-clamp-1">
-															{getSubjectName(lesson.subject_id)}
-														</span>
-														<span class="text-[9px] text-muted-foreground leading-tight flex items-center gap-0.5">
-															<User size={8} />
-															<span class="line-clamp-1">{viewMode === 'class' ? getTeacherName(lesson.teacher_id) : getClassName(lesson.class_id)}</span>
-														</span>
-													</div>
-													{#if lesson.room}
-														<span class="text-[8px] font-mono text-muted-foreground bg-background px-1 py-0.2 rounded border border-border/60 flex items-center gap-0.5">
-															<MapPin size={7} />
-															<span>{lesson.room}</span>
-														</span>
-													{/if}
-												</div>
-											{:else}
-												<!-- Empty Cell (Offer scheduling in Class mode) -->
-												<button 
-													onclick={() => openScheduler(day.value, slot.id)}
-													class="w-full h-full border border-dashed border-transparent hover:border-primary/20 hover:bg-primary/5 rounded-lg flex items-center justify-center text-muted-foreground/0 hover:text-primary transition-all duration-150 cursor-pointer"
-												>
-													<Plus size={16} />
-												</button>
-											{/if}
-										</td>
-									{/each}
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				</div>
+				<Timetable
+					{timeSlots}
+					{weekdays}
+					{lessons}
+					draftLessons={draftLessonsInGrid}
+					{previewDraft}
+					{viewMode}
+					locale={getLocale()}
+					{getSubjectName}
+					{getTeacherName}
+					{getClassName}
+					onCellClick={openScheduler}
+					onDeleteLesson={handleDeleteLesson}
+					onMoveLesson={handleMoveLesson}
+				/>
 			{/if}
 		</div>
 

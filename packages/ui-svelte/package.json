@@ -32,7 +32,8 @@
     "./scroll-area": "./src/components/ui/scroll-area/index.ts",
     "./dropdown-menu": "./src/components/ui/dropdown-menu/index.ts",
     "./breadcrumb": "./src/components/ui/breadcrumb/index.ts",
-    "./calendar": "./src/components/ui/calendar/index.ts"
+    "./calendar": "./src/components/ui/calendar/index.ts",
+    "./timetable": "./src/components/ui/timetable/index.ts"
   },
   "peerDependencies": {
     "svelte": "^5",
