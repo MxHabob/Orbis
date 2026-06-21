@@ -133,53 +133,23 @@ const breadcrumbs = $derived.by(() => {
 		class="flex items-center gap-2"
 		data-tauri-drag-region={isDesktop || undefined}
 	>
-		<!-- Monitors Dropdown -->
-		<DropdownMenu>
-			<DropdownMenuTrigger class="outline-none">
-				<Button
-					variant="outline"
-					size="sm"
-					class="font-semibold text-xs text-foreground bg-white hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800 shadow-[0_2px_0_0_#e4e4e7] dark:shadow-[0_2px_0_0_#27272a] rounded-[8px] px-3 gap-1.5"
-				>
-					<span>0 Monitors</span>
-					<ChevronDown size={14} class="opacity-60" />
-				</Button>
-			</DropdownMenuTrigger>
-			<DropdownMenuContent align="end" sideOffset={8} class="w-48 p-1 z-50">
-				<div class="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Monitors</div>
-				<DropdownMenuSeparator />
-				<div class="px-2 py-3 text-xs text-muted-foreground text-center">No monitors configured</div>
-			</DropdownMenuContent>
-		</DropdownMenu>
 
-		<!-- Play Button -->
-		<Button
-			variant="outline"
-			size="icon-sm"
-			class="bg-white hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800 shadow-[0_2px_0_0_#e4e4e7] dark:shadow-[0_2px_0_0_#27272a] rounded-[8px]"
-			title="Play"
-		>
-			<Play size={14} class="fill-current text-foreground stroke-[2px]" />
-		</Button>
-
-		<!-- Search Button -->
 		<Button
 			variant="outline"
 			size="sm"
-			class="font-semibold text-xs text-foreground bg-white hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800 shadow-[0_2px_0_0_#e4e4e7] dark:shadow-[0_2px_0_0_#27272a] rounded-[8px] px-3 gap-2"
+			class="font-semibold text-xs text-foreground rounded-[8px] px-3 gap-2"
 			title={m.header_search_title()}
 			aria-label="Search"
 		>
 			<Search size={14} class="text-muted-foreground stroke-[2px]" />
 			<span class="whitespace-nowrap">{m.header_search()}</span>
-			<kbd class="ml-1 rounded border border-zinc-200 bg-zinc-50 px-1 py-0.5 font-mono text-[9px] font-medium text-zinc-400 dark:border-zinc-800 dark:bg-zinc-850 dark:text-zinc-500">{m.header_search_shortcut()}</kbd>
+			<kbd class="ml-1 rounded px-1 py-0.5 font-mono text-[9px] font-medium text-zinc-400">{m.header_search_shortcut()}</kbd>
 		</Button>
 
-		<!-- Ask Seer Button -->
 		<Button
 			variant="outline"
 			size="sm"
-			class="font-semibold text-xs text-foreground bg-white hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800 shadow-[0_2px_0_0_#e4e4e7] dark:shadow-[0_2px_0_0_#27272a] rounded-[8px] px-3 gap-2"
+			class="font-semibold text-xs text-foreground px-3 gap-2"
 			title="Ask Seer"
 			aria-label="Ask Seer"
 		>
@@ -188,14 +158,13 @@ const breadcrumbs = $derived.by(() => {
 				<path d="M12 15a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" />
 			</svg>
 			<span class="whitespace-nowrap">Ask Seer</span>
-			<kbd class="ml-1 rounded border border-zinc-200 bg-zinc-50 px-1 py-0.5 font-mono text-[9px] font-medium text-zinc-400 dark:border-zinc-800 dark:bg-zinc-850 dark:text-zinc-500">Ctrl /</kbd>
+			<kbd class="ml-1 rounded px-1 py-0.5 font-mono text-[9px] font-medium text-zinc-400">Ctrl /</kbd>
 		</Button>
 
-		<!-- Megaphone Button -->
 		<Button
 			variant="outline"
 			size="icon-sm"
-			class="bg-white hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800 shadow-[0_2px_0_0_#e4e4e7] dark:shadow-[0_2px_0_0_#27272a] rounded-[8px]"
+			class="rounded-[8px]"
 			title="What's New"
 			aria-label="What's new"
 		>

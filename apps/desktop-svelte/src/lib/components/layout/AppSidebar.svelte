@@ -133,7 +133,7 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 </script>
 
 <TooltipProvider delayDuration={150}>
-	<div class="flex h-full w-15 shrink-0 flex-col items-center justify-between py-3  select-none">
+	<div class="flex h-full w-15 shrink-0 flex-col items-center justify-between py-3 select-none">
 		<div class="flex flex-col items-center gap-3">
 			<OrgSidebarSwitcher {orgId} orgName={orgNameDisplay} />
 
@@ -147,7 +147,6 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 							<Button
 								href={localizeHref(item.href)}
 								variant={isActive(item.href, item.match) ? 'default' : 'ghost'}
-								size="icon"
 								class="rounded-[10px]"
 								aria-label={item.label}
 								aria-current={isActive(item.href, item.match) ? 'page' : undefined}
