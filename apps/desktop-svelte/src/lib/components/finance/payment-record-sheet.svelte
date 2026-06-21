@@ -32,12 +32,16 @@ const isAr = $derived(getLocale() === "ar");
 let isSubmitting = $state(false);
 let students = $state<any[]>([]);
 let treasuries = $state<any[]>([]);
+let fees = $state<any[]>([]);
 let isLoadingDropdowns = $state(false);
+let isLoadingFees = $state(false);
 
 // Form state
 let selectedEnrollmentId = $state("");
 let selectedTreasuryId = $state("");
+let selectedFeeId = $state("");
 let paymentMethod = $state<"Cash" | "Bank Transfer" | "Card">("Cash");
+let currency = $state("YER");
 let amount = $state<number | null>(null);
 let receiptNumber = $state("");
 let referenceNumber = $state("");
@@ -54,8 +58,14 @@ async function loadDropdownData() {
     students = studentList;
     treasuries = treasuryList;
     
-    if (studentList.length > 0) selectedEnrollmentId = String(studentList[0].id);
-    if (treasuryList.length > 0) selectedTreasuryId = String(treasuryList[0].id);
+    if (studentList.length > 0) {
+      selectedEnrollmentId = String(studentList[0].id);
+    }
+    if (treasuryList.length > 0) {
+      selectedTreasuryId = String(treasuryList[0].id);
+      // Fallback currency of treasury
+      currency = treasuryList[0].currency || "YER";
+    }
   } catch (e) {
     console.error("Error loading dropdown data for payment-record-sheet:", e);
   } finally {
@@ -63,10 +73,48 @@ async function loadDropdownData() {
   }
 }
 
-// Reload when opened
+async function loadStudentFees(enrollId: string) {
+  if (!enrollId || !orgId) return;
+  isLoadingFees = true;
+  try {
+    const list = await commands.finance.getStudentFees(orgId, enrollId);
+    fees = list.filter(f => f.status !== 'paid');
+    if (fees.length > 0) {
+      selectedFeeId = String(fees[0].id);
+      amount = Number(fees[0].balance || fees[0].total_amount || 0);
+    } else {
+      selectedFeeId = "";
+      amount = null;
+      toast.info(isAr ? "لا توجد رسوم مستحقة غير مدفوعة لهذا الطالب" : "No outstanding unpaid fees for this student");
+    }
+  } catch (e) {
+    console.error("Error loading student fees:", e);
+  } finally {
+    isLoadingFees = false;
+  }
+}
+
+// Reload dropdowns when sheet is opened
 $effect(() => {
   if (open && orgId) {
     loadDropdownData();
+  }
+});
+
+// Reactively load student fees when student selection changes
+$effect(() => {
+  if (selectedEnrollmentId) {
+    loadStudentFees(selectedEnrollmentId);
+  }
+});
+
+// Reactively set amount when fee selection changes
+$effect(() => {
+  if (selectedFeeId) {
+    const selectedFee = fees.find(f => String(f.id) === selectedFeeId);
+    if (selectedFee) {
+      amount = Number(selectedFee.balance || selectedFee.total_amount || 0);
+    }
   }
 });
 
@@ -74,6 +122,10 @@ async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   if (!selectedEnrollmentId) {
     toast.error(isAr ? "الرجاء اختيار الطالب" : "Please select a student");
+    return;
+  }
+  if (!selectedFeeId) {
+    toast.error(isAr ? "الرجاء اختيار الرسم المستحق للدفع" : "Please select an outstanding fee");
     return;
   }
   if (!selectedTreasuryId) {
@@ -84,18 +136,22 @@ async function handleSubmit(e: SubmitEvent) {
     toast.error(isAr ? "الرجاء إدخال مبلغ صحيح" : "Please enter a valid amount");
     return;
   }
+  if (!currency || currency.trim().length !== 3) {
+    toast.error(isAr ? "الرجاء إدخال رمز عملة صحيح من 3 أحرف" : "Please enter a valid 3-letter currency code");
+    return;
+  }
 
   isSubmitting = true;
   try {
     const createdBy = authStore.userId || authStore.user?.id || "unknown";
     const request = {
-      enrollment_id: selectedEnrollmentId,
-      treasury_id: selectedTreasuryId,
-      payment_method: paymentMethod,
+      fee_id: selectedFeeId,
       amount: Number(amount),
-      receipt_number: receiptNumber || undefined,
-      reference_number: referenceNumber || undefined,
+      method: paymentMethod === "Cash" ? "cash" : paymentMethod === "Bank Transfer" ? "bank_transfer" : "card",
+      reference: referenceNumber || undefined,
       notes: notes || undefined,
+      treasury_id: selectedTreasuryId,
+      currency: currency.trim().toUpperCase(),
     };
     await commands.finance.recordPayment(orgId, createdBy, request);
     toast.success(isAr ? "تم تسجيل الدفعة بنجاح" : "Payment recorded successfully");
@@ -155,6 +211,31 @@ async function handleSubmit(e: SubmitEvent) {
 				</select>
 			</div>
 
+			<!-- Student Fees Select -->
+			<div class="flex flex-col gap-1.5 text-start">
+				<label for="pay_fee" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+					{isAr ? "الرسم المستحق المفوتر *" : "Outstanding Student Fee *"}
+				</label>
+				<select 
+					id="pay_fee"
+					bind:value={selectedFeeId}
+					class="bg-background text-foreground border border-border rounded-md px-3 py-1.5 text-xs focus:ring-1 focus:ring-ring outline-none"
+					disabled={isLoadingFees || isSubmitting}
+				>
+					{#if isLoadingFees}
+						<option>{isAr ? "جاري تحميل الرسوم المستحقة..." : "Loading fees..."}</option>
+					{:else if fees.length === 0}
+						<option value="">{isAr ? "-- لا توجد رسوم مستحقة لهذا الطالب --" : "-- No outstanding fees for this student --"}</option>
+					{:else}
+						{#each fees as f (f.id)}
+							<option value={String(f.id)}>
+								{f.notes || f.id.slice(0, 8)} ({isAr ? 'المتبقي: ' : 'Balance: '}{f.balance})
+							</option>
+						{/each}
+					{/if}
+				</select>
+			</div>
+
 			<!-- Treasury Account Select -->
 			<div class="flex flex-col gap-1.5 text-start">
 				<label for="pay_treasury" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
@@ -170,7 +251,7 @@ async function handleSubmit(e: SubmitEvent) {
 						<option>{isAr ? "جاري تحميل الحسابات..." : "Loading treasuries..."}</option>
 					{:else}
 						{#each treasuries as t (t.id)}
-							<option value={String(t.id)}>{t.name_ar || t.name || t.code}</option>
+							<option value={String(t.id)}>{t.name_ar || t.name || t.code} ({t.currency})</option>
 						{/each}
 					{/if}
 				</select>
@@ -191,6 +272,37 @@ async function handleSubmit(e: SubmitEvent) {
 					<option value="Bank Transfer">{isAr ? "تحويل بنكي" : "Bank Transfer"}</option>
 					<option value="Card">{isAr ? "بطاقة دفع / مدى" : "Card"}</option>
 				</select>
+			</div>
+
+			<!-- Currency Selection -->
+			<div class="flex flex-col gap-1.5 text-start">
+				<label for="pay_currency" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+					{isAr ? "عملة الدفع *" : "Payment Currency *"}
+				</label>
+				<div class="flex gap-2">
+					<Input 
+						id="pay_currency"
+						type="text" 
+						bind:value={currency}
+						placeholder="e.g., YER"
+						class="input-sunken text-xs py-1.5 uppercase font-mono max-w-[100px]"
+						required
+						maxlength={3}
+						disabled={isSubmitting}
+					/>
+					<div class="flex gap-1.5 items-center">
+						{#each ['YER', 'USD', 'SAR'] as curr}
+							<button
+								type="button"
+								class="px-2.5 py-1 rounded border text-[10px] font-bold transition-all {currency.toUpperCase() === curr ? 'bg-primary text-primary-foreground border-primary' : 'bg-background hover:bg-accent text-muted-foreground border-border'}"
+								onclick={() => currency = curr}
+								disabled={isSubmitting}
+							>
+								{curr}
+							</button>
+						{/each}
+					</div>
+				</div>
 			</div>
 
 			<!-- Fee Amount -->
@@ -271,7 +383,7 @@ async function handleSubmit(e: SubmitEvent) {
 					type="submit" 
 					variant="lime" 
 					class="text-xs h-9 px-4 font-semibold"
-					disabled={isSubmitting || isLoadingDropdowns}
+					disabled={isSubmitting || isLoadingDropdowns || isLoadingFees || !selectedFeeId}
 				>
 					{isSubmitting ? (isAr ? "جاري التسجيل..." : "Recording...") : (isAr ? "تسجيل الدفعة" : "Record Receipt")}
 				</Button>

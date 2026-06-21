@@ -32,6 +32,7 @@ let name = $state("");
 let nameAr = $state("");
 let code = $state("");
 let accountType = $state<"revenue" | "expense" | "asset" | "liability">("revenue");
+let currency = $state("YER");
 let description = $state("");
 
 async function handleSubmit(e: SubmitEvent) {
@@ -44,15 +45,22 @@ async function handleSubmit(e: SubmitEvent) {
     toast.error(isAr ? "الرجاء إدخال رمز الحساب" : "Please enter account code");
     return;
   }
+  if (!currency || currency.trim().length !== 3) {
+    toast.error(isAr ? "الرجاء إدخال رمز عملة صحيح من 3 أحرف" : "Please enter a valid 3-letter currency code");
+    return;
+  }
 
   isSubmitting = true;
   try {
     const request = {
+      code: code.trim(),
       name: name || nameAr,
       name_ar: nameAr || name,
-      code: code.trim(),
-      account_type: accountType,
-      description: description || undefined,
+      item_type: accountType,
+      currency: currency.trim().toUpperCase(),
+      opening_balance: 0.0,
+      sub_type: undefined,
+      parent_id: undefined,
     };
     await commands.finance.createLedgerAccount(orgId, request);
     toast.success(isAr ? "تم إنشاء الحساب الدفتري بنجاح" : "Ledger account created successfully");
@@ -63,6 +71,7 @@ async function handleSubmit(e: SubmitEvent) {
     nameAr = "";
     code = "";
     accountType = "revenue";
+    currency = "YER";
     description = "";
 
     onSuccess();
@@ -137,6 +146,37 @@ async function handleSubmit(e: SubmitEvent) {
 					required
 					disabled={isSubmitting}
 				/>
+			</div>
+
+			<!-- Currency Selection -->
+			<div class="flex flex-col gap-1.5 text-start">
+				<label for="led_currency" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+					{isAr ? "العملة *" : "Currency *"}
+				</label>
+				<div class="flex gap-2">
+					<Input 
+						id="led_currency"
+						type="text" 
+						bind:value={currency}
+						placeholder="e.g., YER"
+						class="input-sunken text-xs py-1.5 uppercase font-mono max-w-[100px]"
+						required
+						maxlength={3}
+						disabled={isSubmitting}
+					/>
+					<div class="flex gap-1.5 items-center">
+						{#each ['YER', 'USD', 'SAR'] as curr}
+							<button
+								type="button"
+								class="px-2.5 py-1 rounded border text-[10px] font-bold transition-all {currency.toUpperCase() === curr ? 'bg-primary text-primary-foreground border-primary' : 'bg-background hover:bg-accent text-muted-foreground border-border'}"
+								onclick={() => currency = curr}
+								disabled={isSubmitting}
+							>
+								{curr}
+							</button>
+						{/each}
+					</div>
+				</div>
 			</div>
 
 			<!-- Account Type Selection -->

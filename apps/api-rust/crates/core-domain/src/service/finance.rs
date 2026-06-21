@@ -44,6 +44,8 @@ pub struct RecordPaymentRequest {
     pub notes: Option<String>,
     pub payer_name: Option<String>,
     pub payer_phone: Option<String>,
+    pub treasury_id: Option<String>,
+    pub currency: Option<String>,
 }
 
 impl super::Service {
@@ -187,6 +189,9 @@ impl super::Service {
             "partially_paid".to_string()
         };
 
+        // Determine currency of the payment
+        let payment_currency = req.currency.clone().unwrap_or_else(|| "YER".to_string());
+
         // 2. Record the payment
         let p = payment::Model {
             id: Uuid::new_v4().to_string(),
@@ -194,14 +199,14 @@ impl super::Service {
             fee_id: req.fee_id.clone(),
             enrollment_id: fee.enrollment_id.clone(),
             amount: req.amount,
-            currency: fee.balance.to_string(), // currency fallback or default
+            currency: payment_currency,
             exchange_rate: Some(1.0),
             method: req.method,
             reference: req.reference,
             transaction_id: None,
             receipt_number: Some(format!("REC-{}", Utc::now().timestamp_millis())),
             journal_entry_id: None,
-            treasury_id: None,
+            treasury_id: req.treasury_id.clone(),
             payer_name: req.payer_name,
             payer_phone: req.payer_phone,
             payer_relation: None,

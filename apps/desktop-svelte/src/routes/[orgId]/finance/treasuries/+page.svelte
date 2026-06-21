@@ -122,8 +122,8 @@ function getTreasuryTypeLabel(typeStr: string) {
 						</h3>
 						<span class="text-[8px] text-muted-foreground mt-0.5">
 							{isAr 
-								? `إجمالي الرصيد المتوفر: ${formatCurrency(totalTreasuryBalance)}` 
-								: `Total Cash Assets: ${formatCurrency(totalTreasuryBalance)}`}
+								? `إجمالي الرصيد المتوفر: ${formatCurrency(totalTreasuryBalance, "YER")}` 
+								: `Total Cash Assets: ${formatCurrency(totalTreasuryBalance, "YER")}`}
 						</span>
 					</div>
 					
@@ -159,7 +159,7 @@ function getTreasuryTypeLabel(typeStr: string) {
 										<TableCell class="font-mono font-bold text-foreground">{t.code}</TableCell>
 										<TableCell class="text-foreground">{t.name_ar || t.name}</TableCell>
 										<TableCell class="text-muted-foreground text-[10px]">{getTreasuryTypeLabel(t.treasury_type)}</TableCell>
-										<TableCell class="font-bold font-mono text-emerald-500">{formatCurrency(Number(t.balance || 0))}</TableCell>
+										<TableCell class="font-bold font-mono text-emerald-500">{formatCurrency(Number(t.balance || 0), t.currency)}</TableCell>
 									</TableRow>
 								{/each}
 							</TableBody>

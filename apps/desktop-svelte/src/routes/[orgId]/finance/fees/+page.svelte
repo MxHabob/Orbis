@@ -140,7 +140,7 @@ function getStatusLabel(statusStr: string) {
 					<span class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
 						{isAr ? "إجمالي المبلغ المفوتر" : "Invoiced (Filtered)"}
 					</span>
-					<span class="text-base font-bold text-foreground font-mono">{formatCurrency(stats.invoiced)}</span>
+					<span class="text-base font-bold text-foreground font-mono">{formatCurrency(stats.invoiced, "YER")}</span>
 				</div>
 				<div class="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
 					<Wallet size={15} />
@@ -153,7 +153,7 @@ function getStatusLabel(statusStr: string) {
 					<span class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
 						{isAr ? "إجمالي المبلغ المحصل" : "Collected (Filtered)"}
 					</span>
-					<span class="text-base font-bold text-emerald-500 font-mono">{formatCurrency(stats.collected)}</span>
+					<span class="text-base font-bold text-emerald-500 font-mono">{formatCurrency(stats.collected, "YER")}</span>
 				</div>
 				<div class="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500">
 					<CheckSquare size={14} />
@@ -166,7 +166,7 @@ function getStatusLabel(statusStr: string) {
 					<span class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
 						{isAr ? "المستحقات المعلقة" : "Balance Due (Filtered)"}
 					</span>
-					<span class="text-base font-bold text-rose-500 font-mono">{formatCurrency(stats.due)}</span>
+					<span class="text-base font-bold text-rose-500 font-mono">{formatCurrency(stats.due, "YER")}</span>
 				</div>
 				<div class="h-8 w-8 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-500">
 					<HelpCircle size={15} />
@@ -277,7 +277,7 @@ function getStatusLabel(statusStr: string) {
 									{getStatusLabel(fee.status || 'unpaid')}
 								</span>
 							</TableCell>
-							<TableCell class="font-bold font-mono text-foreground">{formatCurrency(Number(fee.amount || 0))}</TableCell>
+							<TableCell class="font-bold font-mono text-foreground">{formatCurrency(Number(fee.amount || 0), fee.currency || "YER")}</TableCell>
 						</TableRow>
 					{/each}
 				</TableBody>

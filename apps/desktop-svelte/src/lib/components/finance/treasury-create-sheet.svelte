@@ -28,11 +28,42 @@ const isAr = $derived(getLocale() === "ar");
 
 // Form state
 let isSubmitting = $state(false);
+let ledgers = $state<any[]>([]);
+let isLoadingLedgers = $state(false);
+
 let name = $state("");
 let nameAr = $state("");
 let code = $state("");
 let treasuryType = $state<"cash" | "bank">("cash");
+let selectedLedgerId = $state("");
+let currency = $state("YER");
+let bankName = $state("");
+let accountNumber = $state("");
 let balance = $state<number>(0);
+
+async function loadLedgerAccounts() {
+  if (!orgId) return;
+  isLoadingLedgers = true;
+  try {
+    const list = await commands.finance.getLedgerAccounts(orgId);
+    // Filter to asset accounts
+    ledgers = list.filter(l => l.item_type.toLowerCase() === 'asset' || l.is_bank_account === 1 || l.is_cash_account === 1);
+    if (ledgers.length > 0) {
+      selectedLedgerId = ledgers[0].id;
+    }
+  } catch (e) {
+    console.error("Error loading ledger accounts in treasury creation:", e);
+  } finally {
+    isLoadingLedgers = false;
+  }
+}
+
+// Reload when opened
+$effect(() => {
+  if (open && orgId) {
+    loadLedgerAccounts();
+  }
+});
 
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
@@ -40,8 +71,12 @@ async function handleSubmit(e: SubmitEvent) {
     toast.error(isAr ? "الرجاء إدخال اسم الخزينة" : "Please enter treasury name");
     return;
   }
-  if (!code) {
-    toast.error(isAr ? "الرجاء إدخال كود تعريفي" : "Please enter a unique code");
+  if (!selectedLedgerId) {
+    toast.error(isAr ? "الرجاء اختيار الحساب الدفتري المرتبط" : "Please select associated ledger account");
+    return;
+  }
+  if (!currency || currency.trim().length !== 3) {
+    toast.error(isAr ? "الرجاء إدخال رمز عملة صحيح من 3 أحرف" : "Please enter a valid 3-letter currency code");
     return;
   }
 
@@ -50,9 +85,11 @@ async function handleSubmit(e: SubmitEvent) {
     const request = {
       name: name || nameAr,
       name_ar: nameAr || name,
-      code: code.trim(),
-      treasury_type: treasuryType,
-      balance: balance ? Number(balance) : 0,
+      item_type: treasuryType,
+      ledger_account_id: selectedLedgerId,
+      currency: currency.trim().toUpperCase(),
+      bank_name: treasuryType === "bank" ? (bankName || undefined) : undefined,
+      account_number: treasuryType === "bank" ? (accountNumber || undefined) : undefined,
     };
     await commands.finance.createTreasury(orgId, request);
     toast.success(isAr ? "تم إنشاء الخزينة بنجاح" : "Treasury created successfully");
@@ -63,6 +100,10 @@ async function handleSubmit(e: SubmitEvent) {
     nameAr = "";
     code = "";
     treasuryType = "cash";
+    selectedLedgerId = "";
+    currency = "YER";
+    bankName = "";
+    accountNumber = "";
     balance = 0;
 
     onSuccess();
@@ -123,22 +164,6 @@ async function handleSubmit(e: SubmitEvent) {
 				/>
 			</div>
 
-			<!-- Code -->
-			<div class="flex flex-col gap-1.5 text-start">
-				<label for="treas_code" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-					{isAr ? "الكود التعريفي (فريد) *" : "Treasury Code (Unique) *"}
-				</label>
-				<Input 
-					id="treas_code"
-					type="text" 
-					bind:value={code}
-					placeholder="e.g., SAFE-MAIN"
-					class="input-sunken text-xs py-1.5"
-					required
-					disabled={isSubmitting}
-				/>
-			</div>
-
 			<!-- Type Selection -->
 			<div class="flex flex-col gap-1.5 text-start">
 				<label for="treas_type" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
@@ -155,21 +180,90 @@ async function handleSubmit(e: SubmitEvent) {
 				</select>
 			</div>
 
-			<!-- Initial Balance -->
+			<!-- Associated Ledger Account Select -->
 			<div class="flex flex-col gap-1.5 text-start">
-				<label for="treas_bal" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-					{isAr ? "الرصيد الافتتاحي" : "Opening / Initial Balance"}
+				<label for="treas_ledger" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+					{isAr ? "الحساب الدفتري المرتبط (أصول) *" : "Associated Ledger Account (Asset) *"}
 				</label>
-				<Input 
-					id="treas_bal"
-					type="number" 
-					bind:value={balance}
-					min="0"
-					step="any"
-					class="input-sunken text-xs py-1.5"
-					disabled={isSubmitting}
-				/>
+				<select 
+					id="treas_ledger"
+					bind:value={selectedLedgerId}
+					class="bg-background text-foreground border border-border rounded-md px-3 py-1.5 text-xs focus:ring-1 focus:ring-ring outline-none"
+					disabled={isLoadingLedgers || isSubmitting}
+				>
+					{#if isLoadingLedgers}
+						<option>{isAr ? "جاري تحميل الحسابات..." : "Loading ledger accounts..."}</option>
+					{:else}
+						{#each ledgers as l (l.id)}
+							<option value={String(l.id)}>{l.name_ar || l.name} ({l.code})</option>
+						{/each}
+					{/if}
+				</select>
 			</div>
+
+			<!-- Currency Selection -->
+			<div class="flex flex-col gap-1.5 text-start">
+				<label for="treas_currency" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+					{isAr ? "العملة *" : "Currency *"}
+				</label>
+				<div class="flex gap-2">
+					<Input 
+						id="treas_currency"
+						type="text" 
+						bind:value={currency}
+						placeholder="e.g., YER"
+						class="input-sunken text-xs py-1.5 uppercase font-mono max-w-[100px]"
+						required
+						maxlength={3}
+						disabled={isSubmitting}
+					/>
+					<div class="flex gap-1.5 items-center">
+						{#each ['YER', 'USD', 'SAR'] as curr}
+							<button
+								type="button"
+								class="px-2.5 py-1 rounded border text-[10px] font-bold transition-all {currency.toUpperCase() === curr ? 'bg-primary text-primary-foreground border-primary' : 'bg-background hover:bg-accent text-muted-foreground border-border'}"
+								onclick={() => currency = curr}
+								disabled={isSubmitting}
+							>
+								{curr}
+							</button>
+						{/each}
+					</div>
+				</div>
+			</div>
+
+			<!-- Conditional Bank Fields -->
+			{#if treasuryType === "bank"}
+				<!-- Bank Name -->
+				<div class="flex flex-col gap-1.5 text-start">
+					<label for="treas_bank_name" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+						{isAr ? "اسم البنك" : "Bank Name"}
+					</label>
+					<Input 
+						id="treas_bank_name"
+						type="text" 
+						bind:value={bankName}
+						placeholder={isAr ? "مثال: بنك الكريمي الإسلامي" : "e.g., Kuraimi Islamic Bank"}
+						class="input-sunken text-xs py-1.5"
+						disabled={isSubmitting}
+					/>
+				</div>
+
+				<!-- Account Number -->
+				<div class="flex flex-col gap-1.5 text-start">
+					<label for="treas_acc_num" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+						{isAr ? "رقم الحساب" : "Account Number"}
+					</label>
+					<Input 
+						id="treas_acc_num"
+						type="text" 
+						bind:value={accountNumber}
+						placeholder="e.g., 123456789"
+						class="input-sunken text-xs py-1.5"
+						disabled={isSubmitting}
+					/>
+				</div>
+			{/if}
 
 			<!-- Form Actions -->
 			<div class="flex gap-2 justify-end mt-6 pt-4 border-t border-border shrink-0">
@@ -186,7 +280,7 @@ async function handleSubmit(e: SubmitEvent) {
 					type="submit" 
 					variant="lime" 
 					class="text-xs h-9 px-4 font-semibold"
-					disabled={isSubmitting}
+					disabled={isSubmitting || isLoadingLedgers}
 				>
 					{isSubmitting ? (isAr ? "جاري الإنشاء..." : "Creating...") : (isAr ? "إنشاء الخزينة" : "Create Treasury")}
 				</Button>

@@ -2,17 +2,29 @@ import { getLocale } from "$lib/paraglide/runtime";
 
 /**
  * Formats a currency amount to the current locale's format.
- * Defauts to SAR.
+ * Defaults to YER.
  */
-export function formatCurrency(amount: number | null | undefined): string {
+export function formatCurrency(amount: number | null | undefined, currency: string = "YER"): string {
   if (amount === null || amount === undefined) return "";
   const lang = getLocale();
-  return new Intl.NumberFormat(lang === "ar" ? "ar-SA" : "en-US", {
-    style: "currency",
-    currency: "SAR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amount);
+  // Clean up currency code if it has modifiers
+  const cleanCurrency = String(currency || "YER").trim().toUpperCase();
+  try {
+    return new Intl.NumberFormat(lang === "ar" ? "ar-YE" : "en-US", {
+      style: "currency",
+      currency: cleanCurrency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  } catch (e) {
+    // Fallback if the currency code is unrecognized
+    return new Intl.NumberFormat(lang === "ar" ? "ar-YE" : "en-US", {
+      style: "currency",
+      currency: "YER",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  }
 }
 
 /**
@@ -23,7 +35,7 @@ export function formatDate(date: string | Date | null | undefined): string {
   const d = typeof date === "string" ? new Date(date) : date;
   if (isNaN(d.getTime())) return "";
   const lang = getLocale();
-  return new Intl.DateTimeFormat(lang === "ar" ? "ar-SA" : "en-US", {
+  return new Intl.DateTimeFormat(lang === "ar" ? "ar-YE" : "en-US", {
     dateStyle: "medium",
   }).format(d);
 }
@@ -35,7 +47,7 @@ export function formatPercent(value: number | null | undefined): string {
   if (value === null || value === undefined) return "";
   const lang = getLocale();
   // Divide by 100 if value is e.g. 95 for 95%
-  return new Intl.NumberFormat(lang === "ar" ? "ar-SA" : "en-US", {
+  return new Intl.NumberFormat(lang === "ar" ? "ar-YE" : "en-US", {
     style: "percent",
     minimumFractionDigits: 0,
     maximumFractionDigits: 1,
@@ -48,5 +60,5 @@ export function formatPercent(value: number | null | undefined): string {
 export function formatNumber(value: number | null | undefined): string {
   if (value === null || value === undefined) return "";
   const lang = getLocale();
-  return new Intl.NumberFormat(lang === "ar" ? "ar-SA" : "en-US").format(value);
+  return new Intl.NumberFormat(lang === "ar" ? "ar-YE" : "en-US").format(value);
 }

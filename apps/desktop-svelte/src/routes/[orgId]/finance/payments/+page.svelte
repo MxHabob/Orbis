@@ -138,7 +138,7 @@ function getMethodBadgeClass(methodStr: string) {
 					<span class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
 						{isAr ? "إجمالي المحصل (المحدد)" : "Total Collected (Filtered)"}
 					</span>
-					<span class="text-base font-bold text-emerald-500 font-mono">{formatCurrency(stats.total)}</span>
+					<span class="text-base font-bold text-emerald-500 font-mono">{formatCurrency(stats.total, "YER")}</span>
 				</div>
 				<div class="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500">
 					<CreditCard size={15} />
@@ -260,7 +260,7 @@ function getMethodBadgeClass(methodStr: string) {
 							<TableCell class="text-muted-foreground">
 								{pay.treasury_name || pay.treasury_id || "-"}
 							</TableCell>
-							<TableCell class="font-bold font-mono text-emerald-500">{formatCurrency(Number(pay.amount || 0))}</TableCell>
+							<TableCell class="font-bold font-mono text-emerald-500">{formatCurrency(Number(pay.amount || 0), pay.currency)}</TableCell>
 						</TableRow>
 					{/each}
 				</TableBody>
