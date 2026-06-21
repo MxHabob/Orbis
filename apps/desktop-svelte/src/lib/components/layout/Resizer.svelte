@@ -27,6 +27,8 @@ let {
   defaultValue,
   persistId,
   onWidth,
+  collapseThreshold = minWidth * 0.75,
+  collapsedWidth = 3,
 }: {
   viewport: HTMLElement | undefined;
   direction: "left" | "right";
@@ -35,6 +37,8 @@ let {
   defaultValue: number;
   persistId?: string;
   onWidth?: (widthRem: number) => void;
+  collapseThreshold?: number;
+  collapsedWidth?: number;
 } = $props();
 
 let isDragging = $state(false);
@@ -48,7 +52,7 @@ $effect(() => {
   const stored = localStorage.getItem(`resizer:${persistId}`);
   if (stored) {
     const val = parseFloat(stored);
-    if (!isNaN(val) && val >= minWidth && val <= maxWidth) {
+    if (!isNaN(val) && (val === collapsedWidth || (val >= minWidth && val <= maxWidth))) {
       onWidth?.(val);
     }
   }
@@ -89,9 +93,15 @@ function onPointerMove(e: PointerEvent) {
     effectiveDirection === "right" ? e.clientX - startX : startX - e.clientX;
   const newWidthPx = startWidth + delta;
   const newWidthRem = pxToRem(newWidthPx);
-  const clamped = Math.max(minWidth, Math.min(maxWidth, newWidthRem));
 
-  onWidth?.(clamped);
+  let targetWidth = newWidthRem;
+  if (targetWidth < collapseThreshold) {
+    targetWidth = collapsedWidth;
+  } else {
+    targetWidth = Math.max(minWidth, Math.min(maxWidth, targetWidth));
+  }
+
+  onWidth?.(targetWidth);
 }
 
 function onPointerUp(e: PointerEvent) {
@@ -109,8 +119,13 @@ function onPointerUp(e: PointerEvent) {
   // Persist final width
   if (persistId && viewport) {
     const currentRem = pxToRem(viewport.getBoundingClientRect().width);
-    const clamped = Math.max(minWidth, Math.min(maxWidth, currentRem));
-    localStorage.setItem(`resizer:${persistId}`, String(clamped));
+    let targetWidth = currentRem;
+    if (targetWidth < collapseThreshold) {
+      targetWidth = collapsedWidth;
+    } else {
+      targetWidth = Math.max(minWidth, Math.min(maxWidth, targetWidth));
+    }
+    localStorage.setItem(`resizer:${persistId}`, String(targetWidth));
   }
 }
 

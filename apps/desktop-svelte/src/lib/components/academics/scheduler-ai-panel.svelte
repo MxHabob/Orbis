@@ -293,279 +293,319 @@ function formatTime(seconds: number): string {
 
 <div 
 	bind:this={panelEl}
-	style="width: {preferredWidth}rem; min-width: {minWidth}rem; max-width: {maxWidth}rem;"
-	class="relative shrink-0 bg-card/65 backdrop-blur-md border border-border/80 rounded-xl p-4 flex flex-col gap-4 select-none" 
+	style="width: {preferredWidth}rem; min-width: {preferredWidth > 3 ? minWidth : 3}rem; max-width: {maxWidth}rem;"
+	class="relative shrink-0 bg-card/65 backdrop-blur-md select-none transition-all duration-200"
+	class:p-4={preferredWidth > 3}
+	class:border={preferredWidth > 3}
+	class:border-border={preferredWidth > 3}
+	class:rounded-xl={preferredWidth > 3}
+	class:flex={preferredWidth > 3}
+	class:flex-col={preferredWidth > 3}
+	class:gap-4={preferredWidth > 3}
+	class:mt-6={preferredWidth > 3}
+	class:lg:mt-0={preferredWidth > 3}
+	class:lg:ms-6={preferredWidth > 3}
 	in:fade={{ duration: 250 }}
 >
-	<!-- Resizer Component inside the sidebar -->
+	<!-- Resizer Component inside the sidebar (always rendered so we can drag it open) -->
 	<Resizer
 		viewport={panelEl}
 		direction="left"
 		minWidth={minWidth}
 		maxWidth={maxWidth}
 		defaultValue={defaultValue}
+		collapsedWidth={3}
 		persistId="scheduler-sidebar-width"
 		onWidth={(w) => preferredWidth = w}
 	/>
 
-	<!-- Panel Header -->
-	<div class="flex items-center justify-between pb-3 border-b border-border/80">
-		<div class="flex items-center gap-2">
-			<Sparkles size={16} class="text-purple-500 animate-pulse" />
-			<span class="text-xs font-bold text-foreground tracking-wide">
+	{#if preferredWidth <= 3}
+		<!-- Collapsed vertical strip -->
+		<div class="h-full w-full flex flex-col items-center py-4 bg-card/30 border-l border-border/80 select-none">
+			<button
+				type="button"
+				class="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground cursor-pointer transition-colors duration-150 mb-4"
+				onclick={() => preferredWidth = defaultValue}
+				title={getLocale() === "ar" ? "توسيع اللوحة" : "Expand Panel"}
+			>
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<rect width="18" height="18" x="3" y="3" rx="2" />
+					<path d="M15 3v18" />
+				</svg>
+			</button>
+
+			<span class="vertical-text text-[10px] font-bold text-muted-foreground tracking-wider uppercase whitespace-nowrap">
 				{getLocale() === "ar" ? "الجدولة الذكية (AI)" : "AI Auto-Scheduler"}
 			</span>
 		</div>
-		<span class="text-[9px] font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded-full uppercase tracking-wider">
-			Orbis AI v1.0
-		</span>
-	</div>
-
-	<!-- Direct Weekly Load Editor section -->
-	{#if classSubjects.length > 0}
-		<div class="flex flex-col gap-2.5 pb-2.5 border-b border-border/60" in:fade={{ duration: 150 }}>
-			<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-				<BookOpen size={12} class="text-purple-500" />
-				<span>{getLocale() === "ar" ? "نصاب الساعات الأسبوعية" : "Weekly Subject Hours"}</span>
+	{:else}
+		<!-- Panel Header -->
+		<div class="flex items-center justify-between pb-3 border-b border-border/80">
+			<div class="flex items-center gap-2">
+				<Sparkles size={16} class="text-purple-500 animate-pulse" />
+				<span class="text-xs font-bold text-foreground tracking-wide">
+					{getLocale() === "ar" ? "الجدولة الذكية (AI)" : "AI Auto-Scheduler"}
+				</span>
+			</div>
+			<span class="text-[9px] font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+				Orbis AI v1.0
 			</span>
-			<div class="flex flex-col gap-1.5 max-h-[160px] overflow-y-auto pr-1 scrollbar-hide">
-				{#each classSubjects as cs (cs.id)}
-					<div class="flex items-center justify-between p-1.5 bg-background border border-border/50 rounded-lg text-[9.5px]">
-						<span class="font-bold text-foreground truncate max-w-[130px]" title={getSubjectName(cs.subject_id)}>
-							{getSubjectName(cs.subject_id)}
-						</span>
-						<div class="flex items-center gap-1.5">
-							<button 
-								type="button"
-								class="h-5 w-5 rounded bg-muted hover:bg-muted-foreground/10 text-foreground flex items-center justify-center font-bold cursor-pointer disabled:opacity-50 border border-border/60"
-								onclick={() => adjustSubjectHours(cs.id, -1)}
-								disabled={isUpdatingSubjectHours}
-							>
-								-
-							</button>
-							<span class="font-mono font-bold w-4 text-center text-foreground">
-								{cs.weekly_hours || 0}
+		</div>
+
+		<!-- Direct Weekly Load Editor section -->
+		{#if classSubjects.length > 0}
+			<div class="flex flex-col gap-2.5 pb-2.5 border-b border-border/60" in:fade={{ duration: 150 }}>
+				<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+					<BookOpen size={12} class="text-purple-500" />
+					<span>{getLocale() === "ar" ? "نصاب الساعات الأسبوعية" : "Weekly Subject Hours"}</span>
+				</span>
+				<div class="flex flex-col gap-1.5 max-h-[160px] overflow-y-auto pr-1 scrollbar-hide">
+					{#each classSubjects as cs (cs.id)}
+						<div class="flex items-center justify-between p-1.5 bg-background border border-border/50 rounded-lg text-[9.5px]">
+							<span class="font-bold text-foreground truncate max-w-[130px]" title={getSubjectName(cs.subject_id)}>
+								{getSubjectName(cs.subject_id)}
 							</span>
-							<button 
-								type="button"
-								class="h-5 w-5 rounded bg-muted hover:bg-muted-foreground/10 text-foreground flex items-center justify-center font-bold cursor-pointer disabled:opacity-50 border border-border/60"
-								onclick={() => adjustSubjectHours(cs.id, 1)}
-								disabled={isUpdatingSubjectHours}
-							>
-								+
-							</button>
+							<div class="flex items-center gap-1.5">
+								<button 
+									type="button"
+									class="h-5 w-5 rounded bg-muted hover:bg-muted-foreground/10 text-foreground flex items-center justify-center font-bold cursor-pointer disabled:opacity-50 border border-border/60"
+									onclick={() => adjustSubjectHours(cs.id, -1)}
+									disabled={isUpdatingSubjectHours}
+								>
+									-
+								</button>
+								<span class="font-mono font-bold w-4 text-center text-foreground">
+									{cs.weekly_hours || 0}
+								</span>
+								<button 
+									type="button"
+									class="h-5 w-5 rounded bg-muted hover:bg-muted-foreground/10 text-foreground flex items-center justify-center font-bold cursor-pointer disabled:opacity-50 border border-border/60"
+									onclick={() => adjustSubjectHours(cs.id, 1)}
+									disabled={isUpdatingSubjectHours}
+								>
+									+
+								</button>
+							</div>
 						</div>
+					{/each}
+				</div>
+			</div>
+		{/if}
+
+		<!-- Settings / Controls -->
+		{#if !activeJob || activeJob.status === 'completed' || activeJob.status === 'failed' || activeJob.status === 'cancelled'}
+			<div class="flex flex-col gap-3.5" in:fade={{ duration: 150 }}>
+				<!-- Solver Mode -->
+				<div class="flex flex-col gap-1.5">
+					<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+						{getLocale() === "ar" ? "وضع الجدولة التلقائية" : "Scheduling Optimization Mode"}
+					</span>
+					<div class="grid grid-cols-2 p-0.5 rounded-lg bg-muted border border-border/60">
+						<button 
+							type="button"
+							class="text-[10px] font-bold py-1.5 rounded-md transition-all duration-150 cursor-pointer {solverMode === 'incremental' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}"
+							onclick={() => solverMode = 'incremental'}
+						>
+							{getLocale() === "ar" ? "تدريجي (مسودة)" : "Incremental"}
+						</button>
+						<button 
+							type="button"
+							class="text-[10px] font-bold py-1.5 rounded-md transition-all duration-150 cursor-pointer {solverMode === 'full' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}"
+							onclick={() => solverMode = 'full'}
+						>
+							{getLocale() === "ar" ? "إعادة بالكامل" : "Full Reset"}
+						</button>
 					</div>
-				{/each}
-			</div>
-		</div>
-	{/if}
-
-	<!-- Settings / Controls -->
-	{#if !activeJob || activeJob.status === 'completed' || activeJob.status === 'failed' || activeJob.status === 'cancelled'}
-		<div class="flex flex-col gap-3.5" in:fade={{ duration: 150 }}>
-			<!-- Solver Mode -->
-			<div class="flex flex-col gap-1.5">
-				<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-					{getLocale() === "ar" ? "وضع الجدولة التلقائية" : "Scheduling Optimization Mode"}
-				</span>
-				<div class="grid grid-cols-2 p-0.5 rounded-lg bg-muted border border-border/60">
-					<button 
-						type="button"
-						class="text-[10px] font-bold py-1.5 rounded-md transition-all duration-150 cursor-pointer {solverMode === 'incremental' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}"
-						onclick={() => solverMode = 'incremental'}
-					>
-						{getLocale() === "ar" ? "تدريجي (مسودة)" : "Incremental"}
-					</button>
-					<button 
-						type="button"
-						class="text-[10px] font-bold py-1.5 rounded-md transition-all duration-150 cursor-pointer {solverMode === 'full' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}"
-						onclick={() => solverMode = 'full'}
-					>
-						{getLocale() === "ar" ? "إعادة بالكامل" : "Full Reset"}
-					</button>
+					<p class="text-[9px] text-muted-foreground leading-normal mt-0.5">
+						{solverMode === 'incremental' 
+							? (getLocale() === "ar" ? "يحافظ على الحصص الحالية المجدولة يدوياً، ويملأ الساعات الشاغرة فقط." : "Preserves current manual schedule, only schedules unassigned weekly hours.") 
+							: (getLocale() === "ar" ? "يمسح الحصص الحالية في هذه الحلقة، ويعيد الجدولة بالكامل من الصفر." : "Clears all lessons in this cycle and generates a completely fresh schedule.")
+						}
+					</p>
 				</div>
-				<p class="text-[9px] text-muted-foreground leading-normal mt-0.5">
-					{solverMode === 'incremental' 
-						? (getLocale() === "ar" ? "يحافظ على الحصص الحالية المجدولة يدوياً، ويملأ الساعات الشاغرة فقط." : "Preserves current manual schedule, only schedules unassigned weekly hours.") 
-						: (getLocale() === "ar" ? "يمسح الحصص الحالية في هذه الحلقة، ويعيد الجدولة بالكامل من الصفر." : "Clears all lessons in this cycle and generates a completely fresh schedule.")
-					}
-				</p>
-			</div>
 
-			<!-- AI Constraints Config -->
-			<div class="flex flex-col gap-2 bg-muted/40 p-2.5 rounded-lg border border-border/60">
-				<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-					{getLocale() === "ar" ? "محددات قيود الجدولة (AI)" : "AI Constraints Config"}
-				</span>
-				<label class="flex items-center justify-between cursor-pointer py-0.5">
-					<span class="text-[9px] font-semibold text-foreground">
-						{getLocale() === "ar" ? "تجنب فراغات الطلاب" : "Minimize student gaps"}
+				<!-- AI Constraints Config -->
+				<div class="flex flex-col gap-2 bg-muted/40 p-2.5 rounded-lg border border-border/60">
+					<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+						{getLocale() === "ar" ? "محددات قيود الجدولة (AI)" : "AI Constraints Config"}
 					</span>
-					<input type="checkbox" bind:checked={minimizeStudentGaps} class="rounded text-purple-600 focus:ring-purple-500 accent-purple-600 cursor-pointer h-3.5 w-3.5" />
-				</label>
-				<label class="flex items-center justify-between cursor-pointer py-0.5">
-					<span class="text-[9px] font-semibold text-foreground">
-						{getLocale() === "ar" ? "تجنب فراغات المدرسين" : "Minimize teacher gaps"}
-					</span>
-					<input type="checkbox" bind:checked={minimizeTeacherGaps} class="rounded text-purple-600 focus:ring-purple-500 accent-purple-600 cursor-pointer h-3.5 w-3.5" />
-				</label>
-				<label class="flex items-center justify-between cursor-pointer py-0.5">
-					<span class="text-[9px] font-semibold text-foreground">
-						{getLocale() === "ar" ? "حظر مشاركة القاعات بالكامل" : "Strict Room Capacity"}
-					</span>
-					<input type="checkbox" bind:checked={strictRoomCapacity} class="rounded text-purple-600 focus:ring-purple-500 accent-purple-600 cursor-pointer h-3.5 w-3.5" />
-				</label>
-			</div>
-
-			<Button 
-				variant="lime" 
-				class="w-full text-xs font-semibold flex items-center justify-center gap-1.5 py-1.5 h-9" 
-				onclick={triggerSolving}
-				disabled={isSolving}
-			>
-				<Cpu size={13} />
-				<span>{getLocale() === "ar" ? "تشغيل المحسّن التلقائي" : "Run AI Optimizer"}</span>
-			</Button>
-		</div>
-	{/if}
-
-	<!-- Active Solver State -->
-	{#if activeJob && (activeJob.status === 'pending' || activeJob.status === 'running')}
-		<div class="bg-muted/40 border border-border/80 rounded-lg p-3.5 flex flex-col gap-3" in:fade={{ duration: 150 }}>
-			<div class="flex items-center justify-between">
-				<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-					{getLocale() === "ar" ? "الحالة الجارية" : "Optimizer Status"}
-				</span>
-				<span class="text-[9px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold uppercase tracking-wider animate-pulse">
-					{getLocale() === "ar" ? "جاري البحث..." : "Solving..."}
-				</span>
-			</div>
-
-			<!-- Time counter -->
-			<div class="flex items-center gap-2 text-xs font-semibold font-mono bg-background px-3 py-1.5 rounded border border-border/60 justify-center">
-				<Clock size={12} class="text-amber-500 animate-spin" style="animation-duration: 3s" />
-				<span>{formatTime(timeElapsed)}</span>
-			</div>
-
-			<!-- Score progression -->
-			<div class="flex flex-col gap-1">
-				<span class="text-[9px] text-muted-foreground">{getLocale() === "ar" ? "مؤشر القيود المؤقت:" : "Current Constraint Score:"}</span>
-				<div class="bg-background border border-border/60 rounded p-2 font-mono text-[10px] flex justify-between">
-					<span class="text-destructive font-semibold">
-						{activeJob.score ? activeJob.score.split('hard/')[0] : '0'} Hard
-					</span>
-					<span class="text-primary font-semibold">
-						{activeJob.score ? activeJob.score.split('hard/')[1] || '0' : '0'} Soft
-					</span>
+					<label class="flex items-center justify-between cursor-pointer py-0.5">
+						<span class="text-[9px] font-semibold text-foreground">
+							{getLocale() === "ar" ? "تجنب فراغات الطلاب" : "Minimize student gaps"}
+						</span>
+						<input type="checkbox" bind:checked={minimizeStudentGaps} class="rounded text-purple-600 focus:ring-purple-500 accent-purple-600 cursor-pointer h-3.5 w-3.5" />
+					</label>
+					<label class="flex items-center justify-between cursor-pointer py-0.5">
+						<span class="text-[9px] font-semibold text-foreground">
+							{getLocale() === "ar" ? "تجنب فراغات المدرسين" : "Minimize teacher gaps"}
+						</span>
+						<input type="checkbox" bind:checked={minimizeTeacherGaps} class="rounded text-purple-600 focus:ring-purple-500 accent-purple-600 cursor-pointer h-3.5 w-3.5" />
+					</label>
+					<label class="flex items-center justify-between cursor-pointer py-0.5">
+						<span class="text-[9px] font-semibold text-foreground">
+							{getLocale() === "ar" ? "حظر مشاركة القاعات بالكامل" : "Strict Room Capacity"}
+						</span>
+						<input type="checkbox" bind:checked={strictRoomCapacity} class="rounded text-purple-600 focus:ring-purple-500 accent-purple-600 cursor-pointer h-3.5 w-3.5" />
+					</label>
 				</div>
-			</div>
 
-			<Button 
-				variant="outline" 
-				class="w-full text-xs font-semibold text-destructive hover:bg-destructive/10 border-destructive/20 flex items-center justify-center gap-1.5 py-1.5 h-8 mt-1" 
-				onclick={cancelSolving}
-			>
-				<Square size={10} />
-				<span>{getLocale() === "ar" ? "إلغاء التشغيل" : "Cancel Solving"}</span>
-			</Button>
-		</div>
-	{/if}
-
-	<!-- Draft Preview Mode Controls -->
-	{#if activeJob && activeJob.status === 'completed'}
-		<div class="bg-purple-500/5 border border-purple-500/20 rounded-lg p-3.5 flex flex-col gap-3" in:fade={{ duration: 150 }}>
-			<div class="flex items-center justify-between">
-				<span class="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">
-					{getLocale() === "ar" ? "المسودة المقترحة" : "Proposed Solution"}
-				</span>
-				<span class="text-[9px] font-mono px-2 py-0.5 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold uppercase tracking-wider">
-					{getLocale() === "ar" ? "جاهزة" : "Ready"}
-				</span>
-			</div>
-
-			<!-- Final Score -->
-			<div class="flex flex-col gap-1.5">
-				<span class="text-[9px] text-muted-foreground">{getLocale() === "ar" ? "النقاط المحققة:" : "Optimized Score Summary:"}</span>
-				<div class="bg-background border border-border/60 rounded p-2.5 font-mono text-[10px] flex justify-between">
-					<span class="text-destructive font-bold">
-						{activeJob.score ? activeJob.score.split('hard/')[0] : '0'} Hard
-					</span>
-					<span class="text-primary font-bold">
-						{activeJob.score ? activeJob.score.split('hard/')[1] || '0' : '0'} Soft
-					</span>
-				</div>
-			</div>
-
-			<!-- Toggle preview -->
-			<label class="flex items-center justify-between p-2 rounded bg-background border border-border/60 cursor-pointer select-none">
-				<span class="text-[10px] font-bold text-foreground">
-					{getLocale() === "ar" ? "معاينة الحصص المقترحة" : "Preview draft on grid"}
-				</span>
-				<input 
-					type="checkbox" 
-					bind:checked={previewDraft} 
-					class="rounded text-purple-600 focus:ring-purple-500 accent-purple-600 cursor-pointer h-3.5 w-3.5"
-				/>
-			</label>
-
-			<!-- Apply / Discard Actions -->
-			<div class="flex gap-2 mt-1">
 				<Button 
 					variant="lime" 
-					class="flex-1 text-xs font-semibold py-1.5 h-8 flex items-center justify-center gap-1"
-					onclick={applySolving}
+					class="w-full text-xs font-semibold flex items-center justify-center gap-1.5 py-1.5 h-9" 
+					onclick={triggerSolving}
+					disabled={isSolving}
 				>
-					<CheckCircle2 size={11} />
-					<span>{getLocale() === "ar" ? "اعتماد الجدول" : "Apply Table"}</span>
+					<Cpu size={13} />
+					<span>{getLocale() === "ar" ? "تشغيل المحسّن التلقائي" : "Run AI Optimizer"}</span>
 				</Button>
+			</div>
+		{/if}
+
+		<!-- Active Solver State -->
+		{#if activeJob && (activeJob.status === 'pending' || activeJob.status === 'running')}
+			<div class="bg-muted/40 border border-border/80 rounded-lg p-3.5 flex flex-col gap-3" in:fade={{ duration: 150 }}>
+				<div class="flex items-center justify-between">
+					<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+						{getLocale() === "ar" ? "الحالة الجارية" : "Optimizer Status"}
+					</span>
+					<span class="text-[9px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold uppercase tracking-wider animate-pulse">
+						{getLocale() === "ar" ? "جاري البحث..." : "Solving..."}
+					</span>
+				</div>
+
+				<!-- Time counter -->
+				<div class="flex items-center gap-2 text-xs font-semibold font-mono bg-background px-3 py-1.5 rounded border border-border/60 justify-center">
+					<Clock size={12} class="text-amber-500 animate-spin" style="animation-duration: 3s" />
+					<span>{formatTime(timeElapsed)}</span>
+				</div>
+
+				<!-- Score progression -->
+				<div class="flex flex-col gap-1">
+					<span class="text-[9px] text-muted-foreground">{getLocale() === "ar" ? "مؤشر القيود المؤقت:" : "Current Constraint Score:"}</span>
+					<div class="bg-background border border-border/60 rounded p-2 font-mono text-[10px] flex justify-between">
+						<span class="text-destructive font-semibold">
+							{activeJob.score ? activeJob.score.split('hard/')[0] : '0'} Hard
+						</span>
+						<span class="text-primary font-semibold">
+							{activeJob.score ? activeJob.score.split('hard/')[1] || '0' : '0'} Soft
+						</span>
+					</div>
+				</div>
+
 				<Button 
 					variant="outline" 
-					class="flex-1 text-xs font-semibold py-1.5 h-8 text-muted-foreground hover:bg-muted"
-					onclick={discardDraft}
+					class="w-full text-xs font-semibold text-destructive hover:bg-destructive/10 border-destructive/20 flex items-center justify-center gap-1.5 py-1.5 h-8 mt-1" 
+					onclick={cancelSolving}
 				>
-					<span>{getLocale() === "ar" ? "تجاهل" : "Discard"}</span>
+					<Square size={10} />
+					<span>{getLocale() === "ar" ? "إلغاء التشغيل" : "Cancel Solving"}</span>
 				</Button>
 			</div>
-		</div>
-	{/if}
+		{/if}
 
-	<!-- Error Panel -->
-	{#if solveError}
-		<div class="bg-destructive/5 border border-destructive/20 rounded-lg p-3 flex items-start gap-2 text-destructive text-[10px]" in:fade={{ duration: 150 }}>
-			<AlertCircle size={14} class="shrink-0 mt-0.5" />
-			<div class="flex flex-col gap-1">
-				<span class="font-bold">{getLocale() === "ar" ? "خطأ في عملية الجدولة:" : "Optimizer Error:"}</span>
-				<span class="leading-normal">{solveError}</span>
-			</div>
-		</div>
-	{/if}
+		<!-- Draft Preview Mode Controls -->
+		{#if activeJob && activeJob.status === 'completed'}
+			<div class="bg-purple-500/5 border border-purple-500/20 rounded-lg p-3.5 flex flex-col gap-3" in:fade={{ duration: 150 }}>
+				<div class="flex items-center justify-between">
+					<span class="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">
+						{getLocale() === "ar" ? "المسودة المقترحة" : "Proposed Solution"}
+					</span>
+					<span class="text-[9px] font-mono px-2 py-0.5 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold uppercase tracking-wider">
+						{getLocale() === "ar" ? "جاهزة" : "Ready"}
+					</span>
+				</div>
 
-	<!-- History List -->
-	{#if solveJobs.length > 0}
-		<div class="flex flex-col gap-2 mt-2" in:fade={{ duration: 150 }}>
-			<div class="flex items-center gap-1.5 pb-1 border-b border-border/60">
-				<History size={12} class="text-muted-foreground" />
-				<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-					{getLocale() === "ar" ? "سجل الجدولة والتحسين" : "Optimization History"}
-				</span>
-			</div>
-			<div class="flex flex-col gap-1.5 max-h-[140px] overflow-y-auto pr-1 scrollbar-hide">
-				{#each solveJobs.slice(0, 5) as job (job.id)}
-					<div class="flex flex-col p-2 bg-muted/30 border border-border/50 rounded-lg text-[9px] leading-tight select-text">
-						<div class="flex items-center justify-between font-bold text-foreground">
-							<span class="capitalize">{job.mode === 'full' ? (getLocale() === "ar" ? "كامل" : "Full") : (getLocale() === "ar" ? "تدريجي" : "Incremental")}</span>
-							<span class="text-[8px] font-mono opacity-85">{new Date(job.created_at).toLocaleString(getLocale() === "ar" ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
-						</div>
-						<div class="flex items-center justify-between text-muted-foreground mt-1">
-							<span>{getLocale() === "ar" ? "النتيجة:" : "Score:"} <strong class="font-mono text-foreground">{job.score || 'N/A'}</strong></span>
-							<span class="font-semibold uppercase tracking-wider text-[8px] px-1 rounded {job.status === 'completed' ? 'bg-primary/10 text-primary' : job.status === 'failed' ? 'bg-destructive/10 text-destructive' : 'bg-muted text-muted-foreground'}">
-								{job.status === 'completed' ? (getLocale() === "ar" ? "ناجح" : "Done") : job.status === 'failed' ? (getLocale() === "ar" ? "فشل" : "Fail") : job.status}
-							</span>
-						</div>
+				<!-- Final Score -->
+				<div class="flex flex-col gap-1.5">
+					<span class="text-[9px] text-muted-foreground">{getLocale() === "ar" ? "النقاط المحققة:" : "Optimized Score Summary:"}</span>
+					<div class="bg-background border border-border/60 rounded p-2.5 font-mono text-[10px] flex justify-between">
+						<span class="text-destructive font-bold">
+							{activeJob.score ? activeJob.score.split('hard/')[0] : '0'} Hard
+						</span>
+						<span class="text-primary font-bold">
+							{activeJob.score ? activeJob.score.split('hard/')[1] || '0' : '0'} Soft
+						</span>
 					</div>
-				{/each}
+				</div>
+
+				<!-- Toggle preview -->
+				<label class="flex items-center justify-between p-2 rounded bg-background border border-border/60 cursor-pointer select-none">
+					<span class="text-[10px] font-bold text-foreground">
+						{getLocale() === "ar" ? "معاينة الحصص المقترحة" : "Preview draft on grid"}
+					</span>
+					<input 
+						type="checkbox" 
+						bind:checked={previewDraft} 
+						class="rounded text-purple-600 focus:ring-purple-500 accent-purple-600 cursor-pointer h-3.5 w-3.5"
+					/>
+				</label>
+
+				<!-- Apply / Discard Actions -->
+				<div class="flex gap-2 mt-1">
+					<Button 
+						variant="lime" 
+						class="flex-1 text-xs font-semibold py-1.5 h-8 flex items-center justify-center gap-1"
+						onclick={applySolving}
+					>
+						<CheckCircle2 size={11} />
+						<span>{getLocale() === "ar" ? "اعتماد الجدول" : "Apply Table"}</span>
+					</Button>
+					<Button 
+						variant="outline" 
+						class="flex-1 text-xs font-semibold py-1.5 h-8 text-muted-foreground hover:bg-muted"
+						onclick={discardDraft}
+					>
+						<span>{getLocale() === "ar" ? "تجاهل" : "Discard"}</span>
+					</Button>
+				</div>
 			</div>
-		</div>
+		{/if}
+
+		<!-- Error Panel -->
+		{#if solveError}
+			<div class="bg-destructive/5 border border-destructive/20 rounded-lg p-3 flex items-start gap-2 text-destructive text-[10px]" in:fade={{ duration: 150 }}>
+				<AlertCircle size={14} class="shrink-0 mt-0.5" />
+				<div class="flex flex-col gap-1">
+					<span class="font-bold">{getLocale() === "ar" ? "خطأ في عملية الجدولة:" : "Optimizer Error:"}</span>
+					<span class="leading-normal">{solveError}</span>
+				</div>
+			</div>
+		{/if}
+
+		<!-- History List -->
+		{#if solveJobs.length > 0}
+			<div class="flex flex-col gap-2 mt-2" in:fade={{ duration: 150 }}>
+				<div class="flex items-center gap-1.5 pb-1 border-b border-border/60">
+					<History size={12} class="text-muted-foreground" />
+					<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+						{getLocale() === "ar" ? "سجل الجدولة والتحسين" : "Optimization History"}
+					</span>
+				</div>
+				<div class="flex flex-col gap-1.5 max-h-[140px] overflow-y-auto pr-1 scrollbar-hide">
+					{#each solveJobs.slice(0, 5) as job (job.id)}
+						<div class="flex flex-col p-2 bg-muted/30 border border-border/50 rounded-lg text-[9px] leading-tight select-text">
+							<div class="flex items-center justify-between font-bold text-foreground">
+								<span class="capitalize">{job.mode === 'full' ? (getLocale() === "ar" ? "كامل" : "Full") : (getLocale() === "ar" ? "تدريجي" : "Incremental")}</span>
+								<span class="text-[8px] font-mono opacity-85">{new Date(job.created_at).toLocaleString(getLocale() === "ar" ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+							</div>
+							<div class="flex items-center justify-between text-muted-foreground mt-1">
+								<span>{getLocale() === "ar" ? "النتيجة:" : "Score:"} <strong class="font-mono text-foreground">{job.score || 'N/A'}</strong></span>
+								<span class="font-semibold uppercase tracking-wider text-[8px] px-1 rounded {job.status === 'completed' ? 'bg-primary/10 text-primary' : job.status === 'failed' ? 'bg-destructive/10 text-destructive' : 'bg-muted text-muted-foreground'}">
+									{job.status === 'completed' ? (getLocale() === "ar" ? "ناجح" : "Done") : job.status === 'failed' ? (getLocale() === "ar" ? "فشل" : "Fail") : job.status}
+								</span>
+							</div>
+						</div>
+					{/each}
+				</div>
+			</div>
+		{/if}
 	{/if}
 </div>
+
+<style>
+	.vertical-text {
+		writing-mode: vertical-rl;
+		text-orientation: mixed;
+		transform: rotate(180deg);
+	}
+</style>

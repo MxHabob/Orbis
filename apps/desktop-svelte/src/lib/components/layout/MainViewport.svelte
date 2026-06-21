@@ -37,6 +37,8 @@ let {
   middle,
   right,
   rightWidth = { default: 0, min: 0 },
+  leftLabel,
+  rightLabel,
 }: {
   name: string;
   left?: Snippet;
@@ -44,7 +46,11 @@ let {
   middle: Snippet;
   right?: Snippet;
   rightWidth?: PanelSize;
+  leftLabel?: string;
+  rightLabel?: string;
 } = $props();
+
+const COLLAPSED_WIDTH = 3;
 
 // Convert px to rem using root font-size
 function pxToRem(px: number): number {
@@ -69,33 +75,73 @@ const rightMaxWidth = $derived(right ? pxToRem(rightWidth.min * 3) : 0);
 
 // Final computed widths
 const finalLeftWidth = $derived(
-  left ? Math.max(leftMinWidth, Math.min(leftMaxWidth, leftPreferredWidth)) : 0,
+  left
+    ? (leftPreferredWidth <= COLLAPSED_WIDTH
+        ? COLLAPSED_WIDTH
+        : Math.max(leftMinWidth, Math.min(leftMaxWidth, leftPreferredWidth)))
+    : 0,
 );
 const finalRightWidth = $derived(
   right
-    ? Math.max(rightMinWidth, Math.min(rightMaxWidth, rightPreferredWidth))
+    ? (rightPreferredWidth <= COLLAPSED_WIDTH
+        ? COLLAPSED_WIDTH
+        : Math.max(rightMinWidth, Math.min(rightMaxWidth, rightPreferredWidth)))
     : 0,
 );
+
+function getFallbackLabel(viewportName: string, side: "left" | "right"): string {
+  if (side === "left") {
+    if (viewportName.includes("academics")) return "Academics";
+    if (viewportName.includes("finance")) return "Finance";
+    return "Filters";
+  } else {
+    return "Details";
+  }
+}
 </script>
 
 <SashLayer>
-	<div class="relative flex h-full w-full flex-1 items-stretch gap-2">
+	<div class="relative flex h-full w-full flex-1 items-stretch">
 		{#if left}
 			<div
 				class="relative flex h-full shrink-0 flex-col"
+				class:me-2={finalLeftWidth > COLLAPSED_WIDTH}
+				class:overflow-hidden={finalLeftWidth === COLLAPSED_WIDTH}
 				bind:this={leftDiv}
 				style:width="{finalLeftWidth}rem"
-				style:min-width="{leftMinWidth}rem"
+				style:min-width="{finalLeftWidth}rem"
 			>
-				<div class="flex h-full flex-col overflow-hidden">
-					{@render left()}
-				</div>
+				{#if finalLeftWidth === COLLAPSED_WIDTH}
+					<!-- Collapsed vertical strip -->
+					<div class="h-full w-full flex flex-col items-center py-4 bg-card/30 border-r border-border/80 select-none">
+						<button
+							type="button"
+							class="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground cursor-pointer transition-colors duration-150 mb-4"
+							onclick={() => leftPreferredWidth = pxToRem(leftWidth.default)}
+							title="Expand Sidebar"
+						>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<rect width="18" height="18" x="3" y="3" rx="2" />
+								<path d="M9 3v18" />
+							</svg>
+						</button>
+						
+						<span class="vertical-text text-[10px] font-bold text-muted-foreground tracking-wider uppercase whitespace-nowrap">
+							{leftLabel || getFallbackLabel(name, "left")}
+						</span>
+					</div>
+				{:else}
+					<div class="flex h-full flex-col overflow-hidden">
+						{@render left()}
+					</div>
+				{/if}
 				<Resizer
 					viewport={leftDiv}
 					direction="right"
 					minWidth={leftMinWidth}
 					maxWidth={leftMaxWidth}
 					defaultValue={pxToRem(leftWidth.default)}
+					collapsedWidth={COLLAPSED_WIDTH}
 					persistId="viewport-{name}-left"
 					onWidth={(w) => (leftPreferredWidth = w)}
 				/>
@@ -109,9 +155,11 @@ const finalRightWidth = $derived(
 		{#if right}
 			<div
 				class="relative flex h-full shrink-0 flex-col"
+				class:ms-2={finalRightWidth > COLLAPSED_WIDTH}
+				class:overflow-hidden={finalRightWidth === COLLAPSED_WIDTH}
 				bind:this={rightDiv}
 				style:width="{finalRightWidth}rem"
-				style:min-width="{rightMinWidth}rem"
+				style:min-width="{finalRightWidth}rem"
 			>
 				<Resizer
 					viewport={rightDiv}
@@ -119,13 +167,43 @@ const finalRightWidth = $derived(
 					minWidth={rightMinWidth}
 					maxWidth={rightMaxWidth}
 					defaultValue={pxToRem(rightWidth.default)}
+					collapsedWidth={COLLAPSED_WIDTH}
 					persistId="viewport-{name}-right"
 					onWidth={(w) => (rightPreferredWidth = w)}
 				/>
-				<div class="flex h-full flex-col overflow-hidden">
-					{@render right()}
-				</div>
+				{#if finalRightWidth === COLLAPSED_WIDTH}
+					<!-- Collapsed vertical strip -->
+					<div class="h-full w-full flex flex-col items-center py-4 bg-card/30 border-l border-border/80 select-none">
+						<button
+							type="button"
+							class="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground cursor-pointer transition-colors duration-150 mb-4"
+							onclick={() => rightPreferredWidth = pxToRem(rightWidth.default)}
+							title="Expand Sidebar"
+						>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<rect width="18" height="18" x="3" y="3" rx="2" />
+								<path d="M15 3v18" />
+							</svg>
+						</button>
+						
+						<span class="vertical-text text-[10px] font-bold text-muted-foreground tracking-wider uppercase whitespace-nowrap">
+							{rightLabel || getFallbackLabel(name, "right")}
+						</span>
+					</div>
+				{:else}
+					<div class="flex h-full flex-col overflow-hidden">
+						{@render right()}
+					</div>
+				{/if}
 			</div>
 		{/if}
 	</div>
 </SashLayer>
+
+<style>
+	.vertical-text {
+		writing-mode: vertical-rl;
+		text-orientation: mixed;
+		transform: rotate(180deg);
+	}
+</style>

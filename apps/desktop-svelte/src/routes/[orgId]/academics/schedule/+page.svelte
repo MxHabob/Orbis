@@ -347,7 +347,7 @@ function openScheduler(day: number, slotId: string) {
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6">
 	<!-- Layout Grid: Main Content Column + AI Scheduler Column -->
-	<div class="flex flex-col lg:flex-row gap-6 items-stretch w-full">
+	<div class="flex flex-col lg:flex-row items-stretch w-full">
 		
 		<!-- Main Schedule Panel Column -->
 		<div class="flex-1 min-w-0 w-full flex flex-col gap-6">
