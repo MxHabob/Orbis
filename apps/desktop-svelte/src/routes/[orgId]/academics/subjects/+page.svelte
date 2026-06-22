@@ -24,7 +24,7 @@ import {
 import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
-import SubjectCreateSheet from "$lib/components/academics/subject-create-sheet.svelte";
+import SubjectCreateSheet from "$lib/components/sheets/subject-create-sheet.svelte";
 import * as m from "$lib/paraglide/messages";
 
 let { data }: { data: { orgId: string } } = $props();

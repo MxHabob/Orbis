@@ -12,7 +12,7 @@ import { Plus, Users, GraduationCap, Percent } from "lucide-svelte";
 import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
-import ClassCreateSheet from "$lib/components/academics/class-create-sheet.svelte";
+import ClassCreateSheet from "$lib/components/sheets/class-create-sheet.svelte";
 import * as m from "$lib/paraglide/messages";
 
 let { data }: { data: { orgId: string } } = $props();

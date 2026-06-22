@@ -29,8 +29,8 @@ import {
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency } from "$lib/i18n-utils";
 import { fade } from "svelte/transition";
-import TreasuryCreateSheet from "$lib/components/finance/treasury-create-sheet.svelte";
-import LedgerCreateSheet from "$lib/components/finance/ledger-create-sheet.svelte";
+import TreasuryCreateSheet from "$lib/components/sheets/treasury-create-sheet.svelte";
+import LedgerCreateSheet from "$lib/components/sheets/ledger-create-sheet.svelte";
 import * as m from "$lib/paraglide/messages";
 
 let { data }: { data: { orgId: string } } = $props();

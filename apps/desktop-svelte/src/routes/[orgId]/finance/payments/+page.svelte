@@ -29,7 +29,7 @@ import {
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate } from "$lib/i18n-utils";
 import { fade } from "svelte/transition";
-import PaymentRecordSheet from "$lib/components/finance/payment-record-sheet.svelte";
+import PaymentRecordSheet from "$lib/components/sheets/payment-record-sheet.svelte";
 import * as m from "$lib/paraglide/messages";
 
 let { data }: { data: { orgId: string } } = $props();

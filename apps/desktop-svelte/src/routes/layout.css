@@ -1,5 +1,7 @@
 @import "@orbis/ui-svelte/globals.css";
 
+@source "../../../../packages/ui-svelte/src";
+
 html,
 body {
   overflow: hidden !important;
@@ -8,6 +10,7 @@ body {
   margin: 0;
   padding: 0;
 }
+
 
 /* Enforce dark-mode scrollbars and styling in Tauri/WebView2 */
 :root,

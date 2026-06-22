@@ -13,7 +13,7 @@ import { Plus, Clock, MapPin, User, X } from "lucide-svelte";
 import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
-import LessonCreateSheet from "$lib/components/academics/lesson-create-sheet.svelte";
+import LessonCreateSheet from "$lib/components/sheets/lesson-create-sheet.svelte";
 import SchedulerAiPanel from "$lib/components/academics/scheduler-ai-panel.svelte";
 import { Timetable } from "@orbis/ui-svelte/timetable";
 import * as m from "$lib/paraglide/messages";

@@ -30,7 +30,7 @@ import {
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate } from "$lib/i18n-utils";
 import { fade } from "svelte/transition";
-import FeeAssignSheet from "$lib/components/finance/fee-assign-sheet.svelte";
+import FeeAssignSheet from "$lib/components/sheets/fee-assign-sheet.svelte";
 import * as m from "$lib/paraglide/messages";
 
 let { data }: { data: { orgId: string } } = $props();

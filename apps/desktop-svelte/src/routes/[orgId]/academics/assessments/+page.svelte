@@ -22,7 +22,7 @@ import {
 import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
-import AssessmentCreateSheet from "$lib/components/academics/assessment-create-sheet.svelte";
+import AssessmentCreateSheet from "$lib/components/sheets/assessment-create-sheet.svelte";
 import * as m from "$lib/paraglide/messages";
 
 let { data }: { data: { orgId: string } } = $props();
