@@ -66,7 +66,7 @@ try {
   console.log("Creating academic cycle: 1447 Hijri...");
   db.prepare(`
     INSERT INTO academic_cycles (id, org_id, name, name_ar, start_date, end_date, type, grading_system, is_current, is_locked, is_enrollment_open, created_at, updated_at)
-    VALUES (?, ?, 'Academic Year 1447 Hijri', 'العام الدراسي 1447 هـ', '2026-06-21', '2027-02-21', 'yearly', 'percentage', 1, 0, 1, datetime('now'), datetime('now'))
+    VALUES (?, ?, 'Academic Year 1447 Hijri', 'العام الدراسي 1447 هـ', '2026-06-21', '2027-02-21', 'year', 'percentage', 1, 0, 1, datetime('now'), datetime('now'))
   `).run(cycleId, orgId);
 
   // 2. Create Standard Time Slots
