@@ -33,12 +33,15 @@ import {
 } from "lucide-svelte";
 import { onMount } from "svelte";
 import { toast } from "svelte-sonner";
+import { studentsStore } from "$lib/stores";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatDate } from "$lib/i18n-utils";
 
 const orgId = $derived(page.params.orgId);
 const studentId = $derived(page.params.studentId);
+const student = $derived(studentsStore.list.find((s) => s.id === studentId));
+const studentUserId = $derived(student?.student_id || "");
 
 let documents = $state<any[]>([]);
 let isLoading = $state(true);
@@ -60,17 +63,19 @@ let uploadFileUrl = $state("");
 let uploadFileSize = $state("1.5 MB");
 let uploadFileExt = $state("pdf");
 
-onMount(() => {
-  loadDocuments();
+$effect(() => {
+  if (studentUserId) {
+    loadDocuments();
+  }
 });
 
 async function loadDocuments() {
+  if (!orgId || !studentUserId) return;
   isLoading = true;
   error = null;
   try {
-    if (!orgId || !studentId) return;
     // Fetch real documents for this student
-    documents = await commands.documents.getAll({ orgId, ownerId: studentId });
+    documents = await commands.documents.getAll({ orgId, ownerId: studentUserId });
   } catch (e) {
     error = e instanceof Error ? e.message : String(e);
   } finally {
@@ -87,7 +92,7 @@ async function handleAddDocument() {
   try {
     const request = {
       orgId,
-      ownerId: studentId,
+      ownerId: studentUserId,
       name: newDocName.trim(),
       title: newDocTitle.trim() ? newDocTitle.trim() : newDocName.trim(),
       description: newDocDescription.trim() ? newDocDescription.trim() : null,
