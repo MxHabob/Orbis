@@ -29,7 +29,6 @@ import {
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate } from "$lib/i18n-utils";
 import { fade } from "svelte/transition";
-import PaymentRecordSheet from "$lib/components/sheets/payment-record-sheet.svelte";
 import * as m from "$lib/paraglide/messages";
 
 let { data }: { data: { orgId: string } } = $props();
@@ -42,9 +41,6 @@ let error = $state<string | null>(null);
 // Filters State
 let searchQuery = $state("");
 let methodFilter = $state<string>("all");
-
-// Sheet trigger State
-let isSheetOpen = $state(false);
 
 async function loadPayments() {
   isLoading = true;
@@ -135,14 +131,15 @@ function getMethodBadgeClass(methodStr: string) {
 			</p>
 		</div>
 
-		<Button 
-			variant="lime" 
-			class="text-xs h-9 px-3 shrink-0" 
-			onclick={() => isSheetOpen = true}
-		>
-			<Plus size={14} class={getLocale() === "ar" ? 'ml-1.5' : 'mr-1.5'} />
-			{m.payments_record_button()}
-		</Button>
+		<a href={`/${data.orgId}/finance/payments/pos`}>
+			<Button 
+				variant="lime" 
+				class="text-xs h-9 px-3 shrink-0" 
+			>
+				<Plus size={14} class={getLocale() === "ar" ? 'ml-1.5' : 'mr-1.5'} />
+				{m.payments_record_button()}
+			</Button>
+		</a>
 	</div>
 
 	<!-- Statistics summary row -->
@@ -232,9 +229,11 @@ function getMethodBadgeClass(methodStr: string) {
 					{m.payments_no_payments_desc()}
 				</p>
 			</div>
-			<Button variant="lime" class="text-xs mt-2" onclick={() => isSheetOpen = true}>
-				{m.payments_record_button()}
-			</Button>
+			<a href={`/${data.orgId}/finance/payments/pos`}>
+				<Button variant="lime" class="text-xs mt-2">
+					{m.payments_record_button()}
+				</Button>
+			</a>
 		</div>
 	{:else}
 		<!-- Data Table -->
@@ -286,10 +285,3 @@ function getMethodBadgeClass(methodStr: string) {
 		</div>
 	{/if}
 </div>
-
-<!-- Modal Form Dialog -->
-<PaymentRecordSheet 
-	bind:open={isSheetOpen}
-	orgId={data.orgId}
-	onSuccess={loadPayments}
-/>
