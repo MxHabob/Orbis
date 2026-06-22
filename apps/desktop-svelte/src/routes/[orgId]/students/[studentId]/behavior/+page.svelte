@@ -136,44 +136,16 @@ async function handleAISummarize() {
 				<button onclick={loadBehavior} class="text-[10px] underline cursor-pointer mt-2 hover:text-foreground">{m.error_retry()}</button>
 			</div>
 		{:else if records.length === 0}
-			<!-- Fallback records for demo purposes -->
-			{@const fallbackRecords = [
-				{ id: '1', date: '2026-06-10', type: 'positive', description: getLocale() === 'ar' ? 'تم تكريمه في الإذاعة المدرسية للتميز الأخلاقي والعلمي' : 'Honored in the morning broadcast for moral and academic excellence', reporter: getLocale() === 'ar' ? 'أستاذ خالد بن وليد' : 'Mr. Khalid bin Waleed' },
-				{ id: '2', date: '2026-05-24', type: 'positive', description: getLocale() === 'ar' ? 'المشاركة الفعالة في تنظيف وتزيين الفصول الدراسية' : 'Active participation in cleaning and decorating classrooms', reporter: getLocale() === 'ar' ? 'أستاذ فهد الدوسري' : 'Mr. Fahd Al-Dossary' }
-			]}
-			<div class="border border-border rounded-lg bg-card overflow-hidden">
-				<Table>
-					<TableHeader>
-						<TableRow class="hover:bg-transparent">
-							<TableHead class="text-start">{m.behavior_col_date()}</TableHead>
-							<TableHead class="text-start">{m.behavior_col_type()}</TableHead>
-							<TableHead class="text-start">{m.behavior_col_details()}</TableHead>
-							<TableHead class="text-start">{m.behavior_col_reporter()}</TableHead>
-						</TableRow>
-					</TableHeader>
-					<TableBody>
-						{#each fallbackRecords as rec (rec.id)}
-							<TableRow class="hover:bg-accent/10">
-								<TableCell class="font-mono text-muted-foreground text-start">{formatDate(rec.date)}</TableCell>
-								<TableCell class="text-start">
-									{#if rec.type === 'positive'}
-										<span class="badge-brand-lime py-0.5 px-2 text-[9px] flex items-center w-fit gap-1 font-semibold">
-											<ShieldCheck size={10} />
-											{m.behavior_type_positive()}
-										</span>
-									{:else}
-										<span class="badge-brand-destructive py-0.5 px-2 text-[9px] flex items-center w-fit gap-1 font-semibold">
-											<ShieldAlert size={10} />
-											{m.behavior_type_warning()}
-										</span>
-									{/if}
-								</TableCell>
-								<TableCell class="font-semibold text-foreground text-start">{rec.description}</TableCell>
-								<TableCell class="text-muted-foreground text-start">{rec.reporter}</TableCell>
-							</TableRow>
-						{/each}
-					</TableBody>
-				</Table>
+			<div class="flex flex-col items-center justify-center p-12 text-center text-muted-foreground border border-dashed border-border rounded-xl bg-card/10 gap-3">
+				<ShieldCheck size={28} class="text-muted-foreground/30" />
+				<div class="flex flex-col gap-0.5">
+					<p class="text-xs font-semibold">
+						{getLocale() === 'ar' ? 'لا توجد سجلات سلوكية بعد' : 'No behavior records logged'}
+					</p>
+					<p class="text-[10px] text-muted-foreground/80">
+						{getLocale() === 'ar' ? 'السلوكيات والمخالفات المسجلة للطالب ستظهر هنا.' : 'All moral behaviors and violations recorded for this student will appear here.'}
+					</p>
+				</div>
 			</div>
 		{:else}
 			<div class="border border-border rounded-lg bg-card overflow-hidden">
@@ -193,7 +165,7 @@ async function handleAISummarize() {
 									{formatDate(rec.created_at) || '-'}
 								</TableCell>
 								<TableCell class="text-start">
-									{#if String(rec.record_type).toLowerCase() === 'positive' || String(rec.points || 0) >= '0'}
+									{#if String(rec.behavior_type || '').toLowerCase() === 'positive' || String(rec.points || 0) >= '0'}
 										<span class="badge-brand-lime py-0.5 px-2 text-[9px] flex items-center w-fit gap-1 font-semibold">
 											<ShieldCheck size={10} />
 											{m.behavior_type_positive()}
@@ -205,8 +177,8 @@ async function handleAISummarize() {
 										</span>
 									{/if}
 								</TableCell>
-								<TableCell class="font-semibold text-foreground text-start">{rec.description || rec.notes || '-'}</TableCell>
-								<TableCell class="text-muted-foreground text-start">{rec.recorded_by_name || rec.recorded_by || '-'}</TableCell>
+								<TableCell class="font-semibold text-foreground text-start">{rec.description || '-'}</TableCell>
+								<TableCell class="text-muted-foreground text-start">{rec.reported_by || '-'}</TableCell>
 							</TableRow>
 						{/each}
 					</TableBody>

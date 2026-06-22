@@ -201,6 +201,7 @@ pub fn run() {
             commands::finance::get_treasuries,
             commands::finance::create_treasury,
             commands::finance::get_student_fees,
+            commands::finance::get_active_fee_templates,
             commands::finance::assign_student_fee,
             commands::finance::get_payments,
             commands::finance::record_payment,

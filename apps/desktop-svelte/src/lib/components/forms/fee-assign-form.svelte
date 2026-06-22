@@ -18,30 +18,30 @@ let {
 // State
 let isSubmitting = $state(false);
 let students = $state<any[]>([]);
-let ledgers = $state<any[]>([]);
+let templates = $state<any[]>([]);
 let isLoadingDropdowns = $state(false);
 
 // Form state
 let selectedEnrollmentId = $state("");
-let selectedLedgerId = $state("");
+let selectedFeeTemplateId = $state("");
 let amount = $state<number | null>(null);
 let description = $state("");
-let dueDate = $state("");
+let dueDate = $state(new Date().toISOString().split("T")[0]);
 
 async function loadDropdownData() {
   if (!orgId) return;
   isLoadingDropdowns = true;
   try {
-    const [studentList, ledgerList] = await Promise.all([
+    const [studentList, templateList] = await Promise.all([
       commands.enrollments.getAll(orgId),
-      commands.finance.getLedgerAccounts(orgId),
+      commands.finance.getActiveFeeTemplates(orgId),
     ]);
     students = studentList;
-    ledgers = ledgerList;
+    templates = templateList;
 
     if (studentList.length > 0)
       selectedEnrollmentId = String(studentList[0].id);
-    if (ledgerList.length > 0) selectedLedgerId = String(ledgerList[0].id);
+    if (templateList.length > 0) selectedFeeTemplateId = String(templateList[0].id);
   } catch (e) {
     console.error("Error loading dropdown data for fee-assign-form:", e);
   } finally {
@@ -62,7 +62,7 @@ async function handleSubmit(e: SubmitEvent) {
     toast.error(m.fee_toast_error_student());
     return;
   }
-  if (!selectedLedgerId) {
+  if (!selectedFeeTemplateId) {
     toast.error(m.fee_toast_error_ledger());
     return;
   }
@@ -75,10 +75,10 @@ async function handleSubmit(e: SubmitEvent) {
   try {
     const request = {
       enrollment_id: selectedEnrollmentId,
-      ledger_account_id: selectedLedgerId,
+      fee_template_id: selectedFeeTemplateId,
       amount: Number(amount),
-      description: description || undefined,
-      due_date: dueDate || undefined,
+      notes: description || undefined,
+      due_date: dueDate,
     };
     await commands.finance.assignStudentFee(orgId, request);
     toast.success(m.fee_toast_success());
@@ -86,7 +86,7 @@ async function handleSubmit(e: SubmitEvent) {
     // Reset form
     amount = null;
     description = "";
-    dueDate = "";
+    dueDate = new Date().toISOString().split("T")[0];
 
     onSuccess();
   } catch (e) {
@@ -120,22 +120,22 @@ async function handleSubmit(e: SubmitEvent) {
 		</select>
 	</div>
 
-	<!-- Ledger Account Select -->
+	<!-- Fee Template Select -->
 	<div class="flex flex-col gap-2 text-start">
 		<label for="fee_ledger" class="text-sm font-medium text-foreground">
 			{m.fee_label_ledger()}
 		</label>
 		<select 
 			id="fee_ledger"
-			bind:value={selectedLedgerId}
+			bind:value={selectedFeeTemplateId}
 			class="bg-background text-foreground border border-border rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-ring outline-none h-9 w-full"
 			disabled={isLoadingDropdowns || isSubmitting}
 		>
 			{#if isLoadingDropdowns}
 				<option>{m.fee_dropdown_loading_ledgers()}</option>
 			{:else}
-				{#each ledgers as l (l.id)}
-					<option value={String(l.id)}>{l.name_ar || l.name || l.code}</option>
+				{#each templates as t (t.id)}
+					<option value={String(t.id)}>{t.name_ar || t.name || t.code}</option>
 				{/each}
 			{/if}
 		</select>

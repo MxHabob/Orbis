@@ -1,7 +1,7 @@
 use uuid::Uuid;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
-use crate::entities::{ledger_account, treasury, student_fee, payment};
+use crate::entities::{ledger_account, treasury, student_fee, payment, fee_template};
 
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct CreateLedgerAccountRequest {
@@ -111,6 +111,10 @@ impl super::Service {
             updated_at: Utc::now().to_rfc3339(),
         };
         self.repo.create_treasury(t).await.map_err(|e| e.to_string())
+    }
+
+    pub async fn get_active_fee_templates(&self, org_id: &str) -> Result<Vec<fee_template::Model>, String> {
+        self.repo.get_active_fee_templates(org_id).await.map_err(|e| e.to_string())
     }
 
     // ── Student Fees ──

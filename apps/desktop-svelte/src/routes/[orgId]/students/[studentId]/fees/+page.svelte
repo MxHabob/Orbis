@@ -35,7 +35,7 @@ let isLoading = $state(true);
 let error = $state<string | null>(null);
 
 let totalFees = $derived(
-  fees.reduce((sum, f) => sum + Number(f.amount || 0), 0),
+  fees.reduce((sum, f) => sum + Number(f.total_amount || 0), 0),
 );
 let totalPaid = $derived(
   payments.reduce((sum, p) => sum + Number(p.amount || 0), 0),
@@ -127,12 +127,12 @@ async function loadFinance() {
 						<TableBody>
 							{#each fees as fee (fee.id)}
 								<TableRow class="hover:bg-accent/10">
-									<TableCell class="font-bold text-foreground text-start">{fee.description || m.fees_default_description()}</TableCell>
+									<TableCell class="font-bold text-foreground text-start">{fee.notes || m.fees_default_description()}</TableCell>
 									<TableCell class="text-muted-foreground text-start">{fee.ledger_account_name || fee.ledger_account_id || '-'}</TableCell>
 									<TableCell class="font-mono text-muted-foreground text-start">
 										{formatDate(fee.created_at) || '-'}
 									</TableCell>
-									<TableCell class="font-bold font-mono text-start">{formatCurrency(Number(fee.amount || 0))}</TableCell>
+									<TableCell class="font-bold font-mono text-start">{formatCurrency(Number(fee.total_amount || 0))}</TableCell>
 								</TableRow>
 							{/each}
 						</TableBody>
@@ -164,7 +164,7 @@ async function loadFinance() {
 							{#each payments as pay (pay.id)}
 								<TableRow class="hover:bg-accent/10">
 									<TableCell class="font-bold text-foreground font-mono text-start">#{pay.receipt_number || pay.id.slice(0, 8)}</TableCell>
-									<TableCell class="text-muted-foreground text-start">{pay.payment_method || m.fees_default_method()}</TableCell>
+									<TableCell class="text-muted-foreground text-start">{pay.method || m.fees_default_method()}</TableCell>
 									<TableCell class="font-mono text-muted-foreground text-start">
 										{formatDate(pay.created_at) || '-'}
 									</TableCell>

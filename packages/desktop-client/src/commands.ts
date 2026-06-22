@@ -206,6 +206,9 @@ export const commands = {
     getStudentFees: (orgId: string, enrollmentId?: string) =>
       invoke<JsonRecord[]>("get_student_fees", { orgId, enrollmentId }),
 
+    getActiveFeeTemplates: (orgId: string) =>
+      invoke<JsonRecord[]>("get_active_fee_templates", { orgId }),
+
     assignStudentFee: (orgId: string, request: JsonRecord) =>
       invoke<JsonRecord>("assign_student_fee", { orgId, request }),
 

@@ -16,6 +16,7 @@ import {
 import { Calendar, UserCheck, AlertCircle, Clock, Ban } from "lucide-svelte";
 import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
+import { getLocale } from "$lib/paraglide/runtime";
 import { formatNumber, formatPercent, formatDate } from "$lib/i18n-utils";
 
 const studentId = $derived(page.params.studentId || "");
@@ -84,28 +85,28 @@ function getStatusBadge(status: string) {
 			<div class="border border-border bg-card/45 p-4 rounded-xl flex items-center justify-between shadow-sm">
 				<div class="flex flex-col">
 					<span class="text-[9px] text-muted-foreground">{m.attendance_present_days()}</span>
-					<span class="text-sm font-bold mt-0.5 text-emerald-500">{formatNumber(report.present_count || 42)} {m.attendance_day_unit()}</span>
+					<span class="text-sm font-bold mt-0.5 text-emerald-500">{formatNumber(report.present_count || 0)} {m.attendance_day_unit()}</span>
 				</div>
 				<UserCheck size={16} class="text-emerald-500" />
 			</div>
 			<div class="border border-border bg-card/45 p-4 rounded-xl flex items-center justify-between shadow-sm">
 				<div class="flex flex-col">
 					<span class="text-[9px] text-muted-foreground">{m.attendance_absent_days()}</span>
-					<span class="text-sm font-bold mt-0.5 text-destructive">{formatNumber(report.absent_count || 1)} {m.attendance_day_unit()}</span>
+					<span class="text-sm font-bold mt-0.5 text-destructive">{formatNumber(report.absent_count || 0)} {m.attendance_day_unit()}</span>
 				</div>
 				<Ban size={16} class="text-destructive" />
 			</div>
 			<div class="border border-border bg-card/45 p-4 rounded-xl flex items-center justify-between shadow-sm">
 				<div class="flex flex-col">
 					<span class="text-[9px] text-muted-foreground">{m.attendance_late_cases()}</span>
-					<span class="text-sm font-bold mt-0.5 text-amber-500">{formatNumber(report.late_count || 3)} {m.attendance_times_unit()}</span>
+					<span class="text-sm font-bold mt-0.5 text-amber-500">{formatNumber(report.late_count || 0)} {m.attendance_times_unit()}</span>
 				</div>
 				<Clock size={16} class="text-amber-500" />
 			</div>
 			<div class="border border-border bg-card/45 p-4 rounded-xl flex items-center justify-between shadow-sm">
 				<div class="flex flex-col">
 					<span class="text-[9px] text-muted-foreground">{m.attendance_rate()}</span>
-					<span class="text-sm font-bold mt-0.5 text-gradient-brand">{formatPercent(report.rate ?? 98.5)}</span>
+					<span class="text-sm font-bold mt-0.5 text-gradient-brand">{formatPercent(report.rate ?? 100.0)}</span>
 				</div>
 				<Calendar size={16} class="text-primary" />
 			</div>
@@ -129,36 +130,16 @@ function getStatusBadge(status: string) {
 			<span class="font-bold text-[10px] text-muted-foreground uppercase tracking-wider px-1">{m.attendance_log_title()}</span>
 
 			{#if !report || !report.logs || report.logs.length === 0}
-				<!-- Fallback logs to look realistic even if empty -->
-				{@const fallbackLogs = [
-					{ date: '2026-06-18', status: 'present', note: '-' },
-					{ date: '2026-06-17', status: 'present', note: '-' },
-					{ date: '2026-06-16', status: 'late', note: '-' },
-					{ date: '2026-06-15', status: 'present', note: '-' },
-					{ date: '2026-06-14', status: 'present', note: '-' }
-				]}
-				<div class="border border-border rounded-lg bg-card overflow-hidden">
-					<Table>
-						<TableHeader>
-							<TableRow class="hover:bg-transparent">
-								<TableHead class="text-start">{m.attendance_col_date()}</TableHead>
-								<TableHead class="text-start">{m.attendance_col_status()}</TableHead>
-								<TableHead class="text-start">{m.attendance_col_notes()}</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{#each fallbackLogs as log}
-								{@const status = getStatusBadge(log.status)}
-								<TableRow class="hover:bg-accent/10">
-									<TableCell class="font-mono text-foreground text-start">{formatDate(log.date)}</TableCell>
-									<TableCell class="text-start">
-										<span class="{status.class} py-0.5 px-2 text-[10px]">{status.label}</span>
-									</TableCell>
-									<TableCell class="text-muted-foreground text-start">{log.note}</TableCell>
-								</TableRow>
-							{/each}
-						</TableBody>
-					</Table>
+				<div class="flex flex-col items-center justify-center p-12 text-center text-muted-foreground border border-dashed border-border rounded-xl bg-card/10 gap-3">
+					<Calendar size={28} class="text-muted-foreground/30" />
+					<div class="flex flex-col gap-0.5">
+						<p class="text-xs font-semibold">
+							{m.reports_no_attendance()}
+						</p>
+						<p class="text-[10px] text-muted-foreground/80">
+							{getLocale() === 'ar' ? 'سجل غياب وحضور الطالب اليومي سيظهر هنا.' : 'Daily student attendance and absence records will appear here.'}
+						</p>
+					</div>
 				</div>
 			{:else}
 				<div class="border border-border rounded-lg bg-card overflow-hidden">

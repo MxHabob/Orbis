@@ -2,7 +2,7 @@ use tauri::State;
 use std::sync::Arc;
 
 use core_domain::{
-    entities::{ledger_account, treasury, student_fee, payment},
+    entities::{ledger_account, treasury, student_fee, payment, fee_template},
     service::finance::{
         CreateLedgerAccountRequest, CreateTreasuryRequest,
         AssignStudentFeeRequest, RecordPaymentRequest,
@@ -71,6 +71,18 @@ pub async fn get_student_fees(
     state
         .service
         .get_student_fees(&org_id, enrollment_id.as_deref())
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn get_active_fee_templates(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+) -> CmdResult<Vec<fee_template::Model>> {
+    state
+        .service
+        .get_active_fee_templates(&org_id)
         .await
         .map_err(CommandError::from)
 }
