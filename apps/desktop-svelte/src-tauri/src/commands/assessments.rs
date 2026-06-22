@@ -60,6 +60,7 @@ pub struct CreateAssessmentRequest {
     pub term_id: String,
     pub month: Option<serde_json::Value>,
     pub title: String,
+    pub title_ar: Option<String>,
     pub max_score: serde_json::Value,
     pub weight: Option<serde_json::Value>,
     pub item_type: String,
@@ -125,6 +126,7 @@ pub async fn create_assessment(
         cycle_id: Set(request.term_id),
         class_subject_id: Set(class_subject_id),
         title: Set(request.title),
+        title_ar: Set(request.title_ar),
         item_type: Set(request.item_type),
         max_score: Set(max_score),
         weight: Set(weight),
@@ -147,6 +149,7 @@ pub async fn create_assessment(
 #[derive(serde::Deserialize)]
 pub struct UpdateAssessmentRequest {
     pub title: Option<String>,
+    pub title_ar: Option<String>,
     pub max_score: Option<serde_json::Value>,
     pub weight: Option<serde_json::Value>,
     pub item_type: Option<String>,
@@ -168,6 +171,9 @@ pub async fn update_assessment(
 
     if let Some(title) = request.title {
         active.title = Set(title);
+    }
+    if let Some(title_ar) = request.title_ar {
+        active.title_ar = Set(Some(title_ar));
     }
     if let Some(max_score_val) = request.max_score {
         let max_score: f64 = match max_score_val {

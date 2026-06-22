@@ -189,7 +189,7 @@ function getAssessmentTypeColor(typeStr: string) {
 			variant="lime" 
 			class="text-xs h-9 px-3 shrink-0" 
 			onclick={() => isModalOpen = true}
-			disabled={classes.length === 0}
+			disabled={classes.length === 0 || !selectedSubjectId}
 		>
 			<Plus size={14} class={getLocale() === "ar" ? 'ml-1.5' : 'mr-1.5'} />
 			{m.assessments_page_new_button()}
