@@ -10,10 +10,13 @@ pub async fn get_documents(
     state: State<'_, Arc<AppState>>,
     params: Option<serde_json::Value>,
 ) -> CmdResult<Vec<document::Model>> {
-    let mut query = document::Entity::find();
+    let mut query = document::Entity::find().filter(document::Column::DeletedAt.is_null());
     if let Some(params) = params {
         if let Some(org_id) = params.get("orgId").or_else(|| params.get("org_id")).and_then(|v| v.as_str()) {
             query = query.filter(document::Column::OrgId.eq(org_id));
+        }
+        if let Some(owner_id) = params.get("ownerId").or_else(|| params.get("owner_id")).and_then(|v| v.as_str()) {
+            query = query.filter(document::Column::OwnerId.eq(owner_id));
         }
         if let Some(is_template) = params.get("isTemplate").or_else(|| params.get("is_template")) {
             let val = match is_template {

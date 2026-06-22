@@ -2,6 +2,12 @@ use crate::entities::{class, enrollment, academic_cycle};
 use sea_orm::{entity::prelude::*, ActiveModelTrait, ActiveValue::Set, QueryFilter, EntityTrait};
 
 impl super::Repository {
+    pub async fn get_class_by_id(&self, id: &str) -> Result<Option<class::Model>, DbErr> {
+        class::Entity::find_by_id(id.to_string())
+            .one(&self.db)
+            .await
+    }
+
     pub async fn get_classes(&self, org_id: &str, params: crate::params::ClassParams) -> Result<Vec<class::Model>, DbErr> {
         let mut query = class::Entity::find()
             .filter(class::Column::OrgId.eq(org_id))

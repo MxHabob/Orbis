@@ -162,9 +162,9 @@ impl super::Service {
         let new_enrollment = enrollment::Model {
             id: Uuid::new_v4().to_string(),
             org_id: org_id.to_string(),
-            cycle_id,
+            cycle_id: cycle_id.clone(),
             student_id: req.student_id.clone(),
-            class_id: req.class_id,
+            class_id: req.class_id.clone(),
             student_number,
             status: "active".to_string(),
             enrollment_date: Utc::now().format("%Y-%m-%d").to_string(),
@@ -182,6 +182,158 @@ impl super::Service {
             updated_at: Utc::now().to_rfc3339(),
         };
 
+        // Save enrollment first
+        let created_enrollment = self.repo.create_enrollment(new_enrollment).await
+            .map_err(|e| e.to_string())?;
+
+        // 1. Get class details to determine level/grade
+        let class_info = self.repo.get_class_by_id(&req.class_id).await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "class not found".to_string())?;
+
+        // 2. Fetch and apply active fee templates
+        if let Ok(fee_templates) = self.repo.get_active_fee_templates(org_id).await {
+            for tpl in fee_templates {
+                // Check applicability rules (e.g. {"level": "grade1"} or {"levels": ["grade1", "grade2"]})
+                let is_applicable = if let Some(rules_str) = &tpl.applicability_rules {
+                    if let Ok(rules) = serde_json::from_str::<serde_json::Value>(rules_str) {
+                        if let Some(levels) = rules.get("levels").and_then(|l| l.as_array()) {
+                            levels.iter().any(|l| l.as_str() == Some(&class_info.level))
+                        } else if let Some(level) = rules.get("level").and_then(|l| l.as_str()) {
+                            level == class_info.level
+                        } else {
+                            false
+                        }
+                    } else {
+                        false
+                    }
+                } else {
+                    true // Applies to all if no rules are specified
+                };
+
+                if is_applicable {
+                    let original_amount = if let Some(config_str) = &tpl.pricing_config {
+                        if let Ok(config) = serde_json::from_str::<serde_json::Value>(config_str) {
+                            config.get("amount").and_then(|a| a.as_f64()).unwrap_or(0.0)
+                        } else {
+                            0.0
+                        }
+                    } else {
+                        0.0
+                    };
+
+                    let total_amount = original_amount;
+                    let balance = total_amount;
+
+                    let sf = crate::entities::student_fee::Model {
+                        id: Uuid::new_v4().to_string(),
+                        org_id: org_id.to_string(),
+                        cycle_id: cycle_id.clone(),
+                        enrollment_id: created_enrollment.id.clone(),
+                        fee_template_id: tpl.id.clone(),
+                        original_amount,
+                        discount_amount: 0.0,
+                        late_fee_amount: 0.0,
+                        total_amount,
+                        paid_amount: 0.0,
+                        balance,
+                        applied_discounts: None,
+                        payment_plan_id: None,
+                        status: "unpaid".to_string(),
+                        due_date: Utc::now().checked_add_signed(chrono::Duration::days(30))
+                            .unwrap_or_else(Utc::now)
+                            .format("%Y-%m-%d")
+                            .to_string(),
+                        is_overdue: 0,
+                        overdue_since: None,
+                        overdue_days: None,
+                        is_installment: 0,
+                        parent_fee_id: None,
+                        installment_number: None,
+                        total_installments: None,
+                        reminder_sent: Some(0),
+                        reminder_sent_at: None,
+                        final_notice_sent: Some(0),
+                        final_notice_sent_at: None,
+                        is_locked: 0,
+                        locked_at: None,
+                        locked_by: None,
+                        notes: Some(format!("Auto-generated fee: {}", tpl.name)),
+                        meta: None,
+                        created_at: Utc::now().to_rfc3339(),
+                        updated_at: Utc::now().to_rfc3339(),
+                    };
+
+                    if let Ok(created_fee) = self.repo.create_student_fee(sf).await {
+                        // Create double entry bookkeeping journal entry if amount > 0
+                        if original_amount > 0.0 {
+                            let je = crate::entities::journal_entry::Model {
+                                id: Uuid::new_v4().to_string(),
+                                org_id: org_id.to_string(),
+                                transaction_ref: format!("ENR-{}", created_enrollment.student_number),
+                                accounting_date: Utc::now().format("%Y-%m-%d").to_string(),
+                                fiscal_period_id: cycle_id.clone(),
+                                amount: original_amount,
+                                debit_account_id: tpl.receivable_account_id.clone(),
+                                credit_account_id: tpl.revenue_account_id.clone(),
+                                currency: "YER".to_string(),
+                                exchange_rate: Some(1.0),
+                                base_currency_amount: Some(original_amount),
+                                source_type: "student_fee".to_string(),
+                                source_id: Some(created_fee.id),
+                                source_module: Some("finance".to_string()),
+                                description: format!("Auto-tuition fee assignment for student {}", student.full_name),
+                                description_ar: Some(format!("قيد إثبات رسوم دراسية تلقائي للطالب {}", student.full_name)),
+                                metadata: None,
+                                is_reversed: 0,
+                                reversed_by: None,
+                                reversal_reason: None,
+                                is_reconciled: 0,
+                                reconciled_at: None,
+                                reconciliation_ref: None,
+                                status: "posted".to_string(),
+                                posted_by: Some("system".to_string()),
+                                posted_at: Some(Utc::now().to_rfc3339()),
+                                approved_by: Some("system".to_string()),
+                                approved_at: Some(Utc::now().to_rfc3339()),
+                                created_by: Some("system".to_string()),
+                                created_at: Utc::now().to_rfc3339(),
+                            };
+                            let _ = self.repo.create_journal_entry(je).await;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Create document placeholders for enrollment requirements
+        let default_docs = vec![
+            ("Birth Certificate", "شهادة الميلاد"),
+            ("National ID or Passport", "الهوية الوطنية أو جواز السفر"),
+            ("Previous Academic Record", "الشهادة الدراسية السابقة"),
+            ("Medical Record", "الملف الصحي"),
+        ];
+
+        for (en_name, ar_name) in default_docs {
+            let req_doc = crate::service::document::CreateDocumentRequest {
+                name: en_name.to_string(),
+                title: Some(ar_name.to_string()),
+                description: Some(format!("Required document placeholder for student: {}", student.full_name)),
+                item_type: Some("placeholder".to_string()),
+                visibility: Some("private".to_string()),
+                storage_provider: Some("local".to_string()),
+                key: Some(String::new()),
+                url: None,
+                mime_type: None,
+                extension: None,
+                size: None,
+                parent_id: None,
+                is_template: Some(0),
+                tags: Some("enrollment_requirement".to_string()),
+            };
+            let _ = self.create_document(org_id, &student.id, Some("system"), req_doc).await;
+        }
+
         // Send enrollment notification
         let _ = self.send_notification(
             &req.student_id,
@@ -194,8 +346,7 @@ impl super::Service {
             "enrollment",
         ).await;
 
-        self.repo.create_enrollment(new_enrollment).await
-            .map_err(|e| e.to_string())
+        Ok(created_enrollment)
     }
 
     pub async fn withdraw_enrollment(&self, enrollment_id: &str, reason: &str) -> Result<enrollment::Model, String> {

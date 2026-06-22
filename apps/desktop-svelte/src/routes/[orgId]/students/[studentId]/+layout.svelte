@@ -18,6 +18,7 @@ import {
   PhoneCall,
   Edit2,
   Users,
+  FileText,
 } from "lucide-svelte";
 import { studentsStore } from "$lib/stores";
 import { commands } from "$lib/services/ipc";
@@ -156,7 +157,8 @@ function isActive(tabHref: string) {
         { id: "grades", label: m.detail_tab_grades(), icon: GraduationCap, href: `/${orgId}/students/${studentId}/grades` },
         { id: "fees", label: m.detail_tab_fees(), icon: Wallet, href: `/${orgId}/students/${studentId}/fees` },
         { id: "attendance", label: m.detail_tab_attendance(), icon: UserCheck, href: `/${orgId}/students/${studentId}/attendance` },
-        { id: "behavior", label: m.detail_tab_behavior(), icon: ShieldAlert, href: `/${orgId}/students/${studentId}/behavior` }
+        { id: "behavior", label: m.detail_tab_behavior(), icon: ShieldAlert, href: `/${orgId}/students/${studentId}/behavior` },
+        { id: "documents", label: m.detail_tab_documents(), icon: FileText, href: `/${orgId}/students/${studentId}/documents` }
       ] as tab (tab.id)}
         <Button
           href={localizeHref(tab.href)}

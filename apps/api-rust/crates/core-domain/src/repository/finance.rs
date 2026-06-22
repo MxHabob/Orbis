@@ -1,4 +1,4 @@
-use crate::entities::{ledger_account, treasury, student_fee, payment};
+use crate::entities::{ledger_account, treasury, student_fee, payment, fee_template, journal_entry};
 use sea_orm::{entity::prelude::*, ActiveModelTrait, ActiveValue::Set, QueryFilter, EntityTrait, QueryOrder};
 
 impl super::Repository {
@@ -192,6 +192,52 @@ impl super::Repository {
             paid_at: Set(p.paid_at),
             created_at: Set(p.created_at),
             created_by: Set(p.created_by),
+        };
+        active.insert(&self.db).await
+    }
+
+    // ── Fee Templates ──
+    pub async fn get_active_fee_templates(&self, org_id: &str) -> Result<Vec<fee_template::Model>, DbErr> {
+        fee_template::Entity::find()
+            .filter(fee_template::Column::OrgId.eq(org_id))
+            .filter(fee_template::Column::IsActive.eq(1))
+            .all(&self.db)
+            .await
+    }
+
+    // ── Journal Entries ──
+    pub async fn create_journal_entry(&self, je: journal_entry::Model) -> Result<journal_entry::Model, DbErr> {
+        let active = journal_entry::ActiveModel {
+            id: Set(je.id),
+            org_id: Set(je.org_id),
+            transaction_ref: Set(je.transaction_ref),
+            accounting_date: Set(je.accounting_date),
+            fiscal_period_id: Set(je.fiscal_period_id),
+            amount: Set(je.amount),
+            debit_account_id: Set(je.debit_account_id),
+            credit_account_id: Set(je.credit_account_id),
+            currency: Set(je.currency),
+            exchange_rate: Set(je.exchange_rate),
+            base_currency_amount: Set(je.base_currency_amount),
+            source_type: Set(je.source_type),
+            source_id: Set(je.source_id),
+            source_module: Set(je.source_module),
+            description: Set(je.description),
+            description_ar: Set(je.description_ar),
+            metadata: Set(je.metadata),
+            is_reversed: Set(je.is_reversed),
+            reversed_by: Set(je.reversed_by),
+            reversal_reason: Set(je.reversal_reason),
+            is_reconciled: Set(je.is_reconciled),
+            reconciled_at: Set(je.reconciled_at),
+            reconciliation_ref: Set(je.reconciliation_ref),
+            status: Set(je.status),
+            posted_by: Set(je.posted_by),
+            posted_at: Set(je.posted_at),
+            approved_by: Set(je.approved_by),
+            approved_at: Set(je.approved_at),
+            created_by: Set(je.created_by),
+            created_at: Set(je.created_at),
         };
         active.insert(&self.db).await
     }
