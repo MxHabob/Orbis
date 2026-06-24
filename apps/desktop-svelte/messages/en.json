@@ -1190,5 +1190,20 @@
   "onboarding_prev_btn": "Previous",
   "onboarding_next_btn": "Next",
   "onboarding_toast_success": "School database and financial chart of accounts initialized successfully!",
-  "onboarding_toast_error": "Failed to initialize school setup, please check details below"
+  "onboarding_toast_error": "Failed to initialize school setup, please check details below",
+  "onboarding_toast_fill_room_fields": "Please fill in all required fields for the room",
+  "onboarding_toast_room_added": "Room added successfully",
+  "onboarding_toast_room_deleted": "Room deleted successfully",
+  "onboarding_toast_division_added": "Division added successfully",
+  "onboarding_toast_division_deleted": "Division deleted successfully",
+  "onboarding_toast_fill_period_name": "Please enter the period name",
+  "onboarding_toast_period_added": "Period added successfully",
+  "onboarding_toast_period_deleted": "Period deleted successfully",
+  "onboarding_toast_fill_subject_fields": "Please fill in all the details for the new subject",
+  "onboarding_toast_subject_added": "New subject added successfully",
+  "onboarding_err_unexpected": "An unexpected error occurred during setup",
+  "onboarding_err_active_org": "Active organization ID not found, please sign in again",
+  "onboarding_room_floor_label": "Floor: {floor}",
+  "onboarding_progress_label": "Progress",
+  "onboarding_step_x_of_y": "Step {current} of {total}"
 }

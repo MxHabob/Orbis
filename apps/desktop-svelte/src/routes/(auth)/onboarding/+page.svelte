@@ -1,6 +1,7 @@
 <!--
   Interactive school onboarding page.
   Redesigned with a horizontal top stepper, removing the sidebar to match the premium centered wizard layouts.
+  Fully internationalized using paraglide message keys, without hardcoded isRtl checks.
 -->
 <script lang="ts">
 import { onMount } from "svelte";
@@ -29,7 +30,7 @@ import {
   TabsTrigger,
   TabsContent,
 } from "@orbis/ui-svelte/tabs";
-import { localizeHref, getLocale } from "$lib/paraglide/runtime";
+import { localizeHref } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 
 import { 
@@ -58,10 +59,6 @@ import {
 let activeStep = $state(1);
 let isLoading = $state(false);
 let errorMessage = $state<string | null>(null);
-
-// Get current locale for layout direction (RTL or LTR)
-const currentLocale = $derived(getLocale());
-const isRtl = $derived(currentLocale === "ar");
 
 // Sidebar Steps list
 const steps = [
@@ -190,7 +187,7 @@ function resetRoomsToDefault() {
 
 function addRoom() {
   if (!newRoomName || !newRoomNameAr) {
-    toast.error(isRtl ? "يرجى ملء جميع الحقول المطلوبة للغرفة" : "Please fill in all required fields for the room");
+    toast.error(m.onboarding_toast_fill_room_fields ? m.onboarding_toast_fill_room_fields() : "Please fill in all required fields");
     return;
   }
   const id = `room-${Date.now()}`;
@@ -206,12 +203,12 @@ function addRoom() {
   rooms = [...rooms]; // Trigger Svelte reactivity
   newRoomName = "";
   newRoomNameAr = "";
-  toast.success(isRtl ? "تمت إضافة الغرفة بنجاح" : "Room added successfully");
+  toast.success(m.onboarding_toast_room_added ? m.onboarding_toast_room_added() : "Room added successfully");
 }
 
 function removeRoom(id: string) {
   rooms = rooms.filter(r => r.id !== id);
-  toast.success(isRtl ? "تم حذف الغرفة" : "Room deleted successfully");
+  toast.success(m.onboarding_toast_room_deleted ? m.onboarding_toast_room_deleted() : "Room deleted successfully");
 }
 
 // Step 4: Grade Levels & Classes
@@ -247,7 +244,16 @@ function addDivision(level: string) {
     gl.divisions.push(text);
     gradeLevels = [...gradeLevels];
     divisionInput[level] = "";
-    toast.success(isRtl ? "تمت إضافة الشعبة" : "Division added successfully");
+    toast.success(m.onboarding_toast_division_added ? m.onboarding_toast_division_added() : "Division added successfully");
+  }
+}
+
+function removeDivision(level: string, div: string) {
+  const gl = gradeLevels.find(g => g.level === level);
+  if (gl) {
+    gl.divisions = gl.divisions.filter(d => d !== div);
+    gradeLevels = [...gradeLevels];
+    toast.success(m.onboarding_toast_division_deleted ? m.onboarding_toast_division_deleted() : "Division deleted successfully");
   }
 }
 
@@ -273,7 +279,7 @@ let newSlotEnd = $state("13:00");
 
 function addTimeSlot() {
   if (!newSlotName || !newSlotNameAr) {
-    toast.error(isRtl ? "يرجى إدخال اسم الحصة" : "Please enter the period name");
+    toast.error(m.onboarding_toast_fill_period_name ? m.onboarding_toast_fill_period_name() : "Please enter the period name");
     return;
   }
   timeSlots.push({
@@ -285,21 +291,12 @@ function addTimeSlot() {
   timeSlots = [...timeSlots];
   newSlotName = "";
   newSlotNameAr = "";
-  toast.success(isRtl ? "تمت إضافة الحصة" : "Period added successfully");
+  toast.success(m.onboarding_toast_period_added ? m.onboarding_toast_period_added() : "Period added successfully");
 }
 
 function removeTimeSlot(idx: number) {
   timeSlots = timeSlots.filter((_, i) => i !== idx);
-  toast.success(isRtl ? "تم حذف الحصة" : "Period deleted successfully");
-}
-
-function removeDivision(level: string, div: string) {
-  const gl = gradeLevels.find(g => g.level === level);
-  if (gl) {
-    gl.divisions = gl.divisions.filter(d => d !== div);
-    gradeLevels = [...gradeLevels];
-    toast.success(isRtl ? "تم حذف الشعبة" : "Division deleted successfully");
-  }
+  toast.success(m.onboarding_toast_period_deleted ? m.onboarding_toast_period_deleted() : "Period deleted successfully");
 }
 
 // Step 6: Subjects Setup
@@ -329,7 +326,7 @@ let newSubColor = $state("#f59e0b");
 
 function addSubject() {
   if (!newSubCode || !newSubName || !newSubNameAr) {
-    toast.error(isRtl ? "يرجى تعبئة كافة بيانات المادة الجديدة" : "Please fill in all the details for the new subject");
+    toast.error(m.onboarding_toast_fill_subject_fields ? m.onboarding_toast_fill_subject_fields() : "Please fill in all subject details");
     return;
   }
   subjects.push({
@@ -345,7 +342,7 @@ function addSubject() {
   newSubCode = "";
   newSubName = "";
   newSubNameAr = "";
-  toast.success(isRtl ? "تمت إضافة المادة الجديدة" : "New subject added successfully");
+  toast.success(m.onboarding_toast_subject_added ? m.onboarding_toast_subject_added() : "Subject added successfully");
 }
 
 // Helpers for date cycle calculations
@@ -406,7 +403,7 @@ async function handleCompleteSetup() {
   try {
     const orgId = authStore.orgId;
     if (!orgId) {
-      throw new Error(isRtl ? "لم يتم العثور على معرف المنظمة الفعال، يرجى تسجيل الدخول مجدداً" : "Active organization ID not found, please sign in again");
+      throw new Error(m.onboarding_err_active_org ? m.onboarding_err_active_org() : "Active organization ID not found");
     }
 
     // 1. Prepare Cycles structure
@@ -502,14 +499,14 @@ async function handleCompleteSetup() {
 
     authStore.markSetupComplete();
 
-    toast.success(m.onboarding_toast_success ? m.onboarding_toast_success() : "تم تهيئة وتأسيس حساب المدرسة والمحاسبة المالية بنجاح!");
+    toast.success(m.onboarding_toast_success ? m.onboarding_toast_success() : "Setup complete!");
     
     // Redirect to home dashboard
     goto(localizeHref(`/${orgId}`));
   } catch (err: any) {
     console.error("Setup initialization failed:", err);
-    errorMessage = err?.message || String(err) || (isRtl ? "حدث خطأ غير متوقع أثناء إعداد المدرسة" : "An unexpected error occurred during setup");
-    toast.error(m.onboarding_toast_error ? m.onboarding_toast_error() : "فشل تأسيس المدرسة، يرجى مراجعة التفاصيل أدناه");
+    errorMessage = err?.message || String(err) || (m.onboarding_err_unexpected ? m.onboarding_err_unexpected() : "An unexpected error occurred");
+    toast.error(m.onboarding_toast_error ? m.onboarding_toast_error() : "Failed to launch setup");
   } finally {
     isLoading = false;
   }
@@ -530,7 +527,7 @@ onMount(async () => {
 });
 </script>
 
-<div class="min-h-screen w-screen bg-background text-foreground flex flex-col overflow-y-auto font-sans antialiased" class:dir-rtl={isRtl} style="direction: {isRtl ? 'rtl' : 'ltr'};">
+<div class="min-h-screen w-screen bg-background text-foreground flex flex-col overflow-y-auto font-sans antialiased">
   <!-- Top header / navbar with logo and title -->
   <header class="border-b border-border bg-background py-4 px-6 md:px-12 flex items-center justify-between shrink-0">
     <div class="flex items-center gap-3">
@@ -546,7 +543,7 @@ onMount(async () => {
     </div>
     <div class="flex items-center gap-4">
       <Badge variant="outline" class="border-border text-muted-foreground text-[10px] font-mono px-3 py-1">
-        {isRtl ? `${activeStep} من ${steps.length} خطوات` : `Step ${activeStep} of ${steps.length}`}
+        {m.onboarding_step_x_of_y ? m.onboarding_step_x_of_y({ current: activeStep, total: steps.length }) : `Step ${activeStep} of ${steps.length}`}
       </Badge>
     </div>
   </header>
@@ -600,7 +597,7 @@ onMount(async () => {
     </div>
 
     <!-- Mobile progress bar indicator -->
-    <div class="w-full max-w-md mx-auto mb-6 block md:hidden space-y-1.5">
+    <div class="w-full max-w-md mx-auto mb-6 block md:hidden space-y-1.5 font-sans">
       <div class="flex justify-between text-xs text-muted-foreground font-mono">
         <span>{steps[activeStep - 1].label}</span>
         <span>{Math.round(progressValue)}%</span>
@@ -624,7 +621,7 @@ onMount(async () => {
           <div class="p-4 rounded-xl border border-destructive/20 bg-destructive/5 text-destructive text-sm flex gap-3 items-start max-w-3xl mb-6">
             <div class="w-5 h-5 rounded-full bg-destructive/10 flex items-center justify-center shrink-0 mt-0.5 text-destructive font-bold">!</div>
             <div class="space-y-1">
-              <h4 class="font-semibold text-destructive">{isRtl ? "حدث خطأ أثناء الإعداد" : "Error during setup"}</h4>
+              <h4 class="font-semibold text-destructive">{m.onboarding_toast_error ? m.onboarding_toast_error() : "Error during setup"}</h4>
               <p>{errorMessage}</p>
             </div>
           </div>
@@ -772,7 +769,7 @@ onMount(async () => {
                 </div>
               </div>
 
-              <div class="space-y-4 pr-6" class:border-r={isRtl} class:border-l={!isRtl} class:pl-6={!isRtl} class:border-border={true}>
+              <div class="space-y-4 ps-6 border-s border-border">
                 <div class="space-y-1 text-start">
                   <h5 class="text-xs font-semibold text-foreground font-serif">
                     {m.onboarding_semester_2 ? m.onboarding_semester_2() : "الفصل الدراسي الثاني"}
@@ -905,7 +902,7 @@ onMount(async () => {
                                 {/if}
                               </Badge>
                               <span class="text-xs text-muted-foreground">
-                                {isRtl ? `الطابق: ${rm.floor}` : `Floor: ${rm.floor}`}
+                                {m.onboarding_room_floor_label ? m.onboarding_room_floor_label({ floor: rm.floor }) : `Floor: ${rm.floor}`}
                               </span>
                               <span class="text-xs text-muted-foreground">
                                 {rm.capacity} {m.onboarding_room_capacity_unit ? m.onboarding_room_capacity_unit() : "طالب"}
@@ -929,7 +926,7 @@ onMount(async () => {
                       </Button>
                     </div>
                   </div>
-                </Grid>
+                </TabsContent>
               {/each}
             </Tabs>
           </div>
@@ -1303,10 +1300,6 @@ onMount(async () => {
 
 <style>
 /* Smooth micro-animations and scroll hides */
-:global(.dir-rtl) {
-  direction: rtl;
-}
-
 /* Scroll area customization */
 div::-webkit-scrollbar {
   width: 6px;

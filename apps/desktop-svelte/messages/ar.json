@@ -1190,5 +1190,20 @@
   "onboarding_prev_btn": "السابق",
   "onboarding_next_btn": "التالي",
   "onboarding_toast_success": "تم تهيئة وتأسيس حساب المدرسة والمحاسبة المالية بنجاح!",
-  "onboarding_toast_error": "فشل تأسيس المدرسة، يرجى مراجعة التفاصيل أدناه"
+  "onboarding_toast_error": "فشل تأسيس المدرسة، يرجى مراجعة التفاصيل أدناه",
+  "onboarding_toast_fill_room_fields": "يرجى ملء جميع الحقول المطلوبة للغرفة",
+  "onboarding_toast_room_added": "تمت إضافة الغرفة بنجاح",
+  "onboarding_toast_room_deleted": "تم حذف الغرفة",
+  "onboarding_toast_division_added": "تمت إضافة الشعبة",
+  "onboarding_toast_division_deleted": "تم حذف الشعبة",
+  "onboarding_toast_fill_period_name": "يرجى إدخال اسم الحصة",
+  "onboarding_toast_period_added": "تمت إضافة الحصة",
+  "onboarding_toast_period_deleted": "تم حذف الحصة",
+  "onboarding_toast_fill_subject_fields": "يرجى تعبئة كافة بيانات المادة الجديدة",
+  "onboarding_toast_subject_added": "تمت إضافة المادة الجديدة",
+  "onboarding_err_unexpected": "حدث خطأ غير متوقع أثناء إعداد المدرسة",
+  "onboarding_err_active_org": "لم يتم العثور على معرف المنظمة الفعال، يرجى تسجيل الدخول مجدداً",
+  "onboarding_room_floor_label": "الطابق: {floor}",
+  "onboarding_progress_label": "التقدم",
+  "onboarding_step_x_of_y": "الخطوة {current} من {total}"
 }
