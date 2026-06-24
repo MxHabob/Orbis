@@ -107,6 +107,9 @@ export const commands = {
 
     initializeSchoolSetup: (orgId: string, config: any) =>
       invoke<void>("initialize_school_setup", { orgId, config }),
+
+    getSetupStatus: (orgId: string) =>
+      invoke<boolean>("get_setup_status", { orgId }),
   },
 
   classes: {

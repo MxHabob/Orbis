@@ -452,3 +452,24 @@ pub async fn initialize_school_setup(
 
     Ok(())
 }
+
+#[tauri::command]
+pub async fn get_setup_status(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+) -> CmdResult<bool> {
+    use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
+    use core_domain::entities::academic_cycle;
+
+    let db = &state.service.repo.db;
+    let exists = academic_cycle::Entity::find()
+        .filter(academic_cycle::Column::OrgId.eq(&org_id))
+        .one(db)
+        .await
+        .map_err(|e| e.to_string())
+        .map_err(CommandError::from)?
+        .is_some();
+
+    Ok(exists)
+}
+

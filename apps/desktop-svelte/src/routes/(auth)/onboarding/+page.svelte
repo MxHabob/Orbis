@@ -471,6 +471,8 @@ async function handleCompleteSetup() {
     // Call Tauri backend transactional seed API
     await commands.academics.initializeSchoolSetup(orgId, payload);
 
+    authStore.markSetupComplete();
+
     toast.success(m.onboarding_toast_success ? m.onboarding_toast_success() : "تم تهيئة وتأسيس حساب المدرسة والمحاسبة المالية بنجاح!");
     
     // Redirect to home dashboard
@@ -484,8 +486,17 @@ async function handleCompleteSetup() {
   }
 }
 
-onMount(() => {
+onMount(async () => {
   authStore.restore();
+  if (!authStore.isAuthenticated) {
+    goto(localizeHref("/login"), { replaceState: true });
+    return;
+  }
+  await authStore.checkSetupStatus();
+  if (authStore.isSetupComplete) {
+    goto(localizeHref(`/${authStore.orgId}`), { replaceState: true });
+    return;
+  }
   resetRoomsToDefault();
 });
 

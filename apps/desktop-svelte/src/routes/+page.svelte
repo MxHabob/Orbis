@@ -8,11 +8,16 @@ import { authStore } from "$lib/stores";
 import { onMount } from "svelte";
 import { Loader2 } from "lucide-svelte";
 
-onMount(() => {
+onMount(async () => {
   authStore.restore();
 
   if (authStore.isAuthenticated && authStore.orgId) {
-    goto(`/${authStore.orgId}`, { replaceState: true });
+    await authStore.checkSetupStatus();
+    if (authStore.needsOnboarding) {
+      goto("/onboarding", { replaceState: true });
+    } else {
+      goto(`/${authStore.orgId}`, { replaceState: true });
+    }
   } else {
     goto("/login", { replaceState: true });
   }
