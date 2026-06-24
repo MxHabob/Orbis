@@ -1,6 +1,6 @@
 <!--
   Interactive school onboarding page.
-  Designed following the 2026 design language of Orbis, featuring premium glassmorphism, responsive sidebar layout, and bilingual (Arabic/English) interface.
+  Redesigned to match the Dashboard design system, using ui-svelte components and a clean minimalist aesthetic.
 -->
 <script lang="ts">
 import { onMount } from "svelte";
@@ -14,6 +14,21 @@ import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
 import { Switch } from "@orbis/ui-svelte/switch";
 import { Badge } from "@orbis/ui-svelte/badge";
+import { Checkbox } from "@orbis/ui-svelte/checkbox";
+import { Separator } from "@orbis/ui-svelte/separator";
+import { Progress } from "@orbis/ui-svelte/progress";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui-svelte/select";
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "@orbis/ui-svelte/tabs";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 
@@ -35,7 +50,8 @@ import {
   Coins, 
   PlusCircle, 
   X,
-  Layers
+  Layers,
+  Zap
 } from "lucide-svelte";
 
 // --- State variables using Svelte 5 Runes ---
@@ -46,6 +62,19 @@ let errorMessage = $state<string | null>(null);
 // Get current locale for layout direction (RTL or LTR)
 const currentLocale = $derived(getLocale());
 const isRtl = $derived(currentLocale === "ar");
+
+// Sidebar Steps list
+const steps = [
+  { id: 1, label: m.onboarding_step_1_label ? m.onboarding_step_1_label() : "معلومات المدرسة", labelEn: "School Info", icon: School },
+  { id: 2, label: m.onboarding_step_2_label ? m.onboarding_step_2_label() : "التقويم الدراسي", labelEn: "Academic Year", icon: Calendar },
+  { id: 3, label: m.onboarding_step_3_label ? m.onboarding_step_3_label() : "المباني والقاعات", labelEn: "Buildings & Rooms", icon: Building },
+  { id: 4, label: m.onboarding_step_4_label ? m.onboarding_step_4_label() : "الصفوف والشعب", labelEn: "Stages & Classes", icon: GraduationCap },
+  { id: 5, label: m.onboarding_step_5_label ? m.onboarding_step_5_label() : "الحصص اليومية", labelEn: "Daily Schedule", icon: Clock },
+  { id: 6, label: m.onboarding_step_6_label ? m.onboarding_step_6_label() : "المواد الدراسية", labelEn: "Subjects List", icon: BookOpen },
+  { id: 7, label: m.onboarding_step_7_label ? m.onboarding_step_7_label() : "الملخص وتدشين النظام", labelEn: "Review & Launch", icon: Sparkles },
+];
+
+const progressValue = $derived((activeStep / steps.length) * 100);
 
 // Step 1: School General Info
 let orgName = $state("Sanaa Model School");
@@ -499,41 +528,36 @@ onMount(async () => {
   }
   resetRoomsToDefault();
 });
-
-// Sidebar Steps list
-const steps = [
-  { id: 1, label: m.onboarding_step_1_label ? m.onboarding_step_1_label() : "معلومات المدرسة", labelEn: "School Info", icon: School },
-  { id: 2, label: m.onboarding_step_2_label ? m.onboarding_step_2_label() : "التقويم الدراسي", labelEn: "Academic Year", icon: Calendar },
-  { id: 3, label: m.onboarding_step_3_label ? m.onboarding_step_3_label() : "المباني والقاعات", labelEn: "Buildings & Rooms", icon: Building },
-  { id: 4, label: m.onboarding_step_4_label ? m.onboarding_step_4_label() : "الصفوف والشعب", labelEn: "Stages & Classes", icon: GraduationCap },
-  { id: 5, label: m.onboarding_step_5_label ? m.onboarding_step_5_label() : "الحصص اليومية", labelEn: "Daily Schedule", icon: Clock },
-  { id: 6, label: m.onboarding_step_6_label ? m.onboarding_step_6_label() : "المواد الدراسية", labelEn: "Subjects List", icon: BookOpen },
-  { id: 7, label: m.onboarding_step_7_label ? m.onboarding_step_7_label() : "الملخص وتدشين النظام", labelEn: "Review & Launch", icon: Sparkles },
-];
 </script>
 
 <svelte:head>
   <title>{m.onboarding_subtitle ? m.onboarding_subtitle() : "تهيئة نظام أوربيس المدرسي الذكي"} | Setup Wizard</title>
 </svelte:head>
 
-<div class="h-screen w-screen bg-[#07090e] text-slate-100 flex flex-col md:flex-row overflow-hidden font-sans antialiased" class:dir-rtl={isRtl} style="direction: {isRtl ? 'rtl' : 'ltr'};">
+<div class="h-screen w-screen bg-background text-foreground flex flex-col md:flex-row overflow-hidden font-sans antialiased" class:dir-rtl={isRtl} style="direction: {isRtl ? 'rtl' : 'ltr'};">
   <!-- Left/Right Side Wizard Steps Sidebar -->
-  <aside class="w-full md:w-80 bg-slate-950/80 border-slate-800 flex flex-col justify-between shrink-0 p-6 z-10 backdrop-blur-xl relative" class:border-l={isRtl} class:border-r={!isRtl}>
-    <div class="absolute inset-0 bg-gradient-to-b from-violet-500/5 to-cyan-500/5 pointer-events-none"></div>
+  <aside class="w-full md:w-80 bg-background border-border flex flex-col justify-between shrink-0 p-6 z-10 relative" class:border-l={isRtl} class:border-r={!isRtl}>
     <div class="space-y-8 relative">
       <!-- Title & Branding -->
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-violet-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-violet-500/20 text-white">
-          <School class="w-5 h-5" />
-        </div>
-        <div class="text-start">
-          <h2 class="font-bold text-lg leading-tight tracking-wide bg-gradient-to-r from-slate-100 to-slate-300 bg-clip-text text-transparent">
+      <div class="flex flex-col gap-1 text-start">
+        <div class="flex items-center gap-2">
+          <Zap class="w-5 h-5 text-foreground" />
+          <h2 class="font-bold text-lg leading-tight tracking-wide font-serif text-foreground">
             {m.onboarding_title ? m.onboarding_title() : "تأسيس نظام المدرسة"}
           </h2>
-          <span class="text-xs text-slate-400 font-mono tracking-widest uppercase">
-            {m.onboarding_subtitle ? m.onboarding_subtitle() : "Orbis OS v2026"}
-          </span>
         </div>
+        <span class="text-xs text-muted-foreground font-mono tracking-widest uppercase mt-0.5">
+          {m.onboarding_subtitle ? m.onboarding_subtitle() : "Orbis OS v2026"}
+        </span>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="space-y-1.5">
+        <div class="flex justify-between text-xs text-muted-foreground font-mono">
+          <span>{isRtl ? "التقدم" : "Progress"}</span>
+          <span>{Math.round(progressValue)}%</span>
+        </div>
+        <Progress value={progressValue} />
       </div>
 
       <!-- Steps Progress -->
@@ -542,18 +566,18 @@ const steps = [
           <button 
             onclick={() => !isLoading && (activeStep = step.id)}
             disabled={isLoading}
-            class="w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 group border text-start
+            class="w-full flex items-center gap-4 px-4 py-2.5 rounded-lg transition-colors border text-start
               {activeStep === step.id 
-                ? 'bg-violet-600/10 border-violet-500/30 text-violet-400 shadow-md shadow-violet-500/5' 
-                : 'border-transparent text-slate-400 hover:bg-slate-900/50 hover:text-slate-200'}"
+                ? 'bg-accent border-border text-foreground' 
+                : 'border-transparent text-muted-foreground hover:bg-muted/40 hover:text-foreground'}"
           >
             <!-- Step Circle Icon -->
-            <div class="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-semibold transition-all duration-300 shrink-0
+            <div class="w-8 h-8 rounded-md flex items-center justify-center text-sm font-semibold transition-colors shrink-0
               {activeStep === step.id 
-                ? 'bg-violet-500 text-white scale-105' 
+                ? 'bg-primary text-primary-foreground' 
                 : activeStep > step.id 
-                  ? 'bg-emerald-500/20 text-emerald-400'
-                  : 'bg-slate-900 border border-slate-800 text-slate-400 group-hover:border-slate-700'}"
+                  ? 'bg-primary/10 text-primary'
+                  : 'bg-muted border border-border text-muted-foreground'}"
             >
               {#if activeStep > step.id}
                 <Check class="w-4 h-4" />
@@ -564,8 +588,8 @@ const steps = [
 
             <!-- Labels -->
             <div class="flex-1 min-w-0 text-start">
-              <p class="text-sm font-medium transition-colors duration-200 {activeStep === step.id ? 'text-slate-100' : 'text-slate-400'}">{step.label}</p>
-              <p class="text-xs text-slate-500 font-mono tracking-wider mt-0.5">{step.labelEn}</p>
+              <p class="text-sm font-medium transition-colors duration-200 {activeStep === step.id ? 'text-foreground font-serif' : 'text-muted-foreground'}">{step.label}</p>
+              <p class="text-[10px] text-muted-foreground/80 font-mono mt-0.5">{step.labelEn}</p>
             </div>
           </button>
         {/each}
@@ -573,24 +597,24 @@ const steps = [
     </div>
 
     <!-- Bottom Footer Brand info -->
-    <div class="text-center pt-6 border-t border-slate-900 relative">
-      <p class="text-xs text-slate-500 font-mono">Connected to Orbis Core v2.0</p>
-      <p class="text-[10px] text-slate-600 mt-1">Sanaa Model School setup engine</p>
+    <div class="text-center pt-6 border-t border-border relative">
+      <p class="text-xs text-muted-foreground font-mono">Connected to Orbis Core v2.0</p>
+      <p class="text-[10px] text-muted-foreground/80 mt-1">Sanaa Model School setup engine</p>
     </div>
   </aside>
 
   <!-- Content Panel -->
-  <main class="flex-1 flex flex-col min-w-0 h-full relative bg-slate-950/40">
+  <main class="flex-1 flex flex-col min-w-0 h-full relative bg-background">
     <!-- Top Nav bar inside Panel -->
-    <header class="h-16 border-b border-slate-800/80 px-8 flex items-center justify-between shrink-0 bg-slate-950/30 backdrop-blur-md">
+    <header class="h-16 border-b border-border px-8 flex items-center justify-between shrink-0 bg-background">
       <div class="text-start">
-        <h1 class="text-slate-100 font-medium text-lg flex items-center gap-2">
+        <h1 class="text-foreground font-semibold text-lg flex items-center gap-2 font-serif">
           <span>{steps[activeStep - 1].label}</span>
-          <span class="text-slate-500 text-sm font-mono font-normal">/ {steps[activeStep - 1].labelEn}</span>
+          <span class="text-muted-foreground text-sm font-mono font-normal">/ {steps[activeStep - 1].labelEn}</span>
         </h1>
       </div>
       <div>
-        <Badge variant="outline" class="border-slate-800 bg-slate-900/50 text-slate-400 text-[10px] font-mono px-3.5 py-1">
+        <Badge variant="outline" class="border-border text-muted-foreground text-[10px] font-mono px-3 py-1">
           {isRtl ? `${activeStep} من ${steps.length} خطوات` : `Step ${activeStep} of ${steps.length}`}
         </Badge>
       </div>
@@ -599,10 +623,10 @@ const steps = [
     <!-- Wizard Steps Form Scroll Content -->
     <div class="flex-1 overflow-y-auto px-8 py-8 space-y-6 text-start">
       {#if errorMessage}
-        <div class="p-4 rounded-xl border border-rose-500/20 bg-rose-500/5 text-rose-400 text-sm flex gap-3 items-start max-w-3xl">
-          <div class="w-5 h-5 rounded-full bg-rose-500/10 flex items-center justify-center shrink-0 mt-0.5 text-rose-500">!</div>
+        <div class="p-4 rounded-xl border border-destructive/20 bg-destructive/5 text-destructive text-sm flex gap-3 items-start max-w-3xl">
+          <div class="w-5 h-5 rounded-full bg-destructive/10 flex items-center justify-center shrink-0 mt-0.5 text-destructive font-bold">!</div>
           <div class="space-y-1">
-            <h4 class="font-semibold text-rose-300">{isRtl ? "حدث خطأ أثناء الإعداد" : "Error during setup"}</h4>
+            <h4 class="font-semibold text-destructive">{isRtl ? "حدث خطأ أثناء الإعداد" : "Error during setup"}</h4>
             <p>{errorMessage}</p>
           </div>
         </div>
@@ -612,62 +636,77 @@ const steps = [
       {#if activeStep === 1}
         <div class="max-w-3xl space-y-6">
           <div class="space-y-2">
-            <h3 class="text-slate-200 font-bold text-xl">{m.onboarding_school_info_title ? m.onboarding_school_info_title() : "معلومات المدرسة والمنشأة"}</h3>
-            <p class="text-slate-400 text-sm">{m.onboarding_school_info_desc ? m.onboarding_school_info_desc() : "حدد الهوية واللغة والعملة الأساسية للنظام المحاسبي والتعليمي."}</p>
+            <h3 class="text-foreground font-bold text-xl font-serif">{m.onboarding_school_info_title ? m.onboarding_school_info_title() : "معلومات المدرسة والمنشأة"}</h3>
+            <p class="text-muted-foreground text-sm">{m.onboarding_school_info_desc ? m.onboarding_school_info_desc() : "حدد الهوية واللغة والعملة الأساسية للنظام المحاسبي والتعليمي."}</p>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="space-y-2">
               <Label for="orgNameAr">{m.onboarding_school_name_ar ? m.onboarding_school_name_ar() : "اسم المدرسة الرسمي (بالعربية)"}</Label>
-              <Input id="orgNameAr" bind:value={orgNameAr} placeholder="مثال: مدرسة صنعاء النموذجية" class="bg-slate-900/50 border-slate-800 focus:border-violet-500" />
+              <Input id="orgNameAr" bind:value={orgNameAr} placeholder="مثال: مدرسة صنعاء النموذجية" />
             </div>
 
             <div class="space-y-2">
               <Label for="orgName">{m.onboarding_school_name_en ? m.onboarding_school_name_en() : "اسم المدرسة بالإنجليزية (English Name)"}</Label>
-              <Input id="orgName" bind:value={orgName} placeholder="Sanaa Model School" class="bg-slate-900/50 border-slate-800 focus:border-violet-500 text-left font-sans" style="direction: ltr;" />
+              <Input id="orgName" bind:value={orgName} placeholder="Sanaa Model School" class="text-left font-sans" style="direction: ltr;" />
             </div>
 
             <div class="space-y-2">
               <Label for="rootUnitNameAr">{m.onboarding_root_unit_ar ? m.onboarding_root_unit_ar() : "اسم الوحدة التعليمية الجذرية (عربي)"}</Label>
-              <Input id="rootUnitNameAr" bind:value={rootUnitNameAr} placeholder="مدرسة صنعاء النموذجية" class="bg-slate-900/50 border-slate-800 focus:border-violet-500" />
+              <Input id="rootUnitNameAr" bind:value={rootUnitNameAr} placeholder="مدرسة صنعاء النموذجية" />
             </div>
 
             <div class="space-y-2">
               <Label for="rootUnitName">{m.onboarding_root_unit_en ? m.onboarding_root_unit_en() : "الاسم الجذري بالإنجليزية (English Root Unit)"}</Label>
-              <Input id="rootUnitName" bind:value={rootUnitName} placeholder="Sanaa Model School" class="bg-slate-900/50 border-slate-800 focus:border-violet-500 text-left font-sans" style="direction: ltr;" />
+              <Input id="rootUnitName" bind:value={rootUnitName} placeholder="Sanaa Model School" class="text-left font-sans" style="direction: ltr;" />
             </div>
 
             <div class="space-y-2">
               <Label for="currency">{m.onboarding_currency ? m.onboarding_currency() : "العملة الأساسية للنظام المالي"}</Label>
-              <div class="relative">
-                <select id="currency" bind:value={currency} class="w-full h-10 px-3 bg-slate-900 border border-slate-800 rounded-lg text-slate-200 focus:outline-none focus:border-violet-500">
-                  <option value="YER">ريال يمني (YER)</option>
-                  <option value="SAR">ريال سعودي (SAR)</option>
-                  <option value="USD">دولار أمريكي (USD)</option>
-                </select>
-                <div class="absolute top-2.5 text-slate-500" class:left-3={!isRtl} class:right-3={isRtl}><Coins class="w-5 h-5" /></div>
-              </div>
-              <p class="text-[11px] text-slate-500">{m.onboarding_currency_hint ? m.onboarding_currency_hint() : "العملة التي ستعتمد في شجرة الحسابات وتقارير الميزانية والمستحقات."}</p>
+              <Select type="single" value={currency} onValueChange={(v) => (currency = v ?? "YER")}>
+                <SelectTrigger class="w-full h-9 text-sm">
+                  {#if currency === 'YER'}ريال يمني (YER)
+                  {:else if currency === 'SAR'}ريال سعودي (SAR)
+                  {:else}دولار أمريكي (USD)
+                  {/if}
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="YER">ريال يمني (YER)</SelectItem>
+                  <SelectItem value="SAR">ريال سعودي (SAR)</SelectItem>
+                  <SelectItem value="USD">دولار أمريكي (USD)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p class="text-[11px] text-muted-foreground">{m.onboarding_currency_hint ? m.onboarding_currency_hint() : "العملة التي ستعتمد في شجرة الحسابات وتقارير الميزانية والمستحقات."}</p>
             </div>
 
             <div class="space-y-2">
               <Label for="locale">{m.onboarding_locale ? m.onboarding_locale() : "لغة واجهة النظام الافتراضية"}</Label>
-              <div class="relative">
-                <select id="locale" bind:value={locale} class="w-full h-10 px-3 bg-slate-900 border border-slate-800 rounded-lg text-slate-200 focus:outline-none focus:border-violet-500">
-                  <option value="ar">العربية (Arabic)</option>
-                  <option value="en">English (الإنجليزية)</option>
-                </select>
-                <div class="absolute top-2.5 text-slate-500" class:left-3={!isRtl} class:right-3={isRtl}><Globe class="w-5 h-5" /></div>
-              </div>
+              <Select type="single" value={locale} onValueChange={(v) => (locale = v ?? "ar")}>
+                <SelectTrigger class="w-full h-9 text-sm">
+                  {locale === 'ar' ? 'العربية (Arabic)' : 'English (الإنجليزية)'}
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ar">العربية (Arabic)</SelectItem>
+                  <SelectItem value="en">English (الإنجليزية)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div class="space-y-2">
               <Label for="timezone">{m.onboarding_timezone ? m.onboarding_timezone() : "المنطقة الزمنية"}</Label>
-              <select id="timezone" bind:value={timezone} class="w-full h-10 px-3 bg-slate-900 border border-slate-800 rounded-lg text-slate-200 focus:outline-none focus:border-violet-500">
-                <option value="Asia/Aden">توقيت صنعاء / عدن (GMT+3)</option>
-                <option value="Asia/Riyadh">توقيت الرياض (GMT+3)</option>
-                <option value="UTC">التوقيت العالمي الموحد (UTC)</option>
-              </select>
+              <Select type="single" value={timezone} onValueChange={(v) => (timezone = v ?? "Asia/Aden")}>
+                <SelectTrigger class="w-full h-9 text-sm">
+                  {#if timezone === 'Asia/Aden'}توقيت صنعاء / عدن (GMT+3)
+                  {:else if timezone === 'Asia/Riyadh'}توقيت الرياض (GMT+3)
+                  {:else}التوقيت العالمي الموحد (UTC)
+                  {/if}
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Asia/Aden">توقيت صنعاء / عدن (GMT+3)</SelectItem>
+                  <SelectItem value="Asia/Riyadh">توقيت الرياض (GMT+3)</SelectItem>
+                  <SelectItem value="UTC">التوقيت العالمي الموحد (UTC)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>
@@ -677,86 +716,86 @@ const steps = [
       {#if activeStep === 2}
         <div class="max-w-3xl space-y-6">
           <div class="space-y-2">
-            <h3 class="text-slate-200 font-bold text-xl">{m.onboarding_calendar_title ? m.onboarding_calendar_title() : "التقويم والأعوام الدراسية"}</h3>
-            <p class="text-slate-400 text-sm">{m.onboarding_calendar_desc ? m.onboarding_calendar_desc() : "حدد فترات وتواريخ العام الدراسي والفصول وتوزيع الأشهر."}</p>
+            <h3 class="text-foreground font-bold text-xl font-serif">{m.onboarding_calendar_title ? m.onboarding_calendar_title() : "التقويم والأعوام الدراسية"}</h3>
+            <p class="text-muted-foreground text-sm">{m.onboarding_calendar_desc ? m.onboarding_calendar_desc() : "حدد فترات وتواريخ العام الدراسي والفصول وتوزيع الأشهر."}</p>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-950/50 p-6 rounded-xl border border-slate-800/80">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-card border border-border p-6 rounded-xl">
             <div class="md:col-span-2">
-              <h4 class="text-sm font-semibold text-violet-400 border-b border-slate-800 pb-2 mb-4">
+              <h4 class="text-sm font-semibold text-primary border-b border-border pb-2 mb-4 font-serif">
                 {m.onboarding_academic_year_section ? m.onboarding_academic_year_section() : "العام الدراسي الأساسي"}
               </h4>
             </div>
 
             <div class="space-y-2">
               <Label for="academicYearNameAr">{m.onboarding_academic_year_name_ar ? m.onboarding_academic_year_name_ar() : "اسم العام الدراسي (عربي)"}</Label>
-              <Input id="academicYearNameAr" bind:value={academicYearNameAr} placeholder="العام الدراسي 1447 هـ" class="bg-slate-900/50 border-slate-800 focus:border-violet-500" />
+              <Input id="academicYearNameAr" bind:value={academicYearNameAr} placeholder="العام الدراسي 1447 هـ" />
             </div>
 
             <div class="space-y-2">
               <Label for="academicYearName">{m.onboarding_academic_year_name_en ? m.onboarding_academic_year_name_en() : "اسم العام الدراسي (English)"}</Label>
-              <Input id="academicYearName" bind:value={academicYearName} placeholder="Academic Year 1447 Hijri" class="bg-slate-900/50 border-slate-800 focus:border-violet-500 text-left font-sans" style="direction: ltr;" />
+              <Input id="academicYearName" bind:value={academicYearName} placeholder="Academic Year 1447 Hijri" class="text-left font-sans" style="direction: ltr;" />
             </div>
 
             <div class="space-y-2">
               <Label for="startDate">{m.onboarding_start_date ? m.onboarding_start_date() : "تاريخ بدء العام الدراسي"}</Label>
-              <Input id="startDate" type="date" bind:value={startDate} class="bg-slate-900/50 border-slate-800 focus:border-violet-500" />
+              <Input id="startDate" type="date" bind:value={startDate} />
             </div>
 
             <div class="space-y-2">
               <Label for="endDate">{m.onboarding_end_date ? m.onboarding_end_date() : "تاريخ انتهاء العام الدراسي"}</Label>
-              <Input id="endDate" type="date" bind:value={endDate} class="bg-slate-900/50 border-slate-800 focus:border-violet-500" />
+              <Input id="endDate" type="date" bind:value={endDate} />
             </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-950/50 p-6 rounded-xl border border-slate-800/80">
-            <div class="md:col-span-2 flex items-center justify-between border-b border-slate-800 pb-2 mb-4">
-              <h4 class="text-sm font-semibold text-violet-400">{m.onboarding_semester_split ? m.onboarding_semester_split() : "تقسيم الفصل الأول والفصل الثاني"}</h4>
-              <span class="text-xs text-slate-500 font-mono">{m.onboarding_semester_weight_hint ? m.onboarding_semester_weight_hint() : "الوزن الافتراضي (50% لكل فصل)"}</span>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-card border border-border p-6 rounded-xl">
+            <div class="md:col-span-2 flex items-center justify-between border-b border-border pb-2 mb-4">
+              <h4 class="text-sm font-semibold text-primary font-serif">{m.onboarding_semester_split ? m.onboarding_semester_split() : "تقسيم الفصل الأول والفصل الثاني"}</h4>
+              <span class="text-xs text-muted-foreground font-mono">{m.onboarding_semester_weight_hint ? m.onboarding_semester_weight_hint() : "الوزن الافتراضي (50% لكل فصل)"}</span>
             </div>
 
             <div class="space-y-4">
               <div class="space-y-1">
-                <h5 class="text-xs font-semibold text-slate-300">
+                <h5 class="text-xs font-semibold text-foreground font-serif">
                   {m.onboarding_semester_1 ? m.onboarding_semester_1() : "الفصل الدراسي الأول"}
                 </h5>
               </div>
               <div class="space-y-2">
                 <Label class="text-xs">{m.onboarding_semester_name_ar ? m.onboarding_semester_name_ar() : "اسم الفصل (عربي)"}</Label>
-                <Input bind:value={semester1NameAr} class="h-9 bg-slate-900 border-slate-800 focus:border-violet-500 text-xs" />
+                <Input bind:value={semester1NameAr} class="h-9 text-xs" />
               </div>
               <div class="space-y-2">
                 <Label class="text-xs">{m.onboarding_semester_start ? m.onboarding_semester_start() : "تاريخ البدء"}</Label>
-                <Input type="date" bind:value={semester1Start} class="h-9 bg-slate-900 border-slate-800 focus:border-violet-500 text-xs" />
+                <Input type="date" bind:value={semester1Start} class="h-9 text-xs" />
               </div>
               <div class="space-y-2">
                 <Label class="text-xs">{m.onboarding_semester_end ? m.onboarding_semester_end() : "تاريخ الانتهاء"}</Label>
-                <Input type="date" bind:value={semester1End} class="h-9 bg-slate-900 border-slate-800 focus:border-violet-500 text-xs" />
+                <Input type="date" bind:value={semester1End} class="h-9 text-xs" />
               </div>
             </div>
 
-            <div class="space-y-4 pr-6" class:border-r={isRtl} class:border-l={!isRtl} class:pl-6={!isRtl} class:border-slate-850={true}>
+            <div class="space-y-4 pr-6" class:border-r={isRtl} class:border-l={!isRtl} class:pl-6={!isRtl} class:border-border={true}>
               <div class="space-y-1">
-                <h5 class="text-xs font-semibold text-slate-300">
+                <h5 class="text-xs font-semibold text-foreground font-serif">
                   {m.onboarding_semester_2 ? m.onboarding_semester_2() : "الفصل الدراسي الثاني"}
                 </h5>
               </div>
               <div class="space-y-2">
                 <Label class="text-xs">{m.onboarding_semester_name_ar ? m.onboarding_semester_name_ar() : "اسم الفصل (عربي)"}</Label>
-                <Input bind:value={semester2NameAr} class="h-9 bg-slate-900 border-slate-800 focus:border-violet-500 text-xs" />
+                <Input bind:value={semester2NameAr} class="h-9 text-xs" />
               </div>
               <div class="space-y-2">
                 <Label class="text-xs">{m.onboarding_semester_start ? m.onboarding_semester_start() : "تاريخ البدء"}</Label>
-                <Input type="date" bind:value={semester2Start} class="h-9 bg-slate-900 border-slate-800 focus:border-violet-500 text-xs" />
+                <Input type="date" bind:value={semester2Start} class="h-9 text-xs" />
               </div>
               <div class="space-y-2">
                 <Label class="text-xs">{m.onboarding_semester_end ? m.onboarding_semester_end() : "تاريخ الانتهاء"}</Label>
-                <Input type="date" bind:value={semester2End} class="h-9 bg-slate-900 border-slate-800 focus:border-violet-500 text-xs" />
+                <Input type="date" bind:value={semester2End} class="h-9 text-xs" />
               </div>
             </div>
 
             <div class="md:col-span-2 pt-2 text-start">
-              <p class="text-[11px] text-slate-500 leading-relaxed">
+              <p class="text-[11px] text-muted-foreground leading-relaxed">
                 {m.onboarding_calendar_months_hint ? m.onboarding_calendar_months_hint() : "💡 سيقوم المعالج تلقائياً بتوزيع وتقسيم أشهر التقييم (4 أشهر بكل فصل دراسي) مع تخصيص 20% لكل شهر تقييم عادي و 30% لامتحان منتصف/نهاية العام ليتوافق تماماً مع إعداد المدرسة الذكية."}
               </p>
             </div>
@@ -768,116 +807,133 @@ const steps = [
       {#if activeStep === 3}
         <div class="max-w-5xl space-y-6">
           <div class="space-y-2">
-            <h3 class="text-slate-200 font-bold text-xl">{m.onboarding_buildings_title ? m.onboarding_buildings_title() : "توزيع الفصول والقاعات والمباني"}</h3>
-            <p class="text-slate-400 text-sm">{m.onboarding_buildings_desc ? m.onboarding_buildings_desc() : "حدد مباني المدرسة وأنشئ الفصول والمعامل والقاعات المتوفرة للتدريس."}</p>
+            <h3 class="text-foreground font-bold text-xl font-serif">{m.onboarding_buildings_title ? m.onboarding_buildings_title() : "توزيع الفصول والقاعات والمباني"}</h3>
+            <p class="text-muted-foreground text-sm">{m.onboarding_buildings_desc ? m.onboarding_buildings_desc() : "حدد مباني المدرسة وأنشئ الفصول والمعامل والقاعات المتوفرة للتدريس."}</p>
           </div>
 
-          <!-- Building Tabs -->
-          <div class="flex gap-2 border-b border-slate-800 pb-px">
+          <Tabs value={activeBuildingTab} onValueChange={(v) => (activeBuildingTab = v ?? "المبنى 1")} class="w-full">
+            <TabsList class="w-full justify-start bg-muted/50 border-b border-border rounded-none p-0 h-auto gap-2">
+              {#each buildings as bld}
+                <TabsTrigger 
+                  value={bld}
+                  class="px-5 py-3 font-semibold text-sm rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground text-muted-foreground hover:text-foreground"
+                >
+                  {bld}
+                  <Badge variant="secondary" class="mr-2 ml-2 text-[10px]">
+                    {rooms.filter(r => r.building === bld).length} {m.onboarding_rooms_count_suffix ? m.onboarding_rooms_count_suffix() : "قاعات"}
+                  </Badge>
+                </TabsTrigger>
+              {/each}
+            </TabsList>
+            
             {#each buildings as bld}
-              <button 
-                onclick={() => (activeBuildingTab = bld)}
-                class="px-5 py-3 font-semibold text-sm border-b-2 transition-all duration-200 
-                  {activeBuildingTab === bld 
-                    ? 'border-violet-500 text-slate-200 bg-slate-900/20' 
-                    : 'border-transparent text-slate-400 hover:text-slate-200'}"
-              >
-                {bld}
-                <Badge variant="secondary" class="mr-2 ml-2 text-[10px] bg-slate-900 border-slate-800 text-slate-400">
-                  {rooms.filter(r => r.building === bld).length} {m.onboarding_rooms_count_suffix ? m.onboarding_rooms_count_suffix() : "قاعات"}
-                </Badge>
-              </button>
-            {/each}
-          </div>
-
-          <!-- Add Room Form for current Building -->
-          <div class="p-6 bg-slate-900/30 rounded-xl border border-slate-800/80 grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-            <div class="space-y-2 md:col-span-2">
-              <Label class="text-xs">{m.onboarding_room_name_hint ? m.onboarding_room_name_hint() : "اسم القاعة (عربي / إنجليزي)"}</Label>
-              <div class="grid grid-cols-2 gap-2">
-                <Input bind:value={newRoomNameAr} placeholder="فصل 1-05" class="bg-slate-950 border-slate-800 text-xs h-9" />
-                <Input bind:value={newRoomName} placeholder="Classroom 1-05" class="bg-slate-950 border-slate-800 text-xs h-9 text-left font-sans" style="direction: ltr;" />
-              </div>
-            </div>
-            
-            <div class="space-y-2">
-              <Label class="text-xs">{m.onboarding_room_type ? m.onboarding_room_type() : "نوع القاعة"}</Label>
-              <select bind:value={newRoomType} class="w-full h-9 px-3 bg-slate-955 border border-slate-800 rounded-lg text-xs text-slate-200">
-                <option value="classroom">{m.onboarding_room_type_classroom ? m.onboarding_room_type_classroom() : "فصل دراسي (Classroom)"}</option>
-                <option value="computer_lab">{m.onboarding_room_type_computer ? m.onboarding_room_type_computer() : "مختبر حاسوب (Computer Lab)"}</option>
-                <option value="chemistry_lab">{m.onboarding_room_type_chemistry ? m.onboarding_room_type_chemistry() : "مختبر كيمياء (Chemistry Lab)"}</option>
-                <option value="physics_lab">{m.onboarding_room_type_physics ? m.onboarding_room_type_physics() : "مختبر فيزياء (Physics Lab)"}</option>
-                <option value="hall">{m.onboarding_room_type_hall ? m.onboarding_room_type_hall() : "قاعة أنشطة (Activity Hall)"}</option>
-              </select>
-            </div>
-
-            <div class="space-y-2">
-              <Label class="text-xs">{m.onboarding_room_floor_capacity ? m.onboarding_room_floor_capacity() : "الطابق / السعة الاستيعابية"}</Label>
-              <div class="grid grid-cols-2 gap-2">
-                <select bind:value={newRoomFloor} class="h-9 px-2 bg-slate-955 border border-slate-800 rounded-lg text-xs text-slate-200 font-sans">
-                  <option value={1}>{m.onboarding_room_floor_n ? m.onboarding_room_floor_n({ n: 1 }) : "طابق 1"}</option>
-                  <option value={2}>{m.onboarding_room_floor_n ? m.onboarding_room_floor_n({ n: 2 }) : "طابق 2"}</option>
-                  <option value={3}>{m.onboarding_room_floor_n ? m.onboarding_room_floor_n({ n: 3 }) : "طابق 3"}</option>
-                  <option value={4}>{m.onboarding_room_floor_n ? m.onboarding_room_floor_n({ n: 4 }) : "طابق 4"}</option>
-                </select>
-                <Input type="number" bind:value={newRoomCapacity} min="10" max="100" class="bg-slate-955 border-slate-800 text-xs h-9 font-sans" />
-              </div>
-            </div>
-
-            <Button onclick={addRoom} class="w-full h-9 bg-violet-600 hover:bg-violet-700 text-xs flex gap-1.5 items-center justify-center">
-              <Plus class="w-4 h-4" />
-              <span>{m.onboarding_add_room_title ? m.onboarding_add_room_title() : "إضافة القاعة"}</span>
-            </Button>
-          </div>
-
-          <!-- Rooms List for the Active Building -->
-          <div class="space-y-3">
-            <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              {m.onboarding_room_approved ? m.onboarding_room_approved({ building: activeBuildingTab }) : `قاعات ${activeBuildingTab} المعتمدة`}
-            </h4>
-            
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {#each rooms.filter(r => r.building === activeBuildingTab) as rm (rm.id)}
-                <div class="bg-slate-900/20 border border-slate-800 rounded-xl p-4 flex justify-between items-start hover:border-slate-700 transition-all duration-200">
-                  <div class="space-y-1">
-                    <div class="flex items-center gap-2">
-                      <span class="font-semibold text-slate-200 text-sm">{rm.name_ar}</span>
-                      <span class="text-xs text-slate-500 font-mono">({rm.name})</span>
+              <TabsContent value={bld} class="space-y-6 pt-4">
+                <!-- Add Room Form for current Building -->
+                <div class="p-6 bg-muted/40 rounded-xl border border-border grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                  <div class="space-y-2 md:col-span-2">
+                    <Label class="text-xs font-semibold">{m.onboarding_room_name_hint ? m.onboarding_room_name_hint() : "اسم القاعة (عربي / إنجليزي)"}</Label>
+                    <div class="grid grid-cols-2 gap-2">
+                      <Input bind:value={newRoomNameAr} placeholder="فصل 1-05" class="text-xs h-9" />
+                      <Input bind:value={newRoomName} placeholder="Classroom 1-05" class="text-xs h-9 text-left font-sans" style="direction: ltr;" />
                     </div>
-                    <div class="flex items-center gap-2 mt-2">
-                      <Badge variant="outline" class="text-[10px] text-violet-400 border-violet-500/20 bg-violet-500/5">
-                        {#if rm.room_type === 'classroom'}{m.onboarding_room_type_classroom ? m.onboarding_room_type_classroom() : "فصل دراسي"}
-                        {:else if rm.room_type === 'computer_lab'}{m.onboarding_room_type_computer ? m.onboarding_room_type_computer() : "مختبر حاسوب"}
-                        {:else if rm.room_type === 'chemistry_lab'}{m.onboarding_room_type_chemistry ? m.onboarding_room_type_chemistry() : "مختبر كيمياء"}
-                        {:else if rm.room_type === 'physics_lab'}{m.onboarding_room_type_physics ? m.onboarding_room_type_physics() : "مختبر فيزياء"}
-                        {:else}{m.onboarding_room_type_hall ? m.onboarding_room_type_hall() : "قاعة أنشطة"}
+                  </div>
+                  
+                  <div class="space-y-2">
+                    <Label class="text-xs font-semibold">{m.onboarding_room_type ? m.onboarding_room_type() : "نوع القاعة"}</Label>
+                    <Select type="single" value={newRoomType} onValueChange={(v) => (newRoomType = v ?? "classroom")}>
+                      <SelectTrigger class="w-full h-9 text-xs">
+                        {#if newRoomType === 'classroom'}{m.onboarding_room_type_classroom ? m.onboarding_room_type_classroom() : "فصل دراسي (Classroom)"}
+                        {:else if newRoomType === 'computer_lab'}{m.onboarding_room_type_computer ? m.onboarding_room_type_computer() : "مختبر حاسوب (Computer Lab)"}
+                        {:else if newRoomType === 'chemistry_lab'}{m.onboarding_room_type_chemistry ? m.onboarding_room_type_chemistry() : "مختبر كيمياء (Chemistry Lab)"}
+                        {:else if newRoomType === 'physics_lab'}{m.onboarding_room_type_physics ? m.onboarding_room_type_physics() : "مختبر فيزياء (Physics Lab)"}
+                        {:else}{m.onboarding_room_type_hall ? m.onboarding_room_type_hall() : "قاعة أنشطة (Activity Hall)"}
                         {/if}
-                      </Badge>
-                      <span class="text-xs text-slate-500">
-                        {isRtl ? `الطابق: ${rm.floor}` : `Floor: ${rm.floor}`}
-                      </span>
-                      <span class="text-xs text-slate-500">
-                        {rm.capacity} {m.onboarding_room_capacity_unit ? m.onboarding_room_capacity_unit() : "طالب"}
-                      </span>
+                      </SelectTrigger>
+                      <SelectContent class="text-xs">
+                        <SelectItem value="classroom">{m.onboarding_room_type_classroom ? m.onboarding_room_type_classroom() : "فصل دراسي (Classroom)"}</SelectItem>
+                        <SelectItem value="computer_lab">{m.onboarding_room_type_computer ? m.onboarding_room_type_computer() : "مختبر حاسوب (Computer Lab)"}</SelectItem>
+                        <SelectItem value="chemistry_lab">{m.onboarding_room_type_chemistry ? m.onboarding_room_type_chemistry() : "مختبر كيمياء (Chemistry Lab)"}</SelectItem>
+                        <SelectItem value="physics_lab">{m.onboarding_room_type_physics ? m.onboarding_room_type_physics() : "مختبر فيزياء (Physics Lab)"}</SelectItem>
+                        <SelectItem value="hall">{m.onboarding_room_type_hall ? m.onboarding_room_type_hall() : "قاعة أنشطة (Activity Hall)"}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div class="space-y-2">
+                    <Label class="text-xs font-semibold">{m.onboarding_room_floor_capacity ? m.onboarding_room_floor_capacity() : "الطابق / السعة الاستيعابية"}</Label>
+                    <div class="grid grid-cols-2 gap-2">
+                      <Select type="single" value={String(newRoomFloor)} onValueChange={(v) => (newRoomFloor = Number(v ?? "1"))}>
+                        <SelectTrigger class="w-full h-9 text-xs">
+                          {m.onboarding_room_floor_n ? m.onboarding_room_floor_n({ n: newRoomFloor }) : `طابق ${newRoomFloor}`}
+                        </SelectTrigger>
+                        <SelectContent class="text-xs">
+                          <SelectItem value="1">{m.onboarding_room_floor_n ? m.onboarding_room_floor_n({ n: 1 }) : "طابق 1"}</SelectItem>
+                          <SelectItem value="2">{m.onboarding_room_floor_n ? m.onboarding_room_floor_n({ n: 2 }) : "طابق 2"}</SelectItem>
+                          <SelectItem value="3">{m.onboarding_room_floor_n ? m.onboarding_room_floor_n({ n: 3 }) : "طابق 3"}</SelectItem>
+                          <SelectItem value="4">{m.onboarding_room_floor_n ? m.onboarding_room_floor_n({ n: 4 }) : "طابق 4"}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Input type="number" bind:value={newRoomCapacity} min="10" max="100" class="text-xs h-9 font-sans" />
                     </div>
                   </div>
 
-                  <button 
-                    onclick={() => removeRoom(rm.id)} 
-                    class="text-slate-500 hover:text-rose-400 p-1.5 hover:bg-rose-500/10 rounded-lg transition-colors"
-                  >
-                    <Trash class="w-4 h-4" />
-                  </button>
+                  <Button onclick={addRoom} class="w-full h-9 text-xs flex gap-1.5 items-center justify-center">
+                    <Plus class="w-4 h-4" />
+                    <span>{m.onboarding_add_room_title ? m.onboarding_add_room_title() : "إضافة القاعة"}</span>
+                  </Button>
                 </div>
-              {/each}
-            </div>
 
-            <div class="flex justify-end pt-2">
-              <Button variant="ghost" onclick={resetRoomsToDefault} class="text-slate-500 hover:text-slate-300 text-xs">
-                {m.onboarding_room_reset_defaults ? m.onboarding_room_reset_defaults() : "إعادة ضبط القاعات الافتراضية"}
-              </Button>
-            </div>
-          </div>
+                <!-- Rooms List for the Active Building -->
+                <div class="space-y-3">
+                  <h4 class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    {m.onboarding_room_approved ? m.onboarding_room_approved({ building: bld }) : `قاعات ${bld} المعتمدة`}
+                  </h4>
+                  
+                  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {#each rooms.filter(r => r.building === bld) as rm (rm.id)}
+                      <div class="bg-card border border-border rounded-xl p-4 flex justify-between items-start hover:border-muted-foreground/30 transition-colors">
+                        <div class="space-y-1">
+                          <div class="flex items-center gap-2">
+                            <span class="font-semibold text-foreground text-sm">{rm.name_ar}</span>
+                            <span class="text-xs text-muted-foreground font-mono">({rm.name})</span>
+                          </div>
+                          <div class="flex items-center gap-2 mt-2">
+                            <Badge variant="outline" class="text-[10px] text-primary border-primary/20 bg-primary/5">
+                              {#if rm.room_type === 'classroom'}{m.onboarding_room_type_classroom ? m.onboarding_room_type_classroom() : "فصل دراسي"}
+                              {:else if rm.room_type === 'computer_lab'}{m.onboarding_room_type_computer ? m.onboarding_room_type_computer() : "مختبر حاسوب"}
+                              {:else if rm.room_type === 'chemistry_lab'}{m.onboarding_room_type_chemistry ? m.onboarding_room_type_chemistry() : "مختبر كيمياء"}
+                              {:else if rm.room_type === 'physics_lab'}{m.onboarding_room_type_physics ? m.onboarding_room_type_physics() : "مختبر فيزياء"}
+                              {:else}{m.onboarding_room_type_hall ? m.onboarding_room_type_hall() : "قاعة أنشطة"}
+                              {/if}
+                            </Badge>
+                            <span class="text-xs text-muted-foreground">
+                              {isRtl ? `الطابق: ${rm.floor}` : `Floor: ${rm.floor}`}
+                            </span>
+                            <span class="text-xs text-muted-foreground">
+                              {rm.capacity} {m.onboarding_room_capacity_unit ? m.onboarding_room_capacity_unit() : "طالب"}
+                            </span>
+                          </div>
+                        </div>
+
+                        <button 
+                          onclick={() => removeRoom(rm.id)} 
+                          class="text-muted-foreground hover:text-destructive p-1.5 hover:bg-destructive/10 rounded-lg transition-colors"
+                        >
+                          <Trash class="w-4 h-4" />
+                        </button>
+                      </div>
+                    {/each}
+                  </div>
+
+                  <div class="flex justify-end pt-2">
+                    <Button variant="ghost" onclick={resetRoomsToDefault} class="text-muted-foreground hover:text-foreground text-xs">
+                      {m.onboarding_room_reset_defaults ? m.onboarding_room_reset_defaults() : "إعادة ضبط القاعات الافتراضية"}
+                    </Button>
+                  </div>
+                </div>
+              </TabsContent>
+            {/each}
+          </Tabs>
         </div>
       {/if}
 
@@ -885,15 +941,15 @@ const steps = [
       {#if activeStep === 4}
         <div class="max-w-4xl space-y-6">
           <div class="space-y-2">
-            <h3 class="text-slate-200 font-bold text-xl">{m.onboarding_stages_title ? m.onboarding_stages_title() : "المراحل والصفوف الدراسية (الشعب)"}</h3>
-            <p class="text-slate-400 text-sm">{m.onboarding_stages_desc ? m.onboarding_stages_desc() : "اختر الصفوف الدراسية المفعّلة في مدرستك وخصص الشعب (الأقسام) لكل صف."}</p>
+            <h3 class="text-foreground font-bold text-xl font-serif">{m.onboarding_stages_title ? m.onboarding_stages_title() : "المراحل والصفوف الدراسية (الشعب)"}</h3>
+            <p class="text-muted-foreground text-sm">{m.onboarding_stages_desc ? m.onboarding_stages_desc() : "اختر الصفوف الدراسية المفعّلة في مدرستك وخصص الشعب (الأقسام) لكل صف."}</p>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             {#each gradeLevels as gl, idx (gl.level)}
               <div 
-                class="bg-slate-900/30 border rounded-xl p-5 space-y-4 transition-all duration-300
-                  {gl.enabled ? 'border-slate-800 bg-slate-900/20' : 'border-slate-900/50 opacity-50 bg-slate-955/20'}"
+                class="bg-card border rounded-xl p-5 space-y-4 transition-colors
+                  {gl.enabled ? 'border-border' : 'border-border/40 opacity-50'}"
               >
                 <!-- Grade Header -->
                 <div class="flex justify-between items-start">
@@ -901,38 +957,34 @@ const steps = [
                     <!-- Color Tag -->
                     <div class="w-4 h-4 rounded-full" style="background-color: {gl.color};"></div>
                     <div>
-                      <h4 class="font-bold text-slate-200 text-sm">{gl.name_ar}</h4>
-                      <p class="text-xs text-slate-500 font-mono">{gl.name}</p>
+                      <h4 class="font-bold text-foreground text-sm font-serif">{gl.name_ar}</h4>
+                      <p class="text-xs text-muted-foreground font-mono">{gl.name}</p>
                     </div>
                   </div>
 
                   <div class="flex items-center gap-2">
-                    <Label class="text-xs text-slate-400">{m.onboarding_stage_enable ? m.onboarding_stage_enable() : "تفعيل الصف"}</Label>
-                    <input 
-                      type="checkbox" 
-                      bind:checked={gl.enabled} 
-                      class="w-4 h-4 rounded border-slate-800 text-violet-600 focus:ring-violet-500 bg-slate-955" 
-                    />
+                    <Label class="text-xs text-muted-foreground">{m.onboarding_stage_enable ? m.onboarding_stage_enable() : "تفعيل الصف"}</Label>
+                    <Checkbox bind:checked={gl.enabled} />
                   </div>
                 </div>
 
                 <!-- Divisions / Sections manager -->
                 {#if gl.enabled}
-                  <div class="space-y-3 pt-3 border-t border-slate-900">
-                    <Label class="text-xs text-slate-400">{m.onboarding_stage_divisions ? m.onboarding_stage_divisions() : "شعب الفصل الدراسي المتاحة"}</Label>
+                  <div class="space-y-3 pt-3 border-t border-border">
+                    <Label class="text-xs text-muted-foreground">{m.onboarding_stage_divisions ? m.onboarding_stage_divisions() : "شعب الفصل الدراسي المتاحة"}</Label>
                     
-                    <div class="flex flex-wrap gap-1.5 min-h-[32px] p-2 bg-slate-955/40 rounded-lg border border-slate-900">
+                    <div class="flex flex-wrap gap-1.5 min-h-[32px] p-2 bg-muted/40 rounded-lg border border-border">
                       {#each gl.divisions as div}
-                        <Badge variant="secondary" class="bg-slate-900 border-slate-800 text-slate-300 text-xs px-2.5 py-0.5 flex gap-1 items-center font-sans">
+                        <Badge variant="secondary" class="bg-card border-border text-foreground text-xs px-2.5 py-0.5 flex gap-1 items-center font-sans">
                           <span>
                             {m.onboarding_stage_division_unit ? m.onboarding_stage_division_unit({ name: div }) : `الشعبة ${div}`}
                           </span>
-                          <button onclick={() => removeDivision(gl.level, div)} class="hover:text-rose-400 font-bold ml-0.5 mr-0.5 text-[10px]">&times;</button>
+                          <button onclick={() => removeDivision(gl.level, div)} class="hover:text-destructive font-bold ml-0.5 mr-0.5 text-[10px]">&times;</button>
                         </Badge>
                       {/each}
                       
                       {#if gl.divisions.length === 0}
-                        <span class="text-xs text-slate-600 self-center">
+                        <span class="text-xs text-muted-foreground/80 self-center">
                           {m.onboarding_stage_no_divisions ? m.onboarding_stage_no_divisions() : "لا توجد شعب حالياً."}
                         </span>
                       {/if}
@@ -943,9 +995,9 @@ const steps = [
                       <Input 
                         placeholder={m.onboarding_stage_add_division_placeholder ? m.onboarding_stage_add_division_placeholder() : "إضافة شعبة (مثل: ج)"} 
                         bind:value={divisionInput[gl.level]} 
-                        class="bg-slate-955 border-slate-800 text-xs h-8" 
+                        class="text-xs h-8" 
                       />
-                      <Button onclick={() => addDivision(gl.level)} size="sm" class="h-8 bg-violet-600 hover:bg-violet-700 text-xs shrink-0 px-3">
+                      <Button onclick={() => addDivision(gl.level)} size="sm" class="h-8 text-xs shrink-0 px-3">
                         <Plus class="w-3.5 h-3.5" />
                       </Button>
                     </div>
@@ -961,41 +1013,41 @@ const steps = [
       {#if activeStep === 5}
         <div class="max-w-3xl space-y-6">
           <div class="space-y-2">
-            <h3 class="text-slate-200 font-bold text-xl">{m.onboarding_schedule_title ? m.onboarding_schedule_title() : "الخطة الزمنية للحصص اليومية"}</h3>
-            <p class="text-slate-400 text-sm">{m.onboarding_schedule_desc ? m.onboarding_schedule_desc() : "حدد مواعيد الحصص اليومية وفترات الراحة (الفسحة) لتوزيع الجدول تلقائياً."}</p>
+            <h3 class="text-foreground font-bold text-xl font-serif">{m.onboarding_schedule_title ? m.onboarding_schedule_title() : "الخطة الزمنية للحصص اليومية"}</h3>
+            <p class="text-muted-foreground text-sm">{m.onboarding_schedule_desc ? m.onboarding_schedule_desc() : "حدد مواعيد الحصص اليومية وفترات الراحة (الفسحة) لتوزيع الجدول تلقائياً."}</p>
           </div>
 
           <!-- Add Period Form -->
-          <div class="p-6 bg-slate-900/30 rounded-xl border border-slate-800/80 grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+          <div class="p-6 bg-muted/40 rounded-xl border border-border grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
             <div class="space-y-2">
               <Label class="text-xs">{m.onboarding_schedule_name_ar ? m.onboarding_schedule_name_ar() : "اسم الحصة (عربي)"}</Label>
-              <Input bind:value={newSlotNameAr} placeholder="الحصة السادسة" class="bg-slate-955 border-slate-800 text-xs h-9" />
+              <Input bind:value={newSlotNameAr} placeholder="الحصة السادسة" class="text-xs h-9" />
             </div>
 
             <div class="space-y-2">
               <Label class="text-xs">{m.onboarding_schedule_name_en ? m.onboarding_schedule_name_en() : "اسم الحصة (English)"}</Label>
-              <Input bind:value={newSlotName} placeholder="6th Period" class="bg-slate-955 border-slate-800 text-xs h-9 text-left font-sans" style="direction: ltr;" />
+              <Input bind:value={newSlotName} placeholder="6th Period" class="text-xs h-9 text-left font-sans" style="direction: ltr;" />
             </div>
 
             <div class="space-y-2">
               <Label class="text-xs">{m.onboarding_schedule_start_end ? m.onboarding_schedule_start_end() : "البدء / النهاية"}</Label>
               <div class="grid grid-cols-2 gap-2">
-                <Input type="time" bind:value={newSlotStart} class="bg-slate-955 border-slate-800 text-xs h-9 font-sans" />
-                <Input type="time" bind:value={newSlotEnd} class="bg-slate-955 border-slate-800 text-xs h-9 font-sans" />
+                <Input type="time" bind:value={newSlotStart} class="text-xs h-9 font-sans" />
+                <Input type="time" bind:value={newSlotEnd} class="text-xs h-9 font-sans" />
               </div>
             </div>
 
-            <Button onclick={addTimeSlot} class="w-full h-9 bg-violet-600 hover:bg-violet-700 text-xs flex gap-1.5 items-center justify-center">
+            <Button onclick={addTimeSlot} class="w-full h-9 text-xs flex gap-1.5 items-center justify-center">
               <Plus class="w-4 h-4" />
               <span>{m.onboarding_schedule_add_period ? m.onboarding_schedule_add_period() : "إضافة الفترة"}</span>
             </Button>
           </div>
 
           <!-- Time Slots table -->
-          <div class="bg-slate-900/20 border border-slate-800 rounded-xl overflow-hidden">
+          <div class="bg-card border border-border rounded-xl overflow-hidden">
             <table class="w-full border-collapse">
               <thead>
-                <tr class="bg-slate-900/60 text-slate-400 border-b border-slate-800 text-xs font-semibold">
+                <tr class="bg-muted text-muted-foreground border-b border-border text-xs font-semibold">
                   <th class="p-4 text-start w-12">{m.onboarding_schedule_col_num ? m.onboarding_schedule_col_num() : "م"}</th>
                   <th class="p-4 text-start">{m.onboarding_schedule_col_name ? m.onboarding_schedule_col_name() : "اسم الحصة (عربي / إنجليزي)"}</th>
                   <th class="p-4 text-center">{m.onboarding_schedule_col_start ? m.onboarding_schedule_col_start() : "وقت البدء"}</th>
@@ -1004,28 +1056,28 @@ const steps = [
                   <th class="p-4 text-center">{m.onboarding_schedule_col_actions ? m.onboarding_schedule_col_actions() : "إجراءات"}</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-slate-800/80 text-sm">
+              <tbody class="divide-y divide-border text-sm">
                 {#each timeSlots as slot, idx}
                   {@const startParts = slot.start_time.split(':').map(Number)}
                   {@const endParts = slot.end_time.split(':').map(Number)}
                   {@const dur = (endParts[0]*60 + endParts[1]) - (startParts[0]*60 + startParts[1])}
-                  <tr class="hover:bg-slate-900/10">
-                    <td class="p-4 text-slate-400 font-mono text-xs">{idx + 1}</td>
+                  <tr class="hover:bg-muted/30">
+                    <td class="p-4 text-muted-foreground font-mono text-xs">{idx + 1}</td>
                     <td class="p-4 text-start">
-                      <div class="font-medium text-slate-200">{slot.name_ar}</div>
-                      <div class="text-xs text-slate-500 font-mono">{slot.name}</div>
+                      <div class="font-medium text-foreground">{slot.name_ar}</div>
+                      <div class="text-xs text-muted-foreground font-mono">{slot.name}</div>
                     </td>
-                    <td class="p-4 text-center font-mono text-xs text-slate-300">{slot.start_time}</td>
-                    <td class="p-4 text-center font-mono text-xs text-slate-300">{slot.end_time}</td>
+                    <td class="p-4 text-center font-mono text-xs text-foreground">{slot.start_time}</td>
+                    <td class="p-4 text-center font-mono text-xs text-foreground">{slot.end_time}</td>
                     <td class="p-4 text-center">
-                      <span class="text-xs bg-slate-900 text-slate-400 border border-slate-800 px-2 py-0.5 rounded font-sans">
+                      <span class="text-xs bg-muted text-muted-foreground border border-border px-2 py-0.5 rounded font-sans">
                         {m.onboarding_schedule_duration_value ? m.onboarding_schedule_duration_value({ minutes: dur }) : `${dur} دقيقة`}
                       </span>
                     </td>
                     <td class="p-4 text-center">
                       <button 
                         onclick={() => removeTimeSlot(idx)} 
-                        class="text-slate-500 hover:text-rose-400 p-1.5 hover:bg-rose-500/10 rounded-lg transition-colors"
+                        class="text-muted-foreground hover:text-destructive p-1.5 hover:bg-destructive/10 rounded-lg transition-colors"
                       >
                         <Trash class="w-4 h-4" />
                       </button>
@@ -1042,36 +1094,36 @@ const steps = [
       {#if activeStep === 6}
         <div class="max-w-4xl space-y-6">
           <div class="space-y-2">
-            <h3 class="text-slate-200 font-bold text-xl">{m.onboarding_subjects_title ? m.onboarding_subjects_title() : "المواد الدراسية والمناهج"}</h3>
-            <p class="text-slate-400 text-sm">{m.onboarding_subjects_desc ? m.onboarding_subjects_desc() : "اختر وتكامل مع المواد الأساسية المعتمدة في مدرستك وخصص ألوانها أو أضف مواد إضافية."}</p>
+            <h3 class="text-foreground font-bold text-xl font-serif">{m.onboarding_subjects_title ? m.onboarding_subjects_title() : "المواد الدراسية والمناهج"}</h3>
+            <p class="text-muted-foreground text-sm">{m.onboarding_subjects_desc ? m.onboarding_subjects_desc() : "اختر وتكامل مع المواد الأساسية المعتمدة في مدرستك وخصص ألوانها أو أضف مواد إضافية."}</p>
           </div>
 
           <!-- Add Subject form -->
-          <div class="p-6 bg-slate-900/30 rounded-xl border border-slate-800/80 grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+          <div class="p-6 bg-muted/40 rounded-xl border border-border grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
             <div class="space-y-2">
               <Label class="text-xs">{m.onboarding_subject_code ? m.onboarding_subject_code() : "رمز المادة (رمز فريد)"}</Label>
-              <Input bind:value={newSubCode} placeholder="PHY" class="bg-slate-955 border-slate-800 text-xs h-9 uppercase font-sans" />
+              <Input bind:value={newSubCode} placeholder="PHY" class="text-xs h-9 uppercase font-sans" />
             </div>
 
             <div class="space-y-2">
               <Label class="text-xs">{m.onboarding_subject_name_ar ? m.onboarding_subject_name_ar() : "اسم المادة (عربي)"}</Label>
-              <Input bind:value={newSubNameAr} placeholder="الفيزياء" class="bg-slate-955 border-slate-800 text-xs h-9" />
+              <Input bind:value={newSubNameAr} placeholder="الفيزياء" class="text-xs h-9" />
             </div>
 
             <div class="space-y-2 font-sans text-start">
               <Label class="text-xs">{m.onboarding_subject_name_en ? m.onboarding_subject_name_en() : "اسم المادة (English)"}</Label>
-              <Input bind:value={newSubName} placeholder="Physics" class="bg-slate-955 border-slate-800 text-xs h-9 text-left" style="direction: ltr;" />
+              <Input bind:value={newSubName} placeholder="Physics" class="text-xs h-9 text-left" style="direction: ltr;" />
             </div>
 
             <div class="space-y-2">
               <Label class="text-xs">{m.onboarding_subject_color ? m.onboarding_subject_color() : "لون المادة التعريفي"}</Label>
               <div class="flex gap-2 items-center">
-                <input type="color" bind:value={newSubColor} class="w-9 h-9 border border-slate-800 rounded bg-slate-955 cursor-pointer" />
-                <span class="text-xs font-mono text-slate-400">{newSubColor}</span>
+                <input type="color" bind:value={newSubColor} class="w-9 h-9 border border-border rounded bg-background cursor-pointer" />
+                <span class="text-xs font-mono text-muted-foreground">{newSubColor}</span>
               </div>
             </div>
 
-            <Button onclick={addSubject} class="w-full h-9 bg-violet-600 hover:bg-violet-700 text-xs flex gap-1.5 items-center justify-center">
+            <Button onclick={addSubject} class="w-full h-9 text-xs flex gap-1.5 items-center justify-center">
               <Plus class="w-4 h-4" />
               <span>{m.onboarding_subjects_add_subject ? m.onboarding_subjects_add_subject() : "إضافة المادة"}</span>
             </Button>
@@ -1081,8 +1133,8 @@ const steps = [
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {#each subjects as sub, idx}
               <div 
-                class="bg-slate-900/30 border rounded-xl p-4 space-y-3 transition-all duration-300
-                  {sub.enabled ? 'border-slate-800 bg-slate-900/20' : 'border-transparent opacity-50 bg-slate-955/20'}"
+                class="bg-card border rounded-xl p-4 space-y-3 transition-colors
+                  {sub.enabled ? 'border-border' : 'border-border/40 opacity-50'}"
               >
                 <div class="flex justify-between items-start">
                   <div class="flex gap-3 items-center">
@@ -1091,21 +1143,17 @@ const steps = [
                       <BookOpen class="w-4 h-4" style="color: {sub.color};" />
                     </div>
                     <div class="text-start">
-                      <div class="font-bold text-slate-200 text-sm flex gap-1.5 items-center">
+                      <div class="font-bold text-foreground text-sm flex gap-1.5 items-center font-serif">
                         <span>{sub.name_ar}</span>
-                        <Badge variant="outline" class="text-[9px] px-1 font-mono uppercase bg-slate-900 border-slate-800 text-slate-500">
+                        <Badge variant="outline" class="text-[9px] px-1 font-mono uppercase bg-muted border-border text-muted-foreground">
                           {sub.code}
                         </Badge>
                       </div>
-                      <p class="text-xs text-slate-500 font-mono mt-0.5">{sub.name}</p>
+                      <p class="text-xs text-muted-foreground font-mono mt-0.5">{sub.name}</p>
                     </div>
                   </div>
 
-                  <input 
-                    type="checkbox" 
-                    bind:checked={sub.enabled} 
-                    class="w-4 h-4 rounded border-slate-800 text-violet-600 focus:ring-violet-500 bg-slate-955" 
-                  />
+                  <Checkbox bind:checked={sub.enabled} />
                 </div>
               </div>
             {/each}
@@ -1117,91 +1165,91 @@ const steps = [
       {#if activeStep === 7}
         <div class="max-w-4xl space-y-6">
           <div class="space-y-2">
-            <h3 class="text-slate-200 font-bold text-xl">{m.onboarding_review_title ? m.onboarding_review_title() : "مراجعة وتدشين النظام"}</h3>
-            <p class="text-slate-400 text-sm">{m.onboarding_review_desc ? m.onboarding_review_desc() : "راجع الهيكل المدرسي النهائي قبل البدء بعمليات الإعداد الشاملة وقيد الحسابات المالية."}</p>
+            <h3 class="text-foreground font-bold text-xl font-serif">{m.onboarding_review_title ? m.onboarding_review_title() : "مراجعة وتدشين النظام"}</h3>
+            <p class="text-muted-foreground text-sm">{m.onboarding_review_desc ? m.onboarding_review_desc() : "راجع الهيكل المدرسي النهائي قبل البدء بعمليات الإعداد الشاملة وقيد الحسابات المالية."}</p>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- School info card -->
-            <Card class="bg-slate-900/20 border-slate-800">
+            <Card class="bg-card border-border">
               <CardHeader class="pb-2 text-start">
-                <CardTitle class="text-sm font-semibold text-slate-400 flex gap-2 items-center">
-                  <School class="w-4 h-4 text-violet-400" />
+                <CardTitle class="text-sm font-semibold text-muted-foreground flex gap-2 items-center font-serif">
+                  <School class="w-4 h-4 text-primary" />
                   <span>{m.onboarding_review_school_info ? m.onboarding_review_school_info() : "معلومات المدرسة الأساسية"}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent class="space-y-2 text-sm">
-                <div class="flex justify-between"><span class="text-slate-500">{m.onboarding_review_school_name ? m.onboarding_review_school_name() : "اسم المدرسة الرسمي:"}</span><span class="font-medium text-slate-200">{orgNameAr}</span></div>
-                <div class="flex justify-between"><span class="text-slate-500">{m.onboarding_review_org_id ? m.onboarding_review_org_id() : "المعرف البرمجي:"}</span><span class="font-mono text-xs text-slate-400">{authStore.orgId}</span></div>
-                <div class="flex justify-between"><span class="text-slate-500">{m.onboarding_review_currency ? m.onboarding_review_currency() : "العملة الأساسية للنظام:"}</span><span class="font-medium text-emerald-400">{currency}</span></div>
-                <div class="flex justify-between"><span class="text-slate-500">{m.onboarding_review_locale_timezone ? m.onboarding_review_locale_timezone() : "اللغة / التوقيت:"}</span><span class="font-medium text-slate-200">{locale === 'ar' ? 'العربية' : 'English'} / {timezone}</span></div>
+                <div class="flex justify-between"><span class="text-muted-foreground">{m.onboarding_review_school_name ? m.onboarding_review_school_name() : "اسم المدرسة الرسمي:"}</span><span class="font-medium text-foreground">{orgNameAr}</span></div>
+                <div class="flex justify-between"><span class="text-muted-foreground">{m.onboarding_review_org_id ? m.onboarding_review_org_id() : "المعرف البرمجي:"}</span><span class="font-mono text-xs text-muted-foreground">{authStore.orgId}</span></div>
+                <div class="flex justify-between"><span class="text-muted-foreground">{m.onboarding_review_currency ? m.onboarding_review_currency() : "العملة الأساسية للنظام:"}</span><span class="font-medium text-emerald-500">{currency}</span></div>
+                <div class="flex justify-between"><span class="text-muted-foreground">{m.onboarding_review_locale_timezone ? m.onboarding_review_locale_timezone() : "اللغة / التوقيت:"}</span><span class="font-medium text-foreground">{locale === 'ar' ? 'العربية' : 'English'} / {timezone}</span></div>
               </CardContent>
             </Card>
 
             <!-- Calendar card -->
-            <Card class="bg-slate-900/20 border-slate-800">
+            <Card class="bg-card border-border">
               <CardHeader class="pb-2 text-start">
-                <CardTitle class="text-sm font-semibold text-slate-400 flex gap-2 items-center">
-                  <Calendar class="w-4 h-4 text-violet-400" />
+                <CardTitle class="text-sm font-semibold text-muted-foreground flex gap-2 items-center font-serif">
+                  <Calendar class="w-4 h-4 text-primary" />
                   <span>{m.onboarding_review_calendar ? m.onboarding_review_calendar() : "التقويم والفصول المعتمدة"}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent class="space-y-2 text-sm font-sans">
-                <div class="flex justify-between"><span class="text-slate-500 font-medium">{m.onboarding_review_academic_year ? m.onboarding_review_academic_year() : "العام الدراسي:"}</span><span class="font-medium text-slate-200 font-sans">{academicYearNameAr}</span></div>
-                <div class="flex justify-between"><span class="text-slate-500 font-medium">{m.onboarding_review_year_duration ? m.onboarding_review_year_duration() : "مدة العام:"}</span><span class="font-mono text-xs text-slate-400">{startDate} إلى {endDate}</span></div>
-                <div class="flex justify-between"><span class="text-slate-500 font-medium">{m.onboarding_review_sem1 ? m.onboarding_review_sem1() : "الفصل الأول:"}</span><span class="font-mono text-xs text-slate-400">{semester1Start} إلى {semester1End}</span></div>
-                <div class="flex justify-between"><span class="text-slate-500 font-medium">{m.onboarding_review_sem2 ? m.onboarding_review_sem2() : "الفصل الثاني:"}</span><span class="font-mono text-xs text-slate-400">{semester2Start} إلى {semester2End}</span></div>
+                <div class="flex justify-between"><span class="text-muted-foreground font-medium">{m.onboarding_review_academic_year ? m.onboarding_review_academic_year() : "العام الدراسي:"}</span><span class="font-medium text-foreground font-sans">{academicYearNameAr}</span></div>
+                <div class="flex justify-between"><span class="text-muted-foreground font-medium">{m.onboarding_review_year_duration ? m.onboarding_review_year_duration() : "مدة العام:"}</span><span class="font-mono text-xs text-muted-foreground">{startDate} إلى {endDate}</span></div>
+                <div class="flex justify-between"><span class="text-muted-foreground font-medium">{m.onboarding_review_sem1 ? m.onboarding_review_sem1() : "الفصل الأول:"}</span><span class="font-mono text-xs text-muted-foreground">{semester1Start} إلى {semester1End}</span></div>
+                <div class="flex justify-between"><span class="text-muted-foreground font-medium">{m.onboarding_review_sem2 ? m.onboarding_review_sem2() : "الفصل الثاني:"}</span><span class="font-mono text-xs text-muted-foreground">{semester2Start} إلى {semester2End}</span></div>
               </CardContent>
             </Card>
 
             <!-- Buildings & Rooms card -->
-            <Card class="bg-slate-900/20 border-slate-800">
+            <Card class="bg-card border-border">
               <CardHeader class="pb-2 text-start">
-                <CardTitle class="text-sm font-semibold text-slate-400 flex gap-2 items-center">
-                  <Building class="w-4 h-4 text-violet-400" />
+                <CardTitle class="text-sm font-semibold text-muted-foreground flex gap-2 items-center font-serif">
+                  <Building class="w-4 h-4 text-primary" />
                   <span>{m.onboarding_review_buildings ? m.onboarding_review_buildings() : "توزيع المنشآت والغرف"}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent class="space-y-2 text-sm">
-                <div class="flex justify-between"><span class="text-slate-500">{m.onboarding_review_bld1 ? m.onboarding_review_bld1() : "المبنى 1:"}</span><span class="font-medium text-slate-200">
+                <div class="flex justify-between"><span class="text-muted-foreground">{m.onboarding_review_bld1 ? m.onboarding_review_bld1() : "المبنى 1:"}</span><span class="font-medium text-foreground">
                   {m.onboarding_review_bld_rooms_value ? m.onboarding_review_bld_rooms_value({ count: bld1Rooms }) : `${bld1Rooms} غرف ومختبرات`}
                 </span></div>
-                <div class="flex justify-between"><span class="text-slate-500">{m.onboarding_review_bld2 ? m.onboarding_review_bld2() : "المبنى 2:"}</span><span class="font-medium text-slate-200">
+                <div class="flex justify-between"><span class="text-muted-foreground">{m.onboarding_review_bld2 ? m.onboarding_review_bld2() : "المبنى 2:"}</span><span class="font-medium text-foreground">
                   {m.onboarding_review_bld_rooms_only ? m.onboarding_review_bld_rooms_only({ count: bld2Rooms }) : `${bld2Rooms} غرف`}
                 </span></div>
-                <div class="flex justify-between"><span class="text-slate-500">{m.onboarding_review_capacity ? m.onboarding_review_capacity() : "إجمالي الطاقة الاستيعابية:"}</span><span class="font-medium text-violet-400">
+                <div class="flex justify-between"><span class="text-muted-foreground">{m.onboarding_review_capacity ? m.onboarding_review_capacity() : "إجمالي الطاقة الاستيعابية:"}</span><span class="font-medium text-primary">
                   {m.onboarding_review_capacity_value ? m.onboarding_review_capacity_value({ count: totalCapacity }) : `${totalCapacity} طالب`}
                 </span></div>
               </CardContent>
             </Card>
 
             <!-- Stages & Subjects card -->
-            <Card class="bg-slate-900/20 border-slate-800">
+            <Card class="bg-card border-border">
               <CardHeader class="pb-2 text-start">
-                <CardTitle class="text-sm font-semibold text-slate-400 flex gap-2 items-center">
-                  <GraduationCap class="w-4 h-4 text-violet-400" />
+                <CardTitle class="text-sm font-semibold text-muted-foreground flex gap-2 items-center font-serif">
+                  <GraduationCap class="w-4 h-4 text-primary" />
                   <span>{m.onboarding_review_stages ? m.onboarding_review_stages() : "الصفوف والمواد الدراسية"}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent class="space-y-2 text-sm">
-                <div class="flex justify-between"><span class="text-slate-500">{m.onboarding_review_stages_enabled ? m.onboarding_review_stages_enabled() : "الصفوف الدراسية المفعلة:"}</span><span class="font-medium text-slate-200">
+                <div class="flex justify-between"><span class="text-muted-foreground">{m.onboarding_review_stages_enabled ? m.onboarding_review_stages_enabled() : "الصفوف الدراسية المفعلة:"}</span><span class="font-medium text-foreground">
                   {m.onboarding_review_stages_value ? m.onboarding_review_stages_value({ count: enabledStages }) : `${enabledStages} صفوف`}
                 </span></div>
-                <div class="flex justify-between"><span class="text-slate-500">{m.onboarding_review_divisions_count ? m.onboarding_review_divisions_count() : "عدد الشعب الدراسي الكلية:"}</span><span class="font-medium text-slate-200">
+                <div class="flex justify-between"><span class="text-muted-foreground">{m.onboarding_review_divisions_count ? m.onboarding_review_divisions_count() : "عدد الشعب الدراسي الكلية:"}</span><span class="font-medium text-foreground">
                   {m.onboarding_review_divisions_value ? m.onboarding_review_divisions_value({ count: totalDivisions }) : `${totalDivisions} شعب`}
                 </span></div>
-                <div class="flex justify-between"><span class="text-slate-500">{m.onboarding_review_subjects_count ? m.onboarding_review_subjects_count() : "المواد التعليمية المفعلة:"}</span><span class="font-medium text-slate-200">
+                <div class="flex justify-between"><span class="text-muted-foreground">{m.onboarding_review_subjects_count ? m.onboarding_review_subjects_count() : "المواد التعليمية المفعلة:"}</span><span class="font-medium text-foreground">
                   {m.onboarding_review_subjects_value ? m.onboarding_review_subjects_value({ count: enabledSubjects }) : `${enabledSubjects} مواد`}
                 </span></div>
-                <div class="flex justify-between"><span class="text-slate-500">{m.onboarding_review_time_slots ? m.onboarding_review_time_slots() : "الحصص اليومية:"}</span><span class="font-medium text-slate-200">
+                <div class="flex justify-between"><span class="text-muted-foreground">{m.onboarding_review_time_slots ? m.onboarding_review_time_slots() : "الحصص اليومية:"}</span><span class="font-medium text-foreground">
                   {m.onboarding_review_slots_value ? m.onboarding_review_slots_value({ count: totalSlots }) : `${totalSlots} فترات`}
                 </span></div>
               </CardContent>
             </Card>
           </div>
 
-          <div class="p-5 rounded-xl border border-amber-500/20 bg-amber-500/5 text-amber-300 text-xs leading-relaxed max-w-4xl space-y-1 text-start">
-            <h5 class="font-semibold text-amber-200">{m.onboarding_review_warn_title ? m.onboarding_review_warn_title() : "⚠️ تنبيه هام:"}</h5>
+          <div class="p-5 rounded-xl border border-border bg-muted text-muted-foreground text-xs leading-relaxed max-w-4xl space-y-1 text-start">
+            <h5 class="font-semibold text-foreground font-serif">{m.onboarding_review_warn_title ? m.onboarding_review_warn_title() : "⚠️ تنبيه هام:"}</h5>
             <p>{m.onboarding_review_warn_desc ? m.onboarding_review_warn_desc() : "سيؤدي تدشين النظام إلى مسح أي هيكل مدرسي تجريبي قديم وإنشاء الحسابات المحاسبية والقيد التلقائي للعملات. يرجى الانتظار دون إغلاق التطبيق حتى تكتمل المعاملة تماماً."}</p>
           </div>
 
@@ -1211,7 +1259,7 @@ const steps = [
               onclick={handleCompleteSetup} 
               disabled={isLoading}
               size="lg"
-              class="px-10 py-6 text-base font-bold bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-xl shadow-xl shadow-violet-600/20 flex gap-3 items-center justify-center transition-all duration-300 hover:scale-105"
+              class="px-10 py-6 text-base font-bold bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl shadow-lg flex gap-3 items-center justify-center transition-transform hover:scale-105"
             >
               {#if isLoading}
                 <Loader2 class="w-5 h-5 animate-spin" />
@@ -1227,13 +1275,13 @@ const steps = [
     </div>
 
     <!-- Bottom Actions Control Bar -->
-    <footer class="h-20 border-t border-slate-900 px-8 flex justify-between items-center shrink-0 bg-slate-950/80 backdrop-blur-md">
+    <footer class="h-20 border-t border-border px-8 flex justify-between items-center shrink-0 bg-background">
       <!-- Back button -->
       <Button 
         variant="outline" 
         onclick={() => activeStep > 1 && (activeStep -= 1)} 
         disabled={activeStep === 1 || isLoading}
-        class="border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-900 flex gap-2 items-center"
+        class="border-border text-muted-foreground hover:text-foreground hover:bg-muted flex gap-2 items-center"
       >
         <ArrowRight class="w-4 h-4" />
         <span>{m.onboarding_prev_btn ? m.onboarding_prev_btn() : "السابق"}</span>
@@ -1244,7 +1292,7 @@ const steps = [
         <Button 
           onclick={() => (activeStep += 1)} 
           disabled={isLoading}
-          class="bg-violet-600 hover:bg-violet-700 text-white flex gap-2 items-center"
+          class="bg-primary text-primary-foreground hover:bg-primary/90 flex gap-2 items-center"
         >
           <span>{m.onboarding_next_btn ? m.onboarding_next_btn() : "التالي"}</span>
           <ArrowLeft class="w-4 h-4" />
