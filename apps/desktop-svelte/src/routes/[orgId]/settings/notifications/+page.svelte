@@ -1,0 +1,211 @@
+<script lang="ts">
+import { onMount } from "svelte";
+import { Switch } from "@orbis/ui-svelte/switch";
+import { Button } from "@orbis/ui-svelte/button";
+import { toast } from "svelte-sonner";
+import * as m from "$lib/paraglide/messages";
+import { Bell, Mail, ShieldAlert } from "lucide-svelte";
+
+let isSaving = $state(false);
+
+// Preferences state
+let prefs = $state({
+  inApp: {
+    enrollment: true,
+    grades: true,
+    attendance: true,
+    finance: true,
+    behavior: true,
+    system: true,
+  },
+  email: {
+    enrollment: false,
+    grades: false,
+    attendance: false,
+    finance: true,
+    behavior: false,
+    system: true,
+  }
+});
+
+onMount(() => {
+  const saved = localStorage.getItem("orbis_notification_preferences");
+  if (saved) {
+    try {
+      prefs = JSON.parse(saved);
+    } catch (e) {
+      console.error("Failed to parse notifications preferences:", e);
+    }
+  }
+});
+
+async function handleSave(e: Event) {
+  e.preventDefault();
+  isSaving = true;
+  
+  // Simulate delay for premium feel
+  await new Promise((resolve) => setTimeout(resolve, 600));
+  
+  localStorage.setItem("orbis_notification_preferences", JSON.stringify(prefs));
+  toast.success(m.settings_general_save_success());
+  isSaving = false;
+}
+</script>
+
+<svelte:head>
+  <title>{m.settings_notifications_title()} | Orbis</title>
+</svelte:head>
+
+<div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide">
+  <div class="max-w-4xl mx-auto p-6 flex flex-col gap-6">
+    <!-- Header -->
+    <div class="flex flex-col gap-1 text-start">
+      <h1 class="text-xl font-bold tracking-tight text-foreground">{m.settings_notifications_title()}</h1>
+      <p class="text-xs text-muted-foreground">{m.settings_notifications_desc()}</p>
+    </div>
+
+    <form onsubmit={handleSave} class="flex flex-col gap-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- In-App Notifications Card -->
+        <div class="bg-card border border-border rounded-xl p-6 flex flex-col gap-6">
+          <div class="flex items-center gap-2 border-b border-border/60 pb-4 text-start">
+            <Bell size={16} class="text-primary" />
+            <h2 class="text-sm font-semibold text-foreground">{m.settings_notifications_in_app()}</h2>
+          </div>
+
+          <div class="flex flex-col gap-4">
+            <!-- Enrollment -->
+            <div class="flex items-center justify-between py-2 border-b border-border/20">
+              <div class="flex flex-col text-start">
+                <span class="text-xs font-semibold text-foreground">{m.settings_notifications_enrollment()}</span>
+                <span class="text-[10px] text-muted-foreground">Receive updates when students register</span>
+              </div>
+              <Switch bind:checked={prefs.inApp.enrollment} disabled={isSaving} />
+            </div>
+
+            <!-- Grades -->
+            <div class="flex items-center justify-between py-2 border-b border-border/20">
+              <div class="flex flex-col text-start">
+                <span class="text-xs font-semibold text-foreground">{m.settings_notifications_grades()}</span>
+                <span class="text-[10px] text-muted-foreground">Receive updates on examinations and grading sheets</span>
+              </div>
+              <Switch bind:checked={prefs.inApp.grades} disabled={isSaving} />
+            </div>
+
+            <!-- Attendance -->
+            <div class="flex items-center justify-between py-2 border-b border-border/20">
+              <div class="flex flex-col text-start">
+                <span class="text-xs font-semibold text-foreground">{m.settings_notifications_attendance()}</span>
+                <span class="text-[10px] text-muted-foreground">Receive logs on student absence or tardiness</span>
+              </div>
+              <Switch bind:checked={prefs.inApp.attendance} disabled={isSaving} />
+            </div>
+
+            <!-- Finance -->
+            <div class="flex items-center justify-between py-2 border-b border-border/20">
+              <div class="flex flex-col text-start">
+                <span class="text-xs font-semibold text-foreground">{m.settings_notifications_finance()}</span>
+                <span class="text-[10px] text-muted-foreground">Receive invoices and payment confirmations</span>
+              </div>
+              <Switch bind:checked={prefs.inApp.finance} disabled={isSaving} />
+            </div>
+
+            <!-- Behavior -->
+            <div class="flex items-center justify-between py-2 border-b border-border/20">
+              <div class="flex flex-col text-start">
+                <span class="text-xs font-semibold text-foreground">{m.settings_notifications_behavior()}</span>
+                <span class="text-[10px] text-muted-foreground">Receive behavior points or infraction warnings</span>
+              </div>
+              <Switch bind:checked={prefs.inApp.behavior} disabled={isSaving} />
+            </div>
+
+            <!-- System -->
+            <div class="flex items-center justify-between py-2">
+              <div class="flex flex-col text-start">
+                <span class="text-xs font-semibold text-foreground">{m.settings_notifications_system()}</span>
+                <span class="text-[10px] text-muted-foreground">Receive platform notifications & logs</span>
+              </div>
+              <Switch bind:checked={prefs.inApp.system} disabled={isSaving} />
+            </div>
+          </div>
+        </div>
+
+        <!-- Email Notifications Card -->
+        <div class="bg-card border border-border rounded-xl p-6 flex flex-col gap-6">
+          <div class="flex items-center gap-2 border-b border-border/60 pb-4 text-start">
+            <Mail size={16} class="text-primary" />
+            <h2 class="text-sm font-semibold text-foreground">{m.settings_notifications_email()}</h2>
+          </div>
+
+          <div class="flex flex-col gap-4">
+            <!-- Enrollment -->
+            <div class="flex items-center justify-between py-2 border-b border-border/20">
+              <div class="flex flex-col text-start">
+                <span class="text-xs font-semibold text-foreground">{m.settings_notifications_enrollment()}</span>
+                <span class="text-[10px] text-muted-foreground">Receive updates when students register</span>
+              </div>
+              <Switch bind:checked={prefs.email.enrollment} disabled={isSaving} />
+            </div>
+
+            <!-- Grades -->
+            <div class="flex items-center justify-between py-2 border-b border-border/20">
+              <div class="flex flex-col text-start">
+                <span class="text-xs font-semibold text-foreground">{m.settings_notifications_grades()}</span>
+                <span class="text-[10px] text-muted-foreground">Receive updates on examinations and grading sheets</span>
+              </div>
+              <Switch bind:checked={prefs.email.grades} disabled={isSaving} />
+            </div>
+
+            <!-- Attendance -->
+            <div class="flex items-center justify-between py-2 border-b border-border/20">
+              <div class="flex flex-col text-start">
+                <span class="text-xs font-semibold text-foreground">{m.settings_notifications_attendance()}</span>
+                <span class="text-[10px] text-muted-foreground">Receive logs on student absence or tardiness</span>
+              </div>
+              <Switch bind:checked={prefs.email.attendance} disabled={isSaving} />
+            </div>
+
+            <!-- Finance -->
+            <div class="flex items-center justify-between py-2 border-b border-border/20">
+              <div class="flex flex-col text-start">
+                <span class="text-xs font-semibold text-foreground">{m.settings_notifications_finance()}</span>
+                <span class="text-[10px] text-muted-foreground">Receive invoices and payment confirmations</span>
+              </div>
+              <Switch bind:checked={prefs.email.finance} disabled={isSaving} />
+            </div>
+
+            <!-- Behavior -->
+            <div class="flex items-center justify-between py-2 border-b border-border/20">
+              <div class="flex flex-col text-start">
+                <span class="text-xs font-semibold text-foreground">{m.settings_notifications_behavior()}</span>
+                <span class="text-[10px] text-muted-foreground">Receive behavior points or infraction warnings</span>
+              </div>
+              <Switch bind:checked={prefs.email.behavior} disabled={isSaving} />
+            </div>
+
+            <!-- System -->
+            <div class="flex items-center justify-between py-2">
+              <div class="flex flex-col text-start">
+                <span class="text-xs font-semibold text-foreground">{m.settings_notifications_system()}</span>
+                <span class="text-[10px] text-muted-foreground">Receive platform notifications & logs</span>
+              </div>
+              <Switch bind:checked={prefs.email.system} disabled={isSaving} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="flex justify-end gap-3 pb-8">
+        <Button
+          type="submit"
+          variant="lime"
+          class="px-6 font-semibold h-10 text-sm"
+          disabled={isSaving}
+        >
+          {isSaving ? m.settings_general_saving() : m.settings_general_save()}
+        </Button>
+      </div>
+    </form>
+  </div>
+</div>

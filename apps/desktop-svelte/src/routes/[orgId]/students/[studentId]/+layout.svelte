@@ -18,6 +18,7 @@ import {
   PhoneCall,
   Edit2,
   Users,
+  Users2,
   FileText,
 } from "lucide-svelte";
 import { studentsStore } from "$lib/stores";
@@ -158,6 +159,7 @@ function isActive(tabHref: string) {
         { id: "fees", label: m.detail_tab_fees(), icon: Wallet, href: `/${orgId}/students/${studentId}/fees` },
         { id: "attendance", label: m.detail_tab_attendance(), icon: UserCheck, href: `/${orgId}/students/${studentId}/attendance` },
         { id: "behavior", label: m.detail_tab_behavior(), icon: ShieldAlert, href: `/${orgId}/students/${studentId}/behavior` },
+        { id: "guardians", label: m.guardians_tab(), icon: Users2, href: `/${orgId}/students/${studentId}/guardians` },
         { id: "documents", label: m.detail_tab_documents(), icon: FileText, href: `/${orgId}/students/${studentId}/documents` }
       ] as tab (tab.id)}
         <Button

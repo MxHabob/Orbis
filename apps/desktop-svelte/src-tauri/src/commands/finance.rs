@@ -5,7 +5,7 @@ use core_domain::{
     entities::{ledger_account, treasury, student_fee, payment, fee_template},
     service::finance::{
         CreateLedgerAccountRequest, CreateTreasuryRequest,
-        AssignStudentFeeRequest, RecordPaymentRequest,
+        AssignStudentFeeRequest, RecordPaymentRequest, CreateFeeTemplateRequest,
     },
 };
 
@@ -83,6 +83,58 @@ pub async fn get_active_fee_templates(
     state
         .service
         .get_active_fee_templates(&org_id)
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn get_fee_templates(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+) -> CmdResult<Vec<fee_template::Model>> {
+    state
+        .service
+        .get_fee_templates(&org_id)
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn create_fee_template(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    request: CreateFeeTemplateRequest,
+) -> CmdResult<fee_template::Model> {
+    state
+        .service
+        .create_fee_template(&org_id, request)
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn update_fee_template(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    id: String,
+    request: CreateFeeTemplateRequest,
+) -> CmdResult<fee_template::Model> {
+    state
+        .service
+        .update_fee_template(&org_id, &id, request)
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn delete_fee_template(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    id: String,
+) -> CmdResult<u64> {
+    state
+        .service
+        .delete_fee_template(&org_id, &id)
         .await
         .map_err(CommandError::from)
 }

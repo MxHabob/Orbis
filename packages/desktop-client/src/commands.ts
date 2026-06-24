@@ -209,6 +209,18 @@ export const commands = {
     getActiveFeeTemplates: (orgId: string) =>
       invoke<JsonRecord[]>("get_active_fee_templates", { orgId }),
 
+    getFeeTemplates: (orgId: string) =>
+      invoke<JsonRecord[]>("get_fee_templates", { orgId }),
+
+    createFeeTemplate: (orgId: string, request: JsonRecord) =>
+      invoke<JsonRecord>("create_fee_template", { orgId, request }),
+
+    updateFeeTemplate: (orgId: string, id: string, request: JsonRecord) =>
+      invoke<JsonRecord>("update_fee_template", { orgId, id, request }),
+
+    deleteFeeTemplate: (orgId: string, id: string) =>
+      invoke<number>("delete_fee_template", { orgId, id }),
+
     assignStudentFee: (orgId: string, request: JsonRecord) =>
       invoke<JsonRecord>("assign_student_fee", { orgId, request }),
 
@@ -442,6 +454,19 @@ export const commands = {
 
     applySolve: (orgId: string, jobId: string) =>
       invoke<JsonRecord>("apply_schedule_solve", { orgId, jobId }),
+
+    // ── Rooms ──────────────────────────────────────────────────────────────
+    getRooms: (orgId: string) =>
+      invoke<JsonRecord[]>("get_rooms", { orgId }),
+
+    createRoom: (orgId: string, request: JsonRecord) =>
+      invoke<JsonRecord>("create_room", { orgId, request }),
+
+    updateRoom: (orgId: string, id: string, request: JsonRecord) =>
+      invoke<JsonRecord>("update_room", { orgId, id, request }),
+
+    deleteRoom: (orgId: string, id: string) =>
+      invoke<void>("delete_room", { orgId, id }),
   },
 
   guardians: {

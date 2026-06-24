@@ -17,6 +17,7 @@ import {
   Compass,
   ChevronRight,
   ClipboardList,
+  Receipt,
 } from "lucide-svelte";
 import MainViewport from "$lib/components/layout/MainViewport.svelte";
 import type { Snippet } from "svelte";
@@ -81,6 +82,11 @@ const navItems = $derived([
     path: "payments",
     label: m.finance_layout_nav_payments(),
     icon: CreditCard,
+  },
+  {
+    path: "fee-templates",
+    label: m.finance_layout_nav_fee_templates ? m.finance_layout_nav_fee_templates() : "قوالب الرسوم",
+    icon: Receipt,
   },
   {
     path: "treasuries",

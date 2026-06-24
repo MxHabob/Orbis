@@ -205,6 +205,79 @@ impl super::Repository {
             .await
     }
 
+    pub async fn get_fee_templates(&self, org_id: &str) -> Result<Vec<fee_template::Model>, DbErr> {
+        fee_template::Entity::find()
+            .filter(fee_template::Column::OrgId.eq(org_id))
+            .all(&self.db)
+            .await
+    }
+
+    pub async fn get_fee_template_by_id(&self, id: &str) -> Result<Option<fee_template::Model>, DbErr> {
+        fee_template::Entity::find_by_id(id.to_string())
+            .one(&self.db)
+            .await
+    }
+
+    pub async fn create_fee_template(&self, tpl: fee_template::Model) -> Result<fee_template::Model, DbErr> {
+        let active = fee_template::ActiveModel {
+            id: Set(tpl.id),
+            org_id: Set(tpl.org_id),
+            name: Set(tpl.name),
+            name_ar: Set(tpl.name_ar),
+            code: Set(tpl.code),
+            category: Set(tpl.category),
+            revenue_account_id: Set(tpl.revenue_account_id),
+            receivable_account_id: Set(tpl.receivable_account_id),
+            pricing_type: Set(tpl.pricing_type),
+            pricing_config: Set(tpl.pricing_config),
+            applicability_rules: Set(tpl.applicability_rules),
+            frequency: Set(tpl.frequency),
+            frequency_config: Set(tpl.frequency_config),
+            late_fee_rules: Set(tpl.late_fee_rules),
+            allowed_discounts: Set(tpl.allowed_discounts),
+            is_mandatory: Set(tpl.is_mandatory),
+            is_active: Set(tpl.is_active),
+            sort_order: Set(tpl.sort_order),
+            created_at: Set(tpl.created_at),
+            updated_at: Set(tpl.updated_at),
+        };
+        active.insert(&self.db).await
+    }
+
+    pub async fn update_fee_template(&self, tpl: fee_template::Model) -> Result<fee_template::Model, DbErr> {
+        let active = fee_template::ActiveModel {
+            id: Set(tpl.id),
+            org_id: Set(tpl.org_id),
+            name: Set(tpl.name),
+            name_ar: Set(tpl.name_ar),
+            code: Set(tpl.code),
+            category: Set(tpl.category),
+            revenue_account_id: Set(tpl.revenue_account_id),
+            receivable_account_id: Set(tpl.receivable_account_id),
+            pricing_type: Set(tpl.pricing_type),
+            pricing_config: Set(tpl.pricing_config),
+            applicability_rules: Set(tpl.applicability_rules),
+            frequency: Set(tpl.frequency),
+            frequency_config: Set(tpl.frequency_config),
+            late_fee_rules: Set(tpl.late_fee_rules),
+            allowed_discounts: Set(tpl.allowed_discounts),
+            is_mandatory: Set(tpl.is_mandatory),
+            is_active: Set(tpl.is_active),
+            sort_order: Set(tpl.sort_order),
+            created_at: Set(tpl.created_at),
+            updated_at: Set(tpl.updated_at),
+        };
+        active.update(&self.db).await
+    }
+
+    pub async fn delete_fee_template(&self, org_id: &str, id: &str) -> Result<u64, DbErr> {
+        let result = fee_template::Entity::delete_by_id(id.to_string())
+            .filter(fee_template::Column::OrgId.eq(org_id))
+            .exec(&self.db)
+            .await?;
+        Ok(result.rows_affected)
+    }
+
     // ── Journal Entries ──
     pub async fn create_journal_entry(&self, je: journal_entry::Model) -> Result<journal_entry::Model, DbErr> {
         let active = journal_entry::ActiveModel {

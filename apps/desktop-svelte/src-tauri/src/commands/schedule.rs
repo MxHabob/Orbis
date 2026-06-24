@@ -5,6 +5,7 @@ use core_domain::service::schedule::{
     CreateClassSubjectRequest, UpdateClassSubjectRequest,
     CreateLessonRequest, UpdateLessonRequest, ScheduledLessonView,
 };
+use core_domain::service::room::{CreateRoomRequest, UpdateRoomRequest};
 use crate::state::AppState;
 use super::error::{CmdResult, CommandError};
 
@@ -214,6 +215,46 @@ pub async fn apply_schedule_solve(
     job_id: String,
 ) -> CmdResult<core_domain::service::schedule_solver::SolveJobResponse> {
     state.service.apply_schedule_solve(&org_id, &job_id).await
+        .map_err(|e| CommandError::new(e))
+}
+
+#[tauri::command]
+pub async fn get_rooms(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+) -> CmdResult<Vec<core_domain::entities::room::Model>> {
+    state.service.get_rooms(&org_id).await
+        .map_err(|e| CommandError::new(e))
+}
+
+#[tauri::command]
+pub async fn create_room(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    request: CreateRoomRequest,
+) -> CmdResult<core_domain::entities::room::Model> {
+    state.service.create_room(&org_id, request).await
+        .map_err(|e| CommandError::new(e))
+}
+
+#[tauri::command]
+pub async fn update_room(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    id: String,
+    request: UpdateRoomRequest,
+) -> CmdResult<core_domain::entities::room::Model> {
+    state.service.update_room(&org_id, &id, request).await
+        .map_err(|e| CommandError::new(e))
+}
+
+#[tauri::command]
+pub async fn delete_room(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    id: String,
+) -> CmdResult<()> {
+    state.service.delete_room(&org_id, &id).await
         .map_err(|e| CommandError::new(e))
 }
 

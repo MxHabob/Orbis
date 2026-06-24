@@ -16,6 +16,8 @@ import {
   Award,
   Compass,
   ChevronRight,
+  MapPin,
+  BookUser,
 } from "lucide-svelte";
 import MainViewport from "$lib/components/layout/MainViewport.svelte";
 import type { Snippet } from "svelte";
@@ -89,6 +91,16 @@ const navItems = $derived([
     path: "assessments",
     label: m.academics_layout_nav_assessments(),
     icon: Award,
+  },
+  {
+    path: "rooms",
+    label: m.academics_layout_nav_rooms(),
+    icon: MapPin,
+  },
+  {
+    path: "class-subjects",
+    label: m.academics_layout_nav_class_subjects(),
+    icon: BookUser,
   },
 ]);
 </script>

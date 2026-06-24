@@ -27,6 +27,25 @@ pub struct CreateTreasuryRequest {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
+pub struct CreateFeeTemplateRequest {
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub code: Option<String>,
+    pub category: String,
+    pub revenue_account_id: String,
+    pub receivable_account_id: String,
+    pub pricing_type: String,
+    pub pricing_config: Option<String>,
+    pub applicability_rules: Option<String>,
+    pub frequency: String,
+    pub frequency_config: Option<String>,
+    pub late_fee_rules: Option<String>,
+    pub allowed_discounts: Option<String>,
+    pub is_mandatory: i32,
+    pub is_active: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct AssignStudentFeeRequest {
     pub enrollment_id: String,
     pub fee_template_id: String,
@@ -115,6 +134,66 @@ impl super::Service {
 
     pub async fn get_active_fee_templates(&self, org_id: &str) -> Result<Vec<fee_template::Model>, String> {
         self.repo.get_active_fee_templates(org_id).await.map_err(|e| e.to_string())
+    }
+
+    pub async fn get_fee_templates(&self, org_id: &str) -> Result<Vec<fee_template::Model>, String> {
+        self.repo.get_fee_templates(org_id).await.map_err(|e| e.to_string())
+    }
+
+    pub async fn create_fee_template(&self, org_id: &str, req: CreateFeeTemplateRequest) -> Result<fee_template::Model, String> {
+        let tpl = fee_template::Model {
+            id: Uuid::new_v4().to_string(),
+            org_id: org_id.to_string(),
+            name: req.name,
+            name_ar: req.name_ar,
+            code: req.code,
+            category: req.category,
+            revenue_account_id: req.revenue_account_id,
+            receivable_account_id: req.receivable_account_id,
+            pricing_type: req.pricing_type,
+            pricing_config: req.pricing_config,
+            applicability_rules: req.applicability_rules,
+            frequency: req.frequency,
+            frequency_config: req.frequency_config,
+            late_fee_rules: req.late_fee_rules,
+            allowed_discounts: req.allowed_discounts,
+            is_mandatory: req.is_mandatory,
+            is_active: req.is_active,
+            sort_order: None,
+            created_at: Utc::now().to_rfc3339(),
+            updated_at: Utc::now().to_rfc3339(),
+        };
+        self.repo.create_fee_template(tpl).await.map_err(|e| e.to_string())
+    }
+
+    pub async fn update_fee_template(&self, org_id: &str, id: &str, req: CreateFeeTemplateRequest) -> Result<fee_template::Model, String> {
+        let tpl = self.repo.get_fee_template_by_id(id).await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "Fee template not found".to_string())?;
+
+        let mut active: fee_template::ActiveModel = tpl.into();
+        active.name = sea_orm::ActiveValue::Set(req.name);
+        active.name_ar = sea_orm::ActiveValue::Set(req.name_ar);
+        active.code = sea_orm::ActiveValue::Set(req.code);
+        active.category = sea_orm::ActiveValue::Set(req.category);
+        active.revenue_account_id = sea_orm::ActiveValue::Set(req.revenue_account_id);
+        active.receivable_account_id = sea_orm::ActiveValue::Set(req.receivable_account_id);
+        active.pricing_type = sea_orm::ActiveValue::Set(req.pricing_type);
+        active.pricing_config = sea_orm::ActiveValue::Set(req.pricing_config);
+        active.applicability_rules = sea_orm::ActiveValue::Set(req.applicability_rules);
+        active.frequency = sea_orm::ActiveValue::Set(req.frequency);
+        active.frequency_config = sea_orm::ActiveValue::Set(req.frequency_config);
+        active.late_fee_rules = sea_orm::ActiveValue::Set(req.late_fee_rules);
+        active.allowed_discounts = sea_orm::ActiveValue::Set(req.allowed_discounts);
+        active.is_mandatory = sea_orm::ActiveValue::Set(req.is_mandatory);
+        active.is_active = sea_orm::ActiveValue::Set(req.is_active);
+        active.updated_at = sea_orm::ActiveValue::Set(Utc::now().to_rfc3339());
+
+        active.update(&self.repo.db).await.map_err(|e| e.to_string())
+    }
+
+    pub async fn delete_fee_template(&self, org_id: &str, id: &str) -> Result<u64, String> {
+        self.repo.delete_fee_template(org_id, id).await.map_err(|e| e.to_string())
     }
 
     // ── Student Fees ──

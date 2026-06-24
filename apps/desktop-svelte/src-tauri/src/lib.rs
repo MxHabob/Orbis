@@ -202,6 +202,10 @@ pub fn run() {
             commands::finance::create_treasury,
             commands::finance::get_student_fees,
             commands::finance::get_active_fee_templates,
+            commands::finance::get_fee_templates,
+            commands::finance::create_fee_template,
+            commands::finance::update_fee_template,
+            commands::finance::delete_fee_template,
             commands::finance::assign_student_fee,
             commands::finance::get_payments,
             commands::finance::record_payment,
@@ -271,6 +275,10 @@ pub fn run() {
             commands::schedule::list_schedule_solve_jobs,
             commands::schedule::cancel_schedule_solve,
             commands::schedule::apply_schedule_solve,
+            commands::schedule::get_rooms,
+            commands::schedule::create_room,
+            commands::schedule::update_room,
+            commands::schedule::delete_room,
 
             // Guardians
             commands::guardians::get_guardians_by_student,
