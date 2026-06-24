@@ -45,6 +45,7 @@ impl super::Service {
                 let new_org = organization::Model {
                     id: Uuid::new_v4().to_string(),
                     name: format!("{} School", org_slug),
+                    name_ar: None,
                     slug: org_slug.to_string(),
                     code: None,
                     timezone: "Asia/Aden".to_string(),

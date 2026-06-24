@@ -112,8 +112,8 @@ const timezones = [
 
     {#if isLoading}
       <div class="flex flex-col gap-6">
-        <CardSkeleton />
-        <CardSkeleton />
+        {@render CardSkeleton()}
+        {@render CardSkeleton()}
       </div>
     {:else}
       <form onsubmit={handleSave} class="flex flex-col gap-6">

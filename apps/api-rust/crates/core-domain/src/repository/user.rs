@@ -138,6 +138,7 @@ impl super::Repository {
         let active_model = organization::ActiveModel {
             id: Set(o.id),
             name: Set(o.name),
+            name_ar: Set(o.name_ar),
             slug: Set(o.slug),
             code: Set(o.code),
             timezone: Set(o.timezone),

@@ -222,7 +222,6 @@ async function seedFinancials() {
                     <span class="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-muted text-muted-foreground border border-border/40">
                       عملة فرعية
                     </span>
-                  {:-- if is_active is true -->}
                   {/if}
                 </TableCell>
                 <TableCell class="text-end text-xs font-bold font-mono">
