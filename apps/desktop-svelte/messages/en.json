@@ -1205,5 +1205,12 @@
   "onboarding_err_active_org": "Active organization ID not found, please sign in again",
   "onboarding_room_floor_label": "Floor: {floor}",
   "onboarding_progress_label": "Progress",
-  "onboarding_step_x_of_y": "Step {current} of {total}"
+  "onboarding_step_x_of_y": "Step {current} of {total}",
+  "onboarding_step_1_label": "School Info",
+  "onboarding_step_2_label": "Academic Year",
+  "onboarding_step_3_label": "Buildings & Rooms",
+  "onboarding_step_4_label": "Stages & Classes",
+  "onboarding_step_5_label": "Daily Schedule",
+  "onboarding_step_6_label": "Subjects List",
+  "onboarding_step_7_label": "Review & Launch"
 }

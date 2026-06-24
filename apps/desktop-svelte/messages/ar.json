@@ -1205,5 +1205,12 @@
   "onboarding_err_active_org": "لم يتم العثور على معرف المنظمة الفعال، يرجى تسجيل الدخول مجدداً",
   "onboarding_room_floor_label": "الطابق: {floor}",
   "onboarding_progress_label": "التقدم",
-  "onboarding_step_x_of_y": "الخطوة {current} من {total}"
+  "onboarding_step_x_of_y": "الخطوة {current} من {total}",
+  "onboarding_step_1_label": "معلومات المدرسة",
+  "onboarding_step_2_label": "التقويم الدراسي",
+  "onboarding_step_3_label": "المباني والقاعات",
+  "onboarding_step_4_label": "الصفوف والشعب",
+  "onboarding_step_5_label": "الحصص اليومية",
+  "onboarding_step_6_label": "المواد الدراسية",
+  "onboarding_step_7_label": "الملخص وتدشين النظام"
 }

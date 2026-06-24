@@ -1,0 +1,450 @@
+// ── Onboarding State Store ───────────────────────────────────────────
+// Svelte 5 Runes-based state management for the onboarding wizard.
+// Follows the same class-based pattern as auth.svelte.ts.
+
+import { toast } from "svelte-sonner";
+import * as m from "$lib/paraglide/messages";
+import type {
+  Room,
+  GradeLevel,
+  TimeSlot,
+  Subject,
+  CycleEntry,
+  ClassEntry,
+  SubjectEntry,
+  OnboardingPayload,
+} from "./onboarding-types";
+
+// ── Default Data ─────────────────────────────────────────────────────
+
+const DEFAULT_GRADE_LEVELS: GradeLevel[] = [
+  { level: "kg1", name: "KG1", name_ar: "روضة أولى", color: "#f43f5e", enabled: true, divisions: ["أ"] },
+  { level: "kg2", name: "KG2", name_ar: "روضة ثانية", color: "#ec4899", enabled: true, divisions: ["أ"] },
+  { level: "grade1", name: "Grade 1", name_ar: "الصف الأول", color: "#d946ef", enabled: true, divisions: ["أ", "ب"] },
+  { level: "grade2", name: "Grade 2", name_ar: "الصف الثاني", color: "#a855f7", enabled: true, divisions: ["أ", "ب"] },
+  { level: "grade3", name: "Grade 3", name_ar: "الصف الثالث", color: "#6366f1", enabled: true, divisions: ["أ", "ب"] },
+  { level: "grade4", name: "Grade 4", name_ar: "الصف الرابع", color: "#3b82f6", enabled: true, divisions: ["أ"] },
+  { level: "grade5", name: "Grade 5", name_ar: "الصف الخامس", color: "#0ea5e9", enabled: true, divisions: ["أ"] },
+  { level: "grade6", name: "Grade 6", name_ar: "الصف السادس", color: "#06b6d4", enabled: true, divisions: ["أ"] },
+  { level: "grade7", name: "Grade 7", name_ar: "الصف السابع", color: "#14b8a6", enabled: true, divisions: ["أ"] },
+  { level: "grade8", name: "Grade 8", name_ar: "الصف الثامن", color: "#10b981", enabled: true, divisions: ["أ"] },
+  { level: "grade9", name: "Grade 9", name_ar: "الصف التاسع", color: "#22c55e", enabled: true, divisions: ["أ"] },
+];
+
+const DEFAULT_TIME_SLOTS: TimeSlot[] = [
+  { name: "1st Period", name_ar: "الحصة الأولى", start_time: "08:00", end_time: "08:45" },
+  { name: "2nd Period", name_ar: "الحصة الثانية", start_time: "08:45", end_time: "09:30" },
+  { name: "3rd Period", name_ar: "الحصة الثالثة", start_time: "09:45", end_time: "10:30" },
+  { name: "4th Period", name_ar: "الحصة الرابعة", start_time: "10:30", end_time: "11:15" },
+  { name: "5th Period", name_ar: "الحصة الخامسة", start_time: "11:30", end_time: "12:15" },
+];
+
+const DEFAULT_SUBJECTS: Subject[] = [
+  { code: "QUR", name: "Holy Quran", name_ar: "القرآن الكريم", color: "#10b981", icon: "book-open", sort_order: 1, enabled: true },
+  { code: "ISL", name: "Islamic Studies", name_ar: "الدراسات الإسلامية", color: "#0d9488", icon: "bookmark", sort_order: 2, enabled: true },
+  { code: "ARB", name: "Arabic Language", name_ar: "اللغة العربية", color: "#f59e0b", icon: "pen-tool", sort_order: 3, enabled: true },
+  { code: "MTH", name: "Mathematics", name_ar: "الرياضيات", color: "#3b82f6", icon: "binary", sort_order: 4, enabled: true },
+  { code: "SCI", name: "Science", name_ar: "العلوم", color: "#8b5cf6", icon: "flask-conical", sort_order: 5, enabled: true },
+  { code: "ENG", name: "English Language", name_ar: "اللغة الإنجليزية", color: "#6366f1", icon: "languages", sort_order: 6, enabled: true },
+  { code: "SOC", name: "Social Studies", name_ar: "الدراسات الاجتماعية", color: "#f97316", icon: "globe", sort_order: 7, enabled: true },
+];
+
+const BUILDINGS = ["المبنى 1", "المبنى 2"];
+
+// ── Store Class ──────────────────────────────────────────────────────
+
+class OnboardingState {
+  // Wizard navigation
+  activeStep = $state(1);
+  isLoading = $state(false);
+  errorMessage = $state<string | null>(null);
+  totalSteps = 7;
+
+  // Step 1: School General Info
+  orgName = $state("Sanaa Model School");
+  orgNameAr = $state("مدرسة صنعاء النموذجية");
+  rootUnitName = $state("Sanaa Model School");
+  rootUnitNameAr = $state("مدرسة صنعاء النموذجية");
+  timezone = $state("Asia/Aden");
+  locale = $state("ar");
+  currency = $state("YER");
+
+  // Step 2: Academic Calendar
+  academicYearName = $state("Academic Year 1447 Hijri");
+  academicYearNameAr = $state("العام الدراسي 1447 هـ");
+  startDate = $state("2026-06-21");
+  endDate = $state("2027-02-21");
+  semester1Name = $state("Semester 1");
+  semester1NameAr = $state("الفصل الدراسي الأول");
+  semester1Start = $state("2026-06-21");
+  semester1End = $state("2026-10-21");
+  semester2Name = $state("Semester 2");
+  semester2NameAr = $state("الفصل الدراسي الثاني");
+  semester2Start = $state("2026-10-22");
+  semester2End = $state("2027-02-21");
+
+  // Step 3: Buildings & Rooms
+  rooms = $state<Room[]>([]);
+  activeBuildingTab = $state("المبنى 1");
+  buildings = BUILDINGS;
+
+  // Step 4: Grade Levels & Classes
+  gradeLevels = $state<GradeLevel[]>(structuredClone(DEFAULT_GRADE_LEVELS));
+  divisionInput = $state<Record<string, string>>({});
+
+  // Step 5: Time Slots
+  timeSlots = $state<TimeSlot[]>(structuredClone(DEFAULT_TIME_SLOTS));
+
+  // Step 6: Subjects
+  subjects = $state<Subject[]>(structuredClone(DEFAULT_SUBJECTS));
+
+  // ── Derived Values ───────────────────────────────────────────────
+
+  progressValue = $derived((this.activeStep / this.totalSteps) * 100);
+  totalCapacity = $derived(this.rooms.reduce((acc, r) => acc + r.capacity, 0));
+  enabledStages = $derived(this.gradeLevels.filter((l) => l.enabled).length);
+  totalDivisions = $derived(
+    this.gradeLevels.filter((l) => l.enabled).reduce((acc, l) => acc + l.divisions.length, 0)
+  );
+  enabledSubjects = $derived(this.subjects.filter((s) => s.enabled).length);
+  totalSlots = $derived(this.timeSlots.length);
+  bld1Rooms = $derived(this.rooms.filter((r) => r.building === "المبنى 1").length);
+  bld2Rooms = $derived(this.rooms.filter((r) => r.building === "المبنى 2").length);
+
+  // ── Navigation ─────────────────────────────────────────────────
+
+  goNext() {
+    if (this.activeStep < this.totalSteps) this.activeStep += 1;
+  }
+
+  goPrev() {
+    if (this.activeStep > 1) this.activeStep -= 1;
+  }
+
+  goToStep(step: number) {
+    if (!this.isLoading && step >= 1 && step <= this.totalSteps) {
+      this.activeStep = step;
+    }
+  }
+
+  // ── Step 3: Room Management ────────────────────────────────────
+
+  resetRoomsToDefault() {
+    const list: Room[] = [];
+    // Building 1 Classrooms
+    for (let i = 1; i <= 10; i++) {
+      list.push({
+        id: `room-b1-f1-${i}`,
+        name: `Classroom 1-0${i}`,
+        name_ar: `فصل 1-0${i}`,
+        capacity: 30,
+        room_type: "classroom",
+        building: "المبنى 1",
+        floor: 1,
+      });
+    }
+    for (let i = 11; i <= 20; i++) {
+      list.push({
+        id: `room-b1-f2-${i}`,
+        name: `Classroom 1-${i}`,
+        name_ar: `فصل 1-${i}`,
+        capacity: 30,
+        room_type: "classroom",
+        building: "المبنى 1",
+        floor: 2,
+      });
+    }
+    // Building 1 Computer labs
+    for (let i = 1; i <= 3; i++) {
+      list.push({
+        id: `room-b1-lab-comp-${i}`,
+        name: `Computer Lab 1-${i}`,
+        name_ar: `مختبر الحاسوب 1-${i}`,
+        capacity: 25,
+        room_type: "computer_lab",
+        building: "المبنى 1",
+        floor: 2,
+      });
+    }
+    // Building 1 Chemistry labs
+    for (let i = 1; i <= 2; i++) {
+      list.push({
+        id: `room-b1-lab-chem-${i}`,
+        name: `Chemistry Lab 1-${i}`,
+        name_ar: `مختبر الكيمياء 1-${i}`,
+        capacity: 25,
+        room_type: "chemistry_lab",
+        building: "المبنى 1",
+        floor: 1,
+      });
+    }
+    // Building 2
+    for (let floor = 1; floor <= 3; floor++) {
+      for (let room = 1; room <= 7; room++) {
+        const roomNum = `${floor}-0${room}`;
+        list.push({
+          id: `room-b2-f${floor}-${room}`,
+          name: `Classroom 2-${roomNum}`,
+          name_ar: `فصل 2-${roomNum}`,
+          capacity: 30,
+          room_type: "classroom",
+          building: "المبنى 2",
+          floor,
+        });
+      }
+    }
+    this.rooms = list;
+  }
+
+  addRoom(name: string, nameAr: string, capacity: number, roomType: string, floor: number) {
+    if (!name || !nameAr) {
+      toast.error(m.onboarding_toast_fill_room_fields());
+      return false;
+    }
+    const id = `room-${Date.now()}`;
+    this.rooms.push({
+      id,
+      name,
+      name_ar: nameAr,
+      capacity,
+      room_type: roomType,
+      building: this.activeBuildingTab,
+      floor,
+    });
+    this.rooms = [...this.rooms];
+    toast.success(m.onboarding_toast_room_added());
+    return true;
+  }
+
+  removeRoom(id: string) {
+    this.rooms = this.rooms.filter((r) => r.id !== id);
+    toast.success(m.onboarding_toast_room_deleted());
+  }
+
+  // ── Step 4: Grade/Division Management ──────────────────────────
+
+  addDivision(level: string) {
+    const text = this.divisionInput[level]?.trim();
+    if (!text) return;
+    const gl = this.gradeLevels.find((g) => g.level === level);
+    if (gl && !gl.divisions.includes(text)) {
+      gl.divisions.push(text);
+      this.gradeLevels = [...this.gradeLevels];
+      this.divisionInput[level] = "";
+      toast.success(m.onboarding_toast_division_added());
+    }
+  }
+
+  removeDivision(level: string, div: string) {
+    const gl = this.gradeLevels.find((g) => g.level === level);
+    if (gl) {
+      gl.divisions = gl.divisions.filter((d) => d !== div);
+      this.gradeLevels = [...this.gradeLevels];
+      toast.success(m.onboarding_toast_division_deleted());
+    }
+  }
+
+  // ── Step 5: Time Slot Management ───────────────────────────────
+
+  addTimeSlot(name: string, nameAr: string, startTime: string, endTime: string) {
+    if (!name || !nameAr) {
+      toast.error(m.onboarding_toast_fill_period_name());
+      return false;
+    }
+    this.timeSlots.push({ name, name_ar: nameAr, start_time: startTime, end_time: endTime });
+    this.timeSlots = [...this.timeSlots];
+    toast.success(m.onboarding_toast_period_added());
+    return true;
+  }
+
+  removeTimeSlot(idx: number) {
+    this.timeSlots = this.timeSlots.filter((_, i) => i !== idx);
+    toast.success(m.onboarding_toast_period_deleted());
+  }
+
+  // ── Step 6: Subject Management ─────────────────────────────────
+
+  addSubject(code: string, name: string, nameAr: string, color: string) {
+    if (!code || !name || !nameAr) {
+      toast.error(m.onboarding_toast_fill_subject_fields());
+      return false;
+    }
+    this.subjects.push({
+      code: code.toUpperCase(),
+      name,
+      name_ar: nameAr,
+      color,
+      icon: "book",
+      sort_order: this.subjects.length + 1,
+      enabled: true,
+    });
+    this.subjects = [...this.subjects];
+    toast.success(m.onboarding_toast_subject_added());
+    return true;
+  }
+
+  // ── Cycle Generation Helpers ───────────────────────────────────
+
+  private generateMonthsForSemester(
+    parentCycleId: string,
+    namePrefix: string,
+    namePrefixAr: string,
+    startStr: string,
+    endStr: string
+  ): CycleEntry[] {
+    const start = new Date(startStr);
+    const end = new Date(endStr);
+    const totalDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    const daysPerMonth = Math.floor(totalDays / 4);
+
+    const months: CycleEntry[] = [];
+    const monthNamesAr = ["الأول", "الثاني", "الثالث", "الرابع (النهائي)"];
+    const monthNamesEn = ["Month 1", "Month 2", "Month 3", "Month 4 (Final)"];
+
+    let currentStart = new Date(start);
+    for (let i = 0; i < 4; i++) {
+      const mStart = new Date(currentStart);
+      const mEnd = new Date(currentStart);
+      if (i === 3) {
+        mEnd.setTime(end.getTime());
+      } else {
+        mEnd.setDate(mEnd.getDate() + daysPerMonth - 1);
+      }
+
+      months.push({
+        id: `${parentCycleId}-m${i + 1}`,
+        parent_id: parentCycleId,
+        name: `${namePrefix} - ${monthNamesEn[i]}`,
+        name_ar: `${namePrefixAr} - الشهر ${monthNamesAr[i]}`,
+        start_date: mStart.toISOString().split("T")[0],
+        end_date: mEnd.toISOString().split("T")[0],
+        cycle_type: "month",
+        weight: i === 3 ? 30 : 20,
+      });
+
+      currentStart = new Date(mEnd);
+      currentStart.setDate(currentStart.getDate() + 1);
+    }
+    return months;
+  }
+
+  // ── Build Final Payload ────────────────────────────────────────
+
+  buildPayload(): OnboardingPayload {
+    const cycleYearId = "cycle-1447";
+
+    const cycles: CycleEntry[] = [
+      {
+        id: cycleYearId,
+        parent_id: null,
+        name: this.academicYearName,
+        name_ar: this.academicYearNameAr,
+        start_date: this.startDate,
+        end_date: this.endDate,
+        cycle_type: "year",
+        weight: null,
+      },
+      {
+        id: `${cycleYearId}-s1`,
+        parent_id: cycleYearId,
+        name: this.semester1Name,
+        name_ar: this.semester1NameAr,
+        start_date: this.semester1Start,
+        end_date: this.semester1End,
+        cycle_type: "term",
+        weight: 50,
+      },
+      {
+        id: `${cycleYearId}-s2`,
+        parent_id: cycleYearId,
+        name: this.semester2Name,
+        name_ar: this.semester2NameAr,
+        start_date: this.semester2Start,
+        end_date: this.semester2End,
+        cycle_type: "term",
+        weight: 50,
+      },
+      ...this.generateMonthsForSemester(
+        `${cycleYearId}-s1`, this.semester1Name, this.semester1NameAr, this.semester1Start, this.semester1End
+      ),
+      ...this.generateMonthsForSemester(
+        `${cycleYearId}-s2`, this.semester2Name, this.semester2NameAr, this.semester2Start, this.semester2End
+      ),
+    ];
+
+    const classes: ClassEntry[] = [];
+    for (const gl of this.gradeLevels) {
+      if (!gl.enabled) continue;
+      for (const div of gl.divisions) {
+        classes.push({
+          id: `class-${gl.level}-${div}`,
+          name: `${gl.name} - ${div}`,
+          name_ar: `${gl.name_ar} - شعبة ${div}`,
+          level: gl.level,
+          division: div,
+          color: gl.color,
+        });
+      }
+    }
+
+    const activeSubjects: SubjectEntry[] = this.subjects
+      .filter((s) => s.enabled)
+      .map((s, idx) => ({
+        id: `subject-${s.code.toLowerCase()}`,
+        code: s.code,
+        name: s.name,
+        name_ar: s.name_ar,
+        color: s.color,
+        icon: s.icon,
+        sort_order: idx + 1,
+      }));
+
+    return {
+      org_name: this.orgName,
+      org_name_ar: this.orgNameAr,
+      timezone: this.timezone,
+      locale: this.locale,
+      currency: this.currency,
+      root_unit_id: "unit-sanaa-model",
+      root_unit_name: this.rootUnitName,
+      root_unit_name_ar: this.rootUnitNameAr,
+      cycles,
+      time_slots: this.timeSlots,
+      rooms: this.rooms,
+      subjects: activeSubjects,
+      classes,
+    };
+  }
+
+  // ── Complete Setup ─────────────────────────────────────────────
+
+  async completeSetup(orgId: string): Promise<boolean> {
+    this.isLoading = true;
+    this.errorMessage = null;
+
+    try {
+      if (!orgId) {
+        throw new Error(m.onboarding_err_active_org());
+      }
+
+      const payload = this.buildPayload();
+      console.log("Submitting Onboarding Setup Payload:", payload);
+
+      const { commands } = await import("$lib/services/ipc");
+      await commands.academics.initializeSchoolSetup(orgId, payload);
+
+      toast.success(m.onboarding_toast_success());
+      return true;
+    } catch (err: any) {
+      console.error("Setup initialization failed:", err);
+      this.errorMessage =
+        err?.message || String(err) || m.onboarding_err_unexpected();
+      toast.error(m.onboarding_toast_error());
+      return false;
+    } finally {
+      this.isLoading = false;
+    }
+  }
+}
+
+export const onboardingState = new OnboardingState();
