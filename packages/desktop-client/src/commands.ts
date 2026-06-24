@@ -229,6 +229,24 @@ export const commands = {
 
     recordPayment: (orgId: string, createdBy: string, request: JsonRecord) =>
       invoke<JsonRecord>("record_payment", { orgId, createdBy, request }),
+
+    getJournalEntries: (orgId: string) =>
+      invoke<JsonRecord[]>("get_journal_entries", { orgId }),
+
+    getActiveDiscountTemplates: (orgId: string) =>
+      invoke<JsonRecord[]>("get_active_discount_templates", { orgId }),
+
+    getDiscountTemplates: (orgId: string) =>
+      invoke<JsonRecord[]>("get_discount_templates", { orgId }),
+
+    createDiscountTemplate: (orgId: string, request: JsonRecord) =>
+      invoke<JsonRecord>("create_discount_template", { orgId, request }),
+
+    updateDiscountTemplate: (orgId: string, id: string, request: JsonRecord) =>
+      invoke<JsonRecord>("update_discount_template", { orgId, id, request }),
+
+    deleteDiscountTemplate: (orgId: string, id: string) =>
+      invoke<number>("delete_discount_template", { orgId, id }),
   },
 
   behavior: {

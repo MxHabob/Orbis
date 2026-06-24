@@ -18,6 +18,8 @@ import {
   ChevronRight,
   ClipboardList,
   Receipt,
+  BookOpen,
+  Percent,
 } from "lucide-svelte";
 import MainViewport from "$lib/components/layout/MainViewport.svelte";
 import type { Snippet } from "svelte";
@@ -89,10 +91,20 @@ const navItems = $derived([
     icon: Receipt,
   },
   {
+    path: "discount-templates",
+    label: m.finance_layout_nav_discount_templates ? m.finance_layout_nav_discount_templates() : "قوالب الخصومات",
+    icon: Percent,
+  },
+  {
     path: "treasuries",
     label: m.finance_layout_nav_treasuries(),
     icon: Landmark,
     badge: treasuriesCount > 0 ? treasuriesCount : null,
+  },
+  {
+    path: "journal-entries",
+    label: m.finance_layout_nav_journal ? m.finance_layout_nav_journal() : "القيود اليومية",
+    icon: BookOpen,
   },
   {
     path: "ledger",

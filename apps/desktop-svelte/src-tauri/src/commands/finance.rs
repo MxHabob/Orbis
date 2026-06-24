@@ -2,10 +2,11 @@ use tauri::State;
 use std::sync::Arc;
 
 use core_domain::{
-    entities::{ledger_account, treasury, student_fee, payment, fee_template},
+    entities::{ledger_account, treasury, student_fee, payment, fee_template, journal_entry, discount_template},
     service::finance::{
         CreateLedgerAccountRequest, CreateTreasuryRequest,
         AssignStudentFeeRequest, RecordPaymentRequest, CreateFeeTemplateRequest,
+        CreateDiscountTemplateRequest,
     },
 };
 
@@ -175,6 +176,82 @@ pub async fn record_payment(
     state
         .service
         .record_payment(&org_id, request, &created_by)
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn get_journal_entries(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+) -> CmdResult<Vec<journal_entry::Model>> {
+    state
+        .service
+        .get_journal_entries(&org_id)
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn get_active_discount_templates(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+) -> CmdResult<Vec<discount_template::Model>> {
+    state
+        .service
+        .get_active_discount_templates(&org_id)
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn get_discount_templates(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+) -> CmdResult<Vec<discount_template::Model>> {
+    state
+        .service
+        .get_discount_templates(&org_id)
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn create_discount_template(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    request: CreateDiscountTemplateRequest,
+) -> CmdResult<discount_template::Model> {
+    state
+        .service
+        .create_discount_template(&org_id, request)
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn update_discount_template(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    id: String,
+    request: CreateDiscountTemplateRequest,
+) -> CmdResult<discount_template::Model> {
+    state
+        .service
+        .update_discount_template(&org_id, &id, request)
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn delete_discount_template(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    id: String,
+) -> CmdResult<u64> {
+    state
+        .service
+        .delete_discount_template(&org_id, &id)
         .await
         .map_err(CommandError::from)
 }

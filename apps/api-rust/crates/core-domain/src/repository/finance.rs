@@ -1,4 +1,4 @@
-use crate::entities::{ledger_account, treasury, student_fee, payment, fee_template, journal_entry};
+use crate::entities::{ledger_account, treasury, student_fee, payment, fee_template, journal_entry, discount_template, treasury_transaction};
 use sea_orm::{entity::prelude::*, ActiveModelTrait, ActiveValue::Set, QueryFilter, EntityTrait, QueryOrder};
 
 impl super::Repository {
@@ -42,6 +42,12 @@ impl super::Repository {
         treasury::Entity::find()
             .filter(treasury::Column::OrgId.eq(org_id))
             .all(&self.db)
+            .await
+    }
+
+    pub async fn get_treasury_by_id(&self, id: &str) -> Result<Option<treasury::Model>, DbErr> {
+        treasury::Entity::find_by_id(id.to_string())
+            .one(&self.db)
             .await
     }
 
@@ -311,6 +317,129 @@ impl super::Repository {
             approved_at: Set(je.approved_at),
             created_by: Set(je.created_by),
             created_at: Set(je.created_at),
+        };
+        active.insert(&self.db).await
+    }
+
+    pub async fn get_journal_entries(&self, org_id: &str) -> Result<Vec<journal_entry::Model>, DbErr> {
+        journal_entry::Entity::find()
+            .filter(journal_entry::Column::OrgId.eq(org_id))
+            .order_by_desc(journal_entry::Column::AccountingDate)
+            .all(&self.db)
+            .await
+    }
+
+    // ── Discount Templates ──
+    pub async fn get_active_discount_templates(&self, org_id: &str) -> Result<Vec<discount_template::Model>, DbErr> {
+        discount_template::Entity::find()
+            .filter(discount_template::Column::OrgId.eq(org_id))
+            .filter(discount_template::Column::IsActive.eq(1))
+            .all(&self.db)
+            .await
+    }
+
+    pub async fn get_discount_templates(&self, org_id: &str) -> Result<Vec<discount_template::Model>, DbErr> {
+        discount_template::Entity::find()
+            .filter(discount_template::Column::OrgId.eq(org_id))
+            .all(&self.db)
+            .await
+    }
+
+    pub async fn get_discount_template_by_id(&self, id: &str) -> Result<Option<discount_template::Model>, DbErr> {
+        discount_template::Entity::find_by_id(id.to_string())
+            .one(&self.db)
+            .await
+    }
+
+    pub async fn create_discount_template(&self, tpl: discount_template::Model) -> Result<discount_template::Model, DbErr> {
+        let active = discount_template::ActiveModel {
+            id: Set(tpl.id),
+            org_id: Set(tpl.org_id),
+            name: Set(tpl.name),
+            code: Set(tpl.code),
+            item_type: Set(tpl.item_type),
+            calculation_method: Set(tpl.calculation_method),
+            value: Set(tpl.value),
+            eligibility_rules: Set(tpl.eligibility_rules),
+            limits: Set(tpl.limits),
+            requires_approval: Set(tpl.requires_approval),
+            approver_roles: Set(tpl.approver_roles),
+            is_auto_apply: Set(tpl.is_auto_apply),
+            is_stackable: Set(tpl.is_stackable),
+            priority: Set(tpl.priority),
+            is_active: Set(tpl.is_active),
+            created_at: Set(tpl.created_at),
+            updated_at: Set(tpl.updated_at),
+        };
+        active.insert(&self.db).await
+    }
+
+    pub async fn update_discount_template(&self, tpl: discount_template::Model) -> Result<discount_template::Model, DbErr> {
+        let active = discount_template::ActiveModel {
+            id: Set(tpl.id),
+            org_id: Set(tpl.org_id),
+            name: Set(tpl.name),
+            code: Set(tpl.code),
+            item_type: Set(tpl.item_type),
+            calculation_method: Set(tpl.calculation_method),
+            value: Set(tpl.value),
+            eligibility_rules: Set(tpl.eligibility_rules),
+            limits: Set(tpl.limits),
+            requires_approval: Set(tpl.requires_approval),
+            approver_roles: Set(tpl.approver_roles),
+            is_auto_apply: Set(tpl.is_auto_apply),
+            is_stackable: Set(tpl.is_stackable),
+            priority: Set(tpl.priority),
+            is_active: Set(tpl.is_active),
+            created_at: Set(tpl.created_at),
+            updated_at: Set(tpl.updated_at),
+        };
+        active.update(&self.db).await
+    }
+
+    pub async fn delete_discount_template(&self, org_id: &str, id: &str) -> Result<u64, DbErr> {
+        let result = discount_template::Entity::delete_by_id(id.to_string())
+            .filter(discount_template::Column::OrgId.eq(org_id))
+            .exec(&self.db)
+            .await?;
+        Ok(result.rows_affected)
+    }
+
+    pub async fn update_treasury_balance(&self, treasury_id: &str, amount: f64) -> Result<(), DbErr> {
+        let t = treasury::Entity::find_by_id(treasury_id.to_string())
+            .one(&self.db)
+            .await?;
+        if let Some(t) = t {
+            let mut active: treasury::ActiveModel = t.into();
+            let current = active.current_balance.unwrap_or(Some(0.0)).unwrap_or(0.0);
+            active.current_balance = Set(Some(current + amount));
+            active.updated_at = Set(chrono::Utc::now().to_rfc3339());
+            active.update(&self.db).await?;
+        }
+        Ok(())
+    }
+
+    pub async fn create_treasury_transaction(&self, tx: treasury_transaction::Model) -> Result<treasury_transaction::Model, DbErr> {
+        let active = treasury_transaction::ActiveModel {
+            id: Set(tx.id),
+            org_id: Set(tx.org_id),
+            treasury_id: Set(tx.treasury_id),
+            journal_entry_id: Set(tx.journal_entry_id),
+            item_type: Set(tx.item_type),
+            category: Set(tx.category),
+            amount: Set(tx.amount),
+            currency: Set(tx.currency),
+            exchange_rate: Set(tx.exchange_rate),
+            reference_type: Set(tx.reference_type),
+            reference_id: Set(tx.reference_id),
+            description: Set(tx.description),
+            notes: Set(tx.notes),
+            attachments: Set(tx.attachments),
+            created_by: Set(tx.created_by),
+            approved_by: Set(tx.approved_by),
+            approved_at: Set(tx.approved_at),
+            transaction_date: Set(tx.transaction_date),
+            created_at: Set(tx.created_at),
         };
         active.insert(&self.db).await
     }

@@ -209,6 +209,12 @@ pub fn run() {
             commands::finance::assign_student_fee,
             commands::finance::get_payments,
             commands::finance::record_payment,
+            commands::finance::get_journal_entries,
+            commands::finance::get_active_discount_templates,
+            commands::finance::get_discount_templates,
+            commands::finance::create_discount_template,
+            commands::finance::update_discount_template,
+            commands::finance::delete_discount_template,
 
             // Misc commands
             commands::misc::get_behavior_records,
