@@ -532,7 +532,7 @@ const steps = [
           </h2>
           <span class="text-xs text-slate-400 font-mono tracking-widest uppercase">
             {m.onboarding_subtitle ? m.onboarding_subtitle() : "Orbis OS v2026"}
-          </h2>
+          </span>
         </div>
       </div>
 
@@ -1006,6 +1006,9 @@ const steps = [
               </thead>
               <tbody class="divide-y divide-slate-800/80 text-sm">
                 {#each timeSlots as slot, idx}
+                  {@const startParts = slot.start_time.split(':').map(Number)}
+                  {@const endParts = slot.end_time.split(':').map(Number)}
+                  {@const dur = (endParts[0]*60 + endParts[1]) - (startParts[0]*60 + startParts[1])}
                   <tr class="hover:bg-slate-900/10">
                     <td class="p-4 text-slate-400 font-mono text-xs">{idx + 1}</td>
                     <td class="p-4 text-start">
@@ -1015,9 +1018,6 @@ const steps = [
                     <td class="p-4 text-center font-mono text-xs text-slate-300">{slot.start_time}</td>
                     <td class="p-4 text-center font-mono text-xs text-slate-300">{slot.end_time}</td>
                     <td class="p-4 text-center">
-                      {#const startParts = slot.start_time.split(':').map(Number)}
-                      {#const endParts = slot.end_time.split(':').map(Number)}
-                      {#const dur = (endParts[0]*60 + endParts[1]) - (startParts[0]*60 + startParts[1])}
                       <span class="text-xs bg-slate-900 text-slate-400 border border-slate-800 px-2 py-0.5 rounded font-sans">
                         {m.onboarding_schedule_duration_value ? m.onboarding_schedule_duration_value({ minutes: dur }) : `${dur} دقيقة`}
                       </span>
