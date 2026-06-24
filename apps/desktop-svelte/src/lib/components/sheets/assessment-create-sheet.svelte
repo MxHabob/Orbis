@@ -20,12 +20,14 @@ let {
   classId,
   subjectId,
   cycleId,
+  month,
   onSuccess,
 }: {
   open: boolean;
   classId: string;
   subjectId: string;
   cycleId: string;
+  month?: number;
   onSuccess: () => void;
 } = $props();
 </script>
@@ -46,6 +48,7 @@ let {
 			{classId} 
 			{subjectId} 
 			{cycleId} 
+			defaultMonth={month}
 			onSuccess={() => {
 				open = false;
 				onSuccess();

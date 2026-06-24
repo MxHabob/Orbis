@@ -33,6 +33,12 @@ let subjects = $state<any[]>([]);
 let cycles = $state<any[]>([]);
 let activeCycleId = $state<string>("");
 
+// Semester & Month sub-cycles
+let semesters = $state<any[]>([]);
+let selectedSemesterId = $state<string>("");
+let months = $state<any[]>([]);
+let selectedMonthId = $state<string>("all");
+
 let selectedClassId = $state<string>("");
 let selectedSubjectId = $state<string>("");
 
@@ -43,6 +49,26 @@ let error = $state<string | null>(null);
 
 // Sheet trigger state
 let isModalOpen = $state(false);
+
+// Get 1-based chronological month index
+function getMonthNumber(monthId: string): number | undefined {
+  const sortedMonths = cycles
+    .filter((c) => c.type === "month")
+    .sort((a, b) => (a.start_date || "").localeCompare(b.start_date || ""));
+  const idx = sortedMonths.findIndex((m) => m.id === monthId);
+  return idx !== -1 ? idx + 1 : undefined;
+}
+
+// Reactively load child months of the selected semester
+$effect(() => {
+  if (selectedSemesterId) {
+    months = cycles.filter((c) => c.parent_id === selectedSemesterId && c.type === "month");
+    selectedMonthId = "all";
+  } else {
+    months = [];
+    selectedMonthId = "all";
+  }
+});
 
 // Load basic filters
 async function loadFilters() {
@@ -58,11 +84,19 @@ async function loadFilters() {
     subjects = subjectList;
     cycles = cycleList;
 
-    const active =
-      cycleList.find((c) => c.is_current === 1 || c.is_current === true) ||
+    const activeYear =
+      cycleList.find((c) => c.type === "year" && (c.is_current === 1 || c.is_current === true)) ||
+      cycleList.find((c) => c.type === "year") ||
       cycleList[0];
-    if (active) {
-      activeCycleId = String(active.id);
+
+    if (activeYear) {
+      activeCycleId = String(activeYear.id);
+      
+      // Filter direct child semesters/terms of this year
+      semesters = cycleList.filter((c) => c.parent_id === activeYear.id && c.type === "term");
+      if (semesters.length > 0) {
+        selectedSemesterId = semesters[0].id;
+      }
     }
 
     if (classList.length > 0) {
@@ -86,7 +120,8 @@ async function loadAssessments() {
     const list = await commands.assessments.getByClass({
       classId: selectedClassId,
       subjectId: selectedSubjectId || undefined,
-      termId: activeCycleId || undefined,
+      termId: selectedSemesterId || activeCycleId || undefined,
+      month: selectedMonthId !== "all" ? getMonthNumber(selectedMonthId) : undefined,
     });
     assessments = list;
   } catch (e) {
@@ -106,7 +141,7 @@ onMount(() => {
 
 // Reactively load assessments when selections change
 $effect(() => {
-  if (selectedClassId || selectedSubjectId || activeCycleId) {
+  if (selectedClassId || selectedSubjectId || activeCycleId || selectedSemesterId || selectedMonthId) {
     loadAssessments();
   }
 });
@@ -151,7 +186,7 @@ function getAssessmentTypeColor(typeStr: string) {
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 font-sans">
 	<!-- Filter & Selector Header -->
 	<div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-card/25 p-4 rounded-xl border border-border/80 shrink-0 select-none">
-		<div class="grid grid-cols-1 sm:grid-cols-2 md:flex items-center gap-4 w-full md:w-auto">
+		<div class="grid grid-cols-1 sm:grid-cols-2 md:flex items-center gap-4 w-full md:w-auto flex-wrap">
 			<!-- Class Selector -->
 			<div class="flex flex-col sm:flex-row sm:items-center gap-2 text-start">
 				<span class="text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
@@ -182,6 +217,41 @@ function getAssessmentTypeColor(typeStr: string) {
 					{/each}
 				</select>
 			</div>
+
+			<!-- Semester Selector -->
+			{#if semesters.length > 0}
+				<div class="flex flex-col sm:flex-row sm:items-center gap-2 text-start">
+					<span class="text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+						{getLocale() === "ar" ? "الفصل الدراسي" : "Semester"}
+					</span>
+					<select 
+						bind:value={selectedSemesterId} 
+						class="bg-background text-foreground border border-border rounded-md px-3 py-1.5 text-xs focus:ring-1 focus:ring-ring outline-none min-w-44"
+					>
+						{#each semesters as sem (sem.id)}
+							<option value={String(sem.id)}>{sem.name_ar || sem.name}</option>
+						{/each}
+					</select>
+				</div>
+			{/if}
+
+			<!-- Month Selector -->
+			{#if months.length > 0}
+				<div class="flex flex-col sm:flex-row sm:items-center gap-2 text-start">
+					<span class="text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+						{getLocale() === "ar" ? "الشهر الهجري" : "Hijri Month"}
+					</span>
+					<select 
+						bind:value={selectedMonthId} 
+						class="bg-background text-foreground border border-border rounded-md px-3 py-1.5 text-xs focus:ring-1 focus:ring-ring outline-none min-w-44"
+					>
+						<option value="all">{getLocale() === "ar" ? "كل التقييمات الشهرية" : "All Monthly Exams"}</option>
+						{#each months as m (m.id)}
+							<option value={String(m.id)}>{m.name_ar || m.name}</option>
+						{/each}
+					</select>
+				</div>
+			{/if}
 		</div>
 
 		<!-- Action Add Button -->
@@ -337,6 +407,7 @@ function getAssessmentTypeColor(typeStr: string) {
 	bind:open={isModalOpen}
 	classId={selectedClassId}
 	subjectId={selectedSubjectId}
-	cycleId={activeCycleId}
+	cycleId={selectedSemesterId || activeCycleId}
+	month={selectedMonthId !== "all" ? getMonthNumber(selectedMonthId) : undefined}
 	onSuccess={loadAssessments}
 />

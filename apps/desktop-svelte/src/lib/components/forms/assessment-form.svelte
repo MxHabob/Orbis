@@ -9,12 +9,14 @@ let {
   classId,
   subjectId,
   cycleId,
+  defaultMonth,
   onSuccess,
   onCancel,
 }: {
   classId: string;
   subjectId: string;
   cycleId: string;
+  defaultMonth?: number;
   onSuccess: () => void;
   onCancel: () => void;
 } = $props();
@@ -43,6 +45,7 @@ async function handleSubmit(e: SubmitEvent) {
       class_id: classId,
       subject_id: subjectId,
       term_id: cycleId,
+      month: defaultMonth,
       title: name || nameAr,
       title_ar: nameAr || name,
       max_score: maxScore ? Number(maxScore) : 100,
