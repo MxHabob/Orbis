@@ -104,6 +104,9 @@ export const commands = {
         orgId,
         params: { cycle_type: "term" },
       }).then((cycles) => cycles.filter((c) => c.parent_id === yearId)),
+
+    initializeSchoolSetup: (orgId: string, config: any) =>
+      invoke<void>("initialize_school_setup", { orgId, config }),
   },
 
   classes: {

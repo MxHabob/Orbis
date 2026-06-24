@@ -173,3 +173,282 @@ pub async fn get_audit_logs(
         .await
         .map_err(|e| CommandError::from(e.to_string()))
 }
+
+// ── Onboarding / School Setup ──────────────────────────────────────────────
+
+#[derive(serde::Deserialize, Debug)]
+pub struct CycleSetupItem {
+    pub id: String,
+    pub parent_id: Option<String>,
+    pub name: String,
+    pub name_ar: String,
+    pub start_date: String,
+    pub end_date: String,
+    pub cycle_type: String,
+    pub weight: Option<i32>,
+}
+
+#[derive(serde::Deserialize, Debug)]
+pub struct TimeSlotSetupItem {
+    pub name: String,
+    pub name_ar: String,
+    pub start_time: String,
+    pub end_time: String,
+}
+
+#[derive(serde::Deserialize, Debug)]
+pub struct RoomSetupItem {
+    pub id: String,
+    pub name: String,
+    pub name_ar: String,
+    pub capacity: i32,
+    pub room_type: String,
+    pub building: String,
+    pub floor: i32,
+}
+
+#[derive(serde::Deserialize, Debug)]
+pub struct SubjectSetupItem {
+    pub id: String,
+    pub code: String,
+    pub name: String,
+    pub name_ar: String,
+    pub color: String,
+    pub icon: String,
+    pub sort_order: i32,
+}
+
+#[derive(serde::Deserialize, Debug)]
+pub struct ClassSetupItem {
+    pub id: String,
+    pub name: String,
+    pub name_ar: String,
+    pub level: String,
+    pub division: String,
+    pub color: String,
+}
+
+#[derive(serde::Deserialize, Debug)]
+pub struct SchoolSetupConfig {
+    pub org_name: String,
+    pub org_name_ar: String,
+    pub timezone: String,
+    pub locale: String,
+    pub currency: String,
+    
+    pub root_unit_id: String,
+    pub root_unit_name: String,
+    pub root_unit_name_ar: String,
+
+    pub cycles: Vec<CycleSetupItem>,
+    pub time_slots: Vec<TimeSlotSetupItem>,
+    pub rooms: Vec<RoomSetupItem>,
+    pub subjects: Vec<SubjectSetupItem>,
+    pub classes: Vec<ClassSetupItem>,
+}
+
+#[tauri::command]
+pub async fn initialize_school_setup(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    config: SchoolSetupConfig,
+) -> CmdResult<()> {
+    use sea_orm::{TransactionTrait, ConnectionTrait, Statement};
+    let db = &state.service.repo.db;
+    let now_str = chrono::Utc::now().to_rfc3339();
+
+    // Cache values we need outside or multiple times to avoid borrow moves
+    let org_id_for_seeding = org_id.clone();
+    let root_cycle_id = config.cycles.first().map(|c| c.id.clone()).unwrap_or_default();
+
+    db.transaction::<_, (), String>(move |txn| {
+        let org_id = org_id.clone();
+        let root_cycle_id = root_cycle_id.clone();
+        Box::pin(async move {
+            let backend = txn.get_database_backend();
+
+            // 1. Update Organization
+            txn.execute(Statement::from_sql_and_values(
+                backend,
+                "UPDATE organizations SET name = ?, name_ar = ?, timezone = ?, locale = ?, currency = ?, updated_at = ? WHERE id = ?",
+                vec![
+                    config.org_name.into(),
+                    config.org_name_ar.into(),
+                    config.timezone.into(),
+                    config.locale.into(),
+                    config.currency.into(),
+                    now_str.clone().into(),
+                    org_id.clone().into(),
+                ],
+            ))
+            .await
+            .map_err(|e| e.to_string())?;
+
+            // 2. Clear Old Structures (except users and core audit logs)
+            txn.execute(Statement::from_sql_and_values(
+                backend,
+                "DELETE FROM class_subjects WHERE cycle_id IN (SELECT id FROM academic_cycles WHERE org_id = ?)",
+                vec![org_id.clone().into()],
+            ))
+            .await
+            .map_err(|e| e.to_string())?;
+
+            for table in &["classes", "subjects", "rooms", "time_slots", "academic_cycles", "org_units"] {
+                txn.execute(Statement::from_sql_and_values(
+                    backend,
+                    &format!("DELETE FROM {} WHERE org_id = ?", table),
+                    vec![org_id.clone().into()],
+                ))
+                .await
+                .map_err(|e| e.to_string())?;
+            }
+
+            // 3. Create Root Org Unit
+            txn.execute(Statement::from_sql_and_values(
+                backend,
+                "INSERT INTO org_units (id, org_id, name, name_ar, type, path, depth, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, 'school', 'school', 0, 1, ?, ?)",
+                vec![
+                    config.root_unit_id.clone().into(),
+                    org_id.clone().into(),
+                    config.root_unit_name.into(),
+                    config.root_unit_name_ar.into(),
+                    now_str.clone().into(),
+                    now_str.clone().into(),
+                ],
+            ))
+            .await
+            .map_err(|e| e.to_string())?;
+
+            // 4. Insert Academic Cycles
+            for cyc in &config.cycles {
+                let is_root = cyc.parent_id.is_none();
+                txn.execute(Statement::from_sql_and_values(
+                    backend,
+                    "INSERT INTO academic_cycles (id, org_id, name, name_ar, parent_id, start_date, end_date, type, grading_system, weight, is_current, is_locked, is_enrollment_open, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'percentage', ?, ?, 0, 1, ?, ?)",
+                    vec![
+                        cyc.id.clone().into(),
+                        org_id.clone().into(),
+                        cyc.name.clone().into(),
+                        cyc.name_ar.clone().into(),
+                        cyc.parent_id.clone().into(),
+                        cyc.start_date.clone().into(),
+                        cyc.end_date.clone().into(),
+                        cyc.cycle_type.clone().into(),
+                        cyc.weight.into(),
+                        (if is_root { 1 } else { 0 }).into(), // Set root cycle as current
+                        now_str.clone().into(),
+                        now_str.clone().into(),
+                    ],
+                ))
+                .await
+                .map_err(|e| e.to_string())?;
+            }
+
+            // 5. Insert Time Slots
+            for (idx, slot) in config.time_slots.iter().enumerate() {
+                let sh: i32 = slot.start_time.split(':').next().unwrap_or("0").parse().unwrap_or(0);
+                let sm: i32 = slot.start_time.split(':').nth(1).unwrap_or("0").parse().unwrap_or(0);
+                let eh: i32 = slot.end_time.split(':').next().unwrap_or("0").parse().unwrap_or(0);
+                let em: i32 = slot.end_time.split(':').nth(1).unwrap_or("0").parse().unwrap_or(0);
+                let duration = (eh * 60 + em) - (sh * 60 + sm);
+
+                txn.execute(Statement::from_sql_and_values(
+                    backend,
+                    "INSERT INTO time_slots (id, org_id, cycle_id, slot_number, name, name_ar, start_time, end_time, duration_minutes, is_break, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, ?, ?)",
+                    vec![
+                        uuid::Uuid::new_v4().to_string().into(),
+                        org_id.clone().into(),
+                        root_cycle_id.clone().into(),
+                        ((idx + 1) as i32).into(),
+                        slot.name.clone().into(),
+                        slot.name_ar.clone().into(),
+                        slot.start_time.clone().into(),
+                        slot.end_time.clone().into(),
+                        duration.into(),
+                        now_str.clone().into(),
+                        now_str.clone().into(),
+                    ],
+                ))
+                .await
+                .map_err(|e| e.to_string())?;
+            }
+
+            // 6. Insert Rooms
+            for rm in config.rooms {
+                txn.execute(Statement::from_sql_and_values(
+                    backend,
+                    "INSERT INTO rooms (id, org_id, name, name_ar, capacity, room_type, building, floor, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)",
+                    vec![
+                        rm.id.into(),
+                        org_id.clone().into(),
+                        rm.name.into(),
+                        rm.name_ar.into(),
+                        rm.capacity.into(),
+                        rm.room_type.into(),
+                        rm.building.into(),
+                        rm.floor.into(),
+                        now_str.clone().into(),
+                        now_str.clone().into(),
+                    ],
+                ))
+                .await
+                .map_err(|e| e.to_string())?;
+            }
+
+            // 7. Insert Subjects
+            for sub in config.subjects {
+                txn.execute(Statement::from_sql_and_values(
+                    backend,
+                    "INSERT INTO subjects (id, org_id, unit_id, code, name, name_ar, is_core, is_elective, requires_lab, requires_practical, color, icon, sort_order, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 1, 0, 0, 0, ?, ?, ?, 1, ?, ?)",
+                    vec![
+                        sub.id.into(),
+                        org_id.clone().into(),
+                        config.root_unit_id.clone().into(),
+                        sub.code.into(),
+                        sub.name.into(),
+                        sub.name_ar.into(),
+                        sub.color.into(),
+                        sub.icon.into(),
+                        sub.sort_order.into(),
+                        now_str.clone().into(),
+                        now_str.clone().into(),
+                    ],
+                ))
+                .await
+                .map_err(|e| e.to_string())?;
+            }
+
+            // 8. Insert Classes
+            for cl in config.classes {
+                txn.execute(Statement::from_sql_and_values(
+                    backend,
+                    "INSERT INTO classes (id, org_id, unit_id, cycle_id, name, name_ar, level, division, capacity, color, is_active, is_deleted, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 30, ?, 1, 0, ?, ?)",
+                    vec![
+                        cl.id.into(),
+                        org_id.clone().into(),
+                        config.root_unit_id.clone().into(),
+                        root_cycle_id.clone().into(),
+                        cl.name.into(),
+                        cl.name_ar.into(),
+                        cl.level.into(),
+                        cl.division.into(),
+                        cl.color.into(),
+                        now_str.clone().into(),
+                        now_str.clone().into(),
+                    ],
+                ))
+                .await
+                .map_err(|e| e.to_string())?;
+            }
+            Ok(())
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())
+    .map_err(CommandError::from)?;
+
+    // 9. Seeding Chart of Accounts (COA) & default currencies
+    state.service.seed_default_financials(&org_id_for_seeding).await.map_err(CommandError::from)?;
+
+    Ok(())
+}

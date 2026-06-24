@@ -225,6 +225,7 @@ pub fn run() {
 
             // Misc commands
             commands::misc::get_behavior_records,
+            commands::misc::initialize_school_setup,
             commands::misc::submit_ai_behavior,
             commands::misc::update_behavior_record,
             commands::misc::delete_behavior_record,
