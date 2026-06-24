@@ -2,12 +2,16 @@ use tauri::State;
 use std::sync::Arc;
 
 use core_domain::{
-    entities::{ledger_account, treasury, student_fee, payment, fee_template, journal_entry, discount_template},
-    service::finance::{
-        CreateLedgerAccountRequest, CreateTreasuryRequest,
-        AssignStudentFeeRequest, RecordPaymentRequest, CreateFeeTemplateRequest,
-        CreateDiscountTemplateRequest,
+    entities::{ledger_account, treasury, student_fee, payment, fee_template, journal_entry, discount_template, currency},
+    service::{
+        finance::{
+            CreateLedgerAccountRequest, CreateTreasuryRequest,
+            AssignStudentFeeRequest, RecordPaymentRequest, CreateFeeTemplateRequest,
+            CreateDiscountTemplateRequest,
+        },
+        account::AccountStatement,
     },
+    repository::currency::CurrencyUpdate,
 };
 
 use crate::state::AppState;
@@ -252,6 +256,108 @@ pub async fn delete_discount_template(
     state
         .service
         .delete_discount_template(&org_id, &id)
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn get_currencies(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+) -> CmdResult<Vec<currency::Model>> {
+    state
+        .service
+        .repo
+        .get_currencies(&org_id)
+        .await
+        .map_err(|e| e.to_string())
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn get_currency(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    code: String,
+) -> CmdResult<Option<currency::Model>> {
+    state
+        .service
+        .repo
+        .get_currency(&org_id, &code)
+        .await
+        .map_err(|e| e.to_string())
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn create_currency(
+    state: State<'_, Arc<AppState>>,
+    c: currency::Model,
+) -> CmdResult<currency::Model> {
+    state
+        .service
+        .repo
+        .create_currency(c)
+        .await
+        .map_err(|e| e.to_string())
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn update_currency(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    code: String,
+    updates: CurrencyUpdate,
+) -> CmdResult<currency::Model> {
+    state
+        .service
+        .repo
+        .update_currency(&org_id, &code, updates)
+        .await
+        .map_err(|e| e.to_string())
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn delete_currency(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    code: String,
+) -> CmdResult<u64> {
+    let result = state
+        .service
+        .repo
+        .delete_currency(&org_id, &code)
+        .await
+        .map_err(|e| e.to_string())
+        .map_err(CommandError::from)?;
+    Ok(result.rows_affected)
+}
+
+#[tauri::command]
+pub async fn get_account_statement(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    account_id: String,
+    start_date: String,
+    end_date: String,
+) -> CmdResult<AccountStatement> {
+    state
+        .service
+        .get_account_statement(&org_id, &account_id, &start_date, &end_date)
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn seed_default_financials(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+) -> CmdResult<()> {
+    state
+        .service
+        .seed_default_financials(&org_id)
         .await
         .map_err(CommandError::from)
 }

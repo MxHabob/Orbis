@@ -165,7 +165,7 @@ impl super::Service {
             cycle_id: cycle_id.clone(),
             student_id: req.student_id.clone(),
             class_id: req.class_id.clone(),
-            student_number,
+            student_number: student_number.clone(),
             status: "active".to_string(),
             enrollment_date: Utc::now().format("%Y-%m-%d").to_string(),
             enrollment_type: req.enrollment_type.unwrap_or_else(|| "regular".to_string()),
@@ -186,6 +186,42 @@ impl super::Service {
         let created_enrollment = self.repo.create_enrollment(new_enrollment).await
             .map_err(|e| e.to_string())?;
 
+        // Auto-create student sub-ledger account in Chart of Accounts
+        let student_ledger_account = match self.repo.get_ledger_account_by_entity(org_id, "student", &student.id).await {
+            Ok(Some(acc)) => acc,
+            _ => {
+                // Find student receivable control account
+                let control_acc = self.repo.get_control_account_by_sub_type(org_id, "student_receivable").await
+                    .map_err(|e| e.to_string())?
+                    .ok_or_else(|| "Student Receivable Control Account not found in chart of accounts".to_string())?;
+
+                let acc_id = format!("{}_student_{}", org_id, student.id);
+                let new_acc = crate::entities::ledger_account::Model {
+                    id: acc_id.clone(),
+                    org_id: org_id.to_string(),
+                    code: format!("{}.{}", control_acc.code, student_number),
+                    name: format!("Student - {}", student.full_name),
+                    name_ar: Some(format!("طالب - {}", student.full_name)),
+                    item_type: "asset".to_string(),
+                    sub_type: Some("student".to_string()),
+                    parent_id: Some(control_acc.id.clone()),
+                    path: format!("{}/{}", control_acc.path, acc_id),
+                    depth: control_acc.depth + 1,
+                    currency: control_acc.currency.clone(),
+                    opening_balance: Some(0.0),
+                    current_balance: Some(0.0),
+                    entity_type: Some("student".to_string()),
+                    entity_id: Some(student.id.clone()),
+                    is_control_account: 0,
+                    is_system_account: 0,
+                    is_active: 1,
+                    created_at: Utc::now().to_rfc3339(),
+                    updated_at: Utc::now().to_rfc3339(),
+                };
+                self.repo.create_ledger_account(new_acc).await.map_err(|e| e.to_string())?
+            }
+        };
+
         // 1. Get class details to determine level/grade
         let class_info = self.repo.get_class_by_id(&req.class_id).await
             .map_err(|e| e.to_string())?
@@ -194,8 +230,8 @@ impl super::Service {
         // 2. Fetch and apply active fee templates
         if let Ok(fee_templates) = self.repo.get_active_fee_templates(org_id).await {
             for tpl in fee_templates {
-                // Check applicability rules (e.g. {"level": "grade1"} or {"levels": ["grade1", "grade2"]})
-                let is_applicable = if let Some(rules_str) = &tpl.applicability_rules {
+                // Check applicability rules
+                let is_applicable = if let Some(rules_str) = &tpl.applicable_levels {
                     if let Ok(rules) = serde_json::from_str::<serde_json::Value>(rules_str) {
                         if let Some(levels) = rules.get("levels").and_then(|l| l.as_array()) {
                             levels.iter().any(|l| l.as_str() == Some(&class_info.level))
@@ -212,18 +248,8 @@ impl super::Service {
                 };
 
                 if is_applicable {
-                    let original_amount = if let Some(config_str) = &tpl.pricing_config {
-                        if let Ok(config) = serde_json::from_str::<serde_json::Value>(config_str) {
-                            config.get("amount").and_then(|a| a.as_f64()).unwrap_or(0.0)
-                        } else {
-                            0.0
-                        }
-                    } else {
-                        0.0
-                    };
-
+                    let original_amount = tpl.default_amount;
                     let total_amount = original_amount;
-                    let balance = total_amount;
 
                     let sf = crate::entities::student_fee::Model {
                         id: Uuid::new_v4().to_string(),
@@ -233,33 +259,16 @@ impl super::Service {
                         fee_template_id: tpl.id.clone(),
                         original_amount,
                         discount_amount: 0.0,
-                        late_fee_amount: 0.0,
-                        total_amount,
-                        paid_amount: 0.0,
-                        balance,
-                        applied_discounts: None,
-                        payment_plan_id: None,
+                        net_amount: total_amount,
                         status: "unpaid".to_string(),
                         due_date: Utc::now().checked_add_signed(chrono::Duration::days(30))
                             .unwrap_or_else(Utc::now)
                             .format("%Y-%m-%d")
                             .to_string(),
-                        is_overdue: 0,
-                        overdue_since: None,
-                        overdue_days: None,
-                        is_installment: 0,
+                        discount_details: None,
                         parent_fee_id: None,
                         installment_number: None,
-                        total_installments: None,
-                        reminder_sent: Some(0),
-                        reminder_sent_at: None,
-                        final_notice_sent: Some(0),
-                        final_notice_sent_at: None,
-                        is_locked: 0,
-                        locked_at: None,
-                        locked_by: None,
                         notes: Some(format!("Auto-generated fee: {}", tpl.name)),
-                        meta: None,
                         created_at: Utc::now().to_rfc3339(),
                         updated_at: Utc::now().to_rfc3339(),
                     };
@@ -274,9 +283,9 @@ impl super::Service {
                                 accounting_date: Utc::now().format("%Y-%m-%d").to_string(),
                                 fiscal_period_id: cycle_id.clone(),
                                 amount: original_amount,
-                                debit_account_id: tpl.receivable_account_id.clone(),
+                                debit_account_id: student_ledger_account.id.clone(),
                                 credit_account_id: tpl.revenue_account_id.clone(),
-                                currency: "YER".to_string(),
+                                currency: student_ledger_account.currency.clone(),
                                 exchange_rate: Some(1.0),
                                 base_currency_amount: Some(original_amount),
                                 source_type: "student_fee".to_string(),
@@ -300,6 +309,10 @@ impl super::Service {
                                 created_at: Utc::now().to_rfc3339(),
                             };
                             let _ = self.repo.create_journal_entry(je).await;
+
+                            // Update cached ledger balances
+                            let _ = self.repo.update_ledger_account_balance(&student_ledger_account.id, original_amount).await;
+                            let _ = self.repo.update_ledger_account_balance(&tpl.revenue_account_id, original_amount).await;
                         }
                     }
                 }

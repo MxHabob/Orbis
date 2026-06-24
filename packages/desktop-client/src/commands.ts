@@ -247,6 +247,27 @@ export const commands = {
 
     deleteDiscountTemplate: (orgId: string, id: string) =>
       invoke<number>("delete_discount_template", { orgId, id }),
+
+    getCurrencies: (orgId: string) =>
+      invoke<JsonRecord[]>("get_currencies", { orgId }),
+
+    getCurrency: (orgId: string, code: string) =>
+      invoke<JsonRecord | null>("get_currency", { orgId, code }),
+
+    createCurrency: (c: JsonRecord) =>
+      invoke<JsonRecord>("create_currency", { c }),
+
+    updateCurrency: (orgId: string, code: string, updates: JsonRecord) =>
+      invoke<JsonRecord>("update_currency", { orgId, code, updates }),
+
+    deleteCurrency: (orgId: string, code: string) =>
+      invoke<JsonRecord>("delete_currency", { orgId, code }),
+
+    getAccountStatement: (orgId: string, accountId: string, startDate: string, endDate: string) =>
+      invoke<JsonRecord>("get_account_statement", { orgId, accountId, startDate, endDate }),
+
+    seedDefaultFinancials: (orgId: string) =>
+      invoke<void>("seed_default_financials", { orgId }),
   },
 
   behavior: {

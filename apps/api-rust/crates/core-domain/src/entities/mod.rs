@@ -32,20 +32,20 @@ pub mod assessment;
 pub mod grade_history;
 pub mod attendance_daily;
 pub mod attendance_summary;
+
+// ── Finance Domain ──
+pub mod currency;
 pub mod ledger_account;
 pub mod journal_entry;
 pub mod fee_template;
 pub mod discount_template;
-pub mod payment_plan;
 pub mod student_fee;
-pub mod student_discount;
 pub mod payment;
 pub mod treasury;
 pub mod treasury_transaction;
-pub mod financial_event;
-pub mod financial_report;
+
+// ── System & Reporting ──
 pub mod system_log;
 pub mod data_transfer;
 pub mod report_definition;
 pub mod document_template;
-

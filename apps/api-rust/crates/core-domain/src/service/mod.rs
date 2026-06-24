@@ -26,6 +26,8 @@ pub mod subject;
 pub mod assessment;
 pub mod guardian;
 pub mod document;
+pub mod account;
+pub mod seed;
 
 #[derive(Clone)]
 pub struct Service {

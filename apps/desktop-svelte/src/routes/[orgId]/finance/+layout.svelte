@@ -20,6 +20,7 @@ import {
   Receipt,
   BookOpen,
   Percent,
+  Coins,
 } from "lucide-svelte";
 import MainViewport from "$lib/components/layout/MainViewport.svelte";
 import type { Snippet } from "svelte";
@@ -110,6 +111,11 @@ const navItems = $derived([
     path: "ledger",
     label: m.finance_layout_nav_ledger ? m.finance_layout_nav_ledger() : "كشف الحساب",
     icon: ClipboardList,
+  },
+  {
+    path: "currencies",
+    label: "العملات وأسعار الصرف",
+    icon: Coins,
   },
   {
     path: "reports",

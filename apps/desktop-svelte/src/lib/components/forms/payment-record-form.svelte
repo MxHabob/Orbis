@@ -5,6 +5,7 @@ import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
+import { slide } from "svelte/transition";
 
 let {
   orgId,
@@ -21,6 +22,7 @@ let isSubmitting = $state(false);
 let students = $state<any[]>([]);
 let treasuries = $state<any[]>([]);
 let fees = $state<any[]>([]);
+let activeCurrencies = $state<any[]>([]);
 let isLoadingDropdowns = $state(false);
 let isLoadingFees = $state(false);
 
@@ -35,16 +37,38 @@ let receiptNumber = $state("");
 let referenceNumber = $state("");
 let notes = $state("");
 
+// Derived exchange rate & conversion
+const exchangeRate = $derived.by(() => {
+  const selectedCurr = activeCurrencies.find(
+    (c) => c.code === currency.toUpperCase(),
+  );
+  return selectedCurr ? selectedCurr.exchange_rate : 1.0;
+});
+
+const convertedAmount = $derived.by(() => {
+  if (!amount) return 0.0;
+  return amount * exchangeRate;
+});
+
 async function loadDropdownData() {
   if (!orgId) return;
   isLoadingDropdowns = true;
   try {
-    const [studentList, treasuryList] = await Promise.all([
+    const [studentList, treasuryList, currencyList] = await Promise.all([
       commands.enrollments.getAll(orgId),
       commands.finance.getTreasuries(orgId),
+      commands.finance.getCurrencies(orgId),
     ]);
     students = studentList;
     treasuries = treasuryList;
+    activeCurrencies =
+      currencyList.length > 0
+        ? currencyList
+        : [
+            { code: "YER", name: "Yemeni Rial", name_ar: "ريال يمني", exchange_rate: 1.0 },
+            { code: "USD", name: "US Dollar", name_ar: "دولار أمريكي", exchange_rate: 250.0 },
+            { code: "SAR", name: "Saudi Riyal", name_ar: "ريال سعودي", exchange_rate: 66.0 },
+          ];
 
     if (studentList.length > 0) {
       selectedEnrollmentId = String(studentList[0].id);
@@ -269,15 +293,15 @@ async function handleSubmit(e: SubmitEvent) {
 				maxlength={3}
 				disabled={isSubmitting}
 			/>
-			<div class="flex gap-2 items-center">
-				{#each ['YER', 'USD', 'SAR'] as curr}
+			<div class="flex gap-2 items-center flex-wrap">
+				{#each activeCurrencies as curr}
 					<button
 						type="button"
-						class="px-3 py-1.5 rounded border text-xs font-semibold transition-all {currency.toUpperCase() === curr ? 'bg-primary text-primary-foreground border-primary' : 'bg-background hover:bg-accent text-muted-foreground border-border'}"
-						onclick={() => currency = curr}
+						class="px-3 py-1.5 rounded border text-xs font-semibold transition-all cursor-pointer {currency.toUpperCase() === curr.code ? 'bg-primary text-primary-foreground border-primary' : 'bg-background hover:bg-accent text-muted-foreground border-border'}"
+						onclick={() => currency = curr.code}
 						disabled={isSubmitting}
 					>
-						{curr}
+						{curr.name_ar || curr.name || curr.code} ({curr.code})
 					</button>
 				{/each}
 			</div>
@@ -299,6 +323,11 @@ async function handleSubmit(e: SubmitEvent) {
 			required
 			disabled={isSubmitting}
 		/>
+		{#if currency.toUpperCase() !== 'YER' && amount && amount > 0}
+			<div class="text-xs text-emerald-500 font-bold select-none mt-1" transition:slide={{ duration: 150 }}>
+				 يعادل بالريال: {formatCurrency(convertedAmount, 'YER')} (سعر الصرف: {exchangeRate.toFixed(2)})
+			</div>
+		{/if}
 	</div>
 
 	<!-- Receipt ID -->

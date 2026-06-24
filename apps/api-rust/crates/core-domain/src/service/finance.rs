@@ -50,15 +50,13 @@ pub struct CreateFeeTemplateRequest {
     pub name_ar: Option<String>,
     pub code: Option<String>,
     pub category: String,
+    pub default_amount: f64,
     pub revenue_account_id: String,
     pub receivable_account_id: String,
-    pub pricing_type: String,
-    pub pricing_config: Option<String>,
-    pub applicability_rules: Option<String>,
+    pub applicable_levels: Option<String>,
     pub frequency: String,
-    pub frequency_config: Option<String>,
+    pub installment_config: Option<String>,
     pub late_fee_rules: Option<String>,
-    pub allowed_discounts: Option<String>,
     pub is_mandatory: i32,
     pub is_active: i32,
 }
@@ -106,10 +104,10 @@ impl super::Service {
             currency: req.currency,
             opening_balance: req.opening_balance,
             current_balance: req.opening_balance.or(Some(0.0)),
-            is_bank_account: 0,
-            is_cash_account: 0,
+            entity_type: None,
+            entity_id: None,
             is_control_account: 0,
-            external_ref: None,
+            is_system_account: 0,
             is_active: 1,
             created_at: Utc::now().to_rfc3339(),
             updated_at: Utc::now().to_rfc3339(),
@@ -166,15 +164,13 @@ impl super::Service {
             name_ar: req.name_ar,
             code: req.code,
             category: req.category,
+            default_amount: req.default_amount,
             revenue_account_id: req.revenue_account_id,
             receivable_account_id: req.receivable_account_id,
-            pricing_type: req.pricing_type,
-            pricing_config: req.pricing_config,
-            applicability_rules: req.applicability_rules,
+            applicable_levels: req.applicable_levels,
             frequency: req.frequency,
-            frequency_config: req.frequency_config,
+            installment_config: req.installment_config,
             late_fee_rules: req.late_fee_rules,
-            allowed_discounts: req.allowed_discounts,
             is_mandatory: req.is_mandatory,
             is_active: req.is_active,
             sort_order: None,
@@ -198,15 +194,13 @@ impl super::Service {
         active.name_ar = sea_orm::ActiveValue::Set(req.name_ar);
         active.code = sea_orm::ActiveValue::Set(req.code);
         active.category = sea_orm::ActiveValue::Set(req.category);
+        active.default_amount = sea_orm::ActiveValue::Set(req.default_amount);
         active.revenue_account_id = sea_orm::ActiveValue::Set(req.revenue_account_id);
         active.receivable_account_id = sea_orm::ActiveValue::Set(req.receivable_account_id);
-        active.pricing_type = sea_orm::ActiveValue::Set(req.pricing_type);
-        active.pricing_config = sea_orm::ActiveValue::Set(req.pricing_config);
-        active.applicability_rules = sea_orm::ActiveValue::Set(req.applicability_rules);
+        active.applicable_levels = sea_orm::ActiveValue::Set(req.applicable_levels);
         active.frequency = sea_orm::ActiveValue::Set(req.frequency);
-        active.frequency_config = sea_orm::ActiveValue::Set(req.frequency_config);
+        active.installment_config = sea_orm::ActiveValue::Set(req.installment_config);
         active.late_fee_rules = sea_orm::ActiveValue::Set(req.late_fee_rules);
-        active.allowed_discounts = sea_orm::ActiveValue::Set(req.allowed_discounts);
         active.is_mandatory = sea_orm::ActiveValue::Set(req.is_mandatory);
         active.is_active = sea_orm::ActiveValue::Set(req.is_active);
         active.updated_at = sea_orm::ActiveValue::Set(Utc::now().to_rfc3339());
@@ -224,47 +218,94 @@ impl super::Service {
     }
 
     pub async fn assign_student_fee(&self, org_id: &str, req: AssignStudentFeeRequest) -> Result<student_fee::Model, String> {
-        // Find enrollment to get cycle_id
+        // Find enrollment to get cycle_id and student_id
         let enrollment = self.repo.get_enrollment_by_id(&req.enrollment_id).await
             .map_err(|e| e.to_string())?
             .ok_or_else(|| "Enrollment not found".to_string())?;
 
+        // Find student sub-ledger account
+        let student_account = self.repo.get_ledger_account_by_entity(org_id, "student", &enrollment.student_id).await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "Student ledger account not found. Please verify the student has a registered sub-ledger account.".to_string())?;
+
+        // Find fee template to get revenue account
+        let template = self.repo.get_fee_template_by_id(&req.fee_template_id).await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "Fee template not found".to_string())?;
+
+        let fee_id = Uuid::new_v4().to_string();
+
+        // Create the student fee record (invoice)
         let sf = student_fee::Model {
-            id: Uuid::new_v4().to_string(),
+            id: fee_id.clone(),
             org_id: org_id.to_string(),
-            cycle_id: enrollment.cycle_id,
-            enrollment_id: req.enrollment_id,
-            fee_template_id: req.fee_template_id,
+            cycle_id: enrollment.cycle_id.clone(),
+            enrollment_id: req.enrollment_id.clone(),
+            fee_template_id: req.fee_template_id.clone(),
             original_amount: req.amount,
             discount_amount: 0.0,
-            late_fee_amount: 0.0,
-            total_amount: req.amount,
-            paid_amount: 0.0,
-            balance: req.amount,
-            applied_discounts: None,
-            payment_plan_id: None,
+            net_amount: req.amount,
             status: "unpaid".to_string(),
             due_date: req.due_date,
-            is_overdue: 0,
-            overdue_since: None,
-            overdue_days: None,
-            is_installment: 0,
+            discount_details: None,
             parent_fee_id: None,
             installment_number: None,
-            total_installments: None,
-            reminder_sent: Some(0),
-            reminder_sent_at: None,
-            final_notice_sent: Some(0),
-            final_notice_sent_at: None,
-            is_locked: 0,
-            locked_at: None,
-            locked_by: None,
-            notes: req.notes,
-            meta: None,
+            notes: req.notes.clone(),
             created_at: Utc::now().to_rfc3339(),
             updated_at: Utc::now().to_rfc3339(),
         };
-        self.repo.create_student_fee(sf).await.map_err(|e| e.to_string())
+
+        let created_fee = self.repo.create_student_fee(sf).await.map_err(|e| e.to_string())?;
+
+        // Create Double-Entry Journal Entry:
+        // Debit: Student Sub-account (increases asset / Accounts Receivable)
+        // Credit: Tuition Revenue account (increases revenue)
+        let je_id = Uuid::new_v4().to_string();
+        let description = format!("Tuition fee charged: {}", template.name);
+        let description_ar = Some(format!("قيد رسوم دراسية: {}", template.name_ar.unwrap_or(template.name.clone())));
+
+        let je = crate::entities::journal_entry::Model {
+            id: je_id,
+            org_id: org_id.to_string(),
+            transaction_ref: format!("INV-{}", &fee_id[..8].to_uppercase()),
+            accounting_date: Utc::now().format("%Y-%m-%d").to_string(),
+            fiscal_period_id: enrollment.cycle_id,
+            amount: req.amount,
+            debit_account_id: student_account.id.clone(),
+            credit_account_id: template.revenue_account_id.clone(),
+            currency: student_account.currency.clone(),
+            exchange_rate: Some(1.0),
+            base_currency_amount: Some(req.amount),
+            source_type: "student_fee".to_string(),
+            source_id: Some(fee_id),
+            source_module: Some("finance".to_string()),
+            description,
+            description_ar,
+            metadata: None,
+            is_reversed: 0,
+            reversed_by: None,
+            reversal_reason: None,
+            is_reconciled: 0,
+            reconciled_at: None,
+            reconciliation_ref: None,
+            status: "posted".to_string(),
+            posted_by: None,
+            posted_at: Some(Utc::now().to_rfc3339()),
+            approved_by: None,
+            approved_at: Some(Utc::now().to_rfc3339()),
+            created_by: None,
+            created_at: Utc::now().to_rfc3339(),
+        };
+
+        self.repo.create_journal_entry(je).await.map_err(|e| e.to_string())?;
+
+        // Update cached ledger account balances
+        // Debit increases Student Sub-account
+        self.repo.update_ledger_account_balance(&student_account.id, req.amount).await.map_err(|e| e.to_string())?;
+        // Credit increases Revenue (so we add the credit amount)
+        self.repo.update_ledger_account_balance(&template.revenue_account_id, req.amount).await.map_err(|e| e.to_string())?;
+
+        Ok(created_fee)
     }
 
     // ── Payments ──
@@ -273,63 +314,71 @@ impl super::Service {
     }
 
     pub async fn record_payment(&self, org_id: &str, req: RecordPaymentRequest, created_by: &str) -> Result<payment::Model, String> {
-        // 1. Get student fee to verify existence and check balance
+        // 1. Get student fee (invoice)
         let fee = self.repo.get_student_fee_by_id(&req.fee_id).await
             .map_err(|e| e.to_string())?
             .ok_or_else(|| "Student fee not found".to_string())?;
 
-        if fee.balance <= 0.0 {
-            return Err("This fee is already fully paid".to_string());
-        }
+        // Find enrollment to get student_id
+        let enrollment = self.repo.get_enrollment_by_id(&fee.enrollment_id).await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "Enrollment not found".to_string())?;
+
+        // Find student sub-ledger account
+        let student_account = self.repo.get_ledger_account_by_entity(org_id, "student", &enrollment.student_id).await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "Student ledger account not found".to_string())?;
+
+        // Find treasury
+        let treasury_id = req.treasury_id.clone()
+            .ok_or_else(|| "Treasury ID is required".to_string())?;
+        let treasury = self.repo.get_treasury_by_id(&treasury_id).await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "Treasury not found".to_string())?;
 
         if req.amount <= 0.0 {
             return Err("Payment amount must be greater than zero".to_string());
         }
 
-        // Determine status of the fee after this payment
-        let remaining = fee.balance - req.amount;
-        let new_status = if remaining <= 0.0 {
-            "paid".to_string()
+        // Get currency exchange rate if paying in a foreign currency
+        let payment_currency = req.currency.clone().unwrap_or_else(|| student_account.currency.clone());
+        let exchange_rate = if payment_currency == student_account.currency {
+            1.0
         } else {
-            "partially_paid".to_string()
+            let cur = self.repo.get_currency(org_id, &payment_currency).await
+                .map_err(|e| e.to_string())?
+                .ok_or_else(|| format!("Currency {} not supported", payment_currency))?;
+            cur.exchange_rate
         };
 
-        // Determine currency of the payment
-        let payment_currency = req.currency.clone().unwrap_or_else(|| "YER".to_string());
+        // Convert payment amount to student's billing currency (base amount)
+        let base_amount = req.amount * exchange_rate;
 
-        // 2. Record the payment
+        // 2. Create the payment record
+        let payment_id = Uuid::new_v4().to_string();
+        let receipt_number = format!("REC-{}", Utc::now().timestamp_millis());
+        let journal_entry_id = Uuid::new_v4().to_string();
+
         let p = payment::Model {
-            id: Uuid::new_v4().to_string(),
+            id: payment_id.clone(),
             org_id: org_id.to_string(),
-            fee_id: req.fee_id.clone(),
-            enrollment_id: fee.enrollment_id.clone(),
+            fee_id: Some(req.fee_id.clone()),
+            enrollment_id: Some(fee.enrollment_id.clone()),
+            account_id: student_account.id.clone(),
             amount: req.amount,
-            currency: payment_currency,
-            exchange_rate: Some(1.0),
-            method: req.method,
-            reference: req.reference,
-            transaction_id: None,
-            receipt_number: Some(format!("REC-{}", Utc::now().timestamp_millis())),
-            journal_entry_id: None,
-            treasury_id: req.treasury_id.clone(),
-            payer_name: req.payer_name,
-            payer_phone: req.payer_phone,
-            payer_relation: None,
-            payer_id: None,
-            is_verified: 1,
-            verified_by: Some(created_by.to_string()),
-            verified_at: Some(Utc::now().to_rfc3339()),
-            is_refund: 0,
-            refund_amount: None,
-            refund_reason: None,
-            refund_approved_by: None,
-            receipt_url: None,
-            proof_url: None,
-            reconciled: Some(0),
-            reconciled_at: None,
-            reconciled_by: None,
-            notes: req.notes,
-            meta: None,
+            currency: payment_currency.clone(),
+            exchange_rate,
+            base_amount,
+            method: req.method.clone(),
+            reference: req.reference.clone(),
+            receipt_number: Some(receipt_number.clone()),
+            journal_entry_id: Some(journal_entry_id.clone()),
+            treasury_id: Some(treasury_id.clone()),
+            payer_name: req.payer_name.clone(),
+            payer_phone: req.payer_phone.clone(),
+            payment_type: "receipt".to_string(),
+            related_payment_id: None,
+            notes: req.notes.clone(),
             paid_at: Utc::now().to_rfc3339(),
             created_at: Utc::now().to_rfc3339(),
             created_by: Some(created_by.to_string()),
@@ -337,9 +386,97 @@ impl super::Service {
 
         let payment_record = self.repo.create_payment(p).await.map_err(|e| e.to_string())?;
 
-        // 3. Update the student fee balance
-        let _ = self.repo.update_student_fee_balance(&req.fee_id, req.amount, &new_status).await
+        // 3. Create Double-Entry Journal Entry:
+        // Debit: Treasury's ledger account (increases asset)
+        // Credit: Student's sub-ledger account (decreases accounts receivable asset)
+        let description = format!("Fee payment received via {}: {}", req.method, receipt_number);
+        let description_ar = Some(format!("سداد رسوم عبر {}: {}", req.method, receipt_number));
+
+        let je = crate::entities::journal_entry::Model {
+            id: journal_entry_id.clone(),
+            org_id: org_id.to_string(),
+            transaction_ref: receipt_number,
+            accounting_date: Utc::now().format("%Y-%m-%d").to_string(),
+            fiscal_period_id: fee.cycle_id.clone(),
+            amount: req.amount,
+            debit_account_id: treasury.ledger_account_id.clone(),
+            credit_account_id: student_account.id.clone(),
+            currency: payment_currency.clone(),
+            exchange_rate: Some(exchange_rate),
+            base_currency_amount: Some(base_amount),
+            source_type: "payment".to_string(),
+            source_id: Some(payment_id.clone()),
+            source_module: Some("finance".to_string()),
+            description,
+            description_ar,
+            metadata: None,
+            is_reversed: 0,
+            reversed_by: None,
+            reversal_reason: None,
+            is_reconciled: 0,
+            reconciled_at: None,
+            reconciliation_ref: None,
+            status: "posted".to_string(),
+            posted_by: None,
+            posted_at: Some(Utc::now().to_rfc3339()),
+            approved_by: None,
+            approved_at: Some(Utc::now().to_rfc3339()),
+            created_by: Some(created_by.to_string()),
+            created_at: Utc::now().to_rfc3339(),
+        };
+
+        self.repo.create_journal_entry(je).await.map_err(|e| e.to_string())?;
+
+        // 4. Create Treasury Transaction
+        let tx = crate::entities::treasury_transaction::Model {
+            id: Uuid::new_v4().to_string(),
+            org_id: org_id.to_string(),
+            treasury_id: treasury_id.clone(),
+            journal_entry_id: journal_entry_id.clone(),
+            item_type: "inflow".to_string(),
+            category: "tuition".to_string(),
+            amount: req.amount,
+            currency: payment_currency.clone(),
+            exchange_rate: Some(exchange_rate),
+            reference_type: Some("payment".to_string()),
+            reference_id: Some(payment_id),
+            description: format!("Tuition payment for student fee"),
+            notes: req.notes.clone(),
+            attachments: None,
+            created_by: Some(created_by.to_string()),
+            approved_by: Some(created_by.to_string()),
+            approved_at: Some(Utc::now().to_rfc3339()),
+            transaction_date: Utc::now().format("%Y-%m-%d").to_string(),
+            created_at: Utc::now().to_rfc3339(),
+        };
+        self.repo.create_treasury_transaction(tx).await.map_err(|e| e.to_string())?;
+
+        // 5. Update cached balances
+        // Update Treasury cached balance
+        self.repo.update_treasury_balance(&treasury_id, req.amount).await.map_err(|e| e.to_string())?;
+        // Update Treasury's ledger account balance (Debit increases Asset)
+        self.repo.update_ledger_account_balance(&treasury.ledger_account_id, base_amount).await.map_err(|e| e.to_string())?;
+        // Update Student's ledger account balance (Credit decreases Student Receivable, so we subtract base_amount)
+        self.repo.update_ledger_account_balance(&student_account.id, -base_amount).await.map_err(|e| e.to_string())?;
+
+        // 6. Update student fee status (invoice)
+        let payments = self.repo.get_payments(org_id, Some(&fee.enrollment_id)).await
             .map_err(|e| e.to_string())?;
+        
+        let total_paid: f64 = payments.iter()
+            .filter(|p| p.fee_id.as_ref() == Some(&fee.id))
+            .map(|p| p.base_amount)
+            .sum::<f64>() + base_amount;
+
+        let new_status = if total_paid >= fee.net_amount {
+            "paid".to_string()
+        } else if total_paid > 0.0 {
+            "partially_paid".to_string()
+        } else {
+            "unpaid".to_string()
+        };
+
+        self.repo.update_student_fee_status(&fee.id, &new_status).await.map_err(|e| e.to_string())?;
 
         Ok(payment_record)
     }

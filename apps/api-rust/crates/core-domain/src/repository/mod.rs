@@ -17,6 +17,7 @@ pub mod subject;
 pub mod assessment;
 pub mod guardian;
 pub mod document;
+pub mod currency;
 
 #[derive(Clone)]
 pub struct Repository {

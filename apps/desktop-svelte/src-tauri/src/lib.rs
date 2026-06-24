@@ -215,6 +215,13 @@ pub fn run() {
             commands::finance::create_discount_template,
             commands::finance::update_discount_template,
             commands::finance::delete_discount_template,
+            commands::finance::get_currencies,
+            commands::finance::get_currency,
+            commands::finance::create_currency,
+            commands::finance::update_currency,
+            commands::finance::delete_currency,
+            commands::finance::get_account_statement,
+            commands::finance::seed_default_financials,
 
             // Misc commands
             commands::misc::get_behavior_records,

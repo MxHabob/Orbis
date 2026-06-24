@@ -360,6 +360,23 @@ CREATE TABLE IF NOT EXISTS attendance_summary (
   updated_at TEXT NOT NULL
 );
 
+-- ── Currencies ──
+CREATE TABLE IF NOT EXISTS currencies (
+  code TEXT NOT NULL,
+  org_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  name_ar TEXT,
+  symbol TEXT NOT NULL,
+  symbol_position TEXT NOT NULL DEFAULT 'after',
+  decimal_places INTEGER NOT NULL DEFAULT 0,
+  exchange_rate REAL NOT NULL DEFAULT 1.0,
+  is_base INTEGER NOT NULL DEFAULT 0,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (code, org_id)
+);
+
+-- ── Ledger Accounts (Chart of Accounts with sub-accounts for students/employees) ──
 CREATE TABLE IF NOT EXISTS ledger_accounts (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL,
@@ -372,17 +389,21 @@ CREATE TABLE IF NOT EXISTS ledger_accounts (
   path TEXT NOT NULL,
   depth INTEGER NOT NULL,
   currency TEXT NOT NULL,
-  opening_balance REAL,
-  current_balance REAL,
-  is_bank_account INTEGER NOT NULL,
-  is_cash_account INTEGER NOT NULL,
-  is_control_account INTEGER NOT NULL,
-  external_ref TEXT,
-  is_active INTEGER NOT NULL,
+  opening_balance REAL DEFAULT 0,
+  current_balance REAL DEFAULT 0,
+  entity_type TEXT,
+  entity_id TEXT,
+  is_control_account INTEGER NOT NULL DEFAULT 0,
+  is_system_account INTEGER NOT NULL DEFAULT 0,
+  is_active INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
+CREATE INDEX IF NOT EXISTS idx_ledger_entity ON ledger_accounts(entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_ledger_parent ON ledger_accounts(parent_id);
+CREATE INDEX IF NOT EXISTS idx_ledger_org_code ON ledger_accounts(org_id, code);
 
+-- ── Journal Entries (Source of Truth for all financial movements) ──
 CREATE TABLE IF NOT EXISTS journal_entries (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL,
@@ -401,13 +422,13 @@ CREATE TABLE IF NOT EXISTS journal_entries (
   description TEXT NOT NULL,
   description_ar TEXT,
   metadata TEXT,
-  is_reversed INTEGER NOT NULL,
+  is_reversed INTEGER NOT NULL DEFAULT 0,
   reversed_by TEXT,
   reversal_reason TEXT,
-  is_reconciled INTEGER NOT NULL,
+  is_reconciled INTEGER NOT NULL DEFAULT 0,
   reconciled_at TEXT,
   reconciliation_ref TEXT,
-  status TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'posted',
   posted_by TEXT,
   posted_at TEXT,
   approved_by TEXT,
@@ -415,7 +436,11 @@ CREATE TABLE IF NOT EXISTS journal_entries (
   created_by TEXT,
   created_at TEXT NOT NULL
 );
+CREATE INDEX IF NOT EXISTS idx_je_debit ON journal_entries(debit_account_id);
+CREATE INDEX IF NOT EXISTS idx_je_credit ON journal_entries(credit_account_id);
+CREATE INDEX IF NOT EXISTS idx_je_source ON journal_entries(source_type, source_id);
 
+-- ── Fee Templates ──
 CREATE TABLE IF NOT EXISTS fee_templates (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL,
@@ -423,22 +448,21 @@ CREATE TABLE IF NOT EXISTS fee_templates (
   name_ar TEXT,
   code TEXT,
   category TEXT NOT NULL,
+  default_amount REAL NOT NULL DEFAULT 0,
   revenue_account_id TEXT NOT NULL,
   receivable_account_id TEXT NOT NULL,
-  pricing_type TEXT NOT NULL,
-  pricing_config TEXT,
-  applicability_rules TEXT,
-  frequency TEXT NOT NULL,
-  frequency_config TEXT,
+  applicable_levels TEXT,
+  frequency TEXT NOT NULL DEFAULT 'once',
+  installment_config TEXT,
   late_fee_rules TEXT,
-  allowed_discounts TEXT,
-  is_mandatory INTEGER NOT NULL,
-  is_active INTEGER NOT NULL,
+  is_mandatory INTEGER NOT NULL DEFAULT 1,
+  is_active INTEGER NOT NULL DEFAULT 1,
   sort_order INTEGER,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
 
+-- ── Discount Templates ──
 CREATE TABLE IF NOT EXISTS discount_templates (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL,
@@ -449,30 +473,17 @@ CREATE TABLE IF NOT EXISTS discount_templates (
   value INTEGER NOT NULL,
   eligibility_rules TEXT,
   limits TEXT,
-  requires_approval INTEGER NOT NULL,
+  requires_approval INTEGER NOT NULL DEFAULT 0,
   approver_roles TEXT,
-  is_auto_apply INTEGER NOT NULL,
-  is_stackable INTEGER NOT NULL,
+  is_auto_apply INTEGER NOT NULL DEFAULT 0,
+  is_stackable INTEGER NOT NULL DEFAULT 0,
   priority INTEGER,
-  is_active INTEGER NOT NULL,
+  is_active INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS payment_plans (
-  id TEXT PRIMARY KEY,
-  org_id TEXT NOT NULL,
-  name TEXT NOT NULL,
-  name_ar TEXT,
-  "type" TEXT NOT NULL,
-  schedule TEXT NOT NULL,
-  eligibility_rules TEXT,
-  plan_fees TEXT,
-  is_active INTEGER NOT NULL,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
-);
-
+-- ── Student Fees (Invoice only — balance comes from ledger_accounts) ──
 CREATE TABLE IF NOT EXISTS student_fees (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL,
@@ -480,90 +491,47 @@ CREATE TABLE IF NOT EXISTS student_fees (
   enrollment_id TEXT NOT NULL,
   fee_template_id TEXT NOT NULL,
   original_amount REAL NOT NULL,
-  discount_amount REAL NOT NULL,
-  late_fee_amount REAL NOT NULL,
-  total_amount REAL NOT NULL,
-  paid_amount REAL NOT NULL,
-  balance REAL NOT NULL,
-  applied_discounts TEXT,
-  payment_plan_id TEXT,
-  status TEXT NOT NULL,
+  discount_amount REAL NOT NULL DEFAULT 0,
+  net_amount REAL NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active',
   due_date TEXT NOT NULL,
-  is_overdue INTEGER NOT NULL,
-  overdue_since TEXT,
-  overdue_days INTEGER,
-  is_installment INTEGER NOT NULL,
+  discount_details TEXT,
   parent_fee_id TEXT,
   installment_number INTEGER,
-  total_installments INTEGER,
-  reminder_sent INTEGER,
-  reminder_sent_at TEXT,
-  final_notice_sent INTEGER,
-  final_notice_sent_at TEXT,
-  is_locked INTEGER NOT NULL,
-  locked_at TEXT,
-  locked_by TEXT,
   notes TEXT,
-  meta TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
+CREATE INDEX IF NOT EXISTS idx_sf_enrollment ON student_fees(enrollment_id);
 
-CREATE TABLE IF NOT EXISTS student_discounts (
-  id TEXT PRIMARY KEY,
-  enrollment_id TEXT NOT NULL,
-  discount_template_id TEXT NOT NULL,
-  applied_amount REAL NOT NULL,
-  applied_to_fee_id TEXT,
-  status TEXT NOT NULL,
-  reason TEXT,
-  evidence_urls TEXT,
-  applied_by TEXT,
-  applied_at TEXT,
-  approved_by TEXT,
-  approved_at TEXT,
-  approval_notes TEXT,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
-);
-
+-- ── Payments (Multi-currency, supports students + employees) ──
 CREATE TABLE IF NOT EXISTS payments (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL,
-  fee_id TEXT NOT NULL,
-  enrollment_id TEXT NOT NULL,
+  fee_id TEXT,
+  enrollment_id TEXT,
+  account_id TEXT NOT NULL,
   amount REAL NOT NULL,
   currency TEXT NOT NULL,
-  exchange_rate REAL,
+  exchange_rate REAL NOT NULL DEFAULT 1.0,
+  base_amount REAL NOT NULL,
   method TEXT NOT NULL,
   reference TEXT,
-  transaction_id TEXT,
   receipt_number TEXT,
   journal_entry_id TEXT,
   treasury_id TEXT,
   payer_name TEXT,
   payer_phone TEXT,
-  payer_relation TEXT,
-  payer_id TEXT,
-  is_verified INTEGER NOT NULL,
-  verified_by TEXT,
-  verified_at TEXT,
-  is_refund INTEGER NOT NULL,
-  refund_amount REAL,
-  refund_reason TEXT,
-  refund_approved_by TEXT,
-  receipt_url TEXT,
-  proof_url TEXT,
-  reconciled INTEGER,
-  reconciled_at TEXT,
-  reconciled_by TEXT,
+  payment_type TEXT NOT NULL DEFAULT 'receipt',
+  related_payment_id TEXT,
   notes TEXT,
-  meta TEXT,
   paid_at TEXT NOT NULL,
   created_at TEXT NOT NULL,
   created_by TEXT
 );
+CREATE INDEX IF NOT EXISTS idx_pay_account ON payments(account_id);
 
+-- ── Treasuries ──
 CREATE TABLE IF NOT EXISTS treasuries (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL,
@@ -579,16 +547,17 @@ CREATE TABLE IF NOT EXISTS treasuries (
   account_name TEXT,
   iban TEXT,
   swift_code TEXT,
-  opening_balance REAL,
-  current_balance REAL,
+  opening_balance REAL DEFAULT 0,
+  current_balance REAL DEFAULT 0,
   currency TEXT NOT NULL,
   authorized_users TEXT,
-  is_default INTEGER NOT NULL,
-  is_active INTEGER NOT NULL,
+  is_default INTEGER NOT NULL DEFAULT 0,
+  is_active INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
 
+-- ── Treasury Transactions ──
 CREATE TABLE IF NOT EXISTS treasury_transactions (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL,
@@ -608,35 +577,6 @@ CREATE TABLE IF NOT EXISTS treasury_transactions (
   approved_by TEXT,
   approved_at TEXT,
   transaction_date TEXT NOT NULL,
-  created_at TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS financial_events (
-  id TEXT PRIMARY KEY,
-  org_id TEXT NOT NULL,
-  event_type TEXT NOT NULL,
-  entity_type TEXT NOT NULL,
-  entity_id TEXT NOT NULL,
-  payload TEXT NOT NULL,
-  sequence_number INTEGER,
-  aggregate_id TEXT,
-  status TEXT NOT NULL,
-  created_at TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS financial_reports (
-  id TEXT PRIMARY KEY,
-  org_id TEXT NOT NULL,
-  name TEXT NOT NULL,
-  name_ar TEXT,
-  "type" TEXT NOT NULL,
-  start_date TEXT NOT NULL,
-  end_date TEXT NOT NULL,
-  summary TEXT,
-  details TEXT,
-  status TEXT NOT NULL,
-  generated_by TEXT,
-  generated_at TEXT,
   created_at TEXT NOT NULL
 );
 
