@@ -18,11 +18,13 @@ let {
   open = $bindable(false),
   orgId,
   unit = null,
+  defaultParentId = "",
   onSuccess,
 }: {
   open: boolean;
   orgId: string;
   unit?: any;
+  defaultParentId?: string;
   onSuccess: () => void;
 } = $props();
 
@@ -43,6 +45,7 @@ const isEdit = $derived(!!unit);
     <OrgUnitForm
       {orgId}
       {unit}
+      {defaultParentId}
       onSuccess={() => {
         open = false;
         onSuccess();
