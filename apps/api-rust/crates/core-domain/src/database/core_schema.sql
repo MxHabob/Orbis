@@ -3,6 +3,7 @@
 CREATE TABLE IF NOT EXISTS organizations (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
+  name_ar TEXT,
   slug TEXT NOT NULL UNIQUE,
   code TEXT UNIQUE,
   timezone TEXT NOT NULL,
