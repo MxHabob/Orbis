@@ -126,6 +126,7 @@ export {
   TooltipContent,
   TooltipProvider,
 } from "./tooltip/index.js";
+export { ComboboxDropdown } from "./combobox-dropdown/index.js";
 export {
   Breadcrumb,
   BreadcrumbList,

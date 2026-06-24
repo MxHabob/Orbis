@@ -21,6 +21,7 @@
     "./tabs": "./src/components/ui/tabs/index.ts",
     "./tooltip": "./src/components/ui/tooltip/index.ts",
     "./popover": "./src/components/ui/popover/index.ts",
+    "./combobox-dropdown": "./src/components/ui/combobox-dropdown/index.ts",
     "./checkbox": "./src/components/ui/checkbox/index.ts",
     "./switch": "./src/components/ui/switch/index.ts",
     "./accordion": "./src/components/ui/accordion/index.ts",
