@@ -56,6 +56,16 @@ $effect(() => {
   }
 });
 
+// Auto-fill template amount when template changes
+$effect(() => {
+  if (selectedFeeTemplateId && templates.length > 0) {
+    const tpl = templates.find((t) => String(t.id) === String(selectedFeeTemplateId));
+    if (tpl) {
+      amount = tpl.default_amount !== undefined ? Number(tpl.default_amount) : null;
+    }
+  }
+});
+
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   if (!selectedEnrollmentId) {

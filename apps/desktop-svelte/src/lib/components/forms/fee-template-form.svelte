@@ -33,6 +33,13 @@ let receivableAccountId = $state("");
 let isMandatory = $state(true);
 let isActive = $state(true);
 
+// Grade levels applicability state
+let classes = $state<any[]>([]);
+let isLoadingClasses = $state(false);
+let uniqueLevels = $state<{ level: string; label: string }[]>([]);
+let applyToAllGrades = $state(true);
+let selectedLevels = $state<string[]>([]);
+
 // Initialize form if in edit mode
 $effect(() => {
   if (template) {
@@ -46,16 +53,28 @@ $effect(() => {
     isMandatory = template.is_mandatory === 1;
     isActive = template.is_active === 1;
     
-    // Parse pricing config for amount
-    if (template.pricing_config) {
+    // Load amount directly from default_amount
+    amount = template.default_amount || 0;
+
+    // Load applicable levels
+    if (template.applicable_levels) {
       try {
-        const config = JSON.parse(template.pricing_config);
-        amount = Number(config.amount || 0);
+        const rules = JSON.parse(template.applicable_levels);
+        const levels = rules.levels || (rules.level ? [rules.level] : []);
+        if (levels.length > 0) {
+          selectedLevels = levels;
+          applyToAllGrades = false;
+        } else {
+          selectedLevels = [];
+          applyToAllGrades = true;
+        }
       } catch (e) {
-        amount = 0;
+        selectedLevels = [];
+        applyToAllGrades = true;
       }
     } else {
-      amount = 0;
+      selectedLevels = [];
+      applyToAllGrades = true;
     }
   }
 });
@@ -83,9 +102,52 @@ async function loadLedgerAccounts() {
   }
 }
 
+async function loadClasses() {
+  if (!orgId) return;
+  isLoadingClasses = true;
+  try {
+    const list = await commands.classes.getAll(orgId);
+    classes = list;
+    
+    const levelNames: Record<string, { en: string; ar: string }> = {
+      kg1: { en: "KG 1", ar: "روضة أولى" },
+      kg2: { en: "KG 2", ar: "روضة ثانية" },
+      grade1: { en: "Grade 1", ar: "الصف الأول" },
+      grade2: { en: "Grade 2", ar: "الصف الثاني" },
+      grade3: { en: "Grade 3", ar: "الصف الثالث" },
+      grade4: { en: "Grade 4", ar: "الصف الرابع" },
+      grade5: { en: "Grade 5", ar: "الصف الخامس" },
+      grade6: { en: "Grade 6", ar: "الصف السادس" },
+      grade7: { en: "Grade 7", ar: "الصف السابع" },
+      grade8: { en: "Grade 8", ar: "الصف الثامن" },
+      grade9: { en: "Grade 9", ar: "الصف التاسع" },
+    };
+
+    const levelsSet = new Set<string>();
+    for (const cls of list) {
+      if (cls.level) {
+        levelsSet.add(cls.level);
+      }
+    }
+    
+    uniqueLevels = Array.from(levelsSet).map(lvl => {
+      const nameObj = levelNames[lvl] || { en: lvl, ar: lvl };
+      return {
+        level: lvl,
+        label: m.attendance_status_unknown() === "غير محدد" ? nameObj.ar : nameObj.en
+      };
+    });
+  } catch (e) {
+    console.error("Error loading classes for fee template form:", e);
+  } finally {
+    isLoadingClasses = false;
+  }
+}
+
 $effect(() => {
   if (orgId) {
     loadLedgerAccounts();
+    loadClasses();
   }
 });
 
@@ -103,6 +165,10 @@ async function handleSubmit(e: SubmitEvent) {
     toast.error("Receivable Account is required");
     return;
   }
+  if (!applyToAllGrades && selectedLevels.length === 0) {
+    toast.error(m.attendance_status_unknown() === "غير محدد" ? "يرجى تحديد صف واحد على الأقل أو تفعيل خيار التطبيق على جميع الصفوف" : "Please select at least one grade level or apply to all");
+    return;
+  }
 
   isSubmitting = true;
   try {
@@ -111,15 +177,15 @@ async function handleSubmit(e: SubmitEvent) {
       name_ar: nameAr.trim() || null,
       code: code.trim() || null,
       category,
+      default_amount: Number(amount || 0),
       revenue_account_id: revenueAccountId,
       receivable_account_id: receivableAccountId,
-      pricing_type: "fixed",
-      pricing_config: JSON.stringify({ amount }),
-      applicability_rules: null,
+      applicable_levels: !applyToAllGrades && selectedLevels.length > 0 
+        ? JSON.stringify({ levels: selectedLevels }) 
+        : null,
       frequency,
-      frequency_config: null,
+      installment_config: null,
       late_fee_rules: null,
-      allowed_discounts: null,
       is_mandatory: isMandatory ? 1 : 0,
       is_active: isActive ? 1 : 0,
     };
@@ -242,6 +308,57 @@ async function handleSubmit(e: SubmitEvent) {
       required
       disabled={isSubmitting}
     />
+  </div>
+
+  <!-- Grade Level Applicability -->
+  <div class="flex flex-col gap-3 p-3 bg-muted/40 rounded-lg border border-border/60">
+    <span class="text-xs font-bold text-muted-foreground uppercase tracking-wider text-start">
+      {m.attendance_status_unknown() === "غير محدد" ? "الصفوف المستهدفة بالرسم" : "Target Grade Levels"}
+    </span>
+    
+    <label class="flex items-center gap-2 cursor-pointer select-none text-xs font-semibold text-start">
+      <input 
+        type="checkbox" 
+        bind:checked={applyToAllGrades} 
+        disabled={isSubmitting}
+        class="w-4 h-4 rounded text-primary focus:ring-primary border-border"
+      />
+      <span>{m.attendance_status_unknown() === "غير محدد" ? "يطبق على جميع الصفوف" : "Apply to all grades"}</span>
+    </label>
+
+    {#if !applyToAllGrades}
+      {#if isLoadingClasses}
+        <span class="text-xs text-muted-foreground text-start">{m.loading()}</span>
+      {:else}
+        <div class="grid grid-cols-2 gap-2 mt-1">
+          {#each uniqueLevels as lvl}
+            <label class="flex items-center gap-2 cursor-pointer select-none text-xs text-start">
+              <input 
+                type="checkbox" 
+                value={lvl.level}
+                checked={selectedLevels.includes(lvl.level)}
+                disabled={isSubmitting}
+                onchange={(e) => {
+                  const target = e.target as HTMLInputElement;
+                  if (target.checked) {
+                    selectedLevels = [...selectedLevels, lvl.level];
+                  } else {
+                    selectedLevels = selectedLevels.filter(x => x !== lvl.level);
+                  }
+                }}
+                class="w-4 h-4 rounded text-primary focus:ring-primary border-border"
+              />
+              <span>{lvl.label}</span>
+            </label>
+          {/each}
+          {#if uniqueLevels.length === 0}
+            <span class="text-xs text-muted-foreground col-span-2 text-start">
+              {m.attendance_status_unknown() === "غير محدد" ? "لا توجد صفوف دراسية مضافة. يرجى إعداد الفصول أولاً." : "No grade levels found. Please set up classes first."}
+            </span>
+          {/if}
+        </div>
+      {/if}
+    {/if}
   </div>
 
   <!-- Accounts mapping -->

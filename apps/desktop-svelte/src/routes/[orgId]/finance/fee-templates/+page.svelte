@@ -104,15 +104,44 @@ function getFrequencyLabel(freqStr: string) {
 }
 
 function getAmount(tpl: any): number {
-  if (tpl.pricing_config) {
-    try {
-      const config = JSON.parse(tpl.pricing_config);
-      return Number(config.amount || 0);
-    } catch (e) {
-      return 0;
-    }
+  return Number(tpl.default_amount || 0);
+}
+
+function getLevelsLabel(applicableLevelsStr: string | null | undefined): string {
+  if (!applicableLevelsStr) {
+    return m.attendance_status_unknown() === "غير محدد" ? "جميع الصفوف" : "All Grades";
   }
-  return 0;
+  try {
+    const rules = JSON.parse(applicableLevelsStr);
+    const levels: string[] = rules.levels || (rules.level ? [rules.level] : []);
+    if (levels.length === 0) {
+      return m.attendance_status_unknown() === "غير محدد" ? "جميع الصفوف" : "All Grades";
+    }
+    
+    const levelNames: Record<string, { en: string; ar: string }> = {
+      kg1: { en: "KG 1", ar: "روضة أولى" },
+      kg2: { en: "KG 2", ar: "روضة ثانية" },
+      grade1: { en: "Grade 1", ar: "الصف الأول" },
+      grade2: { en: "Grade 2", ar: "الصف الثاني" },
+      grade3: { en: "Grade 3", ar: "الصف الثالث" },
+      grade4: { en: "Grade 4", ar: "الصف الرابع" },
+      grade5: { en: "Grade 5", ar: "الصف الخامس" },
+      grade6: { en: "Grade 6", ar: "الصف السادس" },
+      grade7: { en: "Grade 7", ar: "الصف السابع" },
+      grade8: { en: "Grade 8", ar: "الصف الثامن" },
+      grade9: { en: "Grade 9", ar: "الصف التاسع" },
+    };
+
+    const isArabic = m.attendance_status_unknown() === "غير محدد";
+    return levels
+      .map(lvl => {
+        const nameObj = levelNames[lvl] || { en: lvl, ar: lvl };
+        return isArabic ? nameObj.ar : nameObj.en;
+      })
+      .join(" - ");
+  } catch (e) {
+    return m.attendance_status_unknown() === "غير محدد" ? "جميع الصفوف" : "All Grades";
+  }
 }
 </script>
 
@@ -192,8 +221,11 @@ function getAmount(tpl: any): number {
                 <TableCell class="text-start font-medium text-xs">
                   <div class="flex flex-col">
                     <span class="font-bold text-foreground">{tpl.name_ar || tpl.name}</span>
+                    <span class="text-[10px] text-muted-foreground font-semibold">
+                      {getLevelsLabel(tpl.applicable_levels)}
+                    </span>
                     {#if tpl.name_ar && tpl.name}
-                      <span class="text-[10px] text-muted-foreground font-mono">{tpl.name}</span>
+                      <span class="text-[9px] text-muted-foreground font-mono opacity-80">{tpl.name}</span>
                     {/if}
                   </div>
                 </TableCell>
