@@ -58,7 +58,10 @@ class OnboardingState {
   activeStep = $state(1);
   isLoading = $state(false);
   errorMessage = $state<string | null>(null);
-  totalSteps = 7;
+  totalSteps = 8;
+
+  // Step 7: Registration Fees Setup
+  registrationFees = $state<Record<string, number>>({});
 
   // Step 1: School General Info
   orgName = $state("Sanaa Model School");
@@ -432,6 +435,34 @@ class OnboardingState {
 
       const { commands } = await import("$lib/services/ipc");
       await commands.academics.initializeSchoolSetup(orgId, payload);
+
+      // Create fee templates for the specified registration fees
+      for (const gl of this.gradeLevels) {
+        if (!gl.enabled) continue;
+        const amount = this.registrationFees[gl.level] || 0;
+        if (amount > 0) {
+          const req = {
+            name: `${gl.name} Registration Fee`,
+            name_ar: `رسوم تسجيل ${gl.name_ar}`,
+            code: `REG_${gl.level.toUpperCase()}`,
+            category: "tuition",
+            default_amount: Number(amount),
+            revenue_account_id: `${orgId}_tuition_revenue`,
+            receivable_account_id: `${orgId}_student_receivable_control`,
+            applicable_levels: JSON.stringify({ levels: [gl.level] }),
+            frequency: "once",
+            installment_config: null,
+            late_fee_rules: null,
+            is_mandatory: 1,
+            is_active: 1,
+          };
+          try {
+            await commands.finance.createFeeTemplate(orgId, req);
+          } catch (feeErr) {
+            console.error(`Failed to create fee template for ${gl.level}:`, feeErr);
+          }
+        }
+      }
 
       toast.success(m.onboarding_toast_success());
       return true;
