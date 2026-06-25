@@ -20,6 +20,7 @@ import { isDesktopApp } from "$lib/services/ipc";
 import { page } from "$app/state";
 import * as m from "$lib/paraglide/messages";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
+import WhatsNewDialog from "./WhatsNewDialog.svelte";
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -37,6 +38,7 @@ let {
 } = $props();
 
 const isDesktop = isDesktopApp();
+let showWhatsNew = $state(false);
 
 // Breadcrumb items generator based on active route
 const breadcrumbs = $derived.by(() => {
@@ -184,9 +186,11 @@ const breadcrumbs = $derived.by(() => {
 			class="rounded-[8px]"
 			title="What's New"
 			aria-label="What's new"
+			onclick={() => showWhatsNew = true}
 		>
 			<Megaphone size={14} class="text-foreground stroke-[2px]" />
 		</Button>
 	</div>
 </div>
 
+<WhatsNewDialog bind:open={showWhatsNew} />
