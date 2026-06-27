@@ -998,11 +998,13 @@ function getDefaultPermissionsForRole(roleId: string): Record<string, "global" |
   return defaults;
 }
 
-const STORAGE_KEY = `orbis_roles_permissions_${data.orgId}`;
+function getStorageKey(): string {
+  return `orbis_roles_permissions_${data?.orgId || "default"}`;
+}
 
 function loadRolesFromStorage(): Role[] {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    const saved = localStorage.getItem(getStorageKey());
     if (saved) {
       const parsed = JSON.parse(saved) as Role[];
       return initialRoles.map(initialRole => {
@@ -1025,7 +1027,7 @@ function loadRolesFromStorage(): Role[] {
 
 function saveRolesToStorage() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(roles));
+    localStorage.setItem(getStorageKey(), JSON.stringify(roles));
   } catch (e) {
     console.error("Failed to save roles to localStorage", e);
   }
