@@ -23,6 +23,7 @@ function printHeader(title: string) {
   console.log(c.gray("│"));
 }
 
+// Ensure clean separation for clack style
 function printStep(title: string) {
   console.log(c.purple(`◇  ${c.bold(title)}`));
 }
@@ -34,6 +35,11 @@ function printSuccess(message: string) {
 
 function printInfo(message: string) {
   console.log(c.cyan(`▲  ${message}`));
+  console.log(c.gray("│"));
+}
+
+function printError(message: string) {
+  console.log(c.red(`✖  ${message}`));
   console.log(c.gray("│"));
 }
 
@@ -54,7 +60,7 @@ async function ask(query: string, defaultValue = "", validator?: (val: string) =
       rl.close();
       const finalValue = answer.trim() || defaultValue;
       if (validator && !validator(finalValue)) {
-        console.log(`${c.gray("│")}  ${c.red("✖  Invalid input, please try again.")}`);
+        printError("Invalid input, please try again.");
         resolve(ask(query, defaultValue, validator));
       } else {
         resolve(finalValue);
@@ -158,7 +164,7 @@ function runDatabaseMigration(db: Database) {
   const schemaPath = path.join(dbDir, "schema.sql");
 
   if (!existsSync(coreSchemaPath) || !existsSync(schemaPath)) {
-    console.log(`${c.gray("│")}  ${c.red(`✖  Schema SQL files not found in: ${dbDir}`)}`);
+    printError(`Schema SQL files not found in: ${dbDir}`);
     process.exit(1);
   }
 
@@ -206,7 +212,7 @@ async function handleDatabaseReset() {
       unlinkSync(dbPath);
       printSuccess(`Database deleted successfully from ${dbPath}`);
     } catch (e) {
-      console.log(`${c.gray("│")}  ${c.red(`✖  Failed to delete database: ${e}`)}`);
+      printError(`Failed to delete database: ${e}`);
     }
   } else {
     printInfo("Reset canceled by user.");
@@ -318,7 +324,7 @@ function seedDefaultFinancialsAndPermissions(db: Database, orgId: string, baseCu
     );
   }
 
-  printSuccess("Automatically seeded system currencies, Chart of Accounts, and default permissions.");
+  printSuccess("Successfully seeded system currencies, Chart of Accounts, and default permissions.");
 }
 
 // ── Main Commands Orchestration ─────────────────────────────────────────────
@@ -329,7 +335,7 @@ async function main() {
 
   // Help command
   if (args.includes("-h") || args.includes("--help") || command === "help") {
-    printHeader("Orbis OS Installer CLI help");
+    printHeader("Orbis OS Installer CLI Help");
     printHelp();
     return;
   }
@@ -430,23 +436,23 @@ async function handleInstallation() {
 
   if (!isAutomated) {
     printStep("School Information Setup");
-    schoolNameAr = await ask("School Name in Arabic (اسم المدرسة باللغة العربية)", "مدرسة صنعاء النموذجية");
-    schoolNameEn = await ask("School Name in English (اسم المدرسة باللغة الإنجليزية)", "Sanaa Model School");
-    timezone = await ask("Timezone / المنطقة الزمنية", "Asia/Aden");
+    schoolNameAr = await ask("Enter School Name (Arabic)", "مدرسة صنعاء النموذجية");
+    schoolNameEn = await ask("Enter School Name (English)", "Sanaa Model School");
+    timezone = await ask("Enter Timezone", "Asia/Aden");
     console.log(c.gray("│"));
 
     printStep("Administrator Account Setup");
-    adminNameAr = await ask("Administrator Name in Arabic (اسم المدير باللغة العربية)", "مدير المدرسة");
-    adminNameEn = await ask("Administrator Name in English (اسم المدير باللغة الإنجليزية)", "School Admin");
-    adminEmail = await ask("Login Email Address (البريد الإلكتروني)", "admin@school.com", (val) => {
+    adminNameAr = await ask("Enter Administrator Name (Arabic)", "مدير المدرسة");
+    adminNameEn = await ask("Enter Administrator Name (English)", "School Admin");
+    adminEmail = await ask("Enter Login Email Address", "admin@school.com", (val) => {
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
     });
-    adminPhone = await ask("Phone Number / رقم الهاتف (Optional)", "777777777");
+    adminPhone = await ask("Enter Phone Number (Optional)", "777777777");
     
     while (adminPassword.length < 6) {
-      adminPassword = await askPassword("Login Password / كلمة المرور (Min 6 chars)");
+      adminPassword = await askPassword("Enter Login Password (Min 6 chars)");
       if (adminPassword.length < 6) {
-        console.log(`${c.gray("│")}  ${c.red("✖  Password must be at least 6 characters.")}`);
+        printError("Password must be at least 6 characters.");
       }
     }
     console.log(c.gray("│"));
@@ -498,7 +504,7 @@ async function handleInstallation() {
   console.log(`   ${c.bold("Login Email:")}  ${adminEmail}`);
   console.log(`   ${c.bold("DB Path:")}      ${dbPath}\n`);
   console.log(c.cyan("   You can now launch the Orbis app and log in with this account."));
-  console.log(c.cyan("   يمكنك الآن فتح التطبيق وتسجيل الدخول بحسابك لمتابعة تهيئة النظام.\n"));
+  console.log(c.cyan("   You can now open the app and log in to continue configuring the system.\n"));
 }
 
 main().catch((err) => {
