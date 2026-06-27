@@ -52,7 +52,7 @@ impl super::Service {
     }
 
     pub async fn create_cycle(&self, org_id: &str, req: CreateCycleRequest) -> Result<academic_cycle::Model, String> {
-        let valid_types = ["year", "semester", "trimester", "quarter"];
+        let valid_types = ["year", "semester", "trimester", "quarter", "monthly", "custom"];
         if !valid_types.contains(&req.cycle_type.as_str()) {
             return Err(format!("invalid cycle type: {}. Valid: {:?}", req.cycle_type, valid_types));
         }
@@ -72,12 +72,17 @@ impl super::Service {
             exam_start_date: None,
             exam_end_date: None,
             weight: Some(100),
-            grading_system: req.grading_system.unwrap_or_else(|| "saudi_5".to_string()),
+            grading_system: req.grading_system.unwrap_or_else(|| "percentage".to_string()),
             passing_grade: req.passing_grade.or(Some(50)),
             max_grade: req.max_grade.or(Some(100)),
             is_current: 0,
             is_locked: 0,
             is_enrollment_open: 1,
+            is_grade_entry_open: 0,
+            grade_entry_start: None,
+            grade_entry_end: None,
+            locked_at: None,
+            locked_by: None,
             settings: Some("{}".to_string()),
             sort_order: Some(0),
             created_at: Utc::now().to_rfc3339(),
@@ -89,6 +94,15 @@ impl super::Service {
     }
 
     pub async fn update_cycle(&self, cycle_id: &str, req: UpdateCycleRequest) -> Result<academic_cycle::Model, String> {
+        // Check if cycle is locked - prevent updates on locked cycles (except unlock)
+        let existing = self.repo.get_cycle_by_id(cycle_id).await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "الدورة الأكاديمية غير موجودة".to_string())?;
+
+        if existing.is_locked == 1 {
+            return Err("لا يمكن تعديل دورة مقفلة. يجب فتح القفل أولاً.".to_string());
+        }
+
         let updates = CycleUpdate {
             name: req.name,
             name_ar: req.name_ar,
@@ -122,10 +136,72 @@ impl super::Service {
             .map_err(|e| e.to_string())
     }
 
-    pub async fn lock_cycle(&self, cycle_id: &str) -> Result<academic_cycle::Model, String> {
+    /// Lock cycle: closes grade entry + enrollment, records who locked and when
+    pub async fn lock_cycle(&self, cycle_id: &str, locked_by: &str) -> Result<academic_cycle::Model, String> {
         let updates = CycleUpdate {
             is_locked: Some(1),
             is_enrollment_open: Some(0),
+            is_grade_entry_open: Some(0),
+            locked_at: Some(Utc::now().to_rfc3339()),
+            locked_by: Some(locked_by.to_string()),
+            ..Default::default()
+        };
+
+        self.repo.update_cycle(cycle_id, updates).await
+            .map_err(|e| e.to_string())
+    }
+
+    /// Unlock cycle: only admin/super_admin should call this
+    pub async fn unlock_cycle(&self, cycle_id: &str) -> Result<academic_cycle::Model, String> {
+        let existing = self.repo.get_cycle_by_id(cycle_id).await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "الدورة الأكاديمية غير موجودة".to_string())?;
+
+        if existing.is_locked == 0 {
+            return Err("الدورة غير مقفلة أصلاً".to_string());
+        }
+
+        let updates = CycleUpdate {
+            is_locked: Some(0),
+            locked_at: Some("".to_string()),
+            locked_by: Some("".to_string()),
+            ..Default::default()
+        };
+
+        self.repo.update_cycle(cycle_id, updates).await
+            .map_err(|e| e.to_string())
+    }
+
+    /// Open grade entry period with optional date range
+    pub async fn open_grade_entry(&self, cycle_id: &str, start: Option<String>, end: Option<String>) -> Result<academic_cycle::Model, String> {
+        let existing = self.repo.get_cycle_by_id(cycle_id).await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "الدورة الأكاديمية غير موجودة".to_string())?;
+
+        if existing.is_locked == 1 {
+            return Err("لا يمكن فتح فترة الإدخال لدورة مقفلة. يجب فتح القفل أولاً.".to_string());
+        }
+
+        let mut updates = CycleUpdate {
+            is_grade_entry_open: Some(1),
+            ..Default::default()
+        };
+
+        if let Some(s) = start {
+            updates.grade_entry_start = Some(s);
+        }
+        if let Some(e) = end {
+            updates.grade_entry_end = Some(e);
+        }
+
+        self.repo.update_cycle(cycle_id, updates).await
+            .map_err(|e| e.to_string())
+    }
+
+    /// Close grade entry period
+    pub async fn close_grade_entry(&self, cycle_id: &str) -> Result<academic_cycle::Model, String> {
+        let updates = CycleUpdate {
+            is_grade_entry_open: Some(0),
             ..Default::default()
         };
 

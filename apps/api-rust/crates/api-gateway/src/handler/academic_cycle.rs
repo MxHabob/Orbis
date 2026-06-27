@@ -88,7 +88,56 @@ pub async fn post_lock_cycle(
     service.check_permission_and_audit(&user, crate::service::authz::Permission::CycleLock, None).await
         .map_err(|e| (StatusCode::FORBIDDEN, Json(json!({ "success": false, "error": e }))))?;
 
-    let cycle = service.lock_cycle(&id).await
+    let cycle = service.lock_cycle(&id, &user.id).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "success": false, "error": e }))))?;
+    Ok((StatusCode::OK, Json(json!({ "success": true, "data": cycle }))))
+}
+
+#[utoipa::path(post, path = "/api/cycles/{id}/unlock", responses((status = 200, description = "Cycle unlocked")))]
+pub async fn post_unlock_cycle(
+    State(service): State<Service>,
+    Path(id): Path<String>,
+    AuthenticatedUser(user): AuthenticatedUser,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    service.check_permission_and_audit(&user, crate::service::authz::Permission::CycleUnlock, None).await
+        .map_err(|e| (StatusCode::FORBIDDEN, Json(json!({ "success": false, "error": e }))))?;
+
+    let cycle = service.unlock_cycle(&id).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "success": false, "error": e }))))?;
+    Ok((StatusCode::OK, Json(json!({ "success": true, "data": cycle }))))
+}
+
+#[derive(serde::Deserialize)]
+pub struct GradeEntryRequest {
+    pub start: Option<String>,
+    pub end: Option<String>,
+}
+
+#[utoipa::path(post, path = "/api/cycles/{id}/grade-entry/open", responses((status = 200, description = "Grade entry opened")))]
+pub async fn post_open_grade_entry(
+    State(service): State<Service>,
+    Path(id): Path<String>,
+    AuthenticatedUser(user): AuthenticatedUser,
+    Json(req): Json<GradeEntryRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    service.check_permission_and_audit(&user, crate::service::authz::Permission::GradeEntryManage, None).await
+        .map_err(|e| (StatusCode::FORBIDDEN, Json(json!({ "success": false, "error": e }))))?;
+
+    let cycle = service.open_grade_entry(&id, req.start, req.end).await
+        .map_err(|e| (StatusCode::BAD_REQUEST, Json(json!({ "success": false, "error": e }))))?;
+    Ok((StatusCode::OK, Json(json!({ "success": true, "data": cycle }))))
+}
+
+#[utoipa::path(post, path = "/api/cycles/{id}/grade-entry/close", responses((status = 200, description = "Grade entry closed")))]
+pub async fn post_close_grade_entry(
+    State(service): State<Service>,
+    Path(id): Path<String>,
+    AuthenticatedUser(user): AuthenticatedUser,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    service.check_permission_and_audit(&user, crate::service::authz::Permission::GradeEntryManage, None).await
+        .map_err(|e| (StatusCode::FORBIDDEN, Json(json!({ "success": false, "error": e }))))?;
+
+    let cycle = service.close_grade_entry(&id).await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "success": false, "error": e }))))?;
     Ok((StatusCode::OK, Json(json!({ "success": true, "data": cycle }))))
 }

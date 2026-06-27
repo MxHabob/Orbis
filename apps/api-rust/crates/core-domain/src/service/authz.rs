@@ -18,6 +18,8 @@ pub enum Permission {
     CycleWrite,
     CycleActivate,
     CycleLock,
+    CycleUnlock,
+    GradeEntryManage,
 
     // Org Units
     OrgUnitRead,

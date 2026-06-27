@@ -237,6 +237,8 @@ impl super::Service {
                 org_id: org_id.to_string(),
                 cycle_id: cycle.id.clone(),
                 enrollment_id: enroll.id.clone(),
+                assessment_id: None,
+                class_subject_id: None,
                 subject_name: subject.to_string(),
                 subject_name_ar: None,
                 score,

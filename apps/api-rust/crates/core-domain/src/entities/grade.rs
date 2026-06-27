@@ -10,6 +10,8 @@ pub struct Model {
     pub org_id: String,
     pub cycle_id: String,
     pub enrollment_id: String,
+    pub assessment_id: Option<String>,
+    pub class_subject_id: Option<String>,
     pub subject_name: String,
     pub subject_name_ar: Option<String>,
     pub score: f64,

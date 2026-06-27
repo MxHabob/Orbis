@@ -5,7 +5,7 @@ use axum::{
 };
 use serde_json::json;
 use crate::service::Service;
-use crate::service::grade::{CreateGradeRequest, BulkGradeRequest, UpdateGradeRequest};
+use crate::service::grade::{CreateGradeRequest, BulkGradeRequest, UpdateGradeRequest, BulkSubjectGradeEntry};
 use crate::middleware::AuthenticatedUser;
 
 #[utoipa::path(get, path = "/api/grades", responses((status = 200, description = "Grades list")))]
@@ -60,7 +60,7 @@ pub async fn put_grade(
     service.check_permission_and_audit(&user, crate::service::authz::Permission::GradeWrite, None).await
         .map_err(|e| (StatusCode::FORBIDDEN, Json(json!({ "success": false, "error": e }))))?;
 
-    let grade = service.update_grade(&id, req).await
+    let grade = service.update_grade(&id, &user.id, req).await
         .map_err(|e| (StatusCode::BAD_REQUEST, Json(json!({ "success": false, "error": e }))))?;
     Ok((StatusCode::OK, Json(json!({ "success": true, "data": grade }))))
 }
@@ -96,4 +96,35 @@ pub async fn get_grade_analytics(
     let analytics = service.get_grade_analytics(&user.org_id, params).await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "success": false, "error": e }))))?;
     Ok((StatusCode::OK, Json(json!({ "success": true, "data": analytics }))))
+}
+
+#[utoipa::path(post, path = "/api/grades/bulk-subject", request_body = BulkSubjectGradeEntry, responses((status = 200, description = "Bulk subject grades submitted")))]
+pub async fn post_grades_bulk_subject(
+    State(service): State<Service>,
+    AuthenticatedUser(user): AuthenticatedUser,
+    Json(req): Json<BulkSubjectGradeEntry>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    service.check_permission_and_audit(&user, crate::service::authz::Permission::GradeWrite, None).await
+        .map_err(|e| (StatusCode::FORBIDDEN, Json(json!({ "success": false, "error": e }))))?;
+
+    let result = service.bulk_subject_grade_entry(&user.org_id, &user.id, req).await
+        .map_err(|e| (StatusCode::BAD_REQUEST, Json(json!({ "success": false, "error": e }))))?;
+    Ok((StatusCode::OK, Json(json!({
+        "success": true,
+        "data": result
+    }))))
+}
+
+#[utoipa::path(get, path = "/api/grades/matrix", responses((status = 200, description = "Grade matrix for class subject")))]
+pub async fn get_grade_matrix(
+    State(service): State<Service>,
+    Query(params): Query<crate::handler::params::GradeMatrixParams>,
+    AuthenticatedUser(user): AuthenticatedUser,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    service.check_permission_and_audit(&user, crate::service::authz::Permission::GradeRead, None).await
+        .map_err(|e| (StatusCode::FORBIDDEN, Json(json!({ "success": false, "error": e }))))?;
+
+    let matrix = service.get_grade_matrix(&user.org_id, &params.cycle_id, &params.class_id, &params.subject_id).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "success": false, "error": e }))))?;
+    Ok((StatusCode::OK, Json(json!({ "success": true, "data": matrix }))))
 }

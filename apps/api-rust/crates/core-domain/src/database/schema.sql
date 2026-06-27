@@ -298,6 +298,7 @@ CREATE TABLE IF NOT EXISTS assessments (
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
+CREATE INDEX IF NOT EXISTS idx_assessments_cs ON assessments(class_subject_id, cycle_id);
 
 CREATE TABLE IF NOT EXISTS grade_history (
   id TEXT PRIMARY KEY,

@@ -48,6 +48,9 @@ use service::Service;
         handler::academic_cycle::put_cycle,
         handler::academic_cycle::post_activate_cycle,
         handler::academic_cycle::post_lock_cycle,
+        handler::academic_cycle::post_unlock_cycle,
+        handler::academic_cycle::post_open_grade_entry,
+        handler::academic_cycle::post_close_grade_entry,
         // Org Units
         handler::org_unit::get_units,
         handler::org_unit::post_units,
@@ -70,9 +73,11 @@ use service::Service;
         handler::grade::get_grades,
         handler::grade::post_grades,
         handler::grade::post_grades_bulk,
+        handler::grade::post_grades_bulk_subject,
         handler::grade::put_grade,
         handler::grade::get_report_card,
         handler::grade::get_grade_analytics,
+        handler::grade::get_grade_matrix,
         // Attendance
         handler::attendance::get_attendance,
         handler::attendance::post_attendance,
@@ -208,6 +213,12 @@ use service::Service;
             service::grade::CreateGradeRequest,
             service::grade::BulkGradeRequest,
             service::grade::UpdateGradeRequest,
+            service::grade::BulkSubjectGradeEntry,
+            service::grade::StudentScore,
+            service::grade::BulkSubjectGradeResult,
+            service::grade::GradeMatrixResponse,
+            service::grade::StudentGradeRow,
+            service::grade::GradeCell,
             service::grade::GradeReportCard,
             service::grade::SubjectGradeSummary,
             service::grade::GradeAnalytics,
@@ -354,6 +365,9 @@ pub async fn start_server(database_url: &str, port: u16) -> Result<(), Box<dyn s
         .route("/api/cycles/:id", get(handler::academic_cycle::get_cycle).put(handler::academic_cycle::put_cycle))
         .route("/api/cycles/:id/activate", post(handler::academic_cycle::post_activate_cycle))
         .route("/api/cycles/:id/lock", post(handler::academic_cycle::post_lock_cycle))
+        .route("/api/cycles/:id/unlock", post(handler::academic_cycle::post_unlock_cycle))
+        .route("/api/cycles/:id/grade-entry/open", post(handler::academic_cycle::post_open_grade_entry))
+        .route("/api/cycles/:id/grade-entry/close", post(handler::academic_cycle::post_close_grade_entry))
         .route("/api/units", get(handler::org_unit::get_units).post(handler::org_unit::post_units))
         .route("/api/units/:id", put(handler::org_unit::put_unit).delete(handler::org_unit::delete_unit))
         .route("/api/classes", get(handler::class::get_classes).post(handler::class::post_classes))
@@ -366,6 +380,8 @@ pub async fn start_server(database_url: &str, port: u16) -> Result<(), Box<dyn s
         .route("/api/enrollments/:id/transfer", post(handler::enrollment::post_transfer))
         .route("/api/grades", get(handler::grade::get_grades).post(handler::grade::post_grades))
         .route("/api/grades/bulk", post(handler::grade::post_grades_bulk))
+        .route("/api/grades/bulk-subject", post(handler::grade::post_grades_bulk_subject))
+        .route("/api/grades/matrix", get(handler::grade::get_grade_matrix))
         .route("/api/grades/analytics", get(handler::grade::get_grade_analytics))
         .route("/api/grades/report/:enrollment_id", get(handler::grade::get_report_card))
         .route("/api/grades/:id", put(handler::grade::put_grade))

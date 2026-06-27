@@ -75,6 +75,21 @@ impl super::Repository {
         if let Some(is_current) = updates.is_current {
             active.is_current = Set(is_current);
         }
+        if let Some(is_grade_entry_open) = updates.is_grade_entry_open {
+            active.is_grade_entry_open = Set(is_grade_entry_open);
+        }
+        if let Some(grade_entry_start) = updates.grade_entry_start {
+            active.grade_entry_start = Set(Some(grade_entry_start));
+        }
+        if let Some(grade_entry_end) = updates.grade_entry_end {
+            active.grade_entry_end = Set(Some(grade_entry_end));
+        }
+        if let Some(locked_at) = updates.locked_at {
+            active.locked_at = Set(Some(locked_at));
+        }
+        if let Some(locked_by) = updates.locked_by {
+            active.locked_by = Set(Some(locked_by));
+        }
         active.updated_at = Set(chrono::Utc::now().to_rfc3339());
 
         active.update(&self.db).await
@@ -87,6 +102,41 @@ impl super::Repository {
             .exec(&self.db)
             .await?;
         Ok(result.rows_affected)
+    }
+
+    pub async fn create_academic_cycle(&self, cycle: academic_cycle::Model) -> Result<academic_cycle::Model, DbErr> {
+        let active = academic_cycle::ActiveModel {
+            id: Set(cycle.id),
+            org_id: Set(cycle.org_id),
+            name: Set(cycle.name),
+            name_ar: Set(cycle.name_ar),
+            code: Set(cycle.code),
+            cycle_type: Set(cycle.cycle_type),
+            parent_id: Set(cycle.parent_id),
+            start_date: Set(cycle.start_date),
+            end_date: Set(cycle.end_date),
+            hijri_start_date: Set(cycle.hijri_start_date),
+            hijri_end_date: Set(cycle.hijri_end_date),
+            exam_start_date: Set(cycle.exam_start_date),
+            exam_end_date: Set(cycle.exam_end_date),
+            weight: Set(cycle.weight),
+            grading_system: Set(cycle.grading_system),
+            passing_grade: Set(cycle.passing_grade),
+            max_grade: Set(cycle.max_grade),
+            is_current: Set(cycle.is_current),
+            is_locked: Set(cycle.is_locked),
+            is_enrollment_open: Set(cycle.is_enrollment_open),
+            is_grade_entry_open: Set(cycle.is_grade_entry_open),
+            grade_entry_start: Set(cycle.grade_entry_start),
+            grade_entry_end: Set(cycle.grade_entry_end),
+            locked_at: Set(cycle.locked_at),
+            locked_by: Set(cycle.locked_by),
+            settings: Set(cycle.settings),
+            sort_order: Set(cycle.sort_order),
+            created_at: Set(cycle.created_at),
+            updated_at: Set(cycle.updated_at),
+        };
+        active.insert(&self.db).await
     }
 }
 
@@ -104,5 +154,10 @@ pub struct CycleUpdate {
     pub is_enrollment_open: Option<i32>,
     pub is_locked: Option<i32>,
     pub is_current: Option<i32>,
+    pub is_grade_entry_open: Option<i32>,
+    pub grade_entry_start: Option<String>,
+    pub grade_entry_end: Option<String>,
+    pub locked_at: Option<String>,
+    pub locked_by: Option<String>,
 }
 

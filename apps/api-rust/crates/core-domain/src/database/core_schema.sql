@@ -125,6 +125,11 @@ CREATE TABLE IF NOT EXISTS academic_cycles (
   is_current INTEGER NOT NULL,
   is_locked INTEGER NOT NULL,
   is_enrollment_open INTEGER NOT NULL,
+  is_grade_entry_open INTEGER NOT NULL DEFAULT 0,
+  grade_entry_start TEXT,
+  grade_entry_end TEXT,
+  locked_at TEXT,
+  locked_by TEXT,
   settings TEXT,
   sort_order INTEGER,
   created_at TEXT NOT NULL,
@@ -202,6 +207,8 @@ CREATE TABLE IF NOT EXISTS grades (
   org_id TEXT NOT NULL,
   cycle_id TEXT NOT NULL,
   enrollment_id TEXT NOT NULL,
+  assessment_id TEXT,
+  class_subject_id TEXT,
   subject_name TEXT NOT NULL,
   subject_name_ar TEXT,
   score REAL NOT NULL,
@@ -218,6 +225,8 @@ CREATE TABLE IF NOT EXISTS grades (
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
+CREATE INDEX IF NOT EXISTS idx_grades_assessment ON grades(assessment_id);
+CREATE INDEX IF NOT EXISTS idx_grades_class_subject ON grades(class_subject_id, cycle_id);
 
 CREATE TABLE IF NOT EXISTS attendance (
   id TEXT PRIMARY KEY,

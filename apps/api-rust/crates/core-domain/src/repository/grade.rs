@@ -1,4 +1,4 @@
-use crate::entities::grade;
+use crate::entities::{grade, grade_history};
 use sea_orm::{entity::prelude::*, ActiveModelTrait, ActiveValue::Set, QueryFilter, EntityTrait, QueryOrder, QuerySelect};
 
 impl super::Repository {
@@ -8,6 +8,8 @@ impl super::Repository {
             org_id: Set(g.org_id),
             cycle_id: Set(g.cycle_id),
             enrollment_id: Set(g.enrollment_id),
+            assessment_id: Set(g.assessment_id),
+            class_subject_id: Set(g.class_subject_id),
             subject_name: Set(g.subject_name),
             subject_name_ar: Set(g.subject_name_ar),
             score: Set(g.score),
@@ -69,6 +71,18 @@ impl super::Repository {
             query = query.filter(grade::Column::IsFinal.eq(is_final));
         }
 
+        if let Some(ref assessment_id) = params.assessment_id {
+            if !assessment_id.trim().is_empty() {
+                query = query.filter(grade::Column::AssessmentId.eq(assessment_id));
+            }
+        }
+
+        if let Some(ref class_subject_id) = params.class_subject_id {
+            if !class_subject_id.trim().is_empty() {
+                query = query.filter(grade::Column::ClassSubjectId.eq(class_subject_id));
+            }
+        }
+
         // If class_id is provided, find enrollments for that class and filter
         if let Some(ref class_id) = params.class_id {
             if !class_id.trim().is_empty() {
@@ -114,6 +128,10 @@ impl super::Repository {
         active.update(&self.db).await
     }
 
+    pub async fn get_grade_by_id(&self, id: &str) -> Result<Option<grade::Model>, DbErr> {
+        grade::Entity::find_by_id(id.to_string()).one(&self.db).await
+    }
+
     pub async fn get_grades_by_enrollment(&self, enrollment_id: &str) -> Result<Vec<grade::Model>, DbErr> {
         grade::Entity::find()
             .filter(grade::Column::EnrollmentId.eq(enrollment_id))
@@ -130,5 +148,61 @@ impl super::Repository {
             .all(&self.db)
             .await
     }
-}
 
+    /// Get all grades for a specific assessment (all students)
+    pub async fn get_grades_by_assessment(&self, assessment_id: &str) -> Result<Vec<grade::Model>, DbErr> {
+        grade::Entity::find()
+            .filter(grade::Column::AssessmentId.eq(assessment_id))
+            .order_by_asc(grade::Column::EnrollmentId)
+            .all(&self.db)
+            .await
+    }
+
+    /// Get the grade matrix: all grades for a class_subject in a cycle
+    pub async fn get_grade_matrix(
+        &self,
+        class_subject_id: &str,
+        cycle_id: &str,
+    ) -> Result<Vec<grade::Model>, DbErr> {
+        grade::Entity::find()
+            .filter(grade::Column::ClassSubjectId.eq(class_subject_id))
+            .filter(grade::Column::CycleId.eq(cycle_id))
+            .order_by_asc(grade::Column::EnrollmentId)
+            .order_by_asc(grade::Column::ExamType)
+            .all(&self.db)
+            .await
+    }
+
+    /// Find existing grade for a specific enrollment + assessment combo
+    pub async fn find_grade_by_enrollment_assessment(
+        &self,
+        enrollment_id: &str,
+        assessment_id: &str,
+    ) -> Result<Option<grade::Model>, DbErr> {
+        grade::Entity::find()
+            .filter(grade::Column::EnrollmentId.eq(enrollment_id))
+            .filter(grade::Column::AssessmentId.eq(assessment_id))
+            .one(&self.db)
+            .await
+    }
+
+    /// Save a grade history record for audit trail
+    pub async fn create_grade_history(&self, h: grade_history::Model) -> Result<grade_history::Model, DbErr> {
+        let active = grade_history::ActiveModel {
+            id: Set(h.id),
+            grade_id: Set(h.grade_id),
+            score: Set(h.score),
+            grade_letter: Set(h.grade_letter),
+            is_absent: Set(h.is_absent),
+            is_excused: Set(h.is_excused),
+            comment: Set(h.comment),
+            changed_by: Set(h.changed_by),
+            changed_at: Set(h.changed_at),
+            change_reason: Set(h.change_reason),
+            change_type: Set(h.change_type),
+            snapshot: Set(h.snapshot),
+            created_at: Set(h.created_at),
+        };
+        active.insert(&self.db).await
+    }
+}

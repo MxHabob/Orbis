@@ -97,35 +97,5 @@ impl super::Repository {
             .one(&self.db)
             .await
     }
-
-    pub async fn create_academic_cycle(&self, ac: academic_cycle::Model) -> Result<academic_cycle::Model, DbErr> {
-        let active_model = academic_cycle::ActiveModel {
-            id: Set(ac.id),
-            org_id: Set(ac.org_id),
-            name: Set(ac.name),
-            name_ar: Set(ac.name_ar),
-            code: Set(ac.code),
-            cycle_type: Set(ac.cycle_type),
-            parent_id: Set(ac.parent_id),
-            start_date: Set(ac.start_date),
-            end_date: Set(ac.end_date),
-            hijri_start_date: Set(ac.hijri_start_date),
-            hijri_end_date: Set(ac.hijri_end_date),
-            exam_start_date: Set(ac.exam_start_date),
-            exam_end_date: Set(ac.exam_end_date),
-            weight: Set(ac.weight),
-            grading_system: Set(ac.grading_system),
-            passing_grade: Set(ac.passing_grade),
-            max_grade: Set(ac.max_grade),
-            is_current: Set(ac.is_current),
-            is_locked: Set(ac.is_locked),
-            is_enrollment_open: Set(ac.is_enrollment_open),
-            settings: Set(ac.settings),
-            sort_order: Set(ac.sort_order),
-            created_at: Set(ac.created_at),
-            updated_at: Set(ac.updated_at),
-        };
-        active_model.insert(&self.db).await
-    }
 }
 

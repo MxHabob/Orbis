@@ -62,6 +62,13 @@ impl super::Service {
         user_id: &str,
         req: CreateAssessmentRequest,
     ) -> Result<assessment::Model, String> {
+        // Lock guard: prevent creating assessments in locked cycles
+        let cycle = self.repo.get_cycle_by_id(&req.cycle_id).await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "الدورة الأكاديمية غير موجودة".to_string())?;
+        if cycle.is_locked == 1 {
+            return Err("لا يمكن إنشاء تقييم في دورة مقفلة".to_string());
+        }
         let class_subject_id = match self.repo.find_class_subject_for_assessment(&req.class_id, &req.subject_id).await
             .map_err(|e| e.to_string())? {
             Some(cs) => cs.id,
@@ -124,6 +131,14 @@ impl super::Service {
             .map_err(|e| e.to_string())?
             .ok_or_else(|| "assessment not found".to_string())?;
 
+        // Lock guard: prevent updating assessments in locked cycles
+        let cycle = self.repo.get_cycle_by_id(&assess.cycle_id).await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "الدورة الأكاديمية غير موجودة".to_string())?;
+        if cycle.is_locked == 1 {
+            return Err("لا يمكن تعديل تقييم في دورة مقفلة".to_string());
+        }
+
         let mut active: assessment::ActiveModel = assess.into();
         if let Some(v) = req.title { active.title = Set(v); }
         if let Some(v) = req.title_ar { active.title_ar = Set(Some(v)); }
@@ -144,6 +159,14 @@ impl super::Service {
         let assess = self.repo.get_assessment_by_id(id).await
             .map_err(|e| e.to_string())?
             .ok_or_else(|| "assessment not found".to_string())?;
+
+        // Lock guard: prevent deleting assessments in locked cycles
+        let cycle = self.repo.get_cycle_by_id(&assess.cycle_id).await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "الدورة الأكاديمية غير موجودة".to_string())?;
+        if cycle.is_locked == 1 {
+            return Err("لا يمكن حذف تقييم في دورة مقفلة".to_string());
+        }
 
         assessment::Entity::delete_by_id(assess.id)
             .exec(&self.repo.db)
