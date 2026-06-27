@@ -4,7 +4,6 @@ import path from "node:path";
 import { existsSync, mkdirSync, readFileSync, unlinkSync } from "node:fs";
 import { Database } from "bun:sqlite";
 import readline from "node:readline";
-import { fileURLToPath } from "node:url";
 
 // ── Clack-style CLI Styling Helpers ────────────────────────────────────────
 
@@ -23,7 +22,6 @@ function printHeader(title: string) {
   console.log(c.gray("│"));
 }
 
-// Ensure clean separation for clack style
 function printStep(title: string) {
   console.log(c.purple(`◇  ${c.bold(title)}`));
 }
@@ -71,36 +69,44 @@ async function ask(query: string, defaultValue = "", validator?: (val: string) =
 
 async function askPassword(query: string): Promise<string> {
   return new Promise((resolve) => {
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-    
     process.stdout.write(`${c.gray("│")}  ${query}: `);
     
     let password = "";
+    const isRaw = process.stdin.isRaw;
     process.stdin.setRawMode(true);
     process.stdin.resume();
     
     const handler = (char: Buffer) => {
-      const s = char.toString("utf-8");
-      if (s === "\n" || s === "\r" || s === "\u000d") {
+      const code = char[0];
+      
+      // Enter key (Carriage Return = 13, Line Feed = 10)
+      if (code === 13 || code === 10) {
         process.stdin.removeListener("data", handler);
-        process.stdin.setRawMode(false);
+        process.stdin.setRawMode(isRaw);
         process.stdin.pause();
         process.stdout.write("\n");
-        rl.close();
         resolve(password);
-      } else if (s === "\u0003") { // Ctrl+C
+      } 
+      // Ctrl+C (3)
+      else if (code === 3) {
         process.exit(1);
-      } else if (char[0] === 127 || char[0] === 8) { // Backspace
+      } 
+      // Backspace (127 or 8)
+      else if (code === 127 || code === 8) {
         if (password.length > 0) {
           password = password.slice(0, -1);
           process.stdout.write("\b \b");
         }
-      } else {
-        password += s;
-        process.stdout.write("*");
+      } 
+      // Printable characters
+      else {
+        const s = char.toString("utf-8");
+        // Filter out control sequences and escape characters
+        const printable = s.replace(/[\x00-\x1F\x7F-\x9F]/g, "");
+        if (printable.length > 0) {
+          password += printable;
+          process.stdout.write("*".repeat(printable.length));
+        }
       }
     };
     
@@ -110,9 +116,9 @@ async function askPassword(query: string): Promise<string> {
 
 // ── Database Path & Identifier Resolver ────────────────────────────────────
 
-function getDbPath(): string {
+function getDbPath(isDev = false): string {
   const home = os.homedir();
-  const identifier = "com.mulverse.orbis.svelte";
+  const identifier = isDev ? "com.mulverse.orbis.dev" : "com.mulverse.orbis.svelte";
   let appDataDir = "";
 
   if (process.platform === "win32") {
@@ -140,7 +146,8 @@ function printHelp() {
 
   console.log(c.bold("Options:"));
   console.log(`  ${c.yellow("-h, --help")}    Show this help message`);
-  console.log(`  ${c.yellow("-v, --version")} Show installer CLI version\n`);
+  console.log(`  ${c.yellow("-v, --version")} Show installer CLI version`);
+  console.log(`  ${c.yellow("--dev")}          Target the development database (com.mulverse.orbis.dev)\n`);
 
   console.log(c.bold("Auto-Install Options (for silent installations):"));
   console.log(`  ${c.purple("--school")}       English School Name`);
@@ -158,7 +165,6 @@ function printHelp() {
 
 function runDatabaseMigration(db: Database) {
   printInfo("Tables not found. Initializing database schema...");
-  const __dirname = path.dirname(fileURLToPath(import.meta.url));
   const dbDir = path.resolve(__dirname, "..", "..", "..", "apps", "api-rust", "crates", "core-domain", "src", "database");
   const coreSchemaPath = path.join(dbDir, "core_schema.sql");
   const schemaPath = path.join(dbDir, "schema.sql");
@@ -196,9 +202,9 @@ function runDatabaseMigration(db: Database) {
 
 // ── Db Reset Command ────────────────────────────────────────────────────────
 
-async function handleDatabaseReset() {
+async function handleDatabaseReset(isDev = false) {
   printHeader("Orbis Database Reset Tool");
-  const dbPath = getDbPath();
+  const dbPath = getDbPath(isDev);
   
   if (!existsSync(dbPath)) {
     printInfo(`No database file found at ${dbPath}`);
@@ -221,7 +227,16 @@ async function handleDatabaseReset() {
   console.log(c.purple("└  Completed."));
 }
 
-// ── Automated Financials & Permissions Seeder ───────────────────────────────
+// ── Custom Recursive COA & Financials Seeder ───────────────────────────────
+
+interface AccountNode {
+  code: string;
+  name_ar: string;
+  name_en: string;
+  type: string;
+  level: number;
+  children?: AccountNode[];
+}
 
 function seedDefaultFinancialsAndPermissions(db: Database, orgId: string, baseCurrency: string) {
   const now = new Date().toISOString();
@@ -243,65 +258,89 @@ function seedDefaultFinancialsAndPermissions(db: Database, orgId: string, baseCu
     );
   }
 
-  // 2. Seed Chart of Accounts
-  const coaStructure = [
-    // format: [id_suffix, parent_suffix, code, name, name_ar, type, sub_type, is_control, is_system]
-    ["assets", null, "1000", "Assets", "الأصول", "asset", null, 1, 1],
-    ["current_assets", "assets", "1100", "Current Assets", "الأصول المتداولة", "asset", null, 1, 1],
-    ["cash_treasury_control", "current_assets", "1110", "Cash & Treasury Control", "حساب مراقبة النقدية والخزائن", "asset", "treasury_control", 1, 1],
-    ["student_receivable_control", "current_assets", "1120", "Accounts Receivable - Students", "ذمم الطلاب المدينين", "asset", "student_receivable", 1, 1],
-    ["liabilities", null, "2000", "Liabilities", "الالتزامات", "liability", null, 1, 1],
-    ["current_liabilities", "liabilities", "2100", "Current Liabilities", "الالتزامات المتداولة", "liability", null, 1, 1],
-    ["employee_payable_control", "current_liabilities", "2110", "Accounts Payable - Employees", "ذمم الموظفين الدائنة", "liability", "employee_payable", 1, 1],
-    ["equity", null, "3000", "Equity", "حقوق الملكية", "equity", null, 1, 1],
-    ["retained_earnings", "equity", "3100", "Retained Earnings", "الأرباح المحتجزة", "equity", "retained_earnings", 0, 1],
-    ["revenue", null, "4000", "Revenue", "الإيرادات", "revenue", null, 1, 1],
-    ["tuition_revenue", "revenue", "4100", "Tuition Revenue", "إيرادات الرسوم الدراسية", "revenue", "tuition_revenue", 0, 1],
-    ["other_revenue", "revenue", "4200", "Other School Revenue", "إيرادات مدرسية أخرى", "revenue", null, 0, 1],
-    ["expenses", null, "5000", "Expenses", "المصروفات", "expense", null, 1, 1],
-    ["salaries_expense", "expenses", "5100", "Academic Salaries Expense", "مصروفات رواتب الكادر التعليمي", "expense", "salaries_expense", 0, 1],
-    ["operational_expense", "expenses", "5200", "Operational Expenses", "المصروفات التشغيلية", "expense", null, 0, 1],
-  ] as const;
+  // 2. Seed Chart of Accounts from JSON
+  const jsonPath = path.join(__dirname, "educational_chart_of_accounts.json");
+  
+  if (!existsSync(jsonPath)) {
+    printError(`Local Chart of Accounts JSON file not found at ${jsonPath}`);
+    process.exit(1);
+  }
 
-  const createdPaths: Record<string, { path: string, depth: number }> = {};
+  const coaData = JSON.parse(readFileSync(jsonPath, "utf-8"));
+  const accounts: AccountNode[] = coaData.accounts;
 
-  for (const [id_suffix, parent_suffix, code, name, name_ar, item_type, sub_type, is_control, is_system] of coaStructure) {
-    const full_id = `${orgId}_${id_suffix}`;
-    const full_parent_id = parent_suffix ? `${orgId}_${parent_suffix}` : null;
-
-    let pathVal = full_id;
-    let depth = 0;
-
-    if (full_parent_id && createdPaths[full_parent_id]) {
-      const parentInfo = createdPaths[full_parent_id];
-      pathVal = `${parentInfo.path}/${full_id}`;
-      depth = parentInfo.depth + 1;
+  // Helper to map type to lowercase database types
+  function getDbType(type: string): string {
+    const t = type.toLowerCase();
+    if (t === "asset" || t === "liability" || t === "equity" || t === "revenue" || t === "expense") {
+      return t;
     }
+    return "asset";
+  }
 
-    createdPaths[full_id] = { path: pathVal, depth };
+  // Helper to map code to system required sub-types
+  function getSubType(code: string): string | null {
+    if (code === "110101") return "treasury_control";
+    if (code === "110301") return "student_receivable";
+    if (code === "210401") return "employee_payable"; 
+    if (code === "3201") return "retained_earnings"; 
+    if (code === "4101") return "tuition_revenue"; 
+    if (code === "5101") return "salaries_expense"; 
+    return null;
+  }
+
+  // Helper to determine control status
+  function isControl(code: string, hasChildren: boolean): number {
+    if (hasChildren) return 1;
+    if (code === "110101" || code === "110301" || code === "210401") return 1;
+    return 0;
+  }
+
+  // Recursive insertion function
+  function insertAccount(node: AccountNode, parentId: string | null, parentPath: string | null) {
+    const fullId = `${orgId}_${node.code}`;
+    const dbType = getDbType(node.type);
+    const subType = getSubType(node.code);
+    
+    const hasChildren = !!(node.children && node.children.length > 0);
+    const controlAccount = isControl(node.code, hasChildren);
+    const systemAccount = 1;
+
+    const pathVal = parentPath ? `${parentPath}/${fullId}` : fullId;
+    const depth = node.level - 1;
 
     db.run(
       `INSERT OR IGNORE INTO ledger_accounts (
         id, org_id, code, name, name_ar, type, sub_type, parent_id, path, depth, currency, opening_balance, current_balance, is_control_account, is_system_account, is_active, created_at, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0.0, 0.0, ?, ?, 1, ?, ?)`,
       [
-        full_id,
+        fullId,
         orgId,
-        code,
-        name,
-        name_ar,
-        item_type,
-        sub_type,
-        full_parent_id,
+        node.code,
+        node.name_en,
+        node.name_ar,
+        dbType,
+        subType,
+        parentId,
         pathVal,
         depth,
         baseCurrency,
-        is_control,
-        is_system,
+        controlAccount,
+        systemAccount,
         now,
         now
       ]
     );
+
+    if (node.children) {
+      for (const child of node.children) {
+        insertAccount(child, fullId, pathVal);
+      }
+    }
+  }
+
+  for (const acc of accounts) {
+    insertAccount(acc, null, null);
   }
 
   // 3. Seed Default Permissions
@@ -324,7 +363,7 @@ function seedDefaultFinancialsAndPermissions(db: Database, orgId: string, baseCu
     );
   }
 
-  printSuccess("Successfully seeded system currencies, Chart of Accounts, and default permissions.");
+  printSuccess(`Seeded system currencies, default permissions, and ${coaData.metadata.total_accounts} COA ledger accounts.`);
 }
 
 // ── Main Commands Orchestration ─────────────────────────────────────────────
@@ -332,6 +371,7 @@ function seedDefaultFinancialsAndPermissions(db: Database, orgId: string, baseCu
 async function main() {
   const args = process.argv.slice(2);
   const command = args[0];
+  const isDev = args.includes("--dev");
 
   // Help command
   if (args.includes("-h") || args.includes("--help") || command === "help") {
@@ -348,15 +388,15 @@ async function main() {
 
   // Reset database command
   if (command === "db:reset") {
-    await handleDatabaseReset();
+    await handleDatabaseReset(isDev);
     return;
   }
 
   // Fallback to init command
-  await handleInstallation();
+  await handleInstallation(isDev);
 }
 
-async function handleInstallation() {
+async function handleInstallation(isDev = false) {
   printHeader("Orbis OS System Installation");
   
   const args = process.argv.slice(2);
@@ -376,7 +416,7 @@ async function handleInstallation() {
 
   const isAutomated = !!(argEmail && argPassword && argSchool && argSchoolAr);
 
-  const dbPath = getDbPath();
+  const dbPath = getDbPath(isDev);
   const dbDirName = path.dirname(dbPath);
   printInfo(`Database location resolved: ${dbPath}`);
 
@@ -420,9 +460,12 @@ async function handleInstallation() {
     process.exit(0);
   }
 
-  let schoolNameAr = argSchoolAr;
-  let schoolNameEn = argSchool;
-  let timezone = argTimezone || "Asia/Aden";
+  const schoolNameAr = argSchoolAr || "";
+  const schoolNameEn = schoolNameEnVal();
+  function schoolNameEnVal() {
+    return argSchool || "";
+  }
+  const timezone = argTimezone || "Asia/Aden";
   
   // Default values loaded automatically without prompts
   const currency = "YER";
@@ -430,15 +473,19 @@ async function handleInstallation() {
 
   let adminNameAr = argAdminAr || "مدير المدرسة";
   let adminNameEn = argAdmin || "School Admin";
-  let adminEmail = argEmail;
+  let adminEmail = argEmail || "";
   let adminPhone = argPhone || "777777777";
-  let adminPassword = argPassword;
+  let adminPassword = argPassword || "";
+
+  let finalSchoolNameAr = schoolNameAr;
+  let finalSchoolNameEn = schoolNameEn;
+  let finalTimezone = timezone;
 
   if (!isAutomated) {
     printStep("School Information Setup");
-    schoolNameAr = await ask("Enter School Name (Arabic)", "مدرسة صنعاء النموذجية");
-    schoolNameEn = await ask("Enter School Name (English)", "Sanaa Model School");
-    timezone = await ask("Enter Timezone", "Asia/Aden");
+    finalSchoolNameAr = await ask("Enter School Name (Arabic)", "مدرسة صنعاء النموذجية");
+    finalSchoolNameEn = await ask("Enter School Name (English)", "Sanaa Model School");
+    finalTimezone = await ask("Enter Timezone", "Asia/Aden");
     console.log(c.gray("│"));
 
     printStep("Administrator Account Setup");
@@ -449,9 +496,9 @@ async function handleInstallation() {
     });
     adminPhone = await ask("Enter Phone Number (Optional)", "777777777");
     
-    while (adminPassword.length < 6) {
+    while (adminPassword.trim().length < 6) {
       adminPassword = await askPassword("Enter Login Password (Min 6 chars)");
-      if (adminPassword.length < 6) {
+      if (adminPassword.trim().length < 6) {
         printError("Password must be at least 6 characters.");
       }
     }
@@ -461,14 +508,14 @@ async function handleInstallation() {
   printInfo("Encrypting credentials and bootstrapping database...");
 
   // Hash password using bcrypt
-  const passwordHash = await Bun.password.hash(adminPassword, {
+  const passwordHash = await Bun.password.hash(adminPassword.trim(), {
     algorithm: "bcrypt",
     cost: 10,
   });
 
   const orgId = crypto.randomUUID();
   const userId = crypto.randomUUID();
-  const orgSlug = schoolNameEn.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "school";
+  const orgSlug = finalSchoolNameEn.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "school";
   const now = new Date().toISOString();
 
   db.run("PRAGMA foreign_keys = OFF;");
@@ -480,7 +527,7 @@ async function handleInstallation() {
       max_users, max_students, max_storage_gb, subscription_plan, is_active,
       is_verified, is_deleted, created_at, updated_at
     ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1000, 5000, 100, 'free', 1, 1, 0, ?, ?)`,
-    [orgId, schoolNameEn, schoolNameAr, orgSlug, timezone, locale, currency, now, now]
+    [orgId, finalSchoolNameEn, finalSchoolNameAr, orgSlug, finalTimezone, locale, currency, now, now]
   );
 
   // Insert Admin User
@@ -500,7 +547,7 @@ async function handleInstallation() {
 
   printSuccess("Organization and administrator record successfully created!");
   console.log(c.purple("└  Installation completed successfully!"));
-  console.log(`   ${c.bold("School:")}      ${schoolNameAr} (${schoolNameEn})`);
+  console.log(`   ${c.bold("School:")}      ${finalSchoolNameAr} (${finalSchoolNameEn})`);
   console.log(`   ${c.bold("Login Email:")}  ${adminEmail}`);
   console.log(`   ${c.bold("DB Path:")}      ${dbPath}\n`);
   console.log(c.cyan("   You can now launch the Orbis app and log in with this account."));
