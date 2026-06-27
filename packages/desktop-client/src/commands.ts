@@ -530,6 +530,49 @@ export const commands = {
     deleteLink: (id: string) => invoke<void>("delete_guardian_link", { id }),
   },
 
+  exams: {
+    // Sessions
+    getSessions: (orgId: string, cycleId?: string) =>
+      invoke<JsonRecord[]>("get_exam_sessions", { orgId, cycleId: cycleId ?? null }),
+
+    getSession: (orgId: string, sessionId: string) =>
+      invoke<JsonRecord>("get_exam_session", { orgId, sessionId }),
+
+    createSession: (orgId: string, userId: string, request: JsonRecord) =>
+      invoke<JsonRecord>("create_exam_session", { orgId, userId, request }),
+
+    updateSession: (orgId: string, sessionId: string, request: JsonRecord) =>
+      invoke<JsonRecord>("update_exam_session", { orgId, sessionId, request }),
+
+    // Subjects
+    getSubjects: (orgId: string, sessionId: string) =>
+      invoke<JsonRecord[]>("get_exam_subjects", { orgId, sessionId }),
+
+    createSubject: (orgId: string, request: JsonRecord) =>
+      invoke<JsonRecord>("create_exam_subject", { orgId, request }),
+
+    // Student Ordering
+    getOrdering: (orgId: string, cycleId: string, classId?: string) =>
+      invoke<JsonRecord[]>("get_student_ordering", { orgId, cycleId, classId: classId ?? null }),
+
+    rebuildOrdering: (orgId: string, cycleId: string, strategy: string) =>
+      invoke<JsonRecord>("rebuild_student_ordering", { orgId, cycleId, strategy }),
+
+    freezeOrdering: (orgId: string, cycleId: string, userId: string) =>
+      invoke<JsonRecord>("freeze_student_ordering", { orgId, cycleId, userId }),
+
+    // Seating & Secret Numbers
+    generateSeating: (orgId: string, sessionId: string, userId: string) =>
+      invoke<JsonRecord>("generate_seating_numbers", { orgId, sessionId, userId }),
+
+    generateSecrets: (orgId: string, sessionId: string, userId: string) =>
+      invoke<JsonRecord>("generate_secret_numbers", { orgId, sessionId, userId }),
+
+    // Schedules
+    getSchedules: (orgId: string, sessionId: string) =>
+      invoke<JsonRecord[]>("get_exam_schedules", { orgId, sessionId }),
+  },
+
   window: {
     show: () => invoke<void>("show_window"),
     checkForUpdates: () => invoke<void>("check_for_updates"),

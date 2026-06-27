@@ -14,3 +14,4 @@ pub mod document_templates;
 pub mod widgets;
 pub mod schedule;
 pub mod guardians;
+pub mod exams;

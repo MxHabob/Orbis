@@ -301,6 +301,20 @@ pub fn run() {
             commands::guardians::create_guardian_link,
             commands::guardians::update_guardian_link,
             commands::guardians::delete_guardian_link,
+
+            // Exams
+            commands::exams::get_exam_sessions,
+            commands::exams::get_exam_session,
+            commands::exams::create_exam_session,
+            commands::exams::update_exam_session,
+            commands::exams::get_exam_subjects,
+            commands::exams::create_exam_subject,
+            commands::exams::get_student_ordering,
+            commands::exams::rebuild_student_ordering,
+            commands::exams::freeze_student_ordering,
+            commands::exams::generate_seating_numbers,
+            commands::exams::generate_secret_numbers,
+            commands::exams::get_exam_schedules,
         ])
         .setup(move |app| {
             // Add updater plugin conditionally for desktop

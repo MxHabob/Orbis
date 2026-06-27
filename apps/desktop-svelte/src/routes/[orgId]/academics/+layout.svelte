@@ -18,6 +18,7 @@ import {
   ChevronRight,
   MapPin,
   BookUser,
+  ClipboardList,
 } from "lucide-svelte";
 import MainViewport from "$lib/components/layout/MainViewport.svelte";
 import type { Snippet } from "svelte";
@@ -101,6 +102,11 @@ const navItems = $derived([
     path: "class-subjects",
     label: m.academics_layout_nav_class_subjects(),
     icon: BookUser,
+  },
+  {
+    path: "exams",
+    label: m.nav_exams(),
+    icon: ClipboardList,
   },
 ]);
 </script>

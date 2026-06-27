@@ -91,6 +91,7 @@ const finalRightWidth = $derived(
 
 function getFallbackLabel(viewportName: string, side: "left" | "right"): string {
   if (side === "left") {
+    if (viewportName.includes("exams")) return "Examinations";
     if (viewportName.includes("academics")) return "Academics";
     if (viewportName.includes("finance")) return "Finance";
     return "Filters";

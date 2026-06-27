@@ -92,6 +92,12 @@ const breadcrumbs = $derived.by(() => {
       label: m.breadcrumb_academics(),
       href: `/${currentOrgId}/academics`,
     });
+    if (pathname.includes("/exams")) {
+      items.push({
+        label: m.breadcrumb_exams(),
+        href: `/${currentOrgId}/academics/exams`,
+      });
+    }
   } else if (pathname.includes("/finance")) {
     items.push({
       label: m.breadcrumb_finance(),
