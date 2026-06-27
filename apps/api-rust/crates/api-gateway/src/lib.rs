@@ -156,6 +156,30 @@ use service::Service;
         handler::document::post_documents,
         handler::document::put_document,
         handler::document::delete_document,
+        // Examination Management
+        handler::exam::get_exam_sessions,
+        handler::exam::post_exam_sessions,
+        handler::exam::get_exam_session,
+        handler::exam::put_exam_session,
+        handler::exam::post_activate_exam_session,
+        handler::exam::post_complete_exam_session,
+        handler::exam::get_exam_subjects,
+        handler::exam::post_exam_subjects,
+        handler::exam::get_exam_schedule,
+        handler::exam::post_exam_schedule,
+        handler::exam::get_student_ordering,
+        handler::exam::post_rebuild_ordering,
+        handler::exam::post_freeze_ordering,
+        handler::exam::post_generate_seating_numbers,
+        handler::exam::get_seating_numbers,
+        handler::exam::post_generate_secret_numbers,
+        handler::exam::post_reveal_secret_numbers,
+        handler::exam::get_exam_halls,
+        handler::exam::post_exam_halls,
+        handler::exam::post_allocate_halls,
+        handler::exam::get_hall_students,
+        handler::exam::post_assign_proctors,
+        handler::exam::get_exam_proctors,
     ),
     components(
         schemas(
@@ -226,6 +250,31 @@ use service::Service;
             service::guardian::UpdateGuardianLinkRequest,
             service::document::CreateDocumentRequest,
             service::document::UpdateDocumentRequest,
+            // Examination Management schemas
+            service::exam_session::CreateExamSessionRequest,
+            service::exam_session::UpdateExamSessionRequest,
+            service::exam_session::CreateExamSubjectRequest,
+            service::exam_session::CreateExamScheduleRequest,
+            service::exam_session::CreateExamHallRequest,
+            service::student_ordering::OrderedStudent,
+            service::student_ordering::RebuildOrderingResult,
+            service::exam_numbers::SeatingNumberView,
+            service::exam_numbers::SecretNumberView,
+            service::exam_numbers::GenerationResult,
+            service::exam_logistics::AllocationConfig,
+            service::exam_logistics::AllocationResult,
+            service::exam_logistics::HallAllocationSummary,
+            service::exam_logistics::ProctorAssignConfig,
+            service::exam_logistics::ProctorAssignResult,
+            entities::exam_session::Model,
+            entities::exam_subject::Model,
+            entities::exam_schedule::Model,
+            entities::seating_number::Model,
+            entities::secret_number::Model,
+            entities::exam_hall::Model,
+            entities::exam_hall_allocation::Model,
+            entities::exam_proctor::Model,
+            entities::student_ordering::Model,
             entities::subject::Model,
             entities::time_slot::Model,
             entities::class_subject::Model,
@@ -362,6 +411,25 @@ pub async fn start_server(database_url: &str, port: u16) -> Result<(), Box<dyn s
         .route("/api/guardians/:id", put(handler::guardian::put_guardian).delete(handler::guardian::delete_guardian))
         .route("/api/documents", get(handler::document::get_documents).post(handler::document::post_documents))
         .route("/api/documents/:id", get(handler::document::get_document).put(handler::document::put_document).delete(handler::document::delete_document))
+        // ── Examination Management Routes ──
+        .route("/api/exam-sessions", get(handler::exam::get_exam_sessions).post(handler::exam::post_exam_sessions))
+        .route("/api/exam-sessions/:id", get(handler::exam::get_exam_session).put(handler::exam::put_exam_session))
+        .route("/api/exam-sessions/:id/activate", post(handler::exam::post_activate_exam_session))
+        .route("/api/exam-sessions/:id/complete", post(handler::exam::post_complete_exam_session))
+        .route("/api/exam-sessions/:id/subjects", get(handler::exam::get_exam_subjects).post(handler::exam::post_exam_subjects))
+        .route("/api/exam-sessions/:id/schedule", get(handler::exam::get_exam_schedule).post(handler::exam::post_exam_schedule))
+        .route("/api/exam-sessions/:id/seating-numbers", get(handler::exam::get_seating_numbers))
+        .route("/api/exam-sessions/:id/seating-numbers/generate", post(handler::exam::post_generate_seating_numbers))
+        .route("/api/exam-sessions/:id/secret-numbers/generate", post(handler::exam::post_generate_secret_numbers))
+        .route("/api/exam-sessions/:id/secret-numbers/reveal", post(handler::exam::post_reveal_secret_numbers))
+        .route("/api/exam-sessions/:id/halls", get(handler::exam::get_exam_halls).post(handler::exam::post_exam_halls))
+        .route("/api/exam-sessions/:id/halls/allocate", post(handler::exam::post_allocate_halls))
+        .route("/api/exam-sessions/:session_id/halls/:hall_id/students", get(handler::exam::get_hall_students))
+        .route("/api/exam-sessions/:session_id/proctors/assign/:schedule_id", post(handler::exam::post_assign_proctors))
+        .route("/api/exam-sessions/:id/proctors", get(handler::exam::get_exam_proctors))
+        .route("/api/student-ordering", get(handler::exam::get_student_ordering))
+        .route("/api/student-ordering/rebuild", post(handler::exam::post_rebuild_ordering))
+        .route("/api/student-ordering/freeze", post(handler::exam::post_freeze_ordering))
         .with_state(service)
         .layer(cors);
 

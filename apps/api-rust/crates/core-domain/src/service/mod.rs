@@ -29,6 +29,12 @@ pub mod document;
 pub mod account;
 pub mod seed;
 
+// ── Examination Management System ──
+pub mod exam_session;
+pub mod student_ordering;
+pub mod exam_numbers;
+pub mod exam_logistics;
+
 #[derive(Clone)]
 pub struct Service {
     pub repo: Arc<Repository>,

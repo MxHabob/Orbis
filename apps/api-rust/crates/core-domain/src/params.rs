@@ -130,3 +130,21 @@ pub struct DocumentParams {
     pub owner_id: Option<String>,
     pub is_template: Option<i32>,
 }
+
+#[derive(Deserialize, Serialize, Debug, Clone, utoipa::ToSchema)]
+pub struct ExamSessionParams {
+    pub cycle_id: Option<String>,
+    pub status: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, utoipa::ToSchema)]
+pub struct StudentOrderingParams {
+    pub cycle_id: Option<String>,
+    pub class_id: Option<String>,
+    pub strategy: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, utoipa::ToSchema)]
+pub struct SeatingNumberParams {
+    pub class_id: Option<String>,
+}

@@ -700,3 +700,232 @@ CREATE TABLE IF NOT EXISTS schedule_solve_jobs (
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- ── Examination Management System ──
+-- ══════════════════════════════════════════════════════════════════════════════
+
+-- ── Student Ordering (Centralized Ordering Engine) ──
+CREATE TABLE IF NOT EXISTS student_ordering (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL,
+  cycle_id TEXT NOT NULL,
+  enrollment_id TEXT NOT NULL UNIQUE,
+  student_id TEXT NOT NULL,
+  class_id TEXT NOT NULL,
+  sort_key TEXT NOT NULL,
+  order_in_class INTEGER NOT NULL,
+  order_in_division INTEGER,
+  order_in_level INTEGER,
+  order_in_org INTEGER,
+  level TEXT NOT NULL,
+  division TEXT,
+  student_name_ar TEXT,
+  student_sex TEXT,
+  academic_number TEXT,
+  is_frozen INTEGER NOT NULL DEFAULT 0,
+  frozen_at TEXT,
+  frozen_by TEXT,
+  strategy TEXT NOT NULL DEFAULT 'name_ar_asc',
+  version INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_so_class_order ON student_ordering(class_id, order_in_class);
+CREATE INDEX IF NOT EXISTS idx_so_sort_key ON student_ordering(org_id, cycle_id, sort_key);
+CREATE INDEX IF NOT EXISTS idx_so_level ON student_ordering(org_id, cycle_id, level, order_in_level);
+
+-- ── Exam Sessions (Examination Cycles) ──
+CREATE TABLE IF NOT EXISTS exam_sessions (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL,
+  cycle_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  name_ar TEXT,
+  code TEXT,
+  "type" TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'draft',
+  start_date TEXT NOT NULL,
+  end_date TEXT NOT NULL,
+  hijri_start_date TEXT,
+  hijri_end_date TEXT,
+  applicable_levels TEXT,
+  applicable_class_ids TEXT,
+  settings TEXT,
+  grading_deadline TEXT,
+  results_publish_date TEXT,
+  is_results_published INTEGER NOT NULL DEFAULT 0,
+  created_by TEXT NOT NULL,
+  approved_by TEXT,
+  approved_at TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_es_org_cycle ON exam_sessions(org_id, cycle_id);
+CREATE INDEX IF NOT EXISTS idx_es_status ON exam_sessions(org_id, status);
+
+-- ── Exam Subjects ──
+CREATE TABLE IF NOT EXISTS exam_subjects (
+  id TEXT PRIMARY KEY,
+  exam_session_id TEXT NOT NULL,
+  subject_id TEXT NOT NULL,
+  class_subject_id TEXT,
+  max_score REAL NOT NULL,
+  passing_score REAL NOT NULL,
+  practical_score REAL DEFAULT 0,
+  oral_score REAL DEFAULT 0,
+  coursework_score REAL DEFAULT 0,
+  exam_written_score REAL DEFAULT 0,
+  duration_minutes INTEGER NOT NULL DEFAULT 90,
+  exam_type TEXT NOT NULL DEFAULT 'written',
+  is_included INTEGER NOT NULL DEFAULT 1,
+  weight REAL NOT NULL DEFAULT 1.0,
+  instructions TEXT,
+  instructions_ar TEXT,
+  sort_order INTEGER,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_exs_session ON exam_subjects(exam_session_id);
+
+-- ── Exam Schedules ──
+CREATE TABLE IF NOT EXISTS exam_schedules (
+  id TEXT PRIMARY KEY,
+  exam_session_id TEXT NOT NULL,
+  exam_subject_id TEXT NOT NULL,
+  exam_date TEXT NOT NULL,
+  start_time TEXT NOT NULL,
+  end_time TEXT NOT NULL,
+  period TEXT NOT NULL DEFAULT 'morning',
+  applicable_class_ids TEXT,
+  room_ids TEXT,
+  status TEXT NOT NULL DEFAULT 'scheduled',
+  postponed_to TEXT,
+  postponement_reason TEXT,
+  notes TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_eschd_session ON exam_schedules(exam_session_id);
+CREATE INDEX IF NOT EXISTS idx_eschd_date ON exam_schedules(exam_date);
+
+-- ── Seating Numbers ──
+CREATE TABLE IF NOT EXISTS seating_numbers (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL,
+  exam_session_id TEXT NOT NULL,
+  enrollment_id TEXT NOT NULL,
+  student_id TEXT NOT NULL,
+  class_id TEXT NOT NULL,
+  seating_number TEXT NOT NULL,
+  sequence_number INTEGER NOT NULL,
+  level TEXT NOT NULL,
+  division TEXT,
+  student_name_ar TEXT,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  generated_at TEXT NOT NULL,
+  generated_by TEXT NOT NULL,
+  voided_at TEXT,
+  voided_by TEXT,
+  void_reason TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_sn_unique ON seating_numbers(exam_session_id, seating_number);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_sn_enrollment ON seating_numbers(exam_session_id, enrollment_id);
+CREATE INDEX IF NOT EXISTS idx_sn_class ON seating_numbers(exam_session_id, class_id);
+
+-- ── Secret Numbers ──
+CREATE TABLE IF NOT EXISTS secret_numbers (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL,
+  exam_session_id TEXT NOT NULL,
+  enrollment_id TEXT NOT NULL,
+  student_id TEXT NOT NULL,
+  secret_number TEXT NOT NULL,
+  secret_hash TEXT NOT NULL,
+  barcode_data TEXT,
+  qr_data TEXT,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  is_revealed INTEGER NOT NULL DEFAULT 0,
+  revealed_at TEXT,
+  revealed_by TEXT,
+  generated_at TEXT NOT NULL,
+  generated_by TEXT NOT NULL,
+  generation_batch TEXT NOT NULL,
+  previous_secret_id TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_secn_unique ON secret_numbers(exam_session_id, secret_number);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_secn_enrollment ON secret_numbers(exam_session_id, enrollment_id);
+
+-- ── Exam Halls ──
+CREATE TABLE IF NOT EXISTS exam_halls (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL,
+  exam_session_id TEXT NOT NULL,
+  room_id TEXT NOT NULL,
+  hall_number TEXT NOT NULL,
+  capacity INTEGER NOT NULL,
+  allocated_count INTEGER NOT NULL DEFAULT 0,
+  seating_arrangement TEXT DEFAULT 'rows',
+  floor_number INTEGER,
+  building TEXT,
+  is_accessible INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'active',
+  notes TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_eh_session ON exam_halls(exam_session_id);
+
+-- ── Exam Hall Allocations ──
+CREATE TABLE IF NOT EXISTS exam_hall_allocations (
+  id TEXT PRIMARY KEY,
+  exam_hall_id TEXT NOT NULL,
+  exam_session_id TEXT NOT NULL,
+  enrollment_id TEXT NOT NULL,
+  seating_number_id TEXT,
+  seat_position TEXT,
+  is_present INTEGER,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_eha_unique ON exam_hall_allocations(exam_session_id, enrollment_id);
+CREATE INDEX IF NOT EXISTS idx_eha_hall ON exam_hall_allocations(exam_hall_id);
+
+-- ── Exam Proctors ──
+CREATE TABLE IF NOT EXISTS exam_proctors (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL,
+  exam_session_id TEXT NOT NULL,
+  exam_schedule_id TEXT NOT NULL,
+  exam_hall_id TEXT NOT NULL,
+  teacher_id TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'proctor',
+  is_confirmed INTEGER NOT NULL DEFAULT 0,
+  confirmed_at TEXT,
+  attendance_status TEXT,
+  check_in_time TEXT,
+  notes TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_ep_schedule ON exam_proctors(exam_schedule_id);
+CREATE INDEX IF NOT EXISTS idx_ep_teacher ON exam_proctors(teacher_id);
+
+-- ── Teacher Exam Availability ──
+CREATE TABLE IF NOT EXISTS teacher_exam_availability (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL,
+  exam_session_id TEXT NOT NULL,
+  teacher_id TEXT NOT NULL,
+  date TEXT NOT NULL,
+  is_available INTEGER NOT NULL DEFAULT 1,
+  reason TEXT,
+  approved_by TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_tea_teacher ON teacher_exam_availability(teacher_id, exam_session_id);

@@ -95,6 +95,27 @@ pub enum Permission {
     // Import/Export
     ImportData,
     ExportData,
+
+    // Examination Management
+    ExamSessionRead,
+    ExamSessionWrite,
+    ExamSessionActivate,
+    ExamSessionDelete,
+    SeatingNumberGenerate,
+    SeatingNumberRead,
+    SecretNumberGenerate,
+    SecretNumberRead,
+    SecretNumberReveal,
+    ExamHallRead,
+    ExamHallWrite,
+    ExamHallAllocate,
+    ProctorRead,
+    ProctorAssign,
+    StudentOrderRead,
+    StudentOrderRebuild,
+    StudentOrderFreeze,
+    ExamScheduleRead,
+    ExamScheduleWrite,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -155,7 +176,10 @@ impl AuthzService {
                 Permission::AssessmentRead | Permission::DocumentRead |
                 Permission::NotificationRead | Permission::NotificationWrite |
                 Permission::UserRead | Permission::CycleRead | Permission::OrgUnitRead | Permission::EnrollmentRead |
-                Permission::OrganizationRead | Permission::DashboardRead => {
+                Permission::OrganizationRead | Permission::DashboardRead |
+                Permission::ExamSessionRead | Permission::ExamScheduleRead |
+                Permission::SeatingNumberRead | Permission::ProctorRead |
+                Permission::StudentOrderRead | Permission::ExamHallRead => {
                     return Ok(());
                 }
                 _ => return Err("Teacher is not authorized for this operation".to_string()),

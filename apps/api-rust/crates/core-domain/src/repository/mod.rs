@@ -19,6 +19,9 @@ pub mod guardian;
 pub mod document;
 pub mod currency;
 
+// ── Examination Management System ──
+pub mod exam;
+
 #[derive(Clone)]
 pub struct Repository {
     pub db: DatabaseConnection,

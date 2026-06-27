@@ -129,6 +129,64 @@ impl super::Repository {
     }
 }
 
+/// Flat row returned from the enrollment ordering query (joins enrollment + user + class)
+#[derive(Debug, Clone)]
+pub struct EnrollmentOrderingRow {
+    pub enrollment_id: String,
+    pub student_id: String,
+    pub class_id: String,
+    pub level: String,
+    pub division: Option<String>,
+    pub student_name_ar: Option<String>,
+    pub student_sex: Option<String>,
+    pub academic_number: Option<String>,
+}
+
+impl super::Repository {
+    /// Fetch active enrollments joined with user and class info for the ordering engine.
+    pub async fn get_enrollments_for_ordering(
+        &self,
+        org_id: &str,
+        cycle_id: &str,
+    ) -> Result<Vec<EnrollmentOrderingRow>, DbErr> {
+        use crate::entities::{enrollment, user, class};
+
+        let enrollments = enrollment::Entity::find()
+            .filter(enrollment::Column::OrgId.eq(org_id))
+            .filter(enrollment::Column::CycleId.eq(cycle_id))
+            .filter(enrollment::Column::Status.eq("active"))
+            .all(&self.db)
+            .await?;
+
+        let mut rows = Vec::with_capacity(enrollments.len());
+
+        for enr in &enrollments {
+            let student = user::Entity::find_by_id(enr.student_id.clone())
+                .one(&self.db)
+                .await?;
+
+            let cls = class::Entity::find_by_id(enr.class_id.clone())
+                .one(&self.db)
+                .await?;
+
+            if let (Some(s), Some(c)) = (student, cls) {
+                rows.push(EnrollmentOrderingRow {
+                    enrollment_id: enr.id.clone(),
+                    student_id: s.id.clone(),
+                    class_id: c.id.clone(),
+                    level: c.level.clone(),
+                    division: c.division.clone(),
+                    student_name_ar: s.name_ar.clone(),
+                    student_sex: s.sex.clone(),
+                    academic_number: Some(enr.student_number.clone()),
+                });
+            }
+        }
+
+        Ok(rows)
+    }
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct EnrollmentUpdate {
     pub status: Option<String>,
