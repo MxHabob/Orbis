@@ -99,10 +99,10 @@ async function handleSubmit() {
     const request: JsonRecord = {
       class_id: classId,
       subject_id: subjectId,
-      teacher_id: teacherId,
+      cycle_id: cycleId,
+      primary_teacher_id: teacherId,
       assistant_teacher_id: assistantTeacherId || null,
       weekly_hours: weeklyHours,
-      cycle_id: cycleId,
     };
 
     if (isEditMode && editData?.id) {
