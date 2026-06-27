@@ -10,9 +10,6 @@ export const load: LayoutLoad = async ({ params }) => {
   }
   
   await authStore.checkSetupStatus();
-  if (authStore.needsOnboarding) {
-    throw redirect(302, "/onboarding");
-  }
   
   return { orgId: params.orgId };
 };

@@ -13,11 +13,7 @@ onMount(async () => {
 
   if (authStore.isAuthenticated && authStore.orgId) {
     await authStore.checkSetupStatus();
-    if (authStore.needsOnboarding) {
-      goto("/onboarding", { replaceState: true });
-    } else {
-      goto(`/${authStore.orgId}`, { replaceState: true });
-    }
+    goto(`/${authStore.orgId}`, { replaceState: true });
   } else {
     goto("/login", { replaceState: true });
   }

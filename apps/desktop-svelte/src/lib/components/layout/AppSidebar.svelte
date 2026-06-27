@@ -23,16 +23,18 @@ import {
   Wallet,
   BarChart3,
   Settings,
-  MessageSquare,
+  MoreHorizontal,
   Zap,
   Radio,
-  MoreHorizontal,
 } from "lucide-svelte";
 import { authStore } from "$lib/stores";
 import OrgSidebarSwitcher from "./OrgSidebarSwitcher.svelte";
 import UserSidebarMenu from "./UserSidebarMenu.svelte";
+import OnboardingPopover from "./OnboardingPopover.svelte";
 import * as m from "$lib/paraglide/messages";
 import { deLocalizeUrl, localizeHref } from "$lib/paraglide/runtime";
+import { onboardingState } from "$lib/components/onboarding/onboarding-state.svelte";
+import { onMount } from "svelte";
 
 let {
   orgId,
@@ -45,6 +47,10 @@ let {
 } = $props();
 
 let localOrgName = $state("");
+
+onMount(() => {
+  onboardingState.load();
+});
 
 $effect(() => {
   if (initialOrgName && initialOrgName !== "Orbis School") {
@@ -158,16 +164,11 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 			{/each}
 		</div>
 
-		<div class="flex flex-col gap-2 items-center w-full">
+		<div class="flex flex-col gap-2 items-center w-full relative">
 			<div class="flex flex-col items-center w-8 gap-1 overflow-hidden">
-				<Button variant="outline" size="icon" class="w-full h-8 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-zinc-800/60 relative border-b border-[#f1f5f9] dark:border-zinc-800 cursor-pointer">
-					<div class="relative">
-						<div class="w-[20px] h-[20px] rounded-full border border-[#6366f1] dark:border-indigo-400 text-[#6366f1] dark:text-indigo-400 flex items-center justify-center text-[9px] font-bold">
-							7
-						</div>
-						<span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-[#6366f1] border border-white dark:border-zinc-900"></span>
-					</div>
-				</Button>
+				{#if authStore.isSetupComplete === false}
+					<OnboardingPopover />
+				{/if}
 
 				<Button variant="outline" size="icon"  class="w-full h-8 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-zinc-800/60 relative border-b border-[#f1f5f9] dark:border-zinc-800 cursor-pointer">
 					<div class="relative">

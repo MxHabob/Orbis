@@ -30,11 +30,7 @@ async function handleSubmit(e: SubmitEvent) {
 
   try {
     await authStore.login(email, password);
-    if (authStore.needsOnboarding) {
-      goto(localizeHref("/onboarding"));
-    } else {
-      goto(localizeHref(`/${authStore.orgId}`));
-    }
+    goto(localizeHref(`/${authStore.orgId}`));
   } catch (err) {
     error = err instanceof Error ? err.message : m.login_failed();
   } finally {

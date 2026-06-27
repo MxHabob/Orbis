@@ -10,14 +10,12 @@ import { onboardingState } from "./onboarding-state.svelte";
 // Import components
 import OnboardingStepper from "./onboarding-stepper.svelte";
 import OnboardingFooter from "./onboarding-footer.svelte";
-import SchoolInfoStep from "./steps/school-info-step.svelte";
 import AcademicCalendarStep from "./steps/academic-calendar-step.svelte";
 import BuildingsRoomsStep from "./steps/buildings-rooms-step.svelte";
 import GradesClassesStep from "./steps/grades-classes-step.svelte";
 import TimeSlotsStep from "./steps/time-slots-step.svelte";
 import SubjectsStep from "./steps/subjects-step.svelte";
 import FeesStep from "./steps/fees-step.svelte";
-import AdminUserStep from "./steps/admin-user-step.svelte";
 import ReviewStep from "./steps/review-step.svelte";
 </script>
 
@@ -42,22 +40,18 @@ import ReviewStep from "./steps/review-step.svelte";
     {/if}
 
     {#if onboardingState.activeStep === 1}
-      <SchoolInfoStep />
-    {:else if onboardingState.activeStep === 2}
       <AcademicCalendarStep />
-    {:else if onboardingState.activeStep === 3}
+    {:else if onboardingState.activeStep === 2}
       <BuildingsRoomsStep />
-    {:else if onboardingState.activeStep === 4}
+    {:else if onboardingState.activeStep === 3}
       <GradesClassesStep />
-    {:else if onboardingState.activeStep === 5}
+    {:else if onboardingState.activeStep === 4}
       <TimeSlotsStep />
-    {:else if onboardingState.activeStep === 6}
+    {:else if onboardingState.activeStep === 5}
       <SubjectsStep />
-    {:else if onboardingState.activeStep === 7}
+    {:else if onboardingState.activeStep === 6}
       <FeesStep />
-    {:else if onboardingState.activeStep === 8}
-      <AdminUserStep />
-    {:else if onboardingState.activeStep === 9}
+    {:else if onboardingState.activeStep === 7}
       <ReviewStep />
     {/if}
   </div>

@@ -58,19 +58,13 @@ class OnboardingState {
   activeStep = $state(1);
   isLoading = $state(false);
   errorMessage = $state<string | null>(null);
-  totalSteps = 9;
+  totalSteps = 7;
+  completedSteps = $state([false, false, false, false, false, false, false]);
 
   // Step 7: Registration Fees Setup
   registrationFees = $state<Record<string, number>>({});
 
-  // Step 8: Administrator User Configuration
-  adminFullName = $state("محمد علي احمد");
-  adminFullNameEn = $state("Mohamed Ali Ahmed");
-  adminEmail = $state("admin@sanaa-school.edu");
-  adminPhone = $state("777777777");
-  adminPassword = $state("admin123");
-
-  // Step 1: School General Info
+  // School General Info (pre-populated by CLI / loadExistingOrg)
   orgName = $state("Sanaa Model School");
   orgNameAr = $state("مدرسة صنعاء النموذجية");
   rootUnitName = $state("Sanaa Model School");
@@ -79,7 +73,7 @@ class OnboardingState {
   locale = $state("ar");
   currency = $state("YER");
 
-  // Step 2: Academic Calendar
+  // Step 1: Academic Calendar
   academicYearName = $state("Academic Year 1447 Hijri");
   academicYearNameAr = $state("العام الدراسي 1447 هـ");
   startDate = $state("2026-06-21");
@@ -93,19 +87,19 @@ class OnboardingState {
   semester2Start = $state("2026-10-22");
   semester2End = $state("2027-02-21");
 
-  // Step 3: Buildings & Rooms
+  // Step 2: Buildings & Rooms
   rooms = $state<Room[]>([]);
   activeBuildingTab = $state("المبنى 1");
   buildings = BUILDINGS;
 
-  // Step 4: Grade Levels & Classes
+  // Step 3: Grade Levels & Classes
   gradeLevels = $state<GradeLevel[]>(structuredClone(DEFAULT_GRADE_LEVELS));
   divisionInput = $state<Record<string, string>>({});
 
-  // Step 5: Time Slots
+  // Step 4: Time Slots
   timeSlots = $state<TimeSlot[]>(structuredClone(DEFAULT_TIME_SLOTS));
 
-  // Step 6: Subjects
+  // Step 5: Subjects
   subjects = $state<Subject[]>(structuredClone(DEFAULT_SUBJECTS));
 
   // ── Derived Values ───────────────────────────────────────────────
@@ -120,20 +114,106 @@ class OnboardingState {
   totalSlots = $derived(this.timeSlots.length);
   bld1Rooms = $derived(this.rooms.filter((r) => r.building === "المبنى 1").length);
   bld2Rooms = $derived(this.rooms.filter((r) => r.building === "المبنى 2").length);
+  tasksCompletedCount = $derived(this.completedSteps.filter(Boolean).length);
+
+  // ── Persistence ────────────────────────────────────────────────
+  save() {
+    try {
+      const data = {
+        completedSteps: this.completedSteps,
+        activeStep: this.activeStep,
+        registrationFees: this.registrationFees,
+        academicYearName: this.academicYearName,
+        academicYearNameAr: this.academicYearNameAr,
+        startDate: this.startDate,
+        endDate: this.endDate,
+        semester1Name: this.semester1Name,
+        semester1NameAr: this.semester1NameAr,
+        semester1Start: this.semester1Start,
+        semester1End: this.semester1End,
+        semester2Name: this.semester2Name,
+        semester2NameAr: this.semester2NameAr,
+        semester2Start: this.semester2Start,
+        semester2End: this.semester2End,
+        timeSlots: this.timeSlots,
+        subjects: this.subjects,
+        rooms: this.rooms,
+      };
+      localStorage.setItem("orbis_onboarding_state", JSON.stringify(data));
+    } catch (e) {
+      console.error("Failed to save onboarding state:", e);
+    }
+  }
+
+  load() {
+    try {
+      const saved = localStorage.getItem("orbis_onboarding_state");
+      if (saved) {
+        const data = JSON.parse(saved);
+        if (data.completedSteps) this.completedSteps = data.completedSteps;
+        if (data.activeStep) this.activeStep = data.activeStep;
+        if (data.registrationFees) this.registrationFees = data.registrationFees;
+        if (data.academicYearName) this.academicYearName = data.academicYearName;
+        if (data.academicYearNameAr) this.academicYearNameAr = data.academicYearNameAr;
+        if (data.startDate) this.startDate = data.startDate;
+        if (data.endDate) this.endDate = data.endDate;
+        if (data.semester1Name) this.semester1Name = data.semester1Name;
+        if (data.semester1NameAr) this.semester1NameAr = data.semester1NameAr;
+        if (data.semester1Start) this.semester1Start = data.semester1Start;
+        if (data.semester1End) this.semester1End = data.semester1End;
+        if (data.semester2Name) this.semester2Name = data.semester2Name;
+        if (data.semester2NameAr) this.semester2NameAr = data.semester2NameAr;
+        if (data.semester2Start) this.semester2Start = data.semester2Start;
+        if (data.semester2End) this.semester2End = data.semester2End;
+        if (data.timeSlots) this.timeSlots = data.timeSlots;
+        if (data.subjects) this.subjects = data.subjects;
+        if (data.rooms) this.rooms = data.rooms;
+      }
+    } catch (e) {
+      console.error("Failed to load onboarding state:", e);
+    }
+  }
+
+  async loadExistingOrg(orgId: string) {
+    try {
+      const { commands } = await import("$lib/services/ipc");
+      const org = await commands.users.getOrganization(orgId);
+      if (org) {
+        this.orgName = org.name;
+        this.orgNameAr = org.name_ar || org.name;
+        this.rootUnitName = org.name;
+        this.rootUnitNameAr = org.name_ar || org.name;
+        this.timezone = org.timezone || "Asia/Aden";
+        this.locale = org.locale || "ar";
+        this.currency = org.currency || "YER";
+        this.save();
+      }
+    } catch (e) {
+      console.error("Failed to load existing organization:", e);
+    }
+  }
 
   // ── Navigation ─────────────────────────────────────────────────
 
   goNext() {
-    if (this.activeStep < this.totalSteps) this.activeStep += 1;
+    if (this.activeStep < this.totalSteps) {
+      this.completedSteps[this.activeStep - 1] = true;
+      this.activeStep += 1;
+      this.save();
+    }
   }
 
   goPrev() {
-    if (this.activeStep > 1) this.activeStep -= 1;
+    if (this.activeStep > 1) {
+      this.activeStep -= 1;
+      this.save();
+    }
   }
 
   goToStep(step: number) {
     if (!this.isLoading && step >= 1 && step <= this.totalSteps) {
       this.activeStep = step;
+      this.save();
     }
   }
 
@@ -443,23 +523,6 @@ class OnboardingState {
       const { commands } = await import("$lib/services/ipc");
       await commands.academics.initializeSchoolSetup(orgId, payload);
 
-      // Create the admin user specified during onboarding
-      if (this.adminEmail && this.adminPassword) {
-        const adminRequest = {
-          email: this.adminEmail,
-          password: this.adminPassword,
-          full_name: this.adminFullNameEn || "School Admin",
-          name_ar: this.adminFullName || "مدير المدرسة",
-          primary_role: "admin",
-          phone: this.adminPhone || null,
-        };
-        try {
-          await commands.users.createUser(orgId, "system", adminRequest);
-        } catch (adminErr) {
-          console.error("Failed to create admin user during onboarding:", adminErr);
-        }
-      }
-
       // Create fee templates for the specified registration fees
       for (const gl of this.gradeLevels) {
         if (!gl.enabled) continue;
@@ -488,6 +551,8 @@ class OnboardingState {
         }
       }
 
+      // Mark setup as complete in localStorage
+      localStorage.removeItem("orbis_onboarding_state");
       toast.success(m.onboarding_toast_success());
       return true;
     } catch (err: any) {

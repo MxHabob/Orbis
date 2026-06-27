@@ -21,7 +21,13 @@ onMount(async () => {
     goto(localizeHref(`/${authStore.orgId}`), { replaceState: true });
     return;
   }
-  onboardingState.resetRoomsToDefault();
+  
+  onboardingState.load();
+  await onboardingState.loadExistingOrg(authStore.orgId);
+  
+  if (onboardingState.rooms.length === 0) {
+    onboardingState.resetRoomsToDefault();
+  }
 });
 </script>
 

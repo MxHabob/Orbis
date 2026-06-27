@@ -131,6 +131,16 @@
         "vite": "^8.0.16",
       },
     },
+    "packages/cli": {
+      "name": "@orbis/cli",
+      "version": "1.0.0",
+      "bin": {
+        "orbis-installer": "./src/index.ts",
+      },
+      "devDependencies": {
+        "@orbis/tsconfig": "workspace:*",
+      },
+    },
     "packages/desktop-client": {
       "name": "@orbis/desktop-client",
       "version": "0.1.0",
@@ -677,6 +687,8 @@
     "@opentelemetry/semantic-conventions": ["@opentelemetry/semantic-conventions@1.36.0", "", {}, "sha512-TtxJSRD8Ohxp6bKkhrm27JRHAxPczQA7idtcTOMYI+wQRRrfgqxHv1cFbCApcSnNjtXkmzFozn6jQtFrOmbjPQ=="],
 
     "@orbis/api-rust": ["@orbis/api-rust@workspace:apps/api-rust"],
+
+    "@orbis/cli": ["@orbis/cli@workspace:packages/cli"],
 
     "@orbis/dashboard": ["@orbis/dashboard@workspace:apps/dashboard"],
 

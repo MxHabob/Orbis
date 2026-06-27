@@ -1,0 +1,17 @@
+{
+  "name": "@orbis/cli",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "bin": {
+    "orbis-installer": "./src/index.ts"
+  },
+  "private": true,
+  "scripts": {
+    "start": "bun src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "format": "biome format --write ."
+  },
+  "devDependencies": {
+    "@orbis/tsconfig": "workspace:*"
+  }
+}
