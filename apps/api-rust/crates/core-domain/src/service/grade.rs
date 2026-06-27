@@ -677,7 +677,7 @@ impl super::Service {
 
         // 1. Get all active enrollments
         let enrollments = crate::entities::enrollment::Entity::find()
-            .filter(crate::entities::enrollment::Column::IsActive.eq(1))
+            .filter(crate::entities::enrollment::Column::Status.eq("active"))
             .all(&self.repo.db)
             .await
             .map_err(|e| e.to_string())?;
