@@ -59,6 +59,7 @@ struct TimeSlot {
     date: String,
     period: String,
     start_time: String,
+    #[allow(dead_code)]
     end_time: String,
     is_used: bool,
 }

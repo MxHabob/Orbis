@@ -149,6 +149,12 @@ pub fn run() {
             commands::auth::validate_token,
             commands::auth::logout,
 
+            // Permissions commands
+            commands::permissions::get_permissions,
+            commands::permissions::get_role_permissions,
+            commands::permissions::save_role_permissions,
+
+
             // Users & organization commands
             commands::users::get_organization,
             commands::users::update_organization,

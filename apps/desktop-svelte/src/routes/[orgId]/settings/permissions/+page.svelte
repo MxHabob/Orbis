@@ -998,41 +998,6 @@ function getDefaultPermissionsForRole(roleId: string): Record<string, "global" |
   return defaults;
 }
 
-function getStorageKey(): string {
-  return `orbis_roles_permissions_${data?.orgId || "default"}`;
-}
-
-function loadRolesFromStorage(): Role[] {
-  try {
-    const saved = localStorage.getItem(getStorageKey());
-    if (saved) {
-      const parsed = JSON.parse(saved) as Role[];
-      return initialRoles.map(initialRole => {
-        const found = parsed.find(r => r.id === initialRole.id);
-        if (found) {
-          return {
-            ...initialRole,
-            ...found,
-            permissions: { ...initialRole.permissions, ...found.permissions }
-          };
-        }
-        return initialRole;
-      }).concat(parsed.filter(r => !initialRoles.some(ir => ir.id === r.id)));
-    }
-  } catch (e) {
-    console.error("Failed to load roles from localStorage", e);
-  }
-  return initialRoles;
-}
-
-function saveRolesToStorage() {
-  try {
-    localStorage.setItem(getStorageKey(), JSON.stringify(roles));
-  } catch (e) {
-    console.error("Failed to save roles to localStorage", e);
-  }
-}
-
 // UI States
 let roles = $state<Role[]>(initialRoles);
 let selectedRoleId = $state("super_admin");
@@ -1076,18 +1041,61 @@ async function loadRealUserCounts() {
         userCount: count
       };
     });
-    
-    saveInitialStateSnapshot();
   } catch (e) {
     console.error("Failed to load real user counts", e);
   }
 }
 
+async function loadPermissionsFromDb() {
+  isLoading = true;
+  try {
+    const dbRolePermissions = await commands.permissions.getRolePermissions();
+
+    let savedCustomRoles: Role[] = [];
+    try {
+      const customSaved = localStorage.getItem(`orbis_custom_roles_${data.orgId || "default"}`);
+      if (customSaved) {
+        savedCustomRoles = JSON.parse(customSaved);
+      }
+    } catch(e) {}
+
+    let allRoles = [...initialRoles].map(ir => ({
+      ...ir,
+      permissions: { ...ir.permissions }
+    }));
+
+    for (const cr of savedCustomRoles) {
+      if (!allRoles.some(r => r.id === cr.id)) {
+        allRoles.push({
+          ...cr,
+          permissions: defaultPermissions.reduce((acc, p) => ({ ...acc, [p.id]: "none" }), {})
+        });
+      }
+    }
+
+    roles = allRoles.map(role => {
+      const dbPerms = dbRolePermissions[role.id];
+      if (dbPerms) {
+        return {
+          ...role,
+          permissions: { ...role.permissions, ...dbPerms }
+        };
+      }
+      return role;
+    });
+
+    saveInitialStateSnapshot();
+  } catch (e) {
+    console.error("Failed to load permissions from database", e);
+    saveInitialStateSnapshot();
+  } finally {
+    isLoading = false;
+  }
+}
+
 // Keep deep copy of initial states to show floating banner
 onMount(async () => {
-  const stored = loadRolesFromStorage();
-  roles = stored;
-  saveInitialStateSnapshot();
+  await loadPermissionsFromDb();
 
   if (data.orgId) {
     await loadRealUserCounts();
@@ -1173,19 +1181,37 @@ function discardChanges() {
   toast.success(getLocale() === "ar" ? "تم التراجع عن التغييرات" : "Changes discarded");
 }
 
-function saveChanges() {
+async function saveChanges() {
   isLoading = true;
-  setTimeout(() => {
-    // Save to initial state baseline
+  try {
+    await commands.permissions.saveRolePermissions(
+      selectedRoleObj.id,
+      selectedRoleObj.permissions
+    );
+
+    const customRolesList = roles.filter(r => r.isCustom);
+    localStorage.setItem(
+      `orbis_custom_roles_${data.orgId || "default"}`,
+      JSON.stringify(customRolesList)
+    );
+
     initialPermissions[selectedRoleObj.id] = { ...selectedRoleObj.permissions };
-    saveRolesToStorage();
-    isLoading = false;
+    
     toast.success(
       getLocale() === "ar" 
         ? "تم حفظ تحديثات الصلاحيات بنجاح!" 
         : "Permissions updated and saved successfully!"
     );
-  }, 600);
+  } catch (e) {
+    console.error("Failed to save role permissions to database", e);
+    toast.error(
+      getLocale() === "ar"
+        ? "فشل في حفظ التحديثات في قاعدة البيانات"
+        : "Failed to save permissions to the database"
+    );
+  } finally {
+    isLoading = false;
+  }
 }
 
 function createCustomRole() {
@@ -1212,7 +1238,13 @@ function createCustomRole() {
   showCreateDialog = false;
   newRoleName = "";
   newRoleDesc = "";
-  saveRolesToStorage();
+  
+  const customRolesList = roles.filter(r => r.isCustom);
+  localStorage.setItem(
+    `orbis_custom_roles_${data.orgId || "default"}`,
+    JSON.stringify(customRolesList)
+  );
+
   toast.success(getLocale() === "ar" ? "تم إنشاء الدور بنجاح" : "Role created successfully");
 }
 </script>

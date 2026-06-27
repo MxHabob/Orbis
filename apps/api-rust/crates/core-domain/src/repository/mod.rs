@@ -18,9 +18,11 @@ pub mod assessment;
 pub mod guardian;
 pub mod document;
 pub mod currency;
+pub mod permission;
 
 // ── Examination Management System ──
 pub mod exam;
+
 
 #[derive(Clone)]
 pub struct Repository {

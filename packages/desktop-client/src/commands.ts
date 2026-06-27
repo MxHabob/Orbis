@@ -598,11 +598,19 @@ export const commands = {
       invoke<JsonRecord[]>("get_seating_numbers", { orgId, sessionId, classId: classId ?? null }),
   },
 
+  permissions: {
+    getPermissions: () => invoke<any[]>("get_permissions"),
+    getRolePermissions: () => invoke<Record<string, Record<string, string>>>("get_role_permissions"),
+    saveRolePermissions: (role: string, permissions: Record<string, string>) =>
+      invoke<void>("save_role_permissions", { role, permissions }),
+  },
+
   window: {
     show: () => invoke<void>("show_window"),
     checkForUpdates: () => invoke<void>("check_for_updates"),
   },
 } as const;
+
 
 /** @deprecated Use `commands` — alias for specta migration path */
 export const api = commands;

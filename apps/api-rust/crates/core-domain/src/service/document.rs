@@ -1,6 +1,6 @@
 use uuid::Uuid;
 use chrono::Utc;
-use sea_orm::{entity::prelude::*, ActiveModelTrait, ActiveValue::Set, EntityTrait};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set};
 
 use crate::entities::document;
 

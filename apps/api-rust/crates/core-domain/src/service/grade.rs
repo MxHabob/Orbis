@@ -419,7 +419,7 @@ impl super::Service {
     }
 
     /// Get the grade matrix for a class+subject: all students × all assessment types
-    pub async fn get_grade_matrix(&self, org_id: &str, cycle_id: &str, class_id: &str, subject_id: &str) -> Result<GradeMatrixResponse, String> {
+    pub async fn get_grade_matrix(&self, _org_id: &str, cycle_id: &str, class_id: &str, subject_id: &str) -> Result<GradeMatrixResponse, String> {
         // Find class_subject
         let cs = self.repo.find_class_subject_for_assessment(class_id, subject_id).await
             .map_err(|e| e.to_string())?

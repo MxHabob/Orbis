@@ -15,3 +15,5 @@ pub mod widgets;
 pub mod schedule;
 pub mod guardians;
 pub mod exams;
+pub mod permissions;
+

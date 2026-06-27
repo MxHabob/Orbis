@@ -28,9 +28,11 @@ pub mod guardian;
 pub mod document;
 pub mod account;
 pub mod seed;
+pub mod permission;
 
 // ── Examination Management System ──
 pub mod exam_session;
+
 pub mod student_ordering;
 pub mod exam_numbers;
 pub mod exam_logistics;
