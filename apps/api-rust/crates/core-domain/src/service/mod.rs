@@ -34,6 +34,9 @@ pub mod exam_session;
 pub mod student_ordering;
 pub mod exam_numbers;
 pub mod exam_logistics;
+pub mod exam_auto_schedule;
+pub mod exam_reports;
+pub mod exam_analytics;
 
 #[derive(Clone)]
 pub struct Service {

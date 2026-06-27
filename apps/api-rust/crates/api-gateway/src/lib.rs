@@ -430,6 +430,12 @@ pub async fn start_server(database_url: &str, port: u16) -> Result<(), Box<dyn s
         .route("/api/student-ordering", get(handler::exam::get_student_ordering))
         .route("/api/student-ordering/rebuild", post(handler::exam::post_rebuild_ordering))
         .route("/api/student-ordering/freeze", post(handler::exam::post_freeze_ordering))
+        // ── Phase 6-8: Auto-Scheduling, Reports, Analytics ──
+        .route("/api/exam-sessions/:id/auto-schedule", post(handler::exam::post_auto_schedule))
+        .route("/api/exam-sessions/:session_id/schedule/:schedule_id/postpone", post(handler::exam::post_postpone_exam))
+        .route("/api/exam-sessions/:id/dashboard", get(handler::exam::get_exam_dashboard))
+        .route("/api/exam-sessions/:id/reports", post(handler::exam::post_exam_report))
+        .route("/api/exam-sessions/:id/analytics", post(handler::exam::post_exam_analytics))
         .with_state(service)
         .layer(cors);
 

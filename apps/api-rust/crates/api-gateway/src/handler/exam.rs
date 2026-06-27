@@ -506,3 +506,113 @@ pub async fn get_exam_proctors(
 
     Ok((StatusCode::OK, Json(json!({ "success": true, "data": proctors }))))
 }
+
+// ── Phase 6: Auto-Scheduling ────────────────────────────────────────────────
+
+#[utoipa::path(post, path = "/api/exam-sessions/{id}/auto-schedule", responses((status = 200)))]
+pub async fn post_auto_schedule(
+    State(service): State<Service>,
+    Path(_id): Path<String>,
+    AuthenticatedUser(user): AuthenticatedUser,
+    Json(req): Json<crate::service::exam_auto_schedule::AutoScheduleRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    service
+        .check_permission_and_audit(&user, crate::service::authz::Permission::ExamScheduleWrite, None)
+        .await
+        .map_err(|e| (StatusCode::FORBIDDEN, Json(json!({ "success": false, "error": e }))))?;
+
+    let result = service
+        .auto_schedule_exams(&user.org_id, req)
+        .await
+        .map_err(|e| (StatusCode::BAD_REQUEST, Json(json!({ "success": false, "error": e }))))?;
+
+    Ok((StatusCode::OK, Json(json!({ "success": true, "data": result }))))
+}
+
+#[utoipa::path(post, path = "/api/exam-sessions/{session_id}/schedule/{schedule_id}/postpone", responses((status = 200)))]
+pub async fn post_postpone_exam(
+    State(service): State<Service>,
+    Path((session_id, schedule_id)): Path<(String, String)>,
+    AuthenticatedUser(user): AuthenticatedUser,
+    Json(body): Json<serde_json::Value>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    service
+        .check_permission_and_audit(&user, crate::service::authz::Permission::ExamScheduleWrite, None)
+        .await
+        .map_err(|e| (StatusCode::FORBIDDEN, Json(json!({ "success": false, "error": e }))))?;
+
+    let new_date = body["new_date"].as_str().ok_or_else(|| {
+        (StatusCode::BAD_REQUEST, Json(json!({ "success": false, "error": "new_date is required" })))
+    })?;
+    let reason = body["reason"].as_str().unwrap_or("No reason provided");
+
+    let schedule = service
+        .postpone_exam(&user.org_id, &session_id, &schedule_id, new_date, reason)
+        .await
+        .map_err(|e| (StatusCode::BAD_REQUEST, Json(json!({ "success": false, "error": e }))))?;
+
+    Ok((StatusCode::OK, Json(json!({ "success": true, "data": schedule }))))
+}
+
+// ── Phase 7: Dashboard & Reports ────────────────────────────────────────────
+
+#[utoipa::path(get, path = "/api/exam-sessions/{id}/dashboard", responses((status = 200)))]
+pub async fn get_exam_dashboard(
+    State(service): State<Service>,
+    Path(id): Path<String>,
+    AuthenticatedUser(user): AuthenticatedUser,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    service
+        .check_permission_and_audit(&user, crate::service::authz::Permission::ExamSessionRead, None)
+        .await
+        .map_err(|e| (StatusCode::FORBIDDEN, Json(json!({ "success": false, "error": e }))))?;
+
+    let dashboard = service
+        .get_exam_dashboard(&user.org_id, &id)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "success": false, "error": e }))))?;
+
+    Ok((StatusCode::OK, Json(json!({ "success": true, "data": dashboard }))))
+}
+
+#[utoipa::path(post, path = "/api/exam-sessions/{id}/reports", responses((status = 200)))]
+pub async fn post_exam_report(
+    State(service): State<Service>,
+    Path(_id): Path<String>,
+    AuthenticatedUser(user): AuthenticatedUser,
+    Json(req): Json<crate::service::exam_reports::GenerateReportRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    service
+        .check_permission_and_audit(&user, crate::service::authz::Permission::ExamSessionRead, None)
+        .await
+        .map_err(|e| (StatusCode::FORBIDDEN, Json(json!({ "success": false, "error": e }))))?;
+
+    let report = service
+        .generate_exam_report(&user.org_id, req)
+        .await
+        .map_err(|e| (StatusCode::BAD_REQUEST, Json(json!({ "success": false, "error": e }))))?;
+
+    Ok((StatusCode::OK, Json(json!({ "success": true, "data": report }))))
+}
+
+// ── Phase 8: Analytics ──────────────────────────────────────────────────────
+
+#[utoipa::path(post, path = "/api/exam-sessions/{id}/analytics", responses((status = 200)))]
+pub async fn post_exam_analytics(
+    State(service): State<Service>,
+    Path(_id): Path<String>,
+    AuthenticatedUser(user): AuthenticatedUser,
+    Json(req): Json<crate::service::exam_analytics::ExamAnalyticsRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    service
+        .check_permission_and_audit(&user, crate::service::authz::Permission::ExamSessionRead, None)
+        .await
+        .map_err(|e| (StatusCode::FORBIDDEN, Json(json!({ "success": false, "error": e }))))?;
+
+    let analytics = service
+        .analyze_exam_session(&user.org_id, req)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "success": false, "error": e }))))?;
+
+    Ok((StatusCode::OK, Json(json!({ "success": true, "data": analytics }))))
+}
