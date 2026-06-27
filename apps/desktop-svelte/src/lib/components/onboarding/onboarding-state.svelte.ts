@@ -420,9 +420,9 @@ class OnboardingState {
 
   // ── Build Final Payload ────────────────────────────────────────
 
-  buildPayload(): OnboardingPayload {
-    const cycleYearId = "cycle-1447";
-
+  buildPayload(orgId: string): OnboardingPayload {
+    const cycleYearId = `cycle-1447-${orgId}`;
+ 
     const cycles: CycleEntry[] = [
       {
         id: cycleYearId,
@@ -461,13 +461,13 @@ class OnboardingState {
         `${cycleYearId}-s2`, this.semester2Name, this.semester2NameAr, this.semester2Start, this.semester2End
       ),
     ];
-
+ 
     const classes: ClassEntry[] = [];
     for (const gl of this.gradeLevels) {
       if (!gl.enabled) continue;
       for (const div of gl.divisions) {
         classes.push({
-          id: `class-${gl.level}-${div}`,
+          id: `class-${gl.level}-${div}-${orgId}`,
           name: `${gl.name} - ${div}`,
           name_ar: `${gl.name_ar} - شعبة ${div}`,
           level: gl.level,
@@ -476,11 +476,11 @@ class OnboardingState {
         });
       }
     }
-
+ 
     const activeSubjects: SubjectEntry[] = this.subjects
       .filter((s) => s.enabled)
       .map((s, idx) => ({
-        id: `subject-${s.code.toLowerCase()}`,
+        id: `subject-${s.code.toLowerCase()}-${orgId}`,
         code: s.code,
         name: s.name,
         name_ar: s.name_ar,
@@ -488,36 +488,39 @@ class OnboardingState {
         icon: s.icon,
         sort_order: idx + 1,
       }));
-
+ 
     return {
       org_name: this.orgName,
       org_name_ar: this.orgNameAr,
       timezone: this.timezone,
       locale: this.locale,
       currency: this.currency,
-      root_unit_id: "unit-sanaa-model",
+      root_unit_id: `unit-${orgId}`,
       root_unit_name: this.rootUnitName,
       root_unit_name_ar: this.rootUnitNameAr,
       cycles,
       time_slots: this.timeSlots,
-      rooms: this.rooms,
+      rooms: this.rooms.map((r) => ({
+        ...r,
+        id: `room-${r.id}-${orgId}`,
+      })),
       subjects: activeSubjects,
       classes,
     };
   }
-
+ 
   // ── Complete Setup ─────────────────────────────────────────────
-
+ 
   async completeSetup(orgId: string): Promise<boolean> {
     this.isLoading = true;
     this.errorMessage = null;
-
+ 
     try {
       if (!orgId) {
         throw new Error(m.onboarding_err_active_org());
       }
-
-      const payload = this.buildPayload();
+ 
+      const payload = this.buildPayload(orgId);
       console.log("Submitting Onboarding Setup Payload:", payload);
 
       const { commands } = await import("$lib/services/ipc");
