@@ -175,6 +175,9 @@ pub fn run() {
             commands::academics::update_cycle,
             commands::academics::activate_cycle,
             commands::academics::lock_cycle,
+            commands::academics::unlock_cycle,
+            commands::academics::open_grade_entry,
+            commands::academics::close_grade_entry,
             commands::academics::get_classes,
             commands::academics::create_class,
             commands::academics::update_class,
@@ -195,6 +198,8 @@ pub fn run() {
             commands::grades::update_grade,
             commands::grades::get_report_card,
             commands::grades::get_grade_analytics,
+            commands::grades::bulk_subject_grade_entry,
+            commands::grades::get_grade_matrix,
 
             // Attendance commands
             commands::attendance::get_attendance,

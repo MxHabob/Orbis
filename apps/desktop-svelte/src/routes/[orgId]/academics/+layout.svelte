@@ -19,6 +19,7 @@ import {
   MapPin,
   BookUser,
   ClipboardList,
+  ShieldCheck,
 } from "lucide-svelte";
 import MainViewport from "$lib/components/layout/MainViewport.svelte";
 import type { Snippet } from "svelte";
@@ -107,6 +108,11 @@ const navItems = $derived([
     path: "exams",
     label: m.nav_exams(),
     icon: ClipboardList,
+  },
+  {
+    path: "control",
+    label: "الكنترول",
+    icon: ShieldCheck,
   },
 ]);
 </script>

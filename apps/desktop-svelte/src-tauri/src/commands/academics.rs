@@ -89,6 +89,44 @@ pub async fn lock_cycle(
         .map_err(CommandError::from)
 }
 
+#[tauri::command]
+pub async fn unlock_cycle(
+    state: State<'_, Arc<AppState>>,
+    cycle_id: String,
+) -> CmdResult<academic_cycle::Model> {
+    state
+        .service
+        .unlock_cycle(&cycle_id)
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn open_grade_entry(
+    state: State<'_, Arc<AppState>>,
+    cycle_id: String,
+    start: Option<String>,
+    end: Option<String>,
+) -> CmdResult<academic_cycle::Model> {
+    state
+        .service
+        .open_grade_entry(&cycle_id, start, end)
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn close_grade_entry(
+    state: State<'_, Arc<AppState>>,
+    cycle_id: String,
+) -> CmdResult<academic_cycle::Model> {
+    state
+        .service
+        .close_grade_entry(&cycle_id)
+        .await
+        .map_err(CommandError::from)
+}
+
 // ── Classes ────────────────────────────────────────────────────────────────
 
 #[derive(serde::Serialize, serde::Deserialize)]

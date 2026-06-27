@@ -7,6 +7,7 @@ use core_domain::{
     service::grade::{
         CreateGradeRequest, BulkGradeRequest, UpdateGradeRequest,
         GradeReportCard, GradeAnalytics,
+        BulkSubjectGradeEntry, BulkSubjectGradeResult, GradeMatrixResponse,
     },
 };
 
@@ -88,6 +89,35 @@ pub async fn get_grade_analytics(
     state
         .service
         .get_grade_analytics(&org_id, params)
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn bulk_subject_grade_entry(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    graded_by: String,
+    request: BulkSubjectGradeEntry,
+) -> CmdResult<BulkSubjectGradeResult> {
+    state
+        .service
+        .bulk_subject_grade_entry(&org_id, &graded_by, request)
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn get_grade_matrix(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    cycle_id: String,
+    class_id: String,
+    subject_id: String,
+) -> CmdResult<GradeMatrixResponse> {
+    state
+        .service
+        .get_grade_matrix(&org_id, &cycle_id, &class_id, &subject_id)
         .await
         .map_err(CommandError::from)
 }

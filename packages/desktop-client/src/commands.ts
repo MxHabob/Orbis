@@ -87,6 +87,15 @@ export const commands = {
     lockCycle: (cycleId: string) =>
       invoke<JsonRecord>("lock_cycle", { cycleId }),
 
+    unlockCycle: (cycleId: string) =>
+      invoke<JsonRecord>("unlock_cycle", { cycleId }),
+
+    openGradeEntry: (cycleId: string, start?: string, end?: string) =>
+      invoke<JsonRecord>("open_grade_entry", { cycleId, start: start ?? null, end: end ?? null }),
+
+    closeGradeEntry: (cycleId: string) =>
+      invoke<JsonRecord>("close_grade_entry", { cycleId }),
+
     getCurrentYear: (orgId: string) =>
       invoke<JsonRecord[]>("get_cycles", {
         orgId,
@@ -166,6 +175,12 @@ export const commands = {
         orgId,
         params: params ?? {},
       }),
+
+    bulkSubjectGradeEntry: (orgId: string, gradedBy: string, request: JsonRecord) =>
+      invoke<JsonRecord>("bulk_subject_grade_entry", { orgId, gradedBy, request }),
+
+    getGradeMatrix: (orgId: string, cycleId: string, classId: string, subjectId: string) =>
+      invoke<JsonRecord>("get_grade_matrix", { orgId, cycleId, classId, subjectId }),
   },
 
   attendance: {
