@@ -166,10 +166,7 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 
 		<div class="flex flex-col gap-2 items-center w-full relative">
 			<div class="flex flex-col items-center w-8 gap-1 overflow-hidden">
-				{#if authStore.isSetupComplete === false}
-					<OnboardingPopover />
-				{/if}
-
+				<OnboardingPopover />
 				<Button variant="outline" size="icon"  class="w-full h-8 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-zinc-800/60 relative border-b border-[#f1f5f9] dark:border-zinc-800 cursor-pointer">
 					<div class="relative">
 						<div class="w-[20px] h-[20px] rounded-full border border-slate-800 dark:border-zinc-400 text-slate-800 dark:text-zinc-400 flex items-center justify-center">

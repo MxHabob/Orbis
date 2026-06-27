@@ -258,7 +258,6 @@ pub async fn initialize_school_setup(
     let now_str = chrono::Utc::now().to_rfc3339();
 
     // Cache values we need outside or multiple times to avoid borrow moves
-    let org_id_for_seeding = org_id.clone();
     let root_cycle_id = config.cycles.first().map(|c| c.id.clone()).unwrap_or_default();
 
     db.transaction::<_, (), String>(move |txn| {
@@ -510,7 +509,7 @@ pub async fn initialize_school_setup(
     .map_err(CommandError::from)?;
 
     // 9. Seeding Chart of Accounts (COA) & default currencies
-    state.service.seed_default_financials(&org_id_for_seeding).await.map_err(CommandError::from)?;
+    // state.service.seed_default_financials(&org_id_for_seeding).await.map_err(CommandError::from)?;
 
     Ok(())
 }

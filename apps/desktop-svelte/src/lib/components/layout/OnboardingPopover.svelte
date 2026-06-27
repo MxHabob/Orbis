@@ -26,10 +26,16 @@ function handleChecklistItemClick(stepIndex: number) {
       class="w-full h-8 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-zinc-800/60 relative border-b border-[#f1f5f9] dark:border-zinc-800 cursor-pointer onboarding-popover-trigger"
     >
       <div class="relative">
-        <div class="w-[20px] h-[20px] rounded-full border border-[#6366f1] dark:border-indigo-400 text-[#6366f1] dark:text-indigo-400 flex items-center justify-center text-[9px] font-bold">
-          {7 - onboardingState.tasksCompletedCount}
-        </div>
-        <span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-[#6366f1] border border-white dark:border-zinc-900"></span>
+        {#if authStore.isSetupComplete}
+          <div class="w-[20px] h-[20px] rounded-full border border-emerald-500 text-emerald-500 flex items-center justify-center">
+            <CheckCircle2 class="w-3.5 h-3.5" />
+          </div>
+        {:else}
+          <div class="w-[20px] h-[20px] rounded-full border border-[#6366f1] dark:border-indigo-400 text-[#6366f1] dark:text-indigo-400 flex items-center justify-center text-[9px] font-bold">
+            {7 - onboardingState.tasksCompletedCount}
+          </div>
+          <span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-[#6366f1] border border-white dark:border-zinc-900"></span>
+        {/if}
       </div>
     </Button>
   </PopoverTrigger>
@@ -45,10 +51,10 @@ function handleChecklistItemClick(stepIndex: number) {
         <span>{m.onboarding_progress_label() || 'Getting Started'}</span>
       </h4>
       <p class="text-xs text-muted-foreground font-sans">
-        {onboardingState.tasksCompletedCount} out of 7 tasks completed
+        {authStore.isSetupComplete ? 7 : onboardingState.tasksCompletedCount} out of 7 tasks completed
       </p>
       <div class="w-full bg-slate-100 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden mt-1">
-        <div class="bg-primary h-full transition-all duration-300" style="width: {(onboardingState.tasksCompletedCount / 7) * 100}%"></div>
+        <div class="bg-primary h-full transition-all duration-300" style="width: {authStore.isSetupComplete ? 100 : (onboardingState.tasksCompletedCount / 7) * 100}%"></div>
       </div>
     </div>
 
@@ -62,10 +68,15 @@ function handleChecklistItemClick(stepIndex: number) {
         { label: "Registration Fees Setup", labelAr: "رسوم تسجيل الطلاب", desc: "Define standard tuition fees per grade level.", descAr: "تحديد قيم رسوم التسجيل لكل مرحلة دراسية." },
         { label: "Review & Launch System", labelAr: "المراجعة وتدشين النظام", desc: "Finalize structure and launch the school system.", descAr: "مراجعة الهيكل الإداري وتدشين المحاسبة المالية." }
       ] as task, idx}
-        {@const isCompleted = onboardingState.completedSteps[idx]}
+        {@const isCompleted = authStore.isSetupComplete ? true : onboardingState.completedSteps[idx]}
         <button
-          onclick={() => handleChecklistItemClick(idx)}
-          class="flex items-start gap-3 p-2 rounded-lg hover:bg-muted text-start w-full group transition-all duration-150 cursor-pointer text-foreground bg-transparent border-0 font-sans"
+          onclick={() => {
+            if (!authStore.isSetupComplete) {
+              handleChecklistItemClick(idx);
+            }
+          }}
+          disabled={authStore.isSetupComplete}
+          class="flex items-start gap-3 p-2 rounded-lg hover:bg-muted text-start w-full group transition-all duration-150 cursor-pointer text-foreground bg-transparent border-0 font-sans disabled:opacity-100 disabled:hover:bg-transparent"
         >
           <div class="mt-0.5 shrink-0 text-primary transition-transform group-hover:scale-110 font-sans">
             {#if isCompleted}
