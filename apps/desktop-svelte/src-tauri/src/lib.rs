@@ -200,6 +200,7 @@ pub fn run() {
             commands::grades::get_grade_analytics,
             commands::grades::bulk_subject_grade_entry,
             commands::grades::get_grade_matrix,
+            commands::grades::compile_semester_grades,
 
             // Attendance commands
             commands::attendance::get_attendance,

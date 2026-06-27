@@ -121,3 +121,17 @@ pub async fn get_grade_matrix(
         .await
         .map_err(CommandError::from)
 }
+
+#[tauri::command]
+pub async fn compile_semester_grades(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    semester_num: u32,
+    graded_by: String,
+) -> CmdResult<()> {
+    state
+        .service
+        .compile_semester_grades(&org_id, semester_num, &graded_by)
+        .await
+        .map_err(CommandError::from)
+}

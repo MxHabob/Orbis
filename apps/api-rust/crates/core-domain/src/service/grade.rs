@@ -1,6 +1,7 @@
 use uuid::Uuid;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
+use sea_orm::{EntityTrait, QueryFilter, ColumnTrait, ActiveValue::Set, ActiveModelTrait};
 
 use crate::entities::{grade, grade_history};
 
@@ -653,5 +654,249 @@ impl super::Service {
             pass_rate: (pass_rate * 100.0).round() / 100.0,
             grade_distribution: dist,
         })
+    }
+
+    /// Compile monthly grades (Month 1, 2, 3) and Month 4 exam into Semester grades
+    pub async fn compile_semester_grades(
+        &self,
+        org_id: &str,
+        semester_num: u32,
+        graded_by: &str,
+    ) -> Result<(), String> {
+        let sem_cycle_id = format!("cycle-1447-{}-s{}", org_id, semester_num);
+        let months = vec![
+            format!("{}-m1", sem_cycle_id),
+            format!("{}-m2", sem_cycle_id),
+            format!("{}-m3", sem_cycle_id),
+        ];
+        let m4_cycle_id = format!("{}-m4", sem_cycle_id);
+        let semester_name = if semester_num == 1 { "Semester 1" } else { "Semester 2" };
+
+        let classwork_title_ar = if semester_num == 1 { "أعمال الفصل الأول" } else { "أعمال الفصل الثاني" };
+        let final_exam_title_ar = if semester_num == 1 { "الاختبار النهائي للنصف الأول" } else { "الاختبار النهائي للنصف الثاني" };
+
+        // 1. Get all active enrollments
+        let enrollments = crate::entities::enrollment::Entity::find()
+            .filter(crate::entities::enrollment::Column::IsActive.eq(1))
+            .all(&self.repo.db)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        // 2. Get all active class subject mappings
+        let class_subjects = crate::entities::class_subject::Entity::find()
+            .filter(crate::entities::class_subject::Column::IsActive.eq(1))
+            .all(&self.repo.db)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        // 3. Find target semester assessments
+        let semester_assessments = crate::entities::assessment::Entity::find()
+            .filter(crate::entities::assessment::Column::CycleId.eq(&sem_cycle_id))
+            .filter(
+                crate::entities::assessment::Column::TitleAr.is_in(vec![
+                    classwork_title_ar.to_string(),
+                    final_exam_title_ar.to_string(),
+                ]),
+            )
+            .all(&self.repo.db)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        let mut classwork_assessment_map = std::collections::HashMap::new();
+        let mut final_exam_assessment_map = std::collections::HashMap::new();
+
+        for ass in &semester_assessments {
+            if ass.title_ar.as_deref() == Some(classwork_title_ar) {
+                classwork_assessment_map.insert(ass.class_subject_id.clone(), ass.id.clone());
+            } else if ass.title_ar.as_deref() == Some(final_exam_title_ar) {
+                final_exam_assessment_map.insert(ass.class_subject_id.clone(), ass.id.clone());
+            }
+        }
+
+        let now = Utc::now().to_rfc3339();
+
+        for enrollment in &enrollments {
+            // -------------------------------------------------------------
+            // PART A: Compile Month 1, 2, 3 average -> أعمال الفصل (20%)
+            // -------------------------------------------------------------
+            let monthly_grades = grade::Entity::find()
+                .filter(grade::Column::EnrollmentId.eq(&enrollment.id))
+                .filter(grade::Column::CycleId.is_in(months.clone()))
+                .all(&self.repo.db)
+                .await
+                .map_err(|e| e.to_string())?;
+
+            let mut grades_by_subject: std::collections::HashMap<String, Vec<grade::Model>> = std::collections::HashMap::new();
+            for g in monthly_grades {
+                if let Some(ref cs_id) = g.class_subject_id {
+                    grades_by_subject.entry(cs_id.clone()).or_default().push(g);
+                }
+            }
+
+            for (cs_id, subject_grades) in grades_by_subject {
+                let cs = match class_subjects.iter().find(|c| c.id == cs_id) {
+                    Some(c) => c,
+                    None => continue,
+                };
+
+                let target_classwork_ass_id = match classwork_assessment_map.get(&cs_id) {
+                    Some(id) => id,
+                    None => continue,
+                };
+
+                let mut month_group: std::collections::HashMap<String, (f64, f64)> = std::collections::HashMap::new();
+                for g in subject_grades {
+                    let entry = month_group.entry(g.cycle_id.clone()).or_insert((0.0, 0.0));
+                    entry.0 += g.score;
+                    entry.1 += g.max_score;
+                }
+
+                let mut total_pct = 0.0;
+                let mut active_months_count = 0;
+
+                for (_, (score, max_score)) in month_group {
+                    if max_score > 0.0 {
+                        total_pct += (score / max_score) * 100.0;
+                        active_months_count += 1;
+                    }
+                }
+
+                if active_months_count == 0 {
+                    continue;
+                }
+
+                let avg_pct = total_pct / (active_months_count as f64);
+                let compiled_score = ((avg_pct / 100.0) * 20.0 * 100.0).round() / 100.0;
+
+                let existing_classwork = grade::Entity::find()
+                    .filter(grade::Column::EnrollmentId.eq(&enrollment.id))
+                    .filter(grade::Column::AssessmentId.eq(target_classwork_ass_id))
+                    .filter(grade::Column::CycleId.eq(&sem_cycle_id))
+                    .one(&self.repo.db)
+                    .await
+                    .map_err(|e| e.to_string())?;
+
+                if let Some(existing) = existing_classwork {
+                    let mut active: grade::ActiveModel = existing.into();
+                    active.score = Set(compiled_score);
+                    active.updated_at = Set(now.clone());
+                    active.update(&self.repo.db).await.map_err(|e| e.to_string())?;
+                } else {
+                    let subject = crate::entities::subject::Entity::find_by_id(&cs.subject_id)
+                        .one(&self.repo.db)
+                        .await
+                        .map_err(|e| e.to_string())?;
+                    let subject_name = subject.as_ref().map(|s| s.name.clone()).unwrap_or_else(|| "Subject".to_string());
+                    let subject_name_ar = subject.as_ref().and_then(|s| s.name_ar.clone());
+
+                    let g = grade::Model {
+                        id: Uuid::new_v4().to_string(),
+                        org_id: org_id.to_string(),
+                        cycle_id: sem_cycle_id.clone(),
+                        enrollment_id: enrollment.id.clone(),
+                        assessment_id: Some(target_classwork_ass_id.clone()),
+                        class_subject_id: Some(cs_id.clone()),
+                        subject_name,
+                        subject_name_ar,
+                        score: compiled_score,
+                        max_score: 20.0,
+                        weight: 20.0,
+                        grade_letter: Some(Self::score_to_grade_letter(avg_pct)),
+                        grade_points: Some(Self::score_to_grade_points(avg_pct)),
+                        exam_type: "classwork".to_string(),
+                        semester: semester_name.to_string(),
+                        notes: Some(String::new()),
+                        graded_by: graded_by.to_string(),
+                        graded_at: now.clone(),
+                        is_final: 1,
+                        created_at: now.clone(),
+                        updated_at: now.clone(),
+                    };
+                    self.repo.create_grade(g).await.map_err(|e| e.to_string())?;
+                }
+            }
+
+            // -------------------------------------------------------------
+            // PART B: Copy Month 4 Final Exam -> الاختبار النهائي للفصل (30%)
+            // -------------------------------------------------------------
+            let final_exam_grades = grade::Entity::find()
+                .filter(grade::Column::EnrollmentId.eq(&enrollment.id))
+                .filter(grade::Column::CycleId.eq(&m4_cycle_id))
+                .all(&self.repo.db)
+                .await
+                .map_err(|e| e.to_string())?;
+
+            for g in final_exam_grades {
+                let cs_id = match g.class_subject_id {
+                    Some(ref id) => id,
+                    None => continue,
+                };
+
+                let cs = match class_subjects.iter().find(|c| c.id == *cs_id) {
+                    Some(c) => c,
+                    None => continue,
+                };
+
+                let target_final_exam_ass_id = match final_exam_assessment_map.get(cs_id) {
+                    Some(id) => id,
+                    None => continue,
+                };
+
+                let mut final_exam_score = g.score;
+                if g.max_score != 30.0 && g.max_score > 0.0 {
+                    final_exam_score = ((g.score / g.max_score) * 30.0 * 100.0).round() / 100.0;
+                }
+                let percentage = if g.max_score > 0.0 { (g.score / g.max_score) * 100.0 } else { 0.0 };
+
+                let existing_final_exam = grade::Entity::find()
+                    .filter(grade::Column::EnrollmentId.eq(&enrollment.id))
+                    .filter(grade::Column::AssessmentId.eq(target_final_exam_ass_id))
+                    .filter(grade::Column::CycleId.eq(&sem_cycle_id))
+                    .one(&self.repo.db)
+                    .await
+                    .map_err(|e| e.to_string())?;
+
+                if let Some(existing) = existing_final_exam {
+                    let mut active: grade::ActiveModel = existing.into();
+                    active.score = Set(final_exam_score);
+                    active.updated_at = Set(now.clone());
+                    active.update(&self.repo.db).await.map_err(|e| e.to_string())?;
+                } else {
+                    let subject = crate::entities::subject::Entity::find_by_id(&cs.subject_id)
+                        .one(&self.repo.db)
+                        .await
+                        .map_err(|e| e.to_string())?;
+                    let subject_name = subject.as_ref().map(|s| s.name.clone()).unwrap_or_else(|| "Subject".to_string());
+                    let subject_name_ar = subject.as_ref().and_then(|s| s.name_ar.clone());
+
+                    let new_g = grade::Model {
+                        id: Uuid::new_v4().to_string(),
+                        org_id: org_id.to_string(),
+                        cycle_id: sem_cycle_id.clone(),
+                        enrollment_id: enrollment.id.clone(),
+                        assessment_id: Some(target_final_exam_ass_id.clone()),
+                        class_subject_id: Some(cs_id.clone()),
+                        subject_name,
+                        subject_name_ar,
+                        score: final_exam_score,
+                        max_score: 30.0,
+                        weight: 30.0,
+                        grade_letter: Some(Self::score_to_grade_letter(percentage)),
+                        grade_points: Some(Self::score_to_grade_points(percentage)),
+                        exam_type: "exam".to_string(),
+                        semester: semester_name.to_string(),
+                        notes: Some(String::new()),
+                        graded_by: graded_by.to_string(),
+                        graded_at: now.clone(),
+                        is_final: 1,
+                        created_at: now.clone(),
+                        updated_at: now.clone(),
+                    };
+                    self.repo.create_grade(new_g).await.map_err(|e| e.to_string())?;
+                }
+            }
+        }
+
+        Ok(())
     }
 }

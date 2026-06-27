@@ -30,6 +30,7 @@ import {
 } from "lucide-svelte";
 import { toast } from "svelte-sonner";
 import { fade, slide } from "svelte/transition";
+import { academicStore, authStore } from "$lib/stores";
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -44,6 +45,24 @@ let selectedClassId = $state<string>("");
 let selectedSubjectId = $state<string>("");
 
 let isLoading = $state(true);
+let isCompileLoading = $state(false);
+
+// Sync to/from global academic state store
+onMount(() => {
+  if (academicStore.selectedCycleId) selectedCycleId = academicStore.selectedCycleId;
+  if (academicStore.selectedClassId) selectedClassId = academicStore.selectedClassId;
+  if (academicStore.selectedSubjectId) selectedSubjectId = academicStore.selectedSubjectId;
+});
+
+$effect(() => {
+  if (selectedCycleId) academicStore.selectedCycleId = selectedCycleId;
+});
+$effect(() => {
+  if (selectedClassId) academicStore.selectedClassId = selectedClassId;
+});
+$effect(() => {
+  if (selectedSubjectId) academicStore.selectedSubjectId = selectedSubjectId;
+});
 let isMatrixLoading = $state(false);
 let isSaving = $state(false);
 let isCycleActionLoading = $state(false);
@@ -75,11 +94,13 @@ async function loadInitialData() {
     subjects = subjectList;
     classSubjects = classSubjectList;
 
-    // Default to current/active cycle
-    const activeCycle =
-      cycleList.find((c: any) => c.is_current === 1) || cycleList[0];
-    if (activeCycle) {
-      selectedCycleId = String(activeCycle.id);
+    // Default to current/active cycle if not already set by academicStore
+    if (!selectedCycleId) {
+      const activeCycle =
+        cycleList.find((c: any) => c.is_current === 1) || cycleList[0];
+      if (activeCycle) {
+        selectedCycleId = String(activeCycle.id);
+      }
     }
   } catch (e: any) {
     toast.error("خطأ في تحميل البيانات", { description: e?.message || String(e) });
@@ -149,6 +170,33 @@ async function handleCloseGradeEntry() {
     toast.error("خطأ", { description: e?.message || String(e) });
   } finally {
     isCycleActionLoading = false;
+  }
+}
+
+async function handleCompileGrades() {
+  if (!selectedCycleId) return;
+  const semNum = selectedCycleId.endsWith("-s1") ? 1 : selectedCycleId.endsWith("-s2") ? 2 : null;
+  if (!semNum) {
+    toast.error("هذا الإجراء متاح فقط للفصول الدراسية (الترم الأول أو الثاني)");
+    return;
+  }
+
+  const confirmMsg = "هل أنت متأكد من تجميع درجات الفصل؟ سيتم احتساب متوسط الأشهر 1 و 2 و 3 وترحيله لأعمال الفصل، ونسخ النهائي من الشهر 4.";
+  if (!confirm(confirmMsg)) return;
+
+  isCompileLoading = true;
+  try {
+    const gradedBy = authStore.userId || "admin";
+    await commands.grades.compileSemesterGrades(data.orgId, semNum, gradedBy);
+    toast.success("تم تجميع وحساب درجات الفصل بنجاح!");
+    // Reload grade matrix if currently viewing
+    if (selectedClassId && selectedSubjectId) {
+      await loadGradeMatrix();
+    }
+  } catch (e: any) {
+    toast.error("فشل تجميع الدرجات", { description: e?.message || String(e) });
+  } finally {
+    isCompileLoading = false;
   }
 }
 
@@ -496,6 +544,22 @@ onMount(() => {
                     فتح فترة الإدخال
                   </Button>
                 {/if}
+              {/if}
+
+              {#if selectedCycle && (selectedCycle.type === 'term' || selectedCycle.id.includes('-s1') || selectedCycle.id.includes('-s2'))}
+                <Button
+                  variant="outline"
+                  class="w-full justify-start gap-2 text-xs h-9 cursor-pointer border-blue-500/30 text-blue-600 hover:bg-blue-500/10"
+                  onclick={handleCompileGrades}
+                  disabled={isCompileLoading}
+                >
+                  {#if isCompileLoading}
+                    <Loader2 size={14} class="animate-spin" />
+                  {:else}
+                    <RefreshCw size={14} />
+                  {/if}
+                  احسب وجَمِّع درجات الفصل تلقائياً
+                </Button>
               {/if}
             </div>
           </div>

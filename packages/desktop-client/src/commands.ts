@@ -181,6 +181,9 @@ export const commands = {
 
     getGradeMatrix: (orgId: string, cycleId: string, classId: string, subjectId: string) =>
       invoke<JsonRecord>("get_grade_matrix", { orgId, cycleId, classId, subjectId }),
+
+    compileSemesterGrades: (orgId: string, semesterNum: number, gradedBy: string) =>
+      invoke<void>("compile_semester_grades", { orgId, semesterNum, gradedBy }),
   },
 
   attendance: {
