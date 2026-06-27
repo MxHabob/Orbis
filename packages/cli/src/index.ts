@@ -116,9 +116,8 @@ async function askPassword(query: string): Promise<string> {
 
 // ── Database Path & Identifier Resolver ────────────────────────────────────
 
-function getDbPath(isDev = false): string {
+function getDbPathSingle(identifier: string): string {
   const home = os.homedir();
-  const identifier = isDev ? "com.mulverse.orbis.dev" : "com.mulverse.orbis.svelte";
   let appDataDir = "";
 
   if (process.platform === "win32") {
@@ -134,6 +133,26 @@ function getDbPath(isDev = false): string {
   return path.join(appDataDir, "orbis.db");
 }
 
+function getDbPaths(isDevExplicit = false): string[] {
+  const paths: string[] = [];
+
+  if (isDevExplicit) {
+    paths.push(getDbPathSingle("com.mulverse.orbis.dev"));
+  } else {
+    // production database
+    paths.push(getDbPathSingle("com.mulverse.orbis.svelte"));
+    
+    // Auto-detect if development directory exists on the system
+    const devPath = path.dirname(getDbPathSingle("com.mulverse.orbis.dev"));
+    if (existsSync(devPath)) {
+      paths.push(getDbPathSingle("com.mulverse.orbis.dev"));
+    }
+  }
+
+  // Remove duplicates
+  return Array.from(new Set(paths));
+}
+
 // ── Help & Usage Guides ─────────────────────────────────────────────────────
 
 function printHelp() {
@@ -142,12 +161,12 @@ function printHelp() {
   
   console.log(c.bold("Commands:"));
   console.log(`  ${c.cyan("init")}          Start school system installation & db migrations (Default)`);
-  console.log(`  ${c.cyan("db:reset")}      Completely reset and delete local SQLite database file\n`);
+  console.log(`  ${c.cyan("db:reset")}      Completely reset and delete local SQLite database files\n`);
 
   console.log(c.bold("Options:"));
   console.log(`  ${c.yellow("-h, --help")}    Show this help message`);
   console.log(`  ${c.yellow("-v, --version")} Show installer CLI version`);
-  console.log(`  ${c.yellow("--dev")}          Target the development database (com.mulverse.orbis.dev)\n`);
+  console.log(`  ${c.yellow("--dev")}          Target only the development database (com.mulverse.orbis.dev)\n`);
 
   console.log(c.bold("Auto-Install Options (for silent installations):"));
   console.log(`  ${c.purple("--school")}       English School Name`);
@@ -164,7 +183,6 @@ function printHelp() {
 // ── Database Schema Migration ──────────────────────────────────────────────
 
 function runDatabaseMigration(db: Database) {
-  printInfo("Tables not found. Initializing database schema...");
   const dbDir = path.resolve(__dirname, "..", "..", "..", "apps", "api-rust", "crates", "core-domain", "src", "database");
   const coreSchemaPath = path.join(dbDir, "core_schema.sql");
   const schemaPath = path.join(dbDir, "schema.sql");
@@ -197,28 +215,38 @@ function runDatabaseMigration(db: Database) {
     }
   }
   db.run("PRAGMA foreign_keys = ON;");
-  printSuccess("Database schema tables initialized.");
 }
 
 // ── Db Reset Command ────────────────────────────────────────────────────────
 
 async function handleDatabaseReset(isDev = false) {
   printHeader("Orbis Database Reset Tool");
-  const dbPath = getDbPath(isDev);
+  const dbPaths = getDbPaths(isDev);
   
-  if (!existsSync(dbPath)) {
-    printInfo(`No database file found at ${dbPath}`);
+  let foundAny = false;
+  for (const dbPath of dbPaths) {
+    if (existsSync(dbPath)) {
+      foundAny = true;
+    }
+  }
+
+  if (!foundAny) {
+    printInfo(`No database files found in standard locations.`);
     console.log(c.purple("└  Completed."));
     return;
   }
 
-  const confirm = await ask("Confirm deleting database and wiping all data? (yes/no)", "no");
+  const confirm = await ask("Confirm deleting database files and wiping all data? (yes/no)", "no");
   if (confirm.toLowerCase() === "yes") {
-    try {
-      unlinkSync(dbPath);
-      printSuccess(`Database deleted successfully from ${dbPath}`);
-    } catch (e) {
-      printError(`Failed to delete database: ${e}`);
+    for (const dbPath of dbPaths) {
+      if (existsSync(dbPath)) {
+        try {
+          unlinkSync(dbPath);
+          printSuccess(`Database deleted successfully from ${dbPath}`);
+        } catch (e) {
+          printError(`Failed to delete database at ${dbPath}: ${e}`);
+        }
+      }
     }
   } else {
     printInfo("Reset canceled by user.");
@@ -362,8 +390,6 @@ function seedDefaultFinancialsAndPermissions(db: Database, orgId: string, baseCu
       [p.code, p.name, p.nameAr, p.name, p.module, p.action, p.resource, now]
     );
   }
-
-  printSuccess(`Seeded system currencies, default permissions, and ${coaData.metadata.total_accounts} COA ledger accounts.`);
 }
 
 // ── Main Commands Orchestration ─────────────────────────────────────────────
@@ -416,47 +442,53 @@ async function handleInstallation(isDev = false) {
 
   const isAutomated = !!(argEmail && argPassword && argSchool && argSchoolAr);
 
-  const dbPath = getDbPath(isDev);
-  const dbDirName = path.dirname(dbPath);
-  printInfo(`Database location resolved: ${dbPath}`);
-
-  // Ensure database directory exists
-  if (!existsSync(dbDirName)) {
-    mkdirSync(dbDirName, { recursive: true });
+  const dbPaths = getDbPaths(isDev);
+  printInfo(`Resolved database targets:`);
+  for (const dbPath of dbPaths) {
+    console.log(`${c.gray("│")}   - ${c.cyan(dbPath)}`);
   }
+  console.log(c.gray("│"));
 
-  const db = new Database(dbPath);
-
-  // Check if tables are already created
-  let tablesExist = false;
-  try {
-    const check = db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='organizations'").get() as any;
-    if (check && check.name === 'organizations') {
-      tablesExist = true;
+  // Ensure all parent directories exist
+  for (const dbPath of dbPaths) {
+    const dir = path.dirname(dbPath);
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
     }
-  } catch (e) {
-    tablesExist = false;
   }
 
-  // Run migrations if tables do not exist
-  if (!tablesExist) {
-    runDatabaseMigration(db);
-  } else {
-    printInfo("Database schema table mappings verified.");
+  // Run schema migration on all databases
+  for (const dbPath of dbPaths) {
+    const db = new Database(dbPath);
+    let tablesExist = false;
+    try {
+      const check = db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='organizations'").get() as any;
+      if (check && check.name === 'organizations') {
+        tablesExist = true;
+      }
+    } catch (e) {}
+
+    if (!tablesExist) {
+      printInfo(`Initializing database schema table mappings for: ${path.basename(path.dirname(dbPath))}`);
+      runDatabaseMigration(db);
+    }
+    db.close();
   }
 
-  // Check if admin user already exists
+  // Check if admin user already exists on the main database
+  const primaryDb = new Database(dbPaths[0]);
   let adminExists = false;
   try {
-    const adminCount = db.query("SELECT COUNT(*) as count FROM users WHERE primary_role = 'admin'").get() as any;
+    const adminCount = primaryDb.query("SELECT COUNT(*) as count FROM users WHERE primary_role = 'admin'").get() as any;
     if (adminCount && adminCount.count > 0) {
       adminExists = true;
     }
   } catch (e) {}
+  primaryDb.close();
 
   if (adminExists) {
     printSuccess("An administrator account already exists. Skipping user registration.");
-    console.log(c.purple("└  Installation completed successfully! Run 'npm run dev' to open the UI."));
+    console.log(c.purple("└  Installation completed successfully! Launch the UI."));
     process.exit(0);
   }
 
@@ -505,7 +537,7 @@ async function handleInstallation(isDev = false) {
     console.log(c.gray("│"));
   }
 
-  printInfo("Encrypting credentials and bootstrapping database...");
+  printInfo("Encrypting credentials and bootstrapping databases...");
 
   // Hash password using bcrypt
   const passwordHash = await Bun.password.hash(adminPassword.trim(), {
@@ -518,38 +550,47 @@ async function handleInstallation(isDev = false) {
   const orgSlug = finalSchoolNameEn.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "school";
   const now = new Date().toISOString();
 
-  db.run("PRAGMA foreign_keys = OFF;");
-  
-  // Insert Organization
-  db.run(
-    `INSERT INTO organizations (
-      id, name, name_ar, slug, timezone, locale, currency, hijri_enabled,
-      max_users, max_students, max_storage_gb, subscription_plan, is_active,
-      is_verified, is_deleted, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1000, 5000, 100, 'free', 1, 1, 0, ?, ?)`,
-    [orgId, finalSchoolNameEn, finalSchoolNameAr, orgSlug, finalTimezone, locale, currency, now, now]
-  );
+  // Populate all target databases
+  for (const dbPath of dbPaths) {
+    const db = new Database(dbPath);
+    db.run("PRAGMA foreign_keys = OFF;");
+    
+    // Insert Organization
+    db.run(
+      `INSERT OR IGNORE INTO organizations (
+        id, name, name_ar, slug, timezone, locale, currency, hijri_enabled,
+        max_users, max_students, max_storage_gb, subscription_plan, is_active,
+        is_verified, is_deleted, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1000, 5000, 100, 'free', 1, 1, 0, ?, ?)`,
+      [orgId, finalSchoolNameEn, finalSchoolNameAr, orgSlug, finalTimezone, locale, currency, now, now]
+    );
 
-  // Insert Admin User
-  db.run(
-    `INSERT INTO users (
-      id, org_id, email, email_verified, phone, phone_verified, password_hash,
-      mfa_enabled, full_name, name_ar, name_en, primary_role, status, prefs, meta,
-      is_deleted, created_at, updated_at
-    ) VALUES (?, ?, ?, 1, ?, 1, ?, 0, ?, ?, ?, 'admin', 'active', '{}', '{}', 0, ?, ?)`,
-    [userId, orgId, adminEmail, adminPhone, passwordHash, adminNameEn, adminNameAr, adminNameEn, now, now]
-  );
+    // Insert Admin User
+    db.run(
+      `INSERT OR IGNORE INTO users (
+        id, org_id, email, email_verified, phone, phone_verified, password_hash,
+        mfa_enabled, full_name, name_ar, name_en, primary_role, status, prefs, meta,
+        is_deleted, created_at, updated_at
+      ) VALUES (?, ?, ?, 1, ?, 1, ?, 0, ?, ?, ?, 'admin', 'active', '{}', '{}', 0, ?, ?)`,
+      [userId, orgId, adminEmail, adminPhone, passwordHash, adminNameEn, adminNameAr, adminNameEn, now, now]
+    );
 
-  // Automatically seed Default Currencies, Chart of Accounts, and default permissions
-  seedDefaultFinancialsAndPermissions(db, orgId, currency);
+    // Automatically seed Default Currencies, Chart of Accounts, and default permissions
+    seedDefaultFinancialsAndPermissions(db, orgId, currency);
 
-  db.run("PRAGMA foreign_keys = ON;");
+    db.run("PRAGMA foreign_keys = ON;");
+    db.close();
+  }
 
   printSuccess("Organization and administrator record successfully created!");
   console.log(c.purple("└  Installation completed successfully!"));
   console.log(`   ${c.bold("School:")}      ${finalSchoolNameAr} (${finalSchoolNameEn})`);
   console.log(`   ${c.bold("Login Email:")}  ${adminEmail}`);
-  console.log(`   ${c.bold("DB Path:")}      ${dbPath}\n`);
+  console.log(`   ${c.bold("Main DB:")}       ${dbPaths[0]}`);
+  if (dbPaths.length > 1) {
+    console.log(`   ${c.bold("Dev DB:")}        ${dbPaths[1]}`);
+  }
+  console.log();
   console.log(c.cyan("   You can now launch the Orbis app and log in with this account."));
   console.log(c.cyan("   You can now open the app and log in to continue configuring the system.\n"));
 }
