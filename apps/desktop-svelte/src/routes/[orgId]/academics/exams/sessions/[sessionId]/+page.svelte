@@ -32,6 +32,8 @@ import {
   Play,
   CheckCircle2,
   Pencil,
+  Trash,
+  XCircle,
 } from "lucide-svelte";
 import * as m from "$lib/paraglide/messages";
 import ExamStatusBadge from "$lib/components/exams/status-badge.svelte";
@@ -64,9 +66,105 @@ let timeElapsed = $state(0);
 let pollingInterval = $state<any>(null);
 let elapsedTimer = $state<any>(null);
 
+let classes = $state<any[]>([]);
+let schoolSubjects = $state<any[]>([]);
+let previewDraft = $state(false);
+
+let isConfigModalOpen = $state(false);
+let activeConfigTab = $state("schedule");
+
+let preferredPeriod = $state("both"); // "both" | "morning" | "afternoon"
+let maxExamsPerDay = $state(2);
+let defaultDurationMinutes = $state(90);
+let proctorsPerHall = $state(2);
+let preventOwnSubject = $state(true);
+let maxSessionsPerTeacher = $state(5);
+let separateDivisions = $state(false);
+let separateGenders = $state(false);
+let balanceHalls = $state(true);
+
+const draftSchedulesInGrid = $derived.by(() => {
+  if (!previewDraft || !activeJob || !activeJob.best_solution) return [];
+  try {
+    const solution = JSON.parse(activeJob.best_solution);
+    const assignments = solution.assignments || [];
+    return assignments.map((a: any) => {
+      const slotParts = a.slot_id ? a.slot_id.split('_') : [];
+      const exam_date = slotParts[0] || "";
+      const period = slotParts[1] || "";
+      return {
+        id: a.id,
+        exam_date,
+        period,
+        exam_subject_id: a.exam_subject_id,
+        applicable_class_ids: a.class_id,
+        start_time: period === "morning" ? "08:00" : "13:00",
+        end_time: (() => {
+          const exam_subject = subjects.find(s => s.id === a.exam_subject_id);
+          const duration = exam_subject ? exam_subject.duration_minutes : 90;
+          const start_time = period === "morning" ? "08:00" : "13:00";
+          return addMinutes(start_time, duration);
+        })(),
+        isDraft: true,
+      };
+    });
+  } catch (e) {
+    console.error("Error parsing draft solution for exams:", e);
+    return [];
+  }
+});
+
+const activeSchedules = $derived(previewDraft ? draftSchedulesInGrid : schedules);
+
+const sessionDates = $derived(
+  session ? generateDatesRange(session.start_date, session.end_date) : []
+);
+
+function getSubjectName(subjectId: string) {
+  const sub = schoolSubjects.find((s) => String(s.id) === String(subjectId));
+  return sub ? sub.name_ar || sub.name : subjectId;
+}
+
+function getClassName(classId: string) {
+  const cls = classes.find((c) => String(c.id) === String(classId));
+  return cls ? cls.name_ar || cls.name : classId;
+}
+
+function getSubjectColor(subjectId: string) {
+  const sub = schoolSubjects.find((s) => String(s.id) === String(subjectId));
+  return sub ? sub.color : "#3b82f6";
+}
+
+function formatDateWithDay(dateStr: string): string {
+  try {
+    const date = new Date(dateStr);
+    const options: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'short' };
+    return date.toLocaleDateString(getLocale() === "ar" ? "ar-EG" : "en-US", options);
+  } catch (e) {
+    return dateStr;
+  }
+}
+
+function getExamsInCell(date: string, period: string) {
+  return activeSchedules.filter(
+    (s) => String(s.exam_date) === String(date) && String(s.period) === String(period)
+  );
+}
+
+function addMinutes(timeStr: string, minutes: number): string {
+  const parts = timeStr.split(':');
+  if (parts.length < 2) return timeStr;
+  const h = parseInt(parts[0], 10) || 0;
+  const m = parseInt(parts[1], 10) || 0;
+  const total = h * 60 + m + minutes;
+  const rh = Math.floor(total / 60) % 24;
+  const rm = total % 60;
+  return `${String(rh).padStart(2, '0')}:${String(rm).padStart(2, '0')}`;
+}
+
 const tabs = $derived([
   { id: "subjects", label: m.exams_detail_subjects(), icon: BookOpen, count: subjects.length },
-  { id: "schedule", label: m.exams_detail_schedule(), icon: Calendar, count: schedules.length },
+  { id: "schedule", label: m.exams_detail_schedule(), icon: Calendar, count: activeSchedules.length },
   { id: "seating", label: m.exams_detail_seating(), icon: Hash, count: seatingNumbers.length },
   { id: "halls", label: m.exams_detail_halls(), icon: Building2, count: halls.length },
   { id: "proctors", label: m.exams_detail_proctors(), icon: UserCheck, count: proctors.length },
@@ -118,6 +216,18 @@ async function loadSession() {
       rooms = await commands.schedule.getRooms(data.orgId);
     } catch (err) {
       console.error("Failed to load school rooms", err);
+    }
+
+    // Load school classes & subjects catalogs
+    try {
+      const [classList, subjectList] = await Promise.all([
+        commands.classes.getAll(data.orgId),
+        commands.subjects.getAll(data.orgId),
+      ]);
+      classes = classList;
+      schoolSubjects = subjectList;
+    } catch (err) {
+      console.error("Failed to load classes/subjects catalogs", err);
     }
 
     // Load active solve jobs for exams
@@ -221,9 +331,9 @@ async function handleAutoSchedule() {
     const req = {
       exam_session_id: sessionId,
       available_dates,
-      max_exams_per_day: 2,
-      preferred_period: "both",
-      default_duration_minutes: 90,
+      max_exams_per_day: maxExamsPerDay,
+      preferred_period: preferredPeriod,
+      default_duration_minutes: defaultDurationMinutes,
     };
     const job = await commands.exams.startSolve(data.orgId, userId, req);
     activeJob = job;
@@ -337,17 +447,56 @@ async function handleApplySolve() {
   }
 }
 
+async function handleDeleteSchedule(scheduleId: string) {
+  if (!confirm(getLocale() === "ar" ? "هل أنت متأكد من رغبتك في حذف هذا الامتحان نهائياً؟" : "Are you sure you want to delete this scheduled exam permanently?")) return;
+  const promise = commands.exams.deleteSchedule(data.orgId, scheduleId);
+  toast.promise(promise, {
+    loading: getLocale() === "ar" ? "جاري حذف الامتحان..." : "Deleting scheduled exam...",
+    success: getLocale() === "ar" ? "تم حذف الامتحان بنجاح!" : "Deleted exam successfully!",
+    error: (err: any) => err?.message || "Failed to delete",
+  });
+  try {
+    await promise;
+    await loadSession();
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function handleToggleScheduleStatus(sched: any) {
+  const newStatus = sched.status === "cancelled" ? "scheduled" : "cancelled";
+  const label = newStatus === "cancelled" 
+    ? (getLocale() === "ar" ? "إلغاء تفعيل الامتحان..." : "Deactivating exam...")
+    : (getLocale() === "ar" ? "تفعيل الامتحان..." : "Activating exam...");
+  const labelSuccess = newStatus === "cancelled"
+    ? (getLocale() === "ar" ? "تم إلغاء التفعيل بنجاح!" : "Deactivated successfully!")
+    : (getLocale() === "ar" ? "تم تفعيل الامتحان بنجاح!" : "Activated successfully!");
+
+  const promise = commands.exams.updateScheduleStatus(data.orgId, sched.id, newStatus);
+  toast.promise(promise, {
+    loading: label,
+    success: labelSuccess,
+    error: (err: any) => err?.message || "Failed to update status",
+  });
+  try {
+    await promise;
+    await loadSession();
+  } catch (err) {
+    console.error(err);
+  }
+}
+
 async function handleAllocateHalls() {
   const promise = commands.exams.allocateHalls(data.orgId, sessionId, {
-    separate_divisions: false,
-    separate_genders: false,
-    balance_halls: true,
+    separate_divisions: separateDivisions,
+    separate_genders: separateGenders,
+    balance_halls: balanceHalls,
   });
 
   toast.promise(promise, {
     loading: "جاري توزيع الطلاب على القاعات...",
     success: "تم توزيع الطلاب على القاعات بنجاح!",
-    error: (err) => err?.message || "فشل توزيع الطلاب",
+    error: (err: any) => err?.message || "فشل توزيع الطلاب",
   });
 
   try {
@@ -411,9 +560,9 @@ async function handleAssignProctors() {
   try {
     for (const sched of schedules) {
       await commands.exams.autoAssignProctors(data.orgId, sessionId, sched.id, {
-        proctors_per_hall: 2,
-        prevent_own_subject: true,
-        max_sessions_per_teacher: 5,
+        proctors_per_hall: proctorsPerHall,
+        prevent_own_subject: preventOwnSubject,
+        max_sessions_per_teacher: maxSessionsPerTeacher,
       });
       successCount++;
     }
@@ -559,7 +708,7 @@ async function handleAssignProctors() {
 			<!-- ═══ Schedule Tab ═══ -->
 			{:else if activeTab === "schedule"}
 				<div class="flex flex-col gap-4">
-					{#if schedules.length === 0}
+					{#if activeSchedules.length === 0}
 						<div class="flex flex-col items-center justify-center py-12 gap-3 text-center">
 							<Calendar size={24} class="text-muted-foreground" />
 							<p class="text-xs text-muted-foreground">لم يتم جدولة امتحانات بعد</p>
@@ -569,22 +718,143 @@ async function handleAssignProctors() {
 							</Button>
 						</div>
 					{:else}
-						<!-- Timeline Grid -->
-						<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-							{#each schedules as sched (sched.id)}
-								<div class="card-tactile bg-card p-4 flex flex-col gap-2">
-									<div class="flex items-center justify-between">
-										<span class="text-[10px] font-bold text-foreground">{sched.exam_date}</span>
-										<span class="text-[9px] px-1.5 py-0.5 rounded {sched.period === 'morning' ? 'bg-sky-500/10 text-sky-600' : 'bg-violet-500/10 text-violet-600'}">
-											{sched.period === 'morning' ? '☀️ صباحي' : '🌙 مسائي'}
+						<!-- Period-Based Exam Timetable Component with Premium Aesthetics -->
+						<div class="timetable-container border rounded-2xl flex flex-col overflow-hidden shadow-sm select-none">
+							<div 
+								class="grid gap-px text-xs w-full bg-border-line"
+								style="grid-template-columns: 180px 1fr 1fr;"
+							>
+								<!-- Header Row -->
+								<div class="timetable-header p-4 font-bold text-center flex items-center justify-center border-b uppercase text-[10px] tracking-wider">
+									{getLocale() === "ar" ? "اليوم / التاريخ" : "Day / Date"}
+								</div>
+								<div class="timetable-header p-4 font-bold text-center flex items-center justify-center border-b uppercase text-[10px] tracking-wider">
+									{getLocale() === "ar" ? "☀️ الفترة الصباحية (08:00)" : "☀️ Morning Period (08:00)"}
+								</div>
+								<div class="timetable-header p-4 font-bold text-center flex items-center justify-center border-b uppercase text-[10px] tracking-wider">
+									{getLocale() === "ar" ? "🌙 الفترة المسائية (13:00)" : "🌙 Afternoon Period (13:00)"}
+								</div>
+
+								<!-- Rows (Dates) -->
+								{#each sessionDates as date}
+									<!-- Date Cell -->
+									<div class="timetable-period-info p-3 font-semibold text-center flex flex-col justify-center items-center gap-1 min-h-[90px] border-b bg-muted/10 border-e">
+										<span class="text-[11px] tracking-wide font-extrabold text-foreground text-center">
+											{formatDateWithDay(date)}
 										</span>
 									</div>
-									<div class="text-xs font-medium text-foreground">{sched.exam_subject_id}</div>
-									<div class="text-[9px] text-muted-foreground font-mono">
-										{sched.start_time} → {sched.end_time}
+
+									<!-- Morning Cell -->
+									<div class="timetable-cell p-3 text-start h-full min-h-[90px] relative flex flex-col justify-start items-stretch gap-2 border-b bg-card border-e">
+										{#each getExamsInCell(date, "morning") as sched (sched.id)}
+											<div 
+												style="--subject-color: {getSubjectColor(sched.exam_subject_id)};"
+												class="relative overflow-hidden w-full p-2.5 flex flex-row items-stretch justify-between gap-2.5 select-none transition-all duration-150 rounded-lg border
+													{sched.isDraft ? 'border-dashed border-primary/50 bg-primary/[0.02]' : 'border-border/60 hover:border-primary/20 bg-card hover:bg-muted/10'} 
+													{sched.status === 'cancelled' ? 'opacity-40 bg-muted/20 border-dashed border-muted-foreground/30 line-through' : ''}"
+											>
+												<div class="flex-1 flex flex-col justify-center items-start text-start gap-1 min-w-0">
+													<div class="flex items-center gap-1.5 w-full">
+														<span class="w-1.5 h-1.5 rounded-full bg-[var(--subject-color)] shrink-0"></span>
+														<span class="font-bold text-[11px] leading-tight text-foreground line-clamp-1">
+															{getSubjectName(sched.exam_subject_id)}
+														</span>
+														{#if sched.isDraft}
+															<span class="text-[8px] px-1 py-0.5 rounded bg-primary/10 text-primary font-bold">مسودة</span>
+														{/if}
+													</div>
+													
+													<div class="text-[9px] text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+														<span class="font-bold text-primary">{getClassName(sched.applicable_class_ids)}</span>
+														<span class="opacity-60">•</span>
+														<span class="font-mono">{sched.start_time} - {sched.end_time}</span>
+													</div>
+												</div>
+
+												{#if !sched.isDraft}
+													<div class="flex items-center gap-1 shrink-0 self-center">
+														<button 
+															type="button" 
+															class="text-muted-foreground hover:text-foreground p-1 rounded transition-colors duration-150 cursor-pointer"
+															onclick={() => handleToggleScheduleStatus(sched)}
+															title={sched.status === "cancelled" ? "إعادة تفعيل الامتحان" : "إلغاء تفعيل الامتحان"}
+														>
+															{#if sched.status === "cancelled"}
+																<CheckCircle2 size={12} class="text-emerald-500 hover:text-emerald-600" />
+															{:else}
+																<XCircle size={12} class="text-amber-500 hover:text-amber-600" />
+															{/if}
+														</button>
+														<button 
+															type="button" 
+															class="text-muted-foreground hover:text-destructive p-1 rounded transition-colors duration-150 cursor-pointer"
+															onclick={() => handleDeleteSchedule(sched.id)}
+															title="حذف الامتحان نهائياً"
+														>
+															<Trash size={12} />
+														</button>
+													</div>
+												{/if}
+											</div>
+										{/each}
 									</div>
-								</div>
-							{/each}
+
+									<!-- Afternoon Cell -->
+									<div class="timetable-cell p-3 text-start h-full min-h-[90px] relative flex flex-col justify-start items-stretch gap-2 border-b bg-card">
+										{#each getExamsInCell(date, "afternoon") as sched (sched.id)}
+											<div 
+												style="--subject-color: {getSubjectColor(sched.exam_subject_id)};"
+												class="relative overflow-hidden w-full p-2.5 flex flex-row items-stretch justify-between gap-2.5 select-none transition-all duration-150 rounded-lg border
+													{sched.isDraft ? 'border-dashed border-primary/50 bg-primary/[0.02]' : 'border-border/60 hover:border-primary/20 bg-card hover:bg-muted/10'} 
+													{sched.status === 'cancelled' ? 'opacity-40 bg-muted/20 border-dashed border-muted-foreground/30 line-through' : ''}"
+											>
+												<div class="flex-1 flex flex-col justify-center items-start text-start gap-1 min-w-0">
+													<div class="flex items-center gap-1.5 w-full">
+														<span class="w-1.5 h-1.5 rounded-full bg-[var(--subject-color)] shrink-0"></span>
+														<span class="font-bold text-[11px] leading-tight text-foreground line-clamp-1">
+															{getSubjectName(sched.exam_subject_id)}
+														</span>
+														{#if sched.isDraft}
+															<span class="text-[8px] px-1 py-0.5 rounded bg-primary/10 text-primary font-bold">مسودة</span>
+														{/if}
+													</div>
+													
+													<div class="text-[9px] text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+														<span class="font-bold text-primary">{getClassName(sched.applicable_class_ids)}</span>
+														<span class="opacity-60">•</span>
+														<span class="font-mono">{sched.start_time} - {sched.end_time}</span>
+													</div>
+												</div>
+
+												{#if !sched.isDraft}
+													<div class="flex items-center gap-1 shrink-0 self-center">
+														<button 
+															type="button" 
+															class="text-muted-foreground hover:text-foreground p-1 rounded transition-colors duration-150 cursor-pointer"
+															onclick={() => handleToggleScheduleStatus(sched)}
+															title={sched.status === "cancelled" ? "إعادة تفعيل الامتحان" : "إلغاء تفعيل الامتحان"}
+														>
+															{#if sched.status === "cancelled"}
+																<CheckCircle2 size={12} class="text-emerald-500 hover:text-emerald-600" />
+															{:else}
+																<XCircle size={12} class="text-amber-500 hover:text-amber-600" />
+															{/if}
+														</button>
+														<button 
+															type="button" 
+															class="text-muted-foreground hover:text-destructive p-1 rounded transition-colors duration-150 cursor-pointer"
+															onclick={() => handleDeleteSchedule(sched.id)}
+															title="حذف الامتحان نهائياً"
+														>
+															<Trash size={12} />
+														</button>
+													</div>
+												{/if}
+											</div>
+										{/each}
+									</div>
+								{/each}
+							</div>
 						</div>
 					{/if}
 				</div>
@@ -634,7 +904,7 @@ async function handleAssignProctors() {
 				<div class="flex flex-col gap-4">
 					<div class="flex items-center justify-between text-xs text-muted-foreground select-none px-1">
 						<span>تم تفعيل {halls.length} لجنة من أصل {rooms.length} قاعة دراسية متاحة بالمدرسة</span>
-						<Button variant="outline" class="h-6 px-2 text-[9px] cursor-pointer" onclick={handleAllocateHalls}>
+						<Button variant="outline" class="h-6 px-2 text-[9px] cursor-pointer" onclick={() => { activeConfigTab = "halls"; isConfigModalOpen = true; }}>
 							<Shuffle size={10} class="me-1" />
 							توزيع الطلاب تلقائياً
 						</Button>
@@ -703,7 +973,7 @@ async function handleAssignProctors() {
 						<div class="flex flex-col items-center justify-center py-12 gap-3 text-center">
 							<UserCheck size={24} class="text-muted-foreground" />
 							<p class="text-xs text-muted-foreground">لم يتم تعيين مراقبين بعد</p>
-							<Button variant="outline" class="h-7 px-3 text-[10px] cursor-pointer" onclick={handleAssignProctors}>
+							<Button variant="outline" class="h-7 px-3 text-[10px] cursor-pointer" onclick={() => { activeConfigTab = "proctors"; isConfigModalOpen = true; }}>
 								<UserCheck size={12} class="me-1" />
 								{m.exams_actions_assign_proctors()}
 							</Button>
@@ -784,6 +1054,9 @@ async function handleAssignProctors() {
 							إلغاء العملية
 						</Button>
 					{:else if activeJob.status === 'completed'}
+						<Button size="sm" variant={previewDraft ? "secondary" : "outline"} class="h-8 text-[10px] px-3 font-bold cursor-pointer" onclick={() => previewDraft = !previewDraft}>
+							{previewDraft ? "إلغاء المعاينة" : "معاينة الجدول المقترح"}
+						</Button>
 						<Button size="sm" variant="default" class="h-8 text-[10px] px-3 font-bold cursor-pointer" onclick={handleApplySolve}>
 							تطبيق الجدول المقترح
 						</Button>
@@ -801,15 +1074,197 @@ async function handleAssignProctors() {
 			<Button variant="outline" class="h-7 px-2.5 text-[9px] flex items-center gap-1 cursor-pointer" onclick={handleGenerateSecrets}>
 				<Lock size={10} /> الأرقام السرية
 			</Button>
-			<Button variant="outline" class="h-7 px-2.5 text-[9px] flex items-center gap-1 cursor-pointer" onclick={handleAutoSchedule}>
+			<Button variant="outline" class="h-7 px-2.5 text-[9px] flex items-center gap-1 cursor-pointer" onclick={() => { activeConfigTab = "schedule"; isConfigModalOpen = true; }}>
 				<Zap size={10} /> جدولة تلقائية
 			</Button>
-			<Button variant="outline" class="h-7 px-2.5 text-[9px] flex items-center gap-1 cursor-pointer" onclick={handleAllocateHalls}>
+			<Button variant="outline" class="h-7 px-2.5 text-[9px] flex items-center gap-1 cursor-pointer" onclick={() => { activeConfigTab = "halls"; isConfigModalOpen = true; }}>
 				<Shuffle size={10} /> توزيع اللجان
 			</Button>
 		</div>
 	{/if}
 </div>
+
+{#if isConfigModalOpen}
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div 
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" 
+		transition:fade={{ duration: 150 }}
+		onclick={(e) => { if (e.target === e.currentTarget) isConfigModalOpen = false; }}
+	>
+		<div class="bg-card border border-border shadow-xl rounded-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] text-start">
+			<!-- Modal Header -->
+			<div class="border-b border-border p-4 flex items-center justify-between bg-muted/20">
+				<div>
+					<h3 class="text-sm font-bold text-foreground">معالج وتخصيص الجدولة والتوزيع الذكي AI</h3>
+					<p class="text-[10px] text-muted-foreground mt-0.5">خصص معايير وقيود وخوارزمية الجدولة الذكية</p>
+				</div>
+				<button 
+					type="button" 
+					class="text-muted-foreground hover:text-foreground cursor-pointer text-xs p-1"
+					onclick={() => isConfigModalOpen = false}
+				>
+					✕
+				</button>
+			</div>
+
+			<!-- Dialog Navigation Tabs -->
+			<div class="flex border-b border-border bg-muted/10 p-1 gap-1">
+				<button 
+					type="button"
+					class="flex-1 text-[11px] font-bold py-2 text-center rounded-lg transition-all cursor-pointer 
+						{activeConfigTab === 'schedule' ? 'bg-card text-primary shadow-sm border border-border/40' : 'text-muted-foreground hover:text-foreground'}"
+					onclick={() => activeConfigTab = "schedule"}
+				>
+					🗓️ جدولة الفترات
+				</button>
+				<button 
+					type="button"
+					class="flex-1 text-[11px] font-bold py-2 text-center rounded-lg transition-all cursor-pointer 
+						{activeConfigTab === 'halls' ? 'bg-card text-primary shadow-sm border border-border/40' : 'text-muted-foreground hover:text-foreground'}"
+					onclick={() => activeConfigTab = "halls"}
+				>
+					🏫 توزيع اللجان والطلاب
+				</button>
+				<button 
+					type="button"
+					class="flex-1 text-[11px] font-bold py-2 text-center rounded-lg transition-all cursor-pointer 
+						{activeConfigTab === 'proctors' ? 'bg-card text-primary shadow-sm border border-border/40' : 'text-muted-foreground hover:text-foreground'}"
+					onclick={() => activeConfigTab = "proctors"}
+				>
+					👮 تعيين المراقبين
+				</button>
+			</div>
+
+			<!-- Tab Contents -->
+			<div class="p-5 flex-1 overflow-y-auto flex flex-col gap-4 text-xs">
+				{#if activeConfigTab === "schedule"}
+					<!-- Period Solver settings -->
+					<div class="flex flex-col gap-3.5">
+						<div class="flex flex-col gap-1.5">
+							<span class="font-bold text-foreground">تفضيل فترات الجدولة اليومية:</span>
+							<select 
+								bind:value={preferredPeriod}
+								class="bg-background text-foreground border border-border rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-primary w-full"
+							>
+								<option value="both">☀️ فترتين باليوم (صباحية ومسائية)</option>
+								<option value="morning">☀️ فترة واحدة (صباحية فقط)</option>
+								<option value="afternoon">🌙 فترة واحدة (مسائية فقط)</option>
+							</select>
+						</div>
+
+						<div class="flex flex-col gap-1.5">
+							<span class="font-bold text-foreground">الحد الأقصى للاختبارات باليوم للطالب/الصف:</span>
+							<select 
+								bind:value={maxExamsPerDay}
+								class="bg-background text-foreground border border-border rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-primary w-full"
+							>
+								<option value={1}>اختبار واحد في اليوم (موصى به لتخفيف الضغط)</option>
+								<option value={2}>اختبارين كحد أقصى باليوم (صباحي ومسائي)</option>
+							</select>
+						</div>
+
+						<div class="flex flex-col gap-1.5">
+							<span class="font-bold text-foreground">مدة الامتحان الافتراضية (بالدقائق):</span>
+							<input 
+								type="number"
+								bind:value={defaultDurationMinutes}
+								min="30"
+								max="240"
+								class="bg-background text-foreground border border-border rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-primary w-full font-mono"
+							/>
+						</div>
+					</div>
+
+					<div class="mt-4 pt-4 border-t border-border flex items-center justify-end gap-2">
+						<Button variant="outline" size="sm" class="cursor-pointer" onclick={() => isConfigModalOpen = false}>إلغاء</Button>
+						<Button variant="default" size="sm" class="cursor-pointer font-bold" onclick={() => { isConfigModalOpen = false; handleAutoSchedule(); }}>
+							<Zap size={12} class="me-1" /> بدء الجدولة الذكية
+						</Button>
+					</div>
+
+				{:else if activeConfigTab === "halls"}
+					<!-- Halls allocation settings -->
+					<div class="flex flex-col gap-3.5">
+						<div class="flex items-center justify-between p-3 rounded-lg border border-border/60 bg-muted/5">
+							<div class="flex flex-col gap-0.5 max-w-[80%]">
+								<span class="font-bold text-foreground">فصل الطلاب حسب التخصص:</span>
+								<p class="text-[10px] text-muted-foreground">توزيع طلاب المسارات المختلفة (علمي/أدبي) في لجان منفصلة</p>
+							</div>
+							<input type="checkbox" bind:checked={separateDivisions} class="w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer" />
+						</div>
+
+						<div class="flex items-center justify-between p-3 rounded-lg border border-border/60 bg-muted/5">
+							<div class="flex flex-col gap-0.5 max-w-[80%]">
+								<span class="font-bold text-foreground">فصل الطلاب حسب الجنس:</span>
+								<p class="text-[10px] text-muted-foreground">توزيع البنين والبنات في لجان وقاعات منفصلة تماماً</p>
+							</div>
+							<input type="checkbox" bind:checked={separateGenders} class="w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer" />
+						</div>
+
+						<div class="flex items-center justify-between p-3 rounded-lg border border-border/60 bg-muted/5">
+							<div class="flex flex-col gap-0.5 max-w-[80%]">
+								<span class="font-bold text-foreground">موازنة أعداد الطلاب في اللجان:</span>
+								<p class="text-[10px] text-muted-foreground">موازنة وتوزيع الطلاب بالتساوي بدلاً من ملء اللجان تباعاً</p>
+							</div>
+							<input type="checkbox" bind:checked={balanceHalls} class="w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer" />
+						</div>
+					</div>
+
+					<div class="mt-4 pt-4 border-t border-border flex items-center justify-end gap-2">
+						<Button variant="outline" size="sm" class="cursor-pointer" onclick={() => isConfigModalOpen = false}>إلغاء</Button>
+						<Button variant="default" size="sm" class="cursor-pointer font-bold" onclick={() => { isConfigModalOpen = false; handleAllocateHalls(); }}>
+							<Shuffle size={12} class="me-1" /> بدء التوزيع التلقائي
+						</Button>
+					</div>
+
+				{:else if activeConfigTab === "proctors"}
+					<!-- Proctors assignment settings -->
+					<div class="flex flex-col gap-3.5">
+						<div class="flex flex-col gap-1.5">
+							<span class="font-bold text-foreground">عدد المراقبين المطلوبين في اللجنة الواحدة:</span>
+							<select 
+								bind:value={proctorsPerHall}
+								class="bg-background text-foreground border border-border rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-primary w-full font-mono"
+							>
+								<option value={1}>مراقب واحد (1) لكل لجنة</option>
+								<option value={2}>مراقبين (2) لكل لجنة (موصى به للأمان)</option>
+								<option value={3}>ثلاثة مراقبين (3) لكل لجنة</option>
+							</select>
+						</div>
+
+						<div class="flex items-center justify-between p-3 rounded-lg border border-border/60 bg-muted/5">
+							<div class="flex flex-col gap-0.5 max-w-[80%]">
+								<span class="font-bold text-foreground">منع المعلم من مراقبة مادته الدراسية:</span>
+								<p class="text-[10px] text-muted-foreground">تأكيد عدم مراقبة معلم الرياضيات لامتحان مادة الرياضيات منعاً للغش</p>
+							</div>
+							<input type="checkbox" bind:checked={preventOwnSubject} class="w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer" />
+						</div>
+
+						<div class="flex flex-col gap-1.5">
+							<span class="font-bold text-foreground">الحد الأقصى لفترات المراقبة للمعلم الواحد:</span>
+							<input 
+								type="number"
+								bind:value={maxSessionsPerTeacher}
+								min="1"
+								max="20"
+								class="bg-background text-foreground border border-border rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-primary w-full font-mono"
+							/>
+						</div>
+					</div>
+
+					<div class="mt-4 pt-4 border-t border-border flex items-center justify-end gap-2">
+						<Button variant="outline" size="sm" class="cursor-pointer" onclick={() => isConfigModalOpen = false}>إلغاء</Button>
+						<Button variant="default" size="sm" class="cursor-pointer font-bold" onclick={() => { isConfigModalOpen = false; handleAssignProctors(); }}>
+							<UserCheck size={12} class="me-1" /> تعيين المراقبين تلقائياً
+						</Button>
+					</div>
+				{/if}
+			</div>
+		</div>
+	</div>
+{/if}
+
 
 <SubjectAddSheet
 	bind:open={isSubjectSheetOpen}

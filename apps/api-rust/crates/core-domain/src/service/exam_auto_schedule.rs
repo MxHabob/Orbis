@@ -537,6 +537,61 @@ impl super::Service {
 
         Ok(new_schedule)
     }
+
+    pub async fn delete_exam_schedule(
+        &self,
+        org_id: &str,
+        schedule_id: &str,
+    ) -> Result<(), String> {
+        let schedule = self
+            .repo
+            .get_exam_schedule_by_id(schedule_id)
+            .await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "exam schedule not found".to_string())?;
+
+        let session = self.get_exam_session(org_id, &schedule.exam_session_id).await?;
+        if session.status != "draft" && session.status != "scheduled" {
+            return Err("can only delete schedules for draft or scheduled sessions".to_string());
+        }
+
+        self.repo
+            .delete_exam_schedule(schedule_id)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        Ok(())
+    }
+
+    pub async fn update_exam_schedule_status(
+        &self,
+        org_id: &str,
+        schedule_id: &str,
+        status: &str,
+    ) -> Result<crate::entities::exam_schedule::Model, String> {
+        let mut schedule = self
+            .repo
+            .get_exam_schedule_by_id(schedule_id)
+            .await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "exam schedule not found".to_string())?;
+
+        let session = self.get_exam_session(org_id, &schedule.exam_session_id).await?;
+        if session.status != "draft" && session.status != "scheduled" {
+            return Err("can only update schedules for draft or scheduled sessions".to_string());
+        }
+
+        schedule.status = status.to_string();
+        schedule.updated_at = Utc::now().to_rfc3339();
+
+        let updated = self
+            .repo
+            .update_exam_schedule(schedule)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        Ok(updated)
+    }
 }
 
 /// Add minutes to a time string (HH:MM) and return new time string

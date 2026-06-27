@@ -333,6 +333,49 @@ impl super::Repository {
             .map(|res| res.rows_affected)
     }
 
+    pub async fn get_exam_schedule_by_id(
+        &self,
+        id: &str,
+    ) -> Result<Option<exam_schedule::Model>, DbErr> {
+        exam_schedule::Entity::find_by_id(id.to_string())
+            .one(&self.db)
+            .await
+    }
+
+    pub async fn delete_exam_schedule(
+        &self,
+        id: &str,
+    ) -> Result<u64, DbErr> {
+        exam_schedule::Entity::delete_by_id(id.to_string())
+            .exec(&self.db)
+            .await
+            .map(|res| res.rows_affected)
+    }
+
+    pub async fn update_exam_schedule(
+        &self,
+        model: exam_schedule::Model,
+    ) -> Result<exam_schedule::Model, DbErr> {
+        let active = exam_schedule::ActiveModel {
+            id: Set(model.id),
+            exam_session_id: Set(model.exam_session_id),
+            exam_subject_id: Set(model.exam_subject_id),
+            exam_date: Set(model.exam_date),
+            start_time: Set(model.start_time),
+            end_time: Set(model.end_time),
+            period: Set(model.period),
+            applicable_class_ids: Set(model.applicable_class_ids),
+            room_ids: Set(model.room_ids),
+            status: Set(model.status),
+            postponed_to: Set(model.postponed_to),
+            postponement_reason: Set(model.postponement_reason),
+            notes: Set(model.notes),
+            created_at: Set(model.created_at),
+            updated_at: Set(model.updated_at),
+        };
+        active.update(&self.db).await
+    }
+
     // ── Seating Numbers ─────────────────────────────────────────────────────
 
     pub async fn get_seating_numbers(

@@ -328,6 +328,8 @@ pub fn run() {
             commands::exams::list_exam_solve_jobs,
             commands::exams::cancel_exam_solve,
             commands::exams::apply_exam_solve,
+            commands::exams::delete_exam_schedule,
+            commands::exams::update_exam_schedule_status,
             commands::exams::allocate_students_to_halls,
             commands::exams::auto_assign_proctors,
             commands::exams::get_exam_halls,

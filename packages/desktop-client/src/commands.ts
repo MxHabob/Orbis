@@ -587,6 +587,12 @@ export const commands = {
     applySolve: (orgId: string, jobId: string) =>
       invoke<JsonRecord>("apply_exam_solve", { orgId, jobId }),
 
+    deleteSchedule: (orgId: string, scheduleId: string) =>
+      invoke<void>("delete_exam_schedule", { orgId, scheduleId }),
+
+    updateScheduleStatus: (orgId: string, scheduleId: string, status: string) =>
+      invoke<JsonRecord>("update_exam_schedule_status", { orgId, scheduleId, status }),
+
     // Logistics
     allocateHalls: (orgId: string, sessionId: string, config: JsonRecord) =>
       invoke<JsonRecord>("allocate_students_to_halls", { orgId, sessionId, config }),

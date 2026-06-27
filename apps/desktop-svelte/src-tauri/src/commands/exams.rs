@@ -357,3 +357,30 @@ pub async fn get_seating_numbers(
         .await
         .map_err(CommandError::from)
 }
+
+#[tauri::command]
+pub async fn delete_exam_schedule(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    schedule_id: String,
+) -> CmdResult<()> {
+    state
+        .service
+        .delete_exam_schedule(&org_id, &schedule_id)
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn update_exam_schedule_status(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    schedule_id: String,
+    status: String,
+) -> CmdResult<exam_schedule::Model> {
+    state
+        .service
+        .update_exam_schedule_status(&org_id, &schedule_id, &status)
+        .await
+        .map_err(CommandError::from)
+}
