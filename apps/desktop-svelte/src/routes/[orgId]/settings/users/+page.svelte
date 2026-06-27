@@ -14,9 +14,9 @@ import {
 import { Avatar, AvatarImage, AvatarFallback } from "@orbis/ui-svelte/avatar";
 import { Input } from "@orbis/ui-svelte/input";
 import { toast } from "svelte-sonner";
-import { getLocale } from "$lib/paraglide/runtime";
+import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
-import { Plus, Search, Pencil, Trash2, Shield, User as UserIcon, Users } from "lucide-svelte";
+import { Plus, Search, Pencil, Trash2, Shield, User as UserIcon, Users, Eye } from "lucide-svelte";
 import UserCreateSheet from "$lib/components/sheets/user-create-sheet.svelte";
 import * as m from "$lib/paraglide/messages";
 import type { User } from "$lib/services/ipc";
@@ -229,7 +229,10 @@ function getRoleBadgeClass(roleStr: string): string {
               <TableRow class="hover:bg-accent/5">
                 <!-- Name with Avatar -->
                 <TableCell>
-                  <div class="flex items-center gap-3">
+                  <a
+                    href={localizeHref(`/${data.orgId}/settings/users/${user.id}`)}
+                    class="flex items-center gap-3 hover:opacity-80 transition-opacity"
+                  >
                     <Avatar class="w-8 h-8 border border-border/80">
                       <AvatarImage src={user.avatar ? String(user.avatar) : undefined} alt={user.full_name} class="object-cover" />
                       <AvatarFallback class="text-xs font-bold bg-muted text-muted-foreground">
@@ -244,7 +247,7 @@ function getRoleBadgeClass(roleStr: string): string {
                         <span class="text-[9px] text-muted-foreground leading-none mt-0.5">{user.full_name}</span>
                       {/if}
                     </div>
-                  </div>
+                  </a>
                 </TableCell>
                 
                 <!-- Email -->
@@ -267,6 +270,14 @@ function getRoleBadgeClass(roleStr: string): string {
                 <!-- Actions -->
                 <TableCell class="text-end px-6">
                   <div class="flex items-center justify-end gap-1.5">
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      title={getLocale() === "ar" ? "تفاصيل المستخدم" : "User Details"}
+                      href={localizeHref(`/${data.orgId}/settings/users/${user.id}`)}
+                    >
+                      <Eye size={12} class="text-muted-foreground hover:text-foreground" />
+                    </Button>
                     <Button
                       variant="ghost"
                       size="icon-xs"

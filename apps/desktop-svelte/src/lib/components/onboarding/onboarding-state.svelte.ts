@@ -58,10 +58,17 @@ class OnboardingState {
   activeStep = $state(1);
   isLoading = $state(false);
   errorMessage = $state<string | null>(null);
-  totalSteps = 8;
+  totalSteps = 9;
 
   // Step 7: Registration Fees Setup
   registrationFees = $state<Record<string, number>>({});
+
+  // Step 8: Administrator User Configuration
+  adminFullName = $state("محمد علي احمد");
+  adminFullNameEn = $state("Mohamed Ali Ahmed");
+  adminEmail = $state("admin@sanaa-school.edu");
+  adminPhone = $state("777777777");
+  adminPassword = $state("admin123");
 
   // Step 1: School General Info
   orgName = $state("Sanaa Model School");
@@ -435,6 +442,23 @@ class OnboardingState {
 
       const { commands } = await import("$lib/services/ipc");
       await commands.academics.initializeSchoolSetup(orgId, payload);
+
+      // Create the admin user specified during onboarding
+      if (this.adminEmail && this.adminPassword) {
+        const adminRequest = {
+          email: this.adminEmail,
+          password: this.adminPassword,
+          full_name: this.adminFullNameEn || "School Admin",
+          name_ar: this.adminFullName || "مدير المدرسة",
+          primary_role: "admin",
+          phone: this.adminPhone || null,
+        };
+        try {
+          await commands.users.createUser(orgId, "system", adminRequest);
+        } catch (adminErr) {
+          console.error("Failed to create admin user during onboarding:", adminErr);
+        }
+      }
 
       // Create fee templates for the specified registration fees
       for (const gl of this.gradeLevels) {

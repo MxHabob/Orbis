@@ -17,6 +17,7 @@ import GradesClassesStep from "./steps/grades-classes-step.svelte";
 import TimeSlotsStep from "./steps/time-slots-step.svelte";
 import SubjectsStep from "./steps/subjects-step.svelte";
 import FeesStep from "./steps/fees-step.svelte";
+import AdminUserStep from "./steps/admin-user-step.svelte";
 import ReviewStep from "./steps/review-step.svelte";
 </script>
 
@@ -55,6 +56,8 @@ import ReviewStep from "./steps/review-step.svelte";
     {:else if onboardingState.activeStep === 7}
       <FeesStep />
     {:else if onboardingState.activeStep === 8}
+      <AdminUserStep />
+    {:else if onboardingState.activeStep === 9}
       <ReviewStep />
     {/if}
   </div>

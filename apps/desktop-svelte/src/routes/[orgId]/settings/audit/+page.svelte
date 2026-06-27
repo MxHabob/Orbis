@@ -22,6 +22,7 @@ import {
   Eye,
   Info,
   Calendar,
+  ShieldAlert,
 } from "lucide-svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatDate } from "$lib/i18n-utils";
@@ -53,7 +54,7 @@ async function loadData() {
       commands.users.getUsers(data.orgId),
     ]);
     // Sort logs by date descending
-    auditLogs = logsList.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    auditLogs = logsList.sort((a, b) => new Date(b.created_at as string).getTime() - new Date(a.created_at as string).getTime());
     users = usersList;
   } catch (e) {
     console.error("Error loading audit logs:", e);

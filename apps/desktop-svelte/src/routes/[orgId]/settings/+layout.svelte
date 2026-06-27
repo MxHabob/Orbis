@@ -20,6 +20,7 @@ import {
   History,
   FileDown,
   ChevronRight,
+  Shield,
 } from "lucide-svelte";
 import MainViewport from "$lib/components/layout/MainViewport.svelte";
 import type { Snippet } from "svelte";
@@ -66,6 +67,11 @@ const navItems = $derived([
     path: "users",
     label: m.settings_nav_users(),
     icon: Users,
+  },
+  {
+    path: "permissions",
+    label: m.settings_nav_permissions(),
+    icon: Shield,
   },
   {
     path: "cycles",

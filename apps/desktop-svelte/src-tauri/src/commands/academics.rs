@@ -84,7 +84,7 @@ pub async fn lock_cycle(
 ) -> CmdResult<academic_cycle::Model> {
     state
         .service
-        .lock_cycle(&cycle_id)
+        .lock_cycle(&cycle_id, "admin")
         .await
         .map_err(CommandError::from)
 }

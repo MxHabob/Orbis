@@ -62,7 +62,7 @@ pub async fn update_grade(
 ) -> CmdResult<grade::Model> {
     state
         .service
-        .update_grade(&grade_id, request)
+        .update_grade(&grade_id, "admin", request)
         .await
         .map_err(CommandError::from)
 }
