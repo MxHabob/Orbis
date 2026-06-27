@@ -373,20 +373,82 @@ pub async fn initialize_school_setup(
                 .map_err(|e| e.to_string())?;
             }
 
-            // 6. Insert Rooms
-            for rm in config.rooms {
+            // 6. Insert Rooms & Org Units
+            let mut unique_buildings = Vec::new();
+            for rm in &config.rooms {
+                if !rm.building.is_empty() && !unique_buildings.contains(&rm.building) {
+                    unique_buildings.push(rm.building.clone());
+                }
+            }
+
+            let mut building_id_map = std::collections::HashMap::new();
+            for (idx, bld_name) in unique_buildings.iter().enumerate() {
+                let bld_id = format!("unit-bld-{}-{}", org_id, idx + 1);
+                building_id_map.insert(bld_name.clone(), bld_id.clone());
+
+                txn.execute(Statement::from_sql_and_values(
+                    backend,
+                    "INSERT INTO org_units (id, org_id, name, name_ar, type, parent_id, path, depth, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, 'building', ?, ?, 1, 1, ?, ?)",
+                    vec![
+                        bld_id.clone().into(),
+                        org_id.clone().into(),
+                        bld_name.clone().into(),
+                        bld_name.clone().into(),
+                        config.root_unit_id.clone().into(),
+                        format!("{}/{}", config.root_unit_id, bld_id).into(),
+                        now_str.clone().into(),
+                        now_str.clone().into(),
+                    ],
+                ))
+                .await
+                .map_err(|e| e.to_string())?;
+            }
+
+            for rm in &config.rooms {
+                // First insert into rooms table
                 txn.execute(Statement::from_sql_and_values(
                     backend,
                     "INSERT INTO rooms (id, org_id, name, name_ar, capacity, room_type, building, floor, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)",
                     vec![
-                        rm.id.into(),
+                        rm.id.clone().into(),
                         org_id.clone().into(),
-                        rm.name.into(),
-                        rm.name_ar.into(),
+                        rm.name.clone().into(),
+                        rm.name_ar.clone().into(),
                         rm.capacity.into(),
-                        rm.room_type.into(),
-                        rm.building.into(),
+                        rm.room_type.clone().into(),
+                        rm.building.clone().into(),
                         rm.floor.into(),
+                        now_str.clone().into(),
+                        now_str.clone().into(),
+                    ],
+                ))
+                .await
+                .map_err(|e| e.to_string())?;
+
+                // Then insert into org_units table
+                let parent_id = building_id_map.get(&rm.building).cloned().unwrap_or_else(|| config.root_unit_id.clone());
+                let depth = if building_id_map.contains_key(&rm.building) { 2 } else { 1 };
+                let path = if parent_id == config.root_unit_id {
+                    format!("{}/{}", config.root_unit_id, rm.id)
+                } else {
+                    format!("{}/{}/{}", config.root_unit_id, parent_id, rm.id)
+                };
+
+                txn.execute(Statement::from_sql_and_values(
+                    backend,
+                    "INSERT INTO org_units (id, org_id, name, name_ar, type, parent_id, path, depth, capacity, room_number, floor, building, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, 'classroom', ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)",
+                    vec![
+                        rm.id.clone().into(),
+                        org_id.clone().into(),
+                        rm.name.clone().into(),
+                        rm.name_ar.clone().into(),
+                        parent_id.into(),
+                        path.into(),
+                        depth.into(),
+                        rm.capacity.into(),
+                        rm.name.clone().into(),
+                        rm.floor.into(),
+                        rm.building.clone().into(),
                         now_str.clone().into(),
                         now_str.clone().into(),
                     ],
