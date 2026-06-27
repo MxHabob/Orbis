@@ -200,7 +200,7 @@ async function handleDatabaseReset() {
     return;
   }
 
-  const confirm = await ask("Are you sure you want to delete the database and wipe all data? (yes/no)", "no");
+  const confirm = await ask("Confirm deleting database and wiping all data? (yes/no)", "no");
   if (confirm.toLowerCase() === "yes") {
     try {
       unlinkSync(dbPath);
@@ -429,22 +429,22 @@ async function handleInstallation() {
   let adminPassword = argPassword;
 
   if (!isAutomated) {
-    printStep("School Information / إعداد بيانات المدرسة");
-    schoolNameAr = await ask("Official School Name (Arabic) / اسم المدرسة الرسمي باللغة العربية", "مدرسة صنعاء النموذجية");
-    schoolNameEn = await ask("School Name (English) / اسم المدرسة باللغة الإنجليزية", "Sanaa Model School");
+    printStep("School Information Setup");
+    schoolNameAr = await ask("School Name in Arabic (اسم المدرسة باللغة العربية)", "مدرسة صنعاء النموذجية");
+    schoolNameEn = await ask("School Name in English (اسم المدرسة باللغة الإنجليزية)", "Sanaa Model School");
     timezone = await ask("Timezone / المنطقة الزمنية", "Asia/Aden");
     console.log(c.gray("│"));
 
-    printStep("Administrator Account / إعداد حساب المدير");
-    adminNameAr = await ask("Administrator Full Name (Arabic) / اسم المدير باللغة العربية", "مدير المدرسة");
-    adminNameEn = await ask("Administrator Full Name (English) / اسم المدير باللغة الإنجليزية", "School Admin");
-    adminEmail = await ask("Login Email Address / البريد الإلكتروني لتسجيل الدخول", "admin@school.com", (val) => {
+    printStep("Administrator Account Setup");
+    adminNameAr = await ask("Administrator Name in Arabic (اسم المدير باللغة العربية)", "مدير المدرسة");
+    adminNameEn = await ask("Administrator Name in English (اسم المدير باللغة الإنجليزية)", "School Admin");
+    adminEmail = await ask("Login Email Address (البريد الإلكتروني)", "admin@school.com", (val) => {
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
     });
-    adminPhone = await ask("Phone Number (Optional) / رقم الهاتف (اختياري)", "777777777");
+    adminPhone = await ask("Phone Number / رقم الهاتف (Optional)", "777777777");
     
     while (adminPassword.length < 6) {
-      adminPassword = await askPassword("Login Password (Min 6 chars) / كلمة المرور (6 أحرف على الأقل)");
+      adminPassword = await askPassword("Login Password / كلمة المرور (Min 6 chars)");
       if (adminPassword.length < 6) {
         console.log(`${c.gray("│")}  ${c.red("✖  Password must be at least 6 characters.")}`);
       }
