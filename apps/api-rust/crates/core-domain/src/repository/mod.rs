@@ -19,6 +19,7 @@ pub mod guardian;
 pub mod document;
 pub mod currency;
 pub mod permission;
+pub mod solve_job;
 
 // ── Examination Management System ──
 pub mod exam;

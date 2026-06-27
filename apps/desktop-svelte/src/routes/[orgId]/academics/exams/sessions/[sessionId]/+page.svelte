@@ -16,7 +16,7 @@ import {
   TableCell,
 } from "@orbis/ui-svelte/table";
 import { toast } from "svelte-sonner";
-import { localizeHref } from "$lib/paraglide/runtime";
+import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
 import {
   ArrowLeft,
@@ -55,6 +55,14 @@ let rooms = $state<any[]>([]);
 let isLoading = $state(true);
 let activeTab = $state("subjects");
 let isSubjectSheetOpen = $state(false);
+
+let activeJob = $state<any>(null);
+let solveJobs = $state<any[]>([]);
+let solveError = $state<string | null>(null);
+let isSolving = $state(false);
+let timeElapsed = $state(0);
+let pollingInterval = $state<any>(null);
+let elapsedTimer = $state<any>(null);
 
 const tabs = $derived([
   { id: "subjects", label: m.exams_detail_subjects(), icon: BookOpen, count: subjects.length },
@@ -111,6 +119,9 @@ async function loadSession() {
     } catch (err) {
       console.error("Failed to load school rooms", err);
     }
+
+    // Load active solve jobs for exams
+    await loadSolveJobs();
   } catch (e) {
     toast.error("Failed to load session details");
     console.error(e);
@@ -173,6 +184,26 @@ function generateDatesRange(startStr: string, endStr: string): string[] {
   return dates;
 }
 
+async function loadSolveJobs() {
+  if (!sessionId) return;
+  try {
+    const list = await commands.exams.listSolveJobs(data.orgId, sessionId);
+    solveJobs = list;
+
+    // Auto-resume polling if any job is running in background
+    const running = list.find(
+      (j: any) => j.status === "pending" || j.status === "running",
+    );
+    if (running) {
+      activeJob = running;
+      isSolving = true;
+      startPollingJob(String(running.id));
+    }
+  } catch (e) {
+    console.error("Error loading solve jobs:", e);
+  }
+}
+
 async function handleAutoSchedule() {
   if (!session) return;
   const available_dates = generateDatesRange(session.start_date, session.end_date);
@@ -181,22 +212,125 @@ async function handleAutoSchedule() {
     return;
   }
 
-  const promise = commands.exams.autoSchedule(data.orgId, {
-    exam_session_id: sessionId,
-    available_dates,
-    max_exams_per_day: 2,
-    preferred_period: "both",
-    default_duration_minutes: 90,
-  });
+  isSolving = true;
+  solveError = null;
+  activeJob = null;
 
+  try {
+    const userId = authStore.userId || authStore.user?.id || "desktop_user";
+    const req = {
+      exam_session_id: sessionId,
+      available_dates,
+      max_exams_per_day: 2,
+      preferred_period: "both",
+      default_duration_minutes: 90,
+    };
+    const job = await commands.exams.startSolve(data.orgId, userId, req);
+    activeJob = job;
+    toast.success(
+      getLocale() === "ar"
+        ? "تم بدء الجدولة التلقائية في الخلفية"
+        : "Started auto-scheduling in the background",
+    );
+    startPollingJob(String(job.id));
+  } catch (e: any) {
+    isSolving = false;
+    solveError = e?.message || String(e);
+    toast.error(solveError);
+  }
+}
+
+async function startPollingJob(jobId: string) {
+  if (pollingInterval) clearInterval(pollingInterval);
+  if (elapsedTimer) clearInterval(elapsedTimer);
+
+  solveError = null;
+  timeElapsed = 0;
+  elapsedTimer = setInterval(() => {
+    timeElapsed++;
+  }, 1000);
+
+  pollingInterval = setInterval(async () => {
+    try {
+      const job = await commands.exams.getSolveJob(data.orgId, jobId);
+      activeJob = job;
+
+      if (
+        job.status === "completed" ||
+        job.status === "failed" ||
+        job.status === "cancelled"
+      ) {
+        stopPolling();
+        isSolving = false;
+        await loadSolveJobs();
+        if (job.status === "completed") {
+          toast.success(
+            getLocale() === "ar"
+              ? "اكتملت عملية الجدولة التلقائية بنجاح!"
+              : "Exam schedule optimization completed successfully!",
+          );
+        } else if (job.status === "failed") {
+          solveError =
+            (job.error_message as string) ||
+            (getLocale() === "ar"
+              ? "فشلت عملية الجدولة"
+              : "Optimization job failed");
+          toast.error(solveError);
+        }
+      }
+    } catch (e) {
+      console.error("Error polling solve job status:", e);
+    }
+  }, 2000);
+}
+
+function stopPolling() {
+  if (pollingInterval) {
+    clearInterval(pollingInterval);
+    pollingInterval = null;
+  }
+  if (elapsedTimer) {
+    clearInterval(elapsedTimer);
+    elapsedTimer = null;
+  }
+}
+
+async function handleCancelSolve() {
+  if (!activeJob) return;
+  try {
+    const job = await commands.exams.cancelSolve(data.orgId, activeJob.id);
+    activeJob = job;
+    stopPolling();
+    isSolving = false;
+    toast.success(
+      getLocale() === "ar"
+        ? "تم إلغاء عملية الجدولة"
+        : "Optimization job cancelled",
+    );
+    await loadSolveJobs();
+  } catch (err: any) {
+    toast.error(err?.message || "Failed to cancel");
+  }
+}
+
+async function handleApplySolve() {
+  if (!activeJob) return;
+  const promise = commands.exams.applySolve(data.orgId, activeJob.id);
   toast.promise(promise, {
-    loading: "جاري جدولة الامتحانات تلقائياً...",
-    success: "تمت الجدولة التلقائية بنجاح!",
-    error: (err) => err?.message || "فشل الجدولة التلقائية",
+    loading:
+      getLocale() === "ar"
+        ? "جاري تطبيق الجدول المحسّن..."
+        : "Applying optimized schedule...",
+    success:
+      getLocale() === "ar"
+        ? "تم تطبيق الجدول بنجاح!"
+        : "Applied schedule successfully!",
+    error: (err: any) => err?.message || "Failed to apply",
   });
-  
   try {
     await promise;
+    activeJob = null;
+    await loadSolveJobs();
     await loadSession();
   } catch (err) {
     console.error(err);
@@ -607,6 +741,56 @@ async function handleAssignProctors() {
 				</div>
 			{/if}
 		</div>
+
+		{#if activeJob}
+			<div class="border border-border rounded-xl p-4 bg-muted/40 mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4" transition:fade>
+				<div class="flex items-center gap-3">
+					<div class="relative flex h-3 w-3">
+						{#if activeJob.status === 'running'}
+							<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+							<span class="relative inline-flex rounded-full h-3 w-3 bg-sky-500"></span>
+						{:else if activeJob.status === 'completed'}
+							<span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+						{:else if activeJob.status === 'failed'}
+							<span class="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
+						{:else}
+							<span class="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
+						{/if}
+					</div>
+					<div>
+						<h4 class="text-xs font-bold flex items-center gap-1.5">
+							{#if activeJob.status === 'running'}
+								جاري تحسين وجدولة الامتحانات تلقائياً...
+							{:else if activeJob.status === 'completed'}
+								اكتمل التحسين والجدولة التلقائية بنجاح!
+							{:else if activeJob.status === 'failed'}
+								فشلت عملية التحسين والجدولة.
+							{:else}
+								تم إلغاء الجدولة التلقائية.
+							{/if}
+						</h4>
+						<p class="text-[10px] text-muted-foreground mt-0.5 font-mono">
+							{#if activeJob.status === 'running'}
+								الوقت المنقضي: {timeElapsed} ثانية | النتيجة الحالية: {activeJob.score || '—'}
+							{:else if activeJob.status === 'completed'}
+								النتيجة النهائية: {activeJob.score || '—'}
+							{/if}
+						</p>
+					</div>
+				</div>
+				<div class="flex items-center gap-2">
+					{#if activeJob.status === 'running'}
+						<Button size="sm" variant="destructive" class="h-8 text-[10px] px-3 font-bold cursor-pointer" onclick={handleCancelSolve}>
+							إلغاء العملية
+						</Button>
+					{:else if activeJob.status === 'completed'}
+						<Button size="sm" variant="default" class="h-8 text-[10px] px-3 font-bold cursor-pointer" onclick={handleApplySolve}>
+							تطبيق الجدول المقترح
+						</Button>
+					{/if}
+				</div>
+			</div>
+		{/if}
 
 		<!-- Quick Actions Bar -->
 		<div class="border-t border-border pt-4 flex flex-wrap items-center gap-2" in:fade={{ delay: 150, duration: 200 }}>

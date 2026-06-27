@@ -25,7 +25,7 @@ pub mod class_subject;
 pub mod student_guardian;
 pub mod time_slot;
 pub mod scheduled_lesson;
-pub mod schedule_solve_job;
+pub mod solve_job;
 pub mod room;
 pub mod teacher_availability;
 pub mod assessment;
@@ -61,3 +61,4 @@ pub mod exam_hall;
 pub mod exam_hall_allocation;
 pub mod exam_proctor;
 pub mod teacher_exam_availability;
+

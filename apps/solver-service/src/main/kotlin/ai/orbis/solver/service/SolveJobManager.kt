@@ -1,10 +1,14 @@
 package ai.orbis.solver.service
 
 import ai.orbis.solver.domain.Timetable
+import ai.orbis.solver.domain.ExamSchedule
 import ai.orbis.solver.dto.JobStatus
 import ai.orbis.solver.dto.SolveJobStatusDto
 import ai.orbis.solver.dto.TimetableProblemDto
+import ai.orbis.solver.dto.ExamProblemDto
+import ai.orbis.solver.dto.ExamSolveJobStatusDto
 import ai.orbis.solver.mapper.ProblemMapper
+import ai.orbis.solver.mapper.ExamProblemMapper
 import ai.timefold.solver.core.api.solver.SolverManager
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
@@ -17,8 +21,12 @@ class SolveJobManager {
     @Inject
     lateinit var solverManager: SolverManager<Timetable, String>
 
+    @Inject
+    lateinit var examSolverManager: SolverManager<ExamSchedule, String>
+
     private val log = Logger.getLogger(SolveJobManager::class.java)
     private val jobs = ConcurrentHashMap<String, JobState>()
+    private val examJobs = ConcurrentHashMap<String, ExamJobState>()
 
     fun submit(problem: TimetableProblemDto): Boolean {
         val jobId = problem.jobId
@@ -90,6 +98,78 @@ class SolveJobManager {
         }
     }
 
+    // --- Exam Solver Management ---
+
+    fun submitExam(problem: ExamProblemDto): Boolean {
+        val jobId = problem.jobId
+        if (examJobs.containsKey(jobId)) {
+            return false
+        }
+
+        val schedule = ExamProblemMapper.toSchedule(problem)
+        examJobs[jobId] = ExamJobState(
+            jobId = jobId,
+            status = JobStatus.running,
+            problem = problem,
+            bestSolution = ExamProblemMapper.toSolution(problem, schedule),
+        )
+
+        examSolverManager.solveBuilder()
+            .withProblemId(jobId)
+            .withProblemFinder { schedule }
+            .withBestSolutionConsumer { best -> onBestExamSolution(jobId, problem, best) }
+            .withFinalBestSolutionConsumer { _ -> onExamSolveComplete(jobId) }
+            .withExceptionHandler { _, throwable ->
+                log.error("Exam solving failed for job $jobId", throwable)
+            }
+            .run()
+
+        log.infof("Started exam solve job %s with %d assignments", jobId, problem.assignments.size)
+        return true
+    }
+
+    fun statusExam(jobId: String): ExamSolveJobStatusDto? {
+        val state = examJobs[jobId] ?: return null
+        return ExamSolveJobStatusDto(
+            jobId = jobId,
+            status = state.status.name,
+            score = state.bestSolution?.score,
+            bestSolution = state.bestSolution,
+            error = state.error,
+        )
+    }
+
+    fun cancelExam(jobId: String): Boolean {
+        val state = examJobs[jobId] ?: return false
+        if (state.status == JobStatus.completed || state.status == JobStatus.failed) {
+            return true
+        }
+        examSolverManager.terminateEarly(jobId)
+        state.status = JobStatus.cancelled
+        return true
+    }
+
+    private fun onBestExamSolution(jobId: String, problem: ExamProblemDto, best: ExamSchedule) {
+        examJobs[jobId]?.let { state ->
+            state.bestSolution = ExamProblemMapper.toSolution(problem, best)
+            state.score = best.score?.toString()
+        }
+    }
+
+    private fun onExamSolveComplete(jobId: String) {
+        examJobs[jobId]?.let { state ->
+            state.status = when {
+                state.status == JobStatus.cancelled -> JobStatus.cancelled
+                state.bestSolution?.score?.let { score ->
+                    score.startsWith("0hard")
+                } == true -> JobStatus.completed
+                else -> JobStatus.completed
+            }
+            log.infof("Exam solve job %s finished with status %s score %s",
+                jobId, state.status, state.score)
+        }
+    }
+
     private class JobState(
         val jobId: String,
         var status: JobStatus,
@@ -98,4 +178,14 @@ class SolveJobManager {
         var score: String? = null,
         var error: String? = null,
     )
+
+    private class ExamJobState(
+        val jobId: String,
+        var status: JobStatus,
+        val problem: ExamProblemDto,
+        var bestSolution: ai.orbis.solver.dto.ExamSolutionDto? = null,
+        var score: String? = null,
+        var error: String? = null,
+    )
 }
+

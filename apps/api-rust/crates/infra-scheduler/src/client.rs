@@ -6,6 +6,7 @@ use tracing::{debug, warn};
 
 use crate::{
     ScheduleSolver, SchedulerError, SolveJobStatus, SubmitResponse, TimetableProblem,
+    ExamProblem, ExamSolveJobStatus,
 };
 
 const HTTP_TIMEOUT: Duration = Duration::from_secs(30);
@@ -87,6 +88,79 @@ impl ScheduleSolver for RemoteTimefoldSolver {
 
     async fn cancel(&self, job_id: &str) -> Result<(), SchedulerError> {
         let url = format!("{}/solve/{job_id}", self.base_url);
+
+        let resp = self
+            .client
+            .delete(&url)
+            .send()
+            .await
+            .map_err(|e| SchedulerError::RequestFailed(e.to_string()))?;
+
+        if resp.status().is_success() || resp.status() == StatusCode::NOT_FOUND {
+            Ok(())
+        } else {
+            let status = resp.status();
+            let body = resp.text().await.unwrap_or_default();
+            Err(SchedulerError::SolverError(format!("{status}: {body}")))
+        }
+    }
+
+    async fn submit_exam(&self, problem: &ExamProblem) -> Result<(), SchedulerError> {
+        let url = format!("{}/solve/exam", self.base_url);
+        debug!(job_id = %problem.job_id, "submitting exam to solver");
+
+        let resp = self
+            .client
+            .post(&url)
+            .json(problem)
+            .send()
+            .await
+            .map_err(|e| SchedulerError::RequestFailed(e.to_string()))?;
+
+        if resp.status() == StatusCode::ACCEPTED || resp.status() == StatusCode::OK {
+            let body: SubmitResponse = resp
+                .json()
+                .await
+                .map_err(|e| SchedulerError::RequestFailed(e.to_string()))?;
+            if body.accepted {
+                return Ok(());
+            }
+            return Err(SchedulerError::SolverError("solver rejected exam job".into()));
+        }
+
+        let status = resp.status();
+        let body = resp.text().await.unwrap_or_default();
+        warn!(%status, %body, "exam solver submit failed");
+        Err(SchedulerError::SolverError(format!("{status}: {body}")))
+    }
+
+    async fn status_exam(&self, job_id: &str) -> Result<ExamSolveJobStatus, SchedulerError> {
+        let url = format!("{}/solve/exam/{job_id}", self.base_url);
+
+        let resp = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| SchedulerError::RequestFailed(e.to_string()))?;
+
+        if resp.status() == StatusCode::NOT_FOUND {
+            return Err(SchedulerError::JobNotFound(job_id.to_string()));
+        }
+
+        if !resp.status().is_success() {
+            let status = resp.status();
+            let body = resp.text().await.unwrap_or_default();
+            return Err(SchedulerError::SolverError(format!("{status}: {body}")));
+        }
+
+        resp.json()
+            .await
+            .map_err(|e| SchedulerError::RequestFailed(e.to_string()))
+    }
+
+    async fn cancel_exam(&self, job_id: &str) -> Result<(), SchedulerError> {
+        let url = format!("{}/solve/exam/{job_id}", self.base_url);
 
         let resp = self
             .client

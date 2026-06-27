@@ -322,6 +322,17 @@ impl super::Repository {
         active.insert(&self.db).await
     }
 
+    pub async fn delete_exam_schedules_for_session(
+        &self,
+        exam_session_id: &str,
+    ) -> Result<u64, DbErr> {
+        exam_schedule::Entity::delete_many()
+            .filter(exam_schedule::Column::ExamSessionId.eq(exam_session_id))
+            .exec(&self.db)
+            .await
+            .map(|res| res.rows_affected)
+    }
+
     // ── Seating Numbers ─────────────────────────────────────────────────────
 
     pub async fn get_seating_numbers(

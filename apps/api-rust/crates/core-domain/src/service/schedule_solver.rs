@@ -12,7 +12,7 @@ use tokio::time::sleep;
 use tracing::{error, info, warn};
 use uuid::Uuid;
 
-use crate::entities::schedule_solve_job;
+use crate::entities::solve_job;
 use crate::service::schedule_common::LessonPlacement;
 
 const MAX_CONCURRENT_JOBS_PER_ORG: u64 = 1;
@@ -41,16 +41,16 @@ pub struct SolveJobResponse {
     pub created_at: String,
 }
 
-impl From<schedule_solve_job::Model> for SolveJobResponse {
-    fn from(j: schedule_solve_job::Model) -> Self {
+impl From<solve_job::Model> for SolveJobResponse {
+    fn from(j: solve_job::Model) -> Self {
         Self {
             id: j.id,
             org_id: j.org_id,
-            cycle_id: j.cycle_id,
-            mode: j.mode,
+            cycle_id: j.target_id,
+            mode: j.mode.unwrap_or_default(),
             status: j.status,
             score: j.score,
-            lessons_created: j.lessons_created,
+            lessons_created: j.items_created,
             error_message: j.error_message,
             started_at: j.started_at,
             completed_at: j.completed_at,
@@ -90,7 +90,7 @@ impl super::Service {
     ) -> Result<SolveJobResponse, String> {
         let active = self
             .repo
-            .count_active_solve_jobs(org_id)
+            .count_active_solve_jobs(org_id, "timetable")
             .await
             .map_err(|e| e.to_string())?;
         if active >= MAX_CONCURRENT_JOBS_PER_ORG {
@@ -118,16 +118,17 @@ impl super::Service {
         let now = Utc::now().to_rfc3339();
         let snapshot = serde_json::to_string(&problem).map_err(|e| e.to_string())?;
 
-        let job = schedule_solve_job::Model {
+        let job = solve_job::Model {
             id: job_id.clone(),
             org_id: org_id.to_string(),
-            cycle_id: req.cycle_id.clone(),
-            mode: solve_mode_label(&mode).to_string(),
+            job_type: "timetable".to_string(),
+            target_id: req.cycle_id.clone(),
+            mode: Some(solve_mode_label(&mode).to_string()),
             status: "pending".to_string(),
             problem_snapshot: Some(snapshot),
             best_solution: None,
             score: None,
-            lessons_created: 0,
+            items_created: 0,
             error_message: None,
             created_by: Some(user_id.to_string()),
             started_at: None,
@@ -183,7 +184,7 @@ impl super::Service {
     ) -> Result<Vec<SolveJobResponse>, String> {
         let jobs = self
             .repo
-            .get_solve_jobs(org_id, cycle_id)
+            .get_solve_jobs(org_id, "timetable", cycle_id)
             .await
             .map_err(|e| e.to_string())?;
         Ok(jobs.into_iter().map(Into::into).collect())
@@ -245,9 +246,9 @@ impl super::Service {
         let solution: StoredSolution =
             serde_json::from_str(solution_json).map_err(|e| format!("invalid solution: {e}"))?;
 
-        if job.mode == "full" {
+        if job.mode.as_deref() == Some("full") {
             self.repo
-                .cancel_lessons_for_cycle(org_id, &job.cycle_id)
+                .cancel_lessons_for_cycle(org_id, &job.target_id)
                 .await
                 .map_err(|e| e.to_string())?;
         }
@@ -255,7 +256,7 @@ impl super::Service {
         let mut created = 0i32;
         for assignment in &solution.assignments {
             let Some(placement) = LessonPlacement::from_solver_assignment(
-                &job.cycle_id,
+                &job.target_id,
                 assignment,
                 &job.id,
             ) else {
@@ -266,7 +267,7 @@ impl super::Service {
             created += 1;
         }
 
-        job.lessons_created = created;
+        job.items_created = created;
         job.updated_at = Utc::now().to_rfc3339();
         let job = self.repo.update_solve_job(job).await.map_err(|e| e.to_string())?;
 

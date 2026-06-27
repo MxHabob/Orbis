@@ -106,3 +106,47 @@ pub struct SubmitResponse {
     pub job_id: String,
     pub accepted: bool,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExamTimeSlotDto {
+    pub id: String,
+    pub date: String,
+    pub period: String, // "morning" or "afternoon"
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExamAssignmentDto {
+    pub id: String,
+    pub exam_subject_id: String,
+    pub subject_id: String,
+    pub class_id: String,
+    pub conflict_group_id: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub slot_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExamProblem {
+    pub job_id: String,
+    pub org_id: String,
+    pub exam_session_id: String,
+    pub slots: Vec<ExamTimeSlotDto>,
+    pub assignments: Vec<ExamAssignmentDto>,
+    pub max_exams_per_day: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExamSolution {
+    pub job_id: String,
+    pub assignments: Vec<ExamAssignmentDto>,
+    pub score: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExamSolveJobStatus {
+    pub job_id: String,
+    pub status: JobStatus,
+    pub score: Option<String>,
+    pub best_solution: Option<ExamSolution>,
+    pub error: Option<String>,
+}

@@ -1,4 +1,4 @@
-use crate::entities::{time_slot, class_subject, scheduled_lesson, schedule_solve_job, room, teacher_availability};
+use crate::entities::{time_slot, class_subject, scheduled_lesson, room, teacher_availability};
 use sea_orm::{entity::prelude::*, ActiveModelTrait, ActiveValue::Set, QueryFilter, EntityTrait, QueryOrder, sea_query::Expr};
 
 #[derive(Debug, Clone, Default)]
@@ -358,85 +358,5 @@ impl super::Repository {
 
     // ── Solve jobs ───────────────────────────────────────────────────────────
 
-    pub async fn insert_solve_job(
-        &self,
-        job: schedule_solve_job::Model,
-    ) -> Result<schedule_solve_job::Model, DbErr> {
-        let active = schedule_solve_job::ActiveModel {
-            id: Set(job.id),
-            org_id: Set(job.org_id),
-            cycle_id: Set(job.cycle_id),
-            mode: Set(job.mode),
-            status: Set(job.status),
-            problem_snapshot: Set(job.problem_snapshot),
-            best_solution: Set(job.best_solution),
-            score: Set(job.score),
-            lessons_created: Set(job.lessons_created),
-            error_message: Set(job.error_message),
-            created_by: Set(job.created_by),
-            started_at: Set(job.started_at),
-            completed_at: Set(job.completed_at),
-            created_at: Set(job.created_at),
-            updated_at: Set(job.updated_at),
-        };
-        active.insert(&self.db).await
-    }
-
-    pub async fn get_solve_job_by_id(
-        &self,
-        id: &str,
-    ) -> Result<Option<schedule_solve_job::Model>, DbErr> {
-        schedule_solve_job::Entity::find_by_id(id.to_string()).one(&self.db).await
-    }
-
-    pub async fn get_solve_jobs(
-        &self,
-        org_id: &str,
-        cycle_id: Option<&str>,
-    ) -> Result<Vec<schedule_solve_job::Model>, DbErr> {
-        let mut query = schedule_solve_job::Entity::find()
-            .filter(schedule_solve_job::Column::OrgId.eq(org_id))
-            .order_by_desc(schedule_solve_job::Column::CreatedAt);
-
-        if let Some(cyc) = cycle_id {
-            query = query.filter(schedule_solve_job::Column::CycleId.eq(cyc));
-        }
-
-        query.all(&self.db).await
-    }
-
-    pub async fn update_solve_job(
-        &self,
-        job: schedule_solve_job::Model,
-    ) -> Result<schedule_solve_job::Model, DbErr> {
-        let active = schedule_solve_job::ActiveModel {
-            id: Set(job.id),
-            org_id: Set(job.org_id),
-            cycle_id: Set(job.cycle_id),
-            mode: Set(job.mode),
-            status: Set(job.status),
-            problem_snapshot: Set(job.problem_snapshot),
-            best_solution: Set(job.best_solution),
-            score: Set(job.score),
-            lessons_created: Set(job.lessons_created),
-            error_message: Set(job.error_message),
-            created_by: Set(job.created_by),
-            started_at: Set(job.started_at),
-            completed_at: Set(job.completed_at),
-            created_at: Set(job.created_at),
-            updated_at: Set(chrono::Utc::now().to_rfc3339()),
-        };
-        active.update(&self.db).await
-    }
-
-    pub async fn count_active_solve_jobs(&self, org_id: &str) -> Result<u64, DbErr> {
-        schedule_solve_job::Entity::find()
-            .filter(schedule_solve_job::Column::OrgId.eq(org_id))
-            .filter(
-                schedule_solve_job::Column::Status
-                    .is_in(["pending", "running"]),
-            )
-            .count(&self.db)
-            .await
-    }
+    
 }

@@ -12,7 +12,8 @@ use core_domain::{
     },
     service::student_ordering::{OrderedStudent, RebuildOrderingResult},
     service::exam_numbers::{GenerationResult, SeatingNumberView},
-    service::exam_auto_schedule::{AutoScheduleRequest, AutoScheduleResult},
+    service::exam_auto_schedule::AutoScheduleRequest,
+    service::schedule_solver::SolveJobResponse,
     service::exam_logistics::{
         AllocationConfig, AllocationResult, ProctorAssignConfig, ProctorAssignResult,
     },
@@ -195,14 +196,67 @@ pub async fn get_exam_schedules(
 }
 
 #[tauri::command]
-pub async fn auto_schedule_exams(
+pub async fn start_exam_solve(
     state: State<'_, Arc<AppState>>,
     org_id: String,
+    user_id: String,
     request: AutoScheduleRequest,
-) -> CmdResult<AutoScheduleResult> {
+) -> CmdResult<SolveJobResponse> {
     state
         .service
-        .auto_schedule_exams(&org_id, request)
+        .start_exam_solve(&org_id, &user_id, request)
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn get_exam_solve_job(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    job_id: String,
+) -> CmdResult<SolveJobResponse> {
+    state
+        .service
+        .get_exam_solve_job(&org_id, &job_id)
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn list_exam_solve_jobs(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    exam_session_id: Option<String>,
+) -> CmdResult<Vec<SolveJobResponse>> {
+    state
+        .service
+        .list_exam_solve_jobs(&org_id, exam_session_id.as_deref())
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn cancel_exam_solve(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    job_id: String,
+) -> CmdResult<SolveJobResponse> {
+    state
+        .service
+        .cancel_exam_solve(&org_id, &job_id)
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn apply_exam_solve(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    job_id: String,
+) -> CmdResult<SolveJobResponse> {
+    state
+        .service
+        .apply_exam_solve(&org_id, &job_id)
         .await
         .map_err(CommandError::from)
 }

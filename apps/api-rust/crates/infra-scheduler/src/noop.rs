@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::{ScheduleSolver, SchedulerError, TimetableProblem, SolveJobStatus};
+use crate::{ScheduleSolver, SchedulerError, TimetableProblem, SolveJobStatus, ExamProblem, ExamSolveJobStatus};
 
 pub struct NoOpScheduleSolver;
 
@@ -15,6 +15,18 @@ impl ScheduleSolver for NoOpScheduleSolver {
     }
 
     async fn cancel(&self, _job_id: &str) -> Result<(), SchedulerError> {
+        Err(SchedulerError::NotConfigured)
+    }
+
+    async fn submit_exam(&self, _problem: &ExamProblem) -> Result<(), SchedulerError> {
+        Err(SchedulerError::NotConfigured)
+    }
+
+    async fn status_exam(&self, _job_id: &str) -> Result<ExamSolveJobStatus, SchedulerError> {
+        Err(SchedulerError::NotConfigured)
+    }
+
+    async fn cancel_exam(&self, _job_id: &str) -> Result<(), SchedulerError> {
         Err(SchedulerError::NotConfigured)
     }
 }

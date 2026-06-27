@@ -254,7 +254,7 @@ use service::Service;
             service::room::CreateRoomRequest,
             service::room::UpdateRoomRequest,
             entities::room::Model,
-            entities::schedule_solve_job::Model,
+            entities::solve_job::Model,
             service::assessment::CreateAssessmentRequest,
             service::assessment::UpdateAssessmentRequest,
             service::guardian::CreateGuardianLinkRequest,

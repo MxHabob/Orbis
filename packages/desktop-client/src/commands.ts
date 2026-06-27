@@ -572,8 +572,20 @@ export const commands = {
     getSchedules: (orgId: string, sessionId: string) =>
       invoke<JsonRecord[]>("get_exam_schedules", { orgId, sessionId }),
 
-    autoSchedule: (orgId: string, request: JsonRecord) =>
-      invoke<JsonRecord>("auto_schedule_exams", { orgId, request }),
+    startSolve: (orgId: string, userId: string, request: JsonRecord) =>
+      invoke<JsonRecord>("start_exam_solve", { orgId, userId, request }),
+
+    getSolveJob: (orgId: string, jobId: string) =>
+      invoke<JsonRecord>("get_exam_solve_job", { orgId, jobId }),
+
+    listSolveJobs: (orgId: string, examSessionId?: string) =>
+      invoke<JsonRecord[]>("list_exam_solve_jobs", { orgId, examSessionId: examSessionId ?? null }),
+
+    cancelSolve: (orgId: string, jobId: string) =>
+      invoke<JsonRecord>("cancel_exam_solve", { orgId, jobId }),
+
+    applySolve: (orgId: string, jobId: string) =>
+      invoke<JsonRecord>("apply_exam_solve", { orgId, jobId }),
 
     // Logistics
     allocateHalls: (orgId: string, sessionId: string, config: JsonRecord) =>

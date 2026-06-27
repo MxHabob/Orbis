@@ -1,6 +1,14 @@
+use std::sync::Arc;
+use std::time::Duration;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use tokio::time::sleep;
+use tracing::{error, info, warn};
+
+use crate::entities::solve_job;
+use crate::service::schedule_solver::SolveJobResponse;
+use infra_scheduler::{JobStatus, ExamProblem, ExamTimeSlotDto, ExamAssignmentDto, ScheduleSolver};
 
 /// Request to auto-generate an optimal exam schedule
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
@@ -53,47 +61,246 @@ pub struct UnscheduledSubject {
     pub reason: String,
 }
 
-/// Internal slot representation for the scheduling algorithm
-#[derive(Debug, Clone)]
-struct TimeSlot {
-    date: String,
-    period: String,
-    start_time: String,
-    #[allow(dead_code)]
-    end_time: String,
-    is_used: bool,
-}
-
-/// Subject with metadata for scheduling priority
-#[derive(Debug, Clone)]
-struct SubjectToSchedule {
-    exam_subject_id: String,
-    subject_id: String,
-    duration_minutes: i32,
-    priority: i32,
-    conflict_group: Option<usize>,
-}
-
 impl super::Service {
-    /// Auto-generate an optimal exam schedule using a constraint-based greedy algorithm.
-    ///
-    /// Algorithm:
-    /// 1. Collect all subjects to schedule, sorted by priority
-    /// 2. Generate available time slots from available_dates
-    /// 3. Apply constraint propagation (conflict groups, max per day)
-    /// 4. Greedy assignment: highest priority subjects first, respecting constraints
-    pub async fn auto_schedule_exams(
+    pub async fn start_exam_solve(
         &self,
         org_id: &str,
+        user_id: &str,
         req: AutoScheduleRequest,
-    ) -> Result<AutoScheduleResult, String> {
-        let session = self.get_exam_session(org_id, &req.exam_session_id).await?;
+    ) -> Result<SolveJobResponse, String> {
+        let active = self
+            .repo
+            .count_active_solve_jobs(org_id, "exam")
+            .await
+            .map_err(|e| e.to_string())?;
+        if active >= 1 {
+            return Err(
+                "an exam solve job is already running for this organization; wait for it to finish"
+                    .to_string(),
+            );
+        }
 
+        let job_id = Uuid::new_v4().to_string();
+
+        let problem = self.build_exam_problem(org_id, &req, &job_id).await?;
+        let snapshot = serde_json::to_string(&problem).map_err(|e| e.to_string())?;
+
+        let now = Utc::now().to_rfc3339();
+        let job = solve_job::Model {
+            id: job_id.clone(),
+            org_id: org_id.to_string(),
+            job_type: "exam".to_string(),
+            target_id: req.exam_session_id.clone(),
+            mode: None,
+            status: "pending".to_string(),
+            problem_snapshot: Some(snapshot),
+            best_solution: None,
+            score: None,
+            items_created: 0,
+            error_message: None,
+            created_by: Some(user_id.to_string()),
+            started_at: None,
+            completed_at: None,
+            created_at: now.clone(),
+            updated_at: now,
+        };
+
+        self.repo
+            .insert_solve_job(job.clone())
+            .await
+            .map_err(|e| e.to_string())?;
+
+        let scheduler = Arc::clone(&self.scheduler);
+        let repo = Arc::clone(&self.repo);
+
+        tokio::spawn(async move {
+            if let Err(e) =
+                Self::run_exam_solve_job(scheduler, repo, job_id, problem).await
+            {
+                error!(error = %e, "exam solve job failed");
+            }
+        });
+
+        Ok(job.into())
+    }
+
+    pub async fn get_exam_solve_job(
+        &self,
+        org_id: &str,
+        job_id: &str,
+    ) -> Result<SolveJobResponse, String> {
+        let job = self
+            .repo
+            .get_solve_job_by_id(job_id)
+            .await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "solve job not found".to_string())?;
+
+        if job.org_id != org_id || job.job_type != "exam" {
+            return Err("solve job not found".to_string());
+        }
+
+        Ok(job.into())
+    }
+
+    pub async fn list_exam_solve_jobs(
+        &self,
+        org_id: &str,
+        exam_session_id: Option<&str>,
+    ) -> Result<Vec<SolveJobResponse>, String> {
+        let jobs = self
+            .repo
+            .get_solve_jobs(org_id, "exam", exam_session_id)
+            .await
+            .map_err(|e| e.to_string())?;
+        Ok(jobs.into_iter().map(Into::into).collect())
+    }
+
+    pub async fn cancel_exam_solve(
+        &self,
+        org_id: &str,
+        job_id: &str,
+    ) -> Result<SolveJobResponse, String> {
+        let mut job = self
+            .repo
+            .get_solve_job_by_id(job_id)
+            .await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "solve job not found".to_string())?;
+
+        if job.org_id != org_id || job.job_type != "exam" {
+            return Err("solve job not found".to_string());
+        }
+
+        if matches!(job.status.as_str(), "completed" | "failed" | "cancelled") {
+            return Ok(job.into());
+        }
+
+        let _ = self.scheduler.cancel_exam(job_id).await;
+        job.status = "cancelled".to_string();
+        job.completed_at = Some(Utc::now().to_rfc3339());
+        job.updated_at = Utc::now().to_rfc3339();
+
+        let job = self.repo.update_solve_job(job).await.map_err(|e| e.to_string())?;
+        Ok(job.into())
+    }
+
+    pub async fn apply_exam_solve(
+        &self,
+        org_id: &str,
+        job_id: &str,
+    ) -> Result<SolveJobResponse, String> {
+        let mut job = self
+            .repo
+            .get_solve_job_by_id(job_id)
+            .await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "solve job not found".to_string())?;
+
+        if job.org_id != org_id || job.job_type != "exam" {
+            return Err("solve job not found".to_string());
+        }
+        if job.status != "completed" {
+            return Err("solve job is not completed yet".to_string());
+        }
+
+        let solution_json = job
+            .best_solution
+            .as_ref()
+            .ok_or_else(|| "no solution available to apply".to_string())?;
+
+        let solution: infra_scheduler::ExamSolution =
+            serde_json::from_str(solution_json).map_err(|e| format!("invalid solution: {e}"))?;
+
+        // 1. Clear current schedules for this exam session
+        self.repo
+            .delete_exam_schedules_for_session(&job.target_id)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        // 2. Load the problem snapshot
+        let problem_json = job
+            .problem_snapshot
+            .as_ref()
+            .ok_or_else(|| "no problem snapshot available".to_string())?;
+        let problem: infra_scheduler::ExamProblem =
+            serde_json::from_str(problem_json).map_err(|e| format!("invalid problem: {e}"))?;
+
+        let slot_map: std::collections::HashMap<String, &infra_scheduler::ExamTimeSlotDto> =
+            problem.slots.iter().map(|s| (s.id.clone(), s)).collect();
+
+        let now = Utc::now().to_rfc3339();
+        let mut created = 0i32;
+
+        for assignment in &solution.assignments {
+            let Some(slot_id) = &assignment.slot_id else {
+                continue;
+            };
+            let Some(slot) = slot_map.get(slot_id) else {
+                continue;
+            };
+
+            let exam_subject = self
+                .repo
+                .get_exam_subjects(&job.target_id)
+                .await
+                .map_err(|e| e.to_string())?
+                .into_iter()
+                .find(|s| s.id == assignment.exam_subject_id)
+                .ok_or_else(|| format!("Exam subject {} not found", assignment.exam_subject_id))?;
+
+            let duration = exam_subject.duration_minutes;
+            let start_time = if slot.period == "morning" {
+                "08:00".to_string()
+            } else {
+                "13:00".to_string()
+            };
+            let end_time = add_minutes(&start_time, duration);
+
+            let model = crate::entities::exam_schedule::Model {
+                id: Uuid::new_v4().to_string(),
+                exam_session_id: job.target_id.clone(),
+                exam_subject_id: assignment.exam_subject_id.clone(),
+                exam_date: slot.date.clone(),
+                start_time,
+                end_time,
+                period: slot.period.clone(),
+                applicable_class_ids: Some(assignment.class_id.clone()),
+                room_ids: None,
+                status: "scheduled".to_string(),
+                postponed_to: None,
+                postponement_reason: None,
+                notes: Some("auto-generated via solver-service".to_string()),
+                created_at: now.clone(),
+                updated_at: now.clone(),
+            };
+
+            self.repo
+                .insert_exam_schedule(model)
+                .await
+                .map_err(|e| e.to_string())?;
+
+            created += 1;
+        }
+
+        job.items_created = created;
+        job.updated_at = Utc::now().to_rfc3339();
+        let job = self.repo.update_solve_job(job).await.map_err(|e| e.to_string())?;
+
+        Ok(job.into())
+    }
+
+    async fn build_exam_problem(
+        &self,
+        org_id: &str,
+        req: &AutoScheduleRequest,
+        job_id: &str,
+    ) -> Result<ExamProblem, String> {
+        let session = self.get_exam_session(org_id, &req.exam_session_id).await?;
         if session.status != "draft" && session.status != "scheduled" {
             return Err("can only auto-schedule for draft or scheduled sessions".to_string());
         }
 
-        // 1. Get all subjects for this session
         let subjects = self
             .repo
             .get_exam_subjects(&req.exam_session_id)
@@ -108,201 +315,172 @@ impl super::Service {
             return Err("available_dates cannot be empty".to_string());
         }
 
-        let max_per_day = req.max_exams_per_day.unwrap_or(2) as usize;
-        let default_duration = req.default_duration_minutes.unwrap_or(90);
-        let morning_start = req.morning_start.as_deref().unwrap_or("08:00");
-        let afternoon_start = req.afternoon_start.as_deref().unwrap_or("13:00");
-        let gap = req.gap_minutes.unwrap_or(30);
+        let max_per_day = req.max_exams_per_day.unwrap_or(2);
         let preferred = req.preferred_period.as_deref().unwrap_or("both");
-        let priority_ids = req.priority_subject_ids.unwrap_or_default();
-        let conflict_groups = req.conflict_groups.unwrap_or_default();
+        let conflict_groups = req.conflict_groups.clone().unwrap_or_default();
 
-        // 2. Build subjects to schedule with priorities
-        let mut to_schedule: Vec<SubjectToSchedule> = subjects
-            .iter()
-            .filter(|s| s.is_included == 1)
-            .map(|s| {
-                let priority = if priority_ids.contains(&s.subject_id) { 10 } else { 1 };
-                let conflict_group = conflict_groups
-                    .iter()
-                    .position(|group| group.contains(&s.subject_id));
-
-                SubjectToSchedule {
-                    exam_subject_id: s.id.clone(),
-                    subject_id: s.subject_id.clone(),
-                    duration_minutes: s.duration_minutes,
-                    priority,
-                    conflict_group,
-                }
-            })
-            .collect();
-
-        // Sort by priority descending (highest priority first)
-        to_schedule.sort_by(|a, b| b.priority.cmp(&a.priority));
-
-        // 3. Generate time slots
-        let mut slots: Vec<TimeSlot> = Vec::new();
+        let mut slots = Vec::new();
         let mut sorted_dates = req.available_dates.clone();
         sorted_dates.sort();
 
         for date in &sorted_dates {
             if preferred == "morning" || preferred == "both" {
-                let end = add_minutes(morning_start, default_duration);
-                slots.push(TimeSlot {
+                slots.push(ExamTimeSlotDto {
+                    id: format!("{}_morning", date),
                     date: date.clone(),
                     period: "morning".to_string(),
-                    start_time: morning_start.to_string(),
-                    end_time: end.clone(),
-                    is_used: false,
                 });
-
-                // Second morning slot if max_per_day > 1
-                if max_per_day > 1 && preferred != "both" {
-                    let start2 = add_minutes(&end, gap);
-                    let end2 = add_minutes(&start2, default_duration);
-                    slots.push(TimeSlot {
-                        date: date.clone(),
-                        period: "morning".to_string(),
-                        start_time: start2,
-                        end_time: end2,
-                        is_used: false,
-                    });
-                }
             }
-
             if preferred == "afternoon" || preferred == "both" {
-                let end = add_minutes(afternoon_start, default_duration);
-                slots.push(TimeSlot {
+                slots.push(ExamTimeSlotDto {
+                    id: format!("{}_afternoon", date),
                     date: date.clone(),
                     period: "afternoon".to_string(),
-                    start_time: afternoon_start.to_string(),
-                    end_time: end,
-                    is_used: false,
                 });
             }
         }
 
-        // 4. Greedy assignment with constraint checking
-        let mut schedule_entries: Vec<ScheduleEntry> = Vec::new();
-        let mut unscheduled: Vec<UnscheduledSubject> = Vec::new();
-        let mut warnings: Vec<String> = Vec::new();
+        let mut assignments = Vec::new();
+        for s in &subjects {
+            if s.is_included != 1 {
+                continue;
+            }
+            let conflict_group_id = conflict_groups
+                .iter()
+                .position(|group| group.contains(&s.subject_id))
+                .map(|idx| idx as i32);
 
-        // Track which conflict groups are used on which dates
-        let mut date_conflict_map: std::collections::HashMap<String, Vec<usize>> =
-            std::collections::HashMap::new();
-        // Track exams per day
-        let mut date_exam_count: std::collections::HashMap<String, usize> =
-            std::collections::HashMap::new();
-
-        let now = Utc::now().to_rfc3339();
-
-        for subject in &to_schedule {
-            let mut assigned = false;
-
-            for slot in slots.iter_mut() {
-                if slot.is_used {
-                    continue;
+            let mut class_id = "unknown_class".to_string();
+            if let Some(cs_id) = &s.class_subject_id {
+                if let Ok(Some(cs)) = self.repo.get_class_subject_by_id(cs_id).await {
+                    class_id = cs.class_id;
                 }
+            }
 
-                // Check max exams per day
-                let day_count = date_exam_count.get(&slot.date).copied().unwrap_or(0);
-                if day_count >= max_per_day {
-                    continue;
+            assignments.push(ExamAssignmentDto {
+                id: Uuid::new_v4().to_string(),
+                exam_subject_id: s.id.clone(),
+                subject_id: s.subject_id.clone(),
+                class_id,
+                conflict_group_id,
+                slot_id: None,
+            });
+        }
+
+        Ok(ExamProblem {
+            job_id: job_id.to_string(),
+            org_id: org_id.to_string(),
+            exam_session_id: req.exam_session_id.clone(),
+            slots,
+            assignments,
+            max_exams_per_day: max_per_day,
+        })
+    }
+
+    async fn run_exam_solve_job(
+        scheduler: Arc<dyn ScheduleSolver>,
+        repo: Arc<crate::repository::Repository>,
+        job_id: String,
+        problem: ExamProblem,
+    ) -> Result<(), String> {
+        let mut job = repo
+            .get_solve_job_by_id(&job_id)
+            .await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "job not found".to_string())?;
+
+        job.status = "running".to_string();
+        job.started_at = Some(Utc::now().to_rfc3339());
+        job.updated_at = Utc::now().to_rfc3339();
+        job = repo.update_solve_job(job).await.map_err(|e| e.to_string())?;
+
+        if let Err(e) = scheduler.submit_exam(&problem).await {
+            job.status = "failed".to_string();
+            job.error_message = Some(e.to_string());
+            job.completed_at = Some(Utc::now().to_rfc3339());
+            job.updated_at = Utc::now().to_rfc3339();
+            repo.update_solve_job(job).await.map_err(|e| e.to_string())?;
+            return Err(e.to_string());
+        }
+
+        const MAX_POLL_ATTEMPTS: u32 = 300;
+        const POLL_INTERVAL: Duration = Duration::from_secs(2);
+
+        for attempt in 0..MAX_POLL_ATTEMPTS {
+            sleep(POLL_INTERVAL).await;
+
+            if let Some(j) = repo
+                .get_solve_job_by_id(&job_id)
+                .await
+                .map_err(|e| e.to_string())?
+            {
+                if j.status == "cancelled" {
+                    let _ = scheduler.cancel_exam(&job_id).await;
+                    return Ok(());
                 }
+            }
 
-                // Check conflict group constraint
-                if let Some(group_idx) = subject.conflict_group {
-                    let day_groups = date_conflict_map
-                        .get(&slot.date)
-                        .cloned()
-                        .unwrap_or_default();
-                    if day_groups.contains(&group_idx) {
-                        continue;
+            match scheduler.status_exam(&job_id).await {
+                Ok(status) => {
+                    let mut job = repo
+                        .get_solve_job_by_id(&job_id)
+                        .await
+                        .map_err(|e| e.to_string())?
+                        .ok_or_else(|| "job not found".to_string())?;
+
+                    job.score = status.score.clone();
+                    job.updated_at = Utc::now().to_rfc3339();
+
+                    if let Some(solution) = &status.best_solution {
+                        job.best_solution = serde_json::to_string(solution).ok();
+                    }
+
+                    match status.status {
+                        JobStatus::Completed => {
+                            job.status = "completed".to_string();
+                            job.completed_at = Some(Utc::now().to_rfc3339());
+                            repo.update_solve_job(job).await.map_err(|e| e.to_string())?;
+                            info!(job_id = %job_id, "exam solve job completed");
+                            return Ok(());
+                        }
+                        JobStatus::Failed => {
+                            job.status = "failed".to_string();
+                            job.error_message = status.error;
+                            job.completed_at = Some(Utc::now().to_rfc3339());
+                            repo.update_solve_job(job).await.map_err(|e| e.to_string())?;
+                            return Err("solver reported failure".to_string());
+                        }
+                        JobStatus::Cancelled => {
+                            job.status = "cancelled".to_string();
+                            job.completed_at = Some(Utc::now().to_rfc3339());
+                            repo.update_solve_job(job).await.map_err(|e| e.to_string())?;
+                            return Ok(());
+                        }
+                        JobStatus::Pending | JobStatus::Running => {
+                            repo.update_solve_job(job).await.map_err(|e| e.to_string())?;
+                        }
                     }
                 }
+                Err(e) => warn!(attempt, error = %e, "exam solver poll failed"),
+            }
 
-                // Assign this subject to this slot
-                let duration = subject.duration_minutes;
-                let end_time = add_minutes(&slot.start_time, duration);
-
-                let schedule_id = Uuid::new_v4().to_string();
-
-                // Persist to database
-                let model = crate::entities::exam_schedule::Model {
-                    id: schedule_id.clone(),
-                    exam_session_id: req.exam_session_id.clone(),
-                    exam_subject_id: subject.exam_subject_id.clone(),
-                    exam_date: slot.date.clone(),
-                    start_time: slot.start_time.clone(),
-                    end_time: end_time.clone(),
-                    period: slot.period.clone(),
-                    applicable_class_ids: None,
-                    room_ids: None,
-                    status: "scheduled".to_string(),
-                    postponed_to: None,
-                    postponement_reason: None,
-                    notes: Some("auto-generated".to_string()),
-                    created_at: now.clone(),
-                    updated_at: now.clone(),
-                };
-
-                self.repo
-                    .insert_exam_schedule(model)
+            if attempt == MAX_POLL_ATTEMPTS - 1 {
+                let mut job = repo
+                    .get_solve_job_by_id(&job_id)
                     .await
-                    .map_err(|e| e.to_string())?;
-
-                schedule_entries.push(ScheduleEntry {
-                    exam_schedule_id: schedule_id,
-                    subject_id: subject.subject_id.clone(),
-                    subject_name: None,
-                    exam_date: slot.date.clone(),
-                    start_time: slot.start_time.clone(),
-                    end_time,
-                    period: slot.period.clone(),
-                });
-
-                // Update tracking
-                slot.is_used = true;
-                *date_exam_count.entry(slot.date.clone()).or_insert(0) += 1;
-                if let Some(group_idx) = subject.conflict_group {
-                    date_conflict_map
-                        .entry(slot.date.clone())
-                        .or_default()
-                        .push(group_idx);
-                }
-
-                assigned = true;
-                break;
-            }
-
-            if !assigned {
-                unscheduled.push(UnscheduledSubject {
-                    subject_id: subject.subject_id.clone(),
-                    reason: "no available slot satisfying all constraints".to_string(),
-                });
+                    .map_err(|e| e.to_string())?
+                    .ok_or_else(|| "job not found".to_string())?;
+                job.status = "failed".to_string();
+                job.error_message = Some("solve timed out".to_string());
+                job.completed_at = Some(Utc::now().to_rfc3339());
+                job.updated_at = Utc::now().to_rfc3339();
+                repo.update_solve_job(job).await.map_err(|e| e.to_string())?;
+                let _ = scheduler.cancel_exam(&job_id).await;
+                return Err("solve timed out".to_string());
             }
         }
 
-        // Generate warnings
-        if !unscheduled.is_empty() {
-            warnings.push(format!(
-                "{} subjects could not be scheduled — consider adding more dates",
-                unscheduled.len()
-            ));
-        }
-
-        let available_slots_remaining = slots.iter().filter(|s| !s.is_used).count();
-        if available_slots_remaining == 0 && to_schedule.len() > schedule_entries.len() {
-            warnings.push("all available time slots have been exhausted".to_string());
-        }
-
-        Ok(AutoScheduleResult {
-            total_subjects: to_schedule.len(),
-            scheduled_count: schedule_entries.len(),
-            unscheduled,
-            schedule: schedule_entries,
-            warnings,
-        })
+        Ok(())
     }
 
     /// Postpone a scheduled exam to a new date

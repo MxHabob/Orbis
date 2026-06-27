@@ -17,4 +17,8 @@ pub trait ScheduleSolver: Send + Sync {
     async fn submit(&self, problem: &TimetableProblem) -> Result<(), SchedulerError>;
     async fn status(&self, job_id: &str) -> Result<SolveJobStatus, SchedulerError>;
     async fn cancel(&self, job_id: &str) -> Result<(), SchedulerError>;
+
+    async fn submit_exam(&self, problem: &ExamProblem) -> Result<(), SchedulerError>;
+    async fn status_exam(&self, job_id: &str) -> Result<ExamSolveJobStatus, SchedulerError>;
+    async fn cancel_exam(&self, job_id: &str) -> Result<(), SchedulerError>;
 }

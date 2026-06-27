@@ -684,16 +684,17 @@ CREATE TABLE IF NOT EXISTS teacher_availability (
   updated_at TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS schedule_solve_jobs (
+CREATE TABLE IF NOT EXISTS solve_jobs (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL,
-  cycle_id TEXT NOT NULL,
-  mode TEXT NOT NULL,
+  job_type TEXT NOT NULL,
+  target_id TEXT NOT NULL,
+  mode TEXT,
   status TEXT NOT NULL,
   problem_snapshot TEXT,
   best_solution TEXT,
   score TEXT,
-  lessons_created INTEGER NOT NULL,
+  items_created INTEGER NOT NULL,
   error_message TEXT,
   created_by TEXT,
   started_at TEXT,
