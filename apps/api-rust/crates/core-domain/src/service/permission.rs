@@ -131,4 +131,37 @@ impl super::Service {
             .await
             .map_err(|e| e.to_string())
     }
+
+    pub async fn get_user_permissions(&self, user_id: &str) -> Result<HashMap<String, String>, String> {
+        let perms = self.get_permissions().await?;
+        let user_perms = self.repo.get_user_permissions(user_id).await.map_err(|e| e.to_string())?;
+
+        let id_to_code: HashMap<i32, String> = perms.into_iter().map(|p| (p.id, p.code)).collect();
+        let mut result = HashMap::new();
+        for up in user_perms {
+            if let Some(code) = id_to_code.get(&up.permission_id) {
+                result.insert(code.clone(), up.grant_type);
+            }
+        }
+        Ok(result)
+    }
+
+    pub async fn save_user_permissions(
+        &self,
+        user_id: &str,
+        permissions_map: HashMap<String, String>,
+    ) -> Result<(), String> {
+        let all_perms = self.get_permissions().await?;
+        let mut resolved_permissions = Vec::new();
+        for (perm_code, grant_type) in permissions_map {
+            if let Some(perm) = all_perms.iter().find(|p| p.code == perm_code) {
+                resolved_permissions.push((perm.id, grant_type));
+            }
+        }
+
+        self.repo
+            .save_user_permissions(user_id, resolved_permissions)
+            .await
+            .map_err(|e| e.to_string())
+    }
 }

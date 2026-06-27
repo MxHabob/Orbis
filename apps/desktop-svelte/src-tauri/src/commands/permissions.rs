@@ -49,3 +49,28 @@ pub async fn save_role_permissions(
         .await
         .map_err(CommandError::from)
 }
+
+#[tauri::command]
+pub async fn get_user_permissions(
+    state: State<'_, Arc<AppState>>,
+    user_id: String,
+) -> CmdResult<HashMap<String, String>> {
+    state
+        .service
+        .get_user_permissions(&user_id)
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn save_user_permissions(
+    state: State<'_, Arc<AppState>>,
+    user_id: String,
+    permissions: HashMap<String, String>,
+) -> CmdResult<()> {
+    state
+        .service
+        .save_user_permissions(&user_id, permissions)
+        .await
+        .map_err(CommandError::from)
+}

@@ -603,6 +603,10 @@ export const commands = {
     getRolePermissions: () => invoke<Record<string, Record<string, string>>>("get_role_permissions"),
     saveRolePermissions: (role: string, permissions: Record<string, string>) =>
       invoke<void>("save_role_permissions", { role, permissions }),
+    getUserPermissions: (userId: string) =>
+      invoke<Record<string, string>>("get_user_permissions", { userId }),
+    saveUserPermissions: (userId: string, permissions: Record<string, string>) =>
+      invoke<void>("save_user_permissions", { userId, permissions }),
   },
 
   window: {

@@ -153,6 +153,8 @@ pub fn run() {
             commands::permissions::get_permissions,
             commands::permissions::get_role_permissions,
             commands::permissions::save_role_permissions,
+            commands::permissions::get_user_permissions,
+            commands::permissions::save_user_permissions,
 
 
             // Users & organization commands

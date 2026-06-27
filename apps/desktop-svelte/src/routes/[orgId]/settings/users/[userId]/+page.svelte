@@ -5,7 +5,6 @@ import { fade, slide } from "svelte/transition";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import { Switch } from "@orbis/ui-svelte/switch";
 import { Avatar, AvatarImage, AvatarFallback } from "@orbis/ui-svelte/avatar";
 import { toast } from "svelte-sonner";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
@@ -52,20 +51,47 @@ let newPassword = $state("");
 let confirmPassword = $state("");
 let isResettingPassword = $state(false);
 
+function getRoleLabel(roleStr: string): string {
+  const r = String(roleStr).toLowerCase();
+  if (getLocale() === "ar") {
+    switch (r) {
+      case "super_admin": return "مدير النظام الرئيسي";
+      case "admin": return "إداري النظام";
+      case "principal": return "مدير المدرسة";
+      case "teacher": return "معلم";
+      case "staff": return "موظف كادر مساند";
+      case "student": return "طالب";
+      case "parent": return "ولي أمر";
+      default: return r;
+    }
+  } else {
+    switch (r) {
+      case "super_admin": return "Super Admin";
+      case "admin": return "System Admin";
+      case "principal": return "School Principal";
+      case "teacher": return "Teacher";
+      case "staff": return "Staff Member";
+      case "student": return "Student";
+      case "parent": return "Parent / Guardian";
+      default: return r;
+    }
+  }
+}
+
 // Form Fields
 let fullName = $state("");
 let nameAr = $state("");
 let nameEn = $state("");
 let email = $state("");
 let phone = $state("");
-let role = $state("Teacher");
+let role = $state("teacher");
 
 // Specific Override Permissions State
 let overridePermissions = $state<Record<string, boolean>>({
-  "acad_grades_submit": true,
+  "acad_grades_submit": false,
   "fin_ledger_view": false,
-  "student_enroll": true,
-  "report_generate": true
+  "student_enroll": false,
+  "report_generate": false
 });
 
 // User Preferences State
@@ -120,8 +146,21 @@ async function loadUser() {
     nameEn = fetched.name_en || "";
     email = fetched.email || "";
     phone = (fetched.phone as string) || "";
-    role = fetched.role || "Teacher";
+    role = fetched.primary_role || fetched.role || "teacher";
     isActiveState = fetched.is_active !== undefined ? Boolean(fetched.is_active) : true;
+
+    // Fetch user specific overrides from database
+    try {
+      const dbOverrides = await commands.permissions.getUserPermissions(userId);
+      overridePermissions = {
+        "acad_grades_submit": dbOverrides["GradeWrite"] === "allow",
+        "fin_ledger_view": dbOverrides["FinanceRead"] === "allow",
+        "student_enroll": dbOverrides["EnrollmentWrite"] === "allow",
+        "report_generate": dbOverrides["GradeReport"] === "allow",
+      };
+    } catch (err) {
+      console.error("Failed to load user permissions overrides", err);
+    }
   } catch (e) {
     console.error("Failed to load user:", e);
     toast.error(getLocale() === "ar" ? "فشل تحميل بيانات المستخدم" : "Failed to load user details");
@@ -146,14 +185,36 @@ async function handleUpdateProfile(e: Event) {
       name_en: nameEn || null,
       email: email || null,
       phone: phone || null,
-      role: role,
       is_active: isActiveState
     };
     await commands.users.updateUser(userId, request);
+    if (role) {
+      await commands.users.changeUserRole(userId, { role });
+    }
     toast.success(m.settings_user_detail_save_success());
     loadUser();
   } catch (e) {
     const errorMsg = e instanceof Error ? e.message : String(e);
+    toast.error(errorMsg);
+  } finally {
+    isSaving = false;
+  }
+}
+
+async function handleSaveOverrides() {
+  if (!userId) return;
+  isSaving = true;
+  try {
+    const permissionsMap: Record<string, string> = {
+      "GradeWrite": overridePermissions.acad_grades_submit ? "allow" : "deny",
+      "FinanceRead": overridePermissions.fin_ledger_view ? "allow" : "deny",
+      "EnrollmentWrite": overridePermissions.student_enroll ? "allow" : "deny",
+      "GradeReport": overridePermissions.report_generate ? "allow" : "deny",
+    };
+    await commands.permissions.saveUserPermissions(userId, permissionsMap);
+    toast.success(m.settings_permissions_save_success());
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
     toast.error(errorMsg);
   } finally {
     isSaving = false;
@@ -245,23 +306,6 @@ async function handleDeleteUser() {
   }
 }
 
-function getRoleLabel(roleStr: string): string {
-  switch (String(roleStr).toLowerCase()) {
-    case "admin":
-    case "super_admin":
-    case "principal":
-      return m.settings_users_filter_admin();
-    case "teacher":
-      return m.settings_users_filter_teacher();
-    case "parent":
-    case "guardian":
-      return m.settings_users_filter_guardian();
-    case "student":
-      return m.settings_users_filter_student();
-    default:
-      return roleStr || "Staff";
-  }
-}
 </script>
 
 <div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide flex flex-col p-6 gap-6 font-sans">
@@ -442,11 +486,13 @@ function getRoleLabel(roleStr: string): string {
                   disabled={isSaving}
                   class="bg-background text-foreground border border-border rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-ring outline-none h-9 w-full cursor-pointer"
                 >
-                  <option value="Admin">Admin</option>
-                  <option value="Principal">School Principal</option>
-                  <option value="Teacher">Teacher</option>
-                  <option value="Finance_Officer">Financial Officer</option>
-                  <option value="Student_Parent">Student / Parent</option>
+                  <option value="super_admin">{getLocale() === "ar" ? "مدير النظام الرئيسي" : "Super Admin"}</option>
+                  <option value="admin">{getLocale() === "ar" ? "إداري النظام" : "System Admin"}</option>
+                  <option value="principal">{getLocale() === "ar" ? "مدير المدرسة" : "School Principal"}</option>
+                  <option value="teacher">{getLocale() === "ar" ? "المعلم / المدرس" : "Teacher"}</option>
+                  <option value="staff">{getLocale() === "ar" ? "موظف / كادر مساند" : "Staff Member"}</option>
+                  <option value="student">{getLocale() === "ar" ? "الطالب" : "Student"}</option>
+                  <option value="parent">{getLocale() === "ar" ? "ولي الأمر" : "Parent / Guardian"}</option>
                 </select>
               </div>
 
@@ -611,9 +657,20 @@ function getRoleLabel(roleStr: string): string {
                   {getLocale() === "ar" ? "السماح بالرصد حتى لو لم يكن معلماً للصف" : "Allow inputting scores across all classes"}
                 </span>
               </div>
-              <Switch bind:checked={overridePermissions.acad_grades_submit} />
+              <button 
+                class="w-10 h-6 rounded-full p-0.5 transition-colors duration-200 cursor-pointer focus:outline-none flex items-center
+                  {overridePermissions.acad_grades_submit ? 'bg-primary' : 'bg-muted'}"
+                disabled={isSaving}
+                onclick={() => overridePermissions.acad_grades_submit = !overridePermissions.acad_grades_submit}
+                aria-label="Toggle Override"
+                type="button"
+              >
+                <div class="w-5 h-5 rounded-full bg-white shadow-md transform transition-transform duration-200
+                  {overridePermissions.acad_grades_submit ? (getLocale() === 'ar' ? '-translate-x-4' : 'translate-x-4') : 'translate-x-0'}">
+                </div>
+              </button>
             </div>
-
+ 
             <!-- View Ledgers override -->
             <div class="flex items-center justify-between p-4 rounded-xl border border-border bg-background/20">
               <div class="flex flex-col gap-1">
@@ -624,9 +681,20 @@ function getRoleLabel(roleStr: string): string {
                   {getLocale() === "ar" ? "الولوج للميزانيات والحسابات الختامية" : "View bookkeeping ledgers and balance sheet"}
                 </span>
               </div>
-              <Switch bind:checked={overridePermissions.fin_ledger_view} />
+              <button 
+                class="w-10 h-6 rounded-full p-0.5 transition-colors duration-200 cursor-pointer focus:outline-none flex items-center
+                  {overridePermissions.fin_ledger_view ? 'bg-primary' : 'bg-muted'}"
+                disabled={isSaving}
+                onclick={() => overridePermissions.fin_ledger_view = !overridePermissions.fin_ledger_view}
+                aria-label="Toggle Override"
+                type="button"
+              >
+                <div class="w-5 h-5 rounded-full bg-white shadow-md transform transition-transform duration-200
+                  {overridePermissions.fin_ledger_view ? (getLocale() === 'ar' ? '-translate-x-4' : 'translate-x-4') : 'translate-x-0'}">
+                </div>
+              </button>
             </div>
-
+ 
             <!-- Enroll student override -->
             <div class="flex items-center justify-between p-4 rounded-xl border border-border bg-background/20">
               <div class="flex flex-col gap-1">
@@ -637,9 +705,20 @@ function getRoleLabel(roleStr: string): string {
                   {getLocale() === "ar" ? "حق قبول الطلاب وإصدار الأرقام الأكاديمية" : "Register new students and assign IDs"}
                 </span>
               </div>
-              <Switch bind:checked={overridePermissions.student_enroll} />
+              <button 
+                class="w-10 h-6 rounded-full p-0.5 transition-colors duration-200 cursor-pointer focus:outline-none flex items-center
+                  {overridePermissions.student_enroll ? 'bg-primary' : 'bg-muted'}"
+                disabled={isSaving}
+                onclick={() => overridePermissions.student_enroll = !overridePermissions.student_enroll}
+                aria-label="Toggle Override"
+                type="button"
+              >
+                <div class="w-5 h-5 rounded-full bg-white shadow-md transform transition-transform duration-200
+                  {overridePermissions.student_enroll ? (getLocale() === 'ar' ? '-translate-x-4' : 'translate-x-4') : 'translate-x-0'}">
+                </div>
+              </button>
             </div>
-
+ 
             <!-- Generate reports override -->
             <div class="flex items-center justify-between p-4 rounded-xl border border-border bg-background/20">
               <div class="flex flex-col gap-1">
@@ -650,12 +729,23 @@ function getRoleLabel(roleStr: string): string {
                   {getLocale() === "ar" ? "الطباعة المباشرة لكشوفات الفصل الأول والثاني" : "Export reports and school certifications"}
                 </span>
               </div>
-              <Switch bind:checked={overridePermissions.report_generate} />
+              <button 
+                class="w-10 h-6 rounded-full p-0.5 transition-colors duration-200 cursor-pointer focus:outline-none flex items-center
+                  {overridePermissions.report_generate ? 'bg-primary' : 'bg-muted'}"
+                disabled={isSaving}
+                onclick={() => overridePermissions.report_generate = !overridePermissions.report_generate}
+                aria-label="Toggle Override"
+                type="button"
+              >
+                <div class="w-5 h-5 rounded-full bg-white shadow-md transform transition-transform duration-200
+                  {overridePermissions.report_generate ? (getLocale() === 'ar' ? '-translate-x-4' : 'translate-x-4') : 'translate-x-0'}">
+                </div>
+              </button>
             </div>
           </div>
 
           <div class="flex justify-end border-t border-border/40 pt-4 mt-2">
-            <Button variant="lime" class="text-xs h-9" onclick={() => toast.success(m.settings_permissions_save_success())}>
+            <Button variant="lime" class="text-xs h-9" onclick={handleSaveOverrides}>
               {getLocale() === "ar" ? "حفظ صلاحيات التجاوز" : "Save Overrides"}
             </Button>
           </div>
@@ -721,17 +811,50 @@ function getRoleLabel(roleStr: string): string {
                 {m.settings_user_detail_pref_notifications()}
               </span>
               <div class="flex flex-col gap-2">
-                <label class="flex items-center justify-between text-xs text-foreground cursor-pointer select-none">
+                 <label class="flex items-center justify-between text-xs text-foreground cursor-pointer select-none">
                   <span>{getLocale() === "ar" ? "إرسال الإشعارات عبر البريد الإلكتروني" : "Email Notifications"}</span>
-                  <Switch bind:checked={notifyEmail} />
+                  <button 
+                    class="w-10 h-6 rounded-full p-0.5 transition-colors duration-200 cursor-pointer focus:outline-none flex items-center
+                      {notifyEmail ? 'bg-primary' : 'bg-muted'}"
+                    disabled={isSaving}
+                    onclick={() => notifyEmail = !notifyEmail}
+                    aria-label="Toggle Email Notification"
+                    type="button"
+                  >
+                    <div class="w-5 h-5 rounded-full bg-white shadow-md transform transition-transform duration-200
+                      {notifyEmail ? (getLocale() === 'ar' ? '-translate-x-4' : 'translate-x-4') : 'translate-x-0'}">
+                    </div>
+                  </button>
                 </label>
                 <label class="flex items-center justify-between text-xs text-foreground cursor-pointer select-none">
                   <span>{getLocale() === "ar" ? "تنبيهات فورية (Push Notifications)" : "Push System Alerts"}</span>
-                  <Switch bind:checked={notifyPush} />
+                  <button 
+                    class="w-10 h-6 rounded-full p-0.5 transition-colors duration-200 cursor-pointer focus:outline-none flex items-center
+                      {notifyPush ? 'bg-primary' : 'bg-muted'}"
+                    disabled={isSaving}
+                    onclick={() => notifyPush = !notifyPush}
+                    aria-label="Toggle Push Notification"
+                    type="button"
+                  >
+                    <div class="w-5 h-5 rounded-full bg-white shadow-md transform transition-transform duration-200
+                      {notifyPush ? (getLocale() === 'ar' ? '-translate-x-4' : 'translate-x-4') : 'translate-x-0'}">
+                    </div>
+                  </button>
                 </label>
                 <label class="flex items-center justify-between text-xs text-foreground cursor-pointer select-none">
                   <span>{getLocale() === "ar" ? "رسائل جوال SMS (للحالات العاجلة)" : "SMS Notifications"}</span>
-                  <Switch bind:checked={notifySms} />
+                  <button 
+                    class="w-10 h-6 rounded-full p-0.5 transition-colors duration-200 cursor-pointer focus:outline-none flex items-center
+                      {notifySms ? 'bg-primary' : 'bg-muted'}"
+                    disabled={isSaving}
+                    onclick={() => notifySms = !notifySms}
+                    aria-label="Toggle SMS Notification"
+                    type="button"
+                  >
+                    <div class="w-5 h-5 rounded-full bg-white shadow-md transform transition-transform duration-200
+                      {notifySms ? (getLocale() === 'ar' ? '-translate-x-4' : 'translate-x-4') : 'translate-x-0'}">
+                    </div>
+                  </button>
                 </label>
               </div>
             </div>

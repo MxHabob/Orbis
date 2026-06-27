@@ -48,4 +48,51 @@ impl super::Repository {
 
         Ok(())
     }
+
+    pub async fn get_user_permissions(&self, user_id: &str) -> Result<Vec<crate::entities::user_permission::Model>, DbErr> {
+        crate::entities::user_permission::Entity::find()
+            .filter(crate::entities::user_permission::Column::UserId.eq(user_id.to_string()))
+            .filter(crate::entities::user_permission::Column::IsActive.eq(1))
+            .all(&self.db)
+            .await
+    }
+
+    pub async fn save_user_permissions(
+        &self,
+        user_id: &str,
+        permissions: Vec<(i32, String)>,
+    ) -> Result<(), DbErr> {
+        // Delete all existing user_permissions rows for the given user
+        crate::entities::user_permission::Entity::delete_many()
+            .filter(crate::entities::user_permission::Column::UserId.eq(user_id.to_string()))
+            .exec(&self.db)
+            .await?;
+
+        // Insert new user_permission models
+        let now = Utc::now().naive_utc().to_string();
+        let mut new_models = Vec::new();
+        for (perm_id, grant_type) in permissions {
+            new_models.push(crate::entities::user_permission::ActiveModel {
+                id: Set(uuid::Uuid::new_v4().to_string()),
+                user_id: Set(user_id.to_string()),
+                permission_id: Set(perm_id),
+                grant_type: Set(grant_type),
+                conditions: Set(None),
+                valid_from: Set(None),
+                valid_until: Set(None),
+                reason: Set(None),
+                granted_by: Set(Some("system".to_string())),
+                granted_at: Set(now.clone()),
+                is_active: Set(1),
+            });
+        }
+
+        if !new_models.is_empty() {
+            crate::entities::user_permission::Entity::insert_many(new_models)
+                .exec(&self.db)
+                .await?;
+        }
+
+        Ok(())
+    }
 }
