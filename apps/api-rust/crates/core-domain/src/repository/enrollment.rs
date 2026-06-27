@@ -151,13 +151,32 @@ impl super::Repository {
     ) -> Result<Vec<EnrollmentOrderingRow>, DbErr> {
         use crate::entities::{enrollment, user, class};
 
-        let enrollments = enrollment::Entity::find()
+        let mut list = enrollment::Entity::find()
             .filter(enrollment::Column::OrgId.eq(org_id))
             .filter(enrollment::Column::CycleId.eq(cycle_id))
             .filter(enrollment::Column::Status.eq("active"))
             .all(&self.db)
             .await?;
 
+        if list.is_empty() {
+            // Check if there is a parent cycle with active enrollments
+            use crate::entities::academic_cycle;
+            if let Ok(Some(cycle)) = academic_cycle::Entity::find_by_id(cycle_id.to_string()).one(&self.db).await {
+                if let Some(parent_id) = cycle.parent_id {
+                    if let Ok(parent_list) = enrollment::Entity::find()
+                        .filter(enrollment::Column::OrgId.eq(org_id))
+                        .filter(enrollment::Column::CycleId.eq(parent_id))
+                        .filter(enrollment::Column::Status.eq("active"))
+                        .all(&self.db)
+                        .await
+                    {
+                        list = parent_list;
+                    }
+                }
+            }
+        }
+
+        let enrollments = list;
         let mut rows = Vec::with_capacity(enrollments.len());
 
         for enr in &enrollments {

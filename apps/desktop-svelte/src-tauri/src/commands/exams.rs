@@ -2,13 +2,20 @@ use tauri::State;
 use std::sync::Arc;
 
 use core_domain::{
-    entities::{exam_session, exam_subject, exam_schedule},
+    entities::{
+        exam_session, exam_subject, exam_schedule, exam_hall,
+        exam_hall_allocation, exam_proctor,
+    },
     service::exam_session::{
         CreateExamSessionRequest, UpdateExamSessionRequest,
-        CreateExamSubjectRequest,
+        CreateExamSubjectRequest, CreateExamHallRequest,
     },
     service::student_ordering::{OrderedStudent, RebuildOrderingResult},
-    service::exam_numbers::GenerationResult,
+    service::exam_numbers::{GenerationResult, SeatingNumberView},
+    service::exam_auto_schedule::{AutoScheduleRequest, AutoScheduleResult},
+    service::exam_logistics::{
+        AllocationConfig, AllocationResult, ProctorAssignConfig, ProctorAssignResult,
+    },
 };
 
 use crate::state::AppState;
@@ -183,6 +190,116 @@ pub async fn get_exam_schedules(
     state
         .service
         .get_exam_schedules(&org_id, &session_id)
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn auto_schedule_exams(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    request: AutoScheduleRequest,
+) -> CmdResult<AutoScheduleResult> {
+    state
+        .service
+        .auto_schedule_exams(&org_id, request)
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn allocate_students_to_halls(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    session_id: String,
+    config: AllocationConfig,
+) -> CmdResult<AllocationResult> {
+    state
+        .service
+        .allocate_students_to_halls(&org_id, &session_id, config)
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn auto_assign_proctors(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    session_id: String,
+    schedule_id: String,
+    config: ProctorAssignConfig,
+) -> CmdResult<ProctorAssignResult> {
+    state
+        .service
+        .auto_assign_proctors(&org_id, &session_id, &schedule_id, config)
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn get_exam_halls(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    session_id: String,
+) -> CmdResult<Vec<exam_hall::Model>> {
+    state
+        .service
+        .get_exam_halls(&org_id, &session_id)
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn create_exam_hall(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    request: CreateExamHallRequest,
+) -> CmdResult<exam_hall::Model> {
+    state
+        .service
+        .create_exam_hall(&org_id, request)
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn get_exam_proctors(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    session_id: String,
+    schedule_id: Option<String>,
+) -> CmdResult<Vec<exam_proctor::Model>> {
+    state
+        .service
+        .get_exam_proctors(&org_id, &session_id, schedule_id.as_deref())
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn get_hall_students(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    session_id: String,
+    hall_id: String,
+) -> CmdResult<Vec<exam_hall_allocation::Model>> {
+    state
+        .service
+        .get_hall_students(&org_id, &session_id, &hall_id)
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn get_seating_numbers(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    session_id: String,
+    class_id: Option<String>,
+) -> CmdResult<Vec<SeatingNumberView>> {
+    state
+        .service
+        .get_seating_numbers(&org_id, &session_id, class_id.as_deref())
         .await
         .map_err(CommandError::from)
 }

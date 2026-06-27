@@ -35,6 +35,9 @@ import {
 } from "lucide-svelte";
 import * as m from "$lib/paraglide/messages";
 import ExamStatusBadge from "$lib/components/exams/status-badge.svelte";
+import SubjectAddSheet from "$lib/components/exams/subject-add-sheet.svelte";
+import { commands } from "$lib/services/ipc";
+import { authStore } from "$lib/stores";
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -48,8 +51,10 @@ let schedules = $state<any[]>([]);
 let seatingNumbers = $state<any[]>([]);
 let halls = $state<any[]>([]);
 let proctors = $state<any[]>([]);
+let rooms = $state<any[]>([]);
 let isLoading = $state(true);
 let activeTab = $state("subjects");
+let isSubjectSheetOpen = $state(false);
 
 const tabs = $derived([
   { id: "subjects", label: m.exams_detail_subjects(), icon: BookOpen, count: subjects.length },
@@ -60,17 +65,55 @@ const tabs = $derived([
 ]);
 
 async function loadSession() {
+  if (!data.orgId || !sessionId) return;
   isLoading = true;
   try {
-    // TODO: Wire to IPC commands
-    session = null;
-    subjects = [];
-    schedules = [];
-    seatingNumbers = [];
-    halls = [];
-    proctors = [];
+    session = await commands.exams.getSession(data.orgId, sessionId);
+    
+    // Load subjects
+    try {
+      subjects = await commands.exams.getSubjects(data.orgId, sessionId);
+    } catch (err) {
+      console.error("Failed to load subjects", err);
+    }
+
+    // Load schedules
+    try {
+      schedules = await commands.exams.getSchedules(data.orgId, sessionId);
+    } catch (err) {
+      console.error("Failed to load schedules", err);
+    }
+
+    // Load seating numbers
+    try {
+      seatingNumbers = await commands.exams.getSeatingNumbers(data.orgId, sessionId);
+    } catch (err) {
+      console.error("Failed to load seating numbers", err);
+    }
+
+    // Load halls
+    try {
+      halls = await commands.exams.getHalls(data.orgId, sessionId);
+    } catch (err) {
+      console.error("Failed to load halls", err);
+    }
+
+    // Load proctors
+    try {
+      proctors = await commands.exams.getProctors(data.orgId, sessionId);
+    } catch (err) {
+      console.error("Failed to load proctors", err);
+    }
+
+    // Load school rooms catalog
+    try {
+      rooms = await commands.schedule.getRooms(data.orgId);
+    } catch (err) {
+      console.error("Failed to load school rooms", err);
+    }
   } catch (e) {
     toast.error("Failed to load session details");
+    console.error(e);
   } finally {
     isLoading = false;
   }
@@ -84,24 +127,169 @@ onMount(() => {
 
 // Quick actions
 async function handleGenerateSeating() {
-  toast.info(m.exams_actions_generate_seating());
-  // TODO: Wire to API
+  const userId = authStore.userId || authStore.user?.id || "desktop_user";
+  const promise = commands.exams.generateSeating(data.orgId, sessionId, userId);
+  toast.promise(promise, {
+    loading: "جاري توليد أرقام الجلوس...",
+    success: "تم توليد أرقام الجلوس بنجاح!",
+    error: (err) => err?.message || "فشل توليد أرقام الجلوس",
+  });
+  try {
+    await promise;
+    await loadSession();
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 async function handleGenerateSecrets() {
-  toast.info(m.exams_actions_generate_secrets());
+  const userId = authStore.userId || authStore.user?.id || "desktop_user";
+  const promise = commands.exams.generateSecrets(data.orgId, sessionId, userId);
+  toast.promise(promise, {
+    loading: "جاري توليد الأرقام السرية...",
+    success: "تم توليد الأرقام السرية بنجاح!",
+    error: (err) => err?.message || "فشل توليد الأرقام السرية",
+  });
+  try {
+    await promise;
+    await loadSession();
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+// Generate an array of YYYY-MM-DD strings between two dates inclusive
+function generateDatesRange(startStr: string, endStr: string): string[] {
+  const dates: string[] = [];
+  try {
+    const start = new Date(startStr);
+    const end = new Date(endStr);
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      dates.push(d.toISOString().split("T")[0]);
+    }
+  } catch (e) {
+    console.error(e);
+  }
+  return dates;
 }
 
 async function handleAutoSchedule() {
-  toast.info(m.exams_actions_auto_schedule());
+  if (!session) return;
+  const available_dates = generateDatesRange(session.start_date, session.end_date);
+  if (available_dates.length === 0) {
+    toast.error("تاريخ البداية أو النهاية غير صالح");
+    return;
+  }
+
+  const promise = commands.exams.autoSchedule(data.orgId, {
+    exam_session_id: sessionId,
+    available_dates,
+    max_exams_per_day: 2,
+    preferred_period: "both",
+    default_duration_minutes: 90,
+  });
+
+  toast.promise(promise, {
+    loading: "جاري جدولة الامتحانات تلقائياً...",
+    success: "تمت الجدولة التلقائية بنجاح!",
+    error: (err) => err?.message || "فشل الجدولة التلقائية",
+  });
+  
+  try {
+    await promise;
+    await loadSession();
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 async function handleAllocateHalls() {
-  toast.info(m.exams_actions_allocate_halls());
+  const promise = commands.exams.allocateHalls(data.orgId, sessionId, {
+    separate_divisions: false,
+    separate_genders: false,
+    balance_halls: true,
+  });
+
+  toast.promise(promise, {
+    loading: "جاري توزيع الطلاب على القاعات...",
+    success: "تم توزيع الطلاب على القاعات بنجاح!",
+    error: (err) => err?.message || "فشل توزيع الطلاب",
+  });
+
+  try {
+    await promise;
+    await loadSession();
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 async function handleActivate() {
-  toast.info(m.exams_detail_activate());
+  if (!session) return;
+  const promise = commands.exams.updateSession(data.orgId, sessionId, {
+    status: "active"
+  });
+
+  toast.promise(promise, {
+    loading: "جاري تفعيل دورة الامتحانات...",
+    success: "تم تفعيل دورة الامتحانات بنجاح!",
+    error: (err) => err?.message || "فشل تفعيل دورة الامتحانات",
+  });
+
+  try {
+    await promise;
+    await loadSession();
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function handleToggleHall(room: any) {
+  const promise = commands.exams.createHall(data.orgId, {
+    exam_session_id: sessionId,
+    room_id: room.id,
+    hall_number: room.room_number || room.name || "لجنة",
+    capacity: room.capacity || 30,
+  });
+
+  toast.promise(promise, {
+    loading: `جاري تفعيل القاعة ${room.room_number || room.name}...`,
+    success: "تم تفعيل القاعة كـ لجنة اختبار بنجاح!",
+    error: (err) => err?.message || "فشل تفعيل القاعة",
+  });
+
+  try {
+    await promise;
+    await loadSession();
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function handleAssignProctors() {
+  if (schedules.length === 0) {
+    toast.error("يرجى جدولة الامتحانات أولاً قبل تعيين المراقبين");
+    return;
+  }
+  
+  let successCount = 0;
+  isLoading = true;
+  try {
+    for (const sched of schedules) {
+      await commands.exams.autoAssignProctors(data.orgId, sessionId, sched.id, {
+        proctors_per_hall: 2,
+        prevent_own_subject: true,
+        max_sessions_per_teacher: 5,
+      });
+      successCount++;
+    }
+    toast.success(`تم تعيين المراقبين بنجاح لـ ${successCount} فترات امتحانية!`);
+    await loadSession();
+  } catch (err: any) {
+    toast.error(err?.message || "فشل تعيين المراقبين");
+  } finally {
+    isLoading = false;
+  }
 }
 </script>
 
@@ -193,7 +381,7 @@ async function handleActivate() {
 						<div class="flex flex-col items-center justify-center py-12 gap-3 text-center">
 							<BookOpen size={24} class="text-muted-foreground" />
 							<p class="text-xs text-muted-foreground">لم يتم إضافة مواد بعد</p>
-							<Button variant="outline" class="h-7 px-3 text-[10px] cursor-pointer" onclick={() => toast.info("Add subject coming soon")}>
+							<Button variant="outline" class="h-7 px-3 text-[10px] cursor-pointer" onclick={() => isSubjectSheetOpen = true}>
 								<Plus size={12} class="me-1" />
 								{m.exams_subjects_add()}
 							</Button>
@@ -227,7 +415,7 @@ async function handleActivate() {
 								</TableBody>
 							</Table>
 						</div>
-						<Button variant="outline" class="w-fit h-7 px-3 text-[10px] cursor-pointer" onclick={() => toast.info("Add subject coming soon")}>
+						<Button variant="outline" class="w-fit h-7 px-3 text-[10px] cursor-pointer" onclick={() => isSubjectSheetOpen = true}>
 							<Plus size={12} class="me-1" />
 							{m.exams_subjects_add()}
 						</Button>
@@ -310,37 +498,64 @@ async function handleActivate() {
 			<!-- ═══ Halls Tab ═══ -->
 			{:else if activeTab === "halls"}
 				<div class="flex flex-col gap-4">
-					{#if halls.length === 0}
+					<div class="flex items-center justify-between text-xs text-muted-foreground select-none px-1">
+						<span>تم تفعيل {halls.length} لجنة من أصل {rooms.length} قاعة دراسية متاحة بالمدرسة</span>
+						<Button variant="outline" class="h-6 px-2 text-[9px] cursor-pointer" onclick={handleAllocateHalls}>
+							<Shuffle size={10} class="me-1" />
+							توزيع الطلاب تلقائياً
+						</Button>
+					</div>
+
+					{#if rooms.length === 0}
 						<div class="flex flex-col items-center justify-center py-12 gap-3 text-center">
 							<Building2 size={24} class="text-muted-foreground" />
-							<p class="text-xs text-muted-foreground">لم يتم تحديد لجان بعد</p>
-							<Button variant="outline" class="h-7 px-3 text-[10px] cursor-pointer" onclick={handleAllocateHalls}>
-								<Shuffle size={12} class="me-1" />
-								{m.exams_actions_allocate_halls()}
-							</Button>
+							<p class="text-xs text-muted-foreground">لا توجد قاعات مسجلة في نظام المدرسة بعد</p>
 						</div>
 					{:else}
-						<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-							{#each halls as hall (hall.id)}
-								{@const utilPct = hall.capacity > 0 ? Math.round((hall.allocated_count / hall.capacity) * 100) : 0}
-								<div class="card-tactile bg-card p-4 flex flex-col gap-3">
+						<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+							{#each rooms as room (room.id)}
+								{@const activeHall = halls.find((h) => h.room_id === room.id)}
+								{@const isAct = !!activeHall}
+								<div class="card-tactile bg-card p-4 flex flex-col gap-3 transition-all duration-200 {isAct ? 'border-primary/40 shadow-sm ring-1 ring-primary/10' : 'opacity-85 hover:opacity-100'}">
 									<div class="flex items-center justify-between">
-										<span class="text-xs font-bold text-foreground">{hall.hall_number}</span>
-										<span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-muted/60 border border-border/40">
-											{hall.allocated_count}/{hall.capacity}
+										<div class="flex flex-col">
+											<span class="text-xs font-bold text-foreground">{room.room_number || room.name}</span>
+											{#if room.building}
+												<span class="text-[8px] text-muted-foreground mt-0.5">{room.building} - الطابق {room.floor}</span>
+											{/if}
+										</div>
+										<span class="text-[9px] font-mono px-1.5 py-0.5 rounded {isAct ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-muted text-muted-foreground border border-border/40'}">
+											{isAct ? "لجنة نشطة" : "غير مفعلة"}
 										</span>
 									</div>
-									{#if hall.building}
-										<span class="text-[9px] text-muted-foreground">{hall.building} - الطابق {hall.floor_number}</span>
+
+									{#if isAct}
+										{@const utilPct = activeHall.capacity > 0 ? Math.round((activeHall.allocated_count / activeHall.capacity) * 100) : 0}
+										<div class="flex flex-col gap-1.5">
+											<div class="flex justify-between text-[9px] text-muted-foreground font-mono">
+												<span>السعة المحددة: {activeHall.capacity}</span>
+												<span>الموزعين: {activeHall.allocated_count} طالب</span>
+											</div>
+											<div class="h-1 w-full rounded-full bg-muted/40 overflow-hidden">
+												<div
+													class="h-full rounded-full transition-all duration-300 {utilPct > 90 ? 'bg-red-500' : utilPct > 70 ? 'bg-amber-500' : 'bg-emerald-500'}"
+													style="width: {utilPct}%"
+												></div>
+											</div>
+										</div>
+									{:else}
+										<div class="flex items-center justify-between mt-1">
+											<span class="text-[9px] text-muted-foreground">السعة الافتراضية: {room.capacity || 30}</span>
+											<Button
+												variant="ghost"
+												class="h-6 px-2 text-[9px] font-semibold text-primary hover:bg-primary/5 cursor-pointer"
+												onclick={() => handleToggleHall(room)}
+											>
+												<Plus size={10} class="me-1" />
+												تفعيل كلجنة
+											</Button>
+										</div>
 									{/if}
-									<!-- Utilization Bar -->
-									<div class="h-1.5 w-full rounded-full bg-muted/40 overflow-hidden">
-										<div
-											class="h-full rounded-full transition-all duration-500 {utilPct > 90 ? 'bg-red-500' : utilPct > 70 ? 'bg-amber-500' : 'bg-emerald-500'}"
-											style="width: {utilPct}%"
-										></div>
-									</div>
-									<span class="text-[8px] text-muted-foreground">{utilPct}% ممتلئ</span>
 								</div>
 							{/each}
 						</div>
@@ -354,7 +569,7 @@ async function handleActivate() {
 						<div class="flex flex-col items-center justify-center py-12 gap-3 text-center">
 							<UserCheck size={24} class="text-muted-foreground" />
 							<p class="text-xs text-muted-foreground">لم يتم تعيين مراقبين بعد</p>
-							<Button variant="outline" class="h-7 px-3 text-[10px] cursor-pointer" onclick={() => toast.info("Assign proctors coming soon")}>
+							<Button variant="outline" class="h-7 px-3 text-[10px] cursor-pointer" onclick={handleAssignProctors}>
 								<UserCheck size={12} class="me-1" />
 								{m.exams_actions_assign_proctors()}
 							</Button>
@@ -411,3 +626,11 @@ async function handleActivate() {
 		</div>
 	{/if}
 </div>
+
+<SubjectAddSheet
+	bind:open={isSubjectSheetOpen}
+	orgId={data.orgId}
+	sessionId={sessionId}
+	onSuccess={loadSession}
+/>
+

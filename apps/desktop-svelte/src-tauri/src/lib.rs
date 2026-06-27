@@ -315,6 +315,14 @@ pub fn run() {
             commands::exams::generate_seating_numbers,
             commands::exams::generate_secret_numbers,
             commands::exams::get_exam_schedules,
+            commands::exams::auto_schedule_exams,
+            commands::exams::allocate_students_to_halls,
+            commands::exams::auto_assign_proctors,
+            commands::exams::get_exam_halls,
+            commands::exams::create_exam_hall,
+            commands::exams::get_exam_proctors,
+            commands::exams::get_hall_students,
+            commands::exams::get_seating_numbers,
         ])
         .setup(move |app| {
             // Add updater plugin conditionally for desktop

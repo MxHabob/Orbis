@@ -1,6 +1,7 @@
 <!--
 @component SessionCreateSheet
 Sheet for creating/editing exam sessions.
+Includes choosing the academic cycle.
 -->
 <script lang="ts">
 import {
@@ -15,6 +16,7 @@ import { Input } from "@orbis/ui-svelte/input";
 import { toast } from "svelte-sonner";
 import { examsStore } from "$lib/stores/exams.svelte";
 import { authStore } from "$lib/stores";
+import { commands } from "$lib/services/ipc";
 import * as m from "$lib/paraglide/messages";
 
 let {
@@ -31,11 +33,15 @@ let {
 
 const isEdit = $derived(!!session);
 
+// Form fields state
 let name = $state(session?.name || "");
 let nameAr = $state(session?.name_ar || "");
 let sessionType = $state(session?.session_type || "final");
 let startDate = $state(session?.start_date || "");
 let endDate = $state(session?.end_date || "");
+let cycleId = $state(session?.cycle_id || "");
+let cyclesList = $state<any[]>([]);
+
 let isSaving = $state(false);
 
 // Reset form when session changes
@@ -45,6 +51,23 @@ $effect(() => {
   sessionType = session?.session_type || "final";
   startDate = session?.start_date || "";
   endDate = session?.end_date || "";
+  cycleId = session?.cycle_id || "";
+});
+
+// Load academic cycles on open
+$effect(() => {
+  if (open && orgId) {
+    commands.academics.getCycles(orgId)
+      .then((res) => {
+        cyclesList = res || [];
+        if (!cycleId && cyclesList.length > 0) {
+          cycleId = cyclesList[0].id;
+        }
+      })
+      .catch((e) => {
+        console.error("Failed to load cycles:", e);
+      });
+  }
 });
 
 async function handleSubmit() {
@@ -56,24 +79,36 @@ async function handleSubmit() {
     toast.error("تاريخ البداية والنهاية مطلوبان");
     return;
   }
+  if (!cycleId) {
+    toast.error("الدورة الأكاديمية مطلوبة");
+    return;
+  }
 
   isSaving = true;
   try {
     const userId = authStore.userId || authStore.user?.id || "desktop_user";
     if (isEdit && session) {
       await examsStore.updateSession(orgId, session.id, {
-        name, name_ar: nameAr, type: sessionType,
-        start_date: startDate, end_date: endDate,
+        name,
+        name_ar: nameAr,
+        type: sessionType,
+        start_date: startDate,
+        end_date: endDate,
+        cycle_id: cycleId,
       });
     } else {
       await examsStore.createSession(orgId, userId, {
-        name, name_ar: nameAr, session_type: sessionType,
-        start_date: startDate, end_date: endDate,
+        name,
+        name_ar: nameAr,
+        session_type: sessionType,
+        start_date: startDate,
+        end_date: endDate,
+        cycle_id: cycleId,
       });
     }
     toast.success(m.exams_create_success());
     // Reset form
-    name = ""; nameAr = ""; startDate = ""; endDate = "";
+    name = ""; nameAr = ""; startDate = ""; endDate = ""; cycleId = "";
     open = false;
     onSuccess();
   } catch (e: any) {
@@ -96,6 +131,24 @@ async function handleSubmit() {
     </SheetHeader>
 
     <div class="flex-1 overflow-y-auto py-4 flex flex-col gap-4 px-1">
+      
+      <!-- Academic Cycle Selector -->
+      <div class="flex flex-col gap-1.5">
+        <label for="session-cycle" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
+          الدورة الأكاديمية
+        </label>
+        <select
+          id="session-cycle"
+          bind:value={cycleId}
+          class="h-9 px-3 text-xs rounded-lg border border-border bg-background text-foreground focus:ring-1 focus:ring-primary w-full"
+        >
+          <option value="" disabled>اختر الدورة الأكاديمية...</option>
+          {#each cyclesList as c}
+            <option value={c.id}>{c.name_ar || c.name}</option>
+          {/each}
+        </select>
+      </div>
+
       <!-- Name Arabic -->
       <div class="flex flex-col gap-1.5">
         <label for="session-name-ar" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">

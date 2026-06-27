@@ -32,13 +32,14 @@ import { authStore } from "$lib/stores";
 let { data }: { data: { orgId: string } } = $props();
 
 let students = $state<any[]>([]);
+let cycles = $state<any[]>([]);
 let isLoading = $state(true);
 let isRebuilding = $state(false);
 let searchQuery = $state("");
 let selectedStrategy = $state("name_ar_asc");
 let totalOrdered = $state(0);
 let isFrozen = $state(false);
-let currentCycleId = $state(""); // TODO: get from active academic cycle
+let currentCycleId = $state("");
 
 const strategies = [
   { value: "name_ar_asc", label: m.exams_ordering_strategy_name() },
@@ -47,6 +48,8 @@ const strategies = [
 
 async function loadOrdering() {
   if (!currentCycleId) {
+    students = [];
+    totalOrdered = 0;
     isLoading = false;
     return;
   }
@@ -64,9 +67,31 @@ async function loadOrdering() {
   }
 }
 
+// Reload when currentCycleId changes
+$effect(() => {
+  if (currentCycleId) {
+    loadOrdering();
+  }
+});
+
+async function loadCyclesAndData() {
+  isLoading = true;
+  try {
+    const resCycles = await commands.academics.getCycles(data.orgId);
+    cycles = resCycles || [];
+    if (cycles.length > 0) {
+      currentCycleId = cycles[0].id;
+    }
+  } catch (e) {
+    toast.error("Failed to load academic cycles");
+  } finally {
+    isLoading = false;
+  }
+}
+
 onMount(() => {
   if (data.orgId) {
-    loadOrdering();
+    loadCyclesAndData();
   }
 });
 
@@ -132,6 +157,17 @@ const filtered = $derived(
 		</div>
 
 		<div class="flex items-center gap-2">
+			<!-- Cycle Selector -->
+			<select
+				bind:value={currentCycleId}
+				class="h-8 px-2 text-[10px] rounded-lg border border-border bg-background text-foreground focus:ring-1 focus:ring-primary"
+			>
+				<option value="" disabled>اختر الدورة الأكاديمية</option>
+				{#each cycles as cycle}
+					<option value={cycle.id}>{cycle.name_ar || cycle.name}</option>
+				{/each}
+			</select>
+
 			<!-- Strategy Selector -->
 			<select
 				bind:value={selectedStrategy}

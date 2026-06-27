@@ -571,6 +571,31 @@ export const commands = {
     // Schedules
     getSchedules: (orgId: string, sessionId: string) =>
       invoke<JsonRecord[]>("get_exam_schedules", { orgId, sessionId }),
+
+    autoSchedule: (orgId: string, request: JsonRecord) =>
+      invoke<JsonRecord>("auto_schedule_exams", { orgId, request }),
+
+    // Logistics
+    allocateHalls: (orgId: string, sessionId: string, config: JsonRecord) =>
+      invoke<JsonRecord>("allocate_students_to_halls", { orgId, sessionId, config }),
+
+    autoAssignProctors: (orgId: string, sessionId: string, scheduleId: string, config: JsonRecord) =>
+      invoke<JsonRecord>("auto_assign_proctors", { orgId, sessionId, scheduleId, config }),
+
+    getHalls: (orgId: string, sessionId: string) =>
+      invoke<JsonRecord[]>("get_exam_halls", { orgId, sessionId }),
+
+    createHall: (orgId: string, request: JsonRecord) =>
+      invoke<JsonRecord>("create_exam_hall", { orgId, request }),
+
+    getProctors: (orgId: string, sessionId: string, scheduleId?: string) =>
+      invoke<JsonRecord[]>("get_exam_proctors", { orgId, sessionId, scheduleId: scheduleId ?? null }),
+
+    getHallStudents: (orgId: string, sessionId: string, hallId: string) =>
+      invoke<JsonRecord[]>("get_hall_students", { orgId, sessionId, hallId }),
+
+    getSeatingNumbers: (orgId: string, sessionId: string, classId?: string) =>
+      invoke<JsonRecord[]>("get_seating_numbers", { orgId, sessionId, classId: classId ?? null }),
   },
 
   window: {
