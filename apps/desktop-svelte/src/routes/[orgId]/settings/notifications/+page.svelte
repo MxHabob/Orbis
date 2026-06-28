@@ -4,7 +4,7 @@ import { Switch } from "@orbis/ui-svelte/switch";
 import { Button } from "@orbis/ui-svelte/button";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
-import { Bell, Mail, ShieldAlert } from "lucide-svelte";
+import { Bell, Mail } from "lucide-svelte";
 
 let isSaving = $state(false);
 
@@ -56,19 +56,19 @@ async function handleSave(e: Event) {
   <title>{m.settings_notifications_title()} | Orbis</title>
 </svelte:head>
 
-<div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide">
-  <div class="max-w-4xl mx-auto p-6 flex flex-col gap-6">
+<div class="h-full w-full overflow-y-auto bg-background scrollbar-hide">
+  <div class="max-w-3xl mx-auto p-8 flex flex-col gap-10">
     <!-- Header -->
     <div class="flex flex-col gap-1 text-start">
       <h1 class="text-xl font-bold tracking-tight text-foreground">{m.settings_notifications_title()}</h1>
       <p class="text-xs text-muted-foreground">{m.settings_notifications_desc()}</p>
     </div>
 
-    <form onsubmit={handleSave} class="flex flex-col gap-6">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- In-App Notifications Card -->
-        <div class="bg-card border border-border rounded-xl p-6 flex flex-col gap-6">
-          <div class="flex items-center gap-2 border-b border-border/60 pb-4 text-start">
+    <form onsubmit={handleSave} class="flex flex-col gap-10">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+        <!-- In-App Notifications -->
+        <div class="flex flex-col gap-6 text-start">
+          <div class="border-b border-border/60 pb-3 flex items-center gap-2">
             <Bell size={16} class="text-primary" />
             <h2 class="text-sm font-semibold text-foreground">{m.settings_notifications_in_app()}</h2>
           </div>
@@ -130,9 +130,9 @@ async function handleSave(e: Event) {
           </div>
         </div>
 
-        <!-- Email Notifications Card -->
-        <div class="bg-card border border-border rounded-xl p-6 flex flex-col gap-6">
-          <div class="flex items-center gap-2 border-b border-border/60 pb-4 text-start">
+        <!-- Email Notifications -->
+        <div class="flex flex-col gap-6 text-start">
+          <div class="border-b border-border/60 pb-3 flex items-center gap-2">
             <Mail size={16} class="text-primary" />
             <h2 class="text-sm font-semibold text-foreground">{m.settings_notifications_email()}</h2>
           </div>
@@ -196,11 +196,11 @@ async function handleSave(e: Event) {
       </div>
 
       <!-- Action buttons -->
-      <div class="flex justify-end gap-3 pb-8">
+      <div class="flex justify-end gap-3 pb-8 border-t border-border/40 pt-6">
         <Button
           type="submit"
           variant="lime"
-          class="px-6 font-semibold h-10 text-sm"
+          class="px-6 font-semibold h-9 text-xs"
           disabled={isSaving}
         >
           {isSaving ? m.settings_general_saving() : m.settings_general_save()}

@@ -1443,5 +1443,16 @@
   "settings_user_detail_btn_reset": "Reset Form",
   "settings_user_detail_btn_save_details": "Save Details",
   "settings_user_detail_badge_active": "Active",
-  "settings_user_detail_badge_inactive": "Inactive"
+  "settings_user_detail_badge_inactive": "Inactive",
+  "settings_user_detail_save": "Save Changes",
+  "settings_user_detail_cancel": "Cancel",
+  "settings_user_detail_delete_confirm": "Are you sure you want to permanently delete this account? This action cannot be undone.",
+  "settings_user_detail_deleted": "User account deleted permanently",
+  "settings_user_detail_saved": "User details and roles saved successfully",
+  "settings_user_detail_load_error": "Failed to load user details",
+  "settings_user_detail_search_roles": "Search roles...",
+  "settings_user_detail_tab_roles": "Roles & Permissions",
+  "settings_user_detail_pref_title": "User Preferences",
+  "settings_user_detail_lang_ar": "Arabic (العربية)",
+  "settings_user_detail_lang_en": "English"
 }

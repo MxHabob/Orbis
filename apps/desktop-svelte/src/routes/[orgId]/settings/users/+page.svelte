@@ -27,6 +27,7 @@ import {
   Eye,
 } from "lucide-svelte";
 import UserCreateSheet from "$lib/components/sheets/user-create-sheet.svelte";
+import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui-svelte/select";
 import * as m from "$lib/paraglide/messages";
 import type { User } from "$lib/services/ipc";
 import { authStore } from "$lib/stores";
@@ -185,18 +186,32 @@ function getRoleBadgeClass(roleStr: string): string {
     </div>
 
     <!-- Filter by Role -->
-    <div class="w-full sm:w-48">
-      <select
-        bind:value={selectedRole}
-        class="bg-background text-foreground border border-border rounded-md px-3 py-2 text-xs focus:ring-1 focus:ring-ring outline-none h-9 w-full cursor-pointer"
-      >
-        <option value="all">{m.settings_users_filter_all()}</option>
-        <option value="admin">{m.settings_users_filter_admin()}</option>
-        <option value="teacher">{m.settings_users_filter_teacher()}</option>
-        <option value="parent">{m.settings_users_filter_guardian()}</option>
-        <option value="student">{m.settings_users_filter_student()}</option>
-        <option value="staff">Staff</option>
-      </select>
+    <div class="w-full sm:w-48 text-start">
+      <Select type="single" value={selectedRole} onValueChange={(v) => (selectedRole = v ?? "all")}>
+        <SelectTrigger class="h-9 w-full text-xs">
+          {#if selectedRole === "all"}
+            {m.settings_users_filter_all()}
+          {:else if selectedRole === "admin"}
+            {m.settings_users_filter_admin()}
+          {:else if selectedRole === "teacher"}
+            {m.settings_users_filter_teacher()}
+          {:else if selectedRole === "parent"}
+            {m.settings_users_filter_guardian()}
+          {:else if selectedRole === "student"}
+            {m.settings_users_filter_student()}
+          {:else}
+            Staff
+          {/if}
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">{m.settings_users_filter_all()}</SelectItem>
+          <SelectItem value="admin">{m.settings_users_filter_admin()}</SelectItem>
+          <SelectItem value="teacher">{m.settings_users_filter_teacher()}</SelectItem>
+          <SelectItem value="parent">{m.settings_users_filter_guardian()}</SelectItem>
+          <SelectItem value="student">{m.settings_users_filter_student()}</SelectItem>
+          <SelectItem value="staff">Staff</SelectItem>
+        </SelectContent>
+      </Select>
     </div>
   </div>
 

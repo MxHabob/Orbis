@@ -15,6 +15,8 @@ import {
   TableHeader,
   TableRow,
 } from "@orbis/ui-svelte";
+import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui-svelte/select";
+import { Badge } from "@orbis/ui-svelte/badge";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Switch } from "@orbis/ui-svelte/switch";
@@ -378,7 +380,7 @@ let baseCurrencyCode = $derived(currencies.find(c => c.is_base === 1)?.code || "
         </Button>
       </div>
     {:else}
-      <div in:fade={{ duration: 150 }} class="border border-border/60 rounded-xl overflow-hidden bg-card shadow-sm">
+      <div in:fade={{ duration: 150 }} class="overflow-hidden">
         <Table>
           <TableHeader class="bg-muted/40 select-none">
             <TableRow>
@@ -408,22 +410,24 @@ let baseCurrencyCode = $derived(currencies.find(c => c.is_base === 1)?.code || "
                 </TableCell>
                 <TableCell class="text-start text-xs">
                   {#if c.is_base === 1}
-                    <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-primary/10 text-primary border border-primary/20">
+                    <Badge variant="lime" class="text-[9px] font-bold">
                       {getLocale() === "ar" ? "الأساسية" : "Base"}
-                    </span>
+                    </Badge>
                   {:else}
-                    <span class="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-muted text-muted-foreground border border-border/40">
+                    <Badge variant="secondary" class="text-[9px] font-semibold">
                       {getLocale() === "ar" ? "فرعية" : "Sub"}
-                    </span>
+                    </Badge>
                   {/if}
                 </TableCell>
                 <TableCell class="text-start text-xs">
                   {#if c.is_active === 1}
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block mr-1.5 animate-pulse"></span>
-                    <span class="text-emerald-500 font-medium text-[11px]">{getLocale() === "ar" ? "نشط" : "Active"}</span>
+                    <Badge variant="lime" class="text-[9px] font-bold">
+                      {getLocale() === "ar" ? "نشط" : "Active"}
+                    </Badge>
                   {:else}
-                    <span class="w-2 h-2 rounded-full bg-muted-foreground inline-block mr-1.5"></span>
-                    <span class="text-muted-foreground text-[11px]">{getLocale() === "ar" ? "موقف" : "Inactive"}</span>
+                    <Badge variant="secondary" class="text-[9px] font-semibold">
+                      {getLocale() === "ar" ? "موقف" : "Inactive"}
+                    </Badge>
                   {/if}
                 </TableCell>
                 <TableCell class="text-end text-xs font-bold font-mono">
@@ -591,14 +595,17 @@ let baseCurrencyCode = $derived(currencies.find(c => c.is_base === 1)?.code || "
           <label for="add_position" class="text-xs font-semibold text-muted-foreground">
             {getLocale() === "ar" ? "موضع الرمز" : "Symbol Position"}
           </label>
-          <select
-            id="add_position"
-            bind:value={addSymbolPosition}
-            class="bg-background text-foreground border border-border rounded-md px-3 py-2 text-xs focus:ring-1 focus:ring-ring outline-none h-9 w-full font-semibold"
-          >
-            <option value="before">{getLocale() === "ar" ? "قبل المبلغ ($10)" : "Before Amount ($10)"}</option>
-            <option value="after">{getLocale() === "ar" ? "بعد المبلغ (10﷼)" : "After Amount (10﷼)"}</option>
-          </select>
+          <Select type="single" value={addSymbolPosition} onValueChange={(v) => (addSymbolPosition = v ?? "before")}>
+            <SelectTrigger class="h-9 w-full text-xs">
+              {addSymbolPosition === "before"
+                ? (getLocale() === "ar" ? "قبل المبلغ ($10)" : "Before Amount ($10)")
+                : (getLocale() === "ar" ? "بعد المبلغ (10﷼)" : "After Amount (10﷼)")}
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="before">{getLocale() === "ar" ? "قبل المبلغ ($10)" : "Before Amount ($10)"}</SelectItem>
+              <SelectItem value="after">{getLocale() === "ar" ? "بعد المبلغ (10﷼)" : "After Amount (10﷼)"}</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <!-- Decimal Places -->
@@ -754,14 +761,17 @@ let baseCurrencyCode = $derived(currencies.find(c => c.is_base === 1)?.code || "
           <label for="edit_position" class="text-xs font-semibold text-muted-foreground">
             {getLocale() === "ar" ? "موضع الرمز" : "Symbol Position"}
           </label>
-          <select
-            id="edit_position"
-            bind:value={editSymbolPosition}
-            class="bg-background text-foreground border border-border rounded-md px-3 py-2 text-xs focus:ring-1 focus:ring-ring outline-none h-9 w-full font-semibold"
-          >
-            <option value="before">{getLocale() === "ar" ? "قبل المبلغ ($10)" : "Before Amount ($10)"}</option>
-            <option value="after">{getLocale() === "ar" ? "بعد المبلغ (10﷼)" : "After Amount (10﷼)"}</option>
-          </select>
+          <Select type="single" value={editSymbolPosition} onValueChange={(v) => (editSymbolPosition = v ?? "before")}>
+            <SelectTrigger class="h-9 w-full text-xs">
+              {editSymbolPosition === "before"
+                ? (getLocale() === "ar" ? "قبل المبلغ ($10)" : "Before Amount ($10)")
+                : (getLocale() === "ar" ? "بعد المبلغ (10﷼)" : "After Amount (10﷼)")}
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="before">{getLocale() === "ar" ? "قبل المبلغ ($10)" : "Before Amount ($10)"}</SelectItem>
+              <SelectItem value="after">{getLocale() === "ar" ? "بعد المبلغ (10﷼)" : "After Amount (10﷼)"}</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <!-- Decimal Places -->

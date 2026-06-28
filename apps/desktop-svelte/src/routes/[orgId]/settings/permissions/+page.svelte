@@ -3,6 +3,19 @@
   import { fade, slide } from "svelte/transition";
   import { Button } from "@orbis/ui-svelte/button";
   import { Input } from "@orbis/ui-svelte/input";
+  import { Label } from "@orbis/ui-svelte/label";
+  import { Checkbox } from "@orbis/ui-svelte/checkbox";
+  import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui-svelte/select";
+  import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@orbis/ui-svelte/dialog";
+  import { Badge } from "@orbis/ui-svelte/badge";
+  import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+  } from "@orbis/ui-svelte/table";
   import { toast } from "svelte-sonner";
   import { getLocale } from "$lib/paraglide/runtime";
   import { commands } from "$lib/services/ipc";
@@ -11,12 +24,9 @@
     Shield,
     Search,
     Plus,
-    Users,
-    Check,
     Trash2,
     X,
     ChevronRight,
-    HelpCircle,
     UserCheck
   } from "lucide-svelte";
 
@@ -71,7 +81,7 @@
 
   // Filters
   let docTypeFilter = $state("");
-  let roleFilter = $state("Academics User");
+  let roleFilter = $state("");
 
   // Modals
   let showAddRuleModal = $state(false);
@@ -291,20 +301,20 @@
   </title>
 </svelte:head>
 
-<div class="h-full w-full overflow-hidden flex flex-col font-sans text-start bg-[#0f0f11] text-foreground relative">
+<div class="h-full w-full overflow-hidden flex flex-col font-sans text-start bg-background relative">
   <!-- Header Area -->
-  <div class="p-6 border-b border-border/20 bg-[#131316] flex items-center justify-between gap-4">
+  <div class="p-6 border-b border-border/40 flex items-center justify-between gap-4 select-none">
     <div class="flex flex-col gap-1 text-start">
-      <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-        <Shield size={20} class="text-[#a3e635]" />
+      <h1 class="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+        <Shield size={20} class="text-primary" />
         <span>{getLocale() === "ar" ? "مدير صلاحيات الأدوار" : "Role Permissions Manager"}</span>
       </h1>
     </div>
 
     <div class="flex items-center gap-3">
       <Button
-        variant="ghost"
-        class="text-xs h-9 px-4 font-semibold text-gray-300 hover:text-white bg-[#1a1a1f] border border-border/20"
+        variant="outline"
+        size="sm"
         onclick={() => showSetUserPermissionsModal = true}
       >
         <UserCheck size={14} class={getLocale() === "ar" ? 'ml-1.5' : 'mr-1.5'} />
@@ -313,7 +323,7 @@
 
       <Button
         variant="lime"
-        class="text-xs h-9 px-4 font-semibold bg-[#a3e635] text-black hover:bg-[#bef264]"
+        size="sm"
         onclick={() => showAddRuleModal = true}
       >
         <Plus size={14} class={getLocale() === "ar" ? 'ml-1.5' : 'mr-1.5'} />
@@ -323,143 +333,145 @@
   </div>
 
   <!-- Filters Row -->
-  <div class="px-6 py-4 bg-[#131316]/50 border-b border-border/10 flex items-center gap-4">
-    <div class="flex items-center gap-2 bg-[#17171c] px-3 py-1.5 rounded-lg border border-border/20 w-72">
-      <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider min-w-[90px] text-start border-r border-border/10 pr-2">
+  <div class="px-6 py-4 border-b border-border/40 flex flex-col sm:flex-row gap-4 items-center select-none">
+    <div class="flex items-center gap-2 flex-1 w-full max-w-sm">
+      <Label class="text-xs font-semibold text-muted-foreground min-w-[90px] text-start border-r border-border/10 pr-2">
         {getLocale() === "ar" ? "نوع المستند" : "Document Type"}
-      </span>
-      <input
+      </Label>
+      <Input
         type="text"
         bind:value={docTypeFilter}
         placeholder={getLocale() === "ar" ? "ابحث بالنوع..." : "Search Type..."}
-        class="bg-transparent border-none outline-none text-xs text-white placeholder-gray-500 w-full"
+        class="h-9 text-xs flex-1"
       />
     </div>
 
-    <div class="flex items-center gap-2 bg-[#17171c] px-3 py-1.5 rounded-lg border border-border/20 w-72">
-      <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider min-w-[90px] text-start border-r border-border/10 pr-2">
+    <div class="flex items-center gap-2 flex-1 w-full max-w-sm text-start">
+      <Label class="text-xs font-semibold text-muted-foreground min-w-[90px] text-start border-r border-border/10 pr-2">
         {getLocale() === "ar" ? "الدور" : "Role"}
-      </span>
-      <input
-        type="text"
-        bind:value={roleFilter}
-        placeholder={getLocale() === "ar" ? "ابحث بالدور..." : "Search Role..."}
-        class="bg-transparent border-none outline-none text-xs text-white placeholder-gray-500 w-full"
-      />
-    </div>
-  </div>
-
-  <!-- Rules Table Content -->
-  <div class="flex-1 overflow-y-auto p-6 scrollbar-hide pb-28">
-    <div class="bg-[#131316] border border-border/20 rounded-2xl overflow-hidden shadow-xl">
-      <div class="overflow-x-auto">
-        <table class="w-full border-collapse">
-          <thead>
-            <tr class="border-b border-border/10 bg-[#17171c]/80 text-[10px] uppercase tracking-wider text-gray-400 font-bold">
-              <th class="py-4 px-6 text-start w-[20%]">{getLocale() === "ar" ? "نوع المستند" : "Document Type"}</th>
-              <th class="py-4 px-6 text-start w-[20%]">{getLocale() === "ar" ? "الدور" : "Role"}</th>
-              <th class="py-4 px-6 text-start w-[10%]">{getLocale() === "ar" ? "المستوى" : "Level"}</th>
-              <th class="py-4 px-6 text-start w-[45%]">{getLocale() === "ar" ? "الصلاحيات" : "Permissions"}</th>
-              <th class="py-4 px-6 text-center w-[5%]"></th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-border/10">
-            {#if isLoading}
-              <tr>
-                <td colspan="5" class="py-12 text-center text-xs text-gray-400">
-                  {getLocale() === "ar" ? "جاري تحميل القواعد..." : "Loading rules..."}
-                </td>
-              </tr>
-            {:else if filteredRules.length === 0}
-              <tr>
-                <td colspan="5" class="py-12 text-center text-xs text-gray-400">
-                  {getLocale() === "ar" ? "لا توجد قواعد مطابقة للفلاتر" : "No rules match the filters."}
-                </td>
-              </tr>
-            {:else}
-              {#each filteredRules as rule, idx}
-                <tr class="hover:bg-[#17171c]/30 transition-colors align-top">
-                  <!-- Document Type -->
-                  <td class="py-6 px-6 text-sm font-bold text-white text-start">
-                    {rule.document_type}
-                  </td>
-                  
-                  <!-- Role & Conditions -->
-                  <td class="py-6 px-6 text-start">
-                    <span class="text-xs text-gray-300 font-semibold block">{rule.role}</span>
-                    <label class="inline-flex items-center gap-2 mt-2.5 cursor-pointer group">
-                      <input
-                        type="checkbox"
-                        checked={rule.only_if_creator}
-                        onchange={(e) => {
-                          rule.only_if_creator = e.currentTarget.checked;
-                          hasUnsavedChanges = true;
-                        }}
-                        class="h-3.5 w-3.5 rounded border-gray-600 bg-card text-[#a3e635] focus:ring-0 focus:ring-offset-0"
-                      />
-                      <span class="text-[10px] text-gray-400 group-hover:text-white transition-colors">
-                        {getLocale() === "ar" ? "فقط إذا كان المنشئ" : "Only If Creator"}
-                      </span>
-                    </label>
-                  </td>
-
-                  <!-- Level -->
-                  <td class="py-6 px-6 text-xs text-gray-300 font-mono text-start">
-                    {rule.level}
-                  </td>
-
-                  <!-- Permissions Actions Grid -->
-                  <td class="py-6 px-6">
-                    <div class="grid grid-cols-3 gap-x-8 gap-y-3.5">
-                      {#each getActionsForDocType(rule.document_type) as action}
-                        <label class="flex items-center gap-2.5 text-xs text-gray-300 hover:text-white cursor-pointer select-none font-medium transition-colors">
-                          <input
-                            type="checkbox"
-                            checked={rule.actions.includes(action)}
-                            onchange={() => toggleAction(idx, action)}
-                            class="h-3.5 w-3.5 rounded border-gray-600 bg-card text-[#a3e635] focus:ring-0 focus:ring-offset-0"
-                          />
-                          <span>{capitalizeFirstLetter(action)}</span>
-                        </label>
-                      {/each}
-                    </div>
-                  </td>
-
-                  <!-- Delete Button -->
-                  <td class="py-6 px-6 text-center">
-                    <button
-                      onclick={() => deleteRule(idx)}
-                      class="p-2 rounded-lg text-gray-500 hover:text-red-500 hover:bg-red-500/10 transition-all cursor-pointer"
-                      title={getLocale() === "ar" ? "حذف القاعدة" : "Delete Rule"}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </td>
-                </tr>
-              {/each}
-            {/if}
-          </tbody>
-        </table>
+      </Label>
+      <div class="flex-1">
+        <Select type="single" value={roleFilter} onValueChange={(v) => (roleFilter = v ?? "")}>
+          <SelectTrigger class="h-9 w-full text-xs">
+            {roleFilter || (getLocale() === "ar" ? "كل الأدوار" : "All Roles")}
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">{getLocale() === "ar" ? "كل الأدوار" : "All Roles"}</SelectItem>
+            {#each standardRoles as role}
+              <SelectItem value={role}>{role}</SelectItem>
+            {/each}
+          </SelectContent>
+        </Select>
       </div>
     </div>
   </div>
 
-  <!-- Floating Save Changes Glassmorphic Banner -->
+  <!-- Rules Table Content -->
+  <div class="flex-1 overflow-y-auto p-6 pb-28 scrollbar-hide">
+    <div class="overflow-x-auto">
+      <Table>
+        <TableHeader class="bg-muted/40 select-none">
+          <TableRow>
+            <TableHead class="text-start font-bold text-xs w-[20%]">{getLocale() === "ar" ? "نوع المستند" : "Document Type"}</TableHead>
+            <TableHead class="text-start font-bold text-xs w-[20%]">{getLocale() === "ar" ? "الدور" : "Role"}</TableHead>
+            <TableHead class="text-start font-bold text-xs w-[10%]">{getLocale() === "ar" ? "المستوى" : "Level"}</TableHead>
+            <TableHead class="text-start font-bold text-xs w-[45%]">{getLocale() === "ar" ? "الصلاحيات" : "Permissions"}</TableHead>
+            <TableHead class="text-center w-[5%]"></TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {#if isLoading}
+            <TableRow>
+              <TableCell colspan="5" class="py-12 text-center text-xs text-muted-foreground">
+                {getLocale() === "ar" ? "جاري تحميل القواعد..." : "Loading rules..."}
+              </TableCell>
+            </TableRow>
+          {:else if filteredRules.length === 0}
+            <TableRow>
+              <TableCell colspan="5" class="py-12 text-center text-xs text-muted-foreground">
+                {getLocale() === "ar" ? "لا توجد قواعد مطابقة للفلاتر" : "No rules match the filters."}
+              </TableCell>
+            </TableRow>
+          {:else}
+            {#each filteredRules as rule, idx}
+              <TableRow class="align-top hover:bg-accent/5">
+                <!-- Document Type -->
+                <TableCell class="text-sm font-bold text-foreground text-start">
+                  {rule.document_type}
+                </TableCell>
+                
+                <!-- Role & Conditions -->
+                <TableCell class="text-start">
+                  <span class="text-xs text-foreground font-semibold block">{rule.role}</span>
+                  <label class="inline-flex items-center gap-2 mt-2.5 cursor-pointer group select-none">
+                    <Checkbox
+                      checked={rule.only_if_creator}
+                      onCheckedChange={(checked) => {
+                        rule.only_if_creator = Boolean(checked);
+                        hasUnsavedChanges = true;
+                      }}
+                    />
+                    <span class="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors">
+                      {getLocale() === "ar" ? "فقط إذا كان المنشئ" : "Only If Creator"}
+                    </span>
+                  </label>
+                </TableCell>
+
+                <!-- Level -->
+                <TableCell class="text-xs text-muted-foreground font-mono text-start">
+                  {rule.level}
+                </TableCell>
+
+                <!-- Permissions Actions Grid -->
+                <TableCell>
+                  <div class="grid grid-cols-3 gap-x-8 gap-y-3.5">
+                    {#each getActionsForDocType(rule.document_type) as action}
+                      <label class="flex items-center gap-2.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer select-none font-medium transition-colors">
+                        <Checkbox
+                          checked={rule.actions.includes(action)}
+                          onCheckedChange={() => toggleAction(idx, action)}
+                        />
+                        <span>{capitalizeFirstLetter(action)}</span>
+                      </label>
+                    {/each}
+                  </div>
+                </TableCell>
+
+                <!-- Delete Button -->
+                <TableCell class="text-center">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onclick={() => deleteRule(idx)}
+                    title={getLocale() === "ar" ? "حذف القاعدة" : "Delete Rule"}
+                  >
+                    <Trash2 size={14} class="text-muted-foreground hover:text-destructive" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            {/each}
+          {/if}
+        </TableBody>
+      </Table>
+    </div>
+  </div>
+
+  <!-- Floating Save Changes Banner -->
   {#if hasUnsavedChanges}
     <div 
       in:slide={{ duration: 250 }} 
       out:slide={{ duration: 200 }} 
-      class="absolute bottom-6 left-1/2 -translate-x-1/2 w-11/12 max-w-2xl z-50 rounded-2xl border border-primary/30 bg-[#131316]/90 backdrop-blur-xl shadow-2xl p-4 flex items-center justify-between gap-4"
+      class="absolute bottom-6 left-1/2 -translate-x-1/2 w-11/12 max-w-2xl z-50 rounded-2xl border border-border bg-card/95 backdrop-blur-xl shadow-2xl p-4 flex items-center justify-between gap-4"
     >
       <div class="flex items-center gap-3 text-start">
-        <div class="w-8 h-8 rounded-lg bg-[#a3e635]/20 flex items-center justify-center text-[#a3e635]">
+        <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
           <Shield size={16} />
         </div>
         <div class="flex flex-col">
-          <span class="text-xs font-bold text-white">
+          <span class="text-xs font-bold text-foreground">
             {getLocale() === "ar" ? "تغييرات غير محفوظة" : "Unsaved Rule Updates"}
           </span>
-          <span class="text-[10px] text-gray-400 mt-0.5">
+          <span class="text-[10px] text-muted-foreground mt-0.5">
             {getLocale() === "ar" 
               ? "لقد قمت بتعديل مصفوفة قواعد الصلاحيات." 
               : "You modified the permission rule configurations."}
@@ -468,10 +480,10 @@
       </div>
 
       <div class="flex items-center gap-2">
-        <Button variant="ghost" class="text-xs h-8 px-4 text-gray-400 hover:text-white" onclick={discardChanges} disabled={isLoading}>
+        <Button variant="ghost" size="sm" class="text-xs" onclick={discardChanges} disabled={isLoading}>
           {getLocale() === "ar" ? "تراجع" : "Discard"}
         </Button>
-        <Button variant="lime" class="text-xs h-8 px-4 font-bold bg-[#a3e635] text-black hover:bg-[#bef264]" onclick={saveChanges} disabled={isLoading}>
+        <Button variant="lime" size="sm" class="text-xs font-bold" onclick={saveChanges} disabled={isLoading}>
           {isLoading ? (getLocale() === "ar" ? "جاري الحفظ..." : "Saving...") : (getLocale() === "ar" ? "حفظ التغييرات" : "Save Changes")}
         </Button>
       </div>
@@ -480,202 +492,167 @@
 </div>
 
 <!-- Create Custom Rule Modal -->
-{#if showAddRuleModal}
-  <div 
-    in:fade={{ duration: 150 }} 
-    class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
-  >
-    <div 
-      in:slide={{ duration: 200 }} 
-      class="bg-[#131316] border border-border/20 rounded-2xl w-full max-w-lg p-6 flex flex-col gap-5 text-start shadow-2xl"
-    >
-      <div class="flex items-center justify-between border-b border-border/10 pb-3">
-        <h2 class="text-sm font-bold text-white flex items-center gap-1.5">
-          <Plus size={16} class="text-[#a3e635]" />
-          <span>{getLocale() === "ar" ? "إضافة قاعدة صلاحيات جديدة" : "Add A New Permission Rule"}</span>
-        </h2>
-        <button onclick={() => showAddRuleModal = false} class="text-gray-400 hover:text-white cursor-pointer">
-          <X size={16} />
-        </button>
-      </div>
+<Dialog bind:open={showAddRuleModal}>
+  <DialogContent class="max-w-lg text-start">
+    <DialogHeader>
+      <DialogTitle>{getLocale() === "ar" ? "إضافة قاعدة صلاحيات جديدة" : "Add A New Permission Rule"}</DialogTitle>
+    </DialogHeader>
 
-      <div class="flex flex-col gap-4">
-        <!-- Document Type Selector -->
-        <div class="flex flex-col gap-1.5">
-          <label for="rule_doc_type" class="text-xs font-semibold text-gray-400">
-            {getLocale() === "ar" ? "نوع المستند" : "Document Type"}
-          </label>
-          <div class="relative">
-            <select
-              id="rule_doc_type"
-              bind:value={newRuleDocType}
-              class="w-full bg-[#17171c] text-white border border-border/20 rounded-lg px-3 py-2 text-xs outline-none focus:border-[#a3e635] cursor-pointer"
-            >
-              <option value="" disabled selected>Select Document Type</option>
-              {#each standardDocTypes as type}
-                <option value={type}>{type}</option>
-              {/each}
-            </select>
-          </div>
-        </div>
-
-        <!-- Role Selector -->
-        <div class="flex flex-col gap-1.5">
-          <label for="rule_role" class="text-xs font-semibold text-gray-400">
-            {getLocale() === "ar" ? "الدور الوظيفي" : "Job Role"}
-          </label>
-          <div class="relative">
-            <select
-              id="rule_role"
-              bind:value={newRuleRole}
-              class="w-full bg-[#17171c] text-white border border-border/20 rounded-lg px-3 py-2 text-xs outline-none focus:border-[#a3e635] cursor-pointer"
-            >
-              {#each standardRoles as role}
-                <option value={role}>{role}</option>
-              {/each}
-            </select>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-4">
-          <!-- Level -->
-          <div class="flex flex-col gap-1.5">
-            <label for="rule_level" class="text-xs font-semibold text-gray-400">
-              {getLocale() === "ar" ? "المستوى" : "Level"}
-            </label>
-            <Input
-              id="rule_level"
-              type="number"
-              bind:value={newRuleLevel}
-              class="bg-[#17171c] border-border/20 text-xs text-white h-9"
-            />
-          </div>
-
-          <!-- Creator Condition -->
-          <div class="flex flex-col justify-end pb-2">
-            <label class="inline-flex items-center gap-2 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                bind:checked={newRuleOnlyIfCreator}
-                class="h-4 w-4 rounded border-gray-600 bg-card text-[#a3e635] focus:ring-0 focus:ring-offset-0"
-              />
-              <span class="text-xs text-gray-300">
-                {getLocale() === "ar" ? "فقط إذا كان المنشئ" : "Only If Creator"}
-              </span>
-            </label>
-          </div>
-        </div>
-
-        <!-- Actions Selector Checklist -->
-        <div class="flex flex-col gap-2 border-t border-border/10 pt-3">
-          <span class="text-xs font-semibold text-gray-400 mb-1">
-            {getLocale() === "ar" ? "الإجراءات المسموحة" : "Allowed Actions"}
-          </span>
-          <div class="grid grid-cols-3 gap-2.5 max-h-40 overflow-y-auto pr-1">
-            {#each getActionsForDocType(newRuleDocType || "Default") as action}
-              <label class="inline-flex items-center gap-2 text-xs text-gray-300 hover:text-white cursor-pointer select-none font-medium">
-                <input
-                  type="checkbox"
-                  checked={newRuleActions.includes(action)}
-                  onchange={(e) => {
-                    if (e.currentTarget.checked) {
-                      newRuleActions = [...newRuleActions, action];
-                    } else {
-                      newRuleActions = newRuleActions.filter(a => a !== action);
-                    }
-                  }}
-                  class="h-3.5 w-3.5 rounded border-gray-600 bg-card text-[#a3e635] focus:ring-0 focus:ring-offset-0"
-                />
-                <span>{capitalizeFirstLetter(action)}</span>
-              </label>
+    <div class="flex flex-col gap-4 py-2">
+      <!-- Document Type Selector -->
+      <div class="flex flex-col gap-1.5 text-start">
+        <Label for="rule_doc_type" class="text-xs font-medium text-muted-foreground">
+          {getLocale() === "ar" ? "نوع المستند" : "Document Type"}
+        </Label>
+        <Select type="single" value={newRuleDocType} onValueChange={(v) => (newRuleDocType = v ?? "")}>
+          <SelectTrigger class="h-9 w-full text-xs">
+            {newRuleDocType || "Select Document Type"}
+          </SelectTrigger>
+          <SelectContent>
+            {#each standardDocTypes as type}
+              <SelectItem value={type}>{type}</SelectItem>
             {/each}
-          </div>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <!-- Role Selector -->
+      <div class="flex flex-col gap-1.5 text-start">
+        <Label for="rule_role" class="text-xs font-medium text-muted-foreground">
+          {getLocale() === "ar" ? "الدور الوظيفي" : "Job Role"}
+        </Label>
+        <Select type="single" value={newRuleRole} onValueChange={(v) => (newRuleRole = v ?? "Academics User")}>
+          <SelectTrigger class="h-9 w-full text-xs">
+            {newRuleRole}
+          </SelectTrigger>
+          <SelectContent>
+            {#each standardRoles as role}
+              <SelectItem value={role}>{role}</SelectItem>
+            {/each}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4 items-end">
+        <!-- Level -->
+        <div class="flex flex-col gap-1.5 text-start">
+          <Label for="rule_level" class="text-xs font-medium text-muted-foreground">
+            {getLocale() === "ar" ? "المستوى" : "Level"}
+          </Label>
+          <Input
+            id="rule_level"
+            type="number"
+            bind:value={newRuleLevel}
+            class="h-9 text-xs"
+          />
+        </div>
+
+        <!-- Creator Condition -->
+        <div class="pb-2">
+          <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+            <Checkbox
+              checked={newRuleOnlyIfCreator}
+              onCheckedChange={(checked) => (newRuleOnlyIfCreator = Boolean(checked))}
+            />
+            <span class="text-xs text-muted-foreground">
+              {getLocale() === "ar" ? "فقط إذا كان المنشئ" : "Only If Creator"}
+            </span>
+          </label>
         </div>
       </div>
 
-      <div class="flex items-center justify-end gap-2 border-t border-border/10 pt-4 mt-2">
-        <Button variant="ghost" class="text-xs h-8 text-gray-400 hover:text-white" onclick={() => showAddRuleModal = false}>
-          {getLocale() === "ar" ? "إلغاء" : "Cancel"}
-        </Button>
-        <Button variant="lime" class="text-xs h-8 font-bold bg-[#a3e635] text-black hover:bg-[#bef264]" onclick={addRule}>
-          {getLocale() === "ar" ? "إضافة القاعدة" : "Add Rule"}
-        </Button>
+      <!-- Actions Selector Checklist -->
+      <div class="flex flex-col gap-2 border-t border-border/40 pt-4 mt-2 text-start">
+        <span class="text-xs font-semibold text-muted-foreground mb-1">
+          {getLocale() === "ar" ? "الإجراءات المسموحة" : "Allowed Actions"}
+        </span>
+        <div class="grid grid-cols-3 gap-2.5 max-h-40 overflow-y-auto pr-1">
+          {#each getActionsForDocType(newRuleDocType || "Default") as action}
+            <label class="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground cursor-pointer select-none font-medium">
+              <Checkbox
+                checked={newRuleActions.includes(action)}
+                onCheckedChange={(checked) => {
+                  if (checked) {
+                    newRuleActions = [...newRuleActions, action];
+                  } else {
+                    newRuleActions = newRuleActions.filter(a => a !== action);
+                  }
+                }}
+              />
+              <span>{capitalizeFirstLetter(action)}</span>
+            </label>
+          {/each}
+        </div>
       </div>
     </div>
-  </div>
-{/if}
 
-<!-- Set User Permissions Modal -->
-{#if showSetUserPermissionsModal}
-  <div 
-    in:fade={{ duration: 150 }} 
-    class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
-  >
-    <div 
-      in:slide={{ duration: 200 }} 
-      class="bg-[#131316] border border-border/20 rounded-2xl w-full max-w-md p-6 flex flex-col gap-4 text-start shadow-2xl"
-    >
-      <div class="flex items-center justify-between border-b border-border/10 pb-3">
-        <h2 class="text-sm font-bold text-white flex items-center gap-1.5">
-          <UserCheck size={16} class="text-[#a3e635]" />
-          <span>{getLocale() === "ar" ? "صلاحيات مستخدم محدد" : "User Permissions Settings"}</span>
-        </h2>
-        <button onclick={() => showSetUserPermissionsModal = false} class="text-gray-400 hover:text-white cursor-pointer">
-          <X size={16} />
-        </button>
-      </div>
+    <DialogFooter class="border-t border-border pt-4 mt-2">
+      <Button variant="ghost" size="sm" onclick={() => showAddRuleModal = false}>
+        {getLocale() === "ar" ? "إلغاء" : "Cancel"}
+      </Button>
+      <Button variant="lime" size="sm" class="font-bold" onclick={addRule}>
+        {getLocale() === "ar" ? "إضافة القاعدة" : "Add Rule"}
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
 
-      <p class="text-xs text-gray-400">
+<!-- Set User Permissions Modal Dialog -->
+<Dialog bind:open={showSetUserPermissionsModal}>
+  <DialogContent class="max-w-md text-start">
+    <DialogHeader>
+      <DialogTitle>{getLocale() === "ar" ? "صلاحيات مستخدم محدد" : "User Permissions Settings"}</DialogTitle>
+      <DialogDescription>
         {getLocale() === "ar"
           ? "اختر مستخدماً من القائمة لتعديل صلاحيات الاستثناء الفردية المخصصة له."
           : "Select a user from the directory below to configure custom individual override rules."}
-      </p>
+      </DialogDescription>
+    </DialogHeader>
 
-      <div class="relative w-full my-2">
-        <Search size={14} class="absolute top-1/2 -translate-y-1/2 text-gray-500 rtl:right-3 ltr:left-3" />
-        <Input
-          type="text"
-          bind:value={userSearchQuery}
-          placeholder={getLocale() === "ar" ? "ابحث عن موظف أو مستخدم..." : "Search user directory..."}
-          class="w-full rtl:pr-9 ltr:pl-9 h-9 text-xs bg-[#17171c] border-border/20 text-white"
-        />
-      </div>
-
-      <!-- Users Scrollable list -->
-      <div class="flex flex-col gap-1.5 max-h-60 overflow-y-auto pr-1">
-        {#if filteredUsers.length === 0}
-          <span class="text-xs text-gray-500 text-center py-6">
-            {getLocale() === "ar" ? "لا يوجد مستخدمون" : "No users found"}
-          </span>
-        {:else}
-          {#each filteredUsers as u}
-            <button
-              onclick={() => {
-                showSetUserPermissionsModal = false;
-                goto(`/${data.orgId}/settings/users/${u.id}`);
-              }}
-              class="w-full text-start p-2.5 rounded-lg border border-border/10 bg-[#17171c]/50 hover:bg-[#1a1a24] hover:border-primary/20 transition-all flex items-center justify-between group cursor-pointer"
-            >
-              <div class="flex flex-col gap-0.5">
-                <span class="text-xs font-semibold text-white group-hover:text-[#a3e635] transition-colors">{u.full_name}</span>
-                <span class="text-[9px] text-gray-500 font-mono">{u.email}</span>
-              </div>
-              <div class="flex items-center gap-1.5">
-                <span class="text-[9px] px-1.5 py-0.5 rounded bg-[#1f1f26] text-gray-400 font-semibold border border-border/10">
-                  {u.primary_role}
-                </span>
-                <ChevronRight size={12} class="text-gray-500 group-hover:text-white transition-colors" />
-              </div>
-            </button>
-          {/each}
-        {/if}
-      </div>
-
-      <div class="flex items-center justify-end border-t border-border/10 pt-3 mt-1">
-        <Button variant="ghost" class="text-xs h-8 text-gray-400 hover:text-white" onclick={() => showSetUserPermissionsModal = false}>
-          {getLocale() === "ar" ? "إغلاق" : "Close"}
-        </Button>
-      </div>
+    <div class="relative w-full my-2">
+      <Search size={14} class="absolute top-1/2 -translate-y-1/2 text-muted-foreground rtl:right-3 ltr:left-3" />
+      <Input
+        type="text"
+        bind:value={userSearchQuery}
+        placeholder={getLocale() === "ar" ? "ابحث عن موظف أو مستخدم..." : "Search user directory..."}
+        class="w-full rtl:pr-9 ltr:pl-9 h-9 text-xs"
+      />
     </div>
-  </div>
-{/if}
+
+    <!-- Users Scrollable list -->
+    <div class="flex flex-col gap-1.5 max-h-60 overflow-y-auto pr-1">
+      {#if filteredUsers.length === 0}
+        <span class="text-xs text-muted-foreground text-center py-6">
+          {getLocale() === "ar" ? "لا يوجد مستخدمون" : "No users found"}
+        </span>
+      {:else}
+        {#each filteredUsers as u}
+          <button
+            onclick={() => {
+              showSetUserPermissionsModal = false;
+              goto(`/${data.orgId}/settings/users/${u.id}`);
+            }}
+            class="w-full text-start p-2.5 rounded-lg border border-border bg-background hover:bg-accent transition-all flex items-center justify-between group cursor-pointer"
+          >
+            <div class="flex flex-col gap-0.5">
+              <span class="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">{u.full_name}</span>
+              <span class="text-[9px] text-muted-foreground font-mono">{u.email}</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <Badge variant="secondary" class="text-[9px] font-semibold">
+                {u.primary_role}
+              </Badge>
+              <ChevronRight size={12} class="text-muted-foreground group-hover:text-foreground transition-colors" />
+            </div>
+          </button>
+        {/each}
+      {/if}
+    </div>
+
+    <DialogFooter class="border-t border-border pt-4">
+      <Button variant="ghost" size="sm" onclick={() => showSetUserPermissionsModal = false}>
+        {getLocale() === "ar" ? "إغلاق" : "Close"}
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>

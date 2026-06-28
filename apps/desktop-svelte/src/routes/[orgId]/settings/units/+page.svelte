@@ -371,7 +371,7 @@ function escapeHtml(text: string): string {
   </div>
 
   <!-- Search & View Controls -->
-  <div class="flex flex-col sm:flex-row gap-3 w-full items-center justify-between border border-border/30 p-2 rounded-xl bg-card/5">
+  <div class="flex flex-col sm:flex-row gap-3 w-full items-center justify-between">
     <div class="relative flex-1 w-full">
       <Search size={14} class="absolute top-1/2 -translate-y-1/2 text-muted-foreground rtl:right-3 ltr:left-3" />
       <Input
@@ -459,7 +459,7 @@ function escapeHtml(text: string): string {
       </div>
     </div>
   {:else}
-    <div class="border border-border rounded-xl bg-card/20 overflow-hidden" in:fade={{ duration: 150 }}>
+    <div class="overflow-hidden" in:fade={{ duration: 150 }}>
       <div class="overflow-x-auto">
         <Table>
           <TableHeader>

@@ -3,9 +3,11 @@ import { authStore } from "$lib/stores";
 import { commands } from "$lib/services/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
+import { Label } from "@orbis/ui-svelte/label";
+import { Badge } from "@orbis/ui-svelte/badge";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
-import { Lock, ShieldAlert, Monitor, Smartphone, Key } from "lucide-svelte";
+import { Lock, Monitor, Smartphone, Key } from "lucide-svelte";
 
 let isUpdating = $state(false);
 let currentPassword = $state("");
@@ -35,14 +37,14 @@ async function handleUpdatePassword(e: Event) {
     newPassword = "";
     confirmPassword = "";
   } catch (e) {
-    const errorMsg = e instanceof Error ? e.message : String(e);
+    const errorMsg = (e as any)?.message || "Unknown error";
     toast.error(errorMsg);
   } finally {
     isUpdating = false;
   }
 }
 
-// Mock active sessions for premium feel
+// Mock active sessions
 const activeSessions = [
   {
     id: "1",
@@ -67,8 +69,8 @@ const activeSessions = [
   <title>{m.settings_security_title()} | Orbis</title>
 </svelte:head>
 
-<div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide">
-  <div class="max-w-4xl mx-auto p-6 flex flex-col gap-6">
+<div class="h-full w-full overflow-y-auto bg-background scrollbar-hide">
+  <div class="max-w-3xl mx-auto p-8 flex flex-col gap-10">
     <!-- Header -->
     <div class="flex flex-col gap-1 text-start">
       <h1 class="text-xl font-bold tracking-tight text-foreground">{m.settings_security_title()}</h1>
@@ -76,8 +78,8 @@ const activeSessions = [
     </div>
 
     <!-- Change Password Form -->
-    <div class="bg-card border border-border rounded-xl p-6 flex flex-col gap-6">
-      <div class="flex items-center gap-2 border-b border-border/60 pb-4 text-start">
+    <div class="flex flex-col gap-6 text-start">
+      <div class="border-b border-border/60 pb-3 flex items-center gap-2">
         <Key size={16} class="text-primary" />
         <h2 class="text-sm font-semibold text-foreground">{m.settings_security_change_password()}</h2>
       </div>
@@ -85,9 +87,9 @@ const activeSessions = [
       <form onsubmit={handleUpdatePassword} class="flex flex-col gap-4 max-w-lg">
         <!-- Current Password -->
         <div class="flex flex-col gap-2 text-start">
-          <label for="current_pass" class="text-xs font-medium text-muted-foreground">
+          <Label for="current_pass" class="text-xs font-medium text-muted-foreground">
             {m.settings_security_current_password()}
-          </label>
+          </Label>
           <Input
             id="current_pass"
             type="password"
@@ -100,9 +102,9 @@ const activeSessions = [
 
         <!-- New Password -->
         <div class="flex flex-col gap-2 text-start">
-          <label for="new_pass" class="text-xs font-medium text-muted-foreground">
+          <Label for="new_pass" class="text-xs font-medium text-muted-foreground">
             {m.settings_security_new_password()}
-          </label>
+          </Label>
           <Input
             id="new_pass"
             type="password"
@@ -116,9 +118,9 @@ const activeSessions = [
 
         <!-- Confirm Password -->
         <div class="flex flex-col gap-2 text-start">
-          <label for="confirm_pass" class="text-xs font-medium text-muted-foreground">
+          <Label for="confirm_pass" class="text-xs font-medium text-muted-foreground">
             {m.settings_security_confirm_password()}
-          </label>
+          </Label>
           <Input
             id="confirm_pass"
             type="password"
@@ -133,7 +135,7 @@ const activeSessions = [
           <Button
             type="submit"
             variant="lime"
-            class="px-6 font-semibold text-sm"
+            class="px-6 font-semibold text-xs h-9"
             disabled={isUpdating}
           >
             {isUpdating ? m.settings_security_updating() : m.settings_security_update_password()}
@@ -143,15 +145,15 @@ const activeSessions = [
     </div>
 
     <!-- Active Sessions -->
-    <div class="bg-card border border-border rounded-xl p-6 flex flex-col gap-6">
-      <div class="flex flex-col gap-1 border-b border-border/60 pb-4 text-start">
+    <div class="flex flex-col gap-6 text-start">
+      <div class="border-b border-border/60 pb-3">
         <h2 class="text-sm font-semibold text-foreground">{m.settings_security_sessions()}</h2>
-        <p class="text-[10px] text-muted-foreground">{m.settings_security_sessions_desc()}</p>
+        <p class="text-[10px] text-muted-foreground mt-0.5">{m.settings_security_sessions_desc()}</p>
       </div>
 
       <div class="flex flex-col gap-4">
         {#each activeSessions as session (session.id)}
-          <div class="flex items-center justify-between p-4 rounded-xl border border-border bg-background/40">
+          <div class="flex items-center justify-between py-3 border-b border-border/40 last:border-b-0">
             <div class="flex items-center gap-3">
               <div class="p-2.5 rounded-lg bg-muted text-foreground">
                 <session.icon size={18} />
@@ -163,13 +165,13 @@ const activeSessions = [
             </div>
             
             {#if session.active}
-              <span class="text-[9px] px-2 py-0.5 rounded-full font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+              <Badge variant="lime" class="text-[9px] font-bold uppercase py-0.5 px-2 rounded-full">
                 Active Now
-              </span>
+              </Badge>
             {:else}
-              <span class="text-[9px] px-2 py-0.5 rounded-full font-semibold bg-muted text-muted-foreground border border-border/40">
+              <Badge variant="secondary" class="text-[9px] font-bold uppercase py-0.5 px-2 rounded-full">
                 Logged out
-              </span>
+              </Badge>
             {/if}
           </div>
         {/each}

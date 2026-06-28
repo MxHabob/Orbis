@@ -16,6 +16,8 @@ import {
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
+import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui-svelte/select";
+import { Badge } from "@orbis/ui-svelte/badge";
 import {
   History,
   Search,
@@ -62,7 +64,7 @@ async function loadData() {
     users = usersList;
   } catch (e) {
     console.error("Error loading audit logs:", e);
-    error = e instanceof Error ? e.message : String(e);
+    error = (e as any)?.message || "Unknown error";
   } finally {
     isLoading = false;
   }
@@ -81,17 +83,10 @@ function getUserName(userId: string | null): string {
   return user.full_name || user.username || userId.substring(0, 8);
 }
 
-function getActionColor(action: string): string {
+function getActionVariant(action: string): "default" | "lime" | "destructive" | "secondary" | "outline" | "brand" | "ghost" {
   const act = String(action).toLowerCase();
   if (act.includes("create") || act.includes("insert") || act.includes("add")) {
-    return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
-  }
-  if (
-    act.includes("update") ||
-    act.includes("edit") ||
-    act.includes("modify")
-  ) {
-    return "bg-blue-500/10 text-blue-500 border-blue-500/20";
+    return "lime";
   }
   if (
     act.includes("delete") ||
@@ -99,9 +94,9 @@ function getActionColor(action: string): string {
     act.includes("unlink") ||
     act.includes("withdraw")
   ) {
-    return "bg-rose-500/10 text-rose-500 border-rose-500/20";
+    return "destructive";
   }
-  return "bg-purple-500/10 text-purple-500 border-purple-500/20";
+  return "secondary";
 }
 
 const filteredLogs = $derived.by(() => {
@@ -164,15 +159,23 @@ function closeDetails() {
     </div>
 
     <div class="flex items-center gap-2">
-      <select
-        bind:value={actionFilter}
-        class="bg-background text-foreground border border-border rounded-md px-3 py-1.5 text-xs focus:ring-1 focus:ring-ring outline-none h-9 cursor-pointer"
-      >
-        <option value="all">{m.attendance_status_unknown() === "غير مححدد" ? "كل العمليات" : "All Actions"}</option>
-        <option value="create">Create</option>
-        <option value="update">Update</option>
-        <option value="delete">Delete</option>
-      </select>
+      <div class="w-36 text-start">
+        <Select type="single" value={actionFilter} onValueChange={(v) => (actionFilter = v ?? "all")}>
+          <SelectTrigger class="h-9 w-full text-xs">
+            {#if actionFilter === "all"}
+              {m.attendance_status_unknown() === "غير محدد" ? "كل العمليات" : "All Actions"}
+            {:else}
+              {actionFilter.toUpperCase()}
+            {/if}
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{m.attendance_status_unknown() === "غير محدد" ? "كل العمليات" : "All Actions"}</SelectItem>
+            <SelectItem value="create">Create</SelectItem>
+            <SelectItem value="update">Update</SelectItem>
+            <SelectItem value="delete">Delete</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
       <Button variant="outline" size="sm" onclick={loadData} class="h-9 text-xs flex items-center gap-1 cursor-pointer">
         <span>{m.attendance_status_unknown() === "غير محدد" ? "تحديث" : "Refresh"}</span>
@@ -214,7 +217,7 @@ function closeDetails() {
         </p>
       </div>
     {:else}
-      <div in:fade={{ duration: 150 }} class="border border-border/60 rounded-xl overflow-hidden bg-card/30">
+      <div in:fade={{ duration: 150 }} class="overflow-hidden">
         <Table>
           <TableHeader class="bg-muted/40 select-none">
             <TableRow>
@@ -236,9 +239,9 @@ function closeDetails() {
                   {getUserName(log.user_id)}
                 </TableCell>
                 <TableCell class="text-start text-xs">
-                  <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border {getActionColor(log.action)}">
+                  <Badge variant={getActionVariant(log.action)} class="text-[10px] font-semibold py-0">
                     {log.action}
-                  </span>
+                  </Badge>
                 </TableCell>
                 <TableCell class="text-start text-xs">
                   <div class="flex flex-col text-start">
@@ -249,9 +252,9 @@ function closeDetails() {
                 <TableCell class="text-start text-xs text-muted-foreground line-clamp-1 max-w-[250px]">
                   {log.metadata || '-'}
                 </TableCell>
-                <TableCell class="text-end text-xs">
-                  <Button variant="ghost" size="icon" class="h-8 w-8 cursor-pointer" onclick={() => openDetails(log)}>
-                    <Eye size={13} />
+                <TableCell class="text-end">
+                  <Button variant="ghost" size="icon-sm" onclick={() => openDetails(log)}>
+                    <Eye size={14} />
                   </Button>
                 </TableCell>
               </TableRow>
@@ -263,100 +266,69 @@ function closeDetails() {
   </div>
 </div>
 
-<!-- Details Modal -->
-{#if isDetailsOpen && selectedLog}
-  <div 
-    class="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 select-none"
-    onclick={closeDetails}
-    aria-modal="true"
-    role="dialog"
-  >
-    <div 
-      class="bg-card border border-border rounded-xl shadow-lg w-full max-w-2xl flex flex-col max-h-[85vh]"
-      onclick={(e) => e.stopPropagation()}
-    >
-      <div class="p-6 border-b border-border text-start">
-        <h3 class="text-lg font-bold text-foreground flex items-center gap-2">
+<!-- Details Dialog -->
+{#if selectedLog}
+  <Dialog open={isDetailsOpen} onOpenChange={(open) => { if (!open) closeDetails(); }}>
+    <DialogContent class="max-w-2xl text-start font-sans">
+      <DialogHeader>
+        <DialogTitle class="flex items-center gap-2">
           <Info size={18} class="text-primary" />
-          <span>{m.audit_col_details ? m.audit_col_details() : "تفاصيل السجل"}</span>
-        </h3>
-        <p class="text-xs text-muted-foreground mt-1">
-          {selectedLog.id}
-        </p>
-      </div>
+          <span>{m.audit_details_title ? m.audit_details_title() : "تفاصيل سجل التدقيق"}</span>
+        </DialogTitle>
+        <DialogDescription>
+          {formatDate(selectedLog.created_at)}
+        </DialogDescription>
+      </DialogHeader>
 
-      <div class="p-6 overflow-y-auto flex flex-col gap-4 text-start select-text">
-        <!-- Grid fields -->
-        <div class="grid grid-cols-2 gap-4 text-xs">
-          <div>
-            <span class="font-bold text-muted-foreground block mb-0.5">{m.audit_col_time ? m.audit_col_time() : "الوقت"}</span>
-            <span class="text-foreground">{formatDate(selectedLog.created_at)}</span>
-          </div>
-          <div>
-            <span class="font-bold text-muted-foreground block mb-0.5">{m.audit_col_user ? m.audit_col_user() : "المستخدم"}</span>
-            <span class="text-foreground font-bold">{getUserName(selectedLog.user_id)}</span>
-          </div>
-          <div>
-            <span class="font-bold text-muted-foreground block mb-0.5">{m.audit_col_action ? m.audit_col_action() : "الإجراء"}</span>
-            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border {getActionColor(selectedLog.action)}">
-              {selectedLog.action}
-            </span>
-          </div>
-          <div>
-            <span class="font-bold text-muted-foreground block mb-0.5">{m.audit_col_entity ? m.audit_col_entity() : "الكيان"}</span>
-            <span class="text-foreground font-mono">{selectedLog.entity_type} ({selectedLog.entity_id})</span>
-          </div>
-          {#if selectedLog.ip_address}
-            <div>
-              <span class="font-bold text-muted-foreground block mb-0.5">IP Address</span>
-              <span class="text-foreground font-mono">{selectedLog.ip_address}</span>
-            </div>
-          {/if}
-          {#if selectedLog.user_agent}
-            <div class="col-span-2">
-              <span class="font-bold text-muted-foreground block mb-0.5">User Agent</span>
-              <span class="text-foreground text-[10px] font-mono break-all">{selectedLog.user_agent}</span>
-            </div>
-          {/if}
+      <div class="grid grid-cols-2 gap-4 py-2 text-xs">
+        <div class="flex flex-col gap-1">
+          <span class="text-muted-foreground font-semibold">User:</span>
+          <span class="text-foreground">{getUserName(selectedLog.user_id)}</span>
         </div>
-
-        <!-- Data changes -->
-        {#if selectedLog.old_data || selectedLog.new_data}
-          <div class="border-t border-border pt-4 flex flex-col gap-3">
-            <span class="font-bold text-xs text-foreground block">
-              {m.attendance_status_unknown() === "غير محدد" ? "تغييرات البيانات" : "Data Changes"}
-            </span>
-
-            <div class="grid grid-cols-2 gap-4">
-              <!-- Old data -->
-              <div class="flex flex-col gap-1">
-                <span class="text-[10px] font-bold text-muted-foreground">
-                  {m.attendance_status_unknown() === "غير محدد" ? "البيانات السابقة" : "Old Data"}
-                </span>
-                <pre class="bg-muted p-3 rounded-lg text-[10px] font-mono overflow-auto max-h-[200px] border border-border/40 select-all scrollbar-hide">
-                  {selectedLog.old_data ? JSON.stringify(JSON.parse(selectedLog.old_data), null, 2) : "Null"}
-                </pre>
-              </div>
-
-              <!-- New data -->
-              <div class="flex flex-col gap-1">
-                <span class="text-[10px] font-bold text-muted-foreground">
-                  {m.attendance_status_unknown() === "غير محدد" ? "البيانات الجديدة" : "New Data"}
-                </span>
-                <pre class="bg-muted p-3 rounded-lg text-[10px] font-mono overflow-auto max-h-[200px] border border-border/40 select-all scrollbar-hide">
-                  {selectedLog.new_data ? JSON.stringify(JSON.parse(selectedLog.new_data), null, 2) : "Null"}
-                </pre>
-              </div>
-            </div>
+        <div class="flex flex-col gap-1">
+          <span class="text-muted-foreground font-semibold">Action:</span>
+          <div>
+            <Badge variant={getActionVariant(selectedLog.action)} class="text-[9px] font-bold">
+              {selectedLog.action}
+            </Badge>
+          </div>
+        </div>
+        <div class="flex flex-col gap-1">
+          <span class="text-muted-foreground font-semibold">Entity Type:</span>
+          <span class="text-foreground font-semibold">{selectedLog.entity_type}</span>
+        </div>
+        <div class="flex flex-col gap-1">
+          <span class="text-muted-foreground font-semibold">Entity ID:</span>
+          <span class="text-foreground font-mono">{selectedLog.entity_id}</span>
+        </div>
+        {#if selectedLog.ip_address}
+          <div class="flex flex-col gap-1">
+            <span class="text-muted-foreground font-semibold">IP Address:</span>
+            <span class="text-foreground font-mono">{selectedLog.ip_address}</span>
+          </div>
+        {/if}
+        {#if selectedLog.user_agent}
+          <div class="flex flex-col gap-1 col-span-2">
+            <span class="text-muted-foreground font-semibold">User Agent:</span>
+            <span class="text-foreground text-[10px] leading-relaxed">{selectedLog.user_agent}</span>
           </div>
         {/if}
       </div>
 
-      <div class="p-4 border-t border-border flex justify-end">
-        <Button variant="outline" size="sm" onclick={closeDetails} class="text-xs font-bold cursor-pointer">
-          {m.ft_form_cancel ? m.ft_form_cancel() : "إغلاق"}
+      {#if selectedLog.metadata}
+        <div class="flex flex-col gap-1.5 text-xs text-start border-t border-border pt-4">
+          <span class="text-muted-foreground font-semibold">Metadata / Changes:</span>
+          <pre class="bg-muted p-3 rounded-lg text-[10px] font-mono overflow-x-auto text-foreground whitespace-pre-wrap leading-normal">
+            {selectedLog.metadata}
+          </pre>
+        </div>
+      {/if}
+
+      <DialogFooter class="border-t border-border pt-4">
+        <Button variant="ghost" size="sm" onclick={closeDetails}>
+          {m.attendance_status_unknown() === "غير محدد" ? "إغلاق" : "Close"}
         </Button>
-      </div>
-    </div>
-  </div>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 {/if}

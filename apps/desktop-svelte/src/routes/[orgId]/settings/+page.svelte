@@ -6,6 +6,8 @@ import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Switch } from "@orbis/ui-svelte/switch";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
+import { Label } from "@orbis/ui-svelte/label";
+import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
@@ -70,7 +72,7 @@ async function handleSave(e: Event) {
     await commands.users.updateOrganization(orgId, request);
     toast.success(m.settings_general_save_success());
   } catch (e) {
-    const errorMsg = e instanceof Error ? e.message : String(e);
+    const errorMsg = (e as any)?.message || "Unknown error";
     toast.error(m.settings_general_save_error({ error: errorMsg }));
   } finally {
     isSaving = false;
@@ -102,8 +104,8 @@ const timezones = [
   <title>{m.settings_general_title()} | Orbis</title>
 </svelte:head>
 
-<div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide">
-  <div class="max-w-4xl mx-auto p-6 flex flex-col gap-6">
+<div class="h-full w-full overflow-y-auto bg-background scrollbar-hide">
+  <div class="max-w-3xl mx-auto p-8 flex flex-col gap-10">
     <!-- Header -->
     <div class="flex flex-col gap-1 text-start">
       <h1 class="text-xl font-bold tracking-tight text-foreground">{m.settings_general_title()}</h1>
@@ -111,24 +113,24 @@ const timezones = [
     </div>
 
     {#if isLoading}
-      <div class="flex flex-col gap-6">
-        {@render CardSkeleton()}
-        {@render CardSkeleton()}
+      <div class="flex flex-col gap-8">
+        {@render SectionSkeleton()}
+        {@render SectionSkeleton()}
       </div>
     {:else}
-      <form onsubmit={handleSave} class="flex flex-col gap-6">
+      <form onsubmit={handleSave} class="flex flex-col gap-10">
         <!-- Section 1: Org Info & Branding -->
-        <div class="bg-card border border-border rounded-xl p-6 flex flex-col gap-6">
-          <div class="flex flex-col gap-1 text-start border-b border-border/60 pb-4">
+        <div class="flex flex-col gap-6 text-start">
+          <div class="border-b border-border/60 pb-3">
             <h2 class="text-sm font-semibold text-foreground">{m.settings_general_section_info()}</h2>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Org Name -->
             <div class="flex flex-col gap-2 text-start">
-              <label for="org_name" class="text-xs font-medium text-muted-foreground">
+              <Label for="org_name" class="text-xs font-medium text-muted-foreground">
                 {m.settings_general_name()}
-              </label>
+              </Label>
               <Input
                 id="org_name"
                 type="text"
@@ -141,22 +143,22 @@ const timezones = [
 
             <!-- Primary Color Colorpicker -->
             <div class="flex flex-col gap-2 text-start">
-              <label for="org_color" class="text-xs font-medium text-muted-foreground">
+              <Label for="org_color" class="text-xs font-medium text-muted-foreground">
                 {m.settings_general_color()}
-              </label>
+              </Label>
               <div class="flex gap-2">
                 <input
                   id="org_color"
                   type="color"
                   bind:value={primaryColor}
-                  class="w-10 h-10 rounded border border-border cursor-pointer bg-transparent"
+                  class="w-9 h-9 rounded border border-border cursor-pointer bg-transparent"
                   disabled={isSaving}
                 />
                 <Input
                   type="text"
                   bind:value={primaryColor}
                   placeholder="#84cc16"
-                  class="font-mono uppercase flex-1"
+                  class="font-mono uppercase flex-1 h-9"
                   disabled={isSaving}
                 />
               </div>
@@ -166,9 +168,9 @@ const timezones = [
           <div class="grid grid-cols-1 gap-6">
             <!-- Logo URL -->
             <div class="flex flex-col gap-2 text-start">
-              <label for="org_logo" class="text-xs font-medium text-muted-foreground">
+              <Label for="org_logo" class="text-xs font-medium text-muted-foreground">
                 {m.settings_general_logo()}
-              </label>
+              </Label>
               <div class="flex items-center gap-4">
                 {#if logo}
                   <img
@@ -196,17 +198,17 @@ const timezones = [
         </div>
 
         <!-- Section 2: Regional Settings -->
-        <div class="bg-card border border-border rounded-xl p-6 flex flex-col gap-6">
-          <div class="flex flex-col gap-1 text-start border-b border-border/60 pb-4">
+        <div class="flex flex-col gap-6 text-start">
+          <div class="border-b border-border/60 pb-3">
             <h2 class="text-sm font-semibold text-foreground">{m.settings_general_section_regional()}</h2>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Currency -->
             <div class="flex flex-col gap-2 text-start">
-              <label for="org_currency" class="text-xs font-medium text-muted-foreground">
+              <Label for="org_currency" class="text-xs font-medium text-muted-foreground">
                 {m.settings_general_currency()}
-              </label>
+              </Label>
               <Input
                 id="org_currency"
                 type="text"
@@ -220,62 +222,62 @@ const timezones = [
 
             <!-- Timezone -->
             <div class="flex flex-col gap-2 text-start">
-              <label for="org_timezone" class="text-xs font-medium text-muted-foreground">
+              <Label for="org_timezone" class="text-xs font-medium text-muted-foreground">
                 {m.settings_general_timezone()}
-              </label>
-              <select
-                id="org_timezone"
-                bind:value={timezone}
-                class="bg-background text-foreground border border-border rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-ring outline-none h-9 w-full"
-                disabled={isSaving}
-              >
-                {#each timezones as tz}
-                  <option value={tz.value}>{tz.label}</option>
-                {/each}
-              </select>
+              </Label>
+              <Select type="single" value={timezone} onValueChange={(v) => (timezone = v ?? "")} disabled={isSaving}>
+                <SelectTrigger class="h-9 w-full">
+                  {timezones.find(tz => tz.value === timezone)?.label || timezone}
+                </SelectTrigger>
+                <SelectContent>
+                  {#each timezones as tz}
+                    <SelectItem value={tz.value}>{tz.label}</SelectItem>
+                  {/each}
+                </SelectContent>
+              </Select>
             </div>
 
             <!-- Locale / Language -->
             <div class="flex flex-col gap-2 text-start">
-              <label for="org_locale" class="text-xs font-medium text-muted-foreground">
+              <Label for="org_locale" class="text-xs font-medium text-muted-foreground">
                 {m.settings_general_locale()}
-              </label>
-              <select
-                id="org_locale"
-                bind:value={locale}
-                class="bg-background text-foreground border border-border rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-ring outline-none h-9 w-full"
-                disabled={isSaving}
-              >
-                {#each locales as loc}
-                  <option value={loc.value}>{loc.label}</option>
-                {/each}
-              </select>
+              </Label>
+              <Select type="single" value={locale} onValueChange={(v) => (locale = v ?? "")} disabled={isSaving}>
+                <SelectTrigger class="h-9 w-full">
+                  {locales.find(loc => loc.value === locale)?.label || locale}
+                </SelectTrigger>
+                <SelectContent>
+                  {#each locales as loc}
+                    <SelectItem value={loc.value}>{loc.label}</SelectItem>
+                  {/each}
+                </SelectContent>
+              </Select>
             </div>
 
             <!-- Date Format -->
             <div class="flex flex-col gap-2 text-start">
-              <label for="org_date_format" class="text-xs font-medium text-muted-foreground">
+              <Label for="org_date_format" class="text-xs font-medium text-muted-foreground">
                 {m.settings_general_date_format()}
-              </label>
-              <select
-                id="org_date_format"
-                bind:value={dateFormat}
-                class="bg-background text-foreground border border-border rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-ring outline-none h-9 w-full"
-                disabled={isSaving}
-              >
-                {#each dateFormats as df}
-                  <option value={df.value}>{df.label}</option>
-                {/each}
-              </select>
+              </Label>
+              <Select type="single" value={dateFormat} onValueChange={(v) => (dateFormat = v ?? "")} disabled={isSaving}>
+                <SelectTrigger class="h-9 w-full">
+                  {dateFormats.find(df => df.value === dateFormat)?.label || dateFormat}
+                </SelectTrigger>
+                <SelectContent>
+                  {#each dateFormats as df}
+                    <SelectItem value={df.value}>{df.label}</SelectItem>
+                  {/each}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
           <!-- Hijri Calendar Toggle -->
-          <div class="flex items-center justify-between border-t border-border/40 pt-4">
+          <div class="flex items-center justify-between border-t border-border/40 pt-4 mt-2">
             <div class="flex flex-col gap-1 text-start">
-              <label for="hijri_enabled" class="text-xs font-semibold text-foreground">
+              <Label for="hijri_enabled" class="text-xs font-semibold text-foreground">
                 {m.settings_general_hijri()}
-              </label>
+              </Label>
               <span class="text-[10px] text-muted-foreground">
                 {m.settings_general_hijri_desc()}
               </span>
@@ -289,11 +291,11 @@ const timezones = [
         </div>
 
         <!-- Submit Actions -->
-        <div class="flex justify-end gap-3 pb-8">
+        <div class="flex justify-end gap-3 pb-8 border-t border-border/40 pt-6">
           <Button
             type="submit"
             variant="lime"
-            class="px-6 font-semibold h-10 text-sm"
+            class="px-6 font-semibold h-9 text-xs"
             disabled={isSaving}
           >
             {isSaving ? m.settings_general_saving() : m.settings_general_save()}
@@ -304,9 +306,9 @@ const timezones = [
   </div>
 </div>
 
-{#snippet CardSkeleton()}
-  <div class="bg-card border border-border rounded-xl p-6 flex flex-col gap-6">
-    <div class="border-b border-border/60 pb-4">
+{#snippet SectionSkeleton()}
+  <div class="flex flex-col gap-6 text-start">
+    <div class="border-b border-border/60 pb-3">
       <Skeleton class="h-5 w-32" />
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">

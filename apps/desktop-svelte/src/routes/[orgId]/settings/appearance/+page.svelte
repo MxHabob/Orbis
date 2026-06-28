@@ -4,6 +4,8 @@ import { onMount } from "svelte";
 import { goto } from "$app/navigation";
 import { themeStore } from "$lib/stores";
 import { Button } from "@orbis/ui-svelte/button";
+import { Label } from "@orbis/ui-svelte/label";
+import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
@@ -58,14 +60,19 @@ async function handleLanguageChange(lang: string) {
   await goto(localizedUrl);
   toast.success(m.settings_general_save_success());
 }
+
+const locales = [
+  { value: "ar", label: m.header_language_ar() },
+  { value: "en", label: m.header_language_en() },
+];
 </script>
 
 <svelte:head>
   <title>{m.settings_appearance_title()} | Orbis</title>
 </svelte:head>
 
-<div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide">
-  <div class="max-w-4xl mx-auto p-6 flex flex-col gap-6">
+<div class="h-full w-full overflow-y-auto bg-background scrollbar-hide">
+  <div class="max-w-3xl mx-auto p-8 flex flex-col gap-10">
     <!-- Header -->
     <div class="flex flex-col gap-1 text-start">
       <h1 class="text-xl font-bold tracking-tight text-foreground">{m.settings_appearance_title()}</h1>
@@ -73,8 +80,8 @@ async function handleLanguageChange(lang: string) {
     </div>
 
     <!-- Theme Picker -->
-    <div class="bg-card border border-border rounded-xl p-6 flex flex-col gap-6">
-      <div class="flex flex-col gap-1 text-start border-b border-border/60 pb-4">
+    <div class="flex flex-col gap-6 text-start">
+      <div class="border-b border-border/60 pb-3">
         <h2 class="text-sm font-semibold text-foreground">{m.settings_appearance_theme()}</h2>
       </div>
 
@@ -158,33 +165,34 @@ async function handleLanguageChange(lang: string) {
     </div>
 
     <!-- Language & Typography -->
-    <div class="bg-card border border-border rounded-xl p-6 flex flex-col gap-6">
-      <div class="flex flex-col gap-1 text-start border-b border-border/60 pb-4">
+    <div class="flex flex-col gap-6 text-start">
+      <div class="border-b border-border/60 pb-3">
         <h2 class="text-sm font-semibold text-foreground">{m.settings_appearance_language()}</h2>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <!-- Language Selector -->
         <div class="flex flex-col gap-2 text-start">
-          <label for="app_lang" class="text-xs font-medium text-muted-foreground">
+          <Label for="app_lang" class="text-xs font-medium text-muted-foreground">
             {m.settings_appearance_language()}
-          </label>
-          <select
-            id="app_lang"
-            value={selectedLocale}
-            onchange={(e) => handleLanguageChange(e.currentTarget.value)}
-            class="bg-background text-foreground border border-border rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-ring outline-none h-9 w-full cursor-pointer"
-          >
-            <option value="ar">{m.header_language_ar()}</option>
-            <option value="en">{m.header_language_en()}</option>
-          </select>
+          </Label>
+          <Select type="single" value={selectedLocale} onValueChange={(v) => handleLanguageChange(v ?? "")}>
+            <SelectTrigger class="h-9 w-full">
+              {locales.find(loc => loc.value === selectedLocale)?.label || selectedLocale}
+            </SelectTrigger>
+            <SelectContent>
+              {#each locales as loc}
+                <SelectItem value={loc.value}>{loc.label}</SelectItem>
+              {/each}
+            </SelectContent>
+          </Select>
         </div>
 
         <!-- Font Size Selector -->
         <div class="flex flex-col gap-2 text-start">
-          <label for="app_font" class="text-xs font-medium text-muted-foreground">
+          <Label for="app_font" class="text-xs font-medium text-muted-foreground">
             {m.settings_appearance_font_size()}
-          </label>
+          </Label>
           <div class="flex rounded-md border border-border overflow-hidden h-9 w-full">
             {#each [
               { value: "small", label: m.settings_appearance_font_small() },
@@ -206,8 +214,8 @@ async function handleLanguageChange(lang: string) {
     </div>
 
     <!-- Interface Layout/Density -->
-    <div class="bg-card border border-border rounded-xl p-6 flex flex-col gap-6">
-      <div class="flex flex-col gap-1 text-start border-b border-border/60 pb-4">
+    <div class="flex flex-col gap-6 text-start">
+      <div class="border-b border-border/60 pb-3">
         <h2 class="text-sm font-semibold text-foreground">{m.settings_appearance_density()}</h2>
       </div>
 

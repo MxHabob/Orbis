@@ -1443,5 +1443,16 @@
   "settings_user_detail_btn_reset": "إعادة تعيين",
   "settings_user_detail_btn_save_details": "حفظ التعديلات",
   "settings_user_detail_badge_active": "نشط",
-  "settings_user_detail_badge_inactive": "معطل"
+  "settings_user_detail_badge_inactive": "معطل",
+  "settings_user_detail_save": "حفظ التغييرات",
+  "settings_user_detail_cancel": "إلغاء",
+  "settings_user_detail_delete_confirm": "هل أنت متأكد من حذف هذا الحساب نهائياً؟ لا يمكن التراجع عن هذا الإجراء.",
+  "settings_user_detail_deleted": "تم حذف حساب المستخدم نهائياً",
+  "settings_user_detail_saved": "تم حفظ البيانات والأدوار بنجاح",
+  "settings_user_detail_load_error": "فشل تحميل بيانات المستخدم",
+  "settings_user_detail_search_roles": "ابحث بالأدوار...",
+  "settings_user_detail_tab_roles": "الصلاحيات والأدوار",
+  "settings_user_detail_pref_title": "تفضيلات المستخدم",
+  "settings_user_detail_lang_ar": "العربية (Arabic)",
+  "settings_user_detail_lang_en": "English (الإنجليزية)"
 }
