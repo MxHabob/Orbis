@@ -349,7 +349,8 @@ function escapeHtml(text: string): string {
   <title>Organizational Units | Orbis</title>
 </svelte:head>
 
-<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide">
+<div class="h-full w-full overflow-y-auto scrollbar-hide">
+  <div class="p-6 flex flex-col gap-6">
   <!-- Header Area -->
   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 font-sans border-b border-border/40 pb-5">
     <div class="flex flex-col gap-1 text-start">
@@ -706,6 +707,7 @@ function escapeHtml(text: string): string {
       </div>
     </div>
   {/if}
+  </div>
 </div>
 
 <!-- Modal Sheets -->
