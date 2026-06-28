@@ -69,21 +69,18 @@ function handleFileChange(event: Event) {
         alt="Avatar"
         class="w-full h-full object-cover"
       />
-      <AvatarFallback class="bg-transparent text-muted-foreground font-semibold flex items-center justify-center">
+      <AvatarFallback class="bg-transparent text-muted-foreground/35 font-light flex items-center justify-center select-none">
         {#if fallbackText}
-          <span style="font-size: {Math.max(11, size / 2.5)}px;">{fallbackText.slice(0, 2).toUpperCase()}</span>
+          <span style="font-size: {Math.max(16, size / 1.8)}px; font-weight: 300; tracking-wide">{fallbackText.slice(0, 2).toUpperCase()}</span>
         {:else}
-          <User size={Math.max(16, size / 2.5)} />
+          <User size={Math.max(16, size / 2)} />
         {/if}
       </AvatarFallback>
     </Avatar>
 
     <!-- Overlay on Hover -->
-    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-opacity text-white gap-0.5">
-      <Camera size={Math.max(14, size / 4)} />
-      {#if size >= 60}
-        <span class="text-[9px] font-medium tracking-tight">Edit</span>
-      {/if}
+    <div class="absolute inset-0 bg-black/15 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white font-medium select-none text-xs">
+      <span>Change ▾</span>
     </div>
   {/if}
 

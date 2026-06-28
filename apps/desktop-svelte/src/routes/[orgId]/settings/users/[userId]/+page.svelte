@@ -18,6 +18,8 @@
   import * as m from "$lib/paraglide/messages";
   import { commands } from "$lib/services/ipc";
   import type { User } from "$lib/services/ipc";
+  import AvatarUpload from "$lib/components/shared/avatar-upload.svelte";
+  import MainViewport from "$lib/components/layout/MainViewport.svelte";
   import {
     ArrowLeft,
     ArrowRight,
@@ -28,26 +30,22 @@
     Globe,
   } from "lucide-svelte";
 
-  // Derive params
   let orgId = $derived(page.params.orgId);
   let userId = $derived(page.params.userId);
 
-  // Tab state
   let activeTab = $state<"profile" | "roles" | "sessions" | "settings">("profile");
 
-  // User data state
   let user = $state<User | null>(null);
   let isLoading = $state(true);
   let isSaving = $state(false);
   let isActiveState = $state(true);
+  let avatarUrl = $state<string | null>(null);
 
-  // Password Reset Dialog State
   let showResetModal = $state(false);
   let newPassword = $state("");
   let confirmPassword = $state("");
   let isResettingPassword = $state(false);
 
-  // Form Fields
   let fullName = $state("");
   let nameAr = $state("");
   let nameEn = $state("");
@@ -55,21 +53,17 @@
   let phone = $state("");
   let role = $state("teacher");
 
-  // Multi-roles checklist state
   let checkedRoles = $state<string[]>([]);
   let roleSearchQuery = $state("");
 
-  // Role Profile List
   let allAvailableRoles = $state<string[]>([]);
   let filteredRoles = $derived(allAvailableRoles.filter(r => r.toLowerCase().includes(roleSearchQuery.toLowerCase())));
 
-  // User Preferences State
   let prefTheme = $state("dark");
   let prefLanguage = $state("ar");
   let notifyEmail = $state(true);
   let notifyPush = $state(true);
 
-  // Available system roles select list
   const systemRoles = [
     { value: "super_admin", label: "Super Admin" },
     { value: "admin", label: "System Admin" },
@@ -80,7 +74,6 @@
     { value: "parent", label: "Parent / Guardian" },
   ];
 
-  // Mock Active Sessions
   const activeSessions = [
     {
       id: "sess_1",
@@ -109,7 +102,6 @@
       const fetched = await commands.users.getUser(userId);
       user = fetched;
 
-      // Bind form fields
       fullName = fetched.full_name || "";
       nameAr = fetched.name_ar || "";
       nameEn = fetched.name_en || "";
@@ -117,22 +109,20 @@
       phone = (fetched.phone as string) || "";
       role = fetched.primary_role || fetched.role || "teacher";
       isActiveState = fetched.is_active !== undefined ? Boolean(fetched.is_active) : true;
+      avatarUrl = fetched.avatar_url || fetched.avatar || null;
 
-      // Fetch user specific overrides from database
       try {
         await commands.permissions.getUserPermissions(userId);
       } catch (err) {
         console.error("Failed to load user permissions overrides", err);
       }
 
-      // Fetch dynamic user roles list
       try {
         checkedRoles = await commands.users.getUserRoles(userId);
       } catch (e) {
         console.error("Failed to load user roles list:", e);
       }
 
-      // Fetch all available roles list dynamically from database
       try {
         allAvailableRoles = await commands.permissions.getAvailableRoles();
       } catch (e) {
@@ -151,27 +141,26 @@
     loadUser();
   });
 
-  // Global Unified Save changes
   async function saveAllChanges() {
     if (!userId) return;
     isSaving = true;
     try {
       const request = {
+        ...user,
         full_name: fullName,
         name_ar: nameAr || null,
         name_en: nameEn || null,
         email: email || null,
         phone: phone || null,
         is_active: isActiveState,
+        avatar_url: avatarUrl,
       };
       await commands.users.updateUser(userId, request);
 
-      // Only modify base role based on the primary system roles dropdown
       if (role) {
         await commands.users.changeUserRole(userId, { role });
       }
 
-      // Save additional roles checklist values
       await commands.users.saveUserRoles(userId, checkedRoles);
 
       toast.success(m.settings_user_detail_saved());
@@ -183,7 +172,6 @@
     }
   }
 
-  // Toggle Account Active / Inactive
   async function toggleAccountStatus() {
     if (!userId || !user) return;
 
@@ -215,7 +203,6 @@
     }
   }
 
-  // Reset Password
   async function handleResetPassword(e: Event) {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
@@ -240,7 +227,6 @@
     }
   }
 
-  // Delete User Account
   async function handleDeleteUser() {
     if (!userId) return;
     if (!confirm(m.settings_user_detail_delete_confirm())) return;
@@ -276,341 +262,329 @@
   <title>{fullName || m.settings_user_detail_title()} | Orbis</title>
 </svelte:head>
 
-<div class="h-full w-full overflow-y-auto bg-background scrollbar-hide">
-  <div class="max-w-3xl mx-auto p-8 flex flex-col gap-10">
-    <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 pb-5">
-      <div class="flex flex-col gap-1 text-start">
-        <div class="flex items-center gap-3">
-          <h1 class="text-xl font-bold tracking-tight text-foreground">
-            {fullName || m.settings_user_detail_title()}
-          </h1>
-          {#if isActiveState}
-            <Badge variant="lime">{m.settings_user_detail_badge_active()}</Badge>
-          {:else}
-            <Badge variant="destructive">{m.settings_user_detail_badge_inactive()}</Badge>
-          {/if}
+<div class="h-full w-full bg-background overflow-hidden">
+  <MainViewport
+    name="user-detail-viewport"
+    leftWidth={{ default: 220, min: 180 }}
+  >
+    <!-- Left Sidebar -->
+    {#snippet left()}
+      <div class="h-full p-5 flex flex-col gap-5 overflow-y-auto scrollbar-hide text-center bg-transparent select-none">
+        
+        <!-- Squared Avatar Uploader -->
+        <div class="w-full flex justify-center">
+          <AvatarUpload
+            bind:avatarUrl={avatarUrl}
+            size={120}
+            fallbackText={fullName}
+            class="rounded-2xl [&_span]:rounded-2xl [&_img]:rounded-2xl [&_div]:rounded-2xl [&_span_span]:rounded-2xl"
+          />
         </div>
-        {#if email}
-          <p class="text-xs text-muted-foreground">{email}</p>
-        {/if}
-      </div>
 
-      <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0 justify-end">
-        <Button
-          variant="outline"
-          size="sm"
-          href={localizeHref(`/${orgId}/settings/users`)}
-          class="gap-1.5"
-        >
-          {#if getLocale() === "ar"}
-            <ArrowRight size={14} />
+        <div class="flex flex-col gap-1.5 w-full pt-1">
+          <span class="text-xs font-bold text-foreground truncate max-w-full">{fullName}</span>
+          <span class="text-[10px] text-muted-foreground font-mono truncate max-w-full">{email || "No email"}</span>
+          <div class="pt-1.5">
+            <Badge variant="secondary" class="text-[9px] uppercase font-bold px-1.5 py-0.5">
+              {role.toUpperCase()}
+            </Badge>
+          </div>
+        </div>
+      </div>
+    {/snippet}
+
+    <!-- Right Workspace Area -->
+    {#snippet middle()}
+      <div class="h-full w-full overflow-y-auto p-6 scrollbar-hide">
+        <div class="max-w-3xl mx-auto flex flex-col gap-6">
+          
+
+
+          <!-- Action bar -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 select-none">
+            <div class="flex items-center gap-3 text-start">
+              <h1 class="text-xl font-bold tracking-tight text-foreground">
+                {fullName || m.settings_user_detail_title()}
+              </h1>
+              {#if isActiveState}
+                <Badge variant="lime">{m.settings_user_detail_badge_active()}</Badge>
+              {:else}
+                <Badge variant="destructive">{m.settings_user_detail_badge_inactive()}</Badge>
+              {/if}
+            </div>
+
+            <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0 justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                onclick={() => showResetModal = true}
+              >
+                {m.settings_user_detail_btn_reset_pass()}
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                class="text-destructive border-destructive/20 hover:bg-destructive/5"
+                onclick={handleDeleteUser}
+              >
+                <Trash2 size={13} class="me-1" />
+                {m.settings_user_detail_btn_delete()}
+              </Button>
+
+              <Button
+                variant="lime"
+                size="sm"
+                class="px-6 font-bold"
+                onclick={saveAllChanges}
+                disabled={isSaving}
+              >
+                {isSaving ? "..." : m.settings_user_detail_save()}
+              </Button>
+            </div>
+          </div>
+
+          {#if isLoading}
+            <div class="flex flex-col gap-8">
+              {@render SectionSkeleton()}
+              {@render SectionSkeleton()}
+            </div>
           {:else}
-            <ArrowLeft size={14} />
-          {/if}
-          {m.settings_user_detail_back()}
-        </Button>
+            <!-- Tabs content -->
+            <Tabs bind:value={activeTab}>
+              <TabsList variant="line" class="h-10 gap-6 border-b border-border/20">
+                <TabsTrigger value="profile">
+                  {m.settings_user_detail_tab_profile()}
+                </TabsTrigger>
+                <TabsTrigger value="roles">
+                  {m.settings_user_detail_tab_roles()}
+                </TabsTrigger>
+                <TabsTrigger value="sessions">
+                  {m.settings_user_detail_tab_sessions()}
+                </TabsTrigger>
+                <TabsTrigger value="settings">
+                  {m.settings_user_detail_tab_settings()}
+                </TabsTrigger>
+              </TabsList>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onclick={() => showResetModal = true}
-        >
-          {m.settings_user_detail_btn_reset_pass()}
-        </Button>
-
-        <Button
-          variant="destructive"
-          size="sm"
-          onclick={handleDeleteUser}
-        >
-          <Trash2 size={14} />
-          {m.settings_user_detail_btn_delete()}
-        </Button>
-
-        <Button
-          variant="lime"
-          size="sm"
-          class="px-5 font-bold"
-          onclick={saveAllChanges}
-          disabled={isSaving}
-        >
-          {isSaving ? "..." : m.settings_user_detail_save()}
-        </Button>
-      </div>
-    </div>
-
-    {#if isLoading}
-      <!-- Loading Skeletons -->
-      <div class="flex flex-col gap-8">
-        {@render SectionSkeleton()}
-        {@render SectionSkeleton()}
-      </div>
-    {:else}
-      <!-- Tabs -->
-      <Tabs bind:value={activeTab}>
-        <TabsList variant="line" class="h-10 gap-6">
-          <TabsTrigger value="profile">
-            {m.settings_user_detail_tab_profile()}
-          </TabsTrigger>
-          <TabsTrigger value="roles">
-            {m.settings_user_detail_tab_roles()}
-          </TabsTrigger>
-          <TabsTrigger value="sessions">
-            {m.settings_user_detail_tab_sessions()}
-          </TabsTrigger>
-          <TabsTrigger value="settings">
-            {m.settings_user_detail_tab_settings()}
-          </TabsTrigger>
-        </TabsList>
-
-        <!-- Tab: Profile -->
-        <TabsContent value="profile" class="mt-8">
-          <div in:fade={{ duration: 100 }} class="flex flex-col gap-6 text-start">
-            <div class="border-b border-border/60 pb-3">
-              <h2 class="text-sm font-semibold text-foreground">{m.settings_user_detail_profile_title()}</h2>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <!-- Full Name -->
-              <div class="flex flex-col gap-2 text-start">
-                <Label for="fullName" class="text-xs font-medium text-muted-foreground">
-                  {m.settings_user_detail_label_fullname()}
-                </Label>
-                <Input id="fullName" type="text" bind:value={fullName} required />
-              </div>
-
-              <!-- Primary System Role -->
-              <div class="flex flex-col gap-2 text-start">
-                <Label for="role" class="text-xs font-medium text-muted-foreground">
-                  {m.settings_user_detail_label_primary_role()}
-                </Label>
-                <Select type="single" value={role} onValueChange={(v) => (role = v ?? "")}>
-                  <SelectTrigger class="h-9 w-full">
-                    {systemRoles.find(r => r.value === role)?.label || role}
-                  </SelectTrigger>
-                  <SelectContent>
-                    {#each systemRoles as r}
-                      <SelectItem value={r.value}>{r.label}</SelectItem>
-                    {/each}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <!-- Arabic Name -->
-              <div class="flex flex-col gap-2 text-start">
-                <Label for="nameAr" class="text-xs font-medium text-muted-foreground">
-                  {m.settings_user_detail_label_fullname_ar()}
-                </Label>
-                <Input id="nameAr" type="text" bind:value={nameAr} />
-              </div>
-
-              <!-- English Name -->
-              <div class="flex flex-col gap-2 text-start">
-                <Label for="nameEn" class="text-xs font-medium text-muted-foreground">
-                  {m.settings_user_detail_label_fullname_en()}
-                </Label>
-                <Input id="nameEn" type="text" bind:value={nameEn} />
-              </div>
-
-              <!-- Email -->
-              <div class="flex flex-col gap-2 text-start">
-                <Label for="email" class="text-xs font-medium text-muted-foreground">
-                  {m.settings_user_detail_label_email()}
-                </Label>
-                <Input id="email" type="email" bind:value={email} />
-              </div>
-
-              <!-- Phone -->
-              <div class="flex flex-col gap-2 text-start">
-                <Label for="phone" class="text-xs font-medium text-muted-foreground">
-                  {m.settings_user_detail_label_phone()}
-                </Label>
-                <Input id="phone" type="text" bind:value={phone} />
-              </div>
-            </div>
-
-            <!-- Account Status Toggle -->
-            <div class="flex items-center justify-between border-t border-border/40 pt-4 mt-2">
-              <div class="flex flex-col gap-1 text-start">
-                <span class="text-xs font-semibold text-foreground">
-                  {m.settings_user_detail_status_active()}
-                </span>
-              </div>
-              <Switch
-                checked={isActiveState}
-                onCheckedChange={toggleAccountStatus}
-              />
-            </div>
-
-            <div class="flex justify-end gap-3 border-t border-border/40 pt-6 mt-4">
-              <Button variant="ghost" size="sm" onclick={loadUser}>
-                {m.settings_user_detail_btn_reset()}
-              </Button>
-              <Button variant="lime" size="sm" class="font-bold" onclick={saveAllChanges} disabled={isSaving}>
-                {isSaving ? "..." : m.settings_user_detail_btn_save_details()}
-              </Button>
-            </div>
-          </div>
-        </TabsContent>
-
-        <!-- Tab: Roles -->
-        <TabsContent value="roles" class="mt-8">
-          <div in:fade={{ duration: 100 }} class="flex flex-col gap-6 text-start">
-            <div class="border-b border-border/60 pb-3">
-              <h2 class="text-sm font-semibold text-foreground">{m.settings_user_detail_roles_title()}</h2>
-            </div>
-
-            <!-- Search & Actions -->
-            <div class="flex flex-col sm:flex-row items-center gap-3 w-full justify-between">
-              <div class="w-full sm:max-w-xs">
-                <Input
-                  type="text"
-                  bind:value={roleSearchQuery}
-                  placeholder={m.settings_user_detail_search_roles()}
-                />
-              </div>
-              <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
-                <Button variant="outline" size="sm" class="text-xs" onclick={selectAllRoles}>
-                  {m.settings_user_detail_select_all()}
-                </Button>
-                <Button variant="outline" size="sm" class="text-xs" onclick={unselectAllRoles}>
-                  {m.settings_user_detail_unselect_all()}
-                </Button>
-              </div>
-            </div>
-
-            <!-- Roles Checklist Grid -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pt-2">
-              {#each filteredRoles as roleName (roleName)}
-                <div class="flex items-center justify-between p-3.5 rounded-xl border border-border bg-card/25 hover:bg-accent/5 transition-all select-none">
-                  <span class="text-xs font-semibold text-foreground">{roleName}</span>
-                  <Checkbox
-                    checked={checkedRoles.includes(roleName)}
-                    onCheckedChange={(v) => toggleRole(roleName, Boolean(v))}
-                  />
-                </div>
-              {/each}
-            </div>
-          </div>
-        </TabsContent>
-
-        <!-- Tab: Sessions -->
-        <TabsContent value="sessions" class="mt-8">
-          <div in:fade={{ duration: 100 }} class="flex flex-col gap-6 text-start">
-            <div class="border-b border-border/60 pb-3">
-              <h2 class="text-sm font-semibold text-foreground">{m.settings_user_detail_sessions_title()}</h2>
-            </div>
-
-            <div class="flex flex-col gap-4">
-              {#each activeSessions as session (session.id)}
-                <div class="flex items-center justify-between py-3 border-b border-border/40 last:border-b-0">
+              <!-- Profile Details -->
+              <TabsContent value="profile" class="mt-6">
+                <div in:fade={{ duration: 100 }} class="flex flex-col gap-6 text-start">
+                  
                   <div class="flex items-center gap-3">
-                    <div class="p-2.5 rounded-lg bg-muted text-foreground">
-                      <session.icon size={18} />
+                    <Checkbox
+                      id="user_enabled"
+                      checked={isActiveState}
+                      onCheckedChange={toggleAccountStatus}
+                    />
+                    <Label for="user_enabled" class="text-xs font-bold text-foreground cursor-pointer select-none">
+                      Enabled
+                    </Label>
+                  </div>
+
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Email -->
+                    <div class="flex flex-col gap-1.5 text-start">
+                      <Label for="email" class="text-xs font-medium text-muted-foreground">
+                        {m.settings_user_detail_label_email()} *
+                      </Label>
+                      <Input id="email" type="email" bind:value={email} required />
                     </div>
-                    <div class="flex flex-col gap-0.5">
-                      <span class="text-xs font-bold text-foreground flex items-center gap-2">
-                        <span>{session.device}</span>
-                        {#if session.active}
-                          <Badge variant="lime" class="text-[8px] font-semibold uppercase py-0 px-1.5 h-4.5 rounded">
-                            {m.settings_user_detail_session_active_now()}
-                          </Badge>
-                        {/if}
-                      </span>
-                      <span class="text-[10px] text-muted-foreground font-mono">
-                        {session.location} • {session.ip} • {session.time}
-                      </span>
+
+                    <!-- Full Name -->
+                    <div class="flex flex-col gap-1.5 text-start">
+                      <Label for="fullName" class="text-xs font-medium text-muted-foreground">
+                        {m.settings_user_detail_label_fullname()}
+                      </Label>
+                      <Input id="fullName" type="text" bind:value={fullName} />
+                    </div>
+
+                    <!-- Primary Role -->
+                    <div class="flex flex-col gap-1.5 text-start">
+                      <Label for="role" class="text-xs font-medium text-muted-foreground">
+                        {m.settings_user_detail_label_primary_role()}
+                      </Label>
+                      <Select type="single" value={role} onValueChange={(v) => (role = v ?? "")}>
+                        <SelectTrigger class="h-9 w-full">
+                          {systemRoles.find(r => r.value === role)?.label || role}
+                        </SelectTrigger>
+                        <SelectContent>
+                          {#each systemRoles as r}
+                            <SelectItem value={r.value}>{r.label}</SelectItem>
+                          {/each}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <!-- Arabic Name -->
+                    <div class="flex flex-col gap-1.5 text-start">
+                      <Label for="nameAr" class="text-xs font-medium text-muted-foreground">
+                        {m.settings_user_detail_label_fullname_ar()}
+                      </Label>
+                      <Input id="nameAr" type="text" bind:value={nameAr} />
+                    </div>
+
+                    <!-- English Name -->
+                    <div class="flex flex-col gap-1.5 text-start">
+                      <Label for="nameEn" class="text-xs font-medium text-muted-foreground">
+                        {m.settings_user_detail_label_fullname_en()}
+                      </Label>
+                      <Input id="nameEn" type="text" bind:value={nameEn} />
+                    </div>
+
+                    <!-- Phone -->
+                    <div class="flex flex-col gap-1.5 text-start">
+                      <Label for="phone" class="text-xs font-medium text-muted-foreground">
+                        {m.settings_user_detail_label_phone()}
+                      </Label>
+                      <Input id="phone" type="text" bind:value={phone} />
                     </div>
                   </div>
+
                 </div>
-              {/each}
-            </div>
-          </div>
-        </TabsContent>
+              </TabsContent>
 
-        <!-- Tab: Settings -->
-        <TabsContent value="settings" class="mt-8">
-          <div in:fade={{ duration: 100 }} class="flex flex-col gap-6 text-start">
-            <div class="border-b border-border/60 pb-3">
-              <h2 class="text-sm font-semibold text-foreground">{m.settings_user_detail_pref_title()}</h2>
-            </div>
+              <!-- Roles checklist -->
+              <TabsContent value="roles" class="mt-6">
+                <div in:fade={{ duration: 100 }} class="flex flex-col gap-6 text-start">
+                  
+                  <div class="flex flex-col sm:flex-row items-center gap-3 w-full justify-between">
+                    <div class="w-full sm:max-w-xs">
+                      <Input
+                        type="text"
+                        bind:value={roleSearchQuery}
+                        placeholder={m.settings_user_detail_search_roles()}
+                      />
+                    </div>
+                    <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                      <Button variant="outline" size="sm" class="text-xs" onclick={selectAllRoles}>
+                        {m.settings_user_detail_select_all()}
+                      </Button>
+                      <Button variant="outline" size="sm" class="text-xs" onclick={unselectAllRoles}>
+                        {m.settings_user_detail_unselect_all()}
+                      </Button>
+                    </div>
+                  </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <!-- Theme -->
-              <div class="flex flex-col gap-2 text-start">
-                <Label class="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                  <Layout size={13} />
-                  {m.settings_user_detail_pref_theme()}
-                </Label>
-                <Select type="single" value={prefTheme} onValueChange={(v) => (prefTheme = v ?? "")}>
-                  <SelectTrigger class="h-9 w-full">
-                    {#if prefTheme === "system"}
-                      {m.settings_user_detail_theme_system()}
-                    {:else}
-                      {prefTheme === "light" ? m.settings_user_detail_theme_light() : m.settings_user_detail_theme_dark()}
-                    {/if}
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="system">{m.settings_user_detail_theme_system()}</SelectItem>
-                    <SelectItem value="light">{m.settings_user_detail_theme_light()}</SelectItem>
-                    <SelectItem value="dark">{m.settings_user_detail_theme_dark()}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <!-- Language -->
-              <div class="flex flex-col gap-2 text-start">
-                <Label class="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                  <Globe size={13} />
-                  {m.settings_user_detail_pref_lang()}
-                </Label>
-                <Select type="single" value={prefLanguage} onValueChange={(v) => (prefLanguage = v ?? "")}>
-                  <SelectTrigger class="h-9 w-full">
-                    {prefLanguage === "ar" ? m.settings_user_detail_lang_ar() : m.settings_user_detail_lang_en()}
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ar">{m.settings_user_detail_lang_ar()}</SelectItem>
-                    <SelectItem value="en">{m.settings_user_detail_lang_en()}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <!-- Notification Channels -->
-            <div class="flex flex-col gap-4 border-t border-border/40 pt-4 mt-2">
-              <span class="text-xs font-medium text-muted-foreground">
-                {m.settings_user_detail_pref_notifications()}
-              </span>
-              <div class="flex flex-col gap-3">
-                <div class="flex items-center justify-between">
-                  <label class="text-xs text-muted-foreground cursor-pointer select-none">
-                    {m.settings_user_detail_notify_email()}
-                  </label>
-                  <Switch bind:checked={notifyEmail} />
+                  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pt-2">
+                    {#each filteredRoles as roleName (roleName)}
+                      <div class="flex items-center justify-between p-3.5 select-none">
+                        <span class="text-xs font-semibold text-foreground">{roleName}</span>
+                        <Checkbox
+                          checked={checkedRoles.includes(roleName)}
+                          onCheckedChange={(v) => toggleRole(roleName, Boolean(v))}
+                        />
+                      </div>
+                    {/each}
+                  </div>
                 </div>
-                <div class="flex items-center justify-between">
-                  <label class="text-xs text-muted-foreground cursor-pointer select-none">
-                    {m.settings_user_detail_notify_push()}
-                  </label>
-                  <Switch bind:checked={notifyPush} />
-                </div>
-              </div>
-            </div>
+              </TabsContent>
 
-            <div class="flex justify-end border-t border-border/40 pt-6 mt-4">
-              <Button variant="lime" size="sm" class="font-bold" onclick={() => toast.success(m.settings_user_detail_settings_saved())}>
-                {m.settings_user_detail_save()}
-              </Button>
-            </div>
-          </div>
-        </TabsContent>
-      </Tabs>
-    {/if}
-  </div>
+              <!-- Sessions -->
+              <TabsContent value="sessions" class="mt-6">
+                <div in:fade={{ duration: 100 }} class="flex flex-col gap-6 text-start">
+                  
+                  <div class="flex flex-col gap-4">
+                    {#each activeSessions as session (session.id)}
+                      <div class="flex items-center justify-between py-3 border-b border-border/40 last:border-b-0">
+                        <div class="flex items-center gap-3">
+                          <div class="p-2.5 rounded-lg bg-muted text-foreground">
+                            <session.icon size={18} />
+                          </div>
+                          <div class="flex flex-col gap-0.5">
+                            <span class="text-xs font-bold text-foreground flex items-center gap-2">
+                              <span>{session.device}</span>
+                              {#if session.active}
+                                <Badge variant="lime" class="text-[8px] font-semibold uppercase py-0 px-1.5 h-4.5 rounded">
+                                  {m.settings_user_detail_session_active_now()}
+                                </Badge>
+                              {/if}
+                            </span>
+                            <span class="text-[10px] text-muted-foreground font-mono">
+                              {session.location} • {session.ip} • {session.time}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    {/each}
+                  </div>
+                </div>
+              </TabsContent>
+
+              <!-- Settings -->
+              <TabsContent value="settings" class="mt-6">
+                <div in:fade={{ duration: 100 }} class="flex flex-col gap-6 text-start">
+                  
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="flex flex-col gap-2 text-start">
+                      <Label class="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                        <Layout size={13} />
+                        {m.settings_user_detail_pref_theme()}
+                      </Label>
+                      <Select type="single" value={prefTheme} onValueChange={(v) => (prefTheme = v ?? "")}>
+                        <SelectTrigger class="h-9 w-full">
+                          {#if prefTheme === "system"}
+                            {m.settings_user_detail_theme_system()}
+                          {:else}
+                            {prefTheme === "light" ? m.settings_user_detail_theme_light() : m.settings_user_detail_theme_dark()}
+                          {/if}
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="system">{m.settings_user_detail_theme_system()}</SelectItem>
+                          <SelectItem value="light">{m.settings_user_detail_theme_light()}</SelectItem>
+                          <SelectItem value="dark">{m.settings_user_detail_theme_dark()}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div class="flex flex-col gap-2 text-start">
+                      <Label class="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                        <Globe size={13} />
+                        {m.settings_user_detail_pref_lang()}
+                      </Label>
+                      <Select type="single" value={prefLanguage} onValueChange={(v) => (prefLanguage = v ?? "")}>
+                        <SelectTrigger class="h-9 w-full">
+                          {prefLanguage === "ar" ? m.settings_user_detail_lang_ar() : m.settings_user_detail_lang_en()}
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ar">{m.settings_user_detail_lang_ar()}</SelectItem>
+                          <SelectItem value="en">{m.settings_user_detail_lang_en()}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div class="flex flex-col gap-4 border-t border-border/40 pt-4 mt-2">
+                    <span class="text-xs font-semibold text-muted-foreground">
+                      {m.settings_user_detail_pref_notifications()}
+                    </span>
+                    <div class="flex flex-col gap-3">
+                      <div class="flex items-center justify-between">
+                        <label class="text-xs text-muted-foreground cursor-pointer select-none">
+                          {m.settings_user_detail_notify_email()}
+                        </label>
+                        <Switch bind:checked={notifyEmail} />
+                      </div>
+                      <div class="flex items-center justify-between">
+                        <label class="text-xs text-muted-foreground cursor-pointer select-none">
+                          {m.settings_user_detail_notify_push()}
+                        </label>
+                        <Switch bind:checked={notifyPush} />
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </TabsContent>
+            </Tabs>
+          {/if}
+        </div>
+      </div>
+    {/snippet}
+  </MainViewport>
 </div>
 
-<!-- Reset Password Modal Dialog -->
+<!-- Reset Password Dialog -->
 <Dialog bind:open={showResetModal}>
   <DialogContent class="max-w-md text-start">
     <form onsubmit={handleResetPassword} class="flex flex-col gap-4">
@@ -621,7 +595,6 @@
         </DialogDescription>
       </DialogHeader>
 
-      <!-- New Password Field -->
       <div class="flex flex-col gap-2 text-start">
         <Label for="new_password" class="text-xs font-medium text-muted-foreground">
           {m.settings_user_detail_new_password()}
@@ -637,7 +610,6 @@
         />
       </div>
 
-      <!-- Confirm Password Field -->
       <div class="flex flex-col gap-2 text-start">
         <Label for="confirm_password" class="text-xs font-medium text-muted-foreground">
           {m.settings_user_detail_confirm_password()}
