@@ -11,10 +11,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@orbis/ui-svelte";
 import {
   X,
   ExternalLink,
-  Phone,
-  Mail,
-  MapPin,
-  Calendar,
   CreditCard,
   Award,
   Edit2,
@@ -116,9 +112,9 @@ async function fetchStats() {
 		<!-- Main Profile Section -->
 		<div class="flex-1 overflow-y-auto flex flex-col gap-6 scrollbar-hide p-4 select-none">
 			<div class="flex flex-col items-center text-center gap-3">
-				<Avatar class="h-16 w-16">
+				<Avatar class="w-[85%] max-w-[180px] min-w-[120px] aspect-square h-auto rounded-xl">
 					<AvatarImage src={student.avatar ? String(student.avatar) : undefined} alt={student.full_name ? String(student.full_name) : ''} />
-					<AvatarFallback class="text-lg font-bold">
+					<AvatarFallback class="text-5xl font-bold rounded-xl flex items-center justify-center">
 						{String(student.full_name || "S").slice(0, 1)}
 					</AvatarFallback>
 				</Avatar>
@@ -141,29 +137,95 @@ async function fetchStats() {
 			</div>
 
 
-			<div class="flex flex-col gap-3">
-				<span class="text-[9px] font-bold uppercase tracking-wider px-1">{m.inspector_contact_details()}</span>
-				
-				<div class="p-3 flex flex-col gap-2.5">
-					<div class="flex items-center gap-2">
-						<Phone size={12} />
-						<span class="font-mono text-foreground">{student.phone_number || m.inspector_no_phone()}</span>
+			<!-- Student Metadata List -->
+			<div class="flex flex-col gap-4 border-t border-border/40 pt-4 w-full text-start">
+				{#if student.student_number || student.id}
+					<div class="flex flex-col gap-0.5">
+						<span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
+							{m.form_student_number ? m.form_student_number() : "الرقم الأكاديمي"}
+						</span>
+						<span class="text-xs font-mono font-bold text-foreground">
+							{student.student_number || student.id}
+						</span>
 					</div>
-					<div class="flex items-center gap-2">
-						<Mail size={12} />
-						<span class="font-mono text-foreground">{student.email || m.inspector_no_email()}</span>
+				{/if}
+
+				{#if student.phone || student.phone_number}
+					<div class="flex flex-col gap-0.5">
+						<span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
+							الهاتف
+						</span>
+						<span class="text-xs text-foreground font-mono">
+							{student.phone || student.phone_number}
+						</span>
 					</div>
-					{#if student.address}
-						<div class="flex items-center gap-2">
-							<MapPin size={12}/>
-							<span>{student.address}</span>
-						</div>
-					{/if}
-					<div class="flex items-center gap-2">
-						<Calendar size={12}/>
-						<span>{m.inspector_registered_on({ date: formatDate(student.created_at as string) })}</span>
+				{/if}
+
+				{#if student.email}
+					<div class="flex flex-col gap-0.5">
+						<span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
+							البريد الإلكتروني
+						</span>
+						<span class="text-xs text-foreground font-mono truncate max-w-full" title={student.email}>
+							{student.email}
+						</span>
 					</div>
-				</div>
+				{/if}
+
+				{#if student.sex}
+					<div class="flex flex-col gap-0.5">
+						<span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
+							الجنس
+						</span>
+						<span class="text-xs text-foreground font-medium">
+							{student.sex === 'male' ? 'ذكر' : 'أنثى'}
+						</span>
+					</div>
+				{/if}
+
+				{#if student.birth_date}
+					<div class="flex flex-col gap-0.5">
+						<span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
+							تاريخ الميلاد
+						</span>
+						<span class="text-xs text-foreground font-mono">
+							{student.birth_date}
+						</span>
+					</div>
+				{/if}
+
+				{#if student.guardian_name}
+					<div class="flex flex-col gap-0.5">
+						<span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
+							ولي الأمر
+						</span>
+						<span class="text-xs text-foreground font-medium">
+							{student.guardian_name}
+						</span>
+					</div>
+				{/if}
+
+				{#if student.guardian_phone}
+					<div class="flex flex-col gap-0.5">
+						<span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
+							هاتف ولي الأمر
+						</span>
+						<span class="text-xs text-foreground font-mono">
+							{student.guardian_phone}
+						</span>
+					</div>
+				{/if}
+
+				{#if student.created_at}
+					<div class="flex flex-col gap-0.5">
+						<span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
+							تاريخ التسجيل
+						</span>
+						<span class="text-xs text-foreground font-mono">
+							{formatDate(student.created_at as string)}
+						</span>
+					</div>
+				{/if}
 			</div>
 		</div>
 	</div>

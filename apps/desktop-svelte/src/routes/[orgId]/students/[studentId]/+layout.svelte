@@ -1,13 +1,15 @@
 <!--
 @component StudentDetailsLayout
 Streamlined layout for deep-dive student pages.
-Includes a header (name, class, action buttons, navigation tabs) and the main content viewport below.
+Includes a header (name, class, action buttons) and a double-sidebar MainViewport.
 -->
 <script lang="ts">
 import { page } from "$app/state";
 import { Button } from "@orbis/ui-svelte/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@orbis/ui-svelte/avatar";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
+import { Badge } from "@orbis/ui-svelte/badge";
+import MainViewport from "$lib/components/layout/MainViewport.svelte";
 import {
   ArrowRight,
   ArrowLeft,
@@ -22,13 +24,11 @@ import {
   FileText,
 } from "lucide-svelte";
 import { studentsStore } from "$lib/stores";
-import { commands } from "$lib/services/ipc";
 import { onMount } from "svelte";
 import type { Snippet } from "svelte";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { getLocale, deLocalizeUrl, localizeHref } from "$lib/paraglide/runtime";
-import { formatCurrency, formatPercent } from "$lib/i18n-utils";
 
 let { children }: { children: Snippet } = $props();
 
@@ -54,128 +54,235 @@ function isActive(tabHref: string) {
 </script>
 
 <div class="h-full w-full flex flex-col overflow-hidden bg-background" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
-  <!-- Main Header Block (Name, class, actions, tabs) -->
-  <div class="border-b border-border/50 bg-card/15 shrink-0 flex flex-col select-none">
-    <!-- Top Row: Student info & actions -->
-    <div class="h-16 flex items-center justify-between px-6 border-b border-border/40">
-      <div class="flex items-center gap-4">
-        <Button
-          href={localizeHref(`/${orgId}/students`)}
-          variant="ghost"
-          size="icon"
-          class="h-8 w-8 hover:bg-accent/80 cursor-pointer shrink-0"
-          title={m.detail_back_to_directory()}
-        >
-          {#if getLocale() === "ar"}
-            <ArrowRight class="h-4 w-4" />
-          {:else}
-            <ArrowLeft class="h-4 w-4" />
-          {/if}
-        </Button>
-        <div class="h-4 w-px bg-border/80 shrink-0"></div>
-        
-        {#if student}
-          <div class="flex items-center gap-3">
-            <Avatar class="h-8 w-8 ring-2 ring-primary/5">
-              <AvatarImage src={student.avatar ? String(student.avatar) : undefined} alt={student.full_name ? String(student.full_name) : ''} />
-              <AvatarFallback class="bg-primary/5 text-primary text-xs font-bold">
-                {String(student.full_name || "S").slice(0, 1)}
-              </AvatarFallback>
-            </Avatar>
-            <div class="text-start leading-tight">
-              <h1 class="text-sm font-bold text-foreground flex items-center gap-2">
-                {student.full_name || student.name_ar || ''}
-                <span class="badge-brand-lime text-[9px] py-0.5 px-2 rounded-full font-sans font-medium">
-                  {currentClass ? String(currentClass.name || currentClass.name_ar || '') : m.detail_not_enrolled()}
-                </span>
-              </h1>
-              <span class="text-[10px] text-muted-foreground font-mono">
-                ID: {student.student_number || student.id}
-              </span>
-            </div>
-          </div>
+  <!-- Full-Width Header (Name + Status Badge + Actions) -->
+  <div class="px-6 py-4 flex items-center justify-between gap-4 select-none shrink-0 border-b border-border/40 bg-card/5">
+    <div class="flex items-center gap-3 text-start shrink min-w-0">
+      <Button
+        href={localizeHref(`/${orgId}/students`)}
+        variant="ghost"
+        size="icon"
+        class="h-8 w-8 hover:bg-accent/80 cursor-pointer shrink-0"
+        title={m.detail_back_to_directory()}
+      >
+        {#if getLocale() === "ar"}
+          <ArrowRight class="h-4.5 w-4.5" />
         {:else}
-          <div class="flex items-center gap-3">
-            <Skeleton class="h-8 w-8 rounded-full" />
-            <div class="space-y-1">
-              <Skeleton class="h-4 w-28" />
-              <Skeleton class="h-3 w-16" />
-            </div>
-          </div>
+          <ArrowLeft class="h-4.5 w-4.5" />
         {/if}
-      </div>
+      </Button>
+      <div class="h-4 w-px bg-border/80 shrink-0"></div>
 
       {#if student}
-        <!-- Action Buttons -->
-        <div class="flex items-center gap-2">
-          <Button
-            href={localizeHref(`/${orgId}/students/${studentId}/edit`)}
-            variant="outline"
-            size="sm"
-            class="h-8 text-[11px] gap-1.5"
-          >
-            <Edit2 size={12} />
-            {m.detail_edit_data()}
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            class="h-8 text-[11px] gap-1.5"
-            onclick={() => toast.info(m.detail_call_guardian_toast({ phone: student.phone_number || m.detail_phone_unavailable() }))}
-          >
-            <PhoneCall size={12} />
-            {m.detail_call_guardian()}
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            class="h-8 text-[11px] gap-1.5"
-            onclick={() => toast.info(m.student_layout_transfer_coming_soon())}
-          >
-            <Users size={12} />
-            {m.student_layout_transfer_class()}
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            class="h-8 text-[11px] gap-1.5 text-destructive hover:bg-destructive/5 hover:text-destructive"
-            onclick={() => toast.info(m.student_layout_withdraw_coming_soon())}
-          >
-            <ShieldAlert size={12} />
-            {m.student_layout_withdraw_student()}
-          </Button>
-        </div>
+        <h1 class="text-lg font-bold tracking-tight text-foreground truncate shrink min-w-0">
+          {student.full_name || student.name_ar || ''}
+        </h1>
+        <Badge variant="secondary" class="text-[9px] py-0 px-1.5 h-4.5 rounded shrink-0">
+          {currentClass ? String(currentClass.name || currentClass.name_ar || '') : m.detail_not_enrolled()}
+        </Badge>
+      {:else}
+        <Skeleton class="h-6 w-32" />
+        <Skeleton class="h-4.5 w-16" />
       {/if}
     </div>
 
-    <!-- Bottom Row: Navigation Tabs -->
-    <div class="h-11 flex items-center px-6 gap-1 bg-card/5">
-      <!-- Svelte 5 derived tabs navigation -->
-      {#each [
-        { id: "grades", label: m.detail_tab_grades(), icon: GraduationCap, href: `/${orgId}/students/${studentId}/grades` },
-        { id: "fees", label: m.detail_tab_fees(), icon: Wallet, href: `/${orgId}/students/${studentId}/fees` },
-        { id: "attendance", label: m.detail_tab_attendance(), icon: UserCheck, href: `/${orgId}/students/${studentId}/attendance` },
-        { id: "behavior", label: m.detail_tab_behavior(), icon: ShieldAlert, href: `/${orgId}/students/${studentId}/behavior` },
-        { id: "guardians", label: m.guardians_tab(), icon: Users2, href: `/${orgId}/students/${studentId}/guardians` },
-        { id: "documents", label: m.detail_tab_documents(), icon: FileText, href: `/${orgId}/students/${studentId}/documents` }
-      ] as tab (tab.id)}
+    <!-- Action Buttons Row -->
+    {#if student}
+      <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0 justify-end">
         <Button
-          href={localizeHref(tab.href)}
-          variant={isActive(tab.href) ? 'default' : 'ghost'}
-          class="text-xs font-semibold px-4 py-1.5 h-auto transition-all duration-150 cursor-pointer"
+          href={localizeHref(`/${orgId}/students/${studentId}/edit`)}
+          variant="outline"
+          size="sm"
+          class="h-8 text-[11px] gap-1.5 font-semibold"
         >
-          <tab.icon size={13} class="me-1.5" />
-          {tab.label}
+          <Edit2 size={12} />
+          {m.detail_edit_data()}
         </Button>
-      {/each}
-    </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          class="h-8 text-[11px] gap-1.5 font-semibold"
+          onclick={() => toast.info(m.detail_call_guardian_toast({ phone: student.phone_number || student.phone || m.detail_phone_unavailable() }))}
+        >
+          <PhoneCall size={12} />
+          {m.detail_call_guardian()}
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          class="h-8 text-[11px] gap-1.5 font-semibold"
+          onclick={() => toast.info(m.student_layout_transfer_coming_soon())}
+        >
+          <Users size={12} />
+          {m.student_layout_transfer_class()}
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          class="h-8 text-[11px] gap-1.5 font-semibold text-destructive border-destructive/20 hover:bg-destructive/5 hover:text-destructive"
+          onclick={() => toast.info(m.student_layout_withdraw_coming_soon())}
+        >
+          <ShieldAlert size={12} />
+          {m.student_layout_withdraw_student()}
+        </Button>
+      </div>
+    {/if}
   </div>
 
-  <!-- Content Viewport -->
-  <div class="flex-1 overflow-y-auto p-6 scrollbar-hide">
-    {@render children()}
+  <!-- Resizable split view below the header -->
+  <div class="flex-1 w-full overflow-hidden">
+    <MainViewport
+      name="student-detail-viewport"
+      leftWidth={{ default: 240, min: 200 }}
+    >
+      <!-- Left Sidebar (Avatar and basic student info) -->
+      {#snippet left()}
+        <div class="h-full p-4 flex flex-col gap-5 overflow-y-auto scrollbar-hide text-start bg-transparent select-none">
+          {#if student}
+            <!-- Squared Avatar Display -->
+            <div class="w-full flex justify-center">
+              <Avatar class="w-[85%] max-w-[180px] min-w-[120px] aspect-square h-auto rounded-xl ">
+                <AvatarImage src={student.avatar ? String(student.avatar) : undefined} alt={student.full_name ? String(student.full_name) : ''} />
+                <AvatarFallback class="text-5xl font-bold rounded-xl flex items-center justify-center">
+                  {String(student.full_name || "S").slice(0, 1)}
+                </AvatarFallback>
+              </Avatar>
+            </div>
+
+            <!-- Student Metadata List -->
+            <div class="flex flex-col gap-4 border-t border-border/40 pt-4 w-full text-start">
+              {#if student.student_number || student.id}
+                <div class="flex flex-col gap-0.5">
+                  <span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
+                    {m.form_student_number ? m.form_student_number() : "الرقم الأكاديمي"}
+                  </span>
+                  <span class="text-xs font-mono font-bold text-foreground">
+                    {student.student_number || student.id}
+                  </span>
+                </div>
+              {/if}
+
+              {#if student.phone}
+                <div class="flex flex-col gap-0.5">
+                  <span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
+                    الهاتف
+                  </span>
+                  <span class="text-xs text-foreground font-mono">
+                    {student.phone}
+                  </span>
+                </div>
+              {/if}
+
+              {#if student.email}
+                <div class="flex flex-col gap-0.5">
+                  <span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
+                    البريد الإلكتروني
+                  </span>
+                  <span class="text-xs text-foreground font-mono truncate max-w-full" title={student.email}>
+                    {student.email}
+                  </span>
+                </div>
+              {/if}
+
+              {#if student.sex}
+                <div class="flex flex-col gap-0.5">
+                  <span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
+                    الجنس
+                  </span>
+                  <span class="text-xs text-foreground font-medium">
+                    {student.sex === 'male' ? 'ذكر' : 'أنثى'}
+                  </span>
+                </div>
+              {/if}
+
+              {#if student.birth_date}
+                <div class="flex flex-col gap-0.5">
+                  <span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
+                    تاريخ الميلاد
+                  </span>
+                  <span class="text-xs text-foreground font-mono">
+                    {student.birth_date}
+                  </span>
+                </div>
+              {/if}
+
+              {#if student.guardian_name}
+                <div class="flex flex-col gap-0.5">
+                  <span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
+                    ولي الأمر
+                  </span>
+                  <span class="text-xs text-foreground font-medium">
+                    {student.guardian_name}
+                  </span>
+                </div>
+              {/if}
+
+              {#if student.guardian_phone}
+                <div class="flex flex-col gap-0.5">
+                  <span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
+                    هاتف ولي الأمر
+                  </span>
+                  <span class="text-xs text-foreground font-mono">
+                    {student.guardian_phone}
+                  </span>
+                </div>
+              {/if}
+            </div>
+          {:else}
+            <!-- Skeleton for sidebar -->
+            <div class="w-full flex justify-start">
+              <Skeleton class="h-28 w-28 rounded-xl" />
+            </div>
+            <div class="space-y-4 pt-4 border-t border-border/40">
+              <div class="space-y-1">
+                <Skeleton class="h-3 w-16" />
+                <Skeleton class="h-4 w-24" />
+              </div>
+              <div class="space-y-1">
+                <Skeleton class="h-3 w-16" />
+                <Skeleton class="h-4 w-28" />
+              </div>
+            </div>
+          {/if}
+        </div>
+      {/snippet}
+
+      <!-- Right/Middle Panel (Tab navigation & sub-pages content) -->
+      {#snippet middle()}
+        <div class="h-full w-full overflow-y-auto p-6 scrollbar-hide text-start">
+          <div class="flex flex-col gap-6 w-full h-full">
+            <!-- Tabs Menu -->
+            <div class="flex items-center gap-6 border-b border-border/20 h-10 w-full shrink-0 select-none overflow-x-auto scrollbar-hide">
+              {#each [
+                { id: "grades", label: m.detail_tab_grades(), icon: GraduationCap, href: `/${orgId}/students/${studentId}/grades` },
+                { id: "fees", label: m.detail_tab_fees(), icon: Wallet, href: `/${orgId}/students/${studentId}/fees` },
+                { id: "attendance", label: m.detail_tab_attendance(), icon: UserCheck, href: `/${orgId}/students/${studentId}/attendance` },
+                { id: "behavior", label: m.detail_tab_behavior(), icon: ShieldAlert, href: `/${orgId}/students/${studentId}/behavior` },
+                { id: "guardians", label: m.guardians_tab(), icon: Users2, href: `/${orgId}/students/${studentId}/guardians` },
+                { id: "documents", label: m.detail_tab_documents(), icon: FileText, href: `/${orgId}/students/${studentId}/documents` }
+              ] as tab (tab.id)}
+                <a
+                  href={localizeHref(tab.href)}
+                  class="text-xs font-semibold pb-2 border-b-2 transition-all duration-150 flex items-center gap-1.5 h-full px-1 cursor-pointer shrink-0
+                    {isActive(tab.href) 
+                      ? 'border-primary text-foreground font-bold' 
+                      : 'border-transparent text-muted-foreground hover:text-foreground'}"
+                >
+                  <tab.icon size={13} />
+                  <span>{tab.label}</span>
+                </a>
+              {/each}
+            </div>
+
+            <!-- Children Sub-Route Viewport -->
+            <div class="w-full flex-1">
+              {@render children()}
+            </div>
+          </div>
+        </div>
+      {/snippet}
+    </MainViewport>
   </div>
 </div>
