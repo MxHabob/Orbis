@@ -170,7 +170,7 @@ function handleKeyDown(e: KeyboardEvent) {
         <Button
           variant="outline"
           onclick={() => handleSuggestionClick(sug)}
-          class="w-full text-center py-2.5 px-4 text-[11px] font-medium text-muted-foreground bg-muted/40 border border-border hover:border-zinc-400 dark:hover:border-zinc-650 hover:bg-muted hover:text-foreground rounded-lg cursor-pointer transition-all duration-150 active:scale-[0.99] leading-relaxed whitespace-normal h-auto break-words shadow-sm"
+          class="w-full text-center py-2.5 px-4 text-[11px] font-medium text-muted-foreground bg-muted/40 border border-border hover:border-zinc-400 dark:hover:border-zinc-650 hover:bg-muted hover:text-foreground rounded-lg cursor-pointer transition-all duration-150 active:scale-[0.99] leading-relaxed whitespace-normal h-auto wrap-break-word shadow-sm"
         >
           {sug}
         </Button>
@@ -179,8 +179,8 @@ function handleKeyDown(e: KeyboardEvent) {
   </div>
 
   <!-- Footer Input Area -->
-  <div class="p-3.5 shrink-0 border-t border-border bg-card select-none">
-    <form onsubmit={handleSubmit} class="relative flex items-center bg-muted/30 border border-border focus-within:border-primary focus-within:ring-1 focus-within:ring-primary rounded-lg p-1.5 transition-all duration-150">
+  <div class="p-3.5 shrink-0 bg-card select-none">
+    <form onsubmit={handleSubmit} class="relative flex items-center gap-2">
       <Input
         type="text"
         bind:value={inputValue}
@@ -191,7 +191,7 @@ function handleKeyDown(e: KeyboardEvent) {
       <Button
         type="submit"
         disabled={!inputValue.trim()}
-        class="w-7 h-7 flex items-center justify-center rounded-md bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-40 disabled:hover:bg-card disabled:hover:text-muted-foreground cursor-pointer transition-colors duration-150"
+        class="w-8 h-8 flex items-center justify-center rounded-md bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-40 disabled:hover:bg-card disabled:hover:text-muted-foreground cursor-pointer transition-colors duration-150"
       >
         {#if onboardingState.locale === 'ar'}
           <ArrowLeft size={14} strokeWidth={2.2} />

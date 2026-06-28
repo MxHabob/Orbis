@@ -8,6 +8,7 @@ import { Dialog, DialogContent } from "@orbis/ui-svelte/dialog";
 import { Button } from "@orbis/ui-svelte";
 import * as m from "$lib/paraglide/messages";
 import { Check } from "lucide-svelte";
+import { getLocale } from "$lib/paraglide/runtime";
 
 let { open = $bindable(false) }: { open: boolean } = $props();
 
@@ -19,15 +20,26 @@ function handleClose() {
 <Dialog bind:open>
   <DialogContent
     showCloseButton={true}
+    dir={getLocale() === "ar" ? "rtl" : "ltr"}
     class="sm:max-w-[800px] w-full p-0 gap-0 overflow-hidden bg-card border border-border rounded-2xl flex select-none text-card-foreground shadow-[0_24px_50px_rgba(0,0,0,0.25)] dark:shadow-[0_24px_50px_rgba(0,0,0,0.65)]"
   >
     <!-- Top-Right Geometric Slanted Corner Graphic (using brand primary with opacity, flips in RTL layout) -->
-    <svg class="absolute top-0 end-0 h-32 w-64 text-primary/15 dark:text-primary/10 opacity-90 overflow-visible z-0 pointer-events-none rtl:-scale-x-100" viewBox="0 0 250 110" fill="currentColor">
+    <svg
+      class="absolute top-0 inset-e-0 h-32 w-64 text-primary/15 dark:text-primary/10 opacity-90 overflow-visible z-0 pointer-events-none"
+      style={getLocale() === "ar" ? "transform: scaleX(-1);" : ""}
+      viewBox="0 0 250 110"
+      fill="currentColor"
+    >
       <path d="M70 0 L250 0 L250 110 L220 110 L220 85 L190 85 L190 55 L160 55 L160 25 L70 25 Z" />
     </svg>
 
     <!-- Bottom-Left Geometric Slanted Corner Graphic (using brand primary with opacity, flips in RTL layout) -->
-    <svg class="absolute bottom-0 start-0 h-32 w-64 text-primary/15 dark:text-primary/10 opacity-90 overflow-visible z-0 pointer-events-none rtl:-scale-x-100" viewBox="0 0 250 110" fill="currentColor">
+    <svg
+      class="absolute bottom-0 inset-s-0 h-32 w-64 text-primary/15 dark:text-primary/10 opacity-90 overflow-visible z-0 pointer-events-none"
+      style={getLocale() === "ar" ? "transform: scaleX(-1);" : ""}
+      viewBox="0 0 250 110"
+      fill="currentColor"
+    >
       <path d="M0 110 L0 0 L20 0 L20 30 L50 30 L50 65 L85 65 L85 90 L250 90 L250 110 Z" />
     </svg>
 
