@@ -1,5 +1,6 @@
 use crate::entities::{permission, role_permission};
 use std::collections::HashMap;
+use serde_json;
 
 impl super::Service {
     pub async fn get_permissions(&self) -> Result<Vec<permission::Model>, String> {
@@ -108,28 +109,184 @@ impl super::Service {
     }
 
     pub async fn get_role_permissions(&self) -> Result<Vec<role_permission::Model>, String> {
-        self.repo.get_role_permissions().await.map_err(|e| e.to_string())
+        let mut rules = self.repo.get_role_permissions().await.map_err(|e| e.to_string())?;
+        
+        let default_rules = self.generate_default_rules();
+        let mut missing_by_role: HashMap<String, Vec<role_permission::Model>> = HashMap::new();
+        
+        for r in default_rules {
+            if !rules.iter().any(|existing| existing.role == r.role) {
+                missing_by_role.entry(r.role.clone()).or_default().push(r);
+            }
+        }
+        
+        if !missing_by_role.is_empty() {
+            for (role, role_rules) in missing_by_role {
+                let _ = self.repo.save_role_permissions(&role, role_rules).await;
+            }
+            rules = self.repo.get_role_permissions().await.map_err(|e| e.to_string())?;
+        }
+        Ok(rules)
     }
 
     pub async fn save_role_permissions(
         &self,
         role: &str,
-        permissions_map: HashMap<String, String>,
+        rules: Vec<role_permission::Model>,
     ) -> Result<(), String> {
-        // Fetch all permissions to map code string to its numeric permission ID
-        let all_perms = self.get_permissions().await?;
+        self.repo
+            .save_role_permissions(role, rules)
+            .await
+            .map_err(|e| e.to_string())
+    }
+
+    fn generate_default_rules(&self) -> Vec<role_permission::Model> {
+        let now = chrono::Utc::now().naive_utc().to_string();
+        let mut rules = Vec::new();
+
+        let all_docs = vec![
+            "Organization", "User", "Cycle", "OrgUnit", "Class", "Subject", 
+            "Schedule", "Assessment", "Guardian", "Document", "Enrollment", 
+            "Grade", "Attendance", "Behavior", "Notification", "Dashboard", 
+            "Audit", "Finance", "ImportExport", "Exam"
+        ];
+
+        // 1. Principal rules
+        let principal_docs = vec![
+            ("Organization", vec!["read"]),
+            ("User", vec!["read", "write"]),
+            ("Audit", vec![]),
+        ];
         
-        let mut resolved_permissions = Vec::new();
-        for (perm_code, scope) in permissions_map {
-            if let Some(perm) = all_perms.iter().find(|p| p.code == perm_code) {
-                resolved_permissions.push((perm.id, scope));
+        for doc in &all_docs {
+            let actions = if let Some(custom) = principal_docs.iter().find(|item| item.0 == *doc) {
+                custom.1.clone()
+            } else {
+                vec!["select", "read", "write", "create", "delete", "submit", "cancel", "amend", "print", "email", "report", "import", "export", "share"]
+            };
+            if !actions.is_empty() {
+                rules.push(role_permission::Model {
+                    role: "principal".to_string(),
+                    document_type: doc.to_string(),
+                    level: 0,
+                    only_if_creator: 0,
+                    actions: serde_json::to_string(&actions).unwrap_or_default(),
+                    created_at: now.clone(),
+                });
             }
         }
 
-        self.repo
-            .save_role_permissions(role, resolved_permissions)
-            .await
-            .map_err(|e| e.to_string())
+        // 2. Teacher rules
+        let teacher_rules = vec![
+            ("Grade", vec!["read", "write", "report", "print"]),
+            ("Attendance", vec!["read", "write", "report", "print"]),
+            ("Behavior", vec!["read", "write"]),
+            ("Class", vec!["read"]),
+            ("Subject", vec!["read"]),
+            ("Schedule", vec!["read"]),
+            ("Assessment", vec!["read"]),
+            ("Document", vec!["read"]),
+            ("Notification", vec!["read", "write"]),
+            ("User", vec!["read"]),
+            ("Cycle", vec!["read"]),
+            ("OrgUnit", vec!["read"]),
+            ("Enrollment", vec!["read"]),
+            ("Organization", vec!["read"]),
+            ("Dashboard", vec!["read"]),
+            ("Exam", vec!["read"]),
+        ];
+        for (doc, actions) in teacher_rules {
+            rules.push(role_permission::Model {
+                role: "teacher".to_string(),
+                document_type: doc.to_string(),
+                level: 0,
+                only_if_creator: 0,
+                actions: serde_json::to_string(&actions).unwrap_or_default(),
+                created_at: now.clone(),
+            });
+        }
+
+        // 3. Student rules
+        let student_rules = vec![
+            ("Grade", vec!["read"], 1),
+            ("Schedule", vec!["read"], 1),
+            ("Assessment", vec!["read"], 1),
+            ("Attendance", vec!["read"], 1),
+            ("Behavior", vec!["read"], 1),
+            ("Document", vec!["read"], 1),
+            ("Notification", vec!["read"], 1),
+            ("Class", vec!["read"], 0),
+            ("User", vec!["read"], 0),
+            ("Organization", vec!["read"], 0),
+        ];
+        for (doc, actions, only_creator) in student_rules {
+            rules.push(role_permission::Model {
+                role: "student".to_string(),
+                document_type: doc.to_string(),
+                level: 0,
+                only_if_creator: only_creator,
+                actions: serde_json::to_string(&actions).unwrap_or_default(),
+                created_at: now.clone(),
+            });
+        }
+
+        // 4. Parent rules
+        let parent_rules = vec![
+            ("Grade", vec!["read"], 1),
+            ("Schedule", vec!["read"], 1),
+            ("Assessment", vec!["read"], 1),
+            ("Attendance", vec!["read"], 1),
+            ("Behavior", vec!["read"], 1),
+            ("Document", vec!["read"], 1),
+            ("Notification", vec!["read"], 1),
+            ("Finance", vec!["read"], 1),
+            ("Class", vec!["read"], 0),
+            ("Organization", vec!["read"], 0),
+        ];
+        for (doc, actions, only_creator) in parent_rules {
+            rules.push(role_permission::Model {
+                role: "parent".to_string(),
+                document_type: doc.to_string(),
+                level: 0,
+                only_if_creator: only_creator,
+                actions: serde_json::to_string(&actions).unwrap_or_default(),
+                created_at: now.clone(),
+            });
+        }
+
+        // 5. Seed other screenshot roles with at least one basic permission rule (e.g. Dashboard Read)
+        let other_roles = vec![
+            "Academics User", "Accounts Manager", "Accounts User", "Analytics", "Auditor",
+            "HR User", "Inbox User", "Instructor", "Item Manager", "Knowledge Base Contributor",
+            "Knowledge Base Editor", "Maintenance Manager", "Maintenance User", "Prepared Report User",
+            "Projects Manager", "Quality Manager", "Report Manager", "Support Team", "System Manager"
+        ];
+        for role_name in other_roles {
+            let lower_role = role_name.to_lowercase();
+            if lower_role != "principal" && lower_role != "teacher" && lower_role != "student" && lower_role != "parent" && lower_role != "staff" {
+                rules.push(role_permission::Model {
+                    role: role_name.to_string(),
+                    document_type: "Dashboard".to_string(),
+                    level: 0,
+                    only_if_creator: 0,
+                    actions: serde_json::to_string(&vec!["read"]).unwrap_or_default(),
+                    created_at: now.clone(),
+                });
+            }
+        }
+
+        rules
+    }
+
+    pub async fn get_available_roles(&self) -> Result<Vec<String>, String> {
+        let rules = self.get_role_permissions().await?;
+        let mut roles = std::collections::HashSet::new();
+        for r in rules {
+            roles.insert(r.role);
+        }
+        let mut roles_list: Vec<String> = roles.into_iter().collect();
+        roles_list.sort();
+        Ok(roles_list)
     }
 
     pub async fn get_user_permissions(&self, user_id: &str) -> Result<HashMap<String, String>, String> {

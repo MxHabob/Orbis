@@ -155,6 +155,7 @@ pub fn run() {
             commands::permissions::save_role_permissions,
             commands::permissions::get_user_permissions,
             commands::permissions::save_user_permissions,
+            commands::permissions::get_available_roles,
 
 
             // Users & organization commands
@@ -167,6 +168,8 @@ pub fn run() {
             commands::users::delete_user,
             commands::users::change_user_role,
             commands::users::change_user_password,
+            commands::users::get_user_roles,
+            commands::users::save_user_roles,
 
             // Academics commands
             commands::academics::get_cycles,

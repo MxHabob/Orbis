@@ -7,10 +7,13 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub role: String,
     #[sea_orm(primary_key, auto_increment = false)]
-    pub permission_id: i32,
-    pub conditions: Option<String>,
+    pub document_type: String,
+    pub level: i32,
+    pub only_if_creator: i32,
+    pub actions: String,
     pub created_at: String,
 }
+
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {}

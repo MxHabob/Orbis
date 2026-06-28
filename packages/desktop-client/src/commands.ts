@@ -67,6 +67,11 @@ export const commands = {
 
     changeUserPassword: (userId: string, request: { new_password: string }) =>
       invoke<User>("change_user_password", { userId, request }),
+
+    getUserRoles: (userId: string) => invoke<string[]>("get_user_roles", { userId }),
+
+    saveUserRoles: (userId: string, roles: string[]) =>
+      invoke<void>("save_user_roles", { userId, roles }),
   },
 
   academics: {
@@ -720,15 +725,16 @@ export const commands = {
   permissions: {
     getPermissions: () => invoke<any[]>("get_permissions"),
     getRolePermissions: () =>
-      invoke<Record<string, Record<string, string>>>("get_role_permissions"),
-    saveRolePermissions: (role: string, permissions: Record<string, string>) =>
-      invoke<void>("save_role_permissions", { role, permissions }),
+      invoke<any[]>("get_role_permissions"),
+    saveRolePermissions: (role: string, rules: any[]) =>
+      invoke<void>("save_role_permissions", { role, rules }),
     getUserPermissions: (userId: string) =>
       invoke<Record<string, string>>("get_user_permissions", { userId }),
     saveUserPermissions: (
       userId: string,
       permissions: Record<string, string>,
     ) => invoke<void>("save_user_permissions", { userId, permissions }),
+    getAvailableRoles: () => invoke<string[]>("get_available_roles"),
   },
 
   window: {

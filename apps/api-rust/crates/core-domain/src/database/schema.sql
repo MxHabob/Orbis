@@ -50,12 +50,16 @@ CREATE TABLE IF NOT EXISTS permissions (
   created_at TEXT NOT NULL
 );
 
+DROP TABLE IF EXISTS role_permissions;
+
 CREATE TABLE IF NOT EXISTS role_permissions (
   role TEXT NOT NULL,
-  permission_id INTEGER NOT NULL,
-  conditions TEXT,
+  document_type TEXT NOT NULL,
+  level INTEGER NOT NULL DEFAULT 0,
+  only_if_creator INTEGER NOT NULL DEFAULT 0,
+  actions TEXT NOT NULL,
   created_at TEXT NOT NULL,
-  PRIMARY KEY (role, permission_id)
+  PRIMARY KEY (role, document_type)
 );
 
 CREATE TABLE IF NOT EXISTS user_permissions (

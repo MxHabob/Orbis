@@ -73,7 +73,7 @@ impl Service {
         permission: authz::Permission,
         ctx: Option<&authz::AuthzContext>,
     ) -> Result<(), String> {
-        match self.authz.check_permission(user, permission, ctx) {
+        match self.authz.check_permission(&self.repo.db, user, permission, ctx).await {
             Ok(_) => Ok(()),
             Err(err_msg) => {
                 // Log warning alert to tracing log system

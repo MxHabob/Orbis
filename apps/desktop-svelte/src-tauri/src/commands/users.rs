@@ -133,3 +133,29 @@ pub async fn change_user_password(
         .await
         .map_err(CommandError::from)
 }
+
+#[tauri::command]
+pub async fn get_user_roles(
+    state: State<'_, Arc<AppState>>,
+    user_id: String,
+) -> CmdResult<Vec<String>> {
+    let roles = state
+        .service
+        .get_user_roles(&user_id)
+        .await
+        .map_err(CommandError::from)?;
+    Ok(roles.into_iter().map(|ur| ur.role).collect())
+}
+
+#[tauri::command]
+pub async fn save_user_roles(
+    state: State<'_, Arc<AppState>>,
+    user_id: String,
+    roles: Vec<String>,
+) -> CmdResult<()> {
+    state
+        .service
+        .save_user_roles(&user_id, roles)
+        .await
+        .map_err(CommandError::from)
+}

@@ -173,4 +173,46 @@ impl super::Repository {
             .count(&self.db)
             .await
     }
+
+    pub async fn get_user_roles(&self, user_id: &str) -> Result<Vec<crate::entities::user_role::Model>, DbErr> {
+        crate::entities::user_role::Entity::find()
+            .filter(crate::entities::user_role::Column::UserId.eq(user_id.to_string()))
+            .all(&self.db)
+            .await
+    }
+
+    pub async fn save_user_roles(&self, user_id: &str, org_id: &str, roles: Vec<String>) -> Result<(), DbErr> {
+        // Delete existing roles
+        crate::entities::user_role::Entity::delete_many()
+            .filter(crate::entities::user_role::Column::UserId.eq(user_id.to_string()))
+            .exec(&self.db)
+            .await?;
+
+        // Insert new roles
+        let now = chrono::Utc::now().naive_utc().to_string();
+        let mut new_models = Vec::new();
+        for r in roles {
+            new_models.push(crate::entities::user_role::ActiveModel {
+                id: Set(uuid::Uuid::new_v4().to_string()),
+                user_id: Set(user_id.to_string()),
+                role: Set(r),
+                org_id: Set(org_id.to_string()),
+                scope_type: Set("global".to_string()),
+                scope_id: Set(None),
+                valid_from: Set(None),
+                valid_until: Set(None),
+                is_primary: Set(1),
+                assigned_by: Set(Some("system".to_string())),
+                assigned_at: Set(now.clone()),
+            });
+        }
+
+        if !new_models.is_empty() {
+            crate::entities::user_role::Entity::insert_many(new_models)
+                .exec(&self.db)
+                .await?;
+        }
+
+        Ok(())
+    }
 }

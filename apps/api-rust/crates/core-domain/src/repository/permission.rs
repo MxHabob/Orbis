@@ -18,7 +18,7 @@ impl super::Repository {
     pub async fn save_role_permissions(
         &self,
         role_id: &str,
-        permissions: Vec<(i32, String)>,
+        rules: Vec<role_permission::Model>,
     ) -> Result<(), DbErr> {
         // Delete all existing role_permission rows for the given role
         role_permission::Entity::delete_many()
@@ -27,17 +27,16 @@ impl super::Repository {
             .await?;
 
         // Insert new role_permission models
-        let now = Utc::now().naive_utc().to_string();
         let mut new_models = Vec::new();
-        for (perm_id, scope) in permissions {
-            if scope != "none" {
-                new_models.push(role_permission::ActiveModel {
-                    role: Set(role_id.to_string()),
-                    permission_id: Set(perm_id),
-                    conditions: Set(Some(scope)),
-                    created_at: Set(now.clone()),
-                });
-            }
+        for r in rules {
+            new_models.push(role_permission::ActiveModel {
+                role: Set(r.role),
+                document_type: Set(r.document_type),
+                level: Set(r.level),
+                only_if_creator: Set(r.only_if_creator),
+                actions: Set(r.actions),
+                created_at: Set(r.created_at),
+            });
         }
 
         if !new_models.is_empty() {

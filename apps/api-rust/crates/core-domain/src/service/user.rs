@@ -206,5 +206,18 @@ impl super::Service {
         self.repo.update_user(user_id, updates).await
             .map_err(|e| e.to_string())
     }
+
+    pub async fn get_user_roles(&self, user_id: &str) -> Result<Vec<crate::entities::user_role::Model>, String> {
+        self.repo.get_user_roles(user_id).await.map_err(|e| e.to_string())
+    }
+
+    pub async fn save_user_roles(&self, user_id: &str, roles: Vec<String>) -> Result<(), String> {
+        let u = self.repo.get_user_by_id(user_id).await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "User not found".to_string())?;
+
+        self.repo.save_user_roles(user_id, &u.org_id, roles).await
+            .map_err(|e| e.to_string())
+    }
 }
 
