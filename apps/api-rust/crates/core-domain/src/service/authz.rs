@@ -119,6 +119,21 @@ pub enum Permission {
     StudentOrderFreeze,
     ExamScheduleRead,
     ExamScheduleWrite,
+
+    // Template Management
+    TemplateRead,
+    TemplateWrite,
+    TemplatePublish,
+    TemplateDelete,
+    TemplateImport,
+    TemplateExport,
+    TemplateGenerateSingle,
+    TemplateGenerateBatch,
+    TemplateGenerateDownload,
+    TemplateAssetUpload,
+    TemplateAssetDelete,
+    TemplateComponentWrite,
+    TemplateComponentDelete,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -238,6 +253,20 @@ impl AuthzService {
             Permission::StudentOrderFreeze => ("Exam", "freeze_order"),
             Permission::ExamScheduleRead => ("Exam", "read_schedule"),
             Permission::ExamScheduleWrite => ("Exam", "write_schedule"),
+            
+            Permission::TemplateRead => ("Template", "read"),
+            Permission::TemplateWrite => ("Template", "write"),
+            Permission::TemplatePublish => ("Template", "publish"),
+            Permission::TemplateDelete => ("Template", "delete"),
+            Permission::TemplateImport => ("Template", "import"),
+            Permission::TemplateExport => ("Template", "export"),
+            Permission::TemplateGenerateSingle => ("Template", "generate_single"),
+            Permission::TemplateGenerateBatch => ("Template", "generate_batch"),
+            Permission::TemplateGenerateDownload => ("Template", "generate_download"),
+            Permission::TemplateAssetUpload => ("Template", "asset_upload"),
+            Permission::TemplateAssetDelete => ("Template", "asset_delete"),
+            Permission::TemplateComponentWrite => ("Template", "component_write"),
+            Permission::TemplateComponentDelete => ("Template", "component_delete"),
         };
 
         // 3. Query role permissions rule from the SQLite database

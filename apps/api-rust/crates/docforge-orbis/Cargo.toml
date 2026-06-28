@@ -1,0 +1,34 @@
+[package]
+name = "docforge-orbis"
+version = "0.1.0"
+edition = "2021"
+description = "Orbis adapter for docforge-engine — bridges template engine with Orbis data sources, permissions, and storage"
+
+# This crate IS allowed to depend on Orbis
+[dependencies]
+# Standalone engine
+docforge-engine = { path = "../docforge-engine" }
+
+# Orbis domain
+core-domain = { workspace = true }
+
+# Database
+sea-orm = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Identifiers & Time
+uuid = { workspace = true }
+chrono = { workspace = true }
+
+# Async
+tokio = { workspace = true }
+async-trait = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }

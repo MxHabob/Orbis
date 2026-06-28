@@ -32,6 +32,8 @@ tauri-plugin-process = "2.2.1"
 tauri-plugin-fs = "2"
 tokio = { version = "1.38", features = ["full"] }
 core-domain = { package = "core-domain", path = "../../api-rust/crates/core-domain" }
+docforge-orbis = { path = "../../api-rust/crates/docforge-orbis" }
+docforge-engine = { path = "../../api-rust/crates/docforge-engine" }
 sea-orm = { version = "1.1.0", features = ["sqlx-sqlite", "runtime-tokio-native-tls", "macros"] }
 uuid = { version = "1.9.1", features = ["v4", "serde"] }
 chrono = { version = "0.4.38", features = ["serde"] }

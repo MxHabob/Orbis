@@ -725,6 +725,38 @@ export const commands = {
       }),
   },
 
+  documentTemplates: {
+    getTemplates: (orgId: string, params?: { status?: string; document_type?: string; entity_type?: string; category_id?: string; search?: string }) =>
+      invoke<JsonRecord[]>("get_document_templates", { org_id: orgId, ...params }),
+
+    getTemplate: (orgId: string, id: string) =>
+      invoke<JsonRecord>("get_document_template", { org_id: orgId, id }),
+
+    createTemplate: (orgId: string, userId: string, request: JsonRecord) =>
+      invoke<JsonRecord>("create_document_template", { org_id: orgId, user_id: userId, request }),
+
+    updateTemplate: (orgId: string, id: string, userId: string, request: JsonRecord) =>
+      invoke<JsonRecord>("update_document_template", { org_id: orgId, id, user_id: userId, request }),
+
+    deleteTemplate: (orgId: string, id: string) =>
+      invoke<void>("delete_document_template", { org_id: orgId, id }),
+
+    publishTemplate: (orgId: string, id: string, userId: string) =>
+      invoke<JsonRecord>("publish_document_template", { org_id: orgId, id, user_id: userId }),
+
+    archiveTemplate: (orgId: string, id: string) =>
+      invoke<JsonRecord>("archive_document_template", { org_id: orgId, id }),
+
+    restoreTemplate: (orgId: string, id: string) =>
+      invoke<JsonRecord>("restore_document_template", { org_id: orgId, id }),
+
+    getVersions: (id: string) =>
+      invoke<JsonRecord[]>("get_document_template_versions", { id }),
+
+    revertToVersion: (orgId: string, id: string, version: number, userId: string) =>
+      invoke<JsonRecord>("revert_document_template_to_version", { org_id: orgId, id, version, user_id: userId }),
+  },
+
   permissions: {
     getPermissions: () => invoke<any[]>("get_permissions"),
     getRolePermissions: () =>

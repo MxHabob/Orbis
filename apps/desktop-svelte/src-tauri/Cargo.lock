@@ -8,6 +8,8 @@ version = "0.3.0"
 dependencies = [
  "chrono",
  "core-domain",
+ "docforge-engine",
+ "docforge-orbis",
  "image",
  "sea-orm",
  "serde",
@@ -1144,6 +1146,37 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "442039f5147480ba31067cb00ada1adae6892028e40e45fc5de7b7df6dcc1b5f"
 dependencies = [
  "const-random",
+]
+
+[[package]]
+name = "docforge-engine"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "docforge-orbis"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "core-domain",
+ "docforge-engine",
+ "sea-orm",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "uuid",
 ]
 
 [[package]]

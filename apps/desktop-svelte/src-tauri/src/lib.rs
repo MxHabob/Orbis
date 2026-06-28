@@ -282,6 +282,11 @@ pub fn run() {
             commands::document_templates::create_document_template,
             commands::document_templates::update_document_template,
             commands::document_templates::delete_document_template,
+            commands::document_templates::publish_document_template,
+            commands::document_templates::archive_document_template,
+            commands::document_templates::restore_document_template,
+            commands::document_templates::get_document_template_versions,
+            commands::document_templates::revert_document_template_to_version,
 
             // Widgets
             commands::widgets::get_widget_preferences,
@@ -365,9 +370,16 @@ pub fn run() {
 
             // 2. Initialize managed AppState with direct Rust access (embedded core)
             let app_state = tauri::async_runtime::block_on(async {
-                AppState::init(&database_url)
+                let state = AppState::init(&database_url)
                     .await
-                    .map_err(|e| format!("Database init failed for {:?}: {e}", db_path))
+                    .map_err(|e| format!("Database init failed for {:?}: {e}", db_path))?;
+                
+                // Run docforge template database migrations
+                docforge_orbis::schema::migrate_template_schema(&state.service.repo.db)
+                    .await
+                    .map_err(|e| format!("Template schema migration failed: {e}"))?;
+                
+                Ok::<AppState, String>(state)
             })?;
             app.manage(Arc::new(app_state));
 
