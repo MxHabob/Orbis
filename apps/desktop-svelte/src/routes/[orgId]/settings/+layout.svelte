@@ -21,6 +21,7 @@ import {
   FileDown,
   ChevronRight,
   Shield,
+  Coins,
 } from "lucide-svelte";
 import MainViewport from "$lib/components/layout/MainViewport.svelte";
 import type { Snippet } from "svelte";
@@ -92,6 +93,11 @@ const navItems = $derived([
     path: "import-export",
     label: m.settings_nav_import_export(),
     icon: FileDown,
+  },
+  {
+    path: "currencies",
+    label: m.settings_nav_currencies ? m.settings_nav_currencies() : "العملات وأسعار الصرف",
+    icon: Coins,
   },
 ]);
 </script>

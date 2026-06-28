@@ -121,11 +121,6 @@ const navItems = $derived([
     icon: ClipboardList,
   },
   {
-    path: "currencies",
-    label: "العملات وأسعار الصرف",
-    icon: Coins,
-  },
-  {
     path: "reports",
     label: m.finance_layout_nav_reports(),
     icon: BarChart3,

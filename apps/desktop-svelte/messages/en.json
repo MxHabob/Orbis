@@ -751,6 +751,7 @@
   "settings_nav_units": "Org Units",
   "settings_nav_audit": "Audit Log",
   "settings_nav_import_export": "Import / Export",
+  "settings_nav_currencies": "Currencies & Rates",
 
   "settings_general_title": "Organization Settings",
   "settings_general_desc": "Basic information and general preferences",
