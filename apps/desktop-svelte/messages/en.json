@@ -752,6 +752,9 @@
   "settings_nav_audit": "Audit Log",
   "settings_nav_import_export": "Import / Export",
   "settings_nav_currencies": "Currencies & Rates",
+  "settings_nav_ordering": "Student Ranking",
+  "settings_ordering_title": "Student Ordering Engine",
+  "settings_ordering_desc": "Build, rebuild, and freeze student ordering across all academic cycles for the entire school.",
 
   "settings_general_title": "Organization Settings",
   "settings_general_desc": "Basic information and general preferences",

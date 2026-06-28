@@ -752,6 +752,9 @@
   "settings_nav_audit": "سجل التدقيق",
   "settings_nav_import_export": "استيراد / تصدير",
   "settings_nav_currencies": "العملات وأسعار الصرف",
+  "settings_nav_ordering": "ترتيب الطلاب",
+  "settings_ordering_title": "محرك ترتيب الطلاب",
+  "settings_ordering_desc": "بناء وإعادة بناء وتجميد ترتيب الطلاب عبر كافة الدورات الأكاديمية للمدرسة بأكملها.",
 
   "settings_general_title": "إعدادات المنظمة",
   "settings_general_desc": "المعلومات الأساسية والتفضيلات العامة للمنظمة",

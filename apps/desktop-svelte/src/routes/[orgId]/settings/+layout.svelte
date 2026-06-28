@@ -22,6 +22,7 @@ import {
   ChevronRight,
   Shield,
   Coins,
+  ListOrdered,
 } from "lucide-svelte";
 import MainViewport from "$lib/components/layout/MainViewport.svelte";
 import type { Snippet } from "svelte";
@@ -98,6 +99,11 @@ const navItems = $derived([
     path: "currencies",
     label: m.settings_nav_currencies ? m.settings_nav_currencies() : "العملات وأسعار الصرف",
     icon: Coins,
+  },
+  {
+    path: "ordering",
+    label: m.settings_nav_ordering ? m.settings_nav_ordering() : "ترتيب الطلاب",
+    icon: ListOrdered,
   },
 ]);
 </script>

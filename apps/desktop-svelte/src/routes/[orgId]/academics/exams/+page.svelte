@@ -8,7 +8,6 @@ import { onMount } from "svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import {
   ClipboardList,
-  ListOrdered,
   Calendar,
   FileText,
   ArrowRight,
@@ -84,13 +83,6 @@ const cards = $derived([
     desc: m.exams_card_sessions_desc(),
     icon: ClipboardList,
     color: "bg-blue-500/10 text-blue-500 border-blue-500/20",
-  },
-  {
-    path: "ordering",
-    title: m.exams_card_ordering_title(),
-    desc: m.exams_card_ordering_desc(),
-    icon: ListOrdered,
-    color: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
   },
   {
     path: "sessions",

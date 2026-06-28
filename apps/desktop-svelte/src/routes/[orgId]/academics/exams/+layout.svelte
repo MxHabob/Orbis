@@ -10,7 +10,6 @@ import { Button } from "@orbis/ui-svelte/button";
 import { deLocalizeUrl, localizeHref } from "$lib/paraglide/runtime";
 import {
   ClipboardList,
-  ListOrdered,
   FileText,
   BarChart3,
   ChevronRight,
@@ -63,11 +62,6 @@ const navItems = $derived([
     label: m.exams_layout_nav_sessions(),
     icon: ClipboardList,
     badge: sessionsCount > 0 ? sessionsCount : null,
-  },
-  {
-    path: "ordering",
-    label: m.exams_layout_nav_ordering(),
-    icon: ListOrdered,
   },
   {
     path: "reports",
