@@ -339,7 +339,7 @@
           <div class="w-full flex justify-start">
             <AvatarUpload
               bind:avatarUrl={avatarUrl}
-              size={150}
+              size={220}
               fallbackText={fullName}
               class="rounded-xl border border-border"
             />
