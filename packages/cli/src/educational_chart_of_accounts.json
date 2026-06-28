@@ -2,11 +2,7 @@
   "metadata": {
     "name": "شجرة محاسبية للكيانات التعليمية",
     "description": "شجرة محاسبية شاملة لمدارس، جامعات، معاهد (حكومية وخاصة)",
-    "standards": [
-      "IFRS",
-      "IPSAS",
-      "AICPA NFP"
-    ],
+    "standards": ["IFRS", "IPSAS", "AICPA NFP"],
     "currency": "SAR",
     "levels": 4,
     "version": "1.0.0",
@@ -4096,4 +4092,3 @@
     }
   ]
 }
-

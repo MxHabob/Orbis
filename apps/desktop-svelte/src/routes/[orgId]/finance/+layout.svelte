@@ -88,12 +88,16 @@ const navItems = $derived([
   },
   {
     path: "fee-templates",
-    label: m.finance_layout_nav_fee_templates ? m.finance_layout_nav_fee_templates() : "قوالب الرسوم",
+    label: m.finance_layout_nav_fee_templates
+      ? m.finance_layout_nav_fee_templates()
+      : "قوالب الرسوم",
     icon: Receipt,
   },
   {
     path: "discount-templates",
-    label: m.finance_layout_nav_discount_templates ? m.finance_layout_nav_discount_templates() : "قوالب الخصومات",
+    label: m.finance_layout_nav_discount_templates
+      ? m.finance_layout_nav_discount_templates()
+      : "قوالب الخصومات",
     icon: Percent,
   },
   {
@@ -104,12 +108,16 @@ const navItems = $derived([
   },
   {
     path: "journal-entries",
-    label: m.finance_layout_nav_journal ? m.finance_layout_nav_journal() : "القيود اليومية",
+    label: m.finance_layout_nav_journal
+      ? m.finance_layout_nav_journal()
+      : "القيود اليومية",
     icon: BookOpen,
   },
   {
     path: "ledger",
-    label: m.finance_layout_nav_ledger ? m.finance_layout_nav_ledger() : "كشف الحساب",
+    label: m.finance_layout_nav_ledger
+      ? m.finance_layout_nav_ledger()
+      : "كشف الحساب",
     icon: ClipboardList,
   },
   {

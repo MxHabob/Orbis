@@ -22,17 +22,20 @@ let timeoutId: ReturnType<typeof setTimeout> | undefined;
 function handleCopy() {
   if (!value) return;
 
-  navigator.clipboard.writeText(value).then(() => {
-    isCopied = true;
-    oncopy?.();
+  navigator.clipboard
+    .writeText(value)
+    .then(() => {
+      isCopied = true;
+      oncopy?.();
 
-    if (timeoutId) clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => {
-      isCopied = false;
-    }, 2000);
-  }).catch((err) => {
-    console.error("Failed to copy text: ", err);
-  });
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        isCopied = false;
+      }, 2000);
+    })
+    .catch((err) => {
+      console.error("Failed to copy text: ", err);
+    });
 }
 </script>
 

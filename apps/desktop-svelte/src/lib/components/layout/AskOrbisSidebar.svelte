@@ -6,13 +6,17 @@ Allows users to ask questions, select prompt suggestions, and collapse/resize.
 <script lang="ts">
 import { uiStore } from "$lib/stores";
 import Resizer from "./Resizer.svelte";
+import { Button, Input } from "@orbis/ui-svelte";
+import * as m from "$lib/paraglide/messages";
+import { onboardingState } from "$lib/components/onboarding/onboarding-state.svelte";
 import {
   X,
   MoreHorizontal,
   Columns,
   History,
   Plus,
-  ArrowRight
+  ArrowRight,
+  ArrowLeft,
 } from "lucide-svelte";
 import { onMount } from "svelte";
 
@@ -28,11 +32,11 @@ const minWidth = $derived(pxToRem(320));
 const maxWidth = $derived(pxToRem(650));
 
 let inputValue = $state("");
-const suggestions = [
-  "Which of my open issues are getting worse, not better?",
-  "What are my slowest DB queries?",
-  "Walk me through what's on my screen and what I can focus on next."
-];
+const suggestions = $derived([
+  m.agent_suggest_1(),
+  m.agent_suggest_2(),
+  m.agent_suggest_3(),
+]);
 
 function handleSuggestionClick(suggestion: string) {
   inputValue = suggestion;
@@ -45,9 +49,8 @@ function handleClose() {
 function handleSubmit(e: SubmitEvent | KeyboardEvent) {
   if (e) e.preventDefault();
   if (!inputValue.trim()) return;
-  
+
   // Here we would typically submit the query to an LLM or service
-  // For the UI demonstration, we'll clear the input or show a status
   inputValue = "";
 }
 
@@ -61,7 +64,7 @@ function handleKeyDown(e: KeyboardEvent) {
 
 <div
   bind:this={sidebarDiv}
-  class="relative flex h-full shrink-0 flex-col bg-[#1e1c24] text-zinc-100 rounded-xl overflow-hidden border-l border-zinc-800/80 shadow-2xl z-10 select-none"
+  class="relative flex h-full shrink-0 flex-col bg-card text-card-foreground rounded-xl overflow-hidden border-l border-border shadow-2xl z-10 select-none"
   style:width="{preferredWidth}rem"
   style:min-width="{preferredWidth}rem"
 >
@@ -77,64 +80,73 @@ function handleKeyDown(e: KeyboardEvent) {
   />
 
   <!-- Header Section -->
-  <div class="flex items-center justify-between px-3.5 h-11 shrink-0 border-b border-zinc-800/60 select-none">
+  <div class="flex items-center justify-between px-3.5 h-11 shrink-0 border-b border-border select-none bg-card">
     <div class="flex items-center gap-2">
       <!-- Close Button -->
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="icon-xs"
         onclick={handleClose}
-        class="w-6 h-6 flex items-center justify-center rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 transition-colors cursor-pointer"
+        class="w-6 h-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
         title="Close sidebar"
       >
         <X size={14} strokeWidth={2} />
-      </button>
+      </Button>
       
       <!-- Title -->
-      <span class="text-[12px] font-semibold tracking-wide text-zinc-200 flex items-center gap-1.5">
-        Orbis Agent <span class="text-xs">🧪</span>
+      <span class="text-[12px] font-semibold tracking-wide text-foreground flex items-center gap-1.5">
+        {m.agent_title()}
+        <svg class="text-cyan-400 dark:text-cyan-400 shrink-0 ml-1.5" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 20h9" />
+          <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+        </svg>
       </span>
     </div>
 
     <!-- Actions -->
     <div class="flex items-center gap-1">
-      <button
-        type="button"
-        class="w-6 h-6 flex items-center justify-center rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 transition-colors cursor-pointer"
+      <Button
+        variant="ghost"
+        size="icon-xs"
+        class="w-6 h-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
         title="More options"
       >
         <MoreHorizontal size={14} />
-      </button>
+      </Button>
       
-      <button
-        type="button"
-        class="w-6 h-6 flex items-center justify-center rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 transition-colors cursor-pointer"
+      <Button
+        variant="ghost"
+        size="icon-xs"
+        class="w-6 h-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
         title="Split layout"
       >
         <Columns size={13} />
-      </button>
+      </Button>
 
-      <button
-        type="button"
-        class="w-6 h-6 flex items-center justify-center rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 transition-colors cursor-pointer"
+      <Button
+        variant="ghost"
+        size="icon-xs"
+        class="w-6 h-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
         title="History"
       >
         <History size={13} />
-      </button>
+      </Button>
 
-      <button
-        type="button"
-        class="w-6 h-6 flex items-center justify-center rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 transition-colors cursor-pointer"
+      <Button
+        variant="ghost"
+        size="icon-xs"
+        class="w-6 h-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
         title="New Chat"
       >
         <Plus size={14} />
-      </button>
+      </Button>
     </div>
   </div>
 
   <!-- Content Section -->
-  <div class="flex-1 flex flex-col items-center justify-center px-6 overflow-y-auto pb-8 select-none">
+  <div class="flex-1 flex flex-col items-center justify-center px-6 overflow-y-auto pb-8 select-none bg-card">
     <!-- Eye-Triangle Agent Logo -->
-    <div class="text-zinc-300 mb-6 drop-shadow-[0_0_15px_rgba(255,255,255,0.05)]">
+    <div class="text-muted-foreground mb-6 drop-shadow-[0_0_15px_rgba(0,0,0,0.02)]">
       <svg width="68" height="68" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <!-- Outer Triangle -->
         <path d="M12 3L2 20h20L12 3z" stroke-linejoin="round" />
@@ -148,41 +160,45 @@ function handleKeyDown(e: KeyboardEvent) {
     </div>
 
     <!-- Subtitle -->
-    <p class="text-xs text-zinc-400/90 text-center font-medium max-w-[240px] leading-relaxed mb-6 select-none">
-      Ask Orbis anything about your application.
+    <p class="text-xs text-muted-foreground text-center font-medium max-w-[240px] leading-relaxed mb-6 select-none">
+      {m.agent_subtitle()}
     </p>
 
     <!-- Suggestion Buttons -->
     <div class="flex flex-col gap-2 w-full max-w-[340px]">
       {#each suggestions as sug}
-        <button
-          type="button"
+        <Button
+          variant="outline"
           onclick={() => handleSuggestionClick(sug)}
-          class="w-full text-center py-2.5 px-4 text-[11px] font-medium text-zinc-300 bg-[#25222d] border border-[#322f3e] hover:border-zinc-700 hover:bg-[#2d2938] hover:text-zinc-100 rounded-lg cursor-pointer transition-all duration-150 active:scale-[0.99] leading-normal"
+          class="w-full text-center py-2.5 px-4 text-[11px] font-medium text-muted-foreground bg-muted/40 border border-border hover:border-zinc-400 dark:hover:border-zinc-650 hover:bg-muted hover:text-foreground rounded-lg cursor-pointer transition-all duration-150 active:scale-[0.99] leading-relaxed whitespace-normal h-auto break-words shadow-sm"
         >
           {sug}
-        </button>
+        </Button>
       {/each}
     </div>
   </div>
 
   <!-- Footer Input Area -->
-  <div class="p-3.5 shrink-0 border-t border-zinc-800/60 bg-[#1e1c24] select-none">
-    <form onsubmit={handleSubmit} class="relative flex items-center bg-[#15131a] border border-[#322f3e] focus-within:border-zinc-700/80 focus-within:ring-1 focus-within:ring-zinc-700/40 rounded-lg p-1.5 transition-all duration-150">
-      <input
+  <div class="p-3.5 shrink-0 border-t border-border bg-card select-none">
+    <form onsubmit={handleSubmit} class="relative flex items-center bg-muted/30 border border-border focus-within:border-primary focus-within:ring-1 focus-within:ring-primary rounded-lg p-1.5 transition-all duration-150">
+      <Input
         type="text"
         bind:value={inputValue}
         onkeydown={handleKeyDown}
-        placeholder="Ask Orbis a question, or press / for commands."
-        class="flex-1 bg-transparent border-none outline-none text-zinc-100 placeholder-zinc-500 text-[11.5px] px-2.5 py-1.5"
+        placeholder={m.agent_input_placeholder()}
+        class="flex-1 bg-transparent border-none outline-none text-foreground placeholder-muted-foreground text-[11.5px] px-2.5 py-1.5 h-auto shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 focus:ring-0"
       />
-      <button
+      <Button
         type="submit"
         disabled={!inputValue.trim()}
-        class="w-7 h-7 flex items-center justify-center rounded-md bg-[#25222d] border border-[#322f3e] text-zinc-400 hover:text-zinc-100 hover:bg-[#2d2938] disabled:opacity-40 disabled:hover:bg-[#25222d] disabled:hover:text-zinc-400 cursor-pointer transition-colors duration-150"
+        class="w-7 h-7 flex items-center justify-center rounded-md bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-40 disabled:hover:bg-card disabled:hover:text-muted-foreground cursor-pointer transition-colors duration-150"
       >
-        <ArrowRight size={14} strokeWidth={2.2} />
-      </button>
+        {#if onboardingState.locale === 'ar'}
+          <ArrowLeft size={14} strokeWidth={2.2} />
+        {:else}
+          <ArrowRight size={14} strokeWidth={2.2} />
+        {/if}
+      </Button>
     </form>
   </div>
 </div>

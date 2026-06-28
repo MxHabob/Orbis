@@ -77,9 +77,15 @@ const filteredEntries = $derived.by(() => {
   return journalEntries.filter((je) => {
     const textMatch =
       searchQuery.trim() === "" ||
-      String(je.transaction_ref).toLowerCase().includes(searchQuery.toLowerCase()) ||
-      String(je.description || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-      String(je.description_ar || "").toLowerCase().includes(searchQuery.toLowerCase());
+      String(je.transaction_ref)
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+      String(je.description || "")
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+      String(je.description_ar || "")
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
 
     const statusMatch = statusFilter === "all" || je.status === statusFilter;
 

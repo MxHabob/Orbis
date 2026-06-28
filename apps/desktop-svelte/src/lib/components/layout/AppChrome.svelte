@@ -62,7 +62,4 @@ function handleKeyDown(e: KeyboardEvent) {
 		</div>
 	</div>
 </div>
-
-{#if uiStore.showUpgradeDialog}
-	<UpgradeDialog />
-{/if}
+<UpgradeDialog bind:open={uiStore.showUpgradeDialog} />

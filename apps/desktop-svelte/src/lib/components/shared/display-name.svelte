@@ -3,7 +3,14 @@
 A reusable card component for editing and saving a user's or organization's display name.
 -->
 <script lang="ts">
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@orbis/ui-svelte/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "@orbis/ui-svelte/card";
 import { Input } from "@orbis/ui-svelte/input";
 import { Button } from "@orbis/ui-svelte/button";
 import { Loader2 } from "lucide-svelte";
@@ -31,13 +38,15 @@ $effect(() => {
   tempName = name;
 });
 
-const isInvalid = $derived(tempName.trim().length === 0 || tempName.length > maxLength);
+const isInvalid = $derived(
+  tempName.trim().length === 0 || tempName.length > maxLength,
+);
 const charCount = $derived(tempName.length);
 
 function handleSave(event: Event) {
   event.preventDefault();
   if (isInvalid || isSubmitting) return;
-  
+
   if (onsave) {
     onsave(tempName.trim());
   } else {

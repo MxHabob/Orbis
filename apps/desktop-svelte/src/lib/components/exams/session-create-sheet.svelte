@@ -57,7 +57,8 @@ $effect(() => {
 // Load academic cycles on open
 $effect(() => {
   if (open && orgId) {
-    commands.academics.getCycles(orgId)
+    commands.academics
+      .getCycles(orgId)
       .then((res) => {
         cyclesList = res || [];
         if (!cycleId && cyclesList.length > 0) {
@@ -108,7 +109,11 @@ async function handleSubmit() {
     }
     toast.success(m.exams_create_success());
     // Reset form
-    name = ""; nameAr = ""; startDate = ""; endDate = ""; cycleId = "";
+    name = "";
+    nameAr = "";
+    startDate = "";
+    endDate = "";
+    cycleId = "";
     open = false;
     onSuccess();
   } catch (e: any) {

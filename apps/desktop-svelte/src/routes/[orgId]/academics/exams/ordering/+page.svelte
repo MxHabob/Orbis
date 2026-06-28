@@ -102,7 +102,11 @@ async function handleRebuild() {
   }
   isRebuilding = true;
   try {
-    const result = await commands.exams.rebuildOrdering(data.orgId, currentCycleId, selectedStrategy);
+    const result = await commands.exams.rebuildOrdering(
+      data.orgId,
+      currentCycleId,
+      selectedStrategy,
+    );
     toast.success(`تم إعادة بناء الترتيب — استراتيجية: ${selectedStrategy}`);
     await loadOrdering();
   } catch (e: any) {
@@ -132,7 +136,7 @@ const filtered = $derived(
       (s.academic_number || "").toLowerCase().includes(q) ||
       (s.class_id || "").toLowerCase().includes(q)
     );
-  })
+  }),
 );
 </script>
 

@@ -13,7 +13,9 @@ class AuthStore {
   isAuthenticated = $derived(!!this.token && !!this.user);
   orgId = $derived(this.user?.org_id ?? "");
   userId = $derived(this.user?.id ?? "");
-  needsOnboarding = $derived(this.isAuthenticated && this.isSetupComplete === false);
+  needsOnboarding = $derived(
+    this.isAuthenticated && this.isSetupComplete === false,
+  );
 
   async login(email: string, password: string) {
     this.isLoading = true;
@@ -51,7 +53,9 @@ class AuthStore {
     try {
       const token = localStorage.getItem("orbis_token");
       const userStr = localStorage.getItem("orbis_user");
-      const isSetupCompleteStr = localStorage.getItem("orbis_is_setup_complete");
+      const isSetupCompleteStr = localStorage.getItem(
+        "orbis_is_setup_complete",
+      );
       if (token && userStr) {
         this.token = token;
         this.user = JSON.parse(userStr);

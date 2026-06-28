@@ -1,6 +1,7 @@
 import { Database } from "bun:sqlite";
 
-const DB_PATH = "C:\\Users\\YZLPN3\\AppData\\Roaming\\com.mulverse.orbis.dev\\orbis.db";
+const DB_PATH =
+  "C:\\Users\\YZLPN3\\AppData\\Roaming\\com.mulverse.orbis.dev\\orbis.db";
 const ORG_ID = "f4c151ce-4131-4103-adc0-b546d6673113";
 const DEFAULT_TEACHER_ID = "114e6aee-3394-4c3b-bcd2-e267747d4dd9"; // Fathi Sherihan
 const CREATED_BY = "453b8c02-1b28-4c33-b119-59a3c8a7468d"; // Mohamed Alhabob
@@ -16,7 +17,7 @@ const SEMESTER_ASSESSMENTS = {
       type: "classwork",
       max_score: 20,
       weight: 20,
-      grade_group_name: "أعمال الفصل"
+      grade_group_name: "أعمال الفصل",
     },
     {
       title: "Semester 1 Final Exam",
@@ -24,8 +25,8 @@ const SEMESTER_ASSESSMENTS = {
       type: "exam",
       max_score: 30,
       weight: 30,
-      grade_group_name: "الامتحان النهائي"
-    }
+      grade_group_name: "الامتحان النهائي",
+    },
   ],
   [S2_CYCLE_ID]: [
     {
@@ -34,7 +35,7 @@ const SEMESTER_ASSESSMENTS = {
       type: "classwork",
       max_score: 20,
       weight: 20,
-      grade_group_name: "أعمال الفصل"
+      grade_group_name: "أعمال الفصل",
     },
     {
       title: "Semester 2 Final Exam",
@@ -42,9 +43,9 @@ const SEMESTER_ASSESSMENTS = {
       type: "exam",
       max_score: 30,
       weight: 30,
-      grade_group_name: "الامتحان النهائي"
-    }
-  ]
+      grade_group_name: "الامتحان النهائي",
+    },
+  ],
 };
 
 function setupSemesterAssessments() {
@@ -58,14 +59,16 @@ function setupSemesterAssessments() {
     db.run(
       `DELETE FROM assessments 
        WHERE cycle_id IN (?, ?)`,
-      [S1_CYCLE_ID, S2_CYCLE_ID]
+      [S1_CYCLE_ID, S2_CYCLE_ID],
     );
     console.log("Cleared old assessments from Semester 1 and Semester 2.");
 
     // 2. Get all class_subjects mappings
-    const classSubjects = db.query(
-      "SELECT id, class_id, subject_id FROM class_subjects WHERE is_active = 1"
-    ).all() as any[];
+    const classSubjects = db
+      .query(
+        "SELECT id, class_id, subject_id FROM class_subjects WHERE is_active = 1",
+      )
+      .all() as any[];
 
     console.log(`Found ${classSubjects.length} class-subject links.`);
 
@@ -101,8 +104,8 @@ function setupSemesterAssessments() {
               template.grade_group_name,
               CREATED_BY,
               now,
-              now
-            ]
+              now,
+            ],
           );
           addedCount++;
         }
@@ -111,7 +114,9 @@ function setupSemesterAssessments() {
 
     db.run("COMMIT");
     console.log("Semester assessments configured successfully!");
-    console.log(`- Added ${addedCount} correct assessments (Classwork out of 20 & Final Exam out of 30) for Semester 1 & 2.`);
+    console.log(
+      `- Added ${addedCount} correct assessments (Classwork out of 20 & Final Exam out of 30) for Semester 1 & 2.`,
+    );
   } catch (error) {
     db.run("ROLLBACK");
     console.error("Failed to setup semester assessments:", error);

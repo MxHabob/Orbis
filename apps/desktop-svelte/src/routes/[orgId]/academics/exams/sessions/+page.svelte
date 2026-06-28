@@ -48,7 +48,7 @@ const filtered = $derived(
       (s.name_ar || "").toLowerCase().includes(q) ||
       (s.session_type || "").toLowerCase().includes(q)
     );
-  })
+  }),
 );
 
 function getTypeLabel(type: string): string {

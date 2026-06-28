@@ -62,7 +62,9 @@ function getMonthNumber(monthId: string): number | undefined {
 // Reactively load child months of the selected semester
 $effect(() => {
   if (selectedSemesterId) {
-    months = cycles.filter((c) => c.parent_id === selectedSemesterId && c.type === "month");
+    months = cycles.filter(
+      (c) => c.parent_id === selectedSemesterId && c.type === "month",
+    );
     selectedMonthId = "all";
   } else {
     months = [];
@@ -85,15 +87,20 @@ async function loadFilters() {
     cycles = cycleList;
 
     const activeYear =
-      cycleList.find((c) => c.type === "year" && (c.is_current === 1 || c.is_current === true)) ||
+      cycleList.find(
+        (c) =>
+          c.type === "year" && (c.is_current === 1 || c.is_current === true),
+      ) ||
       cycleList.find((c) => c.type === "year") ||
       cycleList[0];
 
     if (activeYear) {
       activeCycleId = String(activeYear.id);
-      
+
       // Filter direct child semesters/terms of this year
-      semesters = cycleList.filter((c) => c.parent_id === activeYear.id && c.type === "term");
+      semesters = cycleList.filter(
+        (c) => c.parent_id === activeYear.id && c.type === "term",
+      );
       if (semesters.length > 0) {
         selectedSemesterId = semesters[0].id;
       }
@@ -121,7 +128,8 @@ async function loadAssessments() {
       classId: selectedClassId,
       subjectId: selectedSubjectId || undefined,
       termId: selectedSemesterId || activeCycleId || undefined,
-      month: selectedMonthId !== "all" ? getMonthNumber(selectedMonthId) : undefined,
+      month:
+        selectedMonthId !== "all" ? getMonthNumber(selectedMonthId) : undefined,
     });
     assessments = list;
   } catch (e) {
@@ -141,7 +149,13 @@ onMount(() => {
 
 // Reactively load assessments when selections change
 $effect(() => {
-  if (selectedClassId || selectedSubjectId || activeCycleId || selectedSemesterId || selectedMonthId) {
+  if (
+    selectedClassId ||
+    selectedSubjectId ||
+    activeCycleId ||
+    selectedSemesterId ||
+    selectedMonthId
+  ) {
     loadAssessments();
   }
 });

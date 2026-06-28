@@ -49,9 +49,12 @@ let isCompileLoading = $state(false);
 
 // Sync to/from global academic state store
 onMount(() => {
-  if (academicStore.selectedCycleId) selectedCycleId = academicStore.selectedCycleId;
-  if (academicStore.selectedClassId) selectedClassId = academicStore.selectedClassId;
-  if (academicStore.selectedSubjectId) selectedSubjectId = academicStore.selectedSubjectId;
+  if (academicStore.selectedCycleId)
+    selectedCycleId = academicStore.selectedCycleId;
+  if (academicStore.selectedClassId)
+    selectedClassId = academicStore.selectedClassId;
+  if (academicStore.selectedSubjectId)
+    selectedSubjectId = academicStore.selectedSubjectId;
 });
 
 $effect(() => {
@@ -73,7 +76,9 @@ let editedScores = $state<Record<string, number | null>>({});
 let errorCells = $state<Set<string>>(new Set());
 
 // Selected cycle details
-let selectedCycle = $derived(cycles.find((c) => String(c.id) === selectedCycleId));
+let selectedCycle = $derived(
+  cycles.find((c) => String(c.id) === selectedCycleId),
+);
 let isCycleLocked = $derived(selectedCycle?.is_locked === 1);
 let isGradeEntryOpen = $derived(selectedCycle?.is_grade_entry_open === 1);
 let canEnterGrades = $derived(!isCycleLocked && isGradeEntryOpen);
@@ -82,12 +87,13 @@ let canEnterGrades = $derived(!isCycleLocked && isGradeEntryOpen);
 async function loadInitialData() {
   isLoading = true;
   try {
-    const [cycleList, classList, subjectList, classSubjectList] = await Promise.all([
-      commands.academics.getCycles(data.orgId),
-      commands.classes.getAll(data.orgId),
-      commands.subjects.getAll(data.orgId),
-      commands.schedule.getClassSubjects(),
-    ]);
+    const [cycleList, classList, subjectList, classSubjectList] =
+      await Promise.all([
+        commands.academics.getCycles(data.orgId),
+        commands.classes.getAll(data.orgId),
+        commands.subjects.getAll(data.orgId),
+        commands.schedule.getClassSubjects(),
+      ]);
 
     cycles = cycleList;
     classes = classList;
@@ -103,7 +109,9 @@ async function loadInitialData() {
       }
     }
   } catch (e: any) {
-    toast.error("خطأ في تحميل البيانات", { description: e?.message || String(e) });
+    toast.error("خطأ في تحميل البيانات", {
+      description: e?.message || String(e),
+    });
   } finally {
     isLoading = false;
   }
@@ -125,7 +133,9 @@ async function handleLockCycle() {
     updateCycleInList(updated);
     toast.success("تم إقفال الدورة الأكاديمية");
   } catch (e: any) {
-    toast.error("خطأ في إقفال الدورة", { description: e?.message || String(e) });
+    toast.error("خطأ في إقفال الدورة", {
+      description: e?.message || String(e),
+    });
   } finally {
     isCycleActionLoading = false;
   }
@@ -175,13 +185,18 @@ async function handleCloseGradeEntry() {
 
 async function handleCompileGrades() {
   if (!selectedCycleId) return;
-  const semNum = selectedCycleId.endsWith("-s1") ? 1 : selectedCycleId.endsWith("-s2") ? 2 : null;
+  const semNum = selectedCycleId.endsWith("-s1")
+    ? 1
+    : selectedCycleId.endsWith("-s2")
+      ? 2
+      : null;
   if (!semNum) {
     toast.error("هذا الإجراء متاح فقط للفصول الدراسية (الترم الأول أو الثاني)");
     return;
   }
 
-  const confirmMsg = "هل أنت متأكد من تجميع درجات الفصل؟ سيتم احتساب متوسط الأشهر 1 و 2 و 3 وترحيله لأعمال الفصل، ونسخ النهائي من الشهر 4.";
+  const confirmMsg =
+    "هل أنت متأكد من تجميع درجات الفصل؟ سيتم احتساب متوسط الأشهر 1 و 2 و 3 وترحيله لأعمال الفصل، ونسخ النهائي من الشهر 4.";
   if (!confirm(confirmMsg)) return;
 
   isCompileLoading = true;
@@ -216,7 +231,7 @@ async function loadGradeMatrix() {
       data.orgId,
       selectedCycleId,
       selectedClassId,
-      selectedSubjectId
+      selectedSubjectId,
     );
     matrixData = result;
     // Initialize edited scores from existing data
@@ -244,11 +259,19 @@ $effect(() => {
   }
 });
 
-function handleScoreChange(enrollmentId: string, assessmentKey: string, value: string, maxScore: number) {
+function handleScoreChange(
+  enrollmentId: string,
+  assessmentKey: string,
+  value: string,
+  maxScore: number,
+) {
   const key = `${enrollmentId}_${assessmentKey}`;
   const numValue = value === "" ? null : parseFloat(value);
 
-  if (numValue !== null && (isNaN(numValue) || numValue < 0 || numValue > maxScore)) {
+  if (
+    numValue !== null &&
+    (isNaN(numValue) || numValue < 0 || numValue > maxScore)
+  ) {
     errorCells = new Set([...errorCells, key]);
   } else {
     const newErrors = new Set(errorCells);
@@ -267,7 +290,9 @@ async function handleSaveAll() {
   try {
     const sub = subjects.find((s: any) => String(s.id) === selectedSubjectId);
     const cs = classSubjects.find(
-      (c: any) => String(c.class_id) === selectedClassId && String(c.subject_id) === selectedSubjectId
+      (c: any) =>
+        String(c.class_id) === selectedClassId &&
+        String(c.subject_id) === selectedSubjectId,
     );
 
     // Build student scores from edited values
@@ -311,7 +336,7 @@ async function handleSaveAll() {
     const result = await commands.grades.bulkSubjectGradeEntry(
       data.orgId,
       "admin",
-      request
+      request,
     );
 
     const created = (result as any)?.created || 0;
@@ -319,10 +344,9 @@ async function handleSaveAll() {
     const failed = (result as any)?.failed || 0;
 
     if (failed > 0) {
-      toast.warning(
-        `تم حفظ ${created + updated} درجة مع ${failed} أخطاء`,
-        { description: ((result as any)?.errors || []).join("\n") }
-      );
+      toast.warning(`تم حفظ ${created + updated} درجة مع ${failed} أخطاء`, {
+        description: ((result as any)?.errors || []).join("\n"),
+      });
     } else {
       toast.success(`تم حفظ ${created + updated} درجة بنجاح`, {
         description: `${created} جديدة، ${updated} محدّثة`,
@@ -358,8 +382,10 @@ function getGradeColor(percentage: number): string {
 }
 
 function getCycleStatusColor(cycle: any): string {
-  if (cycle.is_locked === 1) return "bg-red-500/10 text-red-500 border-red-500/30";
-  if (cycle.is_grade_entry_open === 1) return "bg-emerald-500/10 text-emerald-500 border-emerald-500/30";
+  if (cycle.is_locked === 1)
+    return "bg-red-500/10 text-red-500 border-red-500/30";
+  if (cycle.is_grade_entry_open === 1)
+    return "bg-emerald-500/10 text-emerald-500 border-emerald-500/30";
   return "bg-amber-500/10 text-amber-500 border-amber-500/30";
 }
 

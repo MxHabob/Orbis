@@ -25,7 +25,7 @@ let prefs = $state({
     finance: true,
     behavior: false,
     system: true,
-  }
+  },
 });
 
 onMount(() => {
@@ -42,10 +42,10 @@ onMount(() => {
 async function handleSave(e: Event) {
   e.preventDefault();
   isSaving = true;
-  
+
   // Simulate delay for premium feel
   await new Promise((resolve) => setTimeout(resolve, 600));
-  
+
   localStorage.setItem("orbis_notification_preferences", JSON.stringify(prefs));
   toast.success(m.settings_general_save_success());
   isSaving = false;

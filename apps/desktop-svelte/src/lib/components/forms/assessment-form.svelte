@@ -36,7 +36,9 @@ async function handleSubmit(e: SubmitEvent) {
     return;
   }
   if (!classId || !subjectId || !cycleId) {
-    toast.error("Please select a class, subject, and cycle before creating an assessment.");
+    toast.error(
+      "Please select a class, subject, and cycle before creating an assessment.",
+    );
     return;
   }
   isSubmitting = true;

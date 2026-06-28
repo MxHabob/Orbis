@@ -91,7 +91,11 @@ export const commands = {
       invoke<JsonRecord>("unlock_cycle", { cycleId }),
 
     openGradeEntry: (cycleId: string, start?: string, end?: string) =>
-      invoke<JsonRecord>("open_grade_entry", { cycleId, start: start ?? null, end: end ?? null }),
+      invoke<JsonRecord>("open_grade_entry", {
+        cycleId,
+        start: start ?? null,
+        end: end ?? null,
+      }),
 
     closeGradeEntry: (cycleId: string) =>
       invoke<JsonRecord>("close_grade_entry", { cycleId }),
@@ -176,13 +180,35 @@ export const commands = {
         params: params ?? {},
       }),
 
-    bulkSubjectGradeEntry: (orgId: string, gradedBy: string, request: JsonRecord) =>
-      invoke<JsonRecord>("bulk_subject_grade_entry", { orgId, gradedBy, request }),
+    bulkSubjectGradeEntry: (
+      orgId: string,
+      gradedBy: string,
+      request: JsonRecord,
+    ) =>
+      invoke<JsonRecord>("bulk_subject_grade_entry", {
+        orgId,
+        gradedBy,
+        request,
+      }),
 
-    getGradeMatrix: (orgId: string, cycleId: string, classId: string, subjectId: string) =>
-      invoke<JsonRecord>("get_grade_matrix", { orgId, cycleId, classId, subjectId }),
+    getGradeMatrix: (
+      orgId: string,
+      cycleId: string,
+      classId: string,
+      subjectId: string,
+    ) =>
+      invoke<JsonRecord>("get_grade_matrix", {
+        orgId,
+        cycleId,
+        classId,
+        subjectId,
+      }),
 
-    compileSemesterGrades: (orgId: string, semesterNum: number, gradedBy: string) =>
+    compileSemesterGrades: (
+      orgId: string,
+      semesterNum: number,
+      gradedBy: string,
+    ) =>
       invoke<void>("compile_semester_grades", { orgId, semesterNum, gradedBy }),
   },
 
@@ -287,8 +313,18 @@ export const commands = {
     deleteCurrency: (orgId: string, code: string) =>
       invoke<JsonRecord>("delete_currency", { orgId, code }),
 
-    getAccountStatement: (orgId: string, accountId: string, startDate: string, endDate: string) =>
-      invoke<JsonRecord>("get_account_statement", { orgId, accountId, startDate, endDate }),
+    getAccountStatement: (
+      orgId: string,
+      accountId: string,
+      startDate: string,
+      endDate: string,
+    ) =>
+      invoke<JsonRecord>("get_account_statement", {
+        orgId,
+        accountId,
+        startDate,
+        endDate,
+      }),
 
     seedDefaultFinancials: (orgId: string) =>
       invoke<void>("seed_default_financials", { orgId }),
@@ -519,8 +555,7 @@ export const commands = {
       invoke<JsonRecord>("apply_schedule_solve", { orgId, jobId }),
 
     // ── Rooms ──────────────────────────────────────────────────────────────
-    getRooms: (orgId: string) =>
-      invoke<JsonRecord[]>("get_rooms", { orgId }),
+    getRooms: (orgId: string) => invoke<JsonRecord[]>("get_rooms", { orgId }),
 
     createRoom: (orgId: string, request: JsonRecord) =>
       invoke<JsonRecord>("create_room", { orgId, request }),
@@ -551,7 +586,10 @@ export const commands = {
   exams: {
     // Sessions
     getSessions: (orgId: string, cycleId?: string) =>
-      invoke<JsonRecord[]>("get_exam_sessions", { orgId, cycleId: cycleId ?? null }),
+      invoke<JsonRecord[]>("get_exam_sessions", {
+        orgId,
+        cycleId: cycleId ?? null,
+      }),
 
     getSession: (orgId: string, sessionId: string) =>
       invoke<JsonRecord>("get_exam_session", { orgId, sessionId }),
@@ -571,20 +609,36 @@ export const commands = {
 
     // Student Ordering
     getOrdering: (orgId: string, cycleId: string, classId?: string) =>
-      invoke<JsonRecord[]>("get_student_ordering", { orgId, cycleId, classId: classId ?? null }),
+      invoke<JsonRecord[]>("get_student_ordering", {
+        orgId,
+        cycleId,
+        classId: classId ?? null,
+      }),
 
     rebuildOrdering: (orgId: string, cycleId: string, strategy: string) =>
-      invoke<JsonRecord>("rebuild_student_ordering", { orgId, cycleId, strategy }),
+      invoke<JsonRecord>("rebuild_student_ordering", {
+        orgId,
+        cycleId,
+        strategy,
+      }),
 
     freezeOrdering: (orgId: string, cycleId: string, userId: string) =>
       invoke<JsonRecord>("freeze_student_ordering", { orgId, cycleId, userId }),
 
     // Seating & Secret Numbers
     generateSeating: (orgId: string, sessionId: string, userId: string) =>
-      invoke<JsonRecord>("generate_seating_numbers", { orgId, sessionId, userId }),
+      invoke<JsonRecord>("generate_seating_numbers", {
+        orgId,
+        sessionId,
+        userId,
+      }),
 
     generateSecrets: (orgId: string, sessionId: string, userId: string) =>
-      invoke<JsonRecord>("generate_secret_numbers", { orgId, sessionId, userId }),
+      invoke<JsonRecord>("generate_secret_numbers", {
+        orgId,
+        sessionId,
+        userId,
+      }),
 
     // Schedules
     getSchedules: (orgId: string, sessionId: string) =>
@@ -597,7 +651,10 @@ export const commands = {
       invoke<JsonRecord>("get_exam_solve_job", { orgId, jobId }),
 
     listSolveJobs: (orgId: string, examSessionId?: string) =>
-      invoke<JsonRecord[]>("list_exam_solve_jobs", { orgId, examSessionId: examSessionId ?? null }),
+      invoke<JsonRecord[]>("list_exam_solve_jobs", {
+        orgId,
+        examSessionId: examSessionId ?? null,
+      }),
 
     cancelSolve: (orgId: string, jobId: string) =>
       invoke<JsonRecord>("cancel_exam_solve", { orgId, jobId }),
@@ -609,14 +666,32 @@ export const commands = {
       invoke<void>("delete_exam_schedule", { orgId, scheduleId }),
 
     updateScheduleStatus: (orgId: string, scheduleId: string, status: string) =>
-      invoke<JsonRecord>("update_exam_schedule_status", { orgId, scheduleId, status }),
+      invoke<JsonRecord>("update_exam_schedule_status", {
+        orgId,
+        scheduleId,
+        status,
+      }),
 
     // Logistics
     allocateHalls: (orgId: string, sessionId: string, config: JsonRecord) =>
-      invoke<JsonRecord>("allocate_students_to_halls", { orgId, sessionId, config }),
+      invoke<JsonRecord>("allocate_students_to_halls", {
+        orgId,
+        sessionId,
+        config,
+      }),
 
-    autoAssignProctors: (orgId: string, sessionId: string, scheduleId: string, config: JsonRecord) =>
-      invoke<JsonRecord>("auto_assign_proctors", { orgId, sessionId, scheduleId, config }),
+    autoAssignProctors: (
+      orgId: string,
+      sessionId: string,
+      scheduleId: string,
+      config: JsonRecord,
+    ) =>
+      invoke<JsonRecord>("auto_assign_proctors", {
+        orgId,
+        sessionId,
+        scheduleId,
+        config,
+      }),
 
     getHalls: (orgId: string, sessionId: string) =>
       invoke<JsonRecord[]>("get_exam_halls", { orgId, sessionId }),
@@ -625,24 +700,35 @@ export const commands = {
       invoke<JsonRecord>("create_exam_hall", { orgId, request }),
 
     getProctors: (orgId: string, sessionId: string, scheduleId?: string) =>
-      invoke<JsonRecord[]>("get_exam_proctors", { orgId, sessionId, scheduleId: scheduleId ?? null }),
+      invoke<JsonRecord[]>("get_exam_proctors", {
+        orgId,
+        sessionId,
+        scheduleId: scheduleId ?? null,
+      }),
 
     getHallStudents: (orgId: string, sessionId: string, hallId: string) =>
       invoke<JsonRecord[]>("get_hall_students", { orgId, sessionId, hallId }),
 
     getSeatingNumbers: (orgId: string, sessionId: string, classId?: string) =>
-      invoke<JsonRecord[]>("get_seating_numbers", { orgId, sessionId, classId: classId ?? null }),
+      invoke<JsonRecord[]>("get_seating_numbers", {
+        orgId,
+        sessionId,
+        classId: classId ?? null,
+      }),
   },
 
   permissions: {
     getPermissions: () => invoke<any[]>("get_permissions"),
-    getRolePermissions: () => invoke<Record<string, Record<string, string>>>("get_role_permissions"),
+    getRolePermissions: () =>
+      invoke<Record<string, Record<string, string>>>("get_role_permissions"),
     saveRolePermissions: (role: string, permissions: Record<string, string>) =>
       invoke<void>("save_role_permissions", { role, permissions }),
     getUserPermissions: (userId: string) =>
       invoke<Record<string, string>>("get_user_permissions", { userId }),
-    saveUserPermissions: (userId: string, permissions: Record<string, string>) =>
-      invoke<void>("save_user_permissions", { userId, permissions }),
+    saveUserPermissions: (
+      userId: string,
+      permissions: Record<string, string>,
+    ) => invoke<void>("save_user_permissions", { userId, permissions }),
   },
 
   window: {
@@ -650,7 +736,6 @@ export const commands = {
     checkForUpdates: () => invoke<void>("check_for_updates"),
   },
 } as const;
-
 
 /** @deprecated Use `commands` — alias for specta migration path */
 export const api = commands;

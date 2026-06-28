@@ -18,35 +18,193 @@ import type {
 // ── Default Data ─────────────────────────────────────────────────────
 
 const DEFAULT_GRADE_LEVELS: GradeLevel[] = [
-  { level: "kg1", name: "KG1", name_ar: "روضة أولى", color: "#f43f5e", enabled: true, divisions: ["أ"] },
-  { level: "kg2", name: "KG2", name_ar: "روضة ثانية", color: "#ec4899", enabled: true, divisions: ["أ"] },
-  { level: "grade1", name: "Grade 1", name_ar: "الصف الأول", color: "#d946ef", enabled: true, divisions: ["أ", "ب"] },
-  { level: "grade2", name: "Grade 2", name_ar: "الصف الثاني", color: "#a855f7", enabled: true, divisions: ["أ", "ب"] },
-  { level: "grade3", name: "Grade 3", name_ar: "الصف الثالث", color: "#6366f1", enabled: true, divisions: ["أ", "ب"] },
-  { level: "grade4", name: "Grade 4", name_ar: "الصف الرابع", color: "#3b82f6", enabled: true, divisions: ["أ"] },
-  { level: "grade5", name: "Grade 5", name_ar: "الصف الخامس", color: "#0ea5e9", enabled: true, divisions: ["أ"] },
-  { level: "grade6", name: "Grade 6", name_ar: "الصف السادس", color: "#06b6d4", enabled: true, divisions: ["أ"] },
-  { level: "grade7", name: "Grade 7", name_ar: "الصف السابع", color: "#14b8a6", enabled: true, divisions: ["أ"] },
-  { level: "grade8", name: "Grade 8", name_ar: "الصف الثامن", color: "#10b981", enabled: true, divisions: ["أ"] },
-  { level: "grade9", name: "Grade 9", name_ar: "الصف التاسع", color: "#22c55e", enabled: true, divisions: ["أ"] },
+  {
+    level: "kg1",
+    name: "KG1",
+    name_ar: "روضة أولى",
+    color: "#f43f5e",
+    enabled: true,
+    divisions: ["أ"],
+  },
+  {
+    level: "kg2",
+    name: "KG2",
+    name_ar: "روضة ثانية",
+    color: "#ec4899",
+    enabled: true,
+    divisions: ["أ"],
+  },
+  {
+    level: "grade1",
+    name: "Grade 1",
+    name_ar: "الصف الأول",
+    color: "#d946ef",
+    enabled: true,
+    divisions: ["أ", "ب"],
+  },
+  {
+    level: "grade2",
+    name: "Grade 2",
+    name_ar: "الصف الثاني",
+    color: "#a855f7",
+    enabled: true,
+    divisions: ["أ", "ب"],
+  },
+  {
+    level: "grade3",
+    name: "Grade 3",
+    name_ar: "الصف الثالث",
+    color: "#6366f1",
+    enabled: true,
+    divisions: ["أ", "ب"],
+  },
+  {
+    level: "grade4",
+    name: "Grade 4",
+    name_ar: "الصف الرابع",
+    color: "#3b82f6",
+    enabled: true,
+    divisions: ["أ"],
+  },
+  {
+    level: "grade5",
+    name: "Grade 5",
+    name_ar: "الصف الخامس",
+    color: "#0ea5e9",
+    enabled: true,
+    divisions: ["أ"],
+  },
+  {
+    level: "grade6",
+    name: "Grade 6",
+    name_ar: "الصف السادس",
+    color: "#06b6d4",
+    enabled: true,
+    divisions: ["أ"],
+  },
+  {
+    level: "grade7",
+    name: "Grade 7",
+    name_ar: "الصف السابع",
+    color: "#14b8a6",
+    enabled: true,
+    divisions: ["أ"],
+  },
+  {
+    level: "grade8",
+    name: "Grade 8",
+    name_ar: "الصف الثامن",
+    color: "#10b981",
+    enabled: true,
+    divisions: ["أ"],
+  },
+  {
+    level: "grade9",
+    name: "Grade 9",
+    name_ar: "الصف التاسع",
+    color: "#22c55e",
+    enabled: true,
+    divisions: ["أ"],
+  },
 ];
 
 const DEFAULT_TIME_SLOTS: TimeSlot[] = [
-  { name: "1st Period", name_ar: "الحصة الأولى", start_time: "08:00", end_time: "08:45" },
-  { name: "2nd Period", name_ar: "الحصة الثانية", start_time: "08:45", end_time: "09:30" },
-  { name: "3rd Period", name_ar: "الحصة الثالثة", start_time: "09:45", end_time: "10:30" },
-  { name: "4th Period", name_ar: "الحصة الرابعة", start_time: "10:30", end_time: "11:15" },
-  { name: "5th Period", name_ar: "الحصة الخامسة", start_time: "11:30", end_time: "12:15" },
+  {
+    name: "1st Period",
+    name_ar: "الحصة الأولى",
+    start_time: "08:00",
+    end_time: "08:45",
+  },
+  {
+    name: "2nd Period",
+    name_ar: "الحصة الثانية",
+    start_time: "08:45",
+    end_time: "09:30",
+  },
+  {
+    name: "3rd Period",
+    name_ar: "الحصة الثالثة",
+    start_time: "09:45",
+    end_time: "10:30",
+  },
+  {
+    name: "4th Period",
+    name_ar: "الحصة الرابعة",
+    start_time: "10:30",
+    end_time: "11:15",
+  },
+  {
+    name: "5th Period",
+    name_ar: "الحصة الخامسة",
+    start_time: "11:30",
+    end_time: "12:15",
+  },
 ];
 
 const DEFAULT_SUBJECTS: Subject[] = [
-  { code: "QUR", name: "Holy Quran", name_ar: "القرآن الكريم", color: "#10b981", icon: "book-open", sort_order: 1, enabled: true },
-  { code: "ISL", name: "Islamic Studies", name_ar: "الدراسات الإسلامية", color: "#0d9488", icon: "bookmark", sort_order: 2, enabled: true },
-  { code: "ARB", name: "Arabic Language", name_ar: "اللغة العربية", color: "#f59e0b", icon: "pen-tool", sort_order: 3, enabled: true },
-  { code: "MTH", name: "Mathematics", name_ar: "الرياضيات", color: "#3b82f6", icon: "binary", sort_order: 4, enabled: true },
-  { code: "SCI", name: "Science", name_ar: "العلوم", color: "#8b5cf6", icon: "flask-conical", sort_order: 5, enabled: true },
-  { code: "ENG", name: "English Language", name_ar: "اللغة الإنجليزية", color: "#6366f1", icon: "languages", sort_order: 6, enabled: true },
-  { code: "SOC", name: "Social Studies", name_ar: "الدراسات الاجتماعية", color: "#f97316", icon: "globe", sort_order: 7, enabled: true },
+  {
+    code: "QUR",
+    name: "Holy Quran",
+    name_ar: "القرآن الكريم",
+    color: "#10b981",
+    icon: "book-open",
+    sort_order: 1,
+    enabled: true,
+  },
+  {
+    code: "ISL",
+    name: "Islamic Studies",
+    name_ar: "الدراسات الإسلامية",
+    color: "#0d9488",
+    icon: "bookmark",
+    sort_order: 2,
+    enabled: true,
+  },
+  {
+    code: "ARB",
+    name: "Arabic Language",
+    name_ar: "اللغة العربية",
+    color: "#f59e0b",
+    icon: "pen-tool",
+    sort_order: 3,
+    enabled: true,
+  },
+  {
+    code: "MTH",
+    name: "Mathematics",
+    name_ar: "الرياضيات",
+    color: "#3b82f6",
+    icon: "binary",
+    sort_order: 4,
+    enabled: true,
+  },
+  {
+    code: "SCI",
+    name: "Science",
+    name_ar: "العلوم",
+    color: "#8b5cf6",
+    icon: "flask-conical",
+    sort_order: 5,
+    enabled: true,
+  },
+  {
+    code: "ENG",
+    name: "English Language",
+    name_ar: "اللغة الإنجليزية",
+    color: "#6366f1",
+    icon: "languages",
+    sort_order: 6,
+    enabled: true,
+  },
+  {
+    code: "SOC",
+    name: "Social Studies",
+    name_ar: "الدراسات الاجتماعية",
+    color: "#f97316",
+    icon: "globe",
+    sort_order: 7,
+    enabled: true,
+  },
 ];
 
 const BUILDINGS = ["المبنى 1", "المبنى 2"];
@@ -108,12 +266,18 @@ class OnboardingState {
   totalCapacity = $derived(this.rooms.reduce((acc, r) => acc + r.capacity, 0));
   enabledStages = $derived(this.gradeLevels.filter((l) => l.enabled).length);
   totalDivisions = $derived(
-    this.gradeLevels.filter((l) => l.enabled).reduce((acc, l) => acc + l.divisions.length, 0)
+    this.gradeLevels
+      .filter((l) => l.enabled)
+      .reduce((acc, l) => acc + l.divisions.length, 0),
   );
   enabledSubjects = $derived(this.subjects.filter((s) => s.enabled).length);
   totalSlots = $derived(this.timeSlots.length);
-  bld1Rooms = $derived(this.rooms.filter((r) => r.building === "المبنى 1").length);
-  bld2Rooms = $derived(this.rooms.filter((r) => r.building === "المبنى 2").length);
+  bld1Rooms = $derived(
+    this.rooms.filter((r) => r.building === "المبنى 1").length,
+  );
+  bld2Rooms = $derived(
+    this.rooms.filter((r) => r.building === "المبنى 2").length,
+  );
   tasksCompletedCount = $derived(this.completedSteps.filter(Boolean).length);
 
   // ── Persistence ────────────────────────────────────────────────
@@ -152,9 +316,12 @@ class OnboardingState {
         const data = JSON.parse(saved);
         if (data.completedSteps) this.completedSteps = data.completedSteps;
         if (data.activeStep) this.activeStep = data.activeStep;
-        if (data.registrationFees) this.registrationFees = data.registrationFees;
-        if (data.academicYearName) this.academicYearName = data.academicYearName;
-        if (data.academicYearNameAr) this.academicYearNameAr = data.academicYearNameAr;
+        if (data.registrationFees)
+          this.registrationFees = data.registrationFees;
+        if (data.academicYearName)
+          this.academicYearName = data.academicYearName;
+        if (data.academicYearNameAr)
+          this.academicYearNameAr = data.academicYearNameAr;
         if (data.startDate) this.startDate = data.startDate;
         if (data.endDate) this.endDate = data.endDate;
         if (data.semester1Name) this.semester1Name = data.semester1Name;
@@ -286,7 +453,13 @@ class OnboardingState {
     this.rooms = list;
   }
 
-  addRoom(name: string, nameAr: string, capacity: number, roomType: string, floor: number) {
+  addRoom(
+    name: string,
+    nameAr: string,
+    capacity: number,
+    roomType: string,
+    floor: number,
+  ) {
     if (!name || !nameAr) {
       toast.error(m.onboarding_toast_fill_room_fields());
       return false;
@@ -336,12 +509,22 @@ class OnboardingState {
 
   // ── Step 5: Time Slot Management ───────────────────────────────
 
-  addTimeSlot(name: string, nameAr: string, startTime: string, endTime: string) {
+  addTimeSlot(
+    name: string,
+    nameAr: string,
+    startTime: string,
+    endTime: string,
+  ) {
     if (!name || !nameAr) {
       toast.error(m.onboarding_toast_fill_period_name());
       return false;
     }
-    this.timeSlots.push({ name, name_ar: nameAr, start_time: startTime, end_time: endTime });
+    this.timeSlots.push({
+      name,
+      name_ar: nameAr,
+      start_time: startTime,
+      end_time: endTime,
+    });
     this.timeSlots = [...this.timeSlots];
     toast.success(m.onboarding_toast_period_added());
     return true;
@@ -380,11 +563,13 @@ class OnboardingState {
     namePrefix: string,
     namePrefixAr: string,
     startStr: string,
-    endStr: string
+    endStr: string,
   ): CycleEntry[] {
     const start = new Date(startStr);
     const end = new Date(endStr);
-    const totalDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    const totalDays = Math.ceil(
+      (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
+    );
     const daysPerMonth = Math.floor(totalDays / 4);
 
     const months: CycleEntry[] = [];
@@ -422,7 +607,7 @@ class OnboardingState {
 
   buildPayload(orgId: string): OnboardingPayload {
     const cycleYearId = `cycle-1447-${orgId}`;
- 
+
     const cycles: CycleEntry[] = [
       {
         id: cycleYearId,
@@ -455,13 +640,21 @@ class OnboardingState {
         weight: 50,
       },
       ...this.generateMonthsForSemester(
-        `${cycleYearId}-s1`, this.semester1Name, this.semester1NameAr, this.semester1Start, this.semester1End
+        `${cycleYearId}-s1`,
+        this.semester1Name,
+        this.semester1NameAr,
+        this.semester1Start,
+        this.semester1End,
       ),
       ...this.generateMonthsForSemester(
-        `${cycleYearId}-s2`, this.semester2Name, this.semester2NameAr, this.semester2Start, this.semester2End
+        `${cycleYearId}-s2`,
+        this.semester2Name,
+        this.semester2NameAr,
+        this.semester2Start,
+        this.semester2End,
       ),
     ];
- 
+
     const classes: ClassEntry[] = [];
     for (const gl of this.gradeLevels) {
       if (!gl.enabled) continue;
@@ -476,7 +669,7 @@ class OnboardingState {
         });
       }
     }
- 
+
     const activeSubjects: SubjectEntry[] = this.subjects
       .filter((s) => s.enabled)
       .map((s, idx) => ({
@@ -488,7 +681,7 @@ class OnboardingState {
         icon: s.icon,
         sort_order: idx + 1,
       }));
- 
+
     return {
       org_name: this.orgName,
       org_name_ar: this.orgNameAr,
@@ -508,18 +701,18 @@ class OnboardingState {
       classes,
     };
   }
- 
+
   // ── Complete Setup ─────────────────────────────────────────────
- 
+
   async completeSetup(orgId: string): Promise<boolean> {
     this.isLoading = true;
     this.errorMessage = null;
- 
+
     try {
       if (!orgId) {
         throw new Error(m.onboarding_err_active_org());
       }
- 
+
       const payload = this.buildPayload(orgId);
       console.log("Submitting Onboarding Setup Payload:", payload);
 
@@ -549,7 +742,10 @@ class OnboardingState {
           try {
             await commands.finance.createFeeTemplate(orgId, req);
           } catch (feeErr) {
-            console.error(`Failed to create fee template for ${gl.level}:`, feeErr);
+            console.error(
+              `Failed to create fee template for ${gl.level}:`,
+              feeErr,
+            );
           }
         }
       }

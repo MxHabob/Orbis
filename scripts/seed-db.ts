@@ -72,27 +72,127 @@ try {
   // Semesters & Month cycles for Sanaa Model School
   const subCycles = [
     // Semesters
-    { id: "cycle-1447-s1", name: "Semester 1", name_ar: "الفصل الدراسي الأول", type: "term", parent_id: cycleId, start: "2026-06-21", end: "2026-10-21", weight: 50 },
-    { id: "cycle-1447-s2", name: "Semester 2", name_ar: "الفصل الدراسي الثاني", type: "term", parent_id: cycleId, start: "2026-10-22", end: "2027-02-21", weight: 50 },
-    
+    {
+      id: "cycle-1447-s1",
+      name: "Semester 1",
+      name_ar: "الفصل الدراسي الأول",
+      type: "term",
+      parent_id: cycleId,
+      start: "2026-06-21",
+      end: "2026-10-21",
+      weight: 50,
+    },
+    {
+      id: "cycle-1447-s2",
+      name: "Semester 2",
+      name_ar: "الفصل الدراسي الثاني",
+      type: "term",
+      parent_id: cycleId,
+      start: "2026-10-22",
+      end: "2027-02-21",
+      weight: 50,
+    },
+
     // Semester 1 Months (Assessment periods + Midterm Exam)
-    { id: "cycle-1447-s1-m1", name: "Muharram", name_ar: "محرم", type: "month", parent_id: "cycle-1447-s1", start: "2026-06-21", end: "2026-07-20", weight: 20 },
-    { id: "cycle-1447-s1-m2", name: "Safar", name_ar: "صفر", type: "month", parent_id: "cycle-1447-s1", start: "2026-07-21", end: "2026-08-20", weight: 20 },
-    { id: "cycle-1447-s1-m3", name: "Rabi' al-Awwal", name_ar: "ربيع الأول", type: "month", parent_id: "cycle-1447-s1", start: "2026-08-21", end: "2026-09-20", weight: 20 },
-    { id: "cycle-1447-s1-m4", name: "Rabi' al-Thani (Midterm)", name_ar: "ربيع الثاني (منتصف العام)", type: "month", parent_id: "cycle-1447-s1", start: "2026-09-21", end: "2026-10-21", weight: 30 },
-    
+    {
+      id: "cycle-1447-s1-m1",
+      name: "Muharram",
+      name_ar: "محرم",
+      type: "month",
+      parent_id: "cycle-1447-s1",
+      start: "2026-06-21",
+      end: "2026-07-20",
+      weight: 20,
+    },
+    {
+      id: "cycle-1447-s1-m2",
+      name: "Safar",
+      name_ar: "صفر",
+      type: "month",
+      parent_id: "cycle-1447-s1",
+      start: "2026-07-21",
+      end: "2026-08-20",
+      weight: 20,
+    },
+    {
+      id: "cycle-1447-s1-m3",
+      name: "Rabi' al-Awwal",
+      name_ar: "ربيع الأول",
+      type: "month",
+      parent_id: "cycle-1447-s1",
+      start: "2026-08-21",
+      end: "2026-09-20",
+      weight: 20,
+    },
+    {
+      id: "cycle-1447-s1-m4",
+      name: "Rabi' al-Thani (Midterm)",
+      name_ar: "ربيع الثاني (منتصف العام)",
+      type: "month",
+      parent_id: "cycle-1447-s1",
+      start: "2026-09-21",
+      end: "2026-10-21",
+      weight: 30,
+    },
+
     // Semester 2 Months (Assessment periods + Final Exam)
-    { id: "cycle-1447-s2-m1", name: "Jumada al-Ula", name_ar: "جمادى الأولى", type: "month", parent_id: "cycle-1447-s2", start: "2026-10-22", end: "2026-11-21", weight: 20 },
-    { id: "cycle-1447-s2-m2", name: "Jumada al-Thania", name_ar: "جمادى الثانية", type: "month", parent_id: "cycle-1447-s2", start: "2026-11-22", end: "2026-12-21", weight: 20 },
-    { id: "cycle-1447-s2-m3", name: "Rajab", name_ar: "رجب", type: "month", parent_id: "cycle-1447-s2", start: "2026-12-22", end: "2027-01-20", weight: 20 },
-    { id: "cycle-1447-s2-m4", name: "Sha'ban (Final)", name_ar: "شعبان (النهائي)", type: "month", parent_id: "cycle-1447-s2", start: "2027-01-21", end: "2027-02-21", weight: 30 }
+    {
+      id: "cycle-1447-s2-m1",
+      name: "Jumada al-Ula",
+      name_ar: "جمادى الأولى",
+      type: "month",
+      parent_id: "cycle-1447-s2",
+      start: "2026-10-22",
+      end: "2026-11-21",
+      weight: 20,
+    },
+    {
+      id: "cycle-1447-s2-m2",
+      name: "Jumada al-Thania",
+      name_ar: "جمادى الثانية",
+      type: "month",
+      parent_id: "cycle-1447-s2",
+      start: "2026-11-22",
+      end: "2026-12-21",
+      weight: 20,
+    },
+    {
+      id: "cycle-1447-s2-m3",
+      name: "Rajab",
+      name_ar: "رجب",
+      type: "month",
+      parent_id: "cycle-1447-s2",
+      start: "2026-12-22",
+      end: "2027-01-20",
+      weight: 20,
+    },
+    {
+      id: "cycle-1447-s2-m4",
+      name: "Sha'ban (Final)",
+      name_ar: "شعبان (النهائي)",
+      type: "month",
+      parent_id: "cycle-1447-s2",
+      start: "2027-01-21",
+      end: "2027-02-21",
+      weight: 30,
+    },
   ];
 
   subCycles.forEach((sc) => {
     db.prepare(`
       INSERT INTO academic_cycles (id, org_id, name, name_ar, parent_id, start_date, end_date, type, grading_system, weight, is_current, is_locked, is_enrollment_open, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'percentage', ?, 0, 0, 1, datetime('now'), datetime('now'))
-    `).run(sc.id, orgId, sc.name, sc.name_ar, sc.parent_id, sc.start, sc.end, sc.type, sc.weight);
+    `).run(
+      sc.id,
+      orgId,
+      sc.name,
+      sc.name_ar,
+      sc.parent_id,
+      sc.start,
+      sc.end,
+      sc.type,
+      sc.weight,
+    );
   });
 
   // 2. Create Standard Time Slots
@@ -399,16 +499,42 @@ try {
 
   // 8. Create Class Subjects & Associate Teachers
   db.prepare("DELETE FROM class_subjects WHERE cycle_id = ?").run(cycleId);
-  console.log("Associating subjects to classes and distributing teachers with default assessment configs...");
+  console.log(
+    "Associating subjects to classes and distributing teachers with default assessment configs...",
+  );
 
   const assessmentConfig = JSON.stringify({
     components: [
-      { code: "behavior", name: "Behavior", name_ar: "السلوك", max_score: 20, weight: 20 },
-      { code: "attendance", name: "Attendance", name_ar: "الحضور", max_score: 20, weight: 20 },
-      { code: "participation", name: "Participation", name_ar: "المشاركة", max_score: 20, weight: 20 },
-      { code: "exam", name: "Written Exam", name_ar: "الامتحان الكتابي", max_score: 40, weight: 40 }
+      {
+        code: "behavior",
+        name: "Behavior",
+        name_ar: "السلوك",
+        max_score: 20,
+        weight: 20,
+      },
+      {
+        code: "attendance",
+        name: "Attendance",
+        name_ar: "الحضور",
+        max_score: 20,
+        weight: 20,
+      },
+      {
+        code: "participation",
+        name: "Participation",
+        name_ar: "المشاركة",
+        max_score: 20,
+        weight: 20,
+      },
+      {
+        code: "exam",
+        name: "Written Exam",
+        name_ar: "الامتحان الكتابي",
+        max_score: 40,
+        weight: 40,
+      },
     ],
-    total_score: 100
+    total_score: 100,
   });
 
   let teacherIndex = 0;

@@ -16,7 +16,16 @@ import { Input } from "@orbis/ui-svelte/input";
 import { toast } from "svelte-sonner";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
-import { Plus, Search, Pencil, Trash2, Shield, User as UserIcon, Users, Eye } from "lucide-svelte";
+import {
+  Plus,
+  Search,
+  Pencil,
+  Trash2,
+  Shield,
+  User as UserIcon,
+  Users,
+  Eye,
+} from "lucide-svelte";
 import UserCreateSheet from "$lib/components/sheets/user-create-sheet.svelte";
 import * as m from "$lib/paraglide/messages";
 import type { User } from "$lib/services/ipc";
@@ -61,16 +70,18 @@ onMount(() => {
 const filteredUsers = $derived(
   users.filter((user) => {
     const matchesSearch =
-      (user.full_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (user.full_name || "")
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
       (user.name_ar || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
       (user.email || "").toLowerCase().includes(searchQuery.toLowerCase());
-      
+
     const matchesRole =
       selectedRole === "all" ||
       String(user.role || "").toLowerCase() === selectedRole.toLowerCase();
 
     return matchesSearch && matchesRole;
-  })
+  }),
 );
 
 function openCreateSheet() {

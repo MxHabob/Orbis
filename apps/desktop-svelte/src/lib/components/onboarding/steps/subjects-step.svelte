@@ -22,7 +22,7 @@ function handleAddSubject() {
     newSubCode,
     newSubName,
     newSubNameAr,
-    newSubColor
+    newSubColor,
   );
   if (success) {
     newSubCode = "";

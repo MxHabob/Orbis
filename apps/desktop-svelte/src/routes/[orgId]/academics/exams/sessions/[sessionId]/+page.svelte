@@ -89,7 +89,7 @@ const draftSchedulesInGrid = $derived.by(() => {
     const solution = JSON.parse(activeJob.best_solution);
     const assignments = solution.assignments || [];
     return assignments.map((a: any) => {
-      const slotParts = a.slot_id ? a.slot_id.split('_') : [];
+      const slotParts = a.slot_id ? a.slot_id.split("_") : [];
       const exam_date = slotParts[0] || "";
       const period = slotParts[1] || "";
       return {
@@ -100,7 +100,7 @@ const draftSchedulesInGrid = $derived.by(() => {
         applicable_class_ids: a.class_id,
         start_time: period === "morning" ? "08:00" : "13:00",
         end_time: (() => {
-          const exam_subject = subjects.find(s => s.id === a.exam_subject_id);
+          const exam_subject = subjects.find((s) => s.id === a.exam_subject_id);
           const duration = exam_subject ? exam_subject.duration_minutes : 90;
           const start_time = period === "morning" ? "08:00" : "13:00";
           return addMinutes(start_time, duration);
@@ -114,10 +114,12 @@ const draftSchedulesInGrid = $derived.by(() => {
   }
 });
 
-const activeSchedules = $derived(previewDraft ? draftSchedulesInGrid : schedules);
+const activeSchedules = $derived(
+  previewDraft ? draftSchedulesInGrid : schedules,
+);
 
 const sessionDates = $derived(
-  session ? generateDatesRange(session.start_date, session.end_date) : []
+  session ? generateDatesRange(session.start_date, session.end_date) : [],
 );
 
 function getSubjectName(subjectId: string) {
@@ -138,8 +140,15 @@ function getSubjectColor(subjectId: string) {
 function formatDateWithDay(dateStr: string): string {
   try {
     const date = new Date(dateStr);
-    const options: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'short' };
-    return date.toLocaleDateString(getLocale() === "ar" ? "ar-EG" : "en-US", options);
+    const options: Intl.DateTimeFormatOptions = {
+      weekday: "long",
+      day: "numeric",
+      month: "short",
+    };
+    return date.toLocaleDateString(
+      getLocale() === "ar" ? "ar-EG" : "en-US",
+      options,
+    );
   } catch (e) {
     return dateStr;
   }
@@ -147,27 +156,54 @@ function formatDateWithDay(dateStr: string): string {
 
 function getExamsInCell(date: string, period: string) {
   return activeSchedules.filter(
-    (s) => String(s.exam_date) === String(date) && String(s.period) === String(period)
+    (s) =>
+      String(s.exam_date) === String(date) &&
+      String(s.period) === String(period),
   );
 }
 
 function addMinutes(timeStr: string, minutes: number): string {
-  const parts = timeStr.split(':');
+  const parts = timeStr.split(":");
   if (parts.length < 2) return timeStr;
   const h = parseInt(parts[0], 10) || 0;
   const m = parseInt(parts[1], 10) || 0;
   const total = h * 60 + m + minutes;
   const rh = Math.floor(total / 60) % 24;
   const rm = total % 60;
-  return `${String(rh).padStart(2, '0')}:${String(rm).padStart(2, '0')}`;
+  return `${String(rh).padStart(2, "0")}:${String(rm).padStart(2, "0")}`;
 }
 
 const tabs = $derived([
-  { id: "subjects", label: m.exams_detail_subjects(), icon: BookOpen, count: subjects.length },
-  { id: "schedule", label: m.exams_detail_schedule(), icon: Calendar, count: activeSchedules.length },
-  { id: "seating", label: m.exams_detail_seating(), icon: Hash, count: seatingNumbers.length },
-  { id: "halls", label: m.exams_detail_halls(), icon: Building2, count: halls.length },
-  { id: "proctors", label: m.exams_detail_proctors(), icon: UserCheck, count: proctors.length },
+  {
+    id: "subjects",
+    label: m.exams_detail_subjects(),
+    icon: BookOpen,
+    count: subjects.length,
+  },
+  {
+    id: "schedule",
+    label: m.exams_detail_schedule(),
+    icon: Calendar,
+    count: activeSchedules.length,
+  },
+  {
+    id: "seating",
+    label: m.exams_detail_seating(),
+    icon: Hash,
+    count: seatingNumbers.length,
+  },
+  {
+    id: "halls",
+    label: m.exams_detail_halls(),
+    icon: Building2,
+    count: halls.length,
+  },
+  {
+    id: "proctors",
+    label: m.exams_detail_proctors(),
+    icon: UserCheck,
+    count: proctors.length,
+  },
 ]);
 
 async function loadSession() {
@@ -175,7 +211,7 @@ async function loadSession() {
   isLoading = true;
   try {
     session = await commands.exams.getSession(data.orgId, sessionId);
-    
+
     // Load subjects
     try {
       subjects = await commands.exams.getSubjects(data.orgId, sessionId);
@@ -192,7 +228,10 @@ async function loadSession() {
 
     // Load seating numbers
     try {
-      seatingNumbers = await commands.exams.getSeatingNumbers(data.orgId, sessionId);
+      seatingNumbers = await commands.exams.getSeatingNumbers(
+        data.orgId,
+        sessionId,
+      );
     } catch (err) {
       console.error("Failed to load seating numbers", err);
     }
@@ -316,7 +355,10 @@ async function loadSolveJobs() {
 
 async function handleAutoSchedule() {
   if (!session) return;
-  const available_dates = generateDatesRange(session.start_date, session.end_date);
+  const available_dates = generateDatesRange(
+    session.start_date,
+    session.end_date,
+  );
   if (available_dates.length === 0) {
     toast.error("تاريخ البداية أو النهاية غير صالح");
     return;
@@ -448,11 +490,24 @@ async function handleApplySolve() {
 }
 
 async function handleDeleteSchedule(scheduleId: string) {
-  if (!confirm(getLocale() === "ar" ? "هل أنت متأكد من رغبتك في حذف هذا الامتحان نهائياً؟" : "Are you sure you want to delete this scheduled exam permanently?")) return;
+  if (
+    !confirm(
+      getLocale() === "ar"
+        ? "هل أنت متأكد من رغبتك في حذف هذا الامتحان نهائياً؟"
+        : "Are you sure you want to delete this scheduled exam permanently?",
+    )
+  )
+    return;
   const promise = commands.exams.deleteSchedule(data.orgId, scheduleId);
   toast.promise(promise, {
-    loading: getLocale() === "ar" ? "جاري حذف الامتحان..." : "Deleting scheduled exam...",
-    success: getLocale() === "ar" ? "تم حذف الامتحان بنجاح!" : "Deleted exam successfully!",
+    loading:
+      getLocale() === "ar"
+        ? "جاري حذف الامتحان..."
+        : "Deleting scheduled exam...",
+    success:
+      getLocale() === "ar"
+        ? "تم حذف الامتحان بنجاح!"
+        : "Deleted exam successfully!",
     error: (err: any) => err?.message || "Failed to delete",
   });
   try {
@@ -465,14 +520,28 @@ async function handleDeleteSchedule(scheduleId: string) {
 
 async function handleToggleScheduleStatus(sched: any) {
   const newStatus = sched.status === "cancelled" ? "scheduled" : "cancelled";
-  const label = newStatus === "cancelled" 
-    ? (getLocale() === "ar" ? "إلغاء تفعيل الامتحان..." : "Deactivating exam...")
-    : (getLocale() === "ar" ? "تفعيل الامتحان..." : "Activating exam...");
-  const labelSuccess = newStatus === "cancelled"
-    ? (getLocale() === "ar" ? "تم إلغاء التفعيل بنجاح!" : "Deactivated successfully!")
-    : (getLocale() === "ar" ? "تم تفعيل الامتحان بنجاح!" : "Activated successfully!");
+  const label =
+    newStatus === "cancelled"
+      ? getLocale() === "ar"
+        ? "إلغاء تفعيل الامتحان..."
+        : "Deactivating exam..."
+      : getLocale() === "ar"
+        ? "تفعيل الامتحان..."
+        : "Activating exam...";
+  const labelSuccess =
+    newStatus === "cancelled"
+      ? getLocale() === "ar"
+        ? "تم إلغاء التفعيل بنجاح!"
+        : "Deactivated successfully!"
+      : getLocale() === "ar"
+        ? "تم تفعيل الامتحان بنجاح!"
+        : "Activated successfully!";
 
-  const promise = commands.exams.updateScheduleStatus(data.orgId, sched.id, newStatus);
+  const promise = commands.exams.updateScheduleStatus(
+    data.orgId,
+    sched.id,
+    newStatus,
+  );
   toast.promise(promise, {
     loading: label,
     success: labelSuccess,
@@ -510,7 +579,7 @@ async function handleAllocateHalls() {
 async function handleActivate() {
   if (!session) return;
   const promise = commands.exams.updateSession(data.orgId, sessionId, {
-    status: "active"
+    status: "active",
   });
 
   toast.promise(promise, {
@@ -554,7 +623,7 @@ async function handleAssignProctors() {
     toast.error("يرجى جدولة الامتحانات أولاً قبل تعيين المراقبين");
     return;
   }
-  
+
   let successCount = 0;
   isLoading = true;
   try {
@@ -566,7 +635,9 @@ async function handleAssignProctors() {
       });
       successCount++;
     }
-    toast.success(`تم تعيين المراقبين بنجاح لـ ${successCount} فترات امتحانية!`);
+    toast.success(
+      `تم تعيين المراقبين بنجاح لـ ${successCount} فترات امتحانية!`,
+    );
     await loadSession();
   } catch (err: any) {
     toast.error(err?.message || "فشل تعيين المراقبين");

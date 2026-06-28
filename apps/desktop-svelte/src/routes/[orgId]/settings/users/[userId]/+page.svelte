@@ -11,25 +11,25 @@ import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 import { commands } from "$lib/services/ipc";
 import type { User } from "$lib/services/ipc";
-import { 
-  ArrowLeft, 
+import {
+  ArrowLeft,
   ArrowRight,
-  Shield, 
-  Key, 
-  Power, 
-  Trash2, 
-  User as UserIcon, 
-  Monitor, 
-  Smartphone, 
-  Globe, 
-  ShieldAlert, 
-  Save, 
-  Layout, 
-  Lock, 
+  Shield,
+  Key,
+  Power,
+  Trash2,
+  User as UserIcon,
+  Monitor,
+  Smartphone,
+  Globe,
+  ShieldAlert,
+  Save,
+  Layout,
+  Lock,
   Activity,
   CheckCircle,
   AlertTriangle,
-  UserCheck
+  UserCheck,
 } from "lucide-svelte";
 
 // Derive params
@@ -37,7 +37,9 @@ let orgId = $derived(page.params.orgId);
 let userId = $derived(page.params.userId);
 
 // Tab state
-let activeTab = $state<"profile" | "sessions" | "permissions" | "settings">("profile");
+let activeTab = $state<"profile" | "sessions" | "permissions" | "settings">(
+  "profile",
+);
 
 // User data state
 let user = $state<User | null>(null);
@@ -55,25 +57,41 @@ function getRoleLabel(roleStr: string): string {
   const r = String(roleStr).toLowerCase();
   if (getLocale() === "ar") {
     switch (r) {
-      case "super_admin": return "مدير النظام الرئيسي";
-      case "admin": return "إداري النظام";
-      case "principal": return "مدير المدرسة";
-      case "teacher": return "معلم";
-      case "staff": return "موظف كادر مساند";
-      case "student": return "طالب";
-      case "parent": return "ولي أمر";
-      default: return r;
+      case "super_admin":
+        return "مدير النظام الرئيسي";
+      case "admin":
+        return "إداري النظام";
+      case "principal":
+        return "مدير المدرسة";
+      case "teacher":
+        return "معلم";
+      case "staff":
+        return "موظف كادر مساند";
+      case "student":
+        return "طالب";
+      case "parent":
+        return "ولي أمر";
+      default:
+        return r;
     }
   } else {
     switch (r) {
-      case "super_admin": return "Super Admin";
-      case "admin": return "System Admin";
-      case "principal": return "School Principal";
-      case "teacher": return "Teacher";
-      case "staff": return "Staff Member";
-      case "student": return "Student";
-      case "parent": return "Parent / Guardian";
-      default: return r;
+      case "super_admin":
+        return "Super Admin";
+      case "admin":
+        return "System Admin";
+      case "principal":
+        return "School Principal";
+      case "teacher":
+        return "Teacher";
+      case "staff":
+        return "Staff Member";
+      case "student":
+        return "Student";
+      case "parent":
+        return "Parent / Guardian";
+      default:
+        return r;
     }
   }
 }
@@ -88,10 +106,10 @@ let role = $state("teacher");
 
 // Specific Override Permissions State
 let overridePermissions = $state<Record<string, boolean>>({
-  "acad_grades_submit": false,
-  "fin_ledger_view": false,
-  "student_enroll": false,
-  "report_generate": false
+  acad_grades_submit: false,
+  fin_ledger_view: false,
+  student_enroll: false,
+  report_generate: false,
 });
 
 // User Preferences State
@@ -111,7 +129,7 @@ let activeSessions = $state([
     ip: "109.74.32.18",
     active: true,
     icon: Monitor,
-    time: "Active now"
+    time: "Active now",
   },
   {
     id: "sess_2",
@@ -120,7 +138,7 @@ let activeSessions = $state([
     ip: "37.220.112.4",
     active: false,
     icon: Smartphone,
-    time: "2 hours ago"
+    time: "2 hours ago",
   },
   {
     id: "sess_3",
@@ -129,8 +147,8 @@ let activeSessions = $state([
     ip: "109.74.32.90",
     active: false,
     icon: Monitor,
-    time: "3 days ago"
-  }
+    time: "3 days ago",
+  },
 ]);
 
 async function loadUser() {
@@ -139,7 +157,7 @@ async function loadUser() {
   try {
     const fetched = await commands.users.getUser(userId);
     user = fetched;
-    
+
     // Bind form fields
     fullName = fetched.full_name || "";
     nameAr = fetched.name_ar || "";
@@ -147,23 +165,28 @@ async function loadUser() {
     email = fetched.email || "";
     phone = (fetched.phone as string) || "";
     role = fetched.primary_role || fetched.role || "teacher";
-    isActiveState = fetched.is_active !== undefined ? Boolean(fetched.is_active) : true;
+    isActiveState =
+      fetched.is_active !== undefined ? Boolean(fetched.is_active) : true;
 
     // Fetch user specific overrides from database
     try {
       const dbOverrides = await commands.permissions.getUserPermissions(userId);
       overridePermissions = {
-        "acad_grades_submit": dbOverrides["GradeWrite"] === "allow",
-        "fin_ledger_view": dbOverrides["FinanceRead"] === "allow",
-        "student_enroll": dbOverrides["EnrollmentWrite"] === "allow",
-        "report_generate": dbOverrides["GradeReport"] === "allow",
+        acad_grades_submit: dbOverrides["GradeWrite"] === "allow",
+        fin_ledger_view: dbOverrides["FinanceRead"] === "allow",
+        student_enroll: dbOverrides["EnrollmentWrite"] === "allow",
+        report_generate: dbOverrides["GradeReport"] === "allow",
       };
     } catch (err) {
       console.error("Failed to load user permissions overrides", err);
     }
   } catch (e) {
     console.error("Failed to load user:", e);
-    toast.error(getLocale() === "ar" ? "فشل تحميل بيانات المستخدم" : "Failed to load user details");
+    toast.error(
+      getLocale() === "ar"
+        ? "فشل تحميل بيانات المستخدم"
+        : "Failed to load user details",
+    );
   } finally {
     isLoading = false;
   }
@@ -185,7 +208,7 @@ async function handleUpdateProfile(e: Event) {
       name_en: nameEn || null,
       email: email || null,
       phone: phone || null,
-      is_active: isActiveState
+      is_active: isActiveState,
     };
     await commands.users.updateUser(userId, request);
     if (role) {
@@ -206,10 +229,10 @@ async function handleSaveOverrides() {
   isSaving = true;
   try {
     const permissionsMap: Record<string, string> = {
-      "GradeWrite": overridePermissions.acad_grades_submit ? "allow" : "deny",
-      "FinanceRead": overridePermissions.fin_ledger_view ? "allow" : "deny",
-      "EnrollmentWrite": overridePermissions.student_enroll ? "allow" : "deny",
-      "GradeReport": overridePermissions.report_generate ? "allow" : "deny",
+      GradeWrite: overridePermissions.acad_grades_submit ? "allow" : "deny",
+      FinanceRead: overridePermissions.fin_ledger_view ? "allow" : "deny",
+      EnrollmentWrite: overridePermissions.student_enroll ? "allow" : "deny",
+      GradeReport: overridePermissions.report_generate ? "allow" : "deny",
     };
     await commands.permissions.saveUserPermissions(userId, permissionsMap);
     toast.success(m.settings_permissions_save_success());
@@ -224,26 +247,27 @@ async function handleSaveOverrides() {
 // Toggle Account Active / Inactive
 async function toggleAccountStatus() {
   if (!userId || !user) return;
-  
+
   const nextState = !isActiveState;
-  const confirmMsg = nextState 
+  const confirmMsg = nextState
     ? m.settings_user_detail_activate_confirm()
     : m.settings_user_detail_deactivate_confirm();
-    
+
   if (!confirm(confirmMsg)) return;
-  
+
   isSaving = true;
   try {
     const request = {
       ...user,
-      is_active: nextState
+      is_active: nextState,
     };
     await commands.users.updateUser(userId, request);
     isActiveState = nextState;
-    
-    toast.success(nextState
-      ? m.settings_user_detail_activate_success()
-      : m.settings_user_detail_deactivate_success()
+
+    toast.success(
+      nextState
+        ? m.settings_user_detail_activate_success()
+        : m.settings_user_detail_deactivate_success(),
     );
   } catch (e) {
     const errorMsg = e instanceof Error ? e.message : String(e);
@@ -265,7 +289,7 @@ async function handleResetPassword(e: Event) {
   isResettingPassword = true;
   try {
     await commands.users.changeUserPassword(userId as string, {
-      new_password: newPassword
+      new_password: newPassword,
     });
     toast.success(m.settings_user_detail_reset_success());
     showResetModal = false;
@@ -284,20 +308,25 @@ function revokeSession(sessionId: string) {
   const confirmMsg = m.settings_user_detail_session_revoke_confirm();
   if (!confirm(confirmMsg)) return;
 
-  activeSessions = activeSessions.filter(s => s.id !== sessionId);
+  activeSessions = activeSessions.filter((s) => s.id !== sessionId);
   toast.success(m.settings_user_detail_session_revoked());
 }
 
 // Delete User Account
 async function handleDeleteUser() {
-  const confirmMsg = getLocale() === "ar"
-    ? "هل أنت متأكد نهائياً من حذف هذا الحساب؟ هذا الإجراء لا يمكن التراجع عنه وسيتم مسح كافة ملفاته الشخصية!"
-    : "Are you sure you want to permanently delete this user? This action is irreversible!";
-    
+  const confirmMsg =
+    getLocale() === "ar"
+      ? "هل أنت متأكد نهائياً من حذف هذا الحساب؟ هذا الإجراء لا يمكن التراجع عنه وسيتم مسح كافة ملفاته الشخصية!"
+      : "Are you sure you want to permanently delete this user? This action is irreversible!";
+
   if (!userId) return;
   try {
     await commands.users.deleteUser(userId as string, "admin");
-    toast.success(getLocale() === "ar" ? "تم حذف حساب المستخدم نهائياً" : "User deleted permanently");
+    toast.success(
+      getLocale() === "ar"
+        ? "تم حذف حساب المستخدم نهائياً"
+        : "User deleted permanently",
+    );
     // Redirect to users directory
     window.location.href = localizeHref(`/${orgId}/settings/users`);
   } catch (e) {
@@ -305,7 +334,6 @@ async function handleDeleteUser() {
     toast.error(errorMsg);
   }
 }
-
 </script>
 
 <div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide flex flex-col p-6 gap-6 font-sans">

@@ -29,7 +29,9 @@ const candidates = [
 
 for (const c of candidates) {
   if (bcrypt.compareSync(c, hash)) {
-    console.log(`>>> MATCH FOUND: "${c.replace(/\r/g, "\\r").replace(/\n/g, "\\n")}"`);
+    console.log(
+      `>>> MATCH FOUND: "${c.replace(/\r/g, "\\r").replace(/\n/g, "\\n")}"`,
+    );
     process.exit(0);
   }
 }

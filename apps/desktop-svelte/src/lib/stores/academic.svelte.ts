@@ -3,9 +3,15 @@
 // persistent across route changes.
 
 class AcademicStore {
-  private _cycleId = $state<string>(localStorage.getItem("orbis_academic_cycle_id") ?? "");
-  private _classId = $state<string>(localStorage.getItem("orbis_academic_class_id") ?? "");
-  private _subjectId = $state<string>(localStorage.getItem("orbis_academic_subject_id") ?? "");
+  private _cycleId = $state<string>(
+    localStorage.getItem("orbis_academic_cycle_id") ?? "",
+  );
+  private _classId = $state<string>(
+    localStorage.getItem("orbis_academic_class_id") ?? "",
+  );
+  private _subjectId = $state<string>(
+    localStorage.getItem("orbis_academic_subject_id") ?? "",
+  );
 
   get selectedCycleId(): string {
     return this._cycleId;

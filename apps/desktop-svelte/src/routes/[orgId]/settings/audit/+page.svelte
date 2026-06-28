@@ -54,7 +54,11 @@ async function loadData() {
       commands.users.getUsers(data.orgId),
     ]);
     // Sort logs by date descending
-    auditLogs = logsList.sort((a, b) => new Date(b.created_at as string).getTime() - new Date(a.created_at as string).getTime());
+    auditLogs = logsList.sort(
+      (a, b) =>
+        new Date(b.created_at as string).getTime() -
+        new Date(a.created_at as string).getTime(),
+    );
     users = usersList;
   } catch (e) {
     console.error("Error loading audit logs:", e);
@@ -82,10 +86,19 @@ function getActionColor(action: string): string {
   if (act.includes("create") || act.includes("insert") || act.includes("add")) {
     return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
   }
-  if (act.includes("update") || act.includes("edit") || act.includes("modify")) {
+  if (
+    act.includes("update") ||
+    act.includes("edit") ||
+    act.includes("modify")
+  ) {
     return "bg-blue-500/10 text-blue-500 border-blue-500/20";
   }
-  if (act.includes("delete") || act.includes("remove") || act.includes("unlink") || act.includes("withdraw")) {
+  if (
+    act.includes("delete") ||
+    act.includes("remove") ||
+    act.includes("unlink") ||
+    act.includes("withdraw")
+  ) {
     return "bg-rose-500/10 text-rose-500 border-rose-500/20";
   }
   return "bg-purple-500/10 text-purple-500 border-purple-500/20";
@@ -97,11 +110,17 @@ const filteredLogs = $derived.by(() => {
     const textMatch =
       searchQuery.trim() === "" ||
       userLabel.includes(searchQuery.toLowerCase()) ||
-      String(log.entity_type).toLowerCase().includes(searchQuery.toLowerCase()) ||
+      String(log.entity_type)
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
       String(log.action).toLowerCase().includes(searchQuery.toLowerCase()) ||
-      String(log.metadata || "").toLowerCase().includes(searchQuery.toLowerCase());
+      String(log.metadata || "")
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
 
-    const actionMatch = actionFilter === "all" || String(log.action).toLowerCase() === actionFilter;
+    const actionMatch =
+      actionFilter === "all" ||
+      String(log.action).toLowerCase() === actionFilter;
 
     return textMatch && actionMatch;
   });

@@ -52,7 +52,7 @@ async function handleLanguageChange(lang: string) {
   if (lang !== "ar" && lang !== "en") return;
   if (lang === getLocale()) return;
   selectedLocale = lang;
-  
+
   // Navigate to the localized URL using paraglide helper
   const localizedUrl = localizeHref(page.url.pathname, { locale: lang });
   await goto(localizedUrl);

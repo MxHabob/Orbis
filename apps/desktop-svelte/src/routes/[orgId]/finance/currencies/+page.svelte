@@ -76,15 +76,15 @@ async function saveRate(code: string) {
     error = "سعر الصرف يجب أن يكون أكبر من الصفر";
     return;
   }
-  
+
   try {
     await commands.finance.updateCurrency(data.orgId, code, {
-      exchange_rate: editRate
+      exchange_rate: editRate,
     });
     successMessage = "تم تحديث سعر الصرف بنجاح";
     editingCode = null;
     await loadCurrencies();
-    
+
     setTimeout(() => {
       successMessage = null;
     }, 3000);
@@ -95,14 +95,20 @@ async function saveRate(code: string) {
 }
 
 async function seedFinancials() {
-  if (!confirm("هل أنت متأكد من رغبتك في تهيئة النظام المالي الافتراضي؟ سيتم إنشاء العملات (ريال، دولار، سعودي) وشجرة الحسابات المحاسبية الأساسية.")) return;
-  
+  if (
+    !confirm(
+      "هل أنت متأكد من رغبتك في تهيئة النظام المالي الافتراضي؟ سيتم إنشاء العملات (ريال، دولار، سعودي) وشجرة الحسابات المحاسبية الأساسية.",
+    )
+  )
+    return;
+
   isSeeding = true;
   error = null;
   successMessage = null;
   try {
     await commands.finance.seedDefaultFinancials(data.orgId);
-    successMessage = "تم تهيئة النظام المالي وتنزيل شجرة الحسابات والعملات الافتراضية بنجاح!";
+    successMessage =
+      "تم تهيئة النظام المالي وتنزيل شجرة الحسابات والعملات الافتراضية بنجاح!";
     await loadCurrencies();
   } catch (e) {
     console.error("Error seeding financials:", e);

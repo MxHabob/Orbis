@@ -58,7 +58,8 @@ function resetForm() {
 // Fetch subjects catalog when sheet is opened
 $effect(() => {
   if (open && orgId) {
-    commands.subjects.getAll(orgId)
+    commands.subjects
+      .getAll(orgId)
       .then((res) => {
         subjectsList = res || [];
       })

@@ -94,7 +94,7 @@ async function fetchStatement() {
       data.orgId,
       selectedAccountId,
       startDate,
-      endDate
+      endDate,
     );
   } catch (e) {
     console.error("Error fetching account statement:", e);
@@ -121,10 +121,17 @@ const totals = $derived.by(() => {
 const filteredItems = $derived.by(() => {
   if (!statement || !statement.items) return [];
   if (searchQuery.trim() === "") return statement.items;
-  return statement.items.filter((item: any) =>
-    String(item.reference || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-    String(item.description || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-    String(item.description_ar || "").toLowerCase().includes(searchQuery.toLowerCase())
+  return statement.items.filter(
+    (item: any) =>
+      String(item.reference || "")
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+      String(item.description || "")
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+      String(item.description_ar || "")
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()),
   );
 });
 

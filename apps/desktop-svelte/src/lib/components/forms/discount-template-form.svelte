@@ -77,11 +77,23 @@ async function handleSubmit(e: SubmitEvent) {
     };
 
     if (template) {
-      await commands.finance.updateDiscountTemplate(orgId, template.id, request);
-      toast.success(m.dt_update_success ? m.dt_update_success() : "Discount template updated successfully");
+      await commands.finance.updateDiscountTemplate(
+        orgId,
+        template.id,
+        request,
+      );
+      toast.success(
+        m.dt_update_success
+          ? m.dt_update_success()
+          : "Discount template updated successfully",
+      );
     } else {
       await commands.finance.createDiscountTemplate(orgId, request);
-      toast.success(m.dt_create_success ? m.dt_create_success() : "Discount template created successfully");
+      toast.success(
+        m.dt_create_success
+          ? m.dt_create_success()
+          : "Discount template created successfully",
+      );
     }
 
     onSuccess();

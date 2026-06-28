@@ -15,13 +15,7 @@ import {
 } from "@orbis/ui-svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import {
-  Plus,
-  Receipt,
-  Edit2,
-  Trash2,
-  ShieldAlert,
-} from "lucide-svelte";
+import { Plus, Receipt, Edit2, Trash2, ShieldAlert } from "lucide-svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency } from "$lib/i18n-utils";
 import { fade } from "svelte/transition";
@@ -71,12 +65,16 @@ function handleEdit(tpl: any) {
 }
 
 async function handleDelete(tpl: any) {
-  const confirmMsg = m.ft_delete_confirm ? m.ft_delete_confirm() : "هل أنت متأكد من حذف هذا القالب؟";
+  const confirmMsg = m.ft_delete_confirm
+    ? m.ft_delete_confirm()
+    : "هل أنت متأكد من حذف هذا القالب؟";
   if (!confirm(confirmMsg)) return;
 
   try {
     await commands.finance.deleteFeeTemplate(data.orgId, tpl.id);
-    toast.success(m.ft_delete_success ? m.ft_delete_success() : "تم حذف القالب بنجاح");
+    toast.success(
+      m.ft_delete_success ? m.ft_delete_success() : "تم حذف القالب بنجاح",
+    );
     loadTemplates();
   } catch (e) {
     const errorMsg = e instanceof Error ? e.message : String(e);
@@ -86,20 +84,28 @@ async function handleDelete(tpl: any) {
 
 function getCategoryLabel(catStr: string) {
   const c = String(catStr).toLowerCase();
-  if (c === "tuition") return m.ft_category_tuition ? m.ft_category_tuition() : "رسوم دراسية";
-  if (c === "transport") return m.ft_category_transport ? m.ft_category_transport() : "نقل";
+  if (c === "tuition")
+    return m.ft_category_tuition ? m.ft_category_tuition() : "رسوم دراسية";
+  if (c === "transport")
+    return m.ft_category_transport ? m.ft_category_transport() : "نقل";
   if (c === "books") return m.ft_category_books ? m.ft_category_books() : "كتب";
-  if (c === "uniform") return m.ft_category_uniform ? m.ft_category_uniform() : "زي مدرسي";
-  if (c === "exam") return m.ft_category_exam ? m.ft_category_exam() : "رسوم امتحانات";
+  if (c === "uniform")
+    return m.ft_category_uniform ? m.ft_category_uniform() : "زي مدرسي";
+  if (c === "exam")
+    return m.ft_category_exam ? m.ft_category_exam() : "رسوم امتحانات";
   return m.ft_category_other ? m.ft_category_other() : "أخرى";
 }
 
 function getFrequencyLabel(freqStr: string) {
   const f = String(freqStr).toLowerCase();
-  if (f === "once") return m.ft_frequency_once ? m.ft_frequency_once() : "مرة واحدة";
-  if (f === "monthly") return m.ft_frequency_monthly ? m.ft_frequency_monthly() : "شهري";
-  if (f === "termly") return m.ft_frequency_termly ? m.ft_frequency_termly() : "فصلي";
-  if (f === "yearly") return m.ft_frequency_yearly ? m.ft_frequency_yearly() : "سنوي";
+  if (f === "once")
+    return m.ft_frequency_once ? m.ft_frequency_once() : "مرة واحدة";
+  if (f === "monthly")
+    return m.ft_frequency_monthly ? m.ft_frequency_monthly() : "شهري";
+  if (f === "termly")
+    return m.ft_frequency_termly ? m.ft_frequency_termly() : "فصلي";
+  if (f === "yearly")
+    return m.ft_frequency_yearly ? m.ft_frequency_yearly() : "سنوي";
   return freqStr;
 }
 
@@ -107,17 +113,23 @@ function getAmount(tpl: any): number {
   return Number(tpl.default_amount || 0);
 }
 
-function getLevelsLabel(applicableLevelsStr: string | null | undefined): string {
+function getLevelsLabel(
+  applicableLevelsStr: string | null | undefined,
+): string {
   if (!applicableLevelsStr) {
-    return m.attendance_status_unknown() === "غير محدد" ? "جميع الصفوف" : "All Grades";
+    return m.attendance_status_unknown() === "غير محدد"
+      ? "جميع الصفوف"
+      : "All Grades";
   }
   try {
     const rules = JSON.parse(applicableLevelsStr);
     const levels: string[] = rules.levels || (rules.level ? [rules.level] : []);
     if (levels.length === 0) {
-      return m.attendance_status_unknown() === "غير محدد" ? "جميع الصفوف" : "All Grades";
+      return m.attendance_status_unknown() === "غير محدد"
+        ? "جميع الصفوف"
+        : "All Grades";
     }
-    
+
     const levelNames: Record<string, { en: string; ar: string }> = {
       kg1: { en: "KG 1", ar: "روضة أولى" },
       kg2: { en: "KG 2", ar: "روضة ثانية" },
@@ -134,13 +146,15 @@ function getLevelsLabel(applicableLevelsStr: string | null | undefined): string 
 
     const isArabic = m.attendance_status_unknown() === "غير محدد";
     return levels
-      .map(lvl => {
+      .map((lvl) => {
         const nameObj = levelNames[lvl] || { en: lvl, ar: lvl };
         return isArabic ? nameObj.ar : nameObj.en;
       })
       .join(" - ");
   } catch (e) {
-    return m.attendance_status_unknown() === "غير محدد" ? "جميع الصفوف" : "All Grades";
+    return m.attendance_status_unknown() === "غير محدد"
+      ? "جميع الصفوف"
+      : "All Grades";
   }
 }
 </script>

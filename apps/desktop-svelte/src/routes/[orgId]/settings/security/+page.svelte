@@ -14,17 +14,17 @@ let confirmPassword = $state("");
 
 async function handleUpdatePassword(e: Event) {
   e.preventDefault();
-  
+
   if (newPassword !== confirmPassword) {
     toast.error(m.settings_security_password_mismatch());
     return;
   }
-  
+
   if (!authStore.userId) {
     toast.error("User ID not found");
     return;
   }
-  
+
   isUpdating = true;
   try {
     await commands.users.changeUserPassword(authStore.userId, {
@@ -59,7 +59,7 @@ const activeSessions = [
     ip: "109.74.32.19",
     active: false,
     icon: Smartphone,
-  }
+  },
 ];
 </script>
 

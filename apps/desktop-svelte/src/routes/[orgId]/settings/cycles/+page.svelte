@@ -6,7 +6,16 @@ import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
-import { Plus, Calendar, Pencil, CheckCircle2, Lock as LockIcon, ChevronRight, ChevronDown, Award } from "lucide-svelte";
+import {
+  Plus,
+  Calendar,
+  Pencil,
+  CheckCircle2,
+  Lock as LockIcon,
+  ChevronRight,
+  ChevronDown,
+  Award,
+} from "lucide-svelte";
 import CycleCreateSheet from "$lib/components/sheets/cycle-create-sheet.svelte";
 import * as m from "$lib/paraglide/messages";
 
@@ -73,7 +82,12 @@ async function handleActivate(cycleId: string) {
 }
 
 async function handleLock(cycleId: string) {
-  if (!confirm("Are you sure you want to lock this cycle? This prevents further edits to marks/enrollment.")) return;
+  if (
+    !confirm(
+      "Are you sure you want to lock this cycle? This prevents further edits to marks/enrollment.",
+    )
+  )
+    return;
   try {
     await commands.academics.lockCycle(cycleId);
     toast.success(m.settings_cycles_lock_success());

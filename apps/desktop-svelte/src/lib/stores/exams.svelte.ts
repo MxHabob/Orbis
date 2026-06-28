@@ -44,11 +44,15 @@ class ExamsStore {
   // Derived
   filteredSessions = $derived.by(() => {
     return this.sessions.filter((s) => {
-      const matchesSearch = !this.searchQuery ||
+      const matchesSearch =
+        !this.searchQuery ||
         (s.name || "").toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-        (s.name_ar || "").toLowerCase().includes(this.searchQuery.toLowerCase());
+        (s.name_ar || "")
+          .toLowerCase()
+          .includes(this.searchQuery.toLowerCase());
 
-      const matchesStatus = this.statusFilter === "all" || s.status === this.statusFilter;
+      const matchesStatus =
+        this.statusFilter === "all" || s.status === this.statusFilter;
 
       return matchesSearch && matchesStatus;
     });
@@ -56,7 +60,9 @@ class ExamsStore {
 
   activeSessions = $derived(this.sessions.filter((s) => s.status === "active"));
   draftSessions = $derived(this.sessions.filter((s) => s.status === "draft"));
-  completedSessions = $derived(this.sessions.filter((s) => s.status === "completed"));
+  completedSessions = $derived(
+    this.sessions.filter((s) => s.status === "completed"),
+  );
 
   // ── Load Sessions from DB ───────────────────────────────────────────
 
@@ -77,14 +83,18 @@ class ExamsStore {
 
   // ── Create Session (saves to DB) ────────────────────────────────────
 
-  async createSession(orgId: string, userId: string, data: {
-    name: string;
-    name_ar: string;
-    session_type: string;
-    start_date: string;
-    end_date: string;
-    cycle_id?: string;
-  }): Promise<ExamSession | null> {
+  async createSession(
+    orgId: string,
+    userId: string,
+    data: {
+      name: string;
+      name_ar: string;
+      session_type: string;
+      start_date: string;
+      end_date: string;
+      cycle_id?: string;
+    },
+  ): Promise<ExamSession | null> {
     try {
       const result = await commands.exams.createSession(orgId, userId, {
         name: data.name,
@@ -105,11 +115,21 @@ class ExamsStore {
 
   // ── Update Session ──────────────────────────────────────────────────
 
-  async updateSession(orgId: string, sessionId: string, updates: Record<string, unknown>): Promise<ExamSession | null> {
+  async updateSession(
+    orgId: string,
+    sessionId: string,
+    updates: Record<string, unknown>,
+  ): Promise<ExamSession | null> {
     try {
-      const result = await commands.exams.updateSession(orgId, sessionId, updates);
+      const result = await commands.exams.updateSession(
+        orgId,
+        sessionId,
+        updates,
+      );
       const updated = result as unknown as ExamSession;
-      this.sessions = this.sessions.map((s) => s.id === sessionId ? updated : s);
+      this.sessions = this.sessions.map((s) =>
+        s.id === sessionId ? updated : s,
+      );
       if (this.activeSession?.id === sessionId) {
         this.activeSession = updated;
       }

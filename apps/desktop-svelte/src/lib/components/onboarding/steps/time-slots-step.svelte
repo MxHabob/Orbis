@@ -20,7 +20,7 @@ function handleAddTimeSlot() {
     newSlotName,
     newSlotNameAr,
     newSlotStart,
-    newSlotEnd
+    newSlotEnd,
   );
   if (success) {
     newSlotName = "";

@@ -65,9 +65,24 @@ async function loadDropdownData() {
       currencyList.length > 0
         ? currencyList
         : [
-            { code: "YER", name: "Yemeni Rial", name_ar: "ريال يمني", exchange_rate: 1.0 },
-            { code: "USD", name: "US Dollar", name_ar: "دولار أمريكي", exchange_rate: 250.0 },
-            { code: "SAR", name: "Saudi Riyal", name_ar: "ريال سعودي", exchange_rate: 66.0 },
+            {
+              code: "YER",
+              name: "Yemeni Rial",
+              name_ar: "ريال يمني",
+              exchange_rate: 1.0,
+            },
+            {
+              code: "USD",
+              name: "US Dollar",
+              name_ar: "دولار أمريكي",
+              exchange_rate: 250.0,
+            },
+            {
+              code: "SAR",
+              name: "Saudi Riyal",
+              name_ar: "ريال سعودي",
+              exchange_rate: 66.0,
+            },
           ];
 
     if (studentList.length > 0) {

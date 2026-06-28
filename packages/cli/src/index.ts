@@ -43,15 +43,19 @@ function printError(message: string) {
 
 // ── Interactive Question Helpers ──────────────────────────────────────────
 
-async function ask(query: string, defaultValue = "", validator?: (val: string) => boolean): Promise<string> {
+async function ask(
+  query: string,
+  defaultValue = "",
+  validator?: (val: string) => boolean,
+): Promise<string> {
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
   });
 
   return new Promise((resolve) => {
-    const promptText = defaultValue 
-      ? `${c.gray("│")}  ${query} ${c.gray(`(${defaultValue})`)}: ` 
+    const promptText = defaultValue
+      ? `${c.gray("│")}  ${query} ${c.gray(`(${defaultValue})`)}: `
       : `${c.gray("│")}  ${query}: `;
 
     rl.question(promptText, (answer) => {
@@ -70,15 +74,15 @@ async function ask(query: string, defaultValue = "", validator?: (val: string) =
 async function askPassword(query: string): Promise<string> {
   return new Promise((resolve) => {
     process.stdout.write(`${c.gray("│")}  ${query}: `);
-    
+
     let password = "";
     const isRaw = process.stdin.isRaw;
     process.stdin.setRawMode(true);
     process.stdin.resume();
-    
+
     const handler = (char: Buffer) => {
       const code = char[0];
-      
+
       // Enter key (Carriage Return = 13, Line Feed = 10)
       if (code === 13 || code === 10) {
         process.stdin.removeListener("data", handler);
@@ -86,18 +90,18 @@ async function askPassword(query: string): Promise<string> {
         process.stdin.pause();
         process.stdout.write("\n");
         resolve(password);
-      } 
+      }
       // Ctrl+C (3)
       else if (code === 3) {
         process.exit(1);
-      } 
+      }
       // Backspace (127 or 8)
       else if (code === 127 || code === 8) {
         if (password.length > 0) {
           password = password.slice(0, -1);
           process.stdout.write("\b \b");
         }
-      } 
+      }
       // Printable characters
       else {
         const s = char.toString("utf-8");
@@ -109,7 +113,7 @@ async function askPassword(query: string): Promise<string> {
         }
       }
     };
-    
+
     process.stdin.on("data", handler);
   });
 }
@@ -121,12 +125,14 @@ function getDbPathSingle(identifier: string): string {
   let appDataDir = "";
 
   if (process.platform === "win32") {
-    const appData = process.env.APPDATA || path.join(home, "AppData", "Roaming");
+    const appData =
+      process.env.APPDATA || path.join(home, "AppData", "Roaming");
     appDataDir = path.join(appData, identifier);
   } else if (process.platform === "darwin") {
     appDataDir = path.join(home, "Library", "Application Support", identifier);
   } else {
-    const xdgData = process.env.XDG_DATA_HOME || path.join(home, ".local", "share");
+    const xdgData =
+      process.env.XDG_DATA_HOME || path.join(home, ".local", "share");
     appDataDir = path.join(xdgData, identifier);
   }
 
@@ -141,7 +147,7 @@ function getDbPaths(isDevExplicit = false): string[] {
   } else {
     // production database
     paths.push(getDbPathSingle("com.mulverse.orbis.svelte"));
-    
+
     // Auto-detect if development directory exists on the system
     const devPath = path.dirname(getDbPathSingle("com.mulverse.orbis.dev"));
     if (existsSync(devPath)) {
@@ -158,23 +164,35 @@ function getDbPaths(isDevExplicit = false): string[] {
 function printHelp() {
   console.log(c.bold("Usage:"));
   console.log(`  bun run start [command] [options]\n`);
-  
+
   console.log(c.bold("Commands:"));
-  console.log(`  ${c.cyan("init")}          Start school system installation & db migrations (Default)`);
-  console.log(`  ${c.cyan("db:reset")}      Completely reset and delete local SQLite database files\n`);
+  console.log(
+    `  ${c.cyan("init")}          Start school system installation & db migrations (Default)`,
+  );
+  console.log(
+    `  ${c.cyan("db:reset")}      Completely reset and delete local SQLite database files\n`,
+  );
 
   console.log(c.bold("Options:"));
   console.log(`  ${c.yellow("-h, --help")}    Show this help message`);
   console.log(`  ${c.yellow("-v, --version")} Show installer CLI version`);
-  console.log(`  ${c.yellow("--dev")}          Target only the development database (com.mulverse.orbis.dev)\n`);
+  console.log(
+    `  ${c.yellow("--dev")}          Target only the development database (com.mulverse.orbis.dev)\n`,
+  );
 
   console.log(c.bold("Auto-Install Options (for silent installations):"));
   console.log(`  ${c.purple("--school")}       English School Name`);
   console.log(`  ${c.purple("--school-ar")}    Arabic School Name`);
   console.log(`  ${c.purple("--email")}        Admin login email address`);
-  console.log(`  ${c.purple("--password")}     Admin password (min 6 characters)`);
-  console.log(`  ${c.purple("--admin")}        Admin English name (default: School Admin)`);
-  console.log(`  ${c.purple("--admin-ar")}     Admin Arabic name (default: مدير المدرسة)`);
+  console.log(
+    `  ${c.purple("--password")}     Admin password (min 6 characters)`,
+  );
+  console.log(
+    `  ${c.purple("--admin")}        Admin English name (default: School Admin)`,
+  );
+  console.log(
+    `  ${c.purple("--admin-ar")}     Admin Arabic name (default: مدير المدرسة)`,
+  );
   console.log(`  ${c.purple("--timezone")}     Timezone (default: Asia/Aden)`);
   console.log(`  ${c.purple("--phone")}        Phone number`);
   console.log();
@@ -183,7 +201,18 @@ function printHelp() {
 // ── Database Schema Migration ──────────────────────────────────────────────
 
 function runDatabaseMigration(db: Database) {
-  const dbDir = path.resolve(__dirname, "..", "..", "..", "apps", "api-rust", "crates", "core-domain", "src", "database");
+  const dbDir = path.resolve(
+    __dirname,
+    "..",
+    "..",
+    "..",
+    "apps",
+    "api-rust",
+    "crates",
+    "core-domain",
+    "src",
+    "database",
+  );
   const coreSchemaPath = path.join(dbDir, "core_schema.sql");
   const schemaPath = path.join(dbDir, "schema.sql");
 
@@ -201,8 +230,8 @@ function runDatabaseMigration(db: Database) {
     for (const statement of statements) {
       const cleaned = statement
         .split("\n")
-        .map(line => line.trim())
-        .filter(line => !line.startsWith("--") && line.length > 0)
+        .map((line) => line.trim())
+        .filter((line) => !line.startsWith("--") && line.length > 0)
         .join("\n")
         .trim();
       if (cleaned.length > 0) {
@@ -222,7 +251,7 @@ function runDatabaseMigration(db: Database) {
 async function handleDatabaseReset(isDev = false) {
   printHeader("Orbis Database Reset Tool");
   const dbPaths = getDbPaths(isDev);
-  
+
   let foundAny = false;
   for (const dbPath of dbPaths) {
     if (existsSync(dbPath)) {
@@ -236,7 +265,10 @@ async function handleDatabaseReset(isDev = false) {
     return;
   }
 
-  const confirm = await ask("Confirm deleting database files and wiping all data? (yes/no)", "no");
+  const confirm = await ask(
+    "Confirm deleting database files and wiping all data? (yes/no)",
+    "no",
+  );
   if (confirm.toLowerCase() === "yes") {
     for (const dbPath of dbPaths) {
       if (existsSync(dbPath)) {
@@ -251,7 +283,7 @@ async function handleDatabaseReset(isDev = false) {
   } else {
     printInfo("Reset canceled by user.");
   }
-  
+
   console.log(c.purple("└  Completed."));
 }
 
@@ -266,14 +298,42 @@ interface AccountNode {
   children?: AccountNode[];
 }
 
-function seedDefaultFinancialsAndPermissions(db: Database, orgId: string, baseCurrency: string) {
+function seedDefaultFinancialsAndPermissions(
+  db: Database,
+  orgId: string,
+  baseCurrency: string,
+) {
   const now = new Date().toISOString();
-  
+
   // 1. Seed Currencies (YER, USD, SAR)
   const defaultCurrencies = [
-    { code: "YER", name: "Yemeni Rial", nameAr: "ريال يمني", symbol: "﷼", position: "after", decimals: 0, rate: 1.0 },
-    { code: "USD", name: "US Dollar", nameAr: "دولار أمريكي", symbol: "$", position: "before", decimals: 2, rate: 250.0 },
-    { code: "SAR", name: "Saudi Riyal", nameAr: "ريال سعودي", symbol: "ر.س", position: "after", decimals: 2, rate: 66.0 }
+    {
+      code: "YER",
+      name: "Yemeni Rial",
+      nameAr: "ريال يمني",
+      symbol: "﷼",
+      position: "after",
+      decimals: 0,
+      rate: 1.0,
+    },
+    {
+      code: "USD",
+      name: "US Dollar",
+      nameAr: "دولار أمريكي",
+      symbol: "$",
+      position: "before",
+      decimals: 2,
+      rate: 250.0,
+    },
+    {
+      code: "SAR",
+      name: "Saudi Riyal",
+      nameAr: "ريال سعودي",
+      symbol: "ر.س",
+      position: "after",
+      decimals: 2,
+      rate: 66.0,
+    },
   ];
 
   for (const cur of defaultCurrencies) {
@@ -282,13 +342,24 @@ function seedDefaultFinancialsAndPermissions(db: Database, orgId: string, baseCu
       `INSERT OR IGNORE INTO currencies (
         code, org_id, name, name_ar, symbol, symbol_position, decimal_places, exchange_rate, is_base, is_active, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`,
-      [cur.code, orgId, cur.name, cur.nameAr, cur.symbol, cur.position, cur.decimals, cur.rate, isBase, now]
+      [
+        cur.code,
+        orgId,
+        cur.name,
+        cur.nameAr,
+        cur.symbol,
+        cur.position,
+        cur.decimals,
+        cur.rate,
+        isBase,
+        now,
+      ],
     );
   }
 
   // 2. Seed Chart of Accounts from JSON
   const jsonPath = path.join(__dirname, "educational_chart_of_accounts.json");
-  
+
   if (!existsSync(jsonPath)) {
     printError(`Local Chart of Accounts JSON file not found at ${jsonPath}`);
     process.exit(1);
@@ -300,7 +371,13 @@ function seedDefaultFinancialsAndPermissions(db: Database, orgId: string, baseCu
   // Helper to map type to lowercase database types
   function getDbType(type: string): string {
     const t = type.toLowerCase();
-    if (t === "asset" || t === "liability" || t === "equity" || t === "revenue" || t === "expense") {
+    if (
+      t === "asset" ||
+      t === "liability" ||
+      t === "equity" ||
+      t === "revenue" ||
+      t === "expense"
+    ) {
       return t;
     }
     return "asset";
@@ -310,10 +387,10 @@ function seedDefaultFinancialsAndPermissions(db: Database, orgId: string, baseCu
   function getSubType(code: string): string | null {
     if (code === "110101") return "treasury_control";
     if (code === "110301") return "student_receivable";
-    if (code === "210401") return "employee_payable"; 
-    if (code === "3201") return "retained_earnings"; 
-    if (code === "4101") return "tuition_revenue"; 
-    if (code === "5101") return "salaries_expense"; 
+    if (code === "210401") return "employee_payable";
+    if (code === "3201") return "retained_earnings";
+    if (code === "4101") return "tuition_revenue";
+    if (code === "5101") return "salaries_expense";
     return null;
   }
 
@@ -325,11 +402,15 @@ function seedDefaultFinancialsAndPermissions(db: Database, orgId: string, baseCu
   }
 
   // Recursive insertion function
-  function insertAccount(node: AccountNode, parentId: string | null, parentPath: string | null) {
+  function insertAccount(
+    node: AccountNode,
+    parentId: string | null,
+    parentPath: string | null,
+  ) {
     const fullId = `${orgId}_${node.code}`;
     const dbType = getDbType(node.type);
     const subType = getSubType(node.code);
-    
+
     const hasChildren = !!(node.children && node.children.length > 0);
     const controlAccount = isControl(node.code, hasChildren);
     const systemAccount = 1;
@@ -356,8 +437,8 @@ function seedDefaultFinancialsAndPermissions(db: Database, orgId: string, baseCu
         controlAccount,
         systemAccount,
         now,
-        now
-      ]
+        now,
+      ],
     );
 
     if (node.children) {
@@ -373,13 +454,62 @@ function seedDefaultFinancialsAndPermissions(db: Database, orgId: string, baseCu
 
   // 3. Seed Default Permissions
   const permissions = [
-    { code: "OrganizationRead", name: "Read Organization Info", nameAr: "عرض معلومات المنشأة", module: "organization", action: "read", resource: "info" },
-    { code: "OrganizationWrite", name: "Write Organization Info", nameAr: "تعديل معلومات المنشأة", module: "organization", action: "write", resource: "info" },
-    { code: "UserRead", name: "Read Users Directory", nameAr: "استعراض دليل المستخدمين", module: "users", action: "read", resource: "directory" },
-    { code: "UserWrite", name: "Create and Edit Users", nameAr: "إنشاء وتعديل حسابات المستخدمين", module: "users", action: "write", resource: "account" },
-    { code: "UserDelete", name: "Delete Users", nameAr: "حذف حسابات المستخدمين", module: "users", action: "delete", resource: "account" },
-    { code: "CycleRead", name: "Read Academic Cycles", nameAr: "عرض الفترات والأعوام الدراسية", module: "academics", action: "read", resource: "cycle" },
-    { code: "CycleWrite", name: "Create and Edit Cycles", nameAr: "إنشاء وتعديل الفترات والأعوام", module: "academics", action: "write", resource: "cycle" }
+    {
+      code: "OrganizationRead",
+      name: "Read Organization Info",
+      nameAr: "عرض معلومات المنشأة",
+      module: "organization",
+      action: "read",
+      resource: "info",
+    },
+    {
+      code: "OrganizationWrite",
+      name: "Write Organization Info",
+      nameAr: "تعديل معلومات المنشأة",
+      module: "organization",
+      action: "write",
+      resource: "info",
+    },
+    {
+      code: "UserRead",
+      name: "Read Users Directory",
+      nameAr: "استعراض دليل المستخدمين",
+      module: "users",
+      action: "read",
+      resource: "directory",
+    },
+    {
+      code: "UserWrite",
+      name: "Create and Edit Users",
+      nameAr: "إنشاء وتعديل حسابات المستخدمين",
+      module: "users",
+      action: "write",
+      resource: "account",
+    },
+    {
+      code: "UserDelete",
+      name: "Delete Users",
+      nameAr: "حذف حسابات المستخدمين",
+      module: "users",
+      action: "delete",
+      resource: "account",
+    },
+    {
+      code: "CycleRead",
+      name: "Read Academic Cycles",
+      nameAr: "عرض الفترات والأعوام الدراسية",
+      module: "academics",
+      action: "read",
+      resource: "cycle",
+    },
+    {
+      code: "CycleWrite",
+      name: "Create and Edit Cycles",
+      nameAr: "إنشاء وتعديل الفترات والأعوام",
+      module: "academics",
+      action: "write",
+      resource: "cycle",
+    },
   ];
 
   for (const p of permissions) {
@@ -387,7 +517,7 @@ function seedDefaultFinancialsAndPermissions(db: Database, orgId: string, baseCu
       `INSERT OR IGNORE INTO permissions (
         code, name, name_ar, description, module, action, resource, requires_scope, scope_types, is_system, is_active, created_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, '["global"]', 1, 1, ?)`,
-      [p.code, p.name, p.nameAr, p.name, p.module, p.action, p.resource, now]
+      [p.code, p.name, p.nameAr, p.name, p.module, p.action, p.resource, now],
     );
   }
 }
@@ -424,7 +554,7 @@ async function main() {
 
 async function handleInstallation(isDev = false) {
   printHeader("Orbis OS System Installation");
-  
+
   const args = process.argv.slice(2);
   const getArg = (flag: string) => {
     const idx = args.indexOf(flag);
@@ -462,14 +592,20 @@ async function handleInstallation(isDev = false) {
     const db = new Database(dbPath);
     let tablesExist = false;
     try {
-      const check = db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='organizations'").get() as any;
-      if (check && check.name === 'organizations') {
+      const check = db
+        .query(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name='organizations'",
+        )
+        .get() as any;
+      if (check && check.name === "organizations") {
         tablesExist = true;
       }
     } catch (e) {}
 
     if (!tablesExist) {
-      printInfo(`Initializing database schema table mappings for: ${path.basename(path.dirname(dbPath))}`);
+      printInfo(
+        `Initializing database schema table mappings for: ${path.basename(path.dirname(dbPath))}`,
+      );
       runDatabaseMigration(db);
     }
     db.close();
@@ -479,7 +615,9 @@ async function handleInstallation(isDev = false) {
   const primaryDb = new Database(dbPaths[0]);
   let adminExists = false;
   try {
-    const adminCount = primaryDb.query("SELECT COUNT(*) as count FROM users WHERE primary_role = 'admin'").get() as any;
+    const adminCount = primaryDb
+      .query("SELECT COUNT(*) as count FROM users WHERE primary_role = 'admin'")
+      .get() as any;
     if (adminCount && adminCount.count > 0) {
       adminExists = true;
     }
@@ -487,8 +625,12 @@ async function handleInstallation(isDev = false) {
   primaryDb.close();
 
   if (adminExists) {
-    printSuccess("An administrator account already exists. Skipping user registration.");
-    console.log(c.purple("└  Installation completed successfully! Launch the UI."));
+    printSuccess(
+      "An administrator account already exists. Skipping user registration.",
+    );
+    console.log(
+      c.purple("└  Installation completed successfully! Launch the UI."),
+    );
     process.exit(0);
   }
 
@@ -498,7 +640,7 @@ async function handleInstallation(isDev = false) {
     return argSchool || "";
   }
   const timezone = argTimezone || "Asia/Aden";
-  
+
   // Default values loaded automatically without prompts
   const currency = "YER";
   const locale = "ar";
@@ -515,19 +657,35 @@ async function handleInstallation(isDev = false) {
 
   if (!isAutomated) {
     printStep("School Information Setup");
-    finalSchoolNameAr = await ask("Enter School Name (Arabic)", "مدرسة صنعاء النموذجية");
-    finalSchoolNameEn = await ask("Enter School Name (English)", "Sanaa Model School");
+    finalSchoolNameAr = await ask(
+      "Enter School Name (Arabic)",
+      "مدرسة صنعاء النموذجية",
+    );
+    finalSchoolNameEn = await ask(
+      "Enter School Name (English)",
+      "Sanaa Model School",
+    );
     finalTimezone = await ask("Enter Timezone", "Asia/Aden");
     console.log(c.gray("│"));
 
     printStep("Administrator Account Setup");
-    adminNameAr = await ask("Enter Administrator Name (Arabic)", "مدير المدرسة");
-    adminNameEn = await ask("Enter Administrator Name (English)", "School Admin");
-    adminEmail = await ask("Enter Login Email Address", "admin@school.com", (val) => {
-      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
-    });
+    adminNameAr = await ask(
+      "Enter Administrator Name (Arabic)",
+      "مدير المدرسة",
+    );
+    adminNameEn = await ask(
+      "Enter Administrator Name (English)",
+      "School Admin",
+    );
+    adminEmail = await ask(
+      "Enter Login Email Address",
+      "admin@school.com",
+      (val) => {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+      },
+    );
     adminPhone = await ask("Enter Phone Number (Optional)", "777777777");
-    
+
     while (adminPassword.trim().length < 6) {
       adminPassword = await askPassword("Enter Login Password (Min 6 chars)");
       if (adminPassword.trim().length < 6) {
@@ -547,14 +705,18 @@ async function handleInstallation(isDev = false) {
 
   const orgId = crypto.randomUUID();
   const userId = crypto.randomUUID();
-  const orgSlug = finalSchoolNameEn.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "school";
+  const orgSlug =
+    finalSchoolNameEn
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "") || "school";
   const now = new Date().toISOString();
 
   // Populate all target databases
   for (const dbPath of dbPaths) {
     const db = new Database(dbPath);
     db.run("PRAGMA foreign_keys = OFF;");
-    
+
     // Insert Organization
     db.run(
       `INSERT OR IGNORE INTO organizations (
@@ -562,7 +724,17 @@ async function handleInstallation(isDev = false) {
         max_users, max_students, max_storage_gb, subscription_plan, is_active,
         is_verified, is_deleted, created_at, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1000, 5000, 100, 'free', 1, 1, 0, ?, ?)`,
-      [orgId, finalSchoolNameEn, finalSchoolNameAr, orgSlug, finalTimezone, locale, currency, now, now]
+      [
+        orgId,
+        finalSchoolNameEn,
+        finalSchoolNameAr,
+        orgSlug,
+        finalTimezone,
+        locale,
+        currency,
+        now,
+        now,
+      ],
     );
 
     // Insert Admin User
@@ -572,7 +744,18 @@ async function handleInstallation(isDev = false) {
         mfa_enabled, full_name, name_ar, name_en, primary_role, status, prefs, meta,
         is_deleted, created_at, updated_at
       ) VALUES (?, ?, ?, 1, ?, 1, ?, 0, ?, ?, ?, 'admin', 'active', '{}', '{}', 0, ?, ?)`,
-      [userId, orgId, adminEmail, adminPhone, passwordHash, adminNameEn, adminNameAr, adminNameEn, now, now]
+      [
+        userId,
+        orgId,
+        adminEmail,
+        adminPhone,
+        passwordHash,
+        adminNameEn,
+        adminNameAr,
+        adminNameEn,
+        now,
+        now,
+      ],
     );
 
     // Automatically seed Default Currencies, Chart of Accounts, and default permissions
@@ -584,15 +767,23 @@ async function handleInstallation(isDev = false) {
 
   printSuccess("Organization and administrator record successfully created!");
   console.log(c.purple("└  Installation completed successfully!"));
-  console.log(`   ${c.bold("School:")}      ${finalSchoolNameAr} (${finalSchoolNameEn})`);
+  console.log(
+    `   ${c.bold("School:")}      ${finalSchoolNameAr} (${finalSchoolNameEn})`,
+  );
   console.log(`   ${c.bold("Login Email:")}  ${adminEmail}`);
   console.log(`   ${c.bold("Main DB:")}       ${dbPaths[0]}`);
   if (dbPaths.length > 1) {
     console.log(`   ${c.bold("Dev DB:")}        ${dbPaths[1]}`);
   }
   console.log();
-  console.log(c.cyan("   You can now launch the Orbis app and log in with this account."));
-  console.log(c.cyan("   You can now open the app and log in to continue configuring the system.\n"));
+  console.log(
+    c.cyan("   You can now launch the Orbis app and log in with this account."),
+  );
+  console.log(
+    c.cyan(
+      "   You can now open the app and log in to continue configuring the system.\n",
+    ),
+  );
 }
 
 main().catch((err) => {

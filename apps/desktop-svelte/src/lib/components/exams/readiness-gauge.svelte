@@ -11,21 +11,23 @@ const circumference = $derived(2 * Math.PI * radius);
 const dashOffset = $derived(circumference - (score / 100) * circumference);
 
 const color = $derived(
-  score >= 80 ? "text-emerald-500" :
-  score >= 50 ? "text-amber-500" :
-  "text-red-500"
+  score >= 80
+    ? "text-emerald-500"
+    : score >= 50
+      ? "text-amber-500"
+      : "text-red-500",
 );
 
 const strokeColor = $derived(
-  score >= 80 ? "stroke-emerald-500" :
-  score >= 50 ? "stroke-amber-500" :
-  "stroke-red-500"
+  score >= 80
+    ? "stroke-emerald-500"
+    : score >= 50
+      ? "stroke-amber-500"
+      : "stroke-red-500",
 );
 
 const label = $derived(
-  score >= 80 ? "جاهز" :
-  score >= 50 ? "جزئياً" :
-  "غير جاهز"
+  score >= 80 ? "جاهز" : score >= 50 ? "جزئياً" : "غير جاهز",
 );
 </script>
 

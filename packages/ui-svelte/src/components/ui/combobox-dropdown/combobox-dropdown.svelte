@@ -37,10 +37,11 @@ let searchQuery = $state("");
 const filteredItems = $derived(
   searchQuery.trim() === ""
     ? items
-    : items.filter((item) =>
-        item.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.value.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+    : items.filter(
+        (item) =>
+          item.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.value.toLowerCase().includes(searchQuery.toLowerCase()),
+      ),
 );
 
 function handleSelect(item: ComboboxItem) {

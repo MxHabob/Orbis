@@ -99,8 +99,12 @@ const searchedAccountsByName = $derived.by(() => {
   if (!q) return ledgers;
   return ledgers.filter(
     (l) =>
-      String(l.name_ar || "").toLowerCase().includes(q) ||
-      String(l.name || "").toLowerCase().includes(q)
+      String(l.name_ar || "")
+        .toLowerCase()
+        .includes(q) ||
+      String(l.name || "")
+        .toLowerCase()
+        .includes(q),
   );
 });
 
@@ -125,7 +129,7 @@ function resetQueries() {
 
 function handleWindowClick(event: MouseEvent) {
   const target = event.target as HTMLElement;
-  if (!target.closest('.combobox-container')) {
+  if (!target.closest(".combobox-container")) {
     isCodeDropdownOpen = false;
     isNameDropdownOpen = false;
     resetQueries();
@@ -178,9 +182,12 @@ const calculatedLedgerRows = $derived.by(() => {
 
   // 1. Initialize with database ledger accounts
   for (const acc of ledgers) {
-    let debY = 0, credY = 0;
-    let debU = 0, credU = 0;
-    let debS = 0, credS = 0;
+    let debY = 0,
+      credY = 0;
+    let debU = 0,
+      credU = 0;
+    let debS = 0,
+      credS = 0;
 
     // Apply opening balance from seed/config
     const ob = Number(acc.opening_balance || 0);
@@ -188,13 +195,16 @@ const calculatedLedgerRows = $derived.by(() => {
       const type = String(acc.item_type || "").toLowerCase();
       const curr = String(acc.currency || "YER").toUpperCase();
       const isDebitType = type === "asset" || type === "expense";
-      
+
       if (curr === "YER") {
-        if (isDebitType) debY = ob; else credY = ob;
+        if (isDebitType) debY = ob;
+        else credY = ob;
       } else if (curr === "USD") {
-        if (isDebitType) debU = ob; else credU = ob;
+        if (isDebitType) debU = ob;
+        else credU = ob;
       } else if (curr === "SAR") {
-        if (isDebitType) debS = ob; else credS = ob;
+        if (isDebitType) debS = ob;
+        else credS = ob;
       }
     }
 
@@ -219,7 +229,10 @@ const calculatedLedgerRows = $derived.by(() => {
 
   // 2. Perform math for fees (Debit Tuition Receivables YER, Credit corresponding revenue account YER)
   const tuitionReceivablesAccount = ledgers.find(
-    (l) => l.code === "1301" || String(l.name_ar).includes("ذمم") || String(l.name).toLowerCase().includes("receivable")
+    (l) =>
+      l.code === "1301" ||
+      String(l.name_ar).includes("ذمم") ||
+      String(l.name).toLowerCase().includes("receivable"),
   );
   const arId = tuitionReceivablesAccount?.id;
 
@@ -273,10 +286,12 @@ const calculatedLedgerRows = $derived.by(() => {
     if (visited.has(nodeId)) return;
     visited.add(nodeId);
 
-    const children = Object.values(result).filter((acc: any) => acc.parent_id === nodeId);
+    const children = Object.values(result).filter(
+      (acc: any) => acc.parent_id === nodeId,
+    );
     for (const child of children) {
       rollupNode(child.id);
-      
+
       result[nodeId].debit_yer += child.debit_yer;
       result[nodeId].credit_yer += child.credit_yer;
       result[nodeId].debit_sar += child.debit_sar;
@@ -300,27 +315,70 @@ const calculatedLedgerRows = $derived.by(() => {
 
 // Selected Account Row derived state
 const selectedAccountRow = $derived.by(() => {
-  return calculatedLedgerRows.find(r => r.id === selectedAccountId);
+  return calculatedLedgerRows.find((r) => r.id === selectedAccountId);
 });
 
 // Arabic spelling helper
 function arabicNumberToWords(num: number): string {
   if (num === 0) return "صفر";
-  
+
   const integerPart = Math.floor(num);
   const decimalPart = Math.round((num - integerPart) * 100);
 
-  const ones = ["", "واحد", "اثنان", "ثلاثة", "أربعة", "خمسة", "ستة", "سبعة", "ثمانية", "تسعة", "عشرة", "أحد عشر", "اثنا عشر", "ثلاثة عشر", "أربعة عشر", "خمسة عشر", "ستة عشر", "سبعة عشر", "ثمانية عشر", "تسعة عشر"];
-  const tens = ["", "", "عشرون", "ثلاثون", "أربعون", "خمسون", "ستون", "سبعون", "ثمانون", "تسعون"];
-  const hundreds = ["", "مائة", "مائتان", "ثلاثمائة", "أربعمائة", "خمسمائة", "ستمائة", "سبعمائة", "ثمانمائة", "تسعمائة"];
+  const ones = [
+    "",
+    "واحد",
+    "اثنان",
+    "ثلاثة",
+    "أربعة",
+    "خمسة",
+    "ستة",
+    "سبعة",
+    "ثمانية",
+    "تسعة",
+    "عشرة",
+    "أحد عشر",
+    "اثنا عشر",
+    "ثلاثة عشر",
+    "أربعة عشر",
+    "خمسة عشر",
+    "ستة عشر",
+    "سبعة عشر",
+    "ثمانية عشر",
+    "تسعة عشر",
+  ];
+  const tens = [
+    "",
+    "",
+    "عشرون",
+    "ثلاثون",
+    "أربعون",
+    "خمسون",
+    "ستون",
+    "سبعون",
+    "ثمانون",
+    "تسعون",
+  ];
+  const hundreds = [
+    "",
+    "مائة",
+    "مائتان",
+    "ثلاثمائة",
+    "أربعمائة",
+    "خمسمائة",
+    "ستمائة",
+    "سبعمائة",
+    "ثمانمائة",
+    "تسعمائة",
+  ];
 
   function convertGroup(n: number): string {
     let parts = [];
     const h = Math.floor(n / 100);
     const remainder = n % 100;
-    
+
     if (h > 0) parts.push(hundreds[h]);
-    
+
     if (remainder > 0) {
       if (remainder < 20) {
         parts.push(ones[remainder]);
@@ -343,19 +401,37 @@ function arabicNumberToWords(num: number): string {
   const billions = Math.floor(temp / 1000000000);
   temp %= 1000000000;
   if (billions > 0) {
-    parts.push(billions === 1 ? "مليار" : billions === 2 ? "ملياران" : `${convertGroup(billions)} مليارات`);
+    parts.push(
+      billions === 1
+        ? "مليار"
+        : billions === 2
+          ? "ملياران"
+          : `${convertGroup(billions)} مليارات`,
+    );
   }
 
   const millions = Math.floor(temp / 1000000);
   temp %= 1000000;
   if (millions > 0) {
-    parts.push(millions === 1 ? "مليون" : millions === 2 ? "مليونان" : `${convertGroup(millions)} ملايين`);
+    parts.push(
+      millions === 1
+        ? "مليون"
+        : millions === 2
+          ? "مليونان"
+          : `${convertGroup(millions)} ملايين`,
+    );
   }
 
   const thousands = Math.floor(temp / 1000);
   temp %= 1000;
   if (thousands > 0) {
-    parts.push(thousands === 1 ? "ألف" : thousands === 2 ? "ألفان" : `${convertGroup(thousands)} آلاف`);
+    parts.push(
+      thousands === 1
+        ? "ألف"
+        : thousands === 2
+          ? "ألفان"
+          : `${convertGroup(thousands)} آلاف`,
+    );
   }
 
   if (temp > 0) {
@@ -377,7 +453,7 @@ const currencySummaryRows = $derived.by(() => {
   if (!row) return [];
 
   const list = [];
-  
+
   // YER Row
   if (row.debit_yer > 0 || row.credit_yer > 0) {
     list.push({
@@ -390,7 +466,7 @@ const currencySummaryRows = $derived.by(() => {
       notes: "رصيد الحساب بالريال اليمني",
     });
   }
-  
+
   // SAR Row
   if (row.debit_sar > 0 || row.credit_sar > 0) {
     const rate = 139.8;
@@ -460,7 +536,11 @@ const balanceText = $derived.by(() => {
 
 // Detailed Transaction Ledger (for Single Account, Specific Currency)
 const ledgerTransactions = $derived.by(() => {
-  if (activeTab !== "single" || !selectedAccountId || selectedCurrency === "all") {
+  if (
+    activeTab !== "single" ||
+    !selectedAccountId ||
+    selectedCurrency === "all"
+  ) {
     return [];
   }
 
@@ -473,7 +553,8 @@ const ledgerTransactions = $derived.by(() => {
   // 1. Add opening balance if any
   const ob = Number(acc.opening_balance || 0);
   if (ob > 0 && String(acc.currency).toUpperCase() === targetCurr) {
-    const isDebitType = acc.item_type === "asset" || acc.item_type === "expense";
+    const isDebitType =
+      acc.item_type === "asset" || acc.item_type === "expense";
     list.push({
       date: "2026-06-01",
       document: "رصيد سابق",
@@ -486,10 +567,14 @@ const ledgerTransactions = $derived.by(() => {
   }
 
   // Find if this account is the Student Tuition Receivables account
-  const isAR = acc.code === "1301" || String(acc.name_ar).includes("ذمم") || String(acc.name).toLowerCase().includes("receivable");
+  const isAR =
+    acc.code === "1301" ||
+    String(acc.name_ar).includes("ذمم") ||
+    String(acc.name).toLowerCase().includes("receivable");
 
   // 2. Add Fees (Debit AR, Credit Revenue)
-  if (targetCurr === "YER") { // Fees are in YER
+  if (targetCurr === "YER") {
+    // Fees are in YER
     if (isAR) {
       // Debit Student Receivables
       for (const fee of fees) {
@@ -497,7 +582,9 @@ const ledgerTransactions = $derived.by(() => {
           date: String(fee.created_at || "2026-06-22").split("T")[0],
           document: "سند قيد بسيط",
           number: fee.id.slice(0, 8),
-          description: fee.notes || `رسوم دراسية مستحقة - كود القالب ${fee.fee_template_id}`,
+          description:
+            fee.notes ||
+            `رسوم دراسية مستحقة - كود القالب ${fee.fee_template_id}`,
           debit: Number(fee.total_amount || 0),
           credit: 0,
           status: "verified",
@@ -534,7 +621,9 @@ const ledgerTransactions = $derived.by(() => {
         date: String(pay.paid_at || "2026-06-22").split("T")[0],
         document: "سند قبض",
         number: pay.receipt_number || pay.id.slice(0, 8),
-        description: pay.notes || `دفعة رسوم مسددة من الطالب - مرجع ${pay.reference || ''}`,
+        description:
+          pay.notes ||
+          `دفعة رسوم مسددة من الطالب - مرجع ${pay.reference || ""}`,
         debit: 0,
         credit: amount,
         status: pay.is_verified === 1 ? "verified" : "pending",
@@ -548,7 +637,9 @@ const ledgerTransactions = $derived.by(() => {
           date: String(pay.paid_at || "2026-06-22").split("T")[0],
           document: "سند قبض",
           number: pay.receipt_number || pay.id.slice(0, 8),
-          description: pay.notes || `مقبوضات الرسوم الدراسية - دفعة ${pay.payer_name || ''}`,
+          description:
+            pay.notes ||
+            `مقبوضات الرسوم الدراسية - دفعة ${pay.payer_name || ""}`,
           debit: amount,
           credit: 0,
           status: pay.is_verified === 1 ? "verified" : "pending",
@@ -562,17 +653,18 @@ const ledgerTransactions = $derived.by(() => {
 
   // Compute running balance
   let runningBalance = 0;
-  const isDebitNormal = acc.item_type === "asset" || acc.item_type === "expense";
-  
+  const isDebitNormal =
+    acc.item_type === "asset" || acc.item_type === "expense";
+
   // In computed entries:
   let cumulativeBalance = 0; // represent as Credit - Debit
   const entries = list.map((item) => {
     if (isDebitNormal) {
-      cumulativeBalance += (item.debit - item.credit);
+      cumulativeBalance += item.debit - item.credit;
     } else {
-      cumulativeBalance += (item.credit - item.debit);
+      cumulativeBalance += item.credit - item.debit;
     }
-    
+
     return {
       ...item,
       balance: Math.abs(cumulativeBalance),
@@ -591,17 +683,19 @@ const detailedTotals = $derived.by(() => {
     totDeb += r.debit;
     totCred += r.credit;
   }
-  
+
   const acc = ledgers.find((l) => l.id === selectedAccountId);
-  const isDebitNormal = acc ? (acc.item_type === "asset" || acc.item_type === "expense") : true;
-  
+  const isDebitNormal = acc
+    ? acc.item_type === "asset" || acc.item_type === "expense"
+    : true;
+
   let netBalance = 0;
   if (isDebitNormal) {
     netBalance = totDeb - totCred;
   } else {
     netBalance = totCred - totDeb;
   }
-  
+
   return {
     debit: totDeb,
     credit: totCred,
@@ -612,12 +706,40 @@ const detailedTotals = $derived.by(() => {
 
 // Categorized tree representation of all accounts (used for Custom Selection sidebar)
 const treeCategories = $derived.by(() => {
-  const cats: Record<string, { id: string; name_ar: string; name_en: string; accounts: any[] }> = {
-    asset: { id: "asset", name_ar: "الأصول (1)", name_en: "Assets", accounts: [] },
-    liability: { id: "liability", name_ar: "الخصوم (2)", name_en: "Liabilities", accounts: [] },
-    expense: { id: "expense", name_ar: "المصروفات (3)", name_en: "Expenses", accounts: [] },
-    revenue: { id: "revenue", name_ar: "الإيرادات (4)", name_en: "Revenues", accounts: [] },
-    equity: { id: "equity", name_ar: "حقوق الملكية (5)", name_en: "Equity", accounts: [] },
+  const cats: Record<
+    string,
+    { id: string; name_ar: string; name_en: string; accounts: any[] }
+  > = {
+    asset: {
+      id: "asset",
+      name_ar: "الأصول (1)",
+      name_en: "Assets",
+      accounts: [],
+    },
+    liability: {
+      id: "liability",
+      name_ar: "الخصوم (2)",
+      name_en: "Liabilities",
+      accounts: [],
+    },
+    expense: {
+      id: "expense",
+      name_ar: "المصروفات (3)",
+      name_en: "Expenses",
+      accounts: [],
+    },
+    revenue: {
+      id: "revenue",
+      name_ar: "الإيرادات (4)",
+      name_en: "Revenues",
+      accounts: [],
+    },
+    equity: {
+      id: "equity",
+      name_ar: "حقوق الملكية (5)",
+      name_en: "Equity",
+      accounts: [],
+    },
   };
 
   const flatLists: Record<string, any[]> = {
@@ -664,10 +786,14 @@ const treeCategories = $derived.by(() => {
 
 // Tree selection helpers
 function toggleCategorySelect(catId: string, accounts: any[]) {
-  const categoryFlatAccounts = calculatedLedgerRows.filter(r => String(r.item_type).toLowerCase() === catId);
-  const isAllSelected = categoryFlatAccounts.every((a) => selectedTreeAccountIds.has(a.id));
+  const categoryFlatAccounts = calculatedLedgerRows.filter(
+    (r) => String(r.item_type).toLowerCase() === catId,
+  );
+  const isAllSelected = categoryFlatAccounts.every((a) =>
+    selectedTreeAccountIds.has(a.id),
+  );
   const newSet = new Set(selectedTreeAccountIds);
-  
+
   if (isAllSelected) {
     categoryFlatAccounts.forEach((a) => newSet.delete(a.id));
   } else {
@@ -711,17 +837,21 @@ function toggleParentAccountSelect(node: any) {
   }
   getDescendants(node);
 
-  const areAllDescendantsSelected = descendants.every(id => selectedTreeAccountIds.has(id));
+  const areAllDescendantsSelected = descendants.every((id) =>
+    selectedTreeAccountIds.has(id),
+  );
 
   if (areAllDescendantsSelected) {
-    descendants.forEach(id => newSet.delete(id));
+    descendants.forEach((id) => newSet.delete(id));
   } else {
-    descendants.forEach(id => newSet.add(id));
+    descendants.forEach((id) => newSet.add(id));
   }
   selectedTreeAccountIds = newSet;
 }
 
-function getAccountCheckboxState(node: any): "checked" | "partial" | "unchecked" {
+function getAccountCheckboxState(
+  node: any,
+): "checked" | "partial" | "unchecked" {
   const descendants: string[] = [];
   function getDescendants(n: any) {
     descendants.push(n.id);
@@ -731,7 +861,9 @@ function getAccountCheckboxState(node: any): "checked" | "partial" | "unchecked"
   }
   getDescendants(node);
 
-  const selectedCount = descendants.filter(id => selectedTreeAccountIds.has(id)).length;
+  const selectedCount = descendants.filter((id) =>
+    selectedTreeAccountIds.has(id),
+  ).length;
   if (selectedCount === descendants.length) {
     return "checked";
   } else if (selectedCount > 0) {
@@ -754,10 +886,14 @@ const filteredLedgerRows = $derived.by(() => {
     // 2. Currency Filter
     if (selectedCurrency !== "all") {
       const c = selectedCurrency.toUpperCase();
-      if (c === "YER" && row.debit_yer === 0 && row.credit_yer === 0) return false;
-      if (c === "SAR" && row.debit_sar === 0 && row.credit_sar === 0) return false;
-      if (c === "USD" && row.debit_usd === 0 && row.credit_usd === 0) return false;
-      if (c === "AED" && row.debit_aed === 0 && row.credit_aed === 0) return false;
+      if (c === "YER" && row.debit_yer === 0 && row.credit_yer === 0)
+        return false;
+      if (c === "SAR" && row.debit_sar === 0 && row.credit_sar === 0)
+        return false;
+      if (c === "USD" && row.debit_usd === 0 && row.credit_usd === 0)
+        return false;
+      if (c === "AED" && row.debit_aed === 0 && row.credit_aed === 0)
+        return false;
     }
 
     // 3. Movement Filter (with movements only)
@@ -797,10 +933,14 @@ const filteredLedgerRows = $derived.by(() => {
 
 // Sum totals for footer
 const totals = $derived.by(() => {
-  let debY = 0, credY = 0;
-  let debS = 0, credS = 0;
-  let debU = 0, credU = 0;
-  let debA = 0, credA = 0;
+  let debY = 0,
+    credY = 0;
+  let debS = 0,
+    credS = 0;
+  let debU = 0,
+    credU = 0;
+  let debA = 0,
+    credA = 0;
 
   for (const r of filteredLedgerRows) {
     debY += r.debit_yer;
@@ -829,15 +969,26 @@ const totals = $derived.by(() => {
 const tableA2Rows = $derived.by(() => {
   if (activeTab !== "all" || selectedCurrency === "all") return [];
   const curr = selectedCurrency.toUpperCase();
-  return filteredLedgerRows.map(row => {
-    let deb = 0, cred = 0;
-    if (curr === "YER") { deb = row.debit_yer; cred = row.credit_yer; }
-    else if (curr === "SAR") { deb = row.debit_sar; cred = row.credit_sar; }
-    else if (curr === "USD") { deb = row.debit_usd; cred = row.credit_usd; }
-    else if (curr === "AED") { deb = row.debit_aed; cred = row.credit_aed; }
-    
-    const isDebitNormal = row.item_type === "asset" || row.item_type === "expense";
-    let bal = isDebitNormal ? (deb - cred) : (cred - deb);
+  return filteredLedgerRows.map((row) => {
+    let deb = 0,
+      cred = 0;
+    if (curr === "YER") {
+      deb = row.debit_yer;
+      cred = row.credit_yer;
+    } else if (curr === "SAR") {
+      deb = row.debit_sar;
+      cred = row.credit_sar;
+    } else if (curr === "USD") {
+      deb = row.debit_usd;
+      cred = row.credit_usd;
+    } else if (curr === "AED") {
+      deb = row.debit_aed;
+      cred = row.credit_aed;
+    }
+
+    const isDebitNormal =
+      row.item_type === "asset" || row.item_type === "expense";
+    let bal = isDebitNormal ? deb - cred : cred - deb;
     return {
       ...row,
       debit: deb,
@@ -849,7 +1000,8 @@ const tableA2Rows = $derived.by(() => {
 });
 
 const tableA2Totals = $derived.by(() => {
-  let deb = 0, cred = 0;
+  let deb = 0,
+    cred = 0;
   for (const r of tableA2Rows) {
     deb += r.debit;
     cred += r.credit;

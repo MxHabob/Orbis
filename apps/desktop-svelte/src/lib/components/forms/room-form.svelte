@@ -23,7 +23,9 @@ const isEdit = $derived(!!room);
 let isSubmitting = $state(false);
 let name = $state(room?.name || "");
 let nameAr = $state(room?.name_ar || "");
-let capacity = $state<number | null>(room?.capacity ? Number(room.capacity) : null);
+let capacity = $state<number | null>(
+  room?.capacity ? Number(room.capacity) : null,
+);
 let roomType = $state(room?.room_type || "classroom");
 let building = $state(room?.building || "");
 let floor = $state<number | null>(room?.floor ? Number(room.floor) : null);

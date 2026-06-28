@@ -35,7 +35,7 @@ function handleAddRoom() {
     newRoomNameAr,
     newRoomCapacity,
     newRoomType,
-    newRoomFloor
+    newRoomFloor,
   );
   if (success) {
     newRoomName = "";

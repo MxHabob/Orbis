@@ -15,13 +15,7 @@ import {
 } from "@orbis/ui-svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import {
-  Plus,
-  Percent,
-  Edit2,
-  Trash2,
-  ShieldAlert,
-} from "lucide-svelte";
+import { Plus, Percent, Edit2, Trash2, ShieldAlert } from "lucide-svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency } from "$lib/i18n-utils";
 import { fade } from "svelte/transition";
@@ -71,12 +65,16 @@ function handleEdit(tpl: any) {
 }
 
 async function handleDelete(tpl: any) {
-  const confirmMsg = m.dt_delete_confirm ? m.dt_delete_confirm() : "هل أنت متأكد من حذف قالب الخصم هذا؟";
+  const confirmMsg = m.dt_delete_confirm
+    ? m.dt_delete_confirm()
+    : "هل أنت متأكد من حذف قالب الخصم هذا؟";
   if (!confirm(confirmMsg)) return;
 
   try {
     await commands.finance.deleteDiscountTemplate(data.orgId, tpl.id);
-    toast.success(m.dt_delete_success ? m.dt_delete_success() : "تم حذف قالب الخصم بنجاح");
+    toast.success(
+      m.dt_delete_success ? m.dt_delete_success() : "تم حذف قالب الخصم بنجاح",
+    );
     loadTemplates();
   } catch (e) {
     const errorMsg = e instanceof Error ? e.message : String(e);
@@ -86,7 +84,8 @@ async function handleDelete(tpl: any) {
 
 function getCalculationMethodLabel(method: string): string {
   const mLow = String(method).toLowerCase();
-  if (mLow === "percentage") return m.dt_method_percentage ? m.dt_method_percentage() : "نسبة مئوية (%)";
+  if (mLow === "percentage")
+    return m.dt_method_percentage ? m.dt_method_percentage() : "نسبة مئوية (%)";
   return m.dt_method_fixed ? m.dt_method_fixed() : "مبلغ ثابت";
 }
 
@@ -100,9 +99,14 @@ function getFormattedValue(tpl: any): string {
 
 function getTypeLabel(typeStr: string): string {
   const t = String(typeStr).toLowerCase();
-  if (t === "manual") return m.attendance_status_unknown() === "غير محدد" ? "يدوي" : "Manual";
-  if (t === "scholarship") return m.attendance_status_unknown() === "غير محدد" ? "منحة دراسية" : "Scholarship";
-  if (t === "system") return m.attendance_status_unknown() === "غير محدد" ? "تلقائي" : "System";
+  if (t === "manual")
+    return m.attendance_status_unknown() === "غير محدد" ? "يدوي" : "Manual";
+  if (t === "scholarship")
+    return m.attendance_status_unknown() === "غير محدد"
+      ? "منحة دراسية"
+      : "Scholarship";
+  if (t === "system")
+    return m.attendance_status_unknown() === "غير محدد" ? "تلقائي" : "System";
   return typeStr;
 }
 </script>

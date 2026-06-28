@@ -32,7 +32,9 @@ let nameAr = $state(unit?.name_ar || "");
 let code = $state(unit?.code || "");
 let unitType = $state(unit?.unit_type || "classroom");
 let parentId = $state(unit?.parent_id || defaultParentId || "");
-let capacity = $state<number | null>(unit?.capacity ? Number(unit.capacity) : null);
+let capacity = $state<number | null>(
+  unit?.capacity ? Number(unit.capacity) : null,
+);
 let roomNumber = $state(unit?.room_number || "");
 let floor = $state<number | null>(unit?.floor ? Number(unit.floor) : null);
 let building = $state(unit?.building || "");
@@ -43,15 +45,19 @@ async function loadReferenceData() {
   try {
     const [allUnits, allUsers] = await Promise.all([
       commands.orgUnits.getAll(orgId),
-      commands.users.getUsers(orgId)
+      commands.users.getUsers(orgId),
     ]);
-    
+
     // Filter units: exclude current unit if editing to prevent cycle
-    unitsList = allUnits.filter((u: any) => !isEdit || String(u.id) !== String(unit.id));
-    
+    unitsList = allUnits.filter(
+      (u: any) => !isEdit || String(u.id) !== String(unit.id),
+    );
+
     // Filter staff / heads: admins, teachers, staff
-    staffList = allUsers.filter((u: any) => 
-      ["admin", "super_admin", "principal", "teacher", "staff"].includes(String(u.role).toLowerCase())
+    staffList = allUsers.filter((u: any) =>
+      ["admin", "super_admin", "principal", "teacher", "staff"].includes(
+        String(u.role).toLowerCase(),
+      ),
     );
   } catch (e) {
     console.error("Failed to load reference data for org unit:", e);

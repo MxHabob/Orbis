@@ -52,7 +52,10 @@ $effect(() => {
   const stored = localStorage.getItem(`resizer:${persistId}`);
   if (stored) {
     const val = parseFloat(stored);
-    if (!isNaN(val) && (val === collapsedWidth || (val >= minWidth && val <= maxWidth))) {
+    if (
+      !isNaN(val) &&
+      (val === collapsedWidth || (val >= minWidth && val <= maxWidth))
+    ) {
       onWidth?.(val);
     }
   }

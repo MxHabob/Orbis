@@ -78,7 +78,9 @@ async function handleSelectReport(id: string) {
   try {
     // TODO: Wire to IPC
     reportData = null;
-    toast.info(`تقرير "${reportTypes.find(r => r.id === id)?.title}" — قيد التحضير`);
+    toast.info(
+      `تقرير "${reportTypes.find((r) => r.id === id)?.title}" — قيد التحضير`,
+    );
   } catch (e) {
     toast.error("Failed to generate report");
   } finally {

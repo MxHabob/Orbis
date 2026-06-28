@@ -24,7 +24,7 @@ import {
   FileText,
   Keyboard,
   X,
-  Plus
+  Plus,
 } from "lucide-svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate } from "$lib/i18n-utils";
@@ -68,12 +68,20 @@ let isSubmitting = $state(false);
 const filteredStudents = $derived.by(() => {
   if (!searchQuery.trim()) return [];
   const q = searchQuery.toLowerCase().trim();
-  return students.filter(
-    (s) =>
-      String(s.full_name || "").toLowerCase().includes(q) ||
-      String(s.student_number || "").toLowerCase().includes(q) ||
-      String(s.id || "").toLowerCase().includes(q)
-  ).slice(0, 8); // Limit to 8 quick results
+  return students
+    .filter(
+      (s) =>
+        String(s.full_name || "")
+          .toLowerCase()
+          .includes(q) ||
+        String(s.student_number || "")
+          .toLowerCase()
+          .includes(q) ||
+        String(s.id || "")
+          .toLowerCase()
+          .includes(q),
+    )
+    .slice(0, 8); // Limit to 8 quick results
 });
 
 // Load basic startup data
@@ -95,9 +103,9 @@ async function loadData() {
   } catch (e) {
     console.error("Error loading POS startup data:", e);
     toast.error(
-      getLocale() === "ar" 
-        ? "خطأ في تحميل البيانات الأساسية" 
-        : "Error loading lookup data"
+      getLocale() === "ar"
+        ? "خطأ في تحميل البيانات الأساسية"
+        : "Error loading lookup data",
     );
   } finally {
     isLoadingData = false;
@@ -120,7 +128,7 @@ async function loadStudentData(enrollId: string) {
 
     // Unpaid/Partially paid fees
     activeStudentFees = feesList.filter((f) => f.status !== "paid");
-    
+
     // Filter payments for this student
     activeStudentPayments = paymentsList
       .filter((p) => String(p.enrollment_id) === String(enrollId))
@@ -137,9 +145,9 @@ async function loadStudentData(enrollId: string) {
   } catch (e) {
     console.error("Error loading details for student:", e);
     toast.error(
-      getLocale() === "ar" 
-        ? "خطأ في تحميل تفاصيل الرسوم والمدفوعات للطالب" 
-        : "Error loading student billing info"
+      getLocale() === "ar"
+        ? "خطأ في تحميل تفاصيل الرسوم والمدفوعات للطالب"
+        : "Error loading student billing info",
     );
   } finally {
     isLoadingStudentDetails = false;
@@ -215,7 +223,7 @@ async function handlePaymentSubmit(e: SubmitEvent) {
       treasury_id: selectedTreasuryId,
       currency: currency.trim().toUpperCase(),
     };
-    
+
     await commands.finance.recordPayment(data.orgId, createdBy, request);
     toast.success(m.payment_toast_success());
 
@@ -233,7 +241,7 @@ async function handlePaymentSubmit(e: SubmitEvent) {
       toast.info(
         getLocale() === "ar"
           ? "تم سداد جميع الرسوم المستحقة لهذا الطالب بنجاح!"
-          : "All outstanding fees for this student have been cleared!"
+          : "All outstanding fees for this student have been cleared!",
       );
       deselectStudent();
     }
@@ -256,7 +264,7 @@ function handleGlobalKeyDown(e: KeyboardEvent) {
       deselectStudent();
     }
   }
-  
+
   // Ctrl + S or Ctrl + F to focus search input
   if ((e.ctrlKey || e.metaKey) && (e.key === "s" || e.key === "f")) {
     e.preventDefault();
@@ -270,7 +278,9 @@ function handleGlobalKeyDown(e: KeyboardEvent) {
       highlightedIndex = (highlightedIndex + 1) % filteredStudents.length;
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      highlightedIndex = (highlightedIndex - 1 + filteredStudents.length) % filteredStudents.length;
+      highlightedIndex =
+        (highlightedIndex - 1 + filteredStudents.length) %
+        filteredStudents.length;
     } else if (e.key === "Enter" && highlightedIndex >= 0) {
       e.preventDefault();
       selectStudent(filteredStudents[highlightedIndex]);

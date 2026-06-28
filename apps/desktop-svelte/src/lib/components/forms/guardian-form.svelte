@@ -36,7 +36,9 @@ const isEditMode = $derived(!!editData);
 
 // Form state
 let guardianUserId = $state(editData ? String(editData.guardian_id ?? "") : "");
-let relation = $state(editData ? String(editData.relation ?? "father") : "father");
+let relation = $state(
+  editData ? String(editData.relation ?? "father") : "father",
+);
 let isPayer = $state(editData ? Boolean(editData.is_payer) : false);
 let job = $state(editData ? String((editData as JsonRecord).job ?? "") : "");
 let searchQuery = $state("");
@@ -69,9 +71,7 @@ const selectedUser = $derived(
   allUsers.find((u) => String(u.id) === guardianUserId),
 );
 
-const selectedRelation = $derived(
-  relations.find((r) => r.value === relation),
-);
+const selectedRelation = $derived(relations.find((r) => r.value === relation));
 
 onMount(async () => {
   isLoading = true;

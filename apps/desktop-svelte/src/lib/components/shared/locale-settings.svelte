@@ -26,7 +26,7 @@ const localeItems = Object.values(countries).map((c, index) => ({
 }));
 
 const selectedItem = $derived(
-  localeItems.find(item => item.value === currentLocale)
+  localeItems.find((item) => item.value === currentLocale),
 );
 
 function handleSelect(item: { id: string; label: string; value: string }) {

@@ -41,7 +41,8 @@ async function loadDropdownData() {
 
     if (studentList.length > 0)
       selectedEnrollmentId = String(studentList[0].id);
-    if (templateList.length > 0) selectedFeeTemplateId = String(templateList[0].id);
+    if (templateList.length > 0)
+      selectedFeeTemplateId = String(templateList[0].id);
   } catch (e) {
     console.error("Error loading dropdown data for fee-assign-form:", e);
   } finally {
@@ -59,9 +60,12 @@ $effect(() => {
 // Auto-fill template amount when template changes
 $effect(() => {
   if (selectedFeeTemplateId && templates.length > 0) {
-    const tpl = templates.find((t) => String(t.id) === String(selectedFeeTemplateId));
+    const tpl = templates.find(
+      (t) => String(t.id) === String(selectedFeeTemplateId),
+    );
     if (tpl) {
-      amount = tpl.default_amount !== undefined ? Number(tpl.default_amount) : null;
+      amount =
+        tpl.default_amount !== undefined ? Number(tpl.default_amount) : null;
     }
   }
 });

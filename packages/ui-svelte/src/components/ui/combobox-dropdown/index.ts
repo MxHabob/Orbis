@@ -1,6 +1,3 @@
 import Root from "./combobox-dropdown.svelte";
 
-export {
-  Root,
-  Root as ComboboxDropdown,
-};
+export { Root, Root as ComboboxDropdown };

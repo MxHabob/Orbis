@@ -72,9 +72,7 @@ onMount(async () => {
 });
 
 // Derived label helpers
-const selectedClass = $derived(
-  classes.find((c) => String(c.id) === classId),
-);
+const selectedClass = $derived(classes.find((c) => String(c.id) === classId));
 const selectedSubject = $derived(
   subjects.find((s) => String(s.id) === subjectId),
 );
@@ -84,9 +82,7 @@ const selectedTeacher = $derived(
 const selectedAssistant = $derived(
   teachers.find((t) => String(t.id) === assistantTeacherId),
 );
-const selectedCycle = $derived(
-  cycles.find((c) => String(c.id) === cycleId),
-);
+const selectedCycle = $derived(cycles.find((c) => String(c.id) === cycleId));
 
 async function handleSubmit() {
   if (!classId || !subjectId || !teacherId || !cycleId) {

@@ -3,7 +3,7 @@ import {
   Popover,
   PopoverTrigger,
   PopoverContent,
-  Button
+  Button,
 } from "@orbis/ui-svelte";
 import { Check, ChevronRight, ChevronLeft } from "lucide-svelte";
 import { onboardingState } from "$lib/components/onboarding/onboarding-state.svelte";
@@ -19,14 +19,16 @@ function handleChecklistItemClick(stepIndex: number) {
 
 // Onboarding tasks variables
 const totalTasks = 7;
-const completedTasks = $derived(authStore.isSetupComplete ? 7 : onboardingState.tasksCompletedCount);
+const completedTasks = $derived(
+  authStore.isSetupComplete ? 7 : onboardingState.tasksCompletedCount,
+);
 const remainingTasks = $derived(7 - completedTasks);
 const progressPercent = $derived((completedTasks / totalTasks) * 100);
 
 const activeIndex = $derived(
-  authStore.isSetupComplete 
-    ? -1 
-    : onboardingState.completedSteps.findIndex((step) => !step)
+  authStore.isSetupComplete
+    ? -1
+    : onboardingState.completedSteps.findIndex((step) => !step),
 );
 </script>
 
@@ -45,7 +47,7 @@ const activeIndex = $derived(
             cx="12"
             cy="12"
             r="8.5"
-            class="stroke-zinc-300 dark:stroke-zinc-700/80 fill-none"
+            class="stroke-muted dark:stroke-zinc-700/80 fill-none"
             stroke-width="2"
           />
           <!-- Progress highlight -->
@@ -54,7 +56,7 @@ const activeIndex = $derived(
               cx="12"
               cy="12"
               r="8.5"
-              class="stroke-[#6366f1] dark:stroke-indigo-400 fill-none transition-all duration-300"
+              class="stroke-primary fill-none transition-all duration-300"
               stroke-width="2"
               stroke-dasharray="53.4"
               stroke-dashoffset={53.4 - (53.4 * progressPercent) / 100}
@@ -67,11 +69,11 @@ const activeIndex = $derived(
         {#if remainingTasks === 0}
           <Check class="w-3.5 h-3.5 text-emerald-500 stroke-[3px]" />
         {:else}
-          <span class="text-[9px] font-bold text-slate-800 dark:text-zinc-200">
+          <span class="text-[9px] font-bold text-foreground">
             {remainingTasks}
           </span>
           <!-- Notification dot badge -->
-          <span class="absolute top-0 right-0 w-1.5 h-1.5 rounded-full bg-[#6366f1] border border-white dark:border-zinc-900"></span>
+          <span class="absolute top-0 right-0 w-1.5 h-1.5 rounded-full bg-primary border border-background"></span>
         {/if}
       </div>
     </Button>
@@ -81,30 +83,30 @@ const activeIndex = $derived(
     side="right"
     align="end"
     sideOffset={12}
-    class="w-[360px] bg-[#2b2836] border border-[#3c384a] shadow-[0_12px_36px_rgba(0,0,0,0.55)] rounded-xl p-0 overflow-hidden z-50 flex flex-col font-sans text-start onboarding-popover-panel relative"
+    class="w-[360px] bg-card border border-border shadow-2xl rounded-xl p-0 overflow-hidden z-50 flex flex-col font-sans text-start onboarding-popover-panel relative text-card-foreground"
   >
-    <!-- Pointer Bezel/Tail pointing to the sidebar trigger -->
-    <div class="absolute bottom-[20px] -left-1.5 w-3 h-3 bg-[#2b2836] border-l border-b border-[#3c384a] rotate-45 z-20"></div>
+    <!-- Pointer Bezel/Tail pointing to the sidebar trigger (positions on left in LTR, right in RTL) -->
+    <div class="absolute bottom-[20px] start-[-6px] w-3 h-3 bg-card border-l border-b border-border rotate-45 z-20 rtl:start-auto rtl:end-[-6px] rtl:border-l-0 rtl:border-b-0 rtl:border-r rtl:border-t"></div>
 
     <!-- Header Section -->
-    <div class="flex items-center gap-3.5 p-4 border-b border-zinc-800/80 bg-[#2b2836] z-10 select-none">
+    <div class="flex items-center gap-3.5 p-4 border-b border-border bg-card z-10 select-none">
       <!-- Outer Ring loader SVG -->
-      <svg class="w-8 h-8 transform -rotate-90 text-indigo-400 shrink-0" viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="9" class="stroke-[#393547] fill-none" stroke-width="2.5" />
-        <circle cx="12" cy="12" r="9" class="stroke-[#a199ff] fill-none" stroke-width="2.5" stroke-dasharray="56.5" stroke-dashoffset={56.5 - (56.5 * progressPercent) / 100} stroke-linecap="round" />
+      <svg class="w-8 h-8 transform -rotate-90 text-primary shrink-0" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="9" class="stroke-muted fill-none" stroke-width="2.5" />
+        <circle cx="12" cy="12" r="9" class="stroke-primary fill-none" stroke-width="2.5" stroke-dasharray="56.5" stroke-dashoffset={56.5 - (56.5 * progressPercent) / 100} stroke-linecap="round" />
       </svg>
       <div class="flex flex-col">
-        <h4 class="font-bold text-sm text-zinc-100 leading-tight">
+        <h4 class="font-bold text-sm text-foreground leading-tight">
           {m.onboarding_progress_label() || 'Getting Started'}
         </h4>
-        <p class="text-[11px] text-zinc-400 font-semibold mt-0.5">
+        <p class="text-[11px] text-muted-foreground font-semibold mt-0.5">
           {completedTasks} out of 7 tasks completed
         </p>
       </div>
     </div>
 
     <!-- Scrollable Checklist Area -->
-    <div class="onboarding-list flex-1 overflow-y-auto max-h-[340px] p-2 flex flex-col gap-0.5 bg-[#2b2836] z-10">
+    <div class="onboarding-list flex-1 overflow-y-auto max-h-[340px] p-2 flex flex-col gap-0.5 bg-card z-10">
       {#each [
         { label: "Academic Calendar & Years", labelAr: "التقويم الدراسي والفصول", desc: "Define academic year periods, dates, and semesters.", descAr: "تحديد الفترات والتواريخ والفصول الدراسية." },
         { label: "Buildings & Rooms Allocation", labelAr: "توزيع المباني والقاعات", desc: "Configure classrooms, computer labs, and lecture halls.", descAr: "تهيئة الفصول الدراسية ومختبرات الحاسوب والكيمياء." },
@@ -124,12 +126,12 @@ const activeIndex = $derived(
             }
           }}
           disabled={authStore.isSetupComplete}
-          class="flex items-start justify-between p-3 rounded-lg hover:bg-[#343040]/40 text-start w-full group transition-all duration-150 cursor-pointer text-foreground bg-transparent border-0 font-sans disabled:opacity-100 disabled:hover:bg-transparent"
+          class="flex items-start justify-between p-3 rounded-lg hover:bg-muted text-start w-full group transition-all duration-150 cursor-pointer text-foreground bg-transparent border-0 font-sans disabled:opacity-100 disabled:hover:bg-transparent"
         >
           <div class="flex items-start gap-3 flex-1 min-w-0">
             {#if isCompleted}
-              <div class="mt-0.5 shrink-0 text-zinc-500">
-                <Check class="w-3.5 h-3.5 text-zinc-400 stroke-[3px]" />
+              <div class="mt-0.5 shrink-0 text-muted-foreground">
+                <Check class="w-3.5 h-3.5 stroke-[3px]" />
               </div>
             {:else}
               <!-- Spacer to align texts of non-completed items -->
@@ -137,17 +139,17 @@ const activeIndex = $derived(
             {/if}
             
             <div class="flex flex-col gap-1 flex-1 min-w-0">
-              <span class="text-[11.5px] leading-tight font-sans {isCompleted ? 'text-zinc-500 line-through decoration-zinc-500/40 font-normal' : 'text-zinc-100 font-bold'}">
+              <span class="text-[11.5px] leading-tight font-sans {isCompleted ? 'text-muted-foreground line-through decoration-muted-foreground/45 font-normal' : 'text-foreground font-bold'}">
                 {onboardingState.locale === 'ar' ? task.labelAr : task.label}
               </span>
-              <span class="text-[10.5px] leading-relaxed font-sans font-normal {isCompleted ? 'text-zinc-600' : isActive ? 'text-zinc-300' : 'text-zinc-400'}">
+              <span class="text-[10.5px] leading-relaxed font-sans font-normal {isCompleted ? 'text-muted-foreground/60' : isActive ? 'text-foreground/80' : 'text-muted-foreground/75'}">
                 {onboardingState.locale === 'ar' ? task.descAr : task.desc}
               </span>
             </div>
           </div>
           
           {#if isActive}
-            <div class="mt-1 shrink-0 text-zinc-400 ml-2">
+            <div class="mt-1 shrink-0 text-muted-foreground ml-2">
               {#if onboardingState.locale === 'ar'}
                 <ChevronLeft size={12} strokeWidth={2.5} />
               {:else}
@@ -164,7 +166,7 @@ const activeIndex = $derived(
 <style>
   :global(.onboarding-list) {
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+    scrollbar-color: var(--border) transparent;
   }
   :global(.onboarding-list)::-webkit-scrollbar {
     width: 3px !important;
@@ -174,10 +176,10 @@ const activeIndex = $derived(
     background: transparent !important;
   }
   :global(.onboarding-list)::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.15) !important;
+    background-color: var(--border) !important;
     border-radius: 9999px !important;
   }
   :global(.onboarding-list)::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(255, 255, 255, 0.25) !important;
+    background-color: rgba(var(--foreground), 0.25) !important;
   }
 </style>

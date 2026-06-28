@@ -52,7 +52,7 @@ $effect(() => {
     receivableAccountId = template.receivable_account_id || "";
     isMandatory = template.is_mandatory === 1;
     isActive = template.is_active === 1;
-    
+
     // Load amount directly from default_amount
     amount = template.default_amount || 0;
 
@@ -85,14 +85,20 @@ async function loadLedgerAccounts() {
   try {
     const list = await commands.finance.getLedgerAccounts(orgId);
     ledgers = list;
-    
+
     // Auto-select revenue and receivable accounts if not set
     if (!revenueAccountId) {
-      const rev = list.find((l: any) => String(l.item_type || "").toLowerCase() === "revenue");
+      const rev = list.find(
+        (l: any) => String(l.item_type || "").toLowerCase() === "revenue",
+      );
       if (rev) revenueAccountId = rev.id;
     }
     if (!receivableAccountId) {
-      const rec = list.find((l: any) => String(l.item_type || "").toLowerCase() === "asset" || String(l.item_type || "").toLowerCase() === "receivable");
+      const rec = list.find(
+        (l: any) =>
+          String(l.item_type || "").toLowerCase() === "asset" ||
+          String(l.item_type || "").toLowerCase() === "receivable",
+      );
       if (rec) receivableAccountId = rec.id;
     }
   } catch (e) {
@@ -108,7 +114,7 @@ async function loadClasses() {
   try {
     const list = await commands.classes.getAll(orgId);
     classes = list;
-    
+
     const levelNames: Record<string, { en: string; ar: string }> = {
       kg1: { en: "KG 1", ar: "روضة أولى" },
       kg2: { en: "KG 2", ar: "روضة ثانية" },
@@ -129,12 +135,15 @@ async function loadClasses() {
         levelsSet.add(cls.level);
       }
     }
-    
-    uniqueLevels = Array.from(levelsSet).map(lvl => {
+
+    uniqueLevels = Array.from(levelsSet).map((lvl) => {
       const nameObj = levelNames[lvl] || { en: lvl, ar: lvl };
       return {
         level: lvl,
-        label: m.attendance_status_unknown() === "غير محدد" ? nameObj.ar : nameObj.en
+        label:
+          m.attendance_status_unknown() === "غير محدد"
+            ? nameObj.ar
+            : nameObj.en,
       };
     });
   } catch (e) {
@@ -166,7 +175,11 @@ async function handleSubmit(e: SubmitEvent) {
     return;
   }
   if (!applyToAllGrades && selectedLevels.length === 0) {
-    toast.error(m.attendance_status_unknown() === "غير محدد" ? "يرجى تحديد صف واحد على الأقل أو تفعيل خيار التطبيق على جميع الصفوف" : "Please select at least one grade level or apply to all");
+    toast.error(
+      m.attendance_status_unknown() === "غير محدد"
+        ? "يرجى تحديد صف واحد على الأقل أو تفعيل خيار التطبيق على جميع الصفوف"
+        : "Please select at least one grade level or apply to all",
+    );
     return;
   }
 
@@ -180,9 +193,10 @@ async function handleSubmit(e: SubmitEvent) {
       default_amount: Number(amount || 0),
       revenue_account_id: revenueAccountId,
       receivable_account_id: receivableAccountId,
-      applicable_levels: !applyToAllGrades && selectedLevels.length > 0 
-        ? JSON.stringify({ levels: selectedLevels }) 
-        : null,
+      applicable_levels:
+        !applyToAllGrades && selectedLevels.length > 0
+          ? JSON.stringify({ levels: selectedLevels })
+          : null,
       frequency,
       installment_config: null,
       late_fee_rules: null,
@@ -192,10 +206,18 @@ async function handleSubmit(e: SubmitEvent) {
 
     if (template) {
       await commands.finance.updateFeeTemplate(orgId, template.id, request);
-      toast.success(m.ft_update_success ? m.ft_update_success() : "Fee template updated successfully");
+      toast.success(
+        m.ft_update_success
+          ? m.ft_update_success()
+          : "Fee template updated successfully",
+      );
     } else {
       await commands.finance.createFeeTemplate(orgId, request);
-      toast.success(m.ft_create_success ? m.ft_create_success() : "Fee template created successfully");
+      toast.success(
+        m.ft_create_success
+          ? m.ft_create_success()
+          : "Fee template created successfully",
+      );
     }
 
     onSuccess();

@@ -15,7 +15,14 @@ import { Input } from "@orbis/ui-svelte/input";
 import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
-import { Plus, Search, Pencil, Trash2, DoorOpen, Landmark } from "lucide-svelte";
+import {
+  Plus,
+  Search,
+  Pencil,
+  Trash2,
+  DoorOpen,
+  Landmark,
+} from "lucide-svelte";
 import RoomCreateSheet from "$lib/components/sheets/room-create-sheet.svelte";
 import * as m from "$lib/paraglide/messages";
 
@@ -61,7 +68,7 @@ const filteredRooms = $derived(
       (r.room_type || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
       (r.building || "").toLowerCase().includes(searchQuery.toLowerCase())
     );
-  })
+  }),
 );
 
 function openCreateSheet() {

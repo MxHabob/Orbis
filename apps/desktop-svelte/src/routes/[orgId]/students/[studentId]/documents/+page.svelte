@@ -18,18 +18,18 @@ import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import { 
-  FileText, 
-  Upload, 
-  Trash2, 
-  Plus, 
-  RefreshCcw, 
-  File, 
-  AlertCircle, 
-  CheckCircle2, 
+import {
+  FileText,
+  Upload,
+  Trash2,
+  Plus,
+  RefreshCcw,
+  File,
+  AlertCircle,
+  CheckCircle2,
   ExternalLink,
   X,
-  Paperclip
+  Paperclip,
 } from "lucide-svelte";
 import { onMount } from "svelte";
 import { toast } from "svelte-sonner";
@@ -75,7 +75,10 @@ async function loadDocuments() {
   error = null;
   try {
     // Fetch real documents for this student
-    documents = await commands.documents.getAll({ orgId, ownerId: studentUserId });
+    documents = await commands.documents.getAll({
+      orgId,
+      ownerId: studentUserId,
+    });
   } catch (e) {
     error = e instanceof Error ? e.message : String(e);
   } finally {
@@ -85,7 +88,11 @@ async function loadDocuments() {
 
 async function handleAddDocument() {
   if (!newDocName.trim()) {
-    toast.error(getLocale() === "ar" ? "يرجى إدخال اسم الوثيقة بالعربية" : "Please enter document name");
+    toast.error(
+      getLocale() === "ar"
+        ? "يرجى إدخال اسم الوثيقة بالعربية"
+        : "Please enter document name",
+    );
     return;
   }
 
@@ -110,7 +117,7 @@ async function handleAddDocument() {
     await commands.documents.create(request);
     toast.success(m.docs_create_success());
     showAddModal = false;
-    
+
     // Reset fields
     newDocName = "";
     newDocTitle = "";
@@ -124,7 +131,13 @@ async function handleAddDocument() {
 }
 
 async function handleDelete(docId: string) {
-  if (!confirm(getLocale() === "ar" ? "هل أنت متأكد من حذف هذه الوثيقة؟" : "Are you sure you want to delete this document?")) {
+  if (
+    !confirm(
+      getLocale() === "ar"
+        ? "هل أنت متأكد من حذف هذه الوثيقة؟"
+        : "Are you sure you want to delete this document?",
+    )
+  ) {
     return;
   }
 
@@ -147,7 +160,11 @@ function openUploadModal(doc: any) {
 
 async function handleUploadFile() {
   if (!uploadFileUrl.trim()) {
-    toast.error(getLocale() === "ar" ? "يرجى تحديد مسار أو رابط الملف" : "Please specify file path or URL");
+    toast.error(
+      getLocale() === "ar"
+        ? "يرجى تحديد مسار أو رابط الملف"
+        : "Please specify file path or URL",
+    );
     return;
   }
 
@@ -156,8 +173,8 @@ async function handleUploadFile() {
     await commands.documents.delete(selectedDoc.id);
 
     // 2. Create new doc entry with file url and details
-    const sizeInBytes = uploadFileSize.includes("MB") 
-      ? Math.round(parseFloat(uploadFileSize) * 1024 * 1024) 
+    const sizeInBytes = uploadFileSize.includes("MB")
+      ? Math.round(parseFloat(uploadFileSize) * 1024 * 1024)
       : Math.round(parseFloat(uploadFileSize) * 1024);
 
     const request = {

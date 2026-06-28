@@ -1,33 +1,35 @@
 <script lang="ts">
-  import { fade } from "svelte/transition";
+import { fade } from "svelte/transition";
 
-  let {
-    lesson,
-    viewMode = "class",
-    locale = "ar",
-    getSubjectName,
-    getTeacherName,
-    getClassName,
-    subjectColor = "#a855f7",
-    ondragstart,
-  }: {
-    lesson: any;
-    viewMode: "class" | "teacher";
-    locale: string;
-    getSubjectName: (id: string) => string;
-    getTeacherName: (id: string) => string;
-    getClassName: (id: string) => string;
-    subjectColor?: string;
-    ondragstart?: (e: DragEvent) => void;
-  } = $props();
+let {
+  lesson,
+  viewMode = "class",
+  locale = "ar",
+  getSubjectName,
+  getTeacherName,
+  getClassName,
+  subjectColor = "#a855f7",
+  ondragstart,
+}: {
+  lesson: any;
+  viewMode: "class" | "teacher";
+  locale: string;
+  getSubjectName: (id: string) => string;
+  getTeacherName: (id: string) => string;
+  getClassName: (id: string) => string;
+  subjectColor?: string;
+  ondragstart?: (e: DragEvent) => void;
+} = $props();
 
-  const isDraft = $derived(!!lesson.isDraft);
-  const subjectName = $derived(getSubjectName(lesson.subject_id));
-  
-  // Format times nicely
-  const timeStr = $derived(lesson.time_slot_start && lesson.time_slot_end 
-    ? `${lesson.time_slot_start} - ${lesson.time_slot_end}` 
-    : "");
+const isDraft = $derived(!!lesson.isDraft);
+const subjectName = $derived(getSubjectName(lesson.subject_id));
+
+// Format times nicely
+const timeStr = $derived(
+  lesson.time_slot_start && lesson.time_slot_end
+    ? `${lesson.time_slot_start} - ${lesson.time_slot_end}`
+    : "",
+);
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->

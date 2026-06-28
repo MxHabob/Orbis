@@ -76,20 +76,23 @@ const rightMaxWidth = $derived(right ? pxToRem(rightWidth.min * 3) : 0);
 // Final computed widths
 const finalLeftWidth = $derived(
   left
-    ? (leftPreferredWidth <= COLLAPSED_WIDTH
-        ? COLLAPSED_WIDTH
-        : Math.max(leftMinWidth, Math.min(leftMaxWidth, leftPreferredWidth)))
+    ? leftPreferredWidth <= COLLAPSED_WIDTH
+      ? COLLAPSED_WIDTH
+      : Math.max(leftMinWidth, Math.min(leftMaxWidth, leftPreferredWidth))
     : 0,
 );
 const finalRightWidth = $derived(
   right
-    ? (rightPreferredWidth <= COLLAPSED_WIDTH
-        ? COLLAPSED_WIDTH
-        : Math.max(rightMinWidth, Math.min(rightMaxWidth, rightPreferredWidth)))
+    ? rightPreferredWidth <= COLLAPSED_WIDTH
+      ? COLLAPSED_WIDTH
+      : Math.max(rightMinWidth, Math.min(rightMaxWidth, rightPreferredWidth))
     : 0,
 );
 
-function getFallbackLabel(viewportName: string, side: "left" | "right"): string {
+function getFallbackLabel(
+  viewportName: string,
+  side: "left" | "right",
+): string {
   if (side === "left") {
     if (viewportName.includes("exams")) return "Examinations";
     if (viewportName.includes("academics")) return "Academics";

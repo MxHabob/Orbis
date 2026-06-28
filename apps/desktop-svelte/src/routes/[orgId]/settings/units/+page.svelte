@@ -15,9 +15,21 @@ import { Input } from "@orbis/ui-svelte/input";
 import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
-import { 
-  Plus, Search, Pencil, Trash2, Network, School, Building2,
-  MapPin, Briefcase, Box, ChevronRight, ChevronDown, List, FolderTree 
+import {
+  Plus,
+  Search,
+  Pencil,
+  Trash2,
+  Network,
+  School,
+  Building2,
+  MapPin,
+  Briefcase,
+  Box,
+  ChevronRight,
+  ChevronDown,
+  List,
+  FolderTree,
 } from "lucide-svelte";
 import OrgUnitSheet from "$lib/components/sheets/org-unit-sheet.svelte";
 import * as m from "$lib/paraglide/messages";
@@ -65,14 +77,14 @@ onMount(() => {
 // Auto-expand parents on initial data load
 $effect(() => {
   if (units.length > 0 && !initializedExpanded) {
-    const parentIds = new Set(units.map(u => u.parent_id).filter(Boolean));
+    const parentIds = new Set(units.map((u) => u.parent_id).filter(Boolean));
     expandedIds = new Set(parentIds);
     initializedExpanded = true;
   }
 });
 
 // Tree construction and query propagation
-const unitsMap = $derived(new Map(units.map(u => [String(u.id), u])));
+const unitsMap = $derived(new Map(units.map((u) => [String(u.id), u])));
 
 const childrenMap = $derived.by(() => {
   const map = new Map<string, any[]>();
@@ -96,7 +108,9 @@ const childrenMap = $derived.by(() => {
 });
 
 const rootUnits = $derived.by(() => {
-  const roots = units.filter(u => !u.parent_id || !unitsMap.has(String(u.parent_id)));
+  const roots = units.filter(
+    (u) => !u.parent_id || !unitsMap.has(String(u.parent_id)),
+  );
   const locale = getLocale();
   roots.sort((a, b) => {
     const nameA = (locale === "ar" ? a.name_ar || a.name : a.name) || "";
@@ -112,7 +126,7 @@ const searchResults = $derived.by(() => {
     return {
       hasQuery: false,
       matchingIds: new Set<string>(),
-      forceExpandedIds: new Set<string>()
+      forceExpandedIds: new Set<string>(),
     };
   }
 
@@ -132,7 +146,7 @@ const searchResults = $derived.by(() => {
       typeVal.includes(query)
     ) {
       matchingIds.add(String(u.id));
-      
+
       // Cascade up and flag all parents as expanded
       let currentParentId = u.parent_id;
       while (currentParentId && unitsMap.has(String(currentParentId))) {
@@ -147,7 +161,7 @@ const searchResults = $derived.by(() => {
   return {
     hasQuery: true,
     matchingIds,
-    forceExpandedIds
+    forceExpandedIds,
   };
 });
 
@@ -168,9 +182,12 @@ const visibleTreeNodes = $derived.by(() => {
     const unitId = String(unit.id);
     const children = childrenMap.get(unitId) || [];
     const hasChildren = children.length > 0;
-    
-    const isVisible = !hasQuery || matchingIds.has(unitId) || forceExpandedIds.has(unitId);
-    const isExpanded = hasQuery ? forceExpandedIds.has(unitId) : expandedIds.has(unitId);
+
+    const isVisible =
+      !hasQuery || matchingIds.has(unitId) || forceExpandedIds.has(unitId);
+    const isExpanded = hasQuery
+      ? forceExpandedIds.has(unitId)
+      : expandedIds.has(unitId);
 
     if (isVisible) {
       list.push({
@@ -179,7 +196,7 @@ const visibleTreeNodes = $derived.by(() => {
         hasChildren,
         isExpanded,
         unit,
-        isMatching: hasQuery && matchingIds.has(unitId)
+        isMatching: hasQuery && matchingIds.has(unitId),
       });
     }
 
@@ -199,7 +216,7 @@ const visibleTreeNodes = $derived.by(() => {
 });
 
 const flatFilteredUnits = $derived(
-  units.filter(u => {
+  units.filter((u) => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
@@ -208,7 +225,7 @@ const flatFilteredUnits = $derived(
       (u.code || "").toLowerCase().includes(q) ||
       (u.unit_type || "").toLowerCase().includes(q)
     );
-  })
+  }),
 );
 
 function toggleExpand(id: string) {
@@ -223,7 +240,7 @@ function toggleExpand(id: string) {
 
 function toggleExpandAll(expand: boolean) {
   if (expand) {
-    const parentIds = new Set(units.map(u => u.parent_id).filter(Boolean));
+    const parentIds = new Set(units.map((u) => u.parent_id).filter(Boolean));
     expandedIds = new Set(parentIds);
   } else {
     expandedIds = new Set();
@@ -249,7 +266,12 @@ function openEditSheet(unit: any) {
 }
 
 async function handleDeleteUnit(unit: any) {
-  if (!confirm(`Are you sure you want to delete org unit "${unit.name_ar || unit.name}"?`)) return;
+  if (
+    !confirm(
+      `Are you sure you want to delete org unit "${unit.name_ar || unit.name}"?`,
+    )
+  )
+    return;
 
   try {
     await commands.orgUnits.delete(unit.id);
@@ -298,16 +320,19 @@ function getUnitTypeIcon(typeStr: string) {
 function highlightText(text: string, search: string): string {
   if (!text) return "";
   if (!search.trim()) return escapeHtml(text);
-  
+
   const escapedText = escapeHtml(text);
   const escapedSearch = escapeRegExp(search.toLowerCase());
-  
+
   const regex = new RegExp(`(${escapedSearch})`, "gi");
-  return escapedText.replace(regex, '<mark class="bg-lime-500/20 text-lime-600 dark:text-lime-300 font-semibold px-0.5 rounded-sm">$1</mark>');
+  return escapedText.replace(
+    regex,
+    '<mark class="bg-lime-500/20 text-lime-600 dark:text-lime-300 font-semibold px-0.5 rounded-sm">$1</mark>',
+  );
 }
 
 function escapeRegExp(string: string) {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function escapeHtml(text: string): string {

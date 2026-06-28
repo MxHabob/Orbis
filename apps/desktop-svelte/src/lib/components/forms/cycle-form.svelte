@@ -39,7 +39,9 @@ async function loadParentYears() {
   try {
     const list = await commands.academics.getYears(orgId);
     // Exclude current cycle if editing to prevent self-referencing
-    years = list.filter((y: any) => !isEdit || String(y.id) !== String(cycle.id));
+    years = list.filter(
+      (y: any) => !isEdit || String(y.id) !== String(cycle.id),
+    );
   } catch (e) {
     console.error("Failed to load parent years:", e);
   }

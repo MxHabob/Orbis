@@ -54,12 +54,12 @@ async function handleSubmit(e: SubmitEvent) {
         date_of_birth: dob || null,
       };
       await commands.users.updateUser(user.id, request);
-      
+
       // Update role if changed
       if (role !== user.role) {
         await commands.users.changeUserRole(user.id, { role });
       }
-      
+
       toast.success(m.settings_users_update_success());
     } else {
       if (!password) {
@@ -67,7 +67,7 @@ async function handleSubmit(e: SubmitEvent) {
         isSubmitting = false;
         return;
       }
-      
+
       const createdBy = authStore.userId || "unknown";
       const request = {
         email,
