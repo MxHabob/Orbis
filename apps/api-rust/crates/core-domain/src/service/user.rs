@@ -66,6 +66,11 @@ impl super::Service {
             .ok_or_else(|| "user not found".to_string())
     }
 
+    pub async fn get_user_sessions(&self, user_id: &str) -> Result<Vec<crate::entities::user_session::Model>, String> {
+        self.repo.get_user_sessions(user_id).await
+            .map_err(|e| e.to_string())
+    }
+
     pub async fn create_user_in_org(&self, org_id: &str, req: CreateUserRequest, created_by: &str) -> Result<user::Model, String> {
         // Check if user email already exists
         let existing = self.repo.get_user_by_email(&req.email).await

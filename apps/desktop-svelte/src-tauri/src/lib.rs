@@ -170,6 +170,7 @@ pub fn run() {
             commands::users::change_user_password,
             commands::users::get_user_roles,
             commands::users::save_user_roles,
+            commands::users::get_user_sessions,
 
             // Academics commands
             commands::academics::get_cycles,

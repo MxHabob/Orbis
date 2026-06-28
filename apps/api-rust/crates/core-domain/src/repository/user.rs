@@ -124,6 +124,14 @@ impl super::Repository {
         Ok(update_res.rows_affected)
     }
 
+    pub async fn get_user_sessions(&self, user_id: &str) -> Result<Vec<user_session::Model>, DbErr> {
+        user_session::Entity::find()
+            .filter(user_session::Column::UserId.eq(user_id.to_string()))
+            .filter(user_session::Column::IsCurrent.eq(1))
+            .all(&self.db)
+            .await
+    }
+
     // ── Organization ───────────────────────────────────────────────
 
     pub async fn get_organization_by_slug(&self, slug: &str) -> Result<Option<organization::Model>, DbErr> {

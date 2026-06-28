@@ -56,9 +56,8 @@ async function handleSave(e: Event) {
   <title>{m.settings_notifications_title()} | Orbis</title>
 </svelte:head>
 
-<div class="h-full w-full overflow-y-auto bg-background scrollbar-hide">
-  <div class="max-w-3xl mx-auto p-8 flex flex-col gap-10">
-    <!-- Header -->
+<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide">
+  <!-- Header -->
     <div class="flex flex-col gap-1 text-start">
       <h1 class="text-xl font-bold tracking-tight text-foreground">{m.settings_notifications_title()}</h1>
       <p class="text-xs text-muted-foreground">{m.settings_notifications_desc()}</p>
@@ -207,5 +206,4 @@ async function handleSave(e: Event) {
         </Button>
       </div>
     </form>
-  </div>
 </div>

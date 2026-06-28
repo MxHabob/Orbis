@@ -132,9 +132,9 @@ function closeDetails() {
 }
 </script>
 
-<div class="h-full flex flex-col overflow-hidden bg-background p-6">
+<div class="h-full w-full overflow-y-auto bg-background p-6 flex flex-col gap-6 scrollbar-hide">
   <!-- Top header section -->
-  <div class="flex items-center justify-between pb-6 select-none border-b border-border">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-5 select-none border-b border-border/40 font-sans">
     <div class="flex flex-col gap-1 text-start">
       <h1 class="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
         <History class="text-primary" size={20} />
@@ -147,7 +147,7 @@ function closeDetails() {
   </div>
 
   <!-- Search & Filters -->
-  <div class="flex items-center justify-between gap-4 py-4 select-none">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 select-none">
     <div class="relative flex-1 max-w-sm">
       <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
       <Input
@@ -184,7 +184,7 @@ function closeDetails() {
   </div>
 
   <!-- Content Table -->
-  <div class="flex-1 overflow-y-auto py-2">
+  <div class="w-full">
     {#if isLoading}
       <div class="flex flex-col gap-3">
         {#each Array(5) as _}

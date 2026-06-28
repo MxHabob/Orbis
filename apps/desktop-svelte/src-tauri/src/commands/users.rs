@@ -2,7 +2,7 @@ use tauri::State;
 use std::sync::Arc;
 
 use core_domain::{
-    entities::{user, organization},
+    entities::{user, organization, user_session},
     params::UserParams,
     service::user::{
         CreateUserRequest, UpdateUserRequest,
@@ -156,6 +156,18 @@ pub async fn save_user_roles(
     state
         .service
         .save_user_roles(&user_id, roles)
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn get_user_sessions(
+    state: State<'_, Arc<AppState>>,
+    user_id: String,
+) -> CmdResult<Vec<user_session::Model>> {
+    state
+        .service
+        .get_user_sessions(&user_id)
         .await
         .map_err(CommandError::from)
 }

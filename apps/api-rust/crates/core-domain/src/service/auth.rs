@@ -206,18 +206,31 @@ impl super::Service {
             .unwrap()
             .to_rfc3339();
 
+        let os_name = match std::env::consts::OS {
+            "windows" => "Windows",
+            "macos" => "macOS",
+            "linux" => "Linux",
+            o => o,
+        };
+        let device_name = match std::env::consts::OS {
+            "windows" => "Windows PC",
+            "macos" => "Mac",
+            "linux" => "Linux PC",
+            _ => "Unknown Device",
+        };
+
         let session = user_session::Model {
             id: session_id,
             user_id: user.id.clone(),
             token: token.clone(),
             refresh_token: Some(refresh_token.clone()),
-            device_id: None,
-            device_type: None,
-            device_name: None,
-            os: None,
-            browser: None,
-            ip_address: None,
-            user_agent: None,
+            device_id: Some("desktop_client".to_string()),
+            device_type: Some("desktop".to_string()),
+            device_name: Some(device_name.to_string()),
+            os: Some(os_name.to_string()),
+            browser: Some("Tauri Desktop App".to_string()),
+            ip_address: Some("127.0.0.1".to_string()),
+            user_agent: Some("Tauri/2.0".to_string()),
             is_current: 1,
             is_trusted: 0,
             mfa_verified: 0,

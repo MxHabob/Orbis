@@ -20,9 +20,10 @@ import type {
   Subject,
   TimeSlot,
   User,
+  UserSession,
 } from "./types";
 
-export type { CommandError, User, LoginResponse, JsonRecord } from "./types";
+export type { CommandError, User, LoginResponse, JsonRecord, UserSession } from "./types";
 
 export const commands = {
   auth: {
@@ -52,6 +53,8 @@ export const commands = {
       invoke<User[]>("get_users", { orgId, params: params ?? {} }),
 
     getUser: (userId: string) => invoke<User>("get_user", { userId }),
+
+    getUserSessions: (userId: string) => invoke<UserSession[]>("get_user_sessions", { userId }),
 
     createUser: (orgId: string, createdBy: string, request: JsonRecord) =>
       invoke<User>("create_user", { orgId, createdBy, request }),

@@ -48,3 +48,24 @@ export type SolveJob = JsonRecord;
 
 // ── Guardians ────────────────────────────────────────────────────────────────
 export type GuardianLink = JsonRecord;
+
+export interface UserSession {
+  id: string;
+  user_id: string;
+  token: string;
+  refresh_token?: string | null;
+  device_id?: string | null;
+  device_type?: string | null;
+  device_name?: string | null;
+  os?: string | null;
+  browser?: string | null;
+  ip_address?: string | null;
+  user_agent?: string | null;
+  is_current: number;
+  is_trusted: number;
+  mfa_verified: number;
+  expires_at: string;
+  refresh_expires_at?: string | null;
+  last_active_at?: string | null;
+  created_at: string;
+}

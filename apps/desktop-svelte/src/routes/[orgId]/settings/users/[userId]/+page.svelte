@@ -17,7 +17,8 @@
   import { getLocale, localizeHref } from "$lib/paraglide/runtime";
   import * as m from "$lib/paraglide/messages";
   import { commands } from "$lib/services/ipc";
-  import type { User } from "$lib/services/ipc";
+  import type { User, UserSession } from "$lib/services/ipc";
+  import { formatDate } from "$lib/i18n-utils";
   import AvatarUpload from "$lib/components/shared/avatar-upload.svelte";
   import MainViewport from "$lib/components/layout/MainViewport.svelte";
   import {
@@ -74,26 +75,7 @@
     { value: "parent", label: "Parent / Guardian" },
   ];
 
-  const activeSessions = [
-    {
-      id: "sess_1",
-      device: "Windows PC (Tauri Desktop App)",
-      location: "Sana'a, Yemen (Current Device)",
-      ip: "109.74.32.18",
-      active: true,
-      icon: Monitor,
-      time: "Active now",
-    },
-    {
-      id: "sess_2",
-      device: "iPhone 15 Pro (Safari Mobile)",
-      location: "Riyadh, Saudi Arabia",
-      ip: "37.220.112.4",
-      active: false,
-      icon: Smartphone,
-      time: "2 hours ago",
-    }
-  ];
+  let activeSessions = $state<any[]>([]);
 
   async function loadUser() {
     if (!userId) return;
@@ -127,6 +109,38 @@
         allAvailableRoles = await commands.permissions.getAvailableRoles();
       } catch (e) {
         console.error("Failed to load available roles from db:", e);
+      }
+
+      try {
+        const rawSessions = await commands.users.getUserSessions(userId);
+        activeSessions = rawSessions.map((s: UserSession) => {
+          const isMobile = s.device_type === "mobile" || (s.user_agent && /mobile|android|iphone|ipad/i.test(s.user_agent));
+          const icon = isMobile ? Smartphone : Monitor;
+
+          let device = "Unknown Device";
+          if (s.device_name) {
+            device = s.device_name;
+            if (s.browser) device += ` (${s.browser})`;
+          } else if (s.os) {
+            device = s.os;
+            if (s.browser) device += ` (${s.browser})`;
+          }
+
+          const location = s.is_current ? (getLocale() === "ar" ? "هذا الجهاز" : "Current Device") : (getLocale() === "ar" ? "جهاز نشط" : "Active Device");
+          const time = s.is_current ? (getLocale() === "ar" ? "نشط الآن" : "Active now") : (s.last_active_at ? formatDate(s.last_active_at) : "");
+
+          return {
+            id: s.id,
+            device,
+            location,
+            ip: s.ip_address || "127.0.0.1",
+            active: s.is_current === 1,
+            icon,
+            time,
+          };
+        });
+      } catch (err) {
+        console.error("Failed to load user sessions:", err);
       }
 
     } catch (e) {

@@ -302,38 +302,40 @@
 </svelte:head>
 
 <div class="h-full w-full overflow-hidden flex flex-col font-sans text-start bg-background relative">
-  <!-- Header Area -->
-  <div class="p-6 border-b border-border/40 flex items-center justify-between gap-4 select-none">
-    <div class="flex flex-col gap-1 text-start">
-      <h1 class="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-        <Shield size={20} class="text-primary" />
-        <span>{getLocale() === "ar" ? "مدير صلاحيات الأدوار" : "Role Permissions Manager"}</span>
-      </h1>
-    </div>
+  <div class="flex-1 overflow-y-auto scrollbar-hide">
+    <div class="p-6 pb-28 flex flex-col gap-6">
+      <!-- Header Area -->
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 font-sans border-b border-border/40 pb-5 select-none">
+        <div class="flex flex-col gap-1 text-start">
+          <h1 class="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+            <Shield size={20} class="text-primary" />
+            <span>{getLocale() === "ar" ? "مدير صلاحيات الأدوار" : "Role Permissions Manager"}</span>
+          </h1>
+        </div>
 
-    <div class="flex items-center gap-3">
-      <Button
-        variant="outline"
-        size="sm"
-        onclick={() => showSetUserPermissionsModal = true}
-      >
-        <UserCheck size={14} class={getLocale() === "ar" ? 'ml-1.5' : 'mr-1.5'} />
-        {getLocale() === "ar" ? "تعيين صلاحيات المستخدمين" : "Set User Permissions"}
-      </Button>
+        <div class="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onclick={() => showSetUserPermissionsModal = true}
+          >
+            <UserCheck size={14} class={getLocale() === "ar" ? 'ml-1.5' : 'mr-1.5'} />
+            {getLocale() === "ar" ? "تعيين صلاحيات المستخدمين" : "Set User Permissions"}
+          </Button>
 
-      <Button
-        variant="lime"
-        size="sm"
-        onclick={() => showAddRuleModal = true}
-      >
-        <Plus size={14} class={getLocale() === "ar" ? 'ml-1.5' : 'mr-1.5'} />
-        {getLocale() === "ar" ? "إضافة قاعدة جديدة" : "+ Add A New Rule"}
-      </Button>
-    </div>
-  </div>
+          <Button
+            variant="lime"
+            size="sm"
+            onclick={() => showAddRuleModal = true}
+          >
+            <Plus size={14} class={getLocale() === "ar" ? 'ml-1.5' : 'mr-1.5'} />
+            {getLocale() === "ar" ? "إضافة قاعدة جديدة" : "+ Add A New Rule"}
+          </Button>
+        </div>
+      </div>
 
-  <!-- Filters Row -->
-  <div class="px-6 py-4 border-b border-border/40 flex flex-col sm:flex-row gap-4 items-center select-none">
+      <!-- Filters Row -->
+      <div class="flex flex-col sm:flex-row gap-4 items-center select-none">
     <div class="flex items-center gap-2 flex-1 w-full max-w-sm">
       <Label class="text-xs font-semibold text-muted-foreground min-w-[90px] text-start border-r border-border/10 pr-2">
         {getLocale() === "ar" ? "نوع المستند" : "Document Type"}
@@ -366,9 +368,9 @@
     </div>
   </div>
 
-  <!-- Rules Table Content -->
-  <div class="flex-1 overflow-y-auto p-6 pb-28 scrollbar-hide">
-    <div class="overflow-x-auto">
+      <!-- Rules Table Content -->
+      <div class="w-full">
+        <div class="overflow-x-auto">
       <Table>
         <TableHeader class="bg-muted/40 select-none">
           <TableRow>
@@ -454,6 +456,8 @@
         </TableBody>
       </Table>
     </div>
+  </div>
+  </div>
   </div>
 
   <!-- Floating Save Changes Banner -->

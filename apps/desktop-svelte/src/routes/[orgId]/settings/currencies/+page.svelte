@@ -292,9 +292,9 @@ let baseCurrencyCode = $derived(currencies.find(c => c.is_base === 1)?.code || "
   <title>{getLocale() === "ar" ? "العملات وأسعار الصرف" : "Currencies & Rates"} | Orbis</title>
 </svelte:head>
 
-<div class="h-full w-full overflow-hidden bg-background/50 flex flex-col p-6">
+<div class="h-full w-full overflow-y-auto bg-background p-6 flex flex-col gap-6 scrollbar-hide">
   <!-- Header -->
-  <div class="flex items-center justify-between pb-6 select-none border-b border-border">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-5 select-none border-b border-border/40 font-sans">
     <div class="flex flex-col gap-1 text-start">
       <h1 class="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
         <Coins class="text-primary" size={20} />
@@ -343,7 +343,7 @@ let baseCurrencyCode = $derived(currencies.find(c => c.is_base === 1)?.code || "
   </div>
 
   <!-- Info Alert Box -->
-  <div class="mt-4 border border-border/60 bg-muted/10 rounded-xl p-4 flex gap-3 text-start text-xs select-none hover:border-primary/25 transition-all duration-200 shrink-0">
+  <div class="border border-border/60 bg-muted/10 rounded-xl p-4 flex gap-3 text-start text-xs select-none hover:border-primary/25 transition-all duration-200">
     <Info class="text-primary shrink-0 animate-pulse" size={16} />
     <div class="flex flex-col gap-1 text-muted-foreground leading-relaxed">
       <span class="font-bold text-foreground text-xs">{getLocale() === "ar" ? "كيف يعمل نظام أسعار الصرف؟" : "How does the exchange rate system work?"}</span>
@@ -356,7 +356,7 @@ let baseCurrencyCode = $derived(currencies.find(c => c.is_base === 1)?.code || "
   </div>
 
   <!-- Content Section -->
-  <div class="flex-1 overflow-y-auto py-6">
+  <div class="w-full">
     {#if isLoading}
       <div class="flex flex-col gap-3">
         {#each Array(3) as _}

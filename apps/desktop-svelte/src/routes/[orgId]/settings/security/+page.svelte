@@ -1,6 +1,10 @@
 <script lang="ts">
+import { onMount } from "svelte";
 import { authStore } from "$lib/stores";
 import { commands } from "$lib/services/ipc";
+import type { UserSession } from "$lib/services/ipc";
+import { getLocale } from "$lib/paraglide/runtime";
+import { formatDate } from "$lib/i18n-utils";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
@@ -44,34 +48,53 @@ async function handleUpdatePassword(e: Event) {
   }
 }
 
-// Mock active sessions
-const activeSessions = [
-  {
-    id: "1",
-    device: "Windows PC (Tauri Desktop App)",
-    location: "Sana'a, Yemen (Current Device)",
-    ip: "109.74.32.18",
-    active: true,
-    icon: Monitor,
-  },
-  {
-    id: "2",
-    device: "iPhone 15 Pro (Safari Mobile)",
-    location: "Sana'a, Yemen",
-    ip: "109.74.32.19",
-    active: false,
-    icon: Smartphone,
-  },
-];
+let activeSessions = $state<any[]>([]);
+
+async function loadSessions() {
+  if (!authStore.userId) return;
+  try {
+    const rawSessions = await commands.users.getUserSessions(authStore.userId);
+    activeSessions = rawSessions.map((s: UserSession) => {
+      const isMobile = s.device_type === "mobile" || (s.user_agent && /mobile|android|iphone|ipad/i.test(s.user_agent));
+      const icon = isMobile ? Smartphone : Monitor;
+
+      let device = "Unknown Device";
+      if (s.device_name) {
+        device = s.device_name;
+        if (s.browser) device += ` (${s.browser})`;
+      } else if (s.os) {
+        device = s.os;
+        if (s.browser) device += ` (${s.browser})`;
+      }
+
+      const isCurrentDevice = s.token === authStore.token;
+      const location = isCurrentDevice ? (getLocale() === "ar" ? "هذا الجهاز" : "Current Device") : (getLocale() === "ar" ? "جهاز نشط" : "Active Device");
+
+      return {
+        id: s.id,
+        device,
+        location,
+        ip: s.ip_address || "127.0.0.1",
+        active: s.is_current === 1,
+        icon,
+      };
+    });
+  } catch (err) {
+    console.error("Failed to load user sessions:", err);
+  }
+}
+
+onMount(() => {
+  loadSessions();
+});
 </script>
 
 <svelte:head>
   <title>{m.settings_security_title()} | Orbis</title>
 </svelte:head>
 
-<div class="h-full w-full overflow-y-auto bg-background scrollbar-hide">
-  <div class="max-w-3xl mx-auto p-8 flex flex-col gap-10">
-    <!-- Header -->
+<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide">
+  <!-- Header -->
     <div class="flex flex-col gap-1 text-start">
       <h1 class="text-xl font-bold tracking-tight text-foreground">{m.settings_security_title()}</h1>
       <p class="text-xs text-muted-foreground">{m.settings_security_desc()}</p>
@@ -177,5 +200,4 @@ const activeSessions = [
         {/each}
       </div>
     </div>
-  </div>
 </div>

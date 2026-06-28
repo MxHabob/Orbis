@@ -101,9 +101,8 @@ function toggleCollapse(yearId: string) {
   <title>{m.settings_cycles_title()} | Orbis</title>
 </svelte:head>
 
-<div class="h-full w-full overflow-y-auto bg-background scrollbar-hide">
-  <div class="max-w-3xl mx-auto p-8 flex flex-col gap-10">
-    <!-- Header Area -->
+<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide">
+  <!-- Header Area -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 font-sans border-b border-border/40 pb-5">
       <div class="flex flex-col gap-1 text-start">
         <h1 class="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
@@ -296,7 +295,6 @@ function toggleCollapse(yearId: string) {
         {/each}
       </div>
     {/if}
-  </div>
 </div>
 
 <!-- Sheets -->
