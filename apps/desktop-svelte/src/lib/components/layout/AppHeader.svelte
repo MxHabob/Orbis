@@ -15,7 +15,7 @@ import {
   Play,
   Megaphone,
 } from "lucide-svelte";
-import { studentsStore } from "$lib/stores";
+import { studentsStore, uiStore } from "$lib/stores";
 import { isDesktopApp } from "$lib/services/ipc";
 import { page } from "$app/state";
 import * as m from "$lib/paraglide/messages";
@@ -174,9 +174,10 @@ const breadcrumbs = $derived.by(() => {
 		<Button
 			variant="outline"
 			size="sm"
-			class="font-semibold text-xs text-foreground px-3 gap-2"
+			class="font-semibold text-xs text-foreground px-3 gap-2 {uiStore.showAskOrbis ? 'bg-zinc-150 dark:bg-zinc-850/80 border-zinc-300 dark:border-zinc-700/80 text-foreground font-bold' : ''}"
 			title="Ask Orbis"
 			aria-label="Ask Orbis"
+			onclick={() => uiStore.toggleAskOrbis()}
 		>
 			<svg width="14" height="14" class="text-foreground shrink-0 stroke-[2px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M12 3l8.5 14.7a1 1 0 0 1-.9 1.3H4.4a1 1 0 0 1-.9-1.3L12 3z" />

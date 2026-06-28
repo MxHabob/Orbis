@@ -4,12 +4,30 @@
 
 class UIStore {
   globalLoading = $state(false);
+  showAskOrbis = $state(false);
+  showUpgradeDialog = $state(false);
 
   // Panel resize preferences are persisted via Resizer component
   // to localStorage with `resizer:{persistId}` keys.
 
   setGlobalLoading(loading: boolean) {
     this.globalLoading = loading;
+  }
+
+  toggleAskOrbis() {
+    this.showAskOrbis = !this.showAskOrbis;
+  }
+
+  setAskOrbis(show: boolean) {
+    this.showAskOrbis = show;
+  }
+
+  toggleUpgradeDialog() {
+    this.showUpgradeDialog = !this.showUpgradeDialog;
+  }
+
+  setUpgradeDialog(show: boolean) {
+    this.showUpgradeDialog = show;
   }
 }
 
