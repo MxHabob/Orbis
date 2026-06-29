@@ -30,7 +30,7 @@ import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui-svel
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
-import { FileText, Plus, Search, Trash2, Edit, CheckCircle, Archive, AlertCircle } from "lucide-svelte";
+import { FileText, Plus, Search, Trash2, Edit, CheckCircle, Archive, AlertCircle, RefreshCw } from "lucide-svelte";
 
 // State runes
 let templates = $state<any[]>([]);
@@ -200,6 +200,46 @@ async function handleDeleteTemplate() {
     templateToDeleteId = "";
   }
 }
+
+// Handle Template Publishing/Activation
+async function publishTemplate(id: string) {
+  try {
+    const userId = "current-user";
+    await commands.documentTemplates.publishTemplate(orgId, id, userId);
+    toast.success(m.templates_publish_success());
+    loadTemplates();
+  } catch (e: unknown) {
+    console.error("Failed to publish template:", e);
+    const msg = (e as any)?.message || "Failed to publish template";
+    toast.error(msg);
+  }
+}
+
+// Handle Template Archiving
+async function archiveTemplate(id: string) {
+  try {
+    await commands.documentTemplates.archiveTemplate(orgId, id);
+    toast.success(m.templates_archive_success());
+    loadTemplates();
+  } catch (e: unknown) {
+    console.error("Failed to archive template:", e);
+    const msg = (e as any)?.message || "Failed to archive template";
+    toast.error(msg);
+  }
+}
+
+// Handle Template Restoring
+async function restoreTemplate(id: string) {
+  try {
+    await commands.documentTemplates.restoreTemplate(orgId, id);
+    toast.success(m.templates_restore_success());
+    loadTemplates();
+  } catch (e: unknown) {
+    console.error("Failed to restore template:", e);
+    const msg = (e as any)?.message || "Failed to restore template";
+    toast.error(msg);
+  }
+}
 </script>
 
 <svelte:head>
@@ -299,8 +339,8 @@ async function handleDeleteTemplate() {
           <Card class="flex flex-col h-full hover:border-primary/40 transition-all duration-200">
             <CardHeader class="pb-3">
               <div class="flex items-start justify-between gap-2">
-                <Badge variant={template.status === 'published' ? 'lime' : 'secondary'}>
-                  {template.status === 'published' ? 'نشط / Active' : 'مسودة / Draft'}
+                <Badge variant={template.status === 'published' ? 'lime' : (template.status === 'archived' ? 'outline' : 'secondary')}>
+                  {template.status === 'published' ? m.templates_status_active() : (template.status === 'archived' ? m.templates_status_archived() : m.templates_status_draft())}
                 </Badge>
                 <div class="text-[10px] text-muted-foreground">v{template.version}</div>
               </div>
@@ -308,44 +348,80 @@ async function handleDeleteTemplate() {
                 {getLocale() === 'ar' && template.name_ar ? template.name_ar : template.name}
               </CardTitle>
               <CardDescription class="text-xs text-muted-foreground line-clamp-2 mt-1">
-                {template.description || "لا يوجد وصف لهذا القالب"}
+                {template.description || m.templates_no_description()}
               </CardDescription>
             </CardHeader>
             
             <CardContent class="flex-grow pb-4 flex flex-col gap-2">
               <div class="flex items-center justify-between text-xs text-muted-foreground border-t border-border/40 pt-3">
-                <span>نوع المستند:</span>
+                <span>{m.templates_label_doc_type()}</span>
                 <span class="font-medium text-foreground">{template.document_type}</span>
               </div>
               <div class="flex items-center justify-between text-xs text-muted-foreground">
-                <span>نوع السجل:</span>
+                <span>{m.templates_label_entity_type()}</span>
                 <span class="font-medium text-foreground">{template.entity_type}</span>
               </div>
               <div class="flex items-center justify-between text-xs text-muted-foreground">
-                <span>المقاس:</span>
+                <span>{m.templates_label_size()}</span>
                 <span class="font-medium text-foreground">{template.page_size} ({template.orientation})</span>
               </div>
             </CardContent>
 
-            <CardFooter class="border-t border-border/40 pt-3 flex justify-between gap-2 bg-muted/10">
-              <Button
-                variant="destructive"
-                size="icon-xs"
-                class="h-8 w-8 rounded-lg cursor-pointer"
-                onclick={() => confirmDelete(template.id)}
-              >
-                <Trash2 size={13} />
-              </Button>
+            <CardFooter class="border-t border-border/40 pt-3 flex justify-between gap-2 bg-muted/10 flex-nowrap overflow-x-auto">
+              <div class="flex items-center gap-1 shrink-0">
+                <Button
+                  variant="destructive"
+                  size="icon-xs"
+                  class="h-8 w-8 rounded-lg cursor-pointer"
+                  onclick={() => confirmDelete(template.id)}
+                >
+                  <Trash2 size={13} />
+                </Button>
+              </div>
               
-              <Button
-                variant="outline"
-                size="xs"
-                class="cursor-pointer"
-                href={`/${orgId}/settings/templates/${template.id}`}
-              >
-                <Edit size={13} class="me-1" />
-                تعديل / Edit
-              </Button>
+              <div class="flex items-center gap-1.5 shrink-0">
+                <Button
+                  variant="outline"
+                  size="xs"
+                  class="cursor-pointer"
+                  href={`/${orgId}/settings/templates/${template.id}`}
+                >
+                  <Edit size={13} class="me-1" />
+                  {m.templates_action_edit()}
+                </Button>
+
+                {#if template.status === 'published'}
+                  <Button
+                    variant="outline"
+                    size="xs"
+                    class="cursor-pointer"
+                    onclick={() => archiveTemplate(template.id)}
+                  >
+                    <Archive size={13} class="me-1" />
+                    {m.templates_action_archive()}
+                  </Button>
+                {:else if template.status === 'archived'}
+                  <Button
+                    variant="outline"
+                    size="xs"
+                    class="cursor-pointer"
+                    onclick={() => restoreTemplate(template.id)}
+                  >
+                    <RefreshCw size={13} class="me-1" />
+                    {m.templates_action_restore()}
+                  </Button>
+                {:else}
+                  <Button
+                    variant="lime"
+                    size="xs"
+                    class="cursor-pointer"
+                    onclick={() => publishTemplate(template.id)}
+                  >
+                    <CheckCircle size={13} class="me-1" />
+                    {m.templates_action_activate()}
+                  </Button>
+                {/if}
+              </div>
             </CardFooter>
           </Card>
         {/each}

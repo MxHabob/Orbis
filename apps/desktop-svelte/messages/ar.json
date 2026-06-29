@@ -1464,5 +1464,21 @@
   "templates_desc": "إنشاء وإدارة قوالب الشهادات، البطاقات، بطاقات الجلوس، وسندات القبض",
   "templates_create_btn": "إنشاء قالب جديد",
   "templates_empty": "لم يتم العثور على أي قوالب مستندات",
-  "templates_empty_desc": "ابدأ بإنشاء أول قالب مستندات لتخصيص الطباعة والإخراج."
+  "templates_empty_desc": "ابدأ بإنشاء أول قالب مستندات لتخصيص الطباعة والإخراج.",
+  "templates_status_active": "نشط",
+  "templates_status_draft": "مسودة",
+  "templates_status_archived": "مؤرشف",
+  "templates_action_activate": "تفعيل",
+  "templates_action_archive": "أرشفة",
+  "templates_action_restore": "استعادة",
+  "templates_action_edit": "تعديل",
+  "templates_action_delete": "حذف",
+  "templates_label_doc_type": "نوع المستند:",
+  "templates_label_entity_type": "نوع السجل:",
+  "templates_label_size": "المقاس:",
+  "templates_no_description": "لا يوجد وصف لهذا القالب",
+  "templates_publish_success": "تم تفعيل القالب بنجاح",
+  "templates_archive_success": "تم أرشفة القالب بنجاح",
+  "templates_restore_success": "تم استعادة القالب بنجاح"
 }
+

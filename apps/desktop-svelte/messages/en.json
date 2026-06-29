@@ -1464,5 +1464,21 @@
   "templates_desc": "Create and manage templates for certificates, cards, seatings, and receipts",
   "templates_create_btn": "Create Template",
   "templates_empty": "No document templates found",
-  "templates_empty_desc": "Get started by creating your first document template."
+  "templates_empty_desc": "Get started by creating your first document template.",
+  "templates_status_active": "Active",
+  "templates_status_draft": "Draft",
+  "templates_status_archived": "Archived",
+  "templates_action_activate": "Activate",
+  "templates_action_archive": "Archive",
+  "templates_action_restore": "Restore",
+  "templates_action_edit": "Edit",
+  "templates_action_delete": "Delete",
+  "templates_label_doc_type": "Document Type:",
+  "templates_label_entity_type": "Record Type:",
+  "templates_label_size": "Size:",
+  "templates_no_description": "No description for this template",
+  "templates_publish_success": "Template activated successfully",
+  "templates_archive_success": "Template archived successfully",
+  "templates_restore_success": "Template restored successfully"
 }
+
