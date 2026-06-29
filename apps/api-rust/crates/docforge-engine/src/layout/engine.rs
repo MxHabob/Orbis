@@ -99,7 +99,7 @@ impl<'a> LayoutEngine<'a> {
             for node in nodes {
                 // Check if the node has an absolute position. If so, layout absolute.
                 if let Some(abs_pos) = get_absolute_position(node) {
-                    let elem = layout_absolute_node(node, &abs_pos, left_margin, top_margin, content_width, content_height)?;
+                    let elem = layout_absolute_node(node, &abs_pos, 0.0, 0.0, page_width, page_height)?;
                     positioned_elements.push(elem);
                 } else {
                     // Regular in-flow node: add to Taffy tree

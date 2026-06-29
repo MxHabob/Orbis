@@ -95,6 +95,7 @@ pub fn generate_barcode_svg(
         r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {} {}" width="{}" height="{}">"#,
         width, height, width, height
     );
+    svg.push('\n');
 
     for (i, &bar) in encoded.iter().enumerate() {
         if bar == 1 {
@@ -103,6 +104,7 @@ pub fn generate_barcode_svg(
                 r#"<rect x="{:.2}" y="0" width="{:.2}" height="{}" fill="black"/>"#,
                 x, bar_width, height
             ));
+            svg.push('\n');
         }
     }
 
@@ -167,12 +169,14 @@ pub fn generate_qr_svg(
         r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {} {}" width="{}" height="{}">"#,
         size, size, size, size
     );
+    svg.push('\n');
 
     // Background
     svg.push_str(&format!(
         r#"<rect x="0" y="0" width="{}" height="{}" fill="{}"/>"#,
         size, size, bg_color
     ));
+    svg.push('\n');
 
     // Modules
     let w = code.width();
@@ -186,6 +190,7 @@ pub fn generate_qr_svg(
                 r#"<rect x="{:.2}" y="{:.2}" width="{:.2}" height="{:.2}" fill="{}"/>"#,
                 x, y, module_size, module_size, fg_color
             ));
+            svg.push('\n');
         }
     }
 
