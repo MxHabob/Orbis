@@ -69,3 +69,13 @@ export interface UserSession {
   last_active_at?: string | null;
   created_at: string;
 }
+
+export interface BatchJobStatus {
+  jobId: string;
+  totalRecords: number;
+  processedRecords: number;
+  status: 'running' | 'paused' | 'cancelled' | 'completed' | 'failed';
+  errorMessage?: string | null;
+  outputPath: string;
+}
+

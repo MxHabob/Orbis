@@ -23,6 +23,7 @@ import {
   Shield,
   Coins,
   ListOrdered,
+  FileText,
 } from "lucide-svelte";
 import MainViewport from "$lib/components/layout/MainViewport.svelte";
 import type { Snippet } from "svelte";
@@ -104,6 +105,11 @@ const navItems = $derived([
     path: "ordering",
     label: m.settings_nav_ordering ? m.settings_nav_ordering() : "ترتيب الطلاب",
     icon: ListOrdered,
+  },
+  {
+    path: "templates",
+    label: m.settings_nav_templates ? m.settings_nav_templates() : "قوالب المستندات",
+    icon: FileText,
   },
 ]);
 </script>

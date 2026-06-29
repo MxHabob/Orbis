@@ -16,4 +16,5 @@ pub mod schedule;
 pub mod guardians;
 pub mod exams;
 pub mod permissions;
+pub mod docforge;
 

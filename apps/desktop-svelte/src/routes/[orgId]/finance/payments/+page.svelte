@@ -35,11 +35,33 @@ import {
 import { formatCurrency, formatDate } from "$lib/i18n-utils";
 import { fade, slide } from "svelte/transition";
 import * as m from "$lib/paraglide/messages";
+import PrintDialog from "$lib/components/shared/PrintDialog.svelte";
 
 let { data }: { data: { orgId: string } } = $props();
 
 // Core State
 let payments = $state<any[]>([]);
+let printDialogOpen = $state(false);
+let selectedPaymentIds = $state<Set<string>>(new Set());
+
+function togglePaymentSelection(id: string) {
+  if (selectedPaymentIds.has(id)) {
+    selectedPaymentIds.delete(id);
+    selectedPaymentIds = new Set(selectedPaymentIds);
+  } else {
+    selectedPaymentIds.add(id);
+    selectedPaymentIds = new Set(selectedPaymentIds);
+  }
+}
+
+function toggleSelectAllPayments() {
+  const visible = filteredPayments;
+  if (selectedPaymentIds.size === visible.length) {
+    selectedPaymentIds = new Set();
+  } else {
+    selectedPaymentIds = new Set(visible.map(p => String(p.id)));
+  }
+}
 let treasuries = $state<any[]>([]);
 let students = $state<any[]>([]);
 let fees = $state<any[]>([]);
@@ -713,6 +735,17 @@ const filteredPayments = $derived.by(() => {
 
       <!-- Action buttons -->
       <div class="flex items-center gap-2">
+        {#if selectedPaymentIds.size > 0}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onclick={() => printDialogOpen = true} 
+            class="h-8 text-[11px] flex items-center gap-1.5 cursor-pointer hover:bg-muted border-primary/30 text-primary"
+          >
+            <Printer size={12} />
+            <span>طباعة القوالب ({selectedPaymentIds.size})</span>
+          </Button>
+        {/if}
         <Button 
           variant="outline" 
           size="sm" 
@@ -758,6 +791,14 @@ const filteredPayments = $derived.by(() => {
           <Table>
             <TableHeader class="bg-muted/40 select-none">
               <TableRow>
+                <TableHead class="w-10 text-center">
+                  <input 
+                    type="checkbox" 
+                    checked={selectedPaymentIds.size === filteredPayments.length && filteredPayments.length > 0} 
+                    onchange={toggleSelectAllPayments}
+                    class="rounded border-border text-primary focus:ring-primary w-3.5 h-3.5 cursor-pointer"
+                  />
+                </TableHead>
                 <TableHead class="text-start font-bold text-xs">الرقم</TableHead>
                 <TableHead class="text-start font-bold text-xs">التاريخ</TableHead>
                 <TableHead class="text-start font-bold text-xs">طريقة القبض</TableHead>
@@ -775,6 +816,14 @@ const filteredPayments = $derived.by(() => {
                     class="hover:bg-muted/20 transition-all duration-150 cursor-pointer select-none {selectedPayment?.id === p.id ? 'bg-primary/10 border-primary border-l-2 hover:bg-primary/15' : ''}"
                     onclick={() => selectRow(p)}
                   >
+                    <TableCell class="w-10 text-center" onclick={(e) => e.stopPropagation()}>
+                      <input 
+                        type="checkbox" 
+                        checked={selectedPaymentIds.has(String(p.id))} 
+                        onchange={() => togglePaymentSelection(String(p.id))}
+                        class="rounded border-border text-primary focus:ring-primary w-3.5 h-3.5 cursor-pointer"
+                      />
+                    </TableCell>
                     <TableCell class="text-start font-mono text-[11px] text-foreground font-extrabold whitespace-nowrap">{p.receipt_number || p.id.slice(0, 8)}</TableCell>
                     <TableCell class="text-start text-[11px] text-muted-foreground whitespace-nowrap">{formatDate(p.payment_date || p.created_at)}</TableCell>
                     <TableCell class="text-start text-[11px] font-semibold text-foreground whitespace-nowrap">{getMethodLabel(p.payment_method || 'Cash')}</TableCell>
@@ -900,6 +949,12 @@ const filteredPayments = $derived.by(() => {
       </table>
     {/if}
   </div>
+
+  <PrintDialog
+    bind:open={printDialogOpen}
+    entityType="payment"
+    entityIds={Array.from(selectedPaymentIds)}
+  />
 
 </div>
 

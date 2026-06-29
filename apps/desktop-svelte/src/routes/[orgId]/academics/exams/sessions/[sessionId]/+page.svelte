@@ -34,10 +34,12 @@ import {
   Pencil,
   Trash,
   XCircle,
+  Printer,
 } from "lucide-svelte";
 import * as m from "$lib/paraglide/messages";
 import ExamStatusBadge from "$lib/components/exams/status-badge.svelte";
 import SubjectAddSheet from "$lib/components/exams/subject-add-sheet.svelte";
+import PrintDialog from "$lib/components/shared/PrintDialog.svelte";
 import { commands } from "$lib/services/ipc";
 import { authStore } from "$lib/stores";
 
@@ -51,6 +53,27 @@ let session = $state<any>(null);
 let subjects = $state<any[]>([]);
 let schedules = $state<any[]>([]);
 let seatingNumbers = $state<any[]>([]);
+let printDialogOpen = $state(false);
+let selectedSeatIds = $state<Set<string>>(new Set());
+
+function toggleSeatSelection(id: string) {
+  if (selectedSeatIds.has(id)) {
+    selectedSeatIds.delete(id);
+    selectedSeatIds = new Set(selectedSeatIds);
+  } else {
+    selectedSeatIds.add(id);
+    selectedSeatIds = new Set(selectedSeatIds);
+  }
+}
+
+function toggleSelectAllSeats() {
+  if (selectedSeatIds.size === seatingNumbers.length) {
+    selectedSeatIds = new Set();
+  } else {
+    selectedSeatIds = new Set(seatingNumbers.map(sn => String(sn.id)));
+  }
+}
+
 let halls = $state<any[]>([]);
 let proctors = $state<any[]>([]);
 let rooms = $state<any[]>([]);
@@ -943,10 +966,31 @@ async function handleAssignProctors() {
 							</Button>
 						</div>
 					{:else}
+						<div class="flex items-center justify-between gap-3 px-1 select-none">
+							<span class="text-xs text-muted-foreground">تم إصدار {seatingNumbers.length} رقم جلوس للطلاب في هذه الدورة الامتحانية</span>
+							{#if selectedSeatIds.size > 0}
+								<Button 
+									variant="outline" 
+									class="h-7 px-3 text-[10px] flex items-center gap-1.5 cursor-pointer border-primary/30 text-primary"
+									onclick={() => printDialogOpen = true}
+								>
+									<Printer size={12} />
+									<span>طباعة القوالب ({selectedSeatIds.size})</span>
+								</Button>
+							{/if}
+						</div>
 						<div class="card-tactile bg-card overflow-hidden">
 							<Table>
 								<TableHeader>
 									<TableRow class="text-[10px]">
+										<TableHead class="w-10 text-center">
+											<input 
+												type="checkbox" 
+												checked={selectedSeatIds.size === seatingNumbers.length && seatingNumbers.length > 0} 
+												onchange={toggleSelectAllSeats}
+												class="rounded border-border text-primary focus:ring-primary w-3.5 h-3.5 cursor-pointer"
+											/>
+										</TableHead>
 										<TableHead class="w-10">#</TableHead>
 										<TableHead>رقم الجلوس</TableHead>
 										<TableHead>الطالب</TableHead>
@@ -957,6 +1001,14 @@ async function handleAssignProctors() {
 								<TableBody>
 									{#each seatingNumbers as sn, i (sn.id)}
 										<TableRow class="text-xs">
+											<TableCell class="w-10 text-center" onclick={(e) => e.stopPropagation()}>
+												<input 
+													type="checkbox" 
+													checked={selectedSeatIds.has(String(sn.id))} 
+													onchange={() => toggleSeatSelection(String(sn.id))}
+													class="rounded border-border text-primary focus:ring-primary w-3.5 h-3.5 cursor-pointer"
+												/>
+											</TableCell>
 											<TableCell class="font-mono text-muted-foreground">{i + 1}</TableCell>
 											<TableCell class="font-mono font-bold text-primary">{sn.seating_number}</TableCell>
 											<TableCell>{sn.student_name_ar || sn.enrollment_id}</TableCell>
@@ -1342,5 +1394,11 @@ async function handleAssignProctors() {
 	orgId={data.orgId}
 	sessionId={sessionId}
 	onSuccess={loadSession}
+/>
+
+<PrintDialog
+	bind:open={printDialogOpen}
+	entityType="exam"
+	entityIds={Array.from(selectedSeatIds)}
 />
 

@@ -710,6 +710,7 @@
   "ledger_action_view": "عرض",
   "ledger_action_print": "طباعة",
   "ledger_action_print_selected": "طباعة المحدد",
+  "print_templates": "طباعة القوالب",
   "ledger_action_exit": "خروج",
   "ledger_col_notes": "ملاحظات",
   "ledger_col_code": "ر.ح",
@@ -1457,5 +1458,11 @@
   "settings_user_detail_tab_roles": "الصلاحيات والأدوار",
   "settings_user_detail_pref_title": "تفضيلات المستخدم",
   "settings_user_detail_lang_ar": "العربية (Arabic)",
-  "settings_user_detail_lang_en": "English (الإنجليزية)"
+  "settings_user_detail_lang_en": "English (الإنجليزية)",
+  "settings_nav_templates": "قوالب المستندات",
+  "templates_title": "قوالب المستندات",
+  "templates_desc": "إنشاء وإدارة قوالب الشهادات، البطاقات، بطاقات الجلوس، وسندات القبض",
+  "templates_create_btn": "إنشاء قالب جديد",
+  "templates_empty": "لم يتم العثور على أي قوالب مستندات",
+  "templates_empty_desc": "ابدأ بإنشاء أول قالب مستندات لتخصيص الطباعة والإخراج."
 }

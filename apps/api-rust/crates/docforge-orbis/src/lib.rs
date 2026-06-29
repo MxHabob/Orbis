@@ -15,3 +15,6 @@ pub mod schema;
 pub mod template_service;
 pub mod asset_store;
 pub mod audit;
+pub mod datasource;
+pub mod batch;
+

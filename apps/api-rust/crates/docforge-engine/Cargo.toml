@@ -1,8 +1,8 @@
 [package]
 name = "docforge-engine"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
-description = "Standalone document template rendering engine — Typst-based PDF generation with batch processing"
+description = "Standalone document template rendering engine — Rust-native PDF generation with Arabic/RTL support"
 license = "MIT"
 
 # IMPORTANT: This crate has ZERO dependencies on Orbis.
@@ -27,6 +27,26 @@ chrono = { version = "0.4", features = ["serde"] }
 # Logging
 tracing = "0.1"
 
-# NOTE: Typst, barcoders, qrcode, rayon will be added in Phase 2
-# when the rendering engine is implemented. For now, only the
-# Document Model and trait definitions are provided.
+# ── PDF Rendering Engine (~2MB total binary impact) ──────────
+# PDF document construction (wraps pdf-writer with high-level API)
+krilla = "0.5"
+
+# Text layout, shaping (rustybuzz/HarfBuzz), bidi, line breaking
+# Provides Arabic/RTL support via built-in rustybuzz + unicode-bidi
+cosmic-text = "0.12"
+
+# CSS Flexbox + Grid layout engine (used by Zed, Bevy, Lapce)
+taffy = "0.7"
+
+# Barcode generation (Code128, EAN13, Code39, etc.)
+barcoders = "2"
+
+# QR code generation
+qrcode = "0.14"
+
+# Image decoding (PNG, JPEG)
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+
+# Parallelism for batch rendering
+rayon = "1.10"
+num_cpus = "1.16"

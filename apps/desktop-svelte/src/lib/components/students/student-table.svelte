@@ -16,7 +16,17 @@ import { ArrowUpRight, GraduationCap } from "lucide-svelte";
 import * as m from "$lib/paraglide/messages";
 import { formatDate } from "$lib/i18n-utils";
 
-let { students }: { students: Enrollment[] } = $props();
+let {
+  students,
+  enableSelection = false,
+  selectedIds = $bindable(new Set()),
+  onSelectionChange,
+}: {
+  students: Enrollment[];
+  enableSelection?: boolean;
+  selectedIds?: Set<string>;
+  onSelectionChange?: (ids: Set<string>) => void;
+} = $props();
 
 // ── Helpers ────────────────────────────────────────────────────────
 
@@ -170,7 +180,11 @@ const columns: ColumnDef<Enrollment>[] = [
 	getRowId={(s) => String(s.id)}
 	height="100%"
 	enableSorting={true}
-	enableSelection={false}
+	enableSelection={enableSelection}
+	onSelectionChange={(ids) => {
+		selectedIds = ids;
+		onSelectionChange?.(ids);
+	}}
 	enableVirtualization={students.length > 100}
 	enableExport={false}
 	enableColumnToggle={false}

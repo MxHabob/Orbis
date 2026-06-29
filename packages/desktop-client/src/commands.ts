@@ -21,6 +21,7 @@ import type {
   TimeSlot,
   User,
   UserSession,
+  BatchJobStatus,
 } from "./types";
 
 export type { CommandError, User, LoginResponse, JsonRecord, UserSession } from "./types";
@@ -770,6 +771,27 @@ export const commands = {
       permissions: Record<string, string>,
     ) => invoke<void>("save_user_permissions", { userId, permissions }),
     getAvailableRoles: () => invoke<string[]>("get_available_roles"),
+  },
+
+  docforge: {
+    previewDocumentTemplate: (templateJson: string, contextJson: string) =>
+      invoke<number[]>("preview_document_template", { template_json: templateJson, context_json: contextJson }),
+    renderDocument: (orgId: string, templateId: string, entityId: string) =>
+      invoke<number[]>("render_document", { org_id: orgId, template_id: templateId, entity_id: entityId }),
+    getDatasourceSchemas: () =>
+      invoke<Record<string, any>>("get_datasource_schemas"),
+    evaluateTemplateExpressions: (expressionTemplate: string, contextJson: string) =>
+      invoke<string>("evaluate_template_expressions", { expression_template: expressionTemplate, context_json: contextJson }),
+    startBatchPrint: (orgId: string, templateId: string, entityIds: string[], outputDir: string) =>
+      invoke<BatchJobStatus>("start_batch_print", { org_id: orgId, template_id: templateId, entity_ids: entityIds, output_dir: outputDir }),
+    pauseBatchPrint: (jobId: string) =>
+      invoke<boolean>("pause_batch_print", { job_id: jobId }),
+    resumeBatchPrint: (jobId: string) =>
+      invoke<boolean>("resume_batch_print", { job_id: jobId }),
+    cancelBatchPrint: (jobId: string) =>
+      invoke<boolean>("cancel_batch_print", { job_id: jobId }),
+    getBatchPrintStatus: (jobId: string) =>
+      invoke<BatchJobStatus>("get_batch_print_status", { job_id: jobId }),
   },
 
   window: {

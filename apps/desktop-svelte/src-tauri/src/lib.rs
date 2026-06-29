@@ -352,6 +352,17 @@ pub fn run() {
             commands::exams::get_exam_proctors,
             commands::exams::get_hall_students,
             commands::exams::get_seating_numbers,
+
+            // DocForge Layout & Render commands
+            commands::docforge::preview_document_template,
+            commands::docforge::render_document,
+            commands::docforge::get_datasource_schemas,
+            commands::docforge::evaluate_template_expressions,
+            commands::docforge::start_batch_print,
+            commands::docforge::pause_batch_print,
+            commands::docforge::resume_batch_print,
+            commands::docforge::cancel_batch_print,
+            commands::docforge::get_batch_print_status,
         ])
         .setup(move |app| {
             // Add updater plugin conditionally for desktop
@@ -382,6 +393,10 @@ pub fn run() {
                 Ok::<AppState, String>(state)
             })?;
             app.manage(Arc::new(app_state));
+            
+            // Create batch job manager state
+            let batch_job_manager = Arc::new(docforge_orbis::batch::BatchJobManager::new());
+            app.manage(batch_job_manager);
 
             let app_handle = app.handle().clone();
             let initial_url = WebviewUrl::App("index.html".into());

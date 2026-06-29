@@ -30,7 +30,8 @@ impl std::fmt::Display for TemplateStatus {
 
 // ── DTOs ─────────────────────────────────────────────────────
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
+#[serde(default)]
 pub struct CreateTemplateRequest {
     pub name: String,
     pub name_ar: Option<String>,
@@ -50,7 +51,8 @@ pub struct CreateTemplateRequest {
     pub tags: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
+#[serde(default)]
 pub struct UpdateTemplateRequest {
     pub name: Option<String>,
     pub name_ar: Option<String>,

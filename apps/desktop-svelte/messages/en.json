@@ -710,6 +710,7 @@
   "ledger_action_view": "View",
   "ledger_action_print": "Print",
   "ledger_action_print_selected": "Print Selected",
+  "print_templates": "Print Templates",
   "ledger_action_exit": "Exit",
   "ledger_col_notes": "Notes",
   "ledger_col_code": "Code",
@@ -1457,5 +1458,11 @@
   "settings_user_detail_tab_roles": "Roles & Permissions",
   "settings_user_detail_pref_title": "User Preferences",
   "settings_user_detail_lang_ar": "Arabic (العربية)",
-  "settings_user_detail_lang_en": "English"
+  "settings_user_detail_lang_en": "English",
+  "settings_nav_templates": "Document Templates",
+  "templates_title": "Document Templates",
+  "templates_desc": "Create and manage templates for certificates, cards, seatings, and receipts",
+  "templates_create_btn": "Create Template",
+  "templates_empty": "No document templates found",
+  "templates_empty_desc": "Get started by creating your first document template."
 }

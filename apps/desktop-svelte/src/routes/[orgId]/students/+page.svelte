@@ -9,8 +9,9 @@ import MainViewport from "$lib/components/layout/MainViewport.svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import { Plus, Search, FilterX, Download } from "lucide-svelte";
+import { Plus, Search, FilterX, Download, Printer } from "lucide-svelte";
 import { studentsStore } from "$lib/stores";
+import PrintDialog from "$lib/components/shared/PrintDialog.svelte";
 import StudentSidebarFilters from "$lib/components/students/student-sidebar-filters.svelte";
 import StudentTable from "$lib/components/students/student-table.svelte";
 import StudentInspector from "$lib/components/students/student-inspector.svelte";
@@ -40,6 +41,9 @@ const hasActiveFilters = $derived(
     studentsStore.statusFilter !== "active" ||
     studentsStore.searchQuery !== "",
 );
+
+let printDialogOpen = $state(false);
+let selectedStudentIds = $state<Set<string>>(new Set());
 </script>
 
 <svelte:head>
@@ -89,6 +93,16 @@ const hasActiveFilters = $derived(
 				</div>
 
 					<div class="flex items-center gap-2">
+						{#if selectedStudentIds.size > 0}
+							<Button
+								variant="outline"
+								class="text-xs h-9 px-3"
+								onclick={() => printDialogOpen = true}
+							>
+								<Printer size={13} class="me-1.5" />
+								<span>{m.print_templates()} ({selectedStudentIds.size})</span>
+							</Button>
+						{/if}
 						<Button
 							variant="outline"
 							class="text-xs h-9 px-3"
@@ -124,7 +138,11 @@ const hasActiveFilters = $derived(
 							<Button variant="outline" class="text-xs" onclick={() => studentsStore.load(data.orgId)}>{m.students_retry()}</Button>
 						</div>
 					{:else}
-						<StudentTable students={studentsStore.filteredList} />
+						<StudentTable
+							students={studentsStore.filteredList}
+							enableSelection={true}
+							bind:selectedIds={selectedStudentIds}
+						/>
 					{/if}
 				</div>
 			</div>
@@ -141,6 +159,12 @@ const hasActiveFilters = $derived(
 			/>
 		</div>
 	{/snippet}
+
+	<PrintDialog
+		bind:open={printDialogOpen}
+		entityType="enrollment"
+		entityIds={Array.from(selectedStudentIds)}
+	/>
 
 </div>
 
