@@ -145,9 +145,9 @@ async function saveTemplate() {
       description: templateRecord.description,
       category_id: templateRecord.category_id,
       code: templateRecord.code,
-      page_size: documentModel.meta.page_setup.size,
-      orientation: documentModel.meta.page_setup.orientation,
-      margins_json: JSON.stringify(documentModel.meta.page_setup.margins),
+      page_size: documentModel.meta.pageSetup.size,
+      orientation: documentModel.meta.pageSetup.orientation,
+      margins_json: JSON.stringify(documentModel.meta.pageSetup.margins),
       document_json: JSON.stringify(documentModel),
       locale: templateRecord.locale || "ar",
       tags: templateRecord.tags,
@@ -211,9 +211,9 @@ function addChildNode(type: "Text" | "Spacer" | "Separator" | "Barcode" | "QRCod
   if (type === "Text") {
     newNode.props = {
       content: "نص جديد / New Text {{variable}}",
-      font_size: 14,
-      font_family: "Tahoma",
-      text_align: "right",
+      fontSize: 14,
+      fontFamily: "Tahoma",
+      textAlign: "right",
       direction: "rtl"
     };
   } else if (type === "Spacer") {
@@ -231,13 +231,13 @@ function addChildNode(type: "Text" | "Spacer" | "Separator" | "Barcode" | "QRCod
       data: "{{studentNumber}}",
       format: "Code128",
       height: 12,
-      show_text: true
+      showText: true
     };
   } else if (type === "QRCode") {
     newNode.props = {
       data: "{{id}}",
       size: 25,
-      error_correction: "Medium"
+      errorCorrection: "Medium"
     };
   }
 
@@ -438,7 +438,7 @@ onMount(() => {
             <span class="text-[10px]">تخطيط فوري حقيقي / Instant Layout Engine</span>
           </div>
           
-          <Badge variant="outline">{documentModel.meta.page_setup.size} ({documentModel.meta.page_setup.orientation})</Badge>
+          <Badge variant="outline">{documentModel.meta.pageSetup.size} ({documentModel.meta.pageSetup.orientation})</Badge>
         </div>
 
         <!-- Canvas Body (renders Live generated PDF inside iframe) -->
@@ -504,12 +504,12 @@ onMount(() => {
                 <div class="flex flex-col gap-3">
                   <div class="flex flex-col gap-1.5">
                     <Label class="text-[10px] font-semibold text-muted-foreground">حجم الصفحة / Size</Label>
-                    <Select type="single" value={documentModel.meta.page_setup.size} onValueChange={(val: any) => {
-                      documentModel.meta.page_setup.size = val;
+                    <Select type="single" value={documentModel.meta.pageSetup.size} onValueChange={(val: any) => {
+                      documentModel.meta.pageSetup.size = val;
                       generatePreview();
                     }}>
                       <SelectTrigger class="h-8">
-                        {documentModel.meta.page_setup.size}
+                        {documentModel.meta.pageSetup.size}
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="A4">A4</SelectItem>
@@ -522,12 +522,12 @@ onMount(() => {
                   
                   <div class="flex flex-col gap-1.5">
                     <Label class="text-[10px] font-semibold text-muted-foreground">الاتجاه / Orientation</Label>
-                    <Select type="single" value={documentModel.meta.page_setup.orientation} onValueChange={(val: any) => {
-                      documentModel.meta.page_setup.orientation = val;
+                    <Select type="single" value={documentModel.meta.pageSetup.orientation} onValueChange={(val: any) => {
+                      documentModel.meta.pageSetup.orientation = val;
                       generatePreview();
                     }}>
                       <SelectTrigger class="h-8">
-                        {documentModel.meta.page_setup.orientation === "portrait" ? "طولي / Portrait" : "عرضي / Landscape"}
+                        {documentModel.meta.pageSetup.orientation === "portrait" ? "طولي / Portrait" : "عرضي / Landscape"}
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="portrait">طولي / Portrait</SelectItem>
@@ -612,16 +612,16 @@ onMount(() => {
                       <Label class="text-[10px] font-semibold text-muted-foreground">حجم الخط / Size (pt)</Label>
                       <Input
                         type="number"
-                        value={selectedNode.props.font_size || 12}
-                        oninput={(e) => updateNodeProp("font_size", parseFloat(e.currentTarget.value) || 12, "props")}
+                        value={selectedNode.props.fontSize || 12}
+                        oninput={(e) => updateNodeProp("fontSize", parseFloat(e.currentTarget.value) || 12, "props")}
                         class="h-8 text-xs"
                       />
                     </div>
                     <div class="flex flex-col gap-1">
                       <Label class="text-[10px] font-semibold text-muted-foreground">محاذاة / Align</Label>
-                      <Select type="single" value={selectedNode.props.text_align || "right"} onValueChange={(val: any) => updateNodeProp("text_align", val, "props")}>
+                      <Select type="single" value={selectedNode.props.textAlign || "right"} onValueChange={(val: any) => updateNodeProp("textAlign", val, "props")}>
                         <SelectTrigger class="h-8">
-                          {({ right: "يمين / Right", center: "وسط / Center", left: "يسار / Left" } as any)[selectedNode.props.text_align || "right"]}
+                          {({ right: "يمين / Right", center: "وسط / Center", left: "يسار / Left" } as any)[selectedNode.props.textAlign || "right"]}
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="right">يمين / Right</SelectItem>
@@ -635,9 +635,9 @@ onMount(() => {
                   <div class="grid grid-cols-2 gap-2">
                     <div class="flex flex-col gap-1">
                       <Label class="text-[10px] font-semibold text-muted-foreground">عائلة الخط / Family</Label>
-                      <Select type="single" value={selectedNode.props.font_family || "Tahoma"} onValueChange={(val: any) => updateNodeProp("font_family", val, "props")}>
+                      <Select type="single" value={selectedNode.props.fontFamily || "Tahoma"} onValueChange={(val: any) => updateNodeProp("fontFamily", val, "props")}>
                         <SelectTrigger class="h-8">
-                          {({ Tahoma: "Tahoma (عربي)", Rubik: "Rubik" } as any)[selectedNode.props.font_family || "Tahoma"]}
+                          {({ Tahoma: "Tahoma (عربي)", Rubik: "Rubik" } as any)[selectedNode.props.fontFamily || "Tahoma"]}
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="Tahoma">Tahoma (عربي)</SelectItem>
