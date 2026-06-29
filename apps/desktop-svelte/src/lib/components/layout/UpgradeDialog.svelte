@@ -163,7 +163,9 @@ function handleClose() {
           {m.upgrade_plan_dev()}
         </span>
         <a
-          href="#compare-plans"
+          href="https://www.mulverse.com"
+          target="_blank"
+          rel="noopener noreferrer"
           class="text-[11px] font-semibold text-primary hover:underline mt-1.5 transition-colors"
         >
           {m.upgrade_compare_plans()}
