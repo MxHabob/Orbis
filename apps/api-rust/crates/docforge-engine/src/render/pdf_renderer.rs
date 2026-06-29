@@ -307,7 +307,8 @@ fn render_text_to_surface(
             });
         }
         
-        let start_point = Point::from_xy(text_elem.x, text_elem.y + run_y);
+        let run_x = run.glyphs.first().map(|g| g.x).unwrap_or(0.0);
+        let start_point = Point::from_xy(text_elem.x + run_x, text_elem.y + run_y);
         
         surface.draw_glyphs(
             start_point,
