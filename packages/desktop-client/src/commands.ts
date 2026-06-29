@@ -4,7 +4,6 @@
  */
 import { invoke } from "./core";
 import type {
-  DocumentTemplate,
   Class,
   ClassSubject,
   DashboardStats,
@@ -113,7 +112,7 @@ export const commands = {
       invoke<JsonRecord[]>("get_cycles", {
         orgId,
         params: { is_current: 1 },
-      }).then((cycles) => cycles[0] ?? null),
+      }).then((cycles: JsonRecord[]) => cycles[0] ?? null),
 
     getYears: (orgId: string) =>
       invoke<JsonRecord[]>("get_cycles", {
@@ -125,7 +124,7 @@ export const commands = {
       invoke<JsonRecord[]>("get_cycles", {
         orgId,
         params: { cycle_type: "term" },
-      }).then((cycles) => cycles.filter((c) => c.parent_id === yearId)),
+      }).then((cycles: JsonRecord[]) => cycles.filter((c) => c.parent_id === yearId)),
 
     initializeSchoolSetup: (orgId: string, config: any) =>
       invoke<void>("initialize_school_setup", { orgId, config }),
@@ -443,22 +442,6 @@ export const commands = {
     delete: (id: string) => invoke<void>("delete_document", { id }),
   },
 
-  documentTemplates: {
-    getAll: (entityType?: string) =>
-      invoke<DocumentTemplate[]>("get_document_templates", { entityType }),
-
-    getById: (id: string) =>
-      invoke<DocumentTemplate>("get_document_template", { id }),
-
-    create: (request: JsonRecord) =>
-      invoke<DocumentTemplate>("create_document_template", { request }),
-
-    update: (id: string, request: JsonRecord) =>
-      invoke<DocumentTemplate>("update_document_template", { id, request }),
-
-    delete: (id: string) => invoke<void>("delete_document_template", { id }),
-  },
-
   widgets: {
     getWidgetPreferences: (userId: string) =>
       invoke<JsonRecord>("get_widget_preferences", { userId }),
@@ -728,34 +711,41 @@ export const commands = {
 
   documentTemplates: {
     getTemplates: (orgId: string, params?: { status?: string; document_type?: string; entity_type?: string; category_id?: string; search?: string }) =>
-      invoke<JsonRecord[]>("get_document_templates", { org_id: orgId, ...params }),
+      invoke<JsonRecord[]>("get_document_templates", {
+        orgId,
+        status: params?.status,
+        documentType: params?.document_type,
+        entityType: params?.entity_type,
+        categoryId: params?.category_id,
+        search: params?.search,
+      }),
 
     getTemplate: (orgId: string, id: string) =>
-      invoke<JsonRecord>("get_document_template", { org_id: orgId, id }),
+      invoke<JsonRecord>("get_document_template", { orgId, id }),
 
     createTemplate: (orgId: string, userId: string, request: JsonRecord) =>
-      invoke<JsonRecord>("create_document_template", { org_id: orgId, user_id: userId, request }),
+      invoke<JsonRecord>("create_document_template", { orgId, userId, request }),
 
     updateTemplate: (orgId: string, id: string, userId: string, request: JsonRecord) =>
-      invoke<JsonRecord>("update_document_template", { org_id: orgId, id, user_id: userId, request }),
+      invoke<JsonRecord>("update_document_template", { orgId, id, userId, request }),
 
     deleteTemplate: (orgId: string, id: string) =>
-      invoke<void>("delete_document_template", { org_id: orgId, id }),
+      invoke<void>("delete_document_template", { orgId, id }),
 
     publishTemplate: (orgId: string, id: string, userId: string) =>
-      invoke<JsonRecord>("publish_document_template", { org_id: orgId, id, user_id: userId }),
+      invoke<JsonRecord>("publish_document_template", { orgId, id, userId }),
 
     archiveTemplate: (orgId: string, id: string) =>
-      invoke<JsonRecord>("archive_document_template", { org_id: orgId, id }),
+      invoke<JsonRecord>("archive_document_template", { orgId, id }),
 
     restoreTemplate: (orgId: string, id: string) =>
-      invoke<JsonRecord>("restore_document_template", { org_id: orgId, id }),
+      invoke<JsonRecord>("restore_document_template", { orgId, id }),
 
     getVersions: (id: string) =>
       invoke<JsonRecord[]>("get_document_template_versions", { id }),
 
     revertToVersion: (orgId: string, id: string, version: number, userId: string) =>
-      invoke<JsonRecord>("revert_document_template_to_version", { org_id: orgId, id, version, user_id: userId }),
+      invoke<JsonRecord>("revert_document_template_to_version", { orgId, id, version, userId }),
   },
 
   permissions: {
@@ -775,23 +765,23 @@ export const commands = {
 
   docforge: {
     previewDocumentTemplate: (templateJson: string, contextJson: string) =>
-      invoke<number[]>("preview_document_template", { template_json: templateJson, context_json: contextJson }),
+      invoke<number[]>("preview_document_template", { templateJson, contextJson }),
     renderDocument: (orgId: string, templateId: string, entityId: string) =>
-      invoke<number[]>("render_document", { org_id: orgId, template_id: templateId, entity_id: entityId }),
+      invoke<number[]>("render_document", { orgId, templateId, entityId }),
     getDatasourceSchemas: () =>
       invoke<Record<string, any>>("get_datasource_schemas"),
     evaluateTemplateExpressions: (expressionTemplate: string, contextJson: string) =>
-      invoke<string>("evaluate_template_expressions", { expression_template: expressionTemplate, context_json: contextJson }),
+      invoke<string>("evaluate_template_expressions", { expressionTemplate, contextJson }),
     startBatchPrint: (orgId: string, templateId: string, entityIds: string[], outputDir: string) =>
-      invoke<BatchJobStatus>("start_batch_print", { org_id: orgId, template_id: templateId, entity_ids: entityIds, output_dir: outputDir }),
+      invoke<BatchJobStatus>("start_batch_print", { orgId, templateId, entityIds, outputDir }),
     pauseBatchPrint: (jobId: string) =>
-      invoke<boolean>("pause_batch_print", { job_id: jobId }),
+      invoke<boolean>("pause_batch_print", { jobId }),
     resumeBatchPrint: (jobId: string) =>
-      invoke<boolean>("resume_batch_print", { job_id: jobId }),
+      invoke<boolean>("resume_batch_print", { jobId }),
     cancelBatchPrint: (jobId: string) =>
-      invoke<boolean>("cancel_batch_print", { job_id: jobId }),
+      invoke<boolean>("cancel_batch_print", { jobId }),
     getBatchPrintStatus: (jobId: string) =>
-      invoke<BatchJobStatus>("get_batch_print_status", { job_id: jobId }),
+      invoke<BatchJobStatus>("get_batch_print_status", { jobId }),
   },
 
   window: {

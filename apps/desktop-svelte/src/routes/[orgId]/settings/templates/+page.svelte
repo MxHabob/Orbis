@@ -103,11 +103,11 @@ async function handleCreateTemplate() {
       version: "1.0",
       meta: {
         name: newTemplateName,
-        name_ar: newTemplateNameAr || null,
-        document_type: newTemplateDocType,
-        entity_type: newTemplateEntityType,
+        nameAr: newTemplateNameAr || null,
+        documentType: newTemplateDocType,
+        entityType: newTemplateEntityType,
         locale: getLocale(),
-        page_setup: {
+        pageSetup: {
           size: newTemplatePageSize,
           orientation: newTemplateOrientation,
           margins: { top: 15, bottom: 15, left: 15, right: 15 },
@@ -124,7 +124,7 @@ async function handleCreateTemplate() {
             type: "Frame",
             id: "content-root",
             props: {
-              layout: "flex",
+              layout: "vertical",
               gap: 10
             },
             children: [
@@ -133,10 +133,10 @@ async function handleCreateTemplate() {
                 id: "main-title",
                 props: {
                   content: newTemplateNameAr || newTemplateName,
-                  font_size: 24,
-                  font_family: "Tahoma",
-                  font_weight: "bold",
-                  text_align: "center"
+                  fontSize: 24,
+                  fontFamily: "Tahoma",
+                  fontWeight: "bold",
+                  textAlign: "center"
                 }
               }
             ]
