@@ -159,6 +159,8 @@
   "currency_sar": "ر.س",
 
   "form_student_info": "معلومات الطالب/ة",
+  "form_print_registration_form": "تحميل استمارة التسجيل",
+  "form_printing_registration_form": "جاري التحضير...",
   "form_full_name_ar": "الاسم الكامل لطالب/ة",
   "form_full_name_ar_placeholder": "الاسم الثلاثي أو الرباعي كما هو مسجل في الهوية",
   "form_full_name_en": "الاسم الكامل باللغة الإنجليزية (اختياري)",

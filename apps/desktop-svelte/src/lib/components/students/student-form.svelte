@@ -28,6 +28,7 @@ import {
   AlertCircle,
   CheckSquare,
   Square,
+  Printer,
 } from "lucide-svelte";
 import * as m from "$lib/paraglide/messages";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
@@ -372,6 +373,52 @@ async function handleSave() {
     isSaving = false;
   }
 }
+
+let isDownloadingForm = $state(false);
+
+async function handleDownloadRegistrationForm() {
+  isDownloadingForm = true;
+  try {
+    const templateRecord = await commands.documentTemplates.getTemplate(orgId, "t5-student-registration-form");
+    if (!templateRecord) {
+      toast.error("Template 't5-student-registration-form' not found in database");
+      return;
+    }
+    const documentModel = JSON.parse(templateRecord.document_json);
+
+    const pdfBytes = await commands.docforge.previewDocumentTemplate(
+      JSON.stringify(documentModel),
+      "{}"
+    );
+
+    if (pdfBytes && pdfBytes.length > 0) {
+      let binary = "";
+      const len = pdfBytes.length;
+      for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(pdfBytes[i]);
+      }
+      const base64 = window.btoa(binary);
+      const pdfUrl = `data:application/pdf;base64,${base64}`;
+
+      const link = document.createElement("a");
+      link.href = pdfUrl;
+      link.download = `استمارة_تسجيل_طالب.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success("تم توليد وتحميل استمارة التسجيل بنجاح");
+    } else {
+      toast.error("Failed to generate PDF document");
+    }
+  } catch (e: any) {
+    console.error("Failed to download registration form:", e);
+    const msg = e?.message || String(e);
+    toast.error(`خطأ أثناء تحميل الاستمارة: ${msg}`);
+  } finally {
+    isDownloadingForm = false;
+  }
+}
 </script>
 
 <div class="h-full flex flex-col overflow-hidden bg-background text-start" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
@@ -699,7 +746,16 @@ async function handleSave() {
   <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-border bg-card/10 shrink-0 bg-background/95 backdrop-blur-xs">
     <Button 
       variant="outline" 
-      class="text-xs h-9 px-5" 
+      class="text-xs h-9 px-5 gap-1.5 border-primary/40 text-primary hover:bg-primary/5 hover:text-primary cursor-pointer" 
+      onclick={handleDownloadRegistrationForm}
+      disabled={isSaving || isDownloadingForm}
+    >
+      <Printer size={14} class={isDownloadingForm ? 'animate-spin' : ''} />
+      {isDownloadingForm ? m.form_printing_registration_form() : m.form_print_registration_form()}
+    </Button>
+    <Button 
+      variant="outline" 
+      class="text-xs h-9 px-5 cursor-pointer" 
       onclick={() => goto(localizeHref(`/${orgId}/students`))}
       disabled={isSaving}
     >

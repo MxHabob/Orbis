@@ -130,7 +130,7 @@ impl<'a> LayoutEngine<'a> {
                         let font_size = text_props.font_size as f32;
                         let line_height = text_props.line_height.unwrap_or(text_props.font_size * 1.2) as f32;
                         
-                        let height = measure_text_height(
+                        let (measured_w, height) = measure_text_size(
                             &text_props.content,
                             &text_props.font_family,
                             font_size,
@@ -138,8 +138,14 @@ impl<'a> LayoutEngine<'a> {
                             max_w,
                             self.fonts
                         );
+                        
+                        let final_width = match known_dimensions.width {
+                            Some(w) => w,
+                            None => measured_w,
+                        };
+
                         taffy::geometry::Size {
-                            width: max_w,
+                            width: final_width,
                             height,
                         }
                     } else {
@@ -407,6 +413,48 @@ fn measure_text_height(
     } else {
         height
     }
+}
+
+fn measure_text_size(
+    content: &str,
+    family: &str,
+    font_size: f32,
+    line_height: f32,
+    max_width: f32,
+    fonts: &FontCache,
+) -> (f32, f32) {
+    let mut font_system = cosmic_text::FontSystem::new();
+    if let Some(cached_font) = fonts.get_font(family, 400, crate::render::font_cache::FontStyleKind::Normal) {
+        font_system.db_mut().load_font_data(cached_font.data.as_ref().clone());
+    }
+
+    let attrs = cosmic_text::Attrs::new().family(cosmic_text::Family::Name(family));
+    let metrics = cosmic_text::Metrics::new(font_size, line_height);
+    let mut buffer = cosmic_text::Buffer::new(&mut font_system, metrics);
+
+    buffer.set_size(&mut font_system, Some(max_width), None);
+    buffer.set_text(&mut font_system, content, attrs, cosmic_text::Shaping::Advanced);
+    buffer.shape_until_scroll(&mut font_system, false);
+
+    let mut max_run_width: f32 = 0.0;
+    let mut height = 0.0;
+
+    for run in buffer.layout_runs() {
+        height = run.line_y + line_height;
+        let mut run_w = 0.0;
+        for glyph in run.glyphs {
+            let right_edge = glyph.x + glyph.w;
+            if right_edge > run_w {
+                run_w = right_edge;
+            }
+        }
+        if run_w > max_run_width {
+            max_run_width = run_w;
+        }
+    }
+
+    let final_height = if height == 0.0 { line_height } else { height };
+    (max_run_width, final_height)
 }
 
 // ── Extract Positioned Elements ────────────────────────────────

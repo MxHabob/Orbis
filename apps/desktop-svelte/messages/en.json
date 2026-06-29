@@ -159,6 +159,8 @@
   "currency_sar": "SAR",
 
   "form_student_info": "Student Information",
+  "form_print_registration_form": "Print Registration Form",
+  "form_printing_registration_form": "Preparing Form...",
   "form_full_name_ar": "Full Name (Arabic)",
   "form_full_name_ar_placeholder": "Full name (triple or quadruple) as registered in ID",
   "form_full_name_en": "Full Name (English - Optional)",
