@@ -183,6 +183,7 @@ fn get_absolute_position(node: &EvaluatedNode) -> Option<crate::model::document:
         EvaluatedNode::Shape(n) => n.props.position.clone(),
         EvaluatedNode::Barcode(n) => n.props.position.clone(),
         EvaluatedNode::QRCode(n) => n.props.position.clone(),
+        EvaluatedNode::Separator(n) => n.props.position.clone(),
         _ => None,
     }
 }
@@ -302,6 +303,20 @@ fn layout_absolute_node(
                 width: w,
                 height: h,
                 svg_content,
+            }))
+        }
+        EvaluatedNode::Separator(n) => {
+            let col = Color::from_hex(n.props.color.as_deref().unwrap_or("#cccccc")).unwrap_or(Color::new(204, 204, 204));
+            let x2 = if n.props.direction == "horizontal" { x + w } else { x };
+            let y2 = if n.props.direction == "horizontal" { y } else { y + h };
+
+            Ok(PositionedElement::Line(LineElement {
+                x1: x,
+                y1: y,
+                x2,
+                y2,
+                color: col,
+                width: n.props.thickness.unwrap_or(1.0) as f32,
             }))
         }
         _ => Err(DocforgeError::Render("Unsupported node type for absolute layout".to_string())),

@@ -267,6 +267,8 @@ pub struct SeparatorProps {
     pub color: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub thickness: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub position: Option<Position>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -115,9 +115,18 @@ let submittedDocs = $state<string[]>([]);
 
 let isSaving = $state(false);
 
+let orgName = $state("");
+
 onMount(async () => {
   if (studentsStore.classes.length === 0) {
     await studentsStore.load(orgId);
+  }
+
+  try {
+    const org = await commands.users.getOrganization(orgId);
+    orgName = org.name || "";
+  } catch (e) {
+    console.error("Failed to load organization name:", e);
   }
 
   if (isEditMode && studentId) {
@@ -388,7 +397,7 @@ async function handleDownloadRegistrationForm() {
 
     const pdfBytes = await commands.docforge.previewDocumentTemplate(
       JSON.stringify(documentModel),
-      "{}"
+      JSON.stringify({ orgName })
     );
 
     if (pdfBytes && pdfBytes.length > 0) {
