@@ -43,7 +43,7 @@ async function handleSubmit(e: SubmitEvent) {
 	<title>{m.login_title()}</title>
 </svelte:head>
 
-<div class="min-h-screen bg-background flex relative w-screen">
+<div class="h-full w-full bg-background flex relative">
 	<!-- Logo - Fixed position matching website header exactly -->
 	<nav class="fixed top-0 left-0 right-0 z-50 w-full pointer-events-none">
 		<div class="relative py-3 xl:py-4 px-4 sm:px-4 md:px-4 lg:px-4 xl:px-6 2xl:px-8 flex items-center">

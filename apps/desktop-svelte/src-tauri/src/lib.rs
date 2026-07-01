@@ -451,13 +451,26 @@ pub fn run() {
                 features::deep_link::handle_deep_link(&app_handle_for_deep_links, url_strings);
             });
 
+            // Dynamically calculate window size based on primary monitor resolution (flexible size)
+            let (width, height) = if let Ok(Some(monitor)) = app.primary_monitor() {
+                let size = monitor.size();
+                let scale = monitor.scale_factor();
+                let mut w = (size.width as f64 * 0.8) / scale;
+                let mut h = (size.height as f64 * 0.8) / scale;
+                if w < 900.0 { w = 900.0; }
+                if h < 600.0 { h = 600.0; }
+                (w, h)
+            } else {
+                (1200.0, 750.0)
+            };
+
             let win_builder = WebviewWindowBuilder::new(
                 app,
                 "main",
                 initial_url,
             )
             .title("Orbis")
-            .inner_size(1200.0, 750.0)
+            .inner_size(width, height)
             .min_inner_size(900.0, 600.0)
             .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 OrbisDesktop/1.0")
             .visible(false)
@@ -475,7 +488,8 @@ pub fn run() {
                 .title_bar_style(tauri::TitleBarStyle::Overlay);
 
             #[cfg(not(target_os = "macos"))]
-            let win_builder = win_builder.decorations(true).transparent(false);
+            let win_builder = win_builder.decorations(false).transparent(false);
+
 
             let window = win_builder
                 .disable_drag_drop_handler()
@@ -547,9 +561,13 @@ pub fn run() {
                 }
             });
 
-            // Set the default app menu to restore the Orbis menu
-            let app_menu = Menu::default(app.handle())?;
-            app.set_menu(app_menu)?;
+            // Set the default app menu to restore the Orbis menu (macOS only, prevents window menu bar on Windows/Linux)
+            #[cfg(target_os = "macos")]
+            {
+                let app_menu = Menu::default(app.handle())?;
+                app.set_menu(app_menu)?;
+            }
+
 
             // Setup simple system tray for search toggle only
             let tray_icon = {

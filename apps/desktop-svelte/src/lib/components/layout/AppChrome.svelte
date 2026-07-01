@@ -24,6 +24,7 @@ import AskOrbisSidebar from "./AskOrbisSidebar.svelte";
 import UpgradeDialog from "./UpgradeDialog.svelte";
 import { uiStore } from "$lib/stores";
 import type { Snippet } from "svelte";
+import { slide } from "svelte/transition";
 
 let {
   orgId,
@@ -45,8 +46,12 @@ function handleKeyDown(e: KeyboardEvent) {
 
 <svelte:window onkeydown={handleKeyDown} />
 
-<div class="flex h-screen max-w-full bg-background mx-1">
-	<AppSidebar {orgId} {orgName} />
+<div class="flex h-full max-w-full bg-background mx-1">
+	{#if !uiStore.focusMode}
+		<div transition:slide={{ axis: 'x', duration: 200 }} class="overflow-hidden h-full flex shrink-0">
+			<AppSidebar {orgId} {orgName} />
+		</div>
+	{/if}
 	<div class="flex flex-1 flex-col overflow-hidden">
 		<AppHeader {orgId} {orgName} />
 		<div
@@ -63,3 +68,4 @@ function handleKeyDown(e: KeyboardEvent) {
 	</div>
 </div>
 <UpgradeDialog bind:open={uiStore.showUpgradeDialog} />
+
