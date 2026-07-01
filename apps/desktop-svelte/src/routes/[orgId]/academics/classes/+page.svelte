@@ -10,7 +10,7 @@ import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { Plus, Users, GraduationCap, Percent } from "lucide-svelte";
 import { toast } from "svelte-sonner";
-import { getLocale } from "$lib/paraglide/runtime";
+import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
 import ClassCreateSheet from "$lib/components/sheets/class-create-sheet.svelte";
 import * as m from "$lib/paraglide/messages";
@@ -150,23 +150,6 @@ const averageClassSize = $derived(
 				<p class="text-[10px] text-muted-foreground/80">{m.classes_empty_desc()}</p>
 			</div>
 			<Button variant="lime" class="text-xs mt-2" onclick={() => isModalOpen = true}>
-				{m.classes_add_class()}
-			</Button>
-		</div>
-	{:else}
-		<!-- Classes Grid -->
-		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" in:fade={{ duration: 250 }}>
-			{#each classes as cls (cls.id)}
-				{@const count = getStudentCount(String(cls.id))}
-				{@const limit = Number(cls.capacity || 30)}
-				{@const ratio = Math.min(100, Math.round((count / limit) * 100))}
-				<div class="card-tactile bg-card flex flex-col justify-between h-36 p-4 select-none relative group transition-all duration-150">
-					<!-- Class Header -->
-					<div class="flex items-start justify-between">
-						<div class="flex flex-col text-start">
-							<span class="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
-								{cls.name_ar || cls.name || cls.id}
-							</span>
 							{#if cls.name && cls.name_ar}
 								<span class="text-[9px] text-muted-foreground font-mono">{cls.name}</span>
 							{/if}
