@@ -1,7 +1,7 @@
 <!--
 @component AcademicsClassesPage
 Lists all academic classes with student counts, capacity utilization progress bars,
-and triggers the class creation side sheet.
+and triggers the class creation side sheet. Each card links to the class detail page.
 -->
 <script lang="ts">
 import { onMount } from "svelte";
@@ -70,7 +70,6 @@ const averageClassSize = $derived(
 	<!-- KPI Metrics Summary -->
 	{#if !isLoading && !error && classes.length > 0}
 		<div class="grid grid-cols-1 md:grid-cols-3 gap-4" in:fade={{ duration: 200 }}>
-			<!-- Total Classes Card -->
 			<div class="card-tactile bg-card/40 flex items-center justify-between p-4">
 				<div class="flex flex-col gap-1 text-start">
 					<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
@@ -83,7 +82,6 @@ const averageClassSize = $derived(
 				</div>
 			</div>
 
-			<!-- Total Enrolled Card -->
 			<div class="card-tactile bg-card/40 flex items-center justify-between p-4">
 				<div class="flex flex-col gap-1 text-start">
 					<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
@@ -96,7 +94,6 @@ const averageClassSize = $derived(
 				</div>
 			</div>
 
-			<!-- Average Class Size Card -->
 			<div class="card-tactile bg-card/40 flex items-center justify-between p-4">
 				<div class="flex flex-col gap-1 text-start">
 					<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
@@ -150,6 +147,26 @@ const averageClassSize = $derived(
 				<p class="text-[10px] text-muted-foreground/80">{m.classes_empty_desc()}</p>
 			</div>
 			<Button variant="lime" class="text-xs mt-2" onclick={() => isModalOpen = true}>
+				{m.classes_add_class()}
+			</Button>
+		</div>
+	{:else}
+		<!-- Classes Grid — each card links to class detail -->
+		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" in:fade={{ duration: 250 }}>
+			{#each classes as cls (cls.id)}
+				{@const count = getStudentCount(String(cls.id))}
+				{@const limit = Number(cls.capacity || 30)}
+				{@const ratio = Math.min(100, Math.round((count / limit) * 100))}
+				<a
+					href={localizeHref(`/${data.orgId}/academics/classes/${cls.id}`)}
+					class="card-tactile bg-card flex flex-col justify-between h-36 p-4 select-none relative group transition-all duration-150 hover:border-primary/30 cursor-pointer no-underline"
+				>
+					<!-- Class Header -->
+					<div class="flex items-start justify-between">
+						<div class="flex flex-col text-start">
+							<span class="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
+								{cls.name_ar || cls.name || cls.id}
+							</span>
 							{#if cls.name && cls.name_ar}
 								<span class="text-[9px] text-muted-foreground font-mono">{cls.name}</span>
 							{/if}
@@ -170,10 +187,9 @@ const averageClassSize = $derived(
 								{count}/{limit} ({ratio}%)
 							</span>
 						</div>
-						<!-- Progress Bar -->
 						<div class="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-							<div 
-								class="h-full rounded-full transition-all duration-300 {ratio >= 100 ? 'bg-destructive' : ratio >= 80 ? 'bg-amber-500' : 'bg-primary'}" 
+							<div
+								class="h-full rounded-full transition-all duration-300 {ratio >= 100 ? 'bg-destructive' : ratio >= 80 ? 'bg-amber-500' : 'bg-primary'}"
 								style="width: {ratio}%"
 							></div>
 						</div>
@@ -190,7 +206,7 @@ const averageClassSize = $derived(
 							</span>
 						{/if}
 					</div>
-				</div>
+				</a>
 			{/each}
 		</div>
 	{/if}
