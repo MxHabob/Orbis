@@ -18,7 +18,6 @@ Follows GitButler's "Chrome Shell" pattern:
   └──┴───────────────────────────────┘
 -->
 <script lang="ts">
-import AppHeader from "./AppHeader.svelte";
 import AppSidebar from "./AppSidebar.svelte";
 import AskOrbisSidebar from "./AskOrbisSidebar.svelte";
 import UpgradeDialog from "./UpgradeDialog.svelte";
@@ -53,9 +52,8 @@ function handleKeyDown(e: KeyboardEvent) {
 		</div>
 	{/if}
 	<div class="flex flex-1 flex-col overflow-hidden">
-		<AppHeader {orgId} {orgName} />
 		<div
-			class="flex flex-1 min-w-0 items-stretch overflow-hidden px-3.5 pb-3.5"
+			class="flex flex-1 min-w-0 items-stretch overflow-hidden p-3.5"
 			class:gap-3.5={uiStore.showAskOrbis}
 		>
 			<div class="flex flex-1 min-w-0 items-stretch overflow-hidden">
