@@ -1503,6 +1503,7 @@
   "titlebar_restore": "Restore",
   "titlebar_close": "Close",
   "titlebar_timer_finished": "Timer Finished!",
-  "titlebar_timer_finished_desc": "The class timer for {time} has finished."
+  "titlebar_timer_finished_desc": "The class timer for {time} has finished.",
+  "titlebar_theme_toggle": "Toggle Theme"
 }
 

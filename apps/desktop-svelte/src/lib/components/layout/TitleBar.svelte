@@ -1,7 +1,7 @@
 <script lang="ts">
 import { onMount, onDestroy } from "svelte";
 import { isDesktopApp } from "$lib/services/ipc";
-import { academicStore, authStore, uiStore } from "$lib/stores";
+import { academicStore, authStore, uiStore, themeStore } from "$lib/stores";
 import { Button } from "@orbis/ui-svelte/button";
 import {
   Minimize2,
@@ -15,7 +15,9 @@ import {
   Sparkles,
   Wifi,
   WifiOff,
-  ChevronDown
+  ChevronDown,
+  Sun,
+  Moon
 } from "lucide-svelte";
 import {
   DropdownMenu,
@@ -310,6 +312,19 @@ onDestroy(() => {
 
   <!-- Right Side: Focus Mode Toggle + Custom Windows Controls -->
   <div class="flex items-center gap-1.5 shrink-0" data-tauri-drag-region>
+    <!-- Theme Toggle -->
+    <button 
+      onclick={() => themeStore.toggle()} 
+      class="flex items-center justify-center w-8 h-8 rounded-lg bg-muted/40 border border-border/60 hover:bg-muted/70 text-foreground transition-all duration-200 cursor-pointer"
+      title={m.titlebar_theme_toggle()}
+    >
+      {#if themeStore.resolved === "dark"}
+        <Sun size={13} class="text-amber-500" />
+      {:else}
+        <Moon size={13} class="text-foreground" />
+      {/if}
+    </button>
+
     <!-- Focus Mode -->
     <button 
       onclick={() => uiStore.toggleFocusMode()} 

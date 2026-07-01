@@ -1504,6 +1504,7 @@
   "titlebar_restore": "استعادة",
   "titlebar_close": "إغلاق",
   "titlebar_timer_finished": "انتهى الوقت!",
-  "titlebar_timer_finished_desc": "انتهى مؤقت الحصة لـ {time}."
+  "titlebar_timer_finished_desc": "انتهى مؤقت الحصة لـ {time}.",
+  "titlebar_theme_toggle": "تبديل المظهر"
 }
 
