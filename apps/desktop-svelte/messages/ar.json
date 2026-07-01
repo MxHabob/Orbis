@@ -1505,6 +1505,8 @@
   "titlebar_close": "إغلاق",
   "titlebar_timer_finished": "انتهى الوقت!",
   "titlebar_timer_finished_desc": "انتهى مؤقت الحصة لـ {time}.",
-  "titlebar_theme_toggle": "تبديل المظهر"
+  "titlebar_theme_toggle": "تبديل المظهر",
+  "titlebar_cycle_selected": "تم تحديد الدورة: {name}",
+  "titlebar_timer_minutes": "{minutes} دقيقة"
 }
 

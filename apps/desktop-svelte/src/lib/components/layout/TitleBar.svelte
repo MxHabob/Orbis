@@ -138,7 +138,7 @@ function selectCycle(cycleId: string) {
   const active = cycles.find(c => String(c.id) === cycleId);
   if (active) {
     const name = active.name_ar && getLocale() === "ar" ? active.name_ar : active.name;
-    toast.success(getLocale() === "ar" ? `تم تحديد الدورة: ${name}` : `Selected cycle: ${name}`);
+    toast.success(m.titlebar_cycle_selected({ name }));
   }
 }
 
@@ -162,7 +162,7 @@ function startTimer(seconds: number) {
 
 function completeTimer() {
   const maxMinutes = Math.round(timerMax / 60);
-  const timeLabel = getLocale() === "ar" ? `${maxMinutes} دقيقة` : `${maxMinutes}m`;
+  const timeLabel = m.titlebar_timer_minutes({ minutes: String(maxMinutes) });
   
   resetTimer();
   
@@ -258,13 +258,14 @@ onDestroy(() => {
   <!-- Center Side: Classroom Timer & Sync Indicator -->
   <div class="flex items-center gap-4 max-w-xl flex-1 justify-center min-w-0" data-tauri-drag-region>
     <!-- Classroom Timer -->
-    <div class="flex items-center gap-2 bg-muted/30 border border-border/50 rounded-lg px-2.5 py-1 relative overflow-hidden shrink-0">
+    <!-- Classroom Timer -->
+    <div class="flex items-center gap-2 h-7 px-1 relative overflow-hidden rounded-lg shrink-0 {timerActive ? 'bg-muted/30' : ''}">
       <!-- Background progress bar for timer -->
       {#if timerActive && timerMax > 0}
         <div class="absolute bottom-0 left-0 h-[3px] bg-primary/45 transition-all duration-1000" style="width: {timerProgress}%"></div>
       {/if}
 
-      <div class="flex items-center gap-1.5 select-none text-[11px] font-medium text-muted-foreground">
+      <div class="flex items-center gap-1.5 select-none text-[11px] font-medium text-muted-foreground me-1">
         <span class="w-1.5 h-1.5 rounded-full {timerActive && !timerPaused ? 'bg-emerald-500' : timerPaused ? 'bg-amber-500' : 'bg-muted-foreground/30'}"></span>
         {#if timerActive}
           <span class="font-mono text-foreground font-bold tracking-wider">{formattedTime}</span>
@@ -275,14 +276,35 @@ onDestroy(() => {
 
       <!-- Preset Buttons & Custom Selector -->
       {#if !timerActive}
-        <div class="flex items-center gap-1">
-          <button onclick={() => startTimer(60)} class="text-[10px] hover:bg-muted px-1.5 py-0.5 rounded cursor-pointer transition-colors text-muted-foreground hover:text-foreground">{m.titlebar_timer_preset({ minutes: "1" })}</button>
-          <button onclick={() => startTimer(180)} class="text-[10px] hover:bg-muted px-1.5 py-0.5 rounded cursor-pointer transition-colors text-muted-foreground hover:text-foreground">{m.titlebar_timer_preset({ minutes: "3" })}</button>
-          <button onclick={() => startTimer(300)} class="text-[10px] hover:bg-muted px-1.5 py-0.5 rounded cursor-pointer transition-colors text-muted-foreground hover:text-foreground">{m.titlebar_timer_preset({ minutes: "5" })}</button>
+        <div class="flex items-center gap-2 shrink-0">
+          <Button 
+            onclick={() => startTimer(60)} 
+            variant="outline" 
+            size="xs" 
+            class="text-[10px] font-semibold bg-muted/40 border-border/60 hover:bg-muted/70 text-foreground transition-all duration-200"
+          >
+            {m.titlebar_timer_preset({ minutes: "1" })}
+          </Button>
+          <Button 
+            onclick={() => startTimer(180)} 
+            variant="outline" 
+            size="xs" 
+            class="text-[10px] font-semibold bg-muted/40 border-border/60 hover:bg-muted/70 text-foreground transition-all duration-200"
+          >
+            {m.titlebar_timer_preset({ minutes: "3" })}
+          </Button>
+          <Button 
+            onclick={() => startTimer(300)} 
+            variant="outline" 
+            size="xs" 
+            class="text-[10px] font-semibold bg-muted/40 border-border/60 hover:bg-muted/70 text-foreground transition-all duration-200"
+          >
+            {m.titlebar_timer_preset({ minutes: "5" })}
+          </Button>
           <DropdownMenu>
-            <DropdownMenuTrigger class="text-[10px] hover:bg-muted px-1.5 py-0.5 rounded cursor-pointer transition-colors text-muted-foreground hover:text-foreground flex items-center gap-0.5">
+            <DropdownMenuTrigger class="text-[10px] font-semibold bg-muted/40 border border-border/60 hover:bg-muted/70 text-foreground px-2 rounded-md cursor-pointer transition-all duration-200 flex items-center gap-0.5 h-6">
               <span>{m.titlebar_timer_custom()}</span>
-              <ChevronDown size={8} />
+              <ChevronDown size={8} class="opacity-60" />
             </DropdownMenuTrigger>
             <DropdownMenuContent class="w-32 bg-popover border border-border rounded-lg shadow-lg py-1 z-50">
               <DropdownMenuItem onclick={() => startTimer(600)} class="text-xs px-2.5 py-1.5 cursor-pointer rounded-md hover:bg-accent">{m.titlebar_timer_preset({ minutes: "10" })}</DropdownMenuItem>
@@ -293,17 +315,29 @@ onDestroy(() => {
         </div>
       {:else}
         <!-- Active Timer Controls -->
-        <div class="flex items-center gap-1.5 ml-1">
-          <button onclick={togglePauseTimer} class="text-[10px] hover:bg-muted p-1 rounded cursor-pointer text-muted-foreground hover:text-foreground flex items-center" title={timerPaused ? m.titlebar_timer_resume() : m.titlebar_timer_pause()}>
+        <div class="flex items-center gap-2 shrink-0">
+          <Button 
+            variant="outline" 
+            size="icon-xs" 
+            onclick={togglePauseTimer} 
+            class="bg-muted/40 border-border/60 hover:bg-muted/70 text-foreground transition-all duration-200" 
+            title={timerPaused ? m.titlebar_timer_resume() : m.titlebar_timer_pause()}
+          >
             {#if timerPaused}
               <Play size={10} fill="currentColor" />
             {:else}
               <Pause size={10} fill="currentColor" />
             {/if}
-          </button>
-          <button onclick={resetTimer} class="text-[10px] hover:bg-muted p-1 rounded cursor-pointer text-muted-foreground hover:text-foreground flex items-center" title={m.titlebar_timer_reset()}>
+          </Button>
+          <Button 
+            variant="outline" 
+            size="icon-xs" 
+            onclick={resetTimer} 
+            class="bg-muted/40 border-border/60 hover:bg-muted/70 text-foreground transition-all duration-200" 
+            title={m.titlebar_timer_reset()}
+          >
             <RotateCcw size={10} />
-          </button>
+          </Button>
         </div>
       {/if}
     </div>
@@ -323,9 +357,11 @@ onDestroy(() => {
   <!-- Right Side: Focus Mode Toggle + Custom Windows Controls -->
   <div class="flex items-center gap-1.5 shrink-0" data-tauri-drag-region>
     <!-- Theme Toggle -->
-    <button 
+    <Button 
+      variant="outline"
+      size="icon"
       onclick={() => themeStore.toggle()} 
-      class="flex items-center justify-center w-8 h-8 rounded-lg bg-muted/40 border border-border/60 hover:bg-muted/70 text-foreground transition-all duration-200 cursor-pointer"
+      class="!w-8 !h-8 !p-0 rounded-lg bg-muted/40 border-border/60 hover:bg-muted/70 text-foreground transition-all duration-200"
       title={m.titlebar_theme_toggle()}
     >
       {#if themeStore.resolved === "dark"}
@@ -333,34 +369,40 @@ onDestroy(() => {
       {:else}
         <Moon size={13} class="text-foreground" />
       {/if}
-    </button>
+    </Button>
 
     <!-- Focus Mode -->
-    <button 
+    <Button 
+      variant="outline"
+      size="sm"
       onclick={() => uiStore.toggleFocusMode()} 
-      class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border transition-all duration-200 cursor-pointer {uiStore.focusMode ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40 text-foreground border-border/60 hover:bg-muted/70'}"
+      class="gap-1.5 text-[11px] font-semibold transition-all duration-200 rounded-lg {uiStore.focusMode ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/95 hover:text-primary-foreground' : 'bg-muted/40 text-foreground border-border/60 hover:bg-muted/70'}"
       title={m.titlebar_focus_mode_tooltip()}
     >
       <Sparkles size={12} class={uiStore.focusMode ? 'text-primary-foreground animate-pulse' : 'text-primary'} />
       <span>{m.titlebar_focus_mode()}</span>
-    </button>
+    </Button>
 
     <!-- Windows Window Controls (Min, Max, Close) -->
     {#if !isMac && appWindow}
       <div class="flex items-center border-s border-border/40 ms-1.5 ps-1.5 h-6">
         <!-- Minimize -->
-        <button 
+        <Button 
+          variant="ghost"
+          size="icon-sm"
           onclick={() => appWindow.minimize()} 
-          class="w-7 h-7 hover:bg-muted rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer transition-colors duration-150"
+          class="text-muted-foreground hover:text-foreground hover:bg-muted"
           title={m.titlebar_minimize()}
         >
           <Minimize2 size={12} />
-        </button>
+        </Button>
 
         <!-- Maximize / Restore -->
-        <button 
+        <Button 
+          variant="ghost"
+          size="icon-sm"
           onclick={() => appWindow.toggleMaximize()} 
-          class="w-7 h-7 hover:bg-muted rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer transition-colors duration-150"
+          class="text-muted-foreground hover:text-foreground hover:bg-muted"
           title={isMaximized ? m.titlebar_restore() : m.titlebar_maximize()}
         >
           {#if isMaximized}
@@ -368,16 +410,18 @@ onDestroy(() => {
           {:else}
             <Square size={11} />
           {/if}
-        </button>
+        </Button>
 
         <!-- Close -->
-        <button 
+        <Button 
+          variant="ghost"
+          size="icon-sm"
           onclick={() => appWindow.close()} 
-          class="w-7 h-7 hover:bg-red-500 hover:text-white rounded-md flex items-center justify-center text-muted-foreground cursor-pointer transition-colors duration-150"
+          class="text-muted-foreground hover:bg-destructive hover:text-destructive-foreground"
           title={m.titlebar_close()}
         >
           <X size={12} />
-        </button>
+        </Button>
       </div>
     {/if}
   </div>
