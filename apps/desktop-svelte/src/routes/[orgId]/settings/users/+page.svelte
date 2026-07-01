@@ -27,7 +27,12 @@ import {
   Eye,
 } from "lucide-svelte";
 import UserCreateSheet from "$lib/components/sheets/user-create-sheet.svelte";
-import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui-svelte/select";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui-svelte/select";
 import * as m from "$lib/paraglide/messages";
 import type { User } from "$lib/services/ipc";
 import { authStore } from "$lib/stores";

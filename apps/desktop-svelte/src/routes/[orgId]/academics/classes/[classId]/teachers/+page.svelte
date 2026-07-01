@@ -5,109 +5,107 @@ Moved from academics/class-subjects/ with context-first navigation.
 Shows only assignments for this class — no class filter needed.
 -->
 <script lang="ts">
-  import { page } from "$app/state";
-  import { onMount } from "svelte";
-  import { toast } from "svelte-sonner";
-  import { Button } from "@orbis/ui-svelte/button";
-  import { Skeleton } from "@orbis/ui-svelte/skeleton";
-  import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-  } from "@orbis/ui-svelte/table";
-  import { Plus, BookUser, Edit2, Trash2, User, BookOpen } from "lucide-svelte";
-  import { commands } from "$lib/services/ipc";
-  import type { ClassSubject, JsonRecord } from "@orbis/desktop-client";
-  import ClassSubjectSheet from "$lib/components/sheets/class-subject-sheet.svelte";
-  import * as m from "$lib/paraglide/messages";
-  import { fade } from "svelte/transition";
+import { page } from "$app/state";
+import { onMount } from "svelte";
+import { toast } from "svelte-sonner";
+import { Button } from "@orbis/ui-svelte/button";
+import { Skeleton } from "@orbis/ui-svelte/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@orbis/ui-svelte/table";
+import { Plus, BookUser, Edit2, Trash2, User, BookOpen } from "lucide-svelte";
+import { commands } from "$lib/services/ipc";
+import type { ClassSubject, JsonRecord } from "@orbis/desktop-client";
+import ClassSubjectSheet from "$lib/components/sheets/class-subject-sheet.svelte";
+import * as m from "$lib/paraglide/messages";
+import { fade } from "svelte/transition";
 
-  const orgId = $derived(page.params.orgId);
-  const classId = $derived(page.params.classId);
+const orgId = $derived(page.params.orgId);
+const classId = $derived(page.params.classId);
 
-  // Data state
-  let allAssignments = $state<ClassSubject[]>([]);
-  let subjects = $state<JsonRecord[]>([]);
-  let teachers = $state<JsonRecord[]>([]);
-  let isLoading = $state(false);
+// Data state
+let allAssignments = $state<ClassSubject[]>([]);
+let subjects = $state<JsonRecord[]>([]);
+let teachers = $state<JsonRecord[]>([]);
+let isLoading = $state(false);
 
-  // Sheet state
-  let sheetOpen = $state(false);
-  let editTarget = $state<ClassSubject | null>(null);
+// Sheet state
+let sheetOpen = $state(false);
+let editTarget = $state<ClassSubject | null>(null);
 
-  // Only show assignments for this class
-  const displayed = $derived(
-    allAssignments.filter((a) => String(a.class_id) === classId),
-  );
+// Only show assignments for this class
+const displayed = $derived(
+  allAssignments.filter((a) => String(a.class_id) === classId),
+);
 
-  // Lookup helpers
-  function getSubjectName(id: unknown) {
-    const s = subjects.find((x) => String(x.id) === String(id));
-    return s ? String(s.name ?? s.name_ar ?? id) : String(id);
+// Lookup helpers
+function getSubjectName(id: unknown) {
+  const s = subjects.find((x) => String(x.id) === String(id));
+  return s ? String(s.name ?? s.name_ar ?? id) : String(id);
+}
+function getTeacherName(id: unknown) {
+  if (!id) return "—";
+  const t = teachers.find((x) => String(x.id) === String(id));
+  return t ? String(t.full_name ?? t.email ?? id) : String(id);
+}
+
+async function loadData() {
+  if (!orgId) return;
+  isLoading = true;
+  try {
+    const [asgn, subj, usr] = await Promise.all([
+      commands.schedule.getClassSubjects(),
+      commands.subjects.getAll(orgId),
+      commands.users.getUsers(orgId, { role: "teacher" }),
+    ]);
+    allAssignments = asgn;
+    subjects = subj as unknown as JsonRecord[];
+    teachers = usr as unknown as JsonRecord[];
+  } catch (e) {
+    console.error("Failed to load class teachers:", e);
+  } finally {
+    isLoading = false;
   }
-  function getTeacherName(id: unknown) {
-    if (!id) return "—";
-    const t = teachers.find((x) => String(x.id) === String(id));
-    return t ? String(t.full_name ?? t.email ?? id) : String(id);
-  }
+}
 
-  async function loadData() {
-    if (!orgId) return;
-    isLoading = true;
-    try {
-      const [asgn, subj, usr] = await Promise.all([
-        commands.schedule.getClassSubjects(),
-        commands.subjects.getAll(orgId),
-        commands.users.getUsers(orgId, { role: "teacher" }),
-      ]);
-      allAssignments = asgn;
-      subjects = subj as unknown as JsonRecord[];
-      teachers = usr as unknown as JsonRecord[];
-    } catch (e) {
-      console.error("Failed to load class teachers:", e);
-    } finally {
-      isLoading = false;
-    }
-  }
+onMount(loadData);
 
-  onMount(loadData);
+function openCreate() {
+  editTarget = null;
+  sheetOpen = true;
+}
 
-  function openCreate() {
-    editTarget = null;
-    sheetOpen = true;
-  }
+function openEdit(a: ClassSubject) {
+  editTarget = a;
+  sheetOpen = true;
+}
 
-  function openEdit(a: ClassSubject) {
-    editTarget = a;
-    sheetOpen = true;
-  }
-
-  async function handleDelete(a: ClassSubject) {
-    if (
-      !confirm(
-        m.cs_delete_confirm
-          ? m.cs_delete_confirm()
-          : "هل تريد حذف هذا الربط؟",
-      )
+async function handleDelete(a: ClassSubject) {
+  if (
+    !confirm(
+      m.cs_delete_confirm ? m.cs_delete_confirm() : "هل تريد حذف هذا الربط؟",
     )
-      return;
-    try {
-      await commands.schedule.deleteClassSubject(String(a.id));
-      allAssignments = allAssignments.filter((x) => x.id !== a.id);
-      toast.success(
-        m.cs_delete_success ? m.cs_delete_success() : "تم الحذف بنجاح",
-      );
-    } catch (e: unknown) {
-      toast.error((e as any)?.message || "فشل الحذف");
-    }
+  )
+    return;
+  try {
+    await commands.schedule.deleteClassSubject(String(a.id));
+    allAssignments = allAssignments.filter((x) => x.id !== a.id);
+    toast.success(
+      m.cs_delete_success ? m.cs_delete_success() : "تم الحذف بنجاح",
+    );
+  } catch (e: unknown) {
+    toast.error((e as any)?.message || "فشل الحذف");
   }
+}
 
-  function onSheetSuccess() {
-    loadData();
-  }
+function onSheetSuccess() {
+  loadData();
+}
 </script>
 
 <div class="flex flex-col gap-5 text-start">

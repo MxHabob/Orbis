@@ -42,7 +42,7 @@ let ledgers = $state<any[]>([]);
 let currencies = $state<{ code: string; name: string }[]>([
   { code: "YER", name: "ريال يمني" },
   { code: "USD", name: "دولار أمريكي" },
-  { code: "SAR", name: "ريال سعودي" }
+  { code: "SAR", name: "ريال سعودي" },
 ]);
 let isLoading = $state(true);
 let error = $state<string | null>(null);
@@ -68,7 +68,7 @@ let endDateFilter = $state("");
 
 // Dialog and Printing states
 let showQrModal = $state(false);
-let printMode = $state<'list' | 'voucher'>('list');
+let printMode = $state<"list" | "voucher">("list");
 
 async function loadData() {
   isLoading = true;
@@ -78,16 +78,16 @@ async function loadData() {
       commands.finance.getJournalEntries(data.orgId),
       commands.finance.getLedgerAccounts(data.orgId),
     ]);
-    
+
     journalEntries = entriesList.map((je) => ({
       ...je,
       prints_count: je.prints_count || 0,
       user: je.user || "U78",
       branch: je.branch || "المركز الرئيسي",
     }));
-    
+
     ledgers = ledgersList;
-    
+
     await loadCurrencies();
   } catch (e) {
     console.error("Error loading journal entries data:", e);
@@ -101,9 +101,9 @@ async function loadCurrencies() {
   try {
     const list = await commands.finance.getCurrencies(data.orgId);
     if (list && list.length > 0) {
-      currencies = list.map(c => ({
+      currencies = list.map((c) => ({
         code: c.code,
-        name: c.name_ar || c.name || c.code
+        name: c.name_ar || c.name || c.code,
       }));
     }
   } catch (e) {
@@ -133,7 +133,7 @@ function localFormatCurrency(val: number, currCode: string) {
     return new Intl.NumberFormat("ar-YE", {
       style: "currency",
       currency: currCode || "YER",
-      maximumFractionDigits: 0
+      maximumFractionDigits: 0,
     }).format(val);
   } catch (e) {
     return `${val} ${currCode}`;
@@ -144,13 +144,15 @@ function selectRow(entry: any) {
   selectedEntry = entry;
   id = entry.id;
   transactionRef = entry.transaction_ref;
-  accountingDate = entry.accounting_date ? entry.accounting_date.split("T")[0] : "";
+  accountingDate = entry.accounting_date
+    ? entry.accounting_date.split("T")[0]
+    : "";
   amount = entry.amount;
   currency = entry.currency || "YER";
   debitAccountId = entry.debit_account_id || "";
   creditAccountId = entry.credit_account_id || "";
   descriptionAr = entry.description_ar || entry.description || "";
-  
+
   toast.info(`تم اختيار القيد رقم ${entry.transaction_ref}`);
 }
 
@@ -185,7 +187,7 @@ function handleAdd() {
   }
 
   const randomRef = String(Math.floor(148000 + Math.random() * 10000));
-  
+
   const newEntry = {
     id: Math.random().toString(36).substring(2, 9),
     transaction_ref: randomRef,
@@ -198,7 +200,7 @@ function handleAdd() {
     status: "draft",
     user: "U78",
     branch: "المركز الرئيسي",
-    prints_count: 0
+    prints_count: 0,
   };
 
   journalEntries = [newEntry, ...journalEntries];
@@ -231,7 +233,7 @@ function handlePrintVoucher() {
     return;
   }
   printMode = "voucher";
-  journalEntries = journalEntries.map(je => {
+  journalEntries = journalEntries.map((je) => {
     if (je.id === selectedEntry.id) {
       const updatedCount = (je.prints_count || 0) + 1;
       selectedEntry.prints_count = updatedCount;
@@ -239,7 +241,7 @@ function handlePrintVoucher() {
     }
     return je;
   });
-  
+
   setTimeout(() => {
     window.print();
   }, 50);
@@ -263,7 +265,9 @@ const filteredEntries = $derived.by(() => {
 
     let dateMatch = true;
     if (filterByDate && startDateFilter && endDateFilter) {
-      const entryDate = je.accounting_date ? je.accounting_date.split("T")[0] : "";
+      const entryDate = je.accounting_date
+        ? je.accounting_date.split("T")[0]
+        : "";
       dateMatch = entryDate >= startDateFilter && entryDate <= endDateFilter;
     }
 

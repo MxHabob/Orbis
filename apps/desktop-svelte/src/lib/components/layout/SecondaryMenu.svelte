@@ -5,35 +5,35 @@ Inspired by dashboard's secondary-menu.tsx — unified across Class Detail,
 Student Detail, and User Detail.
 -->
 <script lang="ts">
-  import { page } from "$app/state";
-  import { deLocalizeUrl, localizeHref } from "$lib/paraglide/runtime";
-  import type { Component } from "svelte";
+import { page } from "$app/state";
+import { deLocalizeUrl, localizeHref } from "$lib/paraglide/runtime";
+import type { Component } from "svelte";
 
-  type MenuItem = {
-    path: string;
-    label: string;
-    icon?: Component;
-  };
+type MenuItem = {
+  path: string;
+  label: string;
+  icon?: Component;
+};
 
-  let {
-    items,
-    basePath,
-  }: {
-    items: MenuItem[];
-    basePath: string;
-  } = $props();
+let {
+  items,
+  basePath,
+}: {
+  items: MenuItem[];
+  basePath: string;
+} = $props();
 
-  function isActive(itemPath: string): boolean {
-    const unlocalizedPathname = deLocalizeUrl(page.url).pathname;
-    const fullPath = itemPath ? `${basePath}/${itemPath}` : basePath;
-    if (itemPath === "") {
-      return unlocalizedPathname === basePath;
-    }
-    return (
-      unlocalizedPathname === fullPath ||
-      unlocalizedPathname.startsWith(`${fullPath}/`)
-    );
+function isActive(itemPath: string): boolean {
+  const unlocalizedPathname = deLocalizeUrl(page.url).pathname;
+  const fullPath = itemPath ? `${basePath}/${itemPath}` : basePath;
+  if (itemPath === "") {
+    return unlocalizedPathname === basePath;
   }
+  return (
+    unlocalizedPathname === fullPath ||
+    unlocalizedPathname.startsWith(`${fullPath}/`)
+  );
+}
 </script>
 
 <nav

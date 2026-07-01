@@ -70,7 +70,7 @@ function toggleSelectAllSeats() {
   if (selectedSeatIds.size === seatingNumbers.length) {
     selectedSeatIds = new Set();
   } else {
-    selectedSeatIds = new Set(seatingNumbers.map(sn => String(sn.id)));
+    selectedSeatIds = new Set(seatingNumbers.map((sn) => String(sn.id)));
   }
 }
 

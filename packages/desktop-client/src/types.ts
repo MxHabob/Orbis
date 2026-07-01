@@ -74,8 +74,7 @@ export interface BatchJobStatus {
   jobId: string;
   totalRecords: number;
   processedRecords: number;
-  status: 'running' | 'paused' | 'cancelled' | 'completed' | 'failed';
+  status: "running" | "paused" | "cancelled" | "completed" | "failed";
   errorMessage?: string | null;
   outputPath: string;
 }
-

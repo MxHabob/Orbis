@@ -1,1 +1,5 @@
-export { validateDocument, type ValidationResult, type ValidationIssue } from "./validator";
+export {
+  validateDocument,
+  type ValidationResult,
+  type ValidationIssue,
+} from "./validator";

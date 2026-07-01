@@ -4,7 +4,11 @@
 // Consumers can register custom formatters via the registry.
 // ═══════════════════════════════════════════════════════════════
 
-import { toArabicNumerals, formatArabicNumber, toArabicOrdinal } from "../utils/arabic";
+import {
+  toArabicNumerals,
+  formatArabicNumber,
+  toArabicOrdinal,
+} from "../utils/arabic";
 
 // ── Formatter Type ───────────────────────────────────────────
 
@@ -230,7 +234,9 @@ function formatDate(date: Date, format: string): string {
 
   let result = format;
   // Replace longest tokens first to avoid partial matches
-  for (const [token, value] of Object.entries(replacements).sort((a, b) => b[0].length - a[0].length)) {
+  for (const [token, value] of Object.entries(replacements).sort(
+    (a, b) => b[0].length - a[0].length,
+  )) {
     result = result.replace(new RegExp(token, "g"), value);
   }
 

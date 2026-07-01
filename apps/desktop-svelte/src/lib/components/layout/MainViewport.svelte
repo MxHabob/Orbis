@@ -117,7 +117,7 @@ function getFallbackLabel(
 			>
 				{#if finalLeftWidth === COLLAPSED_WIDTH}
 					<!-- Collapsed vertical strip -->
-					<div class="h-full w-full flex flex-col items-center py-4 bg-card/30 border-r border-border/80 select-none">
+					<div class="h-full w-full flex flex-col items-center py-4 select-none">
 						<button
 							type="button"
 							class="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground cursor-pointer transition-colors duration-150 mb-4"
@@ -135,7 +135,13 @@ function getFallbackLabel(
 						</span>
 					</div>
 				{:else}
-					<div class="flex h-full flex-col overflow-hidden">
+					<div
+						class="flex h-full flex-col overflow-hidden"
+						oncollapsesidebar={() => {
+							leftPreferredWidth = COLLAPSED_WIDTH;
+							localStorage.setItem(`resizer:viewport-${name}-left`, String(COLLAPSED_WIDTH));
+						}}
+					>
 						{@render left()}
 					</div>
 				{/if}

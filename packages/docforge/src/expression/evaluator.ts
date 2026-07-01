@@ -133,7 +133,10 @@ export function evaluateCondition(
     const idx = trimmed.indexOf(op);
     if (idx >= 0) {
       const left = resolveValue(trimmed.substring(0, idx).trim(), context);
-      const right = resolveValue(trimmed.substring(idx + op.length).trim(), context);
+      const right = resolveValue(
+        trimmed.substring(idx + op.length).trim(),
+        context,
+      );
       return compareValues(left, right, op);
     }
   }
@@ -170,8 +173,16 @@ function splitTopLevel(expr: string, operator: string): string[] {
       continue;
     }
 
-    if (ch === "(") { depth++; current += ch; continue; }
-    if (ch === ")") { depth--; current += ch; continue; }
+    if (ch === "(") {
+      depth++;
+      current += ch;
+      continue;
+    }
+    if (ch === ")") {
+      depth--;
+      current += ch;
+      continue;
+    }
 
     if (depth === 0 && expr.substring(i).startsWith(operator)) {
       parts.push(current.trim());
@@ -192,7 +203,10 @@ function splitTopLevel(expr: string, operator: string): string[] {
  */
 function resolveValue(token: string, context: DataContext): unknown {
   // String literal
-  if ((token.startsWith("'") && token.endsWith("'")) || (token.startsWith('"') && token.endsWith('"'))) {
+  if (
+    (token.startsWith("'") && token.endsWith("'")) ||
+    (token.startsWith('"') && token.endsWith('"'))
+  ) {
     return token.substring(1, token.length - 1);
   }
   // Number
@@ -209,13 +223,20 @@ function resolveValue(token: string, context: DataContext): unknown {
 
 function compareValues(left: unknown, right: unknown, op: string): boolean {
   switch (op) {
-    case "==": return left == right;
-    case "!=": return left != right;
-    case ">": return Number(left) > Number(right);
-    case ">=": return Number(left) >= Number(right);
-    case "<": return Number(left) < Number(right);
-    case "<=": return Number(left) <= Number(right);
-    default: return false;
+    case "==":
+      return left == right;
+    case "!=":
+      return left != right;
+    case ">":
+      return Number(left) > Number(right);
+    case ">=":
+      return Number(left) >= Number(right);
+    case "<":
+      return Number(left) < Number(right);
+    case "<=":
+      return Number(left) <= Number(right);
+    default:
+      return false;
   }
 }
 

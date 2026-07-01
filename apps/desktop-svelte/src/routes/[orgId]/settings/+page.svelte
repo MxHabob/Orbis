@@ -7,7 +7,12 @@ import { Input } from "@orbis/ui-svelte/input";
 import { Switch } from "@orbis/ui-svelte/switch";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { Label } from "@orbis/ui-svelte/label";
-import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui-svelte/select";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";

@@ -16,7 +16,12 @@ import {
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui-svelte/select";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui-svelte/select";
 import { Badge } from "@orbis/ui-svelte/badge";
 import {
   History,
@@ -83,7 +88,16 @@ function getUserName(userId: string | null): string {
   return user.full_name || user.username || userId.substring(0, 8);
 }
 
-function getActionVariant(action: string): "default" | "lime" | "destructive" | "secondary" | "outline" | "brand" | "ghost" {
+function getActionVariant(
+  action: string,
+):
+  | "default"
+  | "lime"
+  | "destructive"
+  | "secondary"
+  | "outline"
+  | "brand"
+  | "ghost" {
   const act = String(action).toLowerCase();
   if (act.includes("create") || act.includes("insert") || act.includes("add")) {
     return "lime";

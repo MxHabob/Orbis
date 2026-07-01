@@ -12,15 +12,28 @@ import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { Plus, Search, FilterX, Download, Printer } from "lucide-svelte";
 import { studentsStore } from "$lib/stores";
 import PrintDialog from "$lib/components/shared/PrintDialog.svelte";
-import StudentSidebarFilters from "$lib/components/students/student-sidebar-filters.svelte";
+import SidebarNav from "$lib/components/layout/SidebarNav.svelte";
 import StudentTable from "$lib/components/students/student-table.svelte";
 import StudentInspector from "$lib/components/students/student-inspector.svelte";
 import { toast } from "svelte-sonner";
 import { goto } from "$app/navigation";
 import * as m from "$lib/paraglide/messages";
 import { localizeHref } from "$lib/paraglide/runtime";
+import { formatNumber } from "$lib/i18n-utils";
 
 let { data }: { data: { orgId: string } } = $props();
+
+// Helper to count students matching a criteria
+function getCountByClass(classId: string): number {
+  return studentsStore.list.filter((s) => s.class_id === classId).length;
+}
+
+function getCountByStatus(status: string): number {
+  if (status === "all") return studentsStore.list.length;
+  return studentsStore.list.filter(
+    (s) => String(s.status || "").toLowerCase() === status,
+  ).length;
+}
 
 // Load data when page mounts
 onMount(() => {
@@ -59,23 +72,67 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 	>
 		<!-- Left Panel: Sidebar Filters -->
 		{#snippet left()}
-			<div class="h-full border-r border-border bg-card/20 p-4 flex flex-col gap-4 overflow-y-auto scrollbar-hide">
-				<div class="flex items-center justify-between">
-					<span class="font-bold text-[10px] text-muted-foreground uppercase tracking-wider">{m.students_filter_panel()}</span>
+			<SidebarNav
+				title={m.students_filter_panel()}
+				groups={[
+					{
+						title: m.filter_academic_status(),
+						items: [
+							{
+								label: m.filter_all(),
+								badge: formatNumber(getCountByStatus('all')),
+								isActive: studentsStore.statusFilter === 'all',
+								onclick: () => studentsStore.statusFilter = 'all'
+							},
+							{
+								label: m.filter_active(),
+								badge: formatNumber(getCountByStatus('active')),
+								isActive: studentsStore.statusFilter === 'active',
+								onclick: () => studentsStore.statusFilter = 'active'
+							},
+							{
+								label: m.filter_withdrawn(),
+								badge: formatNumber(getCountByStatus('withdrawn')),
+								isActive: studentsStore.statusFilter === 'withdrawn',
+								onclick: () => studentsStore.statusFilter = 'withdrawn'
+							}
+						]
+					},
+					{
+						title: m.filter_classes(),
+						items: [
+							{
+								label: m.filter_all_classes(),
+								isActive: studentsStore.selectedClassId === null,
+								onclick: () => studentsStore.selectedClassId = null
+							},
+							...studentsStore.classes.map(cls => {
+								const count = getCountByClass(String(cls.id));
+								return {
+									label: cls.name || cls.name_ar || String(cls.id),
+									badge: count > 0 ? formatNumber(count) : null,
+									isActive: studentsStore.selectedClassId === cls.id,
+									onclick: () => studentsStore.selectedClassId = String(cls.id)
+								};
+							})
+						]
+					}
+				]}
+			>
+				{#snippet headerAction()}
 					{#if hasActiveFilters}
 						<Button 
 							variant="ghost" 
-							size="icon" 
-							class="h-6 w-6 text-muted-foreground hover:text-foreground" 
+							size="icon-xs" 
+							class="h-5 w-5 text-muted-foreground hover:text-foreground cursor-pointer" 
 							onclick={clearFilters}
 							title={m.students_clear_filters()}
 						>
-							<FilterX size={13} />
+							<FilterX size={12} />
 						</Button>
 					{/if}
-				</div>
-				<StudentSidebarFilters />
-			</div>
+				{/snippet}
+			</SidebarNav>
 		{/snippet}
 
 		<!-- Middle Panel: Directory datagrid -->

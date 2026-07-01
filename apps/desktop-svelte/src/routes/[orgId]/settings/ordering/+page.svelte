@@ -17,16 +17,16 @@ import {
 import { Input } from "@orbis/ui-svelte/input";
 import { toast } from "svelte-sonner";
 import { fade } from "svelte/transition";
-import {
-  ListOrdered,
-  RefreshCw,
-  Lock,
-  Search,
-} from "lucide-svelte";
+import { ListOrdered, RefreshCw, Lock, Search } from "lucide-svelte";
 import * as m from "$lib/paraglide/messages";
 import { commands } from "$lib/services/ipc";
 import { authStore } from "$lib/stores";
-import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui-svelte/select";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui-svelte/select";
 
 let { data }: { data: { orgId: string } } = $props();
 

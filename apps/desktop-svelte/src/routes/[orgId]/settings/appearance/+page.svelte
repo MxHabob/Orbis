@@ -5,7 +5,12 @@ import { goto } from "$app/navigation";
 import { themeStore } from "$lib/stores";
 import { Button } from "@orbis/ui-svelte/button";
 import { Label } from "@orbis/ui-svelte/label";
-import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui-svelte/select";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";

@@ -4,7 +4,9 @@
 // ═══════════════════════════════════════════════════════════════
 
 /** Parse a hex color (#rgb or #rrggbb) to RGB components */
-export function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+export function hexToRgb(
+  hex: string,
+): { r: number; g: number; b: number } | null {
   const clean = hex.replace(/^#/, "");
   let r: number, g: number, b: number;
 
@@ -25,7 +27,10 @@ export function hexToRgb(hex: string): { r: number; g: number; b: number } | nul
 
 /** Convert RGB to hex color string */
 export function rgbToHex(r: number, g: number, b: number): string {
-  const toHex = (c: number) => Math.max(0, Math.min(255, Math.round(c))).toString(16).padStart(2, "0");
+  const toHex = (c: number) =>
+    Math.max(0, Math.min(255, Math.round(c)))
+      .toString(16)
+      .padStart(2, "0");
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 

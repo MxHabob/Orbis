@@ -23,7 +23,13 @@ import type {
   BatchJobStatus,
 } from "./types";
 
-export type { CommandError, User, LoginResponse, JsonRecord, UserSession } from "./types";
+export type {
+  CommandError,
+  User,
+  LoginResponse,
+  JsonRecord,
+  UserSession,
+} from "./types";
 
 export const commands = {
   auth: {
@@ -54,7 +60,8 @@ export const commands = {
 
     getUser: (userId: string) => invoke<User>("get_user", { userId }),
 
-    getUserSessions: (userId: string) => invoke<UserSession[]>("get_user_sessions", { userId }),
+    getUserSessions: (userId: string) =>
+      invoke<UserSession[]>("get_user_sessions", { userId }),
 
     createUser: (orgId: string, createdBy: string, request: JsonRecord) =>
       invoke<User>("create_user", { orgId, createdBy, request }),
@@ -71,7 +78,8 @@ export const commands = {
     changeUserPassword: (userId: string, request: { new_password: string }) =>
       invoke<User>("change_user_password", { userId, request }),
 
-    getUserRoles: (userId: string) => invoke<string[]>("get_user_roles", { userId }),
+    getUserRoles: (userId: string) =>
+      invoke<string[]>("get_user_roles", { userId }),
 
     saveUserRoles: (userId: string, roles: string[]) =>
       invoke<void>("save_user_roles", { userId, roles }),
@@ -124,7 +132,9 @@ export const commands = {
       invoke<JsonRecord[]>("get_cycles", {
         orgId,
         params: { cycle_type: "term" },
-      }).then((cycles: JsonRecord[]) => cycles.filter((c) => c.parent_id === yearId)),
+      }).then((cycles: JsonRecord[]) =>
+        cycles.filter((c) => c.parent_id === yearId),
+      ),
 
     initializeSchoolSetup: (orgId: string, config: any) =>
       invoke<void>("initialize_school_setup", { orgId, config }),
@@ -710,7 +720,16 @@ export const commands = {
   },
 
   documentTemplates: {
-    getTemplates: (orgId: string, params?: { status?: string; document_type?: string; entity_type?: string; category_id?: string; search?: string }) =>
+    getTemplates: (
+      orgId: string,
+      params?: {
+        status?: string;
+        document_type?: string;
+        entity_type?: string;
+        category_id?: string;
+        search?: string;
+      },
+    ) =>
       invoke<JsonRecord[]>("get_document_templates", {
         orgId,
         status: params?.status,
@@ -724,10 +743,24 @@ export const commands = {
       invoke<JsonRecord>("get_document_template", { orgId, id }),
 
     createTemplate: (orgId: string, userId: string, request: JsonRecord) =>
-      invoke<JsonRecord>("create_document_template", { orgId, userId, request }),
+      invoke<JsonRecord>("create_document_template", {
+        orgId,
+        userId,
+        request,
+      }),
 
-    updateTemplate: (orgId: string, id: string, userId: string, request: JsonRecord) =>
-      invoke<JsonRecord>("update_document_template", { orgId, id, userId, request }),
+    updateTemplate: (
+      orgId: string,
+      id: string,
+      userId: string,
+      request: JsonRecord,
+    ) =>
+      invoke<JsonRecord>("update_document_template", {
+        orgId,
+        id,
+        userId,
+        request,
+      }),
 
     deleteTemplate: (orgId: string, id: string) =>
       invoke<void>("delete_document_template", { orgId, id }),
@@ -744,14 +777,23 @@ export const commands = {
     getVersions: (id: string) =>
       invoke<JsonRecord[]>("get_document_template_versions", { id }),
 
-    revertToVersion: (orgId: string, id: string, version: number, userId: string) =>
-      invoke<JsonRecord>("revert_document_template_to_version", { orgId, id, version, userId }),
+    revertToVersion: (
+      orgId: string,
+      id: string,
+      version: number,
+      userId: string,
+    ) =>
+      invoke<JsonRecord>("revert_document_template_to_version", {
+        orgId,
+        id,
+        version,
+        userId,
+      }),
   },
 
   permissions: {
     getPermissions: () => invoke<any[]>("get_permissions"),
-    getRolePermissions: () =>
-      invoke<any[]>("get_role_permissions"),
+    getRolePermissions: () => invoke<any[]>("get_role_permissions"),
     saveRolePermissions: (role: string, rules: any[]) =>
       invoke<void>("save_role_permissions", { role, rules }),
     getUserPermissions: (userId: string) =>
@@ -765,15 +807,34 @@ export const commands = {
 
   docforge: {
     previewDocumentTemplate: (templateJson: string, contextJson: string) =>
-      invoke<number[]>("preview_document_template", { templateJson, contextJson }),
+      invoke<number[]>("preview_document_template", {
+        templateJson,
+        contextJson,
+      }),
     renderDocument: (orgId: string, templateId: string, entityId: string) =>
       invoke<number[]>("render_document", { orgId, templateId, entityId }),
     getDatasourceSchemas: () =>
       invoke<Record<string, any>>("get_datasource_schemas"),
-    evaluateTemplateExpressions: (expressionTemplate: string, contextJson: string) =>
-      invoke<string>("evaluate_template_expressions", { expressionTemplate, contextJson }),
-    startBatchPrint: (orgId: string, templateId: string, entityIds: string[], outputDir: string) =>
-      invoke<BatchJobStatus>("start_batch_print", { orgId, templateId, entityIds, outputDir }),
+    evaluateTemplateExpressions: (
+      expressionTemplate: string,
+      contextJson: string,
+    ) =>
+      invoke<string>("evaluate_template_expressions", {
+        expressionTemplate,
+        contextJson,
+      }),
+    startBatchPrint: (
+      orgId: string,
+      templateId: string,
+      entityIds: string[],
+      outputDir: string,
+    ) =>
+      invoke<BatchJobStatus>("start_batch_print", {
+        orgId,
+        templateId,
+        entityIds,
+        outputDir,
+      }),
     pauseBatchPrint: (jobId: string) =>
       invoke<boolean>("pause_batch_print", { jobId }),
     resumeBatchPrint: (jobId: string) =>

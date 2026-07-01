@@ -1229,6 +1229,8 @@
   "whats_new_learn_more": "اعرف المزيد",
 
   "nav_exams": "الامتحانات",
+  "exams_layout_panel_title": "الامتحانات",
+  "exams_layout_panel_desc": "الفترات واللجان",
   "breadcrumb_exams": "الامتحانات",
 
   "exams_layout_nav_overview": "نظرة عامة",
@@ -1509,4 +1511,3 @@
   "titlebar_cycle_selected": "تم تحديد الدورة: {name}",
   "titlebar_timer_minutes": "{minutes} دقيقة"
 }
-

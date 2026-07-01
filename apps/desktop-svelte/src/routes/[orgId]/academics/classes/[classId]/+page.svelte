@@ -4,106 +4,103 @@ Overview page for a single class. Shows summary stats (students, subjects,
 teachers) and quick-access cards for sub-sections.
 -->
 <script lang="ts">
-  import { page } from "$app/state";
-  import { onMount } from "svelte";
-  import { commands } from "$lib/services/ipc";
-  import { Skeleton } from "@orbis/ui-svelte/skeleton";
-  import { Button } from "@orbis/ui-svelte/button";
-  import {
-    Users,
-    BookOpen,
-    BookUser,
-    Award,
-    ClipboardList,
-    ArrowRight,
-  } from "lucide-svelte";
-  import { fade } from "svelte/transition";
-  import { localizeHref, getLocale } from "$lib/paraglide/runtime";
-  import * as m from "$lib/paraglide/messages";
+import { page } from "$app/state";
+import { onMount } from "svelte";
+import { commands } from "$lib/services/ipc";
+import { Skeleton } from "@orbis/ui-svelte/skeleton";
+import { Button } from "@orbis/ui-svelte/button";
+import {
+  Users,
+  BookOpen,
+  BookUser,
+  Award,
+  ClipboardList,
+  ArrowRight,
+} from "lucide-svelte";
+import { fade } from "svelte/transition";
+import { localizeHref, getLocale } from "$lib/paraglide/runtime";
+import * as m from "$lib/paraglide/messages";
 
-  const orgId = $derived(page.params.orgId);
-  const classId = $derived(page.params.classId);
+const orgId = $derived(page.params.orgId);
+const classId = $derived(page.params.classId);
 
-  let studentsCount = $state(0);
-  let subjectsCount = $state(0);
-  let teachersCount = $state(0);
-  let assessmentsCount = $state(0);
-  let isLoading = $state(true);
+let studentsCount = $state(0);
+let subjectsCount = $state(0);
+let teachersCount = $state(0);
+let assessmentsCount = $state(0);
+let isLoading = $state(true);
 
-  async function loadStats() {
-    isLoading = true;
-    try {
-      const [enrollments, classSubjects, assessments] = await Promise.all([
-        commands.enrollments.getAll(orgId),
-        commands.schedule.getClassSubjects(),
-        commands.assessments
-          .getByClass({ classId })
-          .catch(() => []),
-      ]);
+async function loadStats() {
+  isLoading = true;
+  try {
+    const [enrollments, classSubjects, assessments] = await Promise.all([
+      commands.enrollments.getAll(orgId),
+      commands.schedule.getClassSubjects(),
+      commands.assessments.getByClass({ classId }).catch(() => []),
+    ]);
 
-      studentsCount = enrollments.filter(
-        (s) => String(s.class_id) === classId,
-      ).length;
+    studentsCount = enrollments.filter(
+      (s) => String(s.class_id) === classId,
+    ).length;
 
-      const classAssignments = classSubjects.filter(
-        (cs) => String(cs.class_id) === classId,
-      );
-      subjectsCount = new Set(
-        classAssignments.map((cs) => String(cs.subject_id)),
-      ).size;
-      teachersCount = new Set(
-        classAssignments
-          .filter((cs) => cs.teacher_id)
-          .map((cs) => String(cs.teacher_id)),
-      ).size;
-      assessmentsCount = assessments.length;
-    } catch (e) {
-      console.error("Error loading class stats:", e);
-    } finally {
-      isLoading = false;
-    }
+    const classAssignments = classSubjects.filter(
+      (cs) => String(cs.class_id) === classId,
+    );
+    subjectsCount = new Set(classAssignments.map((cs) => String(cs.subject_id)))
+      .size;
+    teachersCount = new Set(
+      classAssignments
+        .filter((cs) => cs.teacher_id)
+        .map((cs) => String(cs.teacher_id)),
+    ).size;
+    assessmentsCount = assessments.length;
+  } catch (e) {
+    console.error("Error loading class stats:", e);
+  } finally {
+    isLoading = false;
   }
+}
 
-  onMount(loadStats);
+onMount(loadStats);
 
-  const statCards = $derived([
-    {
-      label: m.classes_enrolled_students
-        ? m.classes_enrolled_students()
-        : "الطلاب المسجلون",
-      value: studentsCount,
-      icon: Users,
-      color: "bg-primary/10 text-primary",
-      href: `/${orgId}/academics/classes/${classId}/grades`,
-    },
-    {
-      label: m.academics_layout_nav_subjects
-        ? m.academics_layout_nav_subjects()
-        : "المواد",
-      value: subjectsCount,
-      icon: BookOpen,
-      color: "bg-brand-lime/10 text-brand-lime",
-      href: `/${orgId}/academics/classes/${classId}/teachers`,
-    },
-    {
-      label: m.academics_class_detail_tab_teachers
-        ? m.academics_class_detail_tab_teachers()
-        : "المعلمون",
-      value: teachersCount,
-      icon: BookUser,
-      color: "bg-brand-pink/10 text-brand-pink",
-      href: `/${orgId}/academics/classes/${classId}/teachers`,
-    },
-    {
-      label: m.academics_class_detail_tab_assessments
-        ? m.academics_class_detail_tab_assessments()
-        : "التقييمات",
-      value: assessmentsCount,
-      icon: Award,
-      color: "bg-amber-500/10 text-amber-500",
-      href: `/${orgId}/academics/classes/${classId}/assessments`,
-    },
-  ]);
+const statCards = $derived([
+  {
+    label: m.classes_enrolled_students
+      ? m.classes_enrolled_students()
+      : "الطلاب المسجلون",
+    value: studentsCount,
+    icon: Users,
+    color: "bg-primary/10 text-primary",
+    href: `/${orgId}/academics/classes/${classId}/grades`,
+  },
+  {
+    label: m.academics_layout_nav_subjects
+      ? m.academics_layout_nav_subjects()
+      : "المواد",
+    value: subjectsCount,
+    icon: BookOpen,
+    color: "bg-brand-lime/10 text-brand-lime",
+    href: `/${orgId}/academics/classes/${classId}/teachers`,
+  },
+  {
+    label: m.academics_class_detail_tab_teachers
+      ? m.academics_class_detail_tab_teachers()
+      : "المعلمون",
+    value: teachersCount,
+    icon: BookUser,
+    color: "bg-brand-pink/10 text-brand-pink",
+    href: `/${orgId}/academics/classes/${classId}/teachers`,
+  },
+  {
+    label: m.academics_class_detail_tab_assessments
+      ? m.academics_class_detail_tab_assessments()
+      : "التقييمات",
+    value: assessmentsCount,
+    icon: Award,
+    color: "bg-amber-500/10 text-amber-500",
+    href: `/${orgId}/academics/classes/${classId}/assessments`,
+  },
+]);
 </script>
 
 <div class="flex flex-col gap-6">

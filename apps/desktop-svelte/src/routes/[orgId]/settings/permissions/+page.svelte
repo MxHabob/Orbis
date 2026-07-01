@@ -1,298 +1,341 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { fade, slide } from "svelte/transition";
-  import { Button } from "@orbis/ui-svelte/button";
-  import { Input } from "@orbis/ui-svelte/input";
-  import { Label } from "@orbis/ui-svelte/label";
-  import { Checkbox } from "@orbis/ui-svelte/checkbox";
-  import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui-svelte/select";
-  import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@orbis/ui-svelte/dialog";
-  import { Badge } from "@orbis/ui-svelte/badge";
-  import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-  } from "@orbis/ui-svelte/table";
-  import { toast } from "svelte-sonner";
-  import { getLocale } from "$lib/paraglide/runtime";
-  import { commands } from "$lib/services/ipc";
-  import { goto } from "$app/navigation";
-  import {
-    Shield,
-    Search,
-    Plus,
-    Trash2,
-    X,
-    ChevronRight,
-    UserCheck
-  } from "lucide-svelte";
+import { onMount } from "svelte";
+import { fade, slide } from "svelte/transition";
+import { Button } from "@orbis/ui-svelte/button";
+import { Input } from "@orbis/ui-svelte/input";
+import { Label } from "@orbis/ui-svelte/label";
+import { Checkbox } from "@orbis/ui-svelte/checkbox";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui-svelte/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@orbis/ui-svelte/dialog";
+import { Badge } from "@orbis/ui-svelte/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@orbis/ui-svelte/table";
+import { toast } from "svelte-sonner";
+import { getLocale } from "$lib/paraglide/runtime";
+import { commands } from "$lib/services/ipc";
+import { goto } from "$app/navigation";
+import {
+  Shield,
+  Search,
+  Plus,
+  Trash2,
+  X,
+  ChevronRight,
+  UserCheck,
+} from "lucide-svelte";
 
-  let { data }: { data: { orgId: string } } = $props();
+let { data }: { data: { orgId: string } } = $props();
 
-  interface PermissionRule {
-    role: string;
-    document_type: string;
-    level: number;
-    only_if_creator: boolean;
-    actions: string[];
+interface PermissionRule {
+  role: string;
+  document_type: string;
+  level: number;
+  only_if_creator: boolean;
+  actions: string[];
+}
+
+// Predefined lists for inputs
+const standardDocTypes = [
+  "Department",
+  "Assessment Result",
+  "Grade",
+  "User",
+  "Class",
+  "Subject",
+  "Schedule",
+  "Attendance",
+  "Behavior",
+  "Finance",
+  "Document",
+  "Organization",
+  "Enrollment",
+  "Exam",
+  "Notification",
+  "Dashboard",
+  "Audit",
+  "ImportExport",
+];
+
+const standardRoles = [
+  "Academics User",
+  "principal",
+  "teacher",
+  "student",
+  "parent",
+  "academic_supervisor",
+  "registrar",
+  "finance_officer",
+];
+
+// UI States
+let rules = $state<PermissionRule[]>([]);
+let isLoading = $state(false);
+let hasUnsavedChanges = $state(false);
+let initialRolesList = $state<string[]>([]);
+
+// Filters
+let docTypeFilter = $state("");
+let roleFilter = $state("");
+
+// Modals
+let showAddRuleModal = $state(false);
+let showSetUserPermissionsModal = $state(false);
+
+// Users List (for Set User Permissions)
+let usersList = $state<any[]>([]);
+let userSearchQuery = $state("");
+
+// Add Rule Form States
+let newRuleDocType = $state("");
+let newRuleRole = $state("Academics User");
+let newRuleLevel = $state(0);
+let newRuleOnlyIfCreator = $state(false);
+let newRuleActions = $state<string[]>([]);
+
+// Lifecycle
+onMount(async () => {
+  await loadPermissions();
+  await loadUsers();
+});
+
+async function loadPermissions() {
+  isLoading = true;
+  try {
+    const rawRules = await commands.permissions.getRolePermissions();
+    rules = rawRules.map((r: any) => ({
+      role: r.role,
+      document_type: r.document_type,
+      level: r.level,
+      only_if_creator: r.only_if_creator,
+      actions: r.actions || [],
+    }));
+    initialRolesList = Array.from(new Set(rules.map((r) => r.role)));
+    hasUnsavedChanges = false;
+  } catch (e) {
+    console.error("Failed to load permissions", e);
+    toast.error(
+      getLocale() === "ar"
+        ? "فشل تحميل الصلاحيات من قاعدة البيانات"
+        : "Failed to load permissions from database",
+    );
+  } finally {
+    isLoading = false;
   }
+}
 
-  // Predefined lists for inputs
-  const standardDocTypes = [
-    "Department",
-    "Assessment Result",
-    "Grade",
-    "User",
-    "Class",
-    "Subject",
-    "Schedule",
-    "Attendance",
-    "Behavior",
-    "Finance",
-    "Document",
-    "Organization",
-    "Enrollment",
-    "Exam",
-    "Notification",
-    "Dashboard",
-    "Audit",
-    "ImportExport"
-  ];
+async function loadUsers() {
+  try {
+    if (data.orgId) {
+      usersList = await commands.users.getUsers(data.orgId);
+    }
+  } catch (e) {
+    console.error("Failed to load users list", e);
+  }
+}
 
-  const standardRoles = [
-    "Academics User",
-    "principal",
-    "teacher",
-    "student",
-    "parent",
-    "academic_supervisor",
-    "registrar",
-    "finance_officer"
-  ];
+// Group and save rules
+async function saveChanges() {
+  isLoading = true;
+  try {
+    const rulesByRole: Record<string, PermissionRule[]> = {};
+    for (const rule of rules) {
+      if (!rulesByRole[rule.role]) {
+        rulesByRole[rule.role] = [];
+      }
+      rulesByRole[rule.role].push(rule);
+    }
 
-  // UI States
-  let rules = $state<PermissionRule[]>([]);
-  let isLoading = $state(false);
-  let hasUnsavedChanges = $state(false);
-  let initialRolesList = $state<string[]>([]);
+    // Save for all roles that had rules or currently have rules
+    const rolesToSave = new Set([
+      ...initialRolesList,
+      ...rules.map((r) => r.role),
+    ]);
+    for (const r of rolesToSave) {
+      const roleRules = rulesByRole[r] || [];
+      await commands.permissions.saveRolePermissions(r, roleRules);
+    }
 
-  // Filters
-  let docTypeFilter = $state("");
-  let roleFilter = $state("");
-
-  // Modals
-  let showAddRuleModal = $state(false);
-  let showSetUserPermissionsModal = $state(false);
-
-  // Users List (for Set User Permissions)
-  let usersList = $state<any[]>([]);
-  let userSearchQuery = $state("");
-
-  // Add Rule Form States
-  let newRuleDocType = $state("");
-  let newRuleRole = $state("Academics User");
-  let newRuleLevel = $state(0);
-  let newRuleOnlyIfCreator = $state(false);
-  let newRuleActions = $state<string[]>([]);
-
-  // Lifecycle
-  onMount(async () => {
+    toast.success(
+      getLocale() === "ar"
+        ? "تم حفظ التغييرات بنجاح!"
+        : "Permissions updated and saved successfully!",
+    );
     await loadPermissions();
-    await loadUsers();
-  });
-
-  async function loadPermissions() {
-    isLoading = true;
-    try {
-      const rawRules = await commands.permissions.getRolePermissions();
-      rules = rawRules.map((r: any) => ({
-        role: r.role,
-        document_type: r.document_type,
-        level: r.level,
-        only_if_creator: r.only_if_creator,
-        actions: r.actions || [],
-      }));
-      initialRolesList = Array.from(new Set(rules.map(r => r.role)));
-      hasUnsavedChanges = false;
-    } catch (e) {
-      console.error("Failed to load permissions", e);
-      toast.error(
-        getLocale() === "ar"
-          ? "فشل تحميل الصلاحيات من قاعدة البيانات"
-          : "Failed to load permissions from database"
-      );
-    } finally {
-      isLoading = false;
-    }
-  }
-
-  async function loadUsers() {
-    try {
-      if (data.orgId) {
-        usersList = await commands.users.getUsers(data.orgId);
-      }
-    } catch (e) {
-      console.error("Failed to load users list", e);
-    }
-  }
-
-  // Group and save rules
-  async function saveChanges() {
-    isLoading = true;
-    try {
-      const rulesByRole: Record<string, PermissionRule[]> = {};
-      for (const rule of rules) {
-        if (!rulesByRole[rule.role]) {
-          rulesByRole[rule.role] = [];
-        }
-        rulesByRole[rule.role].push(rule);
-      }
-
-      // Save for all roles that had rules or currently have rules
-      const rolesToSave = new Set([...initialRolesList, ...rules.map(r => r.role)]);
-      for (const r of rolesToSave) {
-        const roleRules = rulesByRole[r] || [];
-        await commands.permissions.saveRolePermissions(r, roleRules);
-      }
-
-      toast.success(
-        getLocale() === "ar"
-          ? "تم حفظ التغييرات بنجاح!"
-          : "Permissions updated and saved successfully!"
-      );
-      await loadPermissions();
-    } catch (e) {
-      console.error("Failed to save permissions", e);
-      toast.error(
-        getLocale() === "ar"
-          ? "فشل في حفظ التحديثات في قاعدة البيانات"
-          : "Failed to save permissions to database"
-      );
-    } finally {
-      isLoading = false;
-    }
-  }
-
-  function discardChanges() {
-    loadPermissions();
-    toast.info(
-      getLocale() === "ar" ? "تم التراجع عن التغييرات" : "Changes discarded"
+  } catch (e) {
+    console.error("Failed to save permissions", e);
+    toast.error(
+      getLocale() === "ar"
+        ? "فشل في حفظ التحديثات في قاعدة البيانات"
+        : "Failed to save permissions to database",
     );
+  } finally {
+    isLoading = false;
   }
+}
 
-  // Filtered Rules
-  const filteredRules = $derived(
-    rules.filter(r => {
-      const docMatch = !docTypeFilter || r.document_type.toLowerCase().includes(docTypeFilter.toLowerCase());
-      const roleMatch = !roleFilter || r.role.toLowerCase().includes(roleFilter.toLowerCase());
-      return docMatch && roleMatch;
-    })
+function discardChanges() {
+  loadPermissions();
+  toast.info(
+    getLocale() === "ar" ? "تم التراجع عن التغييرات" : "Changes discarded",
   );
+}
 
-  // Filtered Users (for user permissions list)
-  const filteredUsers = $derived(
-    usersList.filter(u => 
-      u.full_name?.toLowerCase().includes(userSearchQuery.toLowerCase()) || 
-      u.email?.toLowerCase().includes(userSearchQuery.toLowerCase())
-    )
-  );
+// Filtered Rules
+const filteredRules = $derived(
+  rules.filter((r) => {
+    const docMatch =
+      !docTypeFilter ||
+      r.document_type.toLowerCase().includes(docTypeFilter.toLowerCase());
+    const roleMatch =
+      !roleFilter || r.role.toLowerCase().includes(roleFilter.toLowerCase());
+    return docMatch && roleMatch;
+  }),
+);
 
-  // Actions per Doc Type
-  function getActionsForDocType(docType: string): string[] {
-    const dt = docType.toLowerCase();
-    if (dt === "assessment result" || dt === "assessment") {
-      return [
-        "select", "read", "write",
-        "create", "delete", "submit",
-        "cancel", "amend", "print",
-        "email", "report", "import",
-        "export", "share"
-      ];
-    }
+// Filtered Users (for user permissions list)
+const filteredUsers = $derived(
+  usersList.filter(
+    (u) =>
+      u.full_name?.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+      u.email?.toLowerCase().includes(userSearchQuery.toLowerCase()),
+  ),
+);
+
+// Actions per Doc Type
+function getActionsForDocType(docType: string): string[] {
+  const dt = docType.toLowerCase();
+  if (dt === "assessment result" || dt === "assessment") {
     return [
-      "select", "read", "write",
-      "create", "delete", "print",
-      "email", "report", "import",
-      "export", "share"
+      "select",
+      "read",
+      "write",
+      "create",
+      "delete",
+      "submit",
+      "cancel",
+      "amend",
+      "print",
+      "email",
+      "report",
+      "import",
+      "export",
+      "share",
     ];
   }
+  return [
+    "select",
+    "read",
+    "write",
+    "create",
+    "delete",
+    "print",
+    "email",
+    "report",
+    "import",
+    "export",
+    "share",
+  ];
+}
 
-  function capitalizeFirstLetter(str: string): string {
-    if (!str) return "";
-    return str.charAt(0).toUpperCase() + str.slice(1);
-  }
+function capitalizeFirstLetter(str: string): string {
+  if (!str) return "";
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
 
-  // Manage Rules
-  function addRule() {
-    if (!newRuleDocType.trim()) {
-      toast.error(
-        getLocale() === "ar" ? "يرجى إدخال نوع المستند" : "Please input a document type"
-      );
-      return;
-    }
-    if (!newRuleRole.trim()) {
-      toast.error(
-        getLocale() === "ar" ? "يرجى إدخال الدور" : "Please input a role"
-      );
-      return;
-    }
-
-    // Check duplicate
-    const exists = rules.some(
-      r => r.role.toLowerCase() === newRuleRole.toLowerCase() && 
-           r.document_type.toLowerCase() === newRuleDocType.toLowerCase()
+// Manage Rules
+function addRule() {
+  if (!newRuleDocType.trim()) {
+    toast.error(
+      getLocale() === "ar"
+        ? "يرجى إدخال نوع المستند"
+        : "Please input a document type",
     );
-    if (exists) {
-      toast.error(
-        getLocale() === "ar" ? "هذه القاعدة موجودة بالفعل!" : "This rule already exists!"
-      );
-      return;
-    }
-
-    rules = [
-      ...rules,
-      {
-        role: newRuleRole,
-        document_type: newRuleDocType,
-        level: newRuleLevel,
-        only_if_creator: newRuleOnlyIfCreator,
-        actions: newRuleActions,
-      }
-    ];
-
-    hasUnsavedChanges = true;
-    showAddRuleModal = false;
-
-    // Reset Form
-    newRuleDocType = "";
-    newRuleOnlyIfCreator = false;
-    newRuleActions = [];
-    toast.success(
-      getLocale() === "ar" ? "تمت إضافة القاعدة بنجاح" : "Rule added successfully"
+    return;
+  }
+  if (!newRuleRole.trim()) {
+    toast.error(
+      getLocale() === "ar" ? "يرجى إدخال الدور" : "Please input a role",
     );
+    return;
   }
 
-  function deleteRule(index: number) {
-    const deleted = filteredRules[index];
-    rules = rules.filter(r => !(r.role === deleted.role && r.document_type === deleted.document_type));
-    hasUnsavedChanges = true;
-    toast.success(
-      getLocale() === "ar" ? "تم حذف القاعدة" : "Rule deleted"
+  // Check duplicate
+  const exists = rules.some(
+    (r) =>
+      r.role.toLowerCase() === newRuleRole.toLowerCase() &&
+      r.document_type.toLowerCase() === newRuleDocType.toLowerCase(),
+  );
+  if (exists) {
+    toast.error(
+      getLocale() === "ar"
+        ? "هذه القاعدة موجودة بالفعل!"
+        : "This rule already exists!",
     );
+    return;
   }
 
-  function toggleAction(ruleIndex: number, action: string) {
-    const rule = filteredRules[ruleIndex];
-    if (rule.actions.includes(action)) {
-      rule.actions = rule.actions.filter(a => a !== action);
-    } else {
-      rule.actions = [...rule.actions, action];
-    }
-    hasUnsavedChanges = true;
+  rules = [
+    ...rules,
+    {
+      role: newRuleRole,
+      document_type: newRuleDocType,
+      level: newRuleLevel,
+      only_if_creator: newRuleOnlyIfCreator,
+      actions: newRuleActions,
+    },
+  ];
+
+  hasUnsavedChanges = true;
+  showAddRuleModal = false;
+
+  // Reset Form
+  newRuleDocType = "";
+  newRuleOnlyIfCreator = false;
+  newRuleActions = [];
+  toast.success(
+    getLocale() === "ar"
+      ? "تمت إضافة القاعدة بنجاح"
+      : "Rule added successfully",
+  );
+}
+
+function deleteRule(index: number) {
+  const deleted = filteredRules[index];
+  rules = rules.filter(
+    (r) =>
+      !(r.role === deleted.role && r.document_type === deleted.document_type),
+  );
+  hasUnsavedChanges = true;
+  toast.success(getLocale() === "ar" ? "تم حذف القاعدة" : "Rule deleted");
+}
+
+function toggleAction(ruleIndex: number, action: string) {
+  const rule = filteredRules[ruleIndex];
+  if (rule.actions.includes(action)) {
+    rule.actions = rule.actions.filter((a) => a !== action);
+  } else {
+    rule.actions = [...rule.actions, action];
   }
+  hasUnsavedChanges = true;
+}
 </script>
 
 <svelte:head>

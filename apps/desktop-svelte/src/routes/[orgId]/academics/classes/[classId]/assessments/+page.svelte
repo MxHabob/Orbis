@@ -5,165 +5,174 @@ No more class filter needed — subject & period filters only.
 Moved from academics/assessments/ with context-first navigation.
 -->
 <script lang="ts">
-  import { page } from "$app/state";
-  import { onMount } from "svelte";
-  import { commands } from "$lib/services/ipc";
-  import { Button } from "@orbis/ui-svelte/button";
-  import { Skeleton } from "@orbis/ui-svelte/skeleton";
-  import {
-    Select,
-    SelectTrigger,
-    SelectContent,
-    SelectItem,
-  } from "@orbis/ui-svelte/select";
-  import {
-    Plus,
-    Award,
-    Percent,
-    Calendar,
-    Trash2,
-    AlertCircle,
-  } from "lucide-svelte";
-  import { toast } from "svelte-sonner";
-  import { fade } from "svelte/transition";
-  import AssessmentCreateSheet from "$lib/components/sheets/assessment-create-sheet.svelte";
-  import * as m from "$lib/paraglide/messages";
+import { page } from "$app/state";
+import { onMount } from "svelte";
+import { commands } from "$lib/services/ipc";
+import { Button } from "@orbis/ui-svelte/button";
+import { Skeleton } from "@orbis/ui-svelte/skeleton";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui-svelte/select";
+import {
+  Plus,
+  Award,
+  Percent,
+  Calendar,
+  Trash2,
+  AlertCircle,
+} from "lucide-svelte";
+import { toast } from "svelte-sonner";
+import { fade } from "svelte/transition";
+import AssessmentCreateSheet from "$lib/components/sheets/assessment-create-sheet.svelte";
+import * as m from "$lib/paraglide/messages";
 
-  const orgId = $derived(page.params.orgId);
-  const classId = $derived(page.params.classId);
+const orgId = $derived(page.params.orgId);
+const classId = $derived(page.params.classId);
 
-  // State
-  let subjects = $state<any[]>([]);
-  let cycles = $state<any[]>([]);
-  let activeCycleId = $state<string>("");
+// State
+let subjects = $state<any[]>([]);
+let cycles = $state<any[]>([]);
+let activeCycleId = $state<string>("");
 
-  // Semester & Month sub-cycles
-  let semesters = $state<any[]>([]);
-  let selectedSemesterId = $state<string>("");
-  let months = $state<any[]>([]);
-  let selectedMonthId = $state<string>("all");
+// Semester & Month sub-cycles
+let semesters = $state<any[]>([]);
+let selectedSemesterId = $state<string>("");
+let months = $state<any[]>([]);
+let selectedMonthId = $state<string>("all");
 
-  let selectedSubjectId = $state<string>("");
+let selectedSubjectId = $state<string>("");
 
-  let assessments = $state<any[]>([]);
-  let isLoading = $state(true);
-  let isAssessmentsLoading = $state(false);
-  let error = $state<string | null>(null);
+let assessments = $state<any[]>([]);
+let isLoading = $state(true);
+let isAssessmentsLoading = $state(false);
+let error = $state<string | null>(null);
 
-  // Sheet trigger state
-  let isModalOpen = $state(false);
+// Sheet trigger state
+let isModalOpen = $state(false);
 
-  // Get 1-based chronological month index
-  function getMonthNumber(monthId: string): number | undefined {
-    const sortedMonths = cycles
-      .filter((c) => c.type === "month")
-      .sort((a, b) => (a.start_date || "").localeCompare(b.start_date || ""));
-    const idx = sortedMonths.findIndex((m) => m.id === monthId);
-    return idx !== -1 ? idx + 1 : undefined;
+// Get 1-based chronological month index
+function getMonthNumber(monthId: string): number | undefined {
+  const sortedMonths = cycles
+    .filter((c) => c.type === "month")
+    .sort((a, b) => (a.start_date || "").localeCompare(b.start_date || ""));
+  const idx = sortedMonths.findIndex((m) => m.id === monthId);
+  return idx !== -1 ? idx + 1 : undefined;
+}
+
+// Reactively load child months of the selected semester
+$effect(() => {
+  if (selectedSemesterId) {
+    months = cycles.filter(
+      (c) => c.parent_id === selectedSemesterId && c.type === "month",
+    );
+    selectedMonthId = "all";
+  } else {
+    months = [];
+    selectedMonthId = "all";
   }
+});
 
-  // Reactively load child months of the selected semester
-  $effect(() => {
-    if (selectedSemesterId) {
-      months = cycles.filter(
-        (c) => c.parent_id === selectedSemesterId && c.type === "month",
+// Load filters (subjects, cycles — class is already from URL)
+async function loadFilters() {
+  isLoading = true;
+  error = null;
+  try {
+    const [subjectList, cycleList] = await Promise.all([
+      commands.subjects.getAll(orgId),
+      commands.academics.getCycles(orgId),
+    ]);
+    subjects = subjectList;
+    cycles = cycleList;
+
+    const activeYear =
+      cycleList.find(
+        (c) =>
+          c.type === "year" && (c.is_current === 1 || c.is_current === true),
+      ) ||
+      cycleList.find((c) => c.type === "year") ||
+      cycleList[0];
+
+    if (activeYear) {
+      activeCycleId = String(activeYear.id);
+      semesters = cycleList.filter(
+        (c) => c.parent_id === activeYear.id && c.type === "term",
       );
-      selectedMonthId = "all";
-    } else {
-      months = [];
-      selectedMonthId = "all";
-    }
-  });
-
-  // Load filters (subjects, cycles — class is already from URL)
-  async function loadFilters() {
-    isLoading = true;
-    error = null;
-    try {
-      const [subjectList, cycleList] = await Promise.all([
-        commands.subjects.getAll(orgId),
-        commands.academics.getCycles(orgId),
-      ]);
-      subjects = subjectList;
-      cycles = cycleList;
-
-      const activeYear =
-        cycleList.find(
-          (c) =>
-            c.type === "year" && (c.is_current === 1 || c.is_current === true),
-        ) ||
-        cycleList.find((c) => c.type === "year") ||
-        cycleList[0];
-
-      if (activeYear) {
-        activeCycleId = String(activeYear.id);
-        semesters = cycleList.filter(
-          (c) => c.parent_id === activeYear.id && c.type === "term",
-        );
-        if (semesters.length > 0) {
-          selectedSemesterId = semesters[0].id;
-        }
+      if (semesters.length > 0) {
+        selectedSemesterId = semesters[0].id;
       }
-
-      if (subjectList.length > 0) {
-        selectedSubjectId = String(subjectList[0].id);
-      }
-    } catch (e) {
-      error = e instanceof Error ? e.message : String(e);
-    } finally {
-      isLoading = false;
     }
+
+    if (subjectList.length > 0) {
+      selectedSubjectId = String(subjectList[0].id);
+    }
+  } catch (e) {
+    error = e instanceof Error ? e.message : String(e);
+  } finally {
+    isLoading = false;
   }
+}
 
-  // Load assessments based on selections
-  async function loadAssessments() {
-    if (!classId) return;
-    isAssessmentsLoading = true;
-    try {
-      const list = await commands.assessments.getByClass({
-        classId,
-        subjectId: selectedSubjectId || undefined,
-        termId: selectedSemesterId || activeCycleId || undefined,
-        month:
-          selectedMonthId !== "all"
-            ? getMonthNumber(selectedMonthId)
-            : undefined,
-      });
-      assessments = list;
-    } catch (e) {
-      console.error("Error loading assessments:", e);
-      assessments = [];
-    } finally {
-      isAssessmentsLoading = false;
-    }
+// Load assessments based on selections
+async function loadAssessments() {
+  if (!classId) return;
+  isAssessmentsLoading = true;
+  try {
+    const list = await commands.assessments.getByClass({
+      classId,
+      subjectId: selectedSubjectId || undefined,
+      termId: selectedSemesterId || activeCycleId || undefined,
+      month:
+        selectedMonthId !== "all" ? getMonthNumber(selectedMonthId) : undefined,
+    });
+    assessments = list;
+  } catch (e) {
+    console.error("Error loading assessments:", e);
+    assessments = [];
+  } finally {
+    isAssessmentsLoading = false;
   }
+}
 
-  onMount(() => {
-    if (orgId) loadFilters();
-  });
+onMount(() => {
+  if (orgId) loadFilters();
+});
 
-  // Reactively load assessments when selections change
-  $effect(() => {
-    if (classId && selectedSubjectId) {
-      loadAssessments();
-    }
-  });
-
-  async function handleDelete(id: string) {
-    if (!confirm(m.assessments_delete_confirm ? m.assessments_delete_confirm() : "هل تريد حذف هذا التقييم؟")) return;
-    try {
-      await commands.assessments.delete(id);
-      assessments = assessments.filter((a) => String(a.id) !== id);
-      toast.success(m.assessments_delete_success ? m.assessments_delete_success() : "تم الحذف");
-    } catch (e: unknown) {
-      toast.error((e as any)?.message || "فشل الحذف");
-    }
+// Reactively load assessments when selections change
+$effect(() => {
+  if (classId && selectedSubjectId) {
+    loadAssessments();
   }
+});
 
-  // Weight total for current view
-  const totalWeight = $derived(
-    assessments.reduce((sum, a) => sum + (Number(a.weight) || 0), 0),
-  );
+async function handleDelete(id: string) {
+  if (
+    !confirm(
+      m.assessments_delete_confirm
+        ? m.assessments_delete_confirm()
+        : "هل تريد حذف هذا التقييم؟",
+    )
+  )
+    return;
+  try {
+    await commands.assessments.delete(id);
+    assessments = assessments.filter((a) => String(a.id) !== id);
+    toast.success(
+      m.assessments_delete_success
+        ? m.assessments_delete_success()
+        : "تم الحذف",
+    );
+  } catch (e: unknown) {
+    toast.error((e as any)?.message || "فشل الحذف");
+  }
+}
+
+// Weight total for current view
+const totalWeight = $derived(
+  assessments.reduce((sum, a) => sum + (Number(a.weight) || 0), 0),
+);
 </script>
 
 <div class="flex flex-col gap-5 text-start">

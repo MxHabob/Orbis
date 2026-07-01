@@ -4,22 +4,22 @@ Shared header for entity detail pages (Student, User, Class).
 Provides a back button, title slot, and actions slot in a consistent layout.
 -->
 <script lang="ts">
-  import { Button } from "@orbis/ui-svelte/button";
-  import { ArrowRight, ArrowLeft } from "lucide-svelte";
-  import { getLocale, localizeHref } from "$lib/paraglide/runtime";
-  import type { Snippet } from "svelte";
+import { Button } from "@orbis/ui-svelte/button";
+import { ArrowRight, ArrowLeft } from "lucide-svelte";
+import { getLocale, localizeHref } from "$lib/paraglide/runtime";
+import type { Snippet } from "svelte";
 
-  let {
-    backHref,
-    backLabel = "",
-    children,
-    actions,
-  }: {
-    backHref: string;
-    backLabel?: string;
-    children: Snippet;
-    actions?: Snippet;
-  } = $props();
+let {
+  backHref,
+  backLabel = "",
+  children,
+  actions,
+}: {
+  backHref: string;
+  backLabel?: string;
+  children: Snippet;
+  actions?: Snippet;
+} = $props();
 </script>
 
 <div

@@ -55,7 +55,9 @@ async function loadSessions() {
   try {
     const rawSessions = await commands.users.getUserSessions(authStore.userId);
     activeSessions = rawSessions.map((s: UserSession) => {
-      const isMobile = s.device_type === "mobile" || (s.user_agent && /mobile|android|iphone|ipad/i.test(s.user_agent));
+      const isMobile =
+        s.device_type === "mobile" ||
+        (s.user_agent && /mobile|android|iphone|ipad/i.test(s.user_agent));
       const icon = isMobile ? Smartphone : Monitor;
 
       let device = "Unknown Device";
@@ -68,7 +70,13 @@ async function loadSessions() {
       }
 
       const isCurrentDevice = s.token === authStore.token;
-      const location = isCurrentDevice ? (getLocale() === "ar" ? "هذا الجهاز" : "Current Device") : (getLocale() === "ar" ? "جهاز نشط" : "Active Device");
+      const location = isCurrentDevice
+        ? getLocale() === "ar"
+          ? "هذا الجهاز"
+          : "Current Device"
+        : getLocale() === "ar"
+          ? "جهاز نشط"
+          : "Active Device";
 
       return {
         id: s.id,

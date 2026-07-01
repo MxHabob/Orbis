@@ -30,15 +30,26 @@ export function toWesternNumerals(input: string): string {
 /** Format a number with Arabic-Indic digits and proper grouping */
 export function formatArabicNumber(
   n: number,
-  options?: { decimals?: number; groupSeparator?: string; decimalSeparator?: string },
+  options?: {
+    decimals?: number;
+    groupSeparator?: string;
+    decimalSeparator?: string;
+  },
 ): string {
-  const { decimals = 0, groupSeparator = "٬", decimalSeparator = "٫" } = options ?? {};
+  const {
+    decimals = 0,
+    groupSeparator = "٬",
+    decimalSeparator = "٫",
+  } = options ?? {};
 
   const fixed = n.toFixed(decimals);
   const [intPart, decPart] = fixed.split(".");
 
   // Add grouping
-  const grouped = (intPart ?? "").replace(/\B(?=(\d{3})+(?!\d))/g, groupSeparator);
+  const grouped = (intPart ?? "").replace(
+    /\B(?=(\d{3})+(?!\d))/g,
+    groupSeparator,
+  );
   const arabicInt = toArabicNumerals(grouped);
 
   if (decPart) {
@@ -68,13 +79,19 @@ export function toArabicOrdinal(n: number): string {
 
 /** Detect if a string contains Arabic characters */
 export function containsArabic(text: string): boolean {
-  return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text);
+  return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(
+    text,
+  );
 }
 
 /** Determine the dominant text direction for a string */
 export function detectDirection(text: string): "rtl" | "ltr" {
   // Count RTL vs LTR characters
-  const rtlCount = (text.match(/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\u0590-\u05FF]/g) ?? []).length;
+  const rtlCount = (
+    text.match(
+      /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\u0590-\u05FF]/g,
+    ) ?? []
+  ).length;
   const ltrCount = (text.match(/[a-zA-Z]/g) ?? []).length;
   return rtlCount >= ltrCount ? "rtl" : "ltr";
 }

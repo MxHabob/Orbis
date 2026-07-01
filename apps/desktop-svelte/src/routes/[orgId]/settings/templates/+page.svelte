@@ -7,7 +7,14 @@ import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
 import { Badge } from "@orbis/ui-svelte/badge";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@orbis/ui-svelte/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "@orbis/ui-svelte/card";
 import {
   Dialog,
   DialogContent,
@@ -26,11 +33,26 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "@orbis/ui-svelte/alert-dialog";
-import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui-svelte/select";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
-import { FileText, Plus, Search, Trash2, Edit, CheckCircle, Archive, AlertCircle, RefreshCw } from "lucide-svelte";
+import {
+  FileText,
+  Plus,
+  Search,
+  Trash2,
+  Edit,
+  CheckCircle,
+  Archive,
+  AlertCircle,
+  RefreshCw,
+} from "lucide-svelte";
 
 // State runes
 let templates = $state<any[]>([]);
@@ -66,7 +88,10 @@ async function loadTemplates() {
     if (filterDocType !== "all") listParams.document_type = filterDocType;
     if (searchQuery.trim() !== "") listParams.search = searchQuery.trim();
 
-    const response = await commands.documentTemplates.getTemplates(orgId, listParams);
+    const response = await commands.documentTemplates.getTemplates(
+      orgId,
+      listParams,
+    );
     templates = response || [];
   } catch (e: unknown) {
     console.error("Failed to load templates:", e);
@@ -111,8 +136,8 @@ async function handleCreateTemplate() {
           size: newTemplatePageSize,
           orientation: newTemplateOrientation,
           margins: { top: 15, bottom: 15, left: 15, right: 15 },
-          unit: "mm"
-        }
+          unit: "mm",
+        },
       },
       variables: {},
       assets: {},
@@ -125,7 +150,7 @@ async function handleCreateTemplate() {
             id: "content-root",
             props: {
               layout: "vertical",
-              gap: 10
+              gap: 10,
             },
             children: [
               {
@@ -136,13 +161,13 @@ async function handleCreateTemplate() {
                   fontSize: 24,
                   fontFamily: "Tahoma",
                   fontWeight: "bold",
-                  textAlign: "center"
-                }
-              }
-            ]
-          }
-        ]
-      }
+                  textAlign: "center",
+                },
+              },
+            ],
+          },
+        ],
+      },
     });
 
     const createRequest = {
@@ -156,19 +181,28 @@ async function handleCreateTemplate() {
       code: null,
       page_size: newTemplatePageSize,
       orientation: newTemplateOrientation,
-      margins_json: JSON.stringify({ top: 15, bottom: 15, left: 15, right: 15 }),
+      margins_json: JSON.stringify({
+        top: 15,
+        bottom: 15,
+        left: 15,
+        right: 15,
+      }),
       document_json: defaultDocJson,
       locale: getLocale(),
       tags: null,
     };
 
     // User ID mock/context or fetch from auth
-    const userId = "current-user"; 
-    const response = await commands.documentTemplates.createTemplate(orgId, userId, createRequest);
-    
+    const userId = "current-user";
+    const response = await commands.documentTemplates.createTemplate(
+      orgId,
+      userId,
+      createRequest,
+    );
+
     toast.success("Template created successfully");
     isCreateDialogOpen = false;
-    
+
     // Redirect to editor page
     goto(`/${orgId}/settings/templates/${response.id}`);
   } catch (e: unknown) {

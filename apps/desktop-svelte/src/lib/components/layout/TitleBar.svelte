@@ -1,7 +1,13 @@
 <script lang="ts">
 import { onMount } from "svelte";
 import { isDesktopApp } from "$lib/services/ipc";
-import { academicStore, authStore, uiStore, themeStore, studentsStore } from "$lib/stores";
+import {
+  academicStore,
+  authStore,
+  uiStore,
+  themeStore,
+  studentsStore,
+} from "$lib/stores";
 import { Button } from "@orbis/ui-svelte/button";
 import {
   Minimize2,
@@ -18,7 +24,7 @@ import {
   Sun,
   Moon,
   Search,
-  Megaphone
+  Megaphone,
 } from "lucide-svelte";
 import {
   DropdownMenu,
@@ -50,9 +56,13 @@ let isOnline = $state(true);
 // Academic cycles list
 let cycles = $state<any[]>([]);
 let currentCycleName = $derived.by(() => {
-  const active = cycles.find(c => String(c.id) === academicStore.selectedCycleId);
+  const active = cycles.find(
+    (c) => String(c.id) === academicStore.selectedCycleId,
+  );
   if (active) {
-    return active.name_ar && getLocale() === "ar" ? active.name_ar : active.name;
+    return active.name_ar && getLocale() === "ar"
+      ? active.name_ar
+      : active.name;
   }
   return m.titlebar_cycle();
 });
@@ -134,9 +144,13 @@ const breadcrumbs = $derived.by(() => {
 
 onMount(() => {
   isOnline = navigator.onLine;
-  const setOnline = () => { isOnline = true; };
-  const setOffline = () => { isOnline = false; };
-  
+  const setOnline = () => {
+    isOnline = true;
+  };
+  const setOffline = () => {
+    isOnline = false;
+  };
+
   window.addEventListener("online", setOnline);
   window.addEventListener("offline", setOffline);
 
@@ -151,16 +165,16 @@ onMount(() => {
         const { getCurrentWindow } = await import("@tauri-apps/api/window");
         const win = getCurrentWindow();
         appWindow = win;
-        
+
         const checkMaximized = async () => {
           isMaximized = await win.isMaximized();
         };
         await checkMaximized();
-        
+
         const unlisten = await win.onResized(() => {
           checkMaximized();
         });
-        
+
         if (!isMounted) {
           unlisten();
         } else {
@@ -184,17 +198,19 @@ onMount(() => {
 
 $effect(() => {
   if (authStore.isAuthenticated && authStore.orgId) {
-    commands.academics.getCycles(authStore.orgId)
-      .then(list => {
+    commands.academics
+      .getCycles(authStore.orgId)
+      .then((list) => {
         cycles = list;
         if (!academicStore.selectedCycleId && list.length > 0) {
-          const activeCycle = list.find((c: any) => c.is_current === 1) || list[0];
+          const activeCycle =
+            list.find((c: any) => c.is_current === 1) || list[0];
           if (activeCycle) {
             academicStore.selectedCycleId = String(activeCycle.id);
           }
         }
       })
-      .catch(err => {
+      .catch((err) => {
         console.error("Failed to load cycles in TitleBar:", err);
       });
   } else {
@@ -204,9 +220,10 @@ $effect(() => {
 
 function selectCycle(cycleId: string) {
   academicStore.selectedCycleId = cycleId;
-  const active = cycles.find(c => String(c.id) === cycleId);
+  const active = cycles.find((c) => String(c.id) === cycleId);
   if (active) {
-    const name = active.name_ar && getLocale() === "ar" ? active.name_ar : active.name;
+    const name =
+      active.name_ar && getLocale() === "ar" ? active.name_ar : active.name;
     toast.success(m.titlebar_cycle_selected({ name }));
   }
 }

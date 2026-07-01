@@ -15,7 +15,12 @@ import {
   TableHeader,
   TableRow,
 } from "@orbis/ui-svelte";
-import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui-svelte/select";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui-svelte/select";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
@@ -84,7 +89,11 @@ async function loadCurrencies() {
     currencies = await commands.finance.getCurrencies(orgId);
   } catch (e) {
     console.error("Error loading currencies:", e);
-    toast.error(getLocale() === "ar" ? "فشل في تحميل العملات" : "Failed to load currencies");
+    toast.error(
+      getLocale() === "ar"
+        ? "فشل في تحميل العملات"
+        : "Failed to load currencies",
+    );
   } finally {
     isLoading = false;
   }
@@ -115,18 +124,28 @@ async function handleAddCurrency(e: Event) {
 
   const code = addCode.trim().toUpperCase();
   if (!code || code.length < 2) {
-    toast.error(getLocale() === "ar" ? "رمز العملة غير صالح" : "Invalid currency code");
+    toast.error(
+      getLocale() === "ar" ? "رمز العملة غير صالح" : "Invalid currency code",
+    );
     return;
   }
 
   // Check if code already exists
-  if (currencies.some(c => c.code === code)) {
-    toast.error(getLocale() === "ar" ? "هذه العملة مضافة بالفعل" : "This currency already exists");
+  if (currencies.some((c) => c.code === code)) {
+    toast.error(
+      getLocale() === "ar"
+        ? "هذه العملة مضافة بالفعل"
+        : "This currency already exists",
+    );
     return;
   }
 
   if (addExchangeRate <= 0) {
-    toast.error(getLocale() === "ar" ? "سعر الصرف يجب أن يكون أكبر من الصفر" : "Exchange rate must be greater than zero");
+    toast.error(
+      getLocale() === "ar"
+        ? "سعر الصرف يجب أن يكون أكبر من الصفر"
+        : "Exchange rate must be greater than zero",
+    );
     return;
   }
 
@@ -143,17 +162,25 @@ async function handleAddCurrency(e: Event) {
       exchange_rate: addExchangeRate,
       is_base: addIsBase ? 1 : 0,
       is_active: addIsActive ? 1 : 0,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     };
 
     await commands.finance.createCurrency(newCurrency);
-    toast.success(getLocale() === "ar" ? "تم إضافة العملة بنجاح" : "Currency added successfully");
+    toast.success(
+      getLocale() === "ar"
+        ? "تم إضافة العملة بنجاح"
+        : "Currency added successfully",
+    );
     showAddDialog = false;
     await loadCurrencies();
   } catch (e) {
     console.error("Error creating currency:", e);
     const errorMsg = e instanceof Error ? e.message : String(e);
-    toast.error(getLocale() === "ar" ? `خطأ أثناء الإضافة: ${errorMsg}` : `Error adding currency: ${errorMsg}`);
+    toast.error(
+      getLocale() === "ar"
+        ? `خطأ أثناء الإضافة: ${errorMsg}`
+        : `Error adding currency: ${errorMsg}`,
+    );
   } finally {
     isSubmitting = false;
   }
@@ -177,7 +204,11 @@ async function handleEditCurrency(e: Event) {
   if (isSubmitting) return;
 
   if (editExchangeRate <= 0) {
-    toast.error(getLocale() === "ar" ? "سعر الصرف يجب أن يكون أكبر من الصفر" : "Exchange rate must be greater than zero");
+    toast.error(
+      getLocale() === "ar"
+        ? "سعر الصرف يجب أن يكون أكبر من الصفر"
+        : "Exchange rate must be greater than zero",
+    );
     return;
   }
 
@@ -195,13 +226,21 @@ async function handleEditCurrency(e: Event) {
     };
 
     await commands.finance.updateCurrency(orgId, editCode, updates);
-    toast.success(getLocale() === "ar" ? "تم تحديث العملة بنجاح" : "Currency updated successfully");
+    toast.success(
+      getLocale() === "ar"
+        ? "تم تحديث العملة بنجاح"
+        : "Currency updated successfully",
+    );
     showEditDialog = false;
     await loadCurrencies();
   } catch (e) {
     console.error("Error updating currency:", e);
     const errorMsg = e instanceof Error ? e.message : String(e);
-    toast.error(getLocale() === "ar" ? `خطأ أثناء التعديل: ${errorMsg}` : `Error updating currency: ${errorMsg}`);
+    toast.error(
+      getLocale() === "ar"
+        ? `خطأ أثناء التعديل: ${errorMsg}`
+        : `Error updating currency: ${errorMsg}`,
+    );
   } finally {
     isSubmitting = false;
   }
@@ -209,7 +248,11 @@ async function handleEditCurrency(e: Event) {
 
 async function confirmDeleteCurrency(c: any) {
   if (c.is_base === 1) {
-    toast.error(getLocale() === "ar" ? "لا يمكن حذف العملة الأساسية للنظام" : "Cannot delete the base currency");
+    toast.error(
+      getLocale() === "ar"
+        ? "لا يمكن حذف العملة الأساسية للنظام"
+        : "Cannot delete the base currency",
+    );
     return;
   }
   currencyToDelete = c;
@@ -219,13 +262,21 @@ async function handleDeleteCurrency() {
   if (!currencyToDelete) return;
   try {
     await commands.finance.deleteCurrency(orgId, currencyToDelete.code);
-    toast.success(getLocale() === "ar" ? `تم حذف العملة (${currencyToDelete.code}) بنجاح` : `Currency (${currencyToDelete.code}) deleted successfully`);
+    toast.success(
+      getLocale() === "ar"
+        ? `تم حذف العملة (${currencyToDelete.code}) بنجاح`
+        : `Currency (${currencyToDelete.code}) deleted successfully`,
+    );
     currencyToDelete = null;
     await loadCurrencies();
   } catch (e) {
     console.error("Error deleting currency:", e);
     const errorMsg = e instanceof Error ? e.message : String(e);
-    toast.error(getLocale() === "ar" ? `فشل الحذف: ${errorMsg}` : `Failed to delete currency: ${errorMsg}`);
+    toast.error(
+      getLocale() === "ar"
+        ? `فشل الحذف: ${errorMsg}`
+        : `Failed to delete currency: ${errorMsg}`,
+    );
   }
 }
 
@@ -233,7 +284,7 @@ async function seedFinancials() {
   const confirmed = confirm(
     getLocale() === "ar"
       ? "هل أنت متأكد من رغبتك في تهيئة النظام المالي الافتراضي؟ سيتم إنشاء العملات (ريال، دولار، سعودي) وشجرة الحسابات المحاسبية الأساسية."
-      : "Are you sure you want to seed the default financial system? This will generate currencies (YER, USD, SAR) and the basic Chart of Accounts."
+      : "Are you sure you want to seed the default financial system? This will generate currencies (YER, USD, SAR) and the basic Chart of Accounts.",
   );
   if (!confirmed) return;
 
@@ -243,13 +294,17 @@ async function seedFinancials() {
     toast.success(
       getLocale() === "ar"
         ? "تم تهيئة النظام المالي وتنزيل شجرة الحسابات والعملات الافتراضية بنجاح!"
-        : "Financial system, default accounts, and currencies seeded successfully!"
+        : "Financial system, default accounts, and currencies seeded successfully!",
     );
     await loadCurrencies();
   } catch (e) {
     console.error("Error seeding financials:", e);
     const errorMsg = e instanceof Error ? e.message : String(e);
-    toast.error(getLocale() === "ar" ? `خطأ أثناء التهيئة: ${errorMsg}` : `Error seeding financials: ${errorMsg}`);
+    toast.error(
+      getLocale() === "ar"
+        ? `خطأ أثناء التهيئة: ${errorMsg}`
+        : `Error seeding financials: ${errorMsg}`,
+    );
   } finally {
     isSeeding = false;
   }
@@ -267,25 +322,37 @@ function cancelEditingRate() {
 
 async function saveRateValue(code: string) {
   if (editRateValue <= 0) {
-    toast.error(getLocale() === "ar" ? "سعر الصرف يجب أن يكون أكبر من الصفر" : "Exchange rate must be greater than zero");
+    toast.error(
+      getLocale() === "ar"
+        ? "سعر الصرف يجب أن يكون أكبر من الصفر"
+        : "Exchange rate must be greater than zero",
+    );
     return;
   }
   try {
     await commands.finance.updateCurrency(orgId, code, {
       exchange_rate: editRateValue,
     });
-    toast.success(getLocale() === "ar" ? "تم تحديث سعر الصرف بنجاح" : "Exchange rate updated successfully");
+    toast.success(
+      getLocale() === "ar"
+        ? "تم تحديث سعر الصرف بنجاح"
+        : "Exchange rate updated successfully",
+    );
     editingRateCode = null;
     await loadCurrencies();
   } catch (e) {
     console.error("Error updating exchange rate:", e);
     const errorMsg = e instanceof Error ? e.message : String(e);
-    toast.error(getLocale() === "ar" ? `خطأ: ${errorMsg}` : `Error: ${errorMsg}`);
+    toast.error(
+      getLocale() === "ar" ? `خطأ: ${errorMsg}` : `Error: ${errorMsg}`,
+    );
   }
 }
 
 // Find base currency representation
-let baseCurrencyCode = $derived(currencies.find(c => c.is_base === 1)?.code || "YER");
+let baseCurrencyCode = $derived(
+  currencies.find((c) => c.is_base === 1)?.code || "YER",
+);
 </script>
 
 <svelte:head>

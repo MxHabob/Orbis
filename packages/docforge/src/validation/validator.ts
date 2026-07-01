@@ -63,7 +63,10 @@ export function validateDocument(doc: TemplateDocument): ValidationResult {
 
 // ── Schema Validation ────────────────────────────────────────
 
-function validateSchema(doc: TemplateDocument, errors: ValidationIssue[]): void {
+function validateSchema(
+  doc: TemplateDocument,
+  errors: ValidationIssue[],
+): void {
   if (!doc.version) {
     errors.push({
       code: "MISSING_VERSION",
@@ -190,7 +193,10 @@ function validateExpressions(
 
 // ── Layout Validation ────────────────────────────────────────
 
-function validateLayout(doc: TemplateDocument, warnings: ValidationIssue[]): void {
+function validateLayout(
+  doc: TemplateDocument,
+  warnings: ValidationIssue[],
+): void {
   if (!doc.meta?.pageSetup) return;
 
   const { pageSetup } = doc.meta;
@@ -203,7 +209,16 @@ function validateLayout(doc: TemplateDocument, warnings: ValidationIssue[]): voi
 
   walkNodes(doc, (node) => {
     if ("props" in node) {
-      const position = (node.props as { position?: { x: number; y: number; width: number | string; height?: number | string } }).position;
+      const position = (
+        node.props as {
+          position?: {
+            x: number;
+            y: number;
+            width: number | string;
+            height?: number | string;
+          };
+        }
+      ).position;
       if (position && typeof position.width === "number") {
         if (position.x + position.width > pageWidth) {
           warnings.push({
@@ -222,7 +237,10 @@ function validateLayout(doc: TemplateDocument, warnings: ValidationIssue[]): voi
 
 // ── Print Readiness ──────────────────────────────────────────
 
-function validatePrintReadiness(doc: TemplateDocument, warnings: ValidationIssue[]): void {
+function validatePrintReadiness(
+  doc: TemplateDocument,
+  warnings: ValidationIssue[],
+): void {
   walkNodes(doc, (node) => {
     if (node.type === "Text" && "props" in node) {
       const fontSize = (node.props as { fontSize?: number }).fontSize;

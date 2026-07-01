@@ -13,17 +13,29 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@orbis/ui-svelte/dialog";
-import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui-svelte/select";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui-svelte/select";
 import { Progress } from "@orbis/ui-svelte/progress";
 import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
-import { FileText, Printer, Download, RefreshCw, AlertCircle, CheckCircle2 } from "lucide-svelte";
+import {
+  FileText,
+  Printer,
+  Download,
+  RefreshCw,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-svelte";
 
 // Component Props (Svelte 5 runes style)
 let {
   open = $bindable(false),
   entityType,
-  entityIds = []
+  entityIds = [],
 }: {
   open: boolean;
   entityType: string;
@@ -52,7 +64,7 @@ async function loadTemplates() {
   try {
     const list = await commands.documentTemplates.getTemplates(orgId || "", {
       entity_type: entityType,
-      status: "published" // Only allow printing with published templates
+      status: "published", // Only allow printing with published templates
     });
     templates = list || [];
     if (templates.length > 0) {
@@ -93,7 +105,11 @@ async function generatePreview() {
   pdfUrl = null;
   try {
     const firstId = entityIds[0];
-    const pdfBytes = await commands.docforge.renderDocument(orgId || "", selectedTemplateId, firstId);
+    const pdfBytes = await commands.docforge.renderDocument(
+      orgId || "",
+      selectedTemplateId,
+      firstId,
+    );
     if (pdfBytes && pdfBytes.length > 0) {
       const base64 = uint8ArrayToBase64(pdfBytes);
       pdfUrl = `data:application/pdf;base64,${base64}`;
@@ -122,14 +138,18 @@ async function handlePrintAction() {
     isBatchProcessing = true;
     batchProgress = 0;
     batchStatusText = `جاري بدء معالجة ${entityIds.length} مستند...`;
-    
+
     // Process one by one (simplified front-end loop, back-end orchestrator in Phase 5)
     for (let i = 0; i < entityIds.length; i++) {
       const entityId = entityIds[i];
       batchStatusText = `جاري معالجة السجل ${i + 1} من ${entityIds.length}...`;
       try {
         // Run renderer
-        await commands.docforge.renderDocument(orgId || "", selectedTemplateId, entityId);
+        await commands.docforge.renderDocument(
+          orgId || "",
+          selectedTemplateId,
+          entityId,
+        );
       } catch (e) {
         console.error(`Error rendering ${entityId}`, e);
       }
@@ -137,10 +157,10 @@ async function handlePrintAction() {
       // Small pause to visual progress
       await new Promise((r) => setTimeout(r, 200));
     }
-    
+
     batchStatusText = "تم إكمال توليد جميع المستندات بنجاح!";
     toast.success(`تم إنتاج ${entityIds.length} مستند بنجاح`);
-    
+
     // Reset after some time
     setTimeout(() => {
       isBatchProcessing = false;

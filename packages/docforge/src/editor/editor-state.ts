@@ -6,7 +6,13 @@
 
 import type { TemplateDocument } from "../model/document";
 import type { TemplateNode } from "../model/nodes";
-import { findNode, updateNodeProps as updateOp, addNode as addOp, removeNode as removeOp, moveNode as moveOp } from "../operations/node-ops";
+import {
+  findNode,
+  updateNodeProps as updateOp,
+  addNode as addOp,
+  removeNode as removeOp,
+  moveNode as moveOp,
+} from "../operations/node-ops";
 
 // ── History Manager ──────────────────────────────────────────
 
@@ -84,7 +90,12 @@ export class EditorState {
   }
 
   /** History information */
-  getHistory(): { canUndo: boolean; canRedo: boolean; undoCount: number; redoCount: number } {
+  getHistory(): {
+    canUndo: boolean;
+    canRedo: boolean;
+    undoCount: number;
+    redoCount: number;
+  } {
     return {
       canUndo: this._undoStack.length > 0,
       canRedo: this._redoStack.length > 0,
@@ -177,7 +188,10 @@ export class EditorState {
   }
 
   /** Update a variable definition */
-  updateVariable(name: string, definition: TemplateDocument["variables"][string]): void {
+  updateVariable(
+    name: string,
+    definition: TemplateDocument["variables"][string],
+  ): void {
     this._pushHistory("Update variable");
     this._document = {
       ...this._document,
@@ -256,7 +270,9 @@ export class EditorState {
   onChange(listener: ChangeListener): () => void {
     this._changeListeners.push(listener);
     return () => {
-      this._changeListeners = this._changeListeners.filter((l) => l !== listener);
+      this._changeListeners = this._changeListeners.filter(
+        (l) => l !== listener,
+      );
     };
   }
 
@@ -264,7 +280,9 @@ export class EditorState {
   onSelectionChange(listener: SelectionListener): () => void {
     this._selectionListeners.push(listener);
     return () => {
-      this._selectionListeners = this._selectionListeners.filter((l) => l !== listener);
+      this._selectionListeners = this._selectionListeners.filter(
+        (l) => l !== listener,
+      );
     };
   }
 

@@ -1,1 +1,6 @@
-export { serializeDocument, deserializeDocument, diffDocuments, type DocumentDiff } from "./serializer";
+export {
+  serializeDocument,
+  deserializeDocument,
+  diffDocuments,
+  type DocumentDiff,
+} from "./serializer";

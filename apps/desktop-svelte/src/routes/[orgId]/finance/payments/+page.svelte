@@ -59,7 +59,7 @@ function toggleSelectAllPayments() {
   if (selectedPaymentIds.size === visible.length) {
     selectedPaymentIds = new Set();
   } else {
-    selectedPaymentIds = new Set(visible.map(p => String(p.id)));
+    selectedPaymentIds = new Set(visible.map((p) => String(p.id)));
   }
 }
 let treasuries = $state<any[]>([]);
@@ -68,7 +68,7 @@ let fees = $state<any[]>([]);
 let currencies = $state<{ code: string; name: string }[]>([
   { code: "YER", name: "ريال يمني" },
   { code: "USD", name: "دولار أمريكي" },
-  { code: "SAR", name: "ريال سعودي" }
+  { code: "SAR", name: "ريال سعودي" },
 ]);
 let isLoading = $state(true);
 let isLoadingFees = $state(false);
@@ -84,7 +84,9 @@ let amount = $state<number | null>(null);
 let currency = $state("YER");
 let selectedEnrollmentId = $state("");
 let selectedFeeIds = $state<string[]>([]);
-let selectedFeesInfo = $state<{ id: string; amount: number; notes: string }[]>([]);
+let selectedFeesInfo = $state<{ id: string; amount: number; notes: string }[]>(
+  [],
+);
 let checkInfo = $state("");
 let notes = $state("");
 
@@ -98,12 +100,12 @@ let endDateFilter = $state("");
 
 // Dialog and Printing states
 let showQrModal = $state(false);
-let printMode = $state<'list' | 'voucher'>('list');
+let printMode = $state<"list" | "voucher">("list");
 
 const paymentMethods = [
   { value: "Cash", label: "نقداً" },
   { value: "Check", label: "شيك" },
-  { value: "Transfer", label: "حوالة بنكية" }
+  { value: "Transfer", label: "حوالة بنكية" },
 ];
 
 async function loadData() {
@@ -115,23 +117,24 @@ async function loadData() {
       commands.finance.getTreasuries(data.orgId),
       commands.enrollments.getAll(data.orgId),
     ]);
-    
+
     payments = paymentsList.map((p) => ({
       ...p,
-      reference_number: p.reference_number || `005${Math.floor(1000 + Math.random() * 9000)}`,
+      reference_number:
+        p.reference_number || `005${Math.floor(1000 + Math.random() * 9000)}`,
       prints_count: p.prints_count || 0,
       user: p.user || "U78",
       branch: p.branch || "المركز الرئيسي",
       notes: p.notes || "",
     }));
-    
+
     treasuries = treasuriesList;
     students = studentsList;
-    
+
     if (treasuries.length > 0 && !treasuryId) {
       treasuryId = treasuries[0].id;
     }
-    
+
     await loadCurrencies();
   } catch (e) {
     console.error("Error loading data:", e);
@@ -145,9 +148,9 @@ async function loadCurrencies() {
   try {
     const list = await commands.finance.getCurrencies(data.orgId);
     if (list && list.length > 0) {
-      currencies = list.map(c => ({
+      currencies = list.map((c) => ({
         code: c.code,
-        name: c.name_ar || c.name || c.code
+        name: c.name_ar || c.name || c.code,
       }));
     }
   } catch (e) {
@@ -197,67 +200,81 @@ $effect(() => {
 });
 
 function toggleFeeSelection(feeId: string, balance: number) {
-  const fee = fees.find(f => String(f.id) === feeId);
+  const fee = fees.find((f) => String(f.id) === feeId);
   if (!fee) return;
-  
+
   if (selectedFeeIds.includes(feeId)) {
-    selectedFeeIds = selectedFeeIds.filter(id => id !== feeId);
-    selectedFeesInfo = selectedFeesInfo.filter(info => info.id !== feeId);
+    selectedFeeIds = selectedFeeIds.filter((id) => id !== feeId);
+    selectedFeesInfo = selectedFeesInfo.filter((info) => info.id !== feeId);
   } else {
     selectedFeeIds = [...selectedFeeIds, feeId];
-    selectedFeesInfo = [...selectedFeesInfo, {
-      id: feeId,
-      amount: balance,
-      notes: fee.notes || 'رسوم دراسية'
-    }];
+    selectedFeesInfo = [
+      ...selectedFeesInfo,
+      {
+        id: feeId,
+        amount: balance,
+        notes: fee.notes || "رسوم دراسية",
+      },
+    ];
   }
-  
+
   const sum = selectedFeesInfo.reduce((acc, curr) => acc + curr.amount, 0);
   amount = sum;
-  
+
   if (selectedFeesInfo.length > 0) {
-    notes = `سداد رسوم الطالب ${getStudentName(selectedEnrollmentId)}: ` + selectedFeesInfo.map(f => f.notes).join("، ");
+    notes =
+      `سداد رسوم الطالب ${getStudentName(selectedEnrollmentId)}: ` +
+      selectedFeesInfo.map((f) => f.notes).join("، ");
   } else {
     notes = "";
   }
 }
 
 function getStudentName(enrollId: string): string {
-  const s = students.find(student => String(student.id) === enrollId);
+  const s = students.find((student) => String(student.id) === enrollId);
   return s ? s.full_name : "";
 }
 
 function selectRow(p: any) {
   selectedPayment = p;
   receiptNumber = p.receipt_number || p.id.slice(0, 8);
-  paymentDate = p.payment_date ? p.payment_date.split("T")[0] : p.created_at ? p.created_at.split("T")[0] : "";
-  treasuryId = p.treasury_id || (treasuries.find(t => t.name === p.treasury_name)?.id) || "";
+  paymentDate = p.payment_date
+    ? p.payment_date.split("T")[0]
+    : p.created_at
+      ? p.created_at.split("T")[0]
+      : "";
+  treasuryId =
+    p.treasury_id ||
+    treasuries.find((t) => t.name === p.treasury_name)?.id ||
+    "";
   paymentMethod = p.payment_method || "Cash";
   amount = p.amount;
   currency = p.currency || "YER";
-  
-  const student = students.find(s => s.full_name === p.student_name);
+
+  const student = students.find((s) => s.full_name === p.student_name);
   if (student) {
     selectedEnrollmentId = String(student.id);
   } else {
     selectedEnrollmentId = p.enrollment_id || "";
   }
-  
+
   if (p.fee_id) {
     selectedFeeIds = [String(p.fee_id)];
-    selectedFeesInfo = [{
-      id: String(p.fee_id),
-      amount: p.amount,
-      notes: p.notes || 'رسوم دراسية'
-    }];
+    selectedFeesInfo = [
+      {
+        id: String(p.fee_id),
+        amount: p.amount,
+        notes: p.notes || "رسوم دراسية",
+      },
+    ];
   } else {
     selectedFeeIds = [];
     selectedFeesInfo = [];
   }
-  
+
   checkInfo = p.check_info || "";
   notes = p.notes || "";
-  
+
   toast.info(`تم اختيار السند رقم ${receiptNumber}`);
 }
 
@@ -306,21 +323,33 @@ async function handleAdd() {
       const request = {
         fee_id: feeInfo.id,
         amount: Number(feeInfo.amount),
-        method: paymentMethod === "Cash" ? "cash" : paymentMethod === "Check" ? "bank_transfer" : "card",
+        method:
+          paymentMethod === "Cash"
+            ? "cash"
+            : paymentMethod === "Check"
+              ? "bank_transfer"
+              : "card",
         reference: newRefNum,
-        notes: notes || `سداد رسوم الطالب ${getStudentName(selectedEnrollmentId)} - ${feeInfo.notes}`,
+        notes:
+          notes ||
+          `سداد رسوم الطالب ${getStudentName(selectedEnrollmentId)} - ${feeInfo.notes}`,
         treasury_id: treasuryId,
         currency: currency.trim().toUpperCase(),
       };
       await commands.finance.recordPayment(data.orgId, createdBy, request);
     }
-    
-    toast.success(`تم تسجيل ${selectedFeesInfo.length} رسوم بنجاح بسند رقم ${randomRef}`);
+
+    toast.success(
+      `تم تسجيل ${selectedFeesInfo.length} رسوم بنجاح بسند رقم ${randomRef}`,
+    );
     await loadData();
     clearForm();
   } catch (e) {
-    console.error("Backend recordPayment failed, falling back to local simulation:", e);
-    
+    console.error(
+      "Backend recordPayment failed, falling back to local simulation:",
+      e,
+    );
+
     const newPayment = {
       id: Math.random().toString(36).substring(2, 9),
       receipt_number: randomRef,
@@ -330,15 +359,19 @@ async function handleAdd() {
       currency,
       payment_method: paymentMethod,
       treasury_id: treasuryId,
-      treasury_name: treasuries.find(t => t.id === treasuryId)?.name || "صندوق التحصيلات",
+      treasury_name:
+        treasuries.find((t) => t.id === treasuryId)?.name || "صندوق التحصيلات",
       student_name: getStudentName(selectedEnrollmentId),
-      student_number: students.find(s => String(s.id) === selectedEnrollmentId)?.student_number || "",
+      student_number:
+        students.find((s) => String(s.id) === selectedEnrollmentId)
+          ?.student_number || "",
       check_info: checkInfo,
-      notes: notes || `سداد رسوم الطالب ${getStudentName(selectedEnrollmentId)}`,
+      notes:
+        notes || `سداد رسوم الطالب ${getStudentName(selectedEnrollmentId)}`,
       reference_number: newRefNum,
       prints_count: 0,
       user: "U78",
-      branch: "المركز الرئيسي"
+      branch: "المركز الرئيسي",
     };
 
     payments = [newPayment, ...payments];
@@ -372,7 +405,7 @@ function handlePrintVoucher() {
     return;
   }
   printMode = "voucher";
-  payments = payments.map(p => {
+  payments = payments.map((p) => {
     if (p.id === selectedPayment.id) {
       const updatedCount = (p.prints_count || 0) + 1;
       selectedPayment.prints_count = updatedCount;
@@ -380,7 +413,7 @@ function handlePrintVoucher() {
     }
     return p;
   });
-  
+
   setTimeout(() => {
     window.print();
   }, 50);
@@ -389,7 +422,12 @@ function handlePrintVoucher() {
 function getMethodLabel(methodStr: string) {
   const methodLower = String(methodStr).toLowerCase();
   if (methodLower === "cash") return "نقداً";
-  if (methodLower === "check" || methodLower === "bank_transfer" || methodLower === "bank transfer") return "شيك / تحويل";
+  if (
+    methodLower === "check" ||
+    methodLower === "bank_transfer" ||
+    methodLower === "bank transfer"
+  )
+    return "شيك / تحويل";
   return methodStr;
 }
 
@@ -414,7 +452,8 @@ const filteredPayments = $derived.by(() => {
       const stName = String(p.student_name || "").toLowerCase();
       const receiptNum = String(p.receipt_number || p.id || "").toLowerCase();
       const noteStr = String(p.notes || "").toLowerCase();
-      matchesSearch = stName.includes(q) || receiptNum.includes(q) || noteStr.includes(q);
+      matchesSearch =
+        stName.includes(q) || receiptNum.includes(q) || noteStr.includes(q);
     }
 
     let matchesMethod = true;
@@ -425,7 +464,11 @@ const filteredPayments = $derived.by(() => {
 
     let dateMatch = true;
     if (filterByDate && startDateFilter && endDateFilter) {
-      const entryDate = p.payment_date ? p.payment_date.split("T")[0] : p.created_at ? p.created_at.split("T")[0] : "";
+      const entryDate = p.payment_date
+        ? p.payment_date.split("T")[0]
+        : p.created_at
+          ? p.created_at.split("T")[0]
+          : "";
       dateMatch = entryDate >= startDateFilter && entryDate <= endDateFilter;
     }
 

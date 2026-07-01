@@ -1229,6 +1229,8 @@
   "whats_new_footer": "Power by Mulverse Co.",
 
   "nav_exams": "Examinations",
+  "exams_layout_panel_title": "Examinations",
+  "exams_layout_panel_desc": "Sessions & Seating",
   "breadcrumb_exams": "Examinations",
 
   "exams_layout_nav_overview": "Overview",
@@ -1508,4 +1510,3 @@
   "titlebar_cycle_selected": "Cycle selected: {name}",
   "titlebar_timer_minutes": "{minutes}m"
 }
-

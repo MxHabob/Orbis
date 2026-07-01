@@ -388,16 +388,21 @@ let isDownloadingForm = $state(false);
 async function handleDownloadRegistrationForm() {
   isDownloadingForm = true;
   try {
-    const templateRecord = await commands.documentTemplates.getTemplate(orgId, "t5-student-registration-form");
+    const templateRecord = await commands.documentTemplates.getTemplate(
+      orgId,
+      "t5-student-registration-form",
+    );
     if (!templateRecord) {
-      toast.error("Template 't5-student-registration-form' not found in database");
+      toast.error(
+        "Template 't5-student-registration-form' not found in database",
+      );
       return;
     }
     const documentModel = JSON.parse(templateRecord.document_json);
 
     const pdfBytes = await commands.docforge.previewDocumentTemplate(
       JSON.stringify(documentModel),
-      JSON.stringify({ orgName })
+      JSON.stringify({ orgName }),
     );
 
     if (pdfBytes && pdfBytes.length > 0) {
@@ -415,7 +420,7 @@ async function handleDownloadRegistrationForm() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       toast.success("تم توليد وتحميل استمارة التسجيل بنجاح");
     } else {
       toast.error("Failed to generate PDF document");

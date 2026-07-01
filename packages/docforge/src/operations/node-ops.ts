@@ -142,7 +142,11 @@ const NODE_DEFAULTS: Record<string, () => TemplateNode> = {
   Footer: () => ({
     type: "Footer",
     id: generateNodeId("footer"),
-    props: { height: 15, showPageNumber: true, pageNumberFormat: "{{page}}/{{total}}" },
+    props: {
+      height: 15,
+      showPageNumber: true,
+      pageNumberFormat: "{{page}}/{{total}}",
+    },
     children: [],
   }),
   Watermark: () => ({
@@ -244,10 +248,7 @@ function findNodeInTree(
  * Find the path of parent IDs from root to the given node.
  * Returns an array of node IDs, or empty array if not found.
  */
-export function findNodePath(
-  doc: TemplateDocument,
-  nodeId: string,
-): string[] {
+export function findNodePath(doc: TemplateDocument, nodeId: string): string[] {
   const path: string[] = [];
   if (findNodePathRecursive(doc.root, nodeId, path)) {
     return path;
@@ -326,7 +327,10 @@ export function updateNodeProps(
     ...doc,
     root: updateNodeInTree(doc.root, nodeId, (node) => {
       if ("props" in node && node.props) {
-        return { ...node, props: { ...(node.props as object), ...props } } as TemplateNode;
+        return {
+          ...node,
+          props: { ...(node.props as object), ...props },
+        } as TemplateNode;
       }
       return { ...node, ...props } as TemplateNode;
     }) as PageNode,
@@ -420,7 +424,11 @@ function updateNodeInTree(
     }
 
     if (node.type === "Conditional") {
-      return { ...node, children: updatedChildren, elseChildren: updatedElse } as TemplateNode;
+      return {
+        ...node,
+        children: updatedChildren,
+        elseChildren: updatedElse,
+      } as TemplateNode;
     }
     return { ...node, children: updatedChildren } as TemplateNode;
   }
@@ -445,7 +453,11 @@ function removeNodeFromTree(
     }
 
     if (node.type === "Conditional") {
-      return { ...node, children: filteredChildren, elseChildren: filteredElse } as TemplateNode;
+      return {
+        ...node,
+        children: filteredChildren,
+        elseChildren: filteredElse,
+      } as TemplateNode;
     }
     return { ...node, children: filteredChildren } as TemplateNode;
   }

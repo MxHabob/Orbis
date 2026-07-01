@@ -53,7 +53,9 @@ onMount(() => {
 });
 
 // Group cycles into hierarchical Year -> Term
-let years = $derived(cycles.filter((c) => c.parent_id === null || c.parent_id === undefined));
+let years = $derived(
+  cycles.filter((c) => c.parent_id === null || c.parent_id === undefined),
+);
 
 function getTermsForYear(yearId: string) {
   return cycles.filter((c) => c.parent_id === yearId);

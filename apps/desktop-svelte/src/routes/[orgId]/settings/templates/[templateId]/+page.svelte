@@ -9,7 +9,12 @@ import { Label } from "@orbis/ui-svelte/label";
 import { Textarea } from "@orbis/ui-svelte/textarea";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Card, CardContent } from "@orbis/ui-svelte/card";
-import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui-svelte/select";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
@@ -28,7 +33,7 @@ import {
   Braces,
   Sparkles,
   Info,
-  FolderOpen
+  FolderOpen,
 } from "lucide-svelte";
 
 // Router parameters
@@ -41,7 +46,9 @@ let documentModel = $state<any>(null);
 let schemas = $state<Record<string, any>>({});
 let selectedNodeId = $state<string | null>(null);
 let selectedNode = $state<any>(null);
-let testContext = $state<string>("{\n  \"name\": \"عبد الرحمن\",\n  \"std_id\": \"99581-2026\"\n}");
+let testContext = $state<string>(
+  '{\n  "name": "عبد الرحمن",\n  "std_id": "99581-2026"\n}',
+);
 let previewPdfUrl = $state<string | null>(null);
 let isPreviewLoading = $state(false);
 let isSaving = $state(false);
@@ -51,46 +58,61 @@ let variablesSchema = $derived(schemas[templateRecord?.entity_type] || {});
 async function initEditor() {
   try {
     // 1. Fetch template record
-    templateRecord = await commands.documentTemplates.getTemplate(orgId || "", templateId || "");
-    
+    templateRecord = await commands.documentTemplates.getTemplate(
+      orgId || "",
+      templateId || "",
+    );
+
     // 2. Parse inner document model
     documentModel = JSON.parse(templateRecord.document_json);
-    
+
     // 3. Fetch variables schemas
     const schemasResponse = await commands.docforge.getDatasourceSchemas();
     schemas = schemasResponse || {};
 
     // 4. Setup initial test context mock based on entity type
     if (templateRecord.entity_type === "payment") {
-      testContext = JSON.stringify({
-        amount: 2500.0,
-        currency: "SAR",
-        receiptNumber: "R-77401",
-        payerName: "خالد الحربي",
-        notes: "سداد الرسوم الدراسية للفصل الأول",
-        paidAt: "2026-06-29"
-      }, null, 2);
+      testContext = JSON.stringify(
+        {
+          amount: 2500.0,
+          currency: "SAR",
+          receiptNumber: "R-77401",
+          payerName: "خالد الحربي",
+          notes: "سداد الرسوم الدراسية للفصل الأول",
+          paidAt: "2026-06-29",
+        },
+        null,
+        2,
+      );
     } else if (templateRecord.entity_type === "exam") {
-      testContext = JSON.stringify({
-        seatingNumber: "A-402",
-        sequenceNumber: 124,
-        level: "الثالث",
-        studentNameAr: "ياسر الهذلي",
-        session: {
-          name: "امتحانات نهاية العام",
-          term: "الفصل الثاني",
-          academicYear: "2025/2026"
-        }
-      }, null, 2);
+      testContext = JSON.stringify(
+        {
+          seatingNumber: "A-402",
+          sequenceNumber: 124,
+          level: "الثالث",
+          studentNameAr: "ياسر الهذلي",
+          session: {
+            name: "امتحانات نهاية العام",
+            term: "الفصل الثاني",
+            academicYear: "2025/2026",
+          },
+        },
+        null,
+        2,
+      );
     } else if (templateRecord.entity_type === "user") {
-      testContext = JSON.stringify({
-        fullName: "د. عبد الله الهاشمي",
-        email: "a.hashemi@orbis.edu",
-        phone: "+966501234567",
-        nationality: "سعودي",
-        nationalId: "1029384756",
-        primaryRole: "عضو هيئة تدريس"
-      }, null, 2);
+      testContext = JSON.stringify(
+        {
+          fullName: "د. عبد الله الهاشمي",
+          email: "a.hashemi@orbis.edu",
+          phone: "+966501234567",
+          nationality: "سعودي",
+          nationalId: "1029384756",
+          primaryRole: "عضو هيئة تدريس",
+        },
+        null,
+        2,
+      );
     }
 
     // 5. Generate first live preview
@@ -118,10 +140,13 @@ async function generatePreview() {
   try {
     // Stringify document model with state updates
     const templateJson = JSON.stringify(documentModel);
-    
+
     // Resolve PDF bytes
-    const pdfBytes = await commands.docforge.previewDocumentTemplate(templateJson, testContext);
-    
+    const pdfBytes = await commands.docforge.previewDocumentTemplate(
+      templateJson,
+      testContext,
+    );
+
     if (pdfBytes && pdfBytes.length > 0) {
       const base64 = uint8ArrayToBase64(pdfBytes);
       previewPdfUrl = `data:application/pdf;base64,${base64}`;
@@ -154,7 +179,12 @@ async function saveTemplate() {
     };
 
     const userId = "current-user";
-    await commands.documentTemplates.updateTemplate(orgId || "", templateId || "", userId || "", updateRequest);
+    await commands.documentTemplates.updateTemplate(
+      orgId || "",
+      templateId || "",
+      userId || "",
+      updateRequest,
+    );
     toast.success("قالب المستندات تم حفظه بنجاح");
   } catch (e: unknown) {
     const msg = (e as any)?.message || "Failed to save template";
@@ -193,18 +223,20 @@ function updateNodeProp(propName: string, value: any, nestedPath?: string) {
   } else {
     selectedNode[propName] = value;
   }
-  
+
   // Force Svelte 5 state reactivity update
   documentModel = { ...documentModel };
-  
+
   // Auto regenerate live preview
   generatePreview();
 }
 
 // Add a child element to the selected Frame/Page node
-function addChildNode(type: "Text" | "Spacer" | "Separator" | "Barcode" | "QRCode") {
+function addChildNode(
+  type: "Text" | "Spacer" | "Separator" | "Barcode" | "QRCode",
+) {
   if (!selectedNode) return;
-  
+
   const newId = `${type.toLowerCase()}-${Date.now()}`;
   let newNode: any = { type, id: newId };
 
@@ -214,36 +246,36 @@ function addChildNode(type: "Text" | "Spacer" | "Separator" | "Barcode" | "QRCod
       fontSize: 14,
       fontFamily: "Tahoma",
       textAlign: "right",
-      direction: "rtl"
+      direction: "rtl",
     };
   } else if (type === "Spacer") {
     newNode.props = {
-      height: 10
+      height: 10,
     };
   } else if (type === "Separator") {
     newNode.props = {
       direction: "horizontal",
       thickness: 1,
-      color: "#cccccc"
+      color: "#cccccc",
     };
   } else if (type === "Barcode") {
     newNode.props = {
       data: "{{studentNumber}}",
       format: "Code128",
       height: 12,
-      showText: true
+      showText: true,
     };
   } else if (type === "QRCode") {
     newNode.props = {
       data: "{{id}}",
       size: 25,
-      errorCorrection: "Medium"
+      errorCorrection: "Medium",
     };
   }
 
   if (!selectedNode.children) selectedNode.children = [];
   selectedNode.children.push(newNode);
-  
+
   documentModel = { ...documentModel };
   selectNode(newId);
   generatePreview();

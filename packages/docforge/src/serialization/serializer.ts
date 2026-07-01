@@ -10,7 +10,10 @@ import { DOCUMENT_SCHEMA_VERSION } from "../model/document";
  * Serialize a TemplateDocument to a JSON string.
  * Produces compact output by default, or pretty-printed if requested.
  */
-export function serializeDocument(doc: TemplateDocument, pretty = false): string {
+export function serializeDocument(
+  doc: TemplateDocument,
+  pretty = false,
+): string {
   return pretty ? JSON.stringify(doc, null, 2) : JSON.stringify(doc);
 }
 
@@ -101,7 +104,12 @@ function diffObjects(
     return;
   }
 
-  if (typeof a === "object" && a !== null && typeof b === "object" && b !== null) {
+  if (
+    typeof a === "object" &&
+    a !== null &&
+    typeof b === "object" &&
+    b !== null
+  ) {
     const aObj = a as Record<string, unknown>;
     const bObj = b as Record<string, unknown>;
     const allKeys = new Set([...Object.keys(aObj), ...Object.keys(bObj)]);

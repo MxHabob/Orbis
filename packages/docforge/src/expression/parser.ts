@@ -5,10 +5,7 @@
 
 // ── Token Types ──────────────────────────────────────────────
 
-export type Token =
-  | LiteralToken
-  | VariableToken
-  | ConditionalToken;
+export type Token = LiteralToken | VariableToken | ConditionalToken;
 
 export interface LiteralToken {
   type: "literal";
@@ -110,7 +107,9 @@ function parseVariableExpression(expr: string): VariableToken {
     } else {
       const name = fmtStr.substring(0, colonIdx).trim();
       const argsStr = fmtStr.substring(colonIdx + 1);
-      const args = argsStr.split(":").map((a) => a.trim().replace(/^['"]|['"]$/g, ""));
+      const args = argsStr
+        .split(":")
+        .map((a) => a.trim().replace(/^['"]|['"]$/g, ""));
       formatters.push({ name, args });
     }
   }
@@ -122,9 +121,11 @@ function parseVariableExpression(expr: string): VariableToken {
  * Parse the body of a conditional block.
  * Handles nested conditionals and {{#elseif}}/{{#else}}.
  */
-function parseConditionalBody(
-  input: string,
-): { thenBranch: string; elseBranch: string | null; rest: string } {
+function parseConditionalBody(input: string): {
+  thenBranch: string;
+  elseBranch: string | null;
+  rest: string;
+} {
   let depth = 1;
   let i = 0;
   let thenBranch = "";
@@ -228,7 +229,15 @@ export function extractVariableRefs(template: string): string[] {
 /** Extract variable references from a condition expression */
 function extractConditionVars(condition: string): string[] {
   // Match word.path patterns that aren't keywords or numbers
-  const keywords = new Set(["true", "false", "null", "undefined", "and", "or", "not"]);
+  const keywords = new Set([
+    "true",
+    "false",
+    "null",
+    "undefined",
+    "and",
+    "or",
+    "not",
+  ]);
   const matches = condition.match(/[a-zA-Z_]\w*(?:\.\w+)*/g) ?? [];
   return matches.filter(
     (m) => !keywords.has(m) && !m.startsWith("$") && !/^\d/.test(m),

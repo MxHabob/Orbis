@@ -49,7 +49,12 @@ export type {
   WatermarkNode,
 } from "./model";
 
-export { DOCUMENT_SCHEMA_VERSION, isContainerNode, isContentNode, hasPosition } from "./model";
+export {
+  DOCUMENT_SCHEMA_VERSION,
+  isContainerNode,
+  isContentNode,
+  hasPosition,
+} from "./model";
 
 // ── Operations ───────────────────────────────────────────────
 export {
@@ -80,12 +85,24 @@ export {
 export type { DataContext, Token, FormatterFn } from "./expression";
 
 // ── Serialization ────────────────────────────────────────────
-export { serializeDocument, deserializeDocument, diffDocuments } from "./serialization";
+export {
+  serializeDocument,
+  deserializeDocument,
+  diffDocuments,
+} from "./serialization";
 export type { DocumentDiff } from "./serialization";
 
 // ── Data Binding ─────────────────────────────────────────────
 export { createFullContext } from "./data";
-export type { DataSchema, DataFieldSchema, DataResolver, DataFilter, FilterCondition, SystemVars, OrgVars } from "./data";
+export type {
+  DataSchema,
+  DataFieldSchema,
+  DataResolver,
+  DataFilter,
+  FilterCondition,
+  SystemVars,
+  OrgVars,
+} from "./data";
 
 // ── Editor State ─────────────────────────────────────────────
 export { EditorState } from "./editor";

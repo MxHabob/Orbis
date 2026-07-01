@@ -4,131 +4,131 @@ Pattern A: DetailPageHeader + MainViewport (Avatar sidebar + SecondaryMenu + con
 Decomposed from the original 699-line monolith into a layout + 4 sub-pages.
 -->
 <script lang="ts">
-  import { page } from "$app/state";
-  import { onMount } from "svelte";
-  import { goto } from "$app/navigation";
-  import { commands } from "$lib/services/ipc";
-  import type { User } from "$lib/services/ipc";
-  import { Button } from "@orbis/ui-svelte/button";
-  import { Badge } from "@orbis/ui-svelte/badge";
-  import { Skeleton } from "@orbis/ui-svelte/skeleton";
-  import {
-    Dialog,
-    DialogContent,
-    DialogTitle,
-    DialogDescription,
-    DialogHeader,
-    DialogFooter,
-  } from "@orbis/ui-svelte/dialog";
-  import { Input } from "@orbis/ui-svelte/input";
-  import { Label } from "@orbis/ui-svelte/label";
-  import { toast } from "svelte-sonner";
-  import { Trash2 } from "lucide-svelte";
-  import DetailPageHeader from "$lib/components/layout/DetailPageHeader.svelte";
-  import SecondaryMenu from "$lib/components/layout/SecondaryMenu.svelte";
-  import MainViewport from "$lib/components/layout/MainViewport.svelte";
-  import AvatarUpload from "$lib/components/shared/avatar-upload.svelte";
-  import type { Snippet } from "svelte";
-  import * as m from "$lib/paraglide/messages";
-  import { getLocale, localizeHref } from "$lib/paraglide/runtime";
+import { page } from "$app/state";
+import { onMount } from "svelte";
+import { goto } from "$app/navigation";
+import { commands } from "$lib/services/ipc";
+import type { User } from "$lib/services/ipc";
+import { Button } from "@orbis/ui-svelte/button";
+import { Badge } from "@orbis/ui-svelte/badge";
+import { Skeleton } from "@orbis/ui-svelte/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+  DialogHeader,
+  DialogFooter,
+} from "@orbis/ui-svelte/dialog";
+import { Input } from "@orbis/ui-svelte/input";
+import { Label } from "@orbis/ui-svelte/label";
+import { toast } from "svelte-sonner";
+import { Trash2 } from "lucide-svelte";
+import DetailPageHeader from "$lib/components/layout/DetailPageHeader.svelte";
+import SecondaryMenu from "$lib/components/layout/SecondaryMenu.svelte";
+import MainViewport from "$lib/components/layout/MainViewport.svelte";
+import AvatarUpload from "$lib/components/shared/avatar-upload.svelte";
+import type { Snippet } from "svelte";
+import * as m from "$lib/paraglide/messages";
+import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 
-  let { children }: { children: Snippet } = $props();
+let { children }: { children: Snippet } = $props();
 
-  const orgId = $derived(page.params.orgId);
-  const userId = $derived(page.params.userId);
+const orgId = $derived(page.params.orgId);
+const userId = $derived(page.params.userId);
 
-  // Shared user state
-  let user = $state<User | null>(null);
-  let isLoading = $state(true);
-  let fullName = $state("");
-  let email = $state("");
-  let role = $state("teacher");
-  let isActiveState = $state(true);
-  let avatarUrl = $state<string | null>(null);
+// Shared user state
+let user = $state<User | null>(null);
+let isLoading = $state(true);
+let fullName = $state("");
+let email = $state("");
+let role = $state("teacher");
+let isActiveState = $state(true);
+let avatarUrl = $state<string | null>(null);
 
-  // Reset password modal
-  let showResetModal = $state(false);
-  let newPassword = $state("");
-  let confirmPassword = $state("");
-  let isResettingPassword = $state(false);
+// Reset password modal
+let showResetModal = $state(false);
+let newPassword = $state("");
+let confirmPassword = $state("");
+let isResettingPassword = $state(false);
 
-  async function loadUser() {
-    if (!userId) return;
-    isLoading = true;
-    try {
-      const fetched = await commands.users.getUser(userId);
-      user = fetched;
-      fullName = fetched.full_name || "";
-      email = fetched.email || "";
-      role = fetched.primary_role || fetched.role || "teacher";
-      isActiveState =
-        fetched.is_active !== undefined ? Boolean(fetched.is_active) : true;
-      avatarUrl = fetched.avatar_url || fetched.avatar || null;
-    } catch (e) {
-      console.error("Failed to load user:", e);
-      toast.error(m.settings_user_detail_load_error());
-    } finally {
-      isLoading = false;
-    }
+async function loadUser() {
+  if (!userId) return;
+  isLoading = true;
+  try {
+    const fetched = await commands.users.getUser(userId);
+    user = fetched;
+    fullName = fetched.full_name || "";
+    email = fetched.email || "";
+    role = fetched.primary_role || fetched.role || "teacher";
+    isActiveState =
+      fetched.is_active !== undefined ? Boolean(fetched.is_active) : true;
+    avatarUrl = fetched.avatar_url || fetched.avatar || null;
+  } catch (e) {
+    console.error("Failed to load user:", e);
+    toast.error(m.settings_user_detail_load_error());
+  } finally {
+    isLoading = false;
   }
+}
 
-  onMount(loadUser);
+onMount(loadUser);
 
-  async function handleResetPassword(e: Event) {
-    e.preventDefault();
-    if (newPassword !== confirmPassword) {
-      toast.error(m.settings_user_detail_reset_mismatch());
-      return;
-    }
-    if (!userId) return;
-    isResettingPassword = true;
-    try {
-      await commands.users.changeUserPassword(userId as string, {
-        new_password: newPassword,
-      });
-      toast.success(m.settings_user_detail_reset_success());
-      showResetModal = false;
-      newPassword = "";
-      confirmPassword = "";
-    } catch (e: unknown) {
-      toast.error((e as any)?.message || "Failed");
-    } finally {
-      isResettingPassword = false;
-    }
+async function handleResetPassword(e: Event) {
+  e.preventDefault();
+  if (newPassword !== confirmPassword) {
+    toast.error(m.settings_user_detail_reset_mismatch());
+    return;
   }
-
-  async function handleDeleteUser() {
-    if (!userId) return;
-    if (!confirm(m.settings_user_detail_delete_confirm())) return;
-    try {
-      await commands.users.deleteUser(userId as string, "admin");
-      toast.success(m.settings_user_detail_deleted());
-      await goto(localizeHref(`/${orgId}/settings/users`));
-    } catch (e: unknown) {
-      toast.error((e as any)?.message || "Failed");
-    }
+  if (!userId) return;
+  isResettingPassword = true;
+  try {
+    await commands.users.changeUserPassword(userId as string, {
+      new_password: newPassword,
+    });
+    toast.success(m.settings_user_detail_reset_success());
+    showResetModal = false;
+    newPassword = "";
+    confirmPassword = "";
+  } catch (e: unknown) {
+    toast.error((e as any)?.message || "Failed");
+  } finally {
+    isResettingPassword = false;
   }
+}
 
-  const basePath = $derived(`/${orgId}/settings/users/${userId}`);
+async function handleDeleteUser() {
+  if (!userId) return;
+  if (!confirm(m.settings_user_detail_delete_confirm())) return;
+  try {
+    await commands.users.deleteUser(userId as string, "admin");
+    toast.success(m.settings_user_detail_deleted());
+    await goto(localizeHref(`/${orgId}/settings/users`));
+  } catch (e: unknown) {
+    toast.error((e as any)?.message || "Failed");
+  }
+}
 
-  const menuItems = $derived([
-    {
-      path: "profile",
-      label: m.settings_user_detail_tab_profile(),
-    },
-    {
-      path: "roles",
-      label: m.settings_user_detail_tab_roles(),
-    },
-    {
-      path: "sessions",
-      label: m.settings_user_detail_tab_sessions(),
-    },
-    {
-      path: "preferences",
-      label: m.settings_user_detail_tab_settings(),
-    },
-  ]);
+const basePath = $derived(`/${orgId}/settings/users/${userId}`);
+
+const menuItems = $derived([
+  {
+    path: "profile",
+    label: m.settings_user_detail_tab_profile(),
+  },
+  {
+    path: "roles",
+    label: m.settings_user_detail_tab_roles(),
+  },
+  {
+    path: "sessions",
+    label: m.settings_user_detail_tab_sessions(),
+  },
+  {
+    path: "preferences",
+    label: m.settings_user_detail_tab_settings(),
+  },
+]);
 </script>
 
 <svelte:head>

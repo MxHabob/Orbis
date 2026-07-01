@@ -8,13 +8,7 @@ import { authStore } from "$lib/stores";
 import { commands } from "$lib/services/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@orbis/ui-svelte";
-import {
-  X,
-  ExternalLink,
-  CreditCard,
-  Award,
-  Edit2,
-} from "lucide-svelte";
+import { X, ExternalLink, CreditCard, Award, Edit2 } from "lucide-svelte";
 import * as m from "$lib/paraglide/messages";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate, formatPercent } from "$lib/i18n-utils";

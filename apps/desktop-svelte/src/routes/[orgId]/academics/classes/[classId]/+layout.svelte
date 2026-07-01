@@ -6,86 +6,86 @@ Provides a DetailPageHeader (back to classes list) and SecondaryMenu tabs
 Uses Pattern A: MainViewport with class info sidebar.
 -->
 <script lang="ts">
-  import { page } from "$app/state";
-  import { onMount } from "svelte";
-  import { commands } from "$lib/services/ipc";
-  import { Badge } from "@orbis/ui-svelte/badge";
-  import { Skeleton } from "@orbis/ui-svelte/skeleton";
-  import DetailPageHeader from "$lib/components/layout/DetailPageHeader.svelte";
-  import SecondaryMenu from "$lib/components/layout/SecondaryMenu.svelte";
-  import {
-    GraduationCap,
-    Users,
-    Award,
-    BookUser,
-    ClipboardList,
-  } from "lucide-svelte";
-  import type { Snippet } from "svelte";
-  import * as m from "$lib/paraglide/messages";
-  import { getLocale } from "$lib/paraglide/runtime";
+import { page } from "$app/state";
+import { onMount } from "svelte";
+import { commands } from "$lib/services/ipc";
+import { Badge } from "@orbis/ui-svelte/badge";
+import { Skeleton } from "@orbis/ui-svelte/skeleton";
+import DetailPageHeader from "$lib/components/layout/DetailPageHeader.svelte";
+import SecondaryMenu from "$lib/components/layout/SecondaryMenu.svelte";
+import {
+  GraduationCap,
+  Users,
+  Award,
+  BookUser,
+  ClipboardList,
+} from "lucide-svelte";
+import type { Snippet } from "svelte";
+import * as m from "$lib/paraglide/messages";
+import { getLocale } from "$lib/paraglide/runtime";
 
-  let { children }: { children: Snippet } = $props();
+let { children }: { children: Snippet } = $props();
 
-  const orgId = $derived(page.params.orgId);
-  const classId = $derived(page.params.classId);
+const orgId = $derived(page.params.orgId);
+const classId = $derived(page.params.classId);
 
-  let classData = $state<any>(null);
-  let studentsCount = $state(0);
-  let isLoading = $state(true);
+let classData = $state<any>(null);
+let studentsCount = $state(0);
+let isLoading = $state(true);
 
-  async function loadClassData() {
-    if (!orgId || !classId) return;
-    isLoading = true;
-    try {
-      const [classes, enrollments] = await Promise.all([
-        commands.classes.getAll(orgId),
-        commands.enrollments.getAll(orgId),
-      ]);
-      classData = classes.find((c) => String(c.id) === classId);
-      studentsCount = enrollments.filter(
-        (s) => String(s.class_id) === classId,
-      ).length;
-    } catch (e) {
-      console.error("Error loading class data:", e);
-    } finally {
-      isLoading = false;
-    }
+async function loadClassData() {
+  if (!orgId || !classId) return;
+  isLoading = true;
+  try {
+    const [classes, enrollments] = await Promise.all([
+      commands.classes.getAll(orgId),
+      commands.enrollments.getAll(orgId),
+    ]);
+    classData = classes.find((c) => String(c.id) === classId);
+    studentsCount = enrollments.filter(
+      (s) => String(s.class_id) === classId,
+    ).length;
+  } catch (e) {
+    console.error("Error loading class data:", e);
+  } finally {
+    isLoading = false;
   }
+}
 
-  onMount(loadClassData);
+onMount(loadClassData);
 
-  const basePath = $derived(`/${orgId}/academics/classes/${classId}`);
+const basePath = $derived(`/${orgId}/academics/classes/${classId}`);
 
-  const menuItems = $derived([
-    {
-      path: "",
-      label: m.academics_class_detail_tab_overview
-        ? m.academics_class_detail_tab_overview()
-        : "نظرة عامة",
-      icon: GraduationCap,
-    },
-    {
-      path: "assessments",
-      label: m.academics_class_detail_tab_assessments
-        ? m.academics_class_detail_tab_assessments()
-        : "التقييمات",
-      icon: Award,
-    },
-    {
-      path: "teachers",
-      label: m.academics_class_detail_tab_teachers
-        ? m.academics_class_detail_tab_teachers()
-        : "المعلمون",
-      icon: BookUser,
-    },
-    {
-      path: "grades",
-      label: m.academics_class_detail_tab_grades
-        ? m.academics_class_detail_tab_grades()
-        : "الدرجات والطلاب",
-      icon: ClipboardList,
-    },
-  ]);
+const menuItems = $derived([
+  {
+    path: "",
+    label: m.academics_class_detail_tab_overview
+      ? m.academics_class_detail_tab_overview()
+      : "نظرة عامة",
+    icon: GraduationCap,
+  },
+  {
+    path: "assessments",
+    label: m.academics_class_detail_tab_assessments
+      ? m.academics_class_detail_tab_assessments()
+      : "التقييمات",
+    icon: Award,
+  },
+  {
+    path: "teachers",
+    label: m.academics_class_detail_tab_teachers
+      ? m.academics_class_detail_tab_teachers()
+      : "المعلمون",
+    icon: BookUser,
+  },
+  {
+    path: "grades",
+    label: m.academics_class_detail_tab_grades
+      ? m.academics_class_detail_tab_grades()
+      : "الدرجات والطلاب",
+    icon: ClipboardList,
+  },
+]);
 </script>
 
 <div

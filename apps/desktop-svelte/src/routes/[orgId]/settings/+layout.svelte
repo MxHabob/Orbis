@@ -5,119 +5,117 @@ using <MainViewport>. Uses the shared SidebarNav component.
 Now includes rooms and subjects (moved from academics).
 -->
 <script lang="ts">
-  import {
-    Settings,
-    Palette,
-    Bell,
-    Lock,
-    Users,
-    Calendar,
-    Network,
-    History,
-    FileDown,
-    Shield,
-    Coins,
-    ListOrdered,
-    FileText,
-    MapPin,
-    BookOpen,
-  } from "lucide-svelte";
-  import MainViewport from "$lib/components/layout/MainViewport.svelte";
-  import SidebarNav from "$lib/components/layout/SidebarNav.svelte";
-  import type { Snippet } from "svelte";
-  import * as m from "$lib/paraglide/messages";
-  import { getLocale } from "$lib/paraglide/runtime";
+import {
+  Settings,
+  Palette,
+  Bell,
+  Lock,
+  Users,
+  Calendar,
+  Network,
+  History,
+  FileDown,
+  Shield,
+  Coins,
+  ListOrdered,
+  FileText,
+  MapPin,
+  BookOpen,
+} from "lucide-svelte";
+import MainViewport from "$lib/components/layout/MainViewport.svelte";
+import SidebarNav from "$lib/components/layout/SidebarNav.svelte";
+import type { Snippet } from "svelte";
+import * as m from "$lib/paraglide/messages";
+import { getLocale } from "$lib/paraglide/runtime";
 
-  let { data, children }: { data: { orgId: string }; children: Snippet } =
-    $props();
+let { data, children }: { data: { orgId: string }; children: Snippet } =
+  $props();
 
-  const basePath = $derived(`/${data.orgId}/settings`);
+const basePath = $derived(`/${data.orgId}/settings`);
 
-  const navItems = $derived([
-    {
-      path: "",
-      label: m.settings_nav_general(),
-      icon: Settings,
-    },
-    {
-      path: "appearance",
-      label: m.settings_nav_appearance(),
-      icon: Palette,
-    },
-    {
-      path: "notifications",
-      label: m.settings_nav_notifications(),
-      icon: Bell,
-    },
-    {
-      path: "security",
-      label: m.settings_nav_security(),
-      icon: Lock,
-    },
-    {
-      path: "users",
-      label: m.settings_nav_users(),
-      icon: Users,
-    },
-    {
-      path: "permissions",
-      label: m.settings_nav_permissions(),
-      icon: Shield,
-    },
-    {
-      path: "cycles",
-      label: m.settings_nav_cycles(),
-      icon: Calendar,
-    },
-    {
-      path: "units",
-      label: m.settings_nav_units(),
-      icon: Network,
-    },
-    {
-      path: "rooms",
-      label: m.settings_nav_rooms ? m.settings_nav_rooms() : "الغرف والقاعات",
-      icon: MapPin,
-    },
-    {
-      path: "subjects",
-      label: m.settings_nav_subjects
-        ? m.settings_nav_subjects()
-        : "المواد الدراسية",
-      icon: BookOpen,
-    },
-    {
-      path: "audit",
-      label: m.settings_nav_audit(),
-      icon: History,
-    },
-    {
-      path: "import-export",
-      label: m.settings_nav_import_export(),
-      icon: FileDown,
-    },
-    {
-      path: "currencies",
-      label: m.settings_nav_currencies
-        ? m.settings_nav_currencies()
-        : "العملات وأسعار الصرف",
-      icon: Coins,
-    },
-    {
-      path: "ordering",
-      label: m.settings_nav_ordering
-        ? m.settings_nav_ordering()
-        : "ترتيب الطلاب",
-      icon: ListOrdered,
-    },
-    {
-      path: "templates",
-      label: m.settings_nav_templates
-        ? m.settings_nav_templates()
-        : "قوالب المستندات",
-      icon: FileText,
-    },
-  ]);
+const navItems = $derived([
+  {
+    path: "",
+    label: m.settings_nav_general(),
+    icon: Settings,
+  },
+  {
+    path: "appearance",
+    label: m.settings_nav_appearance(),
+    icon: Palette,
+  },
+  {
+    path: "notifications",
+    label: m.settings_nav_notifications(),
+    icon: Bell,
+  },
+  {
+    path: "security",
+    label: m.settings_nav_security(),
+    icon: Lock,
+  },
+  {
+    path: "users",
+    label: m.settings_nav_users(),
+    icon: Users,
+  },
+  {
+    path: "permissions",
+    label: m.settings_nav_permissions(),
+    icon: Shield,
+  },
+  {
+    path: "cycles",
+    label: m.settings_nav_cycles(),
+    icon: Calendar,
+  },
+  {
+    path: "units",
+    label: m.settings_nav_units(),
+    icon: Network,
+  },
+  {
+    path: "rooms",
+    label: m.settings_nav_rooms ? m.settings_nav_rooms() : "الغرف والقاعات",
+    icon: MapPin,
+  },
+  {
+    path: "subjects",
+    label: m.settings_nav_subjects
+      ? m.settings_nav_subjects()
+      : "المواد الدراسية",
+    icon: BookOpen,
+  },
+  {
+    path: "audit",
+    label: m.settings_nav_audit(),
+    icon: History,
+  },
+  {
+    path: "import-export",
+    label: m.settings_nav_import_export(),
+    icon: FileDown,
+  },
+  {
+    path: "currencies",
+    label: m.settings_nav_currencies
+      ? m.settings_nav_currencies()
+      : "العملات وأسعار الصرف",
+    icon: Coins,
+  },
+  {
+    path: "ordering",
+    label: m.settings_nav_ordering ? m.settings_nav_ordering() : "ترتيب الطلاب",
+    icon: ListOrdered,
+  },
+  {
+    path: "templates",
+    label: m.settings_nav_templates
+      ? m.settings_nav_templates()
+      : "قوالب المستندات",
+    icon: FileText,
+  },
+]);
 </script>
 
 <div

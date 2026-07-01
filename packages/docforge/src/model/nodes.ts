@@ -414,16 +414,40 @@ export interface WatermarkNode extends BaseNode {
 
 export function isContainerNode(
   node: TemplateNode,
-): node is PageNode | FrameNode | GridNode | RepeaterNode | ConditionalNode | HeaderNode | FooterNode {
+): node is
+  | PageNode
+  | FrameNode
+  | GridNode
+  | RepeaterNode
+  | ConditionalNode
+  | HeaderNode
+  | FooterNode {
   return "children" in node;
 }
 
 export function isContentNode(
   node: TemplateNode,
-): node is TextNode | ImageNode | ShapeNode | TableNode | BarcodeNode | QRCodeNode | SeparatorNode | SpacerNode {
-  return !isContainerNode(node) && node.type !== "ComponentRef" && node.type !== "PageBreak" && node.type !== "Watermark";
+): node is
+  | TextNode
+  | ImageNode
+  | ShapeNode
+  | TableNode
+  | BarcodeNode
+  | QRCodeNode
+  | SeparatorNode
+  | SpacerNode {
+  return (
+    !isContainerNode(node) &&
+    node.type !== "ComponentRef" &&
+    node.type !== "PageBreak" &&
+    node.type !== "Watermark"
+  );
 }
 
 export function hasPosition(node: TemplateNode): boolean {
-  return "props" in node && node.props !== undefined && "position" in (node.props as Record<string, unknown>);
+  return (
+    "props" in node &&
+    node.props !== undefined &&
+    "position" in (node.props as Record<string, unknown>)
+  );
 }

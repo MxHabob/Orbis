@@ -5,205 +5,201 @@ Displays a table of enrolled students with inline grade entry fields.
 Merges the concepts of "students list" and "grade entry" into one view.
 -->
 <script lang="ts">
-  import { page } from "$app/state";
-  import { onMount } from "svelte";
-  import { commands } from "$lib/services/ipc";
-  import { Button } from "@orbis/ui-svelte/button";
-  import { Input } from "@orbis/ui-svelte/input";
-  import { Skeleton } from "@orbis/ui-svelte/skeleton";
-  import { Badge } from "@orbis/ui-svelte/badge";
-  import {
-    Select,
-    SelectTrigger,
-    SelectContent,
-    SelectItem,
-  } from "@orbis/ui-svelte/select";
-  import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-  } from "@orbis/ui-svelte/table";
-  import {
-    Users,
-    ClipboardList,
-    Save,
-    Download,
-    RefreshCcw,
-  } from "lucide-svelte";
-  import { toast } from "svelte-sonner";
-  import { fade } from "svelte/transition";
-  import * as m from "$lib/paraglide/messages";
+import { page } from "$app/state";
+import { onMount } from "svelte";
+import { commands } from "$lib/services/ipc";
+import { Button } from "@orbis/ui-svelte/button";
+import { Input } from "@orbis/ui-svelte/input";
+import { Skeleton } from "@orbis/ui-svelte/skeleton";
+import { Badge } from "@orbis/ui-svelte/badge";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui-svelte/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@orbis/ui-svelte/table";
+import {
+  Users,
+  ClipboardList,
+  Save,
+  Download,
+  RefreshCcw,
+} from "lucide-svelte";
+import { toast } from "svelte-sonner";
+import { fade } from "svelte/transition";
+import * as m from "$lib/paraglide/messages";
 
-  const orgId = $derived(page.params.orgId);
-  const classId = $derived(page.params.classId);
+const orgId = $derived(page.params.orgId);
+const classId = $derived(page.params.classId);
 
-  // Data state
-  let students = $state<any[]>([]);
-  let assessments = $state<any[]>([]);
-  let subjects = $state<any[]>([]);
-  let cycles = $state<any[]>([]);
-  let isLoading = $state(true);
-  let isSaving = $state(false);
+// Data state
+let students = $state<any[]>([]);
+let assessments = $state<any[]>([]);
+let subjects = $state<any[]>([]);
+let cycles = $state<any[]>([]);
+let isLoading = $state(true);
+let isSaving = $state(false);
 
-  // Filters
-  let selectedSubjectId = $state<string>("");
-  let semesters = $state<any[]>([]);
-  let selectedSemesterId = $state<string>("");
+// Filters
+let selectedSubjectId = $state<string>("");
+let semesters = $state<any[]>([]);
+let selectedSemesterId = $state<string>("");
 
-  // Grade entries: { [studentId_assessmentId]: score }
-  let gradeEntries = $state<Record<string, string>>({});
-  let hasUnsavedChanges = $state(false);
+// Grade entries: { [studentId_assessmentId]: score }
+let gradeEntries = $state<Record<string, string>>({});
+let hasUnsavedChanges = $state(false);
 
-  async function loadData() {
-    isLoading = true;
-    try {
-      const [enrollments, subjectList, cycleList] = await Promise.all([
-        commands.enrollments.getAll(orgId),
-        commands.subjects.getAll(orgId),
-        commands.academics.getCycles(orgId),
-      ]);
+async function loadData() {
+  isLoading = true;
+  try {
+    const [enrollments, subjectList, cycleList] = await Promise.all([
+      commands.enrollments.getAll(orgId),
+      commands.subjects.getAll(orgId),
+      commands.academics.getCycles(orgId),
+    ]);
 
-      // Filter students for this class
-      students = enrollments.filter(
-        (s) => String(s.class_id) === classId,
+    // Filter students for this class
+    students = enrollments.filter((s) => String(s.class_id) === classId);
+    subjects = subjectList;
+    cycles = cycleList;
+
+    // Set default semester
+    const activeYear =
+      cycleList.find(
+        (c) =>
+          c.type === "year" && (c.is_current === 1 || c.is_current === true),
+      ) || cycleList.find((c) => c.type === "year");
+
+    if (activeYear) {
+      semesters = cycleList.filter(
+        (c) => c.parent_id === activeYear.id && c.type === "term",
       );
-      subjects = subjectList;
-      cycles = cycleList;
+      if (semesters.length > 0) {
+        selectedSemesterId = String(semesters[0].id);
+      }
+    }
 
-      // Set default semester
-      const activeYear =
-        cycleList.find(
-          (c) =>
-            c.type === "year" && (c.is_current === 1 || c.is_current === true),
-        ) || cycleList.find((c) => c.type === "year");
+    if (subjectList.length > 0) {
+      selectedSubjectId = String(subjectList[0].id);
+    }
+  } catch (e) {
+    console.error("Error loading grades data:", e);
+    toast.error("خطأ في تحميل البيانات");
+  } finally {
+    isLoading = false;
+  }
+}
 
-      if (activeYear) {
-        semesters = cycleList.filter(
-          (c) => c.parent_id === activeYear.id && c.type === "term",
-        );
-        if (semesters.length > 0) {
-          selectedSemesterId = String(semesters[0].id);
+// Load assessments when subject/semester changes
+async function loadAssessments() {
+  if (!classId || !selectedSubjectId) return;
+  try {
+    const list = await commands.assessments.getByClass({
+      classId,
+      subjectId: selectedSubjectId || undefined,
+      termId: selectedSemesterId || undefined,
+    });
+    assessments = list;
+
+    // Initialize grade entries (try to load existing grades)
+    gradeEntries = {};
+    for (const student of students) {
+      for (const assessment of list) {
+        const key = `${student.id}_${assessment.id}`;
+        gradeEntries[key] = "";
+      }
+    }
+
+    // Load existing grades if API supports it
+    try {
+      const existingGrades = await commands.grades
+        .getByClass(classId, {
+          subjectId: selectedSubjectId,
+          termId: selectedSemesterId || undefined,
+        })
+        .catch(() => []);
+
+      for (const grade of existingGrades) {
+        const key = `${grade.student_id}_${grade.assessment_id}`;
+        if (key in gradeEntries) {
+          gradeEntries[key] = String(grade.score ?? "");
         }
       }
-
-      if (subjectList.length > 0) {
-        selectedSubjectId = String(subjectList[0].id);
-      }
-    } catch (e) {
-      console.error("Error loading grades data:", e);
-      toast.error("خطأ في تحميل البيانات");
-    } finally {
-      isLoading = false;
+    } catch {
+      // Grades API may not exist yet
     }
-  }
 
-  // Load assessments when subject/semester changes
-  async function loadAssessments() {
-    if (!classId || !selectedSubjectId) return;
-    try {
-      const list = await commands.assessments.getByClass({
-        classId,
-        subjectId: selectedSubjectId || undefined,
-        termId: selectedSemesterId || undefined,
+    hasUnsavedChanges = false;
+  } catch (e) {
+    console.error("Error loading assessments:", e);
+    assessments = [];
+  }
+}
+
+$effect(() => {
+  if (classId && selectedSubjectId) {
+    loadAssessments();
+  }
+});
+
+onMount(loadData);
+
+function updateGrade(studentId: string, assessmentId: string, value: string) {
+  const key = `${studentId}_${assessmentId}`;
+  gradeEntries[key] = value;
+  hasUnsavedChanges = true;
+}
+
+async function saveAllGrades() {
+  isSaving = true;
+  try {
+    const entries = Object.entries(gradeEntries)
+      .filter(([_, value]) => value !== "")
+      .map(([key, value]) => {
+        const [studentId, assessmentId] = key.split("_");
+        return {
+          student_id: studentId,
+          assessment_id: assessmentId,
+          score: Number(value),
+          class_id: classId,
+          subject_id: selectedSubjectId,
+        };
       });
-      assessments = list;
 
-      // Initialize grade entries (try to load existing grades)
-      gradeEntries = {};
-      for (const student of students) {
-        for (const assessment of list) {
-          const key = `${student.id}_${assessment.id}`;
-          gradeEntries[key] = "";
-        }
-      }
-
-      // Load existing grades if API supports it
-      try {
-        const existingGrades = await commands.grades
-          .getByClass(classId, {
-            subjectId: selectedSubjectId,
-            termId: selectedSemesterId || undefined,
-          })
-          .catch(() => []);
-
-        for (const grade of existingGrades) {
-          const key = `${grade.student_id}_${grade.assessment_id}`;
-          if (key in gradeEntries) {
-            gradeEntries[key] = String(grade.score ?? "");
-          }
-        }
-      } catch {
-        // Grades API may not exist yet
-      }
-
+    if (entries.length > 0) {
+      await commands.grades.saveBulk(entries);
+      toast.success(m.grades_saved ? m.grades_saved() : "تم حفظ الدرجات بنجاح");
       hasUnsavedChanges = false;
-    } catch (e) {
-      console.error("Error loading assessments:", e);
-      assessments = [];
     }
+  } catch (e: unknown) {
+    toast.error((e as any)?.message || "فشل حفظ الدرجات");
+  } finally {
+    isSaving = false;
   }
+}
 
-  $effect(() => {
-    if (classId && selectedSubjectId) {
-      loadAssessments();
-    }
-  });
-
-  onMount(loadData);
-
-  function updateGrade(studentId: string, assessmentId: string, value: string) {
-    const key = `${studentId}_${assessmentId}`;
-    gradeEntries[key] = value;
-    hasUnsavedChanges = true;
+// Calculate student total from entered grades
+function getStudentTotal(studentId: string): number {
+  let total = 0;
+  for (const assessment of assessments) {
+    const key = `${studentId}_${assessment.id}`;
+    const score = Number(gradeEntries[key]);
+    if (!isNaN(score)) total += score;
   }
+  return total;
+}
 
-  async function saveAllGrades() {
-    isSaving = true;
-    try {
-      const entries = Object.entries(gradeEntries)
-        .filter(([_, value]) => value !== "")
-        .map(([key, value]) => {
-          const [studentId, assessmentId] = key.split("_");
-          return {
-            student_id: studentId,
-            assessment_id: assessmentId,
-            score: Number(value),
-            class_id: classId,
-            subject_id: selectedSubjectId,
-          };
-        });
-
-      if (entries.length > 0) {
-        await commands.grades.saveBulk(entries);
-        toast.success(
-          m.grades_saved ? m.grades_saved() : "تم حفظ الدرجات بنجاح",
-        );
-        hasUnsavedChanges = false;
-      }
-    } catch (e: unknown) {
-      toast.error((e as any)?.message || "فشل حفظ الدرجات");
-    } finally {
-      isSaving = false;
-    }
-  }
-
-  // Calculate student total from entered grades
-  function getStudentTotal(studentId: string): number {
-    let total = 0;
-    for (const assessment of assessments) {
-      const key = `${studentId}_${assessment.id}`;
-      const score = Number(gradeEntries[key]);
-      if (!isNaN(score)) total += score;
-    }
-    return total;
-  }
-
-  const maxTotal = $derived(
-    assessments.reduce((sum, a) => sum + (Number(a.max_score) || 0), 0),
-  );
+const maxTotal = $derived(
+  assessments.reduce((sum, a) => sum + (Number(a.max_score) || 0), 0),
+);
 </script>
 
 <div class="flex flex-col gap-5 text-start">
