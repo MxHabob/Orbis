@@ -63,7 +63,7 @@ let formattedTime = $derived.by(() => {
   return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 });
 
-onMount(async () => {
+onMount(() => {
   isOnline = navigator.onLine;
   const setOnline = () => { isOnline = true; };
   const setOffline = () => { isOnline = false; };
@@ -74,27 +74,37 @@ onMount(async () => {
   isMac = navigator.userAgent.toLowerCase().includes("mac");
 
   let unlistenResize: any;
+  let isMounted = true;
 
   if (isDesktopApp()) {
-    try {
-      const { getCurrentWindow } = await import("@tauri-apps/api/window");
-      const win = getCurrentWindow();
-      appWindow = win;
-      
-      const checkMaximized = async () => {
-        isMaximized = await win.isMaximized();
-      };
-      await checkMaximized();
-      
-      unlistenResize = await win.onResized(() => {
-        checkMaximized();
-      });
-    } catch (e) {
-      console.error("Failed to initialize Tauri window in TitleBar:", e);
-    }
+    (async () => {
+      try {
+        const { getCurrentWindow } = await import("@tauri-apps/api/window");
+        const win = getCurrentWindow();
+        appWindow = win;
+        
+        const checkMaximized = async () => {
+          isMaximized = await win.isMaximized();
+        };
+        await checkMaximized();
+        
+        const unlisten = await win.onResized(() => {
+          checkMaximized();
+        });
+        
+        if (!isMounted) {
+          unlisten();
+        } else {
+          unlistenResize = unlisten;
+        }
+      } catch (e) {
+        console.error("Failed to initialize Tauri window in TitleBar:", e);
+      }
+    })();
   }
 
   return () => {
+    isMounted = false;
     window.removeEventListener("online", setOnline);
     window.removeEventListener("offline", setOffline);
     if (unlistenResize) {
@@ -277,7 +287,7 @@ onDestroy(() => {
             <DropdownMenuContent class="w-32 bg-popover border border-border rounded-lg shadow-lg py-1 z-50">
               <DropdownMenuItem onclick={() => startTimer(600)} class="text-xs px-2.5 py-1.5 cursor-pointer rounded-md hover:bg-accent">{m.titlebar_timer_preset({ minutes: "10" })}</DropdownMenuItem>
               <DropdownMenuItem onclick={() => startTimer(900)} class="text-xs px-2.5 py-1.5 cursor-pointer rounded-md hover:bg-accent">{m.titlebar_timer_preset({ minutes: "15" })}</DropdownMenuItem>
-              <DropdownMenuItem onclick={() => startTimer(1800)} class="text-xs px-2.5 py-1.5 cursor-pointer rounded-md hover:bg-accent">{m.titlebar_timer_preset({ minutes: "30" })}</DropdownMenuItem>
+              <DropdownMenuItem onclick={() => startTimer(2700)} class="text-xs px-2.5 py-1.5 cursor-pointer rounded-md hover:bg-accent">{m.titlebar_timer_preset({ minutes: "45" })}</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
