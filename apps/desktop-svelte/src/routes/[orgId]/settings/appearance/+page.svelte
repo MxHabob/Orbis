@@ -162,7 +162,7 @@ const locales = [
           <Label for="app_lang" class="text-xs font-medium text-muted-foreground">
             {m.settings_appearance_language()}
           </Label>
-          <Select type="single" value={selectedLocale} onValueChange={(v) => handleLanguageChange(v ?? "")}>
+          <Select type="single" value={selectedLocale} onValueChange={(v: string | undefined) => handleLanguageChange(v ?? "")}>
             <SelectTrigger class="h-9 w-full">
               {locales.find(loc => loc.value === selectedLocale)?.label || selectedLocale}
             </SelectTrigger>
