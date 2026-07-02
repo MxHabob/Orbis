@@ -80,8 +80,8 @@
   --brand-lime: oklch(0.75 0.08 145);
   --brand-lime-dark: oklch(0.62 0.08 145);
 
-  --brand-pink: oklch(0.7 0.12 15);
-  --brand-pink-light: oklch(0.82 0.08 15);
+  --brand-pink: oklch(58.18% 0.23022 346.346);
+  --brand-pink-light: oklch(61.809% 0.23617 343.369);
 
   --brand-violet: oklch(0.23 0 0);
   --brand-indigo: oklch(0.6 0.08 250);
@@ -150,8 +150,8 @@
   --brand-lime: oklch(0.78 0.08 145);
   --brand-lime-dark: oklch(0.66 0.08 145);
 
-  --brand-pink: oklch(0.74 0.12 15);
-  --brand-pink-light: oklch(0.84 0.08 15);
+  --brand-pink: oklch(58.18% 0.23022 346.346);
+  --brand-pink-light: oklch(61.809% 0.23617 343.369);
 
   --brand-violet: oklch(0.92 0 0);
   --brand-indigo: oklch(0.72 0.08 250);

@@ -115,9 +115,9 @@ const columns: ColumnDef<Enrollment>[] = [
 {#snippet nameCell(ctx: CellContext<Enrollment>)}
 	{@const student = ctx.row}
 	<div class="flex items-center gap-2.5">
-		<Avatar class="h-7 w-7 ring-1 ring-border flex-shrink-0">
+		<Avatar class="h-7 w-7  shrink-0">
 			<AvatarImage src={student.avatar ? String(student.avatar) : undefined} alt={student.full_name ? String(student.full_name) : ''} />
-			<AvatarFallback class="bg-primary/5 text-primary text-[9px] font-bold">
+			<AvatarFallback class="text-[9px]">
 				{String(student.full_name || "S").slice(0, 1)}
 			</AvatarFallback>
 		</Avatar>

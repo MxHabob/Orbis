@@ -266,7 +266,7 @@ function getRoleBadgeClass(roleStr: string): string {
                   >
                     <Avatar class="w-8 h-8 border border-border/80">
                       <AvatarImage src={user.avatar ? String(user.avatar) : undefined} alt={user.full_name} class="object-cover" />
-                      <AvatarFallback class="text-xs font-bold bg-muted text-muted-foreground">
+                      <AvatarFallback class="text-xs">
                         {(user.full_name || "U").charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
