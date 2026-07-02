@@ -23,7 +23,7 @@ let fees = $state<any[]>([]);
 let payments = $state<any[]>([]);
 let isLoading = $state(true);
 
-let totalFees = $derived(fees.reduce((s, f) => s + Number(f.total_amount || 0), 0));
+let totalFees = $derived(fees.reduce((s, f) => s + Number(f.net_amount || 0), 0));
 let totalPaid = $derived(payments.reduce((s, p) => s + Number(p.amount || 0), 0));
 let balanceDue = $derived(totalFees - totalPaid);
 
@@ -49,15 +49,31 @@ async function loadFinance() {
 // ── Grid Sources ────────────────────────────────────────────────────────
 
 const feesSource = $derived(
-  withIndex(fees.map((f) => ({
-    ...f,
-    fee_name: f.notes || m.fees_default_description(),
-    total: formatCurrency(Number(f.total_amount || 0)),
-    paid: "—",
-    discount: "—",
-    balance: "—",
-    status: "active",
-  }))),
+  withIndex(
+    fees.map((f) => {
+      const paidAmount = payments
+        .filter((p) => p.fee_id === f.id)
+        .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+      const discountAmount = Number(f.discount_amount || 0);
+      const originalAmount = Number(f.original_amount || 0);
+      const balance = Math.max(0, Number(f.net_amount || 0) - paidAmount);
+      
+      let displayStatus = f.status || "unpaid";
+      if (displayStatus === "partially_paid") {
+        displayStatus = "partial";
+      }
+
+      return {
+        ...f,
+        fee_name: f.notes || m.fees_default_description(),
+        total: formatCurrency(originalAmount),
+        paid: formatCurrency(paidAmount),
+        discount: formatCurrency(discountAmount),
+        balance: formatCurrency(balance),
+        status: displayStatus,
+      };
+    })
+  )
 );
 
 const feesCols = $derived(sfDef.columns({

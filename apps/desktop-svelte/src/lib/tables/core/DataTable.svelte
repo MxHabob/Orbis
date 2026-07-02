@@ -1,24 +1,24 @@
-/**
- * DataTable — Universal table shell component
- *
- * Wraps OrbisGrid with a professional toolbar, search, empty states,
- * and loading skeletons. Used system-wide for all data tables.
- *
- * @example
- * ```svelte
- * <DataTable
- *   columns={studentColumns}
- *   source={students}
- *   loading={isLoading}
- *   searchable
- *   searchPlaceholder={m.search_students()}
- *   onSearch={handleSearch}
- *   emptyTitle={m.no_students()}
- *   rtl={getLocale() === "ar"}
- * />
- * ```
- */
 <script lang="ts">
+  /**
+   * DataTable — Universal table shell component
+   *
+   * Wraps OrbisGrid with a professional toolbar, search, empty states,
+   * and loading skeletons. Used system-wide for all data tables.
+   *
+   * @example
+   * ```svelte
+   * <DataTable
+   *   columns={studentColumns}
+   *   source={students}
+   *   loading={isLoading}
+   *   searchable
+   *   searchPlaceholder={m.search_students()}
+   *   onSearch={handleSearch}
+   *   emptyTitle={m.no_students()}
+   *   rtl={getLocale() === "ar"}
+   * />
+   * ```
+   */
   import { OrbisGrid, type OrbisColumnDef, type CellEditEvent } from "@orbis/data-grid";
   import { Input } from "@orbis/ui-svelte/input";
   import { Button } from "@orbis/ui-svelte/button";
@@ -166,7 +166,7 @@
         <div class="relative flex-1 max-w-xs">
           <Search
             size={14}
-            class="absolute start-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+            class="absolute inset-s-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
           />
           <Input
             type="text"
@@ -257,7 +257,8 @@
       <!-- Empty State -->
       <div class="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
         {#if emptyIcon}
-          <svelte:component this={emptyIcon} size={36} class="opacity-30" />
+          {@const Icon = emptyIcon}
+          <Icon size={36} class="opacity-30" />
         {:else}
           <TableProperties size={36} class="opacity-30" />
         {/if}

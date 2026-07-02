@@ -224,8 +224,8 @@ const rtl = $derived(getLocale() === "ar");
       refreshable
       onRefresh={loadFees}
     >
-      {#slot "filters"}
-        <div class="flex items-center gap-2 text-start select-none">
+      {#snippet actions()}
+        <div class="flex items-center gap-2 text-start select-none me-2">
           <span class="text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
             {m.fees_filter_status()}
           </span>
@@ -251,7 +251,7 @@ const rtl = $derived(getLocale() === "ar");
             </Select>
           </div>
         </div>
-      {/slot}
+      {/snippet}
     </DataTable>
   </div>
 </div>

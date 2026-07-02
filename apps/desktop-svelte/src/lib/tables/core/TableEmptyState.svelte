@@ -31,7 +31,8 @@
 
 <div class="flex flex-col items-center justify-center py-16 gap-4 text-muted-foreground select-none">
   {#if icon}
-    <svelte:component this={icon} size={40} class="opacity-25" />
+    {@const Icon = icon}
+    <Icon size={40} class="opacity-25" />
   {:else}
     <TableProperties size={40} class="opacity-25" />
   {/if}
