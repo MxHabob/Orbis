@@ -67,3 +67,24 @@ export function formatNumber(value: number | null | undefined): string {
   const lang = getLocale();
   return new Intl.NumberFormat(lang === "ar" ? "ar-YE" : "en-US").format(value);
 }
+
+/**
+ * Returns the localized value based on the current locale.
+ * Fallbacks to the other language if the current locale's value is missing.
+ */
+export function l<T>(arValue: T, enValue: T): T {
+  const isArabic = getLocale() === "ar";
+  if (isArabic) {
+    return arValue !== undefined && arValue !== null && (arValue as any) !== "" ? arValue : enValue;
+  } else {
+    return enValue !== undefined && enValue !== null && (enValue as any) !== "" ? enValue : arValue;
+  }
+}
+
+/**
+ * Checks if the current locale is Arabic.
+ */
+export function isAr(): boolean {
+  return getLocale() === "ar";
+}
+

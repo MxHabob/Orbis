@@ -36,7 +36,7 @@ import {
   Info,
   ShieldAlert,
 } from "lucide-svelte";
-import { getLocale } from "$lib/paraglide/runtime";
+import { l, isAr } from "$lib/i18n-utils";
 import { fade } from "svelte/transition";
 import * as m from "$lib/paraglide/messages";
 
@@ -99,7 +99,7 @@ function getUserName(userId: string | null): string {
   if (!userId) return m.audit_user_system ? m.audit_user_system() : "System";
   const user = users.find((u) => u.id === userId);
   if (!user) return m.audit_user_system ? m.audit_user_system() : "System";
-  return getLocale() === "ar" && user.name_ar ? user.name_ar : (user.full_name || user.username || "System");
+  return l(user.name_ar, user.full_name) || user.username || "System";
 }
 
 function getUserAvatar(userId: string | null): string | undefined {
@@ -118,7 +118,7 @@ function getUserInitials(userId: string | null): string {
 
 function formatAuditDate(dateStr: string): string {
   const d = new Date(dateStr);
-  if (getLocale() === "ar") {
+  if (isAr()) {
     return d.toLocaleDateString("ar-EG", { month: "short", day: "numeric" });
   }
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -126,7 +126,7 @@ function formatAuditDate(dateStr: string): string {
 
 function formatAuditTime(dateStr: string): string {
   const d = new Date(dateStr);
-  const timeStr = d.toLocaleTimeString(getLocale() === "ar" ? "ar-EG" : "en-US", {
+  const timeStr = d.toLocaleTimeString(isAr() ? "ar-EG" : "en-US", {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,

@@ -5,7 +5,7 @@ import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { toast } from "svelte-sonner";
-import { getLocale } from "$lib/paraglide/runtime";
+import { l } from "$lib/i18n-utils";
 import { fade } from "svelte/transition";
 import {
   Plus,
@@ -73,7 +73,7 @@ function openEditSheet(cycle: any) {
 
 async function handleActivate(cycleId: string) {
   try {
-    await commands.academics.activateCycle(cycleId);
+    await commands.academics.activateCycle(data.orgId, cycleId);
     toast.success(m.settings_cycles_activate_success());
     loadCycles();
   } catch (e) {
@@ -116,7 +116,7 @@ function toggleCollapse(yearId: string) {
 
     <div class="flex items-center gap-2 shrink-0 flex-nowrap">
       <Button variant="lime" class="text-xs h-9 px-4 font-semibold" onclick={openCreateSheet}>
-        <Plus size={14} class={getLocale() === "ar" ? 'ml-1.5' : 'mr-1.5'} />
+        <Plus size={14} class="me-1.5" />
         {m.settings_cycles_add()}
       </Button>
     </div>
@@ -145,7 +145,7 @@ function toggleCollapse(yearId: string) {
                   onclick={() => toggleCollapse(year.id)}
                 >
                   {#if isCollapsed}
-                    <ChevronRight size={16} class={getLocale() === 'ar' ? 'rotate-180' : ''} />
+                    <ChevronRight size={16} class="rtl:rotate-180" />
                   {:else}
                     <ChevronDown size={16} />
                   {/if}
@@ -154,7 +154,7 @@ function toggleCollapse(yearId: string) {
                 <div class="flex flex-col text-start gap-1">
                   <div class="flex items-center gap-2 flex-wrap">
                     <h3 class="text-sm font-bold text-foreground">
-                      {getLocale() === "ar" && year.name_ar ? year.name_ar : year.name}
+                      {l(year.name_ar, year.name)}
                     </h3>
                     
                     <!-- Status Badges -->
@@ -190,7 +190,7 @@ function toggleCollapse(yearId: string) {
                     class="text-[10px] h-7 px-2.5 font-semibold text-emerald-500 hover:text-emerald-600 hover:bg-emerald-500/5 border-emerald-500/20"
                     onclick={() => handleActivate(year.id)}
                   >
-                    <CheckCircle2 size={12} class={getLocale() === 'ar' ? 'ml-1' : 'mr-1'} />
+                    <CheckCircle2 size={12} class="me-1" />
                     {m.settings_cycles_activate()}
                   </Button>
                 {/if}
@@ -202,7 +202,7 @@ function toggleCollapse(yearId: string) {
                     class="text-[10px] h-7 px-2.5 font-semibold text-rose-500 hover:text-rose-600 hover:bg-rose-500/5 border-rose-500/20"
                     onclick={() => handleLock(year.id)}
                   >
-                    <LockIcon size={12} class={getLocale() === 'ar' ? 'ml-1' : 'mr-1'} />
+                    <LockIcon size={12} class="me-1" />
                     {m.settings_cycles_lock()}
                   </Button>
                 {/if}
@@ -213,8 +213,8 @@ function toggleCollapse(yearId: string) {
                   class="text-[10px] h-7 px-2.5 font-semibold text-foreground"
                   onclick={() => openEditSheet(year)}
                 >
-                  <Pencil size={12} class={getLocale() === 'ar' ? 'ml-1' : 'mr-1'} />
-                  Edit
+                  <Pencil size={12} class="me-1" />
+                  {m.templates_action_edit()}
                 </Button>
               </div>
             </div>
@@ -232,7 +232,7 @@ function toggleCollapse(yearId: string) {
                       <div class="flex flex-col text-start gap-1">
                         <div class="flex items-center gap-2">
                           <span class="text-xs font-bold text-foreground">
-                            {getLocale() === "ar" && term.name_ar ? term.name_ar : term.name}
+                            {l(term.name_ar, term.name)}
                           </span>
                           
                           {#if term.is_current === 1}

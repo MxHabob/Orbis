@@ -22,7 +22,6 @@ import {
   Search,
 } from "lucide-svelte";
 import { toast } from "svelte-sonner";
-import { getLocale } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
 import SubjectCreateSheet from "$lib/components/sheets/subject-create-sheet.svelte";
 import * as m from "$lib/paraglide/messages";
@@ -165,7 +164,7 @@ function getSubjectTheme(nameStr: string) {
 
 		<!-- Add button -->
 		<Button variant="lime" class="text-xs h-9 px-4 font-semibold shrink-0" onclick={() => isModalOpen = true}>
-			<Plus size={14} class={getLocale() === "ar" ? 'ml-1.5' : 'mr-1.5'} />
+			<Plus size={14} class="me-1.5" />
 			{m.subjects_add_subject()}
 		</Button>
 	</div>

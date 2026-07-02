@@ -13,7 +13,7 @@ import {
 } from "@orbis/ui-svelte/table";
 import { Input } from "@orbis/ui-svelte/input";
 import { toast } from "svelte-sonner";
-import { getLocale } from "$lib/paraglide/runtime";
+import { l, isAr } from "$lib/i18n-utils";
 import { fade } from "svelte/transition";
 import {
   Plus,
@@ -129,7 +129,7 @@ function getRoomTypeBadgeClass(typeStr: string): string {
     </div>
 
     <Button variant="lime" class="text-xs h-9 px-4 font-semibold shrink-0" onclick={openCreateSheet}>
-      <Plus size={14} class={getLocale() === "ar" ? 'ml-1.5' : 'mr-1.5'} />
+      <Plus size={14} class="me-1.5" />
       {m.rooms_add()}
     </Button>
   </div>
@@ -175,9 +175,9 @@ function getRoomTypeBadgeClass(typeStr: string): string {
                 <TableCell>
                   <div class="flex flex-col text-start">
                     <span class="text-xs font-bold text-foreground">
-                      {getLocale() === "ar" && room.name_ar ? room.name_ar : room.name}
+                      {l(room.name_ar, room.name)}
                     </span>
-                    {#if getLocale() === "ar" && room.name_ar && room.name}
+                    {#if isAr() && room.name_ar && room.name}
                       <span class="text-[9px] text-muted-foreground leading-none mt-0.5">{room.name}</span>
                     {/if}
                   </div>

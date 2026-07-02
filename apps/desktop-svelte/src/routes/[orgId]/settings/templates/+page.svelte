@@ -41,7 +41,7 @@ import {
 } from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
-import { getLocale } from "$lib/paraglide/runtime";
+import { l, isAr } from "$lib/i18n-utils";
 import {
   FileText,
   Plus,
@@ -131,7 +131,7 @@ async function handleCreateTemplate() {
         nameAr: newTemplateNameAr || null,
         documentType: newTemplateDocType,
         entityType: newTemplateEntityType,
-        locale: getLocale(),
+        locale: isAr() ? "ar" : "en",
         pageSetup: {
           size: newTemplatePageSize,
           orientation: newTemplateOrientation,
@@ -188,7 +188,7 @@ async function handleCreateTemplate() {
         right: 15,
       }),
       document_json: defaultDocJson,
-      locale: getLocale(),
+      locale: isAr() ? "ar" : "en",
       tags: null,
     };
 
@@ -377,7 +377,7 @@ async function restoreTemplate(id: string) {
                 <div class="text-[10px] text-muted-foreground">v{template.version}</div>
               </div>
               <CardTitle class="text-sm font-bold text-foreground mt-2">
-                {getLocale() === 'ar' && template.name_ar ? template.name_ar : template.name}
+                {l(template.name_ar, template.name)}
               </CardTitle>
               <CardDescription class="text-xs text-muted-foreground line-clamp-2 mt-1">
                 {template.description || m.templates_no_description()}

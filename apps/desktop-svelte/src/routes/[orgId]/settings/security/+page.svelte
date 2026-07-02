@@ -3,7 +3,6 @@ import { onMount } from "svelte";
 import { authStore } from "$lib/stores";
 import { commands } from "$lib/services/ipc";
 import type { UserSession } from "$lib/services/ipc";
-import { getLocale } from "$lib/paraglide/runtime";
 import { formatDate } from "$lib/i18n-utils";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
@@ -71,12 +70,8 @@ async function loadSessions() {
 
       const isCurrentDevice = s.token === authStore.token;
       const location = isCurrentDevice
-        ? getLocale() === "ar"
-          ? "هذا الجهاز"
-          : "Current Device"
-        : getLocale() === "ar"
-          ? "جهاز نشط"
-          : "Active Device";
+        ? m.settings_user_session_current_device()
+        : m.settings_user_session_active_device();
 
       return {
         id: s.id,

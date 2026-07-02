@@ -13,7 +13,7 @@ import {
 } from "@orbis/ui-svelte/table";
 import { Input } from "@orbis/ui-svelte/input";
 import { toast } from "svelte-sonner";
-import { getLocale } from "$lib/paraglide/runtime";
+import { l, isAr } from "$lib/i18n-utils";
 import { fade } from "svelte/transition";
 import {
   Plus,
@@ -96,11 +96,11 @@ const childrenMap = $derived.by(() => {
     }
   }
   // Sort children alphabetically by name
-  const locale = getLocale();
+  const locale = isAr() ? "ar" : "en";
   for (const [pId, list] of map.entries()) {
     list.sort((a, b) => {
-      const nameA = (locale === "ar" ? a.name_ar || a.name : a.name) || "";
-      const nameB = (locale === "ar" ? b.name_ar || b.name : b.name) || "";
+      const nameA = l(a.name_ar, a.name) || "";
+      const nameB = l(b.name_ar, b.name) || "";
       return nameA.localeCompare(nameB, locale);
     });
   }
@@ -111,10 +111,10 @@ const rootUnits = $derived.by(() => {
   const roots = units.filter(
     (u) => !u.parent_id || !unitsMap.has(String(u.parent_id)),
   );
-  const locale = getLocale();
+  const locale = isAr() ? "ar" : "en";
   roots.sort((a, b) => {
-    const nameA = (locale === "ar" ? a.name_ar || a.name : a.name) || "";
-    const nameB = (locale === "ar" ? b.name_ar || b.name : b.name) || "";
+    const nameA = l(a.name_ar, a.name) || "";
+    const nameB = l(b.name_ar, b.name) || "";
     return nameA.localeCompare(nameB, locale);
   });
   return roots;
@@ -414,7 +414,7 @@ function escapeHtml(text: string): string {
 
     <!-- Add button -->
     <Button variant="lime" class="text-xs h-9 px-4 font-semibold shrink-0 animate-in fade-in zoom-in-95 duration-150" onclick={openCreateSheet}>
-      <Plus size={14} class={getLocale() === "ar" ? 'ml-1.5' : 'mr-1.5'} />
+      <Plus size={14} class="me-1.5" />
       {m.settings_units_add()}
     </Button>
   </div>
@@ -479,7 +479,7 @@ function escapeHtml(text: string): string {
                   <TableCell class="p-2">
                     <div 
                       class="flex items-center gap-1.5 text-start"
-                      style="{getLocale() === 'ar' ? 'padding-right' : 'padding-left'}: {node.depth * 20}px"
+                      style="padding-inline-start: {node.depth * 20}px"
                     >
                       <!-- Expand/Collapse Button -->
                       {#if node.hasChildren}
@@ -507,12 +507,12 @@ function escapeHtml(text: string): string {
                       <div class="flex flex-col leading-tight min-w-0">
                         <span class="text-xs font-bold text-foreground truncate">
                           {#if searchQuery.trim()}
-                            {@html highlightText(getLocale() === "ar" && node.unit.name_ar ? node.unit.name_ar : node.unit.name, searchQuery)}
+                            {@html highlightText(l(node.unit.name_ar, node.unit.name), searchQuery)}
                           {:else}
-                            {getLocale() === "ar" && node.unit.name_ar ? node.unit.name_ar : node.unit.name}
+                            {l(node.unit.name_ar, node.unit.name)}
                           {/if}
                         </span>
-                        {#if getLocale() === "ar" && node.unit.name_ar && node.unit.name}
+                        {#if isAr() && node.unit.name_ar && node.unit.name}
                           <span class="text-[9px] text-muted-foreground truncate">
                             {#if searchQuery.trim()}
                               {@html highlightText(node.unit.name, searchQuery)}
@@ -609,12 +609,12 @@ function escapeHtml(text: string): string {
                       <div class="flex flex-col leading-tight min-w-0">
                         <span class="text-xs font-bold text-foreground truncate">
                           {#if searchQuery.trim()}
-                            {@html highlightText(getLocale() === "ar" && unit.name_ar ? unit.name_ar : unit.name, searchQuery)}
+                            {@html highlightText(l(unit.name_ar, unit.name), searchQuery)}
                           {:else}
-                            {getLocale() === "ar" && unit.name_ar ? unit.name_ar : unit.name}
+                            {l(unit.name_ar, unit.name)}
                           {/if}
                         </span>
-                        {#if getLocale() === "ar" && unit.name_ar && unit.name}
+                        {#if isAr() && unit.name_ar && unit.name}
                           <span class="text-[9px] text-muted-foreground truncate">
                             {#if searchQuery.trim()}
                               {@html highlightText(unit.name, searchQuery)}

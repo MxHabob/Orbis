@@ -17,7 +17,7 @@ import {
 } from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
-import { getLocale } from "$lib/paraglide/runtime";
+import { l } from "$lib/i18n-utils";
 import {
   Save,
   RefreshCw,
@@ -329,7 +329,7 @@ onMount(() => {
 });
 </script>
 
-<div class="h-full w-full flex flex-col bg-background/40" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
+<div class="h-full w-full flex flex-col bg-background/40">
   
   <!-- Editor Header Action Bar -->
   <header class="h-14 border-b border-border bg-card/60 px-4 flex items-center justify-between gap-4 flex-nowrap select-none">
@@ -340,7 +340,7 @@ onMount(() => {
       <div class="flex flex-col text-start">
         <div class="flex items-center gap-2">
           <h1 class="text-sm font-bold text-foreground">
-            {templateRecord ? (getLocale() === 'ar' && templateRecord.name_ar ? templateRecord.name_ar : templateRecord.name) : "جاري التحميل..."}
+            {templateRecord ? l(templateRecord.name_ar, templateRecord.name) : m.settings_templates_loading()}
           </h1>
           {#if templateRecord}
             <Badge variant="outline" class="text-[10px] capitalize">{templateRecord.entity_type}</Badge>
@@ -385,7 +385,7 @@ onMount(() => {
                 type="button"
                 class="w-full flex items-center gap-2 py-1.5 px-2 rounded hover:bg-accent text-start cursor-pointer transition-all
                   {selectedNodeId === node.id ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground'}"
-                style="padding-left: {depth * 12 + 8}px; padding-right: {getLocale() === 'ar' ? (depth * 12 + 8) + 'px' : ''}"
+                style="padding-inline-start: {depth * 12 + 8}px;"
                 onclick={() => selectNode(node.id)}
               >
                 {#if node.type === "Page"}

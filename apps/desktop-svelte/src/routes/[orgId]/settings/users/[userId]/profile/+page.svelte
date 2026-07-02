@@ -53,7 +53,7 @@ Extracted from the original monolith TabsContent "profile".
     if (!userId) return;
     isLoading = true;
     try {
-      const fetched = await commands.users.getUser(userId);
+      const fetched = await commands.users.getUser(userId) as any;
       user = fetched;
       fullName = fetched.full_name || "";
       nameAr = fetched.name_ar || "";

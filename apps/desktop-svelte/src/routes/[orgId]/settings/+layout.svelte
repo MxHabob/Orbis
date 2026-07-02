@@ -128,7 +128,6 @@ const navItems = $derived([
         items={navItems}
         {basePath}
         title={m.settings_layout_title()}
-        description={m.settings_layout_desc()}
       />
     {/snippet}
 

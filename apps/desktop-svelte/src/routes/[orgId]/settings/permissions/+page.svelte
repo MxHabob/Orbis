@@ -29,7 +29,8 @@ import {
   TableRow,
 } from "@orbis/ui-svelte/table";
 import { toast } from "svelte-sonner";
-import { getLocale } from "$lib/paraglide/runtime";
+import { l, isAr } from "$lib/i18n-utils";
+import * as m from "$lib/paraglide/messages";
 import { commands } from "$lib/services/ipc";
 import { goto } from "$app/navigation";
 import {
@@ -131,11 +132,7 @@ async function loadPermissions() {
     hasUnsavedChanges = false;
   } catch (e) {
     console.error("Failed to load permissions", e);
-    toast.error(
-      getLocale() === "ar"
-        ? "فشل تحميل الصلاحيات من قاعدة البيانات"
-        : "Failed to load permissions from database",
-    );
+    toast.error(m.settings_permissions_load_error());
   } finally {
     isLoading = false;
   }
@@ -173,19 +170,11 @@ async function saveChanges() {
       await commands.permissions.saveRolePermissions(r, roleRules);
     }
 
-    toast.success(
-      getLocale() === "ar"
-        ? "تم حفظ التغييرات بنجاح!"
-        : "Permissions updated and saved successfully!",
-    );
+    toast.success(m.settings_permissions_save_success());
     await loadPermissions();
   } catch (e) {
     console.error("Failed to save permissions", e);
-    toast.error(
-      getLocale() === "ar"
-        ? "فشل في حفظ التحديثات في قاعدة البيانات"
-        : "Failed to save permissions to database",
-    );
+    toast.error(m.settings_permissions_save_error());
   } finally {
     isLoading = false;
   }
@@ -193,9 +182,7 @@ async function saveChanges() {
 
 function discardChanges() {
   loadPermissions();
-  toast.info(
-    getLocale() === "ar" ? "تم التراجع عن التغييرات" : "Changes discarded",
-  );
+  toast.info(m.settings_permissions_discarded());
 }
 
 // Filtered Rules
@@ -263,17 +250,11 @@ function capitalizeFirstLetter(str: string): string {
 // Manage Rules
 function addRule() {
   if (!newRuleDocType.trim()) {
-    toast.error(
-      getLocale() === "ar"
-        ? "يرجى إدخال نوع المستند"
-        : "Please input a document type",
-    );
+    toast.error(m.settings_permissions_input_doctype_error());
     return;
   }
   if (!newRuleRole.trim()) {
-    toast.error(
-      getLocale() === "ar" ? "يرجى إدخال الدور" : "Please input a role",
-    );
+    toast.error(m.settings_permissions_input_role_error());
     return;
   }
 
@@ -284,11 +265,7 @@ function addRule() {
       r.document_type.toLowerCase() === newRuleDocType.toLowerCase(),
   );
   if (exists) {
-    toast.error(
-      getLocale() === "ar"
-        ? "هذه القاعدة موجودة بالفعل!"
-        : "This rule already exists!",
-    );
+    toast.error(m.settings_permissions_rule_exists_error());
     return;
   }
 
@@ -310,11 +287,7 @@ function addRule() {
   newRuleDocType = "";
   newRuleOnlyIfCreator = false;
   newRuleActions = [];
-  toast.success(
-    getLocale() === "ar"
-      ? "تمت إضافة القاعدة بنجاح"
-      : "Rule added successfully",
-  );
+  toast.success(m.settings_permissions_rule_added_success());
 }
 
 function deleteRule(index: number) {
@@ -324,7 +297,7 @@ function deleteRule(index: number) {
       !(r.role === deleted.role && r.document_type === deleted.document_type),
   );
   hasUnsavedChanges = true;
-  toast.success(getLocale() === "ar" ? "تم حذف القاعدة" : "Rule deleted");
+  toast.success(m.settings_permissions_rule_deleted_success());
 }
 
 function toggleAction(ruleIndex: number, action: string) {
@@ -384,8 +357,8 @@ function toggleAction(ruleIndex: number, action: string) {
             class="h-9 text-xs"
             onclick={() => showSetUserPermissionsModal = true}
           >
-            <UserCheck size={14} class={getLocale() === "ar" ? 'ml-1.5' : 'mr-1.5'} />
-            {getLocale() === "ar" ? "تعيين صلاحيات المستخدمين" : "Set User Permissions"}
+            <UserCheck size={14} class="me-1.5" />
+            {m.settings_permissions_btn_set_user()}
           </Button>
 
           <Button
@@ -394,8 +367,8 @@ function toggleAction(ruleIndex: number, action: string) {
             class="h-9 text-xs font-semibold"
             onclick={() => showAddRuleModal = true}
           >
-            <Plus size={14} class={getLocale() === "ar" ? 'ml-1.5' : 'mr-1.5'} />
-            {getLocale() === "ar" ? "إضافة قاعدة جديدة" : "+ Add A New Rule"}
+            <Plus size={14} class="me-1.5" />
+            {m.settings_permissions_btn_add_rule()}
           </Button>
         </div>
       </div>
@@ -406,24 +379,24 @@ function toggleAction(ruleIndex: number, action: string) {
       <Table>
         <TableHeader class="bg-muted/40 select-none">
           <TableRow>
-            <TableHead class="text-start font-bold text-xs w-[20%]">{getLocale() === "ar" ? "نوع المستند" : "Document Type"}</TableHead>
-            <TableHead class="text-start font-bold text-xs w-[20%]">{getLocale() === "ar" ? "الدور" : "Role"}</TableHead>
-            <TableHead class="text-start font-bold text-xs w-[10%]">{getLocale() === "ar" ? "المستوى" : "Level"}</TableHead>
-            <TableHead class="text-start font-bold text-xs w-[45%]">{getLocale() === "ar" ? "الصلاحيات" : "Permissions"}</TableHead>
+            <TableHead class="text-start font-bold text-xs w-[20%]">{m.settings_permissions_col_doc_type()}</TableHead>
+            <TableHead class="text-start font-bold text-xs w-[20%]">{m.settings_permissions_col_role()}</TableHead>
+            <TableHead class="text-start font-bold text-xs w-[10%]">{m.settings_permissions_col_level()}</TableHead>
+            <TableHead class="text-start font-bold text-xs w-[45%]">{m.settings_permissions_col_permissions()}</TableHead>
             <TableHead class="text-center w-[5%]"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {#if isLoading}
             <TableRow>
-              <TableCell colspan="5" class="py-12 text-center text-xs text-muted-foreground">
-                {getLocale() === "ar" ? "جاري تحميل القواعد..." : "Loading rules..."}
+              <TableCell colspan={5} class="py-12 text-center text-xs text-muted-foreground">
+                {m.settings_permissions_loading()}
               </TableCell>
             </TableRow>
           {:else if filteredRules.length === 0}
             <TableRow>
-              <TableCell colspan="5" class="py-12 text-center text-xs text-muted-foreground">
-                {getLocale() === "ar" ? "لا توجد قواعد مطابقة للفلاتر" : "No rules match the filters."}
+              <TableCell colspan={5} class="py-12 text-center text-xs text-muted-foreground">
+                {m.settings_permissions_empty_rules()}
               </TableCell>
             </TableRow>
           {:else}
@@ -446,7 +419,7 @@ function toggleAction(ruleIndex: number, action: string) {
                       }}
                     />
                     <span class="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors">
-                      {getLocale() === "ar" ? "فقط إذا كان المنشئ" : "Only If Creator"}
+                      {m.settings_permissions_only_creator()}
                     </span>
                   </label>
                 </TableCell>
@@ -477,7 +450,7 @@ function toggleAction(ruleIndex: number, action: string) {
                     variant="ghost"
                     size="icon"
                     onclick={() => deleteRule(idx)}
-                    title={getLocale() === "ar" ? "حذف القاعدة" : "Delete Rule"}
+                    title={m.settings_permissions_delete_rule_title()}
                   >
                     <Trash2 size={14} class="text-muted-foreground hover:text-destructive" />
                   </Button>
@@ -505,22 +478,20 @@ function toggleAction(ruleIndex: number, action: string) {
         </div>
         <div class="flex flex-col">
           <span class="text-xs font-bold text-foreground">
-            {getLocale() === "ar" ? "تغييرات غير محفوظة" : "Unsaved Rule Updates"}
+            {m.settings_permissions_unsaved_title()}
           </span>
           <span class="text-[10px] text-muted-foreground mt-0.5">
-            {getLocale() === "ar" 
-              ? "لقد قمت بتعديل مصفوفة قواعد الصلاحيات." 
-              : "You modified the permission rule configurations."}
+            {m.settings_permissions_unsaved_desc()}
           </span>
         </div>
       </div>
 
       <div class="flex items-center gap-2">
         <Button variant="ghost" size="sm" class="text-xs" onclick={discardChanges} disabled={isLoading}>
-          {getLocale() === "ar" ? "تراجع" : "Discard"}
+          {m.settings_permissions_discard()}
         </Button>
         <Button variant="lime" size="sm" class="text-xs font-bold" onclick={saveChanges} disabled={isLoading}>
-          {isLoading ? (getLocale() === "ar" ? "جاري الحفظ..." : "Saving...") : (getLocale() === "ar" ? "حفظ التغييرات" : "Save Changes")}
+          {isLoading ? m.settings_permissions_saving_btn() : m.settings_permissions_save_btn()}
         </Button>
       </div>
     </div>
@@ -531,14 +502,14 @@ function toggleAction(ruleIndex: number, action: string) {
 <Dialog bind:open={showAddRuleModal}>
   <DialogContent class="max-w-lg text-start">
     <DialogHeader>
-      <DialogTitle>{getLocale() === "ar" ? "إضافة قاعدة صلاحيات جديدة" : "Add A New Permission Rule"}</DialogTitle>
+      <DialogTitle>{m.settings_permissions_dialog_add_title()}</DialogTitle>
     </DialogHeader>
 
     <div class="flex flex-col gap-4 py-2">
       <!-- Document Type Selector -->
       <div class="flex flex-col gap-1.5 text-start">
         <Label for="rule_doc_type" class="text-xs font-medium text-muted-foreground">
-          {getLocale() === "ar" ? "نوع المستند" : "Document Type"}
+          {m.settings_permissions_label_doctype()}
         </Label>
         <Select type="single" value={newRuleDocType} onValueChange={(v) => (newRuleDocType = v ?? "")}>
           <SelectTrigger class="h-9 w-full text-xs">
@@ -555,7 +526,7 @@ function toggleAction(ruleIndex: number, action: string) {
       <!-- Role Selector -->
       <div class="flex flex-col gap-1.5 text-start">
         <Label for="rule_role" class="text-xs font-medium text-muted-foreground">
-          {getLocale() === "ar" ? "الدور الوظيفي" : "Job Role"}
+          {m.settings_permissions_label_role()}
         </Label>
         <Select type="single" value={newRuleRole} onValueChange={(v) => (newRuleRole = v ?? "Academics User")}>
           <SelectTrigger class="h-9 w-full text-xs">
@@ -573,7 +544,7 @@ function toggleAction(ruleIndex: number, action: string) {
         <!-- Level -->
         <div class="flex flex-col gap-1.5 text-start">
           <Label for="rule_level" class="text-xs font-medium text-muted-foreground">
-            {getLocale() === "ar" ? "المستوى" : "Level"}
+            {m.settings_permissions_label_level()}
           </Label>
           <Input
             id="rule_level"
@@ -591,7 +562,7 @@ function toggleAction(ruleIndex: number, action: string) {
               onCheckedChange={(checked) => (newRuleOnlyIfCreator = Boolean(checked))}
             />
             <span class="text-xs text-muted-foreground">
-              {getLocale() === "ar" ? "فقط إذا كان المنشئ" : "Only If Creator"}
+              {m.settings_permissions_only_creator()}
             </span>
           </label>
         </div>
@@ -600,7 +571,7 @@ function toggleAction(ruleIndex: number, action: string) {
       <!-- Actions Selector Checklist -->
       <div class="flex flex-col gap-2 border-t border-border/40 pt-4 mt-2 text-start">
         <span class="text-xs font-semibold text-muted-foreground mb-1">
-          {getLocale() === "ar" ? "الإجراءات المسموحة" : "Allowed Actions"}
+          {m.settings_permissions_label_allowed_actions()}
         </span>
         <div class="grid grid-cols-3 gap-2.5 max-h-40 overflow-y-auto pr-1">
           {#each getActionsForDocType(newRuleDocType || "Default") as action}
@@ -624,10 +595,10 @@ function toggleAction(ruleIndex: number, action: string) {
 
     <DialogFooter class="border-t border-border pt-4 mt-2">
       <Button variant="ghost" size="sm" onclick={() => showAddRuleModal = false}>
-        {getLocale() === "ar" ? "إلغاء" : "Cancel"}
+        {m.settings_permissions_btn_cancel()}
       </Button>
       <Button variant="lime" size="sm" class="font-bold" onclick={addRule}>
-        {getLocale() === "ar" ? "إضافة القاعدة" : "Add Rule"}
+        {m.settings_permissions_btn_add()}
       </Button>
     </DialogFooter>
   </DialogContent>
@@ -637,11 +608,9 @@ function toggleAction(ruleIndex: number, action: string) {
 <Dialog bind:open={showSetUserPermissionsModal}>
   <DialogContent class="max-w-md text-start">
     <DialogHeader>
-      <DialogTitle>{getLocale() === "ar" ? "صلاحيات مستخدم محدد" : "User Permissions Settings"}</DialogTitle>
+      <DialogTitle>{m.settings_permissions_dialog_user_title()}</DialogTitle>
       <DialogDescription>
-        {getLocale() === "ar"
-          ? "اختر مستخدماً من القائمة لتعديل صلاحيات الاستثناء الفردية المخصصة له."
-          : "Select a user from the directory below to configure custom individual override rules."}
+        {m.settings_permissions_dialog_user_desc()}
       </DialogDescription>
     </DialogHeader>
 
@@ -650,7 +619,7 @@ function toggleAction(ruleIndex: number, action: string) {
       <Input
         type="text"
         bind:value={userSearchQuery}
-        placeholder={getLocale() === "ar" ? "ابحث عن موظف أو مستخدم..." : "Search user directory..."}
+        placeholder={m.settings_permissions_search_user_placeholder()}
         class="w-full rtl:pr-9 ltr:pl-9 h-9 text-xs"
       />
     </div>
@@ -659,7 +628,7 @@ function toggleAction(ruleIndex: number, action: string) {
     <div class="flex flex-col gap-1.5 max-h-60 overflow-y-auto pr-1">
       {#if filteredUsers.length === 0}
         <span class="text-xs text-muted-foreground text-center py-6">
-          {getLocale() === "ar" ? "لا يوجد مستخدمون" : "No users found"}
+          {m.settings_permissions_no_users()}
         </span>
       {:else}
         {#each filteredUsers as u}
@@ -687,7 +656,7 @@ function toggleAction(ruleIndex: number, action: string) {
 
     <DialogFooter class="border-t border-border pt-4">
       <Button variant="ghost" size="sm" onclick={() => showSetUserPermissionsModal = false}>
-        {getLocale() === "ar" ? "إغلاق" : "Close"}
+        {m.settings_permissions_btn_close()}
       </Button>
     </DialogFooter>
   </DialogContent>

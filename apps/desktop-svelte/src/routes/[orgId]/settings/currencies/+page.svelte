@@ -41,7 +41,7 @@ import {
 } from "lucide-svelte";
 import { fade, slide } from "svelte/transition";
 import * as m from "$lib/paraglide/messages";
-import { getLocale } from "$lib/paraglide/runtime";
+import { l, isAr } from "$lib/i18n-utils";
 
 let orgId = $derived((page.params.orgId as string) || "");
 
@@ -89,11 +89,7 @@ async function loadCurrencies() {
     currencies = await commands.finance.getCurrencies(orgId);
   } catch (e) {
     console.error("Error loading currencies:", e);
-    toast.error(
-      getLocale() === "ar"
-        ? "فشل في تحميل العملات"
-        : "Failed to load currencies",
-    );
+    toast.error(m.settings_currencies_load_error());
   } finally {
     isLoading = false;
   }
@@ -124,28 +120,18 @@ async function handleAddCurrency(e: Event) {
 
   const code = addCode.trim().toUpperCase();
   if (!code || code.length < 2) {
-    toast.error(
-      getLocale() === "ar" ? "رمز العملة غير صالح" : "Invalid currency code",
-    );
+    toast.error(m.settings_currencies_invalid_code());
     return;
   }
 
   // Check if code already exists
   if (currencies.some((c) => c.code === code)) {
-    toast.error(
-      getLocale() === "ar"
-        ? "هذه العملة مضافة بالفعل"
-        : "This currency already exists",
-    );
+    toast.error(m.settings_currencies_already_exists());
     return;
   }
 
   if (addExchangeRate <= 0) {
-    toast.error(
-      getLocale() === "ar"
-        ? "سعر الصرف يجب أن يكون أكبر من الصفر"
-        : "Exchange rate must be greater than zero",
-    );
+    toast.error(m.settings_currencies_invalid_rate());
     return;
   }
 
@@ -166,21 +152,13 @@ async function handleAddCurrency(e: Event) {
     };
 
     await commands.finance.createCurrency(newCurrency);
-    toast.success(
-      getLocale() === "ar"
-        ? "تم إضافة العملة بنجاح"
-        : "Currency added successfully",
-    );
+    toast.success(m.settings_currencies_added_success());
     showAddDialog = false;
     await loadCurrencies();
   } catch (e) {
     console.error("Error creating currency:", e);
     const errorMsg = e instanceof Error ? e.message : String(e);
-    toast.error(
-      getLocale() === "ar"
-        ? `خطأ أثناء الإضافة: ${errorMsg}`
-        : `Error adding currency: ${errorMsg}`,
-    );
+    toast.error(m.settings_currencies_add_error({ error: errorMsg }));
   } finally {
     isSubmitting = false;
   }
@@ -204,11 +182,7 @@ async function handleEditCurrency(e: Event) {
   if (isSubmitting) return;
 
   if (editExchangeRate <= 0) {
-    toast.error(
-      getLocale() === "ar"
-        ? "سعر الصرف يجب أن يكون أكبر من الصفر"
-        : "Exchange rate must be greater than zero",
-    );
+    toast.error(m.settings_currencies_invalid_rate());
     return;
   }
 
@@ -226,21 +200,13 @@ async function handleEditCurrency(e: Event) {
     };
 
     await commands.finance.updateCurrency(orgId, editCode, updates);
-    toast.success(
-      getLocale() === "ar"
-        ? "تم تحديث العملة بنجاح"
-        : "Currency updated successfully",
-    );
+    toast.success(m.settings_currencies_updated_success());
     showEditDialog = false;
     await loadCurrencies();
   } catch (e) {
     console.error("Error updating currency:", e);
     const errorMsg = e instanceof Error ? e.message : String(e);
-    toast.error(
-      getLocale() === "ar"
-        ? `خطأ أثناء التعديل: ${errorMsg}`
-        : `Error updating currency: ${errorMsg}`,
-    );
+    toast.error(m.settings_currencies_update_error({ error: errorMsg }));
   } finally {
     isSubmitting = false;
   }
@@ -248,11 +214,7 @@ async function handleEditCurrency(e: Event) {
 
 async function confirmDeleteCurrency(c: any) {
   if (c.is_base === 1) {
-    toast.error(
-      getLocale() === "ar"
-        ? "لا يمكن حذف العملة الأساسية للنظام"
-        : "Cannot delete the base currency",
-    );
+    toast.error(m.settings_currencies_delete_base_error());
     return;
   }
   currencyToDelete = c;
@@ -262,49 +224,29 @@ async function handleDeleteCurrency() {
   if (!currencyToDelete) return;
   try {
     await commands.finance.deleteCurrency(orgId, currencyToDelete.code);
-    toast.success(
-      getLocale() === "ar"
-        ? `تم حذف العملة (${currencyToDelete.code}) بنجاح`
-        : `Currency (${currencyToDelete.code}) deleted successfully`,
-    );
+    toast.success(m.settings_currencies_deleted_success({ code: currencyToDelete.code }));
     currencyToDelete = null;
     await loadCurrencies();
   } catch (e) {
     console.error("Error deleting currency:", e);
     const errorMsg = e instanceof Error ? e.message : String(e);
-    toast.error(
-      getLocale() === "ar"
-        ? `فشل الحذف: ${errorMsg}`
-        : `Failed to delete currency: ${errorMsg}`,
-    );
+    toast.error(m.settings_currencies_delete_error({ error: errorMsg }));
   }
 }
 
 async function seedFinancials() {
-  const confirmed = confirm(
-    getLocale() === "ar"
-      ? "هل أنت متأكد من رغبتك في تهيئة النظام المالي الافتراضي؟ سيتم إنشاء العملات (ريال، دولار، سعودي) وشجرة الحسابات المحاسبية الأساسية."
-      : "Are you sure you want to seed the default financial system? This will generate currencies (YER, USD, SAR) and the basic Chart of Accounts.",
-  );
+  const confirmed = confirm(m.settings_currencies_seed_confirm());
   if (!confirmed) return;
 
   isSeeding = true;
   try {
     await commands.finance.seedDefaultFinancials(orgId);
-    toast.success(
-      getLocale() === "ar"
-        ? "تم تهيئة النظام المالي وتنزيل شجرة الحسابات والعملات الافتراضية بنجاح!"
-        : "Financial system, default accounts, and currencies seeded successfully!",
-    );
+    toast.success(m.settings_currencies_seeded_success());
     await loadCurrencies();
   } catch (e) {
     console.error("Error seeding financials:", e);
     const errorMsg = e instanceof Error ? e.message : String(e);
-    toast.error(
-      getLocale() === "ar"
-        ? `خطأ أثناء التهيئة: ${errorMsg}`
-        : `Error seeding financials: ${errorMsg}`,
-    );
+    toast.error(m.settings_currencies_seed_error({ error: errorMsg }));
   } finally {
     isSeeding = false;
   }
@@ -322,30 +264,20 @@ function cancelEditingRate() {
 
 async function saveRateValue(code: string) {
   if (editRateValue <= 0) {
-    toast.error(
-      getLocale() === "ar"
-        ? "سعر الصرف يجب أن يكون أكبر من الصفر"
-        : "Exchange rate must be greater than zero",
-    );
+    toast.error(m.settings_currencies_invalid_rate());
     return;
   }
   try {
     await commands.finance.updateCurrency(orgId, code, {
       exchange_rate: editRateValue,
     });
-    toast.success(
-      getLocale() === "ar"
-        ? "تم تحديث سعر الصرف بنجاح"
-        : "Exchange rate updated successfully",
-    );
+    toast.success(m.settings_currencies_rate_updated_success());
     editingRateCode = null;
     await loadCurrencies();
   } catch (e) {
     console.error("Error updating exchange rate:", e);
     const errorMsg = e instanceof Error ? e.message : String(e);
-    toast.error(
-      getLocale() === "ar" ? `خطأ: ${errorMsg}` : `Error: ${errorMsg}`,
-    );
+    toast.error(m.settings_currencies_rate_update_error({ error: errorMsg }));
   }
 }
 
@@ -356,7 +288,7 @@ let baseCurrencyCode = $derived(
 </script>
 
 <svelte:head>
-  <title>{getLocale() === "ar" ? "العملات وأسعار الصرف" : "Currencies & Rates"} | Orbis</title>
+  <title>{m.settings_nav_currencies()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto bg-background p-6 flex flex-col gap-6 scrollbar-hide">
@@ -365,7 +297,7 @@ let baseCurrencyCode = $derived(
     <div class="flex items-center gap-2">
       {#if !isLoading}
         <span class="text-[10px] px-2 py-0.5 rounded bg-muted font-mono text-muted-foreground font-bold">
-          {getLocale() === "ar" ? `العملات (${currencies.length})` : `Currencies (${currencies.length})`}
+          {m.settings_currencies_count_label({ count: currencies.length })}
         </span>
       {/if}
     </div>
@@ -380,7 +312,7 @@ let baseCurrencyCode = $derived(
         class="h-9 text-xs flex items-center gap-1.5 cursor-pointer border-primary/30 hover:bg-primary/5 text-primary font-semibold"
       >
         <Sparkles size={13} class={isSeeding ? "animate-spin" : ""} />
-        <span>{isSeeding ? (getLocale() === "ar" ? "جاري التهيئة..." : "Seeding...") : (getLocale() === "ar" ? "تهيئة العملات الافتراضية" : "Seed Default Currencies")}</span>
+        <span>{isSeeding ? m.settings_currencies_seeding() : m.settings_currencies_seed_btn()}</span>
       </Button>
       
       <Button
@@ -388,7 +320,7 @@ let baseCurrencyCode = $derived(
         size="sm"
         onclick={loadCurrencies}
         class="h-9 w-9 p-0 flex items-center justify-center cursor-pointer"
-        title={getLocale() === "ar" ? "تحديث" : "Refresh"}
+        title={m.settings_currencies_refresh_tooltip()}
       >
         <RefreshCw size={13} />
       </Button>
@@ -400,7 +332,7 @@ let baseCurrencyCode = $derived(
         class="h-9 text-xs flex items-center gap-1.5 font-bold cursor-pointer"
       >
         <Plus size={14} />
-        <span>{getLocale() === "ar" ? "إضافة عملة" : "Add Currency"}</span>
+        <span>{m.settings_currencies_add_btn()}</span>
       </Button>
     </div>
   </div>
@@ -409,11 +341,9 @@ let baseCurrencyCode = $derived(
   <div class="border border-border/60 bg-muted/10 rounded-xl p-4 flex gap-3 text-start text-xs select-none hover:border-primary/25 transition-all duration-200">
     <Info class="text-primary shrink-0 animate-pulse" size={16} />
     <div class="flex flex-col gap-1 text-muted-foreground leading-relaxed">
-      <span class="font-bold text-foreground text-xs">{getLocale() === "ar" ? "كيف يعمل نظام أسعار الصرف؟" : "How does the exchange rate system work?"}</span>
+      <span class="font-bold text-foreground text-xs">{m.settings_currencies_how_it_works_title()}</span>
       <span>
-        {getLocale() === "ar" 
-          ? `يتم اعتماد العملة الأساسية (${baseCurrencyCode}) كعملة التقييم والتقارير في النظام. عند سداد الطلاب برسوم أجنبية (مثل الدولار أو السعودي)، يقوم النظام تلقائياً بتحويل المبلغ وحسابه بالعملة الأساسية بناءً على أسعار الصرف المدخلة هنا.`
-          : `The base currency (${baseCurrencyCode}) is used for valuation and reports. When students pay with foreign currencies (e.g. USD or SAR), the system automatically converts and records the amount in the base currency based on the exchange rates defined here.`}
+        {m.settings_currencies_how_it_works_desc({ baseCurrencyCode })}
       </span>
     </div>
   </div>
@@ -432,14 +362,12 @@ let baseCurrencyCode = $derived(
         <div class="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-2">
           <Globe size={28} />
         </div>
-        <h3 class="text-sm font-bold text-foreground">{getLocale() === "ar" ? "لم يتم تهيئة أي عملات بعد" : "No currencies configured yet"}</h3>
+        <h3 class="text-sm font-bold text-foreground">{m.settings_currencies_no_currencies_title()}</h3>
         <p class="text-xs text-muted-foreground max-w-xs">
-          {getLocale() === "ar" 
-            ? "اضغط على زر التهيئة لتنزيل العملات وشجرة الحسابات الافتراضية للبدء فوراً." 
-            : "Click 'Seed Default Currencies' to setup default currencies and Chart of Accounts."}
+          {m.settings_currencies_seed_hint()}
         </p>
         <Button variant="default" size="sm" onclick={seedFinancials} class="mt-2 cursor-pointer font-bold">
-          {getLocale() === "ar" ? "تهيئة النظام الآن" : "Seed System Now"}
+          {m.settings_currencies_seed_now_btn()}
         </Button>
       </div>
     {:else}
@@ -447,14 +375,14 @@ let baseCurrencyCode = $derived(
         <Table>
           <TableHeader class="bg-muted/40 select-none">
             <TableRow>
-              <TableHead class="text-start font-bold text-xs">{getLocale() === "ar" ? "رمز العملة" : "Code"}</TableHead>
-              <TableHead class="text-start font-bold text-xs">{getLocale() === "ar" ? "الاسم بالعربية" : "Arabic Name"}</TableHead>
-              <TableHead class="text-start font-bold text-xs">{getLocale() === "ar" ? "الاسم بالإنجليزية" : "English Name"}</TableHead>
-              <TableHead class="text-start font-bold text-xs">{getLocale() === "ar" ? "الرمز / العلامة" : "Symbol"}</TableHead>
-              <TableHead class="text-start font-bold text-xs">{getLocale() === "ar" ? "النوع" : "Type"}</TableHead>
-              <TableHead class="text-start font-bold text-xs">{getLocale() === "ar" ? "الحالة" : "Status"}</TableHead>
-              <TableHead class="text-end font-bold text-xs">{getLocale() === "ar" ? "سعر الصرف" : "Exchange Rate"}</TableHead>
-              <TableHead class="text-end font-bold text-xs w-[140px]">{getLocale() === "ar" ? "إجراءات" : "Actions"}</TableHead>
+              <TableHead class="text-start font-bold text-xs">{m.settings_currencies_col_code()}</TableHead>
+              <TableHead class="text-start font-bold text-xs">{m.settings_currencies_col_name_ar()}</TableHead>
+              <TableHead class="text-start font-bold text-xs">{m.settings_currencies_col_name_en()}</TableHead>
+              <TableHead class="text-start font-bold text-xs">{m.settings_currencies_col_symbol()}</TableHead>
+              <TableHead class="text-start font-bold text-xs">{m.settings_currencies_col_type()}</TableHead>
+              <TableHead class="text-start font-bold text-xs">{m.settings_currencies_col_status()}</TableHead>
+              <TableHead class="text-end font-bold text-xs">{m.settings_currencies_col_rate()}</TableHead>
+              <TableHead class="text-end font-bold text-xs w-[140px]">{m.settings_currencies_col_actions()}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -468,28 +396,28 @@ let baseCurrencyCode = $derived(
                     {c.symbol}
                   </span>
                   <span class="text-[10px] text-muted-foreground ml-1">
-                    ({c.symbol_position === 'before' ? (getLocale() === "ar" ? "قبل" : "before") : (getLocale() === "ar" ? "بعد" : "after")})
+                    ({c.symbol_position === 'before' ? m.settings_currencies_symbol_position_before() : m.settings_currencies_symbol_position_after()})
                   </span>
                 </TableCell>
                 <TableCell class="text-start text-xs">
                   {#if c.is_base === 1}
                     <Badge variant="lime" class="text-[9px] font-bold">
-                      {getLocale() === "ar" ? "الأساسية" : "Base"}
+                      {m.settings_currencies_type_base()}
                     </Badge>
                   {:else}
                     <Badge variant="secondary" class="text-[9px] font-semibold">
-                      {getLocale() === "ar" ? "فرعية" : "Sub"}
+                      {m.settings_currencies_type_sub()}
                     </Badge>
                   {/if}
                 </TableCell>
                 <TableCell class="text-start text-xs">
                   {#if c.is_active === 1}
                     <Badge variant="lime" class="text-[9px] font-bold">
-                      {getLocale() === "ar" ? "نشط" : "Active"}
+                      {m.settings_currencies_status_active()}
                     </Badge>
                   {:else}
                     <Badge variant="secondary" class="text-[9px] font-semibold">
-                      {getLocale() === "ar" ? "موقف" : "Inactive"}
+                      {m.settings_currencies_status_inactive()}
                     </Badge>
                   {/if}
                 </TableCell>
@@ -526,7 +454,7 @@ let baseCurrencyCode = $derived(
                     <button
                       onclick={() => startEditingRate(c)}
                       class="text-foreground hover:text-primary hover:underline cursor-pointer transition-colors duration-150 py-1 px-2 hover:bg-primary/5 rounded font-mono font-bold"
-                      title={getLocale() === "ar" ? "اضغط لتعديل سعر الصرف" : "Click to edit exchange rate"}
+                      title={m.settings_currencies_edit_rate_tooltip()}
                     >
                       {c.exchange_rate.toFixed(4)}
                     </button>
@@ -540,7 +468,7 @@ let baseCurrencyCode = $derived(
                       size="icon"
                       onclick={() => openEditDialog(c)}
                       class="h-7 w-7 cursor-pointer hover:text-primary hover:bg-primary/5"
-                      title={getLocale() === "ar" ? "تعديل العملة" : "Edit Currency"}
+                      title={m.settings_currencies_edit_title()}
                     >
                       <Edit2 size={12} />
                     </Button>
@@ -551,13 +479,13 @@ let baseCurrencyCode = $derived(
                         size="icon"
                         onclick={() => confirmDeleteCurrency(c)}
                         class="h-7 w-7 cursor-pointer text-destructive hover:bg-destructive/10 border-destructive/20"
-                        title={getLocale() === "ar" ? "حذف العملة" : "Delete Currency"}
+                        title={m.settings_currencies_delete_title()}
                       >
                         <Trash2 size={12} />
                       </Button>
                     {:else}
                       <span class="text-[9px] text-muted-foreground/60 italic px-1 select-none">
-                        {getLocale() === "ar" ? "أساسية" : "Base"}
+                        {m.settings_currencies_type_base()}
                       </span>
                     {/if}
                   </div>
@@ -585,12 +513,10 @@ let baseCurrencyCode = $derived(
       <div class="flex flex-col gap-1 border-b border-border/40 pb-3">
         <h2 class="text-sm font-bold text-foreground flex items-center gap-1.5">
           <Plus size={16} class="text-primary" />
-          <span>{getLocale() === "ar" ? "إضافة عملة جديدة" : "Add New Currency"}</span>
+          <span>{m.settings_currencies_add_dialog_title()}</span>
         </h2>
         <p class="text-[10px] text-muted-foreground">
-          {getLocale() === "ar" 
-            ? "قم بإدخال بيانات العملة الجديدة وسعر صرفها مقابل العملة الأساسية." 
-            : "Define code, names, symbol, position and initial exchange rate."}
+          {m.settings_currencies_add_dialog_desc()}
         </p>
       </div>
 
@@ -598,7 +524,7 @@ let baseCurrencyCode = $derived(
         <!-- Currency Code -->
         <div class="flex flex-col gap-1.5">
           <label for="add_code" class="text-xs font-semibold text-muted-foreground">
-            {getLocale() === "ar" ? "رمز العملة (مثال: USD)" : "Currency Code (e.g. USD)"} *
+            {m.settings_currencies_label_code_example()}
           </label>
           <Input
             id="add_code"
@@ -614,7 +540,7 @@ let baseCurrencyCode = $derived(
         <!-- Symbol -->
         <div class="flex flex-col gap-1.5">
           <label for="add_symbol" class="text-xs font-semibold text-muted-foreground">
-            {getLocale() === "ar" ? "رمز / علامة العملة (مثال: $)" : "Symbol (e.g. $)"} *
+            {m.settings_currencies_label_symbol_example()}
           </label>
           <Input
             id="add_symbol"
@@ -629,7 +555,7 @@ let baseCurrencyCode = $derived(
         <!-- Arabic Name -->
         <div class="flex flex-col gap-1.5">
           <label for="add_name_ar" class="text-xs font-semibold text-muted-foreground">
-            {getLocale() === "ar" ? "الاسم بالعربية" : "Arabic Name"}
+            {m.settings_currencies_label_name_ar()}
           </label>
           <Input
             id="add_name_ar"
@@ -642,7 +568,7 @@ let baseCurrencyCode = $derived(
         <!-- English Name -->
         <div class="flex flex-col gap-1.5">
           <label for="add_name" class="text-xs font-semibold text-muted-foreground">
-            {getLocale() === "ar" ? "الاسم بالإنجليزية" : "English Name"} *
+            {m.settings_currencies_label_name_en()}
           </label>
           <Input
             id="add_name"
@@ -656,17 +582,15 @@ let baseCurrencyCode = $derived(
         <!-- Symbol Position -->
         <div class="flex flex-col gap-1.5">
           <label for="add_position" class="text-xs font-semibold text-muted-foreground">
-            {getLocale() === "ar" ? "موضع الرمز" : "Symbol Position"}
+            {m.settings_currencies_label_position()}
           </label>
           <Select type="single" value={addSymbolPosition} onValueChange={(v) => (addSymbolPosition = v ?? "before")}>
             <SelectTrigger class="h-9 w-full text-xs">
-              {addSymbolPosition === "before"
-                ? (getLocale() === "ar" ? "قبل المبلغ ($10)" : "Before Amount ($10)")
-                : (getLocale() === "ar" ? "بعد المبلغ (10﷼)" : "After Amount (10﷼)")}
+              {addSymbolPosition === "before" ? m.settings_currencies_position_before() : m.settings_currencies_position_after()}
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="before">{getLocale() === "ar" ? "قبل المبلغ ($10)" : "Before Amount ($10)"}</SelectItem>
-              <SelectItem value="after">{getLocale() === "ar" ? "بعد المبلغ (10﷼)" : "After Amount (10﷼)"}</SelectItem>
+              <SelectItem value="before">{m.settings_currencies_position_before()}</SelectItem>
+              <SelectItem value="after">{m.settings_currencies_position_after()}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -674,7 +598,7 @@ let baseCurrencyCode = $derived(
         <!-- Decimal Places -->
         <div class="flex flex-col gap-1.5">
           <label for="add_decimals" class="text-xs font-semibold text-muted-foreground">
-            {getLocale() === "ar" ? "الخانات العشرية" : "Decimal Places"}
+            {m.settings_currencies_label_decimals()}
           </label>
           <Input
             id="add_decimals"
@@ -689,7 +613,7 @@ let baseCurrencyCode = $derived(
         <!-- Exchange Rate -->
         <div class="flex flex-col gap-1.5 md:col-span-2">
           <label for="add_rate" class="text-xs font-semibold text-muted-foreground flex justify-between">
-            <span>{getLocale() === "ar" ? "سعر الصرف مقابل العملة الأساسية" : "Exchange Rate"} *</span>
+            <span>{m.settings_currencies_label_rate_with_base()}</span>
             <span class="text-xs font-bold text-primary">1 {addCode || 'CUR'} = {addExchangeRate} {baseCurrencyCode}</span>
           </label>
           <Input
@@ -708,9 +632,9 @@ let baseCurrencyCode = $derived(
       <div class="flex flex-col gap-3 border-t border-border/40 pt-4 mt-2">
         <div class="flex items-center justify-between">
           <div class="flex flex-col gap-0.5">
-            <span class="text-xs font-semibold text-foreground">{getLocale() === "ar" ? "عملة أساسية" : "Base Currency"}</span>
+            <span class="text-xs font-semibold text-foreground">{m.settings_currencies_base_currency()}</span>
             <span class="text-[9px] text-muted-foreground">
-              {getLocale() === "ar" ? "تحديد ما إذا كانت هذه هي العملة الأساسية للتقارير" : "Set this as the main base currency"}
+              {m.settings_currencies_base_currency_desc()}
             </span>
           </div>
           <Switch bind:checked={addIsBase} />
@@ -718,9 +642,9 @@ let baseCurrencyCode = $derived(
 
         <div class="flex items-center justify-between border-t border-border/20 pt-3">
           <div class="flex flex-col gap-0.5">
-            <span class="text-xs font-semibold text-foreground">{getLocale() === "ar" ? "حالة النشاط" : "Active"}</span>
+            <span class="text-xs font-semibold text-foreground">{m.settings_currencies_active()}</span>
             <span class="text-[9px] text-muted-foreground">
-              {getLocale() === "ar" ? "تفعيل العملة لاستخدامها في المعاملات المالية" : "Enable currency usage in transactions"}
+              {m.settings_currencies_active_desc()}
             </span>
           </div>
           <Switch bind:checked={addIsActive} />
@@ -729,10 +653,10 @@ let baseCurrencyCode = $derived(
 
       <div class="flex items-center justify-end gap-2 border-t border-border/40 pt-4 mt-2">
         <Button variant="ghost" class="text-xs h-8 cursor-pointer" onclick={() => showAddDialog = false} type="button">
-          {getLocale() === "ar" ? "إلغاء" : "Cancel"}
+          {m.settings_currencies_btn_cancel()}
         </Button>
         <Button variant="lime" class="text-xs h-8 font-bold cursor-pointer" type="submit" disabled={isSubmitting}>
-          {isSubmitting ? (getLocale() === "ar" ? "جاري الإضافة..." : "Adding...") : (getLocale() === "ar" ? "حفظ وإضافة" : "Save & Add")}
+          {isSubmitting ? m.settings_currencies_btn_adding() : m.settings_currencies_btn_add()}
         </Button>
       </div>
     </form>
@@ -753,12 +677,10 @@ let baseCurrencyCode = $derived(
       <div class="flex flex-col gap-1 border-b border-border/40 pb-3">
         <h2 class="text-sm font-bold text-foreground flex items-center gap-1.5">
           <Edit2 size={16} class="text-primary" />
-          <span>{getLocale() === "ar" ? `تعديل العملة (${editCode})` : `Edit Currency (${editCode})`}</span>
+          <span>{m.settings_currencies_edit_dialog_title({ code: editCode })}</span>
         </h2>
         <p class="text-[10px] text-muted-foreground">
-          {getLocale() === "ar" 
-            ? "قم بتعديل بيانات العملة المحددة وسعر صرفها اليومي." 
-            : "Modify the configuration details for this currency."}
+          {m.settings_currencies_edit_dialog_desc()}
         </p>
       </div>
 
@@ -766,7 +688,7 @@ let baseCurrencyCode = $derived(
         <!-- Currency Code (Read Only) -->
         <div class="flex flex-col gap-1.5">
           <label for="edit_code" class="text-xs font-semibold text-muted-foreground">
-            {getLocale() === "ar" ? "رمز العملة" : "Currency Code"}
+            {m.settings_currencies_label_code()}
           </label>
           <Input
             id="edit_code"
@@ -780,7 +702,7 @@ let baseCurrencyCode = $derived(
         <!-- Symbol -->
         <div class="flex flex-col gap-1.5">
           <label for="edit_symbol" class="text-xs font-semibold text-muted-foreground">
-            {getLocale() === "ar" ? "رمز / علامة العملة" : "Symbol"} *
+            {m.settings_currencies_label_symbol()}
           </label>
           <Input
             id="edit_symbol"
@@ -795,7 +717,7 @@ let baseCurrencyCode = $derived(
         <!-- Arabic Name -->
         <div class="flex flex-col gap-1.5">
           <label for="edit_name_ar" class="text-xs font-semibold text-muted-foreground">
-            {getLocale() === "ar" ? "الاسم بالعربية" : "Arabic Name"}
+            {m.settings_currencies_label_name_ar()}
           </label>
           <Input
             id="edit_name_ar"
@@ -808,7 +730,7 @@ let baseCurrencyCode = $derived(
         <!-- English Name -->
         <div class="flex flex-col gap-1.5">
           <label for="edit_name" class="text-xs font-semibold text-muted-foreground">
-            {getLocale() === "ar" ? "الاسم بالإنجليزية" : "English Name"} *
+            {m.settings_currencies_label_name_en()}
           </label>
           <Input
             id="edit_name"
@@ -822,17 +744,15 @@ let baseCurrencyCode = $derived(
         <!-- Symbol Position -->
         <div class="flex flex-col gap-1.5">
           <label for="edit_position" class="text-xs font-semibold text-muted-foreground">
-            {getLocale() === "ar" ? "موضع الرمز" : "Symbol Position"}
+            {m.settings_currencies_label_position()}
           </label>
           <Select type="single" value={editSymbolPosition} onValueChange={(v) => (editSymbolPosition = v ?? "before")}>
             <SelectTrigger class="h-9 w-full text-xs">
-              {editSymbolPosition === "before"
-                ? (getLocale() === "ar" ? "قبل المبلغ ($10)" : "Before Amount ($10)")
-                : (getLocale() === "ar" ? "بعد المبلغ (10﷼)" : "After Amount (10﷼)")}
+              {editSymbolPosition === "before" ? m.settings_currencies_position_before() : m.settings_currencies_position_after()}
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="before">{getLocale() === "ar" ? "قبل المبلغ ($10)" : "Before Amount ($10)"}</SelectItem>
-              <SelectItem value="after">{getLocale() === "ar" ? "بعد المبلغ (10﷼)" : "After Amount (10﷼)"}</SelectItem>
+              <SelectItem value="before">{m.settings_currencies_position_before()}</SelectItem>
+              <SelectItem value="after">{m.settings_currencies_position_after()}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -840,7 +760,7 @@ let baseCurrencyCode = $derived(
         <!-- Decimal Places -->
         <div class="flex flex-col gap-1.5">
           <label for="edit_decimals" class="text-xs font-semibold text-muted-foreground">
-            {getLocale() === "ar" ? "الخانات العشرية" : "Decimal Places"}
+            {m.settings_currencies_label_decimals()}
           </label>
           <Input
             id="edit_decimals"
@@ -855,7 +775,7 @@ let baseCurrencyCode = $derived(
         <!-- Exchange Rate -->
         <div class="flex flex-col gap-1.5 md:col-span-2">
           <label for="edit_rate" class="text-xs font-semibold text-muted-foreground flex justify-between">
-            <span>{getLocale() === "ar" ? "سعر الصرف مقابل العملة الأساسية" : "Exchange Rate"} *</span>
+            <span>{m.settings_currencies_label_rate_with_base()}</span>
             {#if !editIsBase}
               <span class="text-xs font-bold text-primary">1 {editCode} = {editExchangeRate} {baseCurrencyCode}</span>
             {/if}
@@ -877,9 +797,9 @@ let baseCurrencyCode = $derived(
       <div class="flex flex-col gap-3 border-t border-border/40 pt-4 mt-2">
         <div class="flex items-center justify-between">
           <div class="flex flex-col gap-0.5">
-            <span class="text-xs font-semibold text-foreground">{getLocale() === "ar" ? "عملة أساسية" : "Base Currency"}</span>
+            <span class="text-xs font-semibold text-foreground">{m.settings_currencies_base_currency()}</span>
             <span class="text-[9px] text-muted-foreground">
-              {getLocale() === "ar" ? "تحديد ما إذا كانت هذه هي العملة الأساسية للتقارير" : "Set this as the main base currency"}
+              {m.settings_currencies_base_currency_desc()}
             </span>
           </div>
           <Switch bind:checked={editIsBase} disabled={editIsBase && editCode === 'YER' /* prevent changing seed base YER directly */} />
@@ -887,9 +807,9 @@ let baseCurrencyCode = $derived(
 
         <div class="flex items-center justify-between border-t border-border/20 pt-3">
           <div class="flex flex-col gap-0.5">
-            <span class="text-xs font-semibold text-foreground">{getLocale() === "ar" ? "حالة النشاط" : "Active"}</span>
+            <span class="text-xs font-semibold text-foreground">{m.settings_currencies_active()}</span>
             <span class="text-[9px] text-muted-foreground">
-              {getLocale() === "ar" ? "تفعيل العملة لاستخدامها في المعاملات المالية" : "Enable currency usage in transactions"}
+              {m.settings_currencies_active_desc()}
             </span>
           </div>
           <Switch bind:checked={editIsActive} disabled={editIsBase /* Base currency must be active */} />
@@ -898,10 +818,10 @@ let baseCurrencyCode = $derived(
 
       <div class="flex items-center justify-end gap-2 border-t border-border/40 pt-4 mt-2">
         <Button variant="ghost" class="text-xs h-8 cursor-pointer" onclick={() => showEditDialog = false} type="button">
-          {getLocale() === "ar" ? "إلغاء" : "Cancel"}
+          {m.settings_currencies_btn_cancel()}
         </Button>
         <Button variant="lime" class="text-xs h-8 font-bold cursor-pointer" type="submit" disabled={isSubmitting}>
-          {isSubmitting ? (getLocale() === "ar" ? "جاري التحديث..." : "Updating...") : (getLocale() === "ar" ? "حفظ التغييرات" : "Save Changes")}
+          {isSubmitting ? m.settings_currencies_btn_editing() : m.settings_currencies_btn_edit()}
         </Button>
       </div>
     </form>
@@ -921,26 +841,22 @@ let baseCurrencyCode = $derived(
       <div class="flex flex-col gap-1">
         <h3 class="text-sm font-bold text-destructive flex items-center gap-1.5">
           <Trash2 size={16} />
-          <span>{getLocale() === "ar" ? "تأكيد حذف العملة" : "Confirm Currency Deletion"}</span>
+          <span>{m.settings_currencies_delete_dialog_title()}</span>
         </h3>
         <p class="text-xs text-foreground mt-2 font-semibold">
-          {getLocale() === "ar"
-            ? `هل أنت متأكد من رغبتك في حذف عملة (${currencyToDelete.code} - ${currencyToDelete.name_ar || currencyToDelete.name}) نهائياً؟`
-            : `Are you sure you want to permanently delete currency (${currencyToDelete.code} - ${currencyToDelete.name_ar || currencyToDelete.name})?`}
+          {m.settings_currencies_delete_dialog_confirm({ code: currencyToDelete.code, name: l(currencyToDelete.name_ar, currencyToDelete.name) })}
         </p>
         <p class="text-[10px] text-muted-foreground leading-relaxed mt-1">
-          {getLocale() === "ar"
-            ? "تنبيه: سيؤدي حذف العملة إلى عدم إمكانية استخدامها في أي عمليات أو رسوم جديدة. لن تتمكن من حذفها إذا كانت مرتبطة بمعاملات مسجلة بالفعل في النظام المالي."
-            : "Warning: Deleting this currency will make it unavailable for new operations or fees. It cannot be deleted if there are existing transactions referencing it."}
+          {m.settings_currencies_delete_dialog_warning()}
         </p>
       </div>
 
       <div class="flex items-center justify-end gap-2 border-t border-border/40 pt-4 mt-2">
         <Button variant="ghost" class="text-xs h-8 cursor-pointer" onclick={() => currencyToDelete = null}>
-          {getLocale() === "ar" ? "تراجع" : "Cancel"}
+          {m.settings_currencies_btn_discard()}
         </Button>
         <Button variant="destructive" class="text-xs h-8 font-bold cursor-pointer" onclick={handleDeleteCurrency}>
-          {getLocale() === "ar" ? "تأكيد الحذف" : "Confirm Delete"}
+          {m.settings_currencies_btn_delete_confirm()}
         </Button>
       </div>
     </div>

@@ -12,7 +12,6 @@ Extracted from the original monolith TabsContent "sessions".
   import { Skeleton } from "@orbis/ui-svelte/skeleton";
   import { Monitor, Smartphone } from "lucide-svelte";
   import { fade } from "svelte/transition";
-  import { getLocale } from "$lib/paraglide/runtime";
   import { formatDate } from "$lib/i18n-utils";
   import * as m from "$lib/paraglide/messages";
 
@@ -42,16 +41,10 @@ Extracted from the original monolith TabsContent "sessions".
         }
 
         const location = s.is_current
-          ? getLocale() === "ar"
-            ? "هذا الجهاز"
-            : "Current Device"
-          : getLocale() === "ar"
-            ? "جهاز نشط"
-            : "Active Device";
+          ? m.settings_user_session_current_device()
+          : m.settings_user_session_active_device();
         const time = s.is_current
-          ? getLocale() === "ar"
-            ? "نشط الآن"
-            : "Active now"
+          ? m.settings_user_session_active_now()
           : s.last_active_at
             ? formatDate(s.last_active_at)
             : "";
@@ -94,9 +87,7 @@ Extracted from the original monolith TabsContent "sessions".
   >
     <Monitor size={40} class="text-muted-foreground/30" />
     <p class="text-xs font-semibold">
-      {m.settings_user_detail_no_sessions
-        ? m.settings_user_detail_no_sessions()
-        : "لا توجد جلسات نشطة"}
+      {m.settings_user_detail_no_sessions()}
     </p>
   </div>
 {:else}

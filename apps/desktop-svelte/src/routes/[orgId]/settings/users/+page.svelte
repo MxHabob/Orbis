@@ -14,7 +14,8 @@ import {
 import { Avatar, AvatarImage, AvatarFallback } from "@orbis/ui-svelte/avatar";
 import { Input } from "@orbis/ui-svelte/input";
 import { toast } from "svelte-sonner";
-import { getLocale, localizeHref } from "$lib/paraglide/runtime";
+import { localizeHref } from "$lib/paraglide/runtime";
+import { l, isAr } from "$lib/i18n-utils";
 import { fade } from "svelte/transition";
 import {
   Plus,
@@ -203,7 +204,7 @@ function getRoleBadgeClass(roleStr: string): string {
 
     <!-- Add Button -->
     <Button variant="lime" class="text-xs h-9 px-4 font-semibold shrink-0" onclick={openCreateSheet}>
-      <Plus size={14} class={getLocale() === "ar" ? 'ml-1.5' : 'mr-1.5'} />
+      <Plus size={14} class="me-1.5" />
       {m.settings_users_add()}
     </Button>
   </div>
@@ -260,9 +261,9 @@ function getRoleBadgeClass(roleStr: string): string {
                     </Avatar>
                     <div class="flex flex-col text-start">
                       <span class="text-xs font-bold text-foreground">
-                        {getLocale() === "ar" && user.name_ar ? user.name_ar : user.full_name}
+                        {l(user.name_ar, user.full_name)}
                       </span>
-                      {#if getLocale() === "ar" && user.name_ar && user.full_name}
+                      {#if isAr() && user.name_ar && user.full_name}
                         <span class="text-[9px] text-muted-foreground leading-none mt-0.5">{user.full_name}</span>
                       {/if}
                     </div>
@@ -292,7 +293,7 @@ function getRoleBadgeClass(roleStr: string): string {
                     <Button
                       variant="ghost"
                       size="icon-xs"
-                      title={getLocale() === "ar" ? "تفاصيل المستخدم" : "User Details"}
+                      title={m.settings_users_view_details()}
                       href={localizeHref(`/${data.orgId}/settings/users/${user.id}`)}
                     >
                       <Eye size={12} class="text-muted-foreground hover:text-foreground" />

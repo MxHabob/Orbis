@@ -30,7 +30,7 @@ import MainViewport from "$lib/components/layout/MainViewport.svelte";
 import AvatarUpload from "$lib/components/shared/avatar-upload.svelte";
 import type { Snippet } from "svelte";
 import * as m from "$lib/paraglide/messages";
-import { getLocale, localizeHref } from "$lib/paraglide/runtime";
+import { localizeHref } from "$lib/paraglide/runtime";
 
 let { children }: { children: Snippet } = $props();
 
@@ -56,7 +56,7 @@ async function loadUser() {
   if (!userId) return;
   isLoading = true;
   try {
-    const fetched = await commands.users.getUser(userId);
+    const fetched = await commands.users.getUser(userId) as any;
     user = fetched;
     fullName = fetched.full_name || "";
     email = fetched.email || "";
@@ -137,7 +137,6 @@ const menuItems = $derived([
 
 <div
   class="h-full w-full flex flex-col overflow-hidden bg-background"
-  dir={getLocale() === "ar" ? "rtl" : "ltr"}
 >
   <!-- Header -->
   <DetailPageHeader
