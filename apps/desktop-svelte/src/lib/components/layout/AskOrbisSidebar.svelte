@@ -19,7 +19,6 @@ import {
   ArrowRight,
   ArrowLeft,
 } from "lucide-svelte";
-import { onMount } from "svelte";
 import { fly } from "svelte/transition";
 import { getLocale } from "$lib/paraglide/runtime";
 import { isDesktopApp } from "$lib/services/ipc";
@@ -64,13 +63,14 @@ async function openStandaloneWindow() {
     
     // Create standalone window
     const webview = new WebviewWindow("orbis-agent", {
-      url: "/agent",
+      url: "/index.html?window=agent",
       title: "Orbis Agent",
       width: 420,
       height: 650,
       resizable: true,
       shadow: true,
       decorations: false, // We use custom TitleBar!
+      parent: "main",
     });
     
     webview.once("tauri://created", () => {
