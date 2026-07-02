@@ -129,6 +129,28 @@ pub struct SubjectGradeSummary {
     pub passed: bool,
 }
 
+// ── Single Cell Upsert (for real-time grid save) ──
+
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
+pub struct UpsertCellRequest {
+    pub enrollment_id: String,
+    pub cycle_id: String,
+    pub assessment_id: String,
+    pub subject_name: String,
+    pub subject_name_ar: Option<String>,
+    pub exam_type: String,
+    pub semester: String,
+    pub score: f64,
+    pub max_score: f64,
+    pub class_subject_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
+pub struct UpsertCellResult {
+    pub grade_id: String,
+    pub created: bool,
+}
+
 // ── Analytics ──
 
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
@@ -440,11 +462,15 @@ impl super::Service {
 
         let assessment_types: Vec<String> = assessments.iter().map(|a| a.item_type.clone()).collect();
 
+        // Batch-load all student users in one query (fixes N+1)
+        let student_ids: Vec<String> = enrollments.iter().map(|e| e.student_id.clone()).collect();
+        let users_map = self.repo.get_users_by_ids(&student_ids).await
+            .map_err(|e| e.to_string())?;
+
         // Build matrix
         let mut students = Vec::new();
         for enrollment in &enrollments {
-            let student = self.repo.get_user_by_id(&enrollment.student_id).await
-                .map_err(|e| e.to_string())?;
+            let student = users_map.get(&enrollment.student_id);
 
             let student_grades: Vec<&grade::Model> = all_grades.iter()
                 .filter(|g| g.enrollment_id == enrollment.id)
@@ -478,8 +504,8 @@ impl super::Service {
             students.push(StudentGradeRow {
                 enrollment_id: enrollment.id.clone(),
                 student_id: enrollment.student_id.clone(),
-                student_name: student.as_ref().map(|u| u.full_name.clone()).unwrap_or_default(),
-                student_name_ar: student.as_ref().and_then(|u| u.name_ar.clone()),
+                student_name: student.map(|u| u.full_name.clone()).unwrap_or_default(),
+                student_name_ar: student.and_then(|u| u.name_ar.clone()),
                 grades: cells,
                 total,
                 max_total,

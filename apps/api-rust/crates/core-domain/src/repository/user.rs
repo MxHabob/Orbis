@@ -18,6 +18,21 @@ impl super::Repository {
             .await
     }
 
+    /// Batch-load multiple users by IDs in a single query.
+    /// Returns a HashMap keyed by user ID for O(1) lookup.
+    pub async fn get_users_by_ids(&self, ids: &[String]) -> Result<std::collections::HashMap<String, user::Model>, DbErr> {
+        if ids.is_empty() {
+            return Ok(std::collections::HashMap::new());
+        }
+        let users = user::Entity::find()
+            .filter(user::Column::Id.is_in(ids.to_vec()))
+            .filter(user::Column::IsDeleted.eq(0))
+            .all(&self.db)
+            .await?;
+        let map = users.into_iter().map(|u| (u.id.clone(), u)).collect();
+        Ok(map)
+    }
+
     pub async fn create_user(&self, u: user::Model) -> Result<user::Model, DbErr> {
         let active_model = user::ActiveModel {
             id: Set(u.id),
