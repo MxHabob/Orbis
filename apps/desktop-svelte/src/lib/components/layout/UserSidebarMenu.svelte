@@ -96,7 +96,7 @@ async function handleLogout() {
           {m.account_settings_title ? m.account_settings_title() : 'User Settings'}
         </DropdownMenuItem>
         <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs text-foreground hover:bg-accent rounded" onclick={handleLogout}>
-          Sign Out
+          {m.sign_out()}
         </DropdownMenuItem>
       </div>
     </DropdownMenuContent>
