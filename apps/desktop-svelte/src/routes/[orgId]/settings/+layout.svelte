@@ -21,6 +21,8 @@ import {
   FileText,
   MapPin,
   BookOpen,
+  Receipt,
+  Percent,
 } from "lucide-svelte";
 import MainViewport from "$lib/components/layout/MainViewport.svelte";
 import SidebarNav from "$lib/components/layout/SidebarNav.svelte";
@@ -114,6 +116,20 @@ const navItems = $derived([
       ? m.settings_nav_templates()
       : "قوالب المستندات",
     icon: FileText,
+  },
+  {
+    path: "fee-templates",
+    label: m.settings_nav_fee_templates
+      ? m.settings_nav_fee_templates()
+      : "الرسوم",
+    icon: Receipt,
+  },
+  {
+    path: "discount-templates",
+    label: m.settings_nav_discount_templates
+      ? m.settings_nav_discount_templates()
+      : "الخصومات",
+    icon: Percent,
   },
 ]);
 </script>

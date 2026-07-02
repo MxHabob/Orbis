@@ -12,9 +12,7 @@ import {
   Landmark,
   BarChart3,
   Compass,
-  Receipt,
   BookOpen,
-  Percent,
   ClipboardList,
 } from "lucide-svelte";
 import MainViewport from "$lib/components/layout/MainViewport.svelte";
@@ -71,20 +69,7 @@ const navItems = $derived([
     label: m.finance_layout_nav_payments(),
     icon: CreditCard,
   },
-  {
-    path: "fee-templates",
-    label: m.finance_layout_nav_fee_templates
-      ? m.finance_layout_nav_fee_templates()
-      : "قوالب الرسوم",
-    icon: Receipt,
-  },
-  {
-    path: "discount-templates",
-    label: m.finance_layout_nav_discount_templates
-      ? m.finance_layout_nav_discount_templates()
-      : "قوالب الخصومات",
-    icon: Percent,
-  },
+
   {
     path: "treasuries",
     label: m.finance_layout_nav_treasuries(),
