@@ -56,7 +56,7 @@ async function loadReferenceData() {
     // Filter staff / heads: admins, teachers, staff
     staffList = allUsers.filter((u: any) =>
       ["admin", "super_admin", "principal", "teacher", "staff"].includes(
-        String(u.role).toLowerCase(),
+        String(u.primary_role || u.role).toLowerCase(),
       ),
     );
   } catch (e) {

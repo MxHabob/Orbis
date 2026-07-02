@@ -86,7 +86,7 @@ const filteredUsers = $derived(
 
     const matchesRole =
       selectedRole === "all" ||
-      String(user.role || "").toLowerCase() === selectedRole.toLowerCase();
+      String(user.primary_role || user.role || "").toLowerCase() === selectedRole.toLowerCase();
 
     return matchesSearch && matchesRole;
   }),
@@ -274,8 +274,8 @@ function getRoleBadgeClass(roleStr: string): string {
                 
                 <!-- Role Badge -->
                 <TableCell>
-                  <span class="px-2 py-0.5 rounded border text-[9px] font-bold tracking-wide uppercase {getRoleBadgeClass(String(user.role))}">
-                    {getRoleLabel(String(user.role))}
+                  <span class="px-2 py-0.5 rounded border text-[9px] font-bold tracking-wide uppercase {getRoleBadgeClass(String(user.primary_role || user.role))}">
+                    {getRoleLabel(String(user.primary_role || user.role))}
                   </span>
                 </TableCell>
                 
