@@ -21,8 +21,7 @@ pub mod features;
 
 use state::AppState;
 
-// Global state for search window availability
-type SearchWindowState = Arc<Mutex<bool>>;
+
 
 #[tauri::command]
 fn show_window(window: tauri::Window) -> Result<(), String> {
@@ -401,42 +400,13 @@ pub fn run() {
             let app_handle = app.handle().clone();
             let initial_url = WebviewUrl::App("index.html".into());
 
-            // Create shared search window state
-            let search_state: SearchWindowState = Arc::new(Mutex::new(false));
-            
-            // Add search state to managed state so commands can access it
-            app.manage(search_state.clone());
+
 
             // Clone app_handle before it gets moved into closures
             let app_handle_for_deep_links = app_handle.clone();
             let app_handle_for_navigation = app_handle.clone();
 
-            // Initialize global shortcuts
-            {
-                use tauri_plugin_global_shortcut::{
-                    Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState,
-                };
 
-                let search_shortcut =
-                    Shortcut::new(Some(Modifiers::SHIFT | Modifiers::ALT), Code::KeyK);
-
-                if let Ok(_) = app.handle().plugin(
-                    tauri_plugin_global_shortcut::Builder::new()
-                        .with_handler(move |app_handle, shortcut, event| {
-                            if shortcut == &search_shortcut
-                                && event.state() == ShortcutState::Pressed
-                            {
-                                println!("🔍 Global shortcut triggered - checking search state");
-                                if let Some(managed_search_state) = app_handle.try_state::<SearchWindowState>() {
-                                    let _ = features::search::toggle_search_window(app_handle, &managed_search_state);
-                                }
-                            }
-                        })
-                        .build(),
-                ) {
-                    let _ = app.global_shortcut().register(search_shortcut);
-                }
-            }
 
             // Register deep links at runtime for development
             #[cfg(debug_assertions)]
@@ -524,29 +494,7 @@ pub fn run() {
                 .build()
                 .unwrap();
 
-            // Listen for search window state events from the frontend
-            let search_state_for_events = search_state.clone();
-            let app_handle_for_events = app_handle.clone();
-            window.listen("search-window-enabled", move |event: tauri::Event| {
-                if let Ok(enabled) = serde_json::from_str::<bool>(&event.payload()) {
-                    *search_state_for_events.lock().unwrap() = enabled;
-                    if !enabled {
-                        if let Some(search_window) = app_handle_for_events.get_webview_window("search") {
-                            let _ = search_window.close();
-                        }
-                    }
-                }
-            });
 
-            // Listen for search window close requests from the frontend
-            let app_handle_for_close = app_handle.clone();
-            window.listen("search-window-close-requested", move |_event| {
-                if let Some(search_window) = app_handle_for_close.get_webview_window("search") {
-                    let _ = search_window.emit("search-window-open", false);
-                    let _ = search_window.set_always_on_top(false);
-                    let _ = search_window.hide();
-                }
-            });
 
             // Fallback timer to ensure main window shows on first launch
             let window_clone = window.clone();
@@ -604,8 +552,13 @@ pub fn run() {
                             ..
                         } => {
                             let app_handle = tray.app_handle();
-                            if let Some(managed_search_state) = app_handle.try_state::<SearchWindowState>() {
-                                let _ = features::search::toggle_search_window(app_handle, &managed_search_state);
+                            if let Some(main_window) = app_handle.get_webview_window("main") {
+                                if main_window.is_visible().unwrap_or(false) {
+                                    let _ = main_window.hide();
+                                } else {
+                                    let _ = main_window.show();
+                                    let _ = main_window.set_focus();
+                                }
                             }
                         },
                         _ => {}
@@ -631,9 +584,7 @@ pub fn run() {
                     if let Some(main_window) = app_handle.get_webview_window("main") {
                         let _ = main_window.hide();
                     }
-                    if let Some(search_window) = app_handle.get_webview_window("search") {
-                        let _ = search_window.hide();
-                    }
+
                 }
             }
             _ => {}

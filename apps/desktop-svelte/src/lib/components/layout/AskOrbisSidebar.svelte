@@ -22,6 +22,9 @@ import {
 import { onMount } from "svelte";
 import { fly } from "svelte/transition";
 import { getLocale } from "$lib/paraglide/runtime";
+import { isDesktopApp } from "$lib/services/ipc";
+
+let { isStandalone = false }: { isStandalone?: boolean } = $props();
 
 function pxToRem(px: number): number {
   if (typeof document === "undefined") return px / 16;
@@ -51,6 +54,33 @@ function handleClose() {
   uiStore.setAskOrbis(false);
 }
 
+async function openStandaloneWindow() {
+  if (!isDesktopApp()) return;
+  try {
+    const { WebviewWindow } = await import("@tauri-apps/api/webviewWindow");
+    
+    // Close the current sidebar overlay
+    uiStore.setAskOrbis(false);
+    
+    // Create standalone window
+    const webview = new WebviewWindow("orbis-agent", {
+      url: "/agent",
+      title: "Orbis Agent",
+      width: 420,
+      height: 650,
+      resizable: true,
+      shadow: true,
+      decorations: false, // We use custom TitleBar!
+    });
+    
+    webview.once("tauri://created", () => {
+      console.log("Standalone agent window created successfully!");
+    });
+  } catch (e) {
+    console.error("Failed to open standalone window:", e);
+  }
+}
+
 function handleSubmit(e: SubmitEvent | KeyboardEvent) {
   if (e) e.preventDefault();
   if (!inputValue.trim()) return;
@@ -69,35 +99,41 @@ function handleKeyDown(e: KeyboardEvent) {
 
 <div
   bind:this={sidebarDiv}
-  class="absolute {isRtl ? 'left-3.5 border-r' : 'right-3.5 border-l'} top-3.5 bottom-3.5 flex shrink-0 flex-col bg-card text-card-foreground rounded-xl overflow-hidden border border-border shadow-2xl z-50 select-none"
-  style:width="{preferredWidth}rem"
-  style:min-width="{preferredWidth}rem"
-  transition:fly={{ x: isRtl ? -400 : 400, duration: 250 }}
+  class={isStandalone 
+    ? "relative flex w-full h-full flex-col bg-card text-card-foreground overflow-hidden select-none"
+    : "absolute " + (isRtl ? 'left-3.5 border-r' : 'right-3.5 border-l') + " top-3.5 bottom-3.5 flex shrink-0 flex-col bg-card text-card-foreground rounded-xl overflow-hidden border border-border shadow-2xl z-50 select-none"}
+  style:width={isStandalone ? "100%" : "{preferredWidth}rem"}
+  style:min-width={isStandalone ? "100%" : "{preferredWidth}rem"}
+  transition:fly={isStandalone ? undefined : { x: isRtl ? -400 : 400, duration: 250 }}
 >
   <!-- Resize Handle on the left/right edge -->
-  <Resizer
-    viewport={sidebarDiv}
-    direction={isRtl ? "right" : "left"}
-    {minWidth}
-    {maxWidth}
-    defaultValue={pxToRem(380)}
-    persistId="ask-orbis-sidebar-width"
-    onWidth={(w) => (preferredWidth = w)}
-  />
+  {#if !isStandalone}
+    <Resizer
+      viewport={sidebarDiv}
+      direction={isRtl ? "right" : "left"}
+      {minWidth}
+      {maxWidth}
+      defaultValue={pxToRem(380)}
+      persistId="ask-orbis-sidebar-width"
+      onWidth={(w) => (preferredWidth = w)}
+    />
+  {/if}
 
   <!-- Header Section -->
   <div class="flex items-center justify-between px-3.5 h-11 shrink-0 border-b border-border select-none bg-card">
     <div class="flex items-center gap-2">
       <!-- Close Button -->
-      <Button
-        variant="ghost"
-        size="icon-xs"
-        onclick={handleClose}
-        class="w-6 h-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
-        title="Close sidebar"
-      >
-        <X size={14} strokeWidth={2} />
-      </Button>
+      {#if !isStandalone}
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          onclick={handleClose}
+          class="w-6 h-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+          title="Close sidebar"
+        >
+          <X size={14} strokeWidth={2} />
+        </Button>
+      {/if}
       
       <!-- Title -->
       <span class="text-[12px] font-semibold tracking-wide text-foreground flex items-center gap-1.5">
@@ -116,14 +152,17 @@ function handleKeyDown(e: KeyboardEvent) {
         <MoreHorizontal size={14} />
       </Button>
       
-      <Button
-        variant="ghost"
-        size="icon-xs"
-        class="w-6 h-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
-        title="Split layout"
-      >
-        <Columns size={13} />
-      </Button>
+      {#if !isStandalone}
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          onclick={openStandaloneWindow}
+          class="w-6 h-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+          title="Split layout"
+        >
+          <Columns size={13} />
+        </Button>
+      {/if}
 
       <Button
         variant="ghost"
