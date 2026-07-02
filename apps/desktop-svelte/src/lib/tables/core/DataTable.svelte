@@ -47,7 +47,7 @@
     searchValue?: string;
 
     /** Empty state configuration */
-    emptyIcon?: Component;
+    emptyIcon?: any;
     emptyTitle?: string;
     emptyDescription?: string;
 

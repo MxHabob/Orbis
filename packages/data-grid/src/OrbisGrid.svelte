@@ -127,11 +127,25 @@ Usage:
         sortable: col.sortable ?? false,
         resizable: col.resizable !== false,
         readonly: readonly || (col.readonly ?? false),
-        cellProperties: () => {
+        cellProperties: (params?: any) => {
           const classes: string[] = [];
           if (col.cellClass) classes.push(col.cellClass);
           if (col.align === "center") classes.push("cell-number-input");
-          return { class: classes.join(" ") };
+
+          let customProps: Record<string, any> = {};
+          if (col.cellProperties) {
+            const row = params?.model || {};
+            customProps = col.cellProperties(row) || {};
+          }
+
+          if (customProps.class) {
+            classes.push(customProps.class);
+          }
+
+          return {
+            ...customProps,
+            class: classes.join(" ").trim()
+          };
         },
       };
 
@@ -145,8 +159,11 @@ Usage:
       if (col.maxSize) revoCol.maxSize = col.maxSize;
 
       // Column meta for editors
-      if (col.meta) {
-        revoCol.meta = col.meta;
+      if (col.meta || col.editorConfig) {
+        revoCol.meta = {
+          ...(col.meta || {}),
+          ...(col.editorConfig || {}),
+        };
       }
 
       // Editor registration

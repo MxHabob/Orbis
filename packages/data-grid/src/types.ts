@@ -36,6 +36,10 @@ export interface OrbisColumnDef {
   cellClass?: string;
   /** Header CSS class */
   headerClass?: string;
+  /** Custom properties function for the cell, receives row data */
+  cellProperties?: (row: any) => Record<string, any>;
+  /** Column-specific editor configuration */
+  editorConfig?: Record<string, any>;
 }
 
 // ── Cell Edit Event ──────────────────────────────────────────────────────────
