@@ -463,15 +463,7 @@ onMount(() => {
 
       <!-- Panel 2: Interactive Live PDF Preview Canvas -->
       <main class="flex-grow bg-muted/30 p-4 flex flex-col gap-3 overflow-hidden">
-        <!-- Canvas Header tools -->
-        <div class="flex items-center justify-between bg-card border border-border px-3 py-2 rounded-lg">
-          <div class="flex items-center gap-1.5 text-muted-foreground">
-            <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
-            <span class="text-[10px]">تخطيط فوري حقيقي / Instant Layout Engine</span>
-          </div>
-          
-          <Badge variant="outline">{documentModel.meta.pageSetup.size} ({documentModel.meta.pageSetup.orientation})</Badge>
-        </div>
+
 
         <!-- Canvas Body (renders Live generated PDF inside iframe) -->
         <div class="flex-grow bg-white border border-border rounded-xl shadow-inner relative overflow-hidden flex items-center justify-center">
