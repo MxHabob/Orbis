@@ -347,12 +347,41 @@ function toggleAction(ruleIndex: number, action: string) {
 <div class="h-full w-full overflow-hidden flex flex-col font-sans text-start bg-background relative">
   <div class="flex-1 overflow-y-auto scrollbar-hide">
     <div class="p-6 pb-28 flex flex-col gap-6">
-      <!-- Header Area -->
-      <div class="flex items-center justify-end gap-4 font-sans border-b border-border/40 pb-5 select-none">
-        <div class="flex items-center gap-3">
+      <!-- Header Area (Search, Filters, and Buttons) -->
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 font-sans border-b border-border/40 pb-5 select-none">
+        <div class="flex flex-1 flex-col sm:flex-row gap-3 items-center w-full">
+          <!-- Document Type Search -->
+          <div class="relative flex-1 w-full max-w-sm">
+            <Search size={14} class="absolute top-1/2 -translate-y-1/2 text-muted-foreground ltr:left-3 rtl:right-3" />
+            <Input
+              type="text"
+              bind:value={docTypeFilter}
+              placeholder={getLocale() === "ar" ? "ابحث بنوع المستند..." : "Search by document type..."}
+              class="w-full ltr:pl-9 rtl:pr-9 h-9 text-xs bg-background/50"
+            />
+          </div>
+
+          <!-- Role Filter -->
+          <div class="w-full sm:w-48 text-start">
+            <Select type="single" value={roleFilter} onValueChange={(v) => (roleFilter = v ?? "")}>
+              <SelectTrigger class="h-9 w-full text-xs bg-background/50">
+                {roleFilter ? (getLocale() === "ar" ? `تصفية حسب الدور: ${roleFilter}` : `Filter by Role: ${roleFilter}`) : (getLocale() === "ar" ? "تصفية حسب الدور: الكل" : "Filter by Role: All")}
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">{getLocale() === "ar" ? "تصفية حسب الدور: الكل" : "Filter by Role: All"}</SelectItem>
+                {#each standardRoles as role}
+                  <SelectItem value={role}>{role}</SelectItem>
+                {/each}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3 shrink-0">
           <Button
             variant="outline"
             size="sm"
+            class="h-9 text-xs"
             onclick={() => showSetUserPermissionsModal = true}
           >
             <UserCheck size={14} class={getLocale() === "ar" ? 'ml-1.5' : 'mr-1.5'} />
@@ -362,6 +391,7 @@ function toggleAction(ruleIndex: number, action: string) {
           <Button
             variant="lime"
             size="sm"
+            class="h-9 text-xs font-semibold"
             onclick={() => showAddRuleModal = true}
           >
             <Plus size={14} class={getLocale() === "ar" ? 'ml-1.5' : 'mr-1.5'} />
@@ -369,40 +399,6 @@ function toggleAction(ruleIndex: number, action: string) {
           </Button>
         </div>
       </div>
-
-      <!-- Filters Row -->
-      <div class="flex flex-col sm:flex-row gap-4 items-center select-none">
-    <div class="flex items-center gap-2 flex-1 w-full max-w-sm">
-      <Label class="text-xs font-semibold text-muted-foreground min-w-[90px] text-start border-r border-border/10 pr-2">
-        {getLocale() === "ar" ? "نوع المستند" : "Document Type"}
-      </Label>
-      <Input
-        type="text"
-        bind:value={docTypeFilter}
-        placeholder={getLocale() === "ar" ? "ابحث بالنوع..." : "Search Type..."}
-        class="h-9 text-xs flex-1"
-      />
-    </div>
-
-    <div class="flex items-center gap-2 flex-1 w-full max-w-sm text-start">
-      <Label class="text-xs font-semibold text-muted-foreground min-w-[90px] text-start border-r border-border/10 pr-2">
-        {getLocale() === "ar" ? "الدور" : "Role"}
-      </Label>
-      <div class="flex-1">
-        <Select type="single" value={roleFilter} onValueChange={(v) => (roleFilter = v ?? "")}>
-          <SelectTrigger class="h-9 w-full text-xs">
-            {roleFilter || (getLocale() === "ar" ? "كل الأدوار" : "All Roles")}
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">{getLocale() === "ar" ? "كل الأدوار" : "All Roles"}</SelectItem>
-            {#each standardRoles as role}
-              <SelectItem value={role}>{role}</SelectItem>
-            {/each}
-          </SelectContent>
-        </Select>
-      </div>
-    </div>
-  </div>
 
       <!-- Rules Table Content -->
       <div class="w-full">

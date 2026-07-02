@@ -351,82 +351,74 @@ function escapeHtml(text: string): string {
 
 <div class="h-full w-full overflow-y-auto scrollbar-hide">
   <div class="p-6 flex flex-col gap-6">
-  <!-- Header Area -->
-  <div class="flex items-center justify-between gap-4 font-sans border-b border-border/40 pb-5">
-    <div class="flex items-center gap-2">
-      {#if !isLoading}
-        <span class="text-[10px] px-2 py-0.5 rounded bg-muted font-mono text-muted-foreground font-bold">
-          {getLocale() === "ar" ? `الوحدات التنظيمية (${units.length})` : `Org Units (${units.length})`}
-        </span>
-      {/if}
+  <!-- Header Area (Search, View controls and Add Button) -->
+  <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 font-sans border-b border-border/40 pb-5 select-none">
+    <div class="flex flex-1 flex-col sm:flex-row gap-3 items-center w-full">
+      <!-- Search Field -->
+      <div class="relative flex-1 w-full">
+        <Search size={14} class="absolute top-1/2 -translate-y-1/2 text-muted-foreground rtl:right-3 ltr:left-3" />
+        <Input
+          type="text"
+          bind:value={searchQuery}
+          placeholder={getLocale() === "ar" ? "ابحث بالاسم أو الرمز أو النوع..." : "Search units by name, code or type..."}
+          class="w-full rtl:pr-9 ltr:pl-9 h-9 text-xs bg-background/50"
+        />
+      </div>
+
+      <div class="flex items-center gap-3 w-full sm:w-auto shrink-0 justify-between sm:justify-end">
+        <!-- View Toggle -->
+        <div class="flex items-center bg-muted/50 p-0.5 rounded-lg border border-border/40 select-none">
+          <Button
+            variant={viewMode === "tree" ? "secondary" : "ghost"}
+            size="sm"
+            class="text-[10px] h-7 px-3 font-semibold gap-1.5"
+            onclick={() => viewMode = "tree"}
+          >
+            <FolderTree size={12} />
+            <span>{getLocale() === "ar" ? "الهيكل الشجري" : "Hierarchy"}</span>
+          </Button>
+          <Button
+            variant={viewMode === "flat" ? "secondary" : "ghost"}
+            size="sm"
+            class="text-[10px] h-7 px-3 font-semibold gap-1.5"
+            onclick={() => viewMode = "flat"}
+          >
+            <List size={12} />
+            <span>{getLocale() === "ar" ? "قائمة مسطحة" : "Flat List"}</span>
+          </Button>
+        </div>
+
+        <!-- Expand/Collapse all -->
+        {#if viewMode === "tree" && !searchQuery.trim()}
+          <div class="flex items-center gap-1 select-none">
+            <Button
+              variant="outline"
+              size="sm"
+              class="text-[10px] h-7 px-2"
+              onclick={() => toggleExpandAll(true)}
+            >
+              {getLocale() === "ar" ? "توسيع الكل" : "Expand All"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              class="text-[10px] h-7 px-2"
+              onclick={() => toggleExpandAll(false)}
+            >
+              {getLocale() === "ar" ? "طي الكل" : "Collapse All"}
+            </Button>
+          </div>
+        {/if}
+      </div>
     </div>
 
-    <Button variant="lime" class="text-xs h-9 px-4 font-semibold animate-in fade-in zoom-in-95 duration-150" onclick={openCreateSheet}>
+    <!-- Add button -->
+    <Button variant="lime" class="text-xs h-9 px-4 font-semibold shrink-0 animate-in fade-in zoom-in-95 duration-150" onclick={openCreateSheet}>
       <Plus size={14} class={getLocale() === "ar" ? 'ml-1.5' : 'mr-1.5'} />
       {getLocale() === "ar" ? "إضافة وحدة" : "Add Unit"}
     </Button>
   </div>
 
-  <!-- Search & View Controls -->
-  <div class="flex flex-col sm:flex-row gap-3 w-full items-center justify-between">
-    <div class="relative flex-1 w-full">
-      <Search size={14} class="absolute top-1/2 -translate-y-1/2 text-muted-foreground rtl:right-3 ltr:left-3" />
-      <Input
-        type="text"
-        bind:value={searchQuery}
-        placeholder="Search units by name, code or type..."
-        class="w-full rtl:pr-9 ltr:pl-9 h-9 text-xs"
-      />
-    </div>
-
-    <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
-      <!-- View Toggle -->
-      <div class="flex items-center bg-muted/50 p-0.5 rounded-lg border border-border/40 select-none">
-        <Button
-          variant={viewMode === "tree" ? "secondary" : "ghost"}
-          size="sm"
-          class="text-[10px] h-7 px-3 font-semibold gap-1.5"
-          onclick={() => viewMode = "tree"}
-        >
-          <FolderTree size={12} />
-          <span>Hierarchy</span>
-        </Button>
-        <Button
-          variant={viewMode === "flat" ? "secondary" : "ghost"}
-          size="sm"
-          class="text-[10px] h-7 px-3 font-semibold gap-1.5"
-          onclick={() => viewMode = "flat"}
-        >
-          <List size={12} />
-          <span>Flat List</span>
-        </Button>
-      </div>
-
-      <!-- Expand/Collapse all (Only in Tree Mode without active search) -->
-      {#if viewMode === "tree" && !searchQuery.trim()}
-        <div class="flex items-center gap-1 select-none">
-          <Button
-            variant="outline"
-            size="sm"
-            class="text-[10px] h-7 px-2"
-            onclick={() => toggleExpandAll(true)}
-          >
-            Expand All
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            class="text-[10px] h-7 px-2"
-            onclick={() => toggleExpandAll(false)}
-          >
-            Collapse All
-          </Button>
-        </div>
-      {/if}
-    </div>
-  </div>
-
-  <!-- Table/Grid Content -->
   {#if isLoading}
     <div class="flex flex-col gap-3">
       <Skeleton class="h-10 w-full" />

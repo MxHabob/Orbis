@@ -115,31 +115,23 @@ function getRoomTypeBadgeClass(typeStr: string): string {
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide">
-  <!-- Header Area -->
-  <div class="flex items-center justify-between gap-4 font-sans border-b border-border/40 pb-5">
-    <div class="flex items-center gap-2">
-      {#if !isLoading}
-        <span class="text-[10px] px-2 py-0.5 rounded bg-muted font-mono text-muted-foreground font-bold">
-          {getLocale() === "ar" ? `الغرف والقاعات (${filteredRooms.length})` : `Rooms & Halls (${filteredRooms.length})`}
-        </span>
-      {/if}
+  <!-- Header Area (Search and Add Button) -->
+  <div class="flex items-center justify-between gap-4 font-sans border-b border-border/40 pb-5 select-none">
+    <!-- Search Bar -->
+    <div class="relative flex-1 max-w-md w-full">
+      <Search size={14} class="absolute top-1/2 -translate-y-1/2 text-muted-foreground rtl:right-3 ltr:left-3" />
+      <Input
+        type="text"
+        bind:value={searchQuery}
+        placeholder={getLocale() === "ar" ? "ابحث عن قاعة بالاسم أو النوع أو الموقع..." : "Search rooms by name, type or location..."}
+        class="w-full rtl:pr-9 ltr:pl-9 h-9 text-xs bg-background/50"
+      />
     </div>
 
-    <Button variant="lime" class="text-xs h-9 px-4 font-semibold" onclick={openCreateSheet}>
+    <Button variant="lime" class="text-xs h-9 px-4 font-semibold shrink-0" onclick={openCreateSheet}>
       <Plus size={14} class={getLocale() === "ar" ? 'ml-1.5' : 'mr-1.5'} />
       {m.rooms_add()}
     </Button>
-  </div>
-
-  <!-- Search Bar -->
-  <div class="relative w-full">
-    <Search size={14} class="absolute top-1/2 -translate-y-1/2 text-muted-foreground rtl:right-3 ltr:left-3" />
-    <Input
-      type="text"
-      bind:value={searchQuery}
-      placeholder="Search rooms by name, type or location..."
-      class="w-full rtl:pr-9 ltr:pl-9 h-9 text-xs"
-    />
   </div>
 
   <!-- Table/Grid Content -->

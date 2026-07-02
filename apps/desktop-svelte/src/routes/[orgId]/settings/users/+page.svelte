@@ -157,63 +157,55 @@ function getRoleBadgeClass(roleStr: string): string {
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide">
-  <!-- Header Area -->
-  <div class="flex items-center justify-between gap-4 font-sans border-b border-border/40 pb-5">
-    <div class="flex items-center gap-2">
-      {#if !isLoading}
-        <span class="text-[10px] px-2 py-0.5 rounded bg-muted font-mono text-muted-foreground font-bold">
-          {getLocale() === "ar" ? `المستخدمين (${filteredUsers.length})` : `Users (${filteredUsers.length})`}
-        </span>
-      {/if}
+  <!-- Header Area (Search, Filters, and Action Button) -->
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 font-sans border-b border-border/40 pb-5 select-none">
+    <div class="flex flex-1 flex-col sm:flex-row gap-3 items-center w-full">
+      <!-- Search Field -->
+      <div class="relative flex-1 w-full">
+        <Search size={14} class="absolute top-1/2 -translate-y-1/2 text-muted-foreground rtl:right-3 ltr:left-3" />
+        <Input
+          type="text"
+          bind:value={searchQuery}
+          placeholder={getLocale() === "ar" ? "البحث بالاسم أو البريد..." : "Search by name or email..."}
+          class="w-full rtl:pr-9 ltr:pl-9 h-9 text-xs bg-background/50"
+        />
+      </div>
+
+      <!-- Filter by Role -->
+      <div class="w-full sm:w-48 text-start">
+        <Select type="single" value={selectedRole} onValueChange={(v) => (selectedRole = v ?? "all")}>
+          <SelectTrigger class="h-9 w-full text-xs bg-background/50">
+            {#if selectedRole === "all"}
+              {getLocale() === "ar" ? "تصفية حسب الدور: الكل" : "Filter by Role: All"}
+            {:else if selectedRole === "admin"}
+              {getLocale() === "ar" ? "تصفية حسب الدور: مدير" : "Filter by Role: Admin"}
+            {:else if selectedRole === "teacher"}
+              {getLocale() === "ar" ? "تصفية حسب الدور: معلم" : "Filter by Role: Teacher"}
+            {:else if selectedRole === "parent"}
+              {getLocale() === "ar" ? "تصفية حسب الدور: ولي أمر" : "Filter by Role: Guardian"}
+            {:else if selectedRole === "student"}
+              {getLocale() === "ar" ? "تصفية حسب الدور: طالب" : "Filter by Role: Student"}
+            {:else}
+              {getLocale() === "ar" ? "تصفية حسب الدور: موظف" : "Filter by Role: Staff"}
+            {/if}
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{getLocale() === "ar" ? "تصفية حسب الدور: الكل" : "Filter by Role: All"}</SelectItem>
+            <SelectItem value="admin">{getLocale() === "ar" ? "مدير" : "Admin"}</SelectItem>
+            <SelectItem value="teacher">{getLocale() === "ar" ? "معلم" : "Teacher"}</SelectItem>
+            <SelectItem value="parent">{getLocale() === "ar" ? "ولي أمر" : "Guardian"}</SelectItem>
+            <SelectItem value="student">{getLocale() === "ar" ? "طالب" : "Student"}</SelectItem>
+            <SelectItem value="staff">{getLocale() === "ar" ? "موظف" : "Staff"}</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
     </div>
 
-    <Button variant="lime" class="text-xs h-9 px-4 font-semibold" onclick={openCreateSheet}>
+    <!-- Add Button -->
+    <Button variant="lime" class="text-xs h-9 px-4 font-semibold shrink-0" onclick={openCreateSheet}>
       <Plus size={14} class={getLocale() === "ar" ? 'ml-1.5' : 'mr-1.5'} />
       {m.settings_users_add()}
     </Button>
-  </div>
-
-  <!-- Search and Filtering Bar -->
-  <div class="flex flex-col sm:flex-row gap-3 items-center w-full">
-    <!-- Search Field -->
-    <div class="relative flex-1 w-full">
-      <Search size={14} class="absolute top-1/2 -translate-y-1/2 text-muted-foreground rtl:right-3 ltr:left-3" />
-      <Input
-        type="text"
-        bind:value={searchQuery}
-        placeholder="Search by name or email..."
-        class="w-full rtl:pr-9 ltr:pl-9 h-9 text-xs"
-      />
-    </div>
-
-    <!-- Filter by Role -->
-    <div class="w-full sm:w-48 text-start">
-      <Select type="single" value={selectedRole} onValueChange={(v) => (selectedRole = v ?? "all")}>
-        <SelectTrigger class="h-9 w-full text-xs">
-          {#if selectedRole === "all"}
-            {m.settings_users_filter_all()}
-          {:else if selectedRole === "admin"}
-            {m.settings_users_filter_admin()}
-          {:else if selectedRole === "teacher"}
-            {m.settings_users_filter_teacher()}
-          {:else if selectedRole === "parent"}
-            {m.settings_users_filter_guardian()}
-          {:else if selectedRole === "student"}
-            {m.settings_users_filter_student()}
-          {:else}
-            Staff
-          {/if}
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">{m.settings_users_filter_all()}</SelectItem>
-          <SelectItem value="admin">{m.settings_users_filter_admin()}</SelectItem>
-          <SelectItem value="teacher">{m.settings_users_filter_teacher()}</SelectItem>
-          <SelectItem value="parent">{m.settings_users_filter_guardian()}</SelectItem>
-          <SelectItem value="student">{m.settings_users_filter_student()}</SelectItem>
-          <SelectItem value="staff">Staff</SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
   </div>
 
   <!-- Main Grid/Table Content -->

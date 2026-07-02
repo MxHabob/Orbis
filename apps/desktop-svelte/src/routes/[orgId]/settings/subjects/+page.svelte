@@ -151,33 +151,23 @@ function getSubjectTheme(nameStr: string) {
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6">
 	<!-- Header & Search Controls -->
-	<div class="flex items-center justify-between gap-4 font-sans border-b border-border/40 pb-5">
-		<div class="flex items-center gap-2">
-			{#if !isLoading}
-				<span class="text-[10px] px-2 py-0.5 rounded bg-muted font-mono text-muted-foreground font-bold">
-					{getLocale() === "ar" ? `المواد الدراسية (${subjects.length})` : `Subjects (${subjects.length})`}
-				</span>
-			{/if}
+	<div class="flex items-center justify-between gap-4 font-sans border-b border-border/40 pb-5 select-none">
+		<!-- Search -->
+		<div class="relative flex-1 max-w-md w-full">
+			<Search class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+			<Input
+				type="text"
+				placeholder={getLocale() === "ar" ? "ابحث عن مادة بالاسم أو الرمز..." : "Search subjects by name or code..."}
+				class="w-full ps-9 h-9 text-xs bg-background/50"
+				bind:value={searchQuery}
+			/>
 		</div>
 
-		<div class="flex items-center gap-2 shrink-0">
-			<!-- Search -->
-			<div class="relative w-full sm:w-60">
-				<Search class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-				<Input
-					type="text"
-					placeholder={m.subjects_search_placeholder()}
-					class="input-sunken ps-9 text-xs py-1.5 w-full"
-					bind:value={searchQuery}
-				/>
-			</div>
-
-			<!-- Add button -->
-			<Button variant="lime" class="text-xs h-9 px-3 shrink-0" onclick={() => isModalOpen = true}>
-				<Plus size={14} class={getLocale() === "ar" ? 'ml-1.5' : 'mr-1.5'} />
-				{m.subjects_add_subject()}
-			</Button>
-		</div>
+		<!-- Add button -->
+		<Button variant="lime" class="text-xs h-9 px-4 font-semibold shrink-0" onclick={() => isModalOpen = true}>
+			<Plus size={14} class={getLocale() === "ar" ? 'ml-1.5' : 'mr-1.5'} />
+			{m.subjects_add_subject()}
+		</Button>
 	</div>
 
 	<!-- Main Subject View Content -->

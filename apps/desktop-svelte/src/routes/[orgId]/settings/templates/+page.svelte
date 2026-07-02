@@ -282,66 +282,61 @@ async function restoreTemplate(id: string) {
 
 <div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide">
   <div class="max-w-6xl mx-auto p-6 flex flex-col gap-6">
-    <!-- Header Action Bar -->
-    <div class="flex items-center justify-between gap-4 flex-nowrap border-b border-border/60 pb-4">
-      <div class="flex items-center gap-2">
-        {#if !isLoading}
-          <span class="text-[10px] px-2 py-0.5 rounded bg-muted font-mono text-muted-foreground font-bold">
-            {getLocale() === "ar" ? `قوالب المستندات (${templates.length})` : `Templates (${templates.length})`}
-          </span>
-        {/if}
+    <!-- Header Action Bar (Search, Filters, and Buttons) -->
+    <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4 border-b border-border/60 pb-4 select-none">
+      <div class="flex flex-1 flex-col sm:flex-row gap-3 items-center w-full">
+        <!-- Search Field -->
+        <div class="relative flex-1 w-full max-w-md">
+          <Search class="absolute start-3 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder={getLocale() === "ar" ? "ابحث بالقوالب..." : "Search templates..."}
+            class="ps-9 bg-background/50 h-9 text-xs"
+            bind:value={searchQuery}
+            oninput={loadTemplates}
+          />
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+          <!-- Entity Type Select -->
+          <div class="min-w-[140px]">
+            <Select type="single" bind:value={filterEntityType} onValueChange={loadTemplates}>
+              <SelectTrigger class="h-9 text-xs bg-background/50">
+                {({ all: getLocale() === "ar" ? "كل الكيانات" : "All Entities", enrollment: getLocale() === "ar" ? "تسجيل الطلاب" : "Enrollment", payment: getLocale() === "ar" ? "سندات القبض" : "Payment", exam: getLocale() === "ar" ? "أرقام الجلوس" : "Exam", user: getLocale() === "ar" ? "بطاقات التعريف" : "User" } as any)[filterEntityType] || (getLocale() === "ar" ? "نوع السجل" : "Entity Type")}
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{getLocale() === "ar" ? "كل الكيانات" : "All Entities"}</SelectItem>
+                <SelectItem value="enrollment">{getLocale() === "ar" ? "تسجيل الطلاب" : "Enrollment"}</SelectItem>
+                <SelectItem value="payment">{getLocale() === "ar" ? "سندات القبض" : "Payment"}</SelectItem>
+                <SelectItem value="exam">{getLocale() === "ar" ? "أرقام الجلوس" : "Exam"}</SelectItem>
+                <SelectItem value="user">{getLocale() === "ar" ? "بطاقات التعريف" : "User"}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <!-- Doc Type Select -->
+          <div class="min-w-[140px]">
+            <Select type="single" bind:value={filterDocType} onValueChange={loadTemplates}>
+              <SelectTrigger class="h-9 text-xs bg-background/50">
+                {({ all: getLocale() === "ar" ? "كل الأنواع" : "All Doc Types", CERTIFICATE: getLocale() === "ar" ? "شهادات" : "Certificates", ID_CARD: getLocale() === "ar" ? "بطاقات تعريف" : "ID Cards", RECEIPT: getLocale() === "ar" ? "سندات" : "Receipts", EXAM_CARD: getLocale() === "ar" ? "بطاقات جلوس" : "Seating Cards" } as any)[filterDocType] || (getLocale() === "ar" ? "نوع المستند" : "Document Type")}
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{getLocale() === "ar" ? "كل الأنواع" : "All Doc Types"}</SelectItem>
+                <SelectItem value="CERTIFICATE">{getLocale() === "ar" ? "شهادات" : "Certificates"}</SelectItem>
+                <SelectItem value="ID_CARD">{getLocale() === "ar" ? "بطاقات تعريف" : "ID Cards"}</SelectItem>
+                <SelectItem value="RECEIPT">{getLocale() === "ar" ? "سندات" : "Receipts"}</SelectItem>
+                <SelectItem value="EXAM_CARD">{getLocale() === "ar" ? "بطاقات جلوس" : "Seating Cards"}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </div>
+
       <div class="flex items-center gap-2 flex-nowrap shrink-0">
-        <Button variant="lime" size="sm" onclick={() => (isCreateDialogOpen = true)}>
+        <Button variant="lime" size="sm" class="h-9 text-xs font-semibold" onclick={() => (isCreateDialogOpen = true)}>
           <Plus size={16} class="me-1.5" />
           {m.templates_create_btn()}
         </Button>
-      </div>
-    </div>
-
-    <!-- Filters and Search -->
-    <div class="flex flex-col sm:flex-row gap-4 items-center justify-between bg-card border border-border p-4 rounded-xl">
-      <div class="relative w-full sm:max-w-md">
-        <Search class="absolute start-3 top-2.5 h-4 w-4 text-muted-foreground" />
-        <Input
-          type="text"
-          placeholder="ابحث بالقوالب... / Search templates..."
-          class="ps-9"
-          bind:value={searchQuery}
-          oninput={loadTemplates}
-        />
-      </div>
-
-      <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-        <div class="flex flex-col gap-1 text-start min-w-[130px]">
-          <Select type="single" bind:value={filterEntityType} onValueChange={loadTemplates}>
-            <SelectTrigger class="h-9">
-              {({ all: "كل الكيانات (All)", enrollment: "تسجيل الطلاب (Enrollment)", payment: "سندات القبض (Payment)", exam: "أرقام الجلوس (Exam)", user: "بطاقات التعريف (User)" } as any)[filterEntityType] || "نوع السجل"}
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">كل الكيانات (All)</SelectItem>
-              <SelectItem value="enrollment">تسجيل الطلاب (Enrollment)</SelectItem>
-              <SelectItem value="payment">سندات القبض (Payment)</SelectItem>
-              <SelectItem value="exam">أرقام الجلوس (Exam)</SelectItem>
-              <SelectItem value="user">بطاقات التعريف (User)</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div class="flex flex-col gap-1 text-start min-w-[130px]">
-          <Select type="single" bind:value={filterDocType} onValueChange={loadTemplates}>
-            <SelectTrigger class="h-9">
-              {({ all: "كل الأنواع (All)", CERTIFICATE: "شهادات (Certificate)", ID_CARD: "بطاقات (ID Card)", RECEIPT: "سندات (Receipt)", EXAM_CARD: "بطاقات جلوس (Seating)" } as any)[filterDocType] || "نوع المستند"}
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">كل الأنواع (All)</SelectItem>
-              <SelectItem value="CERTIFICATE">شهادات (Certificate)</SelectItem>
-              <SelectItem value="ID_CARD">بطاقات (ID Card)</SelectItem>
-              <SelectItem value="RECEIPT">سندات (Receipt)</SelectItem>
-              <SelectItem value="EXAM_CARD">بطاقات جلوس (Seating)</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
       </div>
     </div>
 
