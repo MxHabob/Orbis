@@ -26,6 +26,7 @@ import {
   MoreHorizontal,
   Zap,
   Radio,
+  FileText,
 } from "lucide-svelte";
 import { authStore, uiStore } from "$lib/stores";
 import OrgSidebarSwitcher from "./OrgSidebarSwitcher.svelte";
@@ -111,6 +112,12 @@ const navItems = $derived([
     href: `/${orgId}/finance`,
     icon: Wallet,
     label: m.nav_finance(),
+    match: "prefix",
+  },
+  {
+    href: `/${orgId}/templates`,
+    icon: FileText,
+    label: m.settings_nav_templates ? m.settings_nav_templates() : "قوالب المستندات",
     match: "prefix",
   },
   {

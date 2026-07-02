@@ -105,13 +105,7 @@ const navItems = $derived([
     label: m.settings_nav_ordering ? m.settings_nav_ordering() : "ترتيب الطلاب",
     icon: ListOrdered,
   },
-  {
-    path: "templates",
-    label: m.settings_nav_templates
-      ? m.settings_nav_templates()
-      : "قوالب المستندات",
-    icon: FileText,
-  },
+
   {
     path: "fee-templates",
     label: m.settings_nav_fee_templates

@@ -334,7 +334,7 @@ onMount(() => {
   <!-- Editor Header Action Bar -->
   <header class="h-14 border-b border-border bg-card/60 px-4 flex items-center justify-between gap-4 flex-nowrap select-none">
     <div class="flex items-center gap-3">
-      <Button variant="ghost" size="icon-sm" href={`/${orgId}/settings/templates`} class="cursor-pointer">
+      <Button variant="ghost" size="icon-sm" href={`/${orgId}/templates`} class="cursor-pointer">
         <ArrowLeft size={16} class="rtl:rotate-180" />
       </Button>
       <div class="flex flex-col text-start">

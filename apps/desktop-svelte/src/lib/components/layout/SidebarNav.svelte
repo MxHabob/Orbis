@@ -62,10 +62,10 @@ and collapsibility.
 </script>
 
 <div
-  class="h-full  flex flex-col overflow-y-auto scrollbar-hide select-none"
+  class="h-full flex flex-col overflow-y-auto scrollbar-hide select-none"
 >
   <!-- Header -->
-  <div class="h-14 flex items-center justify-between px-4 border-b border-border/60 shrink-0">
+  <div class="h-14 flex items-center justify-between pb-4 border-b border-border/60 shrink-0">
     <div class="flex items-center gap-2 min-w-0">
       <h2 class="text-sm font-semibold tracking-tight text-foreground truncate">
         {title || "Navigation"}

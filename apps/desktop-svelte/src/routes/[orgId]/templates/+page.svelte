@@ -205,7 +205,7 @@ async function handleCreateTemplate() {
     isCreateDialogOpen = false;
 
     // Redirect to editor page
-    goto(`/${orgId}/settings/templates/${response.id}`);
+    goto(`/${orgId}/templates/${response.id}`);
   } catch (e: unknown) {
     console.error("Failed to create template:", e);
     const msg = (e as any)?.message || "Failed to create template";
@@ -282,7 +282,7 @@ async function restoreTemplate(id: string) {
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide">
-  <div class="max-w-6xl mx-auto p-6 flex flex-col gap-6">
+  <div class=" mx-auto p-6 flex flex-col gap-6">
     <!-- Header Action Bar (Search, Filters, and Buttons) -->
     <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4 border-b border-border/60 pb-4 select-none">
       <div class="flex flex-1 flex-col sm:flex-row gap-3 items-center w-full">
@@ -413,7 +413,7 @@ async function restoreTemplate(id: string) {
                   variant="outline"
                   size="xs"
                   class="cursor-pointer"
-                  href={`/${orgId}/settings/templates/${template.id}`}
+                  href={`/${orgId}/templates/${template.id}`}
                 >
                   <Edit size={13} class="me-1" />
                   {m.templates_action_edit()}

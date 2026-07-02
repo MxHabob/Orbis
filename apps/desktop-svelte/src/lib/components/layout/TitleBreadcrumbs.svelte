@@ -155,13 +155,16 @@ const breadcrumbs = $derived.by(() => {
       items.push({ label: m.settings_nav_currencies ? m.settings_nav_currencies() : "العملات وأسعار الصرف" });
     } else if (pathname.includes("/ordering")) {
       items.push({ label: m.settings_nav_ordering ? m.settings_nav_ordering() : "ترتيب الطلاب" });
-    } else if (pathname.includes("/templates")) {
-      items.push({ label: m.settings_nav_templates ? m.settings_nav_templates() : "قوالب المستندات" });
     } else if (pathname.includes("/fee-templates")) {
       items.push({ label: m.settings_nav_fee_templates ? m.settings_nav_fee_templates() : "قوالب الرسوم" });
     } else if (pathname.includes("/discount-templates")) {
       items.push({ label: m.settings_nav_discount_templates ? m.settings_nav_discount_templates() : "قوالب الخصومات" });
     }
+  } else if (pathname.includes("/templates")) {
+    items.push({
+      label: m.settings_nav_templates ? m.settings_nav_templates() : "قوالب المستندات",
+      href: `/${currentOrgId}/templates`
+    });
   } else if (pathname.includes("/account")) {
     items.push({
       label: m.account_settings_title ? m.account_settings_title() : "إعدادات الحساب"
