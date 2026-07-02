@@ -18,16 +18,48 @@ let {
 	bind:checked
 	data-slot="switch"
 	data-size={size}
+	dir="ltr"
 	class={cn(
-		"data-checked:bg-primary data-unchecked:bg-input focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 dark:data-unchecked:bg-input/80 shrink-0 rounded-full border border-transparent focus-visible:ring-3 aria-invalid:ring-3 data-[size=default]:h-[18.4px] data-[size=default]:w-[32px] data-[size=sm]:h-[14px] data-[size=sm]:w-[24px] peer group/switch relative inline-flex items-center transition-all outline-none after:absolute after:-inset-x-3 after:-inset-y-2 data-disabled:cursor-not-allowed data-disabled:opacity-50",
-		"data-unchecked:shadow-[inset_0_2px_4px_0_oklch(0.3_0.03_285_/_0.15)] dark:data-unchecked:shadow-[inset_0_2px_4px_0_oklch(0_0_0_/_0.35)]",
-		"data-checked:shadow-[0_0_6px_-2px_var(--color-primary)] dark:data-checked:shadow-[0_0_8px_-2px_var(--color-primary)]",
+		"border-border bg-muted/40 data-checked:bg-primary data-checked:border-primary focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 shrink-0 rounded-[6px] border focus-visible:ring-3 aria-invalid:ring-3 peer group/switch relative inline-flex items-center transition-all outline-none after:absolute after:-inset-x-3 after:-inset-y-2 data-disabled:cursor-not-allowed data-disabled:opacity-50",
+		"data-unchecked:shadow-[inset_0_2px_4px_0_oklch(0.3_0.05_280_/_0.06),_inset_0_1px_2px_0_oklch(0.3_0.05_280_/_0.04)] dark:data-unchecked:shadow-[inset_0_3px_6px_0_oklch(0_0_0_/_0.35),_inset_0_1px_2px_0_oklch(0_0_0_/_0.2)]",
+		"data-[size=default]:h-6 data-[size=default]:w-11 data-[size=default]:p-0",
+		"data-[size=sm]:h-4 data-[size=sm]:w-7 data-[size=sm]:p-0",
 		className
 	)}
 	{...restProps}
 >
 	<SwitchPrimitive.Thumb
 		data-slot="switch-thumb"
-		class="bg-background dark:data-unchecked:bg-foreground dark:data-checked:bg-primary-foreground rounded-full group-data-[size=default]/switch:size-4 group-data-[size=sm]/switch:size-3 group-data-[size=default]/switch:data-checked:translate-x-[calc(100%-2px)] group-data-[size=sm]/switch:data-checked:translate-x-[calc(100%-2px)] group-data-[size=default]/switch:data-unchecked:translate-x-0 group-data-[size=sm]/switch:data-unchecked:translate-x-0 pointer-events-none block ring-0 transition-all shadow-[0_1px_3px_0_oklch(0_0_0_/_0.15)] rtl:data-[state=checked]:translate-x-[calc(-100%)]"
-	/>
+		class="bg-background border border-border data-checked:border-primary rounded-[4px] pointer-events-none flex items-center justify-center ring-0 transition-all group-data-[size=default]/switch:h-full group-data-[size=default]/switch:w-[23px] group-data-[size=default]/switch:data-checked:translate-x-[20px] group-data-[size=default]/switch:data-unchecked:translate-x-0 group-data-[size=sm]/switch:h-full group-data-[size=sm]/switch:w-[14px] group-data-[size=sm]/switch:data-checked:translate-x-[12px] group-data-[size=sm]/switch:data-unchecked:translate-x-0 shadow-[0_2px_0_0_var(--color-border),_0_1px_3px_0_oklch(0_0_0_/_0.08)] dark:shadow-[0_2px_0_0_var(--color-border),_0_1px_3px_0_oklch(0_0_0_/_0.3)] data-checked:shadow-[0_2px_0_0_oklch(0.35_0.1_280),_0_1px_3px_0_oklch(0_0_0_/_0.2)] dark:data-checked:shadow-[0_2px_0_0_oklch(0.3_0.1_280),_0_1px_3px_0_oklch(0_0_0_/_0.5)]"
+	>
+		{#if checked}
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="3"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				class="size-2.5 text-primary"
+			>
+				<polyline points="20 6 9 17 4 12" />
+			</svg>
+		{:else}
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="3"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				class="size-2.5 text-muted-foreground/80"
+			>
+				<line x1="18" y1="6" x2="6" y2="18" />
+				<line x1="6" y1="6" x2="18" y2="18" />
+			</svg>
+		{/if}
+	</SwitchPrimitive.Thumb>
 </SwitchPrimitive.Root>
+

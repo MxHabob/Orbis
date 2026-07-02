@@ -7,6 +7,9 @@
 &[data-open]);
 @custom-variant data-closed (&[data-state="closed"],
 &[data-closed]);
+@custom-variant data-checked (&[data-state="checked"], &[data-checked]);
+@custom-variant data-unchecked (&[data-state="unchecked"], &[data-unchecked]);
+
 
 /* ============================================================
    @orbis/ui-svelte — S.C.R.A.P.S. Design System
@@ -311,18 +314,18 @@
 @utility btn-tactile {
   @apply relative inline-flex items-center justify-center gap-2 rounded-md font-medium text-sm transition-all duration-150 ease-out;
   box-shadow:
-    0 2px 0 0 var(--btn-shadow, oklch(0.75 0.015 300)),
-    0 1px 3px 0 oklch(0.3 0.05 280 / 0.08);
+    0 2px 0 0 var(--btn-shadow, oklch(0.75 0 0)),
+    0 1px 3px 0 oklch(0 0 0 / 0.08);
 
   &:hover {
     transform: translateY(-2px);
     box-shadow:
-      0 4px 0 0 var(--btn-shadow, oklch(0.75 0.015 300)),
-      0 4px 8px -2px oklch(0.3 0.05 280 / 0.12);
+      0 4px 0 0 var(--btn-shadow, oklch(0.75 0 0)),
+      0 4px 8px -2px oklch(0 0 0 / 0.12);
   }
   &:active {
     transform: translateY(1px);
-    box-shadow: 0 0 0 0 var(--btn-shadow, oklch(0.75 0.015 300));
+    box-shadow: 0 0 0 0 var(--btn-shadow, oklch(0.75 0 0));
   }
 }
 
@@ -330,11 +333,11 @@
   @apply btn-tactile bg-primary text-primary-foreground;
   box-shadow:
     0 2px 0 0 oklch(0.35 0.1 280),
-    0 1px 3px 0 oklch(0.25 0.1 280 / 0.25);
+    0 1px 3px 0 oklch(0 0 0 / 0.2);
   &:hover {
     box-shadow:
       0 4px 0 0 oklch(0.35 0.1 280),
-      0 6px 12px -2px oklch(0.25 0.1 280 / 0.3);
+      0 6px 12px -2px oklch(0 0 0 / 0.25);
   }
   &:active {
     box-shadow: 0 0 0 0 oklch(0.35 0.1 280);
@@ -345,11 +348,11 @@
   @apply btn-tactile bg-destructive text-destructive-foreground;
   box-shadow:
     0 2px 0 0 oklch(0.4 0.18 15),
-    0 1px 3px 0 oklch(0.3 0.18 15 / 0.25);
+    0 1px 3px 0 oklch(0 0 0 / 0.2);
   &:hover {
     box-shadow:
       0 4px 0 0 oklch(0.4 0.18 15),
-      0 6px 12px -2px oklch(0.3 0.18 15 / 0.3);
+      0 6px 12px -2px oklch(0 0 0 / 0.25);
   }
   &:active {
     box-shadow: 0 0 0 0 oklch(0.4 0.18 15);
@@ -371,12 +374,12 @@
   color: oklch(0.15 0.04 280);
   box-shadow:
     0 2px 0 0 oklch(0.65 0.18 120),
-    0 1px 3px 0 oklch(0.5 0.18 120 / 0.3);
+    0 1px 3px 0 oklch(0 0 0 / 0.15);
   &:hover {
     background-color: oklch(0.88 0.2 120);
     box-shadow:
       0 4px 0 0 oklch(0.65 0.18 120),
-      0 6px 12px -2px oklch(0.5 0.18 120 / 0.35);
+      0 6px 12px -2px oklch(0 0 0 / 0.2);
   }
   &:active {
     background-color: oklch(0.82 0.2 120);
@@ -386,26 +389,26 @@
 
 .dark .btn-tactile {
   box-shadow:
-    0 2px 0 0 var(--btn-shadow, oklch(0.08 0.04 280)),
+    0 2px 0 0 var(--btn-shadow, oklch(0.35 0 0)),
     0 1px 3px 0 oklch(0 0 0 / 0.3);
   &:hover {
     box-shadow:
-      0 4px 0 0 var(--btn-shadow, oklch(0.08 0.04 280)),
+      0 4px 0 0 var(--btn-shadow, oklch(0.35 0 0)),
       0 6px 12px -2px oklch(0 0 0 / 0.4);
   }
   &:active {
-    box-shadow: 0 0 0 0 var(--btn-shadow, oklch(0.08 0.04 280));
+    box-shadow: 0 0 0 0 var(--btn-shadow, oklch(0.35 0 0));
   }
 }
 
 .dark .btn-tactile-primary {
   box-shadow:
     0 2px 0 0 oklch(0.3 0.1 280),
-    0 1px 4px 0 oklch(0.2 0.1 280 / 0.5);
+    0 1px 4px 0 oklch(0 0 0 / 0.5);
   &:hover {
     box-shadow:
       0 4px 0 0 oklch(0.3 0.1 280),
-      0 6px 16px -2px oklch(0.4 0.12 280 / 0.35);
+      0 6px 16px -2px oklch(0 0 0 / 0.6);
   }
   &:active {
     box-shadow: 0 0 0 0 oklch(0.3 0.1 280);
@@ -415,11 +418,11 @@
 .dark .btn-tactile-destructive {
   box-shadow:
     0 2px 0 0 oklch(0.3 0.18 15),
-    0 1px 4px 0 oklch(0.2 0.18 15 / 0.5);
+    0 1px 4px 0 oklch(0 0 0 / 0.5);
   &:hover {
     box-shadow:
       0 4px 0 0 oklch(0.3 0.18 15),
-      0 6px 16px -2px oklch(0.35 0.18 15 / 0.35);
+      0 6px 16px -2px oklch(0 0 0 / 0.6);
   }
   &:active {
     box-shadow: 0 0 0 0 oklch(0.3 0.18 15);
@@ -429,11 +432,11 @@
 .dark .btn-tactile-lime {
   box-shadow:
     0 2px 0 0 oklch(0.5 0.18 120),
-    0 1px 4px 0 oklch(0.4 0.18 120 / 0.5);
+    0 1px 4px 0 oklch(0 0 0 / 0.5);
   &:hover {
     box-shadow:
       0 4px 0 0 oklch(0.5 0.18 120),
-      0 6px 16px -2px oklch(0.7 0.2 120 / 0.25);
+      0 6px 16px -2px oklch(0 0 0 / 0.6);
   }
   &:active {
     box-shadow: 0 0 0 0 oklch(0.5 0.18 120);
