@@ -756,6 +756,14 @@
   "settings_nav_import_export": "استيراد / تصدير",
   "settings_nav_currencies": "العملات وأسعار الصرف",
   "settings_nav_ordering": "ترتيب الطلاب",
+  "settings_nav_rooms": "الغرف والقاعات",
+  "settings_nav_subjects": "المواد الدراسية",
+
+  "academics_class_detail_tab_overview": "نظرة عامة",
+  "academics_class_detail_tab_assessments": "التقييمات",
+  "academics_class_detail_tab_teachers": "المعلمون",
+  "academics_class_detail_tab_grades": "الدرجات والطلاب",
+  "academics_control_label": "الكنترول",
   "settings_ordering_title": "محرك ترتيب الطلاب",
   "settings_ordering_desc": "بناء وإعادة بناء وتجميد ترتيب الطلاب عبر كافة الدورات الأكاديمية للمدرسة بأكملها.",
 

@@ -1,93 +1,126 @@
 <!--
 @component StudentDetailsLayout
 Streamlined layout for deep-dive student pages.
-Includes a header (name, class, action buttons) and a double-sidebar MainViewport.
+Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
 -->
 <script lang="ts">
-import { page } from "$app/state";
-import { Button } from "@orbis/ui-svelte/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@orbis/ui-svelte/avatar";
-import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import { Badge } from "@orbis/ui-svelte/badge";
-import MainViewport from "$lib/components/layout/MainViewport.svelte";
-import {
-  ArrowRight,
-  ArrowLeft,
-  GraduationCap,
-  Wallet,
-  UserCheck,
-  ShieldAlert,
-  PhoneCall,
-  Edit2,
-  Users,
-  Users2,
-  FileText,
-} from "lucide-svelte";
-import { studentsStore } from "$lib/stores";
-import { onMount } from "svelte";
-import type { Snippet } from "svelte";
-import { toast } from "svelte-sonner";
-import * as m from "$lib/paraglide/messages";
-import { getLocale, deLocalizeUrl, localizeHref } from "$lib/paraglide/runtime";
+  import { page } from "$app/state";
+  import { Button } from "@orbis/ui-svelte/button";
+  import {
+    Avatar,
+    AvatarFallback,
+    AvatarImage,
+  } from "@orbis/ui-svelte/avatar";
+  import { Skeleton } from "@orbis/ui-svelte/skeleton";
+  import { Badge } from "@orbis/ui-svelte/badge";
+  import MainViewport from "$lib/components/layout/MainViewport.svelte";
+  import DetailPageHeader from "$lib/components/layout/DetailPageHeader.svelte";
+  import SecondaryMenu from "$lib/components/layout/SecondaryMenu.svelte";
+  import {
+    GraduationCap,
+    Wallet,
+    UserCheck,
+    ShieldAlert,
+    PhoneCall,
+    Edit2,
+    Users,
+    Users2,
+    FileText,
+  } from "lucide-svelte";
+  import { studentsStore } from "$lib/stores";
+  import { onMount } from "svelte";
+  import type { Snippet } from "svelte";
+  import { toast } from "svelte-sonner";
+  import * as m from "$lib/paraglide/messages";
+  import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 
-let { children }: { children: Snippet } = $props();
+  let { children }: { children: Snippet } = $props();
 
-const orgId = $derived(page.params.orgId);
-const studentId = $derived(page.params.studentId);
+  const orgId = $derived(page.params.orgId);
+  const studentId = $derived(page.params.studentId);
 
-// Find active student in the store
-const student = $derived(studentsStore.list.find((s) => s.id === studentId));
-const currentClass = $derived(
-  student ? studentsStore.classes.find((c) => c.id === student.class_id) : null,
-);
+  // Find active student in the store
+  const student = $derived(
+    studentsStore.list.find((s) => s.id === studentId),
+  );
+  const currentClass = $derived(
+    student
+      ? studentsStore.classes.find((c) => c.id === student.class_id)
+      : null,
+  );
 
-onMount(async () => {
-  if (studentsStore.list.length === 0 && orgId) {
-    await studentsStore.load(orgId);
-  }
-});
+  onMount(async () => {
+    if (studentsStore.list.length === 0 && orgId) {
+      await studentsStore.load(orgId);
+    }
+  });
 
-function isActive(tabHref: string) {
-  const unlocalizedPath = deLocalizeUrl(page.url).pathname;
-  return unlocalizedPath === tabHref;
-}
+  const basePath = $derived(`/${orgId}/students/${studentId}`);
+
+  const menuItems = $derived([
+    {
+      path: "grades",
+      label: m.detail_tab_grades(),
+      icon: GraduationCap,
+    },
+    {
+      path: "fees",
+      label: m.detail_tab_fees(),
+      icon: Wallet,
+    },
+    {
+      path: "attendance",
+      label: m.detail_tab_attendance(),
+      icon: UserCheck,
+    },
+    {
+      path: "behavior",
+      label: m.detail_tab_behavior(),
+      icon: ShieldAlert,
+    },
+    {
+      path: "guardians",
+      label: m.guardians_tab(),
+      icon: Users2,
+    },
+    {
+      path: "documents",
+      label: m.detail_tab_documents(),
+      icon: FileText,
+    },
+  ]);
 </script>
 
-<div class="h-full w-full flex flex-col overflow-hidden bg-background" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
-  <!-- Full-Width Header (Name + Status Badge + Actions) -->
-  <div class="px-6 py-4 flex items-center justify-between gap-4 select-none shrink-0 border-b border-border/40 bg-card/5">
-    <div class="flex items-center gap-3 text-start shrink min-w-0">
-      <Button
-        href={localizeHref(`/${orgId}/students`)}
-        variant="ghost"
-        size="icon"
-        class="h-8 w-8 hover:bg-accent/80 cursor-pointer shrink-0"
-        title={m.detail_back_to_directory()}
-      >
-        {#if getLocale() === "ar"}
-          <ArrowRight class="h-4.5 w-4.5" />
-        {:else}
-          <ArrowLeft class="h-4.5 w-4.5" />
-        {/if}
-      </Button>
-      <div class="h-4 w-px bg-border/80 shrink-0"></div>
-
-      {#if student}
-        <h1 class="text-lg font-bold tracking-tight text-foreground truncate shrink min-w-0">
-          {student.full_name || student.name_ar || ''}
-        </h1>
-        <Badge variant="secondary" class="text-[9px] py-0 px-1.5 h-4.5 rounded shrink-0">
-          {currentClass ? String(currentClass.name || currentClass.name_ar || '') : m.detail_not_enrolled()}
-        </Badge>
-      {:else}
-        <Skeleton class="h-6 w-32" />
-        <Skeleton class="h-4.5 w-16" />
-      {/if}
-    </div>
-
-    <!-- Action Buttons Row -->
+<div
+  class="h-full w-full flex flex-col overflow-hidden bg-background"
+  dir={getLocale() === "ar" ? "rtl" : "ltr"}
+>
+  <!-- Header using shared DetailPageHeader -->
+  <DetailPageHeader
+    backHref={`/${orgId}/students`}
+    backLabel={m.detail_back_to_directory()}
+  >
     {#if student}
-      <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0 justify-end">
+      <h1
+        class="text-lg font-bold tracking-tight text-foreground truncate shrink min-w-0"
+      >
+        {student.full_name || student.name_ar || ""}
+      </h1>
+      <Badge
+        variant="secondary"
+        class="text-[9px] py-0 px-1.5 h-4.5 rounded shrink-0"
+      >
+        {currentClass
+          ? String(currentClass.name || currentClass.name_ar || "")
+          : m.detail_not_enrolled()}
+      </Badge>
+    {:else}
+      <Skeleton class="h-6 w-32" />
+      <Skeleton class="h-4.5 w-16" />
+    {/if}
+
+    {#snippet actions()}
+      {#if student}
         <Button
           href={localizeHref(`/${orgId}/students/${studentId}/edit`)}
           variant="outline"
@@ -102,7 +135,15 @@ function isActive(tabHref: string) {
           variant="outline"
           size="sm"
           class="h-8 text-[11px] gap-1.5 font-semibold"
-          onclick={() => toast.info(m.detail_call_guardian_toast({ phone: student.phone_number || student.phone || m.detail_phone_unavailable() }))}
+          onclick={() =>
+            toast.info(
+              m.detail_call_guardian_toast({
+                phone:
+                  student.phone_number ||
+                  student.phone ||
+                  m.detail_phone_unavailable(),
+              }),
+            )}
         >
           <PhoneCall size={12} />
           {m.detail_call_guardian()}
@@ -127,9 +168,9 @@ function isActive(tabHref: string) {
           <ShieldAlert size={12} />
           {m.student_layout_withdraw_student()}
         </Button>
-      </div>
-    {/if}
-  </div>
+      {/if}
+    {/snippet}
+  </DetailPageHeader>
 
   <!-- Resizable split view below the header -->
   <div class="flex-1 w-full overflow-hidden">
@@ -139,24 +180,43 @@ function isActive(tabHref: string) {
     >
       <!-- Left Sidebar (Avatar and basic student info) -->
       {#snippet left()}
-        <div class="h-full p-4 flex flex-col gap-5 overflow-y-auto scrollbar-hide text-start bg-transparent select-none">
+        <div
+          class="h-full p-4 flex flex-col gap-5 overflow-y-auto scrollbar-hide text-start bg-transparent select-none"
+        >
           {#if student}
             <!-- Squared Avatar Display -->
             <div class="w-full flex justify-center">
-              <Avatar class="w-[85%] max-w-[180px] min-w-[120px] aspect-square h-auto rounded-xl ">
-                <AvatarImage src={student.avatar ? String(student.avatar) : undefined} alt={student.full_name ? String(student.full_name) : ''} />
-                <AvatarFallback class="text-5xl font-bold rounded-xl flex items-center justify-center">
+              <Avatar
+                class="w-[85%] max-w-[180px] min-w-[120px] aspect-square h-auto rounded-xl"
+              >
+                <AvatarImage
+                  src={student.avatar
+                    ? String(student.avatar)
+                    : undefined}
+                  alt={student.full_name
+                    ? String(student.full_name)
+                    : ""}
+                />
+                <AvatarFallback
+                  class="text-5xl font-bold rounded-xl flex items-center justify-center"
+                >
                   {String(student.full_name || "S").slice(0, 1)}
                 </AvatarFallback>
               </Avatar>
             </div>
 
             <!-- Student Metadata List -->
-            <div class="flex flex-col gap-4 border-t border-border/40 pt-4 w-full text-start">
+            <div
+              class="flex flex-col gap-4 border-t border-border/40 pt-4 w-full text-start"
+            >
               {#if student.student_number || student.id}
                 <div class="flex flex-col gap-0.5">
-                  <span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
-                    {m.form_student_number ? m.form_student_number() : "الرقم الأكاديمي"}
+                  <span
+                    class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider"
+                  >
+                    {m.form_student_number
+                      ? m.form_student_number()
+                      : "الرقم الأكاديمي"}
                   </span>
                   <span class="text-xs font-mono font-bold text-foreground">
                     {student.student_number || student.id}
@@ -166,9 +226,10 @@ function isActive(tabHref: string) {
 
               {#if student.phone}
                 <div class="flex flex-col gap-0.5">
-                  <span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
-                    الهاتف
-                  </span>
+                  <span
+                    class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider"
+                    >الهاتف</span
+                  >
                   <span class="text-xs text-foreground font-mono">
                     {student.phone}
                   </span>
@@ -177,10 +238,14 @@ function isActive(tabHref: string) {
 
               {#if student.email}
                 <div class="flex flex-col gap-0.5">
-                  <span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
-                    البريد الإلكتروني
-                  </span>
-                  <span class="text-xs text-foreground font-mono truncate max-w-full" title={student.email}>
+                  <span
+                    class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider"
+                    >البريد الإلكتروني</span
+                  >
+                  <span
+                    class="text-xs text-foreground font-mono truncate max-w-full"
+                    title={student.email}
+                  >
                     {student.email}
                   </span>
                 </div>
@@ -188,20 +253,22 @@ function isActive(tabHref: string) {
 
               {#if student.sex}
                 <div class="flex flex-col gap-0.5">
-                  <span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
-                    الجنس
-                  </span>
+                  <span
+                    class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider"
+                    >الجنس</span
+                  >
                   <span class="text-xs text-foreground font-medium">
-                    {student.sex === 'male' ? 'ذكر' : 'أنثى'}
+                    {student.sex === "male" ? "ذكر" : "أنثى"}
                   </span>
                 </div>
               {/if}
 
               {#if student.birth_date}
                 <div class="flex flex-col gap-0.5">
-                  <span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
-                    تاريخ الميلاد
-                  </span>
+                  <span
+                    class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider"
+                    >تاريخ الميلاد</span
+                  >
                   <span class="text-xs text-foreground font-mono">
                     {student.birth_date}
                   </span>
@@ -210,9 +277,10 @@ function isActive(tabHref: string) {
 
               {#if student.guardian_name}
                 <div class="flex flex-col gap-0.5">
-                  <span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
-                    ولي الأمر
-                  </span>
+                  <span
+                    class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider"
+                    >ولي الأمر</span
+                  >
                   <span class="text-xs text-foreground font-medium">
                     {student.guardian_name}
                   </span>
@@ -221,9 +289,10 @@ function isActive(tabHref: string) {
 
               {#if student.guardian_phone}
                 <div class="flex flex-col gap-0.5">
-                  <span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
-                    هاتف ولي الأمر
-                  </span>
+                  <span
+                    class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider"
+                    >هاتف ولي الأمر</span
+                  >
                   <span class="text-xs text-foreground font-mono">
                     {student.guardian_phone}
                   </span>
@@ -249,32 +318,14 @@ function isActive(tabHref: string) {
         </div>
       {/snippet}
 
-      <!-- Right/Middle Panel (Tab navigation & sub-pages content) -->
+      <!-- Right/Middle Panel (SecondaryMenu & sub-pages content) -->
       {#snippet middle()}
-        <div class="h-full w-full overflow-y-auto p-6 scrollbar-hide text-start">
+        <div
+          class="h-full w-full overflow-y-auto p-6 scrollbar-hide text-start"
+        >
           <div class="flex flex-col gap-6 w-full h-full">
-            <!-- Tabs Menu -->
-            <div class="flex items-center gap-6 border-b border-border/20 h-10 w-full shrink-0 select-none overflow-x-auto scrollbar-hide">
-              {#each [
-                { id: "grades", label: m.detail_tab_grades(), icon: GraduationCap, href: `/${orgId}/students/${studentId}/grades` },
-                { id: "fees", label: m.detail_tab_fees(), icon: Wallet, href: `/${orgId}/students/${studentId}/fees` },
-                { id: "attendance", label: m.detail_tab_attendance(), icon: UserCheck, href: `/${orgId}/students/${studentId}/attendance` },
-                { id: "behavior", label: m.detail_tab_behavior(), icon: ShieldAlert, href: `/${orgId}/students/${studentId}/behavior` },
-                { id: "guardians", label: m.guardians_tab(), icon: Users2, href: `/${orgId}/students/${studentId}/guardians` },
-                { id: "documents", label: m.detail_tab_documents(), icon: FileText, href: `/${orgId}/students/${studentId}/documents` }
-              ] as tab (tab.id)}
-                <a
-                  href={localizeHref(tab.href)}
-                  class="text-xs font-semibold pb-2 border-b-2 transition-all duration-150 flex items-center gap-1.5 h-full px-1 cursor-pointer shrink-0
-                    {isActive(tab.href) 
-                      ? 'border-primary text-foreground font-bold' 
-                      : 'border-transparent text-muted-foreground hover:text-foreground'}"
-                >
-                  <tab.icon size={13} />
-                  <span>{tab.label}</span>
-                </a>
-              {/each}
-            </div>
+            <!-- Tabs using shared SecondaryMenu -->
+            <SecondaryMenu items={menuItems} {basePath} />
 
             <!-- Children Sub-Route Viewport -->
             <div class="w-full flex-1">

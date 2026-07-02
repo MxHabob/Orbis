@@ -756,6 +756,14 @@
   "settings_nav_import_export": "Import / Export",
   "settings_nav_currencies": "Currencies & Rates",
   "settings_nav_ordering": "Student Ranking",
+  "settings_nav_rooms": "Rooms & Halls",
+  "settings_nav_subjects": "Subjects",
+
+  "academics_class_detail_tab_overview": "Overview",
+  "academics_class_detail_tab_assessments": "Assessments",
+  "academics_class_detail_tab_teachers": "Teachers",
+  "academics_class_detail_tab_grades": "Grades & Students",
+  "academics_control_label": "Control Board",
   "settings_ordering_title": "Student Ordering Engine",
   "settings_ordering_desc": "Build, rebuild, and freeze student ordering across all academic cycles for the entire school.",
 
