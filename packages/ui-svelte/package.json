@@ -5,36 +5,123 @@
   "type": "module",
   "svelte": "./src/components/ui/index.ts",
   "exports": {
-    ".": "./src/components/ui/index.ts",
+    ".": {
+      "svelte": "./src/components/ui/index.ts",
+      "default": "./src/components/ui/index.ts"
+    },
     "./globals.css": "./globals.css",
-    "./utils": "./src/utils.ts",
-    "./button": "./src/components/ui/button/index.ts",
-    "./input": "./src/components/ui/input/index.ts",
-    "./badge": "./src/components/ui/badge/index.ts",
-    "./card": "./src/components/ui/card/index.ts",
-    "./dialog": "./src/components/ui/dialog/index.ts",
-    "./sheet": "./src/components/ui/sheet/index.ts",
-    "./skeleton": "./src/components/ui/skeleton/index.ts",
-    "./separator": "./src/components/ui/separator/index.ts",
-    "./label": "./src/components/ui/label/index.ts",
-    "./select": "./src/components/ui/select/index.ts",
-    "./tabs": "./src/components/ui/tabs/index.ts",
-    "./tooltip": "./src/components/ui/tooltip/index.ts",
-    "./popover": "./src/components/ui/popover/index.ts",
-    "./combobox-dropdown": "./src/components/ui/combobox-dropdown/index.ts",
-    "./checkbox": "./src/components/ui/checkbox/index.ts",
-    "./switch": "./src/components/ui/switch/index.ts",
-    "./accordion": "./src/components/ui/accordion/index.ts",
-    "./alert-dialog": "./src/components/ui/alert-dialog/index.ts",
-    "./avatar": "./src/components/ui/avatar/index.ts",
-    "./progress": "./src/components/ui/progress/index.ts",
-    "./table": "./src/components/ui/table/index.ts",
-    "./textarea": "./src/components/ui/textarea/index.ts",
-    "./scroll-area": "./src/components/ui/scroll-area/index.ts",
-    "./dropdown-menu": "./src/components/ui/dropdown-menu/index.ts",
-    "./breadcrumb": "./src/components/ui/breadcrumb/index.ts",
-    "./calendar": "./src/components/ui/calendar/index.ts",
-    "./timetable": "./src/components/ui/timetable/index.ts"
+    "./utils": {
+      "svelte": "./src/utils.ts",
+      "default": "./src/utils.ts"
+    },
+    "./button": {
+      "svelte": "./src/components/ui/button/index.ts",
+      "default": "./src/components/ui/button/index.ts"
+    },
+    "./input": {
+      "svelte": "./src/components/ui/input/index.ts",
+      "default": "./src/components/ui/input/index.ts"
+    },
+    "./badge": {
+      "svelte": "./src/components/ui/badge/index.ts",
+      "default": "./src/components/ui/badge/index.ts"
+    },
+    "./card": {
+      "svelte": "./src/components/ui/card/index.ts",
+      "default": "./src/components/ui/card/index.ts"
+    },
+    "./dialog": {
+      "svelte": "./src/components/ui/dialog/index.ts",
+      "default": "./src/components/ui/dialog/index.ts"
+    },
+    "./sheet": {
+      "svelte": "./src/components/ui/sheet/index.ts",
+      "default": "./src/components/ui/sheet/index.ts"
+    },
+    "./skeleton": {
+      "svelte": "./src/components/ui/skeleton/index.ts",
+      "default": "./src/components/ui/skeleton/index.ts"
+    },
+    "./separator": {
+      "svelte": "./src/components/ui/separator/index.ts",
+      "default": "./src/components/ui/separator/index.ts"
+    },
+    "./label": {
+      "svelte": "./src/components/ui/label/index.ts",
+      "default": "./src/components/ui/label/index.ts"
+    },
+    "./select": {
+      "svelte": "./src/components/ui/select/index.ts",
+      "default": "./src/components/ui/select/index.ts"
+    },
+    "./tabs": {
+      "svelte": "./src/components/ui/tabs/index.ts",
+      "default": "./src/components/ui/tabs/index.ts"
+    },
+    "./tooltip": {
+      "svelte": "./src/components/ui/tooltip/index.ts",
+      "default": "./src/components/ui/tooltip/index.ts"
+    },
+    "./popover": {
+      "svelte": "./src/components/ui/popover/index.ts",
+      "default": "./src/components/ui/popover/index.ts"
+    },
+    "./combobox-dropdown": {
+      "svelte": "./src/components/ui/combobox-dropdown/index.ts",
+      "default": "./src/components/ui/combobox-dropdown/index.ts"
+    },
+    "./checkbox": {
+      "svelte": "./src/components/ui/checkbox/index.ts",
+      "default": "./src/components/ui/checkbox/index.ts"
+    },
+    "./switch": {
+      "svelte": "./src/components/ui/switch/index.ts",
+      "default": "./src/components/ui/switch/index.ts"
+    },
+    "./accordion": {
+      "svelte": "./src/components/ui/accordion/index.ts",
+      "default": "./src/components/ui/accordion/index.ts"
+    },
+    "./alert-dialog": {
+      "svelte": "./src/components/ui/alert-dialog/index.ts",
+      "default": "./src/components/ui/alert-dialog/index.ts"
+    },
+    "./avatar": {
+      "svelte": "./src/components/ui/avatar/index.ts",
+      "default": "./src/components/ui/avatar/index.ts"
+    },
+    "./progress": {
+      "svelte": "./src/components/ui/progress/index.ts",
+      "default": "./src/components/ui/progress/index.ts"
+    },
+    "./table": {
+      "svelte": "./src/components/ui/table/index.ts",
+      "default": "./src/components/ui/table/index.ts"
+    },
+    "./textarea": {
+      "svelte": "./src/components/ui/textarea/index.ts",
+      "default": "./src/components/ui/textarea/index.ts"
+    },
+    "./scroll-area": {
+      "svelte": "./src/components/ui/scroll-area/index.ts",
+      "default": "./src/components/ui/scroll-area/index.ts"
+    },
+    "./dropdown-menu": {
+      "svelte": "./src/components/ui/dropdown-menu/index.ts",
+      "default": "./src/components/ui/dropdown-menu/index.ts"
+    },
+    "./breadcrumb": {
+      "svelte": "./src/components/ui/breadcrumb/index.ts",
+      "default": "./src/components/ui/breadcrumb/index.ts"
+    },
+    "./calendar": {
+      "svelte": "./src/components/ui/calendar/index.ts",
+      "default": "./src/components/ui/calendar/index.ts"
+    },
+    "./timetable": {
+      "svelte": "./src/components/ui/timetable/index.ts",
+      "default": "./src/components/ui/timetable/index.ts"
+    }
   },
   "peerDependencies": {
     "svelte": "^5",

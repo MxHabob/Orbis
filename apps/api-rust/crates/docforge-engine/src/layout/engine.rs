@@ -396,6 +396,7 @@ fn build_taffy_node(
     }
 }
 
+#[allow(dead_code)]
 fn measure_text_height(
     content: &str,
     family: &str,
