@@ -14,7 +14,7 @@ let { data }: { data: PageData } = $props();
 </svelte:head>
 
 <div class="h-full w-full overflow-auto">
-	<div class="max-w-6xl mx-auto w-full">
+	<div class="mx-auto w-full">
 		<MetricsView orgId={data.orgId} />
 	</div>
 </div>
