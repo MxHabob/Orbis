@@ -33,6 +33,7 @@ import { l, isAr } from "$lib/i18n-utils";
 import * as m from "$lib/paraglide/messages";
 import { commands } from "$lib/services/ipc";
 import { goto } from "$app/navigation";
+import SearchField from "$lib/components/shared/search-field.svelte";
 import {
   Shield,
   Search,
@@ -324,15 +325,11 @@ function toggleAction(ruleIndex: number, action: string) {
       <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 font-sans border-b border-border/40 pb-5 select-none">
         <div class="flex flex-1 flex-col sm:flex-row gap-3 items-center w-full">
           <!-- Document Type Search -->
-          <div class="relative flex-1 w-full max-w-sm">
-            <Search size={14} class="absolute top-1/2 -translate-y-1/2 text-muted-foreground ltr:left-3 rtl:right-3" />
-            <Input
-              type="text"
-              bind:value={docTypeFilter}
-              placeholder={m.settings_permissions_search_doc_type()}
-              class="w-full ltr:pl-9 rtl:pr-9 h-9 text-xs bg-background/50"
-            />
-          </div>
+          <SearchField
+            placeholder={m.settings_permissions_search_doc_type()}
+            bind:value={docTypeFilter}
+            class="flex-1 bg-background/50 max-w-sm"
+          />
 
           <!-- Role Filter -->
           <div class="w-full sm:w-48 text-start">
@@ -614,13 +611,11 @@ function toggleAction(ruleIndex: number, action: string) {
       </DialogDescription>
     </DialogHeader>
 
-    <div class="relative w-full my-2">
-      <Search size={14} class="absolute top-1/2 -translate-y-1/2 text-muted-foreground rtl:right-3 ltr:left-3" />
-      <Input
-        type="text"
-        bind:value={userSearchQuery}
+    <div class="my-2">
+      <SearchField
         placeholder={m.settings_permissions_search_user_placeholder()}
-        class="w-full rtl:pr-9 ltr:pl-9 h-9 text-xs"
+        bind:value={userSearchQuery}
+        class="max-w-none w-full"
       />
     </div>
 

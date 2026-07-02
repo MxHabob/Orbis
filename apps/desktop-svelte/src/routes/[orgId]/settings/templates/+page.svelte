@@ -42,6 +42,7 @@ import {
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { l, isAr } from "$lib/i18n-utils";
+import SearchField from "$lib/components/shared/search-field.svelte";
 import {
   FileText,
   Plus,
@@ -286,16 +287,12 @@ async function restoreTemplate(id: string) {
     <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4 border-b border-border/60 pb-4 select-none">
       <div class="flex flex-1 flex-col sm:flex-row gap-3 items-center w-full">
         <!-- Search Field -->
-        <div class="relative flex-1 w-full max-w-md">
-          <Search class="absolute start-3 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder={m.settings_templates_search_placeholder()}
-            class="ps-9 bg-background/50 h-9 text-xs"
-            bind:value={searchQuery}
-            oninput={loadTemplates}
-          />
-        </div>
+        <SearchField
+          placeholder={m.settings_templates_search_placeholder()}
+          bind:value={searchQuery}
+          oninput={loadTemplates}
+          class="bg-background/50 max-w-md"
+        />
 
         <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
           <!-- Entity Type Select -->

@@ -14,6 +14,8 @@ import {
 } from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
 import AvatarUpload from "$lib/components/shared/avatar-upload.svelte";
+import LocaleSettings from "$lib/components/shared/locale-settings.svelte";
+import TimezoneSettings from "$lib/components/shared/timezone-settings.svelte";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
 let orgId = $derived(page.params.orgId);
@@ -110,23 +112,10 @@ async function handleSave(e: Event) {
 }
 
 // Lists for dropdown options
-const locales = [
-  { value: "ar", label: m.header_language_ar() },
-  { value: "en", label: m.header_language_en() },
-];
-
 const dateFormats = [
   { value: "YYYY-MM-DD", label: "YYYY-MM-DD (2026-06-24)" },
   { value: "DD/MM/YYYY", label: "DD/MM/YYYY (24/06/2026)" },
   { value: "MM/DD/YYYY", label: "MM/DD/YYYY (06/24/2026)" },
-];
-
-const timezones = [
-  { value: "Asia/Aden", label: "Asia/Aden (GMT+3)" },
-  { value: "Asia/Riyadh", label: "Asia/Riyadh (GMT+3)" },
-  { value: "Asia/Dubai", label: "Asia/Dubai (GMT+4)" },
-  { value: "Africa/Cairo", label: "Africa/Cairo (GMT+3)" },
-  { value: "UTC", label: "UTC (GMT+0)" },
 ];
 </script>
 
@@ -280,48 +269,17 @@ const timezones = [
             </div>
 
             <!-- Timezone -->
-            <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
-              <div class="flex flex-col gap-1 text-start">
-                <Label class="text-xs font-semibold text-foreground">
-                  {m.settings_general_timezone()}
-                </Label>
-                <span class="text-[11px] text-muted-foreground leading-relaxed">{m.settings_general_timezone_desc()}</span>
-              </div>
-              <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
-                <Select type="single" value={timezone} onValueChange={(v) => (timezone = v ?? "")} disabled={isSaving}>
-                  <SelectTrigger class="h-9 w-full bg-background">
-                    {timezones.find(tz => tz.value === timezone)?.label || timezone}
-                  </SelectTrigger>
-                  <SelectContent>
-                    {#each timezones as tz}
-                      <SelectItem value={tz.value}>{tz.label}</SelectItem>
-                    {/each}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+            <TimezoneSettings
+              title={m.settings_general_timezone()}
+              description={m.settings_general_timezone_desc()}
+              bind:currentTimezone={timezone}
+            />
 
-            <!-- Locale / Language -->
-            <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
-              <div class="flex flex-col gap-1 text-start">
-                <Label class="text-xs font-semibold text-foreground">
-                  {m.settings_general_locale()}
-                </Label>
-                <span class="text-[11px] text-muted-foreground leading-relaxed">{m.settings_general_locale_desc()}</span>
-              </div>
-              <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
-                <Select type="single" value={locale} onValueChange={(v) => (locale = v ?? "")} disabled={isSaving}>
-                  <SelectTrigger class="h-9 w-full bg-background">
-                    {locales.find(loc => loc.value === locale)?.label || locale}
-                  </SelectTrigger>
-                  <SelectContent>
-                    {#each locales as loc}
-                      <SelectItem value={loc.value}>{loc.label}</SelectItem>
-                    {/each}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+            <LocaleSettings
+              title={m.settings_general_locale()}
+              description={m.settings_general_locale_desc()}
+              bind:currentLocale={locale}
+            />
 
             <!-- Date Format -->
             <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
@@ -332,8 +290,8 @@ const timezones = [
                 <span class="text-[11px] text-muted-foreground leading-relaxed">{m.settings_general_date_format_desc()}</span>
               </div>
               <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
-                <Select type="single" value={dateFormat} onValueChange={(v) => (dateFormat = v ?? "")} disabled={isSaving}>
-                  <SelectTrigger class="h-9 w-full bg-background">
+                <Select type="single" value={dateFormat} onValueChange={(v: string | undefined) => (dateFormat = v ?? "")} disabled={isSaving}>
+                  <SelectTrigger class="h-9 w-full">
                     {dateFormats.find(df => df.value === dateFormat)?.label || dateFormat}
                   </SelectTrigger>
                   <SelectContent>
@@ -363,6 +321,7 @@ const timezones = [
             </div>
           </div>
         </div>
+
 
         <!-- Action Buttons -->
         <div class="flex justify-end gap-3 pb-8 border-b border-border">

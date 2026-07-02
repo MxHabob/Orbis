@@ -14,6 +14,7 @@ Extracted from the original monolith TabsContent "roles".
   import { toast } from "svelte-sonner";
   import { fade } from "svelte/transition";
   import * as m from "$lib/paraglide/messages";
+  import SearchField from "$lib/components/shared/search-field.svelte";
 
   const userId = $derived(page.params.userId);
 
@@ -95,10 +96,10 @@ Extracted from the original monolith TabsContent "roles".
       class="flex flex-col sm:flex-row items-center gap-3 w-full justify-between"
     >
       <div class="w-full sm:max-w-xs">
-        <Input
-          type="text"
-          bind:value={roleSearchQuery}
+        <SearchField
           placeholder={m.settings_user_detail_search_roles()}
+          bind:value={roleSearchQuery}
+          class="sm:max-w-xs"
         />
       </div>
       <div class="flex items-center gap-2 w-full sm:w-auto justify-end">

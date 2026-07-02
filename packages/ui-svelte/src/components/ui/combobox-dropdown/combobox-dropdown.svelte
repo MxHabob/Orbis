@@ -56,11 +56,11 @@ function handleSelect(item: ComboboxItem) {
   <PopoverTrigger asChild>
     {#snippet child({ props })}
       <Button
+        {...props}
         variant="outline"
         role="combobox"
         aria-expanded={isOpen}
-        class={cn("w-full justify-between text-xs h-9 font-normal px-3 cursor-pointer", className)}
-        {...props}
+        class={cn("w-full justify-between text-xs h-9 font-normal px-3 cursor-pointer", className, props.class)}
       >
         <span class="truncate">
           {selectedItem ? selectedItem.label : placeholder}
@@ -71,7 +71,7 @@ function handleSelect(item: ComboboxItem) {
   </PopoverTrigger>
   
   <PopoverContent class="w-[250px] p-0" align="start">
-    <div class="flex flex-col max-h-[300px]">
+    <div class="flex flex-col max-h-[300px]" style="font-family: var(--font-sans);">
       <!-- Search Input Header -->
       <div class="flex items-center border-b border-border px-3 py-2 shrink-0 gap-2">
         <Search class="h-3.5 w-3.5 text-muted-foreground opacity-60" />
@@ -79,7 +79,7 @@ function handleSelect(item: ComboboxItem) {
           type="text"
           placeholder={searchPlaceholder}
           bind:value={searchQuery}
-          class="h-7 w-full border-0 bg-transparent p-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-xs font-sans"
+          class="h-7 w-full !border-0 !bg-transparent !p-0 !shadow-none !focus:ring-0 !focus-visible:ring-0 !focus-visible:ring-offset-0 text-xs"
           autocomplete="off"
         />
       </div>

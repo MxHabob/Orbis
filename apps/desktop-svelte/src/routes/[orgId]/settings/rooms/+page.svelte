@@ -15,6 +15,7 @@ import { Input } from "@orbis/ui-svelte/input";
 import { toast } from "svelte-sonner";
 import { l, isAr } from "$lib/i18n-utils";
 import { fade } from "svelte/transition";
+import SearchField from "$lib/components/shared/search-field.svelte";
 import {
   Plus,
   Search,
@@ -118,15 +119,11 @@ function getRoomTypeBadgeClass(typeStr: string): string {
   <!-- Header Area (Search and Add Button) -->
   <div class="flex items-center justify-between gap-4 font-sans border-b border-border/40 pb-5 select-none">
     <!-- Search Bar -->
-    <div class="relative flex-1 max-w-md w-full">
-      <Search size={14} class="absolute top-1/2 -translate-y-1/2 text-muted-foreground rtl:right-3 ltr:left-3" />
-      <Input
-        type="text"
-        bind:value={searchQuery}
-        placeholder={m.settings_rooms_search_placeholder()}
-        class="w-full rtl:pr-9 ltr:pl-9 h-9 text-xs bg-background/50"
-      />
-    </div>
+    <SearchField
+      placeholder={m.settings_rooms_search_placeholder()}
+      bind:value={searchQuery}
+      class="max-w-md bg-background/50"
+    />
 
     <Button variant="lime" class="text-xs h-9 px-4 font-semibold shrink-0" onclick={openCreateSheet}>
       <Plus size={14} class="me-1.5" />

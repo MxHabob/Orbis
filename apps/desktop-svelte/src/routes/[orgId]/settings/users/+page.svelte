@@ -17,6 +17,7 @@ import { toast } from "svelte-sonner";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { l, isAr } from "$lib/i18n-utils";
 import { fade } from "svelte/transition";
+import SearchField from "$lib/components/shared/search-field.svelte";
 import {
   Plus,
   Search,
@@ -162,15 +163,11 @@ function getRoleBadgeClass(roleStr: string): string {
   <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 font-sans border-b border-border/40 pb-5 select-none">
     <div class="flex flex-1 flex-col sm:flex-row gap-3 items-center w-full">
       <!-- Search Field -->
-      <div class="relative flex-1 w-full">
-        <Search size={14} class="absolute top-1/2 -translate-y-1/2 text-muted-foreground rtl:right-3 ltr:left-3" />
-        <Input
-          type="text"
-          bind:value={searchQuery}
-          placeholder={m.settings_users_search_placeholder()}
-          class="w-full rtl:pr-9 ltr:pl-9 h-9 text-xs bg-background/50"
-        />
-      </div>
+      <SearchField
+        placeholder={m.settings_users_search_placeholder()}
+        bind:value={searchQuery}
+        class="flex-1 bg-background/50"
+      />
 
       <!-- Filter by Role -->
       <div class="w-full sm:w-48 text-start">

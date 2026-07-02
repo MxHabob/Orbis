@@ -14,13 +14,13 @@ import {
   TableBody,
   TableCell,
 } from "@orbis/ui-svelte/table";
-import { Input } from "@orbis/ui-svelte/input";
 import { toast } from "svelte-sonner";
 import { fade } from "svelte/transition";
 import { ListOrdered, RefreshCw, Lock, Search } from "lucide-svelte";
 import * as m from "$lib/paraglide/messages";
 import { commands } from "$lib/services/ipc";
 import { authStore } from "$lib/stores";
+import SearchField from "$lib/components/shared/search-field.svelte";
 import {
   Select,
   SelectTrigger,
@@ -218,10 +218,11 @@ const filtered = $derived(
   </div>
 
   <!-- Search -->
-  <div class="relative">
-    <Search size={14} class="absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-    <Input placeholder="بحث بالاسم أو الرقم أو الفصل..." class="ps-9 h-9 text-xs" bind:value={searchQuery} />
-  </div>
+  <SearchField
+    placeholder="بحث بالاسم أو الرقم أو الفصل..."
+    bind:value={searchQuery}
+    class="max-w-none w-full"
+  />
 
   <!-- Table/Content Section -->
   {#if isLoading}

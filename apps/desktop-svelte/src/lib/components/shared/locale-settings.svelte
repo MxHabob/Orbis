@@ -3,7 +3,7 @@
 A reusable locale/language selection card using `@orbis/location` and `ComboboxDropdown`.
 -->
 <script lang="ts">
-import { Card, CardTitle, CardDescription } from "@orbis/ui-svelte/card";
+import { Label } from "@orbis/ui-svelte/label";
 import { countries } from "@orbis/location/countries-intl";
 import { ComboboxDropdown } from "@orbis/ui-svelte/combobox-dropdown";
 
@@ -37,20 +37,22 @@ function handleSelect(item: { id: string; label: string; value: string }) {
 }
 </script>
 
-<Card class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-6 gap-4">
-  <div class="space-y-1 text-start">
-    <CardTitle class="text-base font-semibold text-foreground">{title}</CardTitle>
-    <CardDescription class="text-xs text-muted-foreground">{description}</CardDescription>
+<div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+  <div class="flex flex-col gap-1 text-start">
+    <Label class="text-xs font-semibold text-foreground">
+      {title}
+    </Label>
+    <span class="text-[11px] text-muted-foreground leading-relaxed">{description}</span>
   </div>
-
-  <div class="w-full sm:w-[250px] shrink-0">
+  <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
     <ComboboxDropdown
       placeholder="Select language..."
       searchPlaceholder="Search language..."
       {selectedItem}
       items={localeItems}
       onSelect={handleSelect}
+      class="w-full"
     />
   </div>
-</Card>
+</div>
 

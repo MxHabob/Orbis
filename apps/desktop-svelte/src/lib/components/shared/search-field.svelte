@@ -39,7 +39,7 @@ function handleKeyDown(event: KeyboardEvent) {
 </script>
 
 <div class={cn("relative w-full md:max-w-[380px] flex items-center", className)}>
-  <Search className="absolute pointer-events-none left-3 text-muted-foreground/60 shrink-0" size={15} />
+  <Search class="absolute pointer-events-none start-3 text-muted-foreground/60 shrink-0" size={15} />
   
   <Input
     type="text"
@@ -47,7 +47,7 @@ function handleKeyDown(event: KeyboardEvent) {
     {value}
     oninput={handleInput}
     onkeydown={handleKeyDown}
-    class="pl-9 w-full h-9 text-xs"
+    class="ps-9 w-full h-9 text-xs"
     autocomplete="off"
     autocapitalize="none"
     autocorrect="off"

@@ -23,6 +23,7 @@ import {
 } from "lucide-svelte";
 import { toast } from "svelte-sonner";
 import { fade } from "svelte/transition";
+import SearchField from "$lib/components/shared/search-field.svelte";
 import SubjectCreateSheet from "$lib/components/sheets/subject-create-sheet.svelte";
 import * as m from "$lib/paraglide/messages";
 
@@ -152,15 +153,11 @@ function getSubjectTheme(nameStr: string) {
 	<!-- Header & Search Controls -->
 	<div class="flex items-center justify-between gap-4 font-sans border-b border-border/40 pb-5 select-none">
 		<!-- Search -->
-		<div class="relative flex-1 max-w-md w-full">
-			<Search class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-			<Input
-				type="text"
-				placeholder={m.settings_subjects_search_placeholder_custom()}
-				class="w-full ps-9 h-9 text-xs bg-background/50"
-				bind:value={searchQuery}
-			/>
-		</div>
+		<SearchField
+			placeholder={m.settings_subjects_search_placeholder_custom()}
+			bind:value={searchQuery}
+			class="max-w-md bg-background/50"
+		/>
 
 		<!-- Add button -->
 		<Button variant="lime" class="text-xs h-9 px-4 font-semibold shrink-0" onclick={() => isModalOpen = true}>
