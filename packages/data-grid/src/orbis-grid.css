@@ -1,0 +1,277 @@
+/**
+ * @orbis/data-grid — S.C.R.A.P.S. Theme Override for RevoGrid
+ *
+ * Maps RevoGrid's internal CSS custom properties to Orbis design tokens.
+ * This ensures the grid integrates seamlessly with light/dark mode and
+ * the existing S.C.R.A.P.S. design system.
+ */
+
+/* ── Base Grid Container ──────────────────────────────────────────────────── */
+
+revo-grid {
+  --rgFontFamily: var(--font-family, "Rubik", sans-serif);
+  --rgFontSize: 12px;
+  --rgColor: hsl(var(--foreground));
+  --rgHeaderFontSize: 11px;
+  --rgCellHeight: 42px;
+  --rgHeaderHeight: 42px;
+  --rgRowBorder: 1px solid hsl(var(--border));
+
+  /* Backgrounds */
+  --rgBg: hsl(var(--card));
+  --rgHeaderBg: hsl(var(--muted) / 0.3);
+  --rgHeaderBorder: 1px solid hsl(var(--border));
+
+  /* Selection & Focus */
+  --rgSelectionBg: hsl(var(--primary) / 0.08);
+  --rgSelectionBorder: 2px solid hsl(var(--primary));
+  --rgFocusBorder: 2px solid hsl(var(--primary));
+
+  /* Hover */
+  --rgRowHoverBg: hsl(var(--muted) / 0.15);
+
+  /* Borders */
+  --rgBorder: 1px solid hsl(var(--border));
+
+  /* Scrollbar */
+  --rgScrollSize: 8px;
+
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius, 0.75rem);
+  overflow: hidden;
+  font-family: var(--rgFontFamily);
+}
+
+/* ── Header Cells ─────────────────────────────────────────────────────────── */
+
+revo-grid .rgHeaderCell,
+revo-grid .header-rgRow {
+  background: hsl(var(--muted) / 0.3);
+  color: hsl(var(--muted-foreground));
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: none;
+  letter-spacing: 0.01em;
+  border-bottom: 1px solid hsl(var(--border));
+  user-select: none;
+}
+
+revo-grid .rgHeaderCell:hover {
+  background: hsl(var(--muted) / 0.5);
+}
+
+/* ── Data Cells ───────────────────────────────────────────────────────────── */
+
+revo-grid .rgCell {
+  color: hsl(var(--foreground));
+  border-bottom: 1px solid hsl(var(--border) / 0.6);
+  padding: 0 12px;
+  font-size: 12px;
+  transition: background-color 0.1s ease;
+}
+
+revo-grid .rgCell:focus-within {
+  background: hsl(var(--primary) / 0.05);
+}
+
+/* ── Pinned (Frozen) Columns ──────────────────────────────────────────────── */
+
+revo-grid .pinned-start {
+  background: hsl(var(--card));
+  border-inline-end: 2px solid hsl(var(--border));
+  z-index: 5;
+}
+
+revo-grid .pinned-end {
+  background: hsl(var(--primary) / 0.03);
+  border-inline-start: 2px solid hsl(var(--border));
+  z-index: 5;
+  font-weight: 600;
+}
+
+/* ── Edit Mode ────────────────────────────────────────────────────────────── */
+
+revo-grid .rgCell.edit {
+  background: hsl(var(--background));
+  box-shadow: inset 0 0 0 2px hsl(var(--primary));
+  padding: 0;
+}
+
+revo-grid .rgCell.edit input,
+revo-grid .rgCell.edit .orbis-editor-input {
+  width: 100%;
+  height: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: hsl(var(--foreground));
+  font-family: "Rubik Variable", var(--rgFontFamily);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  padding: 0 12px;
+  text-align: inherit;
+}
+
+/* ── Selection Range ──────────────────────────────────────────────────────── */
+
+revo-grid .rg-selection {
+  background: hsl(var(--primary) / 0.06);
+  border: 2px solid hsl(var(--primary));
+}
+
+revo-grid .rg-selection-range {
+  background: hsl(var(--primary) / 0.04);
+  border: 1px dashed hsl(var(--primary) / 0.4);
+}
+
+/* ── Row Hover ────────────────────────────────────────────────────────────── */
+
+revo-grid .rgRow:hover .rgCell {
+  background: hsl(var(--muted) / 0.1);
+}
+
+/* ── Readonly Cells ───────────────────────────────────────────────────────── */
+
+revo-grid .rgCell.readonly {
+  color: hsl(var(--muted-foreground));
+  cursor: default;
+}
+
+/* ── Validation Error State ───────────────────────────────────────────────── */
+
+revo-grid .rgCell.cell-error {
+  background: hsl(var(--destructive) / 0.05);
+  box-shadow: inset 0 0 0 1px hsl(var(--destructive) / 0.4);
+}
+
+revo-grid .rgCell.cell-error input {
+  color: hsl(var(--destructive));
+}
+
+/* ── Grade-Specific: Total Column ─────────────────────────────────────────── */
+
+revo-grid .cell-total {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: hsl(var(--primary));
+}
+
+/* ── Grade-Specific: Percentage Cell ──────────────────────────────────────── */
+
+revo-grid .cell-percentage {
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  font-weight: 500;
+}
+
+/* ── Grade Letter Color Classes ───────────────────────────────────────────── */
+
+revo-grid .grade-excellent {
+  color: #10b981; /* emerald-500 */
+  font-weight: 700;
+}
+
+revo-grid .grade-very-good {
+  color: #3b82f6; /* blue-500 */
+  font-weight: 600;
+}
+
+revo-grid .grade-good {
+  color: #0ea5e9; /* sky-500 */
+  font-weight: 600;
+}
+
+revo-grid .grade-acceptable {
+  color: #f59e0b; /* amber-500 */
+  font-weight: 600;
+}
+
+revo-grid .grade-weak {
+  color: #f97316; /* orange-500 */
+  font-weight: 600;
+}
+
+revo-grid .grade-fail {
+  color: #ef4444; /* red-500 */
+  font-weight: 700;
+}
+
+/* ── Student Name Column ──────────────────────────────────────────────────── */
+
+revo-grid .cell-student-name {
+  font-weight: 600;
+  font-size: 12px;
+  color: hsl(var(--foreground));
+}
+
+/* ── Row Index Column ─────────────────────────────────────────────────────── */
+
+revo-grid .cell-row-index {
+  color: hsl(var(--muted-foreground));
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  font-size: 10px;
+}
+
+/* ── Number Input Cells (Grade Entry) ─────────────────────────────────────── */
+
+revo-grid .cell-number-input {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Scrollbar Styling ────────────────────────────────────────────────────── */
+
+revo-grid ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+revo-grid ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+revo-grid ::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.2);
+  border-radius: 3px;
+}
+
+revo-grid ::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.35);
+}
+
+/* ── RTL Adjustments ──────────────────────────────────────────────────────── */
+
+[dir="rtl"] revo-grid .pinned-start {
+  border-inline-end: 2px solid hsl(var(--border));
+  border-inline-start: none;
+}
+
+[dir="rtl"] revo-grid .pinned-end {
+  border-inline-start: 2px solid hsl(var(--border));
+  border-inline-end: none;
+}
+
+/* ── Empty State ──────────────────────────────────────────────────────────── */
+
+revo-grid .rg-no-data {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+}
+
+/* ── Resize Handle ────────────────────────────────────────────────────────── */
+
+revo-grid .rgHeaderCell .resizable {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+revo-grid .rgHeaderCell:hover .resizable {
+  opacity: 1;
+  background: hsl(var(--primary) / 0.3);
+}

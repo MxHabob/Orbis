@@ -1,7 +1,13 @@
 <!--
 @component ControlPage
 The Control Panel (الكنترول) — Central hub for grade entry management.
-Manages academic cycle lock/unlock, grade entry periods, and bulk grade entry.
+Rebuilt with OrbisGrid (RevoGrid) for enterprise-grade spreadsheet experience:
+- Virtual scrolling (10,000+ students)
+- Frozen columns (student name pinned)
+- Excel-like keyboard navigation (Arrow, Tab, Enter)
+- Copy/Paste from Excel
+- RTL support
+- S.C.R.A.P.S. design tokens
 -->
 <script lang="ts">
 import { onMount } from "svelte";
@@ -9,16 +15,21 @@ import { commands } from "$lib/services/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui-svelte/select";
+import { Badge } from "@orbis/ui-svelte/badge";
+import {
   ShieldCheck,
   Lock,
   Unlock,
   CalendarClock,
   CalendarOff,
-  ChevronDown,
   AlertTriangle,
   CheckCircle2,
   XCircle,
-  Clock,
   Save,
   BarChart3,
   Users,
@@ -31,14 +42,27 @@ import {
 import { toast } from "svelte-sonner";
 import { fade, slide } from "svelte/transition";
 import { academicStore, authStore } from "$lib/stores";
+import { getLocale } from "$lib/paraglide/runtime";
+import * as m from "$lib/paraglide/messages";
 
-let { data }: { data: { orgId: string } } = $props();
+// OrbisGrid
+import { OrbisGrid } from "@orbis/data-grid";
+import {
+  buildGradeColumns,
+  transformMatrixToSource,
+  recalculateRowTotals,
+  scoreToGradeLetter,
+  scoreToGradeColor,
+} from "@orbis/data-grid";
+import type { CellEditEvent, GradeMatrixResponse } from "@orbis/data-grid";
+
+let { data } = $props();
+const orgId = $derived(data?.orgId || "");
 
 // ── State ──────────────────────────────────────────────────────────────────
 let cycles = $state<any[]>([]);
 let classes = $state<any[]>([]);
 let subjects = $state<any[]>([]);
-let classSubjects = $state<any[]>([]);
 
 let selectedCycleId = $state<string>("");
 let selectedClassId = $state<string>("");
@@ -46,6 +70,15 @@ let selectedSubjectId = $state<string>("");
 
 let isLoading = $state(true);
 let isCompileLoading = $state(false);
+let isMatrixLoading = $state(false);
+let isSaving = $state(false);
+let isCycleActionLoading = $state(false);
+let isDirty = $state(false);
+
+// Grade matrix data
+let matrixData = $state<GradeMatrixResponse | null>(null);
+let gridSource = $state<Record<string, unknown>[]>([]);
+let assessmentKeys = $state<string[]>([]);
 
 // Sync to/from global academic state store
 onMount(() => {
@@ -66,14 +99,6 @@ $effect(() => {
 $effect(() => {
   if (selectedSubjectId) academicStore.selectedSubjectId = selectedSubjectId;
 });
-let isMatrixLoading = $state(false);
-let isSaving = $state(false);
-let isCycleActionLoading = $state(false);
-
-// Grade matrix data
-let matrixData = $state<any>(null);
-let editedScores = $state<Record<string, number | null>>({});
-let errorCells = $state<Set<string>>(new Set());
 
 // Selected cycle details
 let selectedCycle = $derived(
@@ -83,24 +108,63 @@ let isCycleLocked = $derived(selectedCycle?.is_locked === 1);
 let isGradeEntryOpen = $derived(selectedCycle?.is_grade_entry_open === 1);
 let canEnterGrades = $derived(!isCycleLocked && isGradeEntryOpen);
 
+// Grid columns (reactive)
+let gridColumns = $derived.by(() => {
+  if (!matrixData) return [];
+  return buildGradeColumns(matrixData, {
+    readonly: !canEnterGrades,
+    locale: getLocale(),
+    labels: {
+      rowIndex: m.control_col_index(),
+      studentName: m.control_col_student(),
+      total: m.control_col_total(),
+      percentage: m.control_col_percentage(),
+      gradeLetter: m.control_col_grade(),
+    },
+  });
+});
+
+// Statistics (derived)
+let stats = $derived.by(() => {
+  if (!gridSource.length) return null;
+  const percentages = gridSource.map((r) => Number(r.__percentageRaw) || 0);
+  const avg =
+    percentages.reduce((a, b) => a + b, 0) / percentages.length;
+  const max = Math.max(...percentages);
+  const min = Math.min(...percentages);
+  const passCount = percentages.filter((p) => p >= 50).length;
+  const passRate = (passCount / percentages.length) * 100;
+  return {
+    avg,
+    max,
+    min,
+    passCount,
+    passRate,
+    total: percentages.length,
+    excellent: percentages.filter((p) => p >= 90).length,
+    veryGood: percentages.filter((p) => p >= 80 && p < 90).length,
+    good: percentages.filter((p) => p >= 70 && p < 80).length,
+    acceptable: percentages.filter((p) => p >= 60 && p < 70).length,
+    weak: percentages.filter((p) => p >= 50 && p < 60).length,
+    fail: percentages.filter((p) => p < 50).length,
+  };
+});
+
 // ── Load initial data ──────────────────────────────────────────────────────
 async function loadInitialData() {
   isLoading = true;
   try {
-    const [cycleList, classList, subjectList, classSubjectList] =
+    const [cycleList, classList, subjectList] =
       await Promise.all([
-        commands.academics.getCycles(data.orgId),
-        commands.classes.getAll(data.orgId),
-        commands.subjects.getAll(data.orgId),
-        commands.schedule.getClassSubjects(),
+        commands.academics.getCycles(orgId),
+        commands.classes.getAll(orgId),
+        commands.subjects.getAll(orgId),
       ]);
 
     cycles = cycleList;
     classes = classList;
     subjects = subjectList;
-    classSubjects = classSubjectList;
 
-    // Default to current/active cycle if not already set by academicStore
     if (!selectedCycleId) {
       const activeCycle =
         cycleList.find((c: any) => c.is_current === 1) || cycleList[0];
@@ -108,16 +172,14 @@ async function loadInitialData() {
         selectedCycleId = String(activeCycle.id);
       }
     }
-  } catch (e: any) {
-    toast.error("خطأ في تحميل البيانات", {
-      description: e?.message || String(e),
-    });
+  } catch (e: unknown) {
+    toast.error((e as any)?.message || "Error loading data");
   } finally {
     isLoading = false;
   }
 }
 
-// Reset subject selection when class changes
+// Reset subject when class changes
 $effect(() => {
   if (selectedClassId) {
     selectedSubjectId = "";
@@ -131,11 +193,9 @@ async function handleLockCycle() {
   try {
     const updated = await commands.academics.lockCycle(selectedCycleId);
     updateCycleInList(updated);
-    toast.success("تم إقفال الدورة الأكاديمية");
-  } catch (e: any) {
-    toast.error("خطأ في إقفال الدورة", {
-      description: e?.message || String(e),
-    });
+    toast.success(m.control_cycle_locked());
+  } catch (e: unknown) {
+    toast.error((e as any)?.message || "Error");
   } finally {
     isCycleActionLoading = false;
   }
@@ -147,9 +207,9 @@ async function handleUnlockCycle() {
   try {
     const updated = await commands.academics.unlockCycle(selectedCycleId);
     updateCycleInList(updated);
-    toast.success("تم فتح قفل الدورة الأكاديمية");
-  } catch (e: any) {
-    toast.error("خطأ في فتح القفل", { description: e?.message || String(e) });
+    toast.success(m.control_cycle_unlocked());
+  } catch (e: unknown) {
+    toast.error((e as any)?.message || "Error");
   } finally {
     isCycleActionLoading = false;
   }
@@ -161,9 +221,9 @@ async function handleOpenGradeEntry() {
   try {
     const updated = await commands.academics.openGradeEntry(selectedCycleId);
     updateCycleInList(updated);
-    toast.success("تم فتح فترة إدخال الدرجات");
-  } catch (e: any) {
-    toast.error("خطأ", { description: e?.message || String(e) });
+    toast.success(m.control_grade_entry_open());
+  } catch (e: unknown) {
+    toast.error((e as any)?.message || "Error");
   } finally {
     isCycleActionLoading = false;
   }
@@ -175,9 +235,9 @@ async function handleCloseGradeEntry() {
   try {
     const updated = await commands.academics.closeGradeEntry(selectedCycleId);
     updateCycleInList(updated);
-    toast.success("تم إغلاق فترة إدخال الدرجات");
-  } catch (e: any) {
-    toast.error("خطأ", { description: e?.message || String(e) });
+    toast.success(m.control_grade_entry_closed());
+  } catch (e: unknown) {
+    toast.error((e as any)?.message || "Error");
   } finally {
     isCycleActionLoading = false;
   }
@@ -191,25 +251,21 @@ async function handleCompileGrades() {
       ? 2
       : null;
   if (!semNum) {
-    toast.error("هذا الإجراء متاح فقط للفصول الدراسية (الترم الأول أو الثاني)");
+    toast.error(m.control_compile_term_only());
     return;
   }
-
-  const confirmMsg =
-    "هل أنت متأكد من تجميع درجات الفصل؟ سيتم احتساب متوسط الأشهر 1 و 2 و 3 وترحيله لأعمال الفصل، ونسخ النهائي من الشهر 4.";
-  if (!confirm(confirmMsg)) return;
+  if (!confirm(m.control_compile_confirm())) return;
 
   isCompileLoading = true;
   try {
     const gradedBy = authStore.userId || "admin";
-    await commands.grades.compileSemesterGrades(data.orgId, semNum, gradedBy);
-    toast.success("تم تجميع وحساب درجات الفصل بنجاح!");
-    // Reload grade matrix if currently viewing
+    await commands.grades.compileSemesterGrades(orgId, semNum, gradedBy);
+    toast.success(m.control_compile_success());
     if (selectedClassId && selectedSubjectId) {
       await loadGradeMatrix();
     }
-  } catch (e: any) {
-    toast.error("فشل تجميع الدرجات", { description: e?.message || String(e) });
+  } catch (e: unknown) {
+    toast.error((e as any)?.message || "Error");
   } finally {
     isCompileLoading = false;
   }
@@ -223,30 +279,31 @@ function updateCycleInList(updated: any) {
 async function loadGradeMatrix() {
   if (!selectedCycleId || !selectedClassId || !selectedSubjectId) return;
   isMatrixLoading = true;
-  matrixData = null;
-  editedScores = {};
-  errorCells = new Set();
+  matrixData = null as any;
+  gridSource = [];
+  isDirty = false;
   try {
-    const result = await commands.grades.getGradeMatrix(
-      data.orgId,
+    const result = (await commands.grades.getGradeMatrix(
+      orgId,
       selectedCycleId,
       selectedClassId,
       selectedSubjectId,
-    );
+    )) as unknown as GradeMatrixResponse;
+
     matrixData = result;
-    // Initialize edited scores from existing data
-    if (result?.students) {
-      for (const student of result.students as any[]) {
-        for (const grade of student.grades as any[]) {
-          const key = `${student.enrollment_id}_${grade.assessment_id || grade.exam_type}`;
-          editedScores[key] = grade.score ?? null;
-        }
-      }
+
+    // Build assessment keys for recalculation
+    if (result?.students?.length > 0) {
+      const first = result.students[0];
+      assessmentKeys = first
+        ? first.grades.map((g) => g.assessment_id || g.exam_type)
+        : [];
     }
-  } catch (e: any) {
-    toast.error("خطأ في تحميل مصفوفة الدرجات", {
-      description: e?.message || String(e),
-    });
+
+    // Transform to flat grid source
+    gridSource = transformMatrixToSource(result, getLocale());
+  } catch (e: unknown) {
+    toast.error((e as any)?.message || "Error loading grade matrix");
   } finally {
     isMatrixLoading = false;
   }
@@ -259,52 +316,42 @@ $effect(() => {
   }
 });
 
-function handleScoreChange(
-  enrollmentId: string,
-  assessmentKey: string,
-  value: string,
-  maxScore: number,
-) {
-  const key = `${enrollmentId}_${assessmentKey}`;
-  const numValue = value === "" ? null : parseFloat(value);
+// ── Cell Edit Handler ──────────────────────────────────────────────────────
+function handleCellEdit(event: CellEditEvent) {
+  const { rowIndex, prop, newValue } = event;
+  if (rowIndex < 0 || rowIndex >= gridSource.length) return;
 
-  if (
-    numValue !== null &&
-    (isNaN(numValue) || numValue < 0 || numValue > maxScore)
-  ) {
-    errorCells = new Set([...errorCells, key]);
-  } else {
-    const newErrors = new Set(errorCells);
-    newErrors.delete(key);
-    errorCells = newErrors;
-  }
+  // Update grid source
+  const updatedSource = [...gridSource];
+  const row = { ...updatedSource[rowIndex]! };
+  row[prop] = newValue;
 
-  editedScores = { ...editedScores, [key]: numValue };
+  // Recalculate totals
+  recalculateRowTotals(row, assessmentKeys);
+
+  updatedSource[rowIndex] = row;
+  gridSource = updatedSource;
+  isDirty = true;
 }
 
-// ── Save Bulk Grades ───────────────────────────────────────────────────────
+// ── Save All Grades ────────────────────────────────────────────────────────
 async function handleSaveAll() {
-  if (!matrixData || errorCells.size > 0) return;
+  if (!matrixData || !canEnterGrades) return;
   isSaving = true;
 
   try {
     const sub = subjects.find((s: any) => String(s.id) === selectedSubjectId);
-    const cs = classSubjects.find(
-      (c: any) =>
-        String(c.class_id) === selectedClassId &&
-        String(c.subject_id) === selectedSubjectId,
-    );
 
-    // Build student scores from edited values
+    // For each assessment, build a bulk request
+    // Collect all students with scores
     const students: any[] = [];
-    for (const student of matrixData.students as any[]) {
-      for (const grade of student.grades as any[]) {
-        const key = `${student.enrollment_id}_${grade.assessment_id || grade.exam_type}`;
-        const score = editedScores[key];
+    for (const row of gridSource) {
+      for (const key of assessmentKeys) {
+        const score = row[`score_${key}`];
         if (score !== null && score !== undefined) {
           students.push({
-            enrollment_id: student.enrollment_id,
-            score,
+            enrollment_id: row.enrollment_id,
+            score: Number(score),
             notes: null,
           });
         }
@@ -312,7 +359,7 @@ async function handleSaveAll() {
     }
 
     if (students.length === 0) {
-      toast.warning("لا توجد درجات للحفظ");
+      toast.warning(m.control_no_grades_to_save());
       isSaving = false;
       return;
     }
@@ -324,7 +371,7 @@ async function handleSaveAll() {
       subject_name: sub?.name || "",
       subject_name_ar: sub?.name_ar || null,
       assessment_id: null,
-      class_subject_id: cs?.id || null,
+      class_subject_id: null,
       exam_type: "final",
       semester: "1",
       max_score: 100,
@@ -334,88 +381,69 @@ async function handleSaveAll() {
     };
 
     const result = await commands.grades.bulkSubjectGradeEntry(
-      data.orgId,
-      "admin",
+      orgId,
+      authStore.userId || "admin",
       request,
     );
 
     const created = (result as any)?.created || 0;
     const updated = (result as any)?.updated || 0;
     const failed = (result as any)?.failed || 0;
+    const total = created + updated;
 
     if (failed > 0) {
-      toast.warning(`تم حفظ ${created + updated} درجة مع ${failed} أخطاء`, {
+      toast.warning(m.control_save_partial({ success: String(total), failed: String(failed) }), {
         description: ((result as any)?.errors || []).join("\n"),
       });
     } else {
-      toast.success(`تم حفظ ${created + updated} درجة بنجاح`, {
-        description: `${created} جديدة، ${updated} محدّثة`,
+      toast.success(m.control_save_success({ total: String(total) }), {
+        description: m.control_save_detail({ created: String(created), updated: String(updated) }),
       });
     }
 
-    // Reload matrix
+    isDirty = false;
     await loadGradeMatrix();
-  } catch (e: any) {
-    toast.error("خطأ في حفظ الدرجات", { description: e?.message || String(e) });
+  } catch (e: unknown) {
+    toast.error((e as any)?.message || "Error saving grades");
   } finally {
     isSaving = false;
   }
 }
 
-// ── Grade Letter Helper ────────────────────────────────────────────────────
-function getGradeLetter(percentage: number): string {
-  if (percentage >= 90) return "ممتاز";
-  if (percentage >= 80) return "جيد جداً";
-  if (percentage >= 70) return "جيد";
-  if (percentage >= 60) return "مقبول";
-  if (percentage >= 50) return "ضعيف";
-  return "راسب";
-}
-
-function getGradeColor(percentage: number): string {
-  if (percentage >= 90) return "text-emerald-500";
-  if (percentage >= 80) return "text-blue-500";
-  if (percentage >= 70) return "text-sky-500";
-  if (percentage >= 60) return "text-amber-500";
-  if (percentage >= 50) return "text-orange-500";
-  return "text-red-500";
-}
-
-function getCycleStatusColor(cycle: any): string {
-  if (cycle.is_locked === 1)
-    return "bg-red-500/10 text-red-500 border-red-500/30";
-  if (cycle.is_grade_entry_open === 1)
-    return "bg-emerald-500/10 text-emerald-500 border-emerald-500/30";
-  return "bg-amber-500/10 text-amber-500 border-amber-500/30";
+// ── Helpers ────────────────────────────────────────────────────────────────
+function getCycleStatusVariant(cycle: any): "destructive" | "lime" | "secondary" {
+  if (cycle.is_locked === 1) return "destructive";
+  if (cycle.is_grade_entry_open === 1) return "lime";
+  return "secondary";
 }
 
 function getCycleStatusLabel(cycle: any): string {
-  if (cycle.is_locked === 1) return "مقفلة";
-  if (cycle.is_grade_entry_open === 1) return "الإدخال مفتوح";
-  return "الإدخال مغلق";
+  if (cycle.is_locked === 1) return m.control_status_locked();
+  if (cycle.is_grade_entry_open === 1) return m.control_status_entry_open();
+  return m.control_status_entry_closed();
 }
 
 onMount(() => {
-  if (data.orgId) loadInitialData();
+  if (orgId) loadInitialData();
 });
 </script>
 
-<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 select-none" dir="rtl">
+<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-5 select-none" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
   <!-- ═══════════════════════════════════════════════════════════════════════
        Header
        ═══════════════════════════════════════════════════════════════════════ -->
   <div
-    class="card-tactile bg-gradient-to-br from-card to-card/50 p-5 flex items-center justify-between"
+    class="bg-card border border-border rounded-xl p-5 flex items-center justify-between"
     in:fade={{ duration: 150 }}
   >
-    <div class="flex items-center gap-3">
+    <div class="flex items-center gap-3 text-start">
       <div class="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
         <ShieldCheck size={22} />
       </div>
       <div>
-        <h1 class="text-sm font-bold text-foreground">الكنترول</h1>
+        <h1 class="text-sm font-bold text-foreground">{m.control_page_title()}</h1>
         <p class="text-[10px] text-muted-foreground mt-0.5">
-          إدارة الدورات الأكاديمية وإدخال الدرجات
+          {m.control_page_desc()}
         </p>
       </div>
     </div>
@@ -430,33 +458,29 @@ onMount(() => {
     <!-- ═══════════════════════════════════════════════════════════════════════
          Section 1: Cycle Control Panel
          ═══════════════════════════════════════════════════════════════════════ -->
-    <div class="card-tactile bg-card p-5 flex flex-col gap-4" in:fade={{ delay: 50, duration: 200 }}>
+    <div class="bg-card border border-border rounded-xl p-5 flex flex-col gap-4" in:fade={{ delay: 50, duration: 200 }}>
       <div class="flex items-center justify-between">
         <h2 class="text-xs font-bold text-foreground flex items-center gap-2">
           <CalendarClock size={14} class="text-primary" />
-          إدارة الدورات الأكاديمية
+          {m.control_cycle_management()}
         </h2>
       </div>
 
       <!-- Cycle Selector -->
       <div class="flex items-center gap-3 flex-wrap">
-        <div class="relative">
-          <select
-            bind:value={selectedCycleId}
-            class="appearance-none bg-background border border-border rounded-lg px-3 py-2 pe-8 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer min-w-[200px]"
-          >
-            <option value="" disabled>اختر الدورة الأكاديمية...</option>
+        <Select type="single" value={selectedCycleId} onValueChange={(v) => { if (v) selectedCycleId = v; }}>
+          <SelectTrigger class="min-w-[220px] text-xs h-9">{selectedCycle ? (selectedCycle.name_ar || selectedCycle.name) : m.control_select_cycle()}</SelectTrigger>
+          <SelectContent>
             {#each cycles as cycle}
-              <option value={cycle.id}>{cycle.name_ar || cycle.name}</option>
+              <SelectItem value={String(cycle.id)}>{cycle.name_ar || cycle.name}</SelectItem>
             {/each}
-          </select>
-          <ChevronDown size={12} class="absolute start-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-        </div>
+          </SelectContent>
+        </Select>
 
         {#if selectedCycle}
-          <span class="px-2.5 py-1 rounded-md border text-[10px] font-bold {getCycleStatusColor(selectedCycle)}">
+          <Badge variant={getCycleStatusVariant(selectedCycle)}>
             {getCycleStatusLabel(selectedCycle)}
-          </span>
+          </Badge>
         {/if}
       </div>
 
@@ -465,43 +489,43 @@ onMount(() => {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3" in:slide={{ duration: 200 }}>
           <!-- Status Card -->
           <div class="bg-background/50 border border-border rounded-lg p-4 flex flex-col gap-3">
-            <h3 class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">حالة الدورة</h3>
+            <h3 class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{m.control_cycle_status()}</h3>
             <div class="flex flex-col gap-2 text-xs">
               <div class="flex items-center justify-between">
-                <span class="text-muted-foreground">القفل:</span>
-                <span class="flex items-center gap-1 font-semibold {isCycleLocked ? 'text-red-500' : 'text-emerald-500'}">
+                <span class="text-muted-foreground">{m.control_cycle_lock()}</span>
+                <span class="flex items-center gap-1 font-semibold {isCycleLocked ? 'text-destructive' : 'text-emerald-500'}">
                   {#if isCycleLocked}
-                    <Lock size={12} /> مقفلة
+                    <Lock size={12} /> {m.control_cycle_locked()}
                   {:else}
-                    <Unlock size={12} /> مفتوحة
+                    <Unlock size={12} /> {m.control_cycle_unlocked()}
                   {/if}
                 </span>
               </div>
               <div class="flex items-center justify-between">
-                <span class="text-muted-foreground">إدخال الدرجات:</span>
+                <span class="text-muted-foreground">{m.control_grade_entry()}</span>
                 <span class="flex items-center gap-1 font-semibold {isGradeEntryOpen ? 'text-emerald-500' : 'text-amber-500'}">
                   {#if isGradeEntryOpen}
-                    <CheckCircle2 size={12} /> مفتوح
+                    <CheckCircle2 size={12} /> {m.control_grade_entry_open()}
                   {:else}
-                    <XCircle size={12} /> مغلق
+                    <XCircle size={12} /> {m.control_grade_entry_closed()}
                   {/if}
                 </span>
               </div>
               {#if selectedCycle.grade_entry_start}
                 <div class="flex items-center justify-between">
-                  <span class="text-muted-foreground">بداية الإدخال:</span>
-                  <span class="font-mono text-[10px]">{new Date(selectedCycle.grade_entry_start).toLocaleDateString("ar")}</span>
+                  <span class="text-muted-foreground">{m.control_grade_entry_start()}</span>
+                  <span class="font-mono text-[10px]">{new Date(selectedCycle.grade_entry_start).toLocaleDateString(getLocale())}</span>
                 </div>
               {/if}
               {#if selectedCycle.grade_entry_end}
                 <div class="flex items-center justify-between">
-                  <span class="text-muted-foreground">نهاية الإدخال:</span>
-                  <span class="font-mono text-[10px]">{new Date(selectedCycle.grade_entry_end).toLocaleDateString("ar")}</span>
+                  <span class="text-muted-foreground">{m.control_grade_entry_end()}</span>
+                  <span class="font-mono text-[10px]">{new Date(selectedCycle.grade_entry_end).toLocaleDateString(getLocale())}</span>
                 </div>
               {/if}
               {#if selectedCycle.locked_by}
                 <div class="flex items-center justify-between">
-                  <span class="text-muted-foreground">تم الإقفال بواسطة:</span>
+                  <span class="text-muted-foreground">{m.control_locked_by()}</span>
                   <span class="text-[10px]">{selectedCycle.locked_by}</span>
                 </div>
               {/if}
@@ -510,7 +534,7 @@ onMount(() => {
 
           <!-- Action Buttons Card -->
           <div class="bg-background/50 border border-border rounded-lg p-4 flex flex-col gap-3">
-            <h3 class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">الإجراءات</h3>
+            <h3 class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{m.control_actions()}</h3>
             <div class="flex flex-col gap-2">
               {#if isCycleLocked}
                 <Button
@@ -524,12 +548,12 @@ onMount(() => {
                   {:else}
                     <Unlock size={14} />
                   {/if}
-                  فتح قفل الدورة
+                  {m.control_unlock_cycle()}
                 </Button>
               {:else}
                 <Button
                   variant="outline"
-                  class="w-full justify-start gap-2 text-xs h-9 cursor-pointer border-red-500/30 text-red-500 hover:bg-red-500/10"
+                  class="w-full justify-start gap-2 text-xs h-9 cursor-pointer border-destructive/30 text-destructive hover:bg-destructive/10"
                   onclick={handleLockCycle}
                   disabled={isCycleActionLoading}
                 >
@@ -538,7 +562,7 @@ onMount(() => {
                   {:else}
                     <Lock size={14} />
                   {/if}
-                  إقفال الدورة
+                  {m.control_lock_cycle()}
                 </Button>
 
                 {#if isGradeEntryOpen}
@@ -553,7 +577,7 @@ onMount(() => {
                     {:else}
                       <CalendarOff size={14} />
                     {/if}
-                    إغلاق فترة الإدخال
+                    {m.control_close_entry()}
                   </Button>
                 {:else}
                   <Button
@@ -567,7 +591,7 @@ onMount(() => {
                     {:else}
                       <CalendarClock size={14} />
                     {/if}
-                    فتح فترة الإدخال
+                    {m.control_open_entry()}
                   </Button>
                 {/if}
               {/if}
@@ -584,7 +608,7 @@ onMount(() => {
                   {:else}
                     <RefreshCw size={14} />
                   {/if}
-                  احسب وجَمِّع درجات الفصل تلقائياً
+                  {m.control_compile_grades()}
                 </Button>
               {/if}
             </div>
@@ -594,21 +618,19 @@ onMount(() => {
     </div>
 
     <!-- ═══════════════════════════════════════════════════════════════════════
-         Lock Warning Banner
+         Lock / Entry Warning Banners
          ═══════════════════════════════════════════════════════════════════════ -->
     {#if selectedCycle && isCycleLocked}
       <div
-        class="bg-red-500/5 border border-red-500/20 rounded-xl p-4 flex items-center gap-3"
+        class="bg-destructive/5 border border-destructive/20 rounded-xl p-4 flex items-center gap-3"
         in:slide={{ duration: 200 }}
       >
-        <div class="h-8 w-8 rounded-lg bg-red-500/10 flex items-center justify-center shrink-0">
-          <Lock size={16} class="text-red-500" />
+        <div class="h-8 w-8 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0">
+          <Lock size={16} class="text-destructive" />
         </div>
-        <div>
-          <p class="text-xs font-bold text-red-500">الدورة الأكاديمية مقفلة</p>
-          <p class="text-[10px] text-red-400 mt-0.5">
-            لا يمكن إدخال أو تعديل أي درجات. تواصل مع الإدارة لفتح القفل.
-          </p>
+        <div class="text-start">
+          <p class="text-xs font-bold text-destructive">{m.control_cycle_locked_title()}</p>
+          <p class="text-[10px] text-destructive/80 mt-0.5">{m.control_cycle_locked_desc()}</p>
         </div>
       </div>
     {:else if selectedCycle && !isGradeEntryOpen}
@@ -619,46 +641,50 @@ onMount(() => {
         <div class="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
           <AlertTriangle size={16} class="text-amber-500" />
         </div>
-        <div>
-          <p class="text-xs font-bold text-amber-500">فترة إدخال الدرجات مغلقة</p>
-          <p class="text-[10px] text-amber-400 mt-0.5">
-            يجب فتح فترة الإدخال أولاً قبل البدء بإدخال الدرجات.
-          </p>
+        <div class="text-start">
+          <p class="text-xs font-bold text-amber-500">{m.control_entry_closed_title()}</p>
+          <p class="text-[10px] text-amber-400 mt-0.5">{m.control_entry_closed_desc()}</p>
         </div>
       </div>
     {/if}
 
     <!-- ═══════════════════════════════════════════════════════════════════════
-         Section 2: Bulk Grade Entry
+         Section 2: Bulk Grade Entry — OrbisGrid
          ═══════════════════════════════════════════════════════════════════════ -->
-    <div class="card-tactile bg-card p-5 flex flex-col gap-4" in:fade={{ delay: 100, duration: 200 }}>
+    <div class="bg-card border border-border rounded-xl p-5 flex flex-col gap-4" in:fade={{ delay: 100, duration: 200 }}>
       <div class="flex items-center justify-between">
         <h2 class="text-xs font-bold text-foreground flex items-center gap-2">
           <Users size={14} class="text-primary" />
-          إدخال الدرجات الجماعي
+          {m.control_bulk_entry_title()}
         </h2>
         {#if matrixData && canEnterGrades}
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 flex-nowrap shrink-0">
+            {#if isDirty}
+              <Badge variant="secondary" class="text-[10px]">●</Badge>
+            {/if}
             <Button
               variant="outline"
+              size="sm"
               class="text-[10px] h-7 px-2.5 gap-1.5 cursor-pointer"
               onclick={loadGradeMatrix}
               disabled={isMatrixLoading}
             >
               <RefreshCw size={11} class={isMatrixLoading ? "animate-spin" : ""} />
-              تحديث
+              {m.control_refresh()}
             </Button>
             <Button
-              class="text-[10px] h-7 px-3 gap-1.5 cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90"
+              variant="lime"
+              size="sm"
+              class="text-[10px] h-7 px-3 gap-1.5 cursor-pointer"
               onclick={handleSaveAll}
-              disabled={isSaving || errorCells.size > 0}
+              disabled={isSaving || !isDirty}
             >
               {#if isSaving}
                 <Loader2 size={11} class="animate-spin" />
               {:else}
                 <Save size={11} />
               {/if}
-              حفظ الكل
+              {m.control_save_all()}
             </Button>
           </div>
         {/if}
@@ -667,202 +693,70 @@ onMount(() => {
       <!-- Filters Row -->
       <div class="flex items-center gap-3 flex-wrap">
         <!-- Class Selector -->
-        <div class="relative">
-          <select
-            bind:value={selectedClassId}
-            class="appearance-none bg-background border border-border rounded-lg px-3 py-2 pe-8 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer min-w-[160px]"
-            disabled={!selectedCycleId}
-          >
-            <option value="" disabled>اختر الفصل...</option>
+        <Select type="single" value={selectedClassId} onValueChange={(v) => { if (v) selectedClassId = v; }}>
+          <SelectTrigger class="min-w-[180px] text-xs h-9" disabled={!selectedCycleId}>
+            <div class="flex items-center gap-2">
+              <GraduationCap size={12} class="text-muted-foreground shrink-0" />
+              <span class="truncate">{classes.find((c) => String(c.id) === selectedClassId)?.name_ar || classes.find((c) => String(c.id) === selectedClassId)?.name || m.control_select_class()}</span>
+            </div>
+          </SelectTrigger>
+          <SelectContent>
             {#each classes as cls}
-              <option value={cls.id}>{cls.name_ar || cls.name}</option>
+              <SelectItem value={String(cls.id)}>{cls.name_ar || cls.name}</SelectItem>
             {/each}
-          </select>
-          <GraduationCap size={12} class="absolute start-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-        </div>
+          </SelectContent>
+        </Select>
 
         <!-- Subject Selector -->
-        <div class="relative">
-          <select
-            bind:value={selectedSubjectId}
-            class="appearance-none bg-background border border-border rounded-lg px-3 py-2 pe-8 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer min-w-[160px]"
-            disabled={!selectedClassId || subjects.length === 0}
-          >
-            <option value="" disabled>اختر المادة...</option>
+        <Select type="single" value={selectedSubjectId} onValueChange={(v) => { if (v) selectedSubjectId = v; }}>
+          <SelectTrigger class="min-w-[180px] text-xs h-9" disabled={!selectedClassId || subjects.length === 0}>
+            <div class="flex items-center gap-2">
+              <BookOpen size={12} class="text-muted-foreground shrink-0" />
+              <span class="truncate">{subjects.find((s) => String(s.id) === selectedSubjectId)?.name_ar || subjects.find((s) => String(s.id) === selectedSubjectId)?.name || m.control_select_subject()}</span>
+            </div>
+          </SelectTrigger>
+          <SelectContent>
             {#each subjects as sub}
-              <option value={String(sub.id)}>{sub.name_ar || sub.name}</option>
+              <SelectItem value={String(sub.id)}>{sub.name_ar || sub.name}</SelectItem>
             {/each}
-          </select>
-          <BookOpen size={12} class="absolute start-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-        </div>
+          </SelectContent>
+        </Select>
       </div>
 
-      <!-- Grade Matrix Table -->
+      <!-- Grade Matrix Grid -->
       {#if isMatrixLoading}
         <div class="flex flex-col gap-2">
-          {#each Array(6) as _, i}
+          {#each Array(6) as _}
             <Skeleton class="h-10 w-full rounded-lg" />
           {/each}
         </div>
-      {:else if matrixData && matrixData.students && matrixData.students.length > 0}
-        <div class="border border-border rounded-xl overflow-hidden" in:fade={{ duration: 200 }}>
-          <div class="overflow-x-auto">
-            <table class="w-full text-xs">
-              <thead>
-                <tr class="bg-muted/30 border-b border-border">
-                  <th class="px-3 py-2.5 text-start font-bold text-muted-foreground sticky start-0 bg-muted/30 z-10 min-w-[40px]">#</th>
-                  <th class="px-3 py-2.5 text-start font-bold text-muted-foreground sticky start-[40px] bg-muted/30 z-10 min-w-[160px]">الطالب</th>
-                  {#each (matrixData.assessment_types || []) as examType, i}
-                    <th class="px-3 py-2.5 text-center font-bold text-muted-foreground min-w-[90px]">{examType}</th>
-                  {/each}
-                  <th class="px-3 py-2.5 text-center font-bold text-muted-foreground min-w-[70px]">المجموع</th>
-                  <th class="px-3 py-2.5 text-center font-bold text-muted-foreground min-w-[60px]">النسبة</th>
-                  <th class="px-3 py-2.5 text-center font-bold text-muted-foreground min-w-[70px]">التقدير</th>
-                </tr>
-              </thead>
-              <tbody>
-                {#each matrixData.students as student, idx}
-                  <tr class="border-b border-border/50 hover:bg-muted/10 transition-colors">
-                    <td class="px-3 py-2 text-muted-foreground font-mono sticky start-0 bg-card z-10">{idx + 1}</td>
-                    <td class="px-3 py-2 font-semibold text-foreground sticky start-[40px] bg-card z-10">
-                      {student.student_name_ar || student.student_name}
-                    </td>
-                    {#each student.grades as grade, gi}
-                      {@const cellKey = `${student.enrollment_id}_${grade.assessment_id || grade.exam_type}`}
-                      {@const hasError = errorCells.has(cellKey)}
-                      <td class="px-1.5 py-1.5 text-center">
-                        {#if canEnterGrades}
-                          <input
-                            type="number"
-                            min="0"
-                            max={grade.max_score}
-                            step="0.5"
-                            value={editedScores[cellKey] ?? grade.score ?? ""}
-                            oninput={(e) => handleScoreChange(student.enrollment_id, grade.assessment_id || grade.exam_type, (e.target as HTMLInputElement).value, grade.max_score)}
-                            class="w-full text-center bg-background border rounded-md px-2 py-1.5 text-xs font-mono
-                              focus:outline-none focus:ring-2 transition-all
-                              {hasError
-                                ? 'border-red-500 focus:ring-red-500/30 text-red-500'
-                                : 'border-border focus:ring-primary/30 text-foreground'}"
-                          />
-                        {:else}
-                          <span class="font-mono text-muted-foreground">{grade.score ?? "—"}</span>
-                        {/if}
-                      </td>
-                    {/each}
-                    <td class="px-3 py-2 text-center font-bold font-mono">{student.total.toFixed(1)}</td>
-                    <td class="px-3 py-2 text-center font-mono">{student.percentage.toFixed(1)}%</td>
-                    <td class="px-3 py-2 text-center">
-                      <span class="font-bold text-[10px] {getGradeColor(student.percentage)}">
-                        {student.grade_letter || getGradeLetter(student.percentage)}
-                      </span>
-                    </td>
-                  </tr>
-                {/each}
-              </tbody>
-            </table>
-          </div>
+      {:else if matrixData && gridSource.length > 0}
+        <div in:fade={{ duration: 200 }}>
+          <OrbisGrid
+            columns={gridColumns}
+            source={gridSource}
+            height="calc(100vh - 420px)"
+            rtl={getLocale() === "ar"}
+            readonly={!canEnterGrades}
+            theme="compact"
+            range={true}
+            clipboard={true}
+            rowSize={42}
+            oncelledit={handleCellEdit}
+          />
         </div>
-
-        <!-- Error Count -->
-        {#if errorCells.size > 0}
-          <div class="flex items-center gap-2 text-red-500 text-[10px]">
-            <AlertTriangle size={12} />
-            <span>{errorCells.size} خلايا تحتوي على أخطاء — يجب تصحيحها قبل الحفظ</span>
-          </div>
-        {/if}
-
       {:else if selectedCycleId && selectedClassId && selectedSubjectId && !isMatrixLoading}
         <div class="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground">
           <Info size={32} class="opacity-40" />
-          <p class="text-xs">لا توجد بيانات لعرضها</p>
-          <p class="text-[10px]">تأكد من وجود تقييمات وطلاب مسجلين في هذا الفصل</p>
+          <p class="text-xs">{m.control_no_data()}</p>
+          <p class="text-[10px]">{m.control_no_data_hint()}</p>
         </div>
       {:else}
         <div class="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground">
           <BarChart3 size={32} class="opacity-40" />
-          <p class="text-xs">اختر الدورة والفصل والمادة لبدء إدخال الدرجات</p>
+          <p class="text-xs">{m.control_select_filters()}</p>
         </div>
       {/if}
     </div>
-
-    <!-- ═══════════════════════════════════════════════════════════════════════
-         Section 3: Statistics Summary
-         ═══════════════════════════════════════════════════════════════════════ -->
-    {#if matrixData && matrixData.students && matrixData.students.length > 0}
-      {@const students = matrixData.students as any[]}
-      {@const percentages = students.map((s: any) => s.percentage)}
-      {@const avg = percentages.reduce((a: number, b: number) => a + b, 0) / percentages.length}
-      {@const max = Math.max(...percentages)}
-      {@const min = Math.min(...percentages)}
-      {@const passCount = percentages.filter((p: number) => p >= 50).length}
-      {@const passRate = (passCount / percentages.length) * 100}
-      {@const excellent = percentages.filter((p: number) => p >= 90).length}
-      {@const veryGood = percentages.filter((p: number) => p >= 80 && p < 90).length}
-      {@const good = percentages.filter((p: number) => p >= 70 && p < 80).length}
-      {@const acceptable = percentages.filter((p: number) => p >= 60 && p < 70).length}
-      {@const weak = percentages.filter((p: number) => p >= 50 && p < 60).length}
-      {@const fail = percentages.filter((p: number) => p < 50).length}
-      {@const total = percentages.length}
-
-      <div class="card-tactile bg-card p-5 flex flex-col gap-4" in:fade={{ delay: 150, duration: 200 }}>
-        <h2 class="text-xs font-bold text-foreground flex items-center gap-2">
-          <BarChart3 size={14} class="text-primary" />
-          ملخص الإحصائيات
-        </h2>
-
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <!-- Average -->
-          <div class="bg-background/50 border border-border rounded-lg p-3 flex flex-col items-center gap-1">
-            <span class="text-[10px] text-muted-foreground">المعدل</span>
-            <span class="text-lg font-bold {getGradeColor(avg)}">{avg.toFixed(1)}%</span>
-            <span class="text-[9px] {getGradeColor(avg)}">{getGradeLetter(avg)}</span>
-          </div>
-          <!-- Highest -->
-          <div class="bg-background/50 border border-border rounded-lg p-3 flex flex-col items-center gap-1">
-            <span class="text-[10px] text-muted-foreground">أعلى درجة</span>
-            <span class="text-lg font-bold text-emerald-500">{max.toFixed(1)}%</span>
-          </div>
-          <!-- Lowest -->
-          <div class="bg-background/50 border border-border rounded-lg p-3 flex flex-col items-center gap-1">
-            <span class="text-[10px] text-muted-foreground">أدنى درجة</span>
-            <span class="text-lg font-bold text-red-500">{min.toFixed(1)}%</span>
-          </div>
-          <!-- Pass Rate -->
-          <div class="bg-background/50 border border-border rounded-lg p-3 flex flex-col items-center gap-1">
-            <span class="text-[10px] text-muted-foreground">معدل النجاح</span>
-            <span class="text-lg font-bold {passRate >= 70 ? 'text-emerald-500' : passRate >= 50 ? 'text-amber-500' : 'text-red-500'}">{passRate.toFixed(0)}%</span>
-            <span class="text-[9px] text-muted-foreground">{passCount} / {percentages.length}</span>
-          </div>
-        </div>
-
-        <!-- Grade Distribution Bar -->
-
-        <div class="flex flex-col gap-2">
-          <h3 class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">توزيع التقديرات</h3>
-          <div class="flex flex-col gap-1.5">
-            {#each [
-              { label: "ممتاز", count: excellent, color: "bg-emerald-500", textColor: "text-emerald-500" },
-              { label: "جيد جداً", count: veryGood, color: "bg-blue-500", textColor: "text-blue-500" },
-              { label: "جيد", count: good, color: "bg-sky-500", textColor: "text-sky-500" },
-              { label: "مقبول", count: acceptable, color: "bg-amber-500", textColor: "text-amber-500" },
-              { label: "ضعيف", count: weak, color: "bg-orange-500", textColor: "text-orange-500" },
-              { label: "راسب", count: fail, color: "bg-red-500", textColor: "text-red-500" },
-            ] as dist}
-              <div class="flex items-center gap-2">
-                <span class="text-[10px] w-14 text-end {dist.textColor} font-semibold">{dist.label}</span>
-                <div class="flex-1 h-4 bg-muted/30 rounded-full overflow-hidden">
-                  <div
-                    class="{dist.color} h-full rounded-full transition-all duration-500"
-                    style="width: {total > 0 ? (dist.count / total) * 100 : 0}%"
-                  ></div>
-                </div>
-                <span class="text-[10px] font-mono text-muted-foreground w-6 text-end">{dist.count}</span>
-              </div>
-            {/each}
-          </div>
-        </div>
-      </div>
-    {/if}
   {/if}
 </div>
