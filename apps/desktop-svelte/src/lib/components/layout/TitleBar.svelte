@@ -31,9 +31,14 @@ import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 import { toast } from "svelte-sonner";
 import { page } from "$app/state";
-import WhatsNewDialog from "./WhatsNewDialog.svelte";
+import WhatsNewPopover from "./WhatsNewPopover.svelte";
 import TitleBreadcrumbs from "./TitleBreadcrumbs.svelte";
-    import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@orbis/ui-svelte/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@orbis/ui-svelte/dropdown-menu";
 
 // Window states
 let appWindow = $state<any>(null);
@@ -54,10 +59,6 @@ let currentCycleName = $derived.by(() => {
   }
   return m.titlebar_cycle();
 });
-
-let showWhatsNew = $state(false);
-
-
 
 onMount(() => {
   isOnline = navigator.onLine;
@@ -237,16 +238,7 @@ function selectCycle(cycleId: string) {
       </Button>
 
       <!-- What's New Megaphone (Original Header Design) -->
-      <Button
-        variant="outline"
-        size="icon-sm"
-        class="rounded-[8px] shrink-0"
-        title="What's New"
-        aria-label="What's new"
-        onclick={() => showWhatsNew = true}
-      >
-        <Megaphone size={14} class="text-foreground stroke-[2px]" />
-      </Button>
+      <WhatsNewPopover />
     {/if}
 
 
@@ -321,4 +313,4 @@ function selectCycle(cycleId: string) {
   </div>
 </div>
 
-<WhatsNewDialog bind:open={showWhatsNew} />
+
