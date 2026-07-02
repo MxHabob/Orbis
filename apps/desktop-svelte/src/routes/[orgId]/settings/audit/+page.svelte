@@ -12,9 +12,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@orbis/ui-svelte";
+} from "@orbis/ui-svelte/table";
 import { Button } from "@orbis/ui-svelte/button";
-import { Input } from "@orbis/ui-svelte/input";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import {
   Select,
@@ -22,17 +21,22 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
+import { Avatar, AvatarImage, AvatarFallback } from "@orbis/ui-svelte/avatar";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from "@orbis/ui-svelte/dialog";
 import { Badge } from "@orbis/ui-svelte/badge";
 import {
   History,
-  Search,
-  Eye,
   Info,
-  Calendar,
   ShieldAlert,
 } from "lucide-svelte";
 import { getLocale } from "$lib/paraglide/runtime";
-import { formatDate } from "$lib/i18n-utils";
 import { fade } from "svelte/transition";
 import * as m from "$lib/paraglide/messages";
 
@@ -49,8 +53,11 @@ let selectedLog = $state<any | null>(null);
 let isDetailsOpen = $state(false);
 
 // Filters
-let searchQuery = $state("");
 let actionFilter = $state("all");
+
+// Pagination
+let currentPage = $state(1);
+const itemsPerPage = 8;
 
 async function loadData() {
   isLoading = true;
@@ -81,59 +88,74 @@ onMount(() => {
   }
 });
 
-function getUserName(userId: string | null): string {
-  if (!userId) return "System";
+function getUserEmail(userId: string | null): string {
+  if (!userId) return "system@orbis.local";
   const user = users.find((u) => u.id === userId);
-  if (!user) return userId.substring(0, 8);
-  return user.full_name || user.username || userId.substring(0, 8);
+  if (!user) return "system@orbis.local";
+  return user.email || user.username || "system@orbis.local";
 }
 
-function getActionVariant(
-  action: string,
-):
-  | "default"
-  | "lime"
-  | "destructive"
-  | "secondary"
-  | "outline"
-  | "brand"
-  | "ghost" {
-  const act = String(action).toLowerCase();
-  if (act.includes("create") || act.includes("insert") || act.includes("add")) {
-    return "lime";
-  }
-  if (
-    act.includes("delete") ||
-    act.includes("remove") ||
-    act.includes("unlink") ||
-    act.includes("withdraw")
-  ) {
-    return "destructive";
-  }
-  return "secondary";
+function getUserName(userId: string | null): string {
+  if (!userId) return m.audit_user_system ? m.audit_user_system() : "System";
+  const user = users.find((u) => u.id === userId);
+  if (!user) return m.audit_user_system ? m.audit_user_system() : "System";
+  return getLocale() === "ar" && user.name_ar ? user.name_ar : (user.full_name || user.username || "System");
 }
+
+function getUserAvatar(userId: string | null): string | undefined {
+  if (!userId) return undefined;
+  const user = users.find((u) => u.id === userId);
+  return user?.avatar ? String(user.avatar) : undefined;
+}
+
+function getUserInitials(userId: string | null): string {
+  if (!userId) return "S";
+  const user = users.find((u) => u.id === userId);
+  if (!user) return "U";
+  const name = user.full_name || user.username || "U";
+  return name.charAt(0).toUpperCase();
+}
+
+function formatAuditDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  if (getLocale() === "ar") {
+    return d.toLocaleDateString("ar-EG", { month: "short", day: "numeric" });
+  }
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function formatAuditTime(dateStr: string): string {
+  const d = new Date(dateStr);
+  const timeStr = d.toLocaleTimeString(getLocale() === "ar" ? "ar-EG" : "en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+  return `${timeStr} UTC`;
+}
+
+// Reset page on filter change
+$effect(() => {
+  if (actionFilter) {
+    currentPage = 1;
+  }
+});
 
 const filteredLogs = $derived.by(() => {
   return auditLogs.filter((log) => {
-    const userLabel = getUserName(log.user_id).toLowerCase();
-    const textMatch =
-      searchQuery.trim() === "" ||
-      userLabel.includes(searchQuery.toLowerCase()) ||
-      String(log.entity_type)
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
-      String(log.action).toLowerCase().includes(searchQuery.toLowerCase()) ||
-      String(log.metadata || "")
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase());
-
-    const actionMatch =
-      actionFilter === "all" ||
-      String(log.action).toLowerCase() === actionFilter;
-
-    return textMatch && actionMatch;
+    return actionFilter === "all" || String(log.action).toLowerCase() === actionFilter.toLowerCase();
   });
 });
+
+const uniqueActions = $derived.by(() => {
+  const actions = auditLogs.map(log => log.action);
+  return [...new Set(actions)].filter(Boolean);
+});
+
+const totalPages = $derived(Math.ceil(filteredLogs.length / itemsPerPage));
+const paginatedLogs = $derived(
+  filteredLogs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+);
 
 function openDetails(log: any) {
   selectedLog = log;
@@ -146,143 +168,168 @@ function closeDetails() {
 }
 </script>
 
-<div class="h-full w-full overflow-y-auto bg-background p-6 flex flex-col gap-6 scrollbar-hide">
-  <!-- Top header section -->
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-5 select-none border-b border-border/40 font-sans">
-    <div class="flex flex-col gap-1 text-start">
-      <h1 class="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-        <History class="text-primary" size={20} />
-        <span>{m.audit_title ? m.audit_title() : "سجل التدقيق"}</span>
-      </h1>
-      <p class="text-xs text-muted-foreground">
-        {m.audit_desc ? m.audit_desc() : "سجل جميع العمليات والعمليات والتعديلات التي حدثت في النظام"}
-      </p>
+<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide font-sans">
+  <!-- Search and Filtering Bar -->
+  <div class="flex items-center justify-end gap-3 w-full select-none">
+    <!-- Time Filter (Mock for UI visual symmetry) -->
+    <div class="w-full sm:w-36 text-start">
+      <Select type="single" value="all-time">
+        <SelectTrigger class="h-9 w-full text-xs bg-background border-border rounded-[6px] border shadow-[0_2px_0_0_var(--color-border),_0_1px_3px_0_oklch(0_0_0_/_0.08)] transition-all hover:bg-muted/10 font-semibold text-foreground flex items-center justify-between px-3 cursor-pointer select-none outline-none">
+          {m.audit_filter_time ? m.audit_filter_time() : "All time"}
+        </SelectTrigger>
+        <SelectContent class="bg-background border-border">
+          <SelectItem value="all-time">{m.audit_filter_time ? m.audit_filter_time() : "All time"}</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+
+    <!-- Action Filter Dropdown -->
+    <div class="w-full sm:w-56 text-start">
+      <Select type="single" value={actionFilter} onValueChange={(v) => (actionFilter = v ?? "all")}>
+        <SelectTrigger class="h-9 w-full text-xs bg-background border-primary rounded-[6px] border-[1.5px] shadow-[0_2px_0_0_oklch(0.58_0.1_285_/_0.15),_0_1px_3px_0_oklch(0_0_0_/_0.08)] transition-all hover:bg-muted/10 font-semibold text-foreground flex items-center justify-between px-3 cursor-pointer select-none outline-none">
+          {actionFilter === "all"
+            ? (m.audit_filter_action ? m.audit_filter_action() : "Select Action:")
+            : actionFilter}
+        </SelectTrigger>
+        <SelectContent class="bg-background border-border max-h-[300px] overflow-y-auto">
+          <SelectItem value="all">{m.audit_filter_action ? m.audit_filter_action() : "Select Action:"}</SelectItem>
+          {#each uniqueActions as act}
+            <SelectItem value={act}>{act}</SelectItem>
+          {/each}
+        </SelectContent>
+      </Select>
     </div>
   </div>
 
-  <!-- Search & Filters -->
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 select-none">
-    <div class="relative flex-1 max-w-sm">
-      <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-      <Input
-        type="text"
-        placeholder={m.search_placeholder ? m.search_placeholder() : "البحث بالمستخدم أو الكيان..."}
-        bind:value={searchQuery}
-        class="pl-9 h-9 text-xs"
-      />
+  <!-- Main Grid/Table Content -->
+  {#if isLoading}
+    <div class="flex flex-col gap-3">
+      <Skeleton class="h-10 w-full" />
+      <Skeleton class="h-12 w-full" />
+      <Skeleton class="h-12 w-full" />
+      <Skeleton class="h-12 w-full" />
     </div>
-
-    <div class="flex items-center gap-2">
-      <div class="w-36 text-start">
-        <Select type="single" value={actionFilter} onValueChange={(v) => (actionFilter = v ?? "all")}>
-          <SelectTrigger class="h-9 w-full text-xs">
-            {#if actionFilter === "all"}
-              {m.attendance_status_unknown() === "غير محدد" ? "كل العمليات" : "All Actions"}
-            {:else}
-              {actionFilter.toUpperCase()}
-            {/if}
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{m.attendance_status_unknown() === "غير محدد" ? "كل العمليات" : "All Actions"}</SelectItem>
-            <SelectItem value="create">Create</SelectItem>
-            <SelectItem value="update">Update</SelectItem>
-            <SelectItem value="delete">Delete</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <Button variant="outline" size="sm" onclick={loadData} class="h-9 text-xs flex items-center gap-1 cursor-pointer">
-        <span>{m.attendance_status_unknown() === "غير محدد" ? "تحديث" : "Refresh"}</span>
-      </Button>
+  {:else if error}
+    <div class="flex flex-col items-center justify-center p-8 border border-destructive/20 bg-destructive/5 rounded-xl text-center gap-3">
+      <p class="text-xs text-destructive font-semibold">Failed to load audit logs</p>
+      <p class="text-xs text-muted-foreground">{error}</p>
+      <Button variant="outline" class="text-xs" onclick={loadData}>Retry</Button>
     </div>
-  </div>
-
-  <!-- Content Table -->
-  <div class="w-full">
-    {#if isLoading}
-      <div class="flex flex-col gap-3">
-        {#each Array(5) as _}
-          <Skeleton class="h-14 w-full rounded-lg" />
-        {/each}
+  {:else if filteredLogs.length === 0}
+    <div class="flex flex-col items-center justify-center py-16 text-muted-foreground border border-border border-dashed rounded-xl gap-4 bg-card/10">
+      <History size={48} class="text-muted-foreground/30" />
+      <div class="flex flex-col gap-1 text-center">
+        <p class="text-xs font-semibold">{m.audit_empty ? m.audit_empty() : "No audit logs found"}</p>
+        <p class="text-[10px] text-muted-foreground/80">{m.audit_empty_desc ? m.audit_empty_desc() : "No operations have been recorded yet."}</p>
       </div>
-    {:else if error}
-      <div
-        in:fade={{ duration: 150 }}
-        class="border border-destructive/20 bg-destructive/10 text-destructive rounded-xl p-4 flex items-center gap-3 text-sm text-start"
-      >
-        <ShieldAlert size={18} />
-        <div>
-          <span class="font-bold">Error:</span> {error}
-        </div>
-      </div>
-    {:else if filteredLogs.length === 0}
-      <div
-        in:fade={{ duration: 150 }}
-        class="border border-dashed border-border/80 rounded-2xl p-12 flex flex-col items-center justify-center text-center gap-3 select-none"
-      >
-        <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-2">
-          <History size={24} />
-        </div>
-        <h3 class="text-sm font-bold text-foreground">
-          {m.audit_empty ? m.audit_empty() : "لا توجد سجلات تدقيق"}
-        </h3>
-        <p class="text-xs text-muted-foreground max-w-sm">
-          {m.audit_empty_desc ? m.audit_empty_desc() : "لم يتم تسجيل أي عمليات بعد"}
-        </p>
-      </div>
-    {:else}
-      <div in:fade={{ duration: 150 }} class="overflow-hidden">
+    </div>
+  {:else}
+    <div class="border border-border rounded-sm overflow-hidden" in:fade={{ duration: 150 }}>
+      <div class="overflow-x-auto">
         <Table>
-          <TableHeader class="bg-muted/40 select-none">
-            <TableRow>
-              <TableHead class="text-start font-bold text-xs">{m.audit_col_time ? m.audit_col_time() : "الوقت"}</TableHead>
-              <TableHead class="text-start font-bold text-xs">{m.audit_col_user ? m.audit_col_user() : "المستخدم"}</TableHead>
-              <TableHead class="text-start font-bold text-xs">{m.audit_col_action ? m.audit_col_action() : "الإجراء"}</TableHead>
-              <TableHead class="text-start font-bold text-xs">{m.audit_col_entity ? m.audit_col_entity() : "الكيان"}</TableHead>
-              <TableHead class="text-start font-bold text-xs">{m.audit_col_details ? m.audit_col_details() : "التفاصيل"}</TableHead>
-              <TableHead class="text-end font-bold text-xs w-[80px]"></TableHead>
+          <TableHeader>
+            <TableRow class="bg-muted border-b border-border/60">
+              <TableHead class="text-start text-xs font-bold text-muted-foreground py-3 w-[40%]">
+                {m.audit_col_member ? m.audit_col_member() : "MEMBER"}
+              </TableHead>
+              <TableHead class="text-start text-xs font-bold text-muted-foreground py-3 w-[30%]">
+                {m.audit_col_action ? m.audit_col_action() : "ACTION"}
+              </TableHead>
+              <TableHead class="text-start text-xs font-bold text-muted-foreground py-3 w-[15%]">
+                {m.audit_col_ip ? m.audit_col_ip() : "IP"}
+              </TableHead>
+              <TableHead class="text-start text-xs font-bold text-muted-foreground py-3 w-[15%]">
+                {m.audit_col_time ? m.audit_col_time() : "TIME"}
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {#each filteredLogs as log (log.id)}
-              <TableRow class="hover:bg-muted/20 transition-all duration-150">
-                <TableCell class="text-start text-xs text-muted-foreground whitespace-nowrap">
-                  {formatDate(log.created_at)}
-                </TableCell>
-                <TableCell class="text-start text-xs font-bold text-foreground">
-                  {getUserName(log.user_id)}
-                </TableCell>
-                <TableCell class="text-start text-xs">
-                  <Badge variant={getActionVariant(log.action)} class="text-[10px] font-semibold py-0">
-                    {log.action}
-                  </Badge>
-                </TableCell>
-                <TableCell class="text-start text-xs">
-                  <div class="flex flex-col text-start">
-                    <span class="font-semibold text-foreground">{log.entity_type}</span>
-                    <span class="text-[10px] text-muted-foreground font-mono">{log.entity_id.substring(0, 8)}...</span>
+            {#each paginatedLogs as log (log.id)}
+              <TableRow
+                class="hover:bg-accent/5 transition-colors duration-150 cursor-pointer"
+                onclick={() => openDetails(log)}
+              >
+                <!-- MEMBER Column -->
+                <TableCell class="py-3 text-start">
+                  <div class="flex items-center gap-3">
+                    <Avatar class="w-8 h-8">
+                      <AvatarImage src={getUserAvatar(log.user_id)} alt="User" class="object-cover" />
+                      <AvatarFallback class="text-xs">
+                        {getUserInitials(log.user_id)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div class="flex flex-col text-start">
+                      <span class="text-xs font-bold text-foreground">
+                        {getUserName(log.user_id)}
+                      </span>
+                      <span class="text-[9px] text-muted-foreground leading-none mt-0.5 truncate max-w-[320px]">
+                        {getUserEmail(log.user_id)}
+                      </span>
+                    </div>
                   </div>
                 </TableCell>
-                <TableCell class="text-start text-xs text-muted-foreground line-clamp-1 max-w-[250px]">
-                  {log.metadata || '-'}
+
+                <!-- ACTION Column -->
+                <TableCell class="py-3 text-start">
+                  <span class="font-mono text-xs text-foreground/80">
+                    {log.action}
+                  </span>
                 </TableCell>
-                <TableCell class="text-end">
-                  <Button variant="ghost" size="icon-sm" onclick={() => openDetails(log)}>
-                    <Eye size={14} />
-                  </Button>
+
+                <!-- IP Column -->
+                <TableCell class="py-3 text-start">
+                  <span class="font-mono text-xs text-muted-foreground">
+                    {log.ip_address || "127.0.0.1"}
+                  </span>
+                </TableCell>
+
+                <!-- TIME Column -->
+                <TableCell class="py-3 text-start">
+                  <div class="flex flex-col text-start">
+                    <span class="text-xs font-semibold text-foreground">
+                      {formatAuditDate(log.created_at)}
+                    </span>
+                    <span class="text-[9px] text-muted-foreground font-mono mt-0.5">
+                      {formatAuditTime(log.created_at)}
+                    </span>
+                  </div>
                 </TableCell>
               </TableRow>
             {/each}
           </TableBody>
         </Table>
       </div>
+
+    </div>
+
+    <!-- Pagination -->
+    {#if totalPages > 1}
+      <div class="flex justify-end select-none mt-2">
+        <div class="flex items-center bg-background border border-border rounded-[6px] p-0.5 shadow-[0_2px_0_0_var(--color-border),_0_1px_3px_0_oklch(0_0_0_/_0.05)]">
+          <button
+            disabled={currentPage === 1}
+            onclick={() => currentPage--}
+            class="h-7 w-7 rounded-[4px] hover:bg-muted/20 flex items-center justify-center cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed text-foreground transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5 rtl:rotate-180"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <div class="h-4 w-px bg-border/60 mx-0.5"></div>
+          <button
+            disabled={currentPage === totalPages}
+            onclick={() => currentPage++}
+            class="h-7 w-7 rounded-[4px] hover:bg-muted/20 flex items-center justify-center cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed text-foreground transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5 rtl:rotate-180"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+      </div>
     {/if}
-  </div>
+  {/if}
 </div>
 
 <!-- Details Dialog -->
 {#if selectedLog}
-  <Dialog open={isDetailsOpen} onOpenChange={(open) => { if (!open) closeDetails(); }}>
+  <Dialog open={isDetailsOpen} onOpenChange={(open: boolean) => { if (!open) closeDetails(); }}>
     <DialogContent class="max-w-2xl text-start font-sans">
       <DialogHeader>
         <DialogTitle class="flex items-center gap-2">
@@ -290,21 +337,21 @@ function closeDetails() {
           <span>{m.audit_details_title ? m.audit_details_title() : "تفاصيل سجل التدقيق"}</span>
         </DialogTitle>
         <DialogDescription>
-          {formatDate(selectedLog.created_at)}
+          {formatAuditDate(selectedLog.created_at)} {formatAuditTime(selectedLog.created_at)}
         </DialogDescription>
       </DialogHeader>
 
       <div class="grid grid-cols-2 gap-4 py-2 text-xs">
         <div class="flex flex-col gap-1">
           <span class="text-muted-foreground font-semibold">User:</span>
-          <span class="text-foreground">{getUserName(selectedLog.user_id)}</span>
+          <span class="text-foreground">{getUserEmail(selectedLog.user_id)}</span>
         </div>
         <div class="flex flex-col gap-1">
           <span class="text-muted-foreground font-semibold">Action:</span>
           <div>
-            <Badge variant={getActionVariant(selectedLog.action)} class="text-[9px] font-bold">
+            <span class="text-xs text-foreground font-mono bg-muted/40 px-2 py-0.5 rounded-md border border-border/50">
               {selectedLog.action}
-            </Badge>
+            </span>
           </div>
         </div>
         <div class="flex flex-col gap-1">
@@ -337,12 +384,6 @@ function closeDetails() {
           </pre>
         </div>
       {/if}
-
-      <DialogFooter class="border-t border-border pt-4">
-        <Button variant="ghost" size="sm" onclick={closeDetails}>
-          {m.attendance_status_unknown() === "غير محدد" ? "إغلاق" : "Close"}
-        </Button>
-      </DialogFooter>
     </DialogContent>
   </Dialog>
 {/if}
