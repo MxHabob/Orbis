@@ -21,6 +21,7 @@ are persisted to localStorage.
 ```
 -->
 <script lang="ts">
+    import { Button } from "@orbis/ui-svelte";
 import Resizer from "./Resizer.svelte";
 import SashLayer from "./SashLayer.svelte";
 import type { Snippet } from "svelte";
@@ -118,18 +119,25 @@ function getFallbackLabel(
 				{#if finalLeftWidth === COLLAPSED_WIDTH}
 					<!-- Collapsed vertical strip -->
 					<div class="h-full w-full flex flex-col items-center py-4 select-none">
-						<button
-							type="button"
-							class="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground cursor-pointer transition-colors duration-150 mb-4"
+						<Button
+							class="h-8 w-8 flex items-center justify-center cursor-pointer duration-150 mb-4"
 							onclick={() => leftPreferredWidth = pxToRem(leftWidth.default)}
 							title="Expand Sidebar"
 						>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-								<rect width="18" height="18" x="3" y="3" rx="2" />
-								<path d="M9 3v18" />
-							</svg>
-						</button>
-						
+                          <svg
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2.5"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            class="transition-transform duration-200 rtl:rotate-180"
+                          >
+                            <path d="m6 17 5-5-5-5M13 17l5-5-5-5" />
+                          </svg>
+						</Button>
 						<span class="vertical-text text-[10px] font-bold text-muted-foreground tracking-wider uppercase whitespace-nowrap">
 							{leftLabel || getFallbackLabel(name, "left")}
 						</span>

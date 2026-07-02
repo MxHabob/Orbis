@@ -53,7 +53,7 @@ function handleKeyDown(e: KeyboardEvent) {
 	{/if}
 	<div class="flex flex-1 flex-col overflow-hidden relative">
 		<div
-			class="flex flex-1 min-w-0 items-stretch overflow-hidden p-3.5"
+			class="flex flex-1 min-w-0 items-stretch overflow-hidden"
 		>
 			<div class="flex flex-1 min-w-0 items-stretch overflow-hidden">
 				{@render children()}

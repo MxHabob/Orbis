@@ -28,7 +28,7 @@ import {
   Users,
   Eye,
 } from "lucide-svelte";
-import UserCreateSheet from "$lib/components/sheets/user-create-sheet.svelte";
+
 import {
   Select,
   SelectTrigger,
@@ -50,9 +50,7 @@ let error = $state<string | null>(null);
 let searchQuery = $state("");
 let selectedRole = $state("all");
 
-// Sheet controls
-let isSheetOpen = $state(false);
-let editingUser = $state<User | null>(null);
+
 
 async function loadUsers() {
   isLoading = true;
@@ -92,15 +90,7 @@ const filteredUsers = $derived(
   }),
 );
 
-function openCreateSheet() {
-  editingUser = null;
-  isSheetOpen = true;
-}
 
-function openEditSheet(user: User) {
-  editingUser = user;
-  isSheetOpen = true;
-}
 
 async function handleDeleteUser(user: User) {
   const confirmMsg = m.settings_users_delete_confirm();
@@ -200,7 +190,7 @@ function getRoleBadgeClass(roleStr: string): string {
     </div>
 
     <!-- Add Button -->
-    <Button variant="lime" class="text-xs h-9 px-4 font-semibold shrink-0" onclick={openCreateSheet}>
+    <Button variant="lime" class="text-xs h-9 px-4 font-semibold shrink-0" href={localizeHref(`/${data.orgId}/settings/users/new`)}>
       <Plus size={14} class="me-1.5" />
       {m.settings_users_add()}
     </Button>
@@ -299,7 +289,7 @@ function getRoleBadgeClass(roleStr: string): string {
                       variant="ghost"
                       size="icon-xs"
                       title="Edit"
-                      onclick={() => openEditSheet(user)}
+                      href={localizeHref(`/${data.orgId}/settings/users/${user.id}/profile`)}
                     >
                       <Pencil size={12} class="text-muted-foreground hover:text-foreground" />
                     </Button>
@@ -323,10 +313,4 @@ function getRoleBadgeClass(roleStr: string): string {
   {/if}
 </div>
 
-<!-- Modal Sheets -->
-<UserCreateSheet
-  bind:open={isSheetOpen}
-  orgId={data.orgId}
-  user={editingUser}
-  onSuccess={loadUsers}
-/>
+

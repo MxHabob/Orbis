@@ -65,9 +65,9 @@ and collapsibility.
   class="h-full flex flex-col overflow-y-auto scrollbar-hide select-none"
 >
   <!-- Header -->
-  <div class="h-14 flex items-center justify-between pb-4 border-b border-border/60 shrink-0">
+  <div class="h-14 flex items-center justify-between  border-b border-border/60 shrink-0">
     <div class="flex items-center gap-2 min-w-0">
-      <h2 class="text-sm font-semibold tracking-tight text-foreground truncate">
+      <h2 class="text-sm font-semibold  text-foreground truncate">
         {title || "Navigation"}
       </h2>
       {#if headerAction}
@@ -75,21 +75,20 @@ and collapsibility.
       {/if}
     </div>
     <Button
-      size="icon-xs"
-      class="shrink-0"
+      class="h-8 w-8 flex items-center justify-center  cursor-pointer duration-150"
       onclick={collapseSidebar}
       title={getLocale() === 'ar' ? 'طي القائمة' : 'Collapse Sidebar'}
     >
       <svg
-        width="11"
-        height="11"
+        width="18"
+        height="18"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
         stroke-width="2.5"
         stroke-linecap="round"
         stroke-linejoin="round"
-        class="transition-transform duration-200 {getLocale() === 'ar' ? 'rotate-180' : ''}"
+        class="transition-transform duration-200 rtl:rotate-180"
       >
         <path d="m11 17-5-5 5-5M18 17l-5-5 5-5" />
       </svg>
