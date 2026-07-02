@@ -228,6 +228,13 @@ export const commands = {
       gradedBy: string,
     ) =>
       invoke<void>("compile_semester_grades", { orgId, semesterNum, gradedBy }),
+
+    upsertGradeCell: (
+      orgId: string,
+      gradedBy: string,
+      request: JsonRecord,
+    ) =>
+      invoke<JsonRecord>("upsert_grade_cell", { orgId, gradedBy, request }),
   },
 
   attendance: {

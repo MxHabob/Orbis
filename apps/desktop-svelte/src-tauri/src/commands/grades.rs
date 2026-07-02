@@ -8,6 +8,7 @@ use core_domain::{
         CreateGradeRequest, BulkGradeRequest, UpdateGradeRequest,
         GradeReportCard, GradeAnalytics,
         BulkSubjectGradeEntry, BulkSubjectGradeResult, GradeMatrixResponse,
+        UpsertCellRequest, UpsertCellResult,
     },
 };
 
@@ -132,6 +133,20 @@ pub async fn compile_semester_grades(
     state
         .service
         .compile_semester_grades(&org_id, semester_num, &graded_by)
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn upsert_grade_cell(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    graded_by: String,
+    request: UpsertCellRequest,
+) -> CmdResult<UpsertCellResult> {
+    state
+        .service
+        .upsert_grade_cell(&org_id, &graded_by, request)
         .await
         .map_err(CommandError::from)
 }

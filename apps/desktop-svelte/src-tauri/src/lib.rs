@@ -234,6 +234,7 @@ pub fn run() {
             commands::grades::bulk_subject_grade_entry,
             commands::grades::get_grade_matrix,
             commands::grades::compile_semester_grades,
+            commands::grades::upsert_grade_cell,
 
             // Attendance commands
             commands::attendance::get_attendance,

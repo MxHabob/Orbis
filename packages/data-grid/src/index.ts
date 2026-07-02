@@ -29,3 +29,18 @@ export {
   transformMatrixToSource,
   recalculateRowTotals,
 } from "./grade-helpers";
+
+// Generic column builders (for students, attendance, fees pages)
+export {
+  indexColumn,
+  studentNameColumn,
+  scoreColumn,
+  textColumn,
+  statusColumn,
+  percentageColumn,
+  addRowIndices,
+  flattenForGrid,
+  buildAttendanceColumns,
+  buildStudentListColumns,
+  buildFeesColumns,
+} from "./column-builders";

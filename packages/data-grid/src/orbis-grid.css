@@ -275,3 +275,48 @@ revo-grid .rgHeaderCell:hover .resizable {
   opacity: 1;
   background: hsl(var(--primary) / 0.3);
 }
+
+/* ── Semantic Cell Status Classes ─────────────────────────────────────────── */
+/* Used by generic column-builders for attendance, fees, grades, etc. */
+
+.orbis-cell-success {
+  color: hsl(142 71% 45%) !important;
+  font-weight: 600;
+}
+
+.orbis-cell-error {
+  color: hsl(var(--destructive)) !important;
+  font-weight: 600;
+}
+
+.orbis-cell-warning {
+  color: hsl(38 92% 50%) !important;
+  font-weight: 600;
+}
+
+.orbis-cell-excellent {
+  color: hsl(142 71% 45%) !important;
+  font-weight: 700;
+}
+
+.orbis-cell-good {
+  color: hsl(199 89% 48%) !important;
+  font-weight: 600;
+}
+
+.orbis-cell-number {
+  font-variant-numeric: tabular-nums;
+  font-family: "Rubik", monospace;
+  text-align: end;
+}
+
+.orbis-cell-index {
+  color: hsl(var(--muted-foreground));
+  font-size: 10px;
+  text-align: center;
+}
+
+.orbis-cell-student {
+  font-weight: 600;
+  font-size: 12px;
+}

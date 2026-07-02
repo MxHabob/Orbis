@@ -441,6 +441,63 @@ impl super::Service {
             .map_err(|e| e.to_string())
     }
 
+    /// Upsert a single grade cell — used by the grid for real-time cell saves.
+    /// If a grade exists for (enrollment_id, assessment_id), update it. Otherwise create.
+    pub async fn upsert_grade_cell(&self, org_id: &str, graded_by: &str, req: UpsertCellRequest) -> Result<UpsertCellResult, String> {
+        if req.score < 0.0 || req.score > req.max_score {
+            return Err(format!("الدرجة يجب أن تكون بين 0 و {}", req.max_score));
+        }
+
+        // Check cycle is open
+        self.check_cycle_open_for_grading(&req.cycle_id).await?;
+
+        let percentage = (req.score / req.max_score) * 100.0;
+        let grade_letter = Self::score_to_grade_letter(percentage);
+        let grade_points = Self::score_to_grade_points(percentage);
+
+        // Try to find existing grade
+        let existing = self.repo.find_grade_by_enrollment_assessment(
+            &req.enrollment_id,
+            &req.assessment_id,
+        ).await.map_err(|e| e.to_string())?;
+
+        match existing {
+            Some(g) => {
+                // Save history
+                self.save_grade_history(&g, graded_by, None, "cell_update").await?;
+                // Update
+                self.repo.update_grade(
+                    &g.id,
+                    req.score,
+                    req.max_score,
+                    Some(grade_letter),
+                    Some(grade_points),
+                    None,
+                ).await.map_err(|e| e.to_string())?;
+                Ok(UpsertCellResult { grade_id: g.id, created: false })
+            }
+            None => {
+                // Create new grade
+                let create_req = CreateGradeRequest {
+                    enrollment_id: req.enrollment_id,
+                    subject_name: req.subject_name,
+                    subject_name_ar: req.subject_name_ar,
+                    score: req.score,
+                    max_score: req.max_score,
+                    weight: Some(1.0),
+                    exam_type: req.exam_type,
+                    semester: req.semester,
+                    notes: None,
+                    is_final: Some(0),
+                    assessment_id: Some(req.assessment_id),
+                    class_subject_id: req.class_subject_id,
+                };
+                let created = self.submit_grade(org_id, graded_by, create_req).await?;
+                Ok(UpsertCellResult { grade_id: created.id, created: true })
+            }
+        }
+    }
+
     /// Get the grade matrix for a class+subject: all students × all assessment types
     pub async fn get_grade_matrix(&self, _org_id: &str, cycle_id: &str, class_id: &str, subject_id: &str) -> Result<GradeMatrixResponse, String> {
         // Find class_subject
