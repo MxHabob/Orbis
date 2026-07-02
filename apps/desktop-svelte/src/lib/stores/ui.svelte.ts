@@ -7,6 +7,7 @@ class UIStore {
   showAskOrbis = $state(false);
   showUpgradeDialog = $state(false);
   focusMode = $state(localStorage.getItem("orbis_focus_mode") === "true");
+  showSearch = $state(false);
 
   // Panel resize preferences are persisted via Resizer component
   // to localStorage with `resizer:{persistId}` keys.
@@ -34,6 +35,14 @@ class UIStore {
 
   setUpgradeDialog(show: boolean) {
     this.showUpgradeDialog = show;
+  }
+
+  toggleSearch() {
+    this.showSearch = !this.showSearch;
+  }
+
+  setSearch(show: boolean) {
+    this.showSearch = show;
   }
 }
 

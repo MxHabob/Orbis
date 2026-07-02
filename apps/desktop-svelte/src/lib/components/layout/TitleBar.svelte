@@ -209,6 +209,7 @@ function selectCycle(cycleId: string) {
       <Button
         variant="outline"
         size="sm"
+        onclick={() => uiStore.setSearch(true)}
         class="font-semibold text-xs text-foreground rounded-[8px] px-3 gap-2 shrink-0"
         title={m.header_search_title()}
         aria-label="Search"

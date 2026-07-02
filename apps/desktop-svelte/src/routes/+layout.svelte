@@ -8,6 +8,7 @@ import { isDesktopApp } from "$lib/services/ipc";
 import { Toaster } from "svelte-sonner";
 import { onMount } from "svelte";
 import TitleBar from "$lib/components/layout/TitleBar.svelte";
+import SearchModal from "$lib/components/layout/SearchModal.svelte";
 import "./layout.css";
 import favicon from "$lib/assets/favicon.svg";
 
@@ -41,6 +42,7 @@ onMount(() => {
 </div>
 
 <Toaster position="bottom-center" expand={true} duration={5000} closeButton={true} />
+<SearchModal />
 
 <!-- Hidden locale links for paraglide -->
 <div style="display:none">
