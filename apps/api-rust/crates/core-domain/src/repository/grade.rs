@@ -132,19 +132,6 @@ impl super::Repository {
         grade::Entity::find_by_id(id.to_string()).one(&self.db).await
     }
 
-    /// Find a grade by enrollment + assessment composite key (for upsert logic)
-    pub async fn find_grade_by_enrollment_assessment(
-        &self,
-        enrollment_id: &str,
-        assessment_id: &str,
-    ) -> Result<Option<grade::Model>, DbErr> {
-        grade::Entity::find()
-            .filter(grade::Column::EnrollmentId.eq(enrollment_id))
-            .filter(grade::Column::AssessmentId.eq(assessment_id))
-            .one(&self.db)
-            .await
-    }
-
     pub async fn get_grades_by_enrollment(&self, enrollment_id: &str) -> Result<Vec<grade::Model>, DbErr> {
         grade::Entity::find()
             .filter(grade::Column::EnrollmentId.eq(enrollment_id))
