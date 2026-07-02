@@ -17,8 +17,7 @@ import AvatarUpload from "$lib/components/shared/avatar-upload.svelte";
 import LocaleSettings from "$lib/components/shared/locale-settings.svelte";
 import TimezoneSettings from "$lib/components/shared/timezone-settings.svelte";
 import * as m from "$lib/paraglide/messages";
-import { getLocale, localizeHref } from "$lib/paraglide/runtime";
-import { goto } from "$app/navigation";
+import { getLocale, setLocale } from "$lib/paraglide/runtime";
 let orgId = $derived(page.params.orgId);
 
 // Form state
@@ -29,7 +28,7 @@ let name = $state("");
 let slug = $state("");
 let id = $state("");
 let logo = $state("");
-let primaryColor = $state("#84cc16"); // default lime
+let primaryColor = $state("#7c3aed");
 let currency = $state("YER");
 let timezone = $state("Asia/Aden");
 let locale = $state("ar");
@@ -40,12 +39,30 @@ async function handleLanguageChange(newLocale: string) {
   const lang = newLocale.split("-")[0]?.toLowerCase() || "ar";
   const targetLang = lang === "ar" ? "ar" : "en";
 
-  if (targetLang === getLocale()) return;
-
   locale = newLocale;
 
-  const localizedUrl = localizeHref(page.url.pathname, { locale: targetLang });
-  await goto(localizedUrl);
+  // Auto-save form to database before reloading to avoid losing unsaved input
+  if (orgId) {
+    try {
+      const request = {
+        name,
+        logo: logo || null,
+        primary_color: primaryColor,
+        currency,
+        timezone,
+        locale: newLocale,
+        date_format: dateFormat,
+        hijri_enabled: hijriEnabled ? 1 : 0,
+      };
+      await commands.users.updateOrganization(orgId, request);
+    } catch (e) {
+      console.error("Failed to auto-save before language switch:", e);
+    }
+  }
+
+  if (targetLang === getLocale()) return;
+
+  setLocale(targetLang);
 }
 
 async function loadOrganization() {

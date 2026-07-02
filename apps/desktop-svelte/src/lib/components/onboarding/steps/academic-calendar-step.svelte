@@ -9,18 +9,18 @@ import * as m from "$lib/paraglide/messages";
 import { onboardingState } from "../onboarding-state.svelte";
 import LocaleSettings from "$lib/components/shared/locale-settings.svelte";
 import TimezoneSettings from "$lib/components/shared/timezone-settings.svelte";
-import { getLocale, localizeHref } from "$lib/paraglide/runtime";
-import { goto } from "$app/navigation";
-import { page } from "$app/state";
+import { getLocale, setLocale } from "$lib/paraglide/runtime";
 
 async function handleLanguageChange(newLocale: string) {
   const lang = newLocale.split("-")[0]?.toLowerCase() || "ar";
   const targetLang = lang === "ar" ? "ar" : "en";
 
+  // Persist current wizard input states to localStorage before reloading
+  onboardingState.save();
+
   if (targetLang === getLocale()) return;
 
-  const localizedUrl = localizeHref(page.url.pathname, { locale: targetLang });
-  await goto(localizedUrl);
+  setLocale(targetLang);
 }
 </script>
 

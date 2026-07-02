@@ -1,9 +1,6 @@
 <script lang="ts">
-import { page } from "$app/state";
 import { onMount } from "svelte";
-import { goto } from "$app/navigation";
 import { themeStore } from "$lib/stores";
-import { Button } from "@orbis/ui-svelte/button";
 import { Label } from "@orbis/ui-svelte/label";
 import {
   Select,
@@ -13,12 +10,12 @@ import {
 } from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
-import { getLocale, localizeHref } from "$lib/paraglide/runtime";
+import { getLocale, setLocale } from "$lib/paraglide/runtime";
 import { Sun, Moon, Laptop, Type, LayoutGrid } from "lucide-svelte";
 
 let fontSize = $state("medium");
 let density = $state("comfortable");
-let selectedLocale = $state(getLocale());
+let selectedLocale = $state("ar");
 
 onMount(() => {
   fontSize = localStorage.getItem("orbis_font_size") || "medium";
@@ -31,22 +28,16 @@ function handleThemeChange(theme: "light" | "dark" | "system") {
   toast.success(m.settings_general_save_success());
 }
 
-function handleFontSizeChange(size: string) {
-  fontSize = size;
-  localStorage.setItem("orbis_font_size", size);
+async function handleFontSizeChange(sz: string) {
+  fontSize = sz;
+  localStorage.setItem("orbis_font_size", sz);
   if (typeof document !== "undefined") {
-    if (size === "small") {
-      document.documentElement.style.fontSize = "13px";
-    } else if (size === "medium") {
-      document.documentElement.style.fontSize = "14px";
-    } else if (size === "large") {
-      document.documentElement.style.fontSize = "16px";
-    }
+    document.documentElement.setAttribute("data-font-size", sz);
   }
   toast.success(m.settings_general_save_success());
 }
 
-function handleDensityChange(dens: string) {
+async function handleDensityChange(dens: string) {
   density = dens;
   localStorage.setItem("orbis_density", dens);
   if (typeof document !== "undefined") {
@@ -60,10 +51,7 @@ async function handleLanguageChange(lang: string) {
   if (lang === getLocale()) return;
   selectedLocale = lang;
 
-  // Navigate to the localized URL using paraglide helper
-  const localizedUrl = localizeHref(page.url.pathname, { locale: lang });
-  await goto(localizedUrl);
-  toast.success(m.settings_general_save_success());
+  setLocale(lang);
 }
 
 const locales = [
