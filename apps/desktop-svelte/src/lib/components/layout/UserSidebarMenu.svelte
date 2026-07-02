@@ -92,8 +92,8 @@ async function handleLogout() {
 
       <!-- Items -->
       <div class="py-1">
-        <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs text-foreground hover:bg-accent rounded" onclick={() => handleNavigate(`/${orgId}/settings`)}>
-          User Settings
+        <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs text-foreground hover:bg-accent rounded" onclick={() => handleNavigate(`/${orgId}/account`)}>
+          {m.account_settings_title ? m.account_settings_title() : 'User Settings'}
         </DropdownMenuItem>
         <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs text-foreground hover:bg-accent rounded" onclick={handleLogout}>
           Sign Out

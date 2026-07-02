@@ -26,26 +26,14 @@ import {
   Search,
   Megaphone,
 } from "lucide-svelte";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@orbis/ui-svelte/dropdown-menu";
-import {
-  Breadcrumb,
-  BreadcrumbList,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbSeparator,
-  BreadcrumbPage,
-} from "@orbis/ui-svelte/breadcrumb";
 import { commands } from "$lib/services/ipc";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 import { toast } from "svelte-sonner";
 import { page } from "$app/state";
 import WhatsNewDialog from "./WhatsNewDialog.svelte";
+import TitleBreadcrumbs from "./TitleBreadcrumbs.svelte";
+    import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@orbis/ui-svelte/dropdown-menu";
 
 // Window states
 let appWindow = $state<any>(null);
@@ -69,78 +57,7 @@ let currentCycleName = $derived.by(() => {
 
 let showWhatsNew = $state(false);
 
-// Breadcrumb items generator based on active route
-const breadcrumbs = $derived.by(() => {
-  const pathname = page.url.pathname;
-  const currentOrgId = page.params.orgId || authStore.orgId || "";
-  const studentId = page.params.studentId;
 
-  const items: { label: string; href?: string }[] = [];
-
-  // Base dashboard link
-  items.push({ label: m.breadcrumb_home(), href: `/${currentOrgId}` });
-
-  if (pathname.includes("/reports")) {
-    items.push({
-      label: m.breadcrumb_reports(),
-      href: `/${currentOrgId}/reports`,
-    });
-  } else if (pathname.includes("/students")) {
-    items.push({
-      label: m.breadcrumb_students(),
-      href: `/${currentOrgId}/students`,
-    });
-
-    if (pathname.includes("/students/new")) {
-      items.push({ label: m.breadcrumb_new_student() });
-    } else if (studentId) {
-      const student = studentsStore.list.find((s) => s.id === studentId);
-      const studentName =
-        (student?.full_name as string) ||
-        (student?.name_ar as string) ||
-        m.breadcrumb_student_profile();
-      items.push({
-        label: studentName,
-        href: `/${currentOrgId}/students/${studentId}`,
-      });
-
-      if (pathname.includes("/edit")) {
-        items.push({ label: m.breadcrumb_edit_data() });
-      } else if (pathname.includes("/grades")) {
-        items.push({ label: m.breadcrumb_grades() });
-      } else if (pathname.includes("/fees")) {
-        items.push({ label: m.breadcrumb_fees() });
-      } else if (pathname.includes("/attendance")) {
-        items.push({ label: m.breadcrumb_attendance() });
-      } else if (pathname.includes("/behavior")) {
-        items.push({ label: m.breadcrumb_behavior() });
-      }
-    }
-  } else if (pathname.includes("/academics")) {
-    items.push({
-      label: m.breadcrumb_academics(),
-      href: `/${currentOrgId}/academics`,
-    });
-    if (pathname.includes("/exams")) {
-      items.push({
-        label: m.breadcrumb_exams(),
-        href: `/${currentOrgId}/academics/exams`,
-      });
-    }
-  } else if (pathname.includes("/finance")) {
-    items.push({
-      label: m.breadcrumb_finance(),
-      href: `/${currentOrgId}/finance`,
-    });
-  } else if (pathname.includes("/settings")) {
-    items.push({
-      label: m.breadcrumb_settings(),
-      href: `/${currentOrgId}/settings`,
-    });
-  }
-
-  return items;
-});
 
 onMount(() => {
   isOnline = navigator.onLine;
@@ -277,32 +194,7 @@ function selectCycle(cycleId: string) {
     <!-- Breadcrumb -->
     {#if authStore.isAuthenticated}
       <div class="w-px h-4 bg-border/60 mx-1 shrink-0" data-tauri-drag-region></div>
-      <Breadcrumb class="min-w-0 overflow-hidden">
-        <BreadcrumbList class="flex items-center gap-1 text-[10px] font-semibold text-muted-foreground select-none flex-nowrap">
-          {#each breadcrumbs as item, index}
-            <BreadcrumbItem class="min-w-0">
-              {#if item.href && index < breadcrumbs.length - 1}
-                <BreadcrumbLink href={localizeHref(item.href)} class="hover:text-foreground transition-colors duration-150 truncate max-w-[120px] block">
-                  {item.label}
-                </BreadcrumbLink>
-              {:else}
-                <BreadcrumbPage class="text-foreground font-bold truncate max-w-[120px] block">
-                  {item.label}
-                </BreadcrumbPage>
-              {/if}
-            </BreadcrumbItem>
-            {#if index < breadcrumbs.length - 1}
-              <BreadcrumbSeparator class="opacity-40 shrink-0">
-                {#if getLocale() === "ar"}
-                  <ChevronLeft size={10} />
-                {:else}
-                  <ChevronRight size={10} />
-                {/if}
-              </BreadcrumbSeparator>
-            {/if}
-          {/each}
-        </BreadcrumbList>
-      </Breadcrumb>
+      <TitleBreadcrumbs />
     {/if}
   </div>
 

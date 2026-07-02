@@ -7,7 +7,6 @@ Now includes rooms and subjects (moved from academics).
 <script lang="ts">
 import {
   Settings,
-  Palette,
   Bell,
   Lock,
   Users,
@@ -41,11 +40,7 @@ const navItems = $derived([
     label: m.settings_nav_general(),
     icon: Settings,
   },
-  {
-    path: "appearance",
-    label: m.settings_nav_appearance(),
-    icon: Palette,
-  },
+
   {
     path: "notifications",
     label: m.settings_nav_notifications(),
