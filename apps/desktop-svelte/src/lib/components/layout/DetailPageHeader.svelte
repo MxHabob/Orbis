@@ -23,7 +23,7 @@ let {
 </script>
 
 <div
-  class="px-6 py-4 flex items-center justify-between gap-4 select-none shrink-0 border-b border-border/40 bg-card/5"
+  class="px-6 py-3 flex items-center justify-between gap-4 select-none shrink-0 border-b border-border/40 bg-card/5"
 >
   <div class="flex items-center gap-3 text-start shrink min-w-0">
     <Button

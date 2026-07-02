@@ -149,7 +149,7 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 			<OrgSidebarSwitcher {orgId} orgName={orgNameDisplay} />
 
 			<!-- Divider -->
-			<div class="w-8 h-px bg-slate-200/80 dark:bg-zinc-700 my-1 self-center"></div>
+			<div class="w-8 h-px bg-slate-200/80 dark:bg-zinc-700  self-center"></div>
 
 			{#each navItems as item (item.href)}
 				<div class="flex">
