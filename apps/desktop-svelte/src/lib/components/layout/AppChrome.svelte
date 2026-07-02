@@ -51,18 +51,17 @@ function handleKeyDown(e: KeyboardEvent) {
 			<AppSidebar {orgId} {orgName} />
 		</div>
 	{/if}
-	<div class="flex flex-1 flex-col overflow-hidden">
+	<div class="flex flex-1 flex-col overflow-hidden relative">
 		<div
 			class="flex flex-1 min-w-0 items-stretch overflow-hidden p-3.5"
-			class:gap-3.5={uiStore.showAskOrbis}
 		>
 			<div class="flex flex-1 min-w-0 items-stretch overflow-hidden">
 				{@render children()}
 			</div>
-			{#if uiStore.showAskOrbis}
-				<AskOrbisSidebar />
-			{/if}
 		</div>
+		{#if uiStore.showAskOrbis}
+			<AskOrbisSidebar />
+		{/if}
 	</div>
 </div>
 <UpgradeDialog bind:open={uiStore.showUpgradeDialog} />

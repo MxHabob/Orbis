@@ -27,7 +27,7 @@ let fullName = $state(user?.full_name || "");
 let nameAr = $state(user?.name_ar || "");
 let email = $state(user?.email || "");
 let password = $state("");
-let role = $state(user?.primary_role || user?.role || "teacher");
+let role = $state((user?.primary_role as string) || user?.role || "teacher");
 let phone = $state((user?.phone as string) || "");
 let sex = $state((user?.sex as string) || "male");
 let nationalId = $state((user?.national_id as string) || "");
@@ -56,7 +56,7 @@ async function handleSubmit(e: SubmitEvent) {
       await commands.users.updateUser(user.id, request);
 
       // Update role if changed
-      if (role !== (user.primary_role || user.role)) {
+      if (role !== ((user.primary_role as string) || user.role)) {
         await commands.users.changeUserRole(user.id, { role });
       }
 
