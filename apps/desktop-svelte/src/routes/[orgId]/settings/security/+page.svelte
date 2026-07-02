@@ -98,7 +98,7 @@ onMount(() => {
 </script>
 
 <svelte:head>
-  <title>{getLocale() === "ar" ? "الأمان" : "Security"} | Orbis</title>
+  <title>{m.settings_security_window_title()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide">

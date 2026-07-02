@@ -111,7 +111,7 @@ function getRoomTypeBadgeClass(typeStr: string): string {
 </script>
 
 <svelte:head>
-  <title>{getLocale() === "ar" ? "الغرف والقاعات" : "Rooms & Halls"} | Orbis</title>
+  <title>{m.settings_rooms_window_title()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide">
@@ -123,7 +123,7 @@ function getRoomTypeBadgeClass(typeStr: string): string {
       <Input
         type="text"
         bind:value={searchQuery}
-        placeholder={getLocale() === "ar" ? "ابحث عن قاعة بالاسم أو النوع أو الموقع..." : "Search rooms by name, type or location..."}
+        placeholder={m.settings_rooms_search_placeholder()}
         class="w-full rtl:pr-9 ltr:pl-9 h-9 text-xs bg-background/50"
       />
     </div>

@@ -153,7 +153,7 @@ function getRoleBadgeClass(roleStr: string): string {
 </script>
 
 <svelte:head>
-  <title>{getLocale() === "ar" ? "المستخدمين" : "Users"} | Orbis</title>
+  <title>{m.settings_users_window_title()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide">
@@ -166,7 +166,7 @@ function getRoleBadgeClass(roleStr: string): string {
         <Input
           type="text"
           bind:value={searchQuery}
-          placeholder={getLocale() === "ar" ? "البحث بالاسم أو البريد..." : "Search by name or email..."}
+          placeholder={m.settings_users_search_placeholder()}
           class="w-full rtl:pr-9 ltr:pl-9 h-9 text-xs bg-background/50"
         />
       </div>
@@ -176,26 +176,26 @@ function getRoleBadgeClass(roleStr: string): string {
         <Select type="single" value={selectedRole} onValueChange={(v) => (selectedRole = v ?? "all")}>
           <SelectTrigger class="h-9 w-full text-xs bg-background/50">
             {#if selectedRole === "all"}
-              {getLocale() === "ar" ? "تصفية حسب الدور: الكل" : "Filter by Role: All"}
+              {m.settings_users_filter_role_all()}
             {:else if selectedRole === "admin"}
-              {getLocale() === "ar" ? "تصفية حسب الدور: مدير" : "Filter by Role: Admin"}
+              {m.settings_users_filter_role_admin()}
             {:else if selectedRole === "teacher"}
-              {getLocale() === "ar" ? "تصفية حسب الدور: معلم" : "Filter by Role: Teacher"}
+              {m.settings_users_filter_role_teacher()}
             {:else if selectedRole === "parent"}
-              {getLocale() === "ar" ? "تصفية حسب الدور: ولي أمر" : "Filter by Role: Guardian"}
+              {m.settings_users_filter_role_guardian()}
             {:else if selectedRole === "student"}
-              {getLocale() === "ar" ? "تصفية حسب الدور: طالب" : "Filter by Role: Student"}
+              {m.settings_users_filter_role_student()}
             {:else}
-              {getLocale() === "ar" ? "تصفية حسب الدور: موظف" : "Filter by Role: Staff"}
+              {m.settings_users_filter_role_staff()}
             {/if}
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{getLocale() === "ar" ? "تصفية حسب الدور: الكل" : "Filter by Role: All"}</SelectItem>
-            <SelectItem value="admin">{getLocale() === "ar" ? "مدير" : "Admin"}</SelectItem>
-            <SelectItem value="teacher">{getLocale() === "ar" ? "معلم" : "Teacher"}</SelectItem>
-            <SelectItem value="parent">{getLocale() === "ar" ? "ولي أمر" : "Guardian"}</SelectItem>
-            <SelectItem value="student">{getLocale() === "ar" ? "طالب" : "Student"}</SelectItem>
-            <SelectItem value="staff">{getLocale() === "ar" ? "موظف" : "Staff"}</SelectItem>
+            <SelectItem value="all">{m.settings_users_filter_all()}</SelectItem>
+            <SelectItem value="admin">{m.settings_users_filter_admin()}</SelectItem>
+            <SelectItem value="teacher">{m.settings_users_filter_teacher()}</SelectItem>
+            <SelectItem value="parent">{m.settings_users_filter_guardian()}</SelectItem>
+            <SelectItem value="student">{m.settings_users_filter_student()}</SelectItem>
+            <SelectItem value="staff">Staff</SelectItem>
           </SelectContent>
         </Select>
       </div>

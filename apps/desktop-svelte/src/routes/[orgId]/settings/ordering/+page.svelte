@@ -140,7 +140,7 @@ const filtered = $derived(
 </script>
 
 <svelte:head>
-  <title>{getLocale() === "ar" ? "ترتيب الطلاب" : "Student Ranking"} | Orbis</title>
+  <title>{m.settings_ordering_window_title()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide select-none animate-in fade-in duration-200">

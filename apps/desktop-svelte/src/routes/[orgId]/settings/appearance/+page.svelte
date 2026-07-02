@@ -73,7 +73,7 @@ const locales = [
 </script>
 
 <svelte:head>
-  <title>{getLocale() === "ar" ? "المظهر" : "Appearance"} | Orbis</title>
+  <title>{m.settings_appearance_window_title()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide">

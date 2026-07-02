@@ -340,7 +340,7 @@ function toggleAction(ruleIndex: number, action: string) {
 
 <svelte:head>
   <title>
-    {getLocale() === "ar" ? "مدير صلاحيات الأدوار" : "Role Permissions Manager"} | Orbis
+    {m.settings_permissions_window_title()} | Orbis
   </title>
 </svelte:head>
 
@@ -356,7 +356,7 @@ function toggleAction(ruleIndex: number, action: string) {
             <Input
               type="text"
               bind:value={docTypeFilter}
-              placeholder={getLocale() === "ar" ? "ابحث بنوع المستند..." : "Search by document type..."}
+              placeholder={m.settings_permissions_search_doc_type()}
               class="w-full ltr:pl-9 rtl:pr-9 h-9 text-xs bg-background/50"
             />
           </div>
@@ -365,10 +365,10 @@ function toggleAction(ruleIndex: number, action: string) {
           <div class="w-full sm:w-48 text-start">
             <Select type="single" value={roleFilter} onValueChange={(v) => (roleFilter = v ?? "")}>
               <SelectTrigger class="h-9 w-full text-xs bg-background/50">
-                {roleFilter ? (getLocale() === "ar" ? `تصفية حسب الدور: ${roleFilter}` : `Filter by Role: ${roleFilter}`) : (getLocale() === "ar" ? "تصفية حسب الدور: الكل" : "Filter by Role: All")}
+                {roleFilter ? m.settings_permissions_filter_role({ role: roleFilter }) : m.settings_permissions_filter_role_all()}
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{getLocale() === "ar" ? "تصفية حسب الدور: الكل" : "Filter by Role: All"}</SelectItem>
+                <SelectItem value="">{m.settings_permissions_filter_role_all()}</SelectItem>
                 {#each standardRoles as role}
                   <SelectItem value={role}>{role}</SelectItem>
                 {/each}

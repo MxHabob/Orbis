@@ -157,7 +157,7 @@ function getSubjectTheme(nameStr: string) {
 			<Search class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
 			<Input
 				type="text"
-				placeholder={getLocale() === "ar" ? "ابحث عن مادة بالاسم أو الرمز..." : "Search subjects by name or code..."}
+				placeholder={m.settings_subjects_search_placeholder_custom()}
 				class="w-full ps-9 h-9 text-xs bg-background/50"
 				bind:value={searchQuery}
 			/>

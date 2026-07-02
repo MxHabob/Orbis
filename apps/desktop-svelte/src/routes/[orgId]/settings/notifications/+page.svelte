@@ -53,7 +53,7 @@ async function handleSave(e: Event) {
 </script>
 
 <svelte:head>
-  <title>{getLocale() === "ar" ? "الإشعارات" : "Notifications"} | Orbis</title>
+  <title>{m.settings_notifications_window_title()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide">

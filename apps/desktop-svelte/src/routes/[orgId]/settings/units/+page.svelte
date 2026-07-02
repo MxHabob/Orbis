@@ -346,7 +346,7 @@ function escapeHtml(text: string): string {
 </script>
 
 <svelte:head>
-  <title>{getLocale() === "ar" ? "الوحدات التنظيمية" : "Organizational Units"} | Orbis</title>
+  <title>{m.settings_units_window_title()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto scrollbar-hide">
@@ -360,7 +360,7 @@ function escapeHtml(text: string): string {
         <Input
           type="text"
           bind:value={searchQuery}
-          placeholder={getLocale() === "ar" ? "ابحث بالاسم أو الرمز أو النوع..." : "Search units by name, code or type..."}
+          placeholder={m.settings_units_search_placeholder()}
           class="w-full rtl:pr-9 ltr:pl-9 h-9 text-xs bg-background/50"
         />
       </div>
@@ -375,7 +375,7 @@ function escapeHtml(text: string): string {
             onclick={() => viewMode = "tree"}
           >
             <FolderTree size={12} />
-            <span>{getLocale() === "ar" ? "الهيكل الشجري" : "Hierarchy"}</span>
+            <span>{m.settings_units_hierarchy()}</span>
           </Button>
           <Button
             variant={viewMode === "flat" ? "secondary" : "ghost"}
@@ -384,7 +384,7 @@ function escapeHtml(text: string): string {
             onclick={() => viewMode = "flat"}
           >
             <List size={12} />
-            <span>{getLocale() === "ar" ? "قائمة مسطحة" : "Flat List"}</span>
+            <span>{m.settings_units_flat_list()}</span>
           </Button>
         </div>
 
@@ -397,7 +397,7 @@ function escapeHtml(text: string): string {
               class="text-[10px] h-7 px-2"
               onclick={() => toggleExpandAll(true)}
             >
-              {getLocale() === "ar" ? "توسيع الكل" : "Expand All"}
+              {m.settings_units_expand_all()}
             </Button>
             <Button
               variant="outline"
@@ -405,7 +405,7 @@ function escapeHtml(text: string): string {
               class="text-[10px] h-7 px-2"
               onclick={() => toggleExpandAll(false)}
             >
-              {getLocale() === "ar" ? "طي الكل" : "Collapse All"}
+              {m.settings_units_collapse_all()}
             </Button>
           </div>
         {/if}
@@ -415,7 +415,7 @@ function escapeHtml(text: string): string {
     <!-- Add button -->
     <Button variant="lime" class="text-xs h-9 px-4 font-semibold shrink-0 animate-in fade-in zoom-in-95 duration-150" onclick={openCreateSheet}>
       <Plus size={14} class={getLocale() === "ar" ? 'ml-1.5' : 'mr-1.5'} />
-      {getLocale() === "ar" ? "إضافة وحدة" : "Add Unit"}
+      {m.settings_units_add()}
     </Button>
   </div>
 

@@ -100,7 +100,7 @@ function toggleCollapse(yearId: string) {
 </script>
 
 <svelte:head>
-  <title>{getLocale() === "ar" ? "الدورات الأكاديمية" : "Academic Cycles"} | Orbis</title>
+  <title>{m.settings_cycles_window_title()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide">
@@ -109,7 +109,7 @@ function toggleCollapse(yearId: string) {
     <div class="flex items-center gap-2">
       {#if !isLoading}
         <span class="text-[10px] px-2 py-0.5 rounded bg-muted font-mono text-muted-foreground font-bold">
-          {getLocale() === "ar" ? `الدورات الأكاديمية (${cycles.length})` : `Academic Cycles (${cycles.length})`}
+          {m.settings_cycles_count({ count: cycles.length })}
         </span>
       {/if}
     </div>

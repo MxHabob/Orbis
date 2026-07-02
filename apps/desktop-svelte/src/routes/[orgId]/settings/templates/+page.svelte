@@ -277,7 +277,7 @@ async function restoreTemplate(id: string) {
 </script>
 
 <svelte:head>
-  <title>{getLocale() === "ar" ? "قوالب المستندات" : "Document Templates"} | Orbis</title>
+  <title>{m.settings_templates_window_title()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide">
@@ -290,7 +290,7 @@ async function restoreTemplate(id: string) {
           <Search class="absolute start-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             type="text"
-            placeholder={getLocale() === "ar" ? "ابحث بالقوالب..." : "Search templates..."}
+            placeholder={m.settings_templates_search_placeholder()}
             class="ps-9 bg-background/50 h-9 text-xs"
             bind:value={searchQuery}
             oninput={loadTemplates}
@@ -302,14 +302,14 @@ async function restoreTemplate(id: string) {
           <div class="min-w-[140px]">
             <Select type="single" bind:value={filterEntityType} onValueChange={loadTemplates}>
               <SelectTrigger class="h-9 text-xs bg-background/50">
-                {({ all: getLocale() === "ar" ? "كل الكيانات" : "All Entities", enrollment: getLocale() === "ar" ? "تسجيل الطلاب" : "Enrollment", payment: getLocale() === "ar" ? "سندات القبض" : "Payment", exam: getLocale() === "ar" ? "أرقام الجلوس" : "Exam", user: getLocale() === "ar" ? "بطاقات التعريف" : "User" } as any)[filterEntityType] || (getLocale() === "ar" ? "نوع السجل" : "Entity Type")}
+                {({ all: m.settings_templates_filter_entity_all(), enrollment: m.settings_templates_filter_entity_enrollment(), payment: m.settings_templates_filter_entity_payment(), exam: m.settings_templates_filter_entity_exam(), user: m.settings_templates_filter_entity_user() } as any)[filterEntityType] || m.settings_templates_filter_entity_trigger()}
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{getLocale() === "ar" ? "كل الكيانات" : "All Entities"}</SelectItem>
-                <SelectItem value="enrollment">{getLocale() === "ar" ? "تسجيل الطلاب" : "Enrollment"}</SelectItem>
-                <SelectItem value="payment">{getLocale() === "ar" ? "سندات القبض" : "Payment"}</SelectItem>
-                <SelectItem value="exam">{getLocale() === "ar" ? "أرقام الجلوس" : "Exam"}</SelectItem>
-                <SelectItem value="user">{getLocale() === "ar" ? "بطاقات التعريف" : "User"}</SelectItem>
+                <SelectItem value="all">{m.settings_templates_filter_entity_all()}</SelectItem>
+                <SelectItem value="enrollment">{m.settings_templates_filter_entity_enrollment()}</SelectItem>
+                <SelectItem value="payment">{m.settings_templates_filter_entity_payment()}</SelectItem>
+                <SelectItem value="exam">{m.settings_templates_filter_entity_exam()}</SelectItem>
+                <SelectItem value="user">{m.settings_templates_filter_entity_user()}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -318,14 +318,14 @@ async function restoreTemplate(id: string) {
           <div class="min-w-[140px]">
             <Select type="single" bind:value={filterDocType} onValueChange={loadTemplates}>
               <SelectTrigger class="h-9 text-xs bg-background/50">
-                {({ all: getLocale() === "ar" ? "كل الأنواع" : "All Doc Types", CERTIFICATE: getLocale() === "ar" ? "شهادات" : "Certificates", ID_CARD: getLocale() === "ar" ? "بطاقات تعريف" : "ID Cards", RECEIPT: getLocale() === "ar" ? "سندات" : "Receipts", EXAM_CARD: getLocale() === "ar" ? "بطاقات جلوس" : "Seating Cards" } as any)[filterDocType] || (getLocale() === "ar" ? "نوع المستند" : "Document Type")}
+                {({ all: m.settings_templates_filter_doc_all(), CERTIFICATE: m.settings_templates_filter_doc_certificate(), ID_CARD: m.settings_templates_filter_doc_id_card(), RECEIPT: m.settings_templates_filter_doc_receipt(), EXAM_CARD: m.settings_templates_filter_doc_exam_card() } as any)[filterDocType] || m.settings_templates_filter_doc_trigger()}
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{getLocale() === "ar" ? "كل الأنواع" : "All Doc Types"}</SelectItem>
-                <SelectItem value="CERTIFICATE">{getLocale() === "ar" ? "شهادات" : "Certificates"}</SelectItem>
-                <SelectItem value="ID_CARD">{getLocale() === "ar" ? "بطاقات تعريف" : "ID Cards"}</SelectItem>
-                <SelectItem value="RECEIPT">{getLocale() === "ar" ? "سندات" : "Receipts"}</SelectItem>
-                <SelectItem value="EXAM_CARD">{getLocale() === "ar" ? "بطاقات جلوس" : "Seating Cards"}</SelectItem>
+                <SelectItem value="all">{m.settings_templates_filter_doc_all()}</SelectItem>
+                <SelectItem value="CERTIFICATE">{m.settings_templates_filter_doc_certificate()}</SelectItem>
+                <SelectItem value="ID_CARD">{m.settings_templates_filter_doc_id_card()}</SelectItem>
+                <SelectItem value="RECEIPT">{m.settings_templates_filter_doc_receipt()}</SelectItem>
+                <SelectItem value="EXAM_CARD">{m.settings_templates_filter_doc_exam_card()}</SelectItem>
               </SelectContent>
             </Select>
           </div>
