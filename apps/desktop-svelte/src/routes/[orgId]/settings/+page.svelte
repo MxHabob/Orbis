@@ -17,7 +17,8 @@ import AvatarUpload from "$lib/components/shared/avatar-upload.svelte";
 import LocaleSettings from "$lib/components/shared/locale-settings.svelte";
 import TimezoneSettings from "$lib/components/shared/timezone-settings.svelte";
 import * as m from "$lib/paraglide/messages";
-import { getLocale } from "$lib/paraglide/runtime";
+import { getLocale, localizeHref } from "$lib/paraglide/runtime";
+import { goto } from "$app/navigation";
 let orgId = $derived(page.params.orgId);
 
 // Form state
@@ -34,6 +35,18 @@ let timezone = $state("Asia/Aden");
 let locale = $state("ar");
 let dateFormat = $state("YYYY-MM-DD");
 let hijriEnabled = $state(false);
+
+async function handleLanguageChange(newLocale: string) {
+  const lang = newLocale.split("-")[0]?.toLowerCase() || "ar";
+  const targetLang = lang === "ar" ? "ar" : "en";
+
+  if (targetLang === getLocale()) return;
+
+  locale = newLocale;
+
+  const localizedUrl = localizeHref(page.url.pathname, { locale: targetLang });
+  await goto(localizedUrl);
+}
 
 async function loadOrganization() {
   if (!orgId) return;
@@ -279,6 +292,7 @@ const dateFormats = [
               title={m.settings_general_locale()}
               description={m.settings_general_locale_desc()}
               bind:currentLocale={locale}
+              onchange={handleLanguageChange}
             />
 
             <!-- Date Format -->

@@ -9,6 +9,19 @@ import * as m from "$lib/paraglide/messages";
 import { onboardingState } from "../onboarding-state.svelte";
 import LocaleSettings from "$lib/components/shared/locale-settings.svelte";
 import TimezoneSettings from "$lib/components/shared/timezone-settings.svelte";
+import { getLocale, localizeHref } from "$lib/paraglide/runtime";
+import { goto } from "$app/navigation";
+import { page } from "$app/state";
+
+async function handleLanguageChange(newLocale: string) {
+  const lang = newLocale.split("-")[0]?.toLowerCase() || "ar";
+  const targetLang = lang === "ar" ? "ar" : "en";
+
+  if (targetLang === getLocale()) return;
+
+  const localizedUrl = localizeHref(page.url.pathname, { locale: targetLang });
+  await goto(localizedUrl);
+}
 </script>
 
 <div class="max-w-3xl space-y-6">
@@ -40,6 +53,7 @@ import TimezoneSettings from "$lib/components/shared/timezone-settings.svelte";
         title={m.settings_general_locale()}
         description={m.settings_general_locale_desc()}
         bind:currentLocale={onboardingState.locale}
+        onchange={handleLanguageChange}
       />
 
       <!-- Currency -->

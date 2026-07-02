@@ -5,8 +5,9 @@
 <script lang="ts">
 import { onMount } from "svelte";
 import { goto } from "$app/navigation";
+import { page } from "$app/state";
 import { authStore } from "$lib/stores";
-import { localizeHref } from "$lib/paraglide/runtime";
+import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import OnboardingWizard from "$lib/components/onboarding/onboarding-wizard.svelte";
 import { onboardingState } from "$lib/components/onboarding/onboarding-state.svelte";
 
@@ -24,6 +25,15 @@ onMount(async () => {
 
   onboardingState.load();
   await onboardingState.loadExistingOrg(authStore.orgId);
+
+  // Redirect to the correct localized URL based on onboardingState.locale
+  const currentUrlLocale = getLocale();
+  const stateLang = onboardingState.locale.split("-")[0]?.toLowerCase() || "ar";
+  const targetLang = stateLang === "ar" ? "ar" : "en";
+  if (currentUrlLocale !== targetLang) {
+    const localizedUrl = localizeHref(page.url.pathname, { locale: targetLang });
+    goto(localizedUrl, { replaceState: true });
+  }
 
   if (onboardingState.rooms.length === 0) {
     onboardingState.resetRoomsToDefault();
