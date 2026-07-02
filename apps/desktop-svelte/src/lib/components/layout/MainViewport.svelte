@@ -130,12 +130,14 @@ function getFallbackLabel(
                             viewBox="0 0 24 24"
                             fill="none"
                             stroke="currentColor"
-                            stroke-width="2.5"
+                            stroke-width="2"
                             stroke-linecap="round"
                             stroke-linejoin="round"
                             class="transition-transform duration-200 rtl:rotate-180"
                           >
-                            <path d="m6 17 5-5-5-5M13 17l5-5-5-5" />
+                            <rect width="18" height="18" x="3" y="3" rx="2" />
+                            <path d="M9 3v18" />
+                            <path d="m14 9 3 3-3 3" />
                           </svg>
 						</Button>
 						<span class="vertical-text text-[10px] font-bold text-muted-foreground tracking-wider uppercase whitespace-nowrap">
