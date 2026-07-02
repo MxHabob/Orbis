@@ -361,17 +361,13 @@ let baseCurrencyCode = $derived(
 
 <div class="h-full w-full overflow-y-auto bg-background p-6 flex flex-col gap-6 scrollbar-hide">
   <!-- Header -->
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-5 select-none border-b border-border/40 font-sans">
-    <div class="flex flex-col gap-1 text-start">
-      <h1 class="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-        <Coins class="text-primary" size={20} />
-        <span>{getLocale() === "ar" ? "إدارة العملات وأسعار الصرف" : "Currencies & Exchange Rates"}</span>
-      </h1>
-      <p class="text-xs text-muted-foreground">
-        {getLocale() === "ar" 
-          ? "تهيئة العملات المقبولة وتعديل أسعار الصرف اليومية مقابل العملة المحلية الأساسية." 
-          : "Configure accepted currencies and manage exchange rates relative to the base currency."}
-      </p>
+  <div class="flex items-center justify-between gap-4 pb-5 select-none border-b border-border/40 font-sans">
+    <div class="flex items-center gap-2">
+      {#if !isLoading}
+        <span class="text-[10px] px-2 py-0.5 rounded bg-muted font-mono text-muted-foreground font-bold">
+          {getLocale() === "ar" ? `العملات (${currencies.length})` : `Currencies (${currencies.length})`}
+        </span>
+      {/if}
     </div>
 
     <!-- Actions -->

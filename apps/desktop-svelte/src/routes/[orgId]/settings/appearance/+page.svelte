@@ -73,30 +73,24 @@ const locales = [
 </script>
 
 <svelte:head>
-  <title>{m.settings_appearance_title()} | Orbis</title>
+  <title>{getLocale() === "ar" ? "المظهر" : "Appearance"} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide">
-  <!-- Header -->
-    <div class="flex flex-col gap-1 text-start">
-      <h1 class="text-xl font-bold tracking-tight text-foreground">{m.settings_appearance_title()}</h1>
-      <p class="text-xs text-muted-foreground">{m.settings_appearance_desc()}</p>
+  <!-- Theme Picker -->
+  <div class="flex flex-col gap-6 text-start">
+    <div class="border-b border-border/60 pb-3">
+      <h2 class="text-sm font-semibold text-foreground">{m.settings_appearance_theme()}</h2>
     </div>
 
-    <!-- Theme Picker -->
-    <div class="flex flex-col gap-6 text-start">
-      <div class="border-b border-border/60 pb-3">
-        <h2 class="text-sm font-semibold text-foreground">{m.settings_appearance_theme()}</h2>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <!-- Light Theme -->
-        <button
-          type="button"
-          class="flex flex-col gap-3 p-4 rounded-xl border text-start transition-all cursor-pointer select-none
-            {themeStore.current === 'light' ? 'bg-primary/5 border-primary shadow-[0_0_8px_-2px_var(--color-primary)]' : 'bg-background hover:bg-accent border-border text-muted-foreground'}"
-          onclick={() => handleThemeChange("light")}
-        >
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <!-- Light Theme -->
+      <button
+        type="button"
+        class="flex flex-col gap-3 p-4 rounded-xl border text-start transition-all cursor-pointer select-none
+          {themeStore.current === 'light' ? 'bg-primary/5 border-primary shadow-[0_0_8px_-2px_var(--color-primary)]' : 'bg-background hover:bg-accent border-border text-muted-foreground'}"
+        onclick={() => handleThemeChange("light")}
+      >
           <div class="flex items-center gap-2">
             <Sun size={16} class={themeStore.current === 'light' ? 'text-primary' : 'text-muted-foreground'} />
             <span class="text-xs font-semibold text-foreground">{m.settings_appearance_theme_light()}</span>

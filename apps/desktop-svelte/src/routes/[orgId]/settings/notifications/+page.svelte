@@ -53,17 +53,22 @@ async function handleSave(e: Event) {
 </script>
 
 <svelte:head>
-  <title>{m.settings_notifications_title()} | Orbis</title>
+  <title>{getLocale() === "ar" ? "الإشعارات" : "Notifications"} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide">
-  <!-- Header -->
-    <div class="flex flex-col gap-1 text-start">
-      <h1 class="text-xl font-bold tracking-tight text-foreground">{m.settings_notifications_title()}</h1>
-      <p class="text-xs text-muted-foreground">{m.settings_notifications_desc()}</p>
-    </div>
-
     <form onsubmit={handleSave} class="flex flex-col gap-10">
+      <!-- Header Actions -->
+      <div class="flex items-center justify-end gap-3 pb-5 border-b border-border/40 w-full select-none font-sans">
+        <Button
+          type="submit"
+          variant="lime"
+          class="px-6 font-semibold h-9 text-xs"
+          disabled={isSaving}
+        >
+          {isSaving ? m.settings_general_saving() : m.settings_general_save()}
+        </Button>
+      </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
         <!-- In-App Notifications -->
         <div class="flex flex-col gap-6 text-start">
@@ -192,18 +197,6 @@ async function handleSave(e: Event) {
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- Action buttons -->
-      <div class="flex justify-end gap-3 pb-8 border-t border-border/40 pt-6">
-        <Button
-          type="submit"
-          variant="lime"
-          class="px-6 font-semibold h-9 text-xs"
-          disabled={isSaving}
-        >
-          {isSaving ? m.settings_general_saving() : m.settings_general_save()}
-        </Button>
       </div>
     </form>
 </div>

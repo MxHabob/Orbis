@@ -348,14 +348,7 @@ function toggleAction(ruleIndex: number, action: string) {
   <div class="flex-1 overflow-y-auto scrollbar-hide">
     <div class="p-6 pb-28 flex flex-col gap-6">
       <!-- Header Area -->
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 font-sans border-b border-border/40 pb-5 select-none">
-        <div class="flex flex-col gap-1 text-start">
-          <h1 class="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <Shield size={20} class="text-primary" />
-            <span>{getLocale() === "ar" ? "مدير صلاحيات الأدوار" : "Role Permissions Manager"}</span>
-          </h1>
-        </div>
-
+      <div class="flex items-center justify-end gap-4 font-sans border-b border-border/40 pb-5 select-none">
         <div class="flex items-center gap-3">
           <Button
             variant="outline"

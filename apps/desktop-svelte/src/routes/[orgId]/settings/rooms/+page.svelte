@@ -111,22 +111,18 @@ function getRoomTypeBadgeClass(typeStr: string): string {
 </script>
 
 <svelte:head>
-  <title>{m.rooms_title()} | Orbis</title>
+  <title>{getLocale() === "ar" ? "الغرف والقاعات" : "Rooms & Halls"} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide">
   <!-- Header Area -->
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 font-sans border-b border-border/40 pb-5">
-    <div class="flex flex-col gap-1 text-start">
-      <h1 class="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-        <span>{m.rooms_title()}</span>
-        {#if !isLoading}
-          <span class="text-[10px] px-1.5 py-0.5 rounded bg-muted font-mono text-muted-foreground font-bold">
-            {filteredRooms.length}
-          </span>
-        {/if}
-      </h1>
-      <p class="text-xs text-muted-foreground">{m.rooms_desc()}</p>
+  <div class="flex items-center justify-between gap-4 font-sans border-b border-border/40 pb-5">
+    <div class="flex items-center gap-2">
+      {#if !isLoading}
+        <span class="text-[10px] px-2 py-0.5 rounded bg-muted font-mono text-muted-foreground font-bold">
+          {getLocale() === "ar" ? `الغرف والقاعات (${filteredRooms.length})` : `Rooms & Halls (${filteredRooms.length})`}
+        </span>
+      {/if}
     </div>
 
     <Button variant="lime" class="text-xs h-9 px-4 font-semibold" onclick={openCreateSheet}>

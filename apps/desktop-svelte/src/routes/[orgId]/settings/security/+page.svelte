@@ -98,15 +98,10 @@ onMount(() => {
 </script>
 
 <svelte:head>
-  <title>{m.settings_security_title()} | Orbis</title>
+  <title>{getLocale() === "ar" ? "الأمان" : "Security"} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide">
-  <!-- Header -->
-    <div class="flex flex-col gap-1 text-start">
-      <h1 class="text-xl font-bold tracking-tight text-foreground">{m.settings_security_title()}</h1>
-      <p class="text-xs text-muted-foreground">{m.settings_security_desc()}</p>
-    </div>
 
     <!-- Change Password Form -->
     <div class="flex flex-col gap-6 text-start">

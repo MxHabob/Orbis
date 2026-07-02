@@ -100,31 +100,27 @@ function toggleCollapse(yearId: string) {
 </script>
 
 <svelte:head>
-  <title>{m.settings_cycles_title()} | Orbis</title>
+  <title>{getLocale() === "ar" ? "الدورات الأكاديمية" : "Academic Cycles"} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide">
   <!-- Header Area -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 font-sans border-b border-border/40 pb-5">
-      <div class="flex flex-col gap-1 text-start">
-        <h1 class="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-          <span>{m.settings_cycles_title()}</span>
-          {#if !isLoading}
-            <span class="text-[10px] px-1.5 py-0.5 rounded bg-muted font-mono text-muted-foreground font-bold">
-              {cycles.length}
-            </span>
-          {/if}
-        </h1>
-        <p class="text-xs text-muted-foreground">{m.settings_cycles_desc()}</p>
-      </div>
-
-      <div class="flex items-center gap-2 shrink-0 flex-nowrap">
-        <Button variant="lime" class="text-xs h-9 px-4 font-semibold" onclick={openCreateSheet}>
-          <Plus size={14} class={getLocale() === "ar" ? 'ml-1.5' : 'mr-1.5'} />
-          {m.settings_cycles_add()}
-        </Button>
-      </div>
+  <div class="flex items-center justify-between gap-4 font-sans border-b border-border/40 pb-5">
+    <div class="flex items-center gap-2">
+      {#if !isLoading}
+        <span class="text-[10px] px-2 py-0.5 rounded bg-muted font-mono text-muted-foreground font-bold">
+          {getLocale() === "ar" ? `الدورات الأكاديمية (${cycles.length})` : `Academic Cycles (${cycles.length})`}
+        </span>
+      {/if}
     </div>
+
+    <div class="flex items-center gap-2 shrink-0 flex-nowrap">
+      <Button variant="lime" class="text-xs h-9 px-4 font-semibold" onclick={openCreateSheet}>
+        <Plus size={14} class={getLocale() === "ar" ? 'ml-1.5' : 'mr-1.5'} />
+        {m.settings_cycles_add()}
+      </Button>
+    </div>
+  </div>
 
     <!-- Main Content -->
     {#if isLoading}

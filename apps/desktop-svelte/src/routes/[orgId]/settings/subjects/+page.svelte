@@ -151,15 +151,14 @@ function getSubjectTheme(nameStr: string) {
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6">
 	<!-- Header & Search Controls -->
-	<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 font-sans">
-		<h2 class="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
-			<span>{m.subjects_registered_title()}</span>
+	<div class="flex items-center justify-between gap-4 font-sans border-b border-border/40 pb-5">
+		<div class="flex items-center gap-2">
 			{#if !isLoading}
-				<span class="text-[10px] px-1.5 py-0.5 rounded bg-muted font-mono text-muted-foreground">
-					{subjects.length}
+				<span class="text-[10px] px-2 py-0.5 rounded bg-muted font-mono text-muted-foreground font-bold">
+					{getLocale() === "ar" ? `المواد الدراسية (${subjects.length})` : `Subjects (${subjects.length})`}
 				</span>
 			{/if}
-		</h2>
+		</div>
 
 		<div class="flex items-center gap-2 shrink-0">
 			<!-- Search -->

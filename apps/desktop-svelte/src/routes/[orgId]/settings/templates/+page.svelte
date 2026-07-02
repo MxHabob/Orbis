@@ -277,16 +277,19 @@ async function restoreTemplate(id: string) {
 </script>
 
 <svelte:head>
-  <title>{m.templates_title()} | Orbis</title>
+  <title>{getLocale() === "ar" ? "قوالب المستندات" : "Document Templates"} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide">
   <div class="max-w-6xl mx-auto p-6 flex flex-col gap-6">
     <!-- Header Action Bar -->
     <div class="flex items-center justify-between gap-4 flex-nowrap border-b border-border/60 pb-4">
-      <div class="flex flex-col gap-1 text-start">
-        <h1 class="text-xl font-bold tracking-tight text-foreground">{m.templates_title()}</h1>
-        <p class="text-xs text-muted-foreground">{m.templates_desc()}</p>
+      <div class="flex items-center gap-2">
+        {#if !isLoading}
+          <span class="text-[10px] px-2 py-0.5 rounded bg-muted font-mono text-muted-foreground font-bold">
+            {getLocale() === "ar" ? `قوالب المستندات (${templates.length})` : `Templates (${templates.length})`}
+          </span>
+        {/if}
       </div>
       <div class="flex items-center gap-2 flex-nowrap shrink-0">
         <Button variant="lime" size="sm" onclick={() => (isCreateDialogOpen = true)}>

@@ -106,16 +106,10 @@ const timezones = [
 </script>
 
 <svelte:head>
-  <title>{m.settings_general_title()} | Orbis</title>
+  <title>{getLocale() === "ar" ? "إعدادات المؤسسة" : "Organization Settings"} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide">
-  <!-- Header -->
-    <div class="flex flex-col gap-1 text-start">
-      <h1 class="text-xl font-bold tracking-tight text-foreground">{m.settings_general_title()}</h1>
-      <p class="text-xs text-muted-foreground">{m.settings_general_desc()}</p>
-    </div>
-
     {#if isLoading}
       <div class="flex flex-col gap-8">
         {@render SectionSkeleton()}
@@ -123,6 +117,17 @@ const timezones = [
       </div>
     {:else}
       <form onsubmit={handleSave} class="flex flex-col gap-10">
+        <!-- Header Actions -->
+        <div class="flex items-center justify-end gap-3 pb-5 border-b border-border/40 w-full select-none">
+          <Button
+            type="submit"
+            variant="lime"
+            class="px-6 font-semibold h-9 text-xs"
+            disabled={isSaving}
+          >
+            {isSaving ? m.settings_general_saving() : m.settings_general_save()}
+          </Button>
+        </div>
         <!-- Section 1: Org Info & Branding -->
         <div class="flex flex-col gap-6 text-start">
           <div class="border-b border-border/60 pb-3">
@@ -292,18 +297,6 @@ const timezones = [
               disabled={isSaving}
             />
           </div>
-        </div>
-
-        <!-- Submit Actions -->
-        <div class="flex justify-end gap-3 pb-8 border-t border-border/40 pt-6">
-          <Button
-            type="submit"
-            variant="lime"
-            class="px-6 font-semibold h-9 text-xs"
-            disabled={isSaving}
-          >
-            {isSaving ? m.settings_general_saving() : m.settings_general_save()}
-          </Button>
         </div>
       </form>
     {/if}

@@ -140,24 +140,10 @@ const filtered = $derived(
 </script>
 
 <svelte:head>
-  <title>{m.settings_ordering_title()} | Orbis</title>
+  <title>{getLocale() === "ar" ? "ترتيب الطلاب" : "Student Ranking"} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide select-none animate-in fade-in duration-200">
-  <!-- Header Area -->
-  <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 font-sans border-b border-border/40 pb-5">
-    <div class="flex flex-col gap-1 text-start w-full">
-      <h1 class="text-xl font-bold tracking-tight text-foreground flex items-center gap-2 justify-start">
-        <span>{m.settings_ordering_title()}</span>
-        {#if totalOrdered > 0}
-          <span class="text-[10px] px-1.5 py-0.5 rounded bg-muted font-mono text-muted-foreground font-bold">
-            {totalOrdered}
-          </span>
-        {/if}
-      </h1>
-      <p class="text-xs text-muted-foreground text-start w-full">{m.settings_ordering_desc()}</p>
-    </div>
-  </div>
 
   <!-- Controls section -->
   <div class="flex flex-col lg:flex-row gap-6 justify-between items-stretch lg:items-end bg-card border border-border rounded-xl p-6">
