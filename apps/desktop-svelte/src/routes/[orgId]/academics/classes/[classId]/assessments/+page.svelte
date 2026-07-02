@@ -123,7 +123,7 @@ async function loadAssessments() {
     const list = await commands.assessments.getByClass({
       classId,
       subjectId: selectedSubjectId || undefined,
-      termId: selectedSemesterId || activeCycleId || undefined,
+      termId: selectedSemesterId || activeCycleId || "",
       month:
         selectedMonthId !== "all" ? getMonthNumber(selectedMonthId) : undefined,
     });

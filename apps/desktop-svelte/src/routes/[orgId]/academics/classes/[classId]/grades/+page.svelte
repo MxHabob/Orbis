@@ -50,6 +50,7 @@ let isSaving = $state(false);
 
 // Filters
 let selectedSubjectId = $state<string>("");
+let activeCycleId = $state<string>("");
 let semesters = $state<any[]>([]);
 let selectedSemesterId = $state<string>("");
 
@@ -71,14 +72,16 @@ async function loadData() {
     subjects = subjectList;
     cycles = cycleList;
 
-    // Set default semester
     const activeYear =
       cycleList.find(
         (c) =>
           c.type === "year" && (c.is_current === 1 || c.is_current === true),
-      ) || cycleList.find((c) => c.type === "year");
+      ) ||
+      cycleList.find((c) => c.type === "year") ||
+      cycleList[0];
 
     if (activeYear) {
+      activeCycleId = String(activeYear.id);
       semesters = cycleList.filter(
         (c) => c.parent_id === activeYear.id && c.type === "term",
       );
@@ -105,7 +108,7 @@ async function loadAssessments() {
     const list = await commands.assessments.getByClass({
       classId,
       subjectId: selectedSubjectId || undefined,
-      termId: selectedSemesterId || undefined,
+      termId: selectedSemesterId || activeCycleId || "",
     });
     assessments = list;
 
@@ -326,16 +329,19 @@ const maxTotal = $derived(
       <Users size={40} class="text-muted-foreground/30" />
       <p class="text-xs font-semibold">لا يوجد طلاب مسجلون في هذا الفصل</p>
     </div>
-  {:else if assessments.length === 0 && selectedSubjectId}
-    <div
-      class="flex flex-col items-center justify-center py-12 text-muted-foreground border border-border border-dashed rounded-xl gap-3"
-    >
-      <ClipboardList size={40} class="text-muted-foreground/30" />
-      <p class="text-xs font-semibold">
-        لا توجد تقييمات لهذه المادة. أضف تقييمات أولاً من تبويب "التقييمات".
-      </p>
-    </div>
   {:else}
+    <!-- Info banner when no assessments exist -->
+    {#if assessments.length === 0 && selectedSubjectId}
+      <div
+        class="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/30 text-xs text-muted-foreground"
+      >
+        <ClipboardList size={16} class="shrink-0" />
+        <span>
+          لا توجد تقييمات لهذه المادة بعد. أضف تقييمات من تبويب "التقييمات" لتتمكن من إدخال الدرجات.
+        </span>
+      </div>
+    {/if}
+
     <div
       class="border border-border rounded-xl overflow-auto"
       in:fade={{ duration: 200 }}
@@ -359,12 +365,14 @@ const maxTotal = $derived(
                 </div>
               </TableHead>
             {/each}
-            <TableHead class="text-xs font-bold text-center min-w-[80px]">
-              {m.grades_col_total ? m.grades_col_total() : "المجموع"}
-              <span class="text-[9px] text-muted-foreground font-normal block">
-                /{maxTotal}
-              </span>
-            </TableHead>
+            {#if assessments.length > 0}
+              <TableHead class="text-xs font-bold text-center min-w-[80px]">
+                {m.grades_col_total ? m.grades_col_total() : "المجموع"}
+                <span class="text-[9px] text-muted-foreground font-normal block">
+                  /{maxTotal}
+                </span>
+              </TableHead>
+            {/if}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -398,28 +406,30 @@ const maxTotal = $derived(
                   />
                 </TableCell>
               {/each}
-              <TableCell class="text-center">
-                <div class="flex flex-col items-center gap-0.5">
-                  <span
-                    class="text-xs font-bold font-mono {percentage >= 90
-                      ? 'text-emerald-500'
-                      : percentage >= 75
-                        ? 'text-primary'
-                        : percentage >= 50
-                          ? 'text-amber-500'
-                          : percentage > 0
-                            ? 'text-destructive'
-                            : 'text-muted-foreground'}"
-                  >
-                    {total || "—"}
-                  </span>
-                  {#if total > 0}
-                    <span class="text-[9px] text-muted-foreground"
-                      >{percentage}%</span
+              {#if assessments.length > 0}
+                <TableCell class="text-center">
+                  <div class="flex flex-col items-center gap-0.5">
+                    <span
+                      class="text-xs font-bold font-mono {percentage >= 90
+                        ? 'text-emerald-500'
+                        : percentage >= 75
+                          ? 'text-primary'
+                          : percentage >= 50
+                            ? 'text-amber-500'
+                            : percentage > 0
+                              ? 'text-destructive'
+                              : 'text-muted-foreground'}"
                     >
-                  {/if}
-                </div>
-              </TableCell>
+                      {total || "—"}
+                    </span>
+                    {#if total > 0}
+                      <span class="text-[9px] text-muted-foreground"
+                        >{percentage}%</span
+                      >
+                    {/if}
+                  </div>
+                </TableCell>
+              {/if}
             </TableRow>
           {/each}
         </TableBody>
