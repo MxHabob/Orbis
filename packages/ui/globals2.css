@@ -276,17 +276,6 @@
       0 0 0 1px rgb(0 0 0 / 0.03),
       0 1px 3px 0 rgb(0 0 0 / 0.08),
       0 1px 2px -1px rgb(0 0 0 / 0.04);
-    transition:
-      box-shadow 0.2s ease,
-      transform 0.2s ease;
-  }
-
-  .card-tactile:hover {
-    box-shadow:
-      0 0 0 1px rgb(0 0 0 / 0.04),
-      0 4px 6px -1px rgb(0 0 0 / 0.08),
-      0 2px 4px -2px rgb(0 0 0 / 0.04);
-    transform: translateY(-1px);
   }
 
   .dark .card-tactile {
@@ -296,7 +285,26 @@
       0 1px 2px -1px rgb(0 0 0 / 0.2);
   }
 
-  .dark .card-tactile:hover {
+  .card-tactile-interactive {
+    @apply card-tactile;
+    transition:
+      box-shadow 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  .card-tactile-interactive:hover {
+    box-shadow:
+      0 0 0 1px rgb(0 0 0 / 0.04),
+      0 4px 6px -1px rgb(0 0 0 / 0.08),
+      0 2px 4px -2px rgb(0 0 0 / 0.04);
+    transform: translateY(-1px);
+  }
+
+  .dark .card-tactile-interactive {
+    /* inherit card-tactile dark shadow */
+  }
+
+  .dark .card-tactile-interactive:hover {
     box-shadow:
       0 0 0 1px rgb(255 255 255 / 0.06),
       0 4px 6px -1px rgb(0 0 0 / 0.4),

@@ -3,11 +3,15 @@ import { cn } from "../utils";
 
 const Card = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
+  React.HTMLAttributes<HTMLDivElement> & { interactive?: boolean }
+>(({ className, interactive = false, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("card-tactile text-card-foreground", className)}
+    className={cn(
+      interactive ? "card-tactile-interactive" : "card-tactile",
+      "text-card-foreground",
+      className,
+    )}
     {...props}
   />
 ));

@@ -294,7 +294,7 @@ async function restoreTemplate(id: string) {
           class="bg-background/50 max-w-md"
         />
 
-        <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+        <div class="flex flex-wrap items-center gap-3 w-full">
           <!-- Entity Type Select -->
           <div class="min-w-[140px]">
             <Select type="single" bind:value={filterEntityType} onValueChange={loadTemplates}>
@@ -365,7 +365,7 @@ async function restoreTemplate(id: string) {
     {:else}
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-start">
         {#each templates as template (template.id)}
-          <Card class="flex flex-col h-full hover:border-primary/40 transition-all duration-200">
+          <Card class="flex flex-col h-full">
             <CardHeader class="pb-3">
               <div class="flex items-start justify-between gap-2">
                 <Badge variant={template.status === 'published' ? 'lime' : (template.status === 'archived' ? 'outline' : 'secondary')}>
