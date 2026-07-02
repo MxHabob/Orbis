@@ -7,6 +7,8 @@ import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
 import * as m from "$lib/paraglide/messages";
 import { onboardingState } from "../onboarding-state.svelte";
+import LocaleSettings from "$lib/components/shared/locale-settings.svelte";
+import TimezoneSettings from "$lib/components/shared/timezone-settings.svelte";
 </script>
 
 <div class="max-w-3xl space-y-6">
@@ -17,6 +19,49 @@ import { onboardingState } from "../onboarding-state.svelte";
     <p class="text-muted-foreground text-sm">
       {m.onboarding_calendar_desc()}
     </p>
+  </div>
+
+  <!-- Regional Settings Section -->
+  <div class="border border-border rounded-xl overflow-hidden flex flex-col bg-card">
+    <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none font-serif">
+      {m.settings_general_section_regional()}
+    </div>
+
+    <div class="flex flex-col">
+      <!-- Timezone -->
+      <TimezoneSettings
+        title={m.settings_general_timezone()}
+        description={m.settings_general_timezone_desc()}
+        bind:currentTimezone={onboardingState.timezone}
+      />
+
+      <!-- Language -->
+      <LocaleSettings
+        title={m.settings_general_locale()}
+        description={m.settings_general_locale_desc()}
+        bind:currentLocale={onboardingState.locale}
+      />
+
+      <!-- Currency -->
+      <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 last:border-b-0">
+        <div class="flex flex-col gap-1 text-start">
+          <Label for="onboarding_currency" class="text-xs font-semibold text-foreground">
+            {m.settings_general_currency()}
+          </Label>
+          <span class="text-[11px] text-muted-foreground leading-relaxed">{m.settings_general_currency_desc()}</span>
+        </div>
+        <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
+          <Input
+            id="onboarding_currency"
+            type="text"
+            bind:value={onboardingState.currency}
+            placeholder={m.settings_general_currency_placeholder()}
+            class="uppercase font-mono w-full text-start h-9 bg-background"
+            required
+          />
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Academic Year Section -->

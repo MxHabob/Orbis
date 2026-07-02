@@ -15,6 +15,32 @@ import type {
   OnboardingPayload,
 } from "./onboarding-types";
 
+function detectTimezone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Aden";
+  } catch {
+    return "Asia/Aden";
+  }
+}
+
+function detectLocale(): string {
+  try {
+    const lang = navigator.language || (navigator.languages && navigator.languages[0]) || "ar";
+    const cleanLang = lang.split("-")[0]?.toLowerCase();
+    return cleanLang === "en" || cleanLang === "ar" ? cleanLang : "ar";
+  } catch {
+    return "ar";
+  }
+}
+
+function detectCurrency(timezone: string): string {
+  if (timezone.includes("Riyadh") || timezone.includes("Saudi")) return "SAR";
+  if (timezone.includes("Dubai") || timezone.includes("Uae")) return "AED";
+  if (timezone.includes("Cairo") || timezone.includes("Egypt")) return "EGP";
+  if (timezone.includes("Aden") || timezone.includes("Yemen")) return "YER";
+  return "YER";
+}
+
 // ── Default Data ─────────────────────────────────────────────────────
 
 const DEFAULT_GRADE_LEVELS: GradeLevel[] = [
@@ -227,9 +253,9 @@ class OnboardingState {
   orgNameAr = $state("مدرسة صنعاء النموذجية");
   rootUnitName = $state("Sanaa Model School");
   rootUnitNameAr = $state("مدرسة صنعاء النموذجية");
-  timezone = $state("Asia/Aden");
-  locale = $state("ar");
-  currency = $state("YER");
+  timezone = $state(detectTimezone());
+  locale = $state(detectLocale());
+  currency = $state(detectCurrency(detectTimezone()));
 
   // Step 1: Academic Calendar
   academicYearName = $state("Academic Year 1447 Hijri");
@@ -350,9 +376,9 @@ class OnboardingState {
         this.orgNameAr = org.name_ar || org.name;
         this.rootUnitName = org.name;
         this.rootUnitNameAr = org.name_ar || org.name;
-        this.timezone = org.timezone || "Asia/Aden";
-        this.locale = org.locale || "ar";
-        this.currency = org.currency || "YER";
+        this.timezone = org.timezone || detectTimezone();
+        this.locale = org.locale || detectLocale();
+        this.currency = org.currency || detectCurrency(this.timezone);
         this.save();
       }
     } catch (e) {
