@@ -22,6 +22,7 @@ import {
 import { fly } from "svelte/transition";
 import { getLocale } from "$lib/paraglide/runtime";
 import { isDesktopApp } from "$lib/services/ipc";
+import { toast } from "svelte-sonner";
 
 let { isStandalone = false }: { isStandalone?: boolean } = $props();
 
@@ -56,28 +57,16 @@ function handleClose() {
 async function openStandaloneWindow() {
   if (!isDesktopApp()) return;
   try {
-    const { WebviewWindow } = await import("@tauri-apps/api/webviewWindow");
+    const { commands } = await import("$lib/services/ipc");
     
     // Close the current sidebar overlay
     uiStore.setAskOrbis(false);
     
-    // Create standalone window
-    const webview = new WebviewWindow("orbis-agent", {
-      url: "/index.html?window=agent",
-      title: "Orbis Agent",
-      width: 420,
-      height: 650,
-      resizable: true,
-      shadow: true,
-      decorations: false, // We use custom TitleBar!
-      parent: "main",
-    });
-    
-    webview.once("tauri://created", () => {
-      console.log("Standalone agent window created successfully!");
-    });
-  } catch (e) {
+    // Create standalone window securely via Rust backend
+    await commands.window.openAgent();
+  } catch (e: any) {
     console.error("Failed to open standalone window:", e);
+    toast.error(`Failed to open window: ${e?.message || e}`);
   }
 }
 

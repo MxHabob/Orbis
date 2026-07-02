@@ -7,8 +7,6 @@ import { themeStore } from "$lib/stores";
 import { isDesktopApp } from "$lib/services/ipc";
 import { Toaster } from "svelte-sonner";
 import { onMount } from "svelte";
-import TitleBar from "$lib/components/layout/TitleBar.svelte";
-import SearchModal from "$lib/components/layout/SearchModal.svelte";
 import "./layout.css";
 import favicon from "$lib/assets/favicon.svg";
 
@@ -32,17 +30,9 @@ onMount(() => {
 	<title>Orbis</title>
 </svelte:head>
 
-<div class="flex flex-col h-screen w-screen overflow-hidden bg-background">
-	{#if isDesktopApp()}
-		<TitleBar />
-	{/if}
-	<div class="flex-1 flex flex-col min-h-0 overflow-hidden relative">
-		{@render children()}
-	</div>
-</div>
+{@render children()}
 
 <Toaster position="bottom-center" expand={true} duration={5000} closeButton={true} />
-<SearchModal />
 
 <!-- Hidden locale links for paraglide -->
 <div style="display:none">

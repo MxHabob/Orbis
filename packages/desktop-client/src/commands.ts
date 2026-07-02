@@ -848,6 +848,7 @@ export const commands = {
   window: {
     show: () => invoke<void>("show_window"),
     checkForUpdates: () => invoke<void>("check_for_updates"),
+    openAgent: () => invoke<void>("open_agent_window"),
   },
 } as const;
 

@@ -44,6 +44,36 @@ fn show_window(window: tauri::Window) -> Result<(), String> {
 }
 
 #[tauri::command]
+async fn open_agent_window(app: tauri::AppHandle) -> Result<(), String> {
+    if let Some(existing) = app.get_webview_window("orbis-agent") {
+        existing.show().map_err(|e| e.to_string())?;
+        existing.set_focus().map_err(|e| e.to_string())?;
+        return Ok(());
+    }
+
+    let main_window = app.get_webview_window("main");
+
+    let mut builder = WebviewWindowBuilder::new(
+        &app,
+        "orbis-agent",
+        WebviewUrl::App("agent".into()),
+    )
+    .title("Orbis Agent")
+    .inner_size(420.0, 650.0)
+    .resizable(true)
+    .shadow(true)
+    .decorations(true);
+
+    if let Some(ref main) = main_window {
+        builder = builder.parent(main).map_err(|e| e.to_string())?;
+    }
+
+    builder.build().map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
 async fn check_for_updates(app: tauri::AppHandle) -> Result<(), String> {
     use tauri_plugin_dialog::{DialogExt, MessageDialogKind, MessageDialogButtons};
     use tauri_plugin_updater::UpdaterExt;
@@ -139,6 +169,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             // Core window & update commands
             show_window,
+            open_agent_window,
             check_for_updates,
 
             // Auth commands
