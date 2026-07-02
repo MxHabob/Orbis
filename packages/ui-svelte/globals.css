@@ -345,17 +345,20 @@
 }
 
 .btn-tactile-destructive {
-  @apply btn-tactile bg-destructive text-destructive-foreground;
+  @apply btn-tactile text-white font-semibold;
+  background-color: oklch(0.55 0.23 25);
   box-shadow:
-    0 2px 0 0 oklch(0.4 0.18 15),
+    0 2px 0 0 oklch(0.42 0.21 25),
     0 1px 3px 0 oklch(0 0 0 / 0.2);
   &:hover {
+    background-color: oklch(0.51 0.23 25);
     box-shadow:
-      0 4px 0 0 oklch(0.4 0.18 15),
+      0 4px 0 0 oklch(0.38 0.21 25),
       0 6px 12px -2px oklch(0 0 0 / 0.25);
   }
   &:active {
-    box-shadow: 0 0 0 0 oklch(0.4 0.18 15);
+    background-color: oklch(0.48 0.23 25);
+    box-shadow: 0 0 0 0 oklch(0.38 0.21 25);
   }
 }
 
@@ -417,15 +420,15 @@
 
 .dark .btn-tactile-destructive {
   box-shadow:
-    0 2px 0 0 oklch(0.3 0.18 15),
+    0 2px 0 0 oklch(0.38 0.21 25),
     0 1px 4px 0 oklch(0 0 0 / 0.5);
   &:hover {
     box-shadow:
-      0 4px 0 0 oklch(0.3 0.18 15),
+      0 4px 0 0 oklch(0.35 0.21 25),
       0 6px 16px -2px oklch(0 0 0 / 0.6);
   }
   &:active {
-    box-shadow: 0 0 0 0 oklch(0.3 0.18 15);
+    box-shadow: 0 0 0 0 oklch(0.35 0.21 25);
   }
 }
 

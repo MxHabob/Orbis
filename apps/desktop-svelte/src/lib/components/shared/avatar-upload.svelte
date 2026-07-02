@@ -5,7 +5,7 @@ A circular avatar image uploader with hover edit states and customizable fallbac
 <script lang="ts">
 import { Avatar, AvatarImage, AvatarFallback } from "@orbis/ui-svelte/avatar";
 import { cn } from "@orbis/ui-svelte/utils";
-import { Loader2, Camera, User } from "lucide-svelte";
+import { Loader2, User } from "lucide-svelte";
 
 let {
   avatarUrl = $bindable(null),
@@ -49,7 +49,7 @@ function handleFileChange(event: Event) {
 
 <div 
   class={cn(
-    "relative flex items-center justify-center rounded-full border border-border hover:border-primary/50 transition-colors group cursor-pointer overflow-hidden bg-muted",
+    "relative flex items-center justify-center rounded-md  group cursor-pointer overflow-hidden bg-muted",
     className
   )}
   style="width: {size}px; height: {size}px;"
@@ -63,15 +63,15 @@ function handleFileChange(event: Event) {
       <Loader2 class="animate-spin text-primary shrink-0" size={Math.max(16, size / 3.5)} />
     </div>
   {:else}
-    <Avatar class="w-full h-full bg-transparent">
+    <Avatar class="w-full h-full rounded-md">
       <AvatarImage
         src={avatarUrl ?? undefined}
         alt="Avatar"
         class="w-full h-full object-cover"
       />
-      <AvatarFallback class="bg-transparent text-muted-foreground/35 font-light flex items-center justify-center select-none">
+      <AvatarFallback class="flex items-center justify-center select-none">
         {#if fallbackText}
-          <span style="font-size: {Math.max(16, size / 1.8)}px; font-weight: 300; tracking-wide">{fallbackText.slice(0, 2).toUpperCase()}</span>
+          <span style="font-size: {Math.max(16, size / 1.8)}px;">{fallbackText.slice(0, 2).toUpperCase()}</span>
         {:else}
           <User size={Math.max(16, size / 2)} />
         {/if}
@@ -84,7 +84,6 @@ function handleFileChange(event: Event) {
     </div>
   {/if}
 
-  <!-- Hidden Native File Input -->
   <input
     bind:this={fileInputRef}
     type="file"
