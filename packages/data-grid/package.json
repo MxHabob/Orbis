@@ -12,7 +12,8 @@
     "./types": "./src/types.ts"
   },
   "dependencies": {
-    "@revolist/svelte-datagrid": "^4.13.2"
+    "@revolist/svelte-datagrid": "^4.13.2",
+    "@revolist/revogrid": "^4.23.20"
   },
   "peerDependencies": {
     "svelte": "^5.0.0"

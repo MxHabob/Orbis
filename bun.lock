@@ -153,6 +153,7 @@
       "name": "@orbis/data-grid",
       "version": "1.0.0",
       "dependencies": {
+        "@revolist/revogrid": "^4.23.20",
         "@revolist/svelte-datagrid": "^4.13.2",
       },
       "devDependencies": {

@@ -12,6 +12,8 @@
  */
 export type CellVariant = "success" | "error" | "warning" | "excellent" | "good";
 
+import type { CellRenderer } from "./renderers/types";
+
 // ── Column Definition ────────────────────────────────────────────────────────
 
 export interface OrbisColumnDef {
@@ -54,6 +56,11 @@ export interface OrbisColumnDef {
    * For dynamic per-row variants, use `cellProperties` instead.
    */
   variant?: CellVariant;
+  /**
+   * Custom cell renderer — a pure function that creates VNode DOM via h().
+   * Bypasses Svelte component mounting for maximum performance.
+   */
+  cellRenderer?: CellRenderer;
 }
 
 // ── Cell Edit Event ──────────────────────────────────────────────────────────

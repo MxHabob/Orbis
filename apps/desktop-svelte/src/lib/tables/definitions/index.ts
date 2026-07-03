@@ -9,7 +9,8 @@
  *   const cols = students.columns("ar");
  */
 
-import type { OrbisColumnDef } from "@orbis/data-grid";
+import type { OrbisColumnDef, ActionItem } from "@orbis/data-grid";
+import { avatarRenderer, badgeRenderer, actionsRenderer } from "../renderers";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Shared column factories
@@ -39,6 +40,23 @@ function nameCol(prop: string, label: string, size = 180): OrbisColumnDef {
   };
 }
 
+/** Frozen user/student name column with avatar renderer */
+function userCol(prop: string, label: string, size = 180, srcKey = "avatar_url"): OrbisColumnDef {
+  return {
+    prop,
+    name: label,
+    size,
+    readonly: true,
+    pin: "colPinStart",
+    cellRenderer: avatarRenderer({
+      srcKey,
+      nameKey: prop,
+      size: "md",
+      showName: true,
+    }),
+  };
+}
+
 /** Standard read-only text column */
 function text(prop: string, name: string, size = 120): OrbisColumnDef {
   return { prop, name, size, readonly: true };
@@ -62,25 +80,25 @@ function status(prop: string, name: string, size = 100): OrbisColumnDef {
     name,
     size,
     readonly: true,
-    cellProperties: (row: Record<string, unknown>) => {
-      const v = String(row[prop] || "").toLowerCase();
-      if (["active", "present", "paid", "approved", "open"].includes(v))
-        return { class: "orbis-cell-success" };
-      if (
-        [
-          "inactive",
-          "absent",
-          "overdue",
-          "failed",
-          "closed",
-          "locked",
-        ].includes(v)
-      )
-        return { class: "orbis-cell-error" };
-      if (["pending", "late", "partial"].includes(v))
-        return { class: "orbis-cell-warning" };
-      return {};
-    },
+    cellRenderer: badgeRenderer({
+      variantMap: {
+        active: "success",
+        present: "success",
+        paid: "success",
+        approved: "success",
+        open: "success",
+        inactive: "error",
+        absent: "error",
+        overdue: "error",
+        failed: "error",
+        closed: "error",
+        locked: "error",
+        withdrawn: "error",
+        pending: "warning",
+        late: "warning",
+        partial: "warning",
+      },
+    }),
   };
 }
 
@@ -131,16 +149,32 @@ export const users = {
       role?: string;
       status?: string;
       lastLogin?: string;
+      actions?: string;
     } = {},
-  ): OrbisColumnDef[] => [
-    idx(labels.idx),
-    nameCol("full_name", labels.name || "Name"),
-    text("email", labels.email || "Email", 200),
-    text("phone", labels.phone || "Phone", 130),
-    text("role", labels.role || "Role", 100),
-    status("status", labels.status || "Status", 90),
-    date("last_login_at", labels.lastLogin || "Last Login"),
-  ],
+    actionsList?: ActionItem[]
+  ): OrbisColumnDef[] => {
+    const cols = [
+      idx(labels.idx),
+      userCol("full_name", labels.name || "Name", 180, "avatar_url"),
+      text("email", labels.email || "Email", 200),
+      text("phone", labels.phone || "Phone", 130),
+      text("role", labels.role || "Role", 100),
+      status("status", labels.status || "Status", 90),
+      date("last_login_at", labels.lastLogin || "Last Login"),
+    ];
+
+    if (actionsList && actionsList.length > 0) {
+      cols.push({
+        prop: "__actions",
+        name: labels.actions || "",
+        size: 90,
+        readonly: true,
+        cellRenderer: actionsRenderer({ items: actionsList }),
+      });
+    }
+
+    return cols;
+  },
 };
 
 export const rooms = {
@@ -301,7 +335,7 @@ export const payments = {
   ): OrbisColumnDef[] => [
     idx(labels.idx),
     date("created_at", labels.date || "Date", 110),
-    nameCol("student_name", labels.student || "Student", 180),
+    userCol("student_name", labels.student || "Student", 180, "student_avatar"),
     num("amount", labels.amount || "Amount", 110),
     text("payment_method", labels.method || "Method", 110),
     status("status", labels.status || "Status", 90),
@@ -322,7 +356,7 @@ export const fees = {
     } = {},
   ): OrbisColumnDef[] => [
     idx(labels.idx),
-    nameCol("student_name", labels.student || "Student", 180),
+    userCol("student_name", labels.student || "Student", 180, "student_avatar"),
     text("template_name", labels.template || "Fee", 160),
     num("total_amount", labels.total || "Total", 100),
     {
@@ -450,7 +484,7 @@ export const classTeachers = {
     } = {},
   ): OrbisColumnDef[] => [
     idx(labels.idx),
-    nameCol("teacher_name", labels.teacher || "Teacher", 180),
+    userCol("teacher_name", labels.teacher || "Teacher", 180, "teacher_avatar"),
     text("subject_name", labels.subject || "Subject", 140),
     text("role", labels.role || "Role", 100),
     text("phone", labels.phone || "Phone", 130),
@@ -470,7 +504,7 @@ export const examSessions = {
     } = {},
   ): OrbisColumnDef[] => [
     idx(labels.idx),
-    nameCol("student_name", labels.student || "Student", 180),
+    userCol("student_name", labels.student || "Student", 180, "student_avatar"),
     text("seat_number", labels.seatNo || "Seat #", 80),
     text("secret_number", labels.secretNo || "Secret #", 90),
     status("status", labels.status || "Status", 90),

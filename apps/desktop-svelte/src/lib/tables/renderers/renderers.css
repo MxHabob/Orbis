@@ -1,0 +1,336 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   Orbis Data Grid Cell Renderers — S.C.R.A.P.S. Theme Stylesheet
+   Uses variables and design tokens from globals.css.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Avatar Renderer ──────────────────────────────────────────────────────── */
+
+revo-grid .orbis-r-avatar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+}
+
+revo-grid .orbis-r-avatar__root {
+  position: relative;
+  border-radius: 9999px;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* S.C.R.A.P.S. Overlay border */
+revo-grid .orbis-r-avatar__root::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--border);
+  border-radius: inherit;
+  pointer-events: none;
+  mix-blend-mode: darken;
+}
+
+.dark revo-grid .orbis-r-avatar__root::after {
+  mix-blend-mode: lighten;
+}
+
+revo-grid .orbis-r-avatar__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* S.C.R.A.P.S. sizes */
+revo-grid .orbis-r-avatar--sm { width: 24px; height: 24px; }
+revo-grid .orbis-r-avatar--md { width: 32px; height: 32px; }
+revo-grid .orbis-r-avatar--lg { width: 40px; height: 40px; }
+
+revo-grid .orbis-r-avatar--sm .orbis-r-avatar__fallback-text { font-size: 10px; }
+revo-grid .orbis-r-avatar--md .orbis-r-avatar__fallback-text { font-size: 12px; }
+revo-grid .orbis-r-avatar--lg .orbis-r-avatar__fallback-text { font-size: 14px; }
+
+/* Fallback matches S.C.R.A.P.S exactly */
+revo-grid .orbis-r-avatar__root--has-fallback {
+  background: var(--brand-pink) !important;
+}
+
+revo-grid .orbis-r-avatar__fallback-text {
+  font-weight: 700;
+  color: oklch(1 0 0) !important;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+revo-grid .orbis-r-avatar__name {
+  font-weight: 500;
+  font-size: 12.5px;
+  color: var(--foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Badge Renderer ───────────────────────────────────────────────────────── */
+
+revo-grid .orbis-r-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  line-height: 1.2;
+}
+
+revo-grid .orbis-r-badge--default {
+  background: var(--muted);
+  color: var(--muted-foreground);
+  border-color: var(--border);
+}
+
+revo-grid .orbis-r-badge--secondary {
+  background: var(--secondary);
+  color: var(--secondary-foreground);
+}
+
+revo-grid .orbis-r-badge--success {
+  background: color-mix(in oklch, oklch(0.72 0.17 160), transparent 90%);
+  color: oklch(0.72 0.17 160);
+  border-color: color-mix(in oklch, oklch(0.72 0.17 160), transparent 80%);
+}
+
+revo-grid .orbis-r-badge--error {
+  background: color-mix(in oklch, var(--destructive), transparent 92%);
+  color: var(--destructive);
+  border-color: color-mix(in oklch, var(--destructive), transparent 80%);
+}
+
+revo-grid .orbis-r-badge--warning {
+  background: color-mix(in oklch, oklch(0.78 0.16 75), transparent 90%);
+  color: oklch(0.78 0.16 75);
+  border-color: color-mix(in oklch, oklch(0.78 0.16 75), transparent 80%);
+}
+
+revo-grid .orbis-r-badge--info {
+  background: color-mix(in oklch, var(--primary), transparent 92%);
+  color: var(--primary);
+  border-color: color-mix(in oklch, var(--primary), transparent 80%);
+}
+
+revo-grid .orbis-r-badge--lime {
+  background: color-mix(in oklch, var(--brand-lime), transparent 88%);
+  color: color-mix(in oklch, var(--brand-lime), black 30%);
+  border-color: color-mix(in oklch, var(--brand-lime), transparent 70%);
+}
+
+revo-grid .orbis-r-badge--brand {
+  background: color-mix(in oklch, var(--primary), transparent 90%);
+  color: var(--primary);
+  border-color: color-mix(in oklch, var(--primary), transparent 80%);
+}
+
+/* Badge dot layout */
+revo-grid .orbis-r-badge-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+revo-grid .orbis-r-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+revo-grid .orbis-r-dot--default   { background: var(--muted-foreground); }
+revo-grid .orbis-r-dot--secondary { background: var(--secondary-foreground); }
+revo-grid .orbis-r-dot--success   { background: oklch(0.72 0.17 160); }
+revo-grid .orbis-r-dot--error     { background: var(--destructive); }
+revo-grid .orbis-r-dot--warning   { background: oklch(0.78 0.16 75); }
+revo-grid .orbis-r-dot--info      { background: var(--primary); }
+revo-grid .orbis-r-dot--lime      { background: var(--brand-lime); }
+
+/* ── Actions Renderer ─────────────────────────────────────────────────────── */
+
+revo-grid .orbis-r-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+revo-grid .orbis-r-action-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius, 0.375rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+revo-grid .orbis-r-action-btn:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+revo-grid .orbis-r-action-btn--destructive:hover {
+  background: color-mix(in oklch, var(--destructive), transparent 90%);
+  color: var(--destructive);
+}
+
+revo-grid .orbis-r-action-btn--success:hover {
+  background: color-mix(in oklch, oklch(0.72 0.17 160), transparent 90%);
+  color: oklch(0.72 0.17 160);
+}
+
+revo-grid .orbis-r-action-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+revo-grid .orbis-r-action-trigger {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius, 0.375rem);
+  border: none;
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+revo-grid .orbis-r-action-trigger:hover {
+  background: var(--accent);
+  color: var(--foreground);
+}
+
+/* ── Progress Bar Renderer ────────────────────────────────────────────────── */
+
+revo-grid .orbis-r-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  width: 100%;
+}
+
+revo-grid .orbis-r-progress__track {
+  flex: 1;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--muted);
+  overflow: hidden;
+}
+
+revo-grid .orbis-r-progress__fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.3s ease;
+}
+
+revo-grid .orbis-r-progress__fill--default { background: var(--primary); }
+revo-grid .orbis-r-progress__fill--success { background: oklch(0.72 0.17 160); }
+revo-grid .orbis-r-progress__fill--error   { background: var(--destructive); }
+revo-grid .orbis-r-progress__fill--warning { background: oklch(0.78 0.16 75); }
+
+revo-grid .orbis-r-progress__label {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-foreground);
+  min-width: 32px;
+  text-align: end;
+  font-weight: 500;
+}
+
+/* ── Tag List Renderer ────────────────────────────────────────────────────── */
+
+revo-grid .orbis-r-tag-list {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-wrap: nowrap;
+  overflow: hidden;
+  height: 100%;
+}
+
+revo-grid .orbis-r-tag {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+  background: var(--secondary);
+  color: var(--secondary-foreground);
+  border: 1px solid var(--border);
+}
+
+revo-grid .orbis-r-tag--outline {
+  background: transparent;
+  color: var(--foreground);
+  border-color: var(--border);
+}
+
+revo-grid .orbis-r-tag--brand {
+  background: color-mix(in oklch, var(--primary), transparent 92%);
+  color: var(--primary);
+  border-color: color-mix(in oklch, var(--primary), transparent 80%);
+}
+
+revo-grid .orbis-r-tag--more {
+  background: var(--muted);
+  color: var(--muted-foreground);
+  font-weight: 600;
+  border-color: var(--border);
+}
+
+/* ── Icon + Text Renderer ─────────────────────────────────────────────────── */
+
+revo-grid .orbis-r-icon-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+}
+
+revo-grid .orbis-r-icon-text__icon {
+  display: flex;
+  align-items: center;
+  color: var(--muted-foreground);
+}
+
+revo-grid .orbis-r-icon-text__label {
+  font-size: 12px;
+  color: var(--foreground);
+}
+
+/* ── Dark Mode Overrides ──────────────────────────────────────────────────── */
+
+.dark revo-grid .orbis-r-badge--success { color: oklch(0.78 0.17 160); }
+.dark revo-grid .orbis-r-badge--warning { color: oklch(0.82 0.16 75); }
+.dark revo-grid .orbis-r-dot--success   { background: oklch(0.78 0.17 160); }
+.dark revo-grid .orbis-r-dot--warning   { background: oklch(0.82 0.16 75); }
+.dark revo-grid .orbis-r-progress__fill--success { background: oklch(0.78 0.17 160); }
+.dark revo-grid .orbis-r-progress__fill--warning { background: oklch(0.82 0.16 75); }

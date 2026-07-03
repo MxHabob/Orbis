@@ -11,34 +11,35 @@
 /* ── Base Grid Container ──────────────────────────────────────────────────── */
 
 revo-grid {
-  --rgFontFamily: var(--font-sans, "Rubik", system-ui, sans-serif);
+  --font-sans: "Rubik", system-ui, sans-serif;
+  --rgFontFamily: var(--font-sans);
   --rgFontSize: 12px;
   --rgColor: var(--foreground);
-  --rgHeaderFontSize: 11px;
+  --rgHeaderFontSize: 12px;
   --rgCellHeight: 42px;
   --rgHeaderHeight: 42px;
-  --rgRowBorder: 1px solid var(--border);
+  --rgRowBorder: 1px solid color-mix(in oklch, var(--border), transparent 50%);
 
   /* Backgrounds */
   --rgBg: var(--card);
-  --rgHeaderBg: color-mix(in oklch, var(--muted), transparent 70%);
-  --rgHeaderBorder: 1px solid var(--border);
+  --rgHeaderBg: color-mix(in oklch, var(--muted), transparent 40%);
+  --rgHeaderBorder: 1px solid color-mix(in oklch, var(--border), transparent 40%);
 
-  /* Selection & Focus */
-  --rgSelectionBg: color-mix(in oklch, var(--primary), transparent 92%);
-  --rgSelectionBorder: 2px solid var(--primary);
-  --rgFocusBorder: 2px solid var(--primary);
+  /* Selection & Focus - thin 1px primary border with high transparency fill */
+  --rgSelectionBg: color-mix(in oklch, var(--primary), transparent 96%);
+  --rgSelectionBorder: 1px solid var(--primary);
+  --rgFocusBorder: 1px solid var(--primary);
 
   /* Hover */
   --rgRowHoverBg: color-mix(in oklch, var(--muted), transparent 85%);
 
   /* Borders */
-  --rgBorder: 1px solid var(--border);
+  --rgBorder: 1px solid transparent;
 
   /* Scrollbar */
   --rgScrollSize: 8px;
 
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in oklch, var(--border), transparent 20%);
   border-radius: var(--radius, 0.5rem);
   overflow: hidden;
   font-family: var(--rgFontFamily);
@@ -61,27 +62,31 @@ revo-grid {
 
 revo-grid .rgHeaderCell,
 revo-grid .header-rgRow {
-  background: color-mix(in oklch, var(--muted), transparent 70%);
-  color: var(--muted-foreground);
-  font-weight: 600;
-  font-size: 11px;
+  background: color-mix(in oklch, var(--muted), transparent 40%) !important;
+  color: var(--foreground) !important;
+  font-weight: 500 !important;
+  font-size: 12px !important;
   text-transform: none;
   letter-spacing: 0.01em;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid color-mix(in oklch, var(--border), transparent 30%) !important;
+  border-right: none !important;
+  border-left: none !important;
   user-select: none;
 }
 
 revo-grid .rgHeaderCell:hover {
-  background: color-mix(in oklch, var(--muted), transparent 50%);
+  background: color-mix(in oklch, var(--muted), transparent 20%) !important;
 }
 
 /* ── Data Cells ───────────────────────────────────────────────────────────── */
 
 revo-grid .rgCell {
   color: var(--foreground);
-  border-bottom: 1px solid color-mix(in oklch, var(--border), transparent 40%);
+  border-bottom: 1px solid color-mix(in oklch, var(--border), transparent 50%) !important;
+  border-right: none !important;
+  border-left: none !important;
   padding: 0 12px;
-  font-size: 12px;
+  font-size: 12.5px;
   transition: background-color 0.1s ease;
 }
 
@@ -93,13 +98,13 @@ revo-grid .rgCell:focus-within {
 
 revo-grid .pinned-start {
   background: var(--card);
-  border-inline-end: 2px solid var(--border);
+  border-inline-end: 1px solid color-mix(in oklch, var(--border), transparent 20%) !important;
   z-index: 5;
 }
 
 revo-grid .pinned-end {
   background: color-mix(in oklch, var(--primary), transparent 97%);
-  border-inline-start: 2px solid var(--border);
+  border-inline-start: 1px solid color-mix(in oklch, var(--border), transparent 20%) !important;
   z-index: 5;
   font-weight: 600;
 }
@@ -140,13 +145,13 @@ revo-grid .rgCell.edit .orbis-editor-input {
 /* ── Selection Range ──────────────────────────────────────────────────────── */
 
 revo-grid .rg-selection {
-  background: color-mix(in oklch, var(--primary), transparent 94%);
-  border: 2px solid var(--primary);
+  background: color-mix(in oklch, var(--primary), transparent 96%) !important;
+  border: 1px solid color-mix(in oklch, var(--primary), transparent 30%) !important;
 }
 
 revo-grid .rg-selection-range {
-  background: color-mix(in oklch, var(--primary), transparent 96%);
-  border: 1px dashed color-mix(in oklch, var(--primary), transparent 60%);
+  background: color-mix(in oklch, var(--primary), transparent 97%) !important;
+  border: 1px dashed color-mix(in oklch, var(--primary), transparent 60%) !important;
 }
 
 /* ── Row Hover ────────────────────────────────────────────────────────────── */
@@ -305,13 +310,24 @@ revo-grid .rg-no-data {
 /* ── Resize Handle ────────────────────────────────────────────────────────── */
 
 revo-grid .rgHeaderCell .resizable {
+  width: 4px !important;
+  background: transparent !important;
+  cursor: col-resize;
   opacity: 0;
   transition: opacity 0.15s;
 }
 
 revo-grid .rgHeaderCell:hover .resizable {
   opacity: 1;
-  background: color-mix(in oklch, var(--primary), transparent 70%);
+  background: color-mix(in oklch, var(--primary), transparent 70%) !important;
+}
+
+/* Column Drag indicator (vertical line when resizing) */
+revo-grid .rgColDragIndicator {
+  background: var(--primary) !important;
+  width: 1px !important;
+  opacity: 0.4 !important;
+  z-index: 100 !important;
 }
 
 /* ══════════════════════════════════════════════════════════════════════════

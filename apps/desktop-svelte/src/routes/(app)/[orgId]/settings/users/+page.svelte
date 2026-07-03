@@ -22,11 +22,21 @@ import { users as usersDef, withIndex } from "$lib/tables/definitions";
 
 let { data }: { data: { orgId: string } } = $props();
 
+import { goto } from "$app/navigation";
+import { ActionOverlay } from "$lib/tables";
+import type { GridActionEvent, ActionItem } from "@orbis/data-grid";
+
 // ── State ──────────────────────────────────────────────────────────────
 let users = $state<User[]>([]);
 let isLoading = $state(true);
 let searchQuery = $state("");
 let selectedRole = $state("all");
+let overlayEl = $state<any>();
+
+const userActions: ActionItem[] = [
+  { id: "edit", label: "Edit / View", icon: "Pencil" },
+  { id: "delete", label: "Delete", icon: "Trash2", variant: "destructive" },
+];
 
 // ── Data Loading ────────────────────────────────────────────────────────
 
@@ -88,8 +98,30 @@ const columns = $derived(
     phone: m.settings_users_col_phone(),
     role: m.settings_users_col_role(),
     status: m.settings_users_col_status?.() || "Status",
-  }),
+    actions: m.settings_users_col_actions?.() || "Actions",
+  }, userActions),
 );
+
+// ── Handlers ───────────────────────────────────────────────────────────
+
+async function handleAction(event: GridActionEvent) {
+  const user = event.row as User;
+  if (event.actionId === "__menu__") {
+    overlayEl?.show(event);
+  } else if (event.actionId === "edit") {
+    goto(localizeHref(`/${data.orgId}/settings/users/${user.id}`));
+  } else if (event.actionId === "delete") {
+    if (confirm(`Are you sure you want to delete ${user.full_name}?`)) {
+      try {
+        await commands.users.deleteUser(user.id, "admin");
+        toast.success("User deleted successfully");
+        loadUsers();
+      } catch (e) {
+        toast.error((e as any)?.message || "Failed to delete user");
+      }
+    }
+  }
+}
 </script>
 
 <svelte:head>
@@ -152,6 +184,9 @@ const columns = $derived(
       rtl={getLocale() === "ar"}
       refreshable
       onRefresh={loadUsers}
+      onaction={handleAction}
     />
   </div>
+
+  <ActionOverlay bind:this={overlayEl} actions={userActions} onselect={handleAction} />
 </div>

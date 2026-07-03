@@ -42,3 +42,20 @@ export type {
   OrbisColumnDef,
   OrbisGridProps,
 } from "./types";
+
+// Renderer infrastructure (types + utilities)
+export {
+  createInitials,
+  resolveThreshold,
+  iconSvg,
+  registerIcon,
+} from "./renderers";
+
+export type {
+  CellRenderer,
+  RenderContext,
+  RendererFactory,
+  GridActionEvent,
+  ActionItem,
+  Threshold,
+} from "./renderers";

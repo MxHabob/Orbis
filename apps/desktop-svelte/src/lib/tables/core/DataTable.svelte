@@ -23,6 +23,7 @@ import {
   OrbisGrid,
   type OrbisColumnDef,
   type CellEditEvent,
+  type GridActionEvent,
 } from "@orbis/data-grid";
 import { Input } from "@orbis/ui-svelte/input";
 import { Button } from "@orbis/ui-svelte/button";
@@ -69,6 +70,8 @@ interface Props {
   oncelledit?: (event: CellEditEvent) => void;
   /** Before edit callback (return false to prevent) */
   onbeforeedit?: (event: CellEditEvent) => boolean | void;
+  /** Action click callback */
+  onaction?: (event: GridActionEvent) => void;
 
   /** Toolbar customization */
   actions?: Snippet;
@@ -107,6 +110,7 @@ let {
   autoSize = false,
   oncelledit,
   onbeforeedit,
+  onaction,
   actions,
   exportable = false,
   onExport,
@@ -258,6 +262,7 @@ function handleSearchKeydown(e: KeyboardEvent) {
         {autoSize}
         {oncelledit}
         {onbeforeedit}
+        {onaction}
       />
     {:else if showEmpty}
       <!-- Empty State -->

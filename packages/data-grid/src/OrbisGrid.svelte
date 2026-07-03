@@ -29,6 +29,7 @@ Usage:
 <script lang="ts">
   import { onMount } from "svelte";
   import type { OrbisColumnDef, CellEditEvent } from "./types";
+  import type { GridActionEvent } from "./renderers/types";
   import "./orbis-grid.css";
 
   // ── Module-Level Cache ────────────────────────────────────────────────────
@@ -89,6 +90,8 @@ Usage:
     onbeforeedit?: (event: CellEditEvent) => boolean | void;
     /** Fired when user pastes from clipboard */
     onpaste?: (data: string[][], startRow: number, startCol: number) => void;
+    /** Fired when a user clicks a [data-grid-action] element in a cell */
+    onaction?: (event: GridActionEvent) => void;
   }
 
   let {
@@ -106,6 +109,7 @@ Usage:
     oncelledit,
     onbeforeedit,
     onpaste,
+    onaction,
   }: Props = $props();
 
   // ── Internal State ───────────────────────────────────────────────────────
@@ -193,6 +197,21 @@ Usage:
         revoCol.editor = col.editor;
       }
 
+      // Cell template / custom cell renderer mapping
+      if (col.cellRenderer) {
+        revoCol.cellTemplate = (h: any, model: any) => {
+          return col.cellRenderer!({
+            h,
+            value: model.model[model.prop],
+            row: model.model,
+            prop: model.prop,
+            rowIndex: model.rowIndex,
+            colIndex: model.colIndex,
+            model,
+          });
+        };
+      }
+
       return revoCol;
     });
   });
@@ -245,6 +264,25 @@ Usage:
       onpaste(detail.parsed, detail.rowIndex ?? 0, detail.colIndex ?? 0);
     }
   }
+
+  function handleGridClick(e: MouseEvent) {
+    if (!onaction) return;
+    const target = (e.target as HTMLElement).closest<HTMLElement>("[data-grid-action]");
+    if (!target) return;
+
+    const actionId = target.dataset.gridAction!;
+    const rowIndex = Number(target.dataset.rowIndex ?? -1);
+    const prop = target.dataset.prop ?? "";
+    if (rowIndex < 0 || rowIndex >= source.length) return;
+
+    onaction({
+      actionId,
+      row: source[rowIndex]!,
+      rowIndex,
+      prop,
+      originalEvent: e,
+    });
+  }
 </script>
 
 {#if gridReady && RevoGridComponent && isBrowser}
@@ -252,6 +290,7 @@ Usage:
     class="orbis-grid-container"
     style="height: {height}; width: 100%;"
     dir={rtl ? "rtl" : "ltr"}
+    onclick={handleGridClick}
   >
     <svelte:component
       this={RevoGridComponent}

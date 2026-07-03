@@ -9,3 +9,4 @@
 export { DataTable } from "./core";
 export { withIndex } from "./definitions";
 export * as tableDefs from "./definitions";
+export * from "./renderers";
