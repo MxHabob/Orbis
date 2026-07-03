@@ -1,7 +1,3 @@
-<!--
-  Step 7: School Registration Fees Setup
-  List of active grade levels with input fields to set registration fees.
--->
 <script lang="ts">
 import { Label } from "@orbis/ui-svelte/label";
 import { Input } from "@orbis/ui-svelte/input";
@@ -9,21 +5,19 @@ import { Coins } from "lucide-svelte";
 import * as m from "$lib/paraglide/messages";
 import { onboardingState } from "../onboarding-state.svelte";
 
+
 const enabledGradeLevels = $derived(
   onboardingState.gradeLevels.filter((gl) => gl.enabled),
 );
-const isArabic = $derived(m.attendance_status_unknown() === "غير محدد");
 </script>
 
 <div class="max-w-4xl space-y-6">
   <div class="space-y-2 text-start">
     <h3 class="text-foreground font-bold text-xl font-serif">
-      {isArabic ? "رسوم التسجيل للمراحل الدراسية" : "Registration Fees per Grade Level"}
+      {m.onboarding_fees_title({ stage: onboardingState.stageLabel })}
     </h3>
     <p class="text-muted-foreground text-sm">
-      {isArabic 
-        ? "حدد رسوم التسجيل لكل صف دراسي مفعل. سيقوم النظام تلقائياً بإنشاء قوالب الرسوم وإسنادها للطلاب عند تسجيلهم." 
-        : "Define the registration fees for each enabled grade level. The system will auto-create fee templates and apply them during enrollment."}
+      {m.onboarding_fees_desc({ stage: onboardingState.stageLabel })}
     </p>
   </div>
 
@@ -49,7 +43,7 @@ const isArabic = $derived(m.attendance_status_unknown() === "غير محدد");
 
         <div class="w-[180px] space-y-1.5 text-start shrink-0">
           <Label class="text-[11px] font-semibold text-muted-foreground">
-            {isArabic ? "رسوم التسجيل (ريال)" : "Registration Fee (YER)"}
+            {m.onboarding_fees_label({ currency: onboardingState.currency })}
           </Label>
           <div class="relative">
             <Input
@@ -60,7 +54,7 @@ const isArabic = $derived(m.attendance_status_unknown() === "غير محدد");
               class="h-9 pr-12 text-sm text-end font-bold font-mono"
             />
             <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none text-[10px] font-bold text-muted-foreground uppercase">
-              YER
+              {onboardingState.currency}
             </div>
           </div>
         </div>
@@ -68,7 +62,7 @@ const isArabic = $derived(m.attendance_status_unknown() === "غير محدد");
     {/each}
     {#if enabledGradeLevels.length === 0}
       <div class="col-span-2 text-center py-10 text-muted-foreground border border-dashed rounded-xl">
-        {isArabic ? "لم يتم تفعيل أي مراحل دراسية. يرجى العودة لخطوة 'المراحل والفصول'." : "No grade levels enabled. Please go back to 'Grades & Classes' step."}
+        {m.onboarding_fees_no_stages({ stage: onboardingState.stageLabel })}
       </div>
     {/if}
   </div>

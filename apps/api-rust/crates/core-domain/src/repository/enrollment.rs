@@ -90,6 +90,9 @@ impl super::Repository {
         if let Some(promotion_notes) = updates.promotion_notes {
             active.promotion_notes = Set(Some(promotion_notes));
         }
+        if let Some(student_number) = updates.student_number {
+            active.student_number = Set(student_number);
+        }
         active.updated_at = Set(chrono::Utc::now().to_rfc3339());
 
         active.update(&self.db).await
@@ -218,5 +221,6 @@ pub struct EnrollmentUpdate {
     pub is_promoted: Option<i32>,
     pub promotion_decision: Option<String>,
     pub promotion_notes: Option<String>,
+    pub student_number: Option<String>,
 }
 

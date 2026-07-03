@@ -224,5 +224,49 @@ impl super::Service {
         self.repo.save_user_roles(user_id, &u.org_id, roles).await
             .map_err(|e| e.to_string())
     }
+
+    pub async fn check_student_duplicate(
+        &self,
+        org_id: &str,
+        email: Option<String>,
+        phone: Option<String>,
+        national_id: Option<String>,
+    ) -> Result<Vec<user::Model>, String> {
+        use sea_orm::{ColumnTrait, QueryFilter, EntityTrait, Condition};
+
+        let mut cond = Condition::any();
+        let mut has_filter = false;
+
+        if let Some(ref e) = email {
+            if !e.trim().is_empty() {
+                cond = cond.add(user::Column::Email.eq(e.trim()));
+                has_filter = true;
+            }
+        }
+        if let Some(ref p) = phone {
+            if !p.trim().is_empty() {
+                cond = cond.add(user::Column::Phone.eq(p.trim()));
+                has_filter = true;
+            }
+        }
+        if let Some(ref n) = national_id {
+            if !n.trim().is_empty() {
+                cond = cond.add(user::Column::NationalId.eq(n.trim()));
+                has_filter = true;
+            }
+        }
+
+        if !has_filter {
+            return Ok(Vec::new());
+        }
+
+        user::Entity::find()
+            .filter(user::Column::OrgId.eq(org_id))
+            .filter(user::Column::IsDeleted.eq(0))
+            .filter(cond)
+            .all(&self.repo.db)
+            .await
+            .map_err(|e| e.to_string())
+    }
 }
 

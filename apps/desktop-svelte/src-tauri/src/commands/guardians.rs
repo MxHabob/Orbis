@@ -49,3 +49,13 @@ pub async fn delete_guardian_link(
     state.service.delete_guardian_link(&id).await
         .map_err(|e| CommandError::new(e))
 }
+
+#[tauri::command]
+pub async fn search_guardians(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    query: String,
+) -> CmdResult<Vec<core_domain::entities::user::Model>> {
+    state.service.search_guardians(&org_id, &query).await
+        .map_err(|e| CommandError::new(e))
+}

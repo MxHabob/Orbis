@@ -1,6 +1,7 @@
 <!--
 @component StudentInspector
 Renders a slide-over/inspector side panel with details and actions for the selected student.
+Updated to support multi-guardian displaying and student lifecycle status transition actions.
 -->
 <script lang="ts">
 import { studentsStore } from "$lib/stores/students.svelte";
@@ -8,7 +9,9 @@ import { authStore } from "$lib/stores";
 import { commands } from "$lib/services/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@orbis/ui-svelte";
-import { X, ExternalLink, CreditCard, Award, Edit2 } from "lucide-svelte";
+import { Badge } from "@orbis/ui-svelte/badge";
+import { X, ExternalLink, CreditCard, Award, Edit2, AlertCircle } from "lucide-svelte";
+import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate, formatPercent } from "$lib/i18n-utils";
@@ -23,6 +26,8 @@ const student = $derived(studentsStore.list.find((s) => s.id === studentId));
 
 let balanceDue = $state<string>(m.loading());
 let gradeSummary = $state<string>(m.loading());
+let guardiansList = $state<any[]>([]);
+let isTransitioning = $state(false);
 
 $effect(() => {
   if (studentId) {
@@ -33,9 +38,10 @@ $effect(() => {
 async function fetchStats() {
   balanceDue = m.loading();
   gradeSummary = m.loading();
+  guardiansList = [];
   try {
     const orgId = authStore.orgId;
-    if (!orgId) return;
+    if (!orgId || !student) return;
 
     // Fetch finances
     const fees = await commands.finance.getStudentFees(orgId, studentId);
@@ -61,32 +67,77 @@ async function fetchStats() {
     } else {
       gradeSummary = m.loading_no_grades();
     }
+
+    // Fetch guardians list
+    const links = await commands.guardians.getByStudent(student.student_id);
+    if (links) {
+      const resolved = [];
+      for (const link of links) {
+        try {
+          const user = await commands.users.getUser(String(link.guardian_id));
+          if (user) {
+            resolved.push({
+              name: user.full_name,
+              phone: user.phone || "",
+              relationship: link.relationship_ar || link.relationship || "ولي أمر",
+              is_primary: link.is_primary === 1,
+            });
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }
+      guardiansList = resolved;
+    }
   } catch (e) {
     balanceDue = m.loading_error();
     gradeSummary = m.loading_no_grades();
   }
 }
+
+async function transitionStatus(target: string) {
+  if (!student) return;
+  isTransitioning = true;
+  try {
+    const updated = await commands.enrollments.transitionStatus(orgId, student.id, target);
+    student.status = updated.status;
+    toast.success(`تم تغيير حالة الطالب بنجاح إلى: ${target}`);
+    await studentsStore.load(orgId);
+    await fetchStats();
+  } catch (err: any) {
+    toast.error(`فشل تغيير حالة الطالب: ${err.message || String(err)}`);
+  } finally {
+    isTransitioning = false;
+  }
+}
 </script>
 
 {#if student}
-	<div class="h-full flex flex-col overflow-hidden text-xs">
+	<div class="h-full flex flex-col overflow-hidden text-xs text-foreground">
 		<!-- Header -->
-		<div class="flex items-center justify-between p-4">
+		<div class="flex items-center justify-between p-4 border-b border-border/40 shrink-0">
 			<div class="flex items-center gap-2">
 				<Button
 					href={localizeHref(`/${orgId}/students/${studentId}`)}
 					variant="ghost"
-					class="text-muted-foreground hover:text-foreground"
+					class="text-muted-foreground hover:text-foreground h-8 px-2 cursor-pointer"
 					title={m.inspector_view_full()}
 				>
 					<ExternalLink size={14} />
+				</Button>
+				<Button
+					href={localizeHref(`/${orgId}/students/${studentId}/edit`)}
+					variant="ghost"
+					class="text-muted-foreground hover:text-foreground h-8 px-2 cursor-pointer"
+					title="تعديل بيانات الطالب"
+				>
+					<Edit2 size={14} />
 				</Button>
 			</div>
 			
 			<Button
 				variant="ghost"
-				// size="icon"
-				class="text-muted-foreground hover:text-foreground"
+				class="text-muted-foreground hover:text-foreground h-8 px-2 cursor-pointer"
 				onclick={onClose}
 			>
 				<X size={14} />
@@ -98,35 +149,44 @@ async function fetchStats() {
 			<div class="flex flex-col items-center text-center gap-3">
 				<Avatar class="w-[85%] max-w-[180px] min-w-[120px] aspect-square h-auto rounded-xl">
 					<AvatarImage src={student.avatar ? String(student.avatar) : undefined} alt={student.full_name ? String(student.full_name) : ''} />
-					<AvatarFallback class="text-5xl font-bold rounded-xl flex items-center justify-center">
+					<AvatarFallback class="text-5xl font-bold rounded-xl flex items-center justify-center bg-muted">
 						{String(student.full_name || "S").slice(0, 1)}
 					</AvatarFallback>
 				</Avatar>
-				<div>
+				<div class="space-y-1">
 				  <h3 class="text-sm font-bold text-foreground">{student.full_name || student.name_ar || ''}</h3>
+          <div class="flex justify-center">
+            <Badge variant={student.status === 'active' ? 'lime' : student.status === 'draft' ? 'outline' : 'secondary'} class="text-[9px] scale-95 font-semibold px-2 py-0.5">
+              {student.status === 'active' ? m.form_status_active() : 
+               student.status === 'draft' ? m.form_status_draft() :
+               student.status === 'pending_review' ? m.form_status_pending_review() :
+               student.status === 'withdrawn' ? m.form_status_withdrawn() :
+               student.status === 'graduated' ? m.form_status_graduated() :
+               student.status}
+            </Badge>
+          </div>
 				</div>
 			</div>
 
 			<div class="grid grid-cols-2 gap-2 text-center">
-				<div class="flex flex-col items-center justify-center">
+				<div class="flex flex-col items-center justify-center p-2 rounded-xl bg-card border border-border/40">
 					<Award size={14} class="text-primary mb-1" />
 					<span class="text-[9px] text-muted-foreground">{m.inspector_grade_avg()}</span>
 					<span class="font-bold text-foreground mt-0.5">{gradeSummary}</span>
 				</div>
-				<div class="flex flex-col items-center justify-center">
+				<div class="flex flex-col items-center justify-center p-2 rounded-xl bg-card border border-border/40">
 					<CreditCard size={14} class="text-emerald-500 mb-1" />
 					<span class="text-[9px] text-muted-foreground">{m.inspector_balance_due()}</span>
 					<span class="font-bold text-foreground mt-0.5">{balanceDue}</span>
 				</div>
 			</div>
 
-
 			<!-- Student Metadata List -->
 			<div class="flex flex-col gap-4 border-t border-border/40 pt-4 w-full text-start">
 				{#if student.student_number || student.id}
 					<div class="flex flex-col gap-0.5">
 						<span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
-							{m.form_student_number ? m.form_student_number() : "الرقم الأكاديمي"}
+							الرقم الأكاديمي
 						</span>
 						<span class="text-xs font-mono font-bold text-foreground">
 							{student.student_number || student.id}
@@ -177,41 +237,65 @@ async function fetchStats() {
 						</span>
 					</div>
 				{/if}
-
-				{#if student.guardian_name}
-					<div class="flex flex-col gap-0.5">
-						<span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
-							ولي الأمر
-						</span>
-						<span class="text-xs text-foreground font-medium">
-							{student.guardian_name}
-						</span>
-					</div>
-				{/if}
-
-				{#if student.guardian_phone}
-					<div class="flex flex-col gap-0.5">
-						<span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
-							هاتف ولي الأمر
-						</span>
-						<span class="text-xs text-foreground font-mono">
-							{student.guardian_phone}
-						</span>
-					</div>
-				{/if}
-
-				{#if student.created_at}
-					<div class="flex flex-col gap-0.5">
-						<span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
-							تاريخ التسجيل
-						</span>
-						<span class="text-xs text-foreground font-mono">
-							{formatDate(student.created_at as string)}
-						</span>
-					</div>
-				{/if}
 			</div>
+
+      <!-- Linked Guardians Section -->
+      {#if guardiansList.length > 0}
+        <div class="flex flex-col gap-2 border-t border-border/40 pt-4 w-full text-start">
+          <span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
+            {m.inspector_guardians_title()}
+          </span>
+          <div class="flex flex-col gap-2 pt-1">
+            {#each guardiansList as g}
+              <div class="flex items-center justify-between p-2.5 border border-border/60 rounded-xl bg-muted/20">
+                <div class="flex flex-col gap-0.5">
+                  <span class="font-bold text-foreground text-xs">{g.name} ({g.relationship})</span>
+                  <span class="text-[10px] text-muted-foreground font-mono">{g.phone || 'بلا هاتف'}</span>
+                </div>
+                {#if g.is_primary}
+                  <Badge variant="lime" class="text-[8px] scale-90 px-1.5 py-0.5 shrink-0 font-semibold uppercase">{m.form_guardian_role_primary()}</Badge>
+                {/if}
+              </div>
+            {/each}
+          </div>
+        </div>
+      {/if}
+
+      <!-- Student Status Transition Actions -->
+      <div class="flex flex-col gap-2 border-t border-border/40 pt-4 w-full text-start">
+        <span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
+          {m.inspector_student_status_title()}
+        </span>
+        <div class="flex flex-wrap gap-2 pt-1">
+          {#if student.status === 'draft'}
+            <Button size="xs" variant="outline" class="text-primary hover:bg-primary/5 cursor-pointer font-semibold" disabled={isTransitioning} onclick={() => transitionStatus('pending_review')}>
+              {m.inspector_action_submit_review()}
+            </Button>
+          {/if}
+          
+          {#if student.status === 'pending_review' || student.status === 'draft' || student.status === 'approved'}
+            <Button size="xs" variant="lime" class="cursor-pointer font-semibold text-xs" disabled={isTransitioning} onclick={() => transitionStatus('active')}>
+              {m.inspector_action_activate()}
+            </Button>
+          {/if}
+
+          {#if student.status === 'active'}
+            <Button size="xs" variant="outline" class="text-destructive border-destructive/20 hover:bg-destructive/5 cursor-pointer font-semibold" disabled={isTransitioning} onclick={() => transitionStatus('withdrawn')}>
+              {m.inspector_action_withdraw()}
+            </Button>
+            <Button size="xs" variant="outline" class="cursor-pointer font-semibold" disabled={isTransitioning} onclick={() => transitionStatus('graduated')}>
+              {m.inspector_action_graduate()}
+            </Button>
+          {/if}
+
+          {#if student.status === 'withdrawn' || student.status === 'graduated'}
+            <Button size="xs" variant="lime" class="cursor-pointer font-bold" disabled={isTransitioning} onclick={() => transitionStatus('active')}>
+              {m.inspector_action_re_enroll()}
+            </Button>
+          {/if}
+        </div>
+      </div>
+
 		</div>
 	</div>
 {/if}
-

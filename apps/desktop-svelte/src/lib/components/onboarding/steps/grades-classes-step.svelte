@@ -16,10 +16,10 @@ import { onboardingState } from "../onboarding-state.svelte";
 <div class="max-w-4xl space-y-6">
   <div class="space-y-2 text-start">
     <h3 class="text-foreground font-bold text-xl font-serif">
-      {m.onboarding_stages_title()}
+      {m.onboarding_configure_stage({ stage: onboardingState.stageLabel })}
     </h3>
     <p class="text-muted-foreground text-sm">
-      {m.onboarding_stages_desc()}
+      {m.onboarding_configure_stage_desc({ stage: onboardingState.stageLabel, division: onboardingState.divisionLabel })}
     </p>
   </div>
 
@@ -52,14 +52,14 @@ import { onboardingState } from "../onboarding-state.svelte";
         {#if gl.enabled}
           <div class="space-y-3 pt-3 border-t border-border">
             <Label class="text-xs text-muted-foreground flex justify-start">
-              {m.onboarding_stage_divisions()}
+              {m.onboarding_associated_divisions({ division: onboardingState.divisionLabel })}
             </Label>
 
             <div class="flex flex-wrap gap-1.5 min-h-[32px] p-2 bg-muted/40 rounded-lg border border-border">
               {#each gl.divisions as div}
                 <Badge variant="secondary" class="bg-card border-border text-foreground text-xs px-2.5 py-0.5 flex gap-1 items-center font-sans">
                   <span>
-                    {m.onboarding_stage_division_unit({ name: div })}
+                    {onboardingState.divisionLabel} {div}
                   </span>
                   <button
                     onclick={() => onboardingState.removeDivision(gl.level, div)}
@@ -72,7 +72,7 @@ import { onboardingState } from "../onboarding-state.svelte";
 
               {#if gl.divisions.length === 0}
                 <span class="text-xs text-muted-foreground/80 self-center">
-                  {m.onboarding_stage_no_divisions()}
+                  {m.onboarding_no_divisions({ division: onboardingState.divisionLabel })}
                 </span>
               {/if}
             </div>
@@ -80,7 +80,7 @@ import { onboardingState } from "../onboarding-state.svelte";
             <!-- Quick Add Division Form -->
             <div class="flex gap-2">
               <Input
-                placeholder={m.onboarding_stage_add_division_placeholder()}
+                placeholder={m.onboarding_add_division_placeholder({ division: onboardingState.divisionLabel })}
                 bind:value={onboardingState.divisionInput[gl.level]}
                 class="text-xs h-8"
               />

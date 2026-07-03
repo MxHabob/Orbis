@@ -174,6 +174,30 @@ export const commands = {
 
     promote: (orgId: string, request: JsonRecord) =>
       invoke<JsonRecord>("promote_students", { orgId, request }),
+
+    transitionStatus: (
+      orgId: string,
+      enrollmentId: string,
+      targetStatus: string,
+      withdrawalReason?: string,
+    ) =>
+      invoke<Enrollment>("transition_enrollment_status", {
+        orgId,
+        enrollmentId,
+        targetStatus,
+        withdrawalReason: withdrawalReason ?? null,
+      }),
+
+    checkDuplicate: (
+      orgId: string,
+      params: { email?: string; phone?: string; nationalId?: string },
+    ) =>
+      invoke<User[]>("check_student_duplicate", {
+        orgId,
+        email: params.email ?? null,
+        phone: params.phone ?? null,
+        nationalId: params.nationalId ?? null,
+      }),
   },
 
   grades: {
@@ -589,6 +613,9 @@ export const commands = {
       invoke<GuardianLink>("update_guardian_link", { id, request }),
 
     deleteLink: (id: string) => invoke<void>("delete_guardian_link", { id }),
+
+    search: (orgId: string, query: string) =>
+      invoke<User[]>("search_guardians", { orgId, query }),
   },
 
   exams: {

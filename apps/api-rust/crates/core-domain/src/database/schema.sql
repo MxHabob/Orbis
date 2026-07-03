@@ -935,3 +935,11 @@ CREATE TABLE IF NOT EXISTS teacher_exam_availability (
   updated_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_tea_teacher ON teacher_exam_availability(teacher_id, exam_session_id);
+
+-- ── Search Optimizations for Students & Guardians ──
+CREATE INDEX IF NOT EXISTS idx_users_org_role ON users(org_id, primary_role);
+CREATE INDEX IF NOT EXISTS idx_users_national_id ON users(national_id);
+CREATE INDEX IF NOT EXISTS idx_users_phone ON users(phone);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_student_guardians_student ON student_guardians(student_id);
+CREATE INDEX IF NOT EXISTS idx_student_guardians_guardian ON student_guardians(guardian_id);

@@ -35,32 +35,32 @@ function handleAddSubject() {
 <div class="max-w-4xl space-y-6">
   <div class="space-y-2 text-start">
     <h3 class="text-foreground font-bold text-xl font-serif">
-      {m.onboarding_subjects_title()}
+      {m.onboarding_configure_subject({ subject: onboardingState.subjectLabel })}
     </h3>
     <p class="text-muted-foreground text-sm">
-      {m.onboarding_subjects_desc()}
+      {m.onboarding_configure_subject_desc({ subject: onboardingState.subjectLabel })}
     </p>
   </div>
 
   <!-- Add Subject form -->
   <div class="p-6 bg-muted/40 rounded-xl border border-border grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
     <div class="space-y-2 text-start">
-      <Label class="text-xs">{m.onboarding_subject_code()}</Label>
+      <Label class="text-xs">{m.onboarding_subject_code_label({ subject: onboardingState.subjectLabel })}</Label>
       <Input bind:value={newSubCode} placeholder="PHY" class="text-xs h-9 uppercase font-sans" />
     </div>
 
     <div class="space-y-2 text-start">
-      <Label class="text-xs">{m.onboarding_subject_name_ar()}</Label>
+      <Label class="text-xs">{m.onboarding_subject_name_ar_label({ subject: onboardingState.subjectLabel })}</Label>
       <Input bind:value={newSubNameAr} placeholder="الفيزياء" class="text-xs h-9" />
     </div>
 
     <div class="space-y-2 font-sans text-start">
-      <Label class="text-xs">{m.onboarding_subject_name_en()}</Label>
+      <Label class="text-xs">{m.onboarding_subject_name_en_label({ subject: onboardingState.subjectLabel })}</Label>
       <Input bind:value={newSubName} placeholder="Physics" class="text-xs h-9 text-left" style="direction: ltr;" />
     </div>
 
     <div class="space-y-2 text-start">
-      <Label class="text-xs">{m.onboarding_subject_color()}</Label>
+      <Label class="text-xs">{m.settings_registration_table_color()}</Label>
       <div class="flex gap-2 items-center">
         <input type="color" bind:value={newSubColor} class="w-9 h-9 border border-border rounded bg-background cursor-pointer" />
         <span class="text-xs font-mono text-muted-foreground">{newSubColor}</span>
@@ -69,7 +69,7 @@ function handleAddSubject() {
 
     <Button onclick={handleAddSubject} class="w-full h-9 text-xs flex gap-1.5 items-center justify-center">
       <Plus class="w-4 h-4" />
-      <span>{m.onboarding_subjects_add_subject()}</span>
+      <span>{m.onboarding_add_label()}</span>
     </Button>
   </div>
 

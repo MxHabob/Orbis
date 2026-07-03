@@ -223,6 +223,8 @@ pub fn run() {
             commands::enrollments::withdraw_enrollment,
             commands::enrollments::transfer_enrollment,
             commands::enrollments::promote_students,
+            commands::enrollments::transition_enrollment_status,
+            commands::enrollments::check_student_duplicate,
 
             // Grades commands
             commands::grades::get_grades,
@@ -355,6 +357,7 @@ pub fn run() {
             commands::guardians::create_guardian_link,
             commands::guardians::update_guardian_link,
             commands::guardians::delete_guardian_link,
+            commands::guardians::search_guardians,
 
             // Exams
             commands::exams::get_exam_sessions,

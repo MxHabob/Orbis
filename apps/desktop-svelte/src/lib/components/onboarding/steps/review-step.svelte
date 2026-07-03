@@ -51,12 +51,12 @@ async function handleCompleteSetup() {
       <CardHeader class="pb-2 text-start">
         <CardTitle class="text-sm font-semibold text-muted-foreground flex gap-2 items-center font-serif">
           <School class="w-4 h-4 text-primary" />
-          <span>{m.onboarding_review_school_info()}</span>
+          <span>{m.onboarding_review_institution_info()}</span>
         </CardTitle>
       </CardHeader>
       <CardContent class="space-y-2 text-sm text-start">
         <div class="flex justify-between">
-          <span class="text-muted-foreground">{m.onboarding_review_school_name()}</span>
+          <span class="text-muted-foreground">{m.onboarding_review_institution_name()}</span>
           <span class="font-medium text-foreground">{onboardingState.orgNameAr}</span>
         </div>
         <div class="flex justify-between">
@@ -70,7 +70,7 @@ async function handleCompleteSetup() {
         <div class="flex justify-between">
           <span class="text-muted-foreground">{m.onboarding_review_locale_timezone()}</span>
           <span class="font-medium text-foreground">
-            {onboardingState.locale === "ar" ? "العربية" : "English"} / {onboardingState.timezone}
+            {onboardingState.localizedLanguageName} / {onboardingState.timezone}
           </span>
         </div>
       </CardContent>
@@ -81,12 +81,12 @@ async function handleCompleteSetup() {
       <CardHeader class="pb-2 text-start">
         <CardTitle class="text-sm font-semibold text-muted-foreground flex gap-2 items-center font-serif">
           <Calendar class="w-4 h-4 text-primary" />
-          <span>{m.onboarding_review_calendar()}</span>
+          <span>{onboardingState.calendarLabel}</span>
         </CardTitle>
       </CardHeader>
       <CardContent class="space-y-2 text-sm font-sans text-start">
         <div class="flex justify-between">
-          <span class="text-muted-foreground font-medium">{m.onboarding_review_academic_year()}</span>
+          <span class="text-muted-foreground font-medium">{onboardingState.calendarLabel}</span>
           <span class="font-medium text-foreground font-sans">{onboardingState.academicYearNameAr}</span>
         </div>
         <div class="flex justify-between">
@@ -109,20 +109,20 @@ async function handleCompleteSetup() {
       <CardHeader class="pb-2 text-start">
         <CardTitle class="text-sm font-semibold text-muted-foreground flex gap-2 items-center font-serif">
           <Building class="w-4 h-4 text-primary" />
-          <span>{m.onboarding_review_buildings()}</span>
+          <span>{m.onboarding_review_buildings_halls()}</span>
         </CardTitle>
       </CardHeader>
       <CardContent class="space-y-2 text-sm text-start">
         <div class="flex justify-between">
           <span class="text-muted-foreground">{m.onboarding_review_bld1()}</span>
           <span class="font-medium text-foreground">
-            {m.onboarding_review_bld_rooms_value({ count: onboardingState.bld1Rooms })}
+            {onboardingState.bld1Rooms} {onboardingState.classroomsLabelPlural}
           </span>
         </div>
         <div class="flex justify-between">
           <span class="text-muted-foreground">{m.onboarding_review_bld2()}</span>
           <span class="font-medium text-foreground">
-            {m.onboarding_review_bld_rooms_only({ count: onboardingState.bld2Rooms })}
+            {onboardingState.bld2Rooms} {onboardingState.classroomsLabelPlural}
           </span>
         </div>
         <div class="flex justify-between">
@@ -139,26 +139,26 @@ async function handleCompleteSetup() {
       <CardHeader class="pb-2 text-start">
         <CardTitle class="text-sm font-semibold text-muted-foreground flex gap-2 items-center font-serif">
           <GraduationCap class="w-4 h-4 text-primary" />
-          <span>{m.onboarding_review_stages()}</span>
+          <span>{onboardingState.stageLabel}</span>
         </CardTitle>
       </CardHeader>
       <CardContent class="space-y-2 text-sm text-start">
         <div class="flex justify-between">
-          <span class="text-muted-foreground">{m.onboarding_review_stages_enabled()}</span>
+          <span class="text-muted-foreground">{m.onboarding_review_enabled_stages({ stage: onboardingState.stageLabel })}</span>
           <span class="font-medium text-foreground">
-            {m.onboarding_review_stages_value({ count: onboardingState.enabledStages })}
+            {onboardingState.enabledStages} {onboardingState.stagesLabelPlural}
           </span>
         </div>
         <div class="flex justify-between">
-          <span class="text-muted-foreground">{m.onboarding_review_divisions_count()}</span>
+          <span class="text-muted-foreground">{m.onboarding_review_divisions_label({ division: onboardingState.divisionLabel })}</span>
           <span class="font-medium text-foreground">
-            {m.onboarding_review_divisions_value({ count: onboardingState.totalDivisions })}
+            {onboardingState.totalDivisions}
           </span>
         </div>
         <div class="flex justify-between">
-          <span class="text-muted-foreground">{m.onboarding_review_subjects_count()}</span>
+          <span class="text-muted-foreground">{m.onboarding_review_subjects_label({ subject: onboardingState.subjectLabel })}</span>
           <span class="font-medium text-foreground">
-            {m.onboarding_review_subjects_value({ count: onboardingState.enabledSubjects })}
+            {onboardingState.enabledSubjects}
           </span>
         </div>
         <div class="flex justify-between">

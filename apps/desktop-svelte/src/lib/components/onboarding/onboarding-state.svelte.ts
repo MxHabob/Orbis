@@ -4,6 +4,8 @@
 
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
+import { getLocale } from "$lib/paraglide/runtime";
+import { INSTITUTION_PROFILES } from "./onboarding-templates";
 import type {
   Room,
   GradeLevel,
@@ -245,10 +247,18 @@ class OnboardingState {
   activeStep = $state(1);
   isLoading = $state(false);
   errorMessage = $state<string | null>(null);
-  totalSteps = 7;
-  completedSteps = $state([false, false, false, false, false, false, false]);
+  totalSteps = 8;
+  completedSteps = $state([false, false, false, false, false, false, false, false]);
 
-  // Step 7: Registration Fees Setup
+  // Central Configuration Defaults
+  institutionType = $state("school");
+  studentNumberPattern = $state("STU-{YEAR}-{SEQ}");
+  activeFields = $state<Record<string, boolean>>({});
+  requiredFields = $state<Record<string, boolean>>({});
+  preventDuplicates = $state<Record<string, boolean>>({});
+  requiredDocumentsList = $state<string[]>([]);
+
+  // Step 8: Registration Fees Setup
   registrationFees = $state<Record<string, number>>({});
 
   // School General Info (pre-populated by CLI / loadExistingOrg)
@@ -260,7 +270,7 @@ class OnboardingState {
   locale = $state(detectLocale());
   currency = $state(detectCurrency(detectTimezone()));
 
-  // Step 1: Academic Calendar
+  // Step 2: Academic Calendar
   academicYearName = $state("Academic Year 1447 Hijri");
   academicYearNameAr = $state("العام الدراسي 1447 هـ");
   startDate = $state("2026-06-21");
@@ -274,20 +284,104 @@ class OnboardingState {
   semester2Start = $state("2026-10-22");
   semester2End = $state("2027-02-21");
 
-  // Step 2: Buildings & Rooms
+  // Step 3: Buildings & Rooms
   rooms = $state<Room[]>([]);
   activeBuildingTab = $state("المبنى 1");
   buildings = BUILDINGS;
 
-  // Step 3: Grade Levels & Classes
+  // Step 4: Grade Levels & Classes
   gradeLevels = $state<GradeLevel[]>(structuredClone(DEFAULT_GRADE_LEVELS));
   divisionInput = $state<Record<string, string>>({});
 
-  // Step 4: Time Slots
+  // Step 5: Time Slots
   timeSlots = $state<TimeSlot[]>(structuredClone(DEFAULT_TIME_SLOTS));
 
-  // Step 5: Subjects
+  // Step 6: Subjects
   subjects = $state<Subject[]>(structuredClone(DEFAULT_SUBJECTS));
+
+  // ── Centralized Terminology Mappings ──────────────────────────────
+  terminology = $derived(
+    INSTITUTION_PROFILES[this.institutionType]?.terminology || INSTITUTION_PROFILES.school.terminology
+  );
+
+  stageLabel = $derived(getLocale() === "ar" ? this.terminology.stage_ar : this.terminology.stage);
+  classroomLabel = $derived(getLocale() === "ar" ? this.terminology.classroom_ar : this.terminology.classroom);
+  divisionLabel = $derived(getLocale() === "ar" ? this.terminology.division_ar : this.terminology.division);
+  subjectLabel = $derived(getLocale() === "ar" ? this.terminology.subject_ar : this.terminology.subject);
+  calendarLabel = $derived(getLocale() === "ar" ? this.terminology.calendar_ar : this.terminology.calendar);
+  localizedLanguageName = $derived(this.locale.startsWith("ar") ? m.onboarding_lang_ar() : m.onboarding_lang_en());
+  classroomsLabelPlural = $derived(getLocale() === "ar" ? this.terminology.classroom_ar : this.terminology.classroom + "s");
+  stagesLabelPlural = $derived(getLocale() === "ar" ? this.terminology.stage_ar : this.terminology.stage + "s");
+
+  selectInstitutionType(type: string) {
+    this.institutionType = type;
+    const profile = INSTITUTION_PROFILES[type];
+    if (profile) {
+      this.studentNumberPattern = profile.numberingPattern;
+      this.activeFields = { ...profile.activeFields };
+      this.requiredFields = { ...profile.requiredFields };
+      this.preventDuplicates = { ...profile.preventDuplicates };
+      this.requiredDocumentsList = [...profile.requiredDocuments];
+      
+      // Default academic stages
+      this.gradeLevels = profile.stages.map(s => ({
+        level: s.level,
+        name: s.name,
+        name_ar: s.name_ar,
+        color: s.color,
+        enabled: true,
+        divisions: [...s.divisions]
+      }));
+      
+      // Default time slots
+      this.timeSlots = profile.timeSlots.map(t => ({
+        name: t.name,
+        name_ar: t.name_ar,
+        start_time: t.start_time,
+        end_time: t.end_time
+      }));
+      
+      // Default subjects
+      this.subjects = profile.subjects.map(s => ({
+        code: s.code,
+        name: s.name,
+        name_ar: s.name_ar,
+        color: s.color,
+        icon: s.icon,
+        sort_order: s.sort_order,
+        enabled: true
+      }));
+
+      // Prepopulate default fees to 0
+      const fees: Record<string, number> = {};
+      profile.stages.forEach(s => {
+        fees[s.level] = 0;
+      });
+      this.registrationFees = fees;
+
+      // Dynamic room list prefix mapping
+      const roomsList: Room[] = [];
+      const bld1Name = getLocale() === "ar" ? "المبنى 1" : "Building 1";
+      const bld2Name = getLocale() === "ar" ? "المبنى 2" : "Building 2";
+      
+      profile.stages.slice(0, 5).forEach((stg, sIdx) => {
+        roomsList.push({
+          id: `room-b1-f1-${sIdx + 1}`,
+          name: `${profile.terminology.classroom} 1-0${sIdx + 1}`,
+          name_ar: `${profile.terminology.classroom_ar} 1-0${sIdx + 1}`,
+          capacity: 30,
+          room_type: "classroom",
+          building: bld1Name,
+          floor: 1,
+        });
+      });
+      this.rooms = roomsList;
+      this.buildings = [bld1Name, bld2Name];
+      this.activeBuildingTab = bld1Name;
+      
+      this.save();
+    }
+  }
 
   // ── Derived Values ───────────────────────────────────────────────
 
@@ -302,10 +396,10 @@ class OnboardingState {
   enabledSubjects = $derived(this.subjects.filter((s) => s.enabled).length);
   totalSlots = $derived(this.timeSlots.length);
   bld1Rooms = $derived(
-    this.rooms.filter((r) => r.building === "المبنى 1").length,
+    this.rooms.filter((r) => r.building === (getLocale() === "ar" ? "المبنى 1" : "Building 1")).length,
   );
   bld2Rooms = $derived(
-    this.rooms.filter((r) => r.building === "المبنى 2").length,
+    this.rooms.filter((r) => r.building === (getLocale() === "ar" ? "المبنى 2" : "Building 2")).length,
   );
   tasksCompletedCount = $derived(this.completedSteps.filter(Boolean).length);
 
@@ -331,6 +425,13 @@ class OnboardingState {
         timeSlots: this.timeSlots,
         subjects: this.subjects,
         rooms: this.rooms,
+        institutionType: this.institutionType,
+        studentNumberPattern: this.studentNumberPattern,
+        activeFields: this.activeFields,
+        requiredFields: this.requiredFields,
+        preventDuplicates: this.preventDuplicates,
+        requiredDocumentsList: this.requiredDocumentsList,
+        gradeLevels: this.gradeLevels,
       };
       localStorage.setItem("orbis_onboarding_state", JSON.stringify(data));
     } catch (e) {
@@ -364,6 +465,13 @@ class OnboardingState {
         if (data.timeSlots) this.timeSlots = data.timeSlots;
         if (data.subjects) this.subjects = data.subjects;
         if (data.rooms) this.rooms = data.rooms;
+        if (data.institutionType) this.institutionType = data.institutionType;
+        if (data.studentNumberPattern) this.studentNumberPattern = data.studentNumberPattern;
+        if (data.activeFields) this.activeFields = data.activeFields;
+        if (data.requiredFields) this.requiredFields = data.requiredFields;
+        if (data.preventDuplicates) this.preventDuplicates = data.preventDuplicates;
+        if (data.requiredDocumentsList) this.requiredDocumentsList = data.requiredDocumentsList;
+        if (data.gradeLevels) this.gradeLevels = data.gradeLevels;
       }
     } catch (e) {
       console.error("Failed to load onboarding state:", e);
@@ -748,6 +856,35 @@ class OnboardingState {
       const { commands } = await import("$lib/services/ipc");
       await commands.academics.initializeSchoolSetup(orgId, payload);
 
+      // Save registration configuration to organization settings
+      const settingsObj = {
+        registration_config: {
+          institution_type: this.institutionType,
+          student_number_pattern: this.studentNumberPattern,
+          academic_stages: this.gradeLevels.filter(gl => gl.enabled).map(gl => gl.level),
+          required_fields: this.requiredFields,
+          active_fields: this.activeFields,
+          prevent_duplicates: this.preventDuplicates,
+          required_documents: this.requiredDocumentsList,
+        }
+      };
+
+      const org = await commands.users.getOrganization(orgId);
+      if (org) {
+        const updateRequest = {
+          name: org.name,
+          logo: org.logo || null,
+          primary_color: org.primary_color,
+          currency: this.currency,
+          timezone: this.timezone,
+          locale: this.locale,
+          date_format: org.date_format,
+          hijri_enabled: org.hijri_enabled,
+          settings: JSON.stringify(settingsObj),
+        };
+        await commands.users.updateOrganization(orgId, updateRequest);
+      }
+
       // Create fee templates for the specified registration fees
       for (const gl of this.gradeLevels) {
         if (!gl.enabled) continue;
@@ -792,6 +929,16 @@ class OnboardingState {
     } finally {
       this.isLoading = false;
     }
+  }
+
+  localizedProfile(profileId: string) {
+    const profile = INSTITUTION_PROFILES[profileId];
+    if (!profile) return { name: "", description: "" };
+    const locale = getLocale();
+    return {
+      name: locale === "ar" ? profile.name_ar : profile.name,
+      description: locale === "ar" ? profile.description_ar : profile.description
+    };
   }
 }
 

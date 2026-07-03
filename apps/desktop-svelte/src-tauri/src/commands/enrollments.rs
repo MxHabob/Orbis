@@ -90,3 +90,33 @@ pub async fn promote_students(
         .await
         .map_err(CommandError::from)
 }
+
+#[tauri::command]
+pub async fn transition_enrollment_status(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    enrollment_id: String,
+    target_status: String,
+    withdrawal_reason: Option<String>,
+) -> CmdResult<enrollment::Model> {
+    state
+        .service
+        .transition_enrollment_status(&org_id, &enrollment_id, &target_status, withdrawal_reason)
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn check_student_duplicate(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    email: Option<String>,
+    phone: Option<String>,
+    national_id: Option<String>,
+) -> CmdResult<Vec<core_domain::entities::user::Model>> {
+    state
+        .service
+        .check_student_duplicate(&org_id, email, phone, national_id)
+        .await
+        .map_err(CommandError::from)
+}

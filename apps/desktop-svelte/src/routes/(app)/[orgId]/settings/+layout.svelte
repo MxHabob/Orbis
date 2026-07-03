@@ -105,6 +105,11 @@ const navItems = $derived([
     label: m.settings_nav_ordering ? m.settings_nav_ordering() : "ترتيب الطلاب",
     icon: ListOrdered,
   },
+  {
+    path: "registration",
+    label: getLocale() === "ar" ? "قواعد وإعدادات التسجيل" : "Registration Settings",
+    icon: FileText,
+  },
 
   {
     path: "fee-templates",

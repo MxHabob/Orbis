@@ -10,6 +10,7 @@ import { onboardingState } from "./onboarding-state.svelte";
 // Import components
 import OnboardingStepper from "./onboarding-stepper.svelte";
 import OnboardingFooter from "./onboarding-footer.svelte";
+import InstitutionTypeStep from "./steps/institution-type-step.svelte";
 import AcademicCalendarStep from "./steps/academic-calendar-step.svelte";
 import BuildingsRoomsStep from "./steps/buildings-rooms-step.svelte";
 import GradesClassesStep from "./steps/grades-classes-step.svelte";
@@ -40,18 +41,20 @@ import ReviewStep from "./steps/review-step.svelte";
     {/if}
 
     {#if onboardingState.activeStep === 1}
-      <AcademicCalendarStep />
+      <InstitutionTypeStep />
     {:else if onboardingState.activeStep === 2}
-      <BuildingsRoomsStep />
+      <AcademicCalendarStep />
     {:else if onboardingState.activeStep === 3}
-      <GradesClassesStep />
+      <BuildingsRoomsStep />
     {:else if onboardingState.activeStep === 4}
-      <TimeSlotsStep />
+      <GradesClassesStep />
     {:else if onboardingState.activeStep === 5}
-      <SubjectsStep />
+      <TimeSlotsStep />
     {:else if onboardingState.activeStep === 6}
-      <FeesStep />
+      <SubjectsStep />
     {:else if onboardingState.activeStep === 7}
+      <FeesStep />
+    {:else if onboardingState.activeStep === 8}
       <ReviewStep />
     {/if}
   </div>

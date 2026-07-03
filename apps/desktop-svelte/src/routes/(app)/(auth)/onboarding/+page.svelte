@@ -37,9 +37,6 @@ onMount(async () => {
     goto(localizedUrl, { replaceState: true });
   }
 
-  if (onboardingState.rooms.length === 0) {
-    onboardingState.resetRoomsToDefault();
-  }
 });
 </script>
 

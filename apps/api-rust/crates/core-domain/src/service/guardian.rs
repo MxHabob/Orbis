@@ -135,4 +135,30 @@ impl super::Service {
             .map_err(|e| e.to_string())?;
         Ok(())
     }
+
+    pub async fn search_guardians(
+        &self,
+        org_id: &str,
+        query: &str,
+    ) -> Result<Vec<crate::entities::user::Model>, String> {
+        use sea_orm::{ColumnTrait, QueryFilter, QueryOrder, QuerySelect};
+        use crate::entities::user;
+
+        let search_pattern = format!("%{}%", query.trim());
+        user::Entity::find()
+            .filter(user::Column::OrgId.eq(org_id))
+            .filter(user::Column::IsDeleted.eq(0))
+            .filter(user::Column::PrimaryRole.eq("parent"))
+            .filter(
+                user::Column::FullName.like(&search_pattern)
+                    .or(user::Column::Phone.like(&search_pattern))
+                    .or(user::Column::Email.like(&search_pattern))
+                    .or(user::Column::NationalId.like(&search_pattern))
+            )
+            .order_by_asc(user::Column::FullName)
+            .limit(20)
+            .all(&self.repo.db)
+            .await
+            .map_err(|e| e.to_string())
+    }
 }
