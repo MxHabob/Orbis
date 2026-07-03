@@ -20,15 +20,15 @@ export function scoreToGradeLetter(percentage: number): string {
   return "راسب";
 }
 
-// ── Grade Color (Tailwind-compatible) ────────────────────────────────────────
+// ── Grade Color (oklch — S.C.R.A.P.S. aligned) ──────────────────────────────
 
 export function scoreToGradeColor(percentage: number): string {
-  if (percentage >= 90) return "text-emerald-500";
-  if (percentage >= 80) return "text-blue-500";
-  if (percentage >= 70) return "text-sky-500";
-  if (percentage >= 60) return "text-amber-500";
-  if (percentage >= 50) return "text-orange-500";
-  return "text-red-500";
+  if (percentage >= 90) return "color: oklch(0.72 0.17 160)"; /* emerald — ممتاز */
+  if (percentage >= 80) return "color: oklch(0.62 0.15 260)"; /* blue — جيد جداً */
+  if (percentage >= 70) return "color: oklch(0.68 0.14 230)"; /* sky — جيد */
+  if (percentage >= 60) return "color: oklch(0.78 0.16 75)";  /* amber — مقبول */
+  if (percentage >= 50) return "color: oklch(0.72 0.17 50)";  /* orange — ضعيف */
+  return "color: oklch(0.62 0.22 25)";                        /* red — راسب */
 }
 
 // ── Grade CSS Class (for RevoGrid cells) ─────────────────────────────────────

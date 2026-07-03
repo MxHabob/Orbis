@@ -1,11 +1,14 @@
 <!--
 @component NumberEditor
 Custom RevoGrid cell editor for numeric grade input.
+Uses S.C.R.A.P.S. design tokens for validation feedback.
+
 Features:
 - Min/max validation with visual feedback
 - Step support (0.5 increments)
 - Auto-select on focus
 - Enter/Tab/Arrow key navigation
+- Error state uses S.C.R.A.P.S. destructive token
 -->
 <script lang="ts">
   import { onMount } from "svelte";
@@ -84,35 +87,5 @@ Features:
   onkeydown={handleKeyDown}
   onblur={handleBlur}
   class="orbis-editor-input"
-  class:editor-error={hasError}
-  style="
-    width: 100%;
-    height: 100%;
-    border: none;
-    outline: none;
-    background: transparent;
-    color: inherit;
-    font-family: inherit;
-    font-size: 12px;
-    font-variant-numeric: tabular-nums;
-    padding: 0 8px;
-    text-align: center;
-    box-sizing: border-box;
-  "
+  class:orbis-editor-error={hasError}
 />
-
-<style>
-  input::-webkit-inner-spin-button,
-  input::-webkit-outer-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-  }
-  input[type="number"] {
-    -moz-appearance: textfield;
-    appearance: textfield;
-  }
-  .editor-error {
-    color: hsl(var(--destructive, 0 84% 60%)) !important;
-    background: hsl(var(--destructive, 0 84% 60%) / 0.08) !important;
-  }
-</style>

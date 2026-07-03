@@ -1,7 +1,16 @@
 /**
  * @orbis/data-grid — Type definitions
  * Shared types for the OrbisGrid component and its editors.
+ * All visual tokens align with S.C.R.A.P.S. design system (oklch).
  */
+
+// ── Cell Variant ─────────────────────────────────────────────────────────────
+
+/**
+ * Semantic cell variant — maps to `orbis-cell-*` CSS classes in orbis-grid.css.
+ * Use these to declaratively style cells based on data state.
+ */
+export type CellVariant = "success" | "error" | "warning" | "excellent" | "good";
 
 // ── Column Definition ────────────────────────────────────────────────────────
 
@@ -40,6 +49,11 @@ export interface OrbisColumnDef {
   cellProperties?: (row: any) => Record<string, any>;
   /** Column-specific editor configuration */
   editorConfig?: Record<string, any>;
+  /**
+   * Semantic cell variant — applies `orbis-cell-{variant}` CSS class.
+   * For dynamic per-row variants, use `cellProperties` instead.
+   */
+  variant?: CellVariant;
 }
 
 // ── Cell Edit Event ──────────────────────────────────────────────────────────

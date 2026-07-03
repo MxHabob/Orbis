@@ -35,6 +35,7 @@ export { default as OrbisGrid } from "./OrbisGrid.svelte";
 export type {
   CellEditEvent,
   CellValidation,
+  CellVariant,
   GradeCell,
   GradeMatrixResponse,
   GradeMatrixStudent,

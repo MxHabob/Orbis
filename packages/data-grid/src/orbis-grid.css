@@ -1,100 +1,125 @@
 /**
- * @orbis/data-grid — S.C.R.A.P.S. Theme Override for RevoGrid
+ * @orbis/data-grid — S.C.R.A.P.S. Theme for RevoGrid
  *
- * Maps RevoGrid's internal CSS custom properties to Orbis design tokens.
- * This ensures the grid integrates seamlessly with light/dark mode and
- * the existing S.C.R.A.P.S. design system.
+ * Maps RevoGrid's internal CSS custom properties to Orbis design tokens
+ * using oklch() color space (matching globals.css).
+ *
+ * Supports: light mode, dark mode (.dark), RTL, frozen columns,
+ *           grade coloring, cell states, scrollbar styling.
  */
 
 /* ── Base Grid Container ──────────────────────────────────────────────────── */
 
 revo-grid {
-  --rgFontFamily: var(--font-family, "Rubik", sans-serif);
+  --rgFontFamily: var(--font-sans, "Rubik", system-ui, sans-serif);
   --rgFontSize: 12px;
-  --rgColor: hsl(var(--foreground));
+  --rgColor: var(--foreground);
   --rgHeaderFontSize: 11px;
   --rgCellHeight: 42px;
   --rgHeaderHeight: 42px;
-  --rgRowBorder: 1px solid hsl(var(--border));
+  --rgRowBorder: 1px solid var(--border);
 
   /* Backgrounds */
-  --rgBg: hsl(var(--card));
-  --rgHeaderBg: hsl(var(--muted) / 0.3);
-  --rgHeaderBorder: 1px solid hsl(var(--border));
+  --rgBg: var(--card);
+  --rgHeaderBg: color-mix(in oklch, var(--muted), transparent 70%);
+  --rgHeaderBorder: 1px solid var(--border);
 
   /* Selection & Focus */
-  --rgSelectionBg: hsl(var(--primary) / 0.08);
-  --rgSelectionBorder: 2px solid hsl(var(--primary));
-  --rgFocusBorder: 2px solid hsl(var(--primary));
+  --rgSelectionBg: color-mix(in oklch, var(--primary), transparent 92%);
+  --rgSelectionBorder: 2px solid var(--primary);
+  --rgFocusBorder: 2px solid var(--primary);
 
   /* Hover */
-  --rgRowHoverBg: hsl(var(--muted) / 0.15);
+  --rgRowHoverBg: color-mix(in oklch, var(--muted), transparent 85%);
 
   /* Borders */
-  --rgBorder: 1px solid hsl(var(--border));
+  --rgBorder: 1px solid var(--border);
 
   /* Scrollbar */
   --rgScrollSize: 8px;
 
-  border: 1px solid hsl(var(--border));
-  border-radius: var(--radius, 0.75rem);
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 0.5rem);
   overflow: hidden;
   font-family: var(--rgFontFamily);
+
+  /* S.C.R.A.P.S. card-tactile shadow */
+  box-shadow:
+    0 0 0 1px oklch(0.3 0.05 280 / 0.04),
+    0 1px 3px 0 oklch(0.3 0.05 280 / 0.08),
+    0 2px 6px -1px oklch(0.3 0.05 280 / 0.05);
+}
+
+.dark revo-grid {
+  box-shadow:
+    0 0 0 1px oklch(0.52 0.12 280 / 0.06),
+    0 1px 3px 0 oklch(0 0 0 / 0.4),
+    0 2px 8px -2px oklch(0 0 0 / 0.3);
 }
 
 /* ── Header Cells ─────────────────────────────────────────────────────────── */
 
 revo-grid .rgHeaderCell,
 revo-grid .header-rgRow {
-  background: hsl(var(--muted) / 0.3);
-  color: hsl(var(--muted-foreground));
+  background: color-mix(in oklch, var(--muted), transparent 70%);
+  color: var(--muted-foreground);
   font-weight: 600;
   font-size: 11px;
   text-transform: none;
   letter-spacing: 0.01em;
-  border-bottom: 1px solid hsl(var(--border));
+  border-bottom: 1px solid var(--border);
   user-select: none;
 }
 
 revo-grid .rgHeaderCell:hover {
-  background: hsl(var(--muted) / 0.5);
+  background: color-mix(in oklch, var(--muted), transparent 50%);
 }
 
 /* ── Data Cells ───────────────────────────────────────────────────────────── */
 
 revo-grid .rgCell {
-  color: hsl(var(--foreground));
-  border-bottom: 1px solid hsl(var(--border) / 0.6);
+  color: var(--foreground);
+  border-bottom: 1px solid color-mix(in oklch, var(--border), transparent 40%);
   padding: 0 12px;
   font-size: 12px;
   transition: background-color 0.1s ease;
 }
 
 revo-grid .rgCell:focus-within {
-  background: hsl(var(--primary) / 0.05);
+  background: color-mix(in oklch, var(--primary), transparent 95%);
 }
 
 /* ── Pinned (Frozen) Columns ──────────────────────────────────────────────── */
 
 revo-grid .pinned-start {
-  background: hsl(var(--card));
-  border-inline-end: 2px solid hsl(var(--border));
+  background: var(--card);
+  border-inline-end: 2px solid var(--border);
   z-index: 5;
 }
 
 revo-grid .pinned-end {
-  background: hsl(var(--primary) / 0.03);
-  border-inline-start: 2px solid hsl(var(--border));
+  background: color-mix(in oklch, var(--primary), transparent 97%);
+  border-inline-start: 2px solid var(--border);
   z-index: 5;
   font-weight: 600;
 }
 
-/* ── Edit Mode ────────────────────────────────────────────────────────────── */
+/* ── Edit Mode — S.C.R.A.P.S. input-sunken style ─────────────────────────── */
 
 revo-grid .rgCell.edit {
-  background: hsl(var(--background));
-  box-shadow: inset 0 0 0 2px hsl(var(--primary));
+  background: var(--background);
+  box-shadow:
+    inset 0 2px 4px 0 oklch(0.3 0.05 280 / 0.06),
+    inset 0 1px 2px 0 oklch(0.3 0.05 280 / 0.04),
+    0 0 0 2px var(--primary);
   padding: 0;
+}
+
+.dark revo-grid .rgCell.edit {
+  box-shadow:
+    inset 0 3px 6px 0 oklch(0 0 0 / 0.35),
+    inset 0 1px 2px 0 oklch(0 0 0 / 0.2),
+    0 0 0 2px var(--primary);
 }
 
 revo-grid .rgCell.edit input,
@@ -104,8 +129,8 @@ revo-grid .rgCell.edit .orbis-editor-input {
   border: none;
   outline: none;
   background: transparent;
-  color: hsl(var(--foreground));
-  font-family: "Rubik Variable", var(--rgFontFamily);
+  color: var(--foreground);
+  font-family: "Rubik Variable", var(--font-sans, sans-serif);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
   padding: 0 12px;
@@ -115,37 +140,37 @@ revo-grid .rgCell.edit .orbis-editor-input {
 /* ── Selection Range ──────────────────────────────────────────────────────── */
 
 revo-grid .rg-selection {
-  background: hsl(var(--primary) / 0.06);
-  border: 2px solid hsl(var(--primary));
+  background: color-mix(in oklch, var(--primary), transparent 94%);
+  border: 2px solid var(--primary);
 }
 
 revo-grid .rg-selection-range {
-  background: hsl(var(--primary) / 0.04);
-  border: 1px dashed hsl(var(--primary) / 0.4);
+  background: color-mix(in oklch, var(--primary), transparent 96%);
+  border: 1px dashed color-mix(in oklch, var(--primary), transparent 60%);
 }
 
 /* ── Row Hover ────────────────────────────────────────────────────────────── */
 
 revo-grid .rgRow:hover .rgCell {
-  background: hsl(var(--muted) / 0.1);
+  background: color-mix(in oklch, var(--muted), transparent 90%);
 }
 
 /* ── Readonly Cells ───────────────────────────────────────────────────────── */
 
 revo-grid .rgCell.readonly {
-  color: hsl(var(--muted-foreground));
+  color: var(--muted-foreground);
   cursor: default;
 }
 
 /* ── Validation Error State ───────────────────────────────────────────────── */
 
 revo-grid .rgCell.cell-error {
-  background: hsl(var(--destructive) / 0.05);
-  box-shadow: inset 0 0 0 1px hsl(var(--destructive) / 0.4);
+  background: color-mix(in oklch, var(--destructive), transparent 95%);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--destructive), transparent 60%);
 }
 
 revo-grid .rgCell.cell-error input {
-  color: hsl(var(--destructive));
+  color: var(--destructive);
 }
 
 /* ── Grade-Specific: Total Column ─────────────────────────────────────────── */
@@ -154,7 +179,7 @@ revo-grid .cell-total {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   text-align: center;
-  color: hsl(var(--primary));
+  color: var(--primary);
 }
 
 /* ── Grade-Specific: Percentage Cell ──────────────────────────────────────── */
@@ -165,50 +190,61 @@ revo-grid .cell-percentage {
   font-weight: 500;
 }
 
-/* ── Grade Letter Color Classes ───────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════════════════
+   Grade Letter Color Classes
+   Uses oklch values that work in both light and dark modes.
+   ══════════════════════════════════════════════════════════════════════════ */
 
 revo-grid .grade-excellent {
-  color: #10b981; /* emerald-500 */
+  color: oklch(0.72 0.17 160); /* emerald — ممتاز */
   font-weight: 700;
 }
 
 revo-grid .grade-very-good {
-  color: #3b82f6; /* blue-500 */
+  color: oklch(0.62 0.15 260); /* blue — جيد جداً */
   font-weight: 600;
 }
 
 revo-grid .grade-good {
-  color: #0ea5e9; /* sky-500 */
+  color: oklch(0.68 0.14 230); /* sky — جيد */
   font-weight: 600;
 }
 
 revo-grid .grade-acceptable {
-  color: #f59e0b; /* amber-500 */
+  color: oklch(0.78 0.16 75);  /* amber — مقبول */
   font-weight: 600;
 }
 
 revo-grid .grade-weak {
-  color: #f97316; /* orange-500 */
+  color: oklch(0.72 0.17 50);  /* orange — ضعيف */
   font-weight: 600;
 }
 
 revo-grid .grade-fail {
-  color: #ef4444; /* red-500 */
+  color: oklch(0.62 0.22 25);  /* red — راسب */
   font-weight: 700;
 }
+
+/* Dark mode — slightly brighter for contrast */
+.dark revo-grid .grade-excellent { color: oklch(0.78 0.17 160); }
+.dark revo-grid .grade-very-good { color: oklch(0.72 0.15 260); }
+.dark revo-grid .grade-good      { color: oklch(0.75 0.14 230); }
+.dark revo-grid .grade-acceptable { color: oklch(0.82 0.16 75); }
+.dark revo-grid .grade-weak      { color: oklch(0.78 0.17 50); }
+.dark revo-grid .grade-fail      { color: oklch(0.68 0.22 25); }
 
 /* ── Student Name Column ──────────────────────────────────────────────────── */
 
 revo-grid .cell-student-name {
   font-weight: 600;
   font-size: 12px;
-  color: hsl(var(--foreground));
+  color: var(--foreground);
 }
 
 /* ── Row Index Column ─────────────────────────────────────────────────────── */
 
 revo-grid .cell-row-index {
-  color: hsl(var(--muted-foreground));
+  color: var(--muted-foreground);
   font-variant-numeric: tabular-nums;
   text-align: center;
   font-size: 10px;
@@ -221,7 +257,9 @@ revo-grid .cell-number-input {
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Scrollbar Styling ────────────────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════════════════
+   Scrollbar Styling
+   ══════════════════════════════════════════════════════════════════════════ */
 
 revo-grid ::-webkit-scrollbar {
   width: 6px;
@@ -233,23 +271,23 @@ revo-grid ::-webkit-scrollbar-track {
 }
 
 revo-grid ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.2);
+  background: color-mix(in oklch, var(--muted-foreground), transparent 80%);
   border-radius: 3px;
 }
 
 revo-grid ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.35);
+  background: color-mix(in oklch, var(--muted-foreground), transparent 65%);
 }
 
 /* ── RTL Adjustments ──────────────────────────────────────────────────────── */
 
 [dir="rtl"] revo-grid .pinned-start {
-  border-inline-end: 2px solid hsl(var(--border));
+  border-inline-end: 2px solid var(--border);
   border-inline-start: none;
 }
 
 [dir="rtl"] revo-grid .pinned-end {
-  border-inline-start: 2px solid hsl(var(--border));
+  border-inline-start: 2px solid var(--border);
   border-inline-end: none;
 }
 
@@ -260,7 +298,7 @@ revo-grid .rg-no-data {
   align-items: center;
   justify-content: center;
   height: 200px;
-  color: hsl(var(--muted-foreground));
+  color: var(--muted-foreground);
   font-size: 12px;
 }
 
@@ -273,50 +311,94 @@ revo-grid .rgHeaderCell .resizable {
 
 revo-grid .rgHeaderCell:hover .resizable {
   opacity: 1;
-  background: hsl(var(--primary) / 0.3);
+  background: color-mix(in oklch, var(--primary), transparent 70%);
 }
 
-/* ── Semantic Cell Status Classes ─────────────────────────────────────────── */
-/* Used by generic column-builders for attendance, fees, grades, etc. */
+/* ══════════════════════════════════════════════════════════════════════════
+   Semantic Cell Status Classes
+   Used by column-builders for attendance, fees, grades, etc.
+   No !important — uses specificity via revo-grid parent selector.
+   ══════════════════════════════════════════════════════════════════════════ */
 
-.orbis-cell-success {
-  color: hsl(142 71% 45%) !important;
+revo-grid .orbis-cell-success {
+  color: oklch(0.72 0.17 160); /* emerald */
   font-weight: 600;
 }
 
-.orbis-cell-error {
-  color: hsl(var(--destructive)) !important;
+revo-grid .orbis-cell-error {
+  color: var(--destructive);
   font-weight: 600;
 }
 
-.orbis-cell-warning {
-  color: hsl(38 92% 50%) !important;
+revo-grid .orbis-cell-warning {
+  color: oklch(0.78 0.16 75);  /* amber */
   font-weight: 600;
 }
 
-.orbis-cell-excellent {
-  color: hsl(142 71% 45%) !important;
+revo-grid .orbis-cell-excellent {
+  color: oklch(0.72 0.17 160); /* emerald */
   font-weight: 700;
 }
 
-.orbis-cell-good {
-  color: hsl(199 89% 48%) !important;
+revo-grid .orbis-cell-good {
+  color: oklch(0.68 0.14 230); /* sky */
   font-weight: 600;
 }
 
-.orbis-cell-number {
+revo-grid .orbis-cell-number {
   font-variant-numeric: tabular-nums;
   font-family: "Rubik", monospace;
   text-align: end;
 }
 
-.orbis-cell-index {
-  color: hsl(var(--muted-foreground));
+revo-grid .orbis-cell-index {
+  color: var(--muted-foreground);
   font-size: 10px;
   text-align: center;
 }
 
-.orbis-cell-student {
+revo-grid .orbis-cell-student {
   font-weight: 600;
   font-size: 12px;
+}
+
+/* Dark mode — brighter status colors for contrast */
+.dark revo-grid .orbis-cell-success  { color: oklch(0.78 0.17 160); }
+.dark revo-grid .orbis-cell-warning  { color: oklch(0.82 0.16 75); }
+.dark revo-grid .orbis-cell-excellent { color: oklch(0.78 0.17 160); }
+.dark revo-grid .orbis-cell-good     { color: oklch(0.75 0.14 230); }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Editor Input — shared styles for all cell editors
+   ══════════════════════════════════════════════════════════════════════════ */
+
+revo-grid .orbis-editor-input {
+  width: 100%;
+  height: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  padding: 0 8px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+revo-grid .orbis-editor-input::-webkit-inner-spin-button,
+revo-grid .orbis-editor-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+revo-grid .orbis-editor-input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+revo-grid .orbis-editor-error {
+  color: var(--destructive);
+  background: color-mix(in oklch, var(--destructive), transparent 92%);
 }

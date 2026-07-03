@@ -11,7 +11,8 @@ Features:
 - Copy/Paste clipboard support
 - Custom cell editors (number, text)
 - Cell validation with visual feedback
-- S.C.R.A.P.S. design token integration (light/dark)
+- S.C.R.A.P.S. design token integration (light/dark via oklch)
+- Module-level caching for fast multi-instance rendering
 
 Usage:
 ```svelte
@@ -29,6 +30,29 @@ Usage:
   import { onMount } from "svelte";
   import type { OrbisColumnDef, CellEditEvent } from "./types";
   import "./orbis-grid.css";
+
+  // ── Module-Level Cache ────────────────────────────────────────────────────
+  // Shared across all OrbisGrid instances — avoids redundant dynamic imports.
+
+  let _revoModule: any = null;
+  let _modulePromise: Promise<any> | null = null;
+  let _editorCache: Record<string, unknown> = {};
+
+  async function loadRevoGridModule(): Promise<any> {
+    if (_revoModule) return _revoModule;
+    if (!_modulePromise) {
+      _modulePromise = import("@revolist/svelte-datagrid");
+    }
+    _revoModule = await _modulePromise;
+    return _revoModule;
+  }
+
+  async function loadNumberEditor(mod: any): Promise<unknown> {
+    if (_editorCache["number"]) return _editorCache["number"];
+    const editorMod = await import("./editors/NumberEditor.svelte");
+    _editorCache["number"] = mod.Editor(editorMod.default);
+    return _editorCache["number"];
+  }
 
   const isBrowser = typeof window !== "undefined";
 
@@ -88,25 +112,21 @@ Usage:
 
   let gridReady = $state(false);
   let RevoGridComponent: any = $state(null);
-  let EditorWrapper: any = $state(null);
-  let TemplateWrapper: any = $state(null);
   let loadedEditors: Record<string, unknown> = $state({});
 
-  // ── Dynamic Import (SSR-safe) ────────────────────────────────────────────
+  // ── Dynamic Import (SSR-safe, module-cached) ──────────────────────────────
 
   onMount(async () => {
     if (!isBrowser) return;
     try {
-      const mod = await import("@revolist/svelte-datagrid");
+      const mod = await loadRevoGridModule();
       RevoGridComponent = mod.RevoGrid;
-      EditorWrapper = mod.Editor;
-      TemplateWrapper = mod.Template;
 
-      // Register editors after module is loaded
+      // Register editors from cache or load once
       const hasNumberEditor = columns.some((c) => c.editor === "number");
       if (hasNumberEditor) {
-        const editorMod = await import("./editors/NumberEditor.svelte");
-        loadedEditors["number"] = mod.Editor(editorMod.default);
+        const numEditor = await loadNumberEditor(mod);
+        loadedEditors = { ...loadedEditors, number: numEditor };
       }
 
       gridReady = true;
@@ -118,7 +138,7 @@ Usage:
   // ── Map OrbisColumnDef → RevoGrid ColumnRegular ──────────────────────────
 
   let revoColumns = $derived.by(() => {
-    if (!EditorWrapper) return [];
+    if (!gridReady) return [];
     return columns.map((col) => {
       const revoCol: Record<string, unknown> = {
         prop: col.prop,
@@ -129,6 +149,8 @@ Usage:
         readonly: readonly || (col.readonly ?? false),
         cellProperties: (params?: any) => {
           const classes: string[] = [];
+          // Declarative variant → orbis-cell-{variant} class
+          if (col.variant) classes.push(`orbis-cell-${col.variant}`);
           if (col.cellClass) classes.push(col.cellClass);
           if (col.align === "center") classes.push("cell-number-input");
 
@@ -177,7 +199,6 @@ Usage:
 
   // ── Editors Registry ─────────────────────────────────────────────────────
 
-  // Editors are loaded in onMount and stored in loadedEditors
   let editors = $derived(loadedEditors);
 
   // ── Event Handlers ───────────────────────────────────────────────────────
@@ -250,7 +271,7 @@ Usage:
     />
   </div>
 {:else}
-  <!-- Loading skeleton matching grid dimensions -->
+  <!-- Loading skeleton using S.C.R.A.P.S. design tokens -->
   <div
     class="orbis-grid-skeleton"
     style="height: {height}; width: 100%;"
@@ -262,8 +283,8 @@ Usage:
         </div>
       {/each}
     </div>
-    {#each Array(8) as _}
-      <div class="skeleton-row">
+    {#each Array(8) as _, i}
+      <div class="skeleton-row" style="opacity: {1 - i * 0.06}">
         {#each columns.slice(0, 6) as col}
           <div class="skeleton-cell" style="width: {col.size ?? 120}px;">
             <div class="skeleton-bar" style="width: {30 + Math.random() * 50}%;"></div>
@@ -277,22 +298,34 @@ Usage:
 <style>
   .orbis-grid-container {
     position: relative;
-    border-radius: var(--radius, 0.75rem);
+    border-radius: var(--radius, 0.5rem);
     overflow: hidden;
   }
 
-  /* ── Loading Skeleton ─────────────────────────────────────────────────── */
+  /* ── Loading Skeleton — S.C.R.A.P.S. themed ───────────────────────────── */
   .orbis-grid-skeleton {
-    border: 1px solid hsl(var(--border, 0 0% 90%));
-    border-radius: var(--radius, 0.75rem);
+    border: 1px solid var(--border);
+    border-radius: var(--radius, 0.5rem);
     overflow: hidden;
-    background: hsl(var(--card, 0 0% 100%));
+    background: var(--card);
+    /* card-tactile shadow */
+    box-shadow:
+      0 0 0 1px oklch(0.3 0.05 280 / 0.04),
+      0 1px 3px 0 oklch(0.3 0.05 280 / 0.08),
+      0 2px 6px -1px oklch(0.3 0.05 280 / 0.05);
+  }
+
+  :global(.dark) .orbis-grid-skeleton {
+    box-shadow:
+      0 0 0 1px oklch(0.52 0.12 280 / 0.06),
+      0 1px 3px 0 oklch(0 0 0 / 0.4),
+      0 2px 8px -2px oklch(0 0 0 / 0.3);
   }
 
   .skeleton-header {
     display: flex;
-    border-bottom: 1px solid hsl(var(--border, 0 0% 90%));
-    background: hsl(var(--muted, 0 0% 96%) / 0.3);
+    border-bottom: 1px solid var(--border);
+    background: color-mix(in oklch, var(--muted), transparent 70%);
     height: 42px;
     align-items: center;
   }
@@ -306,7 +339,7 @@ Usage:
 
   .skeleton-row {
     display: flex;
-    border-bottom: 1px solid hsl(var(--border, 0 0% 90%) / 0.5);
+    border-bottom: 1px solid color-mix(in oklch, var(--border), transparent 50%);
     height: 42px;
     align-items: center;
   }
@@ -321,12 +354,41 @@ Usage:
   .skeleton-bar {
     height: 10px;
     border-radius: 4px;
-    background: hsl(var(--muted, 0 0% 96%));
-    animation: skeleton-pulse 1.5s ease-in-out infinite;
+    background: var(--muted);
+    position: relative;
+    overflow: hidden;
   }
 
-  @keyframes skeleton-pulse {
-    0%, 100% { opacity: 0.4; }
-    50% { opacity: 0.8; }
+  /* S.C.R.A.P.S. shimmer animation — matching globals.css skeleton */
+  .skeleton-bar::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      oklch(0.52 0.12 280 / 0.06) 40%,
+      oklch(0.52 0.12 280 / 0.12) 50%,
+      oklch(0.52 0.12 280 / 0.06) 60%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: orbis-grid-shimmer 2.5s linear infinite;
+  }
+
+  :global(.dark) .skeleton-bar::after {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      oklch(0.6 0.12 280 / 0.08) 40%,
+      oklch(0.6 0.12 280 / 0.16) 50%,
+      oklch(0.6 0.12 280 / 0.08) 60%,
+      transparent 100%
+    );
+  }
+
+  @keyframes orbis-grid-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
   }
 </style>
