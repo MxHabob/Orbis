@@ -19,6 +19,7 @@ import {
   ShieldAlert,
   PhoneCall,
   Edit2,
+  User,
   Users,
   Users2,
   FileText,
@@ -50,6 +51,11 @@ onMount(async () => {
 const basePath = $derived(`/${orgId}/students/${studentId}`);
 
 const menuItems = $derived([
+  {
+    path: "",
+    label: m.form_tab_profile(),
+    icon: User,
+  },
   {
     path: "grades",
     label: m.detail_tab_grades(),
@@ -113,16 +119,6 @@ const menuItems = $derived([
 
     {#snippet actions()}
       {#if student}
-        <Button
-          href={localizeHref(`/${orgId}/students/${studentId}/edit`)}
-          variant="outline"
-          size="sm"
-          class="h-8 text-[11px] gap-1.5 font-semibold"
-        >
-          <Edit2 size={12} />
-          {m.detail_edit_data()}
-        </Button>
-
         <Button
           variant="outline"
           size="sm"

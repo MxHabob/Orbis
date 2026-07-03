@@ -74,22 +74,12 @@ async function fetchStats() {
 		<div class="flex items-center justify-between p-4">
 			<div class="flex items-center gap-2">
 				<Button
-					href={localizeHref(`/${orgId}/students/${studentId}/grades`)}
+					href={localizeHref(`/${orgId}/students/${studentId}`)}
 					variant="ghost"
-					// size="icon"
 					class="text-muted-foreground hover:text-foreground"
 					title={m.inspector_view_full()}
 				>
 					<ExternalLink size={14} />
-				</Button>
-				<Button
-					href={localizeHref(`/${orgId}/students/${studentId}/edit`)}
-					variant="ghost"
-					// size="icon"
-					class=" text-muted-foreground hover:text-foreground"
-					title={m.inspector_edit_record()}
-				>
-					<Edit2 size={13} />
 				</Button>
 			</div>
 			

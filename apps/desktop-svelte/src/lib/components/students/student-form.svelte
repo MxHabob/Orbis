@@ -1,7 +1,7 @@
 <!--
 @component StudentForm
 Redesigned student registration form matching the fields and layout of the registration paper form.
-Uses S.C.R.A.P.S. design components with top-tier 2026 aesthetics and tabbed UX.
+Uses S.C.R.A.P.S. design components with top-tier 2026 aesthetics, tabbed UX, optional fees checklist, and discounts.
 -->
 <script lang="ts">
 import { goto } from "$app/navigation";
@@ -10,6 +10,8 @@ import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Separator } from "@orbis/ui-svelte/separator";
+import { Switch } from "@orbis/ui-svelte/switch";
+import { Checkbox } from "@orbis/ui-svelte/checkbox";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui-svelte/tabs";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@orbis/ui-svelte/card";
 import {
@@ -37,6 +39,8 @@ import {
   GraduationCap,
   Calendar,
   Contact,
+  CreditCard,
+  Percent,
 } from "lucide-svelte";
 import * as m from "$lib/paraglide/messages";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
@@ -125,9 +129,18 @@ let submittedDocs = $state<string[]>([]);
 let isSaving = $state(false);
 let orgName = $state("");
 
-// Template selection state
+// Print Template selection state
 let availableTemplates = $state<any[]>([]);
 let selectedTemplateId = $state("");
+
+// Discount & Optional Fees State
+let discountTemplates = $state<any[]>([]);
+let feeTemplates = $state<any[]>([]);
+let applyDiscount = $state(false);
+let discountType = $state("template"); // template | custom
+let selectedDiscountTemplateId = $state("");
+let customDiscountAmount = $state<number | null>(null);
+let selectedOptionalFees = $state<Record<string, { checked: boolean; amount: number }>>({});
 
 onMount(async () => {
   if (studentsStore.classes.length === 0) {
@@ -141,10 +154,9 @@ onMount(async () => {
     console.error("Failed to load organization name:", e);
   }
 
-  // Load document templates
+  // Load print templates
   try {
     const tpls = await commands.documentTemplates.getTemplates(orgId);
-    // Filter templates applicable to user/enrollment, or default
     availableTemplates = tpls.filter(
       (t) =>
         t.entity_type === "user" ||
@@ -163,8 +175,29 @@ onMount(async () => {
       selectedTemplateId = "t5-student-registration-form";
     }
   } catch (e) {
-    console.error("Failed to load document templates:", e);
+    console.error("Failed to load print templates:", e);
     selectedTemplateId = "t5-student-registration-form";
+  }
+
+  // Load active discount templates and fee templates for mapping
+  try {
+    const [fTpls, dTpls] = await Promise.all([
+      commands.finance.getFeeTemplates(orgId),
+      commands.finance.getActiveDiscountTemplates(orgId),
+    ]);
+    feeTemplates = fTpls || [];
+    discountTemplates = dTpls || [];
+
+    // Pre-populate optional fees mapping
+    const optionalFeesMap: Record<string, { checked: boolean; amount: number }> = {};
+    feeTemplates.forEach((t) => {
+      if (t.is_mandatory === 0 && t.is_active === 1) {
+        optionalFeesMap[t.id] = { checked: false, amount: t.default_amount };
+      }
+    });
+    selectedOptionalFees = optionalFeesMap;
+  } catch (e) {
+    console.error("Failed to load financial templates:", e);
   }
 
   if (isEditMode && studentId) {
@@ -226,12 +259,98 @@ async function loadStudentData() {
           }
         }
       }
+
+      // Load existing student fees to check which optional ones are assigned
+      try {
+        const fees = await commands.finance.getStudentFees(orgId, student.id);
+        const optionalFeesMap = { ...selectedOptionalFees };
+        fees.forEach((f) => {
+          if (f.fee_template_id && optionalFeesMap[f.fee_template_id]) {
+            optionalFeesMap[f.fee_template_id] = { checked: true, amount: f.original_amount };
+          }
+        });
+        selectedOptionalFees = optionalFeesMap;
+      } catch (e) {
+        console.error("Failed to load existing student fees:", e);
+      }
     }
   } catch (e) {
     console.error("Error loading student edit data:", e);
     toast.error(m.form_error_load());
   }
 }
+
+// ── Financial Live Calculations ─────────────────────────────────────
+const classLevel = $derived(
+  studentsStore.classes.find((c) => String(c.id) === classId)?.level || ""
+);
+
+// Filters mandatory fee templates applicable to this student's level
+const mandatoryFeesList = $derived.by(() => {
+  if (!classLevel) return [];
+  return feeTemplates.filter((t) => {
+    if (t.is_mandatory === 1 && t.is_active === 1) {
+      if (t.applicable_levels) {
+        try {
+          const rules = JSON.parse(t.applicable_levels);
+          if (rules.levels && Array.isArray(rules.levels)) {
+            return rules.levels.includes(classLevel);
+          } else if (rules.level) {
+            return rules.level === classLevel;
+          }
+        } catch {
+          return false;
+        }
+      }
+      return true; // Applies to all if no level specified
+    }
+    return false;
+  });
+});
+
+const mandatoryTotal = $derived(
+  mandatoryFeesList.reduce((sum, t) => sum + t.default_amount, 0)
+);
+
+// Calculates active discount amount based on selected template or custom value
+const discountTotal = $derived.by(() => {
+  if (!applyDiscount) return 0;
+  if (discountType === "template" && selectedDiscountTemplateId) {
+    const tpl = discountTemplates.find((t) => t.id === selectedDiscountTemplateId);
+    if (tpl) {
+      const val = (tpl.value as number) || 0;
+      if (String(tpl.calculation_method).toLowerCase() === "percentage") {
+        return (mandatoryTotal * val) / 100;
+      } else {
+        return val;
+      }
+    }
+  } else if (discountType === "custom" && customDiscountAmount) {
+    return customDiscountAmount;
+  }
+  return 0;
+});
+
+// Gets optional fee templates list
+const optionalFeesList = $derived(
+  feeTemplates.filter((t) => t.is_mandatory === 0 && t.is_active === 1)
+);
+
+// Calculates total of selected optional fees
+const optionalTotal = $derived.by(() => {
+  let sum = 0;
+  for (const key in selectedOptionalFees) {
+    if (selectedOptionalFees[key].checked) {
+      sum += selectedOptionalFees[key].amount || 0;
+    }
+  }
+  return sum;
+});
+
+// Final net sum calculation
+const netTotal = $derived(
+  Math.max(0, mandatoryTotal + optionalTotal - discountTotal)
+);
 
 function toggleDoc(docId: string) {
   if (submittedDocs.includes(docId)) {
@@ -331,11 +450,13 @@ async function handleSave() {
         address: address.trim() || null,
       });
 
-      // Create new student enrollment
+      // Create new student enrollment, passing discount parameters
       const enrollmentRequest = {
         student_id: studentUser.id,
         class_id: classId,
         enrollment_type: "regular",
+        discount_template_id: applyDiscount && discountType === "template" ? selectedDiscountTemplateId || null : null,
+        custom_discount_amount: applyDiscount && discountType === "custom" ? customDiscountAmount || null : null,
       };
 
       const res = await commands.enrollments.create(orgId, enrollmentRequest);
@@ -419,6 +540,24 @@ async function handleSave() {
       }
     }
 
+    // Assign optional/custom fees sequentially (only assign if checked, and only on enrollment creation or additions)
+    const today = new Date().toISOString().slice(0, 10);
+    for (const key in selectedOptionalFees) {
+      if (selectedOptionalFees[key].checked) {
+        try {
+          await commands.finance.assignStudentFee(orgId, {
+            enrollment_id: targetEnrollmentId,
+            fee_template_id: key,
+            amount: selectedOptionalFees[key].amount,
+            due_date: today,
+            notes: "رسوم إضافية مضافة عند التسجيل",
+          });
+        } catch (feeErr) {
+          console.error("Failed to assign optional fee:", key, feeErr);
+        }
+      }
+    }
+
     // Navigate back to directory
     goto(localizeHref(`/${orgId}/students`));
   } catch (e: any) {
@@ -483,6 +622,10 @@ async function handleDownloadRegistrationForm() {
       governorate: governorate,
       documents: submittedDocs.join(", "),
       current_date: new Date().toLocaleDateString("ar-YE"),
+      mandatory_fees: mandatoryTotal.toString(),
+      optional_fees: optionalTotal.toString(),
+      discount_fees: discountTotal.toString(),
+      net_fees: netTotal.toString(),
     };
 
     const pdfBytes = await commands.docforge.previewDocumentTemplate(
@@ -522,9 +665,35 @@ async function handleDownloadRegistrationForm() {
 
 <div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
   <div class="max-w-6xl mx-auto p-6 flex flex-col gap-6">
+    
+    <!-- Page Header -->
+    <div class="flex items-center justify-between gap-4 border-b border-border/60 pb-5">
+      <div class="flex flex-col gap-1 text-start">
+        <h1 class="text-xl font-bold tracking-tight text-foreground">
+          {isEditMode ? m.form_edit_student() : m.form_new_student()}
+        </h1>
+        <p class="text-xs text-muted-foreground">
+          {m.form_student_desc()}
+        </p>
+      </div>
+      
+      <!-- Badges indicating the current state -->
+      <div class="flex items-center gap-2 flex-wrap">
+        {#if isEditMode}
+          <Badge variant={status === 'active' ? 'lime' : 'secondary'} class="text-[10px] font-semibold tracking-wider uppercase">
+            {status === 'active' ? m.form_active_status() : status}
+          </Badge>
+        {:else}
+          <Badge variant="outline" class="text-[10px] font-semibold text-primary border-primary/30 bg-primary/5 uppercase">
+            {m.form_draft_status()}
+          </Badge>
+        {/if}
+      </div>
+    </div>
+
     <!-- Redesigned Tabs Interface for 2026 UX best practices -->
     <Tabs value="profile" class="w-full">
-      <TabsList class="grid grid-cols-4 max-w-2xl mx-auto mb-8 bg-muted/20 p-1 rounded-xl border border-border/40">
+      <TabsList class="grid grid-cols-5 max-w-3xl mx-auto mb-8 bg-muted/20 p-1 rounded-xl border border-border/40">
         <TabsTrigger value="profile" class="text-xs font-semibold gap-2 py-2 cursor-pointer">
           <User class="h-4 w-4" />
           <span class="hidden sm:inline">{m.form_tab_profile()}</span>
@@ -536,6 +705,10 @@ async function handleDownloadRegistrationForm() {
         <TabsTrigger value="location" class="text-xs font-semibold gap-2 py-2 cursor-pointer">
           <MapPin class="h-4 w-4" />
           <span class="hidden sm:inline">{m.form_tab_location()}</span>
+        </TabsTrigger>
+        <TabsTrigger value="financials" class="text-xs font-semibold gap-2 py-2 cursor-pointer">
+          <CreditCard class="h-4 w-4" />
+          <span class="hidden sm:inline">{m.form_tab_financials()}</span>
         </TabsTrigger>
         <TabsTrigger value="documents" class="text-xs font-semibold gap-2 py-2 cursor-pointer">
           <FileText class="h-4 w-4" />
@@ -915,7 +1088,212 @@ async function handleDownloadRegistrationForm() {
         </Card>
       </TabsContent>
 
-      <!-- TAB 4: Documents Status -->
+      <!-- TAB 4: Financials & Discounts -->
+      <TabsContent value="financials">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          <!-- Financial Form Configuration Panel -->
+          <div class="lg:col-span-2 space-y-6">
+            
+            <!-- Discounts & Grants section -->
+            <Card class="bg-card/50 border border-border/80 rounded-2xl shadow-xl backdrop-blur-md">
+              <CardHeader class="border-b border-border/60 pb-4">
+                <CardTitle class="text-sm font-bold flex items-center justify-between text-foreground">
+                  <span class="flex items-center gap-2">
+                    <Percent class="text-primary h-4.5 w-4.5" />
+                    <span>{m.form_discount_section()}</span>
+                  </span>
+                  <!-- Switch to apply discount -->
+                  <div class="flex items-center gap-2 cursor-pointer">
+                    <Label class="text-[10px] font-semibold text-muted-foreground cursor-pointer" for="applyDiscountSwitch">
+                      {m.form_apply_discount()}
+                    </Label>
+                    <Switch id="applyDiscountSwitch" bind:checked={applyDiscount} />
+                  </div>
+                </CardTitle>
+                <CardDescription class="text-[11px] text-muted-foreground">
+                  تطبيق منح دراسية أو خصومات مخصصة للطلاب (أقارب الموظفين، إخوة، أيتام، إلخ)
+                </CardDescription>
+              </CardHeader>
+              
+              {#if applyDiscount}
+                <CardContent class="p-6 space-y-4">
+                  <div class="flex gap-4 items-center">
+                    <Button
+                      variant="ghost"
+                      class="flex-1 border rounded-lg text-xs h-8 cursor-pointer transition-all duration-150 {discountType === 'template' ? 'border-primary bg-primary/5 font-semibold text-primary' : 'border-border bg-card/20 text-muted-foreground hover:bg-muted/30'}"
+                      onclick={() => discountType = 'template'}
+                    >
+                      <span>{m.form_discount_type_template()}</span>
+                    </Button>
+                    <Button 
+                      variant="ghost"
+                      class="flex-1 border rounded-lg text-xs h-8 cursor-pointer transition-all duration-150 {discountType === 'custom' ? 'border-primary bg-primary/5 font-semibold text-primary' : 'border-border bg-card/20 text-muted-foreground hover:bg-muted/30'}"
+                      onclick={() => discountType = 'custom'}
+                    >
+                      <span>{m.form_discount_type_custom()}</span>
+                    </Button>
+                  </div>
+
+                  {#if discountType === 'template'}
+                    <div class="flex flex-col gap-2 text-start">
+                      <Label class="text-[11px] font-semibold text-muted-foreground">اختر قالب الخصم</Label>
+                      <Select bind:value={selectedDiscountTemplateId} type="single">
+                        <SelectTrigger class="w-full h-8 text-xs text-start flex items-center justify-between border border-input">
+                          <span class="truncate">
+                            {discountTemplates.find(d => d.id === selectedDiscountTemplateId)?.name || "قالب الخصم"}
+                          </span>
+                        </SelectTrigger>
+                        <SelectContent class="text-start max-h-48 overflow-y-auto" align="end">
+                          {#each discountTemplates as tpl}
+                            <SelectItem value={tpl.id} class="text-xs text-start cursor-pointer justify-start">
+                              {tpl.name} ({tpl.value}{tpl.calculation_method === 'percentage' ? '%' : ' YER'})
+                            </SelectItem>
+                          {/each}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  {:else}
+                    <div class="flex flex-col gap-2 text-start">
+                      <Label class="text-[11px] font-semibold text-muted-foreground" for="customDiscount">{m.form_discount_custom_amount()}</Label>
+                      <Input 
+                        id="customDiscount"
+                        type="number"
+                        min="0"
+                        placeholder="أدخل مبلغ الخصم المباشر بالريال اليمني"
+                        class="text-xs"
+                        bind:value={customDiscountAmount}
+                      />
+                    </div>
+                  {/if}
+                </CardContent>
+              {/if}
+            </Card>
+
+            <!-- Optional Custom Fees list -->
+            <Card class="bg-card/50 border border-border/80 rounded-2xl shadow-xl backdrop-blur-md">
+              <CardHeader class="border-b border-border/60 pb-4">
+                <CardTitle class="text-sm font-bold flex items-center gap-2 text-foreground">
+                  <CreditCard class="text-primary h-4.5 w-4.5" />
+                  <span>{m.form_optional_fees_section()}</span>
+                </CardTitle>
+                <CardDescription class="text-[11px] text-muted-foreground">
+                  اختر رسوم الخدمات المضافة والمنتجات التي ترغب في تسجيلها على الطالب حالاً
+                </CardDescription>
+              </CardHeader>
+              <CardContent class="p-6 space-y-4">
+                {#if optionalFeesList.length === 0}
+                  <p class="text-xs text-muted-foreground text-center py-4">
+                    لا توجد رسوم إضافية مسجلة كـ "اختيارية" في النظام حالياً.
+                  </p>
+                {:else}
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {#each optionalFeesList as fTpl}
+                      {@const isChecked = selectedOptionalFees[fTpl.id]?.checked || false}
+                      <div class="flex items-center justify-between p-3 border border-border/80 rounded-xl bg-card/20 hover:bg-card/40 transition-all duration-150 gap-4">
+                        <div class="flex items-start gap-2.5 text-start">
+                          <Checkbox 
+                            id={`fee_${fTpl.id}`} 
+                            checked={isChecked}
+                            onCheckedChange={(checked) => {
+                              selectedOptionalFees[fTpl.id].checked = !!checked;
+                            }}
+                          />
+                          <div class="flex flex-col gap-0.5">
+                            <Label for={`fee_${fTpl.id}`} class="text-xs font-bold text-foreground cursor-pointer">
+                              {fTpl.name_ar || fTpl.name}
+                            </Label>
+                            <span class="text-[10px] text-muted-foreground capitalize">
+                              {fTpl.category}
+                            </span>
+                          </div>
+                        </div>
+
+                        <!-- Amount override field -->
+                        <div class="w-24 shrink-0 flex items-center gap-1">
+                          <Input 
+                            type="number"
+                            disabled={!isChecked}
+                            class="text-xs h-7 text-center font-bold px-1"
+                            bind:value={selectedOptionalFees[fTpl.id].amount}
+                          />
+                          <span class="text-[10px] text-muted-foreground">ر.ي</span>
+                        </div>
+                      </div>
+                    {/each}
+                  </div>
+                {/if}
+              </CardContent>
+            </Card>
+
+          </div>
+
+          <!-- Live Receipt Summary Panel (Fintech 2026 Style) -->
+          <div class="space-y-6">
+            <Card class="bg-card/50 border border-border/80 rounded-2xl shadow-xl backdrop-blur-md sticky top-6">
+              <CardHeader class="border-b border-border/60 pb-4">
+                <CardTitle class="text-sm font-bold flex items-center gap-2 text-foreground">
+                  <Sparkles class="text-primary h-4.5 w-4.5" />
+                  <span>{m.form_summary_section()}</span>
+                </CardTitle>
+                <CardDescription class="text-[11px] text-muted-foreground">
+                  تفاصيل الفاتورة والقيم المالية المحسوبة ديناميكياً
+                </CardDescription>
+              </CardHeader>
+              <CardContent class="p-6 space-y-4 text-start">
+                
+                <!-- Mandatory Fees Total -->
+                <div class="flex justify-between items-center text-xs">
+                  <span class="text-muted-foreground">{m.form_summary_mandatory()}:</span>
+                  <span class="font-bold text-foreground">{mandatoryTotal.toLocaleString()} ريال</span>
+                </div>
+
+                <!-- Selected Optional Fees Total -->
+                <div class="flex justify-between items-center text-xs">
+                  <span class="text-muted-foreground">{m.form_summary_optional()}:</span>
+                  <span class="font-bold text-foreground">+{optionalTotal.toLocaleString()} ريال</span>
+                </div>
+
+                <!-- Discounts Total -->
+                <div class="flex justify-between items-center text-xs">
+                  <span class="text-muted-foreground">{m.form_summary_discount()}:</span>
+                  <span class="font-bold text-destructive">-{discountTotal.toLocaleString()} ريال</span>
+                </div>
+
+                <div class="py-1">
+                  <Separator class="bg-border/60" />
+                </div>
+
+                <!-- Final Net Fees Required -->
+                <div class="flex justify-between items-center">
+                  <span class="text-sm font-bold text-foreground">{m.form_summary_net()}:</span>
+                  <span class="text-base font-extrabold text-primary">{netTotal.toLocaleString()} ريال يمني</span>
+                </div>
+
+                <!-- Fee breakdown visualizer -->
+                {#if mandatoryFeesList.length > 0}
+                  <div class="mt-4 p-3 rounded-xl bg-muted/20 border border-border/60 space-y-1.5">
+                    <span class="text-[10px] font-bold text-muted-foreground block border-b border-border/40 pb-1">
+                      تفاصيل الرسوم الأساسية المعتمدة للصف:
+                    </span>
+                    {#each mandatoryFeesList as feeTpl}
+                      <div class="flex justify-between items-center text-[10px]">
+                        <span class="text-muted-foreground truncate max-w-[150px]">
+                          {feeTpl.name_ar || feeTpl.name}
+                        </span>
+                        <span class="font-mono text-foreground">{feeTpl.default_amount.toLocaleString()} ر.ي</span>
+                      </div>
+                    {/each}
+                  </div>
+                {/if}
+              </CardContent>
+            </Card>
+          </div>
+
+        </div>
+      </TabsContent>
+
+      <!-- TAB 5: Documents Status -->
       <TabsContent value="documents">
         <Card class="bg-card/50 border border-border/80 rounded-2xl shadow-xl backdrop-blur-md">
           <CardHeader class="border-b border-border/60 pb-4">

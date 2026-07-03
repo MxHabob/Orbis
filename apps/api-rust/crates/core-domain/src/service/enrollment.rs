@@ -11,6 +11,8 @@ pub struct CreateEnrollmentRequest {
     pub class_id: String,
     pub cycle_id: Option<String>,
     pub enrollment_type: Option<String>,
+    pub discount_template_id: Option<String>,
+    pub custom_discount_amount: Option<f64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
@@ -222,7 +224,29 @@ impl super::Service {
 
                 if is_applicable {
                     let original_amount = tpl.default_amount;
-                    let total_amount = original_amount;
+                    let mut discount_amount = 0.0;
+                    let mut discount_details = None;
+
+                    // Apply discount only for tuition/mandatory fees
+                    if tpl.category.to_lowercase() == "tuition" || tpl.category.to_lowercase() == "mandatory" {
+                        if let Some(dt_id) = &req.discount_template_id {
+                            if let Ok(Some(dt)) = self.repo.get_discount_template_by_id(dt_id).await {
+                                let val = dt.value as f64;
+                                if dt.calculation_method.to_lowercase() == "percentage" {
+                                    discount_amount = (original_amount * val) / 100.0;
+                                    discount_details = Some(format!("Applied template: {} ({}%)", dt.name, val));
+                                } else {
+                                    discount_amount = val;
+                                    discount_details = Some(format!("Applied template: {} ({} YER)", dt.name, val));
+                                }
+                            }
+                        } else if let Some(custom_val) = req.custom_discount_amount {
+                            discount_amount = custom_val;
+                            discount_details = Some("خصم مخصص".to_string());
+                        }
+                    }
+
+                    let total_amount = (original_amount - discount_amount).max(0.0);
 
                     let sf = crate::entities::student_fee::Model {
                         id: Uuid::new_v4().to_string(),
@@ -231,14 +255,14 @@ impl super::Service {
                         enrollment_id: created_enrollment.id.clone(),
                         fee_template_id: tpl.id.clone(),
                         original_amount,
-                        discount_amount: 0.0,
+                        discount_amount,
                         net_amount: total_amount,
                         status: "unpaid".to_string(),
                         due_date: Utc::now().checked_add_signed(chrono::Duration::days(30))
                             .unwrap_or_else(Utc::now)
                             .format("%Y-%m-%d")
                             .to_string(),
-                        discount_details: None,
+                        discount_details,
                         parent_fee_id: None,
                         installment_number: None,
                         notes: Some(format!("Auto-generated fee: {}", tpl.name)),
@@ -248,19 +272,19 @@ impl super::Service {
 
                     if let Ok(created_fee) = self.repo.create_student_fee(sf).await {
                         // Create double entry bookkeeping journal entry if amount > 0
-                        if original_amount > 0.0 {
+                        if total_amount > 0.0 {
                             let je = crate::entities::journal_entry::Model {
                                 id: Uuid::new_v4().to_string(),
                                 org_id: org_id.to_string(),
                                 transaction_ref: format!("ENR-{}", created_enrollment.student_number),
                                 accounting_date: Utc::now().format("%Y-%m-%d").to_string(),
                                 fiscal_period_id: cycle_id.clone(),
-                                amount: original_amount,
+                                amount: total_amount,
                                 debit_account_id: student_ledger_account.id.clone(),
                                 credit_account_id: tpl.revenue_account_id.clone(),
                                 currency: student_ledger_account.currency.clone(),
                                 exchange_rate: Some(1.0),
-                                base_currency_amount: Some(original_amount),
+                                base_currency_amount: Some(total_amount),
                                 source_type: "student_fee".to_string(),
                                 source_id: Some(created_fee.id),
                                 source_module: Some("finance".to_string()),
@@ -284,8 +308,8 @@ impl super::Service {
                             let _ = self.repo.create_journal_entry(je).await;
 
                             // Update cached ledger balances
-                            let _ = self.repo.update_ledger_account_balance(&student_ledger_account.id, original_amount).await;
-                            let _ = self.repo.update_ledger_account_balance(&tpl.revenue_account_id, original_amount).await;
+                            let _ = self.repo.update_ledger_account_balance(&student_ledger_account.id, total_amount).await;
+                            let _ = self.repo.update_ledger_account_balance(&tpl.revenue_account_id, total_amount).await;
                         }
                     }
                 }
