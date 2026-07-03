@@ -87,51 +87,52 @@ const tasksList = $derived([
       <Tooltip>
         <TooltipTrigger>
           {#snippet child({ props: tooltipProps })}
-            <Button
-              {...popoverProps}
-              {...tooltipProps}
-              variant="outline"
-              size="icon-sm"
-              class="relative cursor-pointer rounded-[10px] onboarding-popover-trigger"
-            >
-              <div class="relative size-5 flex items-center justify-center">
-                <!-- Progress Circular Ring SVG -->
-                <svg class="absolute inset-0 size-5 select-none" viewBox="0 0 24 24" width="20" height="20">
-                  <!-- Background track -->
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="9"
-                    class="stroke-muted/40 fill-none"
-                    stroke-width="2.5"
-                  />
-                  <!-- Progress highlight rotated around center -->
-                  {#if progressPercent > 0}
+            <span {...tooltipProps} class="inline-block">
+              <Button
+                {...popoverProps}
+                variant="outline"
+                size="icon-sm"
+                class="relative cursor-pointer rounded-[10px] onboarding-popover-trigger"
+              >
+                <div class="relative size-5 flex items-center justify-center">
+                  <!-- Progress Circular Ring SVG -->
+                  <svg class="absolute inset-0 size-5 select-none" viewBox="0 0 24 24" width="20" height="20">
+                    <!-- Background track -->
                     <circle
                       cx="12"
                       cy="12"
                       r="9"
-                      class="stroke-primary fill-none transition-all duration-300 origin-center -rotate-90"
+                      class="stroke-muted/40 fill-none"
                       stroke-width="2.5"
-                      stroke-dasharray="56.5"
-                      stroke-dashoffset={56.5 - (56.5 * progressPercent) / 100}
-                      stroke-linecap="round"
                     />
+                    <!-- Progress highlight rotated around center -->
+                    {#if progressPercent > 0}
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="9"
+                        class="stroke-primary fill-none transition-all duration-300 origin-center -rotate-90"
+                        stroke-width="2.5"
+                        stroke-dasharray="56.5"
+                        stroke-dashoffset={56.5 - (56.5 * progressPercent) / 100}
+                        stroke-linecap="round"
+                      />
+                    {/if}
+                  </svg>
+                  
+                  <!-- Inner status indicator -->
+                  {#if remainingTasks === 0}
+                    <Check class="size-3 text-primary stroke-[3px]" />
+                  {:else}
+                    <span class="text-[8.5px] font-extrabold text-foreground leading-none">
+                      {remainingTasks}
+                    </span>
+                    <!-- Notification dot badge shifted outside the ring -->
+                    <span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary border border-background"></span>
                   {/if}
-                </svg>
-                
-                <!-- Inner status indicator -->
-                {#if remainingTasks === 0}
-                  <Check class="size-3 text-primary stroke-[3px]" />
-                {:else}
-                  <span class="text-[8.5px] font-extrabold text-foreground leading-none">
-                    {remainingTasks}
-                  </span>
-                  <!-- Notification dot badge shifted outside the ring -->
-                  <span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary border border-background"></span>
-                {/if}
-              </div>
-            </Button>
+                </div>
+              </Button>
+            </span>
           {/snippet}
         </TooltipTrigger>
         <TooltipContent side="right" sideOffset={12}>
