@@ -159,13 +159,18 @@ async function saveStudentDetails(e: Event) {
     };
 
     // Update student user details
-    await commands.users.updateUser(student.student_id, studentUserData);
+    await commands.users.updateUser(String(student.student_id), studentUserData);
 
     // If class has changed, invoke transfer command
     if (student.class_id !== classId) {
       await commands.enrollments.transfer(studentId, {
         new_class_id: classId,
       });
+    }
+
+    // Transition enrollment status if it was draft/pending_review and active switch is checked
+    if ((student.status === "draft" || student.status === "pending_review") && isActiveState) {
+      await commands.enrollments.transitionStatus(orgId, studentId, "active");
     }
 
     toast.success(m.form_success_update());

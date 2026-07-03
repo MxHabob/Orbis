@@ -109,7 +109,7 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 							...studentsStore.classes.map(cls => {
 								const count = getCountByClass(String(cls.id));
 								return {
-									label: cls.name || cls.name_ar || String(cls.id),
+									label: String(cls.name || cls.name_ar || cls.id),
 									badge: count > 0 ? formatNumber(count) : null,
 									isActive: studentsStore.selectedClassId === cls.id,
 									onclick: () => studentsStore.selectedClassId = String(cls.id)

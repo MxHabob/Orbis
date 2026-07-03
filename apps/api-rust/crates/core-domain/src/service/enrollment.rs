@@ -169,6 +169,21 @@ impl super::Service {
             self.generate_student_number(org_id, &class_info.level).await?
         };
 
+        let meta_str = if status == "draft" || status == "pending_review" {
+            let mut meta_map = serde_json::Map::new();
+            if let Some(dt_id) = &req.discount_template_id {
+                meta_map.insert("discount_template_id".to_string(), serde_json::Value::String(dt_id.clone()));
+            }
+            if let Some(custom_val) = req.custom_discount_amount {
+                if let Some(num) = serde_json::Number::from_f64(custom_val) {
+                    meta_map.insert("custom_discount_amount".to_string(), serde_json::Value::Number(num));
+                }
+            }
+            serde_json::to_string(&serde_json::Value::Object(meta_map)).unwrap_or_else(|_| "{}".to_string())
+        } else {
+            "{}".to_string()
+        };
+
         let new_enrollment = enrollment::Model {
             id: Uuid::new_v4().to_string(),
             org_id: org_id.to_string(),
@@ -187,7 +202,7 @@ impl super::Service {
             is_promoted: None,
             promotion_decision: None,
             promotion_notes: None,
-            meta: Some("{}".to_string()),
+            meta: Some(meta_str),
             created_at: Utc::now().to_rfc3339(),
             updated_at: Utc::now().to_rfc3339(),
         };
@@ -631,20 +646,126 @@ impl super::Service {
                 .ok_or_else(|| "class not found".to_string())?;
 
             let new_num = self.generate_student_number(org_id, &class_info.level).await?;
-            updates.student_number = Some(new_num);
+            updates.student_number = Some(new_num.clone());
 
             // Provision a ledger sub-account if approved/active
             let student = self.repo.get_user_by_id(&enrollment.student_id).await
                 .map_err(|e| e.to_string())?
                 .ok_or_else(|| "student user not found".to_string())?;
 
-            let _student_ledger_account = self.get_or_create_sub_account(
+            let student_ledger_account = self.get_or_create_sub_account(
                 org_id,
                 "student",
                 &student.id,
                 Some(&student.full_name),
                 student.name_ar.as_deref(),
             ).await?;
+
+            // Retrieve stored discount templates/custom discounts from metadata
+            let mut discount_template_id = None;
+            let mut custom_discount_amount = None;
+            if let Some(meta_str) = &enrollment.meta {
+                if let Ok(meta_val) = serde_json::from_str::<serde_json::Value>(meta_str) {
+                    discount_template_id = meta_val.get("discount_template_id").and_then(|v| v.as_str().map(|s| s.to_string()));
+                    custom_discount_amount = meta_val.get("custom_discount_amount").and_then(|v| v.as_f64());
+                }
+            }
+
+            if let Ok(fee_templates) = self.repo.get_active_fee_templates(org_id).await {
+                for tpl in fee_templates {
+                    // Check applicability rules
+                    let is_applicable = if let Some(rules_str) = &tpl.applicable_levels {
+                        if let Ok(rules) = serde_json::from_str::<serde_json::Value>(rules_str) {
+                            if let Some(levels) = rules.get("levels").and_then(|l| l.as_array()) {
+                                levels.iter().any(|l| l.as_str() == Some(&class_info.level))
+                            } else if let Some(level) = rules.get("level").and_then(|l| l.as_str()) {
+                                level == class_info.level
+                            } else {
+                                false
+                            }
+                        } else {
+                            false
+                        }
+                    } else {
+                        true // Applies to all if no rules are specified
+                    };
+
+                    if is_applicable {
+                        let original_amount = tpl.default_amount;
+                        let mut discount_amount = 0.0;
+                        let mut discount_details = None;
+
+                        // Apply discount only for tuition/mandatory fees
+                        if tpl.category.to_lowercase() == "tuition" || tpl.category.to_lowercase() == "mandatory" {
+                            if let Some(dt_id) = &discount_template_id {
+                                if let Ok(Some(dt)) = self.repo.get_discount_template_by_id(dt_id).await {
+                                    let val = dt.value as f64;
+                                    if dt.calculation_method.to_lowercase() == "percentage" {
+                                        discount_amount = (original_amount * val) / 100.0;
+                                        discount_details = Some(format!("Applied template: {} ({}%)", dt.name, val));
+                                    } else {
+                                        discount_amount = val;
+                                        discount_details = Some(format!("Applied template: {} ({} YER)", dt.name, val));
+                                    }
+                                }
+                            } else if let Some(custom_val) = custom_discount_amount {
+                                discount_amount = custom_val;
+                                discount_details = Some("خصم مخصص".to_string());
+                            }
+                        }
+
+                        let total_amount = (original_amount - discount_amount).max(0.0);
+
+                        let sf = crate::entities::student_fee::Model {
+                            id: Uuid::new_v4().to_string(),
+                            org_id: org_id.to_string(),
+                            cycle_id: enrollment.cycle_id.clone(),
+                            enrollment_id: enrollment.id.clone(),
+                            fee_template_id: tpl.id.clone(),
+                            original_amount,
+                            discount_amount,
+                            net_amount: total_amount,
+                            status: "unpaid".to_string(),
+                            due_date: Utc::now().checked_add_signed(chrono::Duration::days(30))
+                                .unwrap_or_else(Utc::now)
+                                .format("%Y-%m-%d")
+                                .to_string(),
+                            discount_details,
+                            parent_fee_id: None,
+                            installment_number: None,
+                            notes: Some(format!("Auto-generated fee: {}", tpl.name)),
+                            created_at: Utc::now().to_rfc3339(),
+                            updated_at: Utc::now().to_rfc3339(),
+                        };
+
+                        if let Ok(created_fee) = self.repo.create_student_fee(sf).await {
+                            // Create double entry bookkeeping journal entry if amount > 0
+                            if total_amount > 0.0 {
+                                let je = crate::entities::journal_entry::Model {
+                                    id: Uuid::new_v4().to_string(),
+                                    org_id: org_id.to_string(),
+                                    transaction_ref: format!("ENR-{}", &new_num),
+                                    accounting_date: Utc::now().format("%Y-%m-%d").to_string(),
+                                    fiscal_period_id: enrollment.cycle_id.clone(),
+                                    amount: total_amount,
+                                    debit_account_id: student_ledger_account.id.clone(),
+                                    credit_account_id: tpl.revenue_account_id.clone(),
+                                    currency: student_ledger_account.currency.clone(),
+                                    exchange_rate: Some(1.0),
+                                    base_currency_amount: Some(total_amount),
+                                    source_type: "student_fee".to_string(),
+                                    source_id: Some(created_fee.id),
+                                    source_module: Some("finance".to_string()),
+                                    description: format!("Auto-generated fee: {}", tpl.name),
+                                    description_ar: Some(format!("رسوم دراسية تلقائية: {}", tpl.name_ar.clone().unwrap_or(tpl.name.clone()))),
+                                    metadata: None,
+                                };
+                                let _ = self.repo.create_journal_entry(je).await;
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         self.repo.update_enrollment(enrollment_id, updates).await
