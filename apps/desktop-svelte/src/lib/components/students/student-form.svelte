@@ -63,43 +63,40 @@ onMount(async () => {
       </Button>
 
       <div class="flex items-center gap-2">
-        <!-- Segmented Action Group -->
-        <div class="flex items-center border border-border rounded-md bg-background h-8 divide-x divide-border rtl:divide-x-reverse select-none overflow-hidden shrink-0">
-          <!-- Print Template Selector -->
-          <Select bind:value={state.selectedTemplateId} type="single">
-            <SelectTrigger class="w-44 h-8 text-xs bg-transparent border-0 rounded-none shadow-none px-3 py-1 cursor-pointer focus:ring-0 focus-visible:ring-0">
-              <span class="truncate">
+        <!-- Segmented Print Template Selector & Actions Dropdown -->
+        <DropdownMenu>
+          <DropdownMenuTrigger>
+            <div class="flex items-center border border-border rounded-md bg-background h-8 divide-x divide-border rtl:divide-x-reverse select-none overflow-hidden shrink-0 cursor-pointer hover:bg-muted/30">
+              <span class="text-xs px-3 py-1 text-foreground font-medium truncate max-w-40">
                 {state.availableTemplates.find(t => t.id === state.selectedTemplateId)?.name_ar || 
                  state.availableTemplates.find(t => t.id === state.selectedTemplateId)?.name || 
                  m.form_select_template()}
               </span>
-            </SelectTrigger>
-            <SelectContent class="text-start max-h-48 overflow-y-auto" align="end">
-              {#each state.availableTemplates as tpl}
-                <SelectItem value={tpl.id} class="text-xs cursor-pointer text-start justify-start">
-                  {tpl.name_ar || tpl.name}
-                </SelectItem>
-              {/each}
-            </SelectContent>
-          </Select>
-
-          <!-- Actions Dropdown -->
-          <DropdownMenu>
-            <DropdownMenuTrigger>
-              <Button variant="ghost" size="icon" class="h-8 w-8 rounded-none border-0 shadow-none select-none hover:bg-accent/40 cursor-pointer">
+              <div class="h-8 w-8 flex items-center justify-center text-muted-foreground">
                 <MoreHorizontal class="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent class="bg-popover border border-border rounded-xl shadow-lg p-1 min-w-[150px] text-start" align="end">
-              <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 hover:bg-accent/40 rounded flex items-center gap-1.5" onclick={() => state.handleDownloadRegistrationForm()}>
-                {state.isDownloadingForm ? m.form_printing_registration_form() : m.form_download()}
+              </div>
+            </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent class="p-1 min-w-[180px] text-start" align="end">
+            {#each state.availableTemplates as tpl}
+              <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center justify-between gap-1.5" onclick={async () => { state.selectedTemplateId = tpl.id; await state.handleDownloadRegistrationForm(); }}>
+                <span>{tpl.name_ar || tpl.name}</span>
+                {#if state.selectedTemplateId === tpl.id}
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check text-primary h-3.5 w-3.5"><path d="M20 6 9 17l-5-5"/></svg>
+                {/if}
               </DropdownMenuItem>
-              <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 hover:bg-accent/40 rounded flex items-center gap-1.5 text-destructive hover:text-destructive" onclick={() => goto(localizeHref(`/${orgId}/students`))}>
-                {m.form_cancel_return()}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+            {/each}
+            {#if state.availableTemplates.length === 0}
+              <div class="px-3 py-4 text-center text-xs text-muted-foreground">
+                لا توجد قوالب متوفرة
+              </div>
+            {/if}
+            <div class="border-t border-border/40 my-1"></div>
+            <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5 text-destructive hover:text-destructive" onclick={() => goto(localizeHref(`/${orgId}/students`))}>
+              {m.form_cancel_return()}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
 
@@ -175,53 +172,43 @@ onMount(async () => {
         {m.form_cancel()}
       </Button>
 
-      <!-- Save Button with Dropdown Trigger -->
+      <!-- Separate dropdown button for changing status -->
       <DropdownMenu>
         <DropdownMenuTrigger>
           <Button 
-            variant="lime" 
-            class="text-xs h-9 px-5 font-bold shrink-0 gap-1.5 flex items-center justify-center cursor-pointer select-none"
+            size="icon"
+            class="text-xs h-9 w-9 shrink-0"
             disabled={state.isSaving}
           >
-            <span>{state.isSaving ? m.form_saving() : m.form_save_form()}</span>
-            <ChevronDown class="h-4 w-4 shrink-0 text-lime-950/70" />
+            <ChevronDown class="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent class="bg-popover border border-border rounded-xl shadow-lg p-1 min-w-[160px] text-start" align="end">
-          <div class="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-b border-border/40 mb-1">
-            {m.form_options()}
-          </div>
+        <DropdownMenuContent class="p-1 min-w-[160px] text-start" align="end">
           {#if !state.isEditMode}
-            <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 hover:bg-accent/40 rounded flex items-center gap-1.5" onclick={() => { state.registrationStatus = "active"; state.handleSave(); }}>
-              {m.form_direct_enroll()}
-            </DropdownMenuItem>
-            <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 hover:bg-accent/40 rounded flex items-center gap-1.5" onclick={() => { state.registrationStatus = "draft"; state.handleSave(); }}>
+            <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => { state.registrationStatus = "draft"; state.handleSave(); }}>
               {m.form_save_draft()}
             </DropdownMenuItem>
-            <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 hover:bg-accent/40 rounded flex items-center gap-1.5" onclick={() => { state.registrationStatus = "pending_review"; state.handleSave(); }}>
+            <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => { state.registrationStatus = "pending_review"; state.handleSave(); }}>
               {m.form_submit_review()}
             </DropdownMenuItem>
           {:else}
-            <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 hover:bg-accent/40 rounded flex items-center gap-1.5" onclick={() => { state.registrationStatus = "draft"; state.handleSave(); }}>
+            <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => { state.registrationStatus = "draft"; state.handleSave(); }}>
               {m.form_status_draft()}
             </DropdownMenuItem>
-            <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 hover:bg-accent/40 rounded flex items-center gap-1.5" onclick={() => { state.registrationStatus = "pending_review"; state.handleSave(); }}>
+            <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => { state.registrationStatus = "pending_review"; state.handleSave(); }}>
               {m.form_status_pending_review()}
             </DropdownMenuItem>
-            <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 hover:bg-accent/40 rounded flex items-center gap-1.5" onclick={() => { state.registrationStatus = "approved"; state.handleSave(); }}>
+            <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => { state.registrationStatus = "approved"; state.handleSave(); }}>
               {m.form_status_approved()}
             </DropdownMenuItem>
-            <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 hover:bg-accent/40 rounded flex items-center gap-1.5" onclick={() => { state.registrationStatus = "active"; state.handleSave(); }}>
-              {m.form_status_active()}
-            </DropdownMenuItem>
-            <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 hover:bg-accent/40 rounded flex items-center gap-1.5" onclick={() => { state.registrationStatus = "withdrawn"; state.handleSave(); }}>
+            <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => { state.registrationStatus = "withdrawn"; state.handleSave(); }}>
               {state.registrationStatus === "withdrawn" ? "تعديل كـ منسحب" : m.form_status_withdrawn()}
             </DropdownMenuItem>
-            <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 hover:bg-accent/40 rounded flex items-center gap-1.5" onclick={() => { state.registrationStatus = "graduated"; state.handleSave(); }}>
+            <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => { state.registrationStatus = "graduated"; state.handleSave(); }}>
               {state.registrationStatus === "graduated" ? "تعديل كـ خريج" : m.form_status_graduated()}
             </DropdownMenuItem>
           {/if}
-          <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 hover:bg-accent/40 rounded flex items-center gap-1.5 border-t border-border/40 mt-1" onclick={() => state.handleDownloadRegistrationForm()}>
+          <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5 border-t border-border/40 mt-1" onclick={() => state.handleDownloadRegistrationForm()}>
             {state.isDownloadingForm ? m.form_printing_registration_form() : m.form_download()}
           </DropdownMenuItem>
         </DropdownMenuContent>

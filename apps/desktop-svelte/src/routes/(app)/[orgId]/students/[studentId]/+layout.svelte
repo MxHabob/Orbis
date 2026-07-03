@@ -232,7 +232,7 @@ const menuItems = $derived([
                   >
                   <span
                     class="text-xs text-foreground font-mono truncate max-w-full"
-                    title={student.email}
+                    title={String(student.email)}
                   >
                     {student.email}
                   </span>

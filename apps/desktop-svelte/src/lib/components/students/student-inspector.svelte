@@ -14,11 +14,8 @@ import {
   X,
   ExternalLink,
   CreditCard,
-  Award,
-  Edit2,
-  AlertCircle,
+  Award
 } from "lucide-svelte";
-import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate, formatPercent } from "$lib/i18n-utils";
@@ -34,7 +31,6 @@ const student = $derived(studentsStore.list.find((s) => s.id === studentId));
 let balanceDue = $state<string>(m.loading());
 let gradeSummary = $state<string>(m.loading());
 let guardiansList = $state<any[]>([]);
-let isTransitioning = $state(false);
 
 $effect(() => {
   if (studentId) {
@@ -103,25 +99,6 @@ async function fetchStats() {
   }
 }
 
-async function transitionStatus(target: string) {
-  if (!student) return;
-  isTransitioning = true;
-  try {
-    const updated = await commands.enrollments.transitionStatus(
-      orgId,
-      student.id,
-      target,
-    );
-    student.status = updated.status;
-    toast.success(`تم تغيير حالة الطالب بنجاح إلى: ${target}`);
-    await studentsStore.load(orgId);
-    await fetchStats();
-  } catch (err: any) {
-    toast.error(`فشل تغيير حالة الطالب: ${err.message || String(err)}`);
-  } finally {
-    isTransitioning = false;
-  }
-}
 </script>
 
 {#if student}
@@ -136,14 +113,6 @@ async function transitionStatus(target: string) {
 					title={m.inspector_view_full()}
 				>
 					<ExternalLink size={14} />
-				</Button>
-				<Button
-					href={localizeHref(`/${orgId}/students/${studentId}/edit`)}
-					variant="ghost"
-					class="text-muted-foreground hover:text-foreground h-8 px-2 cursor-pointer"
-					title="تعديل بيانات الطالب"
-				>
-					<Edit2 size={14} />
 				</Button>
 			</div>
 			
@@ -222,7 +191,7 @@ async function transitionStatus(target: string) {
 						<span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
 							البريد الإلكتروني
 						</span>
-						<span class="text-xs text-foreground font-mono truncate max-w-full" title={student.email}>
+						<span class="text-xs text-foreground font-mono truncate max-w-full" title={String(student.email)}>
 							{student.email}
 						</span>
 					</div>
@@ -273,40 +242,6 @@ async function transitionStatus(target: string) {
         </div>
       {/if}
 
-      <!-- Student Status Transition Actions -->
-      <div class="flex flex-col gap-2 border-t border-border/40 pt-4 w-full text-start">
-        <span class="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
-          {m.inspector_student_status_title()}
-        </span>
-        <div class="flex flex-wrap gap-2 pt-1">
-          {#if student.status === 'draft'}
-            <Button size="xs" variant="outline" class="text-primary hover:bg-primary/5 cursor-pointer font-semibold" disabled={isTransitioning} onclick={() => transitionStatus('pending_review')}>
-              {m.inspector_action_submit_review()}
-            </Button>
-          {/if}
-          
-          {#if student.status === 'pending_review' || student.status === 'draft' || student.status === 'approved'}
-            <Button size="xs" variant="lime" class="cursor-pointer font-semibold text-xs" disabled={isTransitioning} onclick={() => transitionStatus('active')}>
-              {m.inspector_action_activate()}
-            </Button>
-          {/if}
-
-          {#if student.status === 'active'}
-            <Button size="xs" variant="outline" class="text-destructive border-destructive/20 hover:bg-destructive/5 cursor-pointer font-semibold" disabled={isTransitioning} onclick={() => transitionStatus('withdrawn')}>
-              {m.inspector_action_withdraw()}
-            </Button>
-            <Button size="xs" variant="outline" class="cursor-pointer font-semibold" disabled={isTransitioning} onclick={() => transitionStatus('graduated')}>
-              {m.inspector_action_graduate()}
-            </Button>
-          {/if}
-
-          {#if student.status === 'withdrawn' || student.status === 'graduated'}
-            <Button size="xs" variant="lime" class="cursor-pointer font-bold" disabled={isTransitioning} onclick={() => transitionStatus('active')}>
-              {m.inspector_action_re_enroll()}
-            </Button>
-          {/if}
-        </div>
-      </div>
 
 		</div>
 	</div>

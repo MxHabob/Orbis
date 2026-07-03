@@ -26,7 +26,7 @@ export class StudentFormState {
   requiredFields = $state<Record<string, boolean>>({});
   activeFields = $state<Record<string, boolean>>({});
   preventDuplicates = $state<Record<string, boolean>>({});
-  registrationStatus = $state("active");
+  registrationStatus = $state("draft");
 
   // Warnings
   duplicateWarnings = $state<{
