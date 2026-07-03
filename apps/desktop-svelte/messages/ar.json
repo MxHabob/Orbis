@@ -1897,5 +1897,7 @@
   "onboarding_popover_task_fees_label": "رسوم تسجيل الطلاب",
   "onboarding_popover_task_fees_desc": "تحديد قيم رسوم التسجيل لكل مرحلة دراسية.",
   "onboarding_popover_task_review_label": "الملخص وتدشين النظام",
-  "onboarding_popover_task_review_desc": "مراجعة الهيكل الإداري وتدشين المحاسبة المالية."
+  "onboarding_popover_task_review_desc": "مراجعة الهيكل الإداري وتدشين المحاسبة المالية.",
+  "nav_configure_seer_tooltip": "تهيئة السير",
+  "nav_more_tooltip": "المزيد من الخيارات"
 }

@@ -4,6 +4,9 @@ import {
   PopoverTrigger,
   PopoverContent,
   Button,
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
 } from "@orbis/ui-svelte";
 import { Check, ChevronRight } from "lucide-svelte";
 import { onboardingState } from "$lib/components/onboarding/onboarding-state.svelte";
@@ -69,51 +72,61 @@ const tasksList = $derived([
 
 <Popover>
   <PopoverTrigger>
-    {#snippet child({ props })}
-      <Button
-        {...props}
-        variant="outline"
-        size="icon"
-        class="w-full h-8 p-0 flex items-center justify-center hover:bg-accent hover:text-accent-foreground relative border-b border-border/50 cursor-pointer onboarding-popover-trigger"
-      >
-        <div class="relative size-6 flex items-center justify-center">
-          <!-- Progress Circular Ring SVG -->
-          <svg class="absolute inset-0 size-6 select-none" viewBox="0 0 24 24" width="24" height="24">
-            <!-- Background track -->
-            <circle
-              cx="12"
-              cy="12"
-              r="9.5"
-              class="stroke-muted/40 fill-none"
-              stroke-width="2.5"
-            />
-            <!-- Progress highlight rotated around center -->
-            {#if progressPercent > 0}
-              <circle
-                cx="12"
-                cy="12"
-                r="9.5"
-                class="stroke-primary fill-none transition-all duration-300 origin-center -rotate-90"
-                stroke-width="2.5"
-                stroke-dasharray="59.7"
-                stroke-dashoffset={59.7 - (59.7 * progressPercent) / 100}
-                stroke-linecap="round"
-              />
-            {/if}
-          </svg>
-          
-          <!-- Inner status indicator -->
-          {#if remainingTasks === 0}
-            <Check class="size-3.5 text-primary stroke-[3px]" />
-          {:else}
-            <span class="text-[9.5px] font-extrabold text-foreground leading-none">
-              {remainingTasks}
-            </span>
-            <!-- Notification dot badge shifted outside the ring -->
-            <span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary border border-background"></span>
-          {/if}
-        </div>
-      </Button>
+    {#snippet child({ props: popoverProps })}
+      <Tooltip>
+        <TooltipTrigger>
+          {#snippet child({ props: tooltipProps })}
+            <Button
+              {...popoverProps}
+              {...tooltipProps}
+              variant="outline"
+              size="icon-sm"
+              class="relative cursor-pointer rounded-[10px] onboarding-popover-trigger"
+            >
+              <div class="relative size-5 flex items-center justify-center">
+                <!-- Progress Circular Ring SVG -->
+                <svg class="absolute inset-0 size-5 select-none" viewBox="0 0 24 24" width="20" height="20">
+                  <!-- Background track -->
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="9"
+                    class="stroke-muted/40 fill-none"
+                    stroke-width="2.5"
+                  />
+                  <!-- Progress highlight rotated around center -->
+                  {#if progressPercent > 0}
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="9"
+                      class="stroke-primary fill-none transition-all duration-300 origin-center -rotate-90"
+                      stroke-width="2.5"
+                      stroke-dasharray="56.5"
+                      stroke-dashoffset={56.5 - (56.5 * progressPercent) / 100}
+                      stroke-linecap="round"
+                    />
+                  {/if}
+                </svg>
+                
+                <!-- Inner status indicator -->
+                {#if remainingTasks === 0}
+                  <Check class="size-3 text-primary stroke-[3px]" />
+                {:else}
+                  <span class="text-[8.5px] font-extrabold text-foreground leading-none">
+                    {remainingTasks}
+                  </span>
+                  <!-- Notification dot badge shifted outside the ring -->
+                  <span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary border border-background"></span>
+                {/if}
+              </div>
+            </Button>
+          {/snippet}
+        </TooltipTrigger>
+        <TooltipContent side="right" sideOffset={12}>
+          {m.onboarding_progress_label() || 'Getting Started'}
+        </TooltipContent>
+      </Tooltip>
     {/snippet}
   </PopoverTrigger>
   

@@ -174,32 +174,65 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 		</div>
 
 		<div class="flex flex-col gap-2 items-center w-full relative">
-			<div class="flex flex-col items-center w-8 gap-1 overflow-hidden">
+			<div class="flex flex-col items-center w-8 gap-1.5">
 				<OnboardingPopover />
-				<Button
-					variant="outline"
-					size="icon"
-					class="w-full h-8 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-zinc-800/60 relative border-b border-[#f1f5f9] dark:border-zinc-800 cursor-pointer"
-					onclick={() => uiStore.setUpgradeDialog(true)}
-				>
-					<div class="relative">
-						<div class="w-[20px] h-[20px] rounded-full border border-slate-800 dark:border-zinc-400 text-slate-800 dark:text-zinc-400 flex items-center justify-center">
-							<Zap size={10} strokeWidth={2} />
-						</div>
-						<span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-[#6366f1] border border-white dark:border-zinc-900"></span>
-					</div>
-				</Button>
-				<Button variant="outline" size="icon"  class="w-full h-8 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-zinc-800/60 relative border-b border-[#f1f5f9] dark:border-zinc-800 cursor-pointer">
-					<div class="relative">
-						<div class="w-[20px] h-[20px] rounded-full border border-slate-800 dark:border-zinc-400 text-slate-800 dark:text-zinc-400 flex items-center justify-center">
-							<Radio size={10} strokeWidth={2} />
-						</div>
-						<span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-[#6366f1] border border-white dark:border-zinc-900"></span>
-					</div>
-				</Button>
-				<Button variant="outline" size="icon"  class="w-full h-8 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-zinc-800/60 cursor-pointer">
-					<MoreHorizontal size={14} class="text-slate-600 dark:text-zinc-400" />
-				</Button>
+				
+				<Tooltip>
+					<TooltipTrigger>
+						{#snippet child({ props })}
+							<Button
+								{...props}
+								variant="outline"
+								size="icon-sm"
+								class="relative cursor-pointer rounded-[10px]"
+								onclick={() => uiStore.setUpgradeDialog(true)}
+							>
+								<Zap size={16} strokeWidth={1.8} class="text-foreground" />
+								<span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary border border-background"></span>
+							</Button>
+						{/snippet}
+					</TooltipTrigger>
+					<TooltipContent side="right" sideOffset={12}>
+						{m.upgrade_title()}
+					</TooltipContent>
+				</Tooltip>
+
+				<Tooltip>
+					<TooltipTrigger>
+						{#snippet child({ props })}
+							<Button 
+								{...props}
+								variant="outline" 
+								size="icon-sm" 
+								class="relative cursor-pointer rounded-[10px]"
+							>
+								<Radio size={16} strokeWidth={1.8} class="text-foreground" />
+								<span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary border border-background"></span>
+							</Button>
+						{/snippet}
+					</TooltipTrigger>
+					<TooltipContent side="right" sideOffset={12}>
+						{m.nav_configure_seer_tooltip()}
+					</TooltipContent>
+				</Tooltip>
+
+				<Tooltip>
+					<TooltipTrigger>
+						{#snippet child({ props })}
+							<Button 
+								{...props}
+								variant="outline" 
+								size="icon-sm" 
+								class="relative cursor-pointer rounded-[10px]"
+							>
+								<MoreHorizontal size={16} strokeWidth={1.8} class="text-foreground" />
+							</Button>
+						{/snippet}
+					</TooltipTrigger>
+					<TooltipContent side="right" sideOffset={12}>
+						{m.nav_more_tooltip()}
+					</TooltipContent>
+				</Tooltip>
 			</div>
 
 			<UserSidebarMenu {orgId} />

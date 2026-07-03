@@ -1891,5 +1891,7 @@
   "onboarding_popover_task_fees_label": "Registration Fees Setup",
   "onboarding_popover_task_fees_desc": "Setup registration fees for each academic stage.",
   "onboarding_popover_task_review_label": "Review & Launch",
-  "onboarding_popover_task_review_desc": "Review your configuration and launch the system."
+  "onboarding_popover_task_review_desc": "Review your configuration and launch the system.",
+  "nav_configure_seer_tooltip": "Configure Seer",
+  "nav_more_tooltip": "More Options"
 }
