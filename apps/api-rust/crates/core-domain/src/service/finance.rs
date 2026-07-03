@@ -1,8 +1,8 @@
 use uuid::Uuid;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
-use sea_orm::ActiveModelTrait;
-use crate::entities::{ledger_account, treasury, student_fee, payment, fee_template, discount_template};
+use sea_orm::{ActiveModelTrait, EntityTrait, QueryFilter, ColumnTrait};
+use crate::entities::{ledger_account, treasury, student_fee, payment, fee_template, discount_template, journal_entry, user};
 
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct CreateDiscountTemplateRequest {
@@ -38,7 +38,7 @@ pub struct CreateTreasuryRequest {
     pub name: String,
     pub name_ar: Option<String>,
     pub item_type: String, // bank, cash
-    pub ledger_account_id: String,
+    pub ledger_account_id: Option<String>, // Deprecated: Now auto-created
     pub bank_name: Option<String>,
     pub account_number: Option<String>,
     pub currency: String,
@@ -83,13 +83,279 @@ pub struct RecordPaymentRequest {
     pub currency: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
+pub struct CreateJournalEntryRequest {
+    pub transaction_ref: String,
+    pub accounting_date: String,
+    pub fiscal_period_id: String,
+    pub amount: f64,
+    pub debit_account_id: String,
+    pub credit_account_id: String,
+    pub currency: String,
+    pub exchange_rate: Option<f64>,
+    pub description: String,
+    pub description_ar: Option<String>,
+    pub source_type: String,
+    pub source_id: Option<String>,
+    pub source_module: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
+pub struct LedgerAccountResponse {
+    pub id: String,
+    pub org_id: String,
+    pub code: String,
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub item_type: String,
+    pub sub_type: Option<String>,
+    pub parent_id: Option<String>,
+    pub path: String,
+    pub depth: i32,
+    pub currency: String,
+    pub opening_balance: Option<f64>,
+    pub current_balance: Option<f64>,
+    pub entity_type: Option<String>,
+    pub entity_id: Option<String>,
+    pub is_control_account: i32,
+    pub is_system_account: i32,
+    pub is_active: i32,
+    pub created_at: String,
+    pub updated_at: String,
+    pub debit_yer: f64,
+    pub credit_yer: f64,
+    pub debit_sar: f64,
+    pub credit_sar: f64,
+    pub debit_usd: f64,
+    pub credit_usd: f64,
+    pub debit_aed: f64,
+    pub credit_aed: f64,
+}
+
 impl super::Service {
     // ── Ledger Accounts ──
-    pub async fn get_ledger_accounts(&self, org_id: &str) -> Result<Vec<ledger_account::Model>, String> {
-        self.repo.get_ledger_accounts(org_id).await.map_err(|e| e.to_string())
+    pub async fn get_ledger_accounts(&self, org_id: &str) -> Result<Vec<LedgerAccountResponse>, String> {
+        let accounts = self.repo.get_ledger_accounts(org_id).await.map_err(|e| e.to_string())?;
+        let entries = self.repo.get_journal_entries(org_id).await.map_err(|e| e.to_string())?;
+
+        use std::collections::HashMap;
+        let mut response_map: HashMap<String, LedgerAccountResponse> = accounts.iter().map(|acc| {
+            let mut debit_yer = 0.0;
+            let mut credit_yer = 0.0;
+            let mut debit_sar = 0.0;
+            let mut credit_sar = 0.0;
+            let mut debit_usd = 0.0;
+            let mut credit_usd = 0.0;
+            let mut debit_aed = 0.0;
+            let mut credit_aed = 0.0;
+
+            let ob = acc.opening_balance.unwrap_or(0.0);
+            if ob > 0.0 {
+                let is_debit_type = match acc.item_type.to_lowercase().as_str() {
+                    "asset" | "expense" => true,
+                    _ => false,
+                };
+                match acc.currency.to_uppercase().as_str() {
+                    "YER" => { if is_debit_type { debit_yer = ob; } else { credit_yer = ob; } }
+                    "SAR" => { if is_debit_type { debit_sar = ob; } else { credit_sar = ob; } }
+                    "USD" => { if is_debit_type { debit_usd = ob; } else { credit_usd = ob; } }
+                    "AED" => { if is_debit_type { debit_aed = ob; } else { credit_aed = ob; } }
+                    _ => {}
+                }
+            }
+
+            (acc.id.clone(), LedgerAccountResponse {
+                id: acc.id.clone(),
+                org_id: acc.org_id.clone(),
+                code: acc.code.clone(),
+                name: acc.name.clone(),
+                name_ar: acc.name_ar.clone(),
+                item_type: acc.item_type.clone(),
+                sub_type: acc.sub_type.clone(),
+                parent_id: acc.parent_id.clone(),
+                path: acc.path.clone(),
+                depth: acc.depth,
+                currency: acc.currency.clone(),
+                opening_balance: acc.opening_balance,
+                current_balance: acc.current_balance,
+                entity_type: acc.entity_type.clone(),
+                entity_id: acc.entity_id.clone(),
+                is_control_account: acc.is_control_account,
+                is_system_account: acc.is_system_account,
+                is_active: acc.is_active,
+                created_at: acc.created_at.clone(),
+                updated_at: acc.updated_at.clone(),
+                debit_yer,
+                credit_yer,
+                debit_sar,
+                credit_sar,
+                debit_usd,
+                credit_usd,
+                debit_aed,
+                credit_aed,
+            })
+        }).collect();
+
+        for je in entries {
+            let currency = je.currency.to_uppercase();
+            let amount = je.amount;
+
+            if let Some(res) = response_map.get_mut(&je.debit_account_id) {
+                match currency.as_str() {
+                    "YER" => res.debit_yer += amount,
+                    "SAR" => res.debit_sar += amount,
+                    "USD" => res.debit_usd += amount,
+                    "AED" => res.debit_aed += amount,
+                    _ => {}
+                }
+            }
+
+            if let Some(res) = response_map.get_mut(&je.credit_account_id) {
+                match currency.as_str() {
+                    "YER" => res.credit_yer += amount,
+                    "SAR" => res.credit_sar += amount,
+                    "USD" => res.credit_usd += amount,
+                    "AED" => res.credit_aed += amount,
+                    _ => {}
+                }
+            }
+        }
+
+        let mut sorted_ids: Vec<String> = accounts.iter().map(|a| a.id.clone()).collect();
+        sorted_ids.sort_by(|id_a, id_b| {
+            let depth_a = response_map.get(id_a).map(|a| a.depth).unwrap_or(0);
+            let depth_b = response_map.get(id_b).map(|b| b.depth).unwrap_or(0);
+            depth_b.cmp(&depth_a)
+        });
+
+        for id in sorted_ids {
+            if let Some(acc) = response_map.get(&id).cloned() {
+                if let Some(parent_id) = &acc.parent_id {
+                    if let Some(parent) = response_map.get_mut(parent_id) {
+                        parent.debit_yer += acc.debit_yer;
+                        parent.credit_yer += acc.credit_yer;
+                        parent.debit_sar += acc.debit_sar;
+                        parent.credit_sar += acc.credit_sar;
+                        parent.debit_usd += acc.debit_usd;
+                        parent.credit_usd += acc.credit_usd;
+                        parent.debit_aed += acc.debit_aed;
+                        parent.credit_aed += acc.credit_aed;
+                    }
+                }
+            }
+        }
+
+        let mut result: Vec<LedgerAccountResponse> = response_map.into_values().collect();
+        result.sort_by(|a, b| a.code.cmp(&b.code));
+        Ok(result)
+    }
+
+    pub async fn get_or_create_sub_account(
+        &self,
+        org_id: &str,
+        entity_type: &str,
+        entity_id: &str,
+        entity_name: Option<&str>,
+        entity_name_ar: Option<&str>,
+    ) -> Result<ledger_account::Model, String> {
+        let parent_code = match entity_type {
+            "student" => "110301",
+            "employee" => "210401",
+            "treasury_cash" => "110101",
+            "treasury_bank" => "110102",
+            "vendor" => "210106",
+            "partner" => "310101",
+            "guardian" => "110308",
+            "branch" => "110604",
+            _ => return Err(format!("Unsupported sub-ledger entity type: {}", entity_type)),
+        };
+
+        if let Some(existing) = self.repo.get_ledger_account_by_entity(org_id, entity_type, entity_id).await.map_err(|e| e.to_string())? {
+            return Ok(existing);
+        }
+
+        let parent_id = format!("{}_{}", org_id, parent_code);
+        let parent = self.repo.get_ledger_account_by_id(&parent_id).await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| format!("Parent control account '{}' not found in chart of accounts. Did you run seeding?", parent_code))?;
+
+        let (resolved_name, resolved_name_ar) = if entity_type == "student" || entity_type == "employee" || entity_type == "guardian" {
+            let usr = self.repo.get_user_by_id(entity_id).await
+                .map_err(|e| e.to_string())?
+                .ok_or_else(|| format!("User entity '{}' not found", entity_id))?;
+
+            let ar_name = usr.name_ar.clone().or_else(|| Some(usr.full_name.clone()));
+            (format!("{} - {}", parent.name, usr.full_name), ar_name.map(|ar| format!("{} - {}", parent.name_ar.as_deref().unwrap_or(&parent.name), ar)))
+        } else {
+            let name_val = entity_name.unwrap_or(entity_type);
+            let name_ar_val = entity_name_ar.or(entity_name).unwrap_or(entity_type);
+            (format!("{} - {}", parent.name, name_val), Some(format!("{} - {}", parent.name_ar.as_deref().unwrap_or(&parent.name), name_ar_val)))
+        };
+
+        let children = ledger_account::Entity::find()
+            .filter(ledger_account::Column::OrgId.eq(org_id))
+            .filter(ledger_account::Column::ParentId.eq(Some(parent.id.clone())))
+            .all(&self.repo.db)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        let next_suffix = if children.is_empty() {
+            1
+        } else {
+            let mut max_suf = 0;
+            for child in children {
+                if child.code.starts_with(parent_code) && child.code.len() > parent_code.len() {
+                    let suffix_str = &child.code[parent_code.len()..];
+                    if let Ok(num) = suffix_str.parse::<u32>() {
+                        if num > max_suf {
+                            max_suf = num;
+                        }
+                    }
+                }
+            }
+            max_suf + 1
+        };
+
+        let new_code = format!("{}{:05}", parent_code, next_suffix);
+        let acc_id = format!("{}_{}_{}", org_id, entity_type, entity_id);
+
+        let new_acc = ledger_account::Model {
+            id: acc_id.clone(),
+            org_id: org_id.to_string(),
+            code: new_code,
+            name: resolved_name,
+            name_ar: resolved_name_ar,
+            item_type: parent.item_type.clone(),
+            sub_type: Some(entity_type.to_string()),
+            parent_id: Some(parent.id.clone()),
+            path: format!("{}/{}", parent.path, acc_id),
+            depth: parent.depth + 1,
+            currency: parent.currency.clone(),
+            opening_balance: Some(0.0),
+            current_balance: Some(0.0),
+            entity_type: Some(entity_type.to_string()),
+            entity_id: Some(entity_id.to_string()),
+            is_control_account: 0,
+            is_system_account: 0,
+            is_active: 1,
+            created_at: Utc::now().to_rfc3339(),
+            updated_at: Utc::now().to_rfc3339(),
+        };
+
+        let created = self.repo.create_ledger_account(new_acc).await.map_err(|e| e.to_string())?;
+        Ok(created)
     }
 
     pub async fn create_ledger_account(&self, org_id: &str, req: CreateLedgerAccountRequest) -> Result<ledger_account::Model, String> {
+        let (path, depth) = if let Some(ref pid) = req.parent_id {
+            let parent = self.repo.get_ledger_account_by_id(pid).await
+                .map_err(|e| e.to_string())?
+                .ok_or_else(|| "Parent account not found".to_string())?;
+            (format!("{}/{}", parent.path, req.code), parent.depth + 1)
+        } else {
+            (format!("{}_{}", org_id, req.code), 0)
+        };
+
         let la = ledger_account::Model {
             id: Uuid::new_v4().to_string(),
             org_id: org_id.to_string(),
@@ -99,8 +365,8 @@ impl super::Service {
             item_type: req.item_type,
             sub_type: req.sub_type,
             parent_id: req.parent_id,
-            path: "".to_string(), // leaf path
-            depth: 0,
+            path,
+            depth,
             currency: req.currency,
             opening_balance: req.opening_balance,
             current_balance: req.opening_balance.or(Some(0.0)),
@@ -121,15 +387,30 @@ impl super::Service {
     }
 
     pub async fn create_treasury(&self, org_id: &str, req: CreateTreasuryRequest) -> Result<treasury::Model, String> {
+        let treasury_id = Uuid::new_v4().to_string();
+        let entity_type = if req.item_type.to_lowercase() == "bank" {
+            "treasury_bank"
+        } else {
+            "treasury_cash"
+        };
+
+        let sub_account = self.get_or_create_sub_account(
+            org_id,
+            entity_type,
+            &treasury_id,
+            Some(&req.name),
+            req.name_ar.as_deref(),
+        ).await?;
+
         let t = treasury::Model {
-            id: Uuid::new_v4().to_string(),
+            id: treasury_id,
             org_id: org_id.to_string(),
             unit_id: None,
             name: req.name,
             name_ar: req.name_ar,
             code: None,
             item_type: req.item_type,
-            ledger_account_id: req.ledger_account_id,
+            ledger_account_id: sub_account.id,
             bank_name: req.bank_name,
             bank_branch: None,
             account_number: req.account_number,
@@ -157,6 +438,16 @@ impl super::Service {
     }
 
     pub async fn create_fee_template(&self, org_id: &str, req: CreateFeeTemplateRequest) -> Result<fee_template::Model, String> {
+        // Validate that chosen accounts are leaf accounts
+        let rev_leaf = self.repo.is_leaf_account(&req.revenue_account_id).await.map_err(|e| e.to_string())?;
+        if !rev_leaf {
+            return Err("Revenue account must be a leaf account".to_string());
+        }
+        let rec_leaf = self.repo.is_leaf_account(&req.receivable_account_id).await.map_err(|e| e.to_string())?;
+        if !rec_leaf {
+            return Err("Receivable account must be a leaf account".to_string());
+        }
+
         let tpl = fee_template::Model {
             id: Uuid::new_v4().to_string(),
             org_id: org_id.to_string(),
@@ -189,6 +480,16 @@ impl super::Service {
             return Err("Unauthorized".to_string());
         }
 
+        // Validate leaf accounts
+        let rev_leaf = self.repo.is_leaf_account(&req.revenue_account_id).await.map_err(|e| e.to_string())?;
+        if !rev_leaf {
+            return Err("Revenue account must be a leaf account".to_string());
+        }
+        let rec_leaf = self.repo.is_leaf_account(&req.receivable_account_id).await.map_err(|e| e.to_string())?;
+        if !rec_leaf {
+            return Err("Receivable account must be a leaf account".to_string());
+        }
+
         let mut active: fee_template::ActiveModel = tpl.into();
         active.name = sea_orm::ActiveValue::Set(req.name);
         active.name_ar = sea_orm::ActiveValue::Set(req.name_ar);
@@ -218,24 +519,22 @@ impl super::Service {
     }
 
     pub async fn assign_student_fee(&self, org_id: &str, req: AssignStudentFeeRequest) -> Result<student_fee::Model, String> {
-        // Find enrollment to get cycle_id and student_id
         let enrollment = self.repo.get_enrollment_by_id(&req.enrollment_id).await
             .map_err(|e| e.to_string())?
             .ok_or_else(|| "Enrollment not found".to_string())?;
 
-        // Find student sub-ledger account
-        let student_account = self.repo.get_ledger_account_by_entity(org_id, "student", &enrollment.student_id).await
-            .map_err(|e| e.to_string())?
-            .ok_or_else(|| "Student ledger account not found. Please verify the student has a registered sub-ledger account.".to_string())?;
+        let student_account = match self.repo.get_ledger_account_by_entity(org_id, "student", &enrollment.student_id).await.map_err(|e| e.to_string())? {
+            Some(acc) => acc,
+            None => {
+                self.get_or_create_sub_account(org_id, "student", &enrollment.student_id, None, None).await?
+            }
+        };
 
-        // Find fee template to get revenue account
         let template = self.repo.get_fee_template_by_id(&req.fee_template_id).await
             .map_err(|e| e.to_string())?
             .ok_or_else(|| "Fee template not found".to_string())?;
 
         let fee_id = Uuid::new_v4().to_string();
-
-        // Create the student fee record (invoice)
         let sf = student_fee::Model {
             id: fee_id.clone(),
             org_id: org_id.to_string(),
@@ -257,12 +556,9 @@ impl super::Service {
 
         let created_fee = self.repo.create_student_fee(sf).await.map_err(|e| e.to_string())?;
 
-        // Create Double-Entry Journal Entry:
-        // Debit: Student Sub-account (increases asset / Accounts Receivable)
-        // Credit: Tuition Revenue account (increases revenue)
         let je_id = Uuid::new_v4().to_string();
         let description = format!("Tuition fee charged: {}", template.name);
-        let description_ar = Some(format!("قيد رسوم دراسية: {}", template.name_ar.unwrap_or(template.name.clone())));
+        let description_ar = Some(format!("قيد رسوم دراسية: {}", template.name_ar.clone().unwrap_or(template.name.clone())));
 
         let je = crate::entities::journal_entry::Model {
             id: je_id,
@@ -299,10 +595,7 @@ impl super::Service {
 
         self.repo.create_journal_entry(je).await.map_err(|e| e.to_string())?;
 
-        // Update cached ledger account balances
-        // Debit increases Student Sub-account
         self.repo.update_ledger_account_balance(&student_account.id, req.amount).await.map_err(|e| e.to_string())?;
-        // Credit increases Revenue (so we add the credit amount)
         self.repo.update_ledger_account_balance(&template.revenue_account_id, req.amount).await.map_err(|e| e.to_string())?;
 
         Ok(created_fee)
@@ -314,22 +607,21 @@ impl super::Service {
     }
 
     pub async fn record_payment(&self, org_id: &str, req: RecordPaymentRequest, created_by: &str) -> Result<payment::Model, String> {
-        // 1. Get student fee (invoice)
         let fee = self.repo.get_student_fee_by_id(&req.fee_id).await
             .map_err(|e| e.to_string())?
             .ok_or_else(|| "Student fee not found".to_string())?;
 
-        // Find enrollment to get student_id
         let enrollment = self.repo.get_enrollment_by_id(&fee.enrollment_id).await
             .map_err(|e| e.to_string())?
             .ok_or_else(|| "Enrollment not found".to_string())?;
 
-        // Find student sub-ledger account
-        let student_account = self.repo.get_ledger_account_by_entity(org_id, "student", &enrollment.student_id).await
-            .map_err(|e| e.to_string())?
-            .ok_or_else(|| "Student ledger account not found".to_string())?;
+        let student_account = match self.repo.get_ledger_account_by_entity(org_id, "student", &enrollment.student_id).await.map_err(|e| e.to_string())? {
+            Some(acc) => acc,
+            None => {
+                self.get_or_create_sub_account(org_id, "student", &enrollment.student_id, None, None).await?
+            }
+        };
 
-        // Find treasury
         let treasury_id = req.treasury_id.clone()
             .ok_or_else(|| "Treasury ID is required".to_string())?;
         let treasury = self.repo.get_treasury_by_id(&treasury_id).await
@@ -340,7 +632,6 @@ impl super::Service {
             return Err("Payment amount must be greater than zero".to_string());
         }
 
-        // Get currency exchange rate if paying in a foreign currency
         let payment_currency = req.currency.clone().unwrap_or_else(|| student_account.currency.clone());
         let exchange_rate = if payment_currency == student_account.currency {
             1.0
@@ -351,10 +642,7 @@ impl super::Service {
             cur.exchange_rate
         };
 
-        // Convert payment amount to student's billing currency (base amount)
         let base_amount = req.amount * exchange_rate;
-
-        // 2. Create the payment record
         let payment_id = Uuid::new_v4().to_string();
         let receipt_number = format!("REC-{}", Utc::now().timestamp_millis());
         let journal_entry_id = Uuid::new_v4().to_string();
@@ -386,9 +674,6 @@ impl super::Service {
 
         let payment_record = self.repo.create_payment(p).await.map_err(|e| e.to_string())?;
 
-        // 3. Create Double-Entry Journal Entry:
-        // Debit: Treasury's ledger account (increases asset)
-        // Credit: Student's sub-ledger account (decreases accounts receivable asset)
         let description = format!("Fee payment received via {}: {}", req.method, receipt_number);
         let description_ar = Some(format!("سداد رسوم عبر {}: {}", req.method, receipt_number));
 
@@ -427,7 +712,6 @@ impl super::Service {
 
         self.repo.create_journal_entry(je).await.map_err(|e| e.to_string())?;
 
-        // 4. Create Treasury Transaction
         let tx = crate::entities::treasury_transaction::Model {
             id: Uuid::new_v4().to_string(),
             org_id: org_id.to_string(),
@@ -451,18 +735,11 @@ impl super::Service {
         };
         self.repo.create_treasury_transaction(tx).await.map_err(|e| e.to_string())?;
 
-        // 5. Update cached balances
-        // Update Treasury cached balance
         self.repo.update_treasury_balance(&treasury_id, req.amount).await.map_err(|e| e.to_string())?;
-        // Update Treasury's ledger account balance (Debit increases Asset)
         self.repo.update_ledger_account_balance(&treasury.ledger_account_id, base_amount).await.map_err(|e| e.to_string())?;
-        // Update Student's ledger account balance (Credit decreases Student Receivable, so we subtract base_amount)
         self.repo.update_ledger_account_balance(&student_account.id, -base_amount).await.map_err(|e| e.to_string())?;
 
-        // 6. Update student fee status (invoice)
-        let payments = self.repo.get_payments(org_id, Some(&fee.enrollment_id)).await
-            .map_err(|e| e.to_string())?;
-        
+        let payments = self.repo.get_payments(org_id, Some(&fee.enrollment_id)).await.map_err(|e| e.to_string())?;
         let total_paid: f64 = payments.iter()
             .filter(|p| p.fee_id.as_ref() == Some(&fee.id))
             .map(|p| p.base_amount)
@@ -477,12 +754,80 @@ impl super::Service {
         };
 
         self.repo.update_student_fee_status(&fee.id, &new_status).await.map_err(|e| e.to_string())?;
-
         Ok(payment_record)
     }
 
     pub async fn get_journal_entries(&self, org_id: &str) -> Result<Vec<crate::entities::journal_entry::Model>, String> {
         self.repo.get_journal_entries(org_id).await.map_err(|e| e.to_string())
+    }
+
+    pub async fn create_journal_entry(&self, org_id: &str, req: CreateJournalEntryRequest) -> Result<journal_entry::Model, String> {
+        let debit_is_leaf = self.repo.is_leaf_account(&req.debit_account_id).await.map_err(|e| e.to_string())?;
+        if !debit_is_leaf {
+            return Err("Cannot post journal entries to a control account (debit account has child sub-accounts)".to_string());
+        }
+        let credit_is_leaf = self.repo.is_leaf_account(&req.credit_account_id).await.map_err(|e| e.to_string())?;
+        if !credit_is_leaf {
+            return Err("Cannot post journal entries to a control account (credit account has child sub-accounts)".to_string());
+        }
+
+        let debit_account = self.repo.get_ledger_account_by_id(&req.debit_account_id).await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "Debit account not found".to_string())?;
+
+        let credit_account = self.repo.get_ledger_account_by_id(&req.credit_account_id).await
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "Credit account not found".to_string())?;
+
+        let je_id = Uuid::new_v4().to_string();
+        let je = journal_entry::Model {
+            id: je_id,
+            org_id: org_id.to_string(),
+            transaction_ref: req.transaction_ref,
+            accounting_date: req.accounting_date,
+            fiscal_period_id: req.fiscal_period_id,
+            amount: req.amount,
+            debit_account_id: req.debit_account_id.clone(),
+            credit_account_id: req.credit_account_id.clone(),
+            currency: req.currency.clone(),
+            exchange_rate: req.exchange_rate.or(Some(1.0)),
+            base_currency_amount: Some(req.amount * req.exchange_rate.unwrap_or(1.0)),
+            source_type: req.source_type,
+            source_id: req.source_id,
+            source_module: req.source_module,
+            description: req.description,
+            description_ar: req.description_ar,
+            metadata: None,
+            is_reversed: 0,
+            reversed_by: None,
+            reversal_reason: None,
+            is_reconciled: 0,
+            reconciled_at: None,
+            reconciliation_ref: None,
+            status: "posted".to_string(),
+            posted_by: None,
+            posted_at: Some(Utc::now().to_rfc3339()),
+            approved_by: None,
+            approved_at: Some(Utc::now().to_rfc3339()),
+            created_by: None,
+            created_at: Utc::now().to_rfc3339(),
+        };
+
+        let created_je = self.repo.create_journal_entry(je).await.map_err(|e| e.to_string())?;
+
+        let debit_change = match debit_account.item_type.to_lowercase().as_str() {
+            "asset" | "expense" => req.amount,
+            _ => -req.amount,
+        };
+        self.repo.update_ledger_account_balance(&req.debit_account_id, debit_change).await.map_err(|e| e.to_string())?;
+
+        let credit_change = match credit_account.item_type.to_lowercase().as_str() {
+            "asset" | "expense" => -req.amount,
+            _ => req.amount,
+        };
+        self.repo.update_ledger_account_balance(&req.credit_account_id, credit_change).await.map_err(|e| e.to_string())?;
+
+        Ok(created_je)
     }
 
     // ── Discount Templates ──

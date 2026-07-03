@@ -62,17 +62,31 @@ impl super::Repository {
     }
 
     pub async fn update_ledger_account_balance(&self, account_id: &str, amount: f64) -> Result<(), DbErr> {
-        let account = ledger_account::Entity::find_by_id(account_id.to_string())
-            .one(&self.db)
-            .await?;
-        if let Some(account) = account {
-            let current = account.current_balance.unwrap_or(0.0);
-            let mut active: ledger_account::ActiveModel = account.into();
-            active.current_balance = Set(Some(current + amount));
-            active.updated_at = Set(chrono::Utc::now().to_rfc3339());
-            active.update(&self.db).await?;
+        let mut current_id = Some(account_id.to_string());
+        while let Some(id) = current_id {
+            let account = ledger_account::Entity::find_by_id(id)
+                .one(&self.db)
+                .await?;
+            if let Some(account) = account {
+                let current = account.current_balance.unwrap_or(0.0);
+                let mut active: ledger_account::ActiveModel = account.into();
+                active.current_balance = Set(Some(current + amount));
+                active.updated_at = Set(chrono::Utc::now().to_rfc3339());
+                let updated = active.update(&self.db).await?;
+                current_id = updated.parent_id;
+            } else {
+                break;
+            }
         }
         Ok(())
+    }
+
+    pub async fn is_leaf_account(&self, account_id: &str) -> Result<bool, DbErr> {
+        let child_count = ledger_account::Entity::find()
+            .filter(ledger_account::Column::ParentId.eq(Some(account_id.to_string())))
+            .count(&self.db)
+            .await?;
+        Ok(child_count == 0)
     }
 
     // ── Treasuries ──

@@ -304,6 +304,9 @@ export const commands = {
     getJournalEntries: (orgId: string) =>
       invoke<JsonRecord[]>("get_journal_entries", { orgId }),
 
+    createJournalEntry: (orgId: string, request: JsonRecord) =>
+      invoke<JsonRecord>("create_journal_entry", { orgId, request }),
+
     getActiveDiscountTemplates: (orgId: string) =>
       invoke<JsonRecord[]>("get_active_discount_templates", { orgId }),
 

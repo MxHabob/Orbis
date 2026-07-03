@@ -258,6 +258,7 @@ pub fn run() {
             commands::finance::get_payments,
             commands::finance::record_payment,
             commands::finance::get_journal_entries,
+            commands::finance::create_journal_entry,
             commands::finance::get_active_discount_templates,
             commands::finance::get_discount_templates,
             commands::finance::create_discount_template,

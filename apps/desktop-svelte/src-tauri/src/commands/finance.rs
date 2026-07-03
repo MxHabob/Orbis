@@ -7,7 +7,7 @@ use core_domain::{
         finance::{
             CreateLedgerAccountRequest, CreateTreasuryRequest,
             AssignStudentFeeRequest, RecordPaymentRequest, CreateFeeTemplateRequest,
-            CreateDiscountTemplateRequest,
+            CreateDiscountTemplateRequest, CreateJournalEntryRequest, LedgerAccountResponse,
         },
         account::AccountStatement,
     },
@@ -21,7 +21,7 @@ use super::error::{CmdResult, CommandError};
 pub async fn get_ledger_accounts(
     state: State<'_, Arc<AppState>>,
     org_id: String,
-) -> CmdResult<Vec<ledger_account::Model>> {
+) -> CmdResult<Vec<LedgerAccountResponse>> {
     state
         .service
         .get_ledger_accounts(&org_id)
@@ -195,6 +195,20 @@ pub async fn get_journal_entries(
         .await
         .map_err(CommandError::from)
 }
+
+#[tauri::command]
+pub async fn create_journal_entry(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    request: CreateJournalEntryRequest,
+) -> CmdResult<journal_entry::Model> {
+    state
+        .service
+        .create_journal_entry(&org_id, request)
+        .await
+        .map_err(CommandError::from)
+}
+
 
 #[tauri::command]
 pub async fn get_active_discount_templates(

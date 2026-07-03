@@ -178,139 +178,23 @@ onMount(() => {
 
 // Double entry ledger balance calculation
 const calculatedLedgerRows = $derived.by(() => {
-  const result: Record<string, any> = {};
-
-  // 1. Initialize with database ledger accounts
-  for (const acc of ledgers) {
-    let debY = 0,
-      credY = 0;
-    let debU = 0,
-      credU = 0;
-    let debS = 0,
-      credS = 0;
-
-    // Apply opening balance from seed/config
-    const ob = Number(acc.opening_balance || 0);
-    if (ob > 0) {
-      const type = String(acc.item_type || "").toLowerCase();
-      const curr = String(acc.currency || "YER").toUpperCase();
-      const isDebitType = type === "asset" || type === "expense";
-
-      if (curr === "YER") {
-        if (isDebitType) debY = ob;
-        else credY = ob;
-      } else if (curr === "USD") {
-        if (isDebitType) debU = ob;
-        else credU = ob;
-      } else if (curr === "SAR") {
-        if (isDebitType) debS = ob;
-        else credS = ob;
-      }
-    }
-
-    result[acc.id] = {
-      id: acc.id,
-      code: acc.code,
-      name: acc.name,
-      name_ar: acc.name_ar || acc.name,
-      item_type: acc.item_type || "asset",
-      parent_id: acc.parent_id,
-      debit_yer: debY,
-      credit_yer: credY,
-      debit_usd: debU,
-      credit_usd: credU,
-      debit_sar: debS,
-      credit_sar: credS,
-      debit_aed: 0,
-      credit_aed: 0,
-      notes: acc.sub_type || "",
-    };
-  }
-
-  // 2. Perform math for fees (Debit Tuition Receivables YER, Credit corresponding revenue account YER)
-  const tuitionReceivablesAccount = ledgers.find(
-    (l) =>
-      l.code === "1301" ||
-      String(l.name_ar).includes("ذمم") ||
-      String(l.name).toLowerCase().includes("receivable"),
-  );
-  const arId = tuitionReceivablesAccount?.id;
-
-  for (const fee of fees) {
-    const amount = Number(fee.total_amount || 0);
-    const revenueAccId = fee.fee_template_id; // fee_template_id stores the credit ledger ID
-
-    // Debit student receivables
-    if (arId && result[arId]) {
-      result[arId].debit_yer += amount;
-    }
-    // Credit revenue classification account
-    if (revenueAccId && result[revenueAccId]) {
-      result[revenueAccId].credit_yer += amount;
-    }
-  }
-
-  // 3. Perform math for payments (Debit treasury vault, Credit student receivables)
-  for (const pay of payments) {
-    const amount = Number(pay.amount || 0);
-    const curr = String(pay.currency || "YER").toUpperCase();
-
-    // Debit target treasury's ledger account
-    const treasury = treasuries.find((t) => t.id === pay.treasury_id);
-    const treasuryLedgerId = treasury?.ledger_account_id;
-    if (treasuryLedgerId && result[treasuryLedgerId]) {
-      if (curr === "YER") {
-        result[treasuryLedgerId].debit_yer += amount;
-      } else if (curr === "USD") {
-        result[treasuryLedgerId].debit_usd += amount;
-      } else if (curr === "SAR") {
-        result[treasuryLedgerId].debit_sar += amount;
-      }
-    }
-
-    // Credit student receivables
-    if (arId && result[arId]) {
-      if (curr === "YER") {
-        result[arId].credit_yer += amount;
-      } else if (curr === "USD") {
-        result[arId].credit_usd += amount;
-      } else if (curr === "SAR") {
-        result[arId].credit_sar += amount;
-      }
-    }
-  }
-
-  // 4. Rollup child balances to parent accounts recursively
-  const visited = new Set<string>();
-  function rollupNode(nodeId: string) {
-    if (visited.has(nodeId)) return;
-    visited.add(nodeId);
-
-    const children = Object.values(result).filter(
-      (acc: any) => acc.parent_id === nodeId,
-    );
-    for (const child of children) {
-      rollupNode(child.id);
-
-      result[nodeId].debit_yer += child.debit_yer;
-      result[nodeId].credit_yer += child.credit_yer;
-      result[nodeId].debit_sar += child.debit_sar;
-      result[nodeId].credit_sar += child.credit_sar;
-      result[nodeId].debit_usd += child.debit_usd;
-      result[nodeId].credit_usd += child.credit_usd;
-      result[nodeId].debit_aed += child.debit_aed;
-      result[nodeId].credit_aed += child.credit_aed;
-    }
-  }
-
-  for (const acc of Object.values(result)) {
-    if (!acc.parent_id) {
-      rollupNode(acc.id);
-    }
-  }
-
-  // Convert map to list
-  return Object.values(result);
+  return ledgers.map(acc => ({
+    id: acc.id,
+    code: acc.code,
+    name: acc.name,
+    name_ar: acc.name_ar || acc.name,
+    item_type: acc.item_type || "asset",
+    parent_id: acc.parent_id,
+    debit_yer: acc.debit_yer || 0.0,
+    credit_yer: acc.credit_yer || 0.0,
+    debit_usd: acc.debit_usd || 0.0,
+    credit_usd: acc.credit_usd || 0.0,
+    debit_sar: acc.debit_sar || 0.0,
+    credit_sar: acc.credit_sar || 0.0,
+    debit_aed: acc.debit_aed || 0.0,
+    credit_aed: acc.credit_aed || 0.0,
+    notes: acc.sub_type || "",
+  }));
 });
 
 // Selected Account Row derived state

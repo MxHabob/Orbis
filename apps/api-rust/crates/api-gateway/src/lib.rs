@@ -407,6 +407,7 @@ pub async fn start_server(database_url: &str, port: u16) -> Result<(), Box<dyn s
         .route("/api/finance/treasuries", get(handler::finance::get_treasuries).post(handler::finance::post_treasuries))
         .route("/api/finance/student-fees", get(handler::finance::get_student_fees).post(handler::finance::post_student_fees))
         .route("/api/finance/payments", get(handler::finance::get_payments).post(handler::finance::post_payments))
+        .route("/api/finance/journal-entries", get(handler::finance::get_journal_entries).post(handler::finance::post_journal_entry))
         .route("/api/subjects", get(handler::subject::get_subjects).post(handler::subject::post_subjects))
         .route("/api/subjects/:id", get(handler::subject::get_subject).put(handler::subject::put_subject).delete(handler::subject::delete_subject))
         .route("/api/schedule/time-slots", get(handler::schedule::get_time_slots).post(handler::schedule::post_time_slots))

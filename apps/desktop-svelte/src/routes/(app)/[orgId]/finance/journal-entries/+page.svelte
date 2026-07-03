@@ -168,7 +168,7 @@ function clearForm() {
   descriptionAr = "";
 }
 
-function handleAdd() {
+async function handleAdd() {
   if (!amount || amount <= 0) {
     toast.error("الرجاء إدخال مبلغ صحيح");
     return;
@@ -186,26 +186,37 @@ function handleAdd() {
     return;
   }
 
-  const randomRef = String(Math.floor(148000 + Math.random() * 10000));
+  const randomRef = "JV-" + String(Math.floor(148000 + Math.random() * 10000));
 
-  const newEntry = {
-    id: Math.random().toString(36).substring(2, 9),
-    transaction_ref: randomRef,
-    accounting_date: accountingDate,
-    amount,
-    currency,
-    debit_account_id: debitAccountId,
-    credit_account_id: creditAccountId,
-    description_ar: descriptionAr || "",
-    status: "draft",
-    user: "U78",
-    branch: "المركز الرئيسي",
-    prints_count: 0,
-  };
+  try {
+    const newEntry = await commands.finance.createJournalEntry(data.orgId, {
+      transaction_ref: randomRef,
+      accounting_date: accountingDate,
+      fiscal_period_id: "2026-cycle", // default active cycle representation
+      amount,
+      debit_account_id: debitAccountId,
+      credit_account_id: creditAccountId,
+      currency,
+      exchange_rate: 1.0,
+      description: descriptionAr || "Manual Journal Entry",
+      description_ar: descriptionAr || null,
+      source_type: "manual",
+    });
 
-  journalEntries = [newEntry, ...journalEntries];
-  toast.success(`تم إضافة القيد رقم ${randomRef} بنجاح`);
-  clearForm();
+    journalEntries = [
+      {
+        ...newEntry,
+        prints_count: 0,
+        user: "U78",
+        branch: "المركز الرئيسي",
+      },
+      ...journalEntries
+    ];
+    toast.success(`تم حفظ وترحيل القيد رقم ${randomRef} بنجاح`);
+    clearForm();
+  } catch (e) {
+    toast.error("فشل حفظ القيد: " + String(e));
+  }
 }
 
 function handleVoid() {

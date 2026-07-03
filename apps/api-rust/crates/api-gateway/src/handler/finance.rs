@@ -6,7 +6,7 @@ use axum::{
 use serde::Deserialize;
 use serde_json::json;
 use crate::service::Service;
-use crate::service::finance::{CreateLedgerAccountRequest, CreateTreasuryRequest, AssignStudentFeeRequest, RecordPaymentRequest};
+use crate::service::finance::{CreateLedgerAccountRequest, CreateTreasuryRequest, AssignStudentFeeRequest, RecordPaymentRequest, CreateJournalEntryRequest};
 use crate::middleware::AuthenticatedUser;
 
 #[derive(Debug, Deserialize)]
@@ -131,3 +131,33 @@ pub async fn post_payments(
 
     Ok((StatusCode::CREATED, Json(json!({ "success": true, "data": payment }))))
 }
+
+#[utoipa::path(get, path = "/api/finance/journal-entries", responses((status = 200, description = "Journal entries list")))]
+pub async fn get_journal_entries(
+    State(service): State<Service>,
+    AuthenticatedUser(user): AuthenticatedUser,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    service.check_permission_and_audit(&user, crate::service::authz::Permission::FinanceRead, None).await
+        .map_err(|e| (StatusCode::FORBIDDEN, Json(json!({ "success": false, "error": e }))))?;
+
+    let entries = service.get_journal_entries(&user.org_id).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "success": false, "error": e }))))?;
+
+    Ok((StatusCode::OK, Json(json!({ "success": true, "data": entries }))))
+}
+
+#[utoipa::path(post, path = "/api/finance/journal-entries", request_body = CreateJournalEntryRequest, responses((status = 201, description = "Journal entry created")))]
+pub async fn post_journal_entry(
+    State(service): State<Service>,
+    AuthenticatedUser(user): AuthenticatedUser,
+    Json(req): Json<CreateJournalEntryRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    service.check_permission_and_audit(&user, crate::service::authz::Permission::FinanceWrite, None).await
+        .map_err(|e| (StatusCode::FORBIDDEN, Json(json!({ "success": false, "error": e }))))?;
+
+    let entry = service.create_journal_entry(&user.org_id, req).await
+        .map_err(|e| (StatusCode::BAD_REQUEST, Json(json!({ "success": false, "error": e }))))?;
+
+    Ok((StatusCode::CREATED, Json(json!({ "success": true, "data": entry }))))
+}
+

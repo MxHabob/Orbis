@@ -85,9 +85,12 @@ const navItems = $derived([
   },
   {
     path: "ledger",
-    label: m.finance_layout_nav_ledger
-      ? m.finance_layout_nav_ledger()
-      : "كشف الحساب",
+    label: "الأستاذ العام والدليل",
+    icon: Compass,
+  },
+  {
+    path: "statement",
+    label: "كشف الحساب التفصيلي",
     icon: ClipboardList,
   },
   {
@@ -105,7 +108,6 @@ const navItems = $derived([
         items={navItems}
         {basePath}
         title={m.finance_layout_panel_title()}
-        description={m.finance_layout_panel_desc()}
       />
     {/snippet}
 

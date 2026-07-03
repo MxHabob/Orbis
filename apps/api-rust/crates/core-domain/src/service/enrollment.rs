@@ -187,40 +187,13 @@ impl super::Service {
             .map_err(|e| e.to_string())?;
 
         // Auto-create student sub-ledger account in Chart of Accounts
-        let student_ledger_account = match self.repo.get_ledger_account_by_entity(org_id, "student", &student.id).await {
-            Ok(Some(acc)) => acc,
-            _ => {
-                // Find student receivable control account
-                let control_acc = self.repo.get_control_account_by_sub_type(org_id, "student_receivable").await
-                    .map_err(|e| e.to_string())?
-                    .ok_or_else(|| "Student Receivable Control Account not found in chart of accounts".to_string())?;
-
-                let acc_id = format!("{}_student_{}", org_id, student.id);
-                let new_acc = crate::entities::ledger_account::Model {
-                    id: acc_id.clone(),
-                    org_id: org_id.to_string(),
-                    code: format!("{}.{}", control_acc.code, student_number),
-                    name: format!("Student - {}", student.full_name),
-                    name_ar: Some(format!("طالب - {}", student.full_name)),
-                    item_type: "asset".to_string(),
-                    sub_type: Some("student".to_string()),
-                    parent_id: Some(control_acc.id.clone()),
-                    path: format!("{}/{}", control_acc.path, acc_id),
-                    depth: control_acc.depth + 1,
-                    currency: control_acc.currency.clone(),
-                    opening_balance: Some(0.0),
-                    current_balance: Some(0.0),
-                    entity_type: Some("student".to_string()),
-                    entity_id: Some(student.id.clone()),
-                    is_control_account: 0,
-                    is_system_account: 0,
-                    is_active: 1,
-                    created_at: Utc::now().to_rfc3339(),
-                    updated_at: Utc::now().to_rfc3339(),
-                };
-                self.repo.create_ledger_account(new_acc).await.map_err(|e| e.to_string())?
-            }
-        };
+        let student_ledger_account = self.get_or_create_sub_account(
+            org_id,
+            "student",
+            &student.id,
+            Some(&student.full_name),
+            student.name_ar.as_deref(),
+        ).await?;
 
         // 1. Get class details to determine level/grade
         let class_info = self.repo.get_class_by_id(&req.class_id).await

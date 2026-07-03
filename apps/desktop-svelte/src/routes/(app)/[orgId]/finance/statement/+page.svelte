@@ -146,7 +146,7 @@ function printStatement() {
     <div class="flex flex-col gap-1 text-start">
       <h1 class="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
         <ClipboardList class="text-primary" size={20} />
-        <span>{m.finance_layout_nav_ledger ? m.finance_layout_nav_ledger() : "كشف الحساب التفصيلي"}</span>
+        <span>{m.ledger_title ? m.ledger_title() : "كشف الحساب التفصيلي"}</span>
       </h1>
       <p class="text-xs text-muted-foreground">
         عرض كشف حساب تفصيلي للطلاب والموظفين والخزائن ومطابقة أرصدتهم المحاسبية بدقة

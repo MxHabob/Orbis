@@ -522,7 +522,7 @@ pub async fn post_auto_schedule(
         .map_err(|e| (StatusCode::FORBIDDEN, Json(json!({ "success": false, "error": e }))))?;
 
     let result = service
-        .auto_schedule_exams(&user.org_id, req)
+        .start_exam_solve(&user.org_id, &user.id, req)
         .await
         .map_err(|e| (StatusCode::BAD_REQUEST, Json(json!({ "success": false, "error": e }))))?;
 

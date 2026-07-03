@@ -64,10 +64,6 @@ async function handleSubmit(e: SubmitEvent) {
     toast.error(m.treasury_toast_error_name());
     return;
   }
-  if (!selectedLedgerId) {
-    toast.error(m.treasury_toast_error_ledger());
-    return;
-  }
   if (!currency || currency.trim().length !== 3) {
     toast.error(m.treasury_toast_error_currency());
     return;
@@ -79,7 +75,7 @@ async function handleSubmit(e: SubmitEvent) {
       name: name || nameAr,
       name_ar: nameAr || name,
       item_type: treasuryType,
-      ledger_account_id: selectedLedgerId,
+      ledger_account_id: undefined,
       currency: currency.trim().toUpperCase(),
       bank_name: treasuryType === "bank" ? bankName || undefined : undefined,
       account_number:
@@ -152,27 +148,6 @@ async function handleSubmit(e: SubmitEvent) {
 		>
 			<option value="cash">{m.attendance_status_unknown() === "غير محدد" ? "نقدي (كاش)" : "Physical Cashbox"}</option>
 			<option value="bank">{m.attendance_status_unknown() === "غير محدد" ? "حساب مصرفي / بنك" : "Bank Account"}</option>
-		</select>
-	</div>
-
-	<!-- Associated Ledger Account Select -->
-	<div class="flex flex-col gap-2 text-start">
-		<label for="treas_ledger" class="text-sm font-medium text-foreground">
-			{m.treasury_label_ledger()}
-		</label>
-		<select 
-			id="treas_ledger"
-			bind:value={selectedLedgerId}
-			class="bg-background text-foreground border border-border rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-ring outline-none h-9 w-full"
-			disabled={isLoadingLedgers || isSubmitting}
-		>
-			{#if isLoadingLedgers}
-				<option>{m.loading()}</option>
-			{:else}
-				{#each ledgers as l (l.id)}
-					<option value={String(l.id)}>{l.name_ar || l.name} ({l.code})</option>
-				{/each}
-			{/if}
 		</select>
 	</div>
 
