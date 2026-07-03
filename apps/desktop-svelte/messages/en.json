@@ -1,8 +1,6 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
-
   "app_name": "Orbis",
-
   "nav_overview": "Overview",
   "nav_reports": "Reports",
   "nav_students": "Students",
@@ -11,7 +9,6 @@
   "nav_settings": "Settings",
   "nav_feedback": "Feedback",
   "nav_account": "Account",
-
   "header_search": "Search...",
   "header_search_shortcut": "⌘K",
   "header_search_title": "Search (⌘K)",
@@ -29,7 +26,6 @@
   "header_switch_language": "Switch Language",
   "header_language_ar": "العربية",
   "header_language_en": "English",
-
   "breadcrumb_home": "Home",
   "breadcrumb_reports": "Reports",
   "breadcrumb_students": "Students",
@@ -43,7 +39,6 @@
   "breadcrumb_academics": "Academics",
   "breadcrumb_finance": "Finance",
   "breadcrumb_settings": "Settings",
-
   "login_title": "Sign In — Orbis",
   "login_welcome": "Welcome to Orbis School",
   "login_subtitle": "Sign in or create an account",
@@ -59,11 +54,9 @@
   "login_terms_of_service": "Terms of Service",
   "login_and": "and",
   "login_privacy_policy": "Privacy Policy",
-
   "greeting_morning": "Good morning",
   "greeting_afternoon": "Good afternoon",
   "greeting_evening": "Good evening",
-
   "insight_students": "You currently have {link} registered in the system.",
   "insight_students_link": "{count} students",
   "insight_attendance": "Today's attendance rate is {link}, with {lateRate}% tardiness.",
@@ -75,12 +68,10 @@
   "insight_staff": "Total of {link} supporting operations.",
   "insight_staff_link": "{count} staff members",
   "insight_show_number": "Show metric {number}",
-
   "action_enroll_student": "Enroll Student",
   "action_record_payment": "Record Payment",
   "action_manage_classes": "Manage Classes",
   "action_view_reports": "View Reports",
-
   "card_total_students": "Total Students",
   "card_attendance_rate": "Attendance Rate",
   "card_active_classes": "Active Classes",
@@ -93,18 +84,14 @@
   "card_detail_critical_incidents": "{count} critical incidents",
   "card_detail_admin_roles": "Supporting administrative roles",
   "card_detail_total_enrolled": "Total Enrolled: {count}",
-
   "banner_title": "Orbis Local Environment Active",
   "banner_description": "Advanced desktop environment. Keyboard shortcuts (⌘K) and local database queries are fully functional.",
-
   "error_load_overview": "Failed to load overview data",
   "error_retry": "Retry",
-
   "page_title_dashboard": "Dashboard | Orbis",
   "page_title_students": "Student Directory | Orbis",
   "page_title_reports": "Reports | Orbis",
   "page_title_login": "Sign In — Orbis",
-
   "students_filter_panel": "Filter Panel",
   "students_clear_filters": "Clear Filters",
   "students_search_placeholder": "Search by name, academic number...",
@@ -113,7 +100,6 @@
   "students_new": "New Student",
   "students_load_error": "Failed to load data: {error}",
   "students_retry": "Retry",
-
   "filter_academic_status": "Academic Status",
   "filter_all": "All",
   "filter_active": "Active Students",
@@ -121,7 +107,6 @@
   "filter_classes": "Classes",
   "filter_all_classes": "All Classes",
   "filter_no_classes": "No classes currently registered.",
-
   "table_student": "Student",
   "table_student_number": "Academic ID",
   "table_class": "Class",
@@ -130,12 +115,10 @@
   "table_no_students": "No students found",
   "table_no_students_hint": "Try adjusting your filters or search query above.",
   "table_not_enrolled": "Not Enrolled",
-
   "status_active": "Active",
   "status_withdrawn": "Withdrawn",
   "status_undefined": "Undefined",
   "status_active_enrollment": "Active Enrollment",
-
   "inspector_title": "Student Inspector",
   "inspector_view_full": "View Full Profile",
   "inspector_edit_record": "Edit Student Record",
@@ -159,13 +142,11 @@
   "inspector_no_phone": "No phone",
   "inspector_no_email": "No email",
   "inspector_registered_on": "Registered on: {date}",
-
   "loading": "Loading...",
   "loading_no_dues": "No dues",
   "loading_no_grades": "No grades",
   "loading_error": "Error loading",
   "currency_sar": "SAR",
-
   "form_student_info": "Student Information",
   "form_print_registration_form": "Print Registration Form",
   "form_printing_registration_form": "Preparing Form...",
@@ -279,7 +260,6 @@
   "form_month_10": "October (10)",
   "form_month_11": "November (11)",
   "form_month_12": "December (12)",
-
   "detail_back_to_directory": "Back to Student Directory",
   "detail_loading_student": "Loading student details...",
   "detail_not_enrolled": "Not Enrolled",
@@ -299,7 +279,6 @@
   "detail_email_label": "Email Address:",
   "detail_student_number_label": "Academic ID:",
   "detail_birth_date_label": "Date of Birth:",
-
   "grades_title": "Current Grades & Assessments",
   "grades_subtitle": "Details of grades earned by the student in different subjects during the current term.",
   "grades_refresh": "Refresh Data",
@@ -329,7 +308,6 @@
   "grades_save_all": "Save Grades",
   "grades_no_assessments_banner": "No assessments found for this subject yet. Add assessments in the 'Assessments' tab to enter grades.",
   "grades_no_students": "No students enrolled in this class",
-
   "fees_total_fees": "Total Assigned Fees",
   "fees_total_paid": "Total Amount Paid",
   "fees_balance_due": "Balance Due (Remaining)",
@@ -348,7 +326,6 @@
   "fees_col_pay_date": "Payment Date",
   "fees_col_paid_amount": "Amount Paid",
   "fees_default_method": "Cash",
-
   "attendance_present_days": "Present Days",
   "attendance_absent_days": "Absent Days",
   "attendance_late_cases": "Tardy Instances",
@@ -365,7 +342,6 @@
   "attendance_status_late": "Late",
   "attendance_status_excused": "Excused",
   "attendance_status_unknown": "Undefined",
-
   "behavior_ai_title": "AI Behavior Insights",
   "behavior_ai_generate": "Generate AI Insights",
   "behavior_ai_generating": "Analyzing...",
@@ -382,7 +358,6 @@
   "behavior_type_positive": "Positive",
   "behavior_type_warning": "Warning",
   "behavior_type_violation": "Violation",
-
   "reports_attendance_trends_title": "Average Attendance Rate",
   "reports_attendance_rate_tooltip": "Rate: {rate}%",
   "reports_no_attendance": "No attendance records found.",
@@ -404,7 +379,6 @@
   "reports_grade_label": "Grade {grade}",
   "reports_students_count": "{count} Students",
   "reports_no_grades": "No grades data found.",
-
   "metrics_done": "Done",
   "metrics_customize": "Customize",
   "metrics_filters": "Filters",
@@ -417,7 +391,6 @@
   "metrics_all_terms": "All Terms",
   "metrics_class_grade": "Grade / Class",
   "metrics_all_classes": "All Classes",
-
   "header_switch_theme": "Switch Theme",
   "theme_light": "Light",
   "theme_dark": "Dark",
@@ -798,7 +771,6 @@
   "docs_upload_success": "File uploaded successfully",
   "docs_delete_success": "Document deleted successfully",
   "docs_create_success": "Document requirement added successfully",
-
   "settings_layout_title": "Settings",
   "settings_layout_desc": "Manage organization and system settings",
   "settings_nav_general": "General",
@@ -816,7 +788,6 @@
   "settings_nav_subjects": "Subjects",
   "settings_nav_fee_templates": "Fees",
   "settings_nav_discount_templates": "Discounts",
-
   "academics_class_detail_tab_overview": "Overview",
   "academics_class_detail_tab_assessments": "Assessments",
   "academics_class_detail_tab_teachers": "Teachers",
@@ -927,7 +898,6 @@
   "settings_users_delete_success": "User deleted successfully",
   "settings_users_create_success": "User created successfully",
   "settings_users_update_success": "User updated successfully",
-
   "user_form_title_create": "Add New User",
   "user_form_title_edit": "Edit User",
   "user_form_desc_create": "Create a new account for a teacher, admin, or guardian",
@@ -968,7 +938,6 @@
   "settings_cycles_status_inactive": "Inactive",
   "settings_cycles_activate": "Activate",
   "settings_cycles_lock": "Lock",
-
   "cycle_form_title_create": "Create Academic Cycle",
   "cycle_form_desc": "Add a new academic year or term",
   "cycle_form_name": "Name (Arabic)",
@@ -1005,7 +974,6 @@
   "rooms_delete_success": "Room deleted successfully",
   "rooms_create_success": "Room created successfully",
   "rooms_update_success": "Room updated successfully",
-
   "academics_layout_nav_class_subjects": "Teacher Assignments",
   "cs_title": "Subject-Teacher Assignments",
   "cs_desc": "Assign teachers to subjects for each class and academic cycle",
@@ -1041,7 +1009,6 @@
   "cs_form_cancel": "Cancel",
   "cs_form_save": "Save Assignment",
   "cs_form_saving": "Saving...",
-
   "guardians_tab": "Guardians",
   "guardians_title": "Guardians",
   "guardians_desc": "Manage guardians linked to this student",
@@ -1075,7 +1042,6 @@
   "guardians_form_save": "Save",
   "guardians_form_saving": "Saving...",
   "guardians_form_select_user": "Search for a user...",
-
   "finance_layout_nav_fee_templates": "Fee Templates",
   "ft_title": "Fee Templates",
   "ft_desc": "Manage tuition and enrollment fee templates",
@@ -1116,7 +1082,6 @@
   "ft_update_success": "Fee template updated successfully",
   "ft_delete_confirm": "Are you sure you want to delete this template?",
   "ft_delete_success": "Template deleted successfully",
-
   "audit_title": "Audit Log",
   "audit_desc": "Audit logs of all system operations and modifications",
   "audit_col_user": "User",
@@ -1124,7 +1089,6 @@
   "audit_col_entity": "Entity",
   "audit_col_details": "Details",
   "settings_layout_nav_audit": "Audit Log",
-
   "finance_layout_nav_journal": "Journal Entries",
   "je_title": "Journal Entries",
   "je_desc": "Manage and view double-entry journal logs",
@@ -1139,7 +1103,6 @@
   "je_empty_desc": "No financial transactions have been entered yet",
   "je_status_draft": "Draft",
   "je_status_posted": "Posted",
-
   "finance_layout_nav_discount_templates": "Discount Templates",
   "dt_title": "Discount Templates",
   "dt_desc": "Manage student discount and scholarship templates",
@@ -1305,27 +1268,22 @@
   "whats_new_read_more": "Read more",
   "whats_new_title_2": "Mulverse Cloud Integration",
   "whats_new_desc_2": "Synchronise your school databases securely with Mulverse Cloud Services, enabling advanced reporting, multi-branch analytics, and secure data backups.",
-
   "nav_exams": "Examinations",
   "exams_layout_panel_title": "Examinations",
   "exams_layout_panel_desc": "Sessions & Seating",
   "breadcrumb_exams": "Examinations",
-
   "exams_layout_nav_overview": "Overview",
   "exams_layout_nav_sessions": "Exam Sessions",
   "exams_layout_nav_ordering": "Student Ordering",
   "exams_layout_nav_reports": "Reports",
-
   "exams_overview_title": "Examination Management",
   "exams_overview_subtitle": "Manage exam sessions, seating, halls, and proctors",
   "exams_overview_active_session": "Active Session",
   "exams_overview_no_active": "No active session",
-
   "exams_stat_sessions": "Sessions",
   "exams_stat_students": "Students",
   "exams_stat_halls": "Halls",
   "exams_stat_proctors": "Proctors",
-
   "exams_card_sessions_title": "Exam Sessions",
   "exams_card_sessions_desc": "Create and manage exam periods, subjects, and schedules",
   "exams_card_ordering_title": "Student Ordering",
@@ -1335,7 +1293,6 @@
   "exams_card_reports_title": "Reports & Print",
   "exams_card_reports_desc": "Generate seating lists, hall maps, attendance sheets",
   "exams_open_section": "Open",
-
   "exams_sessions_title": "Exam Sessions",
   "exams_sessions_create": "New Session",
   "exams_sessions_search": "Search sessions...",
@@ -1343,7 +1300,6 @@
   "exams_sessions_type": "Type",
   "exams_sessions_subjects_count": "{count} subjects",
   "exams_sessions_students_count": "{count} students",
-
   "exams_create_title": "Create Exam Session",
   "exams_create_name": "Session Name",
   "exams_create_name_ar": "Session Name (Arabic)",
@@ -1353,7 +1309,6 @@
   "exams_create_cycle": "Academic Cycle",
   "exams_create_submit": "Create Session",
   "exams_create_success": "Exam session created successfully",
-
   "exams_detail_subjects": "Subjects",
   "exams_detail_schedule": "Schedule",
   "exams_detail_seating": "Seating",
@@ -1363,19 +1318,16 @@
   "exams_detail_edit": "Edit",
   "exams_detail_activate": "Activate Session",
   "exams_detail_complete": "Complete Session",
-
   "exams_subjects_add": "Add Subject",
   "exams_subjects_name": "Subject",
   "exams_subjects_score": "Max Score",
   "exams_subjects_duration": "Duration (min)",
   "exams_subjects_type": "Exam Type",
-
   "exams_actions_generate_seating": "Generate Seating Numbers",
   "exams_actions_generate_secrets": "Generate Secret Numbers",
   "exams_actions_auto_schedule": "Auto-Schedule",
   "exams_actions_allocate_halls": "Allocate Halls",
   "exams_actions_assign_proctors": "Assign Proctors",
-
   "exams_ordering_title": "Student Ordering Engine",
   "exams_ordering_cycle": "Academic Cycle",
   "exams_ordering_strategy": "Ordering Strategy",
@@ -1384,7 +1336,6 @@
   "exams_ordering_result": "{count} students ordered",
   "exams_ordering_strategy_name": "Arabic Name (A-Z)",
   "exams_ordering_strategy_hybrid": "Hybrid (Name + Number)",
-
   "exams_reports_title": "Reports & Printing",
   "exams_reports_select_session": "Select Session",
   "exams_reports_timetable": "Exam Timetable",
@@ -1396,14 +1347,12 @@
   "exams_reports_summary": "Session Summary",
   "exams_reports_preview": "Preview",
   "exams_reports_print": "Print",
-
   "exams_status_draft": "Draft",
   "exams_status_scheduled": "Scheduled",
   "exams_status_active": "Active",
   "exams_status_grading": "Grading",
   "exams_status_completed": "Completed",
   "exams_status_archived": "Archived",
-
   "settings_nav_permissions": "Roles & Permissions",
   "settings_permissions_title": "Roles & Permissions",
   "settings_permissions_desc": "Configure security roles and assign granular feature access rights.",
@@ -1460,7 +1409,6 @@
   "settings_user_detail_pref_notifications": "Notifications Channels",
   "settings_user_detail_pref_sidebar_wide": "Expanded Sidebar",
   "settings_user_detail_pref_sidebar_compact": "Compact Sidebar",
-
   "onboarding_admin_title": "Setup Administrator Account",
   "onboarding_admin_desc": "Create the primary administrator account to manage school operations.",
   "onboarding_admin_name_ar": "Administrator Name (Arabic)",
@@ -1469,7 +1417,6 @@
   "onboarding_admin_phone": "Phone Number",
   "onboarding_admin_password": "Login Password",
   "onboarding_admin_password_hint": "Minimum 6 characters for strong security.",
-
   "audit_empty": "No audit logs found",
   "audit_empty_desc": "No operations have been recorded yet.",
   "audit_col_time": "Time",
@@ -1829,7 +1776,6 @@
   "control_compile_success": "Semester grades compiled successfully!",
   "control_compile_term_only": "This action is only available for semester terms (Term 1 or Term 2)",
   "control_dirty_warning": "You have unsaved changes. Continue without saving?",
-  
   "settings_registration_title": "Registration Settings & Rules",
   "settings_registration_desc": "Configure enrollment policies, dynamic field visibility, and automatic academic numbering rules",
   "settings_registration_save_success": "Registration settings saved successfully",
@@ -1864,7 +1810,6 @@
   "settings_registration_field_documents": "Required Documents",
   "settings_registration_save": "Save Settings",
   "settings_registration_saving": "Saving...",
-  
   "form_guardian_search_label": "Search for existing registered parent (by name or phone)",
   "form_guardian_search_placeholder": "Search name or phone number here...",
   "form_guardian_title": "Link Guardians (Legal Guardian)",
@@ -1929,5 +1874,22 @@
   "onboarding_term_division": "Section/Cohort",
   "onboarding_term_subject": "Subject/Course",
   "onboarding_lang_ar": "Arabic",
-  "onboarding_lang_en": "English"
+  "onboarding_lang_en": "English",
+  "onboarding_popover_tasks_completed": "{completed} out of {total} tasks completed",
+  "onboarding_popover_task_institution_type_label": "Institution Type Selection",
+  "onboarding_popover_task_institution_type_desc": "Choose the organization profile that best matches your institution.",
+  "onboarding_popover_task_calendar_label": "{calendar} Setup",
+  "onboarding_popover_task_calendar_desc": "Define academic periods, dates, and terms.",
+  "onboarding_popover_task_classroom_label": "{classroom} Allocation",
+  "onboarding_popover_task_classroom_desc": "Configure classrooms, computer labs, and lecture halls.",
+  "onboarding_popover_task_stage_label": "{stage} Hierarchy",
+  "onboarding_popover_task_stage_desc": "Choose active grade levels and associated {division}s.",
+  "onboarding_popover_task_schedule_label": "Daily Schedule & Periods",
+  "onboarding_popover_task_schedule_desc": "Setup period times, starts, ends, and durations.",
+  "onboarding_popover_task_subject_label": "{subject}s & Curriculums",
+  "onboarding_popover_task_subject_desc": "Select default subjects and customize accent colors.",
+  "onboarding_popover_task_fees_label": "Registration Fees Setup",
+  "onboarding_popover_task_fees_desc": "Setup registration fees for each academic stage.",
+  "onboarding_popover_task_review_label": "Review & Launch",
+  "onboarding_popover_task_review_desc": "Review your configuration and launch the system."
 }

@@ -1,8 +1,6 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
-
   "app_name": "Orbis",
-
   "nav_overview": "الرئيسية",
   "nav_reports": "التقارير",
   "nav_students": "الطلاب",
@@ -11,7 +9,6 @@
   "nav_settings": "الإعدادات",
   "nav_feedback": "الملاحظات",
   "nav_account": "الحساب",
-
   "header_search": "بحث...",
   "header_search_shortcut": "⌘K",
   "header_search_title": "بحث (⌘K)",
@@ -29,7 +26,6 @@
   "header_switch_language": "تبديل اللغة",
   "header_language_ar": "العربية",
   "header_language_en": "English",
-
   "breadcrumb_home": "الرئيسية",
   "breadcrumb_reports": "التقارير",
   "breadcrumb_students": "الطلاب",
@@ -43,7 +39,6 @@
   "breadcrumb_academics": "الأكاديميات",
   "breadcrumb_finance": "المالية",
   "breadcrumb_settings": "الإعدادات",
-
   "login_title": "تسجيل الدخول — Orbis",
   "login_welcome": "مرحباً بك في Orbis School",
   "login_subtitle": "سجّل دخولك أو أنشئ حساباً",
@@ -59,11 +54,9 @@
   "login_terms_of_service": "شروط الخدمة",
   "login_and": "و",
   "login_privacy_policy": "سياسة الخصوصية",
-
   "greeting_morning": "صباح الخير",
   "greeting_afternoon": "مساء الخير",
   "greeting_evening": "مساء الخير",
-
   "insight_students": "لديك {link} مسجلين حالياً في النظام.",
   "insight_students_link": "{count} طالب",
   "insight_attendance": "نسبة الحضور اليوم {link}، مع {lateRate}% تأخر.",
@@ -75,12 +68,10 @@
   "insight_staff": "إجمالي {link} يدعمون العمليات التشغيلية.",
   "insight_staff_link": "{count} موظف",
   "insight_show_number": "عرض المؤشر {number}",
-
   "action_enroll_student": "تسجيل طالب",
   "action_record_payment": "تسجيل دفعة",
   "action_manage_classes": "إدارة الفصول",
   "action_view_reports": "عرض التقارير",
-
   "card_total_students": "إجمالي الطلاب",
   "card_attendance_rate": "نسبة الحضور",
   "card_active_classes": "الفصول النشطة",
@@ -93,18 +84,14 @@
   "card_detail_critical_incidents": "{count} حالة حرجة",
   "card_detail_admin_roles": "دعم الأدوار الإدارية",
   "card_detail_total_enrolled": "إجمالي المسجلين: {count}",
-
   "banner_title": "بيئة Orbis المحلية مفعّلة",
   "banner_description": "بيئة سطح المكتب المتقدمة. اختصارات لوحة المفاتيح (⌘K) واستعلامات قاعدة البيانات المحلية تعمل بالكامل.",
-
   "error_load_overview": "فشل تحميل بيانات النظرة العامة",
   "error_retry": "إعادة المحاولة",
-
   "page_title_dashboard": "لوحة التحكم | Orbis",
   "page_title_students": "دليل الطلاب | Orbis",
   "page_title_reports": "التقارير | Orbis",
   "page_title_login": "تسجيل الدخول — Orbis",
-
   "students_filter_panel": "لوحة التصفية",
   "students_clear_filters": "مسح التصفية",
   "students_search_placeholder": "البحث بالاسم، الرقم الأكاديمي...",
@@ -113,7 +100,6 @@
   "students_new": "طالب جديد",
   "students_load_error": "فشل تحميل البيانات: {error}",
   "students_retry": "إعادة المحاولة",
-
   "filter_academic_status": "الحالة الأكاديمية",
   "filter_all": "الكل",
   "filter_active": "الطلاب النشطين",
@@ -121,7 +107,6 @@
   "filter_classes": "الصفوف الدراسية",
   "filter_all_classes": "كل الصفوف",
   "filter_no_classes": "لا توجد صفوف مسجلة حالياً.",
-
   "table_student": "الطالب",
   "table_student_number": "الرقم الأكاديمي",
   "table_class": "الصف",
@@ -130,12 +115,10 @@
   "table_no_students": "لم يتم العثور على طلاب",
   "table_no_students_hint": "جرب تعديل الفلاتر أو شريط البحث في الأعلى.",
   "table_not_enrolled": "غير مسجل",
-
   "status_active": "نشط",
   "status_withdrawn": "منسحب",
   "status_undefined": "غير محدد",
   "status_active_enrollment": "قيد دراسي نشط",
-
   "inspector_title": "مفتش الطالب",
   "inspector_view_full": "عرض الملف الكامل",
   "inspector_edit_record": "تعديل سجل الطالب",
@@ -159,13 +142,11 @@
   "inspector_no_phone": "لا يوجد هاتف",
   "inspector_no_email": "لا يوجد بريد",
   "inspector_registered_on": "سجل في: {date}",
-
   "loading": "جاري التحميل...",
   "loading_no_dues": "لا توجد مستحقات",
   "loading_no_grades": "لا توجد درجات",
   "loading_error": "خطأ في التحميل",
   "currency_sar": "ر.س",
-
   "form_student_info": "معلومات الطالب/ة",
   "form_print_registration_form": "تحميل استمارة التسجيل",
   "form_printing_registration_form": "جاري التحضير...",
@@ -279,7 +260,6 @@
   "form_month_10": "أكتوبر (10)",
   "form_month_11": "نوفمبر (11)",
   "form_month_12": "ديسمبر (12)",
-
   "detail_back_to_directory": "العودة لدليل الطلاب",
   "detail_loading_student": "جاري تحميل بيانات الطالب...",
   "detail_not_enrolled": "غير مسجل",
@@ -299,7 +279,6 @@
   "detail_email_label": "البريد الإلكتروني:",
   "detail_student_number_label": "الرقم الأكاديمي:",
   "detail_birth_date_label": "تاريخ الميلاد:",
-
   "grades_title": "الدرجات الحالية والتقييمات",
   "grades_subtitle": "تفاصيل درجات الطالب المكتسبة في المواد الدراسية المختلفة خلال الدورة الحالية.",
   "grades_refresh": "تحديث البيانات",
@@ -329,7 +308,6 @@
   "grades_save_all": "حفظ الدرجات",
   "grades_no_assessments_banner": "لا توجد تقييمات لهذه المادة بعد. أضف تقييمات من تبويب \"التقييمات\" لتتمكن من إدخال الدرجات.",
   "grades_no_students": "لا يوجد طلاب مسجلون في هذا الفصل",
-
   "fees_total_fees": "إجمالي الرسوم المترتبة",
   "fees_total_paid": "إجمالي المبالغ المدفوعة",
   "fees_balance_due": "الرصيد المستحق (المتبقي)",
@@ -347,7 +325,6 @@
   "fees_col_pay_date": "تاريخ الدفع",
   "fees_col_paid_amount": "المبلغ المدفوع",
   "fees_default_method": "نقدي",
-
   "attendance_present_days": "أيام الحضور",
   "attendance_absent_days": "أيام الغياب",
   "attendance_late_cases": "حالات التأخر",
@@ -364,7 +341,6 @@
   "attendance_status_late": "تأخر",
   "attendance_status_excused": "مستأذن",
   "attendance_status_unknown": "غير محدد",
-
   "behavior_ai_title": "ملخص السلوك بالذكاء الاصطناعي (AI Behavior Insights)",
   "behavior_ai_generate": "توليد ملخص سلوكي",
   "behavior_ai_generating": "جاري التحليل...",
@@ -381,7 +357,6 @@
   "behavior_type_positive": "إيجابي",
   "behavior_type_warning": "تنبيه",
   "behavior_type_violation": "مخالفة",
-
   "reports_attendance_trends_title": "متوسط نسبة الحضور والمواظبة",
   "reports_attendance_rate_tooltip": "نسبة الحضور: {rate}%",
   "reports_no_attendance": "لا توجد سجلات حضور.",
@@ -403,7 +378,6 @@
   "reports_grade_label": "التقدير {grade}",
   "reports_students_count": "{count} طلاب",
   "reports_no_grades": "لا توجد درجات مسجلة للمواد.",
-
   "metrics_done": "تم",
   "metrics_customize": "تخصيص",
   "metrics_filters": "الفلاتر",
@@ -416,7 +390,6 @@
   "metrics_all_terms": "كل الفصول",
   "metrics_class_grade": "الصف / الفصل",
   "metrics_all_classes": "كل الفصول",
-
   "header_switch_theme": "تغيير المظهر",
   "theme_light": "فاتح",
   "theme_dark": "داكن",
@@ -798,7 +771,6 @@
   "docs_upload_success": "تم رفع الملف بنجاح",
   "docs_delete_success": "تم حذف الوثيقة بنجاح",
   "docs_create_success": "تم إضافة متطلب الوثيقة بنجاح",
-
   "settings_layout_title": "الإعدادات",
   "settings_layout_desc": "إدارة إعدادات المنظمة والنظام",
   "settings_nav_general": "عام",
@@ -816,7 +788,6 @@
   "settings_nav_subjects": "المواد الدراسية",
   "settings_nav_fee_templates": "الرسوم",
   "settings_nav_discount_templates": "الخصومات",
-
   "academics_class_detail_tab_overview": "نظرة عامة",
   "academics_class_detail_tab_assessments": "التقييمات",
   "academics_class_detail_tab_teachers": "المعلمون",
@@ -889,7 +860,6 @@
   "settings_appearance_density_compact": "مضغوط",
   "settings_appearance_density_comfortable": "مريح",
   "settings_appearance_density_spacious": "واسع",
-
   "settings_notifications_title": "الإشعارات",
   "settings_notifications_desc": "تفضيلات الإشعارات وقنوات التنبيه",
   "settings_notifications_in_app": "إشعارات داخل التطبيق",
@@ -900,7 +870,6 @@
   "settings_notifications_finance": "المالية والرسوم",
   "settings_notifications_behavior": "السلوك",
   "settings_notifications_system": "تحديثات النظام",
-
   "settings_security_title": "الأمان",
   "settings_security_desc": "إدارة كلمة المرور والجلسات وإعدادات الأمان",
   "settings_security_change_password": "تغيير كلمة المرور",
@@ -914,7 +883,6 @@
   "settings_security_sessions": "الجلسات النشطة",
   "settings_security_sessions_desc": "الأجهزة التي سجلت دخولك منها",
   "settings_security_last_login": "آخر تسجيل دخول",
-
   "settings_users_title": "إدارة المستخدمين",
   "settings_users_desc": "إنشاء وإدارة حسابات المعلمين والإداريين وأولياء الأمور",
   "settings_users_add": "إضافة مستخدم",
@@ -936,7 +904,6 @@
   "settings_users_delete_success": "تم حذف المستخدم بنجاح",
   "settings_users_create_success": "تم إنشاء المستخدم بنجاح",
   "settings_users_update_success": "تم تحديث المستخدم بنجاح",
-
   "user_form_title_create": "إضافة مستخدم جديد",
   "user_form_title_edit": "تعديل بيانات المستخدم",
   "user_form_desc_create": "إنشاء حساب جديد لمعلم أو إداري أو ولي أمر",
@@ -978,7 +945,6 @@
   "settings_cycles_activate": "تفعيل",
   "settings_cycles_lock": "قفل",
   "settings_cycles_lock_success": "تم قفل الدورة بنجاح",
-
   "cycle_form_title_create": "إنشاء دورة أكاديمية",
   "cycle_form_desc": "إضافة سنة دراسية أو فصل دراسي جديد",
   "cycle_form_name": "الاسم بالعربية",
@@ -1015,7 +981,6 @@
   "rooms_delete_success": "تم حذف القاعة بنجاح",
   "rooms_create_success": "تم إضافة القاعة بنجاح",
   "rooms_update_success": "تم تحديث بيانات القاعة بنجاح",
-
   "academics_layout_nav_class_subjects": "ربط المواد والمعلمين",
   "cs_title": "ربط المواد بالمعلمين",
   "cs_desc": "تحديد المعلم المسؤول عن كل مادة في كل فصل دراسي",
@@ -1051,7 +1016,6 @@
   "cs_form_cancel": "إلغاء",
   "cs_form_save": "حفظ الربط",
   "cs_form_saving": "جاري الحفظ...",
-
   "guardians_tab": "أولياء الأمور",
   "guardians_title": "أولياء الأمور",
   "guardians_desc": "إدارة أولياء الأمور المرتبطين بهذا الطالب",
@@ -1085,7 +1049,6 @@
   "guardians_form_save": "حفظ",
   "guardians_form_saving": "جاري الحفظ...",
   "guardians_form_select_user": "ابحث عن مستخدم...",
-
   "finance_layout_nav_fee_templates": "قوالب الرسوم",
   "ft_title": "قوالب الرسوم",
   "ft_desc": "إدارة قوالب الرسوم الدراسية والخدمات المرتبطة بالتسجيل",
@@ -1126,7 +1089,6 @@
   "ft_update_success": "تم تحديث قالب الرسوم بنجاح",
   "ft_delete_confirm": "هل أنت متأكد من حذف هذا القالب؟",
   "ft_delete_success": "تم حذف القالب بنجاح",
-
   "audit_title": "سجل التدقيق",
   "audit_desc": "سجل جميع العمليات والتغييرات في النظام",
   "audit_col_time": "الوقت",
@@ -1137,7 +1099,6 @@
   "audit_empty": "لا توجد سجلات تدقيق",
   "audit_empty_desc": "لم يتم تسجيل أي عمليات بعد",
   "settings_layout_nav_audit": "سجل التدقيق",
-
   "finance_layout_nav_journal": "القيود اليومية",
   "je_title": "القيود اليومية",
   "je_desc": "سجل القيود اليومية والحركات المالية المزدوجة",
@@ -1152,7 +1113,6 @@
   "je_empty_desc": "لم يتم تسجيل أي قيود يومية بعد",
   "je_status_draft": "مسودة",
   "je_status_posted": "مرحل",
-
   "finance_layout_nav_discount_templates": "قوالب الخصومات",
   "dt_title": "قوالب الخصومات",
   "dt_desc": "إدارة قوالب الخصومات والمنح الدراسية للطلاب",
@@ -1318,27 +1278,22 @@
   "whats_new_read_more": "اقرأ المزيد",
   "whats_new_title_2": "تكامل سحابة مالفيرس",
   "whats_new_desc_2": "قم بمزامنة بيانات مدرستك بأمان مع خدمات مالفيرس السحابية، مما يتيح تقارير متقدمة، وتحليلات للفروع المتعددة، ونسخاً احتياطياً آمناً للبيانات.",
-
   "nav_exams": "الامتحانات",
   "exams_layout_panel_title": "الامتحانات",
   "exams_layout_panel_desc": "الفترات واللجان",
   "breadcrumb_exams": "الامتحانات",
-
   "exams_layout_nav_overview": "نظرة عامة",
   "exams_layout_nav_sessions": "الدورات الامتحانية",
   "exams_layout_nav_ordering": "ترتيب الطلاب",
   "exams_layout_nav_reports": "التقارير",
-
   "exams_overview_title": "إدارة الامتحانات",
   "exams_overview_subtitle": "إدارة الدورات الامتحانية وأرقام الجلوس واللجان والمراقبين",
   "exams_overview_active_session": "الدورة النشطة",
   "exams_overview_no_active": "لا توجد دورة نشطة",
-
   "exams_stat_sessions": "الدورات",
   "exams_stat_students": "الطلاب",
   "exams_stat_halls": "اللجان",
   "exams_stat_proctors": "المراقبين",
-
   "exams_card_sessions_title": "الدورات الامتحانية",
   "exams_card_sessions_desc": "إنشاء وإدارة فترات الامتحانات والمواد والجداول",
   "exams_card_ordering_title": "ترتيب الطلاب",
@@ -1348,7 +1303,6 @@
   "exams_card_reports_title": "التقارير والطباعة",
   "exams_card_reports_desc": "كشوف أرقام الجلوس وخرائط اللجان وكشوف الحضور",
   "exams_open_section": "فتح",
-
   "exams_sessions_title": "الدورات الامتحانية",
   "exams_sessions_create": "دورة جديدة",
   "exams_sessions_search": "بحث في الدورات...",
@@ -1356,7 +1310,6 @@
   "exams_sessions_type": "النوع",
   "exams_sessions_subjects_count": "{count} مادة",
   "exams_sessions_students_count": "{count} طالب",
-
   "exams_create_title": "إنشاء دورة امتحانية",
   "exams_create_name": "اسم الدورة",
   "exams_create_name_ar": "اسم الدورة (عربي)",
@@ -1366,7 +1319,6 @@
   "exams_create_cycle": "الدورة الأكاديمية",
   "exams_create_submit": "إنشاء الدورة",
   "exams_create_success": "تم إنشاء الدورة الامتحانية بنجاح",
-
   "exams_detail_subjects": "المواد",
   "exams_detail_schedule": "الجدول",
   "exams_detail_seating": "الجلوس",
@@ -1376,19 +1328,16 @@
   "exams_detail_edit": "تعديل",
   "exams_detail_activate": "تفعيل الدورة",
   "exams_detail_complete": "إكمال الدورة",
-
   "exams_subjects_add": "إضافة مادة",
   "exams_subjects_name": "المادة",
   "exams_subjects_score": "الدرجة العظمى",
   "exams_subjects_duration": "المدة (دقيقة)",
   "exams_subjects_type": "نوع الامتحان",
-
   "exams_actions_generate_seating": "إصدار أرقام الجلوس",
   "exams_actions_generate_secrets": "إصدار الأرقام السرية",
   "exams_actions_auto_schedule": "جدولة تلقائية",
   "exams_actions_allocate_halls": "توزيع اللجان",
   "exams_actions_assign_proctors": "تعيين المراقبين",
-
   "exams_ordering_title": "محرك ترتيب الطلاب",
   "exams_ordering_cycle": "الدورة الأكاديمية",
   "exams_ordering_strategy": "استراتيجية الترتيب",
@@ -1397,7 +1346,6 @@
   "exams_ordering_result": "تم ترتيب {count} طالب",
   "exams_ordering_strategy_name": "الاسم العربي (أ-ي)",
   "exams_ordering_strategy_hybrid": "هجين (الاسم + الرقم)",
-
   "exams_reports_title": "التقارير والطباعة",
   "exams_reports_select_session": "اختر الدورة",
   "exams_reports_timetable": "جدول الامتحانات",
@@ -1409,14 +1357,12 @@
   "exams_reports_summary": "ملخص الدورة",
   "exams_reports_preview": "معاينة",
   "exams_reports_print": "طباعة",
-
   "exams_status_draft": "مسودة",
   "exams_status_scheduled": "مجدولة",
   "exams_status_active": "نشطة",
   "exams_status_grading": "رصد الدرجات",
   "exams_status_completed": "مكتملة",
   "exams_status_archived": "مؤرشفة",
-
   "settings_nav_permissions": "الصلاحيات والأدوار",
   "settings_permissions_title": "الأدوار وصلاحيات النظام",
   "settings_permissions_desc": "تكوين أدوار الأمان وتخصيص مستويات الصلاحيات التفصيلية للمستخدمين.",
@@ -1471,7 +1417,6 @@
   "settings_user_detail_pref_notifications": "قنوات الإشعارات",
   "settings_user_detail_pref_sidebar_wide": "شريط موسّع",
   "settings_user_detail_pref_sidebar_compact": "شريط مصغّر",
-
   "onboarding_admin_title": "إعداد حساب المدير الرئيسي",
   "onboarding_admin_desc": "أنشئ حساب المدير الرئيسي لإدارة كافة عمليات المدرسة والتحكم في النظام.",
   "onboarding_admin_name_ar": "اسم المدير بالكامل (بالعربية)",
@@ -1480,7 +1425,6 @@
   "onboarding_admin_phone": "رقم الهاتف / الجوال",
   "onboarding_admin_password": "كلمة المرور لتسجيل الدخول",
   "onboarding_admin_password_hint": "يجب ألا تقل عن 6 أحرف لأمان الحساب.",
-
   "audit_col_member": "العضو",
   "audit_col_ip": "عنوان IP",
   "audit_filter_time": "كل الأوقات",
@@ -1494,7 +1438,6 @@
   "agent_suggest_1": "من هم الطلاب الذين لديهم رسوم دراسية غير مدفوعة هذا الشهر؟",
   "agent_suggest_2": "اعرض لي الفصول الأعلى أداءً في الاختبار الأخير.",
   "agent_suggest_3": "أرشدني بكيفية إضافة فصل دراسي جديد في التقويم الدراسي.",
-
   "upgrade_next_stop": "رؤية Mulverse",
   "upgrade_title": "التعليم الذي يُبنى حول كل طالب",
   "upgrade_desc_1": "نُعيد اختراع المدرسة. نظام Orbis يقرأ السلوك، لا الدرجات — يكتشف متى يشتت الطالب، وفي أي مادة ينبض عقله. ثم يُنشئ تقريراً تعليمياً فريداً: هذا ما يجب أن يدرسه، وهذه الطريقة التي يفهم بها.",
@@ -1839,7 +1782,6 @@
   "control_compile_success": "تم تجميع وحساب درجات الفصل بنجاح!",
   "control_compile_term_only": "هذا الإجراء متاح فقط للفصول الدراسية (الترم الأول أو الثاني)",
   "control_dirty_warning": "لديك تغييرات غير محفوظة. هل تريد المتابعة بدون حفظ؟",
-  
   "settings_registration_title": "قواعد وإعدادات تسجيل الطلاب",
   "settings_registration_desc": "تعديل سياسات القبول، الترقيم التلقائي، المراحل الدراسية وحقول الإدخال المطلوبة",
   "settings_registration_save_success": "تم حفظ قواعد وإعدادات التسجيل بنجاح",
@@ -1874,7 +1816,6 @@
   "settings_registration_field_documents": "المرفقات والمستندات المطلوبة",
   "settings_registration_save": "حفظ الإعدادات",
   "settings_registration_saving": "جاري الحفظ...",
-  
   "form_guardian_search_label": "البحث عن ولي أمر مسجل مسبقاً (بحث بالاسم أو الهاتف)",
   "form_guardian_search_placeholder": "ابحث عن الاسم أو رقم الهاتف هنا...",
   "form_guardian_title": "ربط أولياء الأمور (الوصي القانوني)",
@@ -1939,5 +1880,22 @@
   "onboarding_term_division": "الشعبة/الدفعة",
   "onboarding_term_subject": "المساق/المادة",
   "onboarding_lang_ar": "العربية",
-  "onboarding_lang_en": "الإنجليزية"
+  "onboarding_lang_en": "الإنجليزية",
+  "onboarding_popover_tasks_completed": "تم إنجاز {completed} من أصل {total} خطوات",
+  "onboarding_popover_task_institution_type_label": "نوع المؤسسة التعليمية",
+  "onboarding_popover_task_institution_type_desc": "اختر الملف التعريفي للمؤسسة لتوليد الهيكل والمسميات.",
+  "onboarding_popover_task_calendar_label": "تهيئة {calendar}",
+  "onboarding_popover_task_calendar_desc": "تحديد الفترات والتواريخ والتقويم الأكاديمي.",
+  "onboarding_popover_task_classroom_label": "توزيع {classroom} والمباني",
+  "onboarding_popover_task_classroom_desc": "تهيئة وتوزيع قاعات ومختبرات المؤسسة.",
+  "onboarding_popover_task_stage_label": "هيكلة {stage}",
+  "onboarding_popover_task_stage_desc": "تفعيل الصفوف وتحديد الشعب والمجموعات التابعة.",
+  "onboarding_popover_task_schedule_label": "الحصص الدراسية اليومية",
+  "onboarding_popover_task_schedule_desc": "ضبط مواعيد الحصص وفترات الاستراحة اليومية.",
+  "onboarding_popover_task_subject_label": "تهيئة {subject}",
+  "onboarding_popover_task_subject_desc": "تحديد المواد التعليمية وألوان تمييزها.",
+  "onboarding_popover_task_fees_label": "رسوم تسجيل الطلاب",
+  "onboarding_popover_task_fees_desc": "تحديد قيم رسوم التسجيل لكل مرحلة دراسية.",
+  "onboarding_popover_task_review_label": "الملخص وتدشين النظام",
+  "onboarding_popover_task_review_desc": "مراجعة الهيكل الإداري وتدشين المحاسبة المالية."
 }

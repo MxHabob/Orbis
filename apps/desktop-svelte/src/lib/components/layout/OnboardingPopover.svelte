@@ -5,11 +5,11 @@ import {
   PopoverContent,
   Button,
 } from "@orbis/ui-svelte";
-import { Check, ChevronRight, ChevronLeft } from "lucide-svelte";
+import { Check, ChevronRight } from "lucide-svelte";
 import { onboardingState } from "$lib/components/onboarding/onboarding-state.svelte";
 import { authStore } from "$lib/stores";
 import { goto } from "$app/navigation";
-import { localizeHref } from "$lib/paraglide/runtime";
+import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 
 function handleChecklistItemClick(stepIndex: number) {
@@ -18,11 +18,11 @@ function handleChecklistItemClick(stepIndex: number) {
 }
 
 // Onboarding tasks variables
-const totalTasks = 7;
+const totalTasks = 8;
 const completedTasks = $derived(
-  authStore.isSetupComplete ? 7 : onboardingState.tasksCompletedCount,
+  authStore.isSetupComplete ? 8 : onboardingState.tasksCompletedCount,
 );
-const remainingTasks = $derived(7 - completedTasks);
+const remainingTasks = $derived(totalTasks - completedTasks);
 const progressPercent = $derived((completedTasks / totalTasks) * 100);
 
 const activeIndex = $derived(
@@ -30,6 +30,41 @@ const activeIndex = $derived(
     ? -1
     : onboardingState.completedSteps.findIndex((step) => !step),
 );
+
+const tasksList = $derived([
+  { 
+    label: m.onboarding_popover_task_institution_type_label(), 
+    desc: m.onboarding_popover_task_institution_type_desc() 
+  },
+  { 
+    label: m.onboarding_popover_task_calendar_label({ calendar: onboardingState.calendarLabel || m.onboarding_review_calendar() }), 
+    desc: m.onboarding_popover_task_calendar_desc() 
+  },
+  { 
+    label: m.onboarding_popover_task_classroom_label({ classroom: onboardingState.classroomLabel || m.onboarding_term_classroom() }), 
+    desc: m.onboarding_popover_task_classroom_desc() 
+  },
+  { 
+    label: m.onboarding_popover_task_stage_label({ stage: onboardingState.stageLabel || m.onboarding_term_stage() }), 
+    desc: m.onboarding_popover_task_stage_desc({ division: onboardingState.divisionLabel || m.onboarding_term_division() }) 
+  },
+  { 
+    label: m.onboarding_popover_task_schedule_label(), 
+    desc: m.onboarding_popover_task_schedule_desc() 
+  },
+  { 
+    label: m.onboarding_popover_task_subject_label({ subject: onboardingState.subjectLabel || m.onboarding_term_subject() }), 
+    desc: m.onboarding_popover_task_subject_desc() 
+  },
+  { 
+    label: m.onboarding_popover_task_fees_label(), 
+    desc: m.onboarding_popover_task_fees_desc() 
+  },
+  { 
+    label: m.onboarding_popover_task_review_label(), 
+    desc: m.onboarding_popover_task_review_desc() 
+  }
+]);
 </script>
 
 <Popover>
@@ -37,7 +72,7 @@ const activeIndex = $derived(
     <Button
       variant="outline"
       size="icon"
-      class="w-full h-8 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-zinc-800/60 relative border-b border-[#f1f5f9] dark:border-zinc-800 cursor-pointer onboarding-popover-trigger"
+      class="w-full h-8 flex items-center justify-center hover:bg-accent hover:text-accent-foreground relative border-b border-border/50 cursor-pointer onboarding-popover-trigger"
     >
       <div class="relative w-6 h-6 flex items-center justify-center">
         <!-- Progress Circular Ring SVG -->
@@ -46,20 +81,20 @@ const activeIndex = $derived(
           <circle
             cx="12"
             cy="12"
-            r="8.5"
-            class="stroke-muted dark:stroke-zinc-700/80 fill-none"
-            stroke-width="2"
+            r="9.5"
+            class="stroke-muted/40 fill-none"
+            stroke-width="2.5"
           />
           <!-- Progress highlight -->
           {#if progressPercent > 0}
             <circle
               cx="12"
               cy="12"
-              r="8.5"
+              r="9.5"
               class="stroke-primary fill-none transition-all duration-300"
-              stroke-width="2"
-              stroke-dasharray="53.4"
-              stroke-dashoffset={53.4 - (53.4 * progressPercent) / 100}
+              stroke-width="2.5"
+              stroke-dasharray="59.7"
+              stroke-dashoffset={59.7 - (59.7 * progressPercent) / 100}
               stroke-linecap="round"
             />
           {/if}
@@ -67,13 +102,13 @@ const activeIndex = $derived(
         
         <!-- Inner status indicator -->
         {#if remainingTasks === 0}
-          <Check class="w-3.5 h-3.5 text-emerald-500 stroke-[3px]" />
+          <Check class="w-3 h-3 text-emerald-500 stroke-[3.5px]" />
         {:else}
-          <span class="text-[9px] font-bold text-foreground">
+          <span class="text-[9.5px] font-extrabold text-foreground leading-none">
             {remainingTasks}
           </span>
-          <!-- Notification dot badge -->
-          <span class="absolute top-0 right-0 w-1.5 h-1.5 rounded-full bg-primary border border-background"></span>
+          <!-- Notification dot badge shifted outside the ring -->
+          <span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary border border-background"></span>
         {/if}
       </div>
     </Button>
@@ -87,6 +122,13 @@ const activeIndex = $derived(
   >
     <!-- Pointer Bezel/Tail pointing to the sidebar trigger (positions on left in LTR, right in RTL) -->
     <div class="absolute bottom-[20px] start-[-6px] w-3 h-3 bg-card border-l border-b border-border rotate-45 z-20 rtl:start-auto rtl:end-[-6px] rtl:border-l-0 rtl:border-b-0 rtl:border-r rtl:border-t"></div>
+ 
+    <!-- Header Section -->
+    <div class="flex items-center gap-3.5 p-4 border-b border-border bg-card z-10 select-none">
+      <!-- Outer Ring loader SVG -->
+      <svg class="w-8 h-8 transform -rotate-90 text-primary shrink-0" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="9" class="stroke-muted/30 fill-none" stroke-width="2.5" />TL) -->
+    <div class="absolute bottom-[20px] start-[-6px] w-3 h-3 bg-card border-l border-b border-border rotate-45 z-20 rtl:start-auto rtl:end-[-6px] rtl:border-l-0 rtl:border-b-0 rtl:border-r rtl:border-t"></div>
 
     <!-- Header Section -->
     <div class="flex items-center gap-3.5 p-4 border-b border-border bg-card z-10 select-none">
@@ -99,23 +141,15 @@ const activeIndex = $derived(
         <h4 class="font-bold text-sm text-foreground leading-tight">
           {m.onboarding_progress_label() || 'Getting Started'}
         </h4>
-        <p class="text-[11px] text-muted-foreground font-semibold mt-0.5">
-          {completedTasks} out of 7 tasks completed
+        <p class="text-[11px] text-muted-foreground font-semibold mt-0.5 font-sans">
+          {m.onboarding_popover_tasks_completed({ completed: completedTasks, total: totalTasks })}
         </p>
       </div>
     </div>
 
     <!-- Scrollable Checklist Area -->
     <div class="onboarding-list flex-1 overflow-y-auto max-h-[340px] p-2 flex flex-col gap-0.5 bg-card z-10">
-      {#each [
-        { label: "Academic Calendar & Years", labelAr: "التقويم الدراسي والفصول", desc: "Define academic year periods, dates, and semesters.", descAr: "تحديد الفترات والتواريخ والفصول الدراسية." },
-        { label: "Buildings & Rooms Allocation", labelAr: "توزيع المباني والقاعات", desc: "Configure classrooms, computer labs, and lecture halls.", descAr: "تهيئة الفصول الدراسية ومختبرات الحاسوب والكيمياء." },
-        { label: "Academic Stages & Classes", labelAr: "المراحل الدراسية والشعب", desc: "Choose active grade levels and division sections.", descAr: "تفعيل المراحل التعليمية وتحديد شعب الصفوف." },
-        { label: "Daily Schedule & Periods", labelAr: "الحصص الدراسية اليومية", desc: "Setup period times, starts, ends, and durations.", descAr: "ضبط مواعيد الحصص وفترات الاستراحة اليومية." },
-        { label: "Subjects & Curriculums", labelAr: "المواد والمناهج الدراسية", desc: "Select subjects and customize identification colors.", descAr: "تحديد المواد التعليمية وألوان تمييزها." },
-        { label: "Registration Fees Setup", labelAr: "رسوم تسجيل الطلاب", desc: "Define standard tuition fees per grade level.", descAr: "تحديد قيم رسوم التسجيل لكل مرحلة دراسية." },
-        { label: "Review & Launch System", labelAr: "المراجعة وتدشين النظام", desc: "Finalize structure and launch the school system.", descAr: "مراجعة الهيكل الإداري وتدشين المحاسبة المالية." }
-      ] as task, idx}
+      {#each tasksList as task, idx}
         {@const isCompleted = authStore.isSetupComplete ? true : onboardingState.completedSteps[idx]}
         {@const isActive = !isCompleted && idx === activeIndex}
         
@@ -140,21 +174,17 @@ const activeIndex = $derived(
             
             <div class="flex flex-col gap-1 flex-1 min-w-0">
               <span class="text-[11.5px] leading-tight font-sans {isCompleted ? 'text-muted-foreground line-through decoration-muted-foreground/45 font-normal' : 'text-foreground font-bold'}">
-                {onboardingState.locale === 'ar' ? task.labelAr : task.label}
+                {task.label}
               </span>
               <span class="text-[10.5px] leading-relaxed font-sans font-normal {isCompleted ? 'text-muted-foreground/60' : isActive ? 'text-foreground/80' : 'text-muted-foreground/75'}">
-                {onboardingState.locale === 'ar' ? task.descAr : task.desc}
+                {task.desc}
               </span>
             </div>
           </div>
           
           {#if isActive}
-            <div class="mt-1 shrink-0 text-muted-foreground ml-2">
-              {#if onboardingState.locale === 'ar'}
-                <ChevronLeft size={12} strokeWidth={2.5} />
-              {:else}
-                <ChevronRight size={12} strokeWidth={2.5} />
-              {/if}
+            <div class="mt-1 shrink-0 text-muted-foreground ml-2 rtl:rotate-180">
+              <ChevronRight size={12} strokeWidth={2.5} />
             </div>
           {/if}
         </button>
