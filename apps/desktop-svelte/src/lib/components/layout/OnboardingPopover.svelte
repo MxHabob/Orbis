@@ -69,49 +69,54 @@ const tasksList = $derived([
 
 <Popover>
   <PopoverTrigger>
-    <Button
-      variant="outline"
-      size="icon"
-      class="w-full h-8 flex items-center justify-center hover:bg-accent hover:text-accent-foreground relative border-b border-border/50 cursor-pointer onboarding-popover-trigger"
-    >
-      <div class="relative w-6 h-6 flex items-center justify-center">
-        <!-- Progress Circular Ring SVG -->
-        <svg class="absolute inset-0 w-6 h-6 transform -rotate-90 select-none" viewBox="0 0 24 24">
-          <!-- Background track -->
-          <circle
-            cx="12"
-            cy="12"
-            r="9.5"
-            class="stroke-muted/40 fill-none"
-            stroke-width="2.5"
-          />
-          <!-- Progress highlight -->
-          {#if progressPercent > 0}
-            <circle
-              cx="12"
-              cy="12"
-              r="9.5"
-              class="stroke-primary fill-none transition-all duration-300"
-              stroke-width="2.5"
-              stroke-dasharray="59.7"
-              stroke-dashoffset={59.7 - (59.7 * progressPercent) / 100}
-              stroke-linecap="round"
-            />
-          {/if}
-        </svg>
-        
-        <!-- Inner status indicator -->
+    {#snippet child({ props })}
+      <Button
+        {...props}
+        variant="outline"
+        size="icon"
+        class="w-full h-8 flex items-center justify-center hover:bg-accent hover:text-accent-foreground relative border-b border-border/50 cursor-pointer onboarding-popover-trigger"
+      >
         {#if remainingTasks === 0}
-          <Check class="w-3 h-3 text-emerald-500 stroke-[3.5px]" />
+          <!-- Solid Green Checkmark Badge -->
+          <div class="w-5 h-5 rounded-full bg-emerald-500 dark:bg-emerald-600 flex items-center justify-center text-white shadow-sm">
+            <Check class="w-3 h-3 stroke-[3.5px]" />
+          </div>
         {:else}
-          <span class="text-[9.5px] font-extrabold text-foreground leading-none">
-            {remainingTasks}
-          </span>
-          <!-- Notification dot badge shifted outside the ring -->
-          <span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary border border-background"></span>
+          <div class="relative w-6 h-6 flex items-center justify-center">
+            <!-- Progress Circular Ring SVG -->
+            <svg class="absolute inset-0 w-6 h-6 select-none" viewBox="0 0 24 24">
+              <!-- Background track -->
+              <circle
+                cx="12"
+                cy="12"
+                r="9.5"
+                class="stroke-muted/40 fill-none"
+                stroke-width="2.5"
+              />
+              <!-- Progress highlight rotated around center -->
+              {#if progressPercent > 0}
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="9.5"
+                  class="stroke-primary fill-none transition-all duration-300 origin-center -rotate-90"
+                  stroke-width="2.5"
+                  stroke-dasharray="59.7"
+                  stroke-dashoffset={59.7 - (59.7 * progressPercent) / 100}
+                  stroke-linecap="round"
+                />
+              {/if}
+            </svg>
+            
+            <span class="text-[9.5px] font-extrabold text-foreground leading-none">
+              {remainingTasks}
+            </span>
+            <!-- Notification dot badge shifted outside the ring -->
+            <span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary border border-background"></span>
+          </div>
         {/if}
-      </div>
-    </Button>
+      </Button>
+    {/snippet}
   </PopoverTrigger>
   
   <PopoverContent
@@ -121,13 +126,6 @@ const tasksList = $derived([
     class="w-[360px] bg-card border border-border shadow-2xl rounded-xl p-0 overflow-hidden z-50 flex flex-col font-sans text-start onboarding-popover-panel relative text-card-foreground"
   >
     <!-- Pointer Bezel/Tail pointing to the sidebar trigger (positions on left in LTR, right in RTL) -->
-    <div class="absolute bottom-[20px] start-[-6px] w-3 h-3 bg-card border-l border-b border-border rotate-45 z-20 rtl:start-auto rtl:end-[-6px] rtl:border-l-0 rtl:border-b-0 rtl:border-r rtl:border-t"></div>
- 
-    <!-- Header Section -->
-    <div class="flex items-center gap-3.5 p-4 border-b border-border bg-card z-10 select-none">
-      <!-- Outer Ring loader SVG -->
-      <svg class="w-8 h-8 transform -rotate-90 text-primary shrink-0" viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="9" class="stroke-muted/30 fill-none" stroke-width="2.5" />TL) -->
     <div class="absolute bottom-[20px] start-[-6px] w-3 h-3 bg-card border-l border-b border-border rotate-45 z-20 rtl:start-auto rtl:end-[-6px] rtl:border-l-0 rtl:border-b-0 rtl:border-r rtl:border-t"></div>
 
     <!-- Header Section -->
