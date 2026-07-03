@@ -18,12 +18,33 @@ revo-grid {
   --rgHeaderFontSize: 12px;
   --rgCellHeight: 42px;
   --rgHeaderHeight: 42px;
-  --rgRowBorder: 1px solid color-mix(in oklch, var(--border), transparent 50%);
+  --rgRowBorder: 1px solid color-mix(in oklch, var(--border), transparent 75%);
+
+  /* Map RevoGrid internal variables to S.C.R.A.P.S. design tokens */
+  --revo-grid-background: var(--card);
+  --revo-grid-foreground: var(--foreground);
+  --revo-grid-text: var(--foreground);
+  --revo-grid-divider: color-mix(in oklch, var(--border), transparent 75%);
+  --revo-grid-border: color-mix(in oklch, var(--border), transparent 60%);
+
+  /* Header styles */
+  --revo-grid-header-bg: color-mix(in oklch, var(--muted), transparent 40%);
+  --revo-grid-header-color: var(--foreground);
+  --revo-grid-header-border: color-mix(in oklch, var(--border), transparent 65%);
+
+  /* Cell styles */
+  --revo-grid-cell-border: color-mix(in oklch, var(--border), transparent 75%);
+  --revo-grid-row-hover: color-mix(in oklch, var(--muted), transparent 85%);
+  --revo-grid-focused-bg: color-mix(in oklch, var(--primary), transparent 96%);
+
+  /* Row headers (pinned columns) styles */
+  --revo-grid-row-headers-bg: var(--card);
+  --revo-grid-row-headers-color: var(--foreground);
 
   /* Backgrounds */
   --rgBg: var(--card);
   --rgHeaderBg: color-mix(in oklch, var(--muted), transparent 40%);
-  --rgHeaderBorder: 1px solid color-mix(in oklch, var(--border), transparent 40%);
+  --rgHeaderBorder: 1px solid color-mix(in oklch, var(--border), transparent 65%);
 
   /* Selection & Focus - thin 1px primary border with high transparency fill */
   --rgSelectionBg: color-mix(in oklch, var(--primary), transparent 96%);
@@ -39,7 +60,7 @@ revo-grid {
   /* Scrollbar */
   --rgScrollSize: 8px;
 
-  border: 1px solid color-mix(in oklch, var(--border), transparent 20%);
+  border: 1px solid color-mix(in oklch, var(--border), transparent 60%);
   border-radius: var(--radius, 0.5rem);
   overflow: hidden;
   font-family: var(--rgFontFamily);
@@ -61,16 +82,19 @@ revo-grid {
 /* ── Header Cells ─────────────────────────────────────────────────────────── */
 
 revo-grid .rgHeaderCell,
-revo-grid .header-rgRow {
+revo-grid .header-rgRow,
+revo-grid .pinned-start .rgHeaderCell,
+revo-grid .pinned-end .rgHeaderCell {
   background: color-mix(in oklch, var(--muted), transparent 40%) !important;
   color: var(--foreground) !important;
   font-weight: 500 !important;
   font-size: 12px !important;
   text-transform: none;
   letter-spacing: 0.01em;
-  border-bottom: 1px solid color-mix(in oklch, var(--border), transparent 30%) !important;
+  border-bottom: 1px solid color-mix(in oklch, var(--border), transparent 65%) !important;
   border-right: none !important;
   border-left: none !important;
+  box-shadow: 0 -1px 0 0 color-mix(in oklch, var(--border), transparent 65%) inset !important;
   user-select: none;
 }
 
@@ -80,14 +104,21 @@ revo-grid .rgHeaderCell:hover {
 
 /* ── Data Cells ───────────────────────────────────────────────────────────── */
 
-revo-grid .rgCell {
-  color: var(--foreground);
-  border-bottom: 1px solid color-mix(in oklch, var(--border), transparent 50%) !important;
+revo-grid .rgCell,
+revo-grid .pinned-start .rgCell,
+revo-grid .pinned-end .rgCell {
+  color: var(--foreground) !important;
+  border-bottom: 1px solid color-mix(in oklch, var(--border), transparent 75%) !important;
   border-right: none !important;
   border-left: none !important;
+  box-shadow: 0 -1px 0 0 color-mix(in oklch, var(--border), transparent 75%) inset !important;
   padding: 0 12px;
   font-size: 12.5px;
   transition: background-color 0.1s ease;
+}
+
+revo-grid .rgCell * {
+  color: inherit;
 }
 
 revo-grid .rgCell:focus-within {
@@ -98,13 +129,15 @@ revo-grid .rgCell:focus-within {
 
 revo-grid .pinned-start {
   background: var(--card);
-  border-inline-end: 1px solid color-mix(in oklch, var(--border), transparent 20%) !important;
+  border-inline-end: 1px solid color-mix(in oklch, var(--border), transparent 60%) !important;
+  border-inline-start: none !important;
   z-index: 5;
 }
 
 revo-grid .pinned-end {
   background: color-mix(in oklch, var(--primary), transparent 97%);
-  border-inline-start: 1px solid color-mix(in oklch, var(--border), transparent 20%) !important;
+  border-inline-start: 1px solid color-mix(in oklch, var(--border), transparent 60%) !important;
+  border-inline-end: none !important;
   z-index: 5;
   font-weight: 600;
 }
@@ -163,7 +196,7 @@ revo-grid .rgRow:hover .rgCell {
 /* ── Readonly Cells ───────────────────────────────────────────────────────── */
 
 revo-grid .rgCell.readonly {
-  color: var(--muted-foreground);
+  color: var(--muted-foreground) !important;
   cursor: default;
 }
 
@@ -287,13 +320,13 @@ revo-grid ::-webkit-scrollbar-thumb:hover {
 /* ── RTL Adjustments ──────────────────────────────────────────────────────── */
 
 [dir="rtl"] revo-grid .pinned-start {
-  border-inline-end: 2px solid var(--border);
-  border-inline-start: none;
+  border-inline-end: 1px solid color-mix(in oklch, var(--border), transparent 60%) !important;
+  border-inline-start: none !important;
 }
 
 [dir="rtl"] revo-grid .pinned-end {
-  border-inline-start: 2px solid var(--border);
-  border-inline-end: none;
+  border-inline-start: 1px solid color-mix(in oklch, var(--border), transparent 60%) !important;
+  border-inline-end: none !important;
 }
 
 /* ── Empty State ──────────────────────────────────────────────────────────── */
