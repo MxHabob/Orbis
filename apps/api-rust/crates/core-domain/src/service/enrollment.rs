@@ -182,11 +182,7 @@ impl super::Service {
             updated_at: Utc::now().to_rfc3339(),
         };
 
-        // Save enrollment first
-        let created_enrollment = self.repo.create_enrollment(new_enrollment).await
-            .map_err(|e| e.to_string())?;
-
-        // Auto-create student sub-ledger account in Chart of Accounts
+        // Auto-create/validate student sub-ledger account in Chart of Accounts FIRST
         let student_ledger_account = self.get_or_create_sub_account(
             org_id,
             "student",
@@ -194,6 +190,10 @@ impl super::Service {
             Some(&student.full_name),
             student.name_ar.as_deref(),
         ).await?;
+
+        // Save enrollment after sub-account validation succeeds
+        let created_enrollment = self.repo.create_enrollment(new_enrollment).await
+            .map_err(|e| e.to_string())?;
 
         // 1. Get class details to determine level/grade
         let class_info = self.repo.get_class_by_id(&req.class_id).await
