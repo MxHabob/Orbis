@@ -10,7 +10,12 @@
  * Semantic cell variant — maps to `orbis-cell-*` CSS classes in orbis-grid.css.
  * Use these to declaratively style cells based on data state.
  */
-export type CellVariant = "success" | "error" | "warning" | "excellent" | "good";
+export type CellVariant =
+  | "success"
+  | "error"
+  | "warning"
+  | "excellent"
+  | "good";
 
 import type { CellRenderer } from "./renderers/types";
 

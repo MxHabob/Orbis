@@ -84,12 +84,14 @@ async function loadStudent() {
     if (studentsStore.list.length === 0 && orgId) {
       await studentsStore.load(orgId);
     }
-    
+
     if (student) {
       nameAr = String(student.full_name || student.name_ar || "");
       nameEn = String(student.name_en || "");
-      birthDate = student.birth_date ? String(student.birth_date).slice(0, 10) : "";
-      
+      birthDate = student.birth_date
+        ? String(student.birth_date).slice(0, 10)
+        : "";
+
       if (birthDate) {
         const parts = birthDate.split("-");
         if (parts.length === 3) {
@@ -98,7 +100,7 @@ async function loadStudent() {
           birthDay = String(parseInt(parts[2], 10));
         }
       }
-      
+
       sex = String(student.sex || "male");
       classId = String(student.class_id || "");
       studentNumber = String(student.student_number || "");
@@ -167,7 +169,7 @@ async function saveStudentDetails(e: Event) {
     }
 
     toast.success(m.form_success_update());
-    
+
     // Reload local list and refresh data
     await studentsStore.load(orgId);
     await loadStudent();

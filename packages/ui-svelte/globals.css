@@ -594,7 +594,16 @@
 }
 
 .tooltip {
-  @apply z-50 overflow-hidden rounded-md border bg-popover px-3 py-1.5 text-xs text-popover-foreground shadow-md;
+  @apply z-50 rounded-md border bg-popover px-3 py-1.5 text-xs font-medium text-popover-foreground;
+  box-shadow:
+    0 2px 0 0 oklch(0.75 0 0),
+    0 1px 3px 0 oklch(0 0 0 / 0.08);
+}
+
+.dark .tooltip {
+  box-shadow:
+    0 2px 0 0 oklch(0.35 0 0),
+    0 1px 3px 0 oklch(0 0 0 / 0.3);
 }
 
 .skeleton {

@@ -41,7 +41,12 @@ function nameCol(prop: string, label: string, size = 180): OrbisColumnDef {
 }
 
 /** Frozen user/student name column with avatar renderer */
-function userCol(prop: string, label: string, size = 180, srcKey = "avatar_url"): OrbisColumnDef {
+function userCol(
+  prop: string,
+  label: string,
+  size = 180,
+  srcKey = "avatar_url",
+): OrbisColumnDef {
   return {
     prop,
     name: label,
@@ -151,7 +156,7 @@ export const users = {
       lastLogin?: string;
       actions?: string;
     } = {},
-    actionsList?: ActionItem[]
+    actionsList?: ActionItem[],
   ): OrbisColumnDef[] => {
     const cols = [
       idx(labels.idx),

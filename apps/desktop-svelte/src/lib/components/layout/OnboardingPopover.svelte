@@ -35,38 +35,49 @@ const activeIndex = $derived(
 );
 
 const tasksList = $derived([
-  { 
-    label: m.onboarding_popover_task_institution_type_label(), 
-    desc: m.onboarding_popover_task_institution_type_desc() 
+  {
+    label: m.onboarding_popover_task_institution_type_label(),
+    desc: m.onboarding_popover_task_institution_type_desc(),
   },
-  { 
-    label: m.onboarding_popover_task_calendar_label({ calendar: onboardingState.calendarLabel || m.onboarding_review_calendar() }), 
-    desc: m.onboarding_popover_task_calendar_desc() 
+  {
+    label: m.onboarding_popover_task_calendar_label({
+      calendar: onboardingState.calendarLabel || m.onboarding_review_calendar(),
+    }),
+    desc: m.onboarding_popover_task_calendar_desc(),
   },
-  { 
-    label: m.onboarding_popover_task_classroom_label({ classroom: onboardingState.classroomLabel || m.onboarding_term_classroom() }), 
-    desc: m.onboarding_popover_task_classroom_desc() 
+  {
+    label: m.onboarding_popover_task_classroom_label({
+      classroom:
+        onboardingState.classroomLabel || m.onboarding_term_classroom(),
+    }),
+    desc: m.onboarding_popover_task_classroom_desc(),
   },
-  { 
-    label: m.onboarding_popover_task_stage_label({ stage: onboardingState.stageLabel || m.onboarding_term_stage() }), 
-    desc: m.onboarding_popover_task_stage_desc({ division: onboardingState.divisionLabel || m.onboarding_term_division() }) 
+  {
+    label: m.onboarding_popover_task_stage_label({
+      stage: onboardingState.stageLabel || m.onboarding_term_stage(),
+    }),
+    desc: m.onboarding_popover_task_stage_desc({
+      division: onboardingState.divisionLabel || m.onboarding_term_division(),
+    }),
   },
-  { 
-    label: m.onboarding_popover_task_schedule_label(), 
-    desc: m.onboarding_popover_task_schedule_desc() 
+  {
+    label: m.onboarding_popover_task_schedule_label(),
+    desc: m.onboarding_popover_task_schedule_desc(),
   },
-  { 
-    label: m.onboarding_popover_task_subject_label({ subject: onboardingState.subjectLabel || m.onboarding_term_subject() }), 
-    desc: m.onboarding_popover_task_subject_desc() 
+  {
+    label: m.onboarding_popover_task_subject_label({
+      subject: onboardingState.subjectLabel || m.onboarding_term_subject(),
+    }),
+    desc: m.onboarding_popover_task_subject_desc(),
   },
-  { 
-    label: m.onboarding_popover_task_fees_label(), 
-    desc: m.onboarding_popover_task_fees_desc() 
+  {
+    label: m.onboarding_popover_task_fees_label(),
+    desc: m.onboarding_popover_task_fees_desc(),
   },
-  { 
-    label: m.onboarding_popover_task_review_label(), 
-    desc: m.onboarding_popover_task_review_desc() 
-  }
+  {
+    label: m.onboarding_popover_task_review_label(),
+    desc: m.onboarding_popover_task_review_desc(),
+  },
 ]);
 </script>
 

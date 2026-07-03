@@ -4,68 +4,68 @@ A reusable dropdown menu portal positioned dynamically on demand.
 Used to render cell actions overflow menu without mounting Svelte components inside every cell.
 -->
 <script lang="ts">
-  import {
-    DropdownMenu,
-    DropdownMenuTrigger,
-    DropdownMenuContent,
-    DropdownMenuItem,
-  } from "@orbis/ui-svelte/dropdown-menu";
-  import type { ActionItem, GridActionEvent } from "@orbis/data-grid";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@orbis/ui-svelte/dropdown-menu";
+import type { ActionItem, GridActionEvent } from "@orbis/data-grid";
 
-  interface Props {
-    /** Complete list of possible menu actions */
-    actions: ActionItem[];
-    /** Dispatched when an action is selected from the menu */
-    onselect?: (event: GridActionEvent) => void;
+interface Props {
+  /** Complete list of possible menu actions */
+  actions: ActionItem[];
+  /** Dispatched when an action is selected from the menu */
+  onselect?: (event: GridActionEvent) => void;
+}
+
+let { actions, onselect }: Props = $props();
+
+let open = $state(false);
+let x = $state(0);
+let y = $state(0);
+
+let activeRow = $state<Record<string, any>>({});
+let activeRowIndex = $state(-1);
+let activeProp = $state("");
+let originalEvent = $state<MouseEvent | null>(null);
+
+// Filter actions based on conditional visibility for the active row
+const visibleActions = $derived(
+  actions.filter((action) => !action.visible || action.visible(activeRow)),
+);
+
+/**
+ * Public trigger method to show the dropdown menu near the click target.
+ */
+export function show(event: GridActionEvent) {
+  activeRow = event.row;
+  activeRowIndex = event.rowIndex;
+  activeProp = event.prop;
+  originalEvent = event.originalEvent;
+
+  const clickTarget = event.originalEvent.target as HTMLElement;
+  if (clickTarget) {
+    const rect = clickTarget.getBoundingClientRect();
+    // Position dropdown directly below the clicked ellipsis trigger button
+    x = rect.left + window.scrollX;
+    y = rect.bottom + window.scrollY;
+    open = true;
   }
+}
 
-  let { actions, onselect }: Props = $props();
-
-  let open = $state(false);
-  let x = $state(0);
-  let y = $state(0);
-
-  let activeRow = $state<Record<string, any>>({});
-  let activeRowIndex = $state(-1);
-  let activeProp = $state("");
-  let originalEvent = $state<MouseEvent | null>(null);
-
-  // Filter actions based on conditional visibility for the active row
-  const visibleActions = $derived(
-    actions.filter((action) => !action.visible || action.visible(activeRow))
-  );
-
-  /**
-   * Public trigger method to show the dropdown menu near the click target.
-   */
-  export function show(event: GridActionEvent) {
-    activeRow = event.row;
-    activeRowIndex = event.rowIndex;
-    activeProp = event.prop;
-    originalEvent = event.originalEvent;
-
-    const clickTarget = event.originalEvent.target as HTMLElement;
-    if (clickTarget) {
-      const rect = clickTarget.getBoundingClientRect();
-      // Position dropdown directly below the clicked ellipsis trigger button
-      x = rect.left + window.scrollX;
-      y = rect.bottom + window.scrollY;
-      open = true;
-    }
+function handleSelect(action: ActionItem) {
+  open = false;
+  if (onselect && originalEvent) {
+    onselect({
+      actionId: action.id,
+      row: activeRow,
+      rowIndex: activeRowIndex,
+      prop: activeProp,
+      originalEvent,
+    });
   }
-
-  function handleSelect(action: ActionItem) {
-    open = false;
-    if (onselect && originalEvent) {
-      onselect({
-        actionId: action.id,
-        row: activeRow,
-        rowIndex: activeRowIndex,
-        prop: activeProp,
-        originalEvent,
-      });
-    }
-  }
+}
 </script>
 
 {#if open}

@@ -23,9 +23,10 @@ export function linkRenderer(config?: LinkRendererConfig): CellRenderer {
 
     if (!href) return text;
 
-    const displayText = truncate && text.length > truncate
-      ? `${text.slice(0, truncate)}...`
-      : text;
+    const displayText =
+      truncate && text.length > truncate
+        ? `${text.slice(0, truncate)}...`
+        : text;
 
     const attrs: Record<string, string> = {
       class: "orbis-r-link text-primary hover:underline",

@@ -27,6 +27,10 @@ export function badgeRenderer(config?: BadgeRendererConfig): CellRenderer {
       ]);
     }
 
-    return h("span", { class: `orbis-r-badge orbis-r-badge--${variant}` }, label);
+    return h(
+      "span",
+      { class: `orbis-r-badge orbis-r-badge--${variant}` },
+      label,
+    );
   };
 }

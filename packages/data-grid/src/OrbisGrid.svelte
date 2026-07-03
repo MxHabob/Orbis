@@ -27,262 +27,264 @@ Usage:
 ```
 -->
 <script lang="ts">
-  import { onMount } from "svelte";
-  import type { OrbisColumnDef, CellEditEvent } from "./types";
-  import type { GridActionEvent } from "./renderers/types";
-  import "./orbis-grid.css";
+import { onMount } from "svelte";
+import type { OrbisColumnDef, CellEditEvent } from "./types";
+import type { GridActionEvent } from "./renderers/types";
+import "./orbis-grid.css";
 
-  // ── Module-Level Cache ────────────────────────────────────────────────────
-  // Shared across all OrbisGrid instances — avoids redundant dynamic imports.
+// ── Module-Level Cache ────────────────────────────────────────────────────
+// Shared across all OrbisGrid instances — avoids redundant dynamic imports.
 
-  let _revoModule: any = null;
-  let _modulePromise: Promise<any> | null = null;
-  let _editorCache: Record<string, unknown> = {};
+let _revoModule: any = null;
+let _modulePromise: Promise<any> | null = null;
+let _editorCache: Record<string, unknown> = {};
 
-  async function loadRevoGridModule(): Promise<any> {
-    if (_revoModule) return _revoModule;
-    if (!_modulePromise) {
-      _modulePromise = import("@revolist/svelte-datagrid");
+async function loadRevoGridModule(): Promise<any> {
+  if (_revoModule) return _revoModule;
+  if (!_modulePromise) {
+    _modulePromise = import("@revolist/svelte-datagrid");
+  }
+  _revoModule = await _modulePromise;
+  return _revoModule;
+}
+
+async function loadNumberEditor(mod: any): Promise<unknown> {
+  if (_editorCache["number"]) return _editorCache["number"];
+  const editorMod = await import("./editors/NumberEditor.svelte");
+  _editorCache["number"] = mod.Editor(editorMod.default);
+  return _editorCache["number"];
+}
+
+const isBrowser = typeof window !== "undefined";
+
+// ── Props ────────────────────────────────────────────────────────────────
+
+interface Props {
+  /** Column definitions */
+  columns: OrbisColumnDef[];
+  /** Source data array */
+  source: Record<string, unknown>[];
+  /** Grid height (CSS value) */
+  height?: string;
+  /** Enable RTL layout */
+  rtl?: boolean;
+  /** Make entire grid read-only */
+  readonly?: boolean;
+  /** RevoGrid theme */
+  theme?: "compact" | "material" | "default";
+  /** Enable range selection */
+  range?: boolean;
+  /** Enable clipboard operations */
+  clipboard?: boolean;
+  /** Enable column auto-size */
+  autoSize?: boolean;
+  /** Number of extra rows beyond viewport */
+  overscan?: number;
+  /** Row height in pixels */
+  rowSize?: number;
+
+  // ── Events ──────────────────────────────────────────────────────────
+  /** Fired when a cell value is edited */
+  oncelledit?: (event: CellEditEvent) => void;
+  /** Fired before cell edit — return false to cancel */
+  onbeforeedit?: (event: CellEditEvent) => boolean | void;
+  /** Fired when user pastes from clipboard */
+  onpaste?: (data: string[][], startRow: number, startCol: number) => void;
+  /** Fired when a user clicks a [data-grid-action] element in a cell */
+  onaction?: (event: GridActionEvent) => void;
+}
+
+let {
+  columns,
+  source,
+  height = "500px",
+  rtl = false,
+  readonly = false,
+  theme = "compact",
+  range = true,
+  clipboard = true,
+  autoSize = false,
+  overscan = 15,
+  rowSize = 42,
+  oncelledit,
+  onbeforeedit,
+  onpaste,
+  onaction,
+}: Props = $props();
+
+// ── Internal State ───────────────────────────────────────────────────────
+
+let gridReady = $state(false);
+let RevoGridComponent: any = $state(null);
+let loadedEditors: Record<string, unknown> = $state({});
+
+// ── Dynamic Import (SSR-safe, module-cached) ──────────────────────────────
+
+onMount(async () => {
+  if (!isBrowser) return;
+  try {
+    const mod = await loadRevoGridModule();
+    RevoGridComponent = mod.RevoGrid;
+
+    // Register editors from cache or load once
+    const hasNumberEditor = columns.some((c) => c.editor === "number");
+    if (hasNumberEditor) {
+      const numEditor = await loadNumberEditor(mod);
+      loadedEditors = { ...loadedEditors, number: numEditor };
     }
-    _revoModule = await _modulePromise;
-    return _revoModule;
+
+    gridReady = true;
+  } catch (err) {
+    console.error("[OrbisGrid] Failed to load RevoGrid:", err);
   }
+});
 
-  async function loadNumberEditor(mod: any): Promise<unknown> {
-    if (_editorCache["number"]) return _editorCache["number"];
-    const editorMod = await import("./editors/NumberEditor.svelte");
-    _editorCache["number"] = mod.Editor(editorMod.default);
-    return _editorCache["number"];
-  }
+// ── Map OrbisColumnDef → RevoGrid ColumnRegular ──────────────────────────
 
-  const isBrowser = typeof window !== "undefined";
+let revoColumns = $derived.by(() => {
+  if (!gridReady) return [];
+  return columns.map((col) => {
+    const revoCol: Record<string, unknown> = {
+      prop: col.prop,
+      name: col.name,
+      size: col.size ?? 120,
+      sortable: col.sortable ?? false,
+      resizable: col.resizable !== false,
+      readonly: readonly || (col.readonly ?? false),
+      cellProperties: (params?: any) => {
+        const classes: string[] = [];
+        // Declarative variant → orbis-cell-{variant} class
+        if (col.variant) classes.push(`orbis-cell-${col.variant}`);
+        if (col.cellClass) classes.push(col.cellClass);
+        if (col.align === "center") classes.push("cell-number-input");
 
-  // ── Props ────────────────────────────────────────────────────────────────
+        let customProps: Record<string, any> = {};
+        if (col.cellProperties) {
+          const row = params?.model || {};
+          customProps = col.cellProperties(row) || {};
+        }
 
-  interface Props {
-    /** Column definitions */
-    columns: OrbisColumnDef[];
-    /** Source data array */
-    source: Record<string, unknown>[];
-    /** Grid height (CSS value) */
-    height?: string;
-    /** Enable RTL layout */
-    rtl?: boolean;
-    /** Make entire grid read-only */
-    readonly?: boolean;
-    /** RevoGrid theme */
-    theme?: "compact" | "material" | "default";
-    /** Enable range selection */
-    range?: boolean;
-    /** Enable clipboard operations */
-    clipboard?: boolean;
-    /** Enable column auto-size */
-    autoSize?: boolean;
-    /** Number of extra rows beyond viewport */
-    overscan?: number;
-    /** Row height in pixels */
-    rowSize?: number;
+        if (customProps.class) {
+          classes.push(customProps.class);
+        }
 
-    // ── Events ──────────────────────────────────────────────────────────
-    /** Fired when a cell value is edited */
-    oncelledit?: (event: CellEditEvent) => void;
-    /** Fired before cell edit — return false to cancel */
-    onbeforeedit?: (event: CellEditEvent) => boolean | void;
-    /** Fired when user pastes from clipboard */
-    onpaste?: (data: string[][], startRow: number, startCol: number) => void;
-    /** Fired when a user clicks a [data-grid-action] element in a cell */
-    onaction?: (event: GridActionEvent) => void;
-  }
+        return {
+          ...customProps,
+          class: classes.join(" ").trim(),
+        };
+      },
+    };
 
-  let {
-    columns,
-    source,
-    height = "500px",
-    rtl = false,
-    readonly = false,
-    theme = "compact",
-    range = true,
-    clipboard = true,
-    autoSize = false,
-    overscan = 15,
-    rowSize = 42,
-    oncelledit,
-    onbeforeedit,
-    onpaste,
-    onaction,
-  }: Props = $props();
-
-  // ── Internal State ───────────────────────────────────────────────────────
-
-  let gridReady = $state(false);
-  let RevoGridComponent: any = $state(null);
-  let loadedEditors: Record<string, unknown> = $state({});
-
-  // ── Dynamic Import (SSR-safe, module-cached) ──────────────────────────────
-
-  onMount(async () => {
-    if (!isBrowser) return;
-    try {
-      const mod = await loadRevoGridModule();
-      RevoGridComponent = mod.RevoGrid;
-
-      // Register editors from cache or load once
-      const hasNumberEditor = columns.some((c) => c.editor === "number");
-      if (hasNumberEditor) {
-        const numEditor = await loadNumberEditor(mod);
-        loadedEditors = { ...loadedEditors, number: numEditor };
-      }
-
-      gridReady = true;
-    } catch (err) {
-      console.error("[OrbisGrid] Failed to load RevoGrid:", err);
+    // Pinned columns
+    if (col.pin) {
+      revoCol.pin = col.pin;
     }
-  });
 
-  // ── Map OrbisColumnDef → RevoGrid ColumnRegular ──────────────────────────
+    // Min/Max size
+    if (col.minSize) revoCol.minSize = col.minSize;
+    if (col.maxSize) revoCol.maxSize = col.maxSize;
 
-  let revoColumns = $derived.by(() => {
-    if (!gridReady) return [];
-    return columns.map((col) => {
-      const revoCol: Record<string, unknown> = {
-        prop: col.prop,
-        name: col.name,
-        size: col.size ?? 120,
-        sortable: col.sortable ?? false,
-        resizable: col.resizable !== false,
-        readonly: readonly || (col.readonly ?? false),
-        cellProperties: (params?: any) => {
-          const classes: string[] = [];
-          // Declarative variant → orbis-cell-{variant} class
-          if (col.variant) classes.push(`orbis-cell-${col.variant}`);
-          if (col.cellClass) classes.push(col.cellClass);
-          if (col.align === "center") classes.push("cell-number-input");
-
-          let customProps: Record<string, any> = {};
-          if (col.cellProperties) {
-            const row = params?.model || {};
-            customProps = col.cellProperties(row) || {};
-          }
-
-          if (customProps.class) {
-            classes.push(customProps.class);
-          }
-
-          return {
-            ...customProps,
-            class: classes.join(" ").trim()
-          };
-        },
+    // Column meta for editors
+    if (col.meta || col.editorConfig) {
+      revoCol.meta = {
+        ...(col.meta || {}),
+        ...(col.editorConfig || {}),
       };
+    }
 
-      // Pinned columns
-      if (col.pin) {
-        revoCol.pin = col.pin;
-      }
+    // Editor registration
+    if (col.editor && !readonly && !col.readonly) {
+      revoCol.editor = col.editor;
+    }
 
-      // Min/Max size
-      if (col.minSize) revoCol.minSize = col.minSize;
-      if (col.maxSize) revoCol.maxSize = col.maxSize;
+    // Cell template / custom cell renderer mapping
+    if (col.cellRenderer) {
+      revoCol.cellTemplate = (h: any, model: any) => {
+        return col.cellRenderer!({
+          h,
+          value: model.model[model.prop],
+          row: model.model,
+          prop: model.prop,
+          rowIndex: model.rowIndex,
+          colIndex: model.colIndex,
+          model,
+        });
+      };
+    }
 
-      // Column meta for editors
-      if (col.meta || col.editorConfig) {
-        revoCol.meta = {
-          ...(col.meta || {}),
-          ...(col.editorConfig || {}),
-        };
-      }
-
-      // Editor registration
-      if (col.editor && !readonly && !col.readonly) {
-        revoCol.editor = col.editor;
-      }
-
-      // Cell template / custom cell renderer mapping
-      if (col.cellRenderer) {
-        revoCol.cellTemplate = (h: any, model: any) => {
-          return col.cellRenderer!({
-            h,
-            value: model.model[model.prop],
-            row: model.model,
-            prop: model.prop,
-            rowIndex: model.rowIndex,
-            colIndex: model.colIndex,
-            model,
-          });
-        };
-      }
-
-      return revoCol;
-    });
+    return revoCol;
   });
+});
 
-  // ── Editors Registry ─────────────────────────────────────────────────────
+// ── Editors Registry ─────────────────────────────────────────────────────
 
-  let editors = $derived(loadedEditors);
+let editors = $derived(loadedEditors);
 
-  // ── Event Handlers ───────────────────────────────────────────────────────
+// ── Event Handlers ───────────────────────────────────────────────────────
 
-  function handleAfterEdit(event: CustomEvent) {
-    const detail = event.detail;
-    if (!detail || !oncelledit) return;
+function handleAfterEdit(event: CustomEvent) {
+  const detail = event.detail;
+  if (!detail || !oncelledit) return;
 
-    // RevoGrid provides different event shapes depending on version
-    const editEvent: CellEditEvent = {
-      row: detail.model || detail.row || {},
-      rowIndex: detail.rowIndex ?? detail.index ?? 0,
-      prop: detail.prop || "",
-      oldValue: detail.oldValue ?? detail.val,
-      newValue: detail.value ?? detail.val,
-    };
+  // RevoGrid provides different event shapes depending on version
+  const editEvent: CellEditEvent = {
+    row: detail.model || detail.row || {},
+    rowIndex: detail.rowIndex ?? detail.index ?? 0,
+    prop: detail.prop || "",
+    oldValue: detail.oldValue ?? detail.val,
+    newValue: detail.value ?? detail.val,
+  };
 
-    oncelledit(editEvent);
+  oncelledit(editEvent);
+}
+
+function handleBeforeEdit(event: CustomEvent) {
+  if (!onbeforeedit) return;
+
+  const detail = event.detail;
+  const editEvent: CellEditEvent = {
+    row: detail.model || detail.row || {},
+    rowIndex: detail.rowIndex ?? detail.index ?? 0,
+    prop: detail.prop || "",
+    oldValue: detail.val,
+    newValue: detail.val,
+  };
+
+  const result = onbeforeedit(editEvent);
+  if (result === false) {
+    event.preventDefault();
   }
+}
 
-  function handleBeforeEdit(event: CustomEvent) {
-    if (!onbeforeedit) return;
-
-    const detail = event.detail;
-    const editEvent: CellEditEvent = {
-      row: detail.model || detail.row || {},
-      rowIndex: detail.rowIndex ?? detail.index ?? 0,
-      prop: detail.prop || "",
-      oldValue: detail.val,
-      newValue: detail.val,
-    };
-
-    const result = onbeforeedit(editEvent);
-    if (result === false) {
-      event.preventDefault();
-    }
+function handleBeforePaste(event: CustomEvent) {
+  if (!onpaste) return;
+  // Let the default handler work, but also notify parent
+  const detail = event.detail;
+  if (detail?.parsed) {
+    onpaste(detail.parsed, detail.rowIndex ?? 0, detail.colIndex ?? 0);
   }
+}
 
-  function handleBeforePaste(event: CustomEvent) {
-    if (!onpaste) return;
-    // Let the default handler work, but also notify parent
-    const detail = event.detail;
-    if (detail?.parsed) {
-      onpaste(detail.parsed, detail.rowIndex ?? 0, detail.colIndex ?? 0);
-    }
-  }
+function handleGridClick(e: MouseEvent) {
+  if (!onaction) return;
+  const target = (e.target as HTMLElement).closest<HTMLElement>(
+    "[data-grid-action]",
+  );
+  if (!target) return;
 
-  function handleGridClick(e: MouseEvent) {
-    if (!onaction) return;
-    const target = (e.target as HTMLElement).closest<HTMLElement>("[data-grid-action]");
-    if (!target) return;
+  const actionId = target.dataset.gridAction!;
+  const rowIndex = Number(target.dataset.rowIndex ?? -1);
+  const prop = target.dataset.prop ?? "";
+  if (rowIndex < 0 || rowIndex >= source.length) return;
 
-    const actionId = target.dataset.gridAction!;
-    const rowIndex = Number(target.dataset.rowIndex ?? -1);
-    const prop = target.dataset.prop ?? "";
-    if (rowIndex < 0 || rowIndex >= source.length) return;
-
-    onaction({
-      actionId,
-      row: source[rowIndex]!,
-      rowIndex,
-      prop,
-      originalEvent: e,
-    });
-  }
+  onaction({
+    actionId,
+    row: source[rowIndex]!,
+    rowIndex,
+    prop,
+    originalEvent: e,
+  });
+}
 </script>
 
 {#if gridReady && RevoGridComponent && isBrowser}

@@ -13,9 +13,25 @@ import { Badge } from "@orbis/ui-svelte/badge";
 import { Separator } from "@orbis/ui-svelte/separator";
 import { Switch } from "@orbis/ui-svelte/switch";
 import { Checkbox } from "@orbis/ui-svelte/checkbox";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui-svelte/tabs";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@orbis/ui-svelte/card";
-import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui-svelte/select";
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "@orbis/ui-svelte/tabs";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@orbis/ui-svelte/card";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui-svelte/select";
 import { studentsStore, authStore } from "$lib/stores";
 import { commands } from "$lib/services/ipc";
 import { onMount } from "svelte";
@@ -39,7 +55,7 @@ import {
   Percent,
   Plus,
   Trash2,
-  Search
+  Search,
 } from "lucide-svelte";
 import * as m from "$lib/paraglide/messages";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
@@ -68,7 +84,11 @@ let preventDuplicates = $state<Record<string, boolean>>({});
 let registrationStatus = $state("active"); // draft, pending_review, active
 
 // Duplicate warning states
-let duplicateWarnings = $state<{ national_id?: string; email?: string; phone?: string }>({});
+let duplicateWarnings = $state<{
+  national_id?: string;
+  email?: string;
+  phone?: string;
+}>({});
 
 // Date picker options and reactive values
 const currentYear = new Date().getFullYear();
@@ -102,21 +122,23 @@ $effect(() => {
 });
 
 // Many-to-Many Guardians List
-let linkedGuardians = $state<Array<{
-  id?: string;
-  user_id?: string;
-  full_name: string;
-  phone: string;
-  email: string;
-  national_id: string;
-  relationship: string;
-  relationship_ar: string;
-  is_primary: boolean;
-  is_emergency_contact: boolean;
-  is_payer: boolean;
-  payment_share_percent: number;
-  occupation: string;
-}>>([
+let linkedGuardians = $state<
+  Array<{
+    id?: string;
+    user_id?: string;
+    full_name: string;
+    phone: string;
+    email: string;
+    national_id: string;
+    relationship: string;
+    relationship_ar: string;
+    is_primary: boolean;
+    is_emergency_contact: boolean;
+    is_payer: boolean;
+    payment_share_percent: number;
+    occupation: string;
+  }>
+>([
   {
     full_name: "",
     phone: "",
@@ -129,7 +151,7 @@ let linkedGuardians = $state<Array<{
     is_payer: true,
     payment_share_percent: 100,
     occupation: "",
-  }
+  },
 ]);
 
 // Guardian autocomplete states
@@ -175,7 +197,7 @@ function addGuardianField() {
       is_payer: false,
       payment_share_percent: 0,
       occupation: "",
-    }
+    },
   ];
 }
 
@@ -203,13 +225,19 @@ let orgRequiredDocuments = $state<string[]>([]);
 
 const docTypes = $derived.by(() => {
   if (orgRequiredDocuments.length > 0) {
-    return orgRequiredDocuments.map(name => ({ id: name, label: name }));
+    return orgRequiredDocuments.map((name) => ({ id: name, label: name }));
   }
   // Fallback
   return [
     { id: "birth_certificate", label: m.form_doc_birth_certificate() },
     { id: "national_id", label: m.form_doc_national_id() },
-    { id: "previous_record", label: getLocale() === "ar" ? "الشهادة الدراسية السابقة" : "Previous Academic Record" },
+    {
+      id: "previous_record",
+      label:
+        getLocale() === "ar"
+          ? "الشهادة الدراسية السابقة"
+          : "Previous Academic Record",
+    },
   ];
 });
 let submittedDocs = $state<string[]>([]);
@@ -228,7 +256,9 @@ let applyDiscount = $state(false);
 let discountType = $state("template"); // template | custom
 let selectedDiscountTemplateId = $state("");
 let customDiscountAmount = $state<number | null>(null);
-let selectedOptionalFees = $state<Record<string, { checked: boolean; amount: number }>>({});
+let selectedOptionalFees = $state<
+  Record<string, { checked: boolean; amount: number }>
+>({});
 
 onMount(async () => {
   if (studentsStore.classes.length === 0) {
@@ -238,7 +268,7 @@ onMount(async () => {
   try {
     const org = await commands.users.getOrganization(orgId);
     orgName = org.name || "";
-    
+
     // Parse settings
     if (org.settings) {
       try {
@@ -263,9 +293,9 @@ onMount(async () => {
       (t) =>
         t.entity_type === "user" ||
         t.entity_type === "enrollment" ||
-        String(t.id).includes("registration")
+        String(t.id).includes("registration"),
     );
-    
+
     const defaultTpl =
       availableTemplates.find((t) => t.id === "t5-student-registration-form") ||
       availableTemplates.find((t) => t.is_default === 1) ||
@@ -291,7 +321,10 @@ onMount(async () => {
     discountTemplates = dTpls || [];
 
     // Pre-populate optional fees mapping
-    const optionalFeesMap: Record<string, { checked: boolean; amount: number }> = {};
+    const optionalFeesMap: Record<
+      string,
+      { checked: boolean; amount: number }
+    > = {};
     feeTemplates.forEach((t) => {
       if (t.is_mandatory === 0 && t.is_active === 1) {
         optionalFeesMap[t.id] = { checked: false, amount: t.default_amount };
@@ -313,7 +346,9 @@ async function loadStudentData() {
     if (student) {
       nameAr = String(student.full_name || student.name_ar || "");
       nameEn = String(student.name_en || "");
-      birthDate = student.birth_date ? String(student.birth_date).slice(0, 10) : "";
+      birthDate = student.birth_date
+        ? String(student.birth_date).slice(0, 10)
+        : "";
       if (birthDate) {
         const parts = birthDate.split("-");
         if (parts.length === 3) {
@@ -331,11 +366,15 @@ async function loadStudentData() {
       status = String(student.status || "active");
 
       // Fetch linked guardians
-      const guardianLinks = await commands.guardians.getByStudent(student.student_id);
+      const guardianLinks = await commands.guardians.getByStudent(
+        student.student_id,
+      );
       if (guardianLinks && guardianLinks.length > 0) {
         linkedGuardians = [];
         for (const link of guardianLinks) {
-          const guardianUser = await commands.users.getUser(String(link.guardian_id));
+          const guardianUser = await commands.users.getUser(
+            String(link.guardian_id),
+          );
           if (guardianUser) {
             linkedGuardians.push({
               id: String(link.id),
@@ -362,7 +401,10 @@ async function loadStudentData() {
         const optionalFeesMap = { ...selectedOptionalFees };
         fees.forEach((f) => {
           if (f.fee_template_id && optionalFeesMap[f.fee_template_id]) {
-            optionalFeesMap[f.fee_template_id] = { checked: true, amount: f.original_amount };
+            optionalFeesMap[f.fee_template_id] = {
+              checked: true,
+              amount: f.original_amount,
+            };
           }
         });
         selectedOptionalFees = optionalFeesMap;
@@ -377,7 +419,10 @@ async function loadStudentData() {
 }
 
 // Live duplicate check triggers
-async function triggerDuplicateCheck(field: "national_id" | "email" | "phone", value: string) {
+async function triggerDuplicateCheck(
+  field: "national_id" | "email" | "phone",
+  value: string,
+) {
   if (!value.trim() || !preventDuplicates[field]) return;
   try {
     const params = {
@@ -390,12 +435,12 @@ async function triggerDuplicateCheck(field: "national_id" | "email" | "phone", v
       const match = duplicates[0];
       duplicateWarnings = {
         ...duplicateWarnings,
-        [field]: m.form_guardian_duplicate_warning({ name: match.full_name })
+        [field]: m.form_guardian_duplicate_warning({ name: match.full_name }),
       };
     } else {
       duplicateWarnings = {
         ...duplicateWarnings,
-        [field]: undefined
+        [field]: undefined,
       };
     }
   } catch (err) {
@@ -405,7 +450,7 @@ async function triggerDuplicateCheck(field: "national_id" | "email" | "phone", v
 
 // ── Financial Live Calculations ─────────────────────────────────────
 const classLevel = $derived(
-  studentsStore.classes.find((c) => String(c.id) === classId)?.level || ""
+  studentsStore.classes.find((c) => String(c.id) === classId)?.level || "",
 );
 
 const mandatoryFeesList = $derived.by(() => {
@@ -431,13 +476,15 @@ const mandatoryFeesList = $derived.by(() => {
 });
 
 const mandatoryTotal = $derived(
-  mandatoryFeesList.reduce((sum, t) => sum + t.default_amount, 0)
+  mandatoryFeesList.reduce((sum, t) => sum + t.default_amount, 0),
 );
 
 const discountTotal = $derived.by(() => {
   if (!applyDiscount) return 0;
   if (discountType === "template" && selectedDiscountTemplateId) {
-    const tpl = discountTemplates.find((t) => t.id === selectedDiscountTemplateId);
+    const tpl = discountTemplates.find(
+      (t) => t.id === selectedDiscountTemplateId,
+    );
     if (tpl) {
       const val = (tpl.value as number) || 0;
       if (String(tpl.calculation_method).toLowerCase() === "percentage") {
@@ -453,7 +500,7 @@ const discountTotal = $derived.by(() => {
 });
 
 const optionalFeesList = $derived(
-  feeTemplates.filter((t) => t.is_mandatory === 0 && t.is_active === 1)
+  feeTemplates.filter((t) => t.is_mandatory === 0 && t.is_active === 1),
 );
 
 const optionalTotal = $derived.by(() => {
@@ -467,7 +514,7 @@ const optionalTotal = $derived.by(() => {
 });
 
 const netTotal = $derived(
-  Math.max(0, mandatoryTotal + optionalTotal - discountTotal)
+  Math.max(0, mandatoryTotal + optionalTotal - discountTotal),
 );
 
 function toggleDoc(docId: string) {
@@ -488,15 +535,25 @@ async function handleSave() {
     return;
   }
   if (requiredFields.national_id && !nationalId.trim()) {
-    toast.error(getLocale() === "ar" ? "رقم الهوية الوطنية مطلوب" : "National ID is required");
+    toast.error(
+      getLocale() === "ar"
+        ? "رقم الهوية الوطنية مطلوب"
+        : "National ID is required",
+    );
     return;
   }
   if (requiredFields.phone && !phone.trim()) {
-    toast.error(getLocale() === "ar" ? "رقم هاتف الطالب مطلوب" : "Phone number is required");
+    toast.error(
+      getLocale() === "ar"
+        ? "رقم هاتف الطالب مطلوب"
+        : "Phone number is required",
+    );
     return;
   }
   if (requiredFields.email && !email.trim()) {
-    toast.error(getLocale() === "ar" ? "البريد الإلكتروني مطلوب" : "Email is required");
+    toast.error(
+      getLocale() === "ar" ? "البريد الإلكتروني مطلوب" : "Email is required",
+    );
     return;
   }
 
@@ -529,7 +586,9 @@ async function handleSave() {
     };
 
     if (isEditMode) {
-      const originalStudent = studentsStore.list.find((s) => s.id === studentId);
+      const originalStudent = studentsStore.list.find(
+        (s) => s.id === studentId,
+      );
       if (!originalStudent) {
         throw new Error(m.form_error_enrollment_not_found());
       }
@@ -537,12 +596,18 @@ async function handleSave() {
       await commands.users.updateUser(targetStudentId, studentUserData);
 
       if (originalStudent.class_id !== classId) {
-        await commands.enrollments.transfer(studentId!, { new_class_id: classId });
+        await commands.enrollments.transfer(studentId!, {
+          new_class_id: classId,
+        });
       }
-      
+
       // Update registration status transition
       if (originalStudent.status !== registrationStatus) {
-        await commands.enrollments.transitionStatus(orgId, studentId!, registrationStatus);
+        await commands.enrollments.transitionStatus(
+          orgId,
+          studentId!,
+          registrationStatus,
+        );
       }
 
       toast.success(m.form_success_update());
@@ -570,8 +635,14 @@ async function handleSave() {
         student_id: studentUser.id,
         class_id: classId,
         enrollment_type: "regular",
-        discount_template_id: applyDiscount && discountType === "template" ? selectedDiscountTemplateId || null : null,
-        custom_discount_amount: applyDiscount && discountType === "custom" ? customDiscountAmount || null : null,
+        discount_template_id:
+          applyDiscount && discountType === "template"
+            ? selectedDiscountTemplateId || null
+            : null,
+        custom_discount_amount:
+          applyDiscount && discountType === "custom"
+            ? customDiscountAmount || null
+            : null,
         status: registrationStatus,
       };
 
@@ -602,12 +673,16 @@ async function handleSave() {
 
       if (!guardianUserId) {
         // Search if already exists
-        const checkExisting = await commands.guardians.search(orgId, guardian.phone);
+        const checkExisting = await commands.guardians.search(
+          orgId,
+          guardian.phone,
+        );
         if (checkExisting && checkExisting.length > 0) {
           guardianUserId = checkExisting[0].id;
         } else {
           // Create new parent user
-          const guardEmail = guardian.email.trim() || `parent.${Date.now()}@orbis.local`;
+          const guardEmail =
+            guardian.email.trim() || `parent.${Date.now()}@orbis.local`;
           const guardUser = await commands.users.createUser(orgId, createdBy, {
             email: guardEmail,
             password: "Orbis123456",
@@ -632,8 +707,11 @@ async function handleSave() {
       }
 
       // Check if link exists
-      const existingLinks = await commands.guardians.getByStudent(targetStudentId);
-      const matchedLink = existingLinks.find(l => l.guardian_id === guardianUserId);
+      const existingLinks =
+        await commands.guardians.getByStudent(targetStudentId);
+      const matchedLink = existingLinks.find(
+        (l) => l.guardian_id === guardianUserId,
+      );
 
       const linkRequest = {
         student_id: targetStudentId,
@@ -654,7 +732,10 @@ async function handleSave() {
       };
 
       if (matchedLink) {
-        await commands.guardians.updateLink(String(matchedLink.id), linkRequest);
+        await commands.guardians.updateLink(
+          String(matchedLink.id),
+          linkRequest,
+        );
       } else {
         await commands.guardians.createLink(linkRequest);
       }
@@ -705,7 +786,10 @@ async function handleDownloadRegistrationForm() {
   }
   isDownloadingForm = true;
   try {
-    const templateRecord = await commands.documentTemplates.getTemplate(orgId, selectedTemplateId);
+    const templateRecord = await commands.documentTemplates.getTemplate(
+      orgId,
+      selectedTemplateId,
+    );
     if (!templateRecord) {
       toast.error(`القالب '${selectedTemplateId}' غير موجود في قاعدة البيانات`);
       return;
@@ -735,7 +819,7 @@ async function handleDownloadRegistrationForm() {
 
     const pdfBytes = await commands.docforge.previewDocumentTemplate(
       JSON.stringify(documentModel),
-      JSON.stringify(printVariables)
+      JSON.stringify(printVariables),
     );
 
     if (pdfBytes && pdfBytes.length > 0) {

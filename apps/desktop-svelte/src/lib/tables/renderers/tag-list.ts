@@ -15,8 +15,11 @@ export interface TagListRendererConfig {
 }
 
 export function tagListRenderer(config?: TagListRendererConfig): CellRenderer {
-  const { separator = ",", maxVisible = 2, variant = "secondary" } =
-    config ?? {};
+  const {
+    separator = ",",
+    maxVisible = 2,
+    variant = "secondary",
+  } = config ?? {};
 
   return ({ h, value }) => {
     let items: string[] = [];

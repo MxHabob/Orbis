@@ -248,7 +248,16 @@ class OnboardingState {
   isLoading = $state(false);
   errorMessage = $state<string | null>(null);
   totalSteps = 8;
-  completedSteps = $state([false, false, false, false, false, false, false, false]);
+  completedSteps = $state([
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+  ]);
 
   // Central Configuration Defaults
   institutionType = $state("school");
@@ -301,17 +310,48 @@ class OnboardingState {
 
   // ── Centralized Terminology Mappings ──────────────────────────────
   terminology = $derived(
-    INSTITUTION_PROFILES[this.institutionType]?.terminology || INSTITUTION_PROFILES.school.terminology
+    INSTITUTION_PROFILES[this.institutionType]?.terminology ||
+      INSTITUTION_PROFILES.school.terminology,
   );
 
-  stageLabel = $derived(getLocale() === "ar" ? this.terminology.stage_ar : this.terminology.stage);
-  classroomLabel = $derived(getLocale() === "ar" ? this.terminology.classroom_ar : this.terminology.classroom);
-  divisionLabel = $derived(getLocale() === "ar" ? this.terminology.division_ar : this.terminology.division);
-  subjectLabel = $derived(getLocale() === "ar" ? this.terminology.subject_ar : this.terminology.subject);
-  calendarLabel = $derived(getLocale() === "ar" ? this.terminology.calendar_ar : this.terminology.calendar);
-  localizedLanguageName = $derived(this.locale.startsWith("ar") ? m.onboarding_lang_ar() : m.onboarding_lang_en());
-  classroomsLabelPlural = $derived(getLocale() === "ar" ? this.terminology.classroom_ar : this.terminology.classroom + "s");
-  stagesLabelPlural = $derived(getLocale() === "ar" ? this.terminology.stage_ar : this.terminology.stage + "s");
+  stageLabel = $derived(
+    getLocale() === "ar" ? this.terminology.stage_ar : this.terminology.stage,
+  );
+  classroomLabel = $derived(
+    getLocale() === "ar"
+      ? this.terminology.classroom_ar
+      : this.terminology.classroom,
+  );
+  divisionLabel = $derived(
+    getLocale() === "ar"
+      ? this.terminology.division_ar
+      : this.terminology.division,
+  );
+  subjectLabel = $derived(
+    getLocale() === "ar"
+      ? this.terminology.subject_ar
+      : this.terminology.subject,
+  );
+  calendarLabel = $derived(
+    getLocale() === "ar"
+      ? this.terminology.calendar_ar
+      : this.terminology.calendar,
+  );
+  localizedLanguageName = $derived(
+    this.locale.startsWith("ar")
+      ? m.onboarding_lang_ar()
+      : m.onboarding_lang_en(),
+  );
+  classroomsLabelPlural = $derived(
+    getLocale() === "ar"
+      ? this.terminology.classroom_ar
+      : this.terminology.classroom + "s",
+  );
+  stagesLabelPlural = $derived(
+    getLocale() === "ar"
+      ? this.terminology.stage_ar
+      : this.terminology.stage + "s",
+  );
 
   selectInstitutionType(type: string) {
     this.institutionType = type;
@@ -322,39 +362,39 @@ class OnboardingState {
       this.requiredFields = { ...profile.requiredFields };
       this.preventDuplicates = { ...profile.preventDuplicates };
       this.requiredDocumentsList = [...profile.requiredDocuments];
-      
+
       // Default academic stages
-      this.gradeLevels = profile.stages.map(s => ({
+      this.gradeLevels = profile.stages.map((s) => ({
         level: s.level,
         name: s.name,
         name_ar: s.name_ar,
         color: s.color,
         enabled: true,
-        divisions: [...s.divisions]
+        divisions: [...s.divisions],
       }));
-      
+
       // Default time slots
-      this.timeSlots = profile.timeSlots.map(t => ({
+      this.timeSlots = profile.timeSlots.map((t) => ({
         name: t.name,
         name_ar: t.name_ar,
         start_time: t.start_time,
-        end_time: t.end_time
+        end_time: t.end_time,
       }));
-      
+
       // Default subjects
-      this.subjects = profile.subjects.map(s => ({
+      this.subjects = profile.subjects.map((s) => ({
         code: s.code,
         name: s.name,
         name_ar: s.name_ar,
         color: s.color,
         icon: s.icon,
         sort_order: s.sort_order,
-        enabled: true
+        enabled: true,
       }));
 
       // Prepopulate default fees to 0
       const fees: Record<string, number> = {};
-      profile.stages.forEach(s => {
+      profile.stages.forEach((s) => {
         fees[s.level] = 0;
       });
       this.registrationFees = fees;
@@ -363,7 +403,7 @@ class OnboardingState {
       const roomsList: Room[] = [];
       const bld1Name = getLocale() === "ar" ? "المبنى 1" : "Building 1";
       const bld2Name = getLocale() === "ar" ? "المبنى 2" : "Building 2";
-      
+
       profile.stages.slice(0, 5).forEach((stg, sIdx) => {
         roomsList.push({
           id: `room-b1-f1-${sIdx + 1}`,
@@ -378,7 +418,7 @@ class OnboardingState {
       this.rooms = roomsList;
       this.buildings = [bld1Name, bld2Name];
       this.activeBuildingTab = bld1Name;
-      
+
       this.save();
     }
   }
@@ -396,10 +436,14 @@ class OnboardingState {
   enabledSubjects = $derived(this.subjects.filter((s) => s.enabled).length);
   totalSlots = $derived(this.timeSlots.length);
   bld1Rooms = $derived(
-    this.rooms.filter((r) => r.building === (getLocale() === "ar" ? "المبنى 1" : "Building 1")).length,
+    this.rooms.filter(
+      (r) => r.building === (getLocale() === "ar" ? "المبنى 1" : "Building 1"),
+    ).length,
   );
   bld2Rooms = $derived(
-    this.rooms.filter((r) => r.building === (getLocale() === "ar" ? "المبنى 2" : "Building 2")).length,
+    this.rooms.filter(
+      (r) => r.building === (getLocale() === "ar" ? "المبنى 2" : "Building 2"),
+    ).length,
   );
   tasksCompletedCount = $derived(this.completedSteps.filter(Boolean).length);
 
@@ -466,11 +510,14 @@ class OnboardingState {
         if (data.subjects) this.subjects = data.subjects;
         if (data.rooms) this.rooms = data.rooms;
         if (data.institutionType) this.institutionType = data.institutionType;
-        if (data.studentNumberPattern) this.studentNumberPattern = data.studentNumberPattern;
+        if (data.studentNumberPattern)
+          this.studentNumberPattern = data.studentNumberPattern;
         if (data.activeFields) this.activeFields = data.activeFields;
         if (data.requiredFields) this.requiredFields = data.requiredFields;
-        if (data.preventDuplicates) this.preventDuplicates = data.preventDuplicates;
-        if (data.requiredDocumentsList) this.requiredDocumentsList = data.requiredDocumentsList;
+        if (data.preventDuplicates)
+          this.preventDuplicates = data.preventDuplicates;
+        if (data.requiredDocumentsList)
+          this.requiredDocumentsList = data.requiredDocumentsList;
         if (data.gradeLevels) this.gradeLevels = data.gradeLevels;
       }
     } catch (e) {
@@ -861,12 +908,14 @@ class OnboardingState {
         registration_config: {
           institution_type: this.institutionType,
           student_number_pattern: this.studentNumberPattern,
-          academic_stages: this.gradeLevels.filter(gl => gl.enabled).map(gl => gl.level),
+          academic_stages: this.gradeLevels
+            .filter((gl) => gl.enabled)
+            .map((gl) => gl.level),
           required_fields: this.requiredFields,
           active_fields: this.activeFields,
           prevent_duplicates: this.preventDuplicates,
           required_documents: this.requiredDocumentsList,
-        }
+        },
       };
 
       const org = await commands.users.getOrganization(orgId);
@@ -937,7 +986,8 @@ class OnboardingState {
     const locale = getLocale();
     return {
       name: locale === "ar" ? profile.name_ar : profile.name,
-      description: locale === "ar" ? profile.description_ar : profile.description
+      description:
+        locale === "ar" ? profile.description_ar : profile.description,
     };
   }
 }

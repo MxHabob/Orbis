@@ -54,7 +54,7 @@ export function actionsRenderer(config: ActionsRendererConfig): CellRenderer {
             type: "button",
             innerHTML: iconHtml || undefined,
           },
-          action.icon ? undefined : action.label ?? action.id,
+          action.icon ? undefined : (action.label ?? action.id),
         );
       }),
     );

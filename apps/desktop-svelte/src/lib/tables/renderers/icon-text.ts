@@ -17,7 +17,9 @@ export interface IconTextRendererConfig {
   iconPosition?: "start" | "end";
 }
 
-export function iconTextRenderer(config?: IconTextRendererConfig): CellRenderer {
+export function iconTextRenderer(
+  config?: IconTextRendererConfig,
+): CellRenderer {
   const { icon, iconKey, iconMap, iconPosition = "start" } = config ?? {};
 
   return ({ h, value, row }) => {

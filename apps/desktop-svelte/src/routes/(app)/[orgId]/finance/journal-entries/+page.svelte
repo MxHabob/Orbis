@@ -210,7 +210,7 @@ async function handleAdd() {
         user: "U78",
         branch: "المركز الرئيسي",
       },
-      ...journalEntries
+      ...journalEntries,
     ];
     toast.success(`تم حفظ وترحيل القيد رقم ${randomRef} بنجاح`);
     clearForm();

@@ -8,8 +8,20 @@ import { onMount } from "svelte";
 import { commands } from "$lib/services/ipc";
 import { Landmark, FileSpreadsheet, Scale, BarChart3 } from "lucide-svelte";
 import { fade } from "svelte/transition";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui-svelte/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@orbis/ui-svelte/table";
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "@orbis/ui-svelte/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@orbis/ui-svelte/table";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import FeeCollectionCard from "$lib/components/metrics/cards/fee-collection-card.svelte";
 import { formatCurrency } from "$lib/i18n-utils";
@@ -43,7 +55,7 @@ onMount(() => {
 // Derived States for Financial Reports
 // 1. Trial Balance Rows
 const trialBalanceRows = $derived.by(() => {
-  return ledgers.map(l => {
+  return ledgers.map((l) => {
     // For Trial Balance, we show aggregated YER, USD, SAR
     return {
       code: l.code,
@@ -59,77 +71,100 @@ const trialBalanceRows = $derived.by(() => {
 });
 
 // Helper to determine net balance depending on account type nature
-function getNetBalance(acc: any, currency: 'yer' | 'sar' | 'usd'): number {
-  const isDebitNature = acc.item_type === "asset" || acc.item_type === "expense";
+function getNetBalance(acc: any, currency: "yer" | "sar" | "usd"): number {
+  const isDebitNature =
+    acc.item_type === "asset" || acc.item_type === "expense";
   const debit = Number(acc[`debit_${currency}`] || 0.0);
   const credit = Number(acc[`credit_${currency}`] || 0.0);
-  return isDebitNature ? (debit - credit) : (credit - debit);
+  return isDebitNature ? debit - credit : credit - debit;
 }
 
 // 2. Income Statement (Revenue & Expenses)
-const revenueAccounts = $derived.by(() => ledgers.filter(l => l.item_type === "revenue"));
-const expenseAccounts = $derived.by(() => ledgers.filter(l => l.item_type === "expense"));
+const revenueAccounts = $derived.by(() =>
+  ledgers.filter((l) => l.item_type === "revenue"),
+);
+const expenseAccounts = $derived.by(() =>
+  ledgers.filter((l) => l.item_type === "expense"),
+);
 
 const totalRevenue = $derived.by(() => {
-  let yer = 0, sar = 0, usd = 0;
-  revenueAccounts.forEach(acc => {
-    if (!acc.parent_id) { // Top level rollups
-      yer += getNetBalance(acc, 'yer');
-      sar += getNetBalance(acc, 'sar');
-      usd += getNetBalance(acc, 'usd');
+  let yer = 0,
+    sar = 0,
+    usd = 0;
+  revenueAccounts.forEach((acc) => {
+    if (!acc.parent_id) {
+      // Top level rollups
+      yer += getNetBalance(acc, "yer");
+      sar += getNetBalance(acc, "sar");
+      usd += getNetBalance(acc, "usd");
     }
   });
   return { yer, sar, usd };
 });
 
 const totalExpenses = $derived.by(() => {
-  let yer = 0, sar = 0, usd = 0;
-  expenseAccounts.forEach(acc => {
-    if (!acc.parent_id) { // Top level rollups
-      yer += getNetBalance(acc, 'yer');
-      sar += getNetBalance(acc, 'sar');
-      usd += getNetBalance(acc, 'usd');
+  let yer = 0,
+    sar = 0,
+    usd = 0;
+  expenseAccounts.forEach((acc) => {
+    if (!acc.parent_id) {
+      // Top level rollups
+      yer += getNetBalance(acc, "yer");
+      sar += getNetBalance(acc, "sar");
+      usd += getNetBalance(acc, "usd");
     }
   });
   return { yer, sar, usd };
 });
 
 // 3. Balance Sheet (Assets, Liabilities, Equity)
-const assetAccounts = $derived.by(() => ledgers.filter(l => l.item_type === "asset"));
-const liabilityAccounts = $derived.by(() => ledgers.filter(l => l.item_type === "liability"));
-const equityAccounts = $derived.by(() => ledgers.filter(l => l.item_type === "equity"));
+const assetAccounts = $derived.by(() =>
+  ledgers.filter((l) => l.item_type === "asset"),
+);
+const liabilityAccounts = $derived.by(() =>
+  ledgers.filter((l) => l.item_type === "liability"),
+);
+const equityAccounts = $derived.by(() =>
+  ledgers.filter((l) => l.item_type === "equity"),
+);
 
 const totalAssets = $derived.by(() => {
-  let yer = 0, sar = 0, usd = 0;
-  assetAccounts.forEach(acc => {
+  let yer = 0,
+    sar = 0,
+    usd = 0;
+  assetAccounts.forEach((acc) => {
     if (!acc.parent_id) {
-      yer += getNetBalance(acc, 'yer');
-      sar += getNetBalance(acc, 'sar');
-      usd += getNetBalance(acc, 'usd');
+      yer += getNetBalance(acc, "yer");
+      sar += getNetBalance(acc, "sar");
+      usd += getNetBalance(acc, "usd");
     }
   });
   return { yer, sar, usd };
 });
 
 const totalLiabilities = $derived.by(() => {
-  let yer = 0, sar = 0, usd = 0;
-  liabilityAccounts.forEach(acc => {
+  let yer = 0,
+    sar = 0,
+    usd = 0;
+  liabilityAccounts.forEach((acc) => {
     if (!acc.parent_id) {
-      yer += getNetBalance(acc, 'yer');
-      sar += getNetBalance(acc, 'sar');
-      usd += getNetBalance(acc, 'usd');
+      yer += getNetBalance(acc, "yer");
+      sar += getNetBalance(acc, "sar");
+      usd += getNetBalance(acc, "usd");
     }
   });
   return { yer, sar, usd };
 });
 
 const totalEquity = $derived.by(() => {
-  let yer = 0, sar = 0, usd = 0;
-  equityAccounts.forEach(acc => {
+  let yer = 0,
+    sar = 0,
+    usd = 0;
+  equityAccounts.forEach((acc) => {
     if (!acc.parent_id) {
-      yer += getNetBalance(acc, 'yer');
-      sar += getNetBalance(acc, 'sar');
-      usd += getNetBalance(acc, 'usd');
+      yer += getNetBalance(acc, "yer");
+      sar += getNetBalance(acc, "sar");
+      usd += getNetBalance(acc, "usd");
     }
   });
   return { yer, sar, usd };

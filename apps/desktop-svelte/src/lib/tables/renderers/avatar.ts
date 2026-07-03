@@ -44,7 +44,9 @@ export function avatarRenderer(config?: AvatarRendererConfig): CellRenderer {
       "span",
       {
         class: `orbis-r-avatar__root ${sizeClass} ${
-          src ? "orbis-r-avatar__root--has-img" : "orbis-r-avatar__root--has-fallback"
+          src
+            ? "orbis-r-avatar__root--has-img"
+            : "orbis-r-avatar__root--has-fallback"
         }`,
       },
       [innerEl],

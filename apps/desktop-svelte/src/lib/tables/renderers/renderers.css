@@ -45,13 +45,28 @@ revo-grid .orbis-r-avatar__img {
 }
 
 /* S.C.R.A.P.S. sizes */
-revo-grid .orbis-r-avatar--sm { width: 24px; height: 24px; }
-revo-grid .orbis-r-avatar--md { width: 32px; height: 32px; }
-revo-grid .orbis-r-avatar--lg { width: 40px; height: 40px; }
+revo-grid .orbis-r-avatar--sm {
+  width: 24px;
+  height: 24px;
+}
+revo-grid .orbis-r-avatar--md {
+  width: 32px;
+  height: 32px;
+}
+revo-grid .orbis-r-avatar--lg {
+  width: 40px;
+  height: 40px;
+}
 
-revo-grid .orbis-r-avatar--sm .orbis-r-avatar__fallback-text { font-size: 10px; }
-revo-grid .orbis-r-avatar--md .orbis-r-avatar__fallback-text { font-size: 12px; }
-revo-grid .orbis-r-avatar--lg .orbis-r-avatar__fallback-text { font-size: 14px; }
+revo-grid .orbis-r-avatar--sm .orbis-r-avatar__fallback-text {
+  font-size: 10px;
+}
+revo-grid .orbis-r-avatar--md .orbis-r-avatar__fallback-text {
+  font-size: 12px;
+}
+revo-grid .orbis-r-avatar--lg .orbis-r-avatar__fallback-text {
+  font-size: 14px;
+}
 
 /* Fallback matches S.C.R.A.P.S exactly */
 revo-grid .orbis-r-avatar__root--has-fallback {
@@ -150,13 +165,27 @@ revo-grid .orbis-r-dot {
   flex-shrink: 0;
 }
 
-revo-grid .orbis-r-dot--default   { background: var(--muted-foreground); }
-revo-grid .orbis-r-dot--secondary { background: var(--secondary-foreground); }
-revo-grid .orbis-r-dot--success   { background: oklch(0.72 0.17 160); }
-revo-grid .orbis-r-dot--error     { background: var(--destructive); }
-revo-grid .orbis-r-dot--warning   { background: oklch(0.78 0.16 75); }
-revo-grid .orbis-r-dot--info      { background: var(--primary); }
-revo-grid .orbis-r-dot--lime      { background: var(--brand-lime); }
+revo-grid .orbis-r-dot--default {
+  background: var(--muted-foreground);
+}
+revo-grid .orbis-r-dot--secondary {
+  background: var(--secondary-foreground);
+}
+revo-grid .orbis-r-dot--success {
+  background: oklch(0.72 0.17 160);
+}
+revo-grid .orbis-r-dot--error {
+  background: var(--destructive);
+}
+revo-grid .orbis-r-dot--warning {
+  background: oklch(0.78 0.16 75);
+}
+revo-grid .orbis-r-dot--info {
+  background: var(--primary);
+}
+revo-grid .orbis-r-dot--lime {
+  background: var(--brand-lime);
+}
 
 /* ── Actions Renderer ─────────────────────────────────────────────────────── */
 
@@ -249,10 +278,18 @@ revo-grid .orbis-r-progress__fill {
   transition: width 0.3s ease;
 }
 
-revo-grid .orbis-r-progress__fill--default { background: var(--primary); }
-revo-grid .orbis-r-progress__fill--success { background: oklch(0.72 0.17 160); }
-revo-grid .orbis-r-progress__fill--error   { background: var(--destructive); }
-revo-grid .orbis-r-progress__fill--warning { background: oklch(0.78 0.16 75); }
+revo-grid .orbis-r-progress__fill--default {
+  background: var(--primary);
+}
+revo-grid .orbis-r-progress__fill--success {
+  background: oklch(0.72 0.17 160);
+}
+revo-grid .orbis-r-progress__fill--error {
+  background: var(--destructive);
+}
+revo-grid .orbis-r-progress__fill--warning {
+  background: oklch(0.78 0.16 75);
+}
 
 revo-grid .orbis-r-progress__label {
   font-size: 11px;
@@ -328,9 +365,21 @@ revo-grid .orbis-r-icon-text__label {
 
 /* ── Dark Mode Overrides ──────────────────────────────────────────────────── */
 
-.dark revo-grid .orbis-r-badge--success { color: oklch(0.78 0.17 160); }
-.dark revo-grid .orbis-r-badge--warning { color: oklch(0.82 0.16 75); }
-.dark revo-grid .orbis-r-dot--success   { background: oklch(0.78 0.17 160); }
-.dark revo-grid .orbis-r-dot--warning   { background: oklch(0.82 0.16 75); }
-.dark revo-grid .orbis-r-progress__fill--success { background: oklch(0.78 0.17 160); }
-.dark revo-grid .orbis-r-progress__fill--warning { background: oklch(0.82 0.16 75); }
+.dark revo-grid .orbis-r-badge--success {
+  color: oklch(0.78 0.17 160);
+}
+.dark revo-grid .orbis-r-badge--warning {
+  color: oklch(0.82 0.16 75);
+}
+.dark revo-grid .orbis-r-dot--success {
+  background: oklch(0.78 0.17 160);
+}
+.dark revo-grid .orbis-r-dot--warning {
+  background: oklch(0.82 0.16 75);
+}
+.dark revo-grid .orbis-r-progress__fill--success {
+  background: oklch(0.78 0.17 160);
+}
+.dark revo-grid .orbis-r-progress__fill--warning {
+  background: oklch(0.82 0.16 75);
+}

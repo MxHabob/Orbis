@@ -107,7 +107,8 @@ const navItems = $derived([
   },
   {
     path: "registration",
-    label: getLocale() === "ar" ? "قواعد وإعدادات التسجيل" : "Registration Settings",
+    label:
+      getLocale() === "ar" ? "قواعد وإعدادات التسجيل" : "Registration Settings",
     icon: FileText,
   },
 

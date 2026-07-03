@@ -178,7 +178,7 @@ onMount(() => {
 
 // Double entry ledger balance calculation
 const calculatedLedgerRows = $derived.by(() => {
-  return ledgers.map(acc => ({
+  return ledgers.map((acc) => ({
     id: acc.id,
     code: acc.code,
     name: acc.name,

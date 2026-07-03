@@ -23,12 +23,14 @@ export function scoreToGradeLetter(percentage: number): string {
 // ── Grade Color (oklch — S.C.R.A.P.S. aligned) ──────────────────────────────
 
 export function scoreToGradeColor(percentage: number): string {
-  if (percentage >= 90) return "color: oklch(0.72 0.17 160)"; /* emerald — ممتاز */
-  if (percentage >= 80) return "color: oklch(0.62 0.15 260)"; /* blue — جيد جداً */
+  if (percentage >= 90)
+    return "color: oklch(0.72 0.17 160)"; /* emerald — ممتاز */
+  if (percentage >= 80)
+    return "color: oklch(0.62 0.15 260)"; /* blue — جيد جداً */
   if (percentage >= 70) return "color: oklch(0.68 0.14 230)"; /* sky — جيد */
-  if (percentage >= 60) return "color: oklch(0.78 0.16 75)";  /* amber — مقبول */
-  if (percentage >= 50) return "color: oklch(0.72 0.17 50)";  /* orange — ضعيف */
-  return "color: oklch(0.62 0.22 25)";                        /* red — راسب */
+  if (percentage >= 60) return "color: oklch(0.78 0.16 75)"; /* amber — مقبول */
+  if (percentage >= 50) return "color: oklch(0.72 0.17 50)"; /* orange — ضعيف */
+  return "color: oklch(0.62 0.22 25)"; /* red — راسب */
 }
 
 // ── Grade CSS Class (for RevoGrid cells) ─────────────────────────────────────
@@ -188,15 +190,18 @@ export function transformMatrixToSource(
       __maxTotal: student.max_total,
       __percentage: `${student.percentage.toFixed(1)}%`,
       __percentageRaw: student.percentage,
-      __gradeLetter: student.grade_letter || scoreToGradeLetter(student.percentage),
+      __gradeLetter:
+        student.grade_letter || scoreToGradeLetter(student.percentage),
     };
 
     // Flatten grade cells into row
     for (const grade of student.grades) {
       const key = `score_${grade.assessment_id || grade.exam_type}`;
       row[key] = grade.score ?? null;
-      row[`__gradeId_${grade.assessment_id || grade.exam_type}`] = grade.grade_id;
-      row[`__maxScore_${grade.assessment_id || grade.exam_type}`] = grade.max_score;
+      row[`__gradeId_${grade.assessment_id || grade.exam_type}`] =
+        grade.grade_id;
+      row[`__maxScore_${grade.assessment_id || grade.exam_type}`] =
+        grade.max_score;
     }
 
     return row;

@@ -9,13 +9,13 @@ import { Input } from "@orbis/ui-svelte/input";
 import * as m from "$lib/paraglide/messages";
 import { onboardingState } from "../onboarding-state.svelte";
 import { INSTITUTION_PROFILES } from "../onboarding-templates";
-import { 
-  School, 
-  GraduationCap, 
-  BookOpen, 
-  Presentation, 
+import {
+  School,
+  GraduationCap,
+  BookOpen,
+  Presentation,
   Sliders,
-  CheckCircle2
+  CheckCircle2,
 } from "lucide-svelte";
 
 const profiles = [

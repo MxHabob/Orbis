@@ -36,7 +36,6 @@ onMount(async () => {
     });
     goto(localizedUrl, { replaceState: true });
   }
-
 });
 </script>
 

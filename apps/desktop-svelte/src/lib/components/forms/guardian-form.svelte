@@ -39,10 +39,24 @@ const isEditMode = $derived(!!editData);
 // Form state
 let guardianUserId = $state(editData ? String(editData.guardian_id ?? "") : "");
 let relation = $state(
-  editData ? String(editData.relationship ?? editData.relation ?? "father") : "father",
+  editData
+    ? String(editData.relationship ?? editData.relation ?? "father")
+    : "father",
 );
-let isPayer = $state(editData ? Boolean(editData.is_payer === 1 || editData.is_payer === true) : false);
-let job = $state(editData ? String((editData as JsonRecord).occupation ?? (editData as JsonRecord).job ?? "") : "");
+let isPayer = $state(
+  editData
+    ? Boolean(editData.is_payer === 1 || editData.is_payer === true)
+    : false,
+);
+let job = $state(
+  editData
+    ? String(
+        (editData as JsonRecord).occupation ??
+          (editData as JsonRecord).job ??
+          "",
+      )
+    : "",
+);
 let searchQuery = $state("");
 
 // Remote data
@@ -95,8 +109,9 @@ async function handleSubmit() {
 
   isSaving = true;
   try {
-    const relationAr = relation === "father" ? "أب" : relation === "mother" ? "أم" : "قريب";
-    
+    const relationAr =
+      relation === "father" ? "أب" : relation === "mother" ? "أم" : "قريب";
+
     // Construct request conforming exactly to CreateGuardianLinkRequest / UpdateGuardianLinkRequest
     const request: JsonRecord = {
       student_id: studentId,

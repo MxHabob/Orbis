@@ -10,7 +10,14 @@ import { commands } from "$lib/services/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@orbis/ui-svelte";
 import { Badge } from "@orbis/ui-svelte/badge";
-import { X, ExternalLink, CreditCard, Award, Edit2, AlertCircle } from "lucide-svelte";
+import {
+  X,
+  ExternalLink,
+  CreditCard,
+  Award,
+  Edit2,
+  AlertCircle,
+} from "lucide-svelte";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { localizeHref } from "$lib/paraglide/runtime";
@@ -79,7 +86,8 @@ async function fetchStats() {
             resolved.push({
               name: user.full_name,
               phone: user.phone || "",
-              relationship: link.relationship_ar || link.relationship || "ولي أمر",
+              relationship:
+                link.relationship_ar || link.relationship || "ولي أمر",
               is_primary: link.is_primary === 1,
             });
           }
@@ -99,7 +107,11 @@ async function transitionStatus(target: string) {
   if (!student) return;
   isTransitioning = true;
   try {
-    const updated = await commands.enrollments.transitionStatus(orgId, student.id, target);
+    const updated = await commands.enrollments.transitionStatus(
+      orgId,
+      student.id,
+      target,
+    );
     student.status = updated.status;
     toast.success(`تم تغيير حالة الطالب بنجاح إلى: ${target}`);
     await studentsStore.load(orgId);

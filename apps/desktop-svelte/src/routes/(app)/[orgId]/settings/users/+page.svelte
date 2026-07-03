@@ -91,15 +91,18 @@ const gridSource = $derived(
 // ── Columns ─────────────────────────────────────────────────────────────
 
 const columns = $derived(
-  usersDef.columns({
-    idx: "#",
-    name: m.settings_users_col_name(),
-    email: m.settings_users_col_email(),
-    phone: m.settings_users_col_phone(),
-    role: m.settings_users_col_role(),
-    status: m.settings_users_col_status?.() || "Status",
-    actions: m.settings_users_col_actions?.() || "Actions",
-  }, userActions),
+  usersDef.columns(
+    {
+      idx: "#",
+      name: m.settings_users_col_name(),
+      email: m.settings_users_col_email(),
+      phone: m.settings_users_col_phone(),
+      role: m.settings_users_col_role(),
+      status: m.settings_users_col_status?.() || "Status",
+      actions: m.settings_users_col_actions?.() || "Actions",
+    },
+    userActions,
+  ),
 );
 
 // ── Handlers ───────────────────────────────────────────────────────────

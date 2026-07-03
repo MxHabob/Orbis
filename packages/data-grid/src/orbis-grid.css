@@ -30,7 +30,11 @@ revo-grid {
   /* Header styles */
   --revo-grid-header-bg: color-mix(in oklch, var(--muted), transparent 40%);
   --revo-grid-header-color: var(--foreground);
-  --revo-grid-header-border: color-mix(in oklch, var(--border), transparent 65%);
+  --revo-grid-header-border: color-mix(
+    in oklch,
+    var(--border),
+    transparent 65%
+  );
 
   /* Cell styles */
   --revo-grid-cell-border: color-mix(in oklch, var(--border), transparent 75%);
@@ -44,7 +48,8 @@ revo-grid {
   /* Backgrounds */
   --rgBg: var(--card);
   --rgHeaderBg: color-mix(in oklch, var(--muted), transparent 40%);
-  --rgHeaderBorder: 1px solid color-mix(in oklch, var(--border), transparent 65%);
+  --rgHeaderBorder: 1px solid
+    color-mix(in oklch, var(--border), transparent 65%);
 
   /* Selection & Focus - thin 1px primary border with high transparency fill */
   --rgSelectionBg: color-mix(in oklch, var(--primary), transparent 96%);
@@ -94,7 +99,8 @@ revo-grid .pinned-end .rgHeaderCell {
   border-bottom: 1px solid color-mix(in oklch, var(--border), transparent 65%) !important;
   border-right: none !important;
   border-left: none !important;
-  box-shadow: 0 -1px 0 0 color-mix(in oklch, var(--border), transparent 65%) inset !important;
+  box-shadow: 0 -1px 0 0 color-mix(in oklch, var(--border), transparent 65%)
+    inset !important;
   user-select: none;
 }
 
@@ -111,7 +117,8 @@ revo-grid .pinned-end .rgCell {
   border-bottom: 1px solid color-mix(in oklch, var(--border), transparent 75%) !important;
   border-right: none !important;
   border-left: none !important;
-  box-shadow: 0 -1px 0 0 color-mix(in oklch, var(--border), transparent 75%) inset !important;
+  box-shadow: 0 -1px 0 0 color-mix(in oklch, var(--border), transparent 75%)
+    inset !important;
   padding: 0 12px;
   font-size: 12.5px;
   transition: background-color 0.1s ease;
@@ -129,14 +136,16 @@ revo-grid .rgCell:focus-within {
 
 revo-grid .pinned-start {
   background: var(--card);
-  border-inline-end: 1px solid color-mix(in oklch, var(--border), transparent 60%) !important;
+  border-inline-end: 1px solid
+    color-mix(in oklch, var(--border), transparent 60%) !important;
   border-inline-start: none !important;
   z-index: 5;
 }
 
 revo-grid .pinned-end {
   background: color-mix(in oklch, var(--primary), transparent 97%);
-  border-inline-start: 1px solid color-mix(in oklch, var(--border), transparent 60%) !important;
+  border-inline-start: 1px solid
+    color-mix(in oklch, var(--border), transparent 60%) !important;
   border-inline-end: none !important;
   z-index: 5;
   font-weight: 600;
@@ -204,7 +213,8 @@ revo-grid .rgCell.readonly {
 
 revo-grid .rgCell.cell-error {
   background: color-mix(in oklch, var(--destructive), transparent 95%);
-  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--destructive), transparent 60%);
+  box-shadow: inset 0 0 0 1px
+    color-mix(in oklch, var(--destructive), transparent 60%);
 }
 
 revo-grid .rgCell.cell-error input {
@@ -249,27 +259,39 @@ revo-grid .grade-good {
 }
 
 revo-grid .grade-acceptable {
-  color: oklch(0.78 0.16 75);  /* amber — مقبول */
+  color: oklch(0.78 0.16 75); /* amber — مقبول */
   font-weight: 600;
 }
 
 revo-grid .grade-weak {
-  color: oklch(0.72 0.17 50);  /* orange — ضعيف */
+  color: oklch(0.72 0.17 50); /* orange — ضعيف */
   font-weight: 600;
 }
 
 revo-grid .grade-fail {
-  color: oklch(0.62 0.22 25);  /* red — راسب */
+  color: oklch(0.62 0.22 25); /* red — راسب */
   font-weight: 700;
 }
 
 /* Dark mode — slightly brighter for contrast */
-.dark revo-grid .grade-excellent { color: oklch(0.78 0.17 160); }
-.dark revo-grid .grade-very-good { color: oklch(0.72 0.15 260); }
-.dark revo-grid .grade-good      { color: oklch(0.75 0.14 230); }
-.dark revo-grid .grade-acceptable { color: oklch(0.82 0.16 75); }
-.dark revo-grid .grade-weak      { color: oklch(0.78 0.17 50); }
-.dark revo-grid .grade-fail      { color: oklch(0.68 0.22 25); }
+.dark revo-grid .grade-excellent {
+  color: oklch(0.78 0.17 160);
+}
+.dark revo-grid .grade-very-good {
+  color: oklch(0.72 0.15 260);
+}
+.dark revo-grid .grade-good {
+  color: oklch(0.75 0.14 230);
+}
+.dark revo-grid .grade-acceptable {
+  color: oklch(0.82 0.16 75);
+}
+.dark revo-grid .grade-weak {
+  color: oklch(0.78 0.17 50);
+}
+.dark revo-grid .grade-fail {
+  color: oklch(0.68 0.22 25);
+}
 
 /* ── Student Name Column ──────────────────────────────────────────────────── */
 
@@ -320,12 +342,14 @@ revo-grid ::-webkit-scrollbar-thumb:hover {
 /* ── RTL Adjustments ──────────────────────────────────────────────────────── */
 
 [dir="rtl"] revo-grid .pinned-start {
-  border-inline-end: 1px solid color-mix(in oklch, var(--border), transparent 60%) !important;
+  border-inline-end: 1px solid
+    color-mix(in oklch, var(--border), transparent 60%) !important;
   border-inline-start: none !important;
 }
 
 [dir="rtl"] revo-grid .pinned-end {
-  border-inline-start: 1px solid color-mix(in oklch, var(--border), transparent 60%) !important;
+  border-inline-start: 1px solid
+    color-mix(in oklch, var(--border), transparent 60%) !important;
   border-inline-end: none !important;
 }
 
@@ -380,7 +404,7 @@ revo-grid .orbis-cell-error {
 }
 
 revo-grid .orbis-cell-warning {
-  color: oklch(0.78 0.16 75);  /* amber */
+  color: oklch(0.78 0.16 75); /* amber */
   font-weight: 600;
 }
 
@@ -412,10 +436,18 @@ revo-grid .orbis-cell-student {
 }
 
 /* Dark mode — brighter status colors for contrast */
-.dark revo-grid .orbis-cell-success  { color: oklch(0.78 0.17 160); }
-.dark revo-grid .orbis-cell-warning  { color: oklch(0.82 0.16 75); }
-.dark revo-grid .orbis-cell-excellent { color: oklch(0.78 0.17 160); }
-.dark revo-grid .orbis-cell-good     { color: oklch(0.75 0.14 230); }
+.dark revo-grid .orbis-cell-success {
+  color: oklch(0.78 0.17 160);
+}
+.dark revo-grid .orbis-cell-warning {
+  color: oklch(0.82 0.16 75);
+}
+.dark revo-grid .orbis-cell-excellent {
+  color: oklch(0.78 0.17 160);
+}
+.dark revo-grid .orbis-cell-good {
+  color: oklch(0.75 0.14 230);
+}
 
 /* ══════════════════════════════════════════════════════════════════════════
    Editor Input — shared styles for all cell editors

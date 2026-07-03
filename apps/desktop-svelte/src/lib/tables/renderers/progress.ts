@@ -15,7 +15,9 @@ export interface ProgressRendererConfig {
   thresholds?: Threshold[];
 }
 
-export function progressRenderer(config?: ProgressRendererConfig): CellRenderer {
+export function progressRenderer(
+  config?: ProgressRendererConfig,
+): CellRenderer {
   const { max = 100, showLabel = true, thresholds } = config ?? {};
 
   return ({ h, value }) => {

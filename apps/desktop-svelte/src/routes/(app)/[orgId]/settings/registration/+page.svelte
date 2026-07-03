@@ -5,8 +5,19 @@ import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
 import { Checkbox } from "@orbis/ui-svelte/checkbox";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@orbis/ui-svelte/card";
-import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui-svelte/select";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@orbis/ui-svelte/card";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
 import { onMount } from "svelte";
 import { Save, HelpCircle, CheckSquare, Plus, Trash2 } from "lucide-svelte";
@@ -23,7 +34,10 @@ let institutionType = $state("school");
 let studentNumberPattern = $state("STU-{YEAR}-{SEQ}");
 let rawStages = $state<string[]>(["primary", "middle", "high"]);
 let stageInput = $state("");
-let requiredDocuments = $state<string[]>(["Birth Certificate", "National ID or Passport"]);
+let requiredDocuments = $state<string[]>([
+  "Birth Certificate",
+  "National ID or Passport",
+]);
 let documentInput = $state("");
 
 // Field configurations
@@ -67,12 +81,16 @@ onMount(async () => {
       try {
         const settings = JSON.parse(originalOrg.settings);
         const regConfig = settings.registration_config || {};
-        
+
         institutionType = regConfig.institution_type || "school";
-        studentNumberPattern = regConfig.student_number_pattern || "STU-{YEAR}-{SEQ}";
+        studentNumberPattern =
+          regConfig.student_number_pattern || "STU-{YEAR}-{SEQ}";
         rawStages = regConfig.stages || ["primary", "middle", "high"];
-        requiredDocuments = regConfig.required_documents || ["Birth Certificate", "National ID or Passport"];
-        
+        requiredDocuments = regConfig.required_documents || [
+          "Birth Certificate",
+          "National ID or Passport",
+        ];
+
         if (regConfig.required_fields) {
           requiredFields = { ...requiredFields, ...regConfig.required_fields };
         }
@@ -80,7 +98,10 @@ onMount(async () => {
           activeFields = { ...activeFields, ...regConfig.active_fields };
         }
         if (regConfig.prevent_duplicates) {
-          preventDuplicates = { ...preventDuplicates, ...regConfig.prevent_duplicates };
+          preventDuplicates = {
+            ...preventDuplicates,
+            ...regConfig.prevent_duplicates,
+          };
         }
       } catch (err) {
         console.error("Failed to parse settings JSON:", err);
@@ -103,7 +124,7 @@ function addStage() {
 }
 
 function removeStage(stage: string) {
-  rawStages = rawStages.filter(s => s !== stage);
+  rawStages = rawStages.filter((s) => s !== stage);
 }
 
 function addDocument() {
@@ -115,7 +136,7 @@ function addDocument() {
 }
 
 function removeDocument(doc: string) {
-  requiredDocuments = requiredDocuments.filter(d => d !== doc);
+  requiredDocuments = requiredDocuments.filter((d) => d !== doc);
 }
 
 async function handleSave(e: Event) {
@@ -156,14 +177,16 @@ async function handleSave(e: Event) {
     };
 
     await commands.users.updateOrganization(orgId, request);
-    
+
     // Update local cache
     originalOrg.settings = request.settings;
-    
+
     toast.success(m.settings_registration_save_success());
   } catch (e: any) {
     console.error("Failed to save registration settings:", e);
-    toast.error(m.settings_registration_save_error({ error: e.message || String(e) }));
+    toast.error(
+      m.settings_registration_save_error({ error: e.message || String(e) }),
+    );
   } finally {
     isSaving = false;
   }
