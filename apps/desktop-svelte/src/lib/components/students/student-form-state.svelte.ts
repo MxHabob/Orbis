@@ -3,7 +3,7 @@ import { studentsStore, authStore } from "$lib/stores";
 import { commands } from "$lib/services/ipc";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
-import { getLocale, localizeHref } from "$lib/paraglide/runtime";
+import { localizeHref } from "$lib/paraglide/runtime";
 
 export class StudentFormState {
   orgId: string;
@@ -14,7 +14,6 @@ export class StudentFormState {
   nameAr = $state("");
   nameEn = $state("");
   nationalId = $state("");
-  birthDate = $state("");
   sex = $state("male");
   classId = $state("");
   studentNumber = $state("");
@@ -40,6 +39,13 @@ export class StudentFormState {
   birthDay = $state("");
   birthMonth = $state("");
   birthYear = $state("");
+
+  get birthDate() {
+    if (this.birthDay && this.birthMonth && this.birthYear) {
+      return `${this.birthYear}-${this.birthMonth.padStart(2, "0")}-${this.birthDay.padStart(2, "0")}`;
+    }
+    return "";
+  }
 
   // Guardians
   linkedGuardians = $state<Array<{
@@ -110,6 +116,194 @@ export class StudentFormState {
     this.orgId = orgId;
     this.studentId = studentId;
     this.isEditMode = !!studentId;
+  }
+
+  async init() {
+    try {
+      // 1. Ensure studentsStore is loaded so we can find class details and student records
+      if (studentsStore.list.length === 0 || studentsStore.classes.length === 0) {
+        await studentsStore.load(this.orgId);
+      }
+
+      // 2. Fetch active fee templates and discount templates
+      const [feeTpls, discountTpls] = await Promise.all([
+        commands.finance.getActiveFeeTemplates(this.orgId),
+        commands.finance.getActiveDiscountTemplates(this.orgId),
+      ]);
+      this.feeTemplates = feeTpls || [];
+      this.discountTemplates = discountTpls || [];
+
+      // 3. Pre-populate optional fees mapping so they can be bound in UI
+      const feeMap: Record<string, { checked: boolean; amount: number }> = {};
+      for (const fTpl of this.feeTemplates) {
+        if (fTpl.is_mandatory === 0) {
+          feeMap[String(fTpl.id)] = {
+            checked: false,
+            amount: Number(fTpl.default_amount) || 0,
+          };
+        }
+      }
+      this.selectedOptionalFees = feeMap;
+
+      // 4. Load organization settings
+      const org = await commands.users.getOrganization(this.orgId);
+      if (org) {
+        this.orgName = String(org.name || org.name_ar || "");
+        if (org.settings) {
+          try {
+            const settings = JSON.parse(org.settings as string);
+            const regConfig = settings.registration_config || {};
+
+            this.orgRequiredDocuments = regConfig.required_documents || [];
+
+            if (regConfig.required_fields) {
+              this.requiredFields = { ...this.requiredFields, ...regConfig.required_fields };
+            }
+            if (regConfig.active_fields) {
+              this.activeFields = { ...this.activeFields, ...regConfig.active_fields };
+            }
+            if (regConfig.prevent_duplicates) {
+              this.preventDuplicates = {
+                ...this.preventDuplicates,
+                ...regConfig.prevent_duplicates,
+              };
+            }
+          } catch (err) {
+            console.error("Failed to parse settings JSON:", err);
+          }
+        }
+      }
+
+      // 5. Load document templates for printing
+      try {
+        const templatesList = await commands.documentTemplates.getTemplates(this.orgId, {
+          entity_type: "student",
+          status: "published",
+        });
+        this.availableTemplates = templatesList || [];
+        if (this.availableTemplates.length > 0) {
+          this.selectedTemplateId = this.availableTemplates[0].id;
+        }
+      } catch (err) {
+        console.error("Failed to load document templates:", err);
+      }
+
+      // 6. In edit mode, load student profile, guardians, documents, and fees
+      if (this.isEditMode && this.studentId) {
+        const originalStudent = studentsStore.list.find((s) => s.id === this.studentId) as any;
+        if (originalStudent) {
+          this.nameAr = originalStudent.full_name || originalStudent.name_ar || "";
+          this.nameEn = originalStudent.name_en || "";
+          this.nationalId = originalStudent.national_id || "";
+          
+          const birth = originalStudent.birth_date ? String(originalStudent.birth_date).slice(0, 10) : "";
+          if (birth) {
+            const parts = birth.split("-");
+            if (parts.length === 3) {
+              this.birthYear = parts[0];
+              this.birthMonth = String(parseInt(parts[1], 10));
+              this.birthDay = String(parseInt(parts[2], 10));
+            }
+          }
+
+          this.sex = originalStudent.sex || "male";
+          this.classId = String(originalStudent.class_id || "");
+          this.studentNumber = originalStudent.student_number || "";
+          this.email = originalStudent.email || "";
+          this.phone = originalStudent.phone_number || originalStudent.phone || "";
+          this.address = originalStudent.address || "";
+          this.registrationStatus = originalStudent.status || "active";
+
+          // Discount details
+          if (originalStudent.discount_template_id) {
+            this.selectedDiscountTemplateId = String(originalStudent.discount_template_id);
+            this.discountType = "template";
+            this.applyDiscount = true;
+          } else if (originalStudent.custom_discount_amount) {
+            this.customDiscountAmount = Number(originalStudent.custom_discount_amount) || null;
+            this.discountType = "custom";
+            this.applyDiscount = true;
+          }
+
+          // Fetch student fees to check which optional fees are assigned
+          try {
+            const studentFees = await commands.finance.getStudentFees(this.orgId, this.studentId);
+            for (const fee of studentFees as any[]) {
+              const feeTemplateId = fee.fee_template_id as string;
+              if (feeTemplateId && this.selectedOptionalFees[feeTemplateId]) {
+                this.selectedOptionalFees[feeTemplateId].checked = true;
+                this.selectedOptionalFees[feeTemplateId].amount = Number(fee.amount) || 0;
+              }
+            }
+          } catch (feeErr) {
+            console.error("Failed to load student assigned fees:", feeErr);
+          }
+
+          // Fetch guardians
+          try {
+            const guardiansList = await commands.guardians.getByStudent(originalStudent.student_id);
+            const populatedGuardians = [];
+            for (const link of guardiansList) {
+              try {
+                const u = await commands.users.getUser(String(link.guardian_id));
+                if (u) {
+                  populatedGuardians.push({
+                    id: String(link.id),
+                    user_id: String(link.guardian_id),
+                    full_name: String(u.full_name || u.name_ar || ""),
+                    phone: String(u.phone || ""),
+                    email: String(u.email || ""),
+                    national_id: String(u.national_id || ""),
+                    relationship: String(link.relationship || ""),
+                    relationship_ar: String(link.relationship_ar || ""),
+                    is_primary: link.is_primary === 1,
+                    is_emergency_contact: link.is_emergency_contact === 1,
+                    is_payer: link.is_payer === 1,
+                    payment_share_percent: Number(link.payment_share_percent) || 0,
+                    occupation: String(link.occupation || ""),
+                  });
+                }
+              } catch (err) {
+                console.error("Failed to load guardian user details:", err);
+              }
+            }
+            if (populatedGuardians.length > 0) {
+              this.linkedGuardians = populatedGuardians;
+            }
+          } catch (guardErr) {
+            console.error("Failed to load student guardians:", guardErr);
+          }
+
+          // Fetch documents
+          try {
+            const studentDocs = await commands.documents.getAll({
+              orgId: this.orgId,
+              ownerId: originalStudent.student_id,
+            });
+            const submitted = [];
+            const requiredDocNames = this.orgRequiredDocuments.length > 0
+              ? this.orgRequiredDocuments
+              : ["birth_certificate", "national_id", "previous_record"];
+            for (const rDoc of requiredDocNames) {
+              const hasDoc = studentDocs.some((d: any) => {
+                const title = String(d.title || d.name || "").toLowerCase();
+                const rName = rDoc.toLowerCase();
+                return title === rName || title.includes(rName) || rName.includes(title);
+              });
+              if (hasDoc) {
+                submitted.push(rDoc);
+              }
+            }
+            this.submittedDocs = submitted;
+          } catch (docErr) {
+            console.error("Failed to load student documents:", docErr);
+          }
+        }
+      }
+    } catch (e: any) {
+      console.error("Failed to initialize student form state:", e);
+      toast.error("فشل تهيئة نموذج الطالب: " + (e.message || String(e)));
+    }
   }
 
   // Live duplicate check triggers
@@ -518,7 +712,7 @@ export class StudentFormState {
         toast.error(`القالب '${this.selectedTemplateId}' غير موجود في قاعدة البيانات`);
         return;
       }
-      const documentModel = JSON.parse(templateRecord.document_json);
+      const documentModel = JSON.parse(templateRecord.document_json as string);
 
       const printVariables = {
         orgName: this.orgName,

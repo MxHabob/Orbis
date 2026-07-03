@@ -98,7 +98,7 @@ const monthsList = $derived([
           />
           {#if state.duplicateWarnings.national_id}
             <span class="text-[10px] text-destructive font-semibold text-start">
-              ⚠️ {state.duplicateWarnings.national_id}
+              {state.duplicateWarnings.national_id}
             </span>
           {/if}
         </div>
@@ -259,7 +259,7 @@ const monthsList = $derived([
           />
           {#if state.duplicateWarnings.phone}
             <span class="text-[10px] text-destructive font-semibold text-start">
-              ⚠️ {state.duplicateWarnings.phone}
+              {state.duplicateWarnings.phone}
             </span>
           {/if}
         </div>
@@ -288,7 +288,7 @@ const monthsList = $derived([
           />
           {#if state.duplicateWarnings.email}
             <span class="text-[10px] text-destructive font-semibold text-start">
-              ⚠️ {state.duplicateWarnings.email}
+              {state.duplicateWarnings.email}
             </span>
           {/if}
         </div>

@@ -18,7 +18,7 @@ let { state }: { state: StudentFormState } = $props();
       <span class="text-xs font-semibold text-muted-foreground">{m.form_guardian_desc()}</span>
     </div>
     <Button type="button" variant="outline" size="sm" onclick={() => state.addGuardianField()} class="h-8 text-xs">
-      ➕ {m.form_guardian_add()}
+      {m.form_guardian_add()}
     </Button>
   </div>
 
@@ -36,7 +36,7 @@ let { state }: { state: StudentFormState } = $props();
             class="text-destructive hover:bg-destructive/10 h-7 px-2.5 text-xs font-semibold" 
             onclick={() => state.removeGuardianField(index)}
           >
-            🗑️ {m.form_guardian_remove()}
+            {m.form_guardian_remove()}
           </Button>
         {/if}
       </div>
