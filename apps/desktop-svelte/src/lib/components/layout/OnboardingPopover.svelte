@@ -74,47 +74,45 @@ const tasksList = $derived([
         {...props}
         variant="outline"
         size="icon"
-        class="w-full h-8 flex items-center justify-center hover:bg-accent hover:text-accent-foreground relative border-b border-border/50 cursor-pointer onboarding-popover-trigger"
+        class="w-full h-8 p-0 flex items-center justify-center hover:bg-accent hover:text-accent-foreground relative border-b border-border/50 cursor-pointer onboarding-popover-trigger"
       >
-        {#if remainingTasks === 0}
-          <!-- Solid Green Checkmark Badge -->
-          <div class="w-5 h-5 rounded-full bg-emerald-500 dark:bg-emerald-600 flex items-center justify-center text-white shadow-sm">
-            <Check class="w-3 h-3 stroke-[3.5px]" />
-          </div>
-        {:else}
-          <div class="relative w-6 h-6 flex items-center justify-center">
-            <!-- Progress Circular Ring SVG -->
-            <svg class="absolute inset-0 w-6 h-6 select-none" viewBox="0 0 24 24">
-              <!-- Background track -->
+        <div class="relative size-6 flex items-center justify-center">
+          <!-- Progress Circular Ring SVG -->
+          <svg class="absolute inset-0 size-6 select-none" viewBox="0 0 24 24" width="24" height="24">
+            <!-- Background track -->
+            <circle
+              cx="12"
+              cy="12"
+              r="9.5"
+              class="stroke-muted/40 fill-none"
+              stroke-width="2.5"
+            />
+            <!-- Progress highlight rotated around center -->
+            {#if progressPercent > 0}
               <circle
                 cx="12"
                 cy="12"
                 r="9.5"
-                class="stroke-muted/40 fill-none"
+                class="stroke-primary fill-none transition-all duration-300 origin-center -rotate-90"
                 stroke-width="2.5"
+                stroke-dasharray="59.7"
+                stroke-dashoffset={59.7 - (59.7 * progressPercent) / 100}
+                stroke-linecap="round"
               />
-              <!-- Progress highlight rotated around center -->
-              {#if progressPercent > 0}
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="9.5"
-                  class="stroke-primary fill-none transition-all duration-300 origin-center -rotate-90"
-                  stroke-width="2.5"
-                  stroke-dasharray="59.7"
-                  stroke-dashoffset={59.7 - (59.7 * progressPercent) / 100}
-                  stroke-linecap="round"
-                />
-              {/if}
-            </svg>
-            
+            {/if}
+          </svg>
+          
+          <!-- Inner status indicator -->
+          {#if remainingTasks === 0}
+            <Check class="size-3.5 text-primary stroke-[3px]" />
+          {:else}
             <span class="text-[9.5px] font-extrabold text-foreground leading-none">
               {remainingTasks}
             </span>
             <!-- Notification dot badge shifted outside the ring -->
             <span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary border border-background"></span>
-          </div>
-        {/if}
+          {/if}
+        </div>
       </Button>
     {/snippet}
   </PopoverTrigger>
