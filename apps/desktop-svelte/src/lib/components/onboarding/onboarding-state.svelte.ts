@@ -25,7 +25,10 @@ function detectTimezone(): string {
 
 function detectLocale(): string {
   try {
-    const lang = navigator.language || (navigator.languages && navigator.languages[0]) || "ar";
+    const lang =
+      navigator.language ||
+      (navigator.languages && navigator.languages[0]) ||
+      "ar";
     const cleanLang = lang.split("-")[0]?.toLowerCase();
     return cleanLang === "en" || cleanLang === "ar" ? cleanLang : "ar";
   } catch {

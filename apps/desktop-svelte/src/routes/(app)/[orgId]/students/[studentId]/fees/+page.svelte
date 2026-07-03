@@ -23,8 +23,12 @@ let fees = $state<any[]>([]);
 let payments = $state<any[]>([]);
 let isLoading = $state(true);
 
-let totalFees = $derived(fees.reduce((s, f) => s + Number(f.net_amount || 0), 0));
-let totalPaid = $derived(payments.reduce((s, p) => s + Number(p.amount || 0), 0));
+let totalFees = $derived(
+  fees.reduce((s, f) => s + Number(f.net_amount || 0), 0),
+);
+let totalPaid = $derived(
+  payments.reduce((s, p) => s + Number(p.amount || 0), 0),
+);
 let balanceDue = $derived(totalFees - totalPaid);
 
 onMount(() => loadFinance());
@@ -57,7 +61,7 @@ const feesSource = $derived(
       const discountAmount = Number(f.discount_amount || 0);
       const originalAmount = Number(f.original_amount || 0);
       const balance = Math.max(0, Number(f.net_amount || 0) - paidAmount);
-      
+
       let displayStatus = f.status || "unpaid";
       if (displayStatus === "partially_paid") {
         displayStatus = "partial";
@@ -72,33 +76,57 @@ const feesSource = $derived(
         balance: formatCurrency(balance),
         status: displayStatus,
       };
-    })
-  )
+    }),
+  ),
 );
 
-const feesCols = $derived(sfDef.columns({
-  idx: "#",
-  fee: m.fees_col_description(),
-  total: m.fees_col_amount(),
-  status: m.fees_col_date(),
-}));
+const feesCols = $derived(
+  sfDef.columns({
+    idx: "#",
+    fee: m.fees_col_description(),
+    total: m.fees_col_amount(),
+    status: m.fees_col_date(),
+  }),
+);
 
 const paymentsCols: OrbisColumnDef[] = [
-  { prop: "__idx", name: "#", size: 48, readonly: true, pin: "colPinStart", cellProperties: () => ({ class: "orbis-cell-index" }) },
-  { prop: "receipt", name: m.fees_col_receipt(), size: 120, readonly: true, pin: "colPinStart", cellProperties: () => ({ class: "orbis-cell-student" }) },
+  {
+    prop: "__idx",
+    name: "#",
+    size: 48,
+    readonly: true,
+    pin: "colPinStart",
+    cellProperties: () => ({ class: "orbis-cell-index" }),
+  },
+  {
+    prop: "receipt",
+    name: m.fees_col_receipt(),
+    size: 120,
+    readonly: true,
+    pin: "colPinStart",
+    cellProperties: () => ({ class: "orbis-cell-student" }),
+  },
   { prop: "method", name: m.fees_col_method(), size: 110, readonly: true },
   { prop: "date", name: m.fees_col_pay_date(), size: 110, readonly: true },
-  { prop: "amount", name: m.fees_col_paid_amount(), size: 110, readonly: true, cellProperties: () => ({ class: "orbis-cell-success orbis-cell-number" }) },
+  {
+    prop: "amount",
+    name: m.fees_col_paid_amount(),
+    size: 110,
+    readonly: true,
+    cellProperties: () => ({ class: "orbis-cell-success orbis-cell-number" }),
+  },
 ];
 
 const paymentsSource = $derived(
-  withIndex(payments.map((p) => ({
-    ...p,
-    receipt: `#${p.receipt_number || p.id?.slice(0, 8)}`,
-    method: p.method || m.fees_default_method(),
-    date: formatDate(p.created_at) || "—",
-    amount: formatCurrency(Number(p.amount || 0)),
-  }))),
+  withIndex(
+    payments.map((p) => ({
+      ...p,
+      receipt: `#${p.receipt_number || p.id?.slice(0, 8)}`,
+      method: p.method || m.fees_default_method(),
+      date: formatDate(p.created_at) || "—",
+      amount: formatCurrency(Number(p.amount || 0)),
+    })),
+  ),
 );
 
 const rtl = $derived(getLocale() === "ar");

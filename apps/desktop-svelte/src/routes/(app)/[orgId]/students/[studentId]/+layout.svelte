@@ -4,91 +4,83 @@ Streamlined layout for deep-dive student pages.
 Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
 -->
 <script lang="ts">
-  import { page } from "$app/state";
-  import { Button } from "@orbis/ui-svelte/button";
-  import {
-    Avatar,
-    AvatarFallback,
-    AvatarImage,
-  } from "@orbis/ui-svelte/avatar";
-  import { Skeleton } from "@orbis/ui-svelte/skeleton";
-  import { Badge } from "@orbis/ui-svelte/badge";
-  import MainViewport from "$lib/components/layout/MainViewport.svelte";
-  import DetailPageHeader from "$lib/components/layout/DetailPageHeader.svelte";
-  import SecondaryMenu from "$lib/components/layout/SecondaryMenu.svelte";
-  import {
-    GraduationCap,
-    Wallet,
-    UserCheck,
-    ShieldAlert,
-    PhoneCall,
-    Edit2,
-    Users,
-    Users2,
-    FileText,
-  } from "lucide-svelte";
-  import { studentsStore } from "$lib/stores";
-  import { onMount } from "svelte";
-  import type { Snippet } from "svelte";
-  import { toast } from "svelte-sonner";
-  import * as m from "$lib/paraglide/messages";
-  import { getLocale, localizeHref } from "$lib/paraglide/runtime";
+import { page } from "$app/state";
+import { Button } from "@orbis/ui-svelte/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@orbis/ui-svelte/avatar";
+import { Skeleton } from "@orbis/ui-svelte/skeleton";
+import { Badge } from "@orbis/ui-svelte/badge";
+import MainViewport from "$lib/components/layout/MainViewport.svelte";
+import DetailPageHeader from "$lib/components/layout/DetailPageHeader.svelte";
+import SecondaryMenu from "$lib/components/layout/SecondaryMenu.svelte";
+import {
+  GraduationCap,
+  Wallet,
+  UserCheck,
+  ShieldAlert,
+  PhoneCall,
+  Edit2,
+  Users,
+  Users2,
+  FileText,
+} from "lucide-svelte";
+import { studentsStore } from "$lib/stores";
+import { onMount } from "svelte";
+import type { Snippet } from "svelte";
+import { toast } from "svelte-sonner";
+import * as m from "$lib/paraglide/messages";
+import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 
-  let { children }: { children: Snippet } = $props();
+let { children }: { children: Snippet } = $props();
 
-  const orgId = $derived(page.params.orgId);
-  const studentId = $derived(page.params.studentId);
+const orgId = $derived(page.params.orgId);
+const studentId = $derived(page.params.studentId);
 
-  // Find active student in the store
-  const student = $derived(
-    studentsStore.list.find((s) => s.id === studentId),
-  );
-  const currentClass = $derived(
-    student
-      ? studentsStore.classes.find((c) => c.id === student.class_id)
-      : null,
-  );
+// Find active student in the store
+const student = $derived(studentsStore.list.find((s) => s.id === studentId));
+const currentClass = $derived(
+  student ? studentsStore.classes.find((c) => c.id === student.class_id) : null,
+);
 
-  onMount(async () => {
-    if (studentsStore.list.length === 0 && orgId) {
-      await studentsStore.load(orgId);
-    }
-  });
+onMount(async () => {
+  if (studentsStore.list.length === 0 && orgId) {
+    await studentsStore.load(orgId);
+  }
+});
 
-  const basePath = $derived(`/${orgId}/students/${studentId}`);
+const basePath = $derived(`/${orgId}/students/${studentId}`);
 
-  const menuItems = $derived([
-    {
-      path: "grades",
-      label: m.detail_tab_grades(),
-      icon: GraduationCap,
-    },
-    {
-      path: "fees",
-      label: m.detail_tab_fees(),
-      icon: Wallet,
-    },
-    {
-      path: "attendance",
-      label: m.detail_tab_attendance(),
-      icon: UserCheck,
-    },
-    {
-      path: "behavior",
-      label: m.detail_tab_behavior(),
-      icon: ShieldAlert,
-    },
-    {
-      path: "guardians",
-      label: m.guardians_tab(),
-      icon: Users2,
-    },
-    {
-      path: "documents",
-      label: m.detail_tab_documents(),
-      icon: FileText,
-    },
-  ]);
+const menuItems = $derived([
+  {
+    path: "grades",
+    label: m.detail_tab_grades(),
+    icon: GraduationCap,
+  },
+  {
+    path: "fees",
+    label: m.detail_tab_fees(),
+    icon: Wallet,
+  },
+  {
+    path: "attendance",
+    label: m.detail_tab_attendance(),
+    icon: UserCheck,
+  },
+  {
+    path: "behavior",
+    label: m.detail_tab_behavior(),
+    icon: ShieldAlert,
+  },
+  {
+    path: "guardians",
+    label: m.guardians_tab(),
+    icon: Users2,
+  },
+  {
+    path: "documents",
+    label: m.detail_tab_documents(),
+    icon: FileText,
+  },
+]);
 </script>
 
 <div

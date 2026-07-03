@@ -58,10 +58,10 @@ async function openStandaloneWindow() {
   if (!isDesktopApp()) return;
   try {
     const { commands } = await import("$lib/services/ipc");
-    
+
     // Close the current sidebar overlay
     uiStore.setAskOrbis(false);
-    
+
     // Create standalone window securely via Rust backend
     await commands.window.openAgent();
   } catch (e: any) {

@@ -4,69 +4,69 @@ Sessions tab for user detail — lists active devices/sessions.
 Extracted from the original monolith TabsContent "sessions".
 -->
 <script lang="ts">
-  import { page } from "$app/state";
-  import { onMount } from "svelte";
-  import { commands } from "$lib/services/ipc";
-  import type { UserSession } from "$lib/services/ipc";
-  import { Badge } from "@orbis/ui-svelte/badge";
-  import { Skeleton } from "@orbis/ui-svelte/skeleton";
-  import { Monitor, Smartphone } from "lucide-svelte";
-  import { fade } from "svelte/transition";
-  import { formatDate } from "$lib/i18n-utils";
-  import * as m from "$lib/paraglide/messages";
+import { page } from "$app/state";
+import { onMount } from "svelte";
+import { commands } from "$lib/services/ipc";
+import type { UserSession } from "$lib/services/ipc";
+import { Badge } from "@orbis/ui-svelte/badge";
+import { Skeleton } from "@orbis/ui-svelte/skeleton";
+import { Monitor, Smartphone } from "lucide-svelte";
+import { fade } from "svelte/transition";
+import { formatDate } from "$lib/i18n-utils";
+import * as m from "$lib/paraglide/messages";
 
-  const userId = $derived(page.params.userId);
+const userId = $derived(page.params.userId);
 
-  let activeSessions = $state<any[]>([]);
-  let isLoading = $state(true);
+let activeSessions = $state<any[]>([]);
+let isLoading = $state(true);
 
-  async function loadSessions() {
-    if (!userId) return;
-    isLoading = true;
-    try {
-      const rawSessions = await commands.users.getUserSessions(userId);
-      activeSessions = rawSessions.map((s: UserSession) => {
-        const isMobile =
-          s.device_type === "mobile" ||
-          (s.user_agent && /mobile|android|iphone|ipad/i.test(s.user_agent));
-        const icon = isMobile ? Smartphone : Monitor;
+async function loadSessions() {
+  if (!userId) return;
+  isLoading = true;
+  try {
+    const rawSessions = await commands.users.getUserSessions(userId);
+    activeSessions = rawSessions.map((s: UserSession) => {
+      const isMobile =
+        s.device_type === "mobile" ||
+        (s.user_agent && /mobile|android|iphone|ipad/i.test(s.user_agent));
+      const icon = isMobile ? Smartphone : Monitor;
 
-        let device = "Unknown Device";
-        if (s.device_name) {
-          device = s.device_name;
-          if (s.browser) device += ` (${s.browser})`;
-        } else if (s.os) {
-          device = s.os;
-          if (s.browser) device += ` (${s.browser})`;
-        }
+      let device = "Unknown Device";
+      if (s.device_name) {
+        device = s.device_name;
+        if (s.browser) device += ` (${s.browser})`;
+      } else if (s.os) {
+        device = s.os;
+        if (s.browser) device += ` (${s.browser})`;
+      }
 
-        const location = s.is_current
-          ? m.settings_user_session_current_device()
-          : m.settings_user_session_active_device();
-        const time = s.is_current
-          ? m.settings_user_session_active_now()
-          : s.last_active_at
-            ? formatDate(s.last_active_at)
-            : "";
+      const location = s.is_current
+        ? m.settings_user_session_current_device()
+        : m.settings_user_session_active_device();
+      const time = s.is_current
+        ? m.settings_user_session_active_now()
+        : s.last_active_at
+          ? formatDate(s.last_active_at)
+          : "";
 
-        return {
-          id: s.id,
-          device,
-          location,
-          ip: s.ip_address || "127.0.0.1",
-          active: s.is_current === 1,
-          icon,
-          time,
-        };
-      });
-    } catch (err) {
-      console.error("Failed to load user sessions:", err);
-    } finally {
-      isLoading = false;
-    }
+      return {
+        id: s.id,
+        device,
+        location,
+        ip: s.ip_address || "127.0.0.1",
+        active: s.is_current === 1,
+        icon,
+        time,
+      };
+    });
+  } catch (err) {
+    console.error("Failed to load user sessions:", err);
+  } finally {
+    isLoading = false;
   }
+}
 
-  onMount(loadSessions);
+onMount(loadSessions);
 </script>
 
 {#if isLoading}

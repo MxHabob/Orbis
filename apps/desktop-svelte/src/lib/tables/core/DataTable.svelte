@@ -1,146 +1,152 @@
 <script lang="ts">
-  /**
-   * DataTable — Universal table shell component
-   *
-   * Wraps OrbisGrid with a professional toolbar, search, empty states,
-   * and loading skeletons. Used system-wide for all data tables.
-   *
-   * @example
-   * ```svelte
-   * <DataTable
-   *   columns={studentColumns}
-   *   source={students}
-   *   loading={isLoading}
-   *   searchable
-   *   searchPlaceholder={m.search_students()}
-   *   onSearch={handleSearch}
-   *   emptyTitle={m.no_students()}
-   *   rtl={getLocale() === "ar"}
-   * />
-   * ```
-   */
-  import { OrbisGrid, type OrbisColumnDef, type CellEditEvent } from "@orbis/data-grid";
-  import { Input } from "@orbis/ui-svelte/input";
-  import { Button } from "@orbis/ui-svelte/button";
-  import { Skeleton } from "@orbis/ui-svelte/skeleton";
-  import { Search, Download, RefreshCcw, TableProperties } from "lucide-svelte";
-  import type { Snippet, Component } from "svelte";
+/**
+ * DataTable — Universal table shell component
+ *
+ * Wraps OrbisGrid with a professional toolbar, search, empty states,
+ * and loading skeletons. Used system-wide for all data tables.
+ *
+ * @example
+ * ```svelte
+ * <DataTable
+ *   columns={studentColumns}
+ *   source={students}
+ *   loading={isLoading}
+ *   searchable
+ *   searchPlaceholder={m.search_students()}
+ *   onSearch={handleSearch}
+ *   emptyTitle={m.no_students()}
+ *   rtl={getLocale() === "ar"}
+ * />
+ * ```
+ */
+import {
+  OrbisGrid,
+  type OrbisColumnDef,
+  type CellEditEvent,
+} from "@orbis/data-grid";
+import { Input } from "@orbis/ui-svelte/input";
+import { Button } from "@orbis/ui-svelte/button";
+import { Skeleton } from "@orbis/ui-svelte/skeleton";
+import { Search, Download, RefreshCcw, TableProperties } from "lucide-svelte";
+import type { Snippet, Component } from "svelte";
 
-  // ── Props ──────────────────────────────────────────────────────────────
+// ── Props ──────────────────────────────────────────────────────────────
 
-  interface Props {
-    /** Column definitions for the grid */
-    columns: OrbisColumnDef[];
-    /** Data source array */
-    source: Record<string, unknown>[];
+interface Props {
+  /** Column definitions for the grid */
+  columns: OrbisColumnDef[];
+  /** Data source array */
+  source: Record<string, unknown>[];
 
-    /** Loading state — shows skeleton */
-    loading?: boolean;
+  /** Loading state — shows skeleton */
+  loading?: boolean;
 
-    /** Enable search bar */
-    searchable?: boolean;
-    /** Search input placeholder */
-    searchPlaceholder?: string;
-    /** Search callback — filters are handled by the parent */
-    onSearch?: (query: string) => void;
-    /** Current search value (for controlled mode) */
-    searchValue?: string;
+  /** Enable search bar */
+  searchable?: boolean;
+  /** Search input placeholder */
+  searchPlaceholder?: string;
+  /** Search callback — filters are handled by the parent */
+  onSearch?: (query: string) => void;
+  /** Current search value (for controlled mode) */
+  searchValue?: string;
 
-    /** Empty state configuration */
-    emptyIcon?: any;
-    emptyTitle?: string;
-    emptyDescription?: string;
+  /** Empty state configuration */
+  emptyIcon?: any;
+  emptyTitle?: string;
+  emptyDescription?: string;
 
-    /** Grid options */
-    readonly?: boolean;
-    rtl?: boolean;
-    height?: string;
-    rowSize?: number;
-    theme?: "compact" | "default";
-    range?: boolean;
-    clipboard?: boolean;
-    autoSize?: boolean;
+  /** Grid options */
+  readonly?: boolean;
+  rtl?: boolean;
+  height?: string;
+  rowSize?: number;
+  theme?: "compact" | "default";
+  range?: boolean;
+  clipboard?: boolean;
+  autoSize?: boolean;
 
-    /** Cell edit callback */
-    oncelledit?: (event: CellEditEvent) => void;
-    /** Before edit callback (return false to prevent) */
-    onbeforeedit?: (event: CellEditEvent) => boolean | void;
+  /** Cell edit callback */
+  oncelledit?: (event: CellEditEvent) => void;
+  /** Before edit callback (return false to prevent) */
+  onbeforeedit?: (event: CellEditEvent) => boolean | void;
 
-    /** Toolbar customization */
-    actions?: Snippet;
-    exportable?: boolean;
-    onExport?: () => void;
-    refreshable?: boolean;
-    onRefresh?: () => void;
+  /** Toolbar customization */
+  actions?: Snippet;
+  exportable?: boolean;
+  onExport?: () => void;
+  refreshable?: boolean;
+  onRefresh?: () => void;
 
-    /** Title displayed above the grid */
-    title?: string;
-    /** Subtitle / description */
-    subtitle?: string;
+  /** Title displayed above the grid */
+  title?: string;
+  /** Subtitle / description */
+  subtitle?: string;
 
-    /** Number of rows for skeleton loading */
-    skeletonRows?: number;
+  /** Number of rows for skeleton loading */
+  skeletonRows?: number;
+}
+
+let {
+  columns,
+  source,
+  loading = false,
+  searchable = false,
+  searchPlaceholder = "Search...",
+  onSearch,
+  searchValue = $bindable(""),
+  emptyIcon,
+  emptyTitle = "No data",
+  emptyDescription = "",
+  readonly = true,
+  rtl = false,
+  height = "100%",
+  rowSize = 42,
+  theme = "compact",
+  range = false,
+  clipboard = false,
+  autoSize = false,
+  oncelledit,
+  onbeforeedit,
+  actions,
+  exportable = false,
+  onExport,
+  refreshable = false,
+  onRefresh,
+  title,
+  subtitle,
+  skeletonRows = 8,
+}: Props = $props();
+
+// ── Internal State ────────────────────────────────────────────────────
+
+let localSearch = $state("");
+
+// ── Derived ───────────────────────────────────────────────────────────
+
+let hasData = $derived(source.length > 0);
+let showGrid = $derived(!loading && hasData);
+let showEmpty = $derived(!loading && !hasData);
+let showToolbar = $derived(
+  searchable || exportable || refreshable || !!actions,
+);
+let effectiveSearch = $derived(searchValue || localSearch);
+
+// ── Handlers ──────────────────────────────────────────────────────────
+
+function handleSearchInput(e: Event) {
+  const value = (e.target as HTMLInputElement).value;
+  localSearch = value;
+  searchValue = value;
+  onSearch?.(value);
+}
+
+function handleSearchKeydown(e: KeyboardEvent) {
+  if (e.key === "Escape") {
+    localSearch = "";
+    searchValue = "";
+    onSearch?.("");
   }
-
-  let {
-    columns,
-    source,
-    loading = false,
-    searchable = false,
-    searchPlaceholder = "Search...",
-    onSearch,
-    searchValue = $bindable(""),
-    emptyIcon,
-    emptyTitle = "No data",
-    emptyDescription = "",
-    readonly = true,
-    rtl = false,
-    height = "100%",
-    rowSize = 42,
-    theme = "compact",
-    range = false,
-    clipboard = false,
-    autoSize = false,
-    oncelledit,
-    onbeforeedit,
-    actions,
-    exportable = false,
-    onExport,
-    refreshable = false,
-    onRefresh,
-    title,
-    subtitle,
-    skeletonRows = 8,
-  }: Props = $props();
-
-  // ── Internal State ────────────────────────────────────────────────────
-
-  let localSearch = $state("");
-
-  // ── Derived ───────────────────────────────────────────────────────────
-
-  let hasData = $derived(source.length > 0);
-  let showGrid = $derived(!loading && hasData);
-  let showEmpty = $derived(!loading && !hasData);
-  let showToolbar = $derived(searchable || exportable || refreshable || !!actions);
-  let effectiveSearch = $derived(searchValue || localSearch);
-
-  // ── Handlers ──────────────────────────────────────────────────────────
-
-  function handleSearchInput(e: Event) {
-    const value = (e.target as HTMLInputElement).value;
-    localSearch = value;
-    searchValue = value;
-    onSearch?.(value);
-  }
-
-  function handleSearchKeydown(e: KeyboardEvent) {
-    if (e.key === "Escape") {
-      localSearch = "";
-      searchValue = "";
-      onSearch?.("");
-    }
-  }
+}
 </script>
 
 <div

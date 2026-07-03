@@ -4,81 +4,81 @@ Roles tab for user detail — checklist of available roles with search and bulk 
 Extracted from the original monolith TabsContent "roles".
 -->
 <script lang="ts">
-  import { page } from "$app/state";
-  import { onMount } from "svelte";
-  import { commands } from "$lib/services/ipc";
-  import { Button } from "@orbis/ui-svelte/button";
-  import { Input } from "@orbis/ui-svelte/input";
-  import { Checkbox } from "@orbis/ui-svelte/checkbox";
-  import { Skeleton } from "@orbis/ui-svelte/skeleton";
-  import { toast } from "svelte-sonner";
-  import { fade } from "svelte/transition";
-  import * as m from "$lib/paraglide/messages";
-  import SearchField from "$lib/components/shared/search-field.svelte";
+import { page } from "$app/state";
+import { onMount } from "svelte";
+import { commands } from "$lib/services/ipc";
+import { Button } from "@orbis/ui-svelte/button";
+import { Input } from "@orbis/ui-svelte/input";
+import { Checkbox } from "@orbis/ui-svelte/checkbox";
+import { Skeleton } from "@orbis/ui-svelte/skeleton";
+import { toast } from "svelte-sonner";
+import { fade } from "svelte/transition";
+import * as m from "$lib/paraglide/messages";
+import SearchField from "$lib/components/shared/search-field.svelte";
 
-  const userId = $derived(page.params.userId);
+const userId = $derived(page.params.userId);
 
-  let isLoading = $state(true);
-  let isSaving = $state(false);
-  let checkedRoles = $state<string[]>([]);
-  let allAvailableRoles = $state<string[]>([]);
-  let roleSearchQuery = $state("");
+let isLoading = $state(true);
+let isSaving = $state(false);
+let checkedRoles = $state<string[]>([]);
+let allAvailableRoles = $state<string[]>([]);
+let roleSearchQuery = $state("");
 
-  let filteredRoles = $derived(
-    allAvailableRoles.filter((r) =>
-      r.toLowerCase().includes(roleSearchQuery.toLowerCase()),
-    ),
-  );
+let filteredRoles = $derived(
+  allAvailableRoles.filter((r) =>
+    r.toLowerCase().includes(roleSearchQuery.toLowerCase()),
+  ),
+);
 
-  async function loadRoles() {
-    if (!userId) return;
-    isLoading = true;
-    try {
-      const [userRoles, availableRoles] = await Promise.all([
-        commands.users.getUserRoles(userId),
-        commands.permissions.getAvailableRoles(),
-      ]);
-      checkedRoles = userRoles;
-      allAvailableRoles = availableRoles;
-    } catch (e) {
-      console.error("Failed to load roles:", e);
-    } finally {
-      isLoading = false;
+async function loadRoles() {
+  if (!userId) return;
+  isLoading = true;
+  try {
+    const [userRoles, availableRoles] = await Promise.all([
+      commands.users.getUserRoles(userId),
+      commands.permissions.getAvailableRoles(),
+    ]);
+    checkedRoles = userRoles;
+    allAvailableRoles = availableRoles;
+  } catch (e) {
+    console.error("Failed to load roles:", e);
+  } finally {
+    isLoading = false;
+  }
+}
+
+onMount(loadRoles);
+
+function selectAllRoles() {
+  checkedRoles = [...allAvailableRoles];
+}
+
+function unselectAllRoles() {
+  checkedRoles = [];
+}
+
+function toggleRole(roleName: string, isChecked: boolean) {
+  if (isChecked) {
+    if (!checkedRoles.includes(roleName)) {
+      checkedRoles = [...checkedRoles, roleName];
     }
+  } else {
+    checkedRoles = checkedRoles.filter((r) => r !== roleName);
   }
+}
 
-  onMount(loadRoles);
-
-  function selectAllRoles() {
-    checkedRoles = [...allAvailableRoles];
+async function saveRoles() {
+  if (!userId) return;
+  isSaving = true;
+  try {
+    await commands.users.saveUserRoles(userId, checkedRoles);
+    toast.success(m.settings_user_detail_saved());
+  } catch (e: unknown) {
+    toast.error((e as any)?.message || "Save failed");
+  } finally {
+    isSaving = false;
   }
-
-  function unselectAllRoles() {
-    checkedRoles = [];
-  }
-
-  function toggleRole(roleName: string, isChecked: boolean) {
-    if (isChecked) {
-      if (!checkedRoles.includes(roleName)) {
-        checkedRoles = [...checkedRoles, roleName];
-      }
-    } else {
-      checkedRoles = checkedRoles.filter((r) => r !== roleName);
-    }
-  }
-
-  async function saveRoles() {
-    if (!userId) return;
-    isSaving = true;
-    try {
-      await commands.users.saveUserRoles(userId, checkedRoles);
-      toast.success(m.settings_user_detail_saved());
-    } catch (e: unknown) {
-      toast.error((e as any)?.message || "Save failed");
-    } finally {
-      isSaving = false;
-    }
-  }
+}
 </script>
 
 {#if isLoading}

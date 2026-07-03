@@ -66,7 +66,16 @@ function status(prop: string, name: string, size = 100): OrbisColumnDef {
       const v = String(row[prop] || "").toLowerCase();
       if (["active", "present", "paid", "approved", "open"].includes(v))
         return { class: "orbis-cell-success" };
-      if (["inactive", "absent", "overdue", "failed", "closed", "locked"].includes(v))
+      if (
+        [
+          "inactive",
+          "absent",
+          "overdue",
+          "failed",
+          "closed",
+          "locked",
+        ].includes(v)
+      )
         return { class: "orbis-cell-error" };
       if (["pending", "late", "partial"].includes(v))
         return { class: "orbis-cell-warning" };
@@ -113,15 +122,17 @@ export function withIndex<T extends Record<string, unknown>>(
 // ═══════════════════════════════════════════════════════════════════════════
 
 export const users = {
-  columns: (labels: {
-    idx?: string;
-    name?: string;
-    email?: string;
-    phone?: string;
-    role?: string;
-    status?: string;
-    lastLogin?: string;
-  } = {}): OrbisColumnDef[] => [
+  columns: (
+    labels: {
+      idx?: string;
+      name?: string;
+      email?: string;
+      phone?: string;
+      role?: string;
+      status?: string;
+      lastLogin?: string;
+    } = {},
+  ): OrbisColumnDef[] => [
     idx(labels.idx),
     nameCol("full_name", labels.name || "Name"),
     text("email", labels.email || "Email", 200),
@@ -133,15 +144,17 @@ export const users = {
 };
 
 export const rooms = {
-  columns: (labels: {
-    idx?: string;
-    name?: string;
-    building?: string;
-    floor?: string;
-    capacity?: string;
-    type?: string;
-    status?: string;
-  } = {}): OrbisColumnDef[] => [
+  columns: (
+    labels: {
+      idx?: string;
+      name?: string;
+      building?: string;
+      floor?: string;
+      capacity?: string;
+      type?: string;
+      status?: string;
+    } = {},
+  ): OrbisColumnDef[] => [
     idx(labels.idx),
     nameCol("name", labels.name || "Room", 160),
     text("building", labels.building || "Building", 120),
@@ -153,14 +166,16 @@ export const rooms = {
 };
 
 export const units = {
-  columns: (labels: {
-    idx?: string;
-    name?: string;
-    type?: string;
-    parent?: string;
-    head?: string;
-    status?: string;
-  } = {}): OrbisColumnDef[] => [
+  columns: (
+    labels: {
+      idx?: string;
+      name?: string;
+      type?: string;
+      parent?: string;
+      head?: string;
+      status?: string;
+    } = {},
+  ): OrbisColumnDef[] => [
     idx(labels.idx),
     nameCol("name", labels.name || "Unit", 180),
     text("unit_type", labels.type || "Type", 110),
@@ -171,14 +186,16 @@ export const units = {
 };
 
 export const currencies = {
-  columns: (labels: {
-    idx?: string;
-    code?: string;
-    name?: string;
-    symbol?: string;
-    rate?: string;
-    isBase?: string;
-  } = {}): OrbisColumnDef[] => [
+  columns: (
+    labels: {
+      idx?: string;
+      code?: string;
+      name?: string;
+      symbol?: string;
+      rate?: string;
+      isBase?: string;
+    } = {},
+  ): OrbisColumnDef[] => [
     idx(labels.idx),
     nameCol("code", labels.code || "Code", 80),
     text("name", labels.name || "Currency", 160),
@@ -189,13 +206,15 @@ export const currencies = {
 };
 
 export const permissions = {
-  columns: (labels: {
-    idx?: string;
-    user?: string;
-    role?: string;
-    module?: string;
-    access?: string;
-  } = {}): OrbisColumnDef[] => [
+  columns: (
+    labels: {
+      idx?: string;
+      user?: string;
+      role?: string;
+      module?: string;
+      access?: string;
+    } = {},
+  ): OrbisColumnDef[] => [
     idx(labels.idx),
     nameCol("user_name", labels.user || "User", 180),
     text("role", labels.role || "Role", 120),
@@ -205,14 +224,16 @@ export const permissions = {
 };
 
 export const feeTemplates = {
-  columns: (labels: {
-    idx?: string;
-    name?: string;
-    amount?: string;
-    frequency?: string;
-    status?: string;
-    classes?: string;
-  } = {}): OrbisColumnDef[] => [
+  columns: (
+    labels: {
+      idx?: string;
+      name?: string;
+      amount?: string;
+      frequency?: string;
+      status?: string;
+      classes?: string;
+    } = {},
+  ): OrbisColumnDef[] => [
     idx(labels.idx),
     nameCol("name", labels.name || "Template", 200),
     num("amount", labels.amount || "Amount", 110),
@@ -223,13 +244,15 @@ export const feeTemplates = {
 };
 
 export const discountTemplates = {
-  columns: (labels: {
-    idx?: string;
-    name?: string;
-    type?: string;
-    value?: string;
-    status?: string;
-  } = {}): OrbisColumnDef[] => [
+  columns: (
+    labels: {
+      idx?: string;
+      name?: string;
+      type?: string;
+      value?: string;
+      status?: string;
+    } = {},
+  ): OrbisColumnDef[] => [
     idx(labels.idx),
     nameCol("name", labels.name || "Template", 200),
     text("discount_type", labels.type || "Type", 100),
@@ -239,15 +262,17 @@ export const discountTemplates = {
 };
 
 export const auditLogs = {
-  columns: (labels: {
-    idx?: string;
-    user?: string;
-    action?: string;
-    entity?: string;
-    details?: string;
-    timestamp?: string;
-    ip?: string;
-  } = {}): OrbisColumnDef[] => [
+  columns: (
+    labels: {
+      idx?: string;
+      user?: string;
+      action?: string;
+      entity?: string;
+      details?: string;
+      timestamp?: string;
+      ip?: string;
+    } = {},
+  ): OrbisColumnDef[] => [
     idx(labels.idx),
     date("created_at", labels.timestamp || "Time", 150),
     nameCol("user_name", labels.user || "User", 150),
@@ -263,15 +288,17 @@ export const auditLogs = {
 // ═══════════════════════════════════════════════════════════════════════════
 
 export const payments = {
-  columns: (labels: {
-    idx?: string;
-    student?: string;
-    amount?: string;
-    method?: string;
-    status?: string;
-    date?: string;
-    receipt?: string;
-  } = {}): OrbisColumnDef[] => [
+  columns: (
+    labels: {
+      idx?: string;
+      student?: string;
+      amount?: string;
+      method?: string;
+      status?: string;
+      date?: string;
+      receipt?: string;
+    } = {},
+  ): OrbisColumnDef[] => [
     idx(labels.idx),
     date("created_at", labels.date || "Date", 110),
     nameCol("student_name", labels.student || "Student", 180),
@@ -283,15 +310,17 @@ export const payments = {
 };
 
 export const fees = {
-  columns: (labels: {
-    idx?: string;
-    student?: string;
-    template?: string;
-    total?: string;
-    paid?: string;
-    balance?: string;
-    status?: string;
-  } = {}): OrbisColumnDef[] => [
+  columns: (
+    labels: {
+      idx?: string;
+      student?: string;
+      template?: string;
+      total?: string;
+      paid?: string;
+      balance?: string;
+      status?: string;
+    } = {},
+  ): OrbisColumnDef[] => [
     idx(labels.idx),
     nameCol("student_name", labels.student || "Student", 180),
     text("template_name", labels.template || "Fee", 160),
@@ -320,15 +349,17 @@ export const fees = {
 };
 
 export const ledger = {
-  columns: (labels: {
-    idx?: string;
-    code?: string;
-    name?: string;
-    type?: string;
-    debit?: string;
-    credit?: string;
-    balance?: string;
-  } = {}): OrbisColumnDef[] => [
+  columns: (
+    labels: {
+      idx?: string;
+      code?: string;
+      name?: string;
+      type?: string;
+      debit?: string;
+      credit?: string;
+      balance?: string;
+    } = {},
+  ): OrbisColumnDef[] => [
     idx(labels.idx),
     text("code", labels.code || "Code", 80),
     nameCol("name", labels.name || "Account", 200),
@@ -340,15 +371,17 @@ export const ledger = {
 };
 
 export const journalEntries = {
-  columns: (labels: {
-    idx?: string;
-    date?: string;
-    ref?: string;
-    description?: string;
-    debit?: string;
-    credit?: string;
-    createdBy?: string;
-  } = {}): OrbisColumnDef[] => [
+  columns: (
+    labels: {
+      idx?: string;
+      date?: string;
+      ref?: string;
+      description?: string;
+      debit?: string;
+      credit?: string;
+      createdBy?: string;
+    } = {},
+  ): OrbisColumnDef[] => [
     idx(labels.idx),
     date("entry_date", labels.date || "Date", 110),
     text("reference", labels.ref || "Ref #", 100),
@@ -360,14 +393,16 @@ export const journalEntries = {
 };
 
 export const treasuries = {
-  columns: (labels: {
-    idx?: string;
-    name?: string;
-    type?: string;
-    balance?: string;
-    currency?: string;
-    status?: string;
-  } = {}): OrbisColumnDef[] => [
+  columns: (
+    labels: {
+      idx?: string;
+      name?: string;
+      type?: string;
+      balance?: string;
+      currency?: string;
+      status?: string;
+    } = {},
+  ): OrbisColumnDef[] => [
     idx(labels.idx),
     nameCol("name", labels.name || "Treasury", 200),
     text("treasury_type", labels.type || "Type", 110),
@@ -378,15 +413,17 @@ export const treasuries = {
 };
 
 export const accountStatement = {
-  columns: (labels: {
-    idx?: string;
-    date?: string;
-    description?: string;
-    debit?: string;
-    credit?: string;
-    balance?: string;
-    ref?: string;
-  } = {}): OrbisColumnDef[] => [
+  columns: (
+    labels: {
+      idx?: string;
+      date?: string;
+      description?: string;
+      debit?: string;
+      credit?: string;
+      balance?: string;
+      ref?: string;
+    } = {},
+  ): OrbisColumnDef[] => [
     idx(labels.idx),
     date("entry_date", labels.date || "Date", 110),
     text("description", labels.description || "Description", 250),
@@ -402,14 +439,16 @@ export const accountStatement = {
 // ═══════════════════════════════════════════════════════════════════════════
 
 export const classTeachers = {
-  columns: (labels: {
-    idx?: string;
-    teacher?: string;
-    subject?: string;
-    role?: string;
-    phone?: string;
-    email?: string;
-  } = {}): OrbisColumnDef[] => [
+  columns: (
+    labels: {
+      idx?: string;
+      teacher?: string;
+      subject?: string;
+      role?: string;
+      phone?: string;
+      email?: string;
+    } = {},
+  ): OrbisColumnDef[] => [
     idx(labels.idx),
     nameCol("teacher_name", labels.teacher || "Teacher", 180),
     text("subject_name", labels.subject || "Subject", 140),
@@ -420,14 +459,16 @@ export const classTeachers = {
 };
 
 export const examSessions = {
-  columns: (labels: {
-    idx?: string;
-    student?: string;
-    seatNo?: string;
-    secretNo?: string;
-    status?: string;
-    score?: string;
-  } = {}): OrbisColumnDef[] => [
+  columns: (
+    labels: {
+      idx?: string;
+      student?: string;
+      seatNo?: string;
+      secretNo?: string;
+      status?: string;
+      score?: string;
+    } = {},
+  ): OrbisColumnDef[] => [
     idx(labels.idx),
     nameCol("student_name", labels.student || "Student", 180),
     text("seat_number", labels.seatNo || "Seat #", 80),
@@ -442,15 +483,17 @@ export const examSessions = {
 // ═══════════════════════════════════════════════════════════════════════════
 
 export const studentGrades = {
-  columns: (labels: {
-    idx?: string;
-    subject?: string;
-    examType?: string;
-    score?: string;
-    maxScore?: string;
-    pct?: string;
-    grade?: string;
-  } = {}): OrbisColumnDef[] => [
+  columns: (
+    labels: {
+      idx?: string;
+      subject?: string;
+      examType?: string;
+      score?: string;
+      maxScore?: string;
+      pct?: string;
+      grade?: string;
+    } = {},
+  ): OrbisColumnDef[] => [
     idx(labels.idx),
     nameCol("subject_name", labels.subject || "Subject", 180),
     text("exam_type", labels.examType || "Exam Type", 120),
@@ -462,15 +505,17 @@ export const studentGrades = {
 };
 
 export const studentFees = {
-  columns: (labels: {
-    idx?: string;
-    fee?: string;
-    total?: string;
-    paid?: string;
-    discount?: string;
-    balance?: string;
-    status?: string;
-  } = {}): OrbisColumnDef[] => [
+  columns: (
+    labels: {
+      idx?: string;
+      fee?: string;
+      total?: string;
+      paid?: string;
+      discount?: string;
+      balance?: string;
+      status?: string;
+    } = {},
+  ): OrbisColumnDef[] => [
     idx(labels.idx),
     nameCol("fee_name", labels.fee || "Fee", 200),
     num("total", labels.total || "Total", 100),
@@ -482,14 +527,16 @@ export const studentFees = {
 };
 
 export const studentAttendance = {
-  columns: (labels: {
-    idx?: string;
-    date?: string;
-    status?: string;
-    subject?: string;
-    notes?: string;
-    recordedBy?: string;
-  } = {}): OrbisColumnDef[] => [
+  columns: (
+    labels: {
+      idx?: string;
+      date?: string;
+      status?: string;
+      subject?: string;
+      notes?: string;
+      recordedBy?: string;
+    } = {},
+  ): OrbisColumnDef[] => [
     idx(labels.idx),
     date("date", labels.date || "Date", 110),
     status("status", labels.status || "Status", 90),
@@ -500,14 +547,16 @@ export const studentAttendance = {
 };
 
 export const studentDocuments = {
-  columns: (labels: {
-    idx?: string;
-    title?: string;
-    type?: string;
-    size?: string;
-    uploadedAt?: string;
-    uploadedBy?: string;
-  } = {}): OrbisColumnDef[] => [
+  columns: (
+    labels: {
+      idx?: string;
+      title?: string;
+      type?: string;
+      size?: string;
+      uploadedAt?: string;
+      uploadedBy?: string;
+    } = {},
+  ): OrbisColumnDef[] => [
     idx(labels.idx),
     nameCol("title", labels.title || "Document", 220),
     text("document_type", labels.type || "Type", 110),
@@ -518,15 +567,17 @@ export const studentDocuments = {
 };
 
 export const studentBehavior = {
-  columns: (labels: {
-    idx?: string;
-    date?: string;
-    type?: string;
-    category?: string;
-    description?: string;
-    points?: string;
-    status?: string;
-  } = {}): OrbisColumnDef[] => [
+  columns: (
+    labels: {
+      idx?: string;
+      date?: string;
+      type?: string;
+      category?: string;
+      description?: string;
+      points?: string;
+      status?: string;
+    } = {},
+  ): OrbisColumnDef[] => [
     idx(labels.idx),
     date("created_at", labels.date || "Date", 110),
     text("record_type", labels.type || "Type", 90),
@@ -542,12 +593,9 @@ export const studentBehavior = {
 // ═══════════════════════════════════════════════════════════════════════════
 
 export const ordering = {
-  columns: (labels: {
-    idx?: string;
-    name?: string;
-    type?: string;
-    order?: string;
-  } = {}): OrbisColumnDef[] => [
+  columns: (
+    labels: { idx?: string; name?: string; type?: string; order?: string } = {},
+  ): OrbisColumnDef[] => [
     idx(labels.idx),
     nameCol("name", labels.name || "Item", 250),
     text("item_type", labels.type || "Type", 120),

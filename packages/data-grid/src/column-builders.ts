@@ -30,11 +30,9 @@ export function indexColumn(label = "#"): OrbisColumnDef {
 /**
  * Build a frozen student name column with RTL support
  */
-export function studentNameColumn(opts: {
-  label?: string;
-  locale?: string;
-  size?: number;
-} = {}): OrbisColumnDef {
+export function studentNameColumn(
+  opts: { label?: string; locale?: string; size?: number } = {},
+): OrbisColumnDef {
   const { label = "Student", locale = "en", size = 200 } = opts;
   return {
     prop: locale === "ar" ? "student_name_ar" : "student_name",
@@ -67,7 +65,7 @@ export function scoreColumn(opts: {
     editor: readonly ? undefined : "number",
     cellProperties: (row: Record<string, unknown>) => {
       const val = Number(row[prop]);
-      if (isNaN(val)) return {};
+      if (Number.isNaN(val)) return {};
       if (val < 0 || val > maxScore) return { class: "orbis-cell-error" };
       return {};
     },
@@ -141,7 +139,7 @@ export function percentageColumn(opts: {
     readonly: true,
     cellProperties: (row: Record<string, unknown>) => {
       const val = Number(row[prop]);
-      if (isNaN(val)) return {};
+      if (Number.isNaN(val)) return {};
       if (val >= 90) return { class: "orbis-cell-excellent" };
       if (val >= 70) return { class: "orbis-cell-good" };
       if (val >= 50) return { class: "orbis-cell-warning" };
@@ -179,7 +177,10 @@ export function flattenForGrid(
     for (const [key, val] of Object.entries(row)) {
       const fullKey = prefix ? `${prefix}.${key}` : key;
       if (val && typeof val === "object" && !Array.isArray(val)) {
-        const nested = flattenForGrid([val as Record<string, unknown>], fullKey);
+        const nested = flattenForGrid(
+          [val as Record<string, unknown>],
+          fullKey,
+        );
         Object.assign(flat, nested[0]);
       } else {
         flat[fullKey] = val;
@@ -209,12 +210,7 @@ export function buildAttendanceColumns(opts: {
     rate?: string;
   };
 }): OrbisColumnDef[] {
-  const {
-    days,
-    readonly = false,
-    locale = "en",
-    labels = {},
-  } = opts;
+  const { days, readonly = false, locale = "en", labels = {} } = opts;
 
   const cols: OrbisColumnDef[] = [
     indexColumn(labels.rowIndex || "#"),
@@ -234,9 +230,12 @@ export function buildAttendanceColumns(opts: {
       readonly,
       cellProperties: (row: Record<string, unknown>) => {
         const val = String(row[`day_${day}`] || "");
-        if (val === "P" || val === "present") return { class: "orbis-cell-success" };
-        if (val === "A" || val === "absent") return { class: "orbis-cell-error" };
-        if (val === "L" || val === "late") return { class: "orbis-cell-warning" };
+        if (val === "P" || val === "present")
+          return { class: "orbis-cell-success" };
+        if (val === "A" || val === "absent")
+          return { class: "orbis-cell-error" };
+        if (val === "L" || val === "late")
+          return { class: "orbis-cell-warning" };
         return {};
       },
     });
@@ -244,9 +243,17 @@ export function buildAttendanceColumns(opts: {
 
   // Summary columns
   cols.push(
-    textColumn({ prop: "__presentCount", name: labels.present || "✓", size: 50 }),
+    textColumn({
+      prop: "__presentCount",
+      name: labels.present || "✓",
+      size: 50,
+    }),
     textColumn({ prop: "__absentCount", name: labels.absent || "✗", size: 50 }),
-    percentageColumn({ prop: "__attendanceRate", name: labels.rate || "%", size: 60 }),
+    percentageColumn({
+      prop: "__attendanceRate",
+      name: labels.rate || "%",
+      size: 60,
+    }),
   );
 
   return cols;
@@ -281,11 +288,19 @@ export function buildStudentListColumns(opts: {
       locale,
       size: 200,
     }),
-    textColumn({ prop: "class_name", name: labels.class || "Class", size: 120 }),
+    textColumn({
+      prop: "class_name",
+      name: labels.class || "Class",
+      size: 120,
+    }),
     statusColumn({ prop: "status", name: labels.status || "Status", size: 90 }),
     textColumn({ prop: "phone", name: labels.phone || "Phone", size: 130 }),
     textColumn({ prop: "email", name: labels.email || "Email", size: 180 }),
-    textColumn({ prop: "guardian_name", name: labels.guardian || "Guardian", size: 150 }),
+    textColumn({
+      prop: "guardian_name",
+      name: labels.guardian || "Guardian",
+      size: 150,
+    }),
   ];
 }
 
@@ -350,6 +365,10 @@ export function buildFeesColumns(opts: {
         return { class: "orbis-cell-success" };
       },
     },
-    statusColumn({ prop: "payment_status", name: labels.status || "Status", size: 90 }),
+    statusColumn({
+      prop: "payment_status",
+      name: labels.status || "Status",
+      size: 90,
+    }),
   ];
 }

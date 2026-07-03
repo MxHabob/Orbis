@@ -4,24 +4,24 @@ Preferences tab for user detail — theme, language, and notification settings.
 Extracted from the original monolith TabsContent "settings".
 -->
 <script lang="ts">
-  import { Button } from "@orbis/ui-svelte/button";
-  import { Label } from "@orbis/ui-svelte/label";
-  import { Switch } from "@orbis/ui-svelte/switch";
-  import {
-    Select,
-    SelectTrigger,
-    SelectContent,
-    SelectItem,
-  } from "@orbis/ui-svelte/select";
-  import { toast } from "svelte-sonner";
-  import { fade } from "svelte/transition";
-  import { Layout, Globe } from "lucide-svelte";
-  import * as m from "$lib/paraglide/messages";
+import { Button } from "@orbis/ui-svelte/button";
+import { Label } from "@orbis/ui-svelte/label";
+import { Switch } from "@orbis/ui-svelte/switch";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui-svelte/select";
+import { toast } from "svelte-sonner";
+import { fade } from "svelte/transition";
+import { Layout, Globe } from "lucide-svelte";
+import * as m from "$lib/paraglide/messages";
 
-  let prefTheme = $state("dark");
-  let prefLanguage = $state("ar");
-  let notifyEmail = $state(true);
-  let notifyPush = $state(true);
+let prefTheme = $state("dark");
+let prefLanguage = $state("ar");
+let notifyEmail = $state(true);
+let notifyPush = $state(true);
 </script>
 
 <div in:fade={{ duration: 100 }} class="flex flex-col gap-6 text-start">

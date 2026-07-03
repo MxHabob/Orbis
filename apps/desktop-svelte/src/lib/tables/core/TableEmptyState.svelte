@@ -4,29 +4,29 @@
   Displays an icon, title, and optional description.
 -->
 <script lang="ts">
-  import { TableProperties } from "lucide-svelte";
-  import { Button } from "@orbis/ui-svelte/button";
-  import type { Component } from "svelte";
+import { TableProperties } from "lucide-svelte";
+import { Button } from "@orbis/ui-svelte/button";
+import type { Component } from "svelte";
 
-  interface Props {
-    /** Icon component to display */
-    icon?: Component;
-    /** Main title text */
-    title?: string;
-    /** Description / hint text */
-    description?: string;
-    /** Show a retry/action button */
-    actionLabel?: string;
-    onAction?: () => void;
-  }
+interface Props {
+  /** Icon component to display */
+  icon?: Component;
+  /** Main title text */
+  title?: string;
+  /** Description / hint text */
+  description?: string;
+  /** Show a retry/action button */
+  actionLabel?: string;
+  onAction?: () => void;
+}
 
-  let {
-    icon,
-    title = "No data available",
-    description = "",
-    actionLabel,
-    onAction,
-  }: Props = $props();
+let {
+  icon,
+  title = "No data available",
+  description = "",
+  actionLabel,
+  onAction,
+}: Props = $props();
 </script>
 
 <div class="flex flex-col items-center justify-center py-16 gap-4 text-muted-foreground select-none">

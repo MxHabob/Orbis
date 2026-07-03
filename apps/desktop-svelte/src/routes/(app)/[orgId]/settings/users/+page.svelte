@@ -58,7 +58,8 @@ const filteredUsers = $derived(
 
     const matchesRole =
       selectedRole === "all" ||
-      String(user.primary_role || user.role || "").toLowerCase() === selectedRole.toLowerCase();
+      String(user.primary_role || user.role || "").toLowerCase() ===
+        selectedRole.toLowerCase();
 
     return matchesSearch && matchesRole;
   }),

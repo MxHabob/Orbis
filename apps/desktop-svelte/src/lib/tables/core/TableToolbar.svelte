@@ -4,68 +4,68 @@
   Can be used standalone or is embedded inside DataTable.
 -->
 <script lang="ts">
-  import { Input } from "@orbis/ui-svelte/input";
-  import { Button } from "@orbis/ui-svelte/button";
-  import { Search, Download, RefreshCcw, X } from "lucide-svelte";
-  import type { Snippet } from "svelte";
+import { Input } from "@orbis/ui-svelte/input";
+import { Button } from "@orbis/ui-svelte/button";
+import { Search, Download, RefreshCcw, X } from "lucide-svelte";
+import type { Snippet } from "svelte";
 
-  interface Props {
-    /** Enable search input */
-    searchable?: boolean;
-    searchPlaceholder?: string;
-    searchValue?: string;
-    onSearch?: (query: string) => void;
+interface Props {
+  /** Enable search input */
+  searchable?: boolean;
+  searchPlaceholder?: string;
+  searchValue?: string;
+  onSearch?: (query: string) => void;
 
-    /** Enable export button */
-    exportable?: boolean;
-    onExport?: () => void;
+  /** Enable export button */
+  exportable?: boolean;
+  onExport?: () => void;
 
-    /** Enable refresh button */
-    refreshable?: boolean;
-    onRefresh?: () => void;
+  /** Enable refresh button */
+  refreshable?: boolean;
+  onRefresh?: () => void;
 
-    /** Row count to display */
-    rowCount?: number;
+  /** Row count to display */
+  rowCount?: number;
 
-    /** Custom actions slot (Svelte 5 snippet) */
-    actions?: Snippet;
+  /** Custom actions slot (Svelte 5 snippet) */
+  actions?: Snippet;
 
-    /** Custom filters slot */
-    filters?: Snippet;
+  /** Custom filters slot */
+  filters?: Snippet;
 
-    /** RTL direction */
-    rtl?: boolean;
-  }
+  /** RTL direction */
+  rtl?: boolean;
+}
 
-  let {
-    searchable = false,
-    searchPlaceholder = "Search...",
-    searchValue = $bindable(""),
-    onSearch,
-    exportable = false,
-    onExport,
-    refreshable = false,
-    onRefresh,
-    rowCount,
-    actions,
-    filters,
-    rtl = false,
-  }: Props = $props();
+let {
+  searchable = false,
+  searchPlaceholder = "Search...",
+  searchValue = $bindable(""),
+  onSearch,
+  exportable = false,
+  onExport,
+  refreshable = false,
+  onRefresh,
+  rowCount,
+  actions,
+  filters,
+  rtl = false,
+}: Props = $props();
 
-  function handleInput(e: Event) {
-    const value = (e.target as HTMLInputElement).value;
-    searchValue = value;
-    onSearch?.(value);
-  }
+function handleInput(e: Event) {
+  const value = (e.target as HTMLInputElement).value;
+  searchValue = value;
+  onSearch?.(value);
+}
 
-  function clearSearch() {
-    searchValue = "";
-    onSearch?.("");
-  }
+function clearSearch() {
+  searchValue = "";
+  onSearch?.("");
+}
 
-  function handleKeydown(e: KeyboardEvent) {
-    if (e.key === "Escape") clearSearch();
-  }
+function handleKeydown(e: KeyboardEvent) {
+  if (e.key === "Escape") clearSearch();
+}
 </script>
 
 <div

@@ -70,7 +70,7 @@ async function handleSubmit(e: SubmitEvent) {
   isSubmitting = true;
   try {
     const createdBy = authStore.userId || "unknown";
-    
+
     // 1. Send the primary create request to backend
     const request = {
       email: email.trim(),
@@ -100,7 +100,7 @@ async function handleSubmit(e: SubmitEvent) {
     }
 
     toast.success(m.settings_users_create_success());
-    
+
     // Navigate back to the users directory
     goto(localizeHref(`/${orgId}/settings/users`));
   } catch (e) {

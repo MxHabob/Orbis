@@ -3,15 +3,15 @@ import type { HTMLAttributes } from "svelte/elements";
 import { cn, type WithElementRef } from "../../../utils.js";
 
 let {
-	ref = $bindable(null),
-	class: className,
-	children,
-	size = "default",
-	interactive = false,
-	...restProps
+  ref = $bindable(null),
+  class: className,
+  children,
+  size = "default",
+  interactive = false,
+  ...restProps
 }: WithElementRef<HTMLAttributes<HTMLDivElement>> & {
-	size?: "default" | "sm";
-	interactive?: boolean;
+  size?: "default" | "sm";
+  interactive?: boolean;
 } = $props();
 </script>
 

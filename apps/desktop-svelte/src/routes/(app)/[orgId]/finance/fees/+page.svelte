@@ -15,12 +15,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
-import {
-  Plus,
-  Wallet,
-  CheckSquare,
-  HelpCircle,
-} from "lucide-svelte";
+import { Plus, Wallet, CheckSquare, HelpCircle } from "lucide-svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate } from "$lib/i18n-utils";
 import { fade } from "svelte/transition";
@@ -119,8 +114,14 @@ const gridSource = $derived(
       student_name: f.student_name || f.enrollment_id || "—",
       template_name: f.description || m.fees_default_description(),
       total_amount: formatCurrency(Number(f.amount || 0), f.currency || "YER"),
-      paid_amount: formatCurrency(Number(f.paid_amount || 0), f.currency || "YER"),
-      balance: formatCurrency(Math.max(0, Number(f.amount || 0) - Number(f.paid_amount || 0)), f.currency || "YER"),
+      paid_amount: formatCurrency(
+        Number(f.paid_amount || 0),
+        f.currency || "YER",
+      ),
+      balance: formatCurrency(
+        Math.max(0, Number(f.amount || 0) - Number(f.paid_amount || 0)),
+        f.currency || "YER",
+      ),
       payment_status: getStatusLabel(f.status || "unpaid"),
     })),
   ),

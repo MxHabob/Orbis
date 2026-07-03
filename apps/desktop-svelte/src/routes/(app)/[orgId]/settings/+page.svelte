@@ -107,7 +107,11 @@ async function handleSaveAvatar(e: Event) {
 }
 
 function handleRemoveOrganization() {
-  toast.error(getLocale() === "ar" ? "هذا الإجراء غير متاح في تطبيق سطح المكتب." : "This action is disabled in the desktop application.");
+  toast.error(
+    getLocale() === "ar"
+      ? "هذا الإجراء غير متاح في تطبيق سطح المكتب."
+      : "This action is disabled in the desktop application.",
+  );
 }
 
 $effect(() => {

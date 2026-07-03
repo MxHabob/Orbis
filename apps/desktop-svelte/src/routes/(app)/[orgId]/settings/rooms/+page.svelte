@@ -43,11 +43,13 @@ onMount(() => {
 const filteredRooms = $derived(
   rooms.filter((r) => {
     const q = searchQuery.toLowerCase();
-    return !q ||
+    return (
+      !q ||
       (r.name || "").toLowerCase().includes(q) ||
       (r.name_ar || "").toLowerCase().includes(q) ||
       (r.room_type || "").toLowerCase().includes(q) ||
-      (r.building || "").toLowerCase().includes(q);
+      (r.building || "").toLowerCase().includes(q)
+    );
   }),
 );
 

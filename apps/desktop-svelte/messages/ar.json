@@ -1444,7 +1444,6 @@
   "onboarding_admin_password": "كلمة المرور لتسجيل الدخول",
   "onboarding_admin_password_hint": "يجب ألا تقل عن 6 أحرف لأمان الحساب.",
 
-
   "audit_col_member": "العضو",
   "audit_col_ip": "عنوان IP",
   "audit_filter_time": "كل الأوقات",

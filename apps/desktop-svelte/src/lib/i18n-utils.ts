@@ -75,9 +75,13 @@ export function formatNumber(value: number | null | undefined): string {
 export function l<T>(arValue: T, enValue: T): T {
   const isArabic = getLocale() === "ar";
   if (isArabic) {
-    return arValue !== undefined && arValue !== null && (arValue as any) !== "" ? arValue : enValue;
+    return arValue !== undefined && arValue !== null && (arValue as any) !== ""
+      ? arValue
+      : enValue;
   } else {
-    return enValue !== undefined && enValue !== null && (enValue as any) !== "" ? enValue : arValue;
+    return enValue !== undefined && enValue !== null && (enValue as any) !== ""
+      ? enValue
+      : arValue;
   }
 }
 
@@ -87,4 +91,3 @@ export function l<T>(arValue: T, enValue: T): T {
 export function isAr(): boolean {
   return getLocale() === "ar";
 }
-

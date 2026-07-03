@@ -128,8 +128,7 @@ let gridColumns = $derived.by(() => {
 let stats = $derived.by(() => {
   if (!gridSource.length) return null;
   const percentages = gridSource.map((r) => Number(r.__percentageRaw) || 0);
-  const avg =
-    percentages.reduce((a, b) => a + b, 0) / percentages.length;
+  const avg = percentages.reduce((a, b) => a + b, 0) / percentages.length;
   const max = Math.max(...percentages);
   const min = Math.min(...percentages);
   const passCount = percentages.filter((p) => p >= 50).length;
@@ -154,12 +153,11 @@ let stats = $derived.by(() => {
 async function loadInitialData() {
   isLoading = true;
   try {
-    const [cycleList, classList, subjectList] =
-      await Promise.all([
-        commands.academics.getCycles(orgId),
-        commands.classes.getAll(orgId),
-        commands.subjects.getAll(orgId),
-      ]);
+    const [cycleList, classList, subjectList] = await Promise.all([
+      commands.academics.getCycles(orgId),
+      commands.classes.getAll(orgId),
+      commands.subjects.getAll(orgId),
+    ]);
 
     cycles = cycleList;
     classes = classList;
@@ -392,12 +390,21 @@ async function handleSaveAll() {
     const total = created + updated;
 
     if (failed > 0) {
-      toast.warning(m.control_save_partial({ success: String(total), failed: String(failed) }), {
-        description: ((result as any)?.errors || []).join("\n"),
-      });
+      toast.warning(
+        m.control_save_partial({
+          success: String(total),
+          failed: String(failed),
+        }),
+        {
+          description: ((result as any)?.errors || []).join("\n"),
+        },
+      );
     } else {
       toast.success(m.control_save_success({ total: String(total) }), {
-        description: m.control_save_detail({ created: String(created), updated: String(updated) }),
+        description: m.control_save_detail({
+          created: String(created),
+          updated: String(updated),
+        }),
       });
     }
 
@@ -411,7 +418,9 @@ async function handleSaveAll() {
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
-function getCycleStatusVariant(cycle: any): "destructive" | "lime" | "secondary" {
+function getCycleStatusVariant(
+  cycle: any,
+): "destructive" | "lime" | "secondary" {
   if (cycle.is_locked === 1) return "destructive";
   if (cycle.is_grade_entry_open === 1) return "lime";
   return "secondary";

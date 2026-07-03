@@ -117,7 +117,9 @@ const navItems = $derived([
   {
     href: `/${orgId}/templates`,
     icon: FileText,
-    label: m.settings_nav_templates ? m.settings_nav_templates() : "قوالب المستندات",
+    label: m.settings_nav_templates
+      ? m.settings_nav_templates()
+      : "قوالب المستندات",
     match: "prefix",
   },
   {

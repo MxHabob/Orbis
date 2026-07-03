@@ -4,61 +4,59 @@ Vertical sidebar navigation with support for groups, custom actions, active indi
 and collapsibility.
 -->
 <script lang="ts">
-  import { page } from "$app/state";
-  import { Button } from "@orbis/ui-svelte/button";
-  import { deLocalizeUrl, localizeHref, getLocale } from "$lib/paraglide/runtime";
-  import type { Snippet } from "svelte";
+import { page } from "$app/state";
+import { Button } from "@orbis/ui-svelte/button";
+import { deLocalizeUrl, localizeHref, getLocale } from "$lib/paraglide/runtime";
+import type { Snippet } from "svelte";
 
-  type NavItem = {
-    path?: string;
-    label: string;
-    icon?: any;
-    badge?: number | string | null;
-    onclick?: (e: MouseEvent) => void;
-    isActive?: boolean;
-  };
+type NavItem = {
+  path?: string;
+  label: string;
+  icon?: any;
+  badge?: number | string | null;
+  onclick?: (e: MouseEvent) => void;
+  isActive?: boolean;
+};
 
-  type NavGroup = {
-    title?: string;
-    items: NavItem[];
-  };
+type NavGroup = {
+  title?: string;
+  items: NavItem[];
+};
 
-  let {
-    items = [],
-    groups,
-    basePath = "",
-    title,
-    headerAction,
-  }: {
-    items?: NavItem[];
-    groups?: NavGroup[];
-    basePath?: string;
-    title?: string;
-    headerAction?: Snippet;
-  } = $props();
+let {
+  items = [],
+  groups,
+  basePath = "",
+  title,
+  headerAction,
+}: {
+  items?: NavItem[];
+  groups?: NavGroup[];
+  basePath?: string;
+  title?: string;
+  headerAction?: Snippet;
+} = $props();
 
-  function isActive(pathSegment: string): boolean {
-    if (!basePath) return false;
-    const unlocalizedPathname = deLocalizeUrl(page.url).pathname;
-    if (pathSegment === "") {
-      return unlocalizedPathname === basePath;
-    }
-    return (
-      unlocalizedPathname === `${basePath}/${pathSegment}` ||
-      unlocalizedPathname.startsWith(`${basePath}/${pathSegment}/`)
-    );
+function isActive(pathSegment: string): boolean {
+  if (!basePath) return false;
+  const unlocalizedPathname = deLocalizeUrl(page.url).pathname;
+  if (pathSegment === "") {
+    return unlocalizedPathname === basePath;
   }
-
-  function collapseSidebar(e: MouseEvent) {
-    const target = e.currentTarget as HTMLElement;
-    target.dispatchEvent(
-      new CustomEvent("collapsesidebar", { bubbles: true, composed: true }),
-    );
-  }
-
-  const resolvedGroups = $derived(
-    groups || [{ items }]
+  return (
+    unlocalizedPathname === `${basePath}/${pathSegment}` ||
+    unlocalizedPathname.startsWith(`${basePath}/${pathSegment}/`)
   );
+}
+
+function collapseSidebar(e: MouseEvent) {
+  const target = e.currentTarget as HTMLElement;
+  target.dispatchEvent(
+    new CustomEvent("collapsesidebar", { bubbles: true, composed: true }),
+  );
+}
+
+const resolvedGroups = $derived(groups || [{ items }]);
 </script>
 
 <div

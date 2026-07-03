@@ -3,44 +3,41 @@
  * Enterprise data grid for Orbis desktop — wraps RevoGrid with S.C.R.A.P.S. theming.
  */
 
-// Main component
-export { default as OrbisGrid } from "./OrbisGrid.svelte";
+// Generic column builders (for students, attendance, fees pages)
+export {
+  addRowIndices,
+  buildAttendanceColumns,
+  buildFeesColumns,
+  buildStudentListColumns,
+  flattenForGrid,
+  indexColumn,
+  percentageColumn,
+  scoreColumn,
+  statusColumn,
+  studentNameColumn,
+  textColumn,
+} from "./column-builders";
 
 // Editors
 export { NumberEditor } from "./editors/index";
-
-// Types
-export type {
-  OrbisColumnDef,
-  CellEditEvent,
-  CellValidation,
-  GradeMatrixStudent,
-  GradeCell,
-  GradeMatrixResponse,
-  OrbisGridProps,
-} from "./types";
-
 // Grade-specific helpers
 export {
-  scoreToGradeLetter,
-  scoreToGradeColor,
-  scoreToGradeClass,
   buildGradeColumns,
-  transformMatrixToSource,
   recalculateRowTotals,
+  scoreToGradeClass,
+  scoreToGradeColor,
+  scoreToGradeLetter,
+  transformMatrixToSource,
 } from "./grade-helpers";
-
-// Generic column builders (for students, attendance, fees pages)
-export {
-  indexColumn,
-  studentNameColumn,
-  scoreColumn,
-  textColumn,
-  statusColumn,
-  percentageColumn,
-  addRowIndices,
-  flattenForGrid,
-  buildAttendanceColumns,
-  buildStudentListColumns,
-  buildFeesColumns,
-} from "./column-builders";
+// Main component
+export { default as OrbisGrid } from "./OrbisGrid.svelte";
+// Types
+export type {
+  CellEditEvent,
+  CellValidation,
+  GradeCell,
+  GradeMatrixResponse,
+  GradeMatrixStudent,
+  OrbisColumnDef,
+  OrbisGridProps,
+} from "./types";

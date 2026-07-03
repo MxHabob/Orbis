@@ -47,7 +47,9 @@ async function loadData() {
       commands.users.getUsers(data.orgId),
     ]);
     auditLogs = logsList.sort(
-      (a, b) => new Date(b.created_at as string).getTime() - new Date(a.created_at as string).getTime(),
+      (a, b) =>
+        new Date(b.created_at as string).getTime() -
+        new Date(a.created_at as string).getTime(),
     );
     users = usersList;
   } catch (e) {
@@ -79,16 +81,23 @@ function getUserEmail(userId: string | null): string {
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
   return d.toLocaleDateString(isAr() ? "ar-EG" : "en-US", {
-    month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
 // ── Filtering ───────────────────────────────────────────────────────────
 
-const uniqueActions = $derived([...new Set(auditLogs.map((l) => l.action).filter(Boolean))]);
+const uniqueActions = $derived([
+  ...new Set(auditLogs.map((l) => l.action).filter(Boolean)),
+]);
 
 const filteredLogs = $derived(
-  auditLogs.filter((log) => actionFilter === "all" || log.action === actionFilter),
+  auditLogs.filter(
+    (log) => actionFilter === "all" || log.action === actionFilter,
+  ),
 );
 
 // ── Grid Source ─────────────────────────────────────────────────────────
@@ -100,7 +109,9 @@ const gridSource = $derived(
       user_name: getUserName(log.user_id),
       created_at: formatDate(log.created_at),
       ip_address: log.ip_address || "127.0.0.1",
-      details: log.entity_type ? `${log.entity_type} · ${log.entity_id?.slice(0, 8) || ""}` : "",
+      details: log.entity_type
+        ? `${log.entity_type} · ${log.entity_id?.slice(0, 8) || ""}`
+        : "",
     })),
   ),
 );

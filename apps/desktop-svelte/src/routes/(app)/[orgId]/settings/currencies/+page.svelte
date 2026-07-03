@@ -224,7 +224,9 @@ async function handleDeleteCurrency() {
   if (!currencyToDelete) return;
   try {
     await commands.finance.deleteCurrency(orgId, currencyToDelete.code);
-    toast.success(m.settings_currencies_deleted_success({ code: currencyToDelete.code }));
+    toast.success(
+      m.settings_currencies_deleted_success({ code: currencyToDelete.code }),
+    );
     currencyToDelete = null;
     await loadCurrencies();
   } catch (e) {

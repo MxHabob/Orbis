@@ -56,7 +56,7 @@ async function loadUser() {
   if (!userId) return;
   isLoading = true;
   try {
-    const fetched = await commands.users.getUser(userId) as any;
+    const fetched = (await commands.users.getUser(userId)) as any;
     user = fetched;
     fullName = fetched.full_name || "";
     email = fetched.email || "";

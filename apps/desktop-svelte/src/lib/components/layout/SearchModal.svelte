@@ -21,7 +21,7 @@ import {
   Calendar,
   Shield,
   ArrowRightLeft,
-  Wallet
+  Wallet,
 } from "lucide-svelte";
 
 let searchQuery = $state("");
@@ -54,7 +54,7 @@ async function loadSearchData() {
     const [studentsData, classesData, subjectsData] = await Promise.all([
       commands.enrollments.getAll(currentOrgId).catch(() => []),
       commands.classes.getAll(currentOrgId).catch(() => []),
-      commands.subjects.getAll(currentOrgId).catch(() => [])
+      commands.subjects.getAll(currentOrgId).catch(() => []),
     ]);
     students = studentsData;
     classes = classesData;
@@ -71,147 +71,183 @@ const shortcuts = $derived([
     title: m.students_create ? m.students_create() : "إضافة طالب جديد",
     icon: Plus,
     action: () => goto(`/${currentOrgId}/students`),
-    group: m.search_group_shortcuts ? m.search_group_shortcuts() : "Shortcuts"
+    group: m.search_group_shortcuts ? m.search_group_shortcuts() : "Shortcuts",
   },
   {
     id: "sc-view-templates",
-    title: m.settings_nav_templates ? m.settings_nav_templates() : "قوالب المستندات",
+    title: m.settings_nav_templates
+      ? m.settings_nav_templates()
+      : "قوالب المستندات",
     icon: FileText,
     action: () => goto(`/${currentOrgId}/templates`),
-    group: m.search_group_shortcuts ? m.search_group_shortcuts() : "Shortcuts"
+    group: m.search_group_shortcuts ? m.search_group_shortcuts() : "Shortcuts",
   },
   {
     id: "sc-view-reports",
-    title: m.reports_extract_report ? m.reports_extract_report() : "استخراج التقارير",
+    title: m.reports_extract_report
+      ? m.reports_extract_report()
+      : "استخراج التقارير",
     icon: BarChart3,
     action: () => goto(`/${currentOrgId}/reports`),
-    group: m.search_group_shortcuts ? m.search_group_shortcuts() : "Shortcuts"
+    group: m.search_group_shortcuts ? m.search_group_shortcuts() : "Shortcuts",
   },
   {
     id: "sc-view-settings",
     title: m.breadcrumb_settings ? m.breadcrumb_settings() : "الإعدادات العامة",
     icon: Settings,
     action: () => goto(`/${currentOrgId}/settings`),
-    group: m.search_group_shortcuts ? m.search_group_shortcuts() : "Shortcuts"
-  }
+    group: m.search_group_shortcuts ? m.search_group_shortcuts() : "Shortcuts",
+  },
 ]);
 
 // Map System Pages
 const systemPages = $derived([
   // Finance
   {
-    title: m.finance_layout_nav_fees ? m.finance_layout_nav_fees() : "Student Fees",
+    title: m.finance_layout_nav_fees
+      ? m.finance_layout_nav_fees()
+      : "Student Fees",
     path: `/${currentOrgId}/finance/fees`,
-    icon: FileText
+    icon: FileText,
   },
   {
-    title: m.finance_layout_nav_payments ? m.finance_layout_nav_payments() : "Receipts",
+    title: m.finance_layout_nav_payments
+      ? m.finance_layout_nav_payments()
+      : "Receipts",
     path: `/${currentOrgId}/finance/payments`,
-    icon: Wallet
+    icon: Wallet,
   },
   {
-    title: m.finance_layout_nav_treasuries ? m.finance_layout_nav_treasuries() : "Disbursals",
+    title: m.finance_layout_nav_treasuries
+      ? m.finance_layout_nav_treasuries()
+      : "Disbursals",
     path: `/${currentOrgId}/finance/treasuries`,
-    icon: Wallet
+    icon: Wallet,
   },
   {
-    title: m.finance_layout_nav_journal ? m.finance_layout_nav_journal() : "Journal Entries",
+    title: m.finance_layout_nav_journal
+      ? m.finance_layout_nav_journal()
+      : "Journal Entries",
     path: `/${currentOrgId}/finance/journal-entries`,
-    icon: FileText
+    icon: FileText,
   },
   {
-    title: m.finance_layout_nav_ledger ? m.finance_layout_nav_ledger() : "Ledger",
+    title: m.finance_layout_nav_ledger
+      ? m.finance_layout_nav_ledger()
+      : "Ledger",
     path: `/${currentOrgId}/finance/ledger`,
-    icon: FileText
+    icon: FileText,
   },
   {
-    title: m.finance_layout_nav_reports ? m.finance_layout_nav_reports() : "Financial Reports",
+    title: m.finance_layout_nav_reports
+      ? m.finance_layout_nav_reports()
+      : "Financial Reports",
     path: `/${currentOrgId}/finance/reports`,
-    icon: BarChart3
+    icon: BarChart3,
   },
   // Academics
   {
-    title: m.academics_layout_nav_classes ? m.academics_layout_nav_classes() : "Classes",
+    title: m.academics_layout_nav_classes
+      ? m.academics_layout_nav_classes()
+      : "Classes",
     path: `/${currentOrgId}/academics/classes`,
-    icon: GraduationCap
+    icon: GraduationCap,
   },
   {
-    title: m.academics_layout_nav_schedule ? m.academics_layout_nav_schedule() : "Schedule",
+    title: m.academics_layout_nav_schedule
+      ? m.academics_layout_nav_schedule()
+      : "Schedule",
     path: `/${currentOrgId}/academics/schedule`,
-    icon: Calendar
+    icon: Calendar,
   },
   {
     title: m.nav_exams ? m.nav_exams() : "Exams",
     path: `/${currentOrgId}/academics/exams`,
-    icon: FileText
+    icon: FileText,
   },
   {
-    title: m.academics_control_label ? m.academics_control_label() : "Control Board",
+    title: m.academics_control_label
+      ? m.academics_control_label()
+      : "Control Board",
     path: `/${currentOrgId}/academics/control`,
-    icon: Shield
+    icon: Shield,
   },
   // Settings
   {
-    title: m.settings_nav_notifications ? m.settings_nav_notifications() : "Notifications",
+    title: m.settings_nav_notifications
+      ? m.settings_nav_notifications()
+      : "Notifications",
     path: `/${currentOrgId}/settings/notifications`,
-    icon: Settings
+    icon: Settings,
   },
   {
     title: m.settings_nav_security ? m.settings_nav_security() : "Security",
     path: `/${currentOrgId}/settings/security`,
-    icon: Settings
+    icon: Settings,
   },
   {
     title: m.settings_nav_users ? m.settings_nav_users() : "Users & Staff",
     path: `/${currentOrgId}/settings/users`,
-    icon: Users
+    icon: Users,
   },
   {
-    title: m.settings_nav_permissions ? m.settings_nav_permissions() : "Permissions",
+    title: m.settings_nav_permissions
+      ? m.settings_nav_permissions()
+      : "Permissions",
     path: `/${currentOrgId}/settings/permissions`,
-    icon: Shield
+    icon: Shield,
   },
   {
     title: m.settings_nav_cycles ? m.settings_nav_cycles() : "Academic Cycles",
     path: `/${currentOrgId}/settings/cycles`,
-    icon: Calendar
+    icon: Calendar,
   },
   {
-    title: m.settings_nav_units ? m.settings_nav_units() : "Organizational Units",
+    title: m.settings_nav_units
+      ? m.settings_nav_units()
+      : "Organizational Units",
     path: `/${currentOrgId}/settings/units`,
-    icon: Settings
+    icon: Settings,
   },
   {
     title: m.settings_nav_rooms ? m.settings_nav_rooms() : "Rooms & Halls",
     path: `/${currentOrgId}/settings/rooms`,
-    icon: Settings
+    icon: Settings,
   },
   {
     title: m.settings_nav_subjects ? m.settings_nav_subjects() : "Subjects",
     path: `/${currentOrgId}/settings/subjects`,
-    icon: BookOpen
+    icon: BookOpen,
   },
   {
-    title: m.settings_nav_currencies ? m.settings_nav_currencies() : "Currencies",
+    title: m.settings_nav_currencies
+      ? m.settings_nav_currencies()
+      : "Currencies",
     path: `/${currentOrgId}/settings/currencies`,
-    icon: ArrowRightLeft
+    icon: ArrowRightLeft,
   },
   {
-    title: m.settings_nav_fee_templates ? m.settings_nav_fee_templates() : "Fee Templates",
+    title: m.settings_nav_fee_templates
+      ? m.settings_nav_fee_templates()
+      : "Fee Templates",
     path: `/${currentOrgId}/settings/fee-templates`,
-    icon: FileText
+    icon: FileText,
   },
   {
-    title: m.settings_nav_discount_templates ? m.settings_nav_discount_templates() : "Discount Templates",
+    title: m.settings_nav_discount_templates
+      ? m.settings_nav_discount_templates()
+      : "Discount Templates",
     path: `/${currentOrgId}/settings/discount-templates`,
-    icon: FileText
+    icon: FileText,
   },
   // User Account
   {
-    title: m.account_settings_title ? m.account_settings_title() : "Account Settings",
+    title: m.account_settings_title
+      ? m.account_settings_title()
+      : "Account Settings",
     path: `/${currentOrgId}/account`,
-    icon: Settings
-  }
+    icon: Settings,
+  },
 ]);
 
 // Filtered and Grouped Results
@@ -220,67 +256,86 @@ const filteredItems = $derived.by(() => {
   const list: any[] = [];
 
   // 1. Add matching shortcuts
-  const matchedShortcuts = shortcuts.filter(s =>
-    s.title.toLowerCase().includes(query)
+  const matchedShortcuts = shortcuts.filter((s) =>
+    s.title.toLowerCase().includes(query),
   );
   list.push(...matchedShortcuts);
 
   // 2. Add matching system pages
   if (query.length >= 1) {
-    const matchedPages = systemPages.filter(p =>
-      p.title.toLowerCase().includes(query)
-    ).map(p => ({
-      id: `page-${p.path}`,
-      title: p.title,
-      icon: p.icon,
-      action: () => goto(p.path),
-      group: m.search_group_system_pages ? m.search_group_system_pages() : "System Pages"
-    }));
+    const matchedPages = systemPages
+      .filter((p) => p.title.toLowerCase().includes(query))
+      .map((p) => ({
+        id: `page-${p.path}`,
+        title: p.title,
+        icon: p.icon,
+        action: () => goto(p.path),
+        group: m.search_group_system_pages
+          ? m.search_group_system_pages()
+          : "System Pages",
+      }));
     list.push(...matchedPages);
   }
 
   // 3. Add matching students
   if (query.length >= 1) {
-    const matchedStudents = students.filter(s =>
-      String(s.full_name || "").toLowerCase().includes(query) ||
-      String(s.student_number || "").toLowerCase().includes(query) ||
-      String(s.email || "").toLowerCase().includes(query)
-    ).map(s => ({
-      id: `student-${s.id}`,
-      title: s.full_name || s.name_ar || s.name_en || "Student",
-      subtitle: s.student_number || "",
-      icon: Users,
-      action: () => goto(`/${currentOrgId}/students/${s.id}/grades`),
-      group: m.search_group_students ? m.search_group_students() : "Students"
-    }));
+    const matchedStudents = students
+      .filter(
+        (s) =>
+          String(s.full_name || "")
+            .toLowerCase()
+            .includes(query) ||
+          String(s.student_number || "")
+            .toLowerCase()
+            .includes(query) ||
+          String(s.email || "")
+            .toLowerCase()
+            .includes(query),
+      )
+      .map((s) => ({
+        id: `student-${s.id}`,
+        title: s.full_name || s.name_ar || s.name_en || "Student",
+        subtitle: s.student_number || "",
+        icon: Users,
+        action: () => goto(`/${currentOrgId}/students/${s.id}/grades`),
+        group: m.search_group_students ? m.search_group_students() : "Students",
+      }));
     list.push(...matchedStudents.slice(0, 10)); // limit to 10
   }
 
   // 4. Add matching classes
   if (query.length >= 1) {
-    const matchedClasses = classes.filter(c =>
-      String(c.name || "").toLowerCase().includes(query)
-    ).map(c => ({
-      id: `class-${c.id}`,
-      title: c.name || "Class",
-      icon: GraduationCap,
-      action: () => goto(`/${currentOrgId}/academics/classes`),
-      group: m.search_group_classes ? m.search_group_classes() : "Classes"
-    }));
+    const matchedClasses = classes
+      .filter((c) =>
+        String(c.name || "")
+          .toLowerCase()
+          .includes(query),
+      )
+      .map((c) => ({
+        id: `class-${c.id}`,
+        title: c.name || "Class",
+        icon: GraduationCap,
+        action: () => goto(`/${currentOrgId}/academics/classes`),
+        group: m.search_group_classes ? m.search_group_classes() : "Classes",
+      }));
     list.push(...matchedClasses);
   }
 
   // 5. Add matching subjects
   if (query.length >= 1) {
-    const matchedSubjects = subjects.filter(s =>
-      String(s.name || "").toLowerCase().includes(query)
-    ).map(s => ({
-      id: `subject-${s.id}`,
-      title: s.name || "Subject",
-      icon: BookOpen,
-      action: () => goto(`/${currentOrgId}/settings/subjects`),
-      group: m.search_group_subjects ? m.search_group_subjects() : "Subjects"
-    }));
+    const matchedSubjects = subjects
+      .filter((s) =>
+        String(s.name || "")
+          .toLowerCase()
+          .includes(query),
+      )
+      .map((s) => ({
+        id: `subject-${s.id}`,
+        title: s.name || "Subject",
+        icon: BookOpen,
+        action: () => goto(`/${currentOrgId}/settings/subjects`),
+        group: m.search_group_subjects ? m.search_group_subjects() : "Subjects",
+      }));
     list.push(...matchedSubjects);
   }
 
@@ -322,7 +377,8 @@ function handleKeydown(e: KeyboardEvent) {
     selectedIndex = (selectedIndex + 1) % filteredItems.length;
   } else if (e.key === "ArrowUp") {
     e.preventDefault();
-    selectedIndex = (selectedIndex - 1 + filteredItems.length) % filteredItems.length;
+    selectedIndex =
+      (selectedIndex - 1 + filteredItems.length) % filteredItems.length;
   } else if (e.key === "Enter") {
     e.preventDefault();
     if (selectedItem) {

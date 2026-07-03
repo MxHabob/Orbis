@@ -7,9 +7,10 @@
 &[data-open]);
 @custom-variant data-closed (&[data-state="closed"],
 &[data-closed]);
-@custom-variant data-checked (&[data-state="checked"], &[data-checked]);
-@custom-variant data-unchecked (&[data-state="unchecked"], &[data-unchecked]);
-
+@custom-variant data-checked (&[data-state="checked"],
+&[data-checked]);
+@custom-variant data-unchecked (&[data-state="unchecked"],
+&[data-unchecked]);
 
 /* ============================================================
    @orbis/ui-svelte — S.C.R.A.P.S. Design System

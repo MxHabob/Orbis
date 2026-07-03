@@ -21,7 +21,7 @@ are persisted to localStorage.
 ```
 -->
 <script lang="ts">
-    import { Button } from "@orbis/ui-svelte";
+import { Button } from "@orbis/ui-svelte";
 import Resizer from "./Resizer.svelte";
 import SashLayer from "./SashLayer.svelte";
 import type { Snippet } from "svelte";

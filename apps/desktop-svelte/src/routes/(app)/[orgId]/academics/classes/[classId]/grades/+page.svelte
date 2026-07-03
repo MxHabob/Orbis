@@ -16,12 +16,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
-import {
-  Users,
-  ClipboardList,
-  Download,
-  RefreshCcw,
-} from "lucide-svelte";
+import { Users, ClipboardList, Download, RefreshCcw } from "lucide-svelte";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
@@ -130,8 +125,6 @@ async function loadAssessments() {
     }
 
     gradeEntries = initialEntries;
-
-
   } catch (e) {
     console.error("Error loading assessments:", e);
     assessments = [];
@@ -173,7 +166,7 @@ const gridColumns = $derived.by(() => {
       readonly: true,
       sortable: true,
       cellProperties: () => ({ class: "orbis-cell-student" }),
-    }
+    },
   ];
 
   for (const assessment of assessments) {
@@ -192,7 +185,7 @@ const gridColumns = $derived.by(() => {
         min: 0,
         max: Number(assessment.max_score),
         step: 0.5,
-      }
+      },
     });
   }
 
@@ -207,7 +200,8 @@ const gridColumns = $derived.by(() => {
       align: "center",
       cellProperties: (row: any) => {
         const total = Number(row.__total);
-        if (isNaN(total) || maxTotal <= 0) return { class: "orbis-cell-number text-muted-foreground font-bold" };
+        if (isNaN(total) || maxTotal <= 0)
+          return { class: "orbis-cell-number text-muted-foreground font-bold" };
         const percentage = Math.round((total / maxTotal) * 100);
         let colorClass = "text-muted-foreground";
         if (percentage >= 90) colorClass = "text-emerald-500 font-bold";
@@ -228,7 +222,8 @@ const gridSource = $derived.by(() => {
     const row: Record<string, any> = {
       __rowIndex: idx + 1,
       student_id: studentId,
-      student_name: student.full_name || student.name_ar || student.name || studentId,
+      student_name:
+        student.full_name || student.name_ar || student.name || studentId,
     };
 
     let total = 0;
@@ -255,7 +250,7 @@ async function handleCellEdit(event: any) {
 
   if (prop.startsWith("score_")) {
     const assessmentId = prop.replace("score_", "");
-    const assessment = assessments.find(a => String(a.id) === assessmentId);
+    const assessment = assessments.find((a) => String(a.id) === assessmentId);
     if (!assessment) return;
 
     let val = newValue;
@@ -280,8 +275,12 @@ async function handleCellEdit(event: any) {
 
     // Real-time autosave
     try {
-      const selectedSubject = subjects.find(s => String(s.id) === selectedSubjectId);
-      const semesterObj = semesters.find(s => String(s.id) === selectedSemesterId);
+      const selectedSubject = subjects.find(
+        (s) => String(s.id) === selectedSubjectId,
+      );
+      const semesterObj = semesters.find(
+        (s) => String(s.id) === selectedSemesterId,
+      );
 
       const request = {
         enrollment_id: student.id,

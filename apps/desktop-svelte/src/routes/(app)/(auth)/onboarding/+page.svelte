@@ -31,7 +31,9 @@ onMount(async () => {
   const stateLang = onboardingState.locale.split("-")[0]?.toLowerCase() || "ar";
   const targetLang = stateLang === "ar" ? "ar" : "en";
   if (currentUrlLocale !== targetLang) {
-    const localizedUrl = localizeHref(page.url.pathname, { locale: targetLang });
+    const localizedUrl = localizeHref(page.url.pathname, {
+      locale: targetLang,
+    });
     goto(localizedUrl, { replaceState: true });
   }
 

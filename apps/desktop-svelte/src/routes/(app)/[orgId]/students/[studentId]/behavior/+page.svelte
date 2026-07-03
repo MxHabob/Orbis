@@ -36,7 +36,9 @@ async function loadBehavior() {
   isLoading = true;
   try {
     if (!orgId || !studentId) return;
-    records = await commands.behavior.getRecords(orgId, { enrollment_id: studentId });
+    records = await commands.behavior.getRecords(orgId, {
+      enrollment_id: studentId,
+    });
   } catch (e) {
     console.error(e);
   } finally {
@@ -48,18 +50,23 @@ async function handleAISummarize() {
   isGeneratingAI = true;
   aiSummary = null;
   try {
-    const aiRes = await commands.behavior.submitAI({ enrollment_id: studentId, org_id: orgId });
+    const aiRes = await commands.behavior.submitAI({
+      enrollment_id: studentId,
+      org_id: orgId,
+    });
     aiSummary = String(
-      aiRes.summary || aiRes.analysis ||
-      (getLocale() === "ar"
-        ? "الطالب يظهر انضباطاً ممتازاً وتفاعلاً إيجابياً في الحصص الدراسية."
-        : "The student shows excellent discipline and positive engagement in classes."),
+      aiRes.summary ||
+        aiRes.analysis ||
+        (getLocale() === "ar"
+          ? "الطالب يظهر انضباطاً ممتازاً وتفاعلاً إيجابياً في الحصص الدراسية."
+          : "The student shows excellent discipline and positive engagement in classes."),
     );
     toast.success(m.behavior_ai_success());
   } catch {
-    aiSummary = getLocale() === "ar"
-      ? "الطالب يظهر سلوكاً منضبطاً جداً بشكل عام. مشاركته في الأنشطة المدرسية متميزة."
-      : "The student generally shows very disciplined behavior.";
+    aiSummary =
+      getLocale() === "ar"
+        ? "الطالب يظهر سلوكاً منضبطاً جداً بشكل عام. مشاركته في الأنشطة المدرسية متميزة."
+        : "The student generally shows very disciplined behavior.";
     toast.success(m.behavior_ai_success());
   } finally {
     isGeneratingAI = false;
@@ -73,11 +80,17 @@ const gridSource = $derived(
     records.map((rec) => ({
       ...rec,
       created_at: formatDate(rec.created_at) || "—",
-      record_type: String(rec.behavior_type || "").toLowerCase() === "positive" ? "positive" : "negative",
+      record_type:
+        String(rec.behavior_type || "").toLowerCase() === "positive"
+          ? "positive"
+          : "negative",
       category: rec.category || "—",
       description: rec.description || "—",
       points: rec.points ?? 0,
-      status: String(rec.behavior_type || "").toLowerCase() === "positive" ? "approved" : "failed",
+      status:
+        String(rec.behavior_type || "").toLowerCase() === "positive"
+          ? "approved"
+          : "failed",
     })),
   ),
 );

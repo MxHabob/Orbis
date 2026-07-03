@@ -17,7 +17,11 @@ import LedgerCreateSheet from "$lib/components/sheets/ledger-create-sheet.svelte
 import * as m from "$lib/paraglide/messages";
 
 import { DataTable } from "$lib/tables";
-import { treasuries as tDef, ledger as lDef, withIndex } from "$lib/tables/definitions";
+import {
+  treasuries as tDef,
+  ledger as lDef,
+  withIndex,
+} from "$lib/tables/definitions";
 
 let { data }: { data: { orgId: string } } = $props();
 

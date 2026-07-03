@@ -1,6 +1,6 @@
 // See https://svelte.dev/docs/kit/types#app.d.ts
 // for information about these interfaces
-import 'svelte/elements';
+import "svelte/elements";
 
 declare global {
   namespace App {
@@ -19,4 +19,3 @@ declare global {
 }
 
 export {};
-

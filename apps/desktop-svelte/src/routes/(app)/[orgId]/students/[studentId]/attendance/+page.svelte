@@ -39,7 +39,11 @@ const gridSource = $derived(
     (report?.logs || []).map((log: any) => ({
       ...log,
       date: formatDate(log.date) || "—",
-      status: String(log.status || "").toLowerCase().replace("حاضر", "present").replace("غائب", "absent").replace("متأخر", "late"),
+      status: String(log.status || "")
+        .toLowerCase()
+        .replace("حاضر", "present")
+        .replace("غائب", "absent")
+        .replace("متأخر", "late"),
       subject_name: log.subject_name || "—",
       notes: log.notes || "—",
       recorded_by_name: log.recorded_by_name || "—",

@@ -44,14 +44,16 @@ async function getGravatarUrl(emailAddress: string) {
   const msgBuffer = new TextEncoder().encode(cleanEmail);
   const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  const hashHex = hashArray
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
   return `https://gravatar.com/avatar/${hashHex}?d=identicon&s=120`;
 }
 
 // Reactively load Gravatar when email changes
 $effect(() => {
   if (email) {
-    getGravatarUrl(email).then(url => {
+    getGravatarUrl(email).then((url) => {
       gravatarUrl = url;
       if (useGravatar) {
         avatarUrl = url;
@@ -122,7 +124,7 @@ async function handleSaveDetails(e: Event) {
     toast.success(
       m.account_save_success
         ? m.account_save_success()
-        : "تم حفظ تفاصيل الحساب بنجاح"
+        : "تم حفظ تفاصيل الحساب بنجاح",
     );
   } catch (e) {
     console.error("Failed to update user details:", e);
@@ -130,7 +132,7 @@ async function handleSaveDetails(e: Event) {
     toast.error(
       m.account_save_error
         ? m.account_save_error({ error: msg })
-        : `خطأ أثناء حفظ تفاصيل الحساب: ${msg}`
+        : `خطأ أثناء حفظ تفاصيل الحساب: ${msg}`,
     );
   } finally {
     isSavingDetails = false;
@@ -154,7 +156,7 @@ async function handleSaveAvatar(e: Event) {
     toast.success(
       m.account_save_success
         ? m.account_save_success()
-        : "تم حفظ تفاصيل الحساب بنجاح"
+        : "تم حفظ تفاصيل الحساب بنجاح",
     );
   } catch (e) {
     console.error("Failed to update avatar:", e);
@@ -162,7 +164,7 @@ async function handleSaveAvatar(e: Event) {
     toast.error(
       m.account_save_error
         ? m.account_save_error({ error: msg })
-        : `خطأ أثناء حفظ تفاصيل الحساب: ${msg}`
+        : `خطأ أثناء حفظ تفاصيل الحساب: ${msg}`,
     );
   } finally {
     isSavingAvatar = false;

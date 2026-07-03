@@ -45,13 +45,15 @@ onMount(() => {
 
 function getMethodLabel(method: string): string {
   const mLow = String(method).toLowerCase();
-  if (mLow === "percentage") return m.dt_method_percentage?.() || "Percentage (%)";
+  if (mLow === "percentage")
+    return m.dt_method_percentage?.() || "Percentage (%)";
   return m.dt_method_fixed?.() || "Fixed Amount";
 }
 
 function getFormattedValue(tpl: any): string {
   const val = Number(tpl.value || 0);
-  if (String(tpl.calculation_method).toLowerCase() === "percentage") return `${val}%`;
+  if (String(tpl.calculation_method).toLowerCase() === "percentage")
+    return `${val}%`;
   return formatCurrency(val, "YER");
 }
 
