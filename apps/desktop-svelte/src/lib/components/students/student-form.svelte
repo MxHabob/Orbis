@@ -373,6 +373,16 @@ async function handleSave() {
     toast.error(m.form_error_birth_required());
     return;
   }
+  if (!isEditMode) {
+    if (!guardianName.trim()) {
+      toast.error(m.form_error_guardian_name_required());
+      return;
+    }
+    if (!guardianPhone.trim()) {
+      toast.error(m.form_error_guardian_phone_required());
+      return;
+    }
+  }
 
   isSaving = true;
   const createdBy = authStore.user?.id || "";
@@ -921,7 +931,7 @@ async function handleDownloadRegistrationForm() {
               <!-- اسم الأب / ولي الأمر -->
               <div class="flex flex-col gap-2 text-start">
                 <Label class="text-[11px] font-semibold text-muted-foreground" for="guardianName">
-                  {m.form_father_name()}
+                  {m.form_father_name()} <span class="text-destructive">{m.form_required()}</span>
                 </Label>
                 <Input 
                   id="guardianName"
@@ -935,7 +945,7 @@ async function handleDownloadRegistrationForm() {
               <!-- رقم هاتف الأب -->
               <div class="flex flex-col gap-2 text-start">
                 <Label class="text-[11px] font-semibold text-muted-foreground" for="guardianPhone">
-                  {m.form_father_phone()}
+                  {m.form_father_phone()} <span class="text-destructive">{m.form_required()}</span>
                 </Label>
                 <Input 
                   id="guardianPhone"

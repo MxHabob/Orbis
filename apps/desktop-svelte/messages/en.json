@@ -225,6 +225,8 @@
   "form_error_name_required": "Arabic full name is required",
   "form_error_class_required": "Target class is required",
   "form_error_birth_required": "Date of birth is required",
+  "form_error_guardian_name_required": "Guardian (Father) name is required for registration",
+  "form_error_guardian_phone_required": "Guardian (Father) phone number is required for registration",
   "form_error_enrollment_not_found": "Student enrollment record not found",
   "form_success_update": "Student record updated successfully",
   "form_success_create": "New student enrolled successfully",

@@ -1,11 +1,13 @@
 <!--
   @component GuardianForm
   Form for linking a user as a guardian to a student with relation and payer status.
+  Fixes API type mismatches by formatting boolean flags as integer values (1 / 0) and correcting property names.
 -->
 <script lang="ts">
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
+import { Switch } from "@orbis/ui-svelte/switch";
 import {
   Select,
   SelectTrigger,
@@ -37,10 +39,10 @@ const isEditMode = $derived(!!editData);
 // Form state
 let guardianUserId = $state(editData ? String(editData.guardian_id ?? "") : "");
 let relation = $state(
-  editData ? String(editData.relation ?? "father") : "father",
+  editData ? String(editData.relationship ?? editData.relation ?? "father") : "father",
 );
-let isPayer = $state(editData ? Boolean(editData.is_payer) : false);
-let job = $state(editData ? String((editData as JsonRecord).job ?? "") : "");
+let isPayer = $state(editData ? Boolean(editData.is_payer === 1 || editData.is_payer === true) : false);
+let job = $state(editData ? String((editData as JsonRecord).occupation ?? (editData as JsonRecord).job ?? "") : "");
 let searchQuery = $state("");
 
 // Remote data
@@ -93,12 +95,24 @@ async function handleSubmit() {
 
   isSaving = true;
   try {
+    const relationAr = relation === "father" ? "أب" : relation === "mother" ? "أم" : "قريب";
+    
+    // Construct request conforming exactly to CreateGuardianLinkRequest / UpdateGuardianLinkRequest
     const request: JsonRecord = {
       student_id: studentId,
       guardian_id: guardianUserId,
-      relation,
-      is_payer: isPayer,
-      job: job || null,
+      relationship: relation,
+      relationship_ar: relationAr,
+      is_primary: relation === "father" ? 1 : 0,
+      is_emergency_contact: relation === "father" ? 1 : 0,
+      is_payer: isPayer ? 1 : 0, // Cast boolean to i32
+      occupation: job.trim() || null, // Map to occupation instead of job
+      can_view_grades: 1,
+      can_view_attendance: 1,
+      can_view_behavior: 1,
+      can_view_finance: isPayer ? 1 : 0,
+      can_view_schedule: 1,
+      can_receive_notifications: 1,
     };
 
     if (isEditMode && editData?.id) {
@@ -111,7 +125,7 @@ async function handleSubmit() {
 
     onSuccess?.();
   } catch (e: unknown) {
-    const errMsg = e instanceof Error ? e.message : String(e);
+    const errMsg = (e as any)?.message || String(e);
     toast.error(`فشل الحفظ: ${errMsg}`);
   } finally {
     isSaving = false;
@@ -193,19 +207,10 @@ async function handleSubmit() {
       <p class="text-xs font-semibold text-foreground">{m.guardians_form_is_payer()}</p>
       <p class="text-[10px] text-muted-foreground">سيتمكن من استلام فواتير الرسوم</p>
     </div>
-    <button
-      type="button"
-      class="relative w-10 h-5 rounded-full transition-colors duration-200
-        {isPayer ? 'bg-primary' : 'bg-muted border border-border/60'}"
-      onclick={() => (isPayer = !isPayer)}
-      role="switch"
-      aria-checked={isPayer}
-    >
-      <span
-        class="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform duration-200
-          {isPayer ? 'translate-x-5' : 'translate-x-0.5'}"
-      ></span>
-    </button>
+    <Switch
+      checked={isPayer}
+      onCheckedChange={(checked) => isPayer = checked}
+    />
   </div>
 
   <!-- Actions -->
@@ -220,7 +225,7 @@ async function handleSubmit() {
     </Button>
     <Button
       type="submit"
-      class="flex-1 h-9 text-sm"
+      class="flex-1 h-9 text-sm font-semibold"
       disabled={isSaving || isLoading || !guardianUserId || !relation}
     >
       {isSaving ? m.guardians_form_saving() : m.guardians_form_save()}

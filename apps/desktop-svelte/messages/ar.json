@@ -225,6 +225,8 @@
   "form_error_name_required": "يرجى إدخال اسم الطالب الكامل بالعربية",
   "form_error_class_required": "يرجى اختيار الصف الدراسي",
   "form_error_birth_required": "يرجى إدخال تاريخ ميلاد الطالب",
+  "form_error_guardian_name_required": "اسم ولي الأمر (الأب) مطلوب لربطه مع الطالب وقت التسجيل",
+  "form_error_guardian_phone_required": "رقم هاتف ولي الأمر مطلوب للتواصل",
   "form_error_enrollment_not_found": "سجل قيد الطالب غير موجود",
   "form_success_update": "تم تحديث بيانات الطالب بنجاح",
   "form_success_create": "تم تسجيل الطالب الجديد بنجاح",
