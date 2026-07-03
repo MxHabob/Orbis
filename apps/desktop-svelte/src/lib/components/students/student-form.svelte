@@ -191,6 +191,9 @@ onMount(async () => {
             <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => { state.registrationStatus = "pending_review"; state.handleSave(); }}>
               {m.form_submit_review()}
             </DropdownMenuItem>
+            <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => { state.registrationStatus = "approved"; state.handleSave(); }}>
+              {m.form_direct_enroll()}
+            </DropdownMenuItem>
           {:else}
             <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => { state.registrationStatus = "draft"; state.handleSave(); }}>
               {m.form_status_draft()}
