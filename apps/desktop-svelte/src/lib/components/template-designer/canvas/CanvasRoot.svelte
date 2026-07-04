@@ -241,6 +241,9 @@ function handleDrop(e: DragEvent) {
     onmousedown={handleMouseDown}
     onmouseup={handleMouseUp}
     onmouseleave={handleMouseUp}
+    ondragover={handleDragOver}
+    ondragleave={handleDragLeave}
+    ondrop={handleDrop}
   >
     <!-- Background pattern -->
     <defs>
@@ -294,6 +297,22 @@ function handleDrop(e: DragEvent) {
 
       <!-- Selection overlay (handles, guides) -->
       <SelectionOverlay {store} pageSizePx={{ width: pageWidthPx, height: pageHeightPx }} />
+
+      <!-- Drag-over indicator -->
+      {#if isDragOver}
+        <rect
+          x="0" y="0"
+          width={pageWidthPx}
+          height={pageHeightPx}
+          fill="none"
+          stroke="#3b82f6"
+          stroke-width="3"
+          stroke-dasharray="8,4"
+          rx="4"
+          pointer-events="none"
+          opacity="0.5"
+        />
+      {/if}
     </g>
   </svg>
 

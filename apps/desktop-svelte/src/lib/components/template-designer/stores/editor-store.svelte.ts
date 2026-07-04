@@ -223,11 +223,19 @@ export function createEditorStore(initialDoc: TemplateDocument) {
 
   // ── Node Operations ──────────────────────────────────────
 
-  function addElement(type: string, props: Record<string, unknown> = {}): void {
+  function addElement(type: string, props: Record<string, unknown> = {}, x?: number, y?: number): void {
     const parentId = activePage?.id;
     if (!parentId) return;
 
     const newNode = createDefaultNode(type, props);
+    // Apply drop position if provided
+    if (x !== undefined && y !== undefined && "position" in newNode) {
+      (newNode as any).position = {
+        ...(newNode as any).position,
+        x: Math.round(x * 10) / 10,
+        y: Math.round(y * 10) / 10,
+      };
+    }
     executeCommand(new AddNodeCommand(parentId, newNode));
     selectedIds = [newNode.id];
   }

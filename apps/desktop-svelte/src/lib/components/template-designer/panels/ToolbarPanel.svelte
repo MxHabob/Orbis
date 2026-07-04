@@ -55,17 +55,17 @@ let {
   onpreview: () => void;
 } = $props();
 
-const tools: { id: EditorTool; icon: any; label: string }[] = [
-  { id: "select", icon: MousePointer2, label: "Select" },
-  { id: "text", icon: Type, label: "Text" },
-  { id: "image", icon: ImageIcon, label: "Image" },
-  { id: "shape", icon: Square, label: "Shape" },
-  { id: "frame", icon: LayoutGrid, label: "Frame" },
-  { id: "table", icon: Table, label: "Table" },
-  { id: "barcode", icon: Barcode, label: "Barcode" },
-  { id: "qrcode", icon: QrCode, label: "QR Code" },
-  { id: "separator", icon: Minus, label: "Separator" },
-  { id: "pan", icon: Hand, label: "Pan" },
+const tools: { id: EditorTool; icon: any; label: string; draggable: boolean }[] = [
+  { id: "select", icon: MousePointer2, label: "Select", draggable: false },
+  { id: "text", icon: Type, label: "Text", draggable: true },
+  { id: "image", icon: ImageIcon, label: "Image", draggable: true },
+  { id: "shape", icon: Square, label: "Shape", draggable: true },
+  { id: "frame", icon: LayoutGrid, label: "Frame", draggable: true },
+  { id: "table", icon: Table, label: "Table", draggable: true },
+  { id: "barcode", icon: Barcode, label: "Barcode", draggable: true },
+  { id: "qrcode", icon: QrCode, label: "QR Code", draggable: true },
+  { id: "separator", icon: Minus, label: "Separator", draggable: true },
+  { id: "pan", icon: Hand, label: "Pan", draggable: false },
 ];
 
 function selectTool(id: EditorTool) {
@@ -77,6 +77,13 @@ function selectTool(id: EditorTool) {
     store.activeTool = "select";
   }
 }
+
+function handleToolDragStart(e: DragEvent, toolId: string) {
+  const elementType = toolId.charAt(0).toUpperCase() + toolId.slice(1);
+  e.dataTransfer?.setData("application/x-docforge-element", elementType);
+  e.dataTransfer?.setData("text/plain", elementType);
+  if (e.dataTransfer) e.dataTransfer.effectAllowed = "copy";
+}
 </script>
 
 <div class="h-11 border-b border-border bg-card/60 px-2 flex items-center gap-1 flex-nowrap select-none overflow-x-auto scrollbar-hide">
@@ -86,14 +93,21 @@ function selectTool(id: EditorTool) {
       {#each tools as tool (tool.id)}
         <Tooltip>
           <TooltipTrigger>
-            <Button
-              variant={store.activeTool === tool.id ? "default" : "ghost"}
-              size="icon-xs"
-              class="cursor-pointer"
-              onclick={() => selectTool(tool.id)}
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <div
+              draggable={tool.draggable}
+              ondragstart={(e) => tool.draggable && handleToolDragStart(e, tool.id)}
+              class={tool.draggable ? 'cursor-grab' : ''}
             >
-              <svelte:component this={tool.icon} size={14} />
-            </Button>
+              <Button
+                variant={store.activeTool === tool.id ? "default" : "ghost"}
+                size="icon-xs"
+                class="cursor-pointer pointer-events-auto"
+                onclick={() => selectTool(tool.id)}
+              >
+                <svelte:component this={tool.icon} size={14} />
+              </Button>
+            </div>
           </TooltipTrigger>
           <TooltipContent>{tool.label}</TooltipContent>
         </Tooltip>

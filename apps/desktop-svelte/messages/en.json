@@ -2051,6 +2051,25 @@
   "td_barcode_format": "Format",
   "td_qr_data": "Data",
 
-  "td_saved_success": "Template saved successfully"
+  "td_saved_success": "Template saved successfully",
+
+  "td_assets": "Assets",
+  "td_asset_search": "Search...",
+  "td_asset_add": "Add Asset",
+  "td_asset_name": "Asset name",
+  "td_asset_url": "Image URL",
+  "td_asset_empty": "No assets — add images and logos",
+  "td_asset_drag_hint": "Drag an asset onto the canvas to create an image element",
+  "td_asset_remove": "Remove",
+  "td_asset_insert": "Insert as image",
+
+  "td_history": "History",
+  "td_history_empty": "No command history yet",
+  "td_history_initial": "Initial State",
+  "td_history_commands": "commands",
+
+  "td_drag_drop_hint": "Drop to create element",
+  "td_snap_enabled": "Snap enabled",
+  "td_snap_disabled": "Snap disabled"
 }
 
