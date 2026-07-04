@@ -222,8 +222,7 @@ async function publishTemplate(id: string) {
 // Handle Template Archiving
 async function archiveTemplate(id: string) {
   try {
-    const userId = "current-user";
-    await commands.documentTemplates.archiveTemplate(orgId, id, userId);
+    await commands.documentTemplates.archiveTemplate(orgId, id);
     toast.success(m.templates_archive_success());
     loadTemplates();
   } catch (e: unknown) {
@@ -236,8 +235,7 @@ async function archiveTemplate(id: string) {
 // Handle Template Restoring
 async function restoreTemplate(id: string) {
   try {
-    const userId = "current-user";
-    await commands.documentTemplates.restoreTemplate(orgId, id, userId);
+    await commands.documentTemplates.restoreTemplate(orgId, id);
     toast.success(m.templates_restore_success());
     loadTemplates();
   } catch (e: unknown) {
@@ -249,7 +247,7 @@ async function restoreTemplate(id: string) {
 </script>
 
 <svelte:head>
-  <title>{m.templates_window_title()} | Orbis</title>
+  <title>{m.settings_nav_templates()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide">
@@ -264,9 +262,9 @@ async function restoreTemplate(id: string) {
           <FileText size={22} />
         </div>
         <div>
-          <h1 class="text-sm font-bold text-foreground">{m.templates_page_title()}</h1>
+          <h1 class="text-sm font-bold text-foreground">{m.settings_nav_templates()}</h1>
           <p class="text-[10px] text-muted-foreground mt-0.5">
-            {m.templates_page_desc()}
+            {m.templates_empty_desc()}
           </p>
         </div>
       </div>
@@ -278,8 +276,8 @@ async function restoreTemplate(id: string) {
         <!-- Search bar -->
         <SearchField
           bind:value={searchQuery}
-          onchange={loadTemplates}
-          placeholder={m.templates_search_placeholder()}
+          oninput={loadTemplates}
+          placeholder={m.settings_templates_search_placeholder()}
         />
 
         <div class="flex items-center gap-2">

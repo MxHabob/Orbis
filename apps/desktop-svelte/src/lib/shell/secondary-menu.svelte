@@ -12,7 +12,7 @@ import type { Component } from "svelte";
 type MenuItem = {
   path: string;
   label: string;
-  icon?: Component;
+  icon?: any;
 };
 
 let {

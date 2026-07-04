@@ -125,7 +125,7 @@ async function saveTemplate() {
     );
 
     store.markSaved();
-    toast.success(m.settings_templates_saved?.() || "Template saved successfully");
+    toast.success(m.td_saved_success?.() || "Template saved successfully");
   } catch (e: unknown) {
     const msg = (e as any)?.message || "Failed to save template";
     toast.error(msg);
