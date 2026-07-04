@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { onboardingState } from "./onboarding-state.svelte";
+import { onboardingState } from "./state.svelte";
 
 // Import components
 import OnboardingStepper from "./onboarding-stepper.svelte";

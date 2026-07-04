@@ -11,7 +11,7 @@ import {
   SheetDescription,
 } from "@orbis/ui-svelte/sheet";
 import { Percent } from "lucide-svelte";
-import DiscountTemplateForm from "../forms/discount-template-form.svelte";
+import DiscountTemplateForm from "./discount-template-form.svelte";
 import * as m from "$lib/paraglide/messages";
 
 let {

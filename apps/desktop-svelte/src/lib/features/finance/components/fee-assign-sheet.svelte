@@ -12,7 +12,7 @@ import {
   SheetDescription,
 } from "@orbis/ui-svelte/sheet";
 import { Wallet } from "lucide-svelte";
-import FeeAssignForm from "../forms/fee-assign-form.svelte";
+import FeeAssignForm from "./fee-assign-form.svelte";
 import * as m from "$lib/paraglide/messages";
 
 let {

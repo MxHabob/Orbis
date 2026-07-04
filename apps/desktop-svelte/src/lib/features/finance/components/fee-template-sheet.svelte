@@ -11,7 +11,7 @@ import {
   SheetDescription,
 } from "@orbis/ui-svelte/sheet";
 import { Receipt } from "lucide-svelte";
-import FeeTemplateForm from "../forms/fee-template-form.svelte";
+import FeeTemplateForm from "./fee-template-form.svelte";
 import * as m from "$lib/paraglide/messages";
 
 let {

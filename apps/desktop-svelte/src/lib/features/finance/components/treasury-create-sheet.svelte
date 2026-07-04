@@ -12,7 +12,7 @@ import {
   SheetDescription,
 } from "@orbis/ui-svelte/sheet";
 import { Landmark } from "lucide-svelte";
-import TreasuryForm from "../forms/treasury-form.svelte";
+import TreasuryForm from "./treasury-form.svelte";
 import * as m from "$lib/paraglide/messages";
 
 let {

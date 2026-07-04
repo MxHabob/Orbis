@@ -12,7 +12,7 @@ import {
   SheetDescription,
 } from "@orbis/ui-svelte/sheet";
 import { Landmark } from "lucide-svelte";
-import LedgerForm from "../forms/ledger-form.svelte";
+import LedgerForm from "./ledger-form.svelte";
 import * as m from "$lib/paraglide/messages";
 
 let {

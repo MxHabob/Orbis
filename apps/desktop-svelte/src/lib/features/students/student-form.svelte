@@ -23,7 +23,7 @@ import {
 } from "@orbis/ui-svelte/dropdown-menu";
 import * as m from "$lib/paraglide/messages";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
-import { StudentFormState } from "./student-form-state.svelte";
+import { StudentFormState } from "./form-state.svelte";
 
 // Sections
 import ProfileSection from "./sections/ProfileSection.svelte";
