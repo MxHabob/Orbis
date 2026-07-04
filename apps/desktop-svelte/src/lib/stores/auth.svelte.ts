@@ -1,7 +1,9 @@
 // ── Auth Store ───────────────────────────────────────────────────────
 // Svelte 5 Runes-based authentication state (replaces Zustand).
 
+import { commands } from "$lib/services/ipc";
 import type { User, LoginResponse } from "$lib/services/ipc";
+import { extractErrorMessage } from "$lib/utils/ipc-error";
 
 class AuthStore {
   user = $state<User | null>(null);
@@ -21,15 +23,15 @@ class AuthStore {
     this.isLoading = true;
     this.error = null;
     try {
-      const { commands } = await import("$lib/services/ipc");
       const res = await commands.auth.login(email, password);
       this.user = res.user;
       this.token = res.access_token;
       localStorage.setItem("orbis_token", res.access_token);
       localStorage.setItem("orbis_user", JSON.stringify(res.user));
-      await this.checkSetupStatus();
+      // Fire-and-forget — don't block login completion
+      this.checkSetupStatus();
     } catch (e) {
-      this.error = e instanceof Error ? e.message : String(e);
+      this.error = extractErrorMessage(e);
       throw e;
     } finally {
       this.isLoading = false;
@@ -38,7 +40,6 @@ class AuthStore {
 
   async logout() {
     if (this.token) {
-      const { commands } = await import("$lib/services/ipc");
       await commands.auth.logout(this.token).catch(() => {});
     }
     this.user = null;
@@ -74,7 +75,6 @@ class AuthStore {
       return;
     }
     try {
-      const { commands } = await import("$lib/services/ipc");
       const status = await commands.academics.getSetupStatus(this.orgId);
       this.isSetupComplete = status;
       localStorage.setItem("orbis_is_setup_complete", String(status));

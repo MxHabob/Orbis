@@ -8,9 +8,9 @@ import { onMount } from "svelte";
 import MainViewport from "$lib/components/layout/MainViewport.svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
-import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { Plus, Search, FilterX, Download, Printer, Upload } from "lucide-svelte";
 import { studentsStore } from "$lib/stores";
+import StudentsTableSkeleton from "$lib/components/skeletons/StudentsTableSkeleton.svelte";
 import PrintDialog from "$lib/components/shared/PrintDialog.svelte";
 import SidebarNav from "$lib/components/layout/SidebarNav.svelte";
 import StudentTable from "$lib/components/students/student-table.svelte";
@@ -20,6 +20,8 @@ import { goto } from "$app/navigation";
 import * as m from "$lib/paraglide/messages";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { formatNumber } from "$lib/i18n-utils";
+import { debounce } from "$lib/utils/debounce";
+import { queryClient } from "$lib/services/query-client";
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -35,10 +37,23 @@ function getCountByStatus(status: string): number {
   ).length;
 }
 
+// Local search input with debounce to prevent excessive $derived recalculations
+let localSearch = $state("");
+const updateSearch = debounce((q: string) => {
+  studentsStore.searchQuery = q;
+}, 150);
+
 // Load data when page mounts
-onMount(() => {
+onMount(async () => {
   if (data.orgId) {
-    studentsStore.load(data.orgId);
+    await studentsStore.load(data.orgId);
+    // Populate TanStack cache so SearchModal and other pages can reuse
+    if (studentsStore.list.length > 0) {
+      queryClient.setQueryData(["enrollments", data.orgId], studentsStore.list);
+    }
+    if (studentsStore.classes.length > 0) {
+      queryClient.setQueryData(["classes", data.orgId], studentsStore.classes);
+    }
   }
 });
 
@@ -142,11 +157,12 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 				<div class="relative w-full max-w-sm shrink-0">
 					<Search class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
 					<Input
-						type="text"
-						placeholder={m.students_search_placeholder()}
-						class="input-sunken ps-9 text-xs py-2"
-						bind:value={studentsStore.searchQuery}
-					/>
+					type="text"
+					placeholder={m.students_search_placeholder()}
+					class="input-sunken ps-9 text-xs py-2"
+					bind:value={localSearch}
+					oninput={() => updateSearch(localSearch)}
+				/>
 				</div>
 
 					<div class="flex items-center gap-2">
@@ -190,13 +206,7 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 				<!-- Student Grid -->
 				<div class="flex-1 min-h-0 flex flex-col">
 					{#if studentsStore.isLoading}
-						<div class="h-full w-full p-4 flex flex-col gap-3 bg-card border border-border rounded-lg">
-							<Skeleton class="h-10 w-full" />
-							<Skeleton class="h-8 w-full" />
-							<Skeleton class="h-8 w-full" />
-							<Skeleton class="h-8 w-full" />
-							<Skeleton class="h-8 w-full" />
-						</div>
+						<StudentsTableSkeleton />
 					{:else if studentsStore.error}
 						<div class="h-full w-full flex flex-col items-center justify-center p-6 text-center gap-3 bg-card border border-border rounded-lg">
 							<p class="text-xs text-destructive font-semibold">{m.students_load_error({ error: studentsStore.error })}</p>

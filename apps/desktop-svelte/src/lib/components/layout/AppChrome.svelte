@@ -19,8 +19,6 @@ Follows GitButler's "Chrome Shell" pattern:
 -->
 <script lang="ts">
 import AppSidebar from "./AppSidebar.svelte";
-import AskOrbisSidebar from "./AskOrbisSidebar.svelte";
-import UpgradeDialog from "./UpgradeDialog.svelte";
 import { uiStore } from "$lib/stores";
 import type { Snippet } from "svelte";
 import { slide } from "svelte/transition";
@@ -60,9 +58,17 @@ function handleKeyDown(e: KeyboardEvent) {
 			</div>
 		</div>
 		{#if uiStore.showAskOrbis}
-			<AskOrbisSidebar />
+			{#await import("./AskOrbisSidebar.svelte") then { default: AskOrbisSidebar }}
+				<AskOrbisSidebar />
+			{/await}
 		{/if}
 	</div>
 </div>
-<UpgradeDialog bind:open={uiStore.showUpgradeDialog} />
+
+<!-- Lazy-load UpgradeDialog only when shown -->
+{#if uiStore.showUpgradeDialog}
+	{#await import("./UpgradeDialog.svelte") then { default: UpgradeDialog }}
+		<UpgradeDialog bind:open={uiStore.showUpgradeDialog} />
+	{/await}
+{/if}
 

@@ -53,11 +53,12 @@ let {
 
 const COLLAPSED_WIDTH = 3;
 
-// Convert px to rem using root font-size
+// Convert px to rem using root font-size (cached to avoid DOM reads per render)
+let _cachedBaseFontSize: number | null = null;
 function pxToRem(px: number): number {
   if (typeof document === "undefined") return px / 16;
-  const base = parseFloat(getComputedStyle(document.documentElement).fontSize);
-  return px / base;
+  _cachedBaseFontSize ??= parseFloat(getComputedStyle(document.documentElement).fontSize);
+  return px / _cachedBaseFontSize;
 }
 
 // Panel preferred widths (in rem)

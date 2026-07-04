@@ -6,6 +6,7 @@ using <MainViewport>. Uses the shared SidebarNav component.
 <script lang="ts">
 import { page } from "$app/state";
 import { commands } from "$lib/services/ipc";
+import { onMount } from "svelte";
 import {
   Wallet,
   CreditCard,
@@ -42,12 +43,9 @@ async function loadSidebarStats() {
   }
 }
 
-// Reactively reload stats on route pathname change
-$effect(() => {
-  const path = page.url.pathname;
-  if (data.orgId) {
-    loadSidebarStats();
-  }
+// Load once on mount — not on every sub-route change
+onMount(() => {
+  if (data.orgId) loadSidebarStats();
 });
 
 const basePath = $derived(`/${data.orgId}/finance`);

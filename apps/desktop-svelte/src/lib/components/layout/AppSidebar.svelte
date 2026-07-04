@@ -36,6 +36,7 @@ import * as m from "$lib/paraglide/messages";
 import { deLocalizeUrl, localizeHref } from "$lib/paraglide/runtime";
 import { onboardingState } from "$lib/components/onboarding/onboarding-state.svelte";
 import { onMount } from "svelte";
+import { prefetchRouteData } from "$lib/services/prefetch";
 
 let {
   orgId,
@@ -154,7 +155,14 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 			<div class="w-8 h-px bg-slate-200/80 dark:bg-zinc-700  self-center"></div>
 
 			{#each navItems as item (item.href)}
-				<div class="flex">
+				<div
+					class="flex"
+					onmouseenter={() => {
+						// Prefetch data for the destination page on hover
+						const segment = item.href.split('/').pop() || 'dashboard';
+						prefetchRouteData(segment, orgId);
+					}}
+				>
 					<Tooltip>
 						<TooltipTrigger>
 							<Button

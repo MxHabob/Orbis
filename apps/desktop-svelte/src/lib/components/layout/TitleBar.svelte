@@ -6,7 +6,6 @@ import {
   authStore,
   uiStore,
   themeStore,
-  studentsStore,
 } from "$lib/stores";
 import { Button } from "@orbis/ui-svelte/button";
 import {
@@ -39,6 +38,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@orbis/ui-svelte/dropdown-menu";
+import { queryClient } from "$lib/services/query-client";
+import { dedup } from "$lib/services/ipc-dedup";
 
 // Window states
 let appWindow = $state<any>(null);
@@ -116,16 +117,24 @@ onMount(() => {
 
 $effect(() => {
   if (authStore.isAuthenticated && authStore.orgId) {
-    commands.academics
-      .getCycles(authStore.orgId)
+    // Check TanStack cache first
+    const cached = queryClient.getQueryData<any[]>(["cycles", authStore.orgId]);
+    if (cached) {
+      cycles = cached;
+      if (!academicStore.selectedCycleId && cached.length > 0) {
+        const activeCycle = cached.find((c: any) => c.is_current === 1) || cached[0];
+        if (activeCycle) academicStore.selectedCycleId = String(activeCycle.id);
+      }
+      return;
+    }
+    // Deduplicated fetch — prevents double calls if effect re-fires
+    dedup(`cycles:${authStore.orgId}`, () => commands.academics.getCycles(authStore.orgId))
       .then((list) => {
         cycles = list;
+        queryClient.setQueryData(["cycles", authStore.orgId], list);
         if (!academicStore.selectedCycleId && list.length > 0) {
-          const activeCycle =
-            list.find((c: any) => c.is_current === 1) || list[0];
-          if (activeCycle) {
-            academicStore.selectedCycleId = String(activeCycle.id);
-          }
+          const activeCycle = list.find((c: any) => c.is_current === 1) || list[0];
+          if (activeCycle) academicStore.selectedCycleId = String(activeCycle.id);
         }
       })
       .catch((err) => {

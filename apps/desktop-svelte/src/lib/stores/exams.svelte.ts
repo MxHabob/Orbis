@@ -3,6 +3,7 @@
 // Calls real IPC commands → Tauri → SQLite database.
 
 import { commands } from "$lib/services/ipc";
+import { extractErrorMessage } from "$lib/utils/ipc-error";
 
 export interface ExamSession {
   id: string;
@@ -74,7 +75,7 @@ class ExamsStore {
       const list = await commands.exams.getSessions(orgId, cycleId);
       this.sessions = list as unknown as ExamSession[];
     } catch (e) {
-      this.error = e instanceof Error ? e.message : String(e);
+      this.error = extractErrorMessage(e);
       console.error("Failed to load exam sessions:", e);
     } finally {
       this.isLoading = false;
@@ -108,7 +109,7 @@ class ExamsStore {
       this.sessions = [...this.sessions, session];
       return session;
     } catch (e) {
-      this.error = e instanceof Error ? e.message : String(e);
+      this.error = extractErrorMessage(e);
       throw e;
     }
   }
@@ -135,7 +136,7 @@ class ExamsStore {
       }
       return updated;
     } catch (e) {
-      this.error = e instanceof Error ? e.message : String(e);
+      this.error = extractErrorMessage(e);
       throw e;
     }
   }
@@ -165,7 +166,7 @@ class ExamsStore {
       this.subjects = [...this.subjects, subject];
       return subject;
     } catch (e) {
-      this.error = e instanceof Error ? e.message : String(e);
+      this.error = extractErrorMessage(e);
       throw e;
     }
   }
@@ -178,7 +179,7 @@ class ExamsStore {
       const result = await commands.exams.getSession(orgId, sessionId);
       this.activeSession = result as unknown as ExamSession;
     } catch (e) {
-      this.error = e instanceof Error ? e.message : String(e);
+      this.error = extractErrorMessage(e);
     } finally {
       this.isLoading = false;
     }

@@ -5,6 +5,7 @@ import { page } from "$app/state";
 import { Dialog, DialogContent } from "@orbis/ui-svelte/dialog";
 import { uiStore, authStore } from "$lib/stores";
 import { commands } from "$lib/services/ipc";
+import { queryClient } from "$lib/services/query-client";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
 import {
@@ -50,15 +51,32 @@ const currentOrgId = $derived(page.params.orgId || authStore.orgId || "");
 
 async function loadSearchData() {
   if (!currentOrgId) return;
+
+  // Use TanStack cache if available — avoids redundant IPC calls
+  const cachedStudents = queryClient.getQueryData<any[]>(["enrollments", currentOrgId]);
+  const cachedClasses = queryClient.getQueryData<any[]>(["classes", currentOrgId]);
+  const cachedSubjects = queryClient.getQueryData<any[]>(["subjects", currentOrgId]);
+
+  if (cachedStudents && cachedClasses && cachedSubjects) {
+    students = cachedStudents;
+    classes = cachedClasses;
+    subjects = cachedSubjects;
+    return;
+  }
+
   try {
     const [studentsData, classesData, subjectsData] = await Promise.all([
-      commands.enrollments.getAll(currentOrgId).catch(() => []),
-      commands.classes.getAll(currentOrgId).catch(() => []),
-      commands.subjects.getAll(currentOrgId).catch(() => []),
+      cachedStudents ?? commands.enrollments.getAll(currentOrgId).catch(() => []),
+      cachedClasses ?? commands.classes.getAll(currentOrgId).catch(() => []),
+      cachedSubjects ?? commands.subjects.getAll(currentOrgId).catch(() => []),
     ]);
     students = studentsData;
     classes = classesData;
     subjects = subjectsData;
+    // Populate cache for future use
+    if (!cachedStudents) queryClient.setQueryData(["enrollments", currentOrgId], studentsData);
+    if (!cachedClasses) queryClient.setQueryData(["classes", currentOrgId], classesData);
+    if (!cachedSubjects) queryClient.setQueryData(["subjects", currentOrgId], subjectsData);
   } catch (e) {
     console.error("Failed to load search data:", e);
   }

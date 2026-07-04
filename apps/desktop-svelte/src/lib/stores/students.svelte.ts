@@ -3,6 +3,7 @@
 
 import { commands } from "$lib/services/ipc";
 import type { Enrollment, JsonRecord } from "$lib/services/ipc";
+import { extractErrorMessage } from "$lib/utils/ipc-error";
 
 class StudentsStore {
   // Core state
@@ -65,7 +66,7 @@ class StudentsStore {
       this.list = enrollmentData;
       this.classes = classData;
     } catch (e) {
-      this.error = e instanceof Error ? e.message : String(e);
+      this.error = extractErrorMessage(e);
       console.error("Error loading student/class data:", e);
     } finally {
       this.isLoading = false;
@@ -80,7 +81,7 @@ class StudentsStore {
       this.list = [newEnrollment, ...this.list];
       return newEnrollment;
     } catch (e) {
-      this.error = e instanceof Error ? e.message : String(e);
+      this.error = extractErrorMessage(e);
       throw e;
     } finally {
       this.isLoading = false;
@@ -104,7 +105,7 @@ class StudentsStore {
     } catch (e) {
       // Rollback on failure
       this.list = originalList;
-      this.error = e instanceof Error ? e.message : String(e);
+      this.error = extractErrorMessage(e);
       throw e;
     }
   }
@@ -124,7 +125,7 @@ class StudentsStore {
     } catch (e) {
       // Rollback on failure
       this.list = originalList;
-      this.error = e instanceof Error ? e.message : String(e);
+      this.error = extractErrorMessage(e);
       throw e;
     }
   }

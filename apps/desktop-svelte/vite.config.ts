@@ -40,6 +40,26 @@ export default defineConfig(({ mode }) => {
         ),
       },
     },
+    // ── Build Optimization ─────────────────────────────────────────────
+    build: {
+      target: "esnext", // Tauri WebView supports modern JS — no transpilation needed
+      minify: "esbuild",
+      rollupOptions: {
+        output: {
+          // Split heavy vendor libs into separate chunks for better caching
+          manualChunks(id: string) {
+            if (id.includes("node_modules")) {
+              if (id.includes("lucide-svelte")) return "vendor-icons";
+              if (id.includes("@tauri-apps")) return "vendor-tauri";
+              if (id.includes("@tanstack")) return "vendor-query";
+              if (id.includes("svelte-sonner") || id.includes("zod"))
+                return "vendor-utils";
+            }
+          },
+        },
+      },
+      chunkSizeWarningLimit: 350,
+    },
     // Tauri expects a fixed port; fail if that port is not available
     server: {
       port: 1520,

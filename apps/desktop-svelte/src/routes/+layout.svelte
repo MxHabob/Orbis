@@ -7,6 +7,8 @@ import { themeStore } from "$lib/stores";
 import { isDesktopApp } from "$lib/services/ipc";
 import { Toaster } from "svelte-sonner";
 import { onMount } from "svelte";
+import { QueryClientProvider } from "@tanstack/svelte-query";
+import { queryClient } from "$lib/services/query-client";
 import "./layout.css";
 import favicon from "$lib/assets/favicon.svg";
 
@@ -30,7 +32,9 @@ onMount(() => {
 	<title>Orbis</title>
 </svelte:head>
 
-{@render children()}
+<QueryClientProvider client={queryClient}>
+	{@render children()}
+</QueryClientProvider>
 
 <Toaster position="bottom-center" expand={true} duration={5000} closeButton={true} />
 

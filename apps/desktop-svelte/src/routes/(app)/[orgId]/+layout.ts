@@ -9,7 +9,8 @@ export const load: LayoutLoad = async ({ params }) => {
     throw redirect(302, "/login");
   }
 
-  await authStore.checkSetupStatus();
+  // Fire-and-forget — updates state reactively, don't block page render
+  authStore.checkSetupStatus();
 
   return { orgId: params.orgId };
 };
