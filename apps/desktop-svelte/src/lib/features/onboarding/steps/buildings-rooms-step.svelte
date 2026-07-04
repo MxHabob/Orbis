@@ -21,7 +21,7 @@ import {
 import { Button } from "@orbis/ui-svelte/button";
 import { Plus, Trash } from "lucide-svelte";
 import * as m from "$lib/paraglide/messages";
-import { onboardingState } from "../onboarding-state.svelte";
+import { onboardingState } from "../state.svelte";
 
 let newRoomName = $state("");
 let newRoomNameAr = $state("");

@@ -14,7 +14,7 @@ import { mmToPx, pxToMm } from "@docforge/core/canvas";
 import { findNode, getPages } from "@docforge/core";
 import type { SnapLine, BoundingBox } from "@docforge/core";
 import { calcSmartSnap } from "@docforge/core";
-import SnapLinesOverlay from "./SnapLinesOverlay.svelte";
+import SnapLinesOverlay from "./snap-lines-overlay.svelte";
 
 let {
   store,

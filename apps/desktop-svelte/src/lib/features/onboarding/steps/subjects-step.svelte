@@ -10,7 +10,7 @@ import { Badge } from "@orbis/ui-svelte/badge";
 import { Button } from "@orbis/ui-svelte/button";
 import { Plus, BookOpen } from "lucide-svelte";
 import * as m from "$lib/paraglide/messages";
-import { onboardingState } from "../onboarding-state.svelte";
+import { onboardingState } from "../state.svelte";
 
 let newSubCode = $state("");
 let newSubName = $state("");

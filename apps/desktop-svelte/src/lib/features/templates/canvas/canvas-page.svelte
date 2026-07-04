@@ -4,7 +4,7 @@
  */
 import type { PageNode, TemplateNode } from "@docforge/core";
 import type { EditorStore } from "../stores/editor-store.svelte";
-import CanvasNode from "./CanvasNode.svelte";
+import CanvasNode from "./canvas-node.svelte";
 
 let {
   page,

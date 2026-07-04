@@ -8,7 +8,7 @@ import {
   DataTable,
   type ColumnDef,
   type CellContext,
-} from "$lib/components/table";
+} from "$lib/tables";
 import { Avatar, AvatarFallback, AvatarImage } from "@orbis/ui-svelte";
 import { studentsStore } from "$lib/features/students/store.svelte";
 import type { Enrollment } from "$lib/core/ipc";

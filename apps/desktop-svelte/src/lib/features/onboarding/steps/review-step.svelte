@@ -19,7 +19,7 @@ import {
   Loader2,
 } from "lucide-svelte";
 import * as m from "$lib/paraglide/messages";
-import { onboardingState } from "../onboarding-state.svelte";
+import { onboardingState } from "../state.svelte";
 import { authStore } from "$lib/stores";
 import { goto } from "$app/navigation";
 import { localizeHref } from "$lib/paraglide/runtime";

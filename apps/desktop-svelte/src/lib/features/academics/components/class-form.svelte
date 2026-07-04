@@ -2,7 +2,7 @@
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
-import InputColor from "../sheets/input-color.svelte";
+import InputColor from "$lib/shared/components/input-color.svelte";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 

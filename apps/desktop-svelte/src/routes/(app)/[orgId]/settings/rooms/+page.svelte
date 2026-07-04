@@ -94,7 +94,7 @@ function openCreateSheet() {
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-4 scrollbar-hide">
   <div class="flex items-center justify-between gap-4 flex-nowrap shrink-0">
-    <h1 class="text-lg font-bold text-foreground truncate">{m.settings_rooms_title?.() || "Rooms"}</h1>
+    <h1 class="text-lg font-bold text-foreground truncate">{m.settings_rooms_window_title()}</h1>
     <Button variant="lime" class="text-xs h-8 px-4 font-semibold shrink-0" onclick={openCreateSheet}>
       <Plus size={14} class="me-1.5" />
       {m.rooms_add()}

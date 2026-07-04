@@ -7,7 +7,7 @@ import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
 import { Button } from "@orbis/ui-svelte/button";
 import { Separator } from "@orbis/ui-svelte/separator";
-import ColorPicker from "../shared/ColorPicker.svelte";
+import ColorPicker from "../shared/color-picker.svelte";
 import {
   FileText,
   RotateCcw,

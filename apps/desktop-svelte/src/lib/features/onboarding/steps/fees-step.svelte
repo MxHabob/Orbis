@@ -3,7 +3,7 @@ import { Label } from "@orbis/ui-svelte/label";
 import { Input } from "@orbis/ui-svelte/input";
 import { Coins } from "lucide-svelte";
 import * as m from "$lib/paraglide/messages";
-import { onboardingState } from "../onboarding-state.svelte";
+import { onboardingState } from "../state.svelte";
 
 const enabledGradeLevels = $derived(
   onboardingState.gradeLevels.filter((gl) => gl.enabled),

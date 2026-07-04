@@ -6,7 +6,7 @@
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
 import * as m from "$lib/paraglide/messages";
-import { onboardingState } from "../onboarding-state.svelte";
+import { onboardingState } from "../state.svelte";
 import LocaleSettings from "$lib/shared/components/locale-settings.svelte";
 import TimezoneSettings from "$lib/shared/components/timezone-settings.svelte";
 import { getLocale, setLocale } from "$lib/paraglide/runtime";

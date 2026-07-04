@@ -7,8 +7,8 @@ import { Card } from "@orbis/ui-svelte/card";
 import { Label } from "@orbis/ui-svelte/label";
 import { Input } from "@orbis/ui-svelte/input";
 import * as m from "$lib/paraglide/messages";
-import { onboardingState } from "../onboarding-state.svelte";
-import { INSTITUTION_PROFILES } from "../onboarding-templates";
+import { onboardingState } from "../state.svelte";
+import { INSTITUTION_PROFILES } from "../templates";
 import {
   School,
   GraduationCap,

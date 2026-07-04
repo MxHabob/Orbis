@@ -10,7 +10,7 @@ import { Input } from "@orbis/ui-svelte/input";
 import { Button } from "@orbis/ui-svelte/button";
 import { Plus } from "lucide-svelte";
 import * as m from "$lib/paraglide/messages";
-import { onboardingState } from "../onboarding-state.svelte";
+import { onboardingState } from "../state.svelte";
 </script>
 
 <div class="max-w-4xl space-y-6">
