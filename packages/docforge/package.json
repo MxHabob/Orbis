@@ -19,7 +19,8 @@
     "./validation": "./src/validation/index.ts",
     "./data": "./src/data/index.ts",
     "./editor": "./src/editor/index.ts",
-    "./utils": "./src/utils/index.ts"
+    "./utils": "./src/utils/index.ts",
+    "./canvas": "./src/canvas/index.ts"
   },
   "devDependencies": {
     "@orbis/tsconfig": "workspace:*",

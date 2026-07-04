@@ -14,7 +14,6 @@ import { Button } from "@orbis/ui-svelte/button";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Input } from "@orbis/ui-svelte/input";
 import { Separator } from "@orbis/ui-svelte/separator";
-import ColorPicker from "../shared/ColorPicker.svelte";
 import {
   Tooltip,
   TooltipTrigger,
@@ -138,10 +137,11 @@ function updateProp(key: string, value: unknown) {
       <Separator orientation="vertical" class="h-5 mx-1" />
 
       <div class="ctx-group">
-        <ColorPicker
+        <input
+          type="color"
           value={props.color || "#000000"}
-          onchange={(c) => updateProp("color", c)}
-          size="sm"
+          oninput={(e) => updateProp("color", e.currentTarget.value)}
+          class="ctx-color-swatch"
         />
       </div>
 
@@ -163,16 +163,18 @@ function updateProp(key: string, value: unknown) {
       <!-- ═══ SHAPE TOOLBAR ═══ -->
       <div class="ctx-group">
         <span class="ctx-label">تعبئة</span>
-        <ColorPicker
+        <input
+          type="color"
           value={props.fillColor || "#e2e8f0"}
-          onchange={(c) => updateProp("fillColor", c)}
-          size="sm"
+          oninput={(e) => updateProp("fillColor", e.currentTarget.value)}
+          class="ctx-color-swatch"
         />
         <span class="ctx-label">حدود</span>
-        <ColorPicker
+        <input
+          type="color"
           value={props.strokeColor || "#94a3b8"}
-          onchange={(c) => updateProp("strokeColor", c)}
-          size="sm"
+          oninput={(e) => updateProp("strokeColor", e.currentTarget.value)}
+          class="ctx-color-swatch"
         />
         <Input
           type="number"

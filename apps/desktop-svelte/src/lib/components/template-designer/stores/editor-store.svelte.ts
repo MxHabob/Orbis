@@ -259,93 +259,19 @@ export function createEditorStore(initialDoc: TemplateDocument) {
     }
   }
 
-  // ── Live Move/Resize (during drag — no history entry) ─────
-  // These directly mutate position for smooth drag, bypassing
-  // JSON.stringify/parse per frame. Call commitLiveMove() on mouseup.
-
-  let liveDragStart: { nodeId: string; origX: number; origY: number; origW: number; origH: number } | null = null;
-
-  function moveLive(x: number, y: number): void {
-    if (selectedIds.length !== 1) return;
-    const nodeId = selectedIds[0]!;
-    const node = findNode(document, nodeId);
-    if (!node || !("position" in node) || !(node as any).position) return;
-
-    // Capture start position for undo
-    if (!liveDragStart || liveDragStart.nodeId !== nodeId) {
-      const pos = (node as any).position;
-      liveDragStart = {
-        nodeId,
-        origX: pos.x ?? 0,
-        origY: pos.y ?? 0,
-        origW: typeof pos.width === "number" ? pos.width : 50,
-        origH: typeof pos.height === "number" ? pos.height : 20,
-      };
-    }
-
-    // Direct mutation — triggers Svelte reactivity via $state
-    (node as any).position.x = x;
-    (node as any).position.y = y;
-    // Force reactivity
-    document = { ...document };
-  }
-
-  function resizeLive(w: number, h: number): void {
-    if (selectedIds.length !== 1) return;
-    const nodeId = selectedIds[0]!;
-    const node = findNode(document, nodeId);
-    if (!node || !("position" in node) || !(node as any).position) return;
-
-    if (!liveDragStart || liveDragStart.nodeId !== nodeId) {
-      const pos = (node as any).position;
-      liveDragStart = {
-        nodeId,
-        origX: pos.x ?? 0,
-        origY: pos.y ?? 0,
-        origW: typeof pos.width === "number" ? pos.width : 50,
-        origH: typeof pos.height === "number" ? pos.height : 20,
-      };
-    }
-
-    (node as any).position.width = w;
-    (node as any).position.height = h;
-    document = { ...document };
-  }
-
-  function commitLiveMove(): void {
-    if (!liveDragStart) return;
-    const { nodeId, origX, origY } = liveDragStart;
-    const node = findNode(document, nodeId);
-    if (node && "position" in node && (node as any).position) {
-      const pos = (node as any).position;
-      const newX = pos.x ?? 0;
-      const newY = pos.y ?? 0;
-      // Only create history entry if position actually changed
-      if (Math.abs(newX - origX) > 0.01 || Math.abs(newY - origY) > 0.01) {
-        // Restore original position, then execute through command system
-        (node as any).position.x = origX;
-        (node as any).position.y = origY;
-        document = { ...document };
-        executeCommand(new MoveNodeCommand(nodeId, newX, newY));
-      }
-    }
-    liveDragStart = null;
-  }
-
-  // Legacy wrappers (for non-drag contexts)
   function moveSelected(x: number, y: number): void {
-    moveLive(x, y);
+    if (selectedIds.length !== 1) return;
+    executeCommand(new MoveNodeCommand(selectedIds[0]!, x, y));
   }
 
   function resizeSelected(w: number | string, h?: number | string): void {
     if (selectedIds.length !== 1) return;
-    const numW = typeof w === "number" ? w : parseFloat(w) || 50;
-    const numH = typeof h === "number" ? h : typeof h === "string" ? parseFloat(h) || 20 : undefined;
-    if (numH !== undefined) {
-      resizeLive(numW, numH);
-    } else {
-      executeCommand(new ResizeNodeCommand(selectedIds[0]!, w, h));
-    }
+    executeCommand(new ResizeNodeCommand(selectedIds[0]!, w, h));
+  }
+
+  // No-op for backwards compat (called by SelectionOverlay on drag end)
+  function commitLiveMove(): void {
+    // Move is already committed via executeCommand
   }
 
   function deleteSelected(): void {

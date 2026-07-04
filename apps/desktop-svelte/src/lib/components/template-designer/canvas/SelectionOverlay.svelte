@@ -10,7 +10,7 @@
  *   - Dimension label
  */
 import type { EditorStore } from "../stores/editor-store.svelte";
-import { mmToPx, pxToMm } from "@docforge/core";
+import { mmToPx, pxToMm } from "@docforge/core/canvas";
 import { findNode, getPages } from "@docforge/core";
 import type { SnapLine, BoundingBox } from "@docforge/core";
 import { calcSmartSnap } from "@docforge/core";
@@ -26,7 +26,7 @@ let {
 
 const vp = $derived(store.viewport);
 const HANDLE_SIZE = 8;
-const ROTATION_OFFSET = 24; // px above the element
+const ROTATION_OFFSET = 14; // px above the element
 
 // Compute selection bounds for each selected node
 const selectionRects = $derived(

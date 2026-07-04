@@ -168,13 +168,20 @@ let {
 
   .zoom-slider {
     width: 80px;
-    height: 3px;
+    height: 16px;
     -webkit-appearance: none;
     appearance: none;
-    background: color-mix(in srgb, var(--color-muted-foreground) 25%, transparent);
+    background: transparent;
     border-radius: 3px;
     outline: none;
     cursor: pointer;
+    position: relative;
+  }
+
+  .zoom-slider::-webkit-slider-runnable-track {
+    height: 3px;
+    background: color-mix(in srgb, var(--color-muted-foreground) 25%, transparent);
+    border-radius: 3px;
   }
 
   .zoom-slider::-webkit-slider-thumb {
@@ -185,6 +192,7 @@ let {
     border-radius: 50%;
     background: var(--color-foreground);
     cursor: pointer;
+    margin-top: -4.5px;
     transition: transform 0.1s;
   }
 

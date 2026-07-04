@@ -6,7 +6,7 @@
  */
 import { onMount } from "svelte";
 import type { EditorStore } from "../stores/editor-store.svelte";
-import { mmToPx, screenToDoc } from "@docforge/core";
+import { mmToPx, pxToMm, screenToDoc } from "@docforge/core/canvas";
 import CanvasPage from "./CanvasPage.svelte";
 import SelectionOverlay from "./SelectionOverlay.svelte";
 import GridOverlay from "./GridOverlay.svelte";
@@ -71,6 +71,15 @@ onMount(() => {
   }
 });
 
+// Attach wheel listener imperatively with {passive: false}
+// so that preventDefault() works (Svelte's onwheel is passive by default)
+$effect(() => {
+  const svg = svgEl;
+  if (!svg) return;
+  svg.addEventListener("wheel", handleWheel, { passive: false });
+  return () => svg.removeEventListener("wheel", handleWheel);
+});
+
 // ── Mouse Position ───────────────────────────────────────────
 
 let cursorDocMm = $state({ x: 0, y: 0 });
@@ -89,34 +98,14 @@ function handleMouseMove(e: MouseEvent) {
   }
 }
 
-// ── Zoom (Wheel) — cursor-centered ───────────────────────────
+// ── Zoom (Ctrl+Wheel) ────────────────────────────────────────
 
 function handleWheel(e: WheelEvent) {
-  e.preventDefault();
-
-  // Ctrl+wheel = zoom, plain wheel = pan (matching Figma/Canva behavior)
   if (e.ctrlKey || e.metaKey) {
-    // Zoom centered on cursor position
+    e.preventDefault();
     const zoomFactor = e.deltaY > 0 ? 0.95 : 1.05;
     const newZoom = vp.zoom * zoomFactor;
-
-    if (!svgEl) { store.setZoom(newZoom); return; }
-    const rect = svgEl.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-
-    // Adjust pan to keep the point under cursor fixed
-    const scale = newZoom / vp.zoom;
-    const centerX = (containerWidth - pageWidthPx) / 2 + vp.panX;
-    const centerY = (containerHeight - pageHeightPx) / 2 + vp.panY;
-    const newPanX = mouseX - scale * (mouseX - centerX) - (containerWidth - mmToPx(pageWidthMm, vp.dpi, newZoom)) / 2;
-    const newPanY = mouseY - scale * (mouseY - centerY) - (containerHeight - mmToPx(pageHeightMm, vp.dpi, newZoom)) / 2;
-
     store.setZoom(newZoom);
-    store.setPan(newPanX, newPanY);
-  } else {
-    // Pan with scroll wheel
-    store.setPan(vp.panX - e.deltaX, vp.panY - e.deltaY);
   }
 }
 
@@ -269,7 +258,6 @@ function handleDrop(e: DragEvent) {
     class="absolute inset-0 {isPanning ? 'cursor-grabbing' : ''}"
     style="top: {store.rulersVisible ? '24px' : '0'}; left: {store.rulersVisible ? '24px' : '0'};"
     onmousemove={handleMouseMove}
-    onwheel={handleWheel}
     onmousedown={handleMouseDown}
     onmouseup={handleMouseUp}
     onmouseleave={handleMouseUp}
