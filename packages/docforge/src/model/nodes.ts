@@ -4,7 +4,7 @@
 // Each node is a self-contained, serializable unit.
 // ═══════════════════════════════════════════════════════════════
 
-import type { Position, Spacing } from "./document";
+import type { Position, PositionMode, Spacing } from "./document";
 
 // ── Discriminated Union of All Node Types ────────────────────
 
@@ -47,6 +47,16 @@ export interface BaseNode {
   visible?: boolean;
   /** Opacity (0.0 – 1.0) */
   opacity?: number;
+  /** Reference to a named style in TemplateDocument.styles */
+  styleRef?: string;
+  /** Z-index for layering within the same parent */
+  zIndex?: number;
+  /** Rotation in degrees (clockwise) */
+  rotation?: number;
+  /** Group ID — nodes sharing the same groupId move/scale together */
+  groupId?: string;
+  /** Position mode: 'absolute' places at exact mm coords, 'flow' follows parent layout */
+  positionMode?: PositionMode;
 }
 
 // ── Container Nodes ──────────────────────────────────────────

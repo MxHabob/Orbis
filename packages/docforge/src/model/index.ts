@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-// @docforge/core — Model Barrel Export
+// @docforge/core — Model Barrel Export (v2.0)
 // ═══════════════════════════════════════════════════════════════
 
 export type {
@@ -15,9 +15,15 @@ export type {
   AssetType,
   Position,
   PositionMode,
+  StyleDefinition,
+  ThemeDefinition,
 } from "./document";
 
-export { DOCUMENT_SCHEMA_VERSION } from "./document";
+export {
+  DOCUMENT_SCHEMA_VERSION,
+  getPages,
+  getPrimaryPage,
+} from "./document";
 
 export type {
   TemplateNode,

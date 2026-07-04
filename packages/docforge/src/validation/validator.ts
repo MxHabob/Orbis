@@ -103,16 +103,30 @@ function validateSchema(
     });
   }
 
-  if (doc.root?.type !== "Page") {
+  // v2.0: Validate pages array
+  const pages = doc.pages ?? (doc.root ? [doc.root] : []);
+  if (pages.length === 0) {
     errors.push({
-      code: "INVALID_ROOT",
-      message: "Root node must be of type 'Page'",
-      messageAr: "العقدة الجذرية يجب أن تكون من نوع 'Page'",
+      code: "NO_PAGES",
+      message: "Document has no pages",
+      messageAr: "المستند لا يحتوي على صفحات",
       severity: "error",
     });
   }
 
-  // Check for duplicate node IDs
+  for (const page of pages) {
+    if (page.type !== "Page") {
+      errors.push({
+        nodeId: page.id,
+        code: "INVALID_PAGE_TYPE",
+        message: `Page node must be of type 'Page', got '${page.type}'`,
+        messageAr: `عقدة الصفحة يجب أن تكون من نوع 'Page'`,
+        severity: "error",
+      });
+    }
+  }
+
+  // Check for duplicate node IDs across all pages
   const nodeIds = new Set<string>();
   walkNodes(doc, (node) => {
     if (nodeIds.has(node.id)) {

@@ -1,55 +1,88 @@
 // ═══════════════════════════════════════════════════════════════
-// @docforge/core — Document Serialization
-// Serialize / deserialize / diff documents
+// @docforge/core — Document Serialization (v2.0)
+// Serialize / deserialize / diff documents.
+// Handles v1.0 → v2.0 migration transparently.
 // ═══════════════════════════════════════════════════════════════
 
 import type { TemplateDocument } from "../model/document";
+import type { PageNode } from "../model/nodes";
 import { DOCUMENT_SCHEMA_VERSION } from "../model/document";
 
 /**
  * Serialize a TemplateDocument to a JSON string.
  * Produces compact output by default, or pretty-printed if requested.
+ * Strips the deprecated `root` field from output.
  */
 export function serializeDocument(
   doc: TemplateDocument,
   pretty = false,
 ): string {
-  return pretty ? JSON.stringify(doc, null, 2) : JSON.stringify(doc);
+  // Create a clean copy without the deprecated `root` field
+  const { root: _deprecated, ...cleanDoc } = doc;
+  return pretty ? JSON.stringify(cleanDoc, null, 2) : JSON.stringify(cleanDoc);
 }
 
 /**
  * Deserialize a JSON string into a TemplateDocument.
- * Throws if the JSON is invalid or the schema version is unsupported.
+ * Handles v1.0 → v2.0 migration automatically:
+ *   - v1.0 has `root: PageNode` → migrated to `pages: [root]`
+ *   - v2.0 has `pages: PageNode[]` → used directly
  */
 export function deserializeDocument(json: string): TemplateDocument {
-  const parsed = JSON.parse(json) as TemplateDocument;
+  const parsed = JSON.parse(json) as Record<string, unknown>;
 
-  if (!parsed.version) {
-    throw new Error("Invalid document: missing 'version' field");
-  }
   if (!parsed.meta) {
     throw new Error("Invalid document: missing 'meta' field");
   }
-  if (!parsed.root) {
-    throw new Error("Invalid document: missing 'root' field");
-  }
 
-  // Apply migrations if needed
+  // Detect v1.0 and migrate
   if (parsed.version !== DOCUMENT_SCHEMA_VERSION) {
     return migrateDocument(parsed);
   }
 
-  return parsed;
+  // v2.0: validate pages exist
+  const doc = parsed as unknown as TemplateDocument;
+  if (!doc.pages || !Array.isArray(doc.pages) || doc.pages.length === 0) {
+    throw new Error("Invalid v2.0 document: missing or empty 'pages' array");
+  }
+
+  return doc;
 }
 
 /**
- * Migrate a document from an older schema version to the current version.
- * Currently a no-op since we only have v1.0, but the infrastructure is ready.
+ * Migrate a document from an older schema version to v2.0.
+ *
+ * v1.0 → v2.0:
+ *   - Moves `root` PageNode into `pages[0]`
+ *   - Removes `root` field
+ *   - Sets version to "2.0"
+ *   - Initializes empty `styles`, `components` if missing
  */
-function migrateDocument(doc: TemplateDocument): TemplateDocument {
-  // Future: add migration logic as schema evolves
-  // For now, just update the version stamp
-  return { ...doc, version: DOCUMENT_SCHEMA_VERSION };
+function migrateDocument(raw: Record<string, unknown>): TemplateDocument {
+  const version = (raw.version as string) || "1.0";
+
+  if (version === "1.0" || !raw.pages) {
+    // v1.0 → v2.0: single root → pages array
+    const root = raw.root as PageNode | undefined;
+    if (!root) {
+      throw new Error("Invalid v1.0 document: missing 'root' field");
+    }
+
+    const migrated: TemplateDocument = {
+      version: DOCUMENT_SCHEMA_VERSION,
+      meta: raw.meta as TemplateDocument["meta"],
+      variables: (raw.variables as TemplateDocument["variables"]) || {},
+      assets: (raw.assets as TemplateDocument["assets"]) || {},
+      pages: [root],
+      components: {},
+      styles: {},
+    };
+
+    return migrated;
+  }
+
+  // Unknown future version — pass through with version bump
+  return { ...(raw as unknown as TemplateDocument), version: DOCUMENT_SCHEMA_VERSION };
 }
 
 // ── Document Diff ────────────────────────────────────────────

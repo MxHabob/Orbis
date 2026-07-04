@@ -5,7 +5,9 @@
 // ═══════════════════════════════════════════════════════════════
 
 import type { TemplateDocument } from "../model/document";
-import type { TemplateNode } from "../model/nodes";
+import type { TemplateNode, PageNode } from "../model/nodes";
+import { getPages } from "../model/document";
+import { generateNodeId } from "../utils/id-generator";
 import {
   findNode,
   updateNodeProps as updateOp,
@@ -43,6 +45,7 @@ type SelectionListener = (ids: string[]) => void;
 export class EditorState {
   private _document: TemplateDocument;
   private _selectedIds: string[] = [];
+  private _activePageIndex = 0;
   private _undoStack: HistoryEntry[] = [];
   private _redoStack: HistoryEntry[] = [];
   private _isDirty = false;
@@ -72,6 +75,22 @@ export class EditorState {
   getSelectedNode(): TemplateNode | null {
     if (this._selectedIds.length === 0) return null;
     return findNode(this._document, this._selectedIds[0]!);
+  }
+
+  /** Currently active page index */
+  getActivePageIndex(): number {
+    return this._activePageIndex;
+  }
+
+  /** Currently active page node */
+  getActivePage(): PageNode | null {
+    const pages = getPages(this._document);
+    return pages[this._activePageIndex] ?? pages[0] ?? null;
+  }
+
+  /** Total number of pages */
+  getPageCount(): number {
+    return getPages(this._document).length;
   }
 
   /** Whether the document has been modified since last save */
@@ -208,6 +227,73 @@ export class EditorState {
     this._markDirty();
   }
 
+  // ── Page Management ──────────────────────────────────────
+
+  /** Set the active page by index */
+  setActivePage(index: number): void {
+    const pages = getPages(this._document);
+    if (index >= 0 && index < pages.length) {
+      this._activePageIndex = index;
+      this._selectedIds = [];
+      this._notifySelectionChange();
+      this._notifyChange();
+    }
+  }
+
+  /** Add a new empty page at the given index (or at the end) */
+  addPage(index?: number): void {
+    this._pushHistory("Add page");
+    const newPage: PageNode = {
+      type: "Page",
+      id: generateNodeId("page"),
+      children: [],
+    };
+    const pages = [...getPages(this._document)];
+    const insertAt = index ?? pages.length;
+    pages.splice(insertAt, 0, newPage);
+    this._document = { ...this._document, pages };
+    this._activePageIndex = insertAt;
+    this._markDirty();
+  }
+
+  /** Remove a page by index. Cannot remove the last page. */
+  removePage(index: number): void {
+    const pages = getPages(this._document);
+    if (pages.length <= 1) {
+      throw new Error("Cannot remove the last page");
+    }
+    if (index < 0 || index >= pages.length) return;
+
+    this._pushHistory("Remove page");
+    const newPages = pages.filter((_, i) => i !== index);
+    this._document = { ...this._document, pages: newPages };
+
+    // Adjust active page index if needed
+    if (this._activePageIndex >= newPages.length) {
+      this._activePageIndex = newPages.length - 1;
+    }
+    this._selectedIds = [];
+    this._markDirty();
+    this._notifySelectionChange();
+  }
+
+  /** Reorder pages by moving page at `fromIndex` to `toIndex` */
+  reorderPage(fromIndex: number, toIndex: number): void {
+    const pages = [...getPages(this._document)];
+    if (
+      fromIndex < 0 || fromIndex >= pages.length ||
+      toIndex < 0 || toIndex >= pages.length ||
+      fromIndex === toIndex
+    ) return;
+
+    this._pushHistory("Reorder pages");
+    const [moved] = pages.splice(fromIndex, 1);
+    pages.splice(toIndex, 0, moved!);
+    this._document = { ...this._document, pages };
+    this._activePageIndex = toIndex;
+    this._markDirty();
+  }
+
   // ── Undo / Redo ──────────────────────────────────────────
 
   /** Undo the last operation */
@@ -257,6 +343,7 @@ export class EditorState {
     this._document = doc;
     this._savedDocument = JSON.stringify(doc);
     this._selectedIds = [];
+    this._activePageIndex = 0;
     this._undoStack = [];
     this._redoStack = [];
     this._isDirty = false;

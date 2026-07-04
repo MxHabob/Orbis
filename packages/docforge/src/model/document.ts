@@ -1,20 +1,28 @@
 // ═══════════════════════════════════════════════════════════════
-// @docforge/core — Document Model Types
-// The canonical type definitions for the template document AST.
-// This is the single source of truth for all template structures.
+// @docforge/core — Document Model Types  (v2.0)
+//
+// Hierarchical model:  Document → Pages[] → Elements
+//
+// v2.0 changes (backward-compatible):
+//   - `root: PageNode`  →  `pages: PageNode[]`  (unlimited pages)
+//   - Added `styles`, `components`, `theme`
+//   - Added `StyleDefinition`, `ThemeDefinition`
 // ═══════════════════════════════════════════════════════════════
 
-import type { PageNode } from "./nodes";
+import type { PageNode, NodeType, TemplateNode } from "./nodes";
 
 // ── Document Root ────────────────────────────────────────────
 
 /** Schema version for migration compatibility */
-export const DOCUMENT_SCHEMA_VERSION = "1.0";
+export const DOCUMENT_SCHEMA_VERSION = "2.0";
 
 /**
  * Root type representing a complete template document.
  * This is the single source of truth stored in the database
  * and consumed by both the editor and the rendering engine.
+ *
+ * v2.0: Supports unlimited pages via `pages[]`.
+ * Migration from v1.0 (`root`) is handled in serialization/serializer.ts.
  */
 export interface TemplateDocument {
   /** Schema version for forward-compatible migration */
@@ -25,8 +33,24 @@ export interface TemplateDocument {
   variables: Record<string, VariableDefinition>;
   /** Asset references mapping logical names to asset IDs */
   assets: Record<string, AssetReference>;
-  /** The root page node containing all visual content */
-  root: PageNode;
+
+  // ── v2.0: Multi-page hierarchy ───────────────────────────
+  /** Ordered list of pages. At least one page is required. */
+  pages: PageNode[];
+
+  /** Reusable component library — keyed by component ID */
+  components?: Record<string, TemplateNode>;
+  /** Named style presets */
+  styles?: Record<string, StyleDefinition>;
+  /** Document-level theme */
+  theme?: ThemeDefinition;
+
+  // ── v1.0 backward compat (deprecated) ────────────────────
+  /**
+   * @deprecated Use `pages[0]` instead. Kept only for v1.0 migration.
+   * The serializer transparently migrates `root` → `pages[root]`.
+   */
+  root?: PageNode;
 }
 
 // ── Document Metadata ────────────────────────────────────────
@@ -143,3 +167,65 @@ export interface Position {
 }
 
 export type PositionMode = "absolute" | "flow";
+
+// ── Styles ───────────────────────────────────────────────────
+
+/** A named, reusable style preset that can be applied to nodes */
+export interface StyleDefinition {
+  /** Human-readable name */
+  name: string;
+  /** Arabic name */
+  nameAr?: string;
+  /** Node types this style can be applied to */
+  appliesTo: NodeType[];
+  /** Style properties (font, color, spacing, etc.) */
+  props: Record<string, unknown>;
+}
+
+// ── Theme ────────────────────────────────────────────────────
+
+/** Document-level theme controlling global visual defaults */
+export interface ThemeDefinition {
+  /** Primary accent color (hex) */
+  primaryColor: string;
+  /** Secondary color (hex) */
+  secondaryColor: string;
+  /** Default Latin/English font family */
+  fontFamily: string;
+  /** Default Arabic font family */
+  fontFamilyAr: string;
+  /** Reference to a style ID for headers */
+  headerStyle?: string;
+  /** Reference to a style ID for body text */
+  bodyStyle?: string;
+  /** Reference to a style ID for captions */
+  captionStyle?: string;
+}
+
+// ── Helper: Get pages ────────────────────────────────────────
+
+/**
+ * Safely get the pages array from a document, handling v1.0 compat.
+ * Always returns at least one page.
+ */
+export function getPages(doc: TemplateDocument): PageNode[] {
+  if (doc.pages && doc.pages.length > 0) {
+    return doc.pages;
+  }
+  // v1.0 fallback
+  if (doc.root) {
+    return [doc.root];
+  }
+  return [];
+}
+
+/**
+ * Get the first (primary) page. Throws if no pages exist.
+ */
+export function getPrimaryPage(doc: TemplateDocument): PageNode {
+  const pages = getPages(doc);
+  if (pages.length === 0) {
+    throw new Error("Document has no pages");
+  }
+  return pages[0]!;
+}

@@ -1,10 +1,13 @@
 // ═══════════════════════════════════════════════════════════════
-// @docforge/core — Node Operations
+// @docforge/core — Node Operations (v2.0)
 // Immutable operations on the document tree.
 // Every operation returns a new document — never mutates in place.
+//
+// v2.0: All operations work across `pages[]` instead of `root`.
 // ═══════════════════════════════════════════════════════════════
 
 import type { TemplateDocument, PageSetup, Spacing } from "../model/document";
+import { getPages } from "../model/document";
 import type { TemplateNode, PageNode, NodeType } from "../model/nodes";
 import { isContainerNode } from "../model/nodes";
 import { generateNodeId } from "../utils/id-generator";
@@ -215,13 +218,18 @@ function reassignIds(node: TemplateNode): void {
 // ── Tree Search ──────────────────────────────────────────────
 
 /**
- * Find a node by ID in the document tree. Returns null if not found.
+ * Find a node by ID in the document tree. Searches all pages.
+ * Returns null if not found.
  */
 export function findNode(
   doc: TemplateDocument,
   nodeId: string,
 ): TemplateNode | null {
-  return findNodeInTree(doc.root, nodeId);
+  for (const page of getPages(doc)) {
+    const found = findNodeInTree(page, nodeId);
+    if (found) return found;
+  }
+  return null;
 }
 
 function findNodeInTree(
@@ -249,9 +257,11 @@ function findNodeInTree(
  * Returns an array of node IDs, or empty array if not found.
  */
 export function findNodePath(doc: TemplateDocument, nodeId: string): string[] {
-  const path: string[] = [];
-  if (findNodePathRecursive(doc.root, nodeId, path)) {
-    return path;
+  for (const page of getPages(doc)) {
+    const path: string[] = [];
+    if (findNodePathRecursive(page, nodeId, path)) {
+      return path;
+    }
   }
   return [];
 }
@@ -289,7 +299,9 @@ export function walkNodes(
   doc: TemplateDocument,
   visitor: (node: TemplateNode, path: string[], depth: number) => void,
 ): void {
-  walkNodeRecursive(doc.root, visitor, [], 0);
+  for (const page of getPages(doc)) {
+    walkNodeRecursive(page, visitor, [], 0);
+  }
 }
 
 function walkNodeRecursive(
@@ -325,15 +337,17 @@ export function updateNodeProps(
 ): TemplateDocument {
   return {
     ...doc,
-    root: updateNodeInTree(doc.root, nodeId, (node) => {
-      if ("props" in node && node.props) {
-        return {
-          ...node,
-          props: { ...(node.props as object), ...props },
-        } as TemplateNode;
-      }
-      return { ...node, ...props } as TemplateNode;
-    }) as PageNode,
+    pages: getPages(doc).map((page) =>
+      updateNodeInTree(page, nodeId, (node) => {
+        if ("props" in node && node.props) {
+          return {
+            ...node,
+            props: { ...(node.props as object), ...props },
+          } as TemplateNode;
+        }
+        return { ...node, ...props } as TemplateNode;
+      }) as PageNode,
+    ),
   };
 }
 
@@ -349,18 +363,20 @@ export function addNode(
 ): TemplateDocument {
   return {
     ...doc,
-    root: updateNodeInTree(doc.root, parentId, (parent) => {
-      if (!isContainerNode(parent)) {
-        throw new Error(`Node ${parentId} is not a container`);
-      }
-      const children = [...parent.children];
-      if (index !== undefined && index >= 0 && index <= children.length) {
-        children.splice(index, 0, node);
-      } else {
-        children.push(node);
-      }
-      return { ...parent, children } as TemplateNode;
-    }) as PageNode,
+    pages: getPages(doc).map((page) =>
+      updateNodeInTree(page, parentId, (parent) => {
+        if (!isContainerNode(parent)) {
+          throw new Error(`Node ${parentId} is not a container`);
+        }
+        const children = [...parent.children];
+        if (index !== undefined && index >= 0 && index <= children.length) {
+          children.splice(index, 0, node);
+        } else {
+          children.push(node);
+        }
+        return { ...parent, children } as TemplateNode;
+      }) as PageNode,
+    ),
   };
 }
 
@@ -371,12 +387,25 @@ export function removeNode(
   doc: TemplateDocument,
   nodeId: string,
 ): TemplateDocument {
-  if (doc.root.id === nodeId) {
-    throw new Error("Cannot remove the root page node");
+  const pages = getPages(doc);
+  // Cannot remove the last page
+  if (pages.length === 1 && pages[0]!.id === nodeId) {
+    throw new Error("Cannot remove the last page");
   }
+  // If the nodeId is a page, filter it out of pages
+  const isPageNode = pages.some((p) => p.id === nodeId);
+  if (isPageNode) {
+    return {
+      ...doc,
+      pages: pages.filter((p) => p.id !== nodeId),
+    };
+  }
+  // Otherwise, remove from within pages
   return {
     ...doc,
-    root: removeNodeFromTree(doc.root, nodeId) as PageNode,
+    pages: pages.map(
+      (page) => removeNodeFromTree(page, nodeId) as PageNode,
+    ),
   };
 }
 
@@ -469,6 +498,7 @@ function removeNodeFromTree(
 
 /**
  * Create a new, empty template document with sensible defaults.
+ * v2.0: Creates a single-page document using `pages[]`.
  */
 export function createDocument(
   documentType: string,
@@ -484,7 +514,7 @@ export function createDocument(
   };
 
   return {
-    version: "1.0",
+    version: "2.0",
     meta: {
       name: "",
       documentType,
@@ -494,10 +524,14 @@ export function createDocument(
     },
     variables: {},
     assets: {},
-    root: {
-      type: "Page",
-      id: generateNodeId("page"),
-      children: [],
-    },
+    pages: [
+      {
+        type: "Page",
+        id: generateNodeId("page"),
+        children: [],
+      },
+    ],
+    components: {},
+    styles: {},
   };
 }

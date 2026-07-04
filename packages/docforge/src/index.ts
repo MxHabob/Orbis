@@ -23,6 +23,8 @@ export type {
   AssetType,
   Position,
   PositionMode,
+  StyleDefinition,
+  ThemeDefinition,
   TemplateNode,
   NodeType,
   BaseNode,
@@ -51,6 +53,8 @@ export type {
 
 export {
   DOCUMENT_SCHEMA_VERSION,
+  getPages,
+  getPrimaryPage,
   isContainerNode,
   isContentNode,
   hasPosition,
