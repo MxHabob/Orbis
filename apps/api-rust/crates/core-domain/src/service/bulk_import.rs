@@ -1,30 +1,55 @@
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-use chrono::Utc;
 
-use crate::entities::{user, grade};
+use crate::service::user::CreateUserRequest;
+use crate::service::enrollment::CreateEnrollmentRequest;
 
 // ── Request / Response DTOs ──────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct BulkStudentRow {
+    // Personal
     pub full_name: String,
+    pub name_ar: Option<String>,
     pub email: String,
+    pub password: Option<String>,
     pub phone: Option<String>,
     pub national_id: Option<String>,
     pub sex: Option<String>,
     pub date_of_birth: Option<String>,
-    pub primary_role: Option<String>,
+    pub nationality: Option<String>,
+    pub place_of_birth: Option<String>,
+    pub passport_number: Option<String>,
+    // Address
+    pub address: Option<String>,
+    pub city: Option<String>,
+    pub country: Option<String>,
+    // Medical
+    pub blood_type: Option<String>,
+    pub allergies: Option<String>,
+    pub medical_conditions: Option<String>,
+    pub emergency_contact: Option<String>,
+    // Enrollment
+    pub class_id: Option<String>,
+    pub enrollment_type: Option<String>,
+    pub enrollment_status: Option<String>,
+    // Guardian
+    pub guardian_name: Option<String>,
+    pub guardian_phone: Option<String>,
+    pub guardian_relationship: Option<String>,
+    // Finance
+    pub discount_template_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct BulkGradeRow {
-    pub student_email: String,
+    pub student_identifier: String,
+    pub identifier_type: Option<String>, // email | national_id | student_number | name | auto
     pub subject_name: String,
     pub score: f64,
     pub max_score: Option<f64>,
     pub exam_type: Option<String>,
     pub semester: String,
+    pub notes: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
@@ -40,13 +65,14 @@ pub struct BulkImportResult {
     pub created: usize,
     pub failed: usize,
     pub errors: Vec<BulkRowError>,
+    pub active_cycle_name: Option<String>,
 }
 
 // ── Service Implementation ──────────────────────────────────────────────────
 
 impl super::Service {
-    /// Bulk create students/teachers from JSON rows.
-    /// Validates each row, checks duplicates, and creates users.
+    /// Bulk create students using the SAME service as single-entry (create_user_in_org + create_enrollment).
+    /// This ensures identical business rules: email uniqueness, role validation, fee assignment, etc.
     pub async fn bulk_create_users(
         &self,
         org_id: &str,
@@ -59,17 +85,10 @@ impl super::Service {
         let mut failed = 0usize;
         let mut errors: Vec<BulkRowError> = Vec::new();
 
-        let valid_roles = ["admin", "super_admin", "principal", "teacher", "student", "parent", "staff"];
-        let valid_sex = ["male", "female"];
-
-        // Pre-collect emails and national_ids for duplicate detection within the batch
-        let mut seen_emails: std::collections::HashSet<String> = std::collections::HashSet::new();
-        let mut seen_nids: std::collections::HashSet<String> = std::collections::HashSet::new();
-
         for (idx, row) in rows.iter().enumerate() {
-            let row_index = idx + 1; // 1-indexed for user display
+            let row_index = idx + 1;
 
-            // ── Required field validation ──
+            // ── Quick pre-validation ──
             let trimmed_name = row.full_name.trim();
             if trimmed_name.is_empty() || trimmed_name.len() < 2 {
                 errors.push(BulkRowError {
@@ -92,158 +111,111 @@ impl super::Service {
                 continue;
             }
 
-            // Email format validation
-            if !trimmed_email.contains('@') || !trimmed_email.contains('.') {
-                errors.push(BulkRowError {
-                    row_index,
-                    field: "email".to_string(),
-                    message: format!("بريد إلكتروني غير صحيح: '{}'", trimmed_email),
-                });
-                failed += 1;
-                continue;
-            }
+            // ── Use create_user_in_org (same as single-entry) ──
+            let password = row.password.as_deref().unwrap_or("Orbis@2026").to_string();
 
-            // ── Batch duplicate detection (email) ──
-            if !seen_emails.insert(trimmed_email.clone()) {
-                errors.push(BulkRowError {
-                    row_index,
-                    field: "email".to_string(),
-                    message: format!("البريد '{}' مكرر في هذه الدفعة", trimmed_email),
-                });
-                failed += 1;
-                continue;
-            }
+            let req = CreateUserRequest {
+                email: trimmed_email.clone(),
+                password,
+                full_name: trimmed_name.to_string(),
+                name_ar: row.name_ar.clone(),
+                primary_role: default_role.to_string(),
+                sex: row.sex.clone(),
+                phone: row.phone.clone(),
+                national_id: row.national_id.clone(),
+                date_of_birth: row.date_of_birth.clone(),
+            };
 
-            // ── DB duplicate detection (email) ──
-            if let Ok(Some(_)) = self.repo.get_user_by_email(&trimmed_email).await {
-                errors.push(BulkRowError {
-                    row_index,
-                    field: "email".to_string(),
-                    message: format!("البريد '{}' مسجل مسبقاً في النظام", trimmed_email),
-                });
-                failed += 1;
-                continue;
-            }
-
-            // ── Optional field validation ──
-            let role = row.primary_role.as_deref().unwrap_or(default_role).to_lowercase();
-            if !valid_roles.contains(&role.as_str()) {
-                errors.push(BulkRowError {
-                    row_index,
-                    field: "primary_role".to_string(),
-                    message: format!("دور غير صحيح: '{}'. الأدوار المتاحة: {:?}", role, valid_roles),
-                });
-                failed += 1;
-                continue;
-            }
-
-            if let Some(ref sex) = row.sex {
-                let trimmed_sex = sex.trim().to_lowercase();
-                if !trimmed_sex.is_empty() && !valid_sex.contains(&trimmed_sex.as_str()) {
+            let user = match self.create_user_in_org(org_id, req, created_by).await {
+                Ok(u) => u,
+                Err(e) => {
                     errors.push(BulkRowError {
                         row_index,
-                        field: "sex".to_string(),
-                        message: format!("الجنس يجب أن يكون 'male' أو 'female', وجد: '{}'", trimmed_sex),
+                        field: "user".to_string(),
+                        message: e,
                     });
                     failed += 1;
                     continue;
                 }
+            };
+
+            // ── Update additional fields not covered by CreateUserRequest ──
+            let has_extra = row.nationality.is_some() || row.address.is_some()
+                || row.city.is_some() || row.country.is_some()
+                || row.blood_type.is_some() || row.emergency_contact.is_some()
+                || row.allergies.is_some() || row.medical_conditions.is_some();
+
+            if has_extra {
+                let update_req = crate::service::user::UpdateUserRequest {
+                    full_name: None,
+                    name_ar: None,
+                    name_en: None,
+                    email: None,
+                    phone: None,
+                    sex: None,
+                    date_of_birth: None,
+                    nationality: row.nationality.clone(),
+                    national_id: None,
+                    address: row.address.clone(),
+                    city: row.city.clone(),
+                    country: row.country.clone(),
+                    emergency_contact: row.emergency_contact.clone(),
+                    blood_type: row.blood_type.clone(),
+                    medical_conditions: row.medical_conditions.clone(),
+                    avatar: None,
+                    status: None,
+                };
+                let _ = self.update_user(&user.id, update_req).await;
             }
 
-            // National ID batch duplicate check
-            if let Some(ref nid) = row.national_id {
-                let trimmed_nid = nid.trim().to_string();
-                if !trimmed_nid.is_empty() {
-                    if !seen_nids.insert(trimmed_nid.clone()) {
+            // ── Create enrollment if class_id provided ──
+            if let Some(ref class_id) = row.class_id {
+                let trimmed_class = class_id.trim();
+                if !trimmed_class.is_empty() {
+                    let enroll_req = CreateEnrollmentRequest {
+                        student_id: user.id.clone(),
+                        class_id: trimmed_class.to_string(),
+                        cycle_id: None, // auto-detect current cycle
+                        enrollment_type: row.enrollment_type.clone(),
+                        discount_template_id: row.discount_template_id.clone(),
+                        custom_discount_amount: None,
+                        status: row.enrollment_status.clone(),
+                    };
+
+                    if let Err(e) = self.create_enrollment(org_id, enroll_req).await {
+                        // User created but enrollment failed — log error but don't fail the row
                         errors.push(BulkRowError {
                             row_index,
-                            field: "national_id".to_string(),
-                            message: format!("الرقم الوطني '{}' مكرر في هذه الدفعة", trimmed_nid),
+                            field: "enrollment".to_string(),
+                            message: format!("تم إنشاء المستخدم لكن فشل التسجيل: {}", e),
                         });
-                        failed += 1;
-                        continue;
                     }
                 }
             }
 
-            // ── Create user ──
-            let pwd_hash = match bcrypt::hash("Orbis@2026", bcrypt::DEFAULT_COST) {
-                Ok(h) => h,
-                Err(e) => {
-                    errors.push(BulkRowError {
-                        row_index,
-                        field: "password".to_string(),
-                        message: format!("خطأ في تشفير كلمة المرور: {}", e),
-                    });
-                    failed += 1;
-                    continue;
-                }
-            };
-
-            let new_user = user::Model {
-                id: Uuid::new_v4().to_string(),
-                org_id: org_id.to_string(),
-                email: Some(trimmed_email),
-                email_verified: 0,
-                email_verified_at: None,
-                phone: row.phone.as_ref().map(|p| p.trim().to_string()).filter(|p| !p.is_empty()),
-                phone_verified: 0,
-                phone_verified_at: None,
-                password_hash: Some(pwd_hash),
-                password_changed_at: None,
-                password_expires_at: None,
-                mfa_enabled: 0,
-                mfa_secret: None,
-                mfa_backup_codes: None,
-                full_name: trimmed_name.to_string(),
-                name_ar: None,
-                name_en: None,
-                avatar: None,
-                sex: row.sex.as_ref().map(|s| s.trim().to_lowercase()).filter(|s| !s.is_empty()),
-                date_of_birth: row.date_of_birth.as_ref().map(|d| d.trim().to_string()).filter(|d| !d.is_empty()),
-                place_of_birth: None,
-                nationality: None,
-                national_id: row.national_id.as_ref().map(|n| n.trim().to_string()).filter(|n| !n.is_empty()),
-                passport_number: None,
-                address: None,
-                city: None,
-                country: None,
-                postal_code: None,
-                emergency_contact: None,
-                blood_type: None,
-                allergies: None,
-                medical_conditions: None,
-                medical_notes: None,
-                social_links: None,
-                bio: None,
-                primary_role: role,
-                status: "active".to_string(),
-                last_login_at: None,
-                last_login_ip: None,
-                login_count: Some(0),
-                failed_logins: Some(0),
-                locked_until: None,
-                prefs: "{}".to_string(),
-                meta: "{}".to_string(),
-                is_deleted: 0,
-                deleted_at: None,
-                deleted_by: None,
-                created_at: Utc::now().to_rfc3339(),
-                updated_at: Utc::now().to_rfc3339(),
-                created_by: Some(created_by.to_string()),
-            };
-
-            match self.repo.create_user(new_user).await {
-                Ok(_) => created += 1,
-                Err(e) => {
-                    errors.push(BulkRowError {
-                        row_index,
-                        field: "database".to_string(),
-                        message: format!("خطأ في قاعدة البيانات: {}", e),
-                    });
-                    failed += 1;
+            // ── Create guardian if provided ──
+            if let Some(ref guardian_name) = row.guardian_name {
+                let trimmed_gname = guardian_name.trim();
+                if !trimmed_gname.is_empty() {
+                    let g_req = crate::service::guardian::CreateGuardianRequest {
+                        student_id: user.id.clone(),
+                        full_name: trimmed_gname.to_string(),
+                        phone: row.guardian_phone.clone(),
+                        email: None,
+                        national_id: None,
+                        relationship: row.guardian_relationship.clone().unwrap_or_else(|| "father".to_string()),
+                        relationship_ar: None,
+                        is_primary: true,
+                        is_emergency_contact: true,
+                        is_payer: true,
+                        payment_share_percent: Some(100.0),
+                        occupation: None,
+                    };
+                    let _ = self.create_guardian(org_id, g_req).await;
                 }
             }
+
+            created += 1;
         }
 
         Ok(BulkImportResult {
@@ -251,15 +223,17 @@ impl super::Service {
             created,
             failed,
             errors,
+            active_cycle_name: None,
         })
     }
 
-    /// Bulk create grades from JSON rows.
-    /// Resolves student by email, finds enrollment, and creates grade records.
+    /// Bulk create grades with smart student matching.
+    /// Supports identification by: email, national_id, student_number, name, or auto-detect.
     pub async fn bulk_create_grades(
         &self,
         org_id: &str,
         graded_by: &str,
+        cycle_id_opt: Option<String>,
         rows: Vec<BulkGradeRow>,
     ) -> Result<BulkImportResult, String> {
         let total = rows.len();
@@ -267,31 +241,38 @@ impl super::Service {
         let mut failed = 0usize;
         let mut errors: Vec<BulkRowError> = Vec::new();
 
-        // Get current cycle
-        let cycle = self.repo.get_current_cycle(org_id).await
-            .map_err(|e| e.to_string())?
-            .ok_or_else(|| "لا توجد دورة أكاديمية نشطة".to_string())?;
+        // Resolve cycle
+        let cycle = if let Some(ref cid) = cycle_id_opt {
+            self.repo.get_cycle_by_id(cid).await
+                .map_err(|e| e.to_string())?
+                .ok_or_else(|| "الدورة الأكاديمية غير موجودة".to_string())?
+        } else {
+            self.repo.get_current_cycle(org_id).await
+                .map_err(|e| e.to_string())?
+                .ok_or_else(|| "لا توجد دورة أكاديمية نشطة".to_string())?
+        };
 
-        // Check if grade entry is open
+        let cycle_name = cycle.name.clone();
+
+        // Check grade entry open
         self.check_cycle_open_for_grading(&cycle.id).await?;
 
         for (idx, row) in rows.iter().enumerate() {
             let row_index = idx + 1;
 
-            // ── Required field validation ──
-            let trimmed_email = row.student_email.trim().to_lowercase();
-            if trimmed_email.is_empty() {
+            let identifier = row.student_identifier.trim();
+            if identifier.is_empty() {
                 errors.push(BulkRowError {
                     row_index,
-                    field: "student_email".to_string(),
-                    message: "بريد الطالب مطلوب".to_string(),
+                    field: "student_identifier".to_string(),
+                    message: "معرّف الطالب مطلوب".to_string(),
                 });
                 failed += 1;
                 continue;
             }
 
-            let trimmed_subject = row.subject_name.trim();
-            if trimmed_subject.is_empty() {
+            let subject = row.subject_name.trim();
+            if subject.is_empty() {
                 errors.push(BulkRowError {
                     row_index,
                     field: "subject_name".to_string(),
@@ -301,8 +282,8 @@ impl super::Service {
                 continue;
             }
 
-            let trimmed_semester = row.semester.trim();
-            if trimmed_semester.is_empty() {
+            let semester = row.semester.trim();
+            if semester.is_empty() {
                 errors.push(BulkRowError {
                     row_index,
                     field: "semester".to_string(),
@@ -333,23 +314,15 @@ impl super::Service {
                 continue;
             }
 
-            // ── Find student by email ──
-            let student = match self.repo.get_user_by_email(&trimmed_email).await {
-                Ok(Some(s)) => s,
-                Ok(None) => {
-                    errors.push(BulkRowError {
-                        row_index,
-                        field: "student_email".to_string(),
-                        message: format!("الطالب '{}' غير موجود", trimmed_email),
-                    });
-                    failed += 1;
-                    continue;
-                }
+            // ── Smart student matching ──
+            let id_type = row.identifier_type.as_deref().unwrap_or("auto");
+            let student = match self.resolve_student(org_id, identifier, id_type).await {
+                Ok(s) => s,
                 Err(e) => {
                     errors.push(BulkRowError {
                         row_index,
-                        field: "student_email".to_string(),
-                        message: format!("خطأ في البحث: {}", e),
+                        field: "student_identifier".to_string(),
+                        message: e,
                     });
                     failed += 1;
                     continue;
@@ -362,8 +335,8 @@ impl super::Service {
                 Ok(None) => {
                     errors.push(BulkRowError {
                         row_index,
-                        field: "student_email".to_string(),
-                        message: format!("لا يوجد تسجيل نشط للطالب '{}'", trimmed_email),
+                        field: "student_identifier".to_string(),
+                        message: format!("لا يوجد تسجيل نشط للطالب '{}' في هذه الدورة", student.full_name),
                     });
                     failed += 1;
                     continue;
@@ -371,28 +344,28 @@ impl super::Service {
                 Err(e) => {
                     errors.push(BulkRowError {
                         row_index,
-                        field: "student_email".to_string(),
-                        message: format!("خطأ في البحث: {}", e),
+                        field: "student_identifier".to_string(),
+                        message: format!("خطأ: {}", e),
                     });
                     failed += 1;
                     continue;
                 }
             };
 
-            // ── Calculate grade letter and points ──
+            // ── Create grade ──
             let percentage = (row.score / max_score) * 100.0;
             let grade_letter = Self::score_to_grade_letter(percentage);
             let grade_points = Self::score_to_grade_points(percentage);
             let exam_type = row.exam_type.as_deref().unwrap_or("final").to_string();
 
-            let g = grade::Model {
-                id: Uuid::new_v4().to_string(),
+            let g = crate::entities::grade::Model {
+                id: uuid::Uuid::new_v4().to_string(),
                 org_id: org_id.to_string(),
                 cycle_id: cycle.id.clone(),
                 enrollment_id: enrollment.id.clone(),
                 assessment_id: None,
                 class_subject_id: None,
-                subject_name: trimmed_subject.to_string(),
+                subject_name: subject.to_string(),
                 subject_name_ar: None,
                 score: row.score,
                 max_score,
@@ -400,13 +373,13 @@ impl super::Service {
                 grade_letter: Some(grade_letter),
                 grade_points: Some(grade_points),
                 exam_type,
-                semester: trimmed_semester.to_string(),
-                notes: None,
+                semester: semester.to_string(),
+                notes: row.notes.clone(),
                 graded_by: graded_by.to_string(),
-                graded_at: Utc::now().to_rfc3339(),
+                graded_at: chrono::Utc::now().to_rfc3339(),
                 is_final: 1,
-                created_at: Utc::now().to_rfc3339(),
-                updated_at: Utc::now().to_rfc3339(),
+                created_at: chrono::Utc::now().to_rfc3339(),
+                updated_at: chrono::Utc::now().to_rfc3339(),
             };
 
             match self.repo.create_grade(g).await {
@@ -427,6 +400,92 @@ impl super::Service {
             created,
             failed,
             errors,
+            active_cycle_name: Some(cycle_name),
         })
+    }
+
+    /// Smart student resolver: finds a student by various identifier types.
+    /// Auto mode: detects type from format (@ → email, STU- → student_number, numeric → national_id, else → name).
+    async fn resolve_student(
+        &self,
+        org_id: &str,
+        identifier: &str,
+        id_type: &str,
+    ) -> Result<crate::entities::user::Model, String> {
+        use sea_orm::{EntityTrait, QueryFilter, ColumnTrait, Condition};
+        use crate::entities::{user, enrollment};
+
+        match id_type {
+            "email" => {
+                self.repo.get_user_by_email(identifier).await
+                    .map_err(|e| e.to_string())?
+                    .ok_or_else(|| format!("الطالب غير موجود (بريد: {})", identifier))
+            }
+            "national_id" => {
+                user::Entity::find()
+                    .filter(user::Column::OrgId.eq(org_id))
+                    .filter(user::Column::NationalId.eq(identifier))
+                    .filter(user::Column::IsDeleted.eq(0))
+                    .one(&self.repo.db)
+                    .await
+                    .map_err(|e| e.to_string())?
+                    .ok_or_else(|| format!("الطالب غير موجود (رقم وطني: {})", identifier))
+            }
+            "student_number" => {
+                let enrollment_opt = enrollment::Entity::find()
+                    .filter(enrollment::Column::OrgId.eq(org_id))
+                    .filter(enrollment::Column::StudentNumber.eq(identifier))
+                    .one(&self.repo.db)
+                    .await
+                    .map_err(|e| e.to_string())?;
+
+                if let Some(enr) = enrollment_opt {
+                    self.repo.get_user_by_id(&enr.student_id).await
+                        .map_err(|e| e.to_string())?
+                        .ok_or_else(|| format!("الطالب غير موجود (رقم أكاديمي: {})", identifier))
+                } else {
+                    Err(format!("لا يوجد تسجيل بالرقم الأكاديمي: {}", identifier))
+                }
+            }
+            "name" => {
+                let students = user::Entity::find()
+                    .filter(user::Column::OrgId.eq(org_id))
+                    .filter(user::Column::IsDeleted.eq(0))
+                    .filter(
+                        Condition::any()
+                            .add(user::Column::FullName.eq(identifier))
+                            .add(user::Column::NameAr.eq(identifier))
+                    )
+                    .all(&self.repo.db)
+                    .await
+                    .map_err(|e| e.to_string())?;
+
+                match students.len() {
+                    0 => Err(format!("لا يوجد طالب بالاسم: {}", identifier)),
+                    1 => Ok(students.into_iter().next().unwrap()),
+                    n => Err(format!(
+                        "تطابق متعدد: وُجد {} طالب بالاسم '{}'. استخدم البريد أو الرقم الوطني بدلاً من ذلك.",
+                        n, identifier
+                    )),
+                }
+            }
+            _ => {
+                // Auto-detect
+                if identifier.contains('@') {
+                    self.resolve_student(org_id, identifier, "email").await
+                } else if identifier.starts_with("STU-") || identifier.starts_with("stu-") {
+                    self.resolve_student(org_id, identifier, "student_number").await
+                } else if identifier.chars().all(|c| c.is_ascii_digit()) && identifier.len() >= 5 {
+                    self.resolve_student(org_id, identifier, "national_id").await
+                } else {
+                    // Try email first, then name
+                    if let Ok(s) = self.resolve_student(org_id, identifier, "email").await {
+                        Ok(s)
+                    } else {
+                        self.resolve_student(org_id, identifier, "name").await
+                    }
+                }
+            }
+        }
     }
 }

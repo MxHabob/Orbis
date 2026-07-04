@@ -39,11 +39,12 @@ pub async fn bulk_create_grades(
     state: State<'_, Arc<AppState>>,
     org_id: String,
     graded_by: String,
+    cycle_id: Option<String>,
     rows: Vec<BulkGradeRow>,
 ) -> CmdResult<BulkImportResult> {
     state
         .service
-        .bulk_create_grades(&org_id, &graded_by, rows)
+        .bulk_create_grades(&org_id, &graded_by, cycle_id, rows)
         .await
         .map_err(CommandError::from)
 }

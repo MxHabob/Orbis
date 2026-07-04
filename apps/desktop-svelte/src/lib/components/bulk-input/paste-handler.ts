@@ -1,44 +1,43 @@
 /**
  * @module paste-handler
- * Parses Excel clipboard data (tab-separated values) and maps to grid rows.
+ * Parses clipboard data (TSV from Excel/Google Sheets) into grid row objects.
+ * Works with any tabular source that copies as tab-separated values.
  */
-
-import type { BulkInputType } from "./bulk-input-config";
-import { getDataProps } from "./bulk-input-config";
 
 /**
- * Parse tab-separated clipboard text from Excel into grid row objects.
- * Maps columns in order based on the active bulk input type.
- *
- * @param clipboardText - Raw clipboard text (TSV from Excel)
- * @param type - Active bulk input type (determines column mapping)
- * @returns Array of row objects with properties matching the grid columns
+ * Parse raw TSV clipboard text into a 2D string array.
+ * Handles Windows (\r\n) and Unix (\n) line endings.
  */
-export function parseExcelPaste(
-  clipboardText: string,
-  type: BulkInputType,
-): Record<string, unknown>[] {
-  const props = getDataProps(type);
-  const lines = clipboardText.split(/\r?\n/).filter((line) => line.trim() !== "");
-  const rows: Record<string, unknown>[] = [];
+export function parseTSV(text: string): string[][] {
+  return text
+    .split(/\r?\n/)
+    .filter((line) => line.trim() !== "")
+    .map((line) => line.split("\t"));
+}
 
-  for (const line of lines) {
-    const cells = line.split("\t");
-    const row: Record<string, unknown> = {};
+/**
+ * Convert a 2D TSV array into row objects using provided column props.
+ * Each column prop maps to the corresponding TSV column index.
+ *
+ * @param data - 2D string array from parseTSV
+ * @param props - Ordered array of property names to map columns to
+ * @returns Array of row objects
+ */
+export function mapTSVToRows(
+  data: string[][],
+  props: string[],
+): Record<string, string>[] {
+  const rows: Record<string, string>[] = [];
 
-    // Map each cell to its corresponding column prop
+  for (const cells of data) {
+    const row: Record<string, string> = {};
+    let hasData = false;
+
     for (let i = 0; i < props.length; i++) {
-      row[props[i]] = cells[i]?.trim() ?? "";
+      const val = cells[i]?.trim() ?? "";
+      row[props[i]] = val;
+      if (val) hasData = true;
     }
-
-    // Initialize internal fields
-    row.__errors = new Map<string, string>();
-
-    // Skip rows where all data fields are empty
-    const hasData = props.some((p) => {
-      const val = String(row[p] ?? "").trim();
-      return val !== "";
-    });
 
     if (hasData) {
       rows.push(row);
@@ -49,34 +48,41 @@ export function parseExcelPaste(
 }
 
 /**
- * Detect if the first row of pasted data looks like a header row.
- * Checks if the values match common header names.
+ * Detect if the first row looks like a header row.
+ * Uses common header patterns in English and Arabic.
  */
-export function detectHeaderRow(
-  firstRow: Record<string, unknown>,
-  type: BulkInputType,
+export function isHeaderRow(
+  firstRow: string[],
+  headerPatterns: RegExp[],
 ): boolean {
-  const headerPatterns: Record<BulkInputType, RegExp[]> = {
-    students: [/name|اسم/i, /email|بريد/i, /phone|هاتف/i],
-    teachers: [/name|اسم/i, /email|بريد/i, /phone|هاتف/i],
-    grades: [/email|بريد/i, /subject|مادة/i, /score|درجة/i],
-  };
-
-  const patterns = headerPatterns[type];
-  const values = Object.values(firstRow).filter(
-    (v) => typeof v === "string" && !String(v).startsWith("__"),
-  );
+  if (firstRow.length === 0) return false;
 
   let matches = 0;
-  for (const val of values) {
-    for (const pattern of patterns) {
-      if (pattern.test(String(val))) {
+  for (const cell of firstRow) {
+    for (const pattern of headerPatterns) {
+      if (pattern.test(cell)) {
         matches++;
         break;
       }
     }
   }
 
-  // If more than half of the patterns match, it's likely a header
-  return matches >= Math.ceil(patterns.length / 2);
+  // If ≥50% of patterns match, it's a header
+  return matches >= Math.ceil(headerPatterns.length / 2);
 }
+
+/** Common header patterns for student data */
+export const STUDENT_HEADER_PATTERNS: RegExp[] = [
+  /name|اسم|الاسم/i,
+  /email|بريد|إيميل/i,
+  /phone|هاتف|جوال/i,
+  /national|وطني|هوية/i,
+];
+
+/** Common header patterns for grade data */
+export const GRADE_HEADER_PATTERNS: RegExp[] = [
+  /student|طالب|المعرف/i,
+  /subject|مادة/i,
+  /score|درجة|علامة/i,
+  /semester|فصل/i,
+];
