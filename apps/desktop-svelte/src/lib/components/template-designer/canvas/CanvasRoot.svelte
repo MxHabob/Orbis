@@ -315,20 +315,5 @@ function handleDrop(e: DragEvent) {
       {/if}
     </g>
   </svg>
-
-  <!-- Status bar -->
-  <div class="absolute bottom-0 inset-x-0 h-6 bg-card/80 border-t border-border/40 flex items-center px-3 gap-4 text-[10px] text-muted-foreground backdrop-blur-sm">
-    <span>{store.zoomPercent}%</span>
-    <span class="border-s border-border/30 ps-3">
-      X: {cursorDocMm.x.toFixed(1)}mm  Y: {cursorDocMm.y.toFixed(1)}mm
-    </span>
-    {#if store.selectedNode}
-      <span class="border-s border-border/30 ps-3 text-foreground font-medium">
-        {store.selectedNode.name || store.selectedNode.id}
-      </span>
-    {/if}
-    <span class="ms-auto">
-      {store.activePageIndex + 1} / {store.pageCount}
-    </span>
-  </div>
 </div>
+

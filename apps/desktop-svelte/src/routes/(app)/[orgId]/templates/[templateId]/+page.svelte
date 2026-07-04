@@ -1,66 +1,41 @@
 <script lang="ts">
 /**
- * Template Designer — Main Editor Page (v2.0)
- *
- * Full WYSIWYG visual editor with:
- *   - SVG Canvas with zoom/pan
- *   - Layers panel (left)
- *   - Inspector panel (right)
- *   - Toolbar (top)
- *   - Status bar (bottom of canvas)
+ * Template Designer — Main Editor Page (v3.0 — Canva-Inspired)
  *
  * Layout:
- * ┌────────────────────────────────────────────────┐
- * │ Header (back + title + status)                 │
- * ├────────────────────────────────────────────────┤
- * │ ToolbarPanel                                   │
- * ├──────────┬─────────────────────┬───────────────┤
- * │ Layers   │     CanvasRoot      │  Inspector    │
- * │ Panel    │   (SVG viewport)    │  Panel        │
- * │ (240px)  │                     │  (260px)      │
- * └──────────┴─────────────────────┴───────────────┘
+ * ┌──────────────────────────────────────────────────┐
+ * │ ContextToolbar (contextual by selection)          │
+ * ├────────────────────────────────────────────┬──────┤
+ * │                                            │ Side │
+ * │   Canvas (WYSIWYG) + FloatingActionBar     │ Rail │
+ * │   + FlyoutPanel (overlay)                  │ 56px │
+ * │                                            │      │
+ * ├────────────────────────────────────────────┴──────┤
+ * │ StatusBar (zoom slider | page | cursor | snap)    │
+ * └──────────────────────────────────────────────────┘
  */
 import { page } from "$app/state";
 import { onMount } from "svelte";
 import { goto } from "$app/navigation";
 import { commands } from "$lib/services/ipc";
 import { Button } from "@orbis/ui-svelte/button";
-import { Badge } from "@orbis/ui-svelte/badge";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { l } from "$lib/i18n-utils";
-import {
-  ArrowLeft,
-  RefreshCw,
-  Sparkles,
-} from "lucide-svelte";
+import { RefreshCw } from "lucide-svelte";
 
 import { deserializeDocument, serializeDocument } from "@docforge/core";
 import { createEditorStore } from "$lib/components/template-designer/stores/editor-store.svelte";
 import { copyNodes, cutNodes, pasteNodes } from "$lib/components/template-designer/stores/clipboard-manager";
 import CanvasRoot from "$lib/components/template-designer/canvas/CanvasRoot.svelte";
 import CanvasContextMenu from "$lib/components/template-designer/canvas/CanvasContextMenu.svelte";
-import ToolbarPanel from "$lib/components/template-designer/panels/ToolbarPanel.svelte";
-import LayersPanel from "$lib/components/template-designer/panels/LayersPanel.svelte";
-import PagesPanel from "$lib/components/template-designer/panels/PagesPanel.svelte";
-import VariablesPanel from "$lib/components/template-designer/panels/VariablesPanel.svelte";
-import InspectorPanel from "$lib/components/template-designer/panels/InspectorPanel.svelte";
-import AssetPanel from "$lib/components/template-designer/panels/AssetPanel.svelte";
-import HistoryPanel from "$lib/components/template-designer/panels/HistoryPanel.svelte";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "@orbis/ui-svelte/tabs";
-import {
-  Layers,
-  FileText,
-  Variable,
-  Sliders,
-  ImageIcon,
-  History,
-} from "lucide-svelte";
+
+// ── New Layout Components ────────────────────────────────────
+import SideRail from "$lib/components/template-designer/layout/SideRail.svelte";
+import FlyoutPanel from "$lib/components/template-designer/layout/FlyoutPanel.svelte";
+import ContextToolbar from "$lib/components/template-designer/layout/ContextToolbar.svelte";
+import FloatingActionBar from "$lib/components/template-designer/layout/FloatingActionBar.svelte";
+import StatusBar from "$lib/components/template-designer/layout/StatusBar.svelte";
 
 // ── Router ───────────────────────────────────────────────────
 
@@ -74,15 +49,12 @@ let isLoading = $state(true);
 let isSaving = $state(false);
 let isPreviewLoading = $state(false);
 let previewPdfUrl = $state<string | null>(null);
-let leftPanelTab = $state("layers");
-let rightPanelTab = $state("inspector");
 let contextMenuVisible = $state(false);
 let contextMenuX = $state(0);
 let contextMenuY = $state(0);
 
 // ── Editor Store ─────────────────────────────────────────────
 
-// Create with a minimal placeholder document — replaced on load
 let store = createEditorStore({
   version: "2.0",
   meta: {
@@ -107,18 +79,13 @@ let store = createEditorStore({
 async function initEditor() {
   isLoading = true;
   try {
-    // 1. Fetch template record from DB
     templateRecord = await commands.documentTemplates.getTemplate(
       orgId || "",
       templateId || "",
     );
 
-    // 2. Parse and migrate document model
     const doc = deserializeDocument(templateRecord.document_json);
-
-    // 3. Load into editor store
     store.loadDocument(doc);
-
     isLoading = false;
   } catch (e: unknown) {
     const msg = (e as any)?.message || "Failed to initialize editor";
@@ -190,6 +157,7 @@ async function generatePreview() {
     if (pdfBytes && pdfBytes.length > 0) {
       const base64 = uint8ArrayToBase64(pdfBytes);
       previewPdfUrl = `data:application/pdf;base64,${base64}`;
+      store.editorMode = "preview";
     }
   } catch (e: unknown) {
     const msg = (e as any)?.message || "Failed to generate preview";
@@ -205,8 +173,14 @@ function handleKeydown(e: KeyboardEvent) {
   const isCtrl = e.ctrlKey || e.metaKey;
   const isInputFocused = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
 
-  // Close context menu on any key
   if (contextMenuVisible) { contextMenuVisible = false; }
+
+  // Close flyout on Escape
+  if (e.key === "Escape" && store.activeRailPanel) {
+    e.preventDefault();
+    store.activeRailPanel = null;
+    return;
+  }
 
   if (isCtrl && e.key === "z") { e.preventDefault(); store.undo(); }
   else if (isCtrl && e.key === "y") { e.preventDefault(); store.redo(); }
@@ -239,11 +213,10 @@ function handleKeydown(e: KeyboardEvent) {
     }
   }
   else if (e.key === "Escape") { store.clearSelection(); }
-  // Arrow key nudge
   else if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key) && !isInputFocused) {
     if (store.selectedIds.length > 0 && store.selectedNode) {
       e.preventDefault();
-      const nudge = e.shiftKey ? 10 : 1; // mm
+      const nudge = e.shiftKey ? 10 : 1;
       const pos = (store.selectedNode as any).position;
       if (pos) {
         const dx = e.key === "ArrowLeft" ? -nudge : e.key === "ArrowRight" ? nudge : 0;
@@ -264,6 +237,12 @@ function handleContextMenu(e: MouseEvent) {
   contextMenuVisible = true;
 }
 
+// ── Back Navigation ──────────────────────────────────────────
+
+function goBack() {
+  goto(`/${orgId}/templates`);
+}
+
 // ── Lifecycle ────────────────────────────────────────────────
 
 onMount(() => {
@@ -276,124 +255,57 @@ onMount(() => {
 });
 </script>
 
-<div class="h-full w-full flex flex-col bg-background/40" oncontextmenu={handleContextMenu}>
-
-  <!-- ═══ Header ═══ -->
-  <header class="h-12 border-b border-border bg-card/60 px-4 flex items-center justify-between gap-4 flex-nowrap select-none shrink-0">
-    <div class="flex items-center gap-3">
-      <Button variant="ghost" size="icon-sm" href={`/${orgId}/templates`} class="cursor-pointer">
-        <ArrowLeft size={16} class="rtl:rotate-180" />
-      </Button>
-      <div class="flex flex-col text-start">
-        <div class="flex items-center gap-2">
-          <h1 class="text-sm font-bold text-foreground truncate max-w-[250px]">
-            {templateRecord ? l(templateRecord.name_ar, templateRecord.name) : "..."}
-          </h1>
-          {#if templateRecord}
-            <Badge variant="outline" class="text-[9px] capitalize">{templateRecord.entity_type}</Badge>
-          {/if}
-          {#if store.isDirty}
-            <Badge variant="secondary" class="text-[9px]">●</Badge>
-          {/if}
-        </div>
-        <div class="flex items-center gap-1.5">
-          <Sparkles size={10} class="text-primary" />
-          <p class="text-[9px] text-muted-foreground">Template Designer v2.0</p>
-        </div>
-      </div>
-    </div>
-  </header>
+<div class="editor-root" oncontextmenu={handleContextMenu}>
 
   {#if isLoading}
     <!-- Loading State -->
-    <div class="flex-grow flex flex-col items-center justify-center gap-3">
+    <div class="flex-grow flex flex-col items-center justify-center gap-3 bg-background/40">
       <RefreshCw size={24} class="animate-spin text-primary" />
       <p class="text-xs text-muted-foreground">جاري تحميل المحرر...</p>
     </div>
   {:else}
-    <!-- ═══ Toolbar ═══ -->
-    <ToolbarPanel {store} onsave={saveTemplate} onpreview={generatePreview} />
+    <!-- ═══ Context Toolbar ═══ -->
+    <ContextToolbar
+      {store}
+      templateName={templateRecord ? l(templateRecord.name_ar, templateRecord.name) : "..."}
+      onback={goBack}
+      onsave={saveTemplate}
+      onpreview={generatePreview}
+    />
 
-    <!-- ═══ Main Editor Area ═══ -->
-    <div class="flex-grow flex overflow-hidden">
+    <!-- ═══ Main Area: Canvas + SideRail + FlyoutPanel ═══ -->
+    <div class="editor-main">
 
-      <!-- Left Panel: Tabbed (Layers / Pages / Variables) -->
-      <aside class="w-[240px] border-e border-border bg-card/10 shrink-0 overflow-hidden flex flex-col">
-        <Tabs bind:value={leftPanelTab} class="flex flex-col h-full">
-          <TabsList class="flex h-8 p-0 bg-muted/20 border-b border-border/30 rounded-none shrink-0">
-            <TabsTrigger value="layers" class="flex-1 text-[9px] gap-1 h-full rounded-none data-[state=active]:bg-card cursor-pointer">
-              <Layers size={11} />
-              الطبقات
-            </TabsTrigger>
-            <TabsTrigger value="pages" class="flex-1 text-[9px] gap-1 h-full rounded-none data-[state=active]:bg-card cursor-pointer">
-              <FileText size={11} />
-              الصفحات
-            </TabsTrigger>
-            <TabsTrigger value="variables" class="flex-1 text-[9px] gap-1 h-full rounded-none data-[state=active]:bg-card cursor-pointer">
-              <Variable size={11} />
-              المتغيرات
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="layers" class="flex-grow overflow-hidden mt-0">
-            <LayersPanel {store} />
-          </TabsContent>
-          <TabsContent value="pages" class="flex-grow overflow-hidden mt-0">
-            <PagesPanel {store} />
-          </TabsContent>
-          <TabsContent value="variables" class="flex-grow overflow-hidden mt-0">
-            <VariablesPanel {store} />
-          </TabsContent>
-        </Tabs>
-      </aside>
-
-      <!-- Center: Canvas -->
-      <div class="flex-grow flex flex-col overflow-hidden relative">
+      <!-- Canvas Area (takes full remaining space) -->
+      <div class="canvas-area">
         {#if store.editorMode === "preview" && previewPdfUrl}
           <!-- PDF Preview Mode -->
           <div class="flex-grow relative">
             <iframe src={previewPdfUrl} title="PDF Preview" class="w-full h-full border-none"></iframe>
             <div class="absolute top-2 end-2">
               <Button variant="outline" size="xs" onclick={() => { store.editorMode = "design"; }} class="cursor-pointer">
-                Back to Editor
+                العودة للمحرر
               </Button>
             </div>
           </div>
         {:else}
           <!-- Design Canvas -->
           <CanvasRoot {store} />
+
+          <!-- Floating Action Bar (overlay above selected element) -->
+          <FloatingActionBar {store} />
         {/if}
+
+        <!-- Flyout Panel (overlay from right) -->
+        <FlyoutPanel {store} />
       </div>
 
-      <!-- Right Panel: Tabbed (Inspector / Assets / History) -->
-      <aside class="w-[260px] border-s border-border bg-card/10 shrink-0 overflow-hidden flex flex-col">
-        <Tabs bind:value={rightPanelTab} class="flex flex-col h-full">
-          <TabsList class="flex h-8 p-0 bg-muted/20 border-b border-border/30 rounded-none shrink-0">
-            <TabsTrigger value="inspector" class="flex-1 text-[9px] gap-1 h-full rounded-none data-[state=active]:bg-card cursor-pointer">
-              <Sliders size={11} />
-              الخصائص
-            </TabsTrigger>
-            <TabsTrigger value="assets" class="flex-1 text-[9px] gap-1 h-full rounded-none data-[state=active]:bg-card cursor-pointer">
-              <ImageIcon size={11} />
-              الأصول
-            </TabsTrigger>
-            <TabsTrigger value="history" class="flex-1 text-[9px] gap-1 h-full rounded-none data-[state=active]:bg-card cursor-pointer">
-              <History size={11} />
-              السجل
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="inspector" class="flex-grow overflow-hidden mt-0">
-            <InspectorPanel {store} />
-          </TabsContent>
-          <TabsContent value="assets" class="flex-grow overflow-hidden mt-0">
-            <AssetPanel {store} />
-          </TabsContent>
-          <TabsContent value="history" class="flex-grow overflow-hidden mt-0">
-            <HistoryPanel {store} />
-          </TabsContent>
-        </Tabs>
-      </aside>
-
+      <!-- Side Rail (icon strip - always visible) -->
+      <SideRail {store} />
     </div>
+
+    <!-- ═══ Status Bar ═══ -->
+    <StatusBar {store} />
   {/if}
 
   <!-- Context Menu -->
@@ -405,3 +317,29 @@ onMount(() => {
     onclose={() => contextMenuVisible = false}
   />
 </div>
+
+<style>
+  .editor-root {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    background: var(--color-background);
+    overflow: hidden;
+  }
+
+  .editor-main {
+    flex-grow: 1;
+    display: flex;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .canvas-area {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+</style>

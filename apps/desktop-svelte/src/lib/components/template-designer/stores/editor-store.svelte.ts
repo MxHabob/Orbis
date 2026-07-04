@@ -75,6 +75,11 @@ export function createEditorStore(initialDoc: TemplateDocument) {
   let rulersVisible = $state(true);
   let guidesVisible = $state(true);
 
+  // ── Layout UI (Canva-style) ──────────────────────────────
+  type RailPanel = "templates" | "elements" | "text" | "uploads" | "tools" | "page-setup" | null;
+  let activeRailPanel = $state<RailPanel>(null);
+  let flyoutWidth = $state(320);
+
   // ── Layout Cache ─────────────────────────────────────────
   let nodeLayouts = $state<Map<string, NodeLayoutInfo>>(new Map());
 
@@ -372,6 +377,8 @@ export function createEditorStore(initialDoc: TemplateDocument) {
     get undoHistory() { return undoStack.map((e) => e.cmd.description); },
     get commandHistory() { return commandHistory; },
     get historyIndex() { return historyIndex; },
+    get activeRailPanel() { return activeRailPanel; },
+    get flyoutWidth() { return flyoutWidth; },
 
     // Setters
     set activeTool(t: EditorTool) { activeTool = t; },
@@ -381,6 +388,15 @@ export function createEditorStore(initialDoc: TemplateDocument) {
     set snapEnabled(v: boolean) { snapEnabled = v; },
     set rulersVisible(v: boolean) { rulersVisible = v; },
     set guidesVisible(v: boolean) { guidesVisible = v; },
+    set activeRailPanel(p: RailPanel) { activeRailPanel = p; },
+    set flyoutWidth(w: number) { flyoutWidth = Math.max(280, Math.min(480, w)); },
+    toggleRailPanel(panel: string) {
+      if (activeRailPanel === panel) {
+        activeRailPanel = null;
+      } else {
+        activeRailPanel = panel as RailPanel;
+      }
+    },
 
     // Commands
     executeCommand,
@@ -420,6 +436,58 @@ export function createEditorStore(initialDoc: TemplateDocument) {
     resizeSelected,
     deleteSelected,
     duplicateSelected,
+
+    // Layer ordering
+    bringToFront() {
+      if (selectedIds.length !== 1 || !activePage) return;
+      const page = activePage;
+      const idx = page.children.findIndex((c) => c.id === selectedIds[0]);
+      if (idx < 0 || idx === page.children.length - 1) return;
+      const node = page.children[idx]!;
+      const newChildren = [...page.children];
+      newChildren.splice(idx, 1);
+      newChildren.push(node);
+      executeCommand({
+        type: "reorder",
+        description: `Bring ${node.name || node.id} to front`,
+        descriptionAr: `إحضار ${node.name || node.id} للأمام`,
+        execute: (doc) => {
+          const p = getPages(doc).find((pg) => pg.id === page.id);
+          if (p) (p as any).children = newChildren;
+          return { ...doc };
+        },
+        undo: (doc) => {
+          const p = getPages(doc).find((pg) => pg.id === page.id);
+          if (p) (p as any).children = [...page.children];
+          return { ...doc };
+        },
+      } as EditorCommand);
+    },
+    sendToBack() {
+      if (selectedIds.length !== 1 || !activePage) return;
+      const page = activePage;
+      const idx = page.children.findIndex((c) => c.id === selectedIds[0]);
+      if (idx <= 0) return;
+      const node = page.children[idx]!;
+      const newChildren = [...page.children];
+      newChildren.splice(idx, 1);
+      newChildren.unshift(node);
+      executeCommand({
+        type: "reorder",
+        description: `Send ${node.name || node.id} to back`,
+        descriptionAr: `إرسال ${node.name || node.id} للخلف`,
+        execute: (doc) => {
+          const p = getPages(doc).find((pg) => pg.id === page.id);
+          if (p) (p as any).children = newChildren;
+          return { ...doc };
+        },
+        undo: (doc) => {
+          const p = getPages(doc).find((pg) => pg.id === page.id);
+          if (p) (p as any).children = [...page.children];
+          return { ...doc };
+        },
+      } as EditorCommand);
+    },
 
     // Viewport
     setZoom,

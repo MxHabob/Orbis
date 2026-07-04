@@ -2076,6 +2076,57 @@
 
   "td_drag_drop_hint": "أفلت لإنشاء عنصر",
   "td_snap_enabled": "الالتصاق مفعّل",
-  "td_snap_disabled": "الالتصاق معطّل"
+  "td_snap_disabled": "الالتصاق معطّل",
+
+  "td_rail_templates": "قوالب",
+  "td_rail_elements": "عناصر",
+  "td_rail_text": "نص",
+  "td_rail_uploads": "رفع",
+  "td_rail_tools": "أدوات",
+  "td_rail_page_setup": "إعدادات",
+
+  "td_flyout_templates": "القوالب",
+  "td_flyout_elements": "العناصر",
+  "td_flyout_text": "أنماط النص",
+  "td_flyout_uploads": "الأصول والصور",
+  "td_flyout_tools": "الأدوات",
+  "td_flyout_page_setup": "إعدادات الصفحة",
+  "td_flyout_coming_soon": "قريباً",
+  "td_flyout_search_templates": "ابحث في القوالب...",
+  "td_flyout_search_elements": "ابحث في العناصر...",
+
+  "td_ctx_back": "رجوع",
+  "td_ctx_undo": "تراجع",
+  "td_ctx_redo": "إعادة",
+  "td_ctx_grid": "الشبكة",
+  "td_ctx_snap": "الالتصاق",
+  "td_ctx_rulers": "المساطر",
+  "td_ctx_preview": "معاينة",
+  "td_ctx_save": "حفظ",
+  "td_ctx_fill": "تعبئة",
+  "td_ctx_stroke": "حدود",
+  "td_ctx_corners": "زوايا",
+  "td_ctx_fit": "ملاءمة",
+  "td_ctx_opacity": "شفافية",
+  "td_ctx_data": "البيانات",
+  "td_ctx_format": "الصيغة",
+  "td_ctx_selected_elements": "عناصر محددة",
+
+  "td_fab_duplicate": "تكرار",
+  "td_fab_delete": "حذف",
+  "td_fab_lock": "قفل",
+  "td_fab_unlock": "فتح القفل",
+  "td_fab_bring_front": "للأمام",
+  "td_fab_send_back": "للخلف",
+
+  "td_status_page": "الصفحة",
+  "td_status_zoom_in": "تكبير",
+  "td_status_zoom_out": "تصغير",
+  "td_status_fit": "ملء الشاشة",
+  "td_status_snap_on": "إيقاف الالتصاق",
+  "td_status_snap_off": "تفعيل الالتصاق",
+
+  "td_back_to_editor": "العودة للمحرر",
+  "td_loading_editor": "جاري تحميل المحرر..."
 }
 

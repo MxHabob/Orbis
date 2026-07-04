@@ -2070,6 +2070,57 @@
 
   "td_drag_drop_hint": "Drop to create element",
   "td_snap_enabled": "Snap enabled",
-  "td_snap_disabled": "Snap disabled"
+  "td_snap_disabled": "Snap disabled",
+
+  "td_rail_templates": "Templates",
+  "td_rail_elements": "Elements",
+  "td_rail_text": "Text",
+  "td_rail_uploads": "Uploads",
+  "td_rail_tools": "Tools",
+  "td_rail_page_setup": "Page Setup",
+
+  "td_flyout_templates": "Templates",
+  "td_flyout_elements": "Elements",
+  "td_flyout_text": "Text Presets",
+  "td_flyout_uploads": "Assets & Images",
+  "td_flyout_tools": "Tools",
+  "td_flyout_page_setup": "Page Setup",
+  "td_flyout_coming_soon": "Coming soon",
+  "td_flyout_search_templates": "Search templates...",
+  "td_flyout_search_elements": "Search elements...",
+
+  "td_ctx_back": "Back",
+  "td_ctx_undo": "Undo",
+  "td_ctx_redo": "Redo",
+  "td_ctx_grid": "Grid",
+  "td_ctx_snap": "Snap",
+  "td_ctx_rulers": "Rulers",
+  "td_ctx_preview": "Preview",
+  "td_ctx_save": "Save",
+  "td_ctx_fill": "Fill",
+  "td_ctx_stroke": "Stroke",
+  "td_ctx_corners": "Corners",
+  "td_ctx_fit": "Fit",
+  "td_ctx_opacity": "Opacity",
+  "td_ctx_data": "Data",
+  "td_ctx_format": "Format",
+  "td_ctx_selected_elements": "selected elements",
+
+  "td_fab_duplicate": "Duplicate",
+  "td_fab_delete": "Delete",
+  "td_fab_lock": "Lock",
+  "td_fab_unlock": "Unlock",
+  "td_fab_bring_front": "Bring to Front",
+  "td_fab_send_back": "Send to Back",
+
+  "td_status_page": "Page",
+  "td_status_zoom_in": "Zoom In",
+  "td_status_zoom_out": "Zoom Out",
+  "td_status_fit": "Fit to screen",
+  "td_status_snap_on": "Disable snap",
+  "td_status_snap_off": "Enable snap",
+
+  "td_back_to_editor": "Back to Editor",
+  "td_loading_editor": "Loading editor..."
 }
 
