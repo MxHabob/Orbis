@@ -10,7 +10,7 @@
  * Shows distance markers at midpoints.
  */
 import type { SnapLine } from "@docforge/core";
-import { mmToPx } from "@docforge/core";
+import { mmToPx } from "@docforge/core/canvas";
 import type { ViewportTransform } from "@docforge/core";
 
 let {

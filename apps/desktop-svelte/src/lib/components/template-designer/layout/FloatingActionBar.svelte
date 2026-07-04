@@ -5,7 +5,7 @@
  * Positioned relative to the element's bounding box in screen coordinates.
  */
 import type { EditorStore } from "../stores/editor-store.svelte";
-import { mmToPx } from "@docforge/core";
+import { mmToPx } from "@docforge/core/canvas";
 import {
   Tooltip,
   TooltipTrigger,

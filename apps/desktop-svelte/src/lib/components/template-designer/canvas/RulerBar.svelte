@@ -4,7 +4,7 @@
  * Tracks cursor position with a red indicator.
  */
 import type { ViewportTransform } from "@docforge/core";
-import { mmToPx } from "@docforge/core";
+import { mmToPx } from "@docforge/core/canvas";
 
 let {
   axis,

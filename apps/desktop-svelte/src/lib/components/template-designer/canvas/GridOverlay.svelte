@@ -3,7 +3,7 @@
  * GridOverlay — Renders a dot or line grid on the canvas page.
  */
 import type { ViewportTransform } from "@docforge/core";
-import { mmToPx } from "@docforge/core";
+import { mmToPx } from "@docforge/core/canvas";
 
 let {
   widthPx,

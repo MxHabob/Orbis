@@ -5,7 +5,7 @@
  * as SVG elements at their exact mm positions.
  */
 import type { TemplateNode } from "@docforge/core";
-import { mmToPx } from "@docforge/core";
+import { mmToPx } from "@docforge/core/canvas";
 import type { EditorStore } from "../stores/editor-store.svelte";
 
 let {
