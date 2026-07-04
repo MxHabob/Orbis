@@ -48,7 +48,7 @@ function updatePosition(key: string, value: number) {
   <!-- Header -->
   <div class="px-3 py-2 border-b border-border/40 flex items-center gap-2">
     <Sliders size={13} class="text-primary shrink-0" />
-    <h3 class="text-xs font-bold text-foreground">الخصائص / Inspector</h3>
+    <h3 class="text-xs font-bold text-foreground">الخصائص</h3>
   </div>
 
   {#if !node}
@@ -68,7 +68,7 @@ function updatePosition(key: string, value: number) {
 
       <!-- Name -->
       <div class="flex flex-col gap-1">
-        <Label class="text-[10px] text-muted-foreground">الاسم / Name</Label>
+        <Label class="text-[10px] text-muted-foreground">الاسم</Label>
         <Input
           type="text"
           value={node.name || ""}
@@ -84,7 +84,7 @@ function updatePosition(key: string, value: number) {
         <!-- Position & Size -->
         <AccordionItem value="position">
           <AccordionTrigger class="text-[10px] font-semibold py-1.5">
-            الموقع والأبعاد / Position
+            الموقع والأبعاد
           </AccordionTrigger>
           <AccordionContent>
             <div class="grid grid-cols-2 gap-2 pt-1">
@@ -156,7 +156,7 @@ function updatePosition(key: string, value: number) {
         <!-- Appearance -->
         <AccordionItem value="appearance">
           <AccordionTrigger class="text-[10px] font-semibold py-1.5">
-            المظهر / Appearance
+            المظهر
           </AccordionTrigger>
           <AccordionContent>
             <div class="flex flex-col gap-2 pt-1">
@@ -195,14 +195,14 @@ function updatePosition(key: string, value: number) {
         <!-- Content (type-specific) -->
         <AccordionItem value="content">
           <AccordionTrigger class="text-[10px] font-semibold py-1.5">
-            المحتوى / Content
+            المحتوى
           </AccordionTrigger>
           <AccordionContent>
             <div class="flex flex-col gap-2 pt-1">
               {#if nodeType === "Text"}
                 <!-- Text Content -->
                 <div class="flex flex-col gap-1">
-                  <Label class="text-[9px] text-muted-foreground">المحتوى / Content</Label>
+                  <Label class="text-[9px] text-muted-foreground">المحتوى</Label>
                   <Textarea
                     value={props.content || ""}
                     oninput={(e) => updateProp("content", e.currentTarget.value)}

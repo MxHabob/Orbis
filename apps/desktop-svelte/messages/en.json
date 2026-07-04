@@ -2121,6 +2121,11 @@
   "td_status_snap_off": "Enable snap",
 
   "td_back_to_editor": "Back to Editor",
-  "td_loading_editor": "Loading editor..."
+  "td_loading_editor": "Loading editor...",
+
+  "td_inline_edit_hint": "Double-click to edit text",
+  "td_rotation_snap": "Hold Shift for 15° increments",
+  "td_rubber_band_hint": "Drag on empty area to select multiple elements",
+  "td_aspect_ratio_hint": "Hold Shift to constrain aspect ratio"
 }
 

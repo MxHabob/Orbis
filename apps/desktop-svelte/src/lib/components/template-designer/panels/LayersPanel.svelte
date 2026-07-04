@@ -73,7 +73,7 @@ function getIconColor(type: string): string {
 <div class="flex flex-col h-full text-start">
   <!-- Header -->
   <div class="px-3 py-2 border-b border-border/40 flex items-center justify-between">
-    <h3 class="text-xs font-bold text-foreground">الطبقات / Layers</h3>
+    <h3 class="text-xs font-bold text-foreground">الطبقات</h3>
     <div class="flex items-center gap-1">
       <span class="text-[9px] text-muted-foreground">
         {store.activePageIndex + 1}/{store.pageCount}

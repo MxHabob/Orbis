@@ -2127,6 +2127,11 @@
   "td_status_snap_off": "تفعيل الالتصاق",
 
   "td_back_to_editor": "العودة للمحرر",
-  "td_loading_editor": "جاري تحميل المحرر..."
+  "td_loading_editor": "جاري تحميل المحرر...",
+
+  "td_inline_edit_hint": "انقر مرتين لتعديل النص",
+  "td_rotation_snap": "اضغط Shift للتدوير بزيادات 15°",
+  "td_rubber_band_hint": "اسحب على منطقة فارغة لتحديد عناصر متعددة",
+  "td_aspect_ratio_hint": "اضغط Shift للحفاظ على نسبة الأبعاد"
 }
 

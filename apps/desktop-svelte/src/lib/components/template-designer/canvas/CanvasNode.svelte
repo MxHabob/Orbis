@@ -64,6 +64,47 @@ function handleClick(e: MouseEvent) {
   store.select(node.id, e.ctrlKey || e.metaKey);
 }
 
+// ── Inline Text Editing ──────────────────────────────────────
+let isEditing = $state(false);
+let editEl: HTMLDivElement | undefined = $state();
+
+function handleDoubleClick(e: MouseEvent) {
+  if (node.type !== "Text") return;
+  e.stopPropagation();
+  e.preventDefault();
+  isEditing = true;
+  // Focus on next tick
+  requestAnimationFrame(() => {
+    if (editEl) {
+      editEl.focus();
+      // Select all text
+      const range = document.createRange();
+      range.selectNodeContents(editEl);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    }
+  });
+}
+
+function commitEdit() {
+  if (!isEditing || !editEl) return;
+  const newContent = editEl.innerText || "";
+  if (newContent !== props.content) {
+    store.updateSelectedProps({ props: { ...props, content: newContent } } as any);
+  }
+  isEditing = false;
+}
+
+function handleEditKeydown(e: KeyboardEvent) {
+  if (e.key === "Escape") {
+    e.preventDefault();
+    isEditing = false; // Discard changes
+  }
+  // Stop propagation to prevent canvas shortcuts
+  e.stopPropagation();
+}
+
 // Props shorthand
 const props = $derived("props" in node ? (node as any).props || {} : {});
 
@@ -103,34 +144,72 @@ const textSegments = $derived(
     opacity={opacity}
     transform="translate({x}, {y}){node.rotation ? ` rotate(${node.rotation} ${w/2} ${h/2})` : ''}"
     onclick={handleClick}
+    ondblclick={handleDoubleClick}
     class="cursor-pointer"
     style="outline: none;"
   >
     {#if node.type === "Text"}
       <!-- Text Node -->
       <foreignObject width={w} height={h} class="overflow-visible">
-        <div
-          xmlns="http://www.w3.org/1999/xhtml"
-          style="
-            width: {w}px;
-            height: {h}px;
-            font-size: {mmToPx((props.fontSize ?? 12) * 0.352778, vp.dpi, vp.zoom)}px;
-            font-family: {props.fontFamily || 'Rubik'}, sans-serif;
-            font-weight: {props.fontWeight || '400'};
-            color: {props.color || '#000000'};
-            text-align: {props.textAlign || 'start'};
-            direction: {props.direction || 'rtl'};
-            line-height: {props.lineHeight || 1.4};
-            display: flex;
-            align-items: {props.verticalAlign === 'center' ? 'center' : props.verticalAlign === 'bottom' ? 'flex-end' : 'flex-start'};
-            overflow: hidden;
-            word-wrap: break-word;
-            padding: 0;
-            margin: 0;
-          "
-        >
-          <span style="display: inline;">{#each textSegments as seg}{#if seg.type === "variable"}<span style="background: #dbeafe; color: #1d4ed8; border-radius: 3px; padding: 0 3px; font-size: 0.85em; font-weight: 600; white-space: nowrap;">{`{{${seg.key}}}`}</span>{:else}{seg.value}{/if}{/each}{#if textSegments.length === 0}{props.content || ""}{/if}</span>
-        </div>
+        {#if isEditing}
+          <!-- Inline edit mode -->
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div
+            xmlns="http://www.w3.org/1999/xhtml"
+            bind:this={editEl}
+            contenteditable="true"
+            onblur={commitEdit}
+            onkeydown={handleEditKeydown}
+            style="
+              width: {w}px;
+              min-height: {h}px;
+              font-size: {mmToPx((props.fontSize ?? 12) * 0.352778, vp.dpi, vp.zoom)}px;
+              font-family: {props.fontFamily || 'Rubik'}, sans-serif;
+              font-weight: {props.fontWeight || '400'};
+              font-style: {props.fontStyle || 'normal'};
+              text-decoration: {props.textDecoration || 'none'};
+              color: {props.color || '#000000'};
+              text-align: {props.textAlign || 'start'};
+              direction: {props.direction || 'rtl'};
+              line-height: {props.lineHeight || 1.4};
+              overflow: visible;
+              word-wrap: break-word;
+              padding: 2px;
+              margin: 0;
+              outline: 2px solid #3b82f6;
+              outline-offset: 1px;
+              border-radius: 2px;
+              background: rgba(255,255,255,0.95);
+              cursor: text;
+            "
+          >{props.content || ""}</div>
+        {:else}
+          <!-- Display mode -->
+          <div
+            xmlns="http://www.w3.org/1999/xhtml"
+            style="
+              width: {w}px;
+              height: {h}px;
+              font-size: {mmToPx((props.fontSize ?? 12) * 0.352778, vp.dpi, vp.zoom)}px;
+              font-family: {props.fontFamily || 'Rubik'}, sans-serif;
+              font-weight: {props.fontWeight || '400'};
+              font-style: {props.fontStyle || 'normal'};
+              text-decoration: {props.textDecoration || 'none'};
+              color: {props.color || '#000000'};
+              text-align: {props.textAlign || 'start'};
+              direction: {props.direction || 'rtl'};
+              line-height: {props.lineHeight || 1.4};
+              display: flex;
+              align-items: {props.verticalAlign === 'center' ? 'center' : props.verticalAlign === 'bottom' ? 'flex-end' : 'flex-start'};
+              overflow: hidden;
+              word-wrap: break-word;
+              padding: 0;
+              margin: 0;
+            "
+          >
+            <span style="display: inline;">{#each textSegments as seg}{#if seg.type === "variable"}<span style="background: #dbeafe; color: #1d4ed8; border-radius: 3px; padding: 0 3px; font-size: 0.85em; font-weight: 600; white-space: nowrap;">{`{{${seg.key}}}`}</span>{:else}{seg.value}{/if}{/each}{#if textSegments.length === 0}{props.content || ""}{/if}</span>
+          </div>
+        {/if}
       </foreignObject>
 
     {:else if node.type === "Image"}

@@ -31,6 +31,7 @@ let panStartX = 0;
 let panStartY = 0;
 let panStartPanX = 0;
 let panStartPanY = 0;
+let selectionOverlay: SelectionOverlay | undefined = $state();
 
 // ── Derived ──────────────────────────────────────────────────
 
@@ -110,9 +111,17 @@ function handleMouseDown(e: MouseEvent) {
     return;
   }
 
-  // Left click on empty canvas area → clear selection
-  if (e.button === 0 && e.target === svgEl) {
-    store.clearSelection();
+  // Left click on empty canvas area → rubber band selection or clear
+  if (e.button === 0 && (e.target === svgEl || (e.target as Element)?.classList?.contains('canvas-bg'))) {
+    // Start rubber band selection
+    if (selectionOverlay && svgEl) {
+      const rect = svgEl.getBoundingClientRect();
+      const canvasX = e.clientX - rect.left - offsetX;
+      const canvasY = e.clientY - rect.top - offsetY;
+      selectionOverlay.startRubberBand(e, canvasX, canvasY);
+    } else {
+      store.clearSelection();
+    }
   }
 }
 
@@ -251,10 +260,10 @@ function handleDrop(e: DragEvent) {
         <circle cx="10" cy="10" r="0.5" fill="var(--color-muted-foreground)" opacity="0.15" />
       </pattern>
     </defs>
-    <rect width="100%" height="100%" fill="url(#canvas-dots)" />
+    <rect width="100%" height="100%" fill="url(#canvas-dots)" class="canvas-bg" />
 
     <!-- Page Group (translated for centering + pan) -->
-    <g transform="translate({offsetX}, {offsetY})">
+    <g transform="translate({offsetX}, {offsetY})" class="page-transform">
       <!-- Page shadow -->
       <rect
         x="3"
@@ -296,7 +305,7 @@ function handleDrop(e: DragEvent) {
       {/if}
 
       <!-- Selection overlay (handles, guides) -->
-      <SelectionOverlay {store} pageSizePx={{ width: pageWidthPx, height: pageHeightPx }} />
+      <SelectionOverlay bind:this={selectionOverlay} {store} pageSizePx={{ width: pageWidthPx, height: pageHeightPx }} />
 
       <!-- Drag-over indicator -->
       {#if isDragOver}

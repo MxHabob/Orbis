@@ -13,6 +13,9 @@ import AssetPanel from "../panels/AssetPanel.svelte";
 import LayersPanel from "../panels/LayersPanel.svelte";
 import VariablesPanel from "../panels/VariablesPanel.svelte";
 import HistoryPanel from "../panels/HistoryPanel.svelte";
+import ElementsPanel from "../panels/ElementsPanel.svelte";
+import TextPresetsPanel from "../panels/TextPresetsPanel.svelte";
+import PageSetupPanel from "../panels/PageSetupPanel.svelte";
 import {
   Tabs,
   TabsList,
@@ -144,37 +147,13 @@ function stopResize() {
         </div>
 
       {:else if panel === "elements"}
-        <div class="flyout-placeholder">
-          <div class="px-3 py-2">
-            <div class="relative">
-              <Search size={12} class="absolute start-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input type="text" placeholder="ابحث في العناصر..." bind:value={searchQuery} class="h-7 text-[10px] ps-7" />
-            </div>
-          </div>
-          <div class="flex flex-col items-center justify-center py-12 px-4 gap-2">
-            <p class="text-[10px] text-muted-foreground text-center">
-              قريباً — مكتبة أشكال وعناصر
-            </p>
-          </div>
-        </div>
+        <ElementsPanel {store} />
 
       {:else if panel === "text"}
-        <div class="flyout-placeholder">
-          <div class="flex flex-col items-center justify-center py-12 px-4 gap-2">
-            <p class="text-[10px] text-muted-foreground text-center">
-              قريباً — أنماط نصية جاهزة
-            </p>
-          </div>
-        </div>
+        <TextPresetsPanel {store} />
 
       {:else if panel === "page-setup"}
-        <div class="flyout-placeholder">
-          <div class="flex flex-col items-center justify-center py-12 px-4 gap-2">
-            <p class="text-[10px] text-muted-foreground text-center">
-              قريباً — إعدادات الصفحة
-            </p>
-          </div>
-        </div>
+        <PageSetupPanel {store} />
       {/if}
     </div>
 
