@@ -11,7 +11,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@orbis/ui-svelte/sheet";
-import RoomForm from "../forms/room-form.svelte";
+import RoomForm from "./room-form.svelte";
 import * as m from "$lib/paraglide/messages";
 
 let {

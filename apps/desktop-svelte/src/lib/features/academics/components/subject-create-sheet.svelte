@@ -11,7 +11,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@orbis/ui-svelte/sheet";
-import SubjectForm from "../forms/subject-form.svelte";
+import SubjectForm from "./subject-form.svelte";
 import * as m from "$lib/paraglide/messages";
 
 let {
