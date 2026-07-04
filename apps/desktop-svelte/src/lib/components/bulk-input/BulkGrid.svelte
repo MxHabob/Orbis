@@ -1,10 +1,11 @@
 <!--
 @component BulkGrid
 Enterprise-grade data grid for bulk data entry.
-Wraps OrbisGrid with fixed clipboard paste, validation overlays, and auto-expand.
+Wraps OrbisGrid with proper paste handling, validation overlays, and auto-expand.
 
-Key fix: Uses RevoGrid's native `beforepaste` event instead of DOM `onpaste`,
-ensuring clipboard data is properly intercepted and distributed across cells.
+Key design: Uses OrbisGrid's native onpaste callback (which fires from RevoGrid's
+beforepaste event) to expand rows when needed, and oncelledit for data model sync.
+RevoGrid handles the actual cell population internally.
 -->
 <script lang="ts">
 import { OrbisGrid, addRowIndices } from "@orbis/data-grid";
@@ -46,6 +47,7 @@ const isRtl = getLocale() === "ar";
 let indexedSource = $derived(addRowIndices(rows));
 
 // ── Cell Edit Handler ──────────────────────────────────────────────
+// Called by OrbisGrid after RevoGrid applies edits (including from paste)
 function handleCellEdit(event: CellEditEvent) {
   const { rowIndex, prop, newValue } = event;
   if (rowIndex < 0 || rowIndex >= rows.length) return;
@@ -61,85 +63,67 @@ function handleCellEdit(event: CellEditEvent) {
   onrowschange?.(rows);
 }
 
-// ── Paste Handler (via RevoGrid beforepaste event) ─────────────────
-function handleBeforePaste(event: CustomEvent) {
-  // Prevent RevoGrid's default paste (which puts everything in one cell)
-  event.preventDefault();
+// ── Paste Handler ──────────────────────────────────────────────────
+// Called by OrbisGrid's onpaste when data is pasted from clipboard.
+// RevoGrid handles the actual cell population — we just need to:
+// 1. Ensure enough rows exist for the pasted data
+// 2. Sync back the data from RevoGrid's internal model to our rows
+function handlePaste(data: string[][], startRow: number, _startCol: number) {
+  if (!data || data.length === 0) return;
 
-  const detail = event.detail;
-  if (!detail) return;
+  // Calculate how many additional rows we need
+  const endRow = startRow + data.length;
+  const currentLen = rows.length;
 
-  // Extract raw clipboard text — RevoGrid provides parsed data
-  let pastedData: string[][] = [];
-
-  if (detail.parsed && Array.isArray(detail.parsed)) {
-    // RevoGrid already parsed it into 2D array
-    pastedData = detail.parsed;
-  } else if (detail.raw && typeof detail.raw === "string") {
-    pastedData = parseTSV(detail.raw);
-  }
-
-  if (pastedData.length === 0) return;
-
-  // Detect and skip header row
-  if (pastedData.length > 1 && headerPatterns.length > 0) {
-    if (isHeaderRow(pastedData[0], headerPatterns)) {
-      pastedData = pastedData.slice(1);
+  if (endRow > currentLen) {
+    // Expand rows to accommodate pasted data
+    const newRows = [...rows];
+    for (let i = currentLen; i < endRow + minEmptyRows; i++) {
+      newRows.push(createEmptyRow());
     }
+    rows = newRows;
   }
 
-  if (pastedData.length === 0) return;
-
-  // Convert 2D array to row objects
-  const pastedRows = mapTSVToRows(pastedData, dataProps);
-  if (pastedRows.length === 0) return;
-
-  // Find insertion point: first fully empty row, or end of data
-  const startRow = detail.rowIndex ?? findFirstEmptyRow();
-
-  // Merge pasted rows into grid
+  // RevoGrid will handle cell population via afteredit events.
+  // However, afteredit fires asynchronously, so we also manually
+  // sync the pasted data into our model to ensure consistency.
   const newRows = [...rows];
-  for (let i = 0; i < pastedRows.length; i++) {
-    const targetIdx = startRow + i;
+  for (let r = 0; r < data.length; r++) {
+    const targetIdx = startRow + r;
+    if (targetIdx >= newRows.length) break;
 
-    if (targetIdx < newRows.length) {
-      // Overwrite existing row
-      for (const prop of dataProps) {
-        if (pastedRows[i][prop] !== undefined) {
-          newRows[targetIdx][prop] = pastedRows[i][prop];
-        }
+    for (let c = 0; c < data[r].length; c++) {
+      // Map column index to property name (skip index column at 0)
+      const propIdx = c; // columns[0] is #, data doesn't include it
+      if (propIdx < dataProps.length) {
+        const val = data[r][c]?.trim() ?? "";
+        newRows[targetIdx][dataProps[propIdx]] = val;
       }
-      // Reset errors
-      if (newRows[targetIdx].__errors instanceof Map) {
-        (newRows[targetIdx].__errors as Map<string, string>).clear();
-      }
-    } else {
-      // Append new row
-      const emptyRow = createEmptyRow();
-      for (const prop of dataProps) {
-        if (pastedRows[i][prop] !== undefined) {
-          emptyRow[prop] = pastedRows[i][prop];
-        }
-      }
-      newRows.push(emptyRow);
+    }
+
+    // Reset errors for modified rows
+    if (newRows[targetIdx].__errors instanceof Map) {
+      (newRows[targetIdx].__errors as Map<string, string>).clear();
     }
   }
 
-  // Ensure empty rows at the bottom
+  // Ensure empty tail
   ensureEmptyTail(newRows);
-
   rows = newRows;
   onrowschange?.(rows);
 }
 
-// Also handle raw clipboard paste as fallback for edge cases
+// Also handle raw clipboard paste as fallback when grid isn't focused
 function handleClipboardPaste(e: ClipboardEvent) {
-  // Check if RevoGrid already handled this (it should via beforepaste)
-  // Only handle if the grid isn't focused (e.g., clicking the wrapper area)
   const text = e.clipboardData?.getData("text/plain");
   if (!text || !text.includes("\t")) return;
 
-  // If we get here, RevoGrid didn't catch it — handle manually
+  // Check if the event target is inside the RevoGrid
+  // If so, RevoGrid will handle it via onpaste callback
+  const target = e.target as HTMLElement;
+  if (target?.closest("revo-grid")) return;
+
+  // Handle paste when clicking outside the grid cells but inside wrapper
   e.preventDefault();
   e.stopPropagation();
 
@@ -231,7 +215,7 @@ $effect(() => {
   onpaste={handleClipboardPaste}
 >
   <OrbisGrid
-    columns={columns}
+    {columns}
     source={indexedSource}
     height="calc(100vh - 380px)"
     rtl={isRtl}
@@ -240,11 +224,7 @@ $effect(() => {
     range={true}
     clipboard={true}
     oncelledit={handleCellEdit}
-    onbeforeedit={() => {}}
-    onpaste={(data, startRow, startCol) => {
-      // This is the OrbisGrid onpaste callback (from beforepaste)
-      // Our handleBeforePaste above takes priority
-    }}
+    oncellspaste={handlePaste}
   />
 </div>
 

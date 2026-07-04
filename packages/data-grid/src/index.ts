@@ -20,7 +20,7 @@ export {
 } from "./column-builders";
 
 // Editors
-export { NumberEditor } from "./editors/index";
+export { NumberEditor, TextEditor } from "./editors/index";
 // Grade-specific helpers
 export {
   buildGradeColumns,

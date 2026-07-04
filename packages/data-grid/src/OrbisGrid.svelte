@@ -55,6 +55,13 @@ async function loadNumberEditor(mod: any): Promise<unknown> {
   return _editorCache["number"];
 }
 
+async function loadTextEditor(mod: any): Promise<unknown> {
+  if (_editorCache["text"]) return _editorCache["text"];
+  const editorMod = await import("./editors/TextEditor.svelte");
+  _editorCache["text"] = mod.Editor(editorMod.default);
+  return _editorCache["text"];
+}
+
 const isBrowser = typeof window !== "undefined";
 
 // ── Props ────────────────────────────────────────────────────────────────
@@ -89,7 +96,7 @@ interface Props {
   /** Fired before cell edit — return false to cancel */
   onbeforeedit?: (event: CellEditEvent) => boolean | void;
   /** Fired when user pastes from clipboard */
-  onpaste?: (data: string[][], startRow: number, startCol: number) => void;
+  oncellspaste?: (data: string[][], startRow: number, startCol: number) => void;
   /** Fired when a user clicks a [data-grid-action] element in a cell */
   onaction?: (event: GridActionEvent) => void;
 }
@@ -108,7 +115,7 @@ let {
   rowSize = 42,
   oncelledit,
   onbeforeedit,
-  onpaste,
+  oncellspaste,
   onaction,
 }: Props = $props();
 
@@ -132,6 +139,10 @@ onMount(async () => {
       const numEditor = await loadNumberEditor(mod);
       loadedEditors = { ...loadedEditors, number: numEditor };
     }
+
+    // Always register text editor for consistent theming
+    const txtEditor = await loadTextEditor(mod);
+    loadedEditors = { ...loadedEditors, text: txtEditor };
 
     gridReady = true;
   } catch (err) {
@@ -193,8 +204,8 @@ let revoColumns = $derived.by(() => {
     }
 
     // Editor registration
-    if (col.editor && !readonly && !col.readonly) {
-      revoCol.editor = col.editor;
+    if (!readonly && !col.readonly) {
+      revoCol.editor = col.editor || "text";
     }
 
     // Cell template / custom cell renderer mapping
@@ -257,11 +268,11 @@ function handleBeforeEdit(event: CustomEvent) {
 }
 
 function handleBeforePaste(event: CustomEvent) {
-  if (!onpaste) return;
+  if (!oncellspaste) return;
   // Let the default handler work, but also notify parent
   const detail = event.detail;
   if (detail?.parsed) {
-    onpaste(detail.parsed, detail.rowIndex ?? 0, detail.colIndex ?? 0);
+    oncellspaste(detail.parsed, detail.rowIndex ?? 0, detail.colIndex ?? 0);
   }
 }
 
