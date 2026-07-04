@@ -2,7 +2,7 @@ use uuid::Uuid;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use sea_orm::{ActiveModelTrait, EntityTrait, QueryFilter, ColumnTrait};
-use crate::entities::{ledger_account, treasury, student_fee, payment, fee_template, discount_template, journal_entry, user};
+use crate::entities::{ledger_account, treasury, student_fee, payment, fee_template, discount_template, journal_entry};
 
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct CreateDiscountTemplateRequest {

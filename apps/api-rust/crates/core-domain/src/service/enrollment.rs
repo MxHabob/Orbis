@@ -759,6 +759,19 @@ impl super::Service {
                                     description: format!("Auto-generated fee: {}", tpl.name),
                                     description_ar: Some(format!("رسوم دراسية تلقائية: {}", tpl.name_ar.clone().unwrap_or(tpl.name.clone()))),
                                     metadata: None,
+                                    is_reversed: 0,
+                                    reversed_by: None,
+                                    reversal_reason: None,
+                                    is_reconciled: 0,
+                                    reconciled_at: None,
+                                    reconciliation_ref: None,
+                                    status: "posted".to_string(),
+                                    posted_by: Some("system".to_string()),
+                                    posted_at: Some(Utc::now().to_rfc3339()),
+                                    approved_by: Some("system".to_string()),
+                                    approved_at: Some(Utc::now().to_rfc3339()),
+                                    created_by: Some("system".to_string()),
+                                    created_at: Utc::now().to_rfc3339(),
                                 };
                                 let _ = self.repo.create_journal_entry(je).await;
                             }
