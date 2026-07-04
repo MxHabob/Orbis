@@ -157,7 +157,7 @@ function reassignIds(node: any) {
   <div class="px-3 py-2 border-b border-border/40 flex items-center justify-between">
     <div class="flex items-center gap-2">
       <FileText size={13} class="text-primary" />
-      <h3 class="text-xs font-bold text-foreground">الصفحات / Pages</h3>
+      <h3 class="text-xs font-bold text-foreground">الصفحات</h3>
     </div>
     <div class="flex items-center gap-1">
       <Badge variant="outline" class="text-[8px]">{store.pageCount}</Badge>
@@ -167,7 +167,7 @@ function reassignIds(node: any) {
             <Plus size={11} />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>إضافة صفحة / Add Page</TooltipContent>
+        <TooltipContent>إضافة صفحة</TooltipContent>
       </Tooltip>
     </div>
   </div>

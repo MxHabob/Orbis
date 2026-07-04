@@ -48,7 +48,7 @@ function jumpToState(index: number) {
   <div class="px-3 py-2 border-b border-border/40 flex items-center justify-between">
     <div class="flex items-center gap-2">
       <History size={13} class="text-primary" />
-      <h3 class="text-xs font-bold text-foreground">السجل / History</h3>
+      <h3 class="text-xs font-bold text-foreground">السجل</h3>
     </div>
     <div class="flex items-center gap-1">
       <Tooltip>
@@ -57,7 +57,7 @@ function jumpToState(index: number) {
             <Undo2 size={11} />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>تراجع / Undo</TooltipContent>
+        <TooltipContent>تراجع</TooltipContent>
       </Tooltip>
       <Tooltip>
         <TooltipTrigger>
@@ -65,7 +65,7 @@ function jumpToState(index: number) {
             <Redo2 size={11} />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>إعادة / Redo</TooltipContent>
+        <TooltipContent>إعادة</TooltipContent>
       </Tooltip>
     </div>
   </div>

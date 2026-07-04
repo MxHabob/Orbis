@@ -161,7 +161,7 @@ function updatePosition(key: string, value: number) {
           <AccordionContent>
             <div class="flex flex-col gap-2 pt-1">
               <div class="flex items-center justify-between">
-                <span class="text-[9px] text-muted-foreground">الشفافية / Opacity</span>
+                <span class="text-[9px] text-muted-foreground">الشفافية</span>
                 <Input
                   type="number"
                   step="0.1"
@@ -174,7 +174,7 @@ function updatePosition(key: string, value: number) {
               </div>
 
               <div class="flex items-center justify-between">
-                <span class="text-[9px] text-muted-foreground">مرئي / Visible</span>
+                <span class="text-[9px] text-muted-foreground">مرئي</span>
                 <Switch
                   checked={node.visible !== false}
                   onCheckedChange={(v) => store.updateSelectedProps({ visible: v })}
@@ -182,7 +182,7 @@ function updatePosition(key: string, value: number) {
               </div>
 
               <div class="flex items-center justify-between">
-                <span class="text-[9px] text-muted-foreground">مقفل / Locked</span>
+                <span class="text-[9px] text-muted-foreground">مقفل</span>
                 <Switch
                   checked={node.locked === true}
                   onCheckedChange={(v) => store.updateSelectedProps({ locked: v })}
@@ -212,11 +212,11 @@ function updatePosition(key: string, value: number) {
 
                 <div class="grid grid-cols-2 gap-2">
                   <div class="flex flex-col gap-0.5">
-                    <span class="text-[8px] text-muted-foreground">حجم الخط / Size (pt)</span>
+                    <span class="text-[8px] text-muted-foreground">حجم الخط</span>
                     <Input type="number" step="1" value={props.fontSize ?? 12} oninput={(e) => updateProp("fontSize", parseFloat(e.currentTarget.value))} class="h-6 text-[10px]" />
                   </div>
                   <div class="flex flex-col gap-0.5">
-                    <span class="text-[8px] text-muted-foreground">الوزن / Weight</span>
+                    <span class="text-[8px] text-muted-foreground">الوزن</span>
                     <Select type="single" value={props.fontWeight || "400"} onValueChange={(v) => { if (v) updateProp("fontWeight", v); }}>
                       <SelectTrigger class="h-6 text-[10px]">{props.fontWeight || "400"}</SelectTrigger>
                       <SelectContent>
@@ -231,7 +231,7 @@ function updatePosition(key: string, value: number) {
 
                 <div class="grid grid-cols-2 gap-2">
                   <div class="flex flex-col gap-0.5">
-                    <span class="text-[8px] text-muted-foreground">الخط / Font</span>
+                    <span class="text-[8px] text-muted-foreground">الخط</span>
                     <Select type="single" value={props.fontFamily || "Rubik"} onValueChange={(v) => { if (v) updateProp("fontFamily", v); }}>
                       <SelectTrigger class="h-6 text-[10px]">{props.fontFamily || "Rubik"}</SelectTrigger>
                       <SelectContent>
@@ -242,7 +242,7 @@ function updatePosition(key: string, value: number) {
                     </Select>
                   </div>
                   <div class="flex flex-col gap-0.5">
-                    <span class="text-[8px] text-muted-foreground">المحاذاة / Align</span>
+                    <span class="text-[8px] text-muted-foreground">المحاذاة</span>
                     <Select type="single" value={props.textAlign || "start"} onValueChange={(v) => { if (v) updateProp("textAlign", v); }}>
                       <SelectTrigger class="h-6 text-[10px]">{props.textAlign || "start"}</SelectTrigger>
                       <SelectContent>
@@ -255,7 +255,7 @@ function updatePosition(key: string, value: number) {
                 </div>
 
                 <div class="flex flex-col gap-0.5">
-                  <span class="text-[8px] text-muted-foreground">اللون / Color</span>
+                  <span class="text-[8px] text-muted-foreground">اللون</span>
                   <div class="flex items-center gap-2">
                     <input type="color" value={props.color || "#000000"} oninput={(e) => updateProp("color", e.currentTarget.value)} class="w-7 h-6 rounded border border-border cursor-pointer" />
                     <Input type="text" value={props.color || "#000000"} oninput={(e) => updateProp("color", e.currentTarget.value)} class="h-6 text-[10px] font-mono flex-grow" />
@@ -265,7 +265,7 @@ function updatePosition(key: string, value: number) {
               {:else if nodeType === "Shape"}
                 <!-- Shape properties -->
                 <div class="flex flex-col gap-0.5">
-                  <span class="text-[8px] text-muted-foreground">الشكل / Shape</span>
+                  <span class="text-[8px] text-muted-foreground">الشكل</span>
                   <Select type="single" value={props.shape || "rectangle"} onValueChange={(v) => { if (v) updateProp("shape", v); }}>
                     <SelectTrigger class="h-6 text-[10px]">{props.shape || "rectangle"}</SelectTrigger>
                     <SelectContent>
@@ -277,7 +277,7 @@ function updatePosition(key: string, value: number) {
                 </div>
 
                 <div class="flex flex-col gap-0.5">
-                  <span class="text-[8px] text-muted-foreground">لون التعبئة / Fill</span>
+                  <span class="text-[8px] text-muted-foreground">لون التعبئة</span>
                   <div class="flex items-center gap-2">
                     <input type="color" value={props.fillColor || "#e2e8f0"} oninput={(e) => updateProp("fillColor", e.currentTarget.value)} class="w-7 h-6 rounded border border-border cursor-pointer" />
                     <Input type="text" value={props.fillColor || "#e2e8f0"} oninput={(e) => updateProp("fillColor", e.currentTarget.value)} class="h-6 text-[10px] font-mono flex-grow" />
@@ -285,7 +285,7 @@ function updatePosition(key: string, value: number) {
                 </div>
 
                 <div class="flex flex-col gap-0.5">
-                  <span class="text-[8px] text-muted-foreground">لون الإطار / Stroke</span>
+                  <span class="text-[8px] text-muted-foreground">لون الإطار</span>
                   <div class="flex items-center gap-2">
                     <input type="color" value={props.strokeColor || "#94a3b8"} oninput={(e) => updateProp("strokeColor", e.currentTarget.value)} class="w-7 h-6 rounded border border-border cursor-pointer" />
                     <Input type="text" value={props.strokeColor || "#94a3b8"} oninput={(e) => updateProp("strokeColor", e.currentTarget.value)} class="h-6 text-[10px] font-mono flex-grow" />
@@ -294,11 +294,11 @@ function updatePosition(key: string, value: number) {
 
               {:else if nodeType === "Barcode"}
                 <div class="flex flex-col gap-1">
-                  <Label class="text-[9px] text-muted-foreground">البيانات / Data</Label>
+                  <Label class="text-[9px] text-muted-foreground">البيانات</Label>
                   <Input type="text" value={props.data || ""} oninput={(e) => updateProp("data", e.currentTarget.value)} class="h-7 text-xs font-mono" />
                 </div>
                 <div class="flex flex-col gap-0.5">
-                  <span class="text-[8px] text-muted-foreground">الصيغة / Format</span>
+                  <span class="text-[8px] text-muted-foreground">الصيغة</span>
                   <Select type="single" value={props.format || "Code128"} onValueChange={(v) => { if (v) updateProp("format", v); }}>
                     <SelectTrigger class="h-6 text-[10px]">{props.format || "Code128"}</SelectTrigger>
                     <SelectContent>
@@ -312,7 +312,7 @@ function updatePosition(key: string, value: number) {
 
               {:else if nodeType === "QRCode"}
                 <div class="flex flex-col gap-1">
-                  <Label class="text-[9px] text-muted-foreground">البيانات / Data</Label>
+                  <Label class="text-[9px] text-muted-foreground">البيانات</Label>
                   <Input type="text" value={props.data || ""} oninput={(e) => updateProp("data", e.currentTarget.value)} class="h-7 text-xs font-mono" />
                 </div>
 

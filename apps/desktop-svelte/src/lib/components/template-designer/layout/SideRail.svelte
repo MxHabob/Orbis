@@ -62,7 +62,7 @@ const topItems: RailItem[] = [
             <span class="rail-label">{item.label}</span>
           </button>
         </TooltipTrigger>
-        <TooltipContent side="end">{item.label}</TooltipContent>
+        <TooltipContent side="left" sideOffset={12}>{item.label}</TooltipContent>
       </Tooltip>
     {/each}
   </div>

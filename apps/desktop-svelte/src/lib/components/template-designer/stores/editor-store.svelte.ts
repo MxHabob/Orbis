@@ -637,7 +637,7 @@ function createDefaultNode(type: string, overrides: Record<string, unknown> = {}
         ...base,
         type: "Text",
         props: {
-          content: "نص جديد / New Text",
+          content: "نص جديد",
           fontSize: 14,
           fontFamily: "Rubik",
           fontWeight: "400",

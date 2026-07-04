@@ -176,7 +176,7 @@ function handleDragStart(e: DragEvent, varName: string) {
   <div class="px-3 py-2 border-b border-border/40 flex items-center justify-between">
     <div class="flex items-center gap-2">
       <Variable size={13} class="text-primary" />
-      <h3 class="text-xs font-bold text-foreground">المتغيرات / Variables</h3>
+      <h3 class="text-xs font-bold text-foreground">المتغيرات</h3>
     </div>
     <div class="flex items-center gap-1">
       <Badge variant="outline" class="text-[8px]">{variableEntries.length}</Badge>
@@ -186,7 +186,7 @@ function handleDragStart(e: DragEvent, varName: string) {
             <Plus size={11} />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>إضافة متغير / Add Variable</TooltipContent>
+        <TooltipContent>إضافة متغير</TooltipContent>
       </Tooltip>
     </div>
   </div>
@@ -197,7 +197,7 @@ function handleDragStart(e: DragEvent, varName: string) {
       <Search size={11} class="absolute start-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
       <Input
         type="text"
-        placeholder="بحث... / Search..."
+        placeholder="بحث..."
         bind:value={searchQuery}
         class="h-6 text-[10px] ps-7"
       />
@@ -209,13 +209,13 @@ function handleDragStart(e: DragEvent, varName: string) {
     <div class="px-3 py-2 border-b border-border/30 bg-muted/20 flex flex-col gap-1.5">
       <Input
         type="text"
-        placeholder="اسم المتغير / Variable name"
+        placeholder="اسم المتغير"
         bind:value={newVarName}
         class="h-6 text-[10px]"
       />
       <Input
         type="text"
-        placeholder="المصدر / Source path (e.g. student.name_ar)"
+        placeholder="المصدر"
         bind:value={newVarSource}
         class="h-6 text-[10px] font-mono"
       />

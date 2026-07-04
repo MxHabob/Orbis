@@ -167,7 +167,7 @@ function handleToolDragStart(e: DragEvent, toolId: string) {
 
     <Separator orientation="vertical" class="h-6 mx-1" />
 
-    <!-- Undo / Redo -->
+    <!-- Undo -->
     <div class="flex items-center gap-0.5">
       <Tooltip>
         <TooltipTrigger>

@@ -139,7 +139,7 @@ function addAssetManually() {
   <div class="px-3 py-2 border-b border-border/40 flex items-center justify-between">
     <div class="flex items-center gap-2">
       <ImageIcon size={13} class="text-primary" />
-      <h3 class="text-xs font-bold text-foreground">الأصول / Assets</h3>
+      <h3 class="text-xs font-bold text-foreground">الأصول</h3>
     </div>
     <div class="flex items-center gap-1">
       <Badge variant="outline" class="text-[8px]">{assetEntries.length}</Badge>
@@ -149,7 +149,7 @@ function addAssetManually() {
             <Upload size={11} />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>إضافة أصل / Add Asset</TooltipContent>
+        <TooltipContent>إضافة أصل</TooltipContent>
       </Tooltip>
     </div>
   </div>
@@ -160,7 +160,7 @@ function addAssetManually() {
       <Search size={11} class="absolute start-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
       <Input
         type="text"
-        placeholder="بحث... / Search..."
+        placeholder="بحث..."
         bind:value={searchQuery}
         class="h-6 text-[10px] ps-7"
       />
@@ -172,13 +172,13 @@ function addAssetManually() {
     <div class="px-3 py-2 border-b border-border/30 bg-muted/20 flex flex-col gap-1.5">
       <Input
         type="text"
-        placeholder="اسم الأصل / Asset name"
+        placeholder="اسم الأصل"
         bind:value={newAssetName}
         class="h-6 text-[10px]"
       />
       <Input
         type="text"
-        placeholder="رابط الصورة / Image URL"
+        placeholder="رابط الصورة"
         bind:value={newAssetUrl}
         class="h-6 text-[10px] font-mono"
       />

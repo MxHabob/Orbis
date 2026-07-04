@@ -189,6 +189,8 @@ function onDragMove(e: MouseEvent) {
 }
 
 function onDragEnd() {
+  // Commit the drag as a single history entry
+  store.commitLiveMove();
   isDragging = false;
   dragHandle = null;
   dragNodeId = null;
