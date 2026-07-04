@@ -341,6 +341,7 @@ function updateProp(key: string, value: unknown) {
 <style>
   .ctx-toolbar {
     height: 42px;
+    min-height: 42px;
     display: flex;
     align-items: center;
     gap: 4px;
@@ -350,6 +351,7 @@ function updateProp(key: string, value: unknown) {
     flex-shrink: 0;
     user-select: none;
     overflow-x: auto;
+    z-index: 40;
   }
 
   .ctx-toolbar::-webkit-scrollbar { display: none; }

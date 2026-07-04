@@ -404,10 +404,10 @@ function getHandles(r: { x: number; y: number; w: number; h: number }) {
       onmousedown={(e) => startDrag(e, rect.id, "move")}
     />
 
-    <!-- Dimension label -->
+    <!-- Dimension label (above rotation handle) -->
     <text
       x={rect.x + rect.w / 2}
-      y={rect.y - ROTATION_OFFSET - 10}
+      y={rect.y - ROTATION_OFFSET - 6}
       text-anchor="middle"
       fill="#3b82f6"
       font-size="9"
