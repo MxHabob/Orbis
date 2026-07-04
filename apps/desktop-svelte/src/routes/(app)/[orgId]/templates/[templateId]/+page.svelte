@@ -273,8 +273,11 @@ onMount(() => {
       onpreview={generatePreview}
     />
 
-    <!-- ═══ Main Area: Canvas + SideRail + FlyoutPanel ═══ -->
+    <!-- ═══ Main Area: SideRail + FlyoutPanel + Canvas ═══ -->
     <div class="editor-main">
+
+      <!-- Side Rail (icon strip - inline-start, same as app sidebar) -->
+      <SideRail {store} />
 
       <!-- Canvas Area (takes full remaining space) -->
       <div class="canvas-area">
@@ -296,12 +299,9 @@ onMount(() => {
           <FloatingActionBar {store} />
         {/if}
 
-        <!-- Flyout Panel (overlay from right) -->
+        <!-- Flyout Panel (overlay from inline-start, next to rail) -->
         <FlyoutPanel {store} />
       </div>
-
-      <!-- Side Rail (icon strip - always visible) -->
-      <SideRail {store} />
     </div>
 
     <!-- ═══ Status Bar ═══ -->

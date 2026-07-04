@@ -62,7 +62,7 @@ const topItems: RailItem[] = [
             <span class="rail-label">{item.label}</span>
           </button>
         </TooltipTrigger>
-        <TooltipContent side="start">{item.label}</TooltipContent>
+        <TooltipContent side="end">{item.label}</TooltipContent>
       </Tooltip>
     {/each}
   </div>
@@ -76,7 +76,7 @@ const topItems: RailItem[] = [
     display: flex;
     flex-direction: column;
     background: var(--color-card);
-    border-inline-start: 1px solid color-mix(in srgb, var(--color-border) 40%, transparent);
+    border-inline-end: 1px solid color-mix(in srgb, var(--color-border) 40%, transparent);
     flex-shrink: 0;
     user-select: none;
     z-index: 20;

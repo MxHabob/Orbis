@@ -89,12 +89,35 @@ function handleMouseMove(e: MouseEvent) {
   }
 }
 
-// ── Zoom (Wheel) ─────────────────────────────────────────────
+// ── Zoom (Wheel) — cursor-centered ───────────────────────────
 
 function handleWheel(e: WheelEvent) {
   e.preventDefault();
-  const delta = e.deltaY > 0 ? -0.05 : 0.05;
-  store.setZoom(vp.zoom + delta);
+
+  // Ctrl+wheel = zoom, plain wheel = pan (matching Figma/Canva behavior)
+  if (e.ctrlKey || e.metaKey) {
+    // Zoom centered on cursor position
+    const zoomFactor = e.deltaY > 0 ? 0.95 : 1.05;
+    const newZoom = vp.zoom * zoomFactor;
+
+    if (!svgEl) { store.setZoom(newZoom); return; }
+    const rect = svgEl.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    // Adjust pan to keep the point under cursor fixed
+    const scale = newZoom / vp.zoom;
+    const centerX = (containerWidth - pageWidthPx) / 2 + vp.panX;
+    const centerY = (containerHeight - pageHeightPx) / 2 + vp.panY;
+    const newPanX = mouseX - scale * (mouseX - centerX) - (containerWidth - mmToPx(pageWidthMm, vp.dpi, newZoom)) / 2;
+    const newPanY = mouseY - scale * (mouseY - centerY) - (containerHeight - mmToPx(pageHeightMm, vp.dpi, newZoom)) / 2;
+
+    store.setZoom(newZoom);
+    store.setPan(newPanX, newPanY);
+  } else {
+    // Pan with scroll wheel
+    store.setPan(vp.panX - e.deltaX, vp.panY - e.deltaY);
+  }
 }
 
 // ── Pan (Middle mouse or Space+drag) ─────────────────────────

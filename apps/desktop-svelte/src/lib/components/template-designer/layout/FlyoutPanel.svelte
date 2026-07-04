@@ -166,21 +166,21 @@ function stopResize() {
 <style>
   .flyout-container {
     position: absolute;
-    inset-inline-end: 56px; /* next to the rail */
+    inset-inline-start: 0; /* adjacent to the rail */
     top: 0;
     bottom: 0;
     z-index: 30;
     background: var(--color-card);
-    border-inline-start: 1px solid color-mix(in srgb, var(--color-border) 40%, transparent);
+    border-inline-end: 1px solid color-mix(in srgb, var(--color-border) 40%, transparent);
     display: flex;
     flex-direction: column;
-    box-shadow: -4px 0 16px rgba(0, 0, 0, 0.15);
+    box-shadow: 4px 0 16px rgba(0, 0, 0, 0.15);
     animation: flyout-slide-in 0.2s ease-out;
   }
 
   @keyframes flyout-slide-in {
     from {
-      transform: translateX(30px);
+      transform: translateX(-30px);
       opacity: 0;
     }
     to {
@@ -190,12 +190,16 @@ function stopResize() {
   }
 
   :global([dir="rtl"]) .flyout-container {
-    box-shadow: 4px 0 16px rgba(0, 0, 0, 0.15);
+    box-shadow: -4px 0 16px rgba(0, 0, 0, 0.15);
+  }
+
+  :global([dir="rtl"]) .flyout-container {
+    animation: flyout-slide-in-rtl 0.2s ease-out;
   }
 
   @keyframes flyout-slide-in-rtl {
     from {
-      transform: translateX(-30px);
+      transform: translateX(30px);
       opacity: 0;
     }
     to {
@@ -234,7 +238,7 @@ function stopResize() {
 
   .flyout-resize-handle {
     position: absolute;
-    inset-inline-start: -3px;
+    inset-inline-end: -3px;
     top: 0;
     bottom: 0;
     width: 6px;
