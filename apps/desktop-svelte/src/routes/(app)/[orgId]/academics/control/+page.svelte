@@ -1,18 +1,6 @@
-<!--
-@component ControlPage
-The Control Panel (الكنترول) — Central hub for grade entry management.
-Rebuilt with OrbisGrid (RevoGrid) for enterprise-grade spreadsheet experience:
-- Virtual scrolling (10,000+ students)
-- Frozen columns (student name pinned)
-- Excel-like keyboard navigation (Arrow, Tab, Enter)
-- Copy/Paste from Excel
-- RTL support
-- S.C.R.A.P.S. design tokens
--->
 <script lang="ts">
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
-import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import {
   Select,
@@ -26,18 +14,8 @@ import {
   Lock,
   Unlock,
   CalendarClock,
-  CalendarOff,
   AlertTriangle,
-  CheckCircle2,
-  XCircle,
-  Save,
-  BarChart3,
-  Users,
-  BookOpen,
   GraduationCap,
-  Loader2,
-  Info,
-  RefreshCw,
 } from "lucide-svelte";
 import { toast } from "svelte-sonner";
 import { fade, slide } from "svelte/transition";
@@ -45,14 +23,14 @@ import { academicStore, authStore } from "$lib/stores";
 import { getLocale } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 
-// OrbisGrid
-import { OrbisGrid } from "@orbis/data-grid";
+// Component imports
+import { ControlSidebar, ControlGrid } from "$lib/features/academics";
+
+// OrbisGrid utilities
 import {
   buildGradeColumns,
   transformMatrixToSource,
   recalculateRowTotals,
-  scoreToGradeLetter,
-  scoreToGradeColor,
 } from "@orbis/data-grid";
 import type { CellEditEvent, GradeMatrixResponse } from "@orbis/data-grid";
 
@@ -290,7 +268,6 @@ async function loadGradeMatrix() {
 
     matrixData = result;
 
-    // Build assessment keys for recalculation
     if (result?.students?.length > 0) {
       const first = result.students[0];
       assessmentKeys = first
@@ -298,7 +275,6 @@ async function loadGradeMatrix() {
         : [];
     }
 
-    // Transform to flat grid source
     gridSource = transformMatrixToSource(result, getLocale());
   } catch (e: unknown) {
     toast.error((e as any)?.message || "Error loading grade matrix");
@@ -307,7 +283,6 @@ async function loadGradeMatrix() {
   }
 }
 
-// Auto-load matrix when all filters are selected
 $effect(() => {
   if (selectedCycleId && selectedClassId && selectedSubjectId) {
     loadGradeMatrix();
@@ -319,12 +294,10 @@ function handleCellEdit(event: CellEditEvent) {
   const { rowIndex, prop, newValue } = event;
   if (rowIndex < 0 || rowIndex >= gridSource.length) return;
 
-  // Update grid source
   const updatedSource = [...gridSource];
   const row = { ...updatedSource[rowIndex]! };
   row[prop] = newValue;
 
-  // Recalculate totals
   recalculateRowTotals(row, assessmentKeys);
 
   updatedSource[rowIndex] = row;
@@ -340,8 +313,6 @@ async function handleSaveAll() {
   try {
     const sub = subjects.find((s: any) => String(s.id) === selectedSubjectId);
 
-    // For each assessment, build a bulk request
-    // Collect all students with scores
     const students: any[] = [];
     for (const row of gridSource) {
       for (const key of assessmentKeys) {
@@ -417,7 +388,6 @@ async function handleSaveAll() {
   }
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────
 function getCycleStatusVariant(
   cycle: any,
 ): "destructive" | "lime" | "secondary" {
@@ -438,9 +408,7 @@ onMount(() => {
 </script>
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-5 select-none" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
-  <!-- ═══════════════════════════════════════════════════════════════════════
-       Header
-       ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- Header -->
   <div
     class="bg-card border border-border rounded-xl p-5 flex items-center justify-between"
     in:fade={{ duration: 150 }}
@@ -464,9 +432,7 @@ onMount(() => {
       <Skeleton class="h-64 w-full rounded-xl" />
     </div>
   {:else}
-    <!-- ═══════════════════════════════════════════════════════════════════════
-         Section 1: Cycle Control Panel
-         ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- Section 1: Cycle Control Panel -->
     <div class="bg-card border border-border rounded-xl p-5 flex flex-col gap-4" in:fade={{ delay: 50, duration: 200 }}>
       <div class="flex items-center justify-between">
         <h2 class="text-xs font-bold text-foreground flex items-center gap-2">
@@ -478,157 +444,42 @@ onMount(() => {
       <!-- Cycle Selector -->
       <div class="flex items-center gap-3 flex-wrap">
         <Select type="single" value={selectedCycleId} onValueChange={(v) => { if (v) selectedCycleId = v; }}>
-          <SelectTrigger class="min-w-[220px] text-xs h-9">{selectedCycle ? (selectedCycle.name_ar || selectedCycle.name) : m.control_select_cycle()}</SelectTrigger>
+          <SelectTrigger class="min-w-[200px] text-xs h-9">
+            <div class="flex items-center gap-2">
+              <span class="truncate">{selectedCycle ? selectedCycle.name_ar || selectedCycle.name : m.control_select_cycle()}</span>
+              {#if selectedCycle}
+                <Badge variant={getCycleStatusVariant(selectedCycle)} class="text-[9px] scale-90 px-1 py-0">{getCycleStatusLabel(selectedCycle)}</Badge>
+              {/if}
+            </div>
+          </SelectTrigger>
           <SelectContent>
             {#each cycles as cycle}
               <SelectItem value={String(cycle.id)}>{cycle.name_ar || cycle.name}</SelectItem>
             {/each}
           </SelectContent>
         </Select>
-
-        {#if selectedCycle}
-          <Badge variant={getCycleStatusVariant(selectedCycle)}>
-            {getCycleStatusLabel(selectedCycle)}
-          </Badge>
-        {/if}
       </div>
 
-      <!-- Cycle Status & Actions -->
       {#if selectedCycle}
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3" in:slide={{ duration: 200 }}>
-          <!-- Status Card -->
-          <div class="bg-background/50 border border-border rounded-lg p-4 flex flex-col gap-3">
-            <h3 class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{m.control_cycle_status()}</h3>
-            <div class="flex flex-col gap-2 text-xs">
-              <div class="flex items-center justify-between">
-                <span class="text-muted-foreground">{m.control_cycle_lock()}</span>
-                <span class="flex items-center gap-1 font-semibold {isCycleLocked ? 'text-destructive' : 'text-emerald-500'}">
-                  {#if isCycleLocked}
-                    <Lock size={12} /> {m.control_cycle_locked()}
-                  {:else}
-                    <Unlock size={12} /> {m.control_cycle_unlocked()}
-                  {/if}
-                </span>
-              </div>
-              <div class="flex items-center justify-between">
-                <span class="text-muted-foreground">{m.control_grade_entry()}</span>
-                <span class="flex items-center gap-1 font-semibold {isGradeEntryOpen ? 'text-emerald-500' : 'text-amber-500'}">
-                  {#if isGradeEntryOpen}
-                    <CheckCircle2 size={12} /> {m.control_grade_entry_open()}
-                  {:else}
-                    <XCircle size={12} /> {m.control_grade_entry_closed()}
-                  {/if}
-                </span>
-              </div>
-              {#if selectedCycle.grade_entry_start}
-                <div class="flex items-center justify-between">
-                  <span class="text-muted-foreground">{m.control_grade_entry_start()}</span>
-                  <span class="font-mono text-[10px]">{new Date(selectedCycle.grade_entry_start).toLocaleDateString(getLocale())}</span>
-                </div>
-              {/if}
-              {#if selectedCycle.grade_entry_end}
-                <div class="flex items-center justify-between">
-                  <span class="text-muted-foreground">{m.control_grade_entry_end()}</span>
-                  <span class="font-mono text-[10px]">{new Date(selectedCycle.grade_entry_end).toLocaleDateString(getLocale())}</span>
-                </div>
-              {/if}
-              {#if selectedCycle.locked_by}
-                <div class="flex items-center justify-between">
-                  <span class="text-muted-foreground">{m.control_locked_by()}</span>
-                  <span class="text-[10px]">{selectedCycle.locked_by}</span>
-                </div>
-              {/if}
-            </div>
-          </div>
-
-          <!-- Action Buttons Card -->
-          <div class="bg-background/50 border border-border rounded-lg p-4 flex flex-col gap-3">
-            <h3 class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{m.control_actions()}</h3>
-            <div class="flex flex-col gap-2">
-              {#if isCycleLocked}
-                <Button
-                  variant="outline"
-                  class="w-full justify-start gap-2 text-xs h-9 cursor-pointer border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10"
-                  onclick={handleUnlockCycle}
-                  disabled={isCycleActionLoading}
-                >
-                  {#if isCycleActionLoading}
-                    <Loader2 size={14} class="animate-spin" />
-                  {:else}
-                    <Unlock size={14} />
-                  {/if}
-                  {m.control_unlock_cycle()}
-                </Button>
-              {:else}
-                <Button
-                  variant="outline"
-                  class="w-full justify-start gap-2 text-xs h-9 cursor-pointer border-destructive/30 text-destructive hover:bg-destructive/10"
-                  onclick={handleLockCycle}
-                  disabled={isCycleActionLoading}
-                >
-                  {#if isCycleActionLoading}
-                    <Loader2 size={14} class="animate-spin" />
-                  {:else}
-                    <Lock size={14} />
-                  {/if}
-                  {m.control_lock_cycle()}
-                </Button>
-
-                {#if isGradeEntryOpen}
-                  <Button
-                    variant="outline"
-                    class="w-full justify-start gap-2 text-xs h-9 cursor-pointer border-amber-500/30 text-amber-600 hover:bg-amber-500/10"
-                    onclick={handleCloseGradeEntry}
-                    disabled={isCycleActionLoading}
-                  >
-                    {#if isCycleActionLoading}
-                      <Loader2 size={14} class="animate-spin" />
-                    {:else}
-                      <CalendarOff size={14} />
-                    {/if}
-                    {m.control_close_entry()}
-                  </Button>
-                {:else}
-                  <Button
-                    variant="outline"
-                    class="w-full justify-start gap-2 text-xs h-9 cursor-pointer border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10"
-                    onclick={handleOpenGradeEntry}
-                    disabled={isCycleActionLoading}
-                  >
-                    {#if isCycleActionLoading}
-                      <Loader2 size={14} class="animate-spin" />
-                    {:else}
-                      <CalendarClock size={14} />
-                    {/if}
-                    {m.control_open_entry()}
-                  </Button>
-                {/if}
-              {/if}
-
-              {#if selectedCycle && (selectedCycle.type === 'term' || selectedCycle.id.includes('-s1') || selectedCycle.id.includes('-s2'))}
-                <Button
-                  variant="outline"
-                  class="w-full justify-start gap-2 text-xs h-9 cursor-pointer border-blue-500/30 text-blue-600 hover:bg-blue-500/10"
-                  onclick={handleCompileGrades}
-                  disabled={isCompileLoading}
-                >
-                  {#if isCompileLoading}
-                    <Loader2 size={14} class="animate-spin" />
-                  {:else}
-                    <RefreshCw size={14} />
-                  {/if}
-                  {m.control_compile_grades()}
-                </Button>
-              {/if}
-            </div>
-          </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <ControlSidebar
+            {selectedCycle}
+            {isCycleLocked}
+            {isGradeEntryOpen}
+            {isCycleActionLoading}
+            {isCompileLoading}
+            stats={null}
+            onLockCycle={handleLockCycle}
+            onUnlockCycle={handleUnlockCycle}
+            onOpenGradeEntry={handleOpenGradeEntry}
+            onCloseGradeEntry={handleCloseGradeEntry}
+            onCompileGrades={handleCompileGrades}
+          />
         </div>
       {/if}
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════════════
-         Lock / Entry Warning Banners
-         ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- Warnings -->
     {#if selectedCycle && isCycleLocked}
       <div
         class="bg-destructive/5 border border-destructive/20 rounded-xl p-4 flex items-center gap-3"
@@ -657,115 +508,23 @@ onMount(() => {
       </div>
     {/if}
 
-    <!-- ═══════════════════════════════════════════════════════════════════════
-         Section 2: Bulk Grade Entry — OrbisGrid
-         ═══════════════════════════════════════════════════════════════════════ -->
-    <div class="bg-card border border-border rounded-xl p-5 flex flex-col gap-4" in:fade={{ delay: 100, duration: 200 }}>
-      <div class="flex items-center justify-between">
-        <h2 class="text-xs font-bold text-foreground flex items-center gap-2">
-          <Users size={14} class="text-primary" />
-          {m.control_bulk_entry_title()}
-        </h2>
-        {#if matrixData && canEnterGrades}
-          <div class="flex items-center gap-2 flex-nowrap shrink-0">
-            {#if isDirty}
-              <Badge variant="secondary" class="text-[10px]">●</Badge>
-            {/if}
-            <Button
-              variant="outline"
-              size="sm"
-              class="text-[10px] h-7 px-2.5 gap-1.5 cursor-pointer"
-              onclick={loadGradeMatrix}
-              disabled={isMatrixLoading}
-            >
-              <RefreshCw size={11} class={isMatrixLoading ? "animate-spin" : ""} />
-              {m.control_refresh()}
-            </Button>
-            <Button
-              variant="lime"
-              size="sm"
-              class="text-[10px] h-7 px-3 gap-1.5 cursor-pointer"
-              onclick={handleSaveAll}
-              disabled={isSaving || !isDirty}
-            >
-              {#if isSaving}
-                <Loader2 size={11} class="animate-spin" />
-              {:else}
-                <Save size={11} />
-              {/if}
-              {m.control_save_all()}
-            </Button>
-          </div>
-        {/if}
-      </div>
-
-      <!-- Filters Row -->
-      <div class="flex items-center gap-3 flex-wrap">
-        <!-- Class Selector -->
-        <Select type="single" value={selectedClassId} onValueChange={(v) => { if (v) selectedClassId = v; }}>
-          <SelectTrigger class="min-w-[180px] text-xs h-9" disabled={!selectedCycleId}>
-            <div class="flex items-center gap-2">
-              <GraduationCap size={12} class="text-muted-foreground shrink-0" />
-              <span class="truncate">{classes.find((c) => String(c.id) === selectedClassId)?.name_ar || classes.find((c) => String(c.id) === selectedClassId)?.name || m.control_select_class()}</span>
-            </div>
-          </SelectTrigger>
-          <SelectContent>
-            {#each classes as cls}
-              <SelectItem value={String(cls.id)}>{cls.name_ar || cls.name}</SelectItem>
-            {/each}
-          </SelectContent>
-        </Select>
-
-        <!-- Subject Selector -->
-        <Select type="single" value={selectedSubjectId} onValueChange={(v) => { if (v) selectedSubjectId = v; }}>
-          <SelectTrigger class="min-w-[180px] text-xs h-9" disabled={!selectedClassId || subjects.length === 0}>
-            <div class="flex items-center gap-2">
-              <BookOpen size={12} class="text-muted-foreground shrink-0" />
-              <span class="truncate">{subjects.find((s) => String(s.id) === selectedSubjectId)?.name_ar || subjects.find((s) => String(s.id) === selectedSubjectId)?.name || m.control_select_subject()}</span>
-            </div>
-          </SelectTrigger>
-          <SelectContent>
-            {#each subjects as sub}
-              <SelectItem value={String(sub.id)}>{sub.name_ar || sub.name}</SelectItem>
-            {/each}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <!-- Grade Matrix Grid -->
-      {#if isMatrixLoading}
-        <div class="flex flex-col gap-2">
-          {#each Array(6) as _}
-            <Skeleton class="h-10 w-full rounded-lg" />
-          {/each}
-        </div>
-      {:else if matrixData && gridSource.length > 0}
-        <div in:fade={{ duration: 200 }}>
-          <OrbisGrid
-            columns={gridColumns}
-            source={gridSource}
-            height="calc(100vh - 420px)"
-            rtl={getLocale() === "ar"}
-            readonly={!canEnterGrades}
-            theme="compact"
-            range={true}
-            clipboard={true}
-            rowSize={42}
-            oncelledit={handleCellEdit}
-          />
-        </div>
-      {:else if selectedCycleId && selectedClassId && selectedSubjectId && !isMatrixLoading}
-        <div class="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground">
-          <Info size={32} class="opacity-40" />
-          <p class="text-xs">{m.control_no_data()}</p>
-          <p class="text-[10px]">{m.control_no_data_hint()}</p>
-        </div>
-      {:else}
-        <div class="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground">
-          <BarChart3 size={32} class="opacity-40" />
-          <p class="text-xs">{m.control_select_filters()}</p>
-        </div>
-      {/if}
-    </div>
+    <!-- Section 2: Bulk Grade Entry — OrbisGrid -->
+    <ControlGrid
+      bind:selectedClassId
+      bind:selectedSubjectId
+      {classes}
+      {subjects}
+      {matrixData}
+      {gridSource}
+      {gridColumns}
+      {isMatrixLoading}
+      {isSaving}
+      {isDirty}
+      {canEnterGrades}
+      {selectedCycleId}
+      onRefresh={loadGradeMatrix}
+      onSaveAll={handleSaveAll}
+      onCellEdit={handleCellEdit}
+    />
   {/if}
 </div>

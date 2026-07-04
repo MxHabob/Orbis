@@ -5,34 +5,6 @@ import { goto } from "$app/navigation";
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
-import { Label } from "@orbis/ui-svelte/label";
-import { Badge } from "@orbis/ui-svelte/badge";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-} from "@orbis/ui-svelte/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@orbis/ui-svelte/dialog";
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogAction,
-  AlertDialogCancel,
-} from "@orbis/ui-svelte/alert-dialog";
 import {
   Select,
   SelectTrigger,
@@ -43,17 +15,15 @@ import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { l, isAr } from "$lib/core/i18n";
 import SearchField from "$lib/shared/components/search-field.svelte";
+import { Plus, RefreshCw, FileText } from "lucide-svelte";
+import { fade } from "svelte/transition";
+
+// Component imports
 import {
-  FileText,
-  Plus,
-  Search,
-  Trash2,
-  Edit,
-  CheckCircle,
-  Archive,
-  AlertCircle,
-  RefreshCw,
-} from "lucide-svelte";
+  TemplateGrid,
+  CreateTemplateDialog,
+  DeleteTemplateDialog,
+} from "$lib/features/templates";
 
 // State runes
 let templates = $state<any[]>([]);
@@ -193,7 +163,6 @@ async function handleCreateTemplate() {
       tags: null,
     };
 
-    // User ID mock/context or fetch from auth
     const userId = "current-user";
     const response = await commands.documentTemplates.createTemplate(
       orgId,
@@ -253,7 +222,8 @@ async function publishTemplate(id: string) {
 // Handle Template Archiving
 async function archiveTemplate(id: string) {
   try {
-    await commands.documentTemplates.archiveTemplate(orgId, id);
+    const userId = "current-user";
+    await commands.documentTemplates.archiveTemplate(orgId, id, userId);
     toast.success(m.templates_archive_success());
     loadTemplates();
   } catch (e: unknown) {
@@ -266,7 +236,8 @@ async function archiveTemplate(id: string) {
 // Handle Template Restoring
 async function restoreTemplate(id: string) {
   try {
-    await commands.documentTemplates.restoreTemplate(orgId, id);
+    const userId = "current-user";
+    await commands.documentTemplates.restoreTemplate(orgId, id, userId);
     toast.success(m.templates_restore_success());
     loadTemplates();
   } catch (e: unknown) {
@@ -278,23 +249,40 @@ async function restoreTemplate(id: string) {
 </script>
 
 <svelte:head>
-  <title>{m.settings_templates_window_title()} | Orbis</title>
+  <title>{m.templates_window_title()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide">
-  <div class=" mx-auto p-6 flex flex-col gap-6">
-    <!-- Header Action Bar (Search, Filters, and Buttons) -->
-    <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4 border-b border-border/60 pb-4 select-none">
-      <div class="flex flex-1 flex-col sm:flex-row gap-3 items-center w-full">
-        <!-- Search Field -->
+  <div class="w-full p-6 flex flex-col gap-6">
+    <!-- Header -->
+    <div
+      class="bg-card border border-border rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4"
+      in:fade={{ duration: 150 }}
+    >
+      <div class="flex items-center gap-3 text-start">
+        <div class="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+          <FileText size={22} />
+        </div>
+        <div>
+          <h1 class="text-sm font-bold text-foreground">{m.templates_page_title()}</h1>
+          <p class="text-[10px] text-muted-foreground mt-0.5">
+            {m.templates_page_desc()}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 select-none shrink-0" in:fade={{ delay: 50, duration: 200 }}>
+      <div class="flex items-center gap-3 flex-wrap">
+        <!-- Search bar -->
         <SearchField
-          placeholder={m.settings_templates_search_placeholder()}
           bind:value={searchQuery}
-          oninput={loadTemplates}
-          class="bg-background/50 max-w-md"
+          onchange={loadTemplates}
+          placeholder={m.templates_search_placeholder()}
         />
 
-        <div class="flex flex-wrap items-center gap-3 w-full">
+        <div class="flex items-center gap-2">
           <!-- Entity Type Select -->
           <div class="min-w-[140px]">
             <Select type="single" bind:value={filterEntityType} onValueChange={loadTemplates}>
@@ -340,242 +328,34 @@ async function restoreTemplate(id: string) {
     </div>
 
     <!-- Templates Grid -->
-    {#if loading}
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {#each Array(3) as _}
-          <div class="bg-card border border-border rounded-xl p-5 flex flex-col gap-4 animate-pulse">
-            <div class="h-6 w-2/3 bg-muted rounded"></div>
-            <div class="h-4 w-full bg-muted rounded"></div>
-            <div class="h-8 w-1/2 bg-muted rounded mt-2"></div>
-          </div>
-        {/each}
-      </div>
-    {:else if templates.length === 0}
-      <div class="flex flex-col items-center justify-center py-16 px-4 bg-card border border-border border-dashed rounded-xl gap-4">
-        <div class="bg-muted p-4 rounded-full text-muted-foreground">
-          <FileText size={32} />
-        </div>
-        <div class="flex flex-col gap-1">
-          <h3 class="text-sm font-semibold text-foreground">{m.templates_empty()}</h3>
-          <p class="text-xs text-muted-foreground">{m.templates_empty_desc()}</p>
-        </div>
-        <Button variant="outline" size="sm" onclick={() => (isCreateDialogOpen = true)}>
-          <Plus size={14} class="me-1" />
-          {m.templates_create_btn()}
-        </Button>
-      </div>
-    {:else}
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-start">
-        {#each templates as template (template.id)}
-          <Card class="flex flex-col h-full">
-            <CardHeader class="pb-3">
-              <div class="flex items-start justify-between gap-2">
-                <Badge variant={template.status === 'published' ? 'lime' : (template.status === 'archived' ? 'outline' : 'secondary')}>
-                  {template.status === 'published' ? m.templates_status_active() : (template.status === 'archived' ? m.templates_status_archived() : m.templates_status_draft())}
-                </Badge>
-                <div class="text-[10px] text-muted-foreground">v{template.version}</div>
-              </div>
-              <CardTitle class="text-sm font-bold text-foreground mt-2">
-                {l(template.name_ar, template.name)}
-              </CardTitle>
-              <CardDescription class="text-xs text-muted-foreground line-clamp-2 mt-1">
-                {template.description || m.templates_no_description()}
-              </CardDescription>
-            </CardHeader>
-            
-            <CardContent class="flex-grow pb-4 flex flex-col gap-2">
-              <div class="flex items-center justify-between text-xs text-muted-foreground border-t border-border/40 pt-3">
-                <span>{m.templates_label_doc_type()}</span>
-                <span class="font-medium text-foreground">{template.document_type}</span>
-              </div>
-              <div class="flex items-center justify-between text-xs text-muted-foreground">
-                <span>{m.templates_label_entity_type()}</span>
-                <span class="font-medium text-foreground">{template.entity_type}</span>
-              </div>
-              <div class="flex items-center justify-between text-xs text-muted-foreground">
-                <span>{m.templates_label_size()}</span>
-                <span class="font-medium text-foreground">{template.page_size} ({template.orientation})</span>
-              </div>
-            </CardContent>
-
-            <CardFooter class="border-t border-border/40 pt-3 flex justify-between gap-2 bg-muted/10 flex-nowrap overflow-x-auto">
-              <div class="flex items-center gap-1 shrink-0">
-                <Button
-                  variant="destructive"
-                  size="icon-xs"
-                  class="h-8 w-8 rounded-lg cursor-pointer"
-                  onclick={() => confirmDelete(template.id)}
-                >
-                  <Trash2 size={13} />
-                </Button>
-              </div>
-              
-              <div class="flex items-center gap-1.5 shrink-0">
-                <Button
-                  variant="outline"
-                  size="xs"
-                  class="cursor-pointer"
-                  href={`/${orgId}/templates/${template.id}`}
-                >
-                  <Edit size={13} class="me-1" />
-                  {m.templates_action_edit()}
-                </Button>
-
-                {#if template.status === 'published'}
-                  <Button
-                    variant="outline"
-                    size="xs"
-                    class="cursor-pointer"
-                    onclick={() => archiveTemplate(template.id)}
-                  >
-                    <Archive size={13} class="me-1" />
-                    {m.templates_action_archive()}
-                  </Button>
-                {:else if template.status === 'archived'}
-                  <Button
-                    variant="outline"
-                    size="xs"
-                    class="cursor-pointer"
-                    onclick={() => restoreTemplate(template.id)}
-                  >
-                    <RefreshCw size={13} class="me-1" />
-                    {m.templates_action_restore()}
-                  </Button>
-                {:else}
-                  <Button
-                    variant="lime"
-                    size="xs"
-                    class="cursor-pointer"
-                    onclick={() => publishTemplate(template.id)}
-                  >
-                    <CheckCircle size={13} class="me-1" />
-                    {m.templates_action_activate()}
-                  </Button>
-                {/if}
-              </div>
-            </CardFooter>
-          </Card>
-        {/each}
-      </div>
-    {/if}
+    <TemplateGrid
+      {templates}
+      {loading}
+      {orgId}
+      onconfirmdelete={confirmDelete}
+      onpublish={publishTemplate}
+      onarchive={archiveTemplate}
+      onrestore={restoreTemplate}
+      oncreatenew={() => (isCreateDialogOpen = true)}
+    />
   </div>
 </div>
 
-<!-- CREATE DIALOG -->
-<Dialog bind:open={isCreateDialogOpen}>
-  <DialogContent class="sm:max-w-[480px] text-start">
-    <DialogHeader>
-      <DialogTitle>{m.templates_create_btn()}</DialogTitle>
-      <DialogDescription>
-        أدخل تفاصيل قالب المستندات الجديد لبدء تصميمه في المحرر.
-      </DialogDescription>
-    </DialogHeader>
+<!-- Create Dialog -->
+<CreateTemplateDialog
+  bind:open={isCreateDialogOpen}
+  bind:name={newTemplateName}
+  bind:nameAr={newTemplateNameAr}
+  bind:desc={newTemplateDesc}
+  bind:entityType={newTemplateEntityType}
+  bind:docType={newTemplateDocType}
+  bind:pageSize={newTemplatePageSize}
+  bind:orientation={newTemplateOrientation}
+  onsubmit={handleCreateTemplate}
+/>
 
-    <div class="flex flex-col gap-4 py-2">
-      <div class="flex flex-col gap-2">
-        <Label for="name-en" class="text-xs font-semibold text-muted-foreground">اسم القالب بالإنجليزية (Name EN) *</Label>
-        <Input id="name-en" bind:value={newTemplateName} placeholder="e.g. Student Certificate" />
-      </div>
-
-      <div class="flex flex-col gap-2">
-        <Label for="name-ar" class="text-xs font-semibold text-muted-foreground">اسم القالب بالعربية (Name AR)</Label>
-        <Input id="name-ar" bind:value={newTemplateNameAr} placeholder="مثال: شهادة طالب" />
-      </div>
-
-      <div class="flex flex-col gap-2">
-        <Label for="desc" class="text-xs font-semibold text-muted-foreground">وصف القالب / Description</Label>
-        <Input id="desc" bind:value={newTemplateDesc} placeholder="وصف موجز للقالب..." />
-      </div>
-
-      <div class="grid grid-cols-2 gap-4">
-        <div class="flex flex-col gap-2">
-          <Label class="text-xs font-semibold text-muted-foreground">نوع السجل / Entity</Label>
-          <Select type="single" bind:value={newTemplateEntityType}>
-            <SelectTrigger>
-              {({ enrollment: "تسجيل الطلاب", payment: "سندات القبض", exam: "أرقام الجلوس", user: "بطاقات التعريف", organization: "المؤسسة / المدرسة" } as any)[newTemplateEntityType]}
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="enrollment">تسجيل الطلاب</SelectItem>
-              <SelectItem value="payment">سندات القبض</SelectItem>
-              <SelectItem value="exam">أرقام الجلوس</SelectItem>
-              <SelectItem value="user">بطاقات التعريف</SelectItem>
-              <SelectItem value="organization">المؤسسة / المدرسة</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div class="flex flex-col gap-2">
-          <Label class="text-xs font-semibold text-muted-foreground">نوع المستند / Document</Label>
-          <Select type="single" bind:value={newTemplateDocType}>
-            <SelectTrigger>
-              {({ CERTIFICATE: "شهادات (Certificate)", ID_CARD: "بطاقات (ID Card)", RECEIPT: "سندات (Receipt)", EXAM_CARD: "بطاقات جلوس (Seating)", REPORT: "تقارير (Report)" } as any)[newTemplateDocType]}
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="CERTIFICATE">شهادات (Certificate)</SelectItem>
-              <SelectItem value="ID_CARD">بطاقات (ID Card)</SelectItem>
-              <SelectItem value="RECEIPT">سندات (Receipt)</SelectItem>
-              <SelectItem value="EXAM_CARD">بطاقات جلوس (Seating)</SelectItem>
-              <SelectItem value="REPORT">تقارير (Report)</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-2 gap-4">
-        <div class="flex flex-col gap-2">
-          <Label class="text-xs font-semibold text-muted-foreground">حجم الصفحة / Size</Label>
-          <Select type="single" bind:value={newTemplatePageSize}>
-            <SelectTrigger>
-              {({ A4: "A4 (210 x 297 mm)", A5: "A5 (148 x 210 mm)", Letter: "Letter (8.5 x 11 in)", Custom: "Custom" } as any)[newTemplatePageSize]}
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="A4">A4 (210 x 297 mm)</SelectItem>
-              <SelectItem value="A5">A5 (148 x 210 mm)</SelectItem>
-              <SelectItem value="Letter">Letter (8.5 x 11 in)</SelectItem>
-              <SelectItem value="Custom">Custom</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div class="flex flex-col gap-2">
-          <Label class="text-xs font-semibold text-muted-foreground">الاتجاه / Orientation</Label>
-          <Select type="single" bind:value={newTemplateOrientation}>
-            <SelectTrigger>
-              {({ portrait: "طولي (Portrait)", landscape: "عرضي (Landscape)" } as any)[newTemplateOrientation]}
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="portrait">طولي (Portrait)</SelectItem>
-              <SelectItem value="landscape">عرضي (Landscape)</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-    </div>
-
-    <DialogFooter class="gap-2 sm:gap-0 mt-4">
-      <Button variant="outline" size="sm" onclick={() => (isCreateDialogOpen = false)}>إلغاء / Cancel</Button>
-      <Button variant="lime" size="sm" onclick={handleCreateTemplate}>إنشاء ومتابعة / Create</Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
-
-<!-- DELETE ALERT DIALOG -->
-<AlertDialog bind:open={isDeleteDialogOpen}>
-  <AlertDialogContent class="text-start">
-    <AlertDialogHeader>
-      <AlertDialogTitle class="flex items-center gap-2 text-destructive">
-        <AlertCircle size={20} />
-        <span>تأكيد الحذف / Confirm Delete</span>
-      </AlertDialogTitle>
-      <AlertDialogDescription>
-        هل أنت متأكد من رغبتك في حذف هذا القالب نهائياً؟ لن تتمكن من استرجاع البيانات أو استخدام هذا القالب للطباعة مجدداً.
-      </AlertDialogDescription>
-    </AlertDialogHeader>
-    <AlertDialogFooter class="gap-2 sm:gap-0">
-      <AlertDialogCancel>إلغاء / Cancel</AlertDialogCancel>
-      <AlertDialogAction class="bg-destructive hover:bg-destructive/90 text-white cursor-pointer" onclick={handleDeleteTemplate}>
-        حذف نهائي / Delete
-      </AlertDialogAction>
-    </AlertDialogFooter>
-  </AlertDialogContent>
-</AlertDialog>
+<!-- Delete Dialog -->
+<DeleteTemplateDialog
+  bind:open={isDeleteDialogOpen}
+  onconfirm={handleDeleteTemplate}
+/>

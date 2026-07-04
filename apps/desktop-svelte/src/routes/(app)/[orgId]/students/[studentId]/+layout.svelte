@@ -33,8 +33,8 @@ import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 
 let { children }: { children: Snippet } = $props();
 
-const orgId = $derived(page.params.orgId);
-const studentId = $derived(page.params.studentId);
+const orgId = $derived(page.params.orgId || "");
+const studentId = $derived(page.params.studentId || "");
 
 // TanStack Queries
 const enrollmentsQuery = createEnrollmentsQuery(orgId);

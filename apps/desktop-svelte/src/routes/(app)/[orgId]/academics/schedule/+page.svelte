@@ -1,22 +1,17 @@
-<!--
-@component AcademicsSchedulePage
-Displays the weekly academic schedule grid,
-allows selecting classes or teachers, scheduling lessons, and deleting scheduled lessons.
-Triggers the LessonCreateSheet for scheduling lessons.
--->
 <script lang="ts">
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
-import { Button } from "@orbis/ui-svelte/button";
-import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import { Plus, Clock, MapPin, User, X } from "lucide-svelte";
 import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
-import { fade } from "svelte/transition";
 import LessonCreateSheet from "$lib/features/academics/components/lesson-create-sheet.svelte";
 import SchedulerAiPanel from "$lib/features/academics/components/scheduler-ai-panel.svelte";
-import { Timetable } from "@orbis/ui-svelte/timetable";
 import * as m from "$lib/paraglide/messages";
+
+// Component imports
+import {
+  ScheduleFilterControls,
+  ScheduleTimetableWrapper,
+} from "$lib/features/academics";
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -249,54 +244,55 @@ async function handleMoveLesson(
 
     toast.dismiss();
 
-    if (conflicts && conflicts.length > 0) {
-      const first = conflicts[0] as any;
-      const type = String(first.conflict_type || "");
-      let arMsg = `لا يمكن نقل الحصة لوجود تضارب: `;
-      if (type === "teacher") arMsg += "المعلم مشغول في هذا الوقت.";
-      else if (type === "class") arMsg += "الصف لديه حصة أخرى في هذا الوقت.";
-      else if (type === "room") arMsg += "القاعة/الغرفة مشغولة في هذا الوقت.";
-      else arMsg += first.message || "";
-
-      const enMsg = `Cannot move lesson: ${first.message || "conflict detected."}`;
-      toast.error(getLocale() === "ar" ? arMsg : enMsg, { duration: 5000 });
+    if (conflicts.length > 0) {
+      const conflictMsgs = conflicts.map((c: any) => c.message).join("\n");
+      toast.error(
+        getLocale() === "ar"
+          ? "توجد تضاربات في هذا الموعد!"
+          : "Conflicts detected for this schedule!",
+        {
+          description: conflictMsgs,
+        },
+      );
       return;
     }
 
-    toast.loading(
-      getLocale() === "ar" ? "جاري نقل الحصة..." : "Moving lesson...",
-    );
-    await commands.schedule.updateLesson(data.orgId, lesson.id, {
-      teacher_id: lesson.teacher_id,
-      time_slot_id: targetSlotId,
-      day_of_week: targetDay,
-      room_id: lesson.room_id || undefined,
-    });
-
-    toast.dismiss();
+    await commands.schedule.updateLessonTime(lesson.id, targetDay, targetSlotId);
     toast.success(
       getLocale() === "ar"
-        ? "تم نقل الحصة بنجاح!"
-        : "Lesson moved successfully!",
+        ? "تم نقل الحصة بنجاح"
+        : "Lesson moved successfully",
     );
     await loadScheduleLessons();
-  } catch (err: any) {
+  } catch (e: any) {
     toast.dismiss();
-    toast.error(err instanceof Error ? err.message : String(err));
+    toast.error(e?.message || "Failed to move lesson");
   }
 }
 
-onMount(() => {
-  if (data.orgId) {
-    initializeSchedule();
+// React to class selection changes
+$effect(() => {
+  if (selectedClassId && viewMode === "class") {
+    loadScheduleLessons();
   }
 });
 
-// Reactively reload schedule lessons when filters change
+// React to teacher selection changes
 $effect(() => {
-  if (selectedClassId || selectedTeacherId || viewMode || activeCycleId) {
+  if (selectedTeacherId && viewMode === "teacher") {
     loadScheduleLessons();
   }
+});
+
+// React to viewMode toggle
+$effect(() => {
+  if (viewMode) {
+    loadScheduleLessons();
+  }
+});
+
+onMount(() => {
+  initializeSchedule();
 });
 
 function getSubjectName(subjectId: string) {
@@ -346,115 +342,63 @@ function openScheduler(day: number, slotId: string) {
 </script>
 
 <div class="h-full w-full flex flex-col lg:flex-row items-stretch overflow-hidden">
-	
-	<!-- Main Schedule Panel Column -->
-	<div class="flex-1 min-w-0 w-full flex flex-col p-6 gap-6 overflow-y-auto">
-		<!-- Timetable Header Filter Controls -->
-			<div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-card/25 p-4 rounded-xl border border-border/80 shrink-0 select-none">
-				<div class="flex items-center gap-3">
-					<span class="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-						{m.schedule_page_view_by()}
-					</span>
-					<div class="flex p-0.5 rounded-lg bg-muted border border-border/60">
-						<button 
-							class="text-[10px] font-bold px-3 py-1.5 rounded-md transition-all duration-150 cursor-pointer {viewMode === 'class' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}"
-							onclick={() => viewMode = 'class'}
-						>
-							{m.schedule_page_class()}
-						</button>
-						<button 
-							class="text-[10px] font-bold px-3 py-1.5 rounded-md transition-all duration-150 cursor-pointer {viewMode === 'teacher' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}"
-							onclick={() => viewMode = 'teacher'}
-						>
-							{m.schedule_page_teacher()}
-						</button>
-					</div>
-				</div>
+  <!-- Main Schedule Panel Column -->
+  <div class="flex-1 min-w-0 w-full flex flex-col p-6 gap-6 overflow-y-auto">
+    <!-- Timetable Header Filter Controls -->
+    <ScheduleFilterControls
+      bind:viewMode
+      bind:selectedClassId
+      bind:selectedTeacherId
+      {classes}
+      {teachers}
+    />
 
-				<!-- Selector Box -->
-				<div class="flex items-center gap-3">
-					{#if viewMode === 'class'}
-						<span class="text-xs text-muted-foreground">{m.schedule_page_sel_class()}</span>
-						<select 
-							bind:value={selectedClassId} 
-							class="bg-background text-foreground border border-border rounded-md px-3 py-1.5 text-xs focus:ring-1 focus:ring-ring outline-none"
-						>
-							{#each classes as cls (cls.id)}
-								<option value={String(cls.id)}>{cls.name_ar || cls.name}</option>
-							{/each}
-						</select>
-					{:else}
-						<span class="text-xs text-muted-foreground">{m.schedule_page_sel_teacher()}</span>
-						<select 
-							bind:value={selectedTeacherId} 
-							class="bg-background text-foreground border border-border rounded-md px-3 py-1.5 text-xs focus:ring-1 focus:ring-ring outline-none"
-						>
-							{#each teachers as teach (teach.id)}
-								<option value={String(teach.id)}>{getLocale() === "ar" ? (teach.name_ar || teach.full_name) : teach.full_name}</option>
-							{/each}
-						</select>
-					{/if}
-				</div>
-			</div>
+    <!-- Timetable Grid Content -->
+    <ScheduleTimetableWrapper
+      {isLoading}
+      {error}
+      {timeSlots}
+      {weekdays}
+      {lessons}
+      draftLessons={draftLessonsInGrid}
+      {previewDraft}
+      {viewMode}
+      {getSubjectName}
+      {getTeacherName}
+      {getClassName}
+      {getSubjectColor}
+      onCellClick={openScheduler}
+      onDeleteLesson={handleDeleteLesson}
+      onMoveLesson={handleMoveLesson}
+      onRetry={initializeSchedule}
+    />
+  </div>
 
-			<!-- Timetable Grid Content -->
-			{#if isLoading}
-				<div class="flex-1 w-full p-4 flex flex-col gap-3 bg-card border border-border rounded-lg">
-					<Skeleton class="h-10 w-full" />
-					<Skeleton class="h-20 w-full" />
-					<Skeleton class="h-20 w-full" />
-				</div>
-			{:else if error}
-				<div class="flex flex-col items-center justify-center p-8 border border-destructive/20 bg-destructive/5 rounded-xl text-center gap-3">
-					<p class="text-xs text-destructive font-semibold">{m.schedule_page_error()}</p>
-					<p class="text-xs text-muted-foreground">{error}</p>
-					<Button variant="outline" class="text-xs" onclick={initializeSchedule}>{m.error_retry()}</Button>
-				</div>
-			{:else}
-				<Timetable
-					{timeSlots}
-					{weekdays}
-					{lessons}
-					draftLessons={draftLessonsInGrid}
-					{previewDraft}
-					{viewMode}
-					locale={getLocale()}
-					{getSubjectName}
-					{getTeacherName}
-					{getClassName}
-					{getSubjectColor}
-					onCellClick={openScheduler}
-					onDeleteLesson={handleDeleteLesson}
-					onMoveLesson={handleMoveLesson}
-				/>
-			{/if}
-		</div>
-
-		<!-- AI Auto-Scheduler Sidebar Panel (Fixed Side) -->
-		{#if !isLoading && !error}
-			<SchedulerAiPanel
-				orgId={data.orgId}
-				cycleId={activeCycleId}
-				selectedClassId={selectedClassId}
-				selectedTeacherId={selectedTeacherId}
-				viewMode={viewMode}
-				subjects={subjects}
-				bind:previewDraft={previewDraft}
-				bind:activeJob={activeJob}
-				onApply={loadScheduleLessons}
-			/>
-		{/if}
+  <!-- AI Auto-Scheduler Sidebar Panel (Fixed Side) -->
+  {#if !isLoading && !error}
+    <SchedulerAiPanel
+      orgId={data.orgId}
+      cycleId={activeCycleId}
+      selectedClassId={selectedClassId}
+      selectedTeacherId={selectedTeacherId}
+      viewMode={viewMode}
+      subjects={subjects}
+      bind:previewDraft={previewDraft}
+      bind:activeJob={activeJob}
+      onApply={loadScheduleLessons}
+    />
+  {/if}
 </div>
 
 <!-- Lesson Scheduling Side Sheet -->
-<LessonCreateSheet 
-	bind:open={isModalOpen}
-	orgId={data.orgId}
-	cycleId={activeCycleId}
-	classId={selectedClassId}
-	dayOfWeek={activeDay}
-	timeSlotId={activeSlotId}
-	subjects={subjects}
-	teachers={teachers}
-	onSuccess={loadScheduleLessons}
+<LessonCreateSheet
+  bind:open={isModalOpen}
+  orgId={data.orgId}
+  cycleId={activeCycleId}
+  classId={selectedClassId}
+  dayOfWeek={activeDay}
+  timeSlotId={activeSlotId}
+  subjects={subjects}
+  teachers={teachers}
+  onSuccess={loadScheduleLessons}
 />

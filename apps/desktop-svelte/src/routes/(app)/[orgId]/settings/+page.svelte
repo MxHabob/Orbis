@@ -2,22 +2,18 @@
 import { page } from "$app/state";
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
-import { Input } from "@orbis/ui-svelte/input";
-import { Switch } from "@orbis/ui-svelte/switch";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import { Label } from "@orbis/ui-svelte/label";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-} from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
-import AvatarUpload from "$lib/shared/components/avatar-upload.svelte";
-import LocaleSettings from "$lib/shared/components/locale-settings.svelte";
-import TimezoneSettings from "$lib/shared/components/timezone-settings.svelte";
 import * as m from "$lib/paraglide/messages";
 import { getLocale, setLocale } from "$lib/paraglide/runtime";
+import {
+  InfoSettingsCard,
+  BrandingSettingsCard,
+  RegionalSettingsCard,
+  AvatarSettingsCard,
+  DangerZoneSettingsCard,
+} from "$lib/features/settings";
+
 let orgId = $derived(page.params.orgId);
 
 // Form state
@@ -144,13 +140,6 @@ async function handleSave(e: Event) {
     isSaving = false;
   }
 }
-
-// Lists for dropdown options
-const dateFormats = [
-  { value: "YYYY-MM-DD", label: "YYYY-MM-DD (2026-06-24)" },
-  { value: "DD/MM/YYYY", label: "DD/MM/YYYY (24/06/2026)" },
-  { value: "MM/DD/YYYY", label: "MM/DD/YYYY (06/24/2026)" },
-];
 </script>
 
 <svelte:head>
@@ -166,197 +155,27 @@ const dateFormats = [
       </div>
     {:else}
       <form onsubmit={handleSave} class="flex flex-col gap-6">
+        <InfoSettingsCard
+          {slug}
+          bind:name
+          {id}
+          {isSaving}
+        />
 
-        <div class="border border-border rounded-md overflow-hidden flex flex-col">
-          <!-- Card Header -->
-          <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-            {m.settings_general_section_info()}
-          </div>
+        <BrandingSettingsCard
+          bind:primaryColor
+          {isSaving}
+        />
 
-          <!-- Card Body / Rows -->
-          <div class="flex flex-col">
-            <!-- Organization Slug -->
-            <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
-              <div class="flex flex-col gap-1 text-start">
-                <Label for="org_slug" class="text-xs font-semibold text-foreground flex items-center gap-1">
-                  {m.settings_general_slug()}
-                </Label>
-                <span class="text-[11px] text-muted-foreground leading-relaxed">{m.settings_general_slug_desc()}</span>
-              </div>
-              <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
-                <Input
-                  id="org_slug"
-                  type="text"
-                  value={slug}
-                  disabled
-                  class="h-9 w-full bg-muted/40 text-muted-foreground border-border/80"
-                />
-              </div>
-            </div>
-
-            <!-- Display Name -->
-            <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
-              <div class="flex flex-col gap-1 text-start">
-                <Label for="org_name" class="text-xs font-semibold text-foreground flex items-center gap-1">
-                  {m.settings_general_display_name()}
-                  <span class="text-destructive">*</span>
-                </Label>
-                <span class="text-[11px] text-muted-foreground leading-relaxed">{m.settings_general_display_name_desc()}</span>
-              </div>
-              <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
-                <Input
-                  id="org_name"
-                  type="text"
-                  bind:value={name}
-                  placeholder={m.settings_general_name_placeholder()}
-                  required
-                  disabled={isSaving}
-                  class="h-9 w-full bg-background"
-                />
-              </div>
-            </div>
-
-            <!-- Organization ID -->
-            <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between last:border-b-0 gap-4">
-              <div class="flex flex-col gap-1 text-start">
-                <Label for="org_id" class="text-xs font-semibold text-foreground">
-                  {m.settings_general_id()}
-                </Label>
-                <span class="text-[11px] text-muted-foreground leading-relaxed">{m.settings_general_id_desc()}</span>
-              </div>
-              <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
-                <Input
-                  id="org_id"
-                  type="text"
-                  value={id}
-                  disabled
-                  class="h-9 w-full bg-muted/40 text-muted-foreground border-border/80 font-mono"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Section 2: Branding Settings (primary color) -->
-        <div class="border border-border rounded-md overflow-hidden flex flex-col">
-          <!-- Card Header -->
-          <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-            {m.settings_general_section_branding()}
-          </div>
-
-          <div class="flex flex-col">
-            <!-- Primary Color -->
-            <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between last:border-b-0 gap-4">
-              <div class="flex flex-col gap-1 text-start">
-                <Label for="org_color" class="text-xs font-semibold text-foreground">
-                  {m.settings_general_color()}
-                </Label>
-                <span class="text-[11px] text-muted-foreground leading-relaxed">{m.settings_general_color_desc()}</span>
-              </div>
-              <div class="w-full md:w-[480px] shrink-0 flex items-center justify-start gap-2">
-                <input
-                  id="org_color"
-                  type="color"
-                  bind:value={primaryColor}
-                  class="w-9 h-9 rounded-lg border border-border cursor-pointer bg-transparent shrink-0"
-                  disabled={isSaving}
-                />
-                <Input
-                  type="text"
-                  bind:value={primaryColor}
-                  placeholder="#84cc16"
-                  class="font-mono uppercase h-9 w-28 text-center shrink-0 bg-background"
-                  disabled={isSaving}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Section 3: Regional Settings (currency, timezone, language, date format, hijri calendar) -->
-        <div class="border border-border rounded-md overflow-hidden flex flex-col">
-          <!-- Card Header -->
-          <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-            {m.settings_general_section_regional()}
-          </div>
-
-          <div class="flex flex-col">
-            <!-- Currency -->
-            <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
-              <div class="flex flex-col gap-1 text-start">
-                <Label for="org_currency" class="text-xs font-semibold text-foreground">
-                  {m.settings_general_currency()}
-                </Label>
-                <span class="text-[11px] text-muted-foreground leading-relaxed">{m.settings_general_currency_desc()}</span>
-              </div>
-              <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
-                <Input
-                  id="org_currency"
-                  type="text"
-                  bind:value={currency}
-                  placeholder={m.settings_general_currency_placeholder()}
-                  class="uppercase font-mono w-full text-start h-9 bg-background"
-                  required
-                  disabled={isSaving}
-                />
-              </div>
-            </div>
-
-            <!-- Timezone -->
-            <TimezoneSettings
-              title={m.settings_general_timezone()}
-              description={m.settings_general_timezone_desc()}
-              bind:currentTimezone={timezone}
-            />
-
-            <LocaleSettings
-              title={m.settings_general_locale()}
-              description={m.settings_general_locale_desc()}
-              bind:currentLocale={locale}
-              onchange={handleLanguageChange}
-            />
-
-            <!-- Date Format -->
-            <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
-              <div class="flex flex-col gap-1 text-start">
-                <Label class="text-xs font-semibold text-foreground">
-                  {m.settings_general_date_format()}
-                </Label>
-                <span class="text-[11px] text-muted-foreground leading-relaxed">{m.settings_general_date_format_desc()}</span>
-              </div>
-              <div class="w-full md:w-[480px] shrink-0 flex items-center justify-end">
-                <Select type="single" value={dateFormat} onValueChange={(v: string | undefined) => (dateFormat = v ?? "")} disabled={isSaving}>
-                  <SelectTrigger class="h-9 w-full">
-                    {dateFormats.find(df => df.value === dateFormat)?.label || dateFormat}
-                  </SelectTrigger>
-                  <SelectContent>
-                    {#each dateFormats as df}
-                      <SelectItem value={df.value}>{df.label}</SelectItem>
-                    {/each}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <!-- Hijri Calendar Toggle -->
-            <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between last:border-b-0 gap-4">
-              <div class="flex flex-col gap-1 text-start">
-                <Label for="hijri_enabled" class="text-xs font-semibold text-foreground">
-                  {m.settings_general_hijri()}
-                </Label>
-                <span class="text-[11px] text-muted-foreground leading-relaxed">{m.settings_general_hijri_desc()}</span>
-              </div>
-              <div class="w-full md:w-[480px] shrink-0 flex items-center justify-start md:justify-start">
-                <Switch
-                  id="hijri_enabled"
-                  bind:checked={hijriEnabled}
-                  disabled={isSaving}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
+        <RegionalSettingsCard
+          bind:currency
+          bind:timezone
+          bind:locale
+          bind:dateFormat
+          bind:hijriEnabled
+          {isSaving}
+          onLanguageChange={handleLanguageChange}
+        />
 
         <!-- Action Buttons -->
         <div class="flex justify-end gap-3 pb-8 border-b border-border">
@@ -370,52 +189,16 @@ const dateFormats = [
         </div>
       </form>
 
-      <!-- Section 4: Avatar (preview, choices, save footer) -->
-      <div class="border border-border rounded-md overflow-hidden flex flex-col">
-        <!-- Card Header -->
-        <div class="bg-muted/50 px-6 py-3 border-b border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-          {m.settings_general_section_avatar()}
-        </div>
+      <AvatarSettingsCard
+        bind:logo
+        {name}
+        {isSaving}
+        onsave={handleSaveAvatar}
+      />
 
-        <!-- Card Body -->
-        <div class="px-6 py-5 flex items-center justify-start text-start select-none">
-          <AvatarUpload
-            bind:avatarUrl={logo}
-            size={64}
-            fallbackText={name}
-          />
-        </div>
-
-        <!-- Card Footer -->
-        <div class="bg-muted/10 px-6 py-3 border-t border-border flex justify-start">
-          <Button type="button" class="font-semibold text-xs h-8 px-4" onclick={handleSaveAvatar} disabled={isSaving}>
-            {isSaving ? m.settings_general_saving() : m.settings_general_avatar_save()}
-          </Button>
-        </div>
-      </div>
-
-      <!-- Section 5: Remove Organization -->
-      <div class="border border-border rounded-md overflow-hidden flex flex-col">
-        <!-- Card Header -->
-        <div class="bg-muted/50 px-6 py-3 border border-border text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-          {m.settings_general_section_remove()}
-        </div>
-
-        <!-- Card Body -->
-        <div class="px-6 py-5 flex flex-col md:flex-row md:items-center justify-between gap-4 text-start">
-          <div class="flex flex-col gap-1">
-            <span class="text-xs font-semibold text-foreground">{m.settings_general_remove_title()}</span>
-            <span class="text-[11px] text-muted-foreground leading-relaxed">
-              {m.settings_general_remove_desc()}
-            </span>
-          </div>
-          <div class="w-full md:w-auto flex items-center justify-end shrink-0">
-            <Button type="button" variant="destructive" onclick={handleRemoveOrganization} class="font-semibold text-xs h-9 px-6 select-none">
-              {m.settings_general_remove_btn()}
-            </Button>
-          </div>
-        </div>
-      </div>
+      <DangerZoneSettingsCard
+        onremove={handleRemoveOrganization}
+      />
     {/if}
   </div>
 </div>
