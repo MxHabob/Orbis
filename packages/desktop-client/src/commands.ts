@@ -915,8 +915,8 @@ export const commands = {
     createTeachers: (orgId: string, createdBy: string, rows: JsonRecord[]) =>
       invoke<JsonRecord>("bulk_create_teachers", { orgId, createdBy, rows }),
 
-    createGrades: (orgId: string, gradedBy: string, rows: JsonRecord[]) =>
-      invoke<JsonRecord>("bulk_create_grades", { orgId, gradedBy, rows }),
+    createGrades: (orgId: string, gradedBy: string, cycleId: string | null, rows: JsonRecord[]) =>
+      invoke<JsonRecord>("bulk_create_grades", { orgId, gradedBy, cycleId, rows }),
   },
 
   window: {

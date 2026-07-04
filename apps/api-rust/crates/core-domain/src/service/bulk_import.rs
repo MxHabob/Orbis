@@ -197,21 +197,42 @@ impl super::Service {
             if let Some(ref guardian_name) = row.guardian_name {
                 let trimmed_gname = guardian_name.trim();
                 if !trimmed_gname.is_empty() {
-                    let g_req = crate::service::guardian::CreateGuardianRequest {
-                        student_id: user.id.clone(),
+                    // Create guardian as a parent user
+                    let guardian_email = format!("guardian_{}@temp.orbis", uuid::Uuid::new_v4().to_string().split('-').next().unwrap_or("x"));
+                    let g_user_req = CreateUserRequest {
+                        email: guardian_email,
+                        password: "Orbis@2026".to_string(),
                         full_name: trimmed_gname.to_string(),
+                        name_ar: None,
+                        primary_role: "parent".to_string(),
+                        sex: None,
                         phone: row.guardian_phone.clone(),
-                        email: None,
                         national_id: None,
-                        relationship: row.guardian_relationship.clone().unwrap_or_else(|| "father".to_string()),
-                        relationship_ar: None,
-                        is_primary: true,
-                        is_emergency_contact: true,
-                        is_payer: true,
-                        payment_share_percent: Some(100.0),
-                        occupation: None,
+                        date_of_birth: None,
                     };
-                    let _ = self.create_guardian(org_id, g_req).await;
+                    if let Ok(guardian_user) = self.create_user_in_org(org_id, g_user_req, created_by).await {
+                        let link_req = crate::service::guardian::CreateGuardianLinkRequest {
+                            student_id: user.id.clone(),
+                            guardian_id: guardian_user.id.clone(),
+                            relationship: row.guardian_relationship.clone().unwrap_or_else(|| "father".to_string()),
+                            relationship_ar: None,
+                            is_primary: Some(1),
+                            is_emergency_contact: Some(1),
+                            can_view_grades: Some(1),
+                            can_view_attendance: Some(1),
+                            can_view_behavior: Some(1),
+                            can_view_finance: Some(0),
+                            can_view_schedule: Some(1),
+                            can_receive_notifications: Some(1),
+                            is_payer: Some(1),
+                            payment_share_percent: Some(100.0),
+                            occupation: None,
+                            employer: None,
+                            work_phone: None,
+                            notes: None,
+                        };
+                        let _ = self.create_guardian_link(link_req).await;
+                    }
                 }
             }
 
@@ -470,19 +491,62 @@ impl super::Service {
                 }
             }
             _ => {
-                // Auto-detect
+                // Auto-detect: inline the logic to avoid async recursion
                 if identifier.contains('@') {
-                    self.resolve_student(org_id, identifier, "email").await
+                    // Email lookup
+                    self.repo.get_user_by_email(identifier).await
+                        .map_err(|e| e.to_string())?
+                        .ok_or_else(|| format!("الطالب غير موجود (بريد: {})", identifier))
                 } else if identifier.starts_with("STU-") || identifier.starts_with("stu-") {
-                    self.resolve_student(org_id, identifier, "student_number").await
-                } else if identifier.chars().all(|c| c.is_ascii_digit()) && identifier.len() >= 5 {
-                    self.resolve_student(org_id, identifier, "national_id").await
-                } else {
-                    // Try email first, then name
-                    if let Ok(s) = self.resolve_student(org_id, identifier, "email").await {
-                        Ok(s)
+                    // Student number lookup
+                    let enrollment_opt = enrollment::Entity::find()
+                        .filter(enrollment::Column::OrgId.eq(org_id))
+                        .filter(enrollment::Column::StudentNumber.eq(identifier))
+                        .one(&self.repo.db)
+                        .await
+                        .map_err(|e| e.to_string())?;
+                    if let Some(enr) = enrollment_opt {
+                        self.repo.get_user_by_id(&enr.student_id).await
+                            .map_err(|e| e.to_string())?
+                            .ok_or_else(|| format!("الطالب غير موجود (رقم أكاديمي: {})", identifier))
                     } else {
-                        self.resolve_student(org_id, identifier, "name").await
+                        Err(format!("لا يوجد تسجيل بالرقم الأكاديمي: {}", identifier))
+                    }
+                } else if identifier.chars().all(|c| c.is_ascii_digit()) && identifier.len() >= 5 {
+                    // National ID lookup
+                    user::Entity::find()
+                        .filter(user::Column::OrgId.eq(org_id))
+                        .filter(user::Column::NationalId.eq(identifier))
+                        .filter(user::Column::IsDeleted.eq(0))
+                        .one(&self.repo.db)
+                        .await
+                        .map_err(|e| e.to_string())?
+                        .ok_or_else(|| format!("الطالب غير موجود (رقم وطني: {})", identifier))
+                } else {
+                    // Try email first, then name search
+                    if let Ok(Some(u)) = self.repo.get_user_by_email(identifier).await {
+                        Ok(u)
+                    } else {
+                        // Name search
+                        let students = user::Entity::find()
+                            .filter(user::Column::OrgId.eq(org_id))
+                            .filter(user::Column::IsDeleted.eq(0))
+                            .filter(
+                                Condition::any()
+                                    .add(user::Column::FullName.eq(identifier))
+                                    .add(user::Column::NameAr.eq(identifier))
+                            )
+                            .all(&self.repo.db)
+                            .await
+                            .map_err(|e| e.to_string())?;
+                        match students.len() {
+                            0 => Err(format!("لا يوجد طالب بالمعرّف: {}", identifier)),
+                            1 => Ok(students.into_iter().next().unwrap()),
+                            n => Err(format!(
+                                "تطابق متعدد: وُجد {} طالب بالاسم '{}'. استخدم البريد أو الرقم الوطني.",
+                                n, identifier
+                            )),
+                        }
                     }
                 }
             }

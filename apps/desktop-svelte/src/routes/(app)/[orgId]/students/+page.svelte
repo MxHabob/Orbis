@@ -163,7 +163,7 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 						<Button
 							variant="outline"
 							class="text-xs h-9 px-3"
-							onclick={() => goto(localizeHref(`/${data.orgId}/students/bulk-input`))}
+							onclick={() => goto(localizeHref(`/${data.orgId}/bulk-input`))}
 						>
 							<Upload size={13} class="me-1.5" />
 							{m.nav_bulk_input()}
