@@ -7,10 +7,10 @@
 import { onMount } from "svelte";
 import type { EditorStore } from "../stores/editor-store.svelte";
 import { mmToPx, pxToMm, screenToDoc } from "@docforge/core/canvas";
-import CanvasPage from "./CanvasPage.svelte";
-import SelectionOverlay from "./SelectionOverlay.svelte";
-import GridOverlay from "./GridOverlay.svelte";
-import RulerBar from "./RulerBar.svelte";
+import CanvasPage from "./canvas-page.svelte";
+import SelectionOverlay from "./selection-overlay.svelte";
+import GridOverlay from "./grid-overlay.svelte";
+import RulerBar from "./ruler-bar.svelte";
 
 // ── Props ────────────────────────────────────────────────────
 

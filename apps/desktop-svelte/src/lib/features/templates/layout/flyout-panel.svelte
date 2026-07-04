@@ -9,13 +9,13 @@ import { Button } from "@orbis/ui-svelte/button";
 import { X } from "lucide-svelte";
 
 // Panels
-import AssetPanel from "../panels/AssetPanel.svelte";
-import LayersPanel from "../panels/LayersPanel.svelte";
-import VariablesPanel from "../panels/VariablesPanel.svelte";
-import HistoryPanel from "../panels/HistoryPanel.svelte";
-import ElementsPanel from "../panels/ElementsPanel.svelte";
-import TextPresetsPanel from "../panels/TextPresetsPanel.svelte";
-import PageSetupPanel from "../panels/PageSetupPanel.svelte";
+import AssetPanel from "../panels/asset-panel.svelte";
+import LayersPanel from "../panels/layers-panel.svelte";
+import VariablesPanel from "../panels/variables-panel.svelte";
+import HistoryPanel from "../panels/history-panel.svelte";
+import ElementsPanel from "../panels/elements-panel.svelte";
+import TextPresetsPanel from "../panels/text-presets-panel.svelte";
+import PageSetupPanel from "../panels/page-setup-panel.svelte";
 import {
   Tabs,
   TabsList,

@@ -26,11 +26,11 @@ import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { StudentFormState } from "./form-state.svelte";
 
 // Sections
-import ProfileSection from "./sections/ProfileSection.svelte";
-import FamilySection from "./sections/FamilySection.svelte";
-import LocationSection from "./sections/LocationSection.svelte";
-import FinancialsSection from "./sections/FinancialsSection.svelte";
-import DocumentsSection from "./sections/DocumentsSection.svelte";
+import ProfileSection from "./sections/profile-section.svelte";
+import FamilySection from "./sections/family-section.svelte";
+import LocationSection from "./sections/location-section.svelte";
+import FinancialsSection from "./sections/financials-section.svelte";
+import DocumentsSection from "./sections/documents-section.svelte";
 
 let { studentId, orgId }: { studentId?: string; orgId: string } = $props();
 
