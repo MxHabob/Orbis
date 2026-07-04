@@ -19,6 +19,7 @@
     "tauri:build:prod": "tauri build"
   },
   "dependencies": {
+    "@docforge/core": "workspace:*",
     "@internationalized/date": "^3.12.0",
     "@orbis/data-grid": "workspace:*",
     "@orbis/desktop-client": "workspace:*",

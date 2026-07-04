@@ -126,7 +126,7 @@ function getIconColor(type: string): string {
               <!-- svelte-ignore a11y_no_static_element_interactions -->
               <span
                 class="shrink-0 cursor-pointer"
-                onclick|stopPropagation={() => toggleCollapse(node.id)}
+                onclick={(e) => { e.stopPropagation(); toggleCollapse(node.id); }}
               >
                 {#if isCollapsed}
                   <ChevronRight size={10} />

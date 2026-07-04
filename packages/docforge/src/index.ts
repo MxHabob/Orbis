@@ -160,3 +160,7 @@ export type {
   SheetSize,
   FillOrder,
 } from "./multi-up";
+
+// ── Canvas Utilities ──────────────────────────────────────────
+export * from "./canvas";
+

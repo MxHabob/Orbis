@@ -130,7 +130,6 @@ function getPageDimensionMm(dim: "width" | "height"): number {
   };
   const size = sizes[pageSetup.size] ?? { w: pageSetup.width ?? 210, h: pageSetup.height ?? 297 };
   const isLandscape = pageSetup.orientation === "landscape";
-  const isLandscape = pageSetup.orientation === "landscape";
   if (dim === "width") return isLandscape ? size.h : size.w;
   return isLandscape ? size.w : size.h;
 }

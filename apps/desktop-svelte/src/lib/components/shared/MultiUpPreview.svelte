@@ -65,12 +65,7 @@ function nextPage() {
       {@const recordIdx = startIndex + i}
       {@const hasRecord = recordIdx < totalRecords}
       <div
-        class="absolute border transition-all duration-150"
-        class:border-primary={hasRecord}
-        class:bg-primary/5={hasRecord}
-        class:border-dashed={!hasRecord}
-        class:border-border/40={!hasRecord}
-        class:bg-muted/10={!hasRecord}
+        class="absolute border transition-all duration-150 {hasRecord ? 'border-primary bg-primary/5' : 'border-dashed border-border/40 bg-muted/10'}"
         style="
           left: {slot.xMm * scale}px;
           top: {slot.yMm * scale}px;

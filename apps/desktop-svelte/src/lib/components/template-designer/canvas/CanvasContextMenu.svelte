@@ -105,7 +105,7 @@ function handleSelectAll() {
   <div
     class="fixed inset-0 z-50"
     onclick={onclose}
-    oncontextmenu|preventDefault={onclose}
+    oncontextmenu={(e) => { e.preventDefault(); onclose(); }}
   ></div>
 
   <!-- Menu -->
