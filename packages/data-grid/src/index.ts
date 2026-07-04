@@ -13,6 +13,7 @@ export {
   indexColumn,
   percentageColumn,
   scoreColumn,
+  selectionColumn,
   statusColumn,
   studentNameColumn,
   textColumn,

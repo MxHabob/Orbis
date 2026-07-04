@@ -171,6 +171,77 @@ impl<'a> LayoutEngine<'a> {
 
         Ok(LayoutResult { pages })
     }
+
+    /// Layout multiple data records onto physical sheets using multi-up arrangement.
+    ///
+    /// Each record is rendered using the same template document, then placed into
+    /// the appropriate slot position on the physical sheet. When all slots on a
+    /// sheet are filled, a new sheet page is created automatically.
+    ///
+    /// # Arguments
+    /// * `doc` - The template document (defines template dimensions and content)
+    /// * `contexts` - Data contexts for each record to render
+    /// * `multi_up_config` - Multi-up layout configuration (sheet size, gaps, etc.)
+    ///
+    /// # Returns
+    /// A `LayoutResult` where each page represents one physical sheet containing
+    /// multiple template instances arranged according to the multi-up config.
+    pub fn layout_multi_up(
+        &self,
+        doc: &TemplateDocument,
+        contexts: &[Value],
+        multi_up_config: &crate::layout::multi_up::MultiUpConfig,
+    ) -> Result<LayoutResult, DocforgeError> {
+        use crate::layout::multi_up::{
+            offset_element, generate_cut_lines, paginate_contexts,
+        };
+
+        let multi_up = multi_up_config.compute_layout();
+        let chunks = paginate_contexts(contexts, multi_up.items_per_sheet);
+        let mut pages = Vec::with_capacity(chunks.len());
+
+        for chunk in chunks {
+            let mut sheet_elements = Vec::new();
+
+            for (i, ctx) in chunk.iter().enumerate() {
+                if i >= multi_up.slots.len() {
+                    break; // Safety guard
+                }
+                let slot = &multi_up.slots[i];
+
+                // Layout the template for this single record
+                let single_result = self.layout(doc, ctx)?;
+
+                // Take elements from the first page only (multi-up templates are single-page)
+                if let Some(first_page) = single_result.pages.first() {
+                    for element in &first_page.elements {
+                        sheet_elements.push(offset_element(element, slot.x_pt, slot.y_pt));
+                    }
+                }
+            }
+
+            // Add cut guide lines if enabled
+            let cut_lines = generate_cut_lines(&multi_up, multi_up_config);
+            sheet_elements.extend(cut_lines);
+
+            pages.push(PageLayout {
+                width_pt: multi_up.sheet_width_pt,
+                height_pt: multi_up.sheet_height_pt,
+                elements: sheet_elements,
+            });
+        }
+
+        // Ensure at least one empty page if no contexts provided
+        if pages.is_empty() {
+            pages.push(PageLayout {
+                width_pt: multi_up.sheet_width_pt,
+                height_pt: multi_up.sheet_height_pt,
+                elements: Vec::new(),
+            });
+        }
+
+        Ok(LayoutResult { pages })
+    }
 }
 
 // ── Absolute Position Layout ──────────────────────────────────
@@ -750,6 +821,7 @@ mod tests {
                         direction: "horizontal".to_string(),
                         color: Some("#0066cc".to_string()),
                         thickness: Some(2.0),
+                        position: None,
                     },
                 }),
                 // 4. Barcode

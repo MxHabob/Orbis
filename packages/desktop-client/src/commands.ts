@@ -876,6 +876,36 @@ export const commands = {
       invoke<boolean>("cancel_batch_print", { jobId }),
     getBatchPrintStatus: (jobId: string) =>
       invoke<BatchJobStatus>("get_batch_print_status", { jobId }),
+
+    // ── Multi-Up Printing ──────────────────────────────────────
+    computeMultiUpLayout: (configJson: string) =>
+      invoke<any>("compute_multi_up_layout", { configJson }),
+    previewMultiUp: (
+      orgId: string,
+      templateId: string,
+      entityIds: string[],
+      configJson: string,
+    ) =>
+      invoke<number[]>("preview_multi_up", {
+        orgId,
+        templateId,
+        entityIds,
+        configJson,
+      }),
+    startMultiUpBatchPrint: (
+      orgId: string,
+      templateId: string,
+      entityIds: string[],
+      configJson: string,
+      outputDir: string,
+    ) =>
+      invoke<BatchJobStatus>("start_multi_up_batch_print", {
+        orgId,
+        templateId,
+        entityIds,
+        configJson,
+        outputDir,
+      }),
   },
 
   window: {

@@ -202,3 +202,107 @@ pub async fn get_batch_print_status(
         .ok_or_else(|| CommandError::new(format!("Job not found: {}", job_id)))
 }
 
+// ═══════════════════════════════════════════════════════════════
+// Multi-Up Printing Commands
+// ═══════════════════════════════════════════════════════════════
+
+/// Compute optimal multi-up layout for given config.
+/// Returns layout info (columns, rows, items_per_sheet, slot positions).
+/// Used by the frontend for instant WYSIWYG preview.
+#[tauri::command]
+pub async fn compute_multi_up_layout(
+    config_json: String,
+) -> CmdResult<serde_json::Value> {
+    let config: docforge_engine::layout::multi_up::MultiUpConfig =
+        serde_json::from_str(&config_json)
+            .map_err(|e| CommandError::new(format!("Invalid multi-up config: {}", e)))?;
+
+    let layout = config.compute_layout();
+    let result = serde_json::to_value(&layout)
+        .map_err(|e| CommandError::new(format!("Serialization error: {}", e)))?;
+
+    Ok(result)
+}
+
+/// Generate a multi-up preview PDF containing only the first sheet.
+/// Uses real entity data for WYSIWYG accuracy.
+#[tauri::command]
+pub async fn preview_multi_up(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    template_id: String,
+    entity_ids: Vec<String>,
+    config_json: String,
+) -> CmdResult<Vec<u8>> {
+    let db = &state.service.repo.db;
+
+    let config: docforge_engine::layout::multi_up::MultiUpConfig =
+        serde_json::from_str(&config_json)
+            .map_err(|e| CommandError::new(format!("Invalid multi-up config: {}", e)))?;
+
+    let pdf_bytes = docforge_orbis::batch_multi_up::preview_multi_up(
+        db, &org_id, &template_id, &entity_ids, &config,
+    )
+    .await
+    .map_err(|e| CommandError::new(e))?;
+
+    Ok(pdf_bytes)
+}
+
+/// Start a background multi-up batch print job.
+/// Emits "multi-up-batch-progress" events for frontend progress tracking.
+#[tauri::command]
+pub async fn start_multi_up_batch_print(
+    state: State<'_, Arc<AppState>>,
+    batch_manager: State<'_, Arc<docforge_orbis::batch::BatchJobManager>>,
+    app_handle: tauri::AppHandle,
+    org_id: String,
+    template_id: String,
+    entity_ids: Vec<String>,
+    config_json: String,
+    output_dir: String,
+) -> CmdResult<docforge_orbis::batch::BatchJobStatus> {
+    let config: docforge_engine::layout::multi_up::MultiUpConfig =
+        serde_json::from_str(&config_json)
+            .map_err(|e| CommandError::new(format!("Invalid multi-up config: {}", e)))?;
+
+    // Generate a unique job ID
+    let job_id = uuid::Uuid::new_v4().to_string();
+
+    // Create the job status
+    let job = batch_manager.create_job(job_id.clone(), entity_ids.len(), output_dir.clone());
+
+    // Build the multi-up job config
+    let multi_up_config = docforge_orbis::batch_multi_up::MultiUpPrintJobConfig {
+        job_id: job_id.clone(),
+        template_id,
+        org_id,
+        entity_ids,
+        multi_up: config,
+        output_mode: docforge_orbis::batch_multi_up::MultiUpOutputMode::MergedPdf,
+        output_path: output_dir,
+    };
+
+    // Progress callback emits Tauri events
+    let app_handle_clone = app_handle.clone();
+    let callback = Arc::new(move |status: docforge_orbis::batch::BatchJobStatus| {
+        use tauri::Emitter;
+        let _ = app_handle_clone.emit("multi-up-batch-progress", &status);
+    });
+
+    // Spawn the background orchestrator
+    let db = state.service.repo.db.clone();
+    let job_clone = job.clone();
+
+    tokio::spawn(async move {
+        docforge_orbis::batch_multi_up::start_multi_up_print_job(
+            multi_up_config,
+            job_clone,
+            db,
+            callback,
+        ).await;
+    });
+
+    let status = job.status.lock().unwrap().clone();
+    Ok(status)
+}

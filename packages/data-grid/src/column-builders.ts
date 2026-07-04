@@ -28,6 +28,24 @@ export function indexColumn(label = "#"): OrbisColumnDef {
 }
 
 /**
+ * Build a selection checkbox column for multi-row selection.
+ * Used by bulk actions (print, export, delete).
+ */
+export function selectionColumn(): OrbisColumnDef {
+  return {
+    prop: "__selected",
+    name: "",
+    size: 40,
+    readonly: true,
+    pin: "colPinStart",
+    cellType: "custom",
+    cellProperties: (row: Record<string, unknown>) => ({
+      class: row.__selected ? "orbis-cell-selected" : "orbis-cell-checkbox",
+    }),
+  };
+}
+
+/**
  * Build a frozen student name column with RTL support
  */
 export function studentNameColumn(

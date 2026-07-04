@@ -138,3 +138,21 @@ export {
 } from "./utils";
 
 export type { PageDimensions } from "./utils";
+
+// ── Multi-Up Layout ──────────────────────────────────────────
+export {
+  computeMultiUpLayout,
+  computeTotalSheets,
+  suggestLayouts,
+  createDefaultMultiUpConfig,
+  layoutLabel,
+  layoutLabelAr,
+} from "./multi-up";
+
+export type {
+  MultiUpConfig,
+  MultiUpLayout,
+  SlotPosition,
+  SheetSize,
+  FillOrder,
+} from "./multi-up";

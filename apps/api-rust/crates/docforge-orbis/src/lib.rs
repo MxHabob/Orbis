@@ -17,4 +17,4 @@ pub mod asset_store;
 pub mod audit;
 pub mod datasource;
 pub mod batch;
-
+pub mod batch_multi_up;

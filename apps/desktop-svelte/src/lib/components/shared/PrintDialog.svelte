@@ -1,6 +1,9 @@
 <script lang="ts">
+/**
+ * PrintDialog — Enhanced bulk printing dialog with Multi-Up support.
+ * Supports multiple documents per sheet with WYSIWYG preview.
+ */
 import { page } from "$app/state";
-import { onMount } from "svelte";
 import { commands } from "$lib/services/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Badge } from "@orbis/ui-svelte/badge";
@@ -19,56 +22,104 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "@orbis/ui-svelte/tabs";
 import { Progress } from "@orbis/ui-svelte/progress";
+import { Separator } from "@orbis/ui-svelte/separator";
 import { toast } from "svelte-sonner";
+import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
 import {
-  FileText,
   Printer,
   Download,
   RefreshCw,
   AlertCircle,
   CheckCircle2,
+  FileText,
+  LayoutGrid,
 } from "lucide-svelte";
 
-// Component Props (Svelte 5 runes style)
+import {
+  computeMultiUpLayout,
+  computeTotalSheets,
+  suggestLayouts,
+  createDefaultMultiUpConfig,
+  layoutLabel,
+  layoutLabelAr,
+} from "@docforge/core";
+import type { MultiUpConfig, MultiUpLayout } from "@docforge/core";
+
+import MultiUpPreview from "./MultiUpPreview.svelte";
+import PrintConfigPanel from "./PrintConfigPanel.svelte";
+
+// ── Props ────────────────────────────────────────────────────
+
 let {
   open = $bindable(false),
   entityType,
   entityIds = [],
+  entityLabels = [],
 }: {
   open: boolean;
   entityType: string;
   entityIds: string[];
+  entityLabels?: string[];
 } = $props();
 
-// Local State Runes
+// ── State ────────────────────────────────────────────────────
+
 let templates = $state<any[]>([]);
 let selectedTemplateId = $state<string>("");
 let loadingTemplates = $state(false);
 let generatingPdf = $state(false);
 let pdfUrl = $state<string | null>(null);
+let activeTab = $state("preview");
 
-// Batch progress state
+// Batch progress
 let batchProgress = $state(0);
 let isBatchProcessing = $state(false);
 let batchStatusText = $state("");
 
-// Derived orgId
-const orgId = $derived(page.params.orgId);
+// Multi-Up config (initialized when template is selected)
+let multiUpConfig = $state<MultiUpConfig>(
+  createDefaultMultiUpConfig(90, 50),
+);
+let previewPage = $state(1);
 
-// Load templates for this entity type
+// ── Derived ──────────────────────────────────────────────────
+
+const orgId = $derived(page.params.orgId);
+const isRtl = $derived(getLocale() === "ar");
+
+// Compute layout reactively whenever config changes
+const multiUpLayout = $derived(computeMultiUpLayout(multiUpConfig));
+const totalSheets = $derived(computeTotalSheets(entityIds.length, multiUpLayout.itemsPerSheet));
+
+// Suggested layouts for the current template dimensions
+const suggestions = $derived(
+  multiUpConfig.templateWidthMm > 0 && multiUpConfig.templateHeightMm > 0
+    ? suggestLayouts(multiUpConfig.templateWidthMm, multiUpConfig.templateHeightMm, multiUpConfig.sheetSize)
+    : [],
+);
+
+// ── Load Templates ───────────────────────────────────────────
+
 async function loadTemplates() {
   if (!entityType || !orgId) return;
   loadingTemplates = true;
   try {
     const list = await commands.documentTemplates.getTemplates(orgId || "", {
       entity_type: entityType,
-      status: "published", // Only allow printing with published templates
+      status: "published",
     });
     templates = list || [];
     if (templates.length > 0) {
       selectedTemplateId = templates[0].id;
+      updateConfigFromTemplate(templates[0]);
     }
   } catch (e: unknown) {
     const msg = (e as any)?.message || "Failed to load templates";
@@ -78,17 +129,50 @@ async function loadTemplates() {
   }
 }
 
-// React to open state & entityType
+function updateConfigFromTemplate(template: any) {
+  // Extract template dimensions from document JSON
+  try {
+    const doc = JSON.parse(template.document_json);
+    const pageSetup = doc?.meta?.page_setup;
+    if (pageSetup) {
+      const w = pageSetup.width_mm || 90;
+      const h = pageSetup.height_mm || 50;
+      multiUpConfig = createDefaultMultiUpConfig(w, h);
+      // Set fill order based on locale
+      multiUpConfig.fillOrder = isRtl ? "rtl-ttb" : "ltr-ttb";
+    }
+  } catch {
+    // Use defaults
+  }
+}
+
+// ── React to open/entityType ─────────────────────────────────
+
 $effect(() => {
   if (open && entityType) {
     loadTemplates();
     pdfUrl = null;
     batchProgress = 0;
     isBatchProcessing = false;
+    previewPage = 1;
+    activeTab = "preview";
   }
 });
 
-// Helper: Uint8Array to base64 Data URL
+// ── React to template selection ──────────────────────────────
+
+$effect(() => {
+  if (selectedTemplateId && templates.length > 0) {
+    const tpl = templates.find((t: any) => t.id === selectedTemplateId);
+    if (tpl) {
+      updateConfigFromTemplate(tpl);
+      pdfUrl = null;
+    }
+  }
+});
+
+// ── Helpers ──────────────────────────────────────────────────
+
 function uint8ArrayToBase64(bytes: number[]): string {
   let binary = "";
   const len = bytes.length;
@@ -98,101 +182,107 @@ function uint8ArrayToBase64(bytes: number[]): string {
   return window.btoa(binary);
 }
 
-// Generate high fidelity preview (using first entity in selection)
+// ── Preview Generation ───────────────────────────────────────
+
 async function generatePreview() {
   if (!selectedTemplateId || entityIds.length === 0) return;
   generatingPdf = true;
   pdfUrl = null;
   try {
-    const firstId = entityIds[0];
-    const pdfBytes = await commands.docforge.renderDocument(
+    const configJson = JSON.stringify(multiUpConfig);
+    // Use first N entity IDs for preview (one sheet)
+    const previewIds = entityIds.slice(0, multiUpLayout.itemsPerSheet);
+    const pdfBytes = await commands.docforge.previewMultiUp(
       orgId || "",
       selectedTemplateId,
-      firstId,
+      previewIds,
+      configJson,
     );
     if (pdfBytes && pdfBytes.length > 0) {
       const base64 = uint8ArrayToBase64(pdfBytes);
       pdfUrl = `data:application/pdf;base64,${base64}`;
     }
   } catch (e: unknown) {
-    const msg = (e as any)?.message || "Failed to generate print preview";
+    const msg = (e as any)?.message || "Failed to generate preview";
     toast.error(msg);
   } finally {
     generatingPdf = false;
   }
 }
 
-// Single / Batch action execution
+// ── Print Action ─────────────────────────────────────────────
+
 async function handlePrintAction() {
   if (!selectedTemplateId) {
-    toast.error("Please select a template");
+    toast.error(m.print_multi_up_no_templates());
     return;
   }
 
-  if (entityIds.length === 1) {
-    // Single render & download / preview
+  if (entityIds.length <= multiUpLayout.itemsPerSheet) {
+    // Single sheet — just generate preview
     await generatePreview();
-    toast.success("تم توليد المستند للطباعة بنجاح");
+    toast.success(m.print_multi_up_complete());
   } else {
-    // Batch processing progress bar simulation
+    // Batch multi-up processing
     isBatchProcessing = true;
     batchProgress = 0;
-    batchStatusText = `جاري بدء معالجة ${entityIds.length} مستند...`;
+    batchStatusText = m.print_multi_up_processing();
 
-    // Process one by one (simplified front-end loop, back-end orchestrator in Phase 5)
-    for (let i = 0; i < entityIds.length; i++) {
-      const entityId = entityIds[i];
-      batchStatusText = `جاري معالجة السجل ${i + 1} من ${entityIds.length}...`;
-      try {
-        // Run renderer
-        await commands.docforge.renderDocument(
-          orgId || "",
-          selectedTemplateId,
-          entityId,
-        );
-      } catch (e) {
-        console.error(`Error rendering ${entityId}`, e);
-      }
-      batchProgress = Math.round(((i + 1) / entityIds.length) * 100);
-      // Small pause to visual progress
-      await new Promise((r) => setTimeout(r, 200));
-    }
+    try {
+      const configJson = JSON.stringify(multiUpConfig);
+      await commands.docforge.startMultiUpBatchPrint(
+        orgId || "",
+        selectedTemplateId,
+        entityIds,
+        configJson,
+        "", // output_dir — backend handles temp location
+      );
+      batchProgress = 100;
+      batchStatusText = m.print_multi_up_complete();
+      toast.success(m.print_multi_up_complete_detail({ count: String(entityIds.length) }));
 
-    batchStatusText = "تم إكمال توليد جميع المستندات بنجاح!";
-    toast.success(`تم إنتاج ${entityIds.length} مستند بنجاح`);
-
-    // Reset after some time
-    setTimeout(() => {
+      setTimeout(() => {
+        isBatchProcessing = false;
+      }, 1500);
+    } catch (e: unknown) {
+      const msg = (e as any)?.message || "Batch print failed";
+      toast.error(msg);
       isBatchProcessing = false;
-      open = false;
-    }, 1500);
+    }
   }
 }
 
-// Helper download trigger
 function triggerDownload() {
   if (!pdfUrl) return;
   const link = document.createElement("a");
   link.href = pdfUrl;
-  link.download = `document_${entityType}_${Date.now()}.pdf`;
+  link.download = `multi_up_${entityType}_${Date.now()}.pdf`;
   link.click();
+}
+
+function applySuggestion(suggestion: MultiUpLayout) {
+  // Update config to match the suggestion's orientation
+  multiUpConfig.sheetOrientation =
+    suggestion.sheetWidthMm < suggestion.sheetHeightMm ? "portrait" : "landscape";
+  // Recalculate will happen automatically via $derived
+  pdfUrl = null;
 }
 </script>
 
 <Dialog bind:open={open}>
-  <DialogContent class="sm:max-w-[650px] text-start max-h-[85vh] flex flex-col overflow-hidden">
+  <DialogContent class="sm:max-w-[780px] text-start max-h-[90vh] flex flex-col overflow-hidden">
     <DialogHeader class="shrink-0">
       <DialogTitle class="flex items-center gap-2">
-        <Printer class="text-primary h-5 w-5" />
-        <span>طباعة المستندات / Print Documents</span>
+        <LayoutGrid class="text-primary h-5 w-5" />
+        <span>{m.print_multi_up_title()}</span>
       </DialogTitle>
       <DialogDescription>
-        اختر القالب المطلوب لطباعة أو تصدير {entityIds.length} من سجلات {entityType}.
+        {m.print_multi_up_description()}
       </DialogDescription>
     </DialogHeader>
 
     {#if isBatchProcessing}
-      <!-- Batch Progress View -->
+      <!-- ═══ Batch Progress View ═══ -->
       <div class="flex-grow py-12 flex flex-col items-center justify-center gap-6">
         <div class="w-full max-w-md flex flex-col gap-3">
           <div class="flex items-center justify-between text-xs text-muted-foreground">
@@ -204,38 +294,43 @@ function triggerDownload() {
         {#if batchProgress === 100}
           <div class="flex items-center gap-2 text-emerald-500 text-xs font-semibold animate-bounce mt-2">
             <CheckCircle2 size={16} />
-            <span>جاهز للطباعة والتنزيل!</span>
+            <span>{m.print_multi_up_complete()}</span>
           </div>
         {:else}
           <RefreshCw size={24} class="animate-spin text-primary mt-2" />
         {/if}
       </div>
+
     {:else}
-      <!-- Normal Print Selection & Preview View -->
+      <!-- ═══ Main Content: Config + Preview ═══ -->
       <div class="flex-grow flex flex-col md:flex-row gap-4 overflow-hidden py-3">
-        <!-- Configuration Side -->
-        <div class="w-full md:w-60 flex flex-col gap-4 shrink-0">
+
+        <!-- Left Panel: Config -->
+        <div class="w-full md:w-[240px] flex flex-col gap-3 shrink-0 overflow-y-auto scrollbar-hide">
+          <!-- Template Selection -->
           <div class="flex flex-col gap-1.5">
-            <Label class="text-xs font-semibold text-muted-foreground">قالب الطباعة / Template</Label>
+            <Label class="text-xs font-semibold text-muted-foreground">
+              {m.print_multi_up_template()}
+            </Label>
             {#if loadingTemplates}
               <div class="h-8 bg-muted rounded animate-pulse"></div>
             {:else if templates.length === 0}
               <div class="text-[10px] text-destructive flex items-center gap-1">
                 <AlertCircle size={12} />
-                <span>لا توجد قوالب نشطة منشورة!</span>
+                <span>{m.print_multi_up_no_templates()}</span>
               </div>
             {:else}
-              <Select type="single" bind:value={selectedTemplateId} onValueChange={(val: any) => { pdfUrl = null; if (val) selectedTemplateId = val; }}>
-                <SelectTrigger class="h-9">
+              <Select type="single" bind:value={selectedTemplateId} onValueChange={(val) => { if (val) { selectedTemplateId = val; pdfUrl = null; } }}>
+                <SelectTrigger class="h-8 text-xs">
                   {(() => {
-                    const selected = templates.find(t => t.id === selectedTemplateId);
-                    return selected ? (getLocale() === "ar" && selected.name_ar ? selected.name_ar : selected.name) : "اختر قالب...";
+                    const selected = templates.find((t: any) => t.id === selectedTemplateId);
+                    return selected ? (isRtl && selected.name_ar ? selected.name_ar : selected.name) : m.print_multi_up_template_placeholder();
                   })()}
                 </SelectTrigger>
                 <SelectContent>
                   {#each templates as t (t.id)}
                     <SelectItem value={t.id}>
-                      {getLocale() === "ar" && t.name_ar ? t.name_ar : t.name}
+                      {isRtl && t.name_ar ? t.name_ar : t.name}
                     </SelectItem>
                   {/each}
                 </SelectContent>
@@ -243,63 +338,122 @@ function triggerDownload() {
             {/if}
           </div>
 
+          <!-- Stats Card -->
           <div class="bg-card border border-border rounded-xl p-3 flex flex-col gap-2">
             <div class="flex items-center justify-between text-[10px] text-muted-foreground border-b border-border/40 pb-2">
-              <span>السجلات المحددة:</span>
-              <Badge variant="secondary" size="xs">{entityIds.length}</Badge>
+              <span>{m.print_multi_up_records_selected()}</span>
+              <Badge variant="secondary" class="text-[10px]">{entityIds.length}</Badge>
+            </div>
+            <div class="flex items-center justify-between text-[10px] text-muted-foreground border-b border-border/40 pb-2">
+              <span>{m.print_multi_up_items_per_sheet()}</span>
+              <Badge variant="lime" class="text-[10px]">{multiUpLayout.itemsPerSheet}</Badge>
+            </div>
+            <div class="flex items-center justify-between text-[10px] text-muted-foreground border-b border-border/40 pb-2">
+              <span>{m.print_multi_up_sheets_needed()}</span>
+              <Badge variant="outline" class="text-[10px]">{totalSheets}</Badge>
             </div>
             <div class="flex items-center justify-between text-[10px] text-muted-foreground">
-              <span>نوع الكيان:</span>
-              <Badge variant="outline" size="xs" class="capitalize">{entityType}</Badge>
+              <span>{m.print_multi_up_entity_type()}</span>
+              <Badge variant="ghost" class="text-[10px] capitalize">{entityType}</Badge>
             </div>
           </div>
 
-          {#if entityIds.length > 0}
-            <Button
-              variant="outline"
-              size="xs"
-              onclick={generatePreview}
-              disabled={generatingPdf || !selectedTemplateId}
-              class="w-full cursor-pointer"
-            >
-              <RefreshCw size={12} class="me-1 {generatingPdf ? 'animate-spin' : ''}" />
-              تحديث المعاينة / Load Preview
-            </Button>
-          {/if}
+          <Separator />
+
+          <!-- Print Config Panel -->
+          <PrintConfigPanel bind:config={multiUpConfig} />
         </div>
 
-        <!-- Preview Screen Side -->
-        <div class="flex-grow border border-border rounded-xl bg-muted/20 relative min-h-[250px] overflow-hidden flex items-center justify-center">
-          {#if generatingPdf}
-            <div class="absolute inset-0 bg-background/60 backdrop-blur-xs flex flex-col items-center justify-center gap-2 z-10">
-              <RefreshCw size={20} class="text-primary animate-spin" />
-              <p class="text-[10px] font-semibold">جاري تحضير ملف المعاينة...</p>
-            </div>
-          {/if}
+        <!-- Right Panel: Preview -->
+        <div class="flex-grow flex flex-col gap-3 overflow-hidden">
+          <Tabs bind:value={activeTab} class="flex-grow flex flex-col overflow-hidden">
+            <TabsList class="w-full shrink-0">
+              <TabsTrigger value="preview" class="flex-1 text-xs">
+                {m.print_multi_up_preview()}
+              </TabsTrigger>
+              <TabsTrigger value="pdf" class="flex-1 text-xs">
+                PDF
+              </TabsTrigger>
+            </TabsList>
 
-          {#if pdfUrl}
-            <iframe
-              src={pdfUrl}
-              title="Print Document Preview"
-              class="w-full h-full border-none"
-            ></iframe>
-          {:else}
-            <div class="text-muted-foreground flex flex-col items-center gap-2 text-[10px]">
-              <FileText size={28} />
-              <p>انقر على "تحديث المعاينة" لعرض المستند</p>
+            <!-- Layout Preview Tab -->
+            <TabsContent value="preview" class="flex-grow flex items-center justify-center p-4 border border-border rounded-xl bg-muted/10 mt-2 overflow-hidden">
+              <MultiUpPreview
+                layout={multiUpLayout}
+                totalRecords={entityIds.length}
+                bind:currentPage={previewPage}
+                entityLabels={entityLabels}
+              />
+            </TabsContent>
+
+            <!-- PDF Preview Tab -->
+            <TabsContent value="pdf" class="flex-grow border border-border rounded-xl bg-muted/20 mt-2 relative min-h-[280px] overflow-hidden flex items-center justify-center">
+              {#if generatingPdf}
+                <div class="absolute inset-0 bg-background/60 backdrop-blur-xs flex flex-col items-center justify-center gap-2 z-10">
+                  <RefreshCw size={20} class="text-primary animate-spin" />
+                  <p class="text-[10px] font-semibold">{m.print_multi_up_preview_loading()}</p>
+                </div>
+              {/if}
+
+              {#if pdfUrl}
+                <iframe
+                  src={pdfUrl}
+                  title="Multi-Up Print Preview"
+                  class="w-full h-full border-none"
+                ></iframe>
+              {:else}
+                <div class="text-muted-foreground flex flex-col items-center gap-2 text-[10px]">
+                  <FileText size={28} />
+                  <p>{m.print_multi_up_preview_empty()}</p>
+                  <Button
+                    variant="outline"
+                    size="xs"
+                    onclick={generatePreview}
+                    disabled={generatingPdf || !selectedTemplateId}
+                    class="mt-2 cursor-pointer"
+                  >
+                    <RefreshCw size={12} class="me-1" />
+                    {m.print_multi_up_refresh_preview()}
+                  </Button>
+                </div>
+              {/if}
+            </TabsContent>
+          </Tabs>
+
+          <!-- Suggested Layouts -->
+          {#if suggestions.length > 1}
+            <div class="flex flex-col gap-1.5">
+              <Label class="text-[10px] text-muted-foreground font-semibold">
+                {m.print_multi_up_suggested_layouts()}
+              </Label>
+              <div class="flex items-center gap-1.5 flex-wrap">
+                {#each suggestions.slice(0, 4) as suggestion (suggestion.itemsPerSheet)}
+                  <Button
+                    variant={suggestion.itemsPerSheet === multiUpLayout.itemsPerSheet ? "default" : "outline"}
+                    size="xs"
+                    class="text-[10px] cursor-pointer"
+                    onclick={() => applySuggestion(suggestion)}
+                  >
+                    {suggestion.columns}×{suggestion.rows}={suggestion.itemsPerSheet}
+                  </Button>
+                {/each}
+              </div>
             </div>
           {/if}
         </div>
       </div>
     {/if}
 
+    <!-- ═══ Footer ═══ -->
     <DialogFooter class="shrink-0 border-t border-border/40 pt-3 gap-2 sm:gap-0">
-      <Button variant="outline" size="sm" onclick={() => (open = false)}>إلغاء / Cancel</Button>
-      
+      <Button variant="outline" size="sm" onclick={() => (open = false)}>
+        {m.print_multi_up_cancel()}
+      </Button>
+
       {#if pdfUrl && !isBatchProcessing}
         <Button variant="outline" size="sm" onclick={triggerDownload}>
           <Download size={14} class="me-1" />
-          تنزيل / Download
+          {m.print_multi_up_download()}
         </Button>
       {/if}
 
@@ -310,7 +464,9 @@ function triggerDownload() {
         onclick={handlePrintAction}
       >
         <Printer size={14} class="me-1.5" />
-        {entityIds.length > 1 ? `بدء طباعة الدفعة (${entityIds.length})` : "توليد للطباعة / Generate"}
+        {entityIds.length > multiUpLayout.itemsPerSheet
+          ? m.print_multi_up_start_batch_count({ count: String(entityIds.length) })
+          : m.print_multi_up_start_batch()}
       </Button>
     </DialogFooter>
   </DialogContent>
