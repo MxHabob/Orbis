@@ -58,7 +58,7 @@ const isRtl = getLocale() === "ar";
       <button
         class="text-start w-full"
         onclick={() =>
-          goto(localizeHref(`/${data.orgId}/students/bulk-input/students`))}
+          goto(localizeHref(`/${data.orgId}/bulk-input/students`))}
       >
         <Card class="h-full cursor-pointer transition-all duration-200 hover:border-primary/40 hover:shadow-md group">
           <CardHeader class="pb-3">
@@ -98,7 +98,7 @@ const isRtl = getLocale() === "ar";
       <button
         class="text-start w-full"
         onclick={() =>
-          goto(localizeHref(`/${data.orgId}/students/bulk-input/grades`))}
+          goto(localizeHref(`/${data.orgId}/bulk-input/grades`))}
       >
         <Card class="h-full cursor-pointer transition-all duration-200 hover:border-primary/40 hover:shadow-md group">
           <CardHeader class="pb-3">
