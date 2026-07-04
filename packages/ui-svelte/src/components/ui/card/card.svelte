@@ -19,7 +19,7 @@ let {
 	bind:this={ref}
 	data-slot="card"
 	data-size={size}
-	class={cn(interactive ? "card-tactile-interactive" : "card-tactile", "text-card-foreground gap-4 overflow-hidden py-4 text-sm has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:gap-3 data-[size=sm]:py-3 data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl group/card flex flex-col", className)}
+	class={cn(interactive ? "card-tactile-interactive" : "card-tactile", "text-card-foreground gap-4 overflow-hidden text-sm has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:gap-3 data-[size=sm]:py-3 data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl group/card flex flex-col", className)}
 	{...restProps}
 >
 	{@render children?.()}

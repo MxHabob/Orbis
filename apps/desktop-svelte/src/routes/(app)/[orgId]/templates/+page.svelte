@@ -299,7 +299,7 @@ async function restoreTemplate(id: string) {
           <div class="min-w-[140px]">
             <Select type="single" bind:value={filterEntityType} onValueChange={loadTemplates}>
               <SelectTrigger class="h-9 text-xs bg-background/50">
-                {({ all: m.settings_templates_filter_entity_all(), enrollment: m.settings_templates_filter_entity_enrollment(), payment: m.settings_templates_filter_entity_payment(), exam: m.settings_templates_filter_entity_exam(), user: m.settings_templates_filter_entity_user() } as any)[filterEntityType] || m.settings_templates_filter_entity_trigger()}
+                {({ all: m.settings_templates_filter_entity_all(), enrollment: m.settings_templates_filter_entity_enrollment(), payment: m.settings_templates_filter_entity_payment(), exam: m.settings_templates_filter_entity_exam(), user: m.settings_templates_filter_entity_user(), organization: m.settings_templates_filter_entity_organization() } as any)[filterEntityType] || m.settings_templates_filter_entity_trigger()}
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{m.settings_templates_filter_entity_all()}</SelectItem>
@@ -307,6 +307,7 @@ async function restoreTemplate(id: string) {
                 <SelectItem value="payment">{m.settings_templates_filter_entity_payment()}</SelectItem>
                 <SelectItem value="exam">{m.settings_templates_filter_entity_exam()}</SelectItem>
                 <SelectItem value="user">{m.settings_templates_filter_entity_user()}</SelectItem>
+                <SelectItem value="organization">{m.settings_templates_filter_entity_organization()}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -315,7 +316,7 @@ async function restoreTemplate(id: string) {
           <div class="min-w-[140px]">
             <Select type="single" bind:value={filterDocType} onValueChange={loadTemplates}>
               <SelectTrigger class="h-9 text-xs bg-background/50">
-                {({ all: m.settings_templates_filter_doc_all(), CERTIFICATE: m.settings_templates_filter_doc_certificate(), ID_CARD: m.settings_templates_filter_doc_id_card(), RECEIPT: m.settings_templates_filter_doc_receipt(), EXAM_CARD: m.settings_templates_filter_doc_exam_card() } as any)[filterDocType] || m.settings_templates_filter_doc_trigger()}
+                {({ all: m.settings_templates_filter_doc_all(), CERTIFICATE: m.settings_templates_filter_doc_certificate(), ID_CARD: m.settings_templates_filter_doc_id_card(), RECEIPT: m.settings_templates_filter_doc_receipt(), EXAM_CARD: m.settings_templates_filter_doc_exam_card(), REPORT: m.settings_templates_filter_doc_report() } as any)[filterDocType] || m.settings_templates_filter_doc_trigger()}
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{m.settings_templates_filter_doc_all()}</SelectItem>
@@ -323,6 +324,7 @@ async function restoreTemplate(id: string) {
                 <SelectItem value="ID_CARD">{m.settings_templates_filter_doc_id_card()}</SelectItem>
                 <SelectItem value="RECEIPT">{m.settings_templates_filter_doc_receipt()}</SelectItem>
                 <SelectItem value="EXAM_CARD">{m.settings_templates_filter_doc_exam_card()}</SelectItem>
+                <SelectItem value="REPORT">{m.settings_templates_filter_doc_report()}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -490,13 +492,14 @@ async function restoreTemplate(id: string) {
           <Label class="text-xs font-semibold text-muted-foreground">نوع السجل / Entity</Label>
           <Select type="single" bind:value={newTemplateEntityType}>
             <SelectTrigger>
-              {({ enrollment: "تسجيل الطلاب", payment: "سندات القبض", exam: "أرقام الجلوس", user: "بطاقات التعريف" } as any)[newTemplateEntityType]}
+              {({ enrollment: "تسجيل الطلاب", payment: "سندات القبض", exam: "أرقام الجلوس", user: "بطاقات التعريف", organization: "المؤسسة / المدرسة" } as any)[newTemplateEntityType]}
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="enrollment">تسجيل الطلاب</SelectItem>
               <SelectItem value="payment">سندات القبض</SelectItem>
               <SelectItem value="exam">أرقام الجلوس</SelectItem>
               <SelectItem value="user">بطاقات التعريف</SelectItem>
+              <SelectItem value="organization">المؤسسة / المدرسة</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -505,13 +508,14 @@ async function restoreTemplate(id: string) {
           <Label class="text-xs font-semibold text-muted-foreground">نوع المستند / Document</Label>
           <Select type="single" bind:value={newTemplateDocType}>
             <SelectTrigger>
-              {({ CERTIFICATE: "شهادات (Certificate)", ID_CARD: "بطاقات (ID Card)", RECEIPT: "سندات (Receipt)", EXAM_CARD: "بطاقات جلوس (Seating)" } as any)[newTemplateDocType]}
+              {({ CERTIFICATE: "شهادات (Certificate)", ID_CARD: "بطاقات (ID Card)", RECEIPT: "سندات (Receipt)", EXAM_CARD: "بطاقات جلوس (Seating)", REPORT: "تقارير (Report)" } as any)[newTemplateDocType]}
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="CERTIFICATE">شهادات (Certificate)</SelectItem>
               <SelectItem value="ID_CARD">بطاقات (ID Card)</SelectItem>
               <SelectItem value="RECEIPT">سندات (Receipt)</SelectItem>
               <SelectItem value="EXAM_CARD">بطاقات جلوس (Seating)</SelectItem>
+              <SelectItem value="REPORT">تقارير (Report)</SelectItem>
             </SelectContent>
           </Select>
         </div>
