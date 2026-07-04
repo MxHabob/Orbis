@@ -12,7 +12,7 @@ import {
   SheetDescription,
 } from "@orbis/ui-svelte/sheet";
 import { Calendar } from "lucide-svelte";
-import LessonForm from "../forms/lesson-form.svelte";
+import LessonForm from "./lesson-form.svelte";
 import * as m from "$lib/paraglide/messages";
 
 let {

@@ -11,7 +11,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@orbis/ui-svelte/sheet";
-import CycleForm from "../forms/cycle-form.svelte";
+import CycleForm from "./cycle-form.svelte";
 import * as m from "$lib/paraglide/messages";
 
 let {

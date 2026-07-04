@@ -53,8 +53,8 @@ import {
 } from "@docforge/core";
 import type { MultiUpConfig, MultiUpLayout } from "@docforge/core";
 
-import MultiUpPreview from "./MultiUpPreview.svelte";
-import PrintConfigPanel from "./PrintConfigPanel.svelte";
+import MultiUpPreview from "./multi-up-preview.svelte";
+import PrintConfigPanel from "./print-config-panel.svelte";
 
 // ── Props ────────────────────────────────────────────────────
 

@@ -12,7 +12,7 @@ import {
   SheetDescription,
 } from "@orbis/ui-svelte/sheet";
 import { Award } from "lucide-svelte";
-import AssessmentForm from "../forms/assessment-form.svelte";
+import AssessmentForm from "./assessment-form.svelte";
 import * as m from "$lib/paraglide/messages";
 
 let {
