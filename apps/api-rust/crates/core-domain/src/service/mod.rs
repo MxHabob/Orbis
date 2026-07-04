@@ -17,6 +17,7 @@ pub mod grade;
 pub mod attendance_svc;
 pub mod dashboard;
 pub mod import_export;
+pub mod bulk_import;
 pub mod finance;
 pub mod schedule;
 pub mod schedule_common;

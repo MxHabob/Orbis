@@ -9,7 +9,7 @@ import MainViewport from "$lib/components/layout/MainViewport.svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import { Plus, Search, FilterX, Download, Printer } from "lucide-svelte";
+import { Plus, Search, FilterX, Download, Printer, Upload } from "lucide-svelte";
 import { studentsStore } from "$lib/stores";
 import PrintDialog from "$lib/components/shared/PrintDialog.svelte";
 import SidebarNav from "$lib/components/layout/SidebarNav.svelte";
@@ -160,6 +160,14 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 								<span>{m.print_templates()} ({selectedStudentIds.size})</span>
 							</Button>
 						{/if}
+						<Button
+							variant="outline"
+							class="text-xs h-9 px-3"
+							onclick={() => goto(localizeHref(`/${data.orgId}/students/bulk-input`))}
+						>
+							<Upload size={13} class="me-1.5" />
+							{m.nav_bulk_input()}
+						</Button>
 						<Button
 							variant="outline"
 							class="text-xs h-9 px-3"

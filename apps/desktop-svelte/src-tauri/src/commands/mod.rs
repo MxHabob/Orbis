@@ -17,4 +17,5 @@ pub mod guardians;
 pub mod exams;
 pub mod permissions;
 pub mod docforge;
+pub mod bulk_import;
 

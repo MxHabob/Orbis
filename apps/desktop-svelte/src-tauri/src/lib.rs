@@ -397,6 +397,11 @@ pub fn run() {
             commands::docforge::resume_batch_print,
             commands::docforge::cancel_batch_print,
             commands::docforge::get_batch_print_status,
+
+            // Bulk Import commands
+            commands::bulk_import::bulk_create_students,
+            commands::bulk_import::bulk_create_teachers,
+            commands::bulk_import::bulk_create_grades,
         ])
         .setup(move |app| {
             // Add updater plugin conditionally for desktop

@@ -908,6 +908,17 @@ export const commands = {
       }),
   },
 
+  bulkImport: {
+    createStudents: (orgId: string, createdBy: string, rows: JsonRecord[]) =>
+      invoke<JsonRecord>("bulk_create_students", { orgId, createdBy, rows }),
+
+    createTeachers: (orgId: string, createdBy: string, rows: JsonRecord[]) =>
+      invoke<JsonRecord>("bulk_create_teachers", { orgId, createdBy, rows }),
+
+    createGrades: (orgId: string, gradedBy: string, rows: JsonRecord[]) =>
+      invoke<JsonRecord>("bulk_create_grades", { orgId, gradedBy, rows }),
+  },
+
   window: {
     show: () => invoke<void>("show_window"),
     checkForUpdates: () => invoke<void>("check_for_updates"),

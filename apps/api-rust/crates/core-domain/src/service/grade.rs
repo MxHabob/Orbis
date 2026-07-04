@@ -204,7 +204,7 @@ impl super::Service {
     }
 
     /// Check if the academic cycle allows grade entry
-    async fn check_cycle_open_for_grading(&self, cycle_id: &str) -> Result<(), String> {
+    pub(crate) async fn check_cycle_open_for_grading(&self, cycle_id: &str) -> Result<(), String> {
         let cycle = self.repo.get_cycle_by_id(cycle_id).await
             .map_err(|e| e.to_string())?
             .ok_or_else(|| "الدورة الأكاديمية غير موجودة".to_string())?;
