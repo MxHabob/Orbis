@@ -5,7 +5,7 @@ using <MainViewport>. Uses the shared SidebarNav component.
 -->
 <script lang="ts">
 import { page } from "$app/state";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import { onMount } from "svelte";
 import {
   Wallet,
@@ -16,8 +16,8 @@ import {
   BookOpen,
   ClipboardList,
 } from "lucide-svelte";
-import MainViewport from "$lib/components/layout/MainViewport.svelte";
-import SidebarNav from "$lib/components/layout/SidebarNav.svelte";
+import MainViewport from "$lib/shell/main-viewport.svelte";
+import SidebarNav from "$lib/shell/sidebar-nav.svelte";
 import type { Snippet } from "svelte";
 import * as m from "$lib/paraglide/messages";
 

@@ -4,35 +4,46 @@ Main workspace for students. Integrates Left sidebar filters, middle data table,
 and right detailed student inspector.
 -->
 <script lang="ts">
-import { onMount } from "svelte";
-import MainViewport from "$lib/components/layout/MainViewport.svelte";
+import MainViewport from "$lib/shell/main-viewport.svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Plus, Search, FilterX, Download, Printer, Upload } from "lucide-svelte";
-import { studentsStore } from "$lib/stores";
-import StudentsTableSkeleton from "$lib/components/skeletons/StudentsTableSkeleton.svelte";
-import PrintDialog from "$lib/components/shared/PrintDialog.svelte";
-import SidebarNav from "$lib/components/layout/SidebarNav.svelte";
-import StudentTable from "$lib/components/students/student-table.svelte";
-import StudentInspector from "$lib/components/students/student-inspector.svelte";
+import { studentsStore, createEnrollmentsQuery } from "$lib/features/students";
+import { createClassesQuery } from "$lib/features/academics";
+import StudentsTableSkeleton from "$lib/shared/skeletons/students-table-skeleton.svelte";
+import PrintDialog from "$lib/shared/components/print-dialog.svelte";
+import SidebarNav from "$lib/shell/sidebar-nav.svelte";
+import StudentTable from "$lib/features/students/student-table.svelte";
+import StudentInspector from "$lib/features/students/student-inspector.svelte";
 import { toast } from "svelte-sonner";
 import { goto } from "$app/navigation";
 import * as m from "$lib/paraglide/messages";
 import { localizeHref } from "$lib/paraglide/runtime";
-import { formatNumber } from "$lib/i18n-utils";
-import { debounce } from "$lib/utils/debounce";
-import { queryClient } from "$lib/services/query-client";
+import { formatNumber } from "$lib/core/i18n";
+import { extractErrorMessage } from "$lib/core/ipc";
+import { debounce } from "$lib/shared/utils/debounce";
 
 let { data }: { data: { orgId: string } } = $props();
 
+// TanStack Queries
+const enrollmentsQuery = createEnrollmentsQuery(data.orgId);
+const classesQuery = createClassesQuery(data.orgId);
+
+// Derived data from queries
+const enrollments = $derived($enrollmentsQuery.data ?? []);
+const classes = $derived($classesQuery.data ?? []);
+const filteredStudents = $derived(studentsStore.filterList(enrollments));
+const isLoading = $derived($enrollmentsQuery.isLoading || $classesQuery.isLoading);
+const error = $derived($enrollmentsQuery.error || $classesQuery.error);
+
 // Helper to count students matching a criteria
 function getCountByClass(classId: string): number {
-  return studentsStore.list.filter((s) => s.class_id === classId).length;
+  return enrollments.filter((s) => s.class_id === classId).length;
 }
 
 function getCountByStatus(status: string): number {
-  if (status === "all") return studentsStore.list.length;
-  return studentsStore.list.filter(
+  if (status === "all") return enrollments.length;
+  return enrollments.filter(
     (s) => String(s.status || "").toLowerCase() === status,
   ).length;
 }
@@ -42,20 +53,6 @@ let localSearch = $state("");
 const updateSearch = debounce((q: string) => {
   studentsStore.searchQuery = q;
 }, 150);
-
-// Load data when page mounts
-onMount(async () => {
-  if (data.orgId) {
-    await studentsStore.load(data.orgId);
-    // Populate TanStack cache so SearchModal and other pages can reuse
-    if (studentsStore.list.length > 0) {
-      queryClient.setQueryData(["enrollments", data.orgId], studentsStore.list);
-    }
-    if (studentsStore.classes.length > 0) {
-      queryClient.setQueryData(["classes", data.orgId], studentsStore.classes);
-    }
-  }
-});
 
 // Clear active filters
 function clearFilters() {
@@ -121,7 +118,7 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 								isActive: studentsStore.selectedClassId === null,
 								onclick: () => studentsStore.selectedClassId = null
 							},
-							...studentsStore.classes.map(cls => {
+							...classes.map(cls => {
 								const count = getCountByClass(String(cls.id));
 								return {
 									label: String(cls.name || cls.name_ar || cls.id),
@@ -205,16 +202,16 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 
 				<!-- Student Grid -->
 				<div class="flex-1 min-h-0 flex flex-col">
-					{#if studentsStore.isLoading}
+					{#if isLoading}
 						<StudentsTableSkeleton />
-					{:else if studentsStore.error}
+					{:else if error}
 						<div class="h-full w-full flex flex-col items-center justify-center p-6 text-center gap-3 bg-card border border-border rounded-lg">
-							<p class="text-xs text-destructive font-semibold">{m.students_load_error({ error: studentsStore.error })}</p>
-							<Button variant="outline" class="text-xs" onclick={() => studentsStore.load(data.orgId)}>{m.students_retry()}</Button>
+							<p class="text-xs text-destructive font-semibold">{m.students_load_error({ error: extractErrorMessage(error) })}</p>
+							<Button variant="outline" class="text-xs" onclick={() => { $enrollmentsQuery.refetch(); $classesQuery.refetch(); }}>{m.students_retry()}</Button>
 						</div>
 					{:else}
 						<StudentTable
-							students={studentsStore.filteredList}
+							students={filteredStudents}
 							enableSelection={true}
 							bind:selectedIds={selectedStudentIds}
 						/>

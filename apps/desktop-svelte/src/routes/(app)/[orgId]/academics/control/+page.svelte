@@ -11,7 +11,7 @@ Rebuilt with OrbisGrid (RevoGrid) for enterprise-grade spreadsheet experience:
 -->
 <script lang="ts">
 import { onMount } from "svelte";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import {

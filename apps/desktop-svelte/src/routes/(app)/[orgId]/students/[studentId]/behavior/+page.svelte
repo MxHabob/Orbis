@@ -4,7 +4,7 @@ Behavior records + AI summary using OrbisGrid.
 -->
 <script lang="ts">
 import { page } from "$app/state";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import {
   ShieldCheck,
@@ -17,7 +17,7 @@ import { onMount } from "svelte";
 import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
-import { formatDate } from "$lib/i18n-utils";
+import { formatDate } from "$lib/core/i18n";
 
 import { DataTable } from "$lib/tables";
 import { studentBehavior as sbDef, withIndex } from "$lib/tables/definitions";

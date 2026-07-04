@@ -7,7 +7,7 @@ Merges the concepts of "students list" and "grade entry" into one view.
 <script lang="ts">
 import { page } from "$app/state";
 import { onMount } from "svelte";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Badge } from "@orbis/ui-svelte/badge";
 import {

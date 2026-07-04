@@ -6,13 +6,13 @@ Extracted from the original monolith TabsContent "sessions".
 <script lang="ts">
 import { page } from "$app/state";
 import { onMount } from "svelte";
-import { commands } from "$lib/services/ipc";
-import type { UserSession } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
+import type { UserSession } from "$lib/core/ipc";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { Monitor, Smartphone } from "lucide-svelte";
 import { fade } from "svelte/transition";
-import { formatDate } from "$lib/i18n-utils";
+import { formatDate } from "$lib/core/i18n";
 import * as m from "$lib/paraglide/messages";
 
 const userId = $derived(page.params.userId);

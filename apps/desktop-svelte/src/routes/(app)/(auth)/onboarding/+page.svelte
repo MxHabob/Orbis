@@ -8,8 +8,8 @@ import { goto } from "$app/navigation";
 import { page } from "$app/state";
 import { authStore } from "$lib/stores";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
-import OnboardingWizard from "$lib/components/onboarding/onboarding-wizard.svelte";
-import { onboardingState } from "$lib/components/onboarding/onboarding-state.svelte";
+import OnboardingWizard from "$lib/features/onboarding/onboarding-wizard.svelte";
+import { onboardingState } from "$lib/features/onboarding/state.svelte";
 
 onMount(async () => {
   authStore.restore();

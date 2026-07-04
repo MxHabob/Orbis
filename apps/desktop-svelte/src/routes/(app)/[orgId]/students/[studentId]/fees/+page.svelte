@@ -4,13 +4,13 @@ Assigned fees + payment history using OrbisGrid, with summary statistics.
 -->
 <script lang="ts">
 import { page } from "$app/state";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { CreditCard, Wallet, CheckCircle2, AlertCircle } from "lucide-svelte";
 import { onMount } from "svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
-import { formatCurrency, formatDate } from "$lib/i18n-utils";
+import { formatCurrency, formatDate } from "$lib/core/i18n";
 
 import { DataTable } from "$lib/tables";
 import { studentFees as sfDef, withIndex } from "$lib/tables/definitions";

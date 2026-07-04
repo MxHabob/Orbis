@@ -6,7 +6,7 @@ Provides All, Single, and Custom selection mode with interactive Accounts Tree s
 -->
 <script lang="ts">
 import { onMount } from "svelte";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import { goto } from "$app/navigation";
 import {
   Table,
@@ -34,7 +34,7 @@ import {
   FileText,
 } from "lucide-svelte";
 import { getLocale, deLocalizeUrl } from "$lib/paraglide/runtime";
-import { formatCurrency, formatDate } from "$lib/i18n-utils";
+import { formatCurrency, formatDate } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
 import * as m from "$lib/paraglide/messages";
 

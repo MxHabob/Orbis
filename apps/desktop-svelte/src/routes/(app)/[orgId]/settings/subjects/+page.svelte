@@ -5,7 +5,7 @@ and triggers the subject creation side sheet.
 -->
 <script lang="ts">
 import { onMount } from "svelte";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
@@ -23,8 +23,8 @@ import {
 } from "lucide-svelte";
 import { toast } from "svelte-sonner";
 import { fade } from "svelte/transition";
-import SearchField from "$lib/components/shared/search-field.svelte";
-import SubjectCreateSheet from "$lib/components/sheets/subject-create-sheet.svelte";
+import SearchField from "$lib/shared/components/search-field.svelte";
+import SubjectCreateSheet from "$lib/features/academics/components/subject-create-sheet.svelte";
 import * as m from "$lib/paraglide/messages";
 
 let { data }: { data: { orgId: string } } = $props();

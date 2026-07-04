@@ -9,9 +9,9 @@ import { onMount } from "svelte";
 import { toast } from "svelte-sonner";
 import { Button } from "@orbis/ui-svelte/button";
 import { Plus, BookUser } from "lucide-svelte";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import type { ClassSubject, JsonRecord } from "@orbis/desktop-client";
-import ClassSubjectSheet from "$lib/components/sheets/class-subject-sheet.svelte";
+import ClassSubjectSheet from "$lib/features/academics/components/class-subject-sheet.svelte";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
 

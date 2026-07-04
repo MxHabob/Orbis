@@ -5,7 +5,7 @@ Excludes any hardcoded fake/placeholder data.
 -->
 <script lang="ts">
 import { page } from "$app/state";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import {
   Table,
   TableBody,
@@ -33,14 +33,15 @@ import {
 } from "lucide-svelte";
 import { onMount } from "svelte";
 import { toast } from "svelte-sonner";
-import { studentsStore } from "$lib/stores";
+import { createEnrollmentsQuery } from "$lib/features/students";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
-import { formatDate } from "$lib/i18n-utils";
+import { formatDate } from "$lib/core/i18n";
 
-const orgId = $derived(page.params.orgId);
-const studentId = $derived(page.params.studentId);
-const student = $derived(studentsStore.list.find((s) => s.id === studentId));
+const orgId = $derived(page.params.orgId || "");
+const studentId = $derived(page.params.studentId || "");
+const enrollmentsQuery = createEnrollmentsQuery(orgId);
+const student = $derived($enrollmentsQuery.data?.find((s) => s.id === studentId));
 const studentUserId = $derived(student?.student_id || "");
 
 let documents = $state<any[]>([]);

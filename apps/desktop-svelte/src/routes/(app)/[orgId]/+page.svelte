@@ -3,7 +3,7 @@
   Renders the Midday-style widgets dashboard.
 -->
 <script lang="ts">
-import OverviewView from "$lib/components/widgets/index.svelte";
+import OverviewView from "$lib/features/dashboard/components/dashboard-widgets.svelte";
 import type { LayoutData } from "./$types";
 import * as m from "$lib/paraglide/messages";
 

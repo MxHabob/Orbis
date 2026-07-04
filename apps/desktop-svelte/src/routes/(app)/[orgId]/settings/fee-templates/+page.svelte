@@ -4,13 +4,13 @@
 -->
 <script lang="ts">
 import { onMount } from "svelte";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Plus, Receipt } from "lucide-svelte";
 import { getLocale } from "$lib/paraglide/runtime";
-import { formatCurrency } from "$lib/i18n-utils";
+import { formatCurrency } from "$lib/core/i18n";
 import { toast } from "svelte-sonner";
-import FeeTemplateSheet from "$lib/components/sheets/fee-template-sheet.svelte";
+import FeeTemplateSheet from "$lib/features/finance/components/fee-template-sheet.svelte";
 import * as m from "$lib/paraglide/messages";
 
 import { DataTable } from "$lib/tables";

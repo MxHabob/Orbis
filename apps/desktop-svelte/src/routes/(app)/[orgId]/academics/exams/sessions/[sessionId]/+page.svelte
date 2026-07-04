@@ -37,10 +37,10 @@ import {
   Printer,
 } from "lucide-svelte";
 import * as m from "$lib/paraglide/messages";
-import ExamStatusBadge from "$lib/components/exams/status-badge.svelte";
-import SubjectAddSheet from "$lib/components/exams/subject-add-sheet.svelte";
-import PrintDialog from "$lib/components/shared/PrintDialog.svelte";
-import { commands } from "$lib/services/ipc";
+import ExamStatusBadge from "$lib/features/exams/components/status-badge.svelte";
+import SubjectAddSheet from "$lib/features/exams/components/subject-add-sheet.svelte";
+import PrintDialog from "$lib/shared/components/print-dialog.svelte";
+import { commands } from "$lib/core/ipc";
 import { authStore } from "$lib/stores";
 
 let { data }: { data: { orgId: string } } = $props();

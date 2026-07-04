@@ -4,7 +4,7 @@
 -->
 <script lang="ts">
 import { onMount } from "svelte";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import {
   Select,
@@ -20,7 +20,7 @@ import {
   DialogDescription,
 } from "@orbis/ui-svelte/dialog";
 import { History, Info } from "lucide-svelte";
-import { l, isAr } from "$lib/i18n-utils";
+import { l, isAr } from "$lib/core/i18n";
 import { getLocale } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 

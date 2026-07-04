@@ -1,7 +1,7 @@
 <script lang="ts">
 import { onMount } from "svelte";
 import { page } from "$app/state";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
@@ -14,8 +14,8 @@ import {
 import { themeStore } from "$lib/stores";
 import { authStore } from "$lib/stores";
 import { toast } from "svelte-sonner";
-import AvatarUpload from "$lib/components/shared/avatar-upload.svelte";
-import LocaleSettings from "$lib/components/shared/locale-settings.svelte";
+import AvatarUpload from "$lib/shared/components/avatar-upload.svelte";
+import LocaleSettings from "$lib/shared/components/locale-settings.svelte";
 import * as m from "$lib/paraglide/messages";
 import { getLocale, setLocale } from "$lib/paraglide/runtime";
 import { Checkbox } from "@orbis/ui-svelte/checkbox";

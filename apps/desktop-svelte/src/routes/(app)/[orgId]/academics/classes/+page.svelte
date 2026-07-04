@@ -5,14 +5,14 @@ and triggers the class creation side sheet. Each card links to the class detail 
 -->
 <script lang="ts">
 import { onMount } from "svelte";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { Plus, Users, GraduationCap, Percent } from "lucide-svelte";
 import { toast } from "svelte-sonner";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
-import ClassCreateSheet from "$lib/components/sheets/class-create-sheet.svelte";
+import ClassCreateSheet from "$lib/features/academics/components/class-create-sheet.svelte";
 import * as m from "$lib/paraglide/messages";
 
 let { data }: { data: { orgId: string } } = $props();

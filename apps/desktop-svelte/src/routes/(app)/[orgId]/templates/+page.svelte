@@ -2,7 +2,7 @@
 import { page } from "$app/state";
 import { onMount } from "svelte";
 import { goto } from "$app/navigation";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
@@ -41,8 +41,8 @@ import {
 } from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
-import { l, isAr } from "$lib/i18n-utils";
-import SearchField from "$lib/components/shared/search-field.svelte";
+import { l, isAr } from "$lib/core/i18n";
+import SearchField from "$lib/shared/components/search-field.svelte";
 import {
   FileText,
   Plus,

@@ -6,7 +6,7 @@ collection percentage progress, and quick links to submodules.
 -->
 <script lang="ts">
 import { onMount } from "svelte";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import { Card } from "@orbis/ui-svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
@@ -21,7 +21,7 @@ import {
   HelpCircle,
 } from "lucide-svelte";
 import { getLocale } from "$lib/paraglide/runtime";
-import { formatCurrency } from "$lib/i18n-utils";
+import { formatCurrency } from "$lib/core/i18n";
 import { fade } from "svelte/transition";
 import * as m from "$lib/paraglide/messages";
 

@@ -23,8 +23,8 @@ import {
   Receipt,
   Percent,
 } from "lucide-svelte";
-import MainViewport from "$lib/components/layout/MainViewport.svelte";
-import SidebarNav from "$lib/components/layout/SidebarNav.svelte";
+import MainViewport from "$lib/shell/main-viewport.svelte";
+import SidebarNav from "$lib/shell/sidebar-nav.svelte";
 import type { Snippet } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";

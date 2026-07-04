@@ -6,7 +6,7 @@
 <script lang="ts">
 import { page } from "$app/state";
 import { onMount } from "svelte";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import {
   Table,
   TableBody,
@@ -41,7 +41,7 @@ import {
 } from "lucide-svelte";
 import { fade, slide } from "svelte/transition";
 import * as m from "$lib/paraglide/messages";
-import { l, isAr } from "$lib/i18n-utils";
+import { l, isAr } from "$lib/core/i18n";
 
 let orgId = $derived((page.params.orgId as string) || "");
 

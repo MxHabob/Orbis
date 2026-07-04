@@ -30,22 +30,22 @@ import {
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import { studentsStore, authStore } from "$lib/stores";
 
-import BulkGrid from "$lib/components/bulk-input/BulkGrid.svelte";
-import BulkSummary from "$lib/components/bulk-input/BulkSummary.svelte";
-import { STUDENT_HEADER_PATTERNS } from "$lib/components/bulk-input/paste-handler";
+import BulkGrid from "$lib/features/bulk-input/bulk-grid.svelte";
+import BulkSummary from "$lib/features/bulk-input/bulk-summary.svelte";
+import { STUDENT_HEADER_PATTERNS } from "$lib/features/bulk-input/paste-handler";
 import {
   buildStudentColumns,
   createEmptyStudentRow,
   STUDENT_DATA_PROPS,
   EXTENDED_PROPS,
-} from "$lib/components/bulk-input/students/student-columns";
+} from "$lib/features/bulk-input/students/student-columns";
 import {
   validateStudentRows,
   getStudentValidationSummary,
-} from "$lib/components/bulk-input/students/student-validator";
+} from "$lib/features/bulk-input/students/student-validator";
 
 let { data } = $props();
 const locale = getLocale();

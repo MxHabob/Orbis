@@ -1,9 +1,9 @@
 <script lang="ts">
 import { onMount } from "svelte";
 import { authStore } from "$lib/stores";
-import { commands } from "$lib/services/ipc";
-import type { UserSession } from "$lib/services/ipc";
-import { formatDate } from "$lib/i18n-utils";
+import { commands } from "$lib/core/ipc";
+import type { UserSession } from "$lib/core/ipc";
+import { formatDate } from "$lib/core/i18n";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";

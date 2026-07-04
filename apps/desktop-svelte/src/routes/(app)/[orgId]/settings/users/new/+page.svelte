@@ -1,5 +1,5 @@
 <script lang="ts">
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
@@ -11,7 +11,7 @@ import {
 } from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
-import DetailPageHeader from "$lib/components/layout/DetailPageHeader.svelte";
+import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
 import { authStore } from "$lib/stores";
 import { goto } from "$app/navigation";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";

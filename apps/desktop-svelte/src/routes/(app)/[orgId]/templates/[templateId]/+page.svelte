@@ -17,25 +17,25 @@
 import { page } from "$app/state";
 import { onMount } from "svelte";
 import { goto } from "$app/navigation";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
-import { l } from "$lib/i18n-utils";
+import { l } from "$lib/core/i18n";
 import { RefreshCw } from "lucide-svelte";
 
 import { deserializeDocument, serializeDocument } from "@docforge/core";
-import { createEditorStore } from "$lib/components/template-designer/stores/editor-store.svelte";
-import { copyNodes, cutNodes, pasteNodes } from "$lib/components/template-designer/stores/clipboard-manager";
-import CanvasRoot from "$lib/components/template-designer/canvas/CanvasRoot.svelte";
-import CanvasContextMenu from "$lib/components/template-designer/canvas/CanvasContextMenu.svelte";
+import { createEditorStore } from "$lib/features/templates/stores/editor-store.svelte";
+import { copyNodes, cutNodes, pasteNodes } from "$lib/features/templates/stores/clipboard-manager";
+import CanvasRoot from "$lib/features/templates/canvas/canvas-root.svelte";
+import CanvasContextMenu from "$lib/features/templates/canvas/canvas-context-menu.svelte";
 
 // ── New Layout Components ────────────────────────────────────
-import SideRail from "$lib/components/template-designer/layout/SideRail.svelte";
-import FlyoutPanel from "$lib/components/template-designer/layout/FlyoutPanel.svelte";
-import ContextToolbar from "$lib/components/template-designer/layout/ContextToolbar.svelte";
-import FloatingActionBar from "$lib/components/template-designer/layout/FloatingActionBar.svelte";
-import StatusBar from "$lib/components/template-designer/layout/StatusBar.svelte";
+import SideRail from "$lib/features/templates/layout/side-rail.svelte";
+import FlyoutPanel from "$lib/features/templates/layout/flyout-panel.svelte";
+import ContextToolbar from "$lib/features/templates/layout/context-toolbar.svelte";
+import FloatingActionBar from "$lib/features/templates/layout/floating-action-bar.svelte";
+import StatusBar from "$lib/features/templates/layout/status-bar.svelte";
 
 // ── Router ───────────────────────────────────────────────────
 

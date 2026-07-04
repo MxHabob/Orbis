@@ -6,7 +6,7 @@ Allows triggering FeeAssignSheet to bill a student.
 -->
 <script lang="ts">
 import { onMount } from "svelte";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import {
@@ -17,9 +17,9 @@ import {
 } from "@orbis/ui-svelte/select";
 import { Plus, Wallet, CheckSquare, HelpCircle } from "lucide-svelte";
 import { getLocale } from "$lib/paraglide/runtime";
-import { formatCurrency, formatDate } from "$lib/i18n-utils";
+import { formatCurrency, formatDate } from "$lib/core/i18n";
 import { fade } from "svelte/transition";
-import FeeAssignSheet from "$lib/components/sheets/fee-assign-sheet.svelte";
+import FeeAssignSheet from "$lib/features/finance/components/fee-assign-sheet.svelte";
 import * as m from "$lib/paraglide/messages";
 
 import { DataTable } from "$lib/tables";

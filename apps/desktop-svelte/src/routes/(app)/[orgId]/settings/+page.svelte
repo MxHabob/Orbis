@@ -1,6 +1,6 @@
 <script lang="ts">
 import { page } from "$app/state";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Switch } from "@orbis/ui-svelte/switch";
@@ -13,9 +13,9 @@ import {
   SelectItem,
 } from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
-import AvatarUpload from "$lib/components/shared/avatar-upload.svelte";
-import LocaleSettings from "$lib/components/shared/locale-settings.svelte";
-import TimezoneSettings from "$lib/components/shared/timezone-settings.svelte";
+import AvatarUpload from "$lib/shared/components/avatar-upload.svelte";
+import LocaleSettings from "$lib/shared/components/locale-settings.svelte";
+import TimezoneSettings from "$lib/shared/components/timezone-settings.svelte";
 import * as m from "$lib/paraglide/messages";
 import { getLocale, setLocale } from "$lib/paraglide/runtime";
 let orgId = $derived(page.params.orgId);

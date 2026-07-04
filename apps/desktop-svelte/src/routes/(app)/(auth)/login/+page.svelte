@@ -9,10 +9,10 @@ import { Zap } from "lucide-svelte";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
 
-import AnnouncementBanner from "$lib/components/login/AnnouncementBanner.svelte";
-import BackgroundPattern from "$lib/components/login/BackgroundPattern.svelte";
-import LoginForm from "$lib/components/login/LoginForm.svelte";
-import EnvironmentSelect from "$lib/components/login/EnvironmentSelect.svelte";
+import AnnouncementBanner from "$lib/features/auth/components/announcement-banner.svelte";
+import BackgroundPattern from "$lib/features/auth/components/background-pattern.svelte";
+import LoginForm from "$lib/features/auth/components/login-form.svelte";
+import EnvironmentSelect from "$lib/features/auth/components/environment-select.svelte";
 
 let selectedBranch = $state("main_branch");
 let selectedYear = $state("2026_2027");

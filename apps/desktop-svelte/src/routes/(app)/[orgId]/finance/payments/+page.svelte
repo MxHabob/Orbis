@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
 import { onMount } from "svelte";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import {
   Table,
   TableBody,
@@ -32,10 +32,10 @@ import {
   QrCode,
   Printer,
 } from "lucide-svelte";
-import { formatCurrency, formatDate } from "$lib/i18n-utils";
+import { formatCurrency, formatDate } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
 import * as m from "$lib/paraglide/messages";
-import PrintDialog from "$lib/components/shared/PrintDialog.svelte";
+import PrintDialog from "$lib/shared/components/print-dialog.svelte";
 
 let { data }: { data: { orgId: string } } = $props();
 

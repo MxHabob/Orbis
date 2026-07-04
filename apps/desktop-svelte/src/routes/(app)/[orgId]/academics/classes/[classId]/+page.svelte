@@ -6,7 +6,7 @@ teachers) and quick-access cards for sub-sections.
 <script lang="ts">
 import { page } from "$app/state";
 import { onMount } from "svelte";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { Button } from "@orbis/ui-svelte/button";
 import {

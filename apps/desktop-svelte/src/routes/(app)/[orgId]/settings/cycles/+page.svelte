@@ -1,11 +1,11 @@
 <script lang="ts">
 import { onMount } from "svelte";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { toast } from "svelte-sonner";
-import { l } from "$lib/i18n-utils";
+import { l } from "$lib/core/i18n";
 import { fade } from "svelte/transition";
 import {
   Plus,
@@ -17,7 +17,7 @@ import {
   ChevronDown,
   Award,
 } from "lucide-svelte";
-import CycleCreateSheet from "$lib/components/sheets/cycle-create-sheet.svelte";
+import CycleCreateSheet from "$lib/features/academics/components/cycle-create-sheet.svelte";
 import * as m from "$lib/paraglide/messages";
 
 let { data }: { data: { orgId: string } } = $props();

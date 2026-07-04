@@ -9,9 +9,9 @@ import { Button } from "@orbis/ui-svelte/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@orbis/ui-svelte/avatar";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { Badge } from "@orbis/ui-svelte/badge";
-import MainViewport from "$lib/components/layout/MainViewport.svelte";
-import DetailPageHeader from "$lib/components/layout/DetailPageHeader.svelte";
-import SecondaryMenu from "$lib/components/layout/SecondaryMenu.svelte";
+import MainViewport from "$lib/shell/main-viewport.svelte";
+import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
+import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
 import {
   GraduationCap,
   Wallet,
@@ -24,8 +24,8 @@ import {
   Users2,
   FileText,
 } from "lucide-svelte";
-import { studentsStore } from "$lib/stores";
-import { onMount } from "svelte";
+import { createEnrollmentsQuery } from "$lib/features/students";
+import { createClassesQuery } from "$lib/features/academics";
 import type { Snippet } from "svelte";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
@@ -36,17 +36,15 @@ let { children }: { children: Snippet } = $props();
 const orgId = $derived(page.params.orgId);
 const studentId = $derived(page.params.studentId);
 
-// Find active student in the store
-const student = $derived(studentsStore.list.find((s) => s.id === studentId));
-const currentClass = $derived(
-  student ? studentsStore.classes.find((c) => c.id === student.class_id) : null,
-);
+// TanStack Queries
+const enrollmentsQuery = createEnrollmentsQuery(orgId);
+const classesQuery = createClassesQuery(orgId);
 
-onMount(async () => {
-  if (studentsStore.list.length === 0 && orgId) {
-    await studentsStore.load(orgId);
-  }
-});
+// Find active student in query data
+const student = $derived($enrollmentsQuery.data?.find((s) => s.id === studentId));
+const currentClass = $derived(
+  student ? $classesQuery.data?.find((c) => String(c.id) === String(student.class_id)) : null,
+);
 
 const basePath = $derived(`/${orgId}/students/${studentId}`);
 

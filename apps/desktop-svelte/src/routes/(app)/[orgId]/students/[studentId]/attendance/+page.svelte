@@ -4,12 +4,12 @@ Attendance stats + log history using OrbisGrid.
 -->
 <script lang="ts">
 import { page } from "$app/state";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import { Calendar, UserCheck, Ban, Clock } from "lucide-svelte";
 import { onMount } from "svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
-import { formatNumber, formatPercent, formatDate } from "$lib/i18n-utils";
+import { formatNumber, formatPercent, formatDate } from "$lib/core/i18n";
 
 import { DataTable } from "$lib/tables";
 import { studentAttendance as saDef, withIndex } from "$lib/tables/definitions";

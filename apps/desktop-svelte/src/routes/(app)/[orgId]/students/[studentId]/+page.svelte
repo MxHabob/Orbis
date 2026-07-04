@@ -1,7 +1,5 @@
 <script lang="ts">
 import { page } from "$app/state";
-import { onMount } from "svelte";
-import { commands } from "$lib/services/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
@@ -15,18 +13,26 @@ import {
 } from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
 import { fade } from "svelte/transition";
-import { studentsStore } from "$lib/stores";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
+import { createEnrollmentsQuery } from "$lib/features/students";
+import { createClassesQuery } from "$lib/features/academics";
+import { commands } from "$lib/core/ipc";
+import { queryClient } from "$lib/core/query/client";
 
 const orgId = $derived(page.params.orgId || "");
 const studentId = $derived(page.params.studentId || ""); // Enrollment ID
 
-let isLoading = $state(true);
-let isSaving = $state(false);
+// TanStack Queries
+const enrollmentsQuery = createEnrollmentsQuery(orgId);
+const classesQuery = createClassesQuery(orgId);
 
-// Find active student in the store
-const student = $derived(studentsStore.list.find((s) => s.id === studentId));
+const enrollments = $derived($enrollmentsQuery.data ?? []);
+const classes = $derived($classesQuery.data ?? []);
+const student = $derived(enrollments.find((s) => s.id === studentId));
+const isLoading = $derived($enrollmentsQuery.isLoading || $classesQuery.isLoading);
+
+let isSaving = $state(false);
 
 // Form fields
 let nameAr = $state("");
@@ -41,8 +47,8 @@ let address = $state("");
 let isActiveState = $state(true);
 
 const selectedClassName = $derived(
-  studentsStore.classes.find((c) => String(c.id) === classId)?.name ||
-    studentsStore.classes.find((c) => String(c.id) === classId)?.name_ar ||
+  classes.find((c) => String(c.id) === classId)?.name ||
+    classes.find((c) => String(c.id) === classId)?.name_ar ||
     m.form_select_class(),
 );
 
@@ -77,47 +83,34 @@ $effect(() => {
   }
 });
 
-async function loadStudent() {
-  if (!studentId) return;
-  isLoading = true;
-  try {
-    if (studentsStore.list.length === 0 && orgId) {
-      await studentsStore.load(orgId);
-    }
+let initialized = $state(false);
+$effect(() => {
+  if (student && !initialized) {
+    nameAr = String(student.full_name || student.name_ar || "");
+    nameEn = String(student.name_en || "");
+    birthDate = student.birth_date
+      ? String(student.birth_date).slice(0, 10)
+      : "";
 
-    if (student) {
-      nameAr = String(student.full_name || student.name_ar || "");
-      nameEn = String(student.name_en || "");
-      birthDate = student.birth_date
-        ? String(student.birth_date).slice(0, 10)
-        : "";
-
-      if (birthDate) {
-        const parts = birthDate.split("-");
-        if (parts.length === 3) {
-          birthYear = parts[0];
-          birthMonth = String(parseInt(parts[1], 10));
-          birthDay = String(parseInt(parts[2], 10));
-        }
+    if (birthDate) {
+      const parts = birthDate.split("-");
+      if (parts.length === 3) {
+        birthYear = parts[0];
+        birthMonth = String(parseInt(parts[1], 10));
+        birthDay = String(parseInt(parts[2], 10));
       }
-
-      sex = String(student.sex || "male");
-      classId = String(student.class_id || "");
-      studentNumber = String(student.student_number || "");
-      email = String(student.email || "");
-      phone = String(student.phone_number || student.phone || "");
-      address = String(student.address || "");
-      isActiveState = student.status === "active";
     }
-  } catch (e) {
-    console.error("Failed to load student profile:", e);
-    toast.error(m.form_error_load());
-  } finally {
-    isLoading = false;
-  }
-}
 
-onMount(loadStudent);
+    sex = String(student.sex || "male");
+    classId = String(student.class_id || "");
+    studentNumber = String(student.student_number || "");
+    email = String(student.email || "");
+    phone = String(student.phone_number || student.phone || "");
+    address = String(student.address || "");
+    isActiveState = student.status === "active";
+    initialized = true;
+  }
+});
 
 async function saveStudentDetails(e: Event) {
   e.preventDefault();
@@ -175,9 +168,9 @@ async function saveStudentDetails(e: Event) {
 
     toast.success(m.form_success_update());
 
-    // Reload local list and refresh data
-    await studentsStore.load(orgId);
-    await loadStudent();
+    // Invalidate query data to trigger reactive updates
+    queryClient.invalidateQueries({ queryKey: ["enrollments", orgId] });
+    initialized = false; // re-populate form with updated data
   } catch (e: any) {
     console.error("Save error:", e);
     toast.error(m.form_error_save({ error: e.message || String(e) }));
@@ -330,7 +323,7 @@ async function saveStudentDetails(e: Event) {
                   <span>{selectedClassName}</span>
                 </SelectTrigger>
                 <SelectContent class="text-start max-h-48 overflow-y-auto" align="end">
-                  {#each studentsStore.classes as cls (cls.id)}
+                  {#each classes as cls (cls.id)}
                     <SelectItem value={String(cls.id)} class="text-xs text-start justify-start cursor-pointer">
                       {cls.name || cls.name_ar}
                     </SelectItem>
@@ -388,7 +381,7 @@ async function saveStudentDetails(e: Event) {
 
         <!-- Card Footer Actions (Identical to settings page) -->
         <div class="flex justify-end gap-3 px-6 py-4 bg-muted/20 border-t border-border">
-          <Button type="button" variant="ghost" size="sm" onclick={loadStudent}>
+          <Button type="button" variant="ghost" size="sm" onclick={() => { initialized = false; }}>
             {m.settings_user_detail_btn_reset()}
           </Button>
           <Button

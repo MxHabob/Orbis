@@ -29,11 +29,11 @@ import {
   TableRow,
 } from "@orbis/ui-svelte/table";
 import { toast } from "svelte-sonner";
-import { l, isAr } from "$lib/i18n-utils";
+import { l, isAr } from "$lib/core/i18n";
 import * as m from "$lib/paraglide/messages";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import { goto } from "$app/navigation";
-import SearchField from "$lib/components/shared/search-field.svelte";
+import SearchField from "$lib/shared/components/search-field.svelte";
 import {
   Shield,
   Search,

@@ -20,9 +20,9 @@ import {
   ClipboardList,
 } from "lucide-svelte";
 import * as m from "$lib/paraglide/messages";
-import ExamStatusBadge from "$lib/components/exams/status-badge.svelte";
-import SessionCreateSheet from "$lib/components/exams/session-create-sheet.svelte";
-import { examsStore } from "$lib/stores/exams.svelte";
+import ExamStatusBadge from "$lib/features/exams/components/status-badge.svelte";
+import SessionCreateSheet from "$lib/features/exams/components/session-create-sheet.svelte";
+import { examsStore } from "$lib/features/exams/store.svelte";
 
 let { data }: { data: { orgId: string } } = $props();
 

@@ -19,9 +19,9 @@ import {
   CheckCircle,
   XCircle,
 } from "lucide-svelte";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import type { GuardianLink, JsonRecord } from "@orbis/desktop-client";
-import GuardianLinkSheet from "$lib/components/sheets/guardian-link-sheet.svelte";
+import GuardianLinkSheet from "$lib/features/students/components/guardian-link-sheet.svelte";
 import * as m from "$lib/paraglide/messages";
 
 const orgId = $derived(page.params.orgId ?? "");

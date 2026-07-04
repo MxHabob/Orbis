@@ -6,7 +6,7 @@ Extracted from the original monolith TabsContent "roles".
 <script lang="ts">
 import { page } from "$app/state";
 import { onMount } from "svelte";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Checkbox } from "@orbis/ui-svelte/checkbox";
@@ -14,7 +14,7 @@ import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { toast } from "svelte-sonner";
 import { fade } from "svelte/transition";
 import * as m from "$lib/paraglide/messages";
-import SearchField from "$lib/components/shared/search-field.svelte";
+import SearchField from "$lib/shared/components/search-field.svelte";
 
 const userId = $derived(page.params.userId);
 

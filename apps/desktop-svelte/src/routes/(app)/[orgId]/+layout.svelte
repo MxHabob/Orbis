@@ -3,7 +3,7 @@
   This is the equivalent of GitButler's [projectId]/+layout.svelte.
 -->
 <script lang="ts">
-import AppChrome from "$lib/components/layout/AppChrome.svelte";
+import AppChrome from "$lib/shell/app-chrome.svelte";
 import type { Snippet } from "svelte";
 import type { LayoutData } from "./$types";
 

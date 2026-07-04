@@ -5,7 +5,7 @@ Provides barcode/ID lookup, outstanding fee checklist, and payment history.
 -->
 <script lang="ts">
 import { onMount } from "svelte";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import { authStore } from "$lib/stores";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
@@ -27,7 +27,7 @@ import {
   Plus,
 } from "lucide-svelte";
 import { getLocale } from "$lib/paraglide/runtime";
-import { formatCurrency, formatDate } from "$lib/i18n-utils";
+import { formatCurrency, formatDate } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
 import * as m from "$lib/paraglide/messages";
 

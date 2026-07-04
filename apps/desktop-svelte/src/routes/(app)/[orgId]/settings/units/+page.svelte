@@ -1,6 +1,6 @@
 <script lang="ts">
 import { onMount } from "svelte";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import {
@@ -13,9 +13,9 @@ import {
 } from "@orbis/ui-svelte/table";
 import { Input } from "@orbis/ui-svelte/input";
 import { toast } from "svelte-sonner";
-import { l, isAr } from "$lib/i18n-utils";
+import { l, isAr } from "$lib/core/i18n";
 import { fade } from "svelte/transition";
-import SearchField from "$lib/components/shared/search-field.svelte";
+import SearchField from "$lib/shared/components/search-field.svelte";
 import {
   Plus,
   Search,
@@ -32,7 +32,7 @@ import {
   List,
   FolderTree,
 } from "lucide-svelte";
-import OrgUnitSheet from "$lib/components/sheets/org-unit-sheet.svelte";
+import OrgUnitSheet from "$lib/features/academics/components/org-unit-sheet.svelte";
 import * as m from "$lib/paraglide/messages";
 
 let { data }: { data: { orgId: string } } = $props();

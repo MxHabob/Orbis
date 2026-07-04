@@ -7,7 +7,7 @@ Moved from academics/assessments/ with context-first navigation.
 <script lang="ts">
 import { page } from "$app/state";
 import { onMount } from "svelte";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import {
@@ -26,7 +26,7 @@ import {
 } from "lucide-svelte";
 import { toast } from "svelte-sonner";
 import { fade } from "svelte/transition";
-import AssessmentCreateSheet from "$lib/components/sheets/assessment-create-sheet.svelte";
+import AssessmentCreateSheet from "$lib/features/academics/components/assessment-create-sheet.svelte";
 import * as m from "$lib/paraglide/messages";
 
 const orgId = $derived(page.params.orgId);

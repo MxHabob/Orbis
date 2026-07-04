@@ -6,8 +6,8 @@ Uses the shared SidebarNav component.
 <script lang="ts">
 import { page } from "$app/state";
 import { ClipboardList, FileText, BarChart3 } from "lucide-svelte";
-import MainViewport from "$lib/components/layout/MainViewport.svelte";
-import SidebarNav from "$lib/components/layout/SidebarNav.svelte";
+import MainViewport from "$lib/shell/main-viewport.svelte";
+import SidebarNav from "$lib/shell/sidebar-nav.svelte";
 import type { Snippet } from "svelte";
 import * as m from "$lib/paraglide/messages";
 

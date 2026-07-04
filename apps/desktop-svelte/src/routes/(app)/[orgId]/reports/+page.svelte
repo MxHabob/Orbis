@@ -2,7 +2,7 @@
   Reports / Analytics dashboard.
 -->
 <script lang="ts">
-import MetricsView from "$lib/components/metrics/metrics-view.svelte";
+import MetricsView from "$lib/features/metrics/metrics-view.svelte";
 import type { PageData } from "./$types";
 import * as m from "$lib/paraglide/messages";
 

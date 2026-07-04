@@ -6,8 +6,8 @@ Extracted from the original monolith TabsContent "profile".
 <script lang="ts">
 import { page } from "$app/state";
 import { onMount } from "svelte";
-import { commands } from "$lib/services/ipc";
-import type { User } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
+import type { User } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";

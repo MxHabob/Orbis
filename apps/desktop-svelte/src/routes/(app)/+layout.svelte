@@ -1,6 +1,6 @@
 <script lang="ts">
-import { isDesktopApp } from "$lib/services/ipc";
-import TitleBar from "$lib/components/layout/TitleBar.svelte";
+import { isDesktopApp } from "$lib/core/ipc";
+import TitleBar from "$lib/shell/title-bar.svelte";
 import { uiStore } from "$lib/stores";
 
 let { children } = $props();
@@ -17,7 +17,7 @@ let { children } = $props();
 
 <!-- Lazy-load SearchModal only when opened (saves ~15KB from initial bundle) -->
 {#if uiStore.showSearch}
-	{#await import("$lib/components/layout/SearchModal.svelte") then { default: SearchModal }}
+	{#await import("$lib/shell/search-modal.svelte") then { default: SearchModal }}
 		<SearchModal />
 	{/await}
 {/if}

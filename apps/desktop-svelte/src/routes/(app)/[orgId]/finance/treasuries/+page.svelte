@@ -5,15 +5,15 @@ Both use OrbisGrid via DataTable.
 -->
 <script lang="ts">
 import { onMount } from "svelte";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { Plus, Landmark, Layers } from "lucide-svelte";
 import { getLocale } from "$lib/paraglide/runtime";
-import { formatCurrency } from "$lib/i18n-utils";
+import { formatCurrency } from "$lib/core/i18n";
 import { fade } from "svelte/transition";
-import TreasuryCreateSheet from "$lib/components/sheets/treasury-create-sheet.svelte";
-import LedgerCreateSheet from "$lib/components/sheets/ledger-create-sheet.svelte";
+import TreasuryCreateSheet from "$lib/features/finance/components/treasury-create-sheet.svelte";
+import LedgerCreateSheet from "$lib/features/finance/components/ledger-create-sheet.svelte";
 import * as m from "$lib/paraglide/messages";
 
 import { DataTable } from "$lib/tables";

@@ -1,6 +1,6 @@
 <script lang="ts">
 import { page } from "$app/state";
-import StudentForm from "$lib/components/students/student-form.svelte";
+import StudentForm from "$lib/features/students/student-form.svelte";
 
 const orgId = $derived(page.params.orgId || "");
 </script>

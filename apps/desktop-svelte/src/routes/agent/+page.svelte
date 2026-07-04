@@ -1,5 +1,5 @@
 <script lang="ts">
-import AskOrbisSidebar from "$lib/components/layout/AskOrbisSidebar.svelte";
+import AskOrbisSidebar from "$lib/shell/ask-orbis-sidebar.svelte";
 </script>
 
 <div class="flex flex-col h-screen w-screen overflow-hidden bg-card">

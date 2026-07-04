@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
 import { onMount } from "svelte";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import {
   Table,
   TableBody,
@@ -30,7 +30,7 @@ import {
   Printer,
   FileText,
 } from "lucide-svelte";
-import { formatDate } from "$lib/i18n-utils";
+import { formatDate } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
 import * as m from "$lib/paraglide/messages";
 

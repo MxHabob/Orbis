@@ -1,9 +1,9 @@
 // ── Auth Store ───────────────────────────────────────────────────────
 // Svelte 5 Runes-based authentication state (replaces Zustand).
 
-import { commands } from "$lib/services/ipc";
-import type { User, LoginResponse } from "$lib/services/ipc";
-import { extractErrorMessage } from "$lib/utils/ipc-error";
+import { commands } from "$lib/core/ipc";
+import type { User, LoginResponse } from "$lib/core/ipc";
+import { extractErrorMessage } from "$lib/core/ipc";
 
 class AuthStore {
   user = $state<User | null>(null);

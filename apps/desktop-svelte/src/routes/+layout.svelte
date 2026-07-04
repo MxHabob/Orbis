@@ -4,11 +4,11 @@ import { resolve } from "$app/paths";
 import { page } from "$app/state";
 import { locales, localizeHref } from "$lib/paraglide/runtime";
 import { themeStore } from "$lib/stores";
-import { isDesktopApp } from "$lib/services/ipc";
+import { isDesktopApp } from "$lib/core/ipc";
 import { Toaster } from "svelte-sonner";
 import { onMount } from "svelte";
 import { QueryClientProvider } from "@tanstack/svelte-query";
-import { queryClient } from "$lib/services/query-client";
+import { queryClient } from "$lib/core/query/client";
 import "./layout.css";
 import favicon from "$lib/assets/favicon.svg";
 

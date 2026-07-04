@@ -5,7 +5,7 @@ Shows real-time Trial Balance, Income Statement, and Balance Sheet, loaded from 
 -->
 <script lang="ts">
 import { onMount } from "svelte";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import { Landmark, FileSpreadsheet, Scale, BarChart3 } from "lucide-svelte";
 import { fade } from "svelte/transition";
 import {
@@ -23,8 +23,8 @@ import {
   TableRow,
 } from "@orbis/ui-svelte/table";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import FeeCollectionCard from "$lib/components/metrics/cards/fee-collection-card.svelte";
-import { formatCurrency } from "$lib/i18n-utils";
+import FeeCollectionCard from "$lib/features/metrics/cards/fee-collection-card.svelte";
+import { formatCurrency } from "$lib/core/i18n";
 import * as m from "$lib/paraglide/messages";
 
 let { data }: { data: { orgId: string } } = $props();

@@ -8,11 +8,11 @@ Uses Pattern A: MainViewport with class info sidebar.
 <script lang="ts">
 import { page } from "$app/state";
 import { onMount } from "svelte";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import DetailPageHeader from "$lib/components/layout/DetailPageHeader.svelte";
-import SecondaryMenu from "$lib/components/layout/SecondaryMenu.svelte";
+import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
+import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
 import {
   GraduationCap,
   Users,

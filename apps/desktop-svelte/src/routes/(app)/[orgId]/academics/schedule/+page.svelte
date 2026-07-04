@@ -6,15 +6,15 @@ Triggers the LessonCreateSheet for scheduling lessons.
 -->
 <script lang="ts">
 import { onMount } from "svelte";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { Plus, Clock, MapPin, User, X } from "lucide-svelte";
 import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
-import LessonCreateSheet from "$lib/components/sheets/lesson-create-sheet.svelte";
-import SchedulerAiPanel from "$lib/components/academics/scheduler-ai-panel.svelte";
+import LessonCreateSheet from "$lib/features/academics/components/lesson-create-sheet.svelte";
+import SchedulerAiPanel from "$lib/features/academics/components/scheduler-ai-panel.svelte";
 import { Timetable } from "@orbis/ui-svelte/timetable";
 import * as m from "$lib/paraglide/messages";
 

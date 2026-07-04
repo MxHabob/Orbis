@@ -18,9 +18,9 @@ import { toast } from "svelte-sonner";
 import { fade } from "svelte/transition";
 import { ListOrdered, RefreshCw, Lock, Search } from "lucide-svelte";
 import * as m from "$lib/paraglide/messages";
-import { commands } from "$lib/services/ipc";
+import { commands } from "$lib/core/ipc";
 import { authStore } from "$lib/stores";
-import SearchField from "$lib/components/shared/search-field.svelte";
+import SearchField from "$lib/shared/components/search-field.svelte";
 import {
   Select,
   SelectTrigger,
