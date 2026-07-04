@@ -339,13 +339,31 @@ export function updateNodeProps(
     ...doc,
     pages: getPages(doc).map((page) =>
       updateNodeInTree(page, nodeId, (node) => {
-        if ("props" in node && node.props) {
-          return {
-            ...node,
-            props: { ...(node.props as object), ...props },
-          } as TemplateNode;
+        const rootKeys = [
+          "id", "type", "name", "locked", "visible", 
+          "opacity", "rotation", "zIndex", "groupId", 
+          "styleRef", "position", "positionMode"
+        ];
+        
+        const rootUpdates: Record<string, any> = {};
+        const innerUpdates: Record<string, any> = {};
+
+        for (const [key, val] of Object.entries(props)) {
+          if (key === "props" && val && typeof val === "object") {
+            // Unpack nested props if passed as { props: { ... } }
+            Object.assign(innerUpdates, val);
+          } else if (rootKeys.includes(key)) {
+            rootUpdates[key] = val;
+          } else {
+            innerUpdates[key] = val;
+          }
         }
-        return { ...node, ...props } as TemplateNode;
+
+        const updated = { ...node, ...rootUpdates } as any;
+        if (Object.keys(innerUpdates).length > 0 && "props" in updated && updated.props) {
+          updated.props = { ...updated.props, ...innerUpdates };
+        }
+        return updated as TemplateNode;
       }) as PageNode,
     ),
   };
