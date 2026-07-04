@@ -119,11 +119,30 @@ let {
   onaction,
 }: Props = $props();
 
-// ── Internal State ───────────────────────────────────────────────────────
-
 let gridReady = $state(false);
 let RevoGridComponent: any = $state(null);
 let loadedEditors: Record<string, unknown> = $state({});
+let gridContainer: HTMLDivElement | undefined = $state();
+
+$effect(() => {
+  if (gridReady && gridContainer) {
+    const revoGridEl = gridContainer.querySelector("revo-grid");
+    if (revoGridEl) {
+      const handleBeforePasteEvent = (e: any) => {
+        if (!oncellspaste) return;
+        const detail = e.detail;
+        if (detail?.parsed) {
+          oncellspaste(detail.parsed, detail.rowIndex ?? 0, detail.colIndex ?? 0);
+        }
+      };
+
+      revoGridEl.addEventListener("beforepaste", handleBeforePasteEvent);
+      return () => {
+        revoGridEl.removeEventListener("beforepaste", handleBeforePasteEvent);
+      };
+    }
+  }
+});
 
 // ── Dynamic Import (SSR-safe, module-cached) ──────────────────────────────
 
@@ -182,6 +201,8 @@ let revoColumns = $derived.by(() => {
         return {
           ...customProps,
           class: classes.join(" ").trim(),
+          "data-row": params?.rowIndex ?? 0,
+          "data-prop": col.prop,
         };
       },
     };
@@ -300,6 +321,7 @@ function handleGridClick(e: MouseEvent) {
 
 {#if gridReady && RevoGridComponent && isBrowser}
   <div
+    bind:this={gridContainer}
     class="orbis-grid-container"
     style="height: {height}; width: 100%;"
     dir={rtl ? "rtl" : "ltr"}

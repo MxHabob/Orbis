@@ -215,14 +215,23 @@ $effect(() => {
         >
           <ArrowLeft class="h-4 w-4 rtl:rotate-180" />
         </Button>
-        <div class="flex flex-col gap-0.5">
-          <h1 class="text-lg font-bold tracking-tight text-foreground">
-            {m.bulk_students_title()}
-          </h1>
-          <p class="text-xs text-muted-foreground">
-            {m.bulk_students_desc()}
-          </p>
-        </div>
+      <div class="flex items-center gap-2">
+        <Select type="single" value={selectedClassId} onValueChange={(v) => (selectedClassId = v)}>
+          <SelectTrigger class="w-52 h-8 text-xs">
+            {#if selectedClassId}
+              {studentsStore.classes.find((c: any) => c.id === selectedClassId)?.name ?? selectedClassId}
+            {:else}
+              {m.bulk_class_all()}
+            {/if}
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">{m.bulk_class_per_row()}</SelectItem>
+            {#each studentsStore.classes as cls}
+              <SelectItem value={cls.id}>{cls.name}</SelectItem>
+            {/each}
+          </SelectContent>
+        </Select>
+      </div>
       </div>
 
       <div class="flex items-center gap-2 flex-nowrap shrink-0">
@@ -253,7 +262,6 @@ $effect(() => {
             </div>
           </PopoverContent>
         </Popover>
-
         <Button
           variant="outline"
           size="sm"
@@ -276,36 +284,6 @@ $effect(() => {
         </Button>
       </div>
     </div>
-
-    <!-- Context Bar -->
-    <div class="flex items-center gap-4 p-3 rounded-lg bg-card border border-border">
-      <div class="flex items-center gap-2">
-        <Label class="text-xs font-medium text-muted-foreground shrink-0">
-          {m.bulk_col_class()}:
-        </Label>
-        <Select type="single" value={selectedClassId} onValueChange={(v) => (selectedClassId = v)}>
-          <SelectTrigger class="w-52 h-8 text-xs">
-            {#if selectedClassId}
-              {studentsStore.classes.find((c: any) => c.id === selectedClassId)?.name ?? selectedClassId}
-            {:else}
-              {m.bulk_class_all()}
-            {/if}
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">{m.bulk_class_per_row()}</SelectItem>
-            {#each studentsStore.classes as cls}
-              <SelectItem value={cls.id}>{cls.name}</SelectItem>
-            {/each}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Info size={13} class="shrink-0" />
-        {m.bulk_paste_hint()}
-      </div>
-    </div>
-
     <!-- Grid -->
     <BulkGrid
       {columns}

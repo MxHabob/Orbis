@@ -116,51 +116,79 @@ function handlePaste(data: string[][], startRow: number, _startCol: number) {
 // Also handle raw clipboard paste as fallback when grid isn't focused
 function handleClipboardPaste(e: ClipboardEvent) {
   const text = e.clipboardData?.getData("text/plain");
-  if (!text || !text.includes("\t")) return;
+  if (!text) return;
 
-  // Check if the event target is inside the RevoGrid
-  // If so, RevoGrid will handle it via onpaste callback
-  const target = e.target as HTMLElement;
-  if (target?.closest("revo-grid")) return;
-
-  // Handle paste when clicking outside the grid cells but inside wrapper
+  // Take complete control over the paste operation
   e.preventDefault();
   e.stopPropagation();
 
   let pastedData = parseTSV(text);
+  if (pastedData.length === 0) return;
 
+  // Detect and skip header row
   if (pastedData.length > 1 && headerPatterns.length > 0) {
     if (isHeaderRow(pastedData[0], headerPatterns)) {
       pastedData = pastedData.slice(1);
     }
   }
 
+  // Convert 2D TSV to standard row objects
   const pastedRows = mapTSVToRows(pastedData, dataProps);
   if (pastedRows.length === 0) return;
 
-  const startRow = findFirstEmptyRow();
+  // ── Find active cell coordinates ──
+  const activeEl = document.activeElement as HTMLElement;
+  const targetEl = e.target as HTMLElement;
+
+  // Find closest cell container
+  const cell = (
+    activeEl?.closest(".rgCell") ||
+    targetEl?.closest(".rgCell") ||
+    // RevoGrid overlays selection elements outside cells, check if target is near selection
+    document.querySelector("revo-grid .rgCell.focus")
+  ) as HTMLElement;
+
+  let startRow = findFirstEmptyRow();
+  let startColProp = dataProps[0];
+
+  if (cell) {
+    const r = cell.getAttribute("data-row");
+    const p = cell.getAttribute("data-prop");
+    if (r !== null) startRow = Number(r);
+    if (p !== null) startColProp = p;
+  }
+
+  const startColIdx = dataProps.indexOf(startColProp);
   const newRows = [...rows];
 
-  for (let i = 0; i < pastedRows.length; i++) {
-    const targetIdx = startRow + i;
-    if (targetIdx < newRows.length) {
-      for (const prop of dataProps) {
-        if (pastedRows[i][prop] !== undefined) {
-          newRows[targetIdx][prop] = pastedRows[i][prop];
-        }
+  for (let r = 0; r < pastedRows.length; r++) {
+    const targetRowIdx = startRow + r;
+
+    // Ensure row exists in grid
+    if (targetRowIdx >= newRows.length) {
+      newRows.push(createEmptyRow());
+    }
+
+    // Write pasted columns matching the starting column offset
+    const maxCols = Math.min(dataProps.length - startColIdx, dataProps.length);
+    for (let c = 0; c < maxCols; c++) {
+      const sourceColProp = dataProps[c]; // raw column property name
+      const targetColProp = dataProps[startColIdx + c]; // offset destination property
+
+      if (pastedRows[r][sourceColProp] !== undefined && targetColProp) {
+        newRows[targetRowIdx][targetColProp] = pastedRows[r][sourceColProp];
       }
-    } else {
-      const emptyRow = createEmptyRow();
-      for (const prop of dataProps) {
-        if (pastedRows[i][prop] !== undefined) {
-          emptyRow[prop] = pastedRows[i][prop];
-        }
-      }
-      newRows.push(emptyRow);
+    }
+
+    // Reset validation errors for updated row
+    if (newRows[targetRowIdx].__errors instanceof Map) {
+      (newRows[targetRowIdx].__errors as Map<string, string>).clear();
     }
   }
 
+  // Maintain minimum tail of empty rows
   ensureEmptyTail(newRows);
+
   rows = newRows;
   onrowschange?.(rows);
 }
@@ -210,22 +238,24 @@ $effect(() => {
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div
-  class="bulk-grid-wrapper"
-  onpaste={handleClipboardPaste}
->
-  <OrbisGrid
-    {columns}
-    source={indexedSource}
-    height="calc(100vh - 380px)"
-    rtl={isRtl}
-    readonly={false}
-    theme="compact"
-    range={true}
-    clipboard={true}
-    oncelledit={handleCellEdit}
-    oncellspaste={handlePaste}
-  />
+<div class="flex flex-col gap-1 w-full">
+  <div
+    class="bulk-grid-wrapper"
+    onpaste={handleClipboardPaste}
+  >
+    <OrbisGrid
+      {columns}
+      source={indexedSource}
+      height="calc(100vh - 180px)"
+      rtl={isRtl}
+      readonly={false}
+      theme="compact"
+      range={true}
+      clipboard={true}
+      oncelledit={handleCellEdit}
+      oncellspaste={handlePaste}
+    />
+  </div>
 </div>
 
 <style>

@@ -174,14 +174,28 @@ async function handleSubmit() {
         >
           <ArrowLeft class="h-4 w-4 rtl:rotate-180" />
         </Button>
-        <div class="flex flex-col gap-0.5">
-          <h1 class="text-lg font-bold tracking-tight text-foreground">
-            {m.bulk_grades_title()}
-          </h1>
-          <p class="text-xs text-muted-foreground">
-            {m.bulk_grades_desc()}
-          </p>
-        </div>
+      <div class="flex items-center gap-2">
+        <Select type="single" value={identifierType} onValueChange={(v) => (identifierType = v)}>
+          <SelectTrigger class="w-44 h-8 text-xs">
+            {identifierType === "auto"
+              ? m.bulk_id_auto()
+              : identifierType === "email"
+                ? m.bulk_col_email()
+                : identifierType === "student_number"
+                  ? m.bulk_id_student_number()
+                  : identifierType === "national_id"
+                    ? m.bulk_col_national_id()
+                    : m.bulk_id_name()}
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="auto">{m.bulk_id_auto()}</SelectItem>
+            <SelectItem value="email">{m.bulk_col_email()}</SelectItem>
+            <SelectItem value="student_number">{m.bulk_id_student_number()}</SelectItem>
+            <SelectItem value="national_id">{m.bulk_col_national_id()}</SelectItem>
+            <SelectItem value="name">{m.bulk_id_name()}</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
       </div>
 
       <div class="flex items-center gap-2 flex-nowrap shrink-0">
@@ -207,57 +221,6 @@ async function handleSubmit() {
         </Button>
       </div>
     </div>
-
-    <!-- Context Bar -->
-    <div class="flex items-center gap-6 p-3 rounded-lg bg-card border border-border flex-wrap">
-      <!-- Active Cycle -->
-      <div class="flex items-center gap-2">
-        <CalendarDays size={13} class="text-muted-foreground shrink-0" />
-        <Label class="text-xs font-medium text-muted-foreground shrink-0">
-          {m.bulk_cycle()}:
-        </Label>
-        {#if activeCycleName}
-          <Badge variant="secondary" class="text-xs">
-            {activeCycleName}
-          </Badge>
-        {:else}
-          <span class="text-xs text-muted-foreground">{m.bulk_cycle_auto()}</span>
-        {/if}
-      </div>
-
-      <!-- Identifier Type -->
-      <div class="flex items-center gap-2">
-        <Label class="text-xs font-medium text-muted-foreground shrink-0">
-          {m.bulk_identifier_type()}:
-        </Label>
-        <Select type="single" value={identifierType} onValueChange={(v) => (identifierType = v)}>
-          <SelectTrigger class="w-44 h-8 text-xs">
-            {identifierType === "auto"
-              ? m.bulk_id_auto()
-              : identifierType === "email"
-                ? m.bulk_col_email()
-                : identifierType === "student_number"
-                  ? m.bulk_id_student_number()
-                  : identifierType === "national_id"
-                    ? m.bulk_col_national_id()
-                    : m.bulk_id_name()}
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="auto">{m.bulk_id_auto()}</SelectItem>
-            <SelectItem value="email">{m.bulk_col_email()}</SelectItem>
-            <SelectItem value="student_number">{m.bulk_id_student_number()}</SelectItem>
-            <SelectItem value="national_id">{m.bulk_col_national_id()}</SelectItem>
-            <SelectItem value="name">{m.bulk_id_name()}</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Info size={13} class="shrink-0" />
-        {m.bulk_grades_hint()}
-      </div>
-    </div>
-
     <!-- Grid -->
     <BulkGrid
       {columns}
