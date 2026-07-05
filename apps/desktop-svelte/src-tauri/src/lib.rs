@@ -402,30 +402,47 @@ pub fn run() {
             commands::bulk_import::bulk_create_students,
             commands::bulk_import::bulk_create_teachers,
             commands::bulk_import::bulk_create_grades,
+
+            // Academic Year Management commands
+            commands::academic_years::list_academic_years,
+            commands::academic_years::get_current_academic_year,
+            commands::academic_years::create_academic_year,
+            commands::academic_years::switch_academic_year,
+            commands::academic_years::archive_academic_year,
+            commands::academic_years::is_current_year_archived,
+            commands::academic_years::set_active_academic_year,
+
+            // Promotion commands
+            commands::promotion::promotion_dry_run,
+            commands::promotion::get_promotion_jobs,
+            commands::promotion::get_promotion_job,
+            commands::promotion::get_promotion_details,
+            commands::promotion::override_promotion_decision,
+            commands::promotion::execute_promotion,
+            commands::promotion::rollback_promotion,
         ])
         .setup(move |app| {
             // Add updater plugin conditionally for desktop
             #[cfg(desktop)]
             app.handle().plugin(tauri_plugin_updater::Builder::new().build())?;
 
-            // 1. Initialize local SQLite database path in local AppData folder
+            // 1. Initialize local AppData directory
             let app_data_dir = app
                 .path()
                 .app_data_dir()
                 .map_err(|e| format!("Failed to resolve app data dir: {e}"))?;
             std::fs::create_dir_all(&app_data_dir)
                 .map_err(|e| format!("Failed to create app data dir {:?}: {e}", app_data_dir))?;
-            let db_path = app_data_dir.join("orbis.db");
-            let database_url = state::sqlite_database_url(&db_path);
 
-            // 2. Initialize managed AppState with direct Rust access (embedded core)
+            // 2. Initialize managed AppState with DatabaseProvider (multi-year support)
             let app_state = tauri::async_runtime::block_on(async {
-                let state = AppState::init(&database_url)
+                let state = AppState::init(&app_data_dir)
                     .await
-                    .map_err(|e| format!("Database init failed for {:?}: {e}", db_path))?;
+                    .map_err(|e| format!("Database init failed: {e}"))?;
                 
-                // Run docforge template database migrations
-                docforge_orbis::schema::migrate_template_schema(&state.service.repo.db)
+                // Run docforge template database migrations on the current year's DB
+                let service = state.service().await;
+                docforge_orbis::schema::migrate_template_schema(&service.repo.db)
                     .await
                     .map_err(|e| format!("Template schema migration failed: {e}"))?;
                 

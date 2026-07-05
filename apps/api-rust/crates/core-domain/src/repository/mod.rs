@@ -24,6 +24,12 @@ pub mod solve_job;
 // ── Examination Management System ──
 pub mod exam;
 
+// ── Academic Year Management & Promotion (Registry DB) ──
+// These repositories use standalone structs (AcademicYearRepo, PromotionRepo)
+// that operate on the registry DatabaseConnection, not the year Repository.
+pub mod academic_year;
+pub mod promotion;
+
 
 #[derive(Clone)]
 pub struct Repository {

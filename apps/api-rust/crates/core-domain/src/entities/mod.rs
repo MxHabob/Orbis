@@ -62,3 +62,8 @@ pub mod exam_hall_allocation;
 pub mod exam_proctor;
 pub mod teacher_exam_availability;
 
+// ── Academic Year Management & Promotion (Registry DB) ──
+pub mod academic_year;
+pub mod promotion_job;
+pub mod promotion_detail;
+pub mod student_registry_entry;

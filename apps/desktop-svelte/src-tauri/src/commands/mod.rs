@@ -19,3 +19,6 @@ pub mod permissions;
 pub mod docforge;
 pub mod bulk_import;
 
+// ── Academic Year Management & Promotion ──
+pub mod academic_years;
+pub mod promotion;

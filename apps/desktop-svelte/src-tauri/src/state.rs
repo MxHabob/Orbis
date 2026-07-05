@@ -1,8 +1,7 @@
 use std::sync::Arc;
+use std::path::Path;
 use core_domain::{
-    config::Config,
-    database,
-    repository::Repository,
+    database::provider::DatabaseProvider,
     service::Service,
 };
 
@@ -18,27 +17,36 @@ pub fn sqlite_database_url(db_path: &std::path::Path) -> String {
 }
 
 /// Shared application state passed to all Tauri commands.
-/// Wraps the full Service layer for direct, zero-network access.
+///
+/// Uses `DatabaseProvider` for transparent multi-year database access.
+/// All commands call `state.service().await` to get the current year's Service,
+/// without any knowledge of year switching mechanics.
 #[derive(Clone)]
 pub struct AppState {
-    pub service: Arc<Service>,
+    /// The database provider — manages current year's Service behind a RwLock.
+    pub provider: Arc<DatabaseProvider>,
 }
 
 impl AppState {
-    /// Initialize AppState by connecting to the SQLite database and building
-    /// the full service layer. Must be called inside an async context.
-    pub async fn init(database_url: &str) -> Result<Self, Box<dyn std::error::Error>> {
-        let mut cfg = Config::load();
-        cfg.database_url = database_url.to_string();
-        // Local embedded server: use a fixed port for potential dev-mode HTTP fallback
-        cfg.port = 3002;
-
-        let db = database::connect(database_url).await?;
-        let repo = Repository::new(db);
-        let service = Service::new(repo, cfg);
+    /// Initialize AppState by setting up the DatabaseProvider.
+    ///
+    /// The provider connects to the registry database, finds the current active
+    /// academic year, and opens its database. If no years exist, it handles
+    /// first-launch scenarios (legacy orbis.db or fresh install).
+    pub async fn init(app_data_dir: &Path) -> Result<Self, Box<dyn std::error::Error>> {
+        let provider = DatabaseProvider::init(app_data_dir).await?;
 
         Ok(Self {
-            service: Arc::new(service),
+            provider: Arc::new(provider),
         })
+    }
+
+    /// Get the current year's Service. Used by all Tauri commands.
+    ///
+    /// This is the primary access point. Returns an `Arc<Service>` that remains
+    /// valid for the duration of a single command, even if a year switch occurs
+    /// concurrently.
+    pub async fn service(&self) -> Arc<Service> {
+        self.provider.current().await
     }
 }
