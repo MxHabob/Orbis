@@ -20,8 +20,10 @@ Follows GitButler's "Chrome Shell" pattern:
 <script lang="ts">
 import AppSidebar from "./app-sidebar.svelte";
 import { uiStore } from "$lib/stores";
+import { bootstrapApp } from "$lib/core/bootstrap";
 import type { Snippet } from "svelte";
 import { slide } from "svelte/transition";
+import { onMount } from "svelte";
 
 let {
   orgId,
@@ -32,6 +34,12 @@ let {
   orgName?: string;
   children: Snippet;
 } = $props();
+
+// Bootstrap academic context, workflow inbox, and Tauri event listeners.
+// Runs once per session — idempotent, non-blocking.
+onMount(() => {
+  bootstrapApp(orgId);
+});
 
 function handleKeyDown(e: KeyboardEvent) {
   if ((e.ctrlKey || e.metaKey) && e.key === "/") {

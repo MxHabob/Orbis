@@ -6,6 +6,9 @@ export { uiStore } from "./ui.svelte";
 // ── Academic Context (unified store — replaces separate year + academic stores)
 export { academicContext, academicYearStore } from "./academic-context.svelte";
 
+// ── Workflow Inbox (pending action counts for Title Bar badge)
+export { workflowInbox } from "./workflow-inbox.svelte";
+
 // ── Backward Compatibility: re-export old academicStore from new context ──
 // The old `academicStore` had selectedCycleId/selectedClassId/selectedSubjectId
 // which are now part of `academicContext`. Re-export for gradual migration.
