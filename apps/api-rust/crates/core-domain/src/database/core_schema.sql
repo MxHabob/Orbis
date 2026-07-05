@@ -316,3 +316,138 @@ CREATE TABLE IF NOT EXISTS audit_log (
   metadata TEXT NOT NULL,
   created_at TEXT NOT NULL
 );
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- ── Academic Calendar Events ──
+-- Each event represents an academic milestone with one of three execution modes:
+--   manual:    no automation, user must act
+--   suggested: system notifies + recommends, user confirms
+--   automatic: system executes when prerequisites are met
+-- ══════════════════════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS academic_calendar_events (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL,
+  cycle_id TEXT NOT NULL,
+
+  -- Event identity
+  event_type TEXT NOT NULL,
+    -- enrollment_open, enrollment_close, add_drop_open, add_drop_close,
+    -- classes_start, classes_end, exam_prep_start,
+    -- exam_start, exam_end, grade_entry_open, grade_entry_close,
+    -- results_announcement, holiday, break, teacher_training,
+    -- promotion_window_open, promotion_window_close,
+    -- cycle_start, cycle_end, custom
+  title TEXT NOT NULL,
+  title_ar TEXT,
+  description TEXT,
+
+  -- Timing
+  start_date TEXT NOT NULL,
+  end_date TEXT NOT NULL,
+  start_time TEXT,
+  end_time TEXT,
+
+  -- Execution mode (tri-modal: manual | suggested | automatic)
+  execution_mode TEXT NOT NULL DEFAULT 'suggested',
+
+  -- Automated action (JSON: {"action": "open_enrollment", "params": {...}})
+  auto_action TEXT,
+  -- Prerequisites (JSON: conditions that must be true before execution)
+  prerequisites TEXT,
+
+  -- Execution tracking
+  executed_at TEXT,
+  executed_by TEXT,
+  execution_result TEXT,
+  execution_notes TEXT,
+
+  -- Recurrence
+  is_recurring INTEGER NOT NULL DEFAULT 0,
+  recurrence_rule TEXT,
+
+  -- Display
+  color TEXT,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  sort_order INTEGER,
+  created_by TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+
+  FOREIGN KEY (cycle_id) REFERENCES academic_cycles(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_ace_org_cycle ON academic_calendar_events(org_id, cycle_id);
+CREATE INDEX IF NOT EXISTS idx_ace_type ON academic_calendar_events(event_type);
+CREATE INDEX IF NOT EXISTS idx_ace_date ON academic_calendar_events(start_date, end_date);
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- ── Organization Academic Policies ──
+-- Per-organization configuration for academic behaviors.
+-- ══════════════════════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS org_academic_policies (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL UNIQUE,
+
+  -- Grading defaults
+  default_grading_system TEXT NOT NULL DEFAULT 'percentage',
+  default_passing_grade INTEGER NOT NULL DEFAULT 50,
+  default_max_grade INTEGER NOT NULL DEFAULT 100,
+
+  -- Enrollment policies
+  enrollment_auto_close_on_capacity INTEGER NOT NULL DEFAULT 0,
+  allow_late_enrollment INTEGER NOT NULL DEFAULT 1,
+  late_enrollment_requires_approval INTEGER NOT NULL DEFAULT 1,
+
+  -- Grade entry policies
+  grade_entry_auto_close_on_deadline INTEGER NOT NULL DEFAULT 1,
+  allow_grade_modification_after_close INTEGER NOT NULL DEFAULT 0,
+  grade_modification_requires_approval INTEGER NOT NULL DEFAULT 1,
+
+  -- Calendar defaults
+  default_event_execution_mode TEXT NOT NULL DEFAULT 'suggested',
+
+  -- Extensibility
+  settings TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- ── Promotion Policies ──
+-- Per-organization promotion configuration with configurable fee carry-over.
+-- ══════════════════════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS promotion_policies (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL UNIQUE,
+
+  -- Scoring
+  passing_score INTEGER NOT NULL DEFAULT 50,
+  min_attendance_rate REAL NOT NULL DEFAULT 75.0,
+
+  -- Graduation
+  auto_graduate_final_level INTEGER NOT NULL DEFAULT 1,
+  final_level TEXT,
+
+  -- Exclusions
+  exclude_withdrawn INTEGER NOT NULL DEFAULT 1,
+
+  -- Fee carry-over policy (4 modes)
+  fee_carry_over_mode TEXT NOT NULL DEFAULT 'ignore',
+    -- ignore:           do not transfer fees
+    -- carry_all:        transfer all outstanding balances
+    -- carry_selected:   transfer only selected fee categories
+    -- require_approval: require finance approval before transfer
+  fee_carry_over_categories TEXT,
+
+  -- Data carry-over
+  carry_over_guardians INTEGER NOT NULL DEFAULT 1,
+  carry_over_time_slots INTEGER NOT NULL DEFAULT 1,
+  carry_over_class_subjects INTEGER NOT NULL DEFAULT 1,
+
+  -- Auto-create academic structure in new year
+  auto_create_cycles INTEGER NOT NULL DEFAULT 1,
+  cycle_template TEXT,
+
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
