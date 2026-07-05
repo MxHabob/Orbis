@@ -369,6 +369,18 @@ impl super::Repository {
             .await
     }
 
+    pub async fn get_journal_entries_by_accounts(&self, org_id: &str, account_ids: &[String]) -> Result<Vec<journal_entry::Model>, DbErr> {
+        journal_entry::Entity::find()
+            .filter(journal_entry::Column::OrgId.eq(org_id))
+            .filter(
+                journal_entry::Column::DebitAccountId.is_in(account_ids.to_vec())
+                    .or(journal_entry::Column::CreditAccountId.is_in(account_ids.to_vec()))
+            )
+            .order_by_asc(journal_entry::Column::AccountingDate)
+            .all(&self.db)
+            .await
+    }
+
     // ── Discount Templates ──
     pub async fn get_active_discount_templates(&self, org_id: &str) -> Result<Vec<discount_template::Model>, DbErr> {
         discount_template::Entity::find()

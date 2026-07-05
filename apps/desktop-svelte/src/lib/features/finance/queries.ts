@@ -34,3 +34,23 @@ export function createPaymentsQuery(orgId: string) {
     staleTime: 2 * 60 * 1000,
   });
 }
+
+/** Ledger accounts query. */
+export function createLedgerAccountsQuery(orgId: string) {
+  return createQuery({
+    queryKey: ["ledger-accounts", orgId],
+    queryFn: () => commands.finance.getLedgerAccounts(orgId),
+    enabled: !!orgId,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** Detailed account statement query. */
+export function createAccountStatementQuery(orgId: string, accountId: string, startDate: string, endDate: string) {
+  return createQuery({
+    queryKey: ["account-statement", orgId, accountId, startDate, endDate],
+    queryFn: () => commands.finance.getAccountStatement(orgId, accountId, startDate, endDate),
+    enabled: !!orgId && !!accountId && !!startDate && !!endDate,
+    staleTime: 1 * 60 * 1000,
+  });
+}

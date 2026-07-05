@@ -118,12 +118,12 @@ const breadcrumbs = $derived.by(() => {
           : "القيود اليومية",
         href: `/${currentOrgId}/finance/journal-entries`,
       });
-    } else if (pathname.includes("/ledger")) {
+    } else if (pathname.includes("/ledger") || pathname.includes("/statement")) {
       items.push({
         label: m.finance_layout_nav_ledger
           ? m.finance_layout_nav_ledger()
           : "كشف الحساب",
-        href: `/${currentOrgId}/finance/ledger`,
+        href: `/${currentOrgId}/finance/statement`,
       });
     } else if (pathname.includes("/reports")) {
       items.push({

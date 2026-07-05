@@ -82,13 +82,8 @@ const navItems = $derived([
     icon: BookOpen,
   },
   {
-    path: "ledger",
-    label: "الأستاذ العام والدليل",
-    icon: Compass,
-  },
-  {
     path: "statement",
-    label: "كشف الحساب التفصيلي",
+    label: m.finance_layout_nav_ledger ? m.finance_layout_nav_ledger() : "كشف الحساب",
     icon: ClipboardList,
   },
   {

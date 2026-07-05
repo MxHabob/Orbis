@@ -313,12 +313,8 @@ function handleMouseLeave() {
     <div class="border-t border-border/40 pt-2 flex items-center justify-between w-full select-none text-[9px] font-bold">
       <div class="flex items-center gap-4">
         <a href={localizeHref(`/${orgId}/finance/statement`)} class="text-primary hover:underline flex items-center gap-1 group/statement">
-          <span>{m.finance_overview_btn_statement ? m.finance_overview_btn_statement() : "كشف الحساب"}</span>
+          <span>{m.finance_overview_btn_statement ? m.finance_overview_btn_statement() : "كشف الحساب التفصيلي"}</span>
           <ArrowRight size={10} class="transition-transform group-hover/statement:translate-x-0.5 rtl:rotate-180" />
-        </a>
-        <a href={localizeHref(`/${orgId}/finance/ledger`)} class="text-primary hover:underline flex items-center gap-1 group/ledger">
-          <span>{m.finance_overview_btn_ledger ? m.finance_overview_btn_ledger() : "الأستاذ العام"}</span>
-          <ArrowRight size={10} class="transition-transform group-hover/ledger:translate-x-0.5 rtl:rotate-180" />
         </a>
       </div>
     </div>

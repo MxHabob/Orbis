@@ -153,7 +153,7 @@ const systemPages = $derived([
     title: m.finance_layout_nav_ledger
       ? m.finance_layout_nav_ledger()
       : "Ledger",
-    path: `/${currentOrgId}/finance/ledger`,
+    path: `/${currentOrgId}/finance/statement`,
     icon: FileText,
   },
   {
