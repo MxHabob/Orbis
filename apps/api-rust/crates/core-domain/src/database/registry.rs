@@ -18,8 +18,7 @@ use std::time::Duration;
 use sea_orm::{ConnectOptions, ConnectionTrait, Database, DatabaseConnection, DbErr};
 use tracing::info;
 
-mod registry_migrate;
-pub use registry_migrate::run_registry_migrations;
+pub use super::registry_migrate::run_registry_migrations;
 
 /// Build a SeaORM/sqlx-compatible SQLite URL from an absolute path.
 /// Windows paths use forward slashes and `sqlite:///C:/...` form.

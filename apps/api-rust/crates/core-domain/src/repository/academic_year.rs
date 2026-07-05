@@ -1,6 +1,6 @@
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter,
-    QueryOrder, Set, DbErr,
+    QueryOrder, Set, DbErr, PaginatorTrait,
 };
 
 use crate::entities::academic_year;

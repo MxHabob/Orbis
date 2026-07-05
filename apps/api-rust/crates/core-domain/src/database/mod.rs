@@ -1,6 +1,7 @@
 mod migrate;
 pub mod registry;
 pub mod provider;
+pub mod registry_migrate;
 
 use std::time::Duration;
 use sea_orm::{ConnectOptions, Database, DatabaseConnection, DbErr, ConnectionTrait};

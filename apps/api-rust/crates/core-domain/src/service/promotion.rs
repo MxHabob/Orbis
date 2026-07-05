@@ -94,6 +94,23 @@ pub struct PromotionResult {
     pub backup_path: String,
 }
 
+/// Enrollment data extracted from the year database for analysis.
+#[derive(Debug)]
+pub struct EnrollmentData {
+    pub enrollment_id: String,
+    pub student_id: String,
+    pub student_name: String,
+    pub student_name_ar: Option<String>,
+    pub student_number: Option<String>,
+    pub class_id: String,
+    pub class_name: String,
+    pub level: String,
+    pub division: Option<String>,
+    pub status: String,
+    pub final_score: Option<i32>,
+    pub attendance_rate: f64,
+}
+
 // ── Service ──────────────────────────────────────────────────────
 
 pub struct PromotionService;
@@ -442,22 +459,6 @@ impl PromotionService {
 
     // ── Internal helpers ────────────────────────────────────────
 
-    /// Enrollment data extracted from the year database for analysis.
-    struct EnrollmentData {
-        enrollment_id: String,
-        student_id: String,
-        student_name: String,
-        student_name_ar: Option<String>,
-        student_number: Option<String>,
-        class_id: String,
-        class_name: String,
-        level: String,
-        division: Option<String>,
-        status: String,
-        final_score: Option<i32>,
-        attendance_rate: f64,
-    }
-
     async fn fetch_enrollment_data(
         year_db: &DatabaseConnection,
         org_id: &str,
@@ -664,8 +665,8 @@ impl PromotionService {
         promoted: &[&promotion_detail::Model],
         config: &PromotionConfig,
     ) -> Result<(), String> {
-        // Build a map of target_level → class_ids for distribution
-        let mut level_classes: std::collections::HashMap<String, Vec<String>> =
+        // Build a map of target_level → classes for distribution
+        let mut level_classes: std::collections::HashMap<String, Vec<crate::entities::class::Model>> =
             std::collections::HashMap::new();
 
         for mapping in &config.class_mapping {
@@ -678,18 +679,15 @@ impl PromotionService {
                     .await
                     .map_err(|e| format!("Failed to find target classes: {}", e))?;
 
-            level_classes.insert(
-                mapping.target_level.clone(),
-                classes.iter().map(|c| c.id.clone()).collect(),
-            );
+            level_classes.insert(mapping.target_level.clone(), classes);
         }
 
         for detail in promoted {
             let target_level = detail.target_level.as_deref().unwrap_or("");
-            let class_ids = level_classes.get(target_level).cloned().unwrap_or_default();
+            let classes = level_classes.get(target_level).cloned().unwrap_or_default();
 
             // Balanced distribution: assign to class with fewest students
-            let target_class_id = if class_ids.is_empty() {
+            let target_class = if classes.is_empty() {
                 return Err(format!("No target classes for level '{}'", target_level));
             } else {
                 // Simple round-robin for now
@@ -697,19 +695,31 @@ impl PromotionService {
                     .filter(|d| d.target_level.as_deref() == Some(target_level))
                     .position(|d| d.id == detail.id)
                     .unwrap_or(0);
-                class_ids[idx % class_ids.len()].clone()
+                classes[idx % classes.len()].clone()
             };
 
             let now = chrono::Utc::now().to_rfc3339();
             let enrollment = crate::entities::enrollment::ActiveModel {
                 id: Set(uuid::Uuid::new_v4().to_string()),
-                org_id: Set(detail.student_id.clone()), // Will be set from context
+                org_id: Set(target_class.org_id.clone()),
+                cycle_id: Set(target_class.cycle_id.clone()),
                 student_id: Set(detail.student_id.clone()),
-                class_id: Set(target_class_id),
+                class_id: Set(target_class.id.clone()),
                 student_number: Set(detail.student_number.clone().unwrap_or_default()),
                 status: Set("active".to_string()),
-                enrollment_date: Set(Some(now.clone())),
-                ..Default::default()
+                enrollment_date: Set(now.clone()),
+                enrollment_type: Set("promotion".to_string()),
+                withdrawal_date: Set(None),
+                withdrawal_reason: Set(None),
+                final_grade: Set(None),
+                final_score: Set(None),
+                final_rank: Set(None),
+                is_promoted: Set(None),
+                promotion_decision: Set(None),
+                promotion_notes: Set(None),
+                meta: Set(None),
+                created_at: Set(now.clone()),
+                updated_at: Set(now),
             };
 
             let _ = enrollment.insert(target_db).await;

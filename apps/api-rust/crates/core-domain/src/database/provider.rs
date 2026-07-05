@@ -18,7 +18,7 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use sea_orm::DatabaseConnection;
+use sea_orm::{DatabaseConnection, EntityTrait, ColumnTrait, QueryFilter};
 use tracing::info;
 
 use crate::config::Config;
