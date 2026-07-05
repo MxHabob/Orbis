@@ -45,7 +45,7 @@ impl super::Service {
     ) -> Result<promotion_policy::Model, String> {
         let existing = promotion_policy::Entity::find()
             .filter(promotion_policy::Column::OrgId.eq(org_id))
-            .one(&*self.repo.db)
+            .one(&self.repo.db)
             .await
             .map_err(|e| e.to_string())?;
 
@@ -74,7 +74,7 @@ impl super::Service {
 
                 let active: promotion_policy::ActiveModel = default.into();
                 active
-                    .insert(&*self.repo.db)
+                    .insert(&self.repo.db)
                     .await
                     .map_err(|e| e.to_string())
             }
@@ -119,7 +119,7 @@ impl super::Service {
         active.updated_at = Set(now);
 
         active
-            .update(&*self.repo.db)
+            .update(&self.repo.db)
             .await
             .map_err(|e| e.to_string())
     }

@@ -136,10 +136,10 @@ impl super::Service {
         let closing_balance = running_balance;
 
         Ok(AccountStatement {
-            account_id: account.id,
-            account_name: account.name,
-            account_code: account.code,
-            currency: account.currency,
+            account_id: account.id.clone(),
+            account_name: account.name.clone(),
+            account_code: account.code.clone(),
+            currency: account.currency.clone(),
             start_date: start_date.to_string(),
             end_date: end_date.to_string(),
             opening_balance,

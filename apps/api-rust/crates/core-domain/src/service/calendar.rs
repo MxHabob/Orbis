@@ -120,7 +120,7 @@ impl super::Service {
             .filter(academic_calendar_event::Column::CycleId.eq(cycle_id))
             .order_by_asc(academic_calendar_event::Column::StartDate)
             .order_by_asc(academic_calendar_event::Column::SortOrder)
-            .all(&*self.repo.db)
+            .all(&self.repo.db)
             .await
             .map_err(|e| e.to_string())
     }
@@ -137,7 +137,7 @@ impl super::Service {
             .filter(academic_calendar_event::Column::ExecutedAt.is_null())
             .filter(academic_calendar_event::Column::StartDate.lte(before_date))
             .order_by_asc(academic_calendar_event::Column::StartDate)
-            .all(&*self.repo.db)
+            .all(&self.repo.db)
             .await
             .map_err(|e| e.to_string())
     }
@@ -189,7 +189,7 @@ impl super::Service {
 
         let active: academic_calendar_event::ActiveModel = event.into();
         active
-            .insert(&*self.repo.db)
+            .insert(&self.repo.db)
             .await
             .map_err(|e| e.to_string())
     }
@@ -201,7 +201,7 @@ impl super::Service {
         req: UpdateCalendarEventRequest,
     ) -> Result<academic_calendar_event::Model, String> {
         let existing = academic_calendar_event::Entity::find_by_id(event_id)
-            .one(&*self.repo.db)
+            .one(&self.repo.db)
             .await
             .map_err(|e| e.to_string())?
             .ok_or_else(|| "Calendar event not found".to_string())?;
@@ -230,7 +230,7 @@ impl super::Service {
         active.updated_at = Set(now);
 
         active
-            .update(&*self.repo.db)
+            .update(&self.repo.db)
             .await
             .map_err(|e| e.to_string())
     }
@@ -238,7 +238,7 @@ impl super::Service {
     /// Delete a calendar event.
     pub async fn delete_calendar_event(&self, event_id: &str) -> Result<(), String> {
         let result = academic_calendar_event::Entity::delete_by_id(event_id)
-            .exec(&*self.repo.db)
+            .exec(&self.repo.db)
             .await
             .map_err(|e| e.to_string())?;
 
@@ -257,7 +257,7 @@ impl super::Service {
         notes: Option<&str>,
     ) -> Result<academic_calendar_event::Model, String> {
         let existing = academic_calendar_event::Entity::find_by_id(event_id)
-            .one(&*self.repo.db)
+            .one(&self.repo.db)
             .await
             .map_err(|e| e.to_string())?
             .ok_or_else(|| "Calendar event not found".to_string())?;
@@ -274,7 +274,7 @@ impl super::Service {
         active.updated_at = Set(now);
 
         active
-            .update(&*self.repo.db)
+            .update(&self.repo.db)
             .await
             .map_err(|e| e.to_string())
     }
@@ -522,7 +522,7 @@ impl super::Service {
         for event in events {
             let active: academic_calendar_event::ActiveModel = event.into();
             let inserted = active
-                .insert(&*self.repo.db)
+                .insert(&self.repo.db)
                 .await
                 .map_err(|e| e.to_string())?;
             created.push(inserted);
@@ -540,7 +540,7 @@ impl super::Service {
     ) -> Result<org_academic_policy::Model, String> {
         let existing = org_academic_policy::Entity::find()
             .filter(org_academic_policy::Column::OrgId.eq(org_id))
-            .one(&*self.repo.db)
+            .one(&self.repo.db)
             .await
             .map_err(|e| e.to_string())?;
 
@@ -569,7 +569,7 @@ impl super::Service {
 
                 let active: org_academic_policy::ActiveModel = default.into();
                 active
-                    .insert(&*self.repo.db)
+                    .insert(&self.repo.db)
                     .await
                     .map_err(|e| e.to_string())
             }
@@ -602,7 +602,7 @@ impl super::Service {
         active.updated_at = Set(now);
 
         active
-            .update(&*self.repo.db)
+            .update(&self.repo.db)
             .await
             .map_err(|e| e.to_string())
     }

@@ -139,7 +139,7 @@ impl super::Service {
 
         let active: academic_override_request::ActiveModel = model.into();
         active
-            .insert(&*self.repo.db)
+            .insert(&self.repo.db)
             .await
             .map_err(|e| e.to_string())
     }
@@ -151,7 +151,7 @@ impl super::Service {
         action: ApprovalAction,
     ) -> Result<academic_override_request::Model, String> {
         let existing = academic_override_request::Entity::find_by_id(request_id)
-            .one(&*self.repo.db)
+            .one(&self.repo.db)
             .await
             .map_err(|e| e.to_string())?
             .ok_or_else(|| "Override request not found".to_string())?;
@@ -233,7 +233,7 @@ impl super::Service {
         }
 
         active
-            .update(&*self.repo.db)
+            .update(&self.repo.db)
             .await
             .map_err(|e| e.to_string())
     }
@@ -245,7 +245,7 @@ impl super::Service {
         user_id: &str,
     ) -> Result<academic_override_request::Model, String> {
         let existing = academic_override_request::Entity::find_by_id(request_id)
-            .one(&*self.repo.db)
+            .one(&self.repo.db)
             .await
             .map_err(|e| e.to_string())?
             .ok_or_else(|| "Override request not found".to_string())?;
@@ -268,7 +268,7 @@ impl super::Service {
         active.updated_at = Set(now);
 
         active
-            .update(&*self.repo.db)
+            .update(&self.repo.db)
             .await
             .map_err(|e| e.to_string())
     }
@@ -298,7 +298,7 @@ impl super::Service {
 
         query
             .order_by_desc(academic_override_request::Column::CreatedAt)
-            .all(&*self.repo.db)
+            .all(&self.repo.db)
             .await
             .map_err(|e| e.to_string())
     }
@@ -309,7 +309,7 @@ impl super::Service {
         request_id: &str,
     ) -> Result<academic_override_request::Model, String> {
         academic_override_request::Entity::find_by_id(request_id)
-            .one(&*self.repo.db)
+            .one(&self.repo.db)
             .await
             .map_err(|e| e.to_string())?
             .ok_or_else(|| "Override request not found".to_string())
@@ -331,7 +331,7 @@ impl super::Service {
                 academic_override_request::Column::CurrentApproverRole.eq(approver_role),
             )
             .order_by_asc(academic_override_request::Column::CreatedAt)
-            .all(&*self.repo.db)
+            .all(&self.repo.db)
             .await
             .map_err(|e| e.to_string())
     }
