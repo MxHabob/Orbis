@@ -118,6 +118,84 @@ export interface AcademicContextResponse {
   all_cycles: AcademicCycleSummary[];
 }
 
+// ── Academic Calendar ────────────────────────────────────────────────────────
+
+export type CalendarEventType =
+  | "enrollment_open" | "enrollment_close"
+  | "add_drop_open" | "add_drop_close"
+  | "classes_start" | "classes_end"
+  | "exam_prep_start" | "exam_start" | "exam_end"
+  | "grade_entry_open" | "grade_entry_close"
+  | "results_announcement"
+  | "holiday" | "break" | "teacher_training"
+  | "promotion_window_open" | "promotion_window_close"
+  | "cycle_start" | "cycle_end" | "custom";
+
+export type CalendarExecutionMode = "manual" | "suggested" | "automatic";
+
+export interface CalendarEvent {
+  id: string;
+  org_id: string;
+  cycle_id: string;
+  event_type: CalendarEventType;
+  title: string;
+  title_ar?: string | null;
+  description?: string | null;
+  start_date: string;
+  end_date: string;
+  start_time?: string | null;
+  end_time?: string | null;
+  execution_mode: CalendarExecutionMode;
+  auto_action?: string | null;
+  prerequisites?: string | null;
+  executed_at?: string | null;
+  executed_by?: string | null;
+  execution_result?: string | null;
+  execution_notes?: string | null;
+  is_recurring: number;
+  recurrence_rule?: string | null;
+  color?: string | null;
+  is_active: number;
+  sort_order?: number | null;
+  created_by?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EventProcessingResult {
+  event_id: string;
+  event_type: string;
+  title: string;
+  execution_mode: string;
+  outcome: "executed" | "suggested" | "skipped" | "blocked" | "failed";
+  message?: string | null;
+}
+
+export interface CalendarProcessingReport {
+  executed: EventProcessingResult[];
+  suggested: EventProcessingResult[];
+  skipped: EventProcessingResult[];
+  blocked: EventProcessingResult[];
+}
+
+export interface OrgAcademicPolicy {
+  id: string;
+  org_id: string;
+  default_grading_system: string;
+  default_passing_grade: number;
+  default_max_grade: number;
+  enrollment_auto_close_on_capacity: number;
+  allow_late_enrollment: number;
+  late_enrollment_requires_approval: number;
+  grade_entry_auto_close_on_deadline: number;
+  allow_grade_modification_after_close: number;
+  grade_modification_requires_approval: number;
+  default_event_execution_mode: CalendarExecutionMode;
+  settings?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // ── Academic Year Management ─────────────────────────────────────────────────
 
 export interface AcademicYear {

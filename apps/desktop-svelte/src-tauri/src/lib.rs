@@ -417,6 +417,18 @@ pub fn run() {
             commands::academic_context::resolve_active_cycle,
             commands::academic_context::is_year_writable,
 
+            // Calendar commands
+            commands::calendar::get_calendar_events,
+            commands::calendar::get_pending_calendar_events,
+            commands::calendar::create_calendar_event,
+            commands::calendar::update_calendar_event,
+            commands::calendar::delete_calendar_event,
+            commands::calendar::execute_calendar_event,
+            commands::calendar::generate_default_events,
+            commands::calendar::process_pending_events,
+            commands::calendar::get_org_academic_policy,
+            commands::calendar::update_org_academic_policy,
+
             // Promotion commands
             commands::promotion::promotion_dry_run,
             commands::promotion::get_promotion_jobs,

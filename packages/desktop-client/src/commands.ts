@@ -24,6 +24,10 @@ import type {
   AcademicYear,
   AcademicYearInfo,
   AcademicContextResponse,
+  CalendarEvent,
+  CalendarProcessingReport,
+  EventProcessingResult,
+  OrgAcademicPolicy,
   CreateAcademicYearRequest,
   PromotionJob,
   PromotionDetail,
@@ -944,6 +948,39 @@ export const commands = {
 
     isWritable: () =>
       invoke<boolean>("is_year_writable", {}),
+  },
+
+  // ── Academic Calendar ──────────────────────────────────────────────────
+  calendar: {
+    getEvents: (orgId: string, cycleId: string) =>
+      invoke<CalendarEvent[]>("get_calendar_events", { orgId, cycleId }),
+
+    getPending: (orgId: string) =>
+      invoke<CalendarEvent[]>("get_pending_calendar_events", { orgId }),
+
+    create: (orgId: string, request: JsonRecord) =>
+      invoke<CalendarEvent>("create_calendar_event", { orgId, request }),
+
+    update: (eventId: string, request: JsonRecord) =>
+      invoke<CalendarEvent>("update_calendar_event", { eventId, request }),
+
+    delete: (eventId: string) =>
+      invoke<void>("delete_calendar_event", { eventId }),
+
+    execute: (eventId: string, userId: string) =>
+      invoke<EventProcessingResult>("execute_calendar_event", { eventId, userId }),
+
+    generateDefaults: (orgId: string, cycleId: string) =>
+      invoke<CalendarEvent[]>("generate_default_events", { orgId, cycleId }),
+
+    processPending: (orgId: string, userId: string) =>
+      invoke<CalendarProcessingReport>("process_pending_events", { orgId, userId }),
+
+    getPolicy: (orgId: string) =>
+      invoke<OrgAcademicPolicy>("get_org_academic_policy", { orgId }),
+
+    updatePolicy: (orgId: string, request: JsonRecord) =>
+      invoke<OrgAcademicPolicy>("update_org_academic_policy", { orgId, request }),
   },
 
   // ── Academic Year Management ──────────────────────────────────────────

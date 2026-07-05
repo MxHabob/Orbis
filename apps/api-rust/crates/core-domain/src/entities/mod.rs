@@ -62,6 +62,11 @@ pub mod exam_hall_allocation;
 pub mod exam_proctor;
 pub mod teacher_exam_availability;
 
+// ── Academic Calendar & Policies ──
+pub mod academic_calendar_event;
+pub mod org_academic_policy;
+pub mod promotion_policy;
+
 // ── Academic Year Management & Promotion (Registry DB) ──
 pub mod academic_year;
 pub mod promotion_job;
