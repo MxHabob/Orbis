@@ -9,7 +9,7 @@ pub async fn get_guardians_by_student(
     state: State<'_, Arc<AppState>>,
     student_id: String,
 ) -> CmdResult<Vec<core_domain::entities::student_guardian::Model>> {
-    state.service.get_guardians_by_student(&student_id).await
+    state.service().await.get_guardians_by_student(&student_id).await
         .map_err(|e| CommandError::new(e))
 }
 
@@ -18,7 +18,7 @@ pub async fn get_students_by_guardian(
     state: State<'_, Arc<AppState>>,
     guardian_id: String,
 ) -> CmdResult<Vec<core_domain::entities::student_guardian::Model>> {
-    state.service.get_students_by_guardian(&guardian_id).await
+    state.service().await.get_students_by_guardian(&guardian_id).await
         .map_err(|e| CommandError::new(e))
 }
 
@@ -27,7 +27,7 @@ pub async fn create_guardian_link(
     state: State<'_, Arc<AppState>>,
     request: CreateGuardianLinkRequest,
 ) -> CmdResult<core_domain::entities::student_guardian::Model> {
-    state.service.create_guardian_link(request).await
+    state.service().await.create_guardian_link(request).await
         .map_err(|e| CommandError::new(e))
 }
 
@@ -37,7 +37,7 @@ pub async fn update_guardian_link(
     id: String,
     request: UpdateGuardianLinkRequest,
 ) -> CmdResult<core_domain::entities::student_guardian::Model> {
-    state.service.update_guardian_link(&id, request).await
+    state.service().await.update_guardian_link(&id, request).await
         .map_err(|e| CommandError::new(e))
 }
 
@@ -46,7 +46,7 @@ pub async fn delete_guardian_link(
     state: State<'_, Arc<AppState>>,
     id: String,
 ) -> CmdResult<()> {
-    state.service.delete_guardian_link(&id).await
+    state.service().await.delete_guardian_link(&id).await
         .map_err(|e| CommandError::new(e))
 }
 
@@ -56,6 +56,6 @@ pub async fn search_guardians(
     org_id: String,
     query: String,
 ) -> CmdResult<Vec<core_domain::entities::user::Model>> {
-    state.service.search_guardians(&org_id, &query).await
+    state.service().await.search_guardians(&org_id, &query).await
         .map_err(|e| CommandError::new(e))
 }

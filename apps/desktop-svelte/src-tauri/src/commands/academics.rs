@@ -19,8 +19,7 @@ pub async fn get_cycles(
     org_id: String,
     params: CycleParams,
 ) -> CmdResult<Vec<academic_cycle::Model>> {
-    state
-        .service
+    state.service().await
         .get_cycles(&org_id, params)
         .await
         .map_err(CommandError::from)
@@ -31,8 +30,7 @@ pub async fn get_cycle(
     state: State<'_, Arc<AppState>>,
     cycle_id: String,
 ) -> CmdResult<academic_cycle::Model> {
-    state
-        .service
+    state.service().await
         .get_cycle(&cycle_id)
         .await
         .map_err(CommandError::from)
@@ -44,8 +42,7 @@ pub async fn create_cycle(
     org_id: String,
     request: CreateCycleRequest,
 ) -> CmdResult<academic_cycle::Model> {
-    state
-        .service
+    state.service().await
         .create_cycle(&org_id, request)
         .await
         .map_err(CommandError::from)
@@ -57,8 +54,7 @@ pub async fn update_cycle(
     cycle_id: String,
     request: UpdateCycleRequest,
 ) -> CmdResult<academic_cycle::Model> {
-    state
-        .service
+    state.service().await
         .update_cycle(&cycle_id, request)
         .await
         .map_err(CommandError::from)
@@ -70,8 +66,7 @@ pub async fn activate_cycle(
     org_id: String,
     cycle_id: String,
 ) -> CmdResult<academic_cycle::Model> {
-    state
-        .service
+    state.service().await
         .activate_cycle(&org_id, &cycle_id)
         .await
         .map_err(CommandError::from)
@@ -82,8 +77,7 @@ pub async fn lock_cycle(
     state: State<'_, Arc<AppState>>,
     cycle_id: String,
 ) -> CmdResult<academic_cycle::Model> {
-    state
-        .service
+    state.service().await
         .lock_cycle(&cycle_id, "admin")
         .await
         .map_err(CommandError::from)
@@ -94,8 +88,7 @@ pub async fn unlock_cycle(
     state: State<'_, Arc<AppState>>,
     cycle_id: String,
 ) -> CmdResult<academic_cycle::Model> {
-    state
-        .service
+    state.service().await
         .unlock_cycle(&cycle_id)
         .await
         .map_err(CommandError::from)
@@ -108,8 +101,7 @@ pub async fn open_grade_entry(
     start: Option<String>,
     end: Option<String>,
 ) -> CmdResult<academic_cycle::Model> {
-    state
-        .service
+    state.service().await
         .open_grade_entry(&cycle_id, start, end)
         .await
         .map_err(CommandError::from)
@@ -120,8 +112,7 @@ pub async fn close_grade_entry(
     state: State<'_, Arc<AppState>>,
     cycle_id: String,
 ) -> CmdResult<academic_cycle::Model> {
-    state
-        .service
+    state.service().await
         .close_grade_entry(&cycle_id)
         .await
         .map_err(CommandError::from)
@@ -143,8 +134,7 @@ pub async fn get_classes(
     org_id: String,
     params: ClassParams,
 ) -> CmdResult<Vec<class::Model>> {
-    state
-        .service
+    state.service().await
         .get_classes(&org_id, params)
         .await
         .map_err(CommandError::from)
@@ -156,8 +146,7 @@ pub async fn create_class(
     org_id: String,
     request: CreateClassRequest,
 ) -> CmdResult<class::Model> {
-    state
-        .service
+    state.service().await
         .create_class(
             &request.name,
             &request.name_ar,
@@ -175,8 +164,7 @@ pub async fn update_class(
     class_id: String,
     request: UpdateClassRequest,
 ) -> CmdResult<class::Model> {
-    state
-        .service
+    state.service().await
         .update_class(&class_id, request)
         .await
         .map_err(CommandError::from)
@@ -187,8 +175,7 @@ pub async fn delete_class(
     state: State<'_, Arc<AppState>>,
     class_id: String,
 ) -> CmdResult<()> {
-    state
-        .service
+    state.service().await
         .delete_class(&class_id)
         .await
         .map_err(CommandError::from)

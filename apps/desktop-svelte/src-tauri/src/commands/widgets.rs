@@ -11,7 +11,7 @@ pub async fn get_widget_preferences(
     user_id: String,
 ) -> CmdResult<serde_json::Value> {
     let u = user::Entity::find_by_id(user_id)
-        .one(&state.service.repo.db)
+        .one(&state.service().await.repo.db)
         .await
         .map_err(|e| CommandError::new(e.to_string()))?
         .ok_or_else(|| CommandError::new("User not found"))?;
@@ -37,7 +37,7 @@ pub async fn update_widget_preferences(
     preferences: serde_json::Value,
 ) -> CmdResult<serde_json::Value> {
     let u = user::Entity::find_by_id(user_id)
-        .one(&state.service.repo.db)
+        .one(&state.service().await.repo.db)
         .await
         .map_err(|e| CommandError::new(e.to_string()))?
         .ok_or_else(|| CommandError::new("User not found"))?;
@@ -56,7 +56,7 @@ pub async fn update_widget_preferences(
     active.updated_at = Set(chrono::Utc::now().naive_utc().to_string());
 
     active
-        .update(&state.service.repo.db)
+        .update(&state.service().await.repo.db)
         .await
         .map_err(|e| CommandError::new(e.to_string()))?;
 

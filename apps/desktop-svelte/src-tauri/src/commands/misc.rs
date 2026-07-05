@@ -20,8 +20,7 @@ pub async fn get_behavior_records(
     org_id: String,
     params: BehaviorParams,
 ) -> CmdResult<Vec<behavior_record::Model>> {
-    state
-        .service
+    state.service().await
         .get_behavior_records(&org_id, params)
         .await
         .map_err(CommandError::from)
@@ -32,8 +31,7 @@ pub async fn submit_ai_behavior(
     state: State<'_, Arc<AppState>>,
     request: AIBehaviorSubmission,
 ) -> CmdResult<behavior_record::Model> {
-    state
-        .service
+    state.service().await
         .submit_ai_behavior(request)
         .await
         .map_err(CommandError::from)
@@ -46,8 +44,7 @@ pub async fn update_behavior_record(
     reviewed_by: String,
     request: UpdateBehaviorRequest,
 ) -> CmdResult<behavior_record::Model> {
-    state
-        .service
+    state.service().await
         .update_behavior_record(&record_id, request, &reviewed_by)
         .await
         .map_err(CommandError::from)
@@ -58,8 +55,7 @@ pub async fn delete_behavior_record(
     state: State<'_, Arc<AppState>>,
     record_id: String,
 ) -> CmdResult<()> {
-    state
-        .service
+    state.service().await
         .delete_behavior_record(&record_id)
         .await
         .map_err(CommandError::from)
@@ -73,8 +69,7 @@ pub async fn get_notifications(
     user_id: String,
     params: NotificationParams,
 ) -> CmdResult<Vec<notification::Model>> {
-    state
-        .service
+    state.service().await
         .get_notifications(&user_id, params)
         .await
         .map_err(CommandError::from)
@@ -85,8 +80,7 @@ pub async fn mark_notification_read(
     state: State<'_, Arc<AppState>>,
     notification_id: String,
 ) -> CmdResult<()> {
-    state
-        .service
+    state.service().await
         .mark_notification_read(&notification_id)
         .await
         .map_err(CommandError::from)
@@ -100,8 +94,7 @@ pub async fn get_org_units(
     org_id: String,
     params: OrgUnitParams,
 ) -> CmdResult<Vec<org_unit::Model>> {
-    state
-        .service
+    state.service().await
         .get_org_units(&org_id, params)
         .await
         .map_err(CommandError::from)
@@ -113,8 +106,7 @@ pub async fn create_org_unit(
     org_id: String,
     request: CreateOrgUnitRequest,
 ) -> CmdResult<org_unit::Model> {
-    state
-        .service
+    state.service().await
         .create_org_unit(&org_id, request)
         .await
         .map_err(CommandError::from)
@@ -126,8 +118,7 @@ pub async fn update_org_unit(
     unit_id: String,
     request: UpdateOrgUnitRequest,
 ) -> CmdResult<org_unit::Model> {
-    state
-        .service
+    state.service().await
         .update_org_unit(&unit_id, request)
         .await
         .map_err(CommandError::from)
@@ -138,8 +129,7 @@ pub async fn delete_org_unit(
     state: State<'_, Arc<AppState>>,
     unit_id: String,
 ) -> CmdResult<()> {
-    state
-        .service
+    state.service().await
         .delete_org_unit(&unit_id)
         .await
         .map_err(CommandError::from)
@@ -152,8 +142,7 @@ pub async fn get_dashboard_stats(
     state: State<'_, Arc<AppState>>,
     org_id: String,
 ) -> CmdResult<DashboardStats> {
-    state
-        .service
+    state.service().await
         .get_dashboard_stats(&org_id)
         .await
         .map_err(CommandError::from)
@@ -166,8 +155,7 @@ pub async fn get_audit_logs(
     state: State<'_, Arc<AppState>>,
     org_id: String,
 ) -> CmdResult<Vec<audit_log::Model>> {
-    state
-        .service
+    state.service().await
         .repo
         .get_audit_logs(&org_id)
         .await
@@ -254,7 +242,8 @@ pub async fn initialize_school_setup(
     config: SchoolSetupConfig,
 ) -> CmdResult<()> {
     use sea_orm::{TransactionTrait, ConnectionTrait, Statement};
-    let db = &state.service.repo.db;
+    let svc = state.service().await;
+    let db = &svc.repo.db;
     let now_str = chrono::Utc::now().to_rfc3339();
 
     // Cache values we need outside or multiple times to avoid borrow moves
@@ -509,7 +498,7 @@ pub async fn initialize_school_setup(
     .map_err(CommandError::from)?;
 
     // 9. Seeding Chart of Accounts (COA) & default currencies
-    // state.service.seed_default_financials(&org_id_for_seeding).await.map_err(CommandError::from)?;
+    // state.service().await.seed_default_financials(&org_id_for_seeding).await.map_err(CommandError::from)?;
 
     Ok(())
 }
@@ -522,7 +511,8 @@ pub async fn get_setup_status(
     use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
     use core_domain::entities::academic_cycle;
 
-    let db = &state.service.repo.db;
+    let svc = state.service().await;
+    let db = &svc.repo.db;
     let exists = academic_cycle::Entity::find()
         .filter(academic_cycle::Column::OrgId.eq(&org_id))
         .one(db)

@@ -63,7 +63,7 @@ pub async fn render_document(
     template_id: String,
     entity_id: String,
 ) -> CmdResult<Vec<u8>> {
-    let db = &state.service.repo.db;
+    let db = &state.service().await.repo.db;
 
     // 1. Fetch template record from DB
     let template = TemplateService::get_by_id(db, &org_id, &template_id)
@@ -140,7 +140,7 @@ pub async fn start_batch_print(
     let job = batch_manager.create_job(job_id, entity_ids.len(), output_dir.clone());
     
     // Spawn the background print orchestrator
-    let db = state.service.repo.db.clone();
+    let db = state.service().await.repo.db.clone();
     let job_clone = job.clone();
     
     let app_handle_clone = app_handle.clone();
@@ -234,7 +234,7 @@ pub async fn preview_multi_up(
     entity_ids: Vec<String>,
     config_json: String,
 ) -> CmdResult<Vec<u8>> {
-    let db = &state.service.repo.db;
+    let db = &state.service().await.repo.db;
 
     let config: docforge_engine::layout::multi_up::MultiUpConfig =
         serde_json::from_str(&config_json)
@@ -291,7 +291,7 @@ pub async fn start_multi_up_batch_print(
     });
 
     // Spawn the background orchestrator
-    let db = state.service.repo.db.clone();
+    let db = state.service().await.repo.db.clone();
     let job_clone = job.clone();
 
     tokio::spawn(async move {

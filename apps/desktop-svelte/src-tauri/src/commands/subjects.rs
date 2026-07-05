@@ -13,7 +13,7 @@ pub async fn get_subjects(
     subject::Entity::find()
         .filter(subject::Column::OrgId.eq(org_id))
         .filter(subject::Column::IsActive.eq(1))
-        .all(&state.service.repo.db)
+        .all(&state.service().await.repo.db)
         .await
         .map_err(|e| CommandError::new(e.to_string()))
 }
@@ -24,7 +24,7 @@ pub async fn get_subject(
     id: String,
 ) -> CmdResult<subject::Model> {
     subject::Entity::find_by_id(id)
-        .one(&state.service.repo.db)
+        .one(&state.service().await.repo.db)
         .await
         .map_err(|e| CommandError::new(e.to_string()))?
         .ok_or_else(|| CommandError::new("Subject not found"))
@@ -72,7 +72,7 @@ pub async fn create_subject(
         updated_at: Set(chrono::Utc::now().naive_utc().to_string()),
     };
     new_subject
-        .insert(&state.service.repo.db)
+        .insert(&state.service().await.repo.db)
         .await
         .map_err(|e| CommandError::new(e.to_string()))
 }
@@ -84,7 +84,7 @@ pub async fn update_subject(
     request: CreateSubjectRequest,
 ) -> CmdResult<subject::Model> {
     let subj = subject::Entity::find_by_id(id)
-        .one(&state.service.repo.db)
+        .one(&state.service().await.repo.db)
         .await
         .map_err(|e| CommandError::new(e.to_string()))?
         .ok_or_else(|| CommandError::new("Subject not found"))?;
@@ -103,7 +103,7 @@ pub async fn update_subject(
     active.updated_at = Set(chrono::Utc::now().naive_utc().to_string());
 
     active
-        .update(&state.service.repo.db)
+        .update(&state.service().await.repo.db)
         .await
         .map_err(|e| CommandError::new(e.to_string()))
 }
@@ -114,7 +114,7 @@ pub async fn delete_subject(
     id: String,
 ) -> CmdResult<()> {
     let subj = subject::Entity::find_by_id(id)
-        .one(&state.service.repo.db)
+        .one(&state.service().await.repo.db)
         .await
         .map_err(|e| CommandError::new(e.to_string()))?
         .ok_or_else(|| CommandError::new("Subject not found"))?;
@@ -124,7 +124,7 @@ pub async fn delete_subject(
     active.updated_at = Set(chrono::Utc::now().naive_utc().to_string());
 
     active
-        .update(&state.service.repo.db)
+        .update(&state.service().await.repo.db)
         .await
         .map_err(|e| CommandError::new(e.to_string()))?;
     Ok(())

@@ -9,7 +9,7 @@ use super::error::{CmdResult, CommandError};
 pub async fn get_permissions(
     state: State<'_, Arc<AppState>>,
 ) -> CmdResult<Vec<permission::Model>> {
-    state.service.get_permissions().await.map_err(CommandError::from)
+    state.service().await.get_permissions().await.map_err(CommandError::from)
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
@@ -25,7 +25,7 @@ pub struct PermissionRuleDto {
 pub async fn get_role_permissions(
     state: State<'_, Arc<AppState>>,
 ) -> CmdResult<Vec<PermissionRuleDto>> {
-    let role_perms = state.service.get_role_permissions().await.map_err(CommandError::from)?;
+    let role_perms = state.service().await.get_role_permissions().await.map_err(CommandError::from)?;
 
     let mut result = Vec::new();
     for rp in role_perms {
@@ -62,8 +62,7 @@ pub async fn save_role_permissions(
         })
         .collect();
 
-    state
-        .service
+    state.service().await
         .save_role_permissions(&role, entity_models)
         .await
         .map_err(CommandError::from)
@@ -74,8 +73,7 @@ pub async fn get_user_permissions(
     state: State<'_, Arc<AppState>>,
     user_id: String,
 ) -> CmdResult<HashMap<String, String>> {
-    state
-        .service
+    state.service().await
         .get_user_permissions(&user_id)
         .await
         .map_err(CommandError::from)
@@ -87,8 +85,7 @@ pub async fn save_user_permissions(
     user_id: String,
     permissions: HashMap<String, String>,
 ) -> CmdResult<()> {
-    state
-        .service
+    state.service().await
         .save_user_permissions(&user_id, permissions)
         .await
         .map_err(CommandError::from)
@@ -98,8 +95,7 @@ pub async fn save_user_permissions(
 pub async fn get_available_roles(
     state: State<'_, Arc<AppState>>,
 ) -> CmdResult<Vec<String>> {
-    state
-        .service
+    state.service().await
         .get_available_roles()
         .await
         .map_err(CommandError::from)

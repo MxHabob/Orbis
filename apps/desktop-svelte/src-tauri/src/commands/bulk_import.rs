@@ -13,8 +13,7 @@ pub async fn bulk_create_students(
     created_by: String,
     rows: Vec<BulkStudentRow>,
 ) -> CmdResult<BulkImportResult> {
-    state
-        .service
+    state.service().await
         .bulk_create_users(&org_id, &created_by, rows, "student")
         .await
         .map_err(CommandError::from)
@@ -27,8 +26,7 @@ pub async fn bulk_create_teachers(
     created_by: String,
     rows: Vec<BulkStudentRow>,
 ) -> CmdResult<BulkImportResult> {
-    state
-        .service
+    state.service().await
         .bulk_create_users(&org_id, &created_by, rows, "teacher")
         .await
         .map_err(CommandError::from)
@@ -42,8 +40,7 @@ pub async fn bulk_create_grades(
     cycle_id: Option<String>,
     rows: Vec<BulkGradeRow>,
 ) -> CmdResult<BulkImportResult> {
-    state
-        .service
+    state.service().await
         .bulk_create_grades(&org_id, &graded_by, cycle_id, rows)
         .await
         .map_err(CommandError::from)

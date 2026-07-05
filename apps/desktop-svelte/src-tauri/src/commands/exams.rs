@@ -30,8 +30,7 @@ pub async fn get_exam_sessions(
     org_id: String,
     cycle_id: Option<String>,
 ) -> CmdResult<Vec<exam_session::Model>> {
-    state
-        .service
+    state.service().await
         .get_exam_sessions(&org_id, cycle_id.as_deref())
         .await
         .map_err(CommandError::from)
@@ -43,8 +42,7 @@ pub async fn get_exam_session(
     org_id: String,
     session_id: String,
 ) -> CmdResult<exam_session::Model> {
-    state
-        .service
+    state.service().await
         .get_exam_session(&org_id, &session_id)
         .await
         .map_err(CommandError::from)
@@ -57,8 +55,7 @@ pub async fn create_exam_session(
     user_id: String,
     request: CreateExamSessionRequest,
 ) -> CmdResult<exam_session::Model> {
-    state
-        .service
+    state.service().await
         .create_exam_session(&org_id, &user_id, request)
         .await
         .map_err(CommandError::from)
@@ -71,8 +68,7 @@ pub async fn update_exam_session(
     session_id: String,
     request: UpdateExamSessionRequest,
 ) -> CmdResult<exam_session::Model> {
-    state
-        .service
+    state.service().await
         .update_exam_session(&org_id, &session_id, request)
         .await
         .map_err(CommandError::from)
@@ -86,8 +82,7 @@ pub async fn get_exam_subjects(
     org_id: String,
     session_id: String,
 ) -> CmdResult<Vec<exam_subject::Model>> {
-    state
-        .service
+    state.service().await
         .get_exam_subjects(&org_id, &session_id)
         .await
         .map_err(CommandError::from)
@@ -99,8 +94,7 @@ pub async fn create_exam_subject(
     org_id: String,
     request: CreateExamSubjectRequest,
 ) -> CmdResult<exam_subject::Model> {
-    state
-        .service
+    state.service().await
         .create_exam_subject(&org_id, request)
         .await
         .map_err(CommandError::from)
@@ -115,8 +109,7 @@ pub async fn get_student_ordering(
     cycle_id: String,
     class_id: Option<String>,
 ) -> CmdResult<Vec<OrderedStudent>> {
-    state
-        .service
+    state.service().await
         .get_ordered_students(&org_id, &cycle_id, class_id.as_deref())
         .await
         .map_err(CommandError::from)
@@ -129,8 +122,7 @@ pub async fn rebuild_student_ordering(
     cycle_id: String,
     strategy: String,
 ) -> CmdResult<RebuildOrderingResult> {
-    state
-        .service
+    state.service().await
         .rebuild_ordering(&org_id, &cycle_id, &strategy)
         .await
         .map_err(CommandError::from)
@@ -143,8 +135,7 @@ pub async fn freeze_student_ordering(
     cycle_id: String,
     user_id: String,
 ) -> CmdResult<u64> {
-    state
-        .service
+    state.service().await
         .freeze_ordering(&org_id, &cycle_id, &user_id)
         .await
         .map_err(CommandError::from)
@@ -159,8 +150,7 @@ pub async fn generate_seating_numbers(
     session_id: String,
     user_id: String,
 ) -> CmdResult<GenerationResult> {
-    state
-        .service
+    state.service().await
         .generate_seating_numbers(&org_id, &session_id, &user_id)
         .await
         .map_err(CommandError::from)
@@ -173,8 +163,7 @@ pub async fn generate_secret_numbers(
     session_id: String,
     user_id: String,
 ) -> CmdResult<GenerationResult> {
-    state
-        .service
+    state.service().await
         .generate_secret_numbers(&org_id, &session_id, &user_id)
         .await
         .map_err(CommandError::from)
@@ -188,8 +177,7 @@ pub async fn get_exam_schedules(
     org_id: String,
     session_id: String,
 ) -> CmdResult<Vec<exam_schedule::Model>> {
-    state
-        .service
+    state.service().await
         .get_exam_schedules(&org_id, &session_id)
         .await
         .map_err(CommandError::from)
@@ -202,8 +190,7 @@ pub async fn start_exam_solve(
     user_id: String,
     request: AutoScheduleRequest,
 ) -> CmdResult<SolveJobResponse> {
-    state
-        .service
+    state.service().await
         .start_exam_solve(&org_id, &user_id, request)
         .await
         .map_err(CommandError::from)
@@ -215,8 +202,7 @@ pub async fn get_exam_solve_job(
     org_id: String,
     job_id: String,
 ) -> CmdResult<SolveJobResponse> {
-    state
-        .service
+    state.service().await
         .get_exam_solve_job(&org_id, &job_id)
         .await
         .map_err(CommandError::from)
@@ -228,8 +214,7 @@ pub async fn list_exam_solve_jobs(
     org_id: String,
     exam_session_id: Option<String>,
 ) -> CmdResult<Vec<SolveJobResponse>> {
-    state
-        .service
+    state.service().await
         .list_exam_solve_jobs(&org_id, exam_session_id.as_deref())
         .await
         .map_err(CommandError::from)
@@ -241,8 +226,7 @@ pub async fn cancel_exam_solve(
     org_id: String,
     job_id: String,
 ) -> CmdResult<SolveJobResponse> {
-    state
-        .service
+    state.service().await
         .cancel_exam_solve(&org_id, &job_id)
         .await
         .map_err(CommandError::from)
@@ -254,8 +238,7 @@ pub async fn apply_exam_solve(
     org_id: String,
     job_id: String,
 ) -> CmdResult<SolveJobResponse> {
-    state
-        .service
+    state.service().await
         .apply_exam_solve(&org_id, &job_id)
         .await
         .map_err(CommandError::from)
@@ -268,8 +251,7 @@ pub async fn allocate_students_to_halls(
     session_id: String,
     config: AllocationConfig,
 ) -> CmdResult<AllocationResult> {
-    state
-        .service
+    state.service().await
         .allocate_students_to_halls(&org_id, &session_id, config)
         .await
         .map_err(CommandError::from)
@@ -283,8 +265,7 @@ pub async fn auto_assign_proctors(
     schedule_id: String,
     config: ProctorAssignConfig,
 ) -> CmdResult<ProctorAssignResult> {
-    state
-        .service
+    state.service().await
         .auto_assign_proctors(&org_id, &session_id, &schedule_id, config)
         .await
         .map_err(CommandError::from)
@@ -296,8 +277,7 @@ pub async fn get_exam_halls(
     org_id: String,
     session_id: String,
 ) -> CmdResult<Vec<exam_hall::Model>> {
-    state
-        .service
+    state.service().await
         .get_exam_halls(&org_id, &session_id)
         .await
         .map_err(CommandError::from)
@@ -309,8 +289,7 @@ pub async fn create_exam_hall(
     org_id: String,
     request: CreateExamHallRequest,
 ) -> CmdResult<exam_hall::Model> {
-    state
-        .service
+    state.service().await
         .create_exam_hall(&org_id, request)
         .await
         .map_err(CommandError::from)
@@ -323,8 +302,7 @@ pub async fn get_exam_proctors(
     session_id: String,
     schedule_id: Option<String>,
 ) -> CmdResult<Vec<exam_proctor::Model>> {
-    state
-        .service
+    state.service().await
         .get_exam_proctors(&org_id, &session_id, schedule_id.as_deref())
         .await
         .map_err(CommandError::from)
@@ -337,8 +315,7 @@ pub async fn get_hall_students(
     session_id: String,
     hall_id: String,
 ) -> CmdResult<Vec<exam_hall_allocation::Model>> {
-    state
-        .service
+    state.service().await
         .get_hall_students(&org_id, &session_id, &hall_id)
         .await
         .map_err(CommandError::from)
@@ -351,8 +328,7 @@ pub async fn get_seating_numbers(
     session_id: String,
     class_id: Option<String>,
 ) -> CmdResult<Vec<SeatingNumberView>> {
-    state
-        .service
+    state.service().await
         .get_seating_numbers(&org_id, &session_id, class_id.as_deref())
         .await
         .map_err(CommandError::from)
@@ -364,8 +340,7 @@ pub async fn delete_exam_schedule(
     org_id: String,
     schedule_id: String,
 ) -> CmdResult<()> {
-    state
-        .service
+    state.service().await
         .delete_exam_schedule(&org_id, &schedule_id)
         .await
         .map_err(CommandError::from)
@@ -378,8 +353,7 @@ pub async fn update_exam_schedule_status(
     schedule_id: String,
     status: String,
 ) -> CmdResult<exam_schedule::Model> {
-    state
-        .service
+    state.service().await
         .update_exam_schedule_status(&org_id, &schedule_id, &status)
         .await
         .map_err(CommandError::from)

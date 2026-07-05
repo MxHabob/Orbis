@@ -34,6 +34,10 @@ pub mod permission;
 // ── Examination Management System ──
 pub mod exam_session;
 
+// ── Academic Year Management & Promotion ──
+pub mod academic_year;
+pub mod promotion;
+
 pub mod student_ordering;
 pub mod exam_numbers;
 pub mod exam_logistics;

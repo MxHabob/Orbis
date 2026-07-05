@@ -17,7 +17,7 @@ pub async fn get_assessments(
     let class_sub = class_subject::Entity::find()
         .filter(class_subject::Column::ClassId.eq(class_id.clone()))
         .filter(class_subject::Column::SubjectId.eq(subject_id.clone()))
-        .one(&state.service.repo.db)
+        .one(&state.service().await.repo.db)
         .await
         .map_err(|e| CommandError::new(e.to_string()))?;
 
@@ -48,7 +48,7 @@ pub async fn get_assessments(
     }
 
     query
-        .all(&state.service.repo.db)
+        .all(&state.service().await.repo.db)
         .await
         .map_err(|e| CommandError::new(e.to_string()))
 }
@@ -75,7 +75,7 @@ pub async fn create_assessment(
     let class_sub = class_subject::Entity::find()
         .filter(class_subject::Column::ClassId.eq(request.class_id.clone()))
         .filter(class_subject::Column::SubjectId.eq(request.subject_id.clone()))
-        .one(&state.service.repo.db)
+        .one(&state.service().await.repo.db)
         .await
         .map_err(|e| CommandError::new(e.to_string()))?;
 
@@ -94,7 +94,7 @@ pub async fn create_assessment(
                 updated_at: Set(chrono::Utc::now().naive_utc().to_string()),
                 ..Default::default()
             };
-            new_cs.insert(&state.service.repo.db)
+            new_cs.insert(&state.service().await.repo.db)
                 .await
                 .map_err(|e| CommandError::new(e.to_string()))?;
             new_id
@@ -141,7 +141,7 @@ pub async fn create_assessment(
     };
 
     new_assessment
-        .insert(&state.service.repo.db)
+        .insert(&state.service().await.repo.db)
         .await
         .map_err(|e| CommandError::new(e.to_string()))
 }
@@ -162,7 +162,7 @@ pub async fn update_assessment(
     request: UpdateAssessmentRequest,
 ) -> CmdResult<assessment::Model> {
     let assess = assessment::Entity::find_by_id(id)
-        .one(&state.service.repo.db)
+        .one(&state.service().await.repo.db)
         .await
         .map_err(|e| CommandError::new(e.to_string()))?
         .ok_or_else(|| CommandError::new("Assessment not found"))?;
@@ -197,7 +197,7 @@ pub async fn update_assessment(
     active.updated_at = Set(chrono::Utc::now().naive_utc().to_string());
 
     active
-        .update(&state.service.repo.db)
+        .update(&state.service().await.repo.db)
         .await
         .map_err(|e| CommandError::new(e.to_string()))
 }
@@ -209,13 +209,13 @@ pub async fn delete_assessment(
 ) -> CmdResult<()> {
     // Delete in SeaORM
     let assess = assessment::Entity::find_by_id(id.clone())
-        .one(&state.service.repo.db)
+        .one(&state.service().await.repo.db)
         .await
         .map_err(|e| CommandError::new(e.to_string()))?
         .ok_or_else(|| CommandError::new("Assessment not found"))?;
 
     assessment::Entity::delete_by_id(assess.id)
-        .exec(&state.service.repo.db)
+        .exec(&state.service().await.repo.db)
         .await
         .map_err(|e| CommandError::new(e.to_string()))?;
     Ok(())

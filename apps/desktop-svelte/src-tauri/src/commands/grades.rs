@@ -21,8 +21,7 @@ pub async fn get_grades(
     org_id: String,
     params: GradeParams,
 ) -> CmdResult<Vec<grade::Model>> {
-    state
-        .service
+    state.service().await
         .get_grades(&org_id, params)
         .await
         .map_err(CommandError::from)
@@ -35,8 +34,7 @@ pub async fn submit_grade(
     graded_by: String,
     request: CreateGradeRequest,
 ) -> CmdResult<grade::Model> {
-    state
-        .service
+    state.service().await
         .submit_grade(&org_id, &graded_by, request)
         .await
         .map_err(CommandError::from)
@@ -49,8 +47,7 @@ pub async fn submit_grades_bulk(
     graded_by: String,
     request: BulkGradeRequest,
 ) -> CmdResult<Vec<grade::Model>> {
-    state
-        .service
+    state.service().await
         .submit_grades_bulk(&org_id, &graded_by, request)
         .await
         .map_err(CommandError::from)
@@ -62,8 +59,7 @@ pub async fn update_grade(
     grade_id: String,
     request: UpdateGradeRequest,
 ) -> CmdResult<grade::Model> {
-    state
-        .service
+    state.service().await
         .update_grade(&grade_id, "admin", request)
         .await
         .map_err(CommandError::from)
@@ -74,8 +70,7 @@ pub async fn get_report_card(
     state: State<'_, Arc<AppState>>,
     enrollment_id: String,
 ) -> CmdResult<GradeReportCard> {
-    state
-        .service
+    state.service().await
         .generate_report_card(&enrollment_id)
         .await
         .map_err(CommandError::from)
@@ -87,8 +82,7 @@ pub async fn get_grade_analytics(
     org_id: String,
     params: GradeParams,
 ) -> CmdResult<GradeAnalytics> {
-    state
-        .service
+    state.service().await
         .get_grade_analytics(&org_id, params)
         .await
         .map_err(CommandError::from)
@@ -101,8 +95,7 @@ pub async fn bulk_subject_grade_entry(
     graded_by: String,
     request: BulkSubjectGradeEntry,
 ) -> CmdResult<BulkSubjectGradeResult> {
-    state
-        .service
+    state.service().await
         .bulk_subject_grade_entry(&org_id, &graded_by, request)
         .await
         .map_err(CommandError::from)
@@ -116,8 +109,7 @@ pub async fn get_grade_matrix(
     class_id: String,
     subject_id: String,
 ) -> CmdResult<GradeMatrixResponse> {
-    state
-        .service
+    state.service().await
         .get_grade_matrix(&org_id, &cycle_id, &class_id, &subject_id)
         .await
         .map_err(CommandError::from)
@@ -130,8 +122,7 @@ pub async fn compile_semester_grades(
     semester_num: u32,
     graded_by: String,
 ) -> CmdResult<()> {
-    state
-        .service
+    state.service().await
         .compile_semester_grades(&org_id, semester_num, &graded_by)
         .await
         .map_err(CommandError::from)
@@ -144,8 +135,7 @@ pub async fn upsert_grade_cell(
     graded_by: String,
     request: UpsertCellRequest,
 ) -> CmdResult<UpsertCellResult> {
-    state
-        .service
+    state.service().await
         .upsert_grade_cell(&org_id, &graded_by, request)
         .await
         .map_err(CommandError::from)

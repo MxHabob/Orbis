@@ -28,7 +28,7 @@ pub async fn get_documents(
         }
     }
     query
-        .all(&state.service.repo.db)
+        .all(&state.service().await.repo.db)
         .await
         .map_err(|e| CommandError::new(e.to_string()))
 }
@@ -39,7 +39,7 @@ pub async fn get_document(
     id: String,
 ) -> CmdResult<document::Model> {
     document::Entity::find_by_id(id)
-        .one(&state.service.repo.db)
+        .one(&state.service().await.repo.db)
         .await
         .map_err(|e| CommandError::new(e.to_string()))?
         .ok_or_else(|| CommandError::new("Document not found"))
@@ -102,7 +102,7 @@ pub async fn create_document(
         updated_at: Set(chrono::Utc::now().naive_utc().to_string()),
     };
     active_model
-        .insert(&state.service.repo.db)
+        .insert(&state.service().await.repo.db)
         .await
         .map_err(|e| CommandError::new(e.to_string()))
 }
@@ -113,7 +113,7 @@ pub async fn delete_document(
     id: String,
 ) -> CmdResult<()> {
     let doc = document::Entity::find_by_id(id)
-        .one(&state.service.repo.db)
+        .one(&state.service().await.repo.db)
         .await
         .map_err(|e| CommandError::new(e.to_string()))?
         .ok_or_else(|| CommandError::new("Document not found"))?;
@@ -121,7 +121,7 @@ pub async fn delete_document(
     let mut active: document::ActiveModel = doc.into();
     active.deleted_at = Set(Some(chrono::Utc::now().naive_utc().to_string()));
     active
-        .update(&state.service.repo.db)
+        .update(&state.service().await.repo.db)
         .await
         .map_err(|e| CommandError::new(e.to_string()))?;
     Ok(())

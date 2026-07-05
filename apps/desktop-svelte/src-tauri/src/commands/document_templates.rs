@@ -26,7 +26,7 @@ pub async fn get_document_templates(
         search,
     };
 
-    TemplateService::list(&state.service.repo.db, params)
+    TemplateService::list(&state.service().await.repo.db, params)
         .await
         .map_err(|e| CommandError::new(e))
 }
@@ -37,7 +37,7 @@ pub async fn get_document_template(
     org_id: String,
     id: String,
 ) -> CmdResult<TemplateRecord> {
-    TemplateService::get_by_id(&state.service.repo.db, &org_id, &id)
+    TemplateService::get_by_id(&state.service().await.repo.db, &org_id, &id)
         .await
         .map_err(|e| CommandError::new(e))
 }
@@ -49,7 +49,7 @@ pub async fn create_document_template(
     user_id: String,
     request: CreateTemplateRequest,
 ) -> CmdResult<TemplateRecord> {
-    TemplateService::create(&state.service.repo.db, &org_id, &user_id, request)
+    TemplateService::create(&state.service().await.repo.db, &org_id, &user_id, request)
         .await
         .map_err(|e| CommandError::new(e))
 }
@@ -62,7 +62,7 @@ pub async fn update_document_template(
     user_id: String,
     request: UpdateTemplateRequest,
 ) -> CmdResult<TemplateRecord> {
-    TemplateService::update(&state.service.repo.db, &org_id, &id, &user_id, request)
+    TemplateService::update(&state.service().await.repo.db, &org_id, &id, &user_id, request)
         .await
         .map_err(|e| CommandError::new(e))
 }
@@ -73,7 +73,7 @@ pub async fn delete_document_template(
     org_id: String,
     id: String,
 ) -> CmdResult<()> {
-    TemplateService::delete(&state.service.repo.db, &org_id, &id)
+    TemplateService::delete(&state.service().await.repo.db, &org_id, &id)
         .await
         .map_err(|e| CommandError::new(e))
 }
@@ -85,7 +85,7 @@ pub async fn publish_document_template(
     id: String,
     user_id: String,
 ) -> CmdResult<TemplateRecord> {
-    TemplateService::publish(&state.service.repo.db, &org_id, &id, &user_id)
+    TemplateService::publish(&state.service().await.repo.db, &org_id, &id, &user_id)
         .await
         .map_err(|e| CommandError::new(e))
 }
@@ -96,7 +96,7 @@ pub async fn archive_document_template(
     org_id: String,
     id: String,
 ) -> CmdResult<TemplateRecord> {
-    TemplateService::archive(&state.service.repo.db, &org_id, &id)
+    TemplateService::archive(&state.service().await.repo.db, &org_id, &id)
         .await
         .map_err(|e| CommandError::new(e))
 }
@@ -107,7 +107,7 @@ pub async fn restore_document_template(
     org_id: String,
     id: String,
 ) -> CmdResult<TemplateRecord> {
-    TemplateService::restore(&state.service.repo.db, &org_id, &id)
+    TemplateService::restore(&state.service().await.repo.db, &org_id, &id)
         .await
         .map_err(|e| CommandError::new(e))
 }
@@ -117,7 +117,7 @@ pub async fn get_document_template_versions(
     state: State<'_, Arc<AppState>>,
     id: String,
 ) -> CmdResult<Vec<TemplateVersionRecord>> {
-    TemplateService::get_versions(&state.service.repo.db, &id)
+    TemplateService::get_versions(&state.service().await.repo.db, &id)
         .await
         .map_err(|e| CommandError::new(e))
 }
@@ -130,7 +130,7 @@ pub async fn revert_document_template_to_version(
     version: i32,
     user_id: String,
 ) -> CmdResult<TemplateRecord> {
-    TemplateService::revert_to_version(&state.service.repo.db, &org_id, &id, version, &user_id)
+    TemplateService::revert_to_version(&state.service().await.repo.db, &org_id, &id, version, &user_id)
         .await
         .map_err(|e| CommandError::new(e))
 }

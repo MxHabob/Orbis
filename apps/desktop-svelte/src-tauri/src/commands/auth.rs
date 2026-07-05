@@ -31,8 +31,7 @@ pub async fn register(
     state: State<'_, Arc<AppState>>,
     request: RegisterRequest,
 ) -> CmdResult<user::Model> {
-    state
-        .service
+    state.service().await
         .register(
             &request.email,
             &request.password,
@@ -49,8 +48,7 @@ pub async fn login(
     state: State<'_, Arc<AppState>>,
     request: LoginRequest,
 ) -> CmdResult<LoginResponse> {
-    state
-        .service
+    state.service().await
         .login(&request.email, &request.password)
         .await
         .map_err(CommandError::from)
@@ -63,8 +61,7 @@ pub async fn validate_token(
     state: State<'_, Arc<AppState>>,
     token: String,
 ) -> CmdResult<user::Model> {
-    state
-        .service
+    state.service().await
         .validate_token(&token)
         .await
         .map_err(CommandError::from)
@@ -76,8 +73,7 @@ pub async fn logout(
     state: State<'_, Arc<AppState>>,
     token: String,
 ) -> CmdResult<()> {
-    state
-        .service
+    state.service().await
         .logout(&token)
         .await
         .map_err(CommandError::from)

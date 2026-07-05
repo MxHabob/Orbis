@@ -21,6 +21,14 @@ import type {
   User,
   UserSession,
   BatchJobStatus,
+  AcademicYear,
+  AcademicYearInfo,
+  CreateAcademicYearRequest,
+  PromotionJob,
+  PromotionDetail,
+  PromotionConfig,
+  PromotionPreview,
+  OverrideRequest,
 } from "./types";
 
 export type {
@@ -923,6 +931,54 @@ export const commands = {
     show: () => invoke<void>("show_window"),
     checkForUpdates: () => invoke<void>("check_for_updates"),
     openAgent: () => invoke<void>("open_agent_window"),
+  },
+
+  // ── Academic Year Management ──────────────────────────────────────────
+  academicYears: {
+    list: (orgId: string) =>
+      invoke<AcademicYearInfo[]>("list_academic_years", { orgId }),
+
+    getCurrent: () =>
+      invoke<AcademicYear | null>("get_current_academic_year", {}),
+
+    create: (orgId: string, request: CreateAcademicYearRequest) =>
+      invoke<AcademicYear>("create_academic_year", { orgId, request }),
+
+    switch: (yearId: string) =>
+      invoke<void>("switch_academic_year", { yearId }),
+
+    archive: (yearId: string, userId: string) =>
+      invoke<AcademicYear>("archive_academic_year", { yearId, userId }),
+
+    isArchived: () =>
+      invoke<boolean>("is_current_year_archived", {}),
+
+    setActive: (orgId: string, yearId: string) =>
+      invoke<void>("set_active_academic_year", { orgId, yearId }),
+  },
+
+  // ── Promotion ────────────────────────────────────────────────────────
+  promotion: {
+    dryRun: (orgId: string, config: PromotionConfig) =>
+      invoke<PromotionJob>("promotion_dry_run", { orgId, config }),
+
+    getJobs: (orgId: string) =>
+      invoke<PromotionJob[]>("get_promotion_jobs", { orgId }),
+
+    getJob: (jobId: string) =>
+      invoke<PromotionJob | null>("get_promotion_job", { jobId }),
+
+    getDetails: (jobId: string) =>
+      invoke<PromotionDetail[]>("get_promotion_details", { jobId }),
+
+    override: (request: OverrideRequest) =>
+      invoke<PromotionDetail>("override_promotion_decision", { request }),
+
+    execute: (jobId: string) =>
+      invoke<PromotionJob>("execute_promotion", { jobId }),
+
+    rollback: (jobId: string, userId: string) =>
+      invoke<void>("rollback_promotion", { jobId, userId }),
   },
 } as const;
 
