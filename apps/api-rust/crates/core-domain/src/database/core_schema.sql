@@ -451,3 +451,65 @@ CREATE TABLE IF NOT EXISTS promotion_policies (
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- ── Academic Override Requests ──
+-- Multi-level approval system for academic overrides.
+-- Risk levels determine the required approval chain:
+--   low:      No approval required (auto-approved)
+--   medium:   Department/School Manager approval
+--   high:     School Manager + Admin approval
+--   critical: Multi-level (Manager → Admin → Super Admin)
+-- ══════════════════════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS academic_override_requests (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL,
+
+  -- Request context
+  override_type TEXT NOT NULL,
+    -- grade_modification, attendance_correction, enrollment_exception,
+    -- late_enrollment, fee_waiver, promotion_override,
+    -- cycle_unlock, deadline_extension, custom
+  risk_level TEXT NOT NULL DEFAULT 'medium',
+    -- low, medium, high, critical
+
+  -- What is being overridden
+  entity_type TEXT NOT NULL,
+  entity_id TEXT NOT NULL,
+  field_name TEXT,
+  old_value TEXT,
+  new_value TEXT,
+
+  -- Request info
+  reason TEXT NOT NULL,
+  requested_by TEXT NOT NULL,
+  requested_by_name TEXT,
+  requested_at TEXT NOT NULL,
+
+  -- Current approval state
+  status TEXT NOT NULL DEFAULT 'pending',
+    -- pending, approved, rejected, escalated, expired, cancelled
+  current_approver_role TEXT,
+
+  -- Approval chain (JSON array of approval steps)
+  -- e.g. [{"role":"school_manager","status":"approved","by":"user123","at":"2024-...","notes":"ok"}]
+  approval_chain TEXT NOT NULL DEFAULT '[]',
+
+  -- Resolution
+  resolved_by TEXT,
+  resolved_by_name TEXT,
+  resolved_at TEXT,
+  resolution_notes TEXT,
+
+  -- Expiry
+  expires_at TEXT,
+
+  -- Metadata
+  metadata TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_aor_org_status ON academic_override_requests(org_id, status);
+CREATE INDEX IF NOT EXISTS idx_aor_type ON academic_override_requests(override_type);
+CREATE INDEX IF NOT EXISTS idx_aor_requester ON academic_override_requests(requested_by);

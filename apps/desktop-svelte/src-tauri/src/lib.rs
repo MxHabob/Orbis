@@ -482,6 +482,14 @@ pub fn run() {
             let app_handle_for_deep_links = app_handle.clone();
             let app_handle_for_navigation = app_handle.clone();
 
+            // 3. Spawn startup automation (fire-and-forget, non-blocking)
+            let app_handle_for_automation = app_handle.clone();
+            tauri::async_runtime::spawn(async move {
+                features::startup_automation::process_startup_events(
+                    app_handle_for_automation,
+                ).await;
+            });
+
 
 
             // Register deep links at runtime for development
