@@ -36,6 +36,7 @@ pub mod exam_session;
 
 // ── Academic Year Management & Promotion ──
 pub mod academic_year;
+pub mod academic_context;
 pub mod promotion;
 
 pub mod student_ordering;

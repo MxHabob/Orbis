@@ -129,6 +129,20 @@ impl DatabaseProvider {
         &self.app_data_dir
     }
 
+    /// Verify that the current year allows write operations.
+    /// Returns `Err` if the year is archived (read-only).
+    ///
+    /// Call this before any mutation command to enforce archive safety.
+    pub async fn ensure_writable(&self) -> Result<(), String> {
+        if *self.is_archived.read().await {
+            return Err(
+                "Cannot modify data in an archived year. Switch to an active year first."
+                    .to_string(),
+            );
+        }
+        Ok(())
+    }
+
     /// Switch to a different academic year.
     ///
     /// This atomically swaps the current Service to point at the new year's database.

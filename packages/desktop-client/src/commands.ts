@@ -23,6 +23,7 @@ import type {
   BatchJobStatus,
   AcademicYear,
   AcademicYearInfo,
+  AcademicContextResponse,
   CreateAcademicYearRequest,
   PromotionJob,
   PromotionDetail,
@@ -931,6 +932,18 @@ export const commands = {
     show: () => invoke<void>("show_window"),
     checkForUpdates: () => invoke<void>("check_for_updates"),
     openAgent: () => invoke<void>("open_agent_window"),
+  },
+
+  // ── Academic Context ──────────────────────────────────────────────────
+  academicContext: {
+    getContext: (orgId: string) =>
+      invoke<AcademicContextResponse>("get_academic_context", { orgId }),
+
+    resolveActiveCycle: (orgId: string) =>
+      invoke<JsonRecord | null>("resolve_active_cycle", { orgId }),
+
+    isWritable: () =>
+      invoke<boolean>("is_year_writable", {}),
   },
 
   // ── Academic Year Management ──────────────────────────────────────────

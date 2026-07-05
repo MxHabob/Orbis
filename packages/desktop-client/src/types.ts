@@ -79,6 +79,45 @@ export interface BatchJobStatus {
   outputPath: string;
 }
 
+// ── Academic Context ─────────────────────────────────────────────────────────
+
+export type CyclePhase = "pre_start" | "active" | "exams" | "grade_entry" | "closed";
+
+export interface AcademicCycleSummary {
+  id: string;
+  name: string;
+  name_ar?: string | null;
+  cycle_type: string;
+  start_date: string;
+  end_date: string;
+  is_current: boolean;
+  is_locked: boolean;
+  phase: CyclePhase;
+}
+
+export interface AcademicCycleContext {
+  id: string;
+  name: string;
+  name_ar?: string | null;
+  cycle_type: string;
+  start_date: string;
+  end_date: string;
+  is_enrollment_open: boolean;
+  is_grade_entry_open: boolean;
+  is_locked: boolean;
+  phase: CyclePhase;
+}
+
+export interface AcademicContextResponse {
+  year_id: string;
+  year_name: string;
+  year_name_ar?: string | null;
+  year_status: "active" | "archived" | "promoting";
+  is_read_only: boolean;
+  active_cycle: AcademicCycleContext | null;
+  all_cycles: AcademicCycleSummary[];
+}
+
 // ── Academic Year Management ─────────────────────────────────────────────────
 
 export interface AcademicYear {

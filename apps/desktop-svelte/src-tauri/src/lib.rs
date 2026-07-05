@@ -412,6 +412,11 @@ pub fn run() {
             commands::academic_years::is_current_year_archived,
             commands::academic_years::set_active_academic_year,
 
+            // Academic Context commands
+            commands::academic_context::get_academic_context,
+            commands::academic_context::resolve_active_cycle,
+            commands::academic_context::is_year_writable,
+
             // Promotion commands
             commands::promotion::promotion_dry_run,
             commands::promotion::get_promotion_jobs,
