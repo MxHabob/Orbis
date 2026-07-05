@@ -502,7 +502,6 @@ impl PromotionService {
 
         let mut data = Vec::new();
         for row in results {
-            use sea_orm::QueryResult;
             data.push(EnrollmentData {
                 enrollment_id: row.try_get::<String>("", "enrollment_id").unwrap_or_default(),
                 student_id: row.try_get::<String>("", "student_id").unwrap_or_default(),
@@ -587,10 +586,6 @@ impl PromotionService {
         ];
 
         for table in &tables {
-            let sql = format!(
-                "INSERT INTO {t} SELECT * FROM source.{t}",
-                t = table
-            );
             // Attach source DB and copy via ATTACH DATABASE
             // This is a simplified approach; actual implementation would use
             // SeaORM transactions or row-by-row copy

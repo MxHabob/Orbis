@@ -11,8 +11,8 @@
 // - ZipBundle:       ZIP containing individual PDFs + optional PNGs
 // ═══════════════════════════════════════════════════════════════
 
-use std::sync::{Arc, Mutex};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::sync::atomic::Ordering;
 use serde::{Serialize, Deserialize};
 use sea_orm::DatabaseConnection;
 
@@ -21,7 +21,7 @@ use docforge_engine::{
     render::pdf_renderer::{render_to_pdf, PdfRenderConfig},
     render::types::{LayoutResult, PageLayout},
     layout::LayoutEngine,
-    layout::multi_up::{MultiUpConfig, MultiUpLayout},
+    layout::multi_up::MultiUpConfig,
     model::TemplateDocument,
 };
 use crate::{

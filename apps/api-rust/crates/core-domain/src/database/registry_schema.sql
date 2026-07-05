@@ -156,7 +156,7 @@ CREATE INDEX IF NOT EXISTS idx_pd_decision ON promotion_details(job_id, decision
 -- ══════════════════════════════════════════════════════════════════════════════
 -- ── Student Registry ──
 -- Cross-year student identity. Tracks a student across all academic years.
--- The authoritative student data lives in each year's DB; this is a summary.
+-- The authoritative student data lives in each year's DB - this is a summary.
 -- ══════════════════════════════════════════════════════════════════════════════
 
 CREATE TABLE IF NOT EXISTS student_registry (

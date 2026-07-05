@@ -58,7 +58,6 @@ impl DatabaseProvider {
         info!("✅ Registry database connected");
 
         // 2. Find the current active year
-        use crate::repository::academic_year::AcademicYearRepo;
         // We need at least one org — get the first one if it exists
         // For first launch, we'll handle the case of no years in the caller
         let years = crate::entities::academic_year::Entity::find()
