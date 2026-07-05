@@ -40,6 +40,7 @@ pub mod academic_context;
 pub mod calendar;
 pub mod promotion;
 pub mod promotion_policy;
+pub mod override_approval;
 
 pub mod student_ordering;
 pub mod exam_numbers;

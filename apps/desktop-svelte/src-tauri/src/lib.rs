@@ -439,6 +439,14 @@ pub fn run() {
             commands::promotion::rollback_promotion,
             commands::promotion::get_promotion_policy,
             commands::promotion::update_promotion_policy,
+
+            // Override & Approval commands
+            commands::override_approval::create_override_request,
+            commands::override_approval::process_approval,
+            commands::override_approval::cancel_override_request,
+            commands::override_approval::list_override_requests,
+            commands::override_approval::get_override_request,
+            commands::override_approval::get_pending_approvals,
         ])
         .setup(move |app| {
             // Add updater plugin conditionally for desktop

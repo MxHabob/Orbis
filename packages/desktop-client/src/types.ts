@@ -353,3 +353,59 @@ export interface PromotionPolicy {
   created_at: string;
   updated_at: string;
 }
+
+// ── Override & Approval ──────────────────────────────────────────────────────
+
+export type OverrideType =
+  | "grade_modification" | "attendance_correction" | "enrollment_exception"
+  | "late_enrollment" | "fee_waiver" | "promotion_override"
+  | "cycle_unlock" | "deadline_extension" | "custom";
+
+export type RiskLevel = "low" | "medium" | "high" | "critical";
+
+export type OverrideStatus =
+  | "pending" | "approved" | "rejected" | "escalated" | "expired" | "cancelled";
+
+export interface ApprovalStep {
+  role: string;
+  status: string;
+  by: string;
+  by_name?: string | null;
+  at: string;
+  notes?: string | null;
+}
+
+export interface AcademicOverrideRequest {
+  id: string;
+  org_id: string;
+  override_type: OverrideType;
+  risk_level: RiskLevel;
+  entity_type: string;
+  entity_id: string;
+  field_name?: string | null;
+  old_value?: string | null;
+  new_value?: string | null;
+  reason: string;
+  requested_by: string;
+  requested_by_name?: string | null;
+  requested_at: string;
+  status: OverrideStatus;
+  current_approver_role?: string | null;
+  approval_chain: string; // JSON array of ApprovalStep[]
+  resolved_by?: string | null;
+  resolved_by_name?: string | null;
+  resolved_at?: string | null;
+  resolution_notes?: string | null;
+  expires_at?: string | null;
+  metadata?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ApprovalAction {
+  action: "approve" | "reject" | "escalate";
+  user_id: string;
+  user_name?: string | null;
+  user_role: string;
+  notes?: string | null;
+}

@@ -29,6 +29,8 @@ import type {
   EventProcessingResult,
   OrgAcademicPolicy,
   PromotionPolicy,
+  AcademicOverrideRequest,
+  ApprovalAction,
   CreateAcademicYearRequest,
   PromotionJob,
   PromotionDetail,
@@ -1036,6 +1038,27 @@ export const commands = {
 
     updatePolicy: (orgId: string, request: JsonRecord) =>
       invoke<PromotionPolicy>("update_promotion_policy", { orgId, request }),
+  },
+
+  // ── Override & Approval ─────────────────────────────────────────────
+  overrides: {
+    create: (orgId: string, request: JsonRecord) =>
+      invoke<AcademicOverrideRequest>("create_override_request", { orgId, request }),
+
+    processApproval: (requestId: string, action: ApprovalAction) =>
+      invoke<AcademicOverrideRequest>("process_approval", { requestId, action }),
+
+    cancel: (requestId: string, userId: string) =>
+      invoke<AcademicOverrideRequest>("cancel_override_request", { requestId, userId }),
+
+    list: (orgId: string, params?: JsonRecord) =>
+      invoke<AcademicOverrideRequest[]>("list_override_requests", { orgId, params: params ?? {} }),
+
+    get: (requestId: string) =>
+      invoke<AcademicOverrideRequest>("get_override_request", { requestId }),
+
+    getPending: (orgId: string, approverRole: string) =>
+      invoke<AcademicOverrideRequest[]>("get_pending_approvals", { orgId, approverRole }),
   },
 } as const;
 

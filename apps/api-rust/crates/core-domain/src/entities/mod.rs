@@ -66,6 +66,7 @@ pub mod teacher_exam_availability;
 pub mod academic_calendar_event;
 pub mod org_academic_policy;
 pub mod promotion_policy;
+pub mod academic_override_request;
 
 // ── Academic Year Management & Promotion (Registry DB) ──
 pub mod academic_year;
