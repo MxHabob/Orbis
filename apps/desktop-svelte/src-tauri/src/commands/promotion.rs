@@ -100,8 +100,13 @@ pub async fn promotion_dry_run(
 
     // Analyze all active enrollments in the source year
     let params = core_domain::params::EnrollmentParams {
+        class_id: None,
+        cycle_id: None,
+        student_id: None,
         status: Some("active".to_string()),
-        ..Default::default()
+        q: None,
+        limit: None,
+        offset: None,
     };
     let enrollments = service
         .get_enrollments(&org_id, params)
@@ -279,12 +284,12 @@ pub async fn override_promotion_decision(
 ) -> CmdResult<promotion_detail::Model> {
     let registry_db = state.provider.registry();
 
-    // Get the detail to find its job
-    let detail = PromotionRepo::get_details(registry_db, &request.detail_id)
+    let _detail = PromotionRepo::get_details(registry_db, &request.detail_id)
         .await
         .map_err(|e| CommandError::from(e.to_string()))?
         .into_iter()
-        .next();
+        .next()
+        .ok_or_else(|| CommandError::from("Promotion detail not found".to_string()))?;
 
     // Validate the new decision
     let valid_decisions = ["promoted", "retained", "graduated", "excluded"];

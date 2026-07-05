@@ -13,7 +13,7 @@ import {
   SelectItem,
   SelectSeparator,
 } from "@orbis/ui-svelte/select";
-import Badge from "@orbis/ui-svelte/badge";
+import { Badge } from "@orbis/ui-svelte/badge";
 import { CalendarDays, Archive, Loader2 } from "lucide-svelte";
 
 let { orgId }: { orgId: string } = $props();

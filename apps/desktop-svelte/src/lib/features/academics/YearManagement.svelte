@@ -13,12 +13,12 @@ import { createAcademicYearsQuery, createAcademicYearMutation, createArchiveYear
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter,
 } from "@orbis/ui-svelte/card";
-import Button from "@orbis/ui-svelte/button";
-import Input from "@orbis/ui-svelte/input";
-import Label from "@orbis/ui-svelte/label";
-import Textarea from "@orbis/ui-svelte/textarea";
-import Badge from "@orbis/ui-svelte/badge";
-import Separator from "@orbis/ui-svelte/separator";
+import { Button } from "@orbis/ui-svelte/button";
+import { Input } from "@orbis/ui-svelte/input";
+import { Label } from "@orbis/ui-svelte/label";
+import { Textarea } from "@orbis/ui-svelte/textarea";
+import { Badge } from "@orbis/ui-svelte/badge";
+import { Separator } from "@orbis/ui-svelte/separator";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@orbis/ui-svelte/dialog";
@@ -249,7 +249,7 @@ function statusLabel(status: string) {
     </div>
 
     <DialogFooter>
-      <Button variant="ghost" onclick={() => showCreate = false}>{m.common_cancel?.() ?? "Cancel"}</Button>
+      <Button variant="ghost" onclick={() => showCreate = false}>{m.form_cancel()}</Button>
       <Button variant="lime" onclick={handleCreate}
         disabled={!createForm.name || !createForm.start_date || !createForm.end_date}>
         {m.year_create()}
@@ -266,7 +266,7 @@ function statusLabel(status: string) {
       <AlertDialogDescription>{m.year_archive_confirm()}</AlertDialogDescription>
     </AlertDialogHeader>
     <AlertDialogFooter>
-      <AlertDialogCancel onclick={() => archiveTarget = null}>{m.common_cancel?.() ?? "Cancel"}</AlertDialogCancel>
+      <AlertDialogCancel onclick={() => archiveTarget = null}>{m.form_cancel()}</AlertDialogCancel>
       <AlertDialogAction onclick={handleArchive}>{m.year_archive()}</AlertDialogAction>
     </AlertDialogFooter>
   </AlertDialogContent>
