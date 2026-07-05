@@ -12,13 +12,13 @@ import { academicYearStore } from "$lib/stores/academic-year.svelte";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@orbis/ui-svelte/card";
-import Button from "@orbis/ui-svelte/button";
-import Input from "@orbis/ui-svelte/input";
-import Label from "@orbis/ui-svelte/label";
-import Switch from "@orbis/ui-svelte/switch";
-import Checkbox from "@orbis/ui-svelte/checkbox";
-import Badge from "@orbis/ui-svelte/badge";
-import Separator from "@orbis/ui-svelte/separator";
+import { Button } from "@orbis/ui-svelte/button";
+import { Input } from "@orbis/ui-svelte/input";
+import { Label } from "@orbis/ui-svelte/label";
+import { Switch } from "@orbis/ui-svelte/switch";
+import { Checkbox } from "@orbis/ui-svelte/checkbox";
+import { Badge } from "@orbis/ui-svelte/badge";
+import { Separator } from "@orbis/ui-svelte/separator";
 import {
   Table, TableBody, TableHead, TableHeader, TableRow, TableCell,
 } from "@orbis/ui-svelte/table";

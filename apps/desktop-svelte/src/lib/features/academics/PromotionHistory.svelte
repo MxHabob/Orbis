@@ -11,9 +11,9 @@ import { createPromotionJobsQuery, createRollbackMutation } from "$lib/features/
 import {
   Card, CardContent, CardHeader, CardTitle,
 } from "@orbis/ui-svelte/card";
-import Badge from "@orbis/ui-svelte/badge";
-import Button from "@orbis/ui-svelte/button";
-import Separator from "@orbis/ui-svelte/separator";
+import { Badge } from "@orbis/ui-svelte/badge";
+import { Button } from "@orbis/ui-svelte/button";
+import { Separator } from "@orbis/ui-svelte/separator";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,

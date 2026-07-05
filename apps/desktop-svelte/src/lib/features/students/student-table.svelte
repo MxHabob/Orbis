@@ -4,17 +4,14 @@ Renders the list of students using the DataTable infrastructure.
 Matches the column layout and styling of the React dashboard precisely.
 -->
 <script lang="ts">
-import {
-  DataTable,
-  type ColumnDef,
-  type CellContext,
-} from "$lib/tables";
-import { Avatar, AvatarFallback, AvatarImage } from "@orbis/ui-svelte";
+import { DataTable } from "$lib/tables";
 import { studentsStore } from "$lib/features/students/store.svelte";
 import type { Enrollment } from "$lib/core/ipc";
-import { ArrowUpRight, GraduationCap } from "lucide-svelte";
 import * as m from "$lib/paraglide/messages";
 import { formatDate } from "$lib/core/i18n";
+import { createInitials, type OrbisColumnDef } from "@orbis/data-grid";
+import type { GridActionEvent } from "@orbis/data-grid";
+import { GraduationCap } from "lucide-svelte";
 
 let {
   students,
@@ -39,171 +36,176 @@ function getClassName(classId: string): string {
 
 // ── Column Definitions ─────────────────────────────────────────────
 
-const columns: ColumnDef<Enrollment>[] = [
+const columns: OrbisColumnDef[] = [
   {
-    id: "name",
-    header: m.table_student(),
-    accessorKey: "full_name",
+    prop: "full_name",
+    name: m.table_student(),
     size: 250,
-    minSize: 200,
-    maxSize: 400,
-    sticky: true,
-    sortable: true,
-    skeleton: { type: "avatar-text", width: "w-32" },
-    cell: nameCell,
+    pin: "colPinStart",
+    cellRenderer: ({ h, row, rowIndex }) => {
+      const name = String(row.full_name || row.name_ar || "");
+      const src = row.avatar as string | undefined;
+      const initials = createInitials(name);
+      
+      const innerEl = src
+        ? h("img", {
+            class: "orbis-r-avatar__img",
+            src,
+            alt: name,
+            loading: "lazy",
+          })
+        : h("span", { class: "orbis-r-avatar__fallback-text" }, initials);
+        
+      const avatarEl = h(
+        "span",
+        {
+          class: `orbis-r-avatar__root orbis-r-avatar--md ${
+            src ? "orbis-r-avatar__root--has-img" : "orbis-r-avatar__root--has-fallback"
+          }`,
+        },
+        [innerEl],
+      );
+      
+      const nameLines = [
+        h("span", { class: "text-xs font-bold text-foreground truncate block" }, name)
+      ];
+      if (row.name_en) {
+        nameLines.push(
+          h("span", { class: "text-[10px] text-muted-foreground font-mono truncate block" }, String(row.name_en))
+        );
+      }
+      
+      const textContainer = h("div", { class: "flex flex-col text-start min-w-0" }, nameLines);
+      
+      return h("div", {
+        class: "flex items-center gap-2.5 cursor-pointer w-full h-full",
+        "data-grid-action": "select",
+        "data-row-index": String(rowIndex),
+      }, [avatarEl, textContainer]);
+    }
   },
   {
-    id: "studentNumber",
-    header: m.table_student_number(),
-    accessorKey: "student_number",
+    prop: "student_number",
+    name: m.table_student_number(),
     size: 150,
-    minSize: 100,
-    maxSize: 200,
-    sortable: true,
-    skeleton: { type: "text", width: "w-20" },
-    className: "font-mono",
-    cell: studentNumberCell,
+    cellRenderer: ({ h, row }) => {
+      const num = String(row.student_number || row.id || "-");
+      return h(
+        "span",
+        {
+          class: "inline-flex items-center rounded-md border border-border px-2 py-0.5 text-[10px] font-mono font-medium text-foreground bg-background",
+        },
+        num
+      );
+    }
   },
   {
-    id: "class",
-    header: m.table_class(),
-    accessorFn: (row) => getClassName(String(row.class_id)),
+    prop: "class_name",
+    name: m.table_class(),
     size: 150,
-    minSize: 100,
-    maxSize: 200,
-    sortable: true,
-    skeleton: { type: "text", width: "w-24" },
   },
   {
-    id: "status",
-    header: m.table_status(),
-    accessorKey: "status",
+    prop: "status",
+    name: m.table_status(),
     size: 120,
-    minSize: 100,
-    maxSize: 150,
-    sortable: true,
-    skeleton: { type: "badge", width: "w-16" },
-    cell: statusCell,
+    cellRenderer: ({ h, row }) => {
+      const status = String(row.status || "").toLowerCase();
+      if (status === "active") {
+        return h("span", { class: "badge-brand-lime py-0.5 px-2 text-[10px]" }, m.status_active());
+      } else if (status === "withdrawn") {
+        return h("span", { class: "badge-brand-destructive py-0.5 px-2 text-[10px]" }, m.status_withdrawn());
+      } else {
+        return h("span", { class: "badge-brand-default py-0.5 px-2 text-[10px]" }, String(row.status || m.status_undefined()));
+      }
+    }
   },
   {
-    id: "sex",
-    header: m.form_sex(),
-    accessorKey: "sex",
+    prop: "sex",
+    name: m.form_sex(),
     size: 100,
-    minSize: 80,
-    maxSize: 120,
-    sortable: true,
-    skeleton: { type: "text", width: "w-12" },
-    cell: sexCell,
+    cellRenderer: ({ h, row }) => {
+      const sex = String(row.sex || "").toLowerCase();
+      let label = String(row.sex || "-");
+      if (sex === "male") label = m.form_male();
+      else if (sex === "female") label = m.form_female();
+      return h("span", { class: "capitalize text-xs" }, label);
+    }
   },
   {
-    id: "enrollmentDate",
-    header: "Enrolled At",
-    accessorKey: "enrollment_date",
+    prop: "enrollment_date",
+    name: "Enrolled At",
     size: 150,
-    minSize: 120,
-    maxSize: 200,
-    sortable: true,
-    skeleton: { type: "text", width: "w-24" },
-    cell: enrollmentDateCell,
-  },
+    cellRenderer: ({ h, row }) => {
+      const date = row.enrollment_date as string | undefined;
+      const label = date ? formatDate(date) : "-";
+      return h("span", { class: "text-xs text-muted-foreground" }, label);
+    }
+  }
 ];
+
+let gridSource = $derived(
+  (students || []).map((student, i) => ({
+    ...student,
+    __idx: i + 1,
+    class_name: getClassName(String(student.class_id)),
+  }))
+);
+
+let activeColumns = $derived.by(() => {
+  const cols = [...columns];
+  if (enableSelection) {
+    cols.unshift({
+      prop: "__selected",
+      name: "",
+      size: 40,
+      readonly: true,
+      pin: "colPinStart",
+      cellProperties: (row) => ({
+        class: selectedIds.has(String(row.id)) ? "orbis-cell-selected" : "orbis-cell-checkbox",
+      }),
+      cellRenderer: ({ h, row, rowIndex }) => {
+        const isSelected = selectedIds.has(String(row.id));
+        return h("span", {
+          class: `cursor-pointer block w-full h-full flex items-center justify-center`,
+          "data-grid-action": "toggle-select",
+          "data-row-index": String(rowIndex),
+        }, [
+          h("input", {
+            type: "checkbox",
+            checked: isSelected,
+            class: "cursor-pointer",
+            onclick: (e: any) => e.preventDefault(),
+          })
+        ]);
+      }
+    });
+  }
+  return cols;
+});
+
+function handleGridAction(event: GridActionEvent) {
+  if (event.actionId === "select") {
+    studentsStore.selectedId = String(event.row.id);
+  } else if (event.actionId === "toggle-select") {
+    const id = String(event.row.id);
+    const newSet = new Set(selectedIds);
+    if (newSet.has(id)) {
+      newSet.delete(id);
+    } else {
+      newSet.add(id);
+    }
+    selectedIds = newSet;
+    onSelectionChange?.(newSet);
+  }
+}
 </script>
 
-<!-- ── Custom Cell Snippets ──────────────────────────────────────── -->
-
-{#snippet nameCell(ctx: CellContext<Enrollment>)}
-	{@const student = ctx.row}
-	<div class="flex items-center gap-2.5">
-		<Avatar class="h-7 w-7  shrink-0">
-			<AvatarImage src={student.avatar ? String(student.avatar) : undefined} alt={student.full_name ? String(student.full_name) : ''} />
-			<AvatarFallback class="text-[9px]">
-				{String(student.full_name || "S").slice(0, 1)}
-			</AvatarFallback>
-		</Avatar>
-		<div class="flex flex-col text-start min-w-0">
-			<span class="text-xs font-bold text-foreground truncate">{student.full_name || student.name_ar || ''}</span>
-			{#if student.name_en}
-				<span class="text-[10px] text-muted-foreground font-mono truncate">{student.name_en}</span>
-			{/if}
-		</div>
-	</div>
-{/snippet}
-
-{#snippet studentNumberCell(ctx: CellContext<Enrollment>)}
-	<span class="inline-flex items-center rounded-md border border-border px-2 py-0.5 text-[10px] font-mono font-medium text-foreground bg-background">
-		{ctx.row.student_number || ctx.row.id || '-'}
-	</span>
-{/snippet}
-
-{#snippet statusCell(ctx: CellContext<Enrollment>)}
-	{@const status = String(ctx.row.status || '').toLowerCase()}
-	{#if status === 'active'}
-		<span class="badge-brand-lime py-0.5 px-2 text-[10px]">{m.status_active()}</span>
-	{:else if status === 'withdrawn'}
-		<span class="badge-brand-destructive py-0.5 px-2 text-[10px]">{m.status_withdrawn()}</span>
-	{:else}
-		<span class="badge-brand-default py-0.5 px-2 text-[10px]">{ctx.row.status || m.status_undefined()}</span>
-	{/if}
-{/snippet}
-
-{#snippet sexCell(ctx: CellContext<Enrollment>)}
-	{@const sex = String(ctx.row.sex || '').toLowerCase()}
-	<span class="capitalize text-xs">
-		{#if sex === 'male'}
-			{m.form_male()}
-		{:else if sex === 'female'}
-			{m.form_female()}
-		{:else}
-			{ctx.row.sex || '-'}
-		{/if}
-	</span>
-{/snippet}
-
-{#snippet enrollmentDateCell(ctx: CellContext<Enrollment>)}
-	{@const date = ctx.row.enrollment_date as string | undefined}
-	<span class="text-xs text-muted-foreground">
-		{#if date}
-			{formatDate(date)}
-		{:else}
-			-
-		{/if}
-	</span>
-{/snippet}
-
-<!-- ── DataTable ─────────────────────────────────────────────────── -->
-
 <DataTable
-	{columns}
-	data={students}
-	tableId="students"
-	getRowId={(s) => String(s.id)}
-	height="100%"
-	enableSorting={true}
-	enableSelection={enableSelection}
-	onSelectionChange={(ids) => {
-		selectedIds = ids;
-		onSelectionChange?.(ids);
-	}}
-	enableVirtualization={students.length > 100}
-	enableExport={false}
-	enableColumnToggle={false}
-	enablePersistence={true}
-	onRowClick={(row) => studentsStore.selectedId = String(row.id)}
->
-	{#snippet empty()}
-		<div class="flex flex-col items-center justify-center gap-3 text-muted-foreground">
-			<GraduationCap size={32} class="text-muted-foreground/30" />
-			<div class="flex flex-col gap-1 text-center">
-				<p class="text-xs font-semibold">{m.table_no_students()}</p>
-				<p class="text-[10px] text-muted-foreground/80">{m.table_no_students_hint()}</p>
-			</div>
-		</div>
-	{/snippet}
-
-	{#snippet rowActions({ row })}
-		<div class="flex items-center justify-center text-muted-foreground/60 hover:text-primary transition-colors">
-			<ArrowUpRight size={14} />
-		</div>
-	{/snippet}
-</DataTable>
+  columns={activeColumns}
+  source={gridSource}
+  height="100%"
+  onaction={handleGridAction}
+  emptyIcon={GraduationCap}
+  emptyTitle={m.table_no_students()}
+  emptyDescription={m.table_no_students_hint()}
+/>
