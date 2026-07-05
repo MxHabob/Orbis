@@ -2,30 +2,28 @@
 import { onMount } from "svelte";
 import { isDesktopApp } from "$lib/core/ipc";
 import {
-  academicStore,
+  academicContext,
   authStore,
   uiStore,
   themeStore,
+  workflowInbox,
 } from "$lib/stores";
 import { Button } from "@orbis/ui-svelte/button";
+import { Badge } from "@orbis/ui-svelte/badge";
 import {
   Minimize2,
   Square,
   Copy,
   X,
   GraduationCap,
-  Sparkles,
   Wifi,
   WifiOff,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   Sun,
   Moon,
   Search,
-  Megaphone,
+  Bell,
 } from "lucide-svelte";
-import { commands } from "$lib/core/ipc";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 import { toast } from "svelte-sonner";
@@ -38,8 +36,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@orbis/ui-svelte/dropdown-menu";
-import { queryClient } from "$lib/core/query/client";
-import { dedup } from "$lib/core/ipc";
 
 // Window states
 let appWindow = $state<any>(null);
@@ -47,11 +43,11 @@ let isMaximized = $state(false);
 let isMac = $state(false);
 let isOnline = $state(true);
 
-// Academic cycles list
-let cycles = $state<any[]>([]);
-let currentCycleName = $derived.by(() => {
+// Academic cycle — reads from unified academicContext (populated by bootstrap)
+const cycles = $derived(academicContext.allCycles);
+const currentCycleName = $derived.by(() => {
   const active = cycles.find(
-    (c) => String(c.id) === academicStore.selectedCycleId,
+    (c) => String(c.id) === academicContext.effectiveCycleId,
   );
   if (active) {
     return active.name_ar && getLocale() === "ar"
@@ -59,6 +55,31 @@ let currentCycleName = $derived.by(() => {
       : active.name;
   }
   return m.titlebar_cycle();
+});
+
+// Phase label for the phase badge
+const phaseLabel = $derived.by(() => {
+  const phase = academicContext.cyclePhase;
+  if (!phase) return "";
+  switch (phase) {
+    case "pre_start": return m.phase_pre_start ? m.phase_pre_start() : "Pre-Start";
+    case "active": return m.phase_active ? m.phase_active() : "Active";
+    case "exams": return m.phase_exams ? m.phase_exams() : "Exams";
+    case "grade_entry": return m.phase_grade_entry ? m.phase_grade_entry() : "Grade Entry";
+    case "closed": return m.phase_closed ? m.phase_closed() : "Closed";
+    default: return "";
+  }
+});
+
+const phaseBadgeVariant = $derived.by(() => {
+  const phase = academicContext.cyclePhase;
+  switch (phase) {
+    case "active": return "lime" as const;
+    case "grade_entry": return "brand" as const;
+    case "exams": return "secondary" as const;
+    case "closed": return "outline" as const;
+    default: return "ghost" as const;
+  }
 });
 
 onMount(() => {
@@ -115,38 +136,11 @@ onMount(() => {
   };
 });
 
-$effect(() => {
-  if (authStore.isAuthenticated && authStore.orgId) {
-    // Check TanStack cache first
-    const cached = queryClient.getQueryData<any[]>(["cycles", authStore.orgId]);
-    if (cached) {
-      cycles = cached;
-      if (!academicStore.selectedCycleId && cached.length > 0) {
-        const activeCycle = cached.find((c: any) => c.is_current === 1) || cached[0];
-        if (activeCycle) academicStore.selectedCycleId = String(activeCycle.id);
-      }
-      return;
-    }
-    // Deduplicated fetch — prevents double calls if effect re-fires
-    dedup(`cycles:${authStore.orgId}`, () => commands.academics.getCycles(authStore.orgId))
-      .then((list) => {
-        cycles = list;
-        queryClient.setQueryData(["cycles", authStore.orgId], list);
-        if (!academicStore.selectedCycleId && list.length > 0) {
-          const activeCycle = list.find((c: any) => c.is_current === 1) || list[0];
-          if (activeCycle) academicStore.selectedCycleId = String(activeCycle.id);
-        }
-      })
-      .catch((err) => {
-        console.error("Failed to load cycles in TitleBar:", err);
-      });
-  } else {
-    cycles = [];
-  }
-});
+// No $effect for loading cycles — academicContext is populated by bootstrap.
+// Cycles are reactive via $derived above.
 
 function selectCycle(cycleId: string) {
-  academicStore.selectedCycleId = cycleId;
+  academicContext.selectedCycleId = cycleId;
   const active = cycles.find((c) => String(c.id) === cycleId);
   if (active) {
     const name =
@@ -174,11 +168,15 @@ function selectCycle(cycleId: string) {
 
     <!-- Cycle Switcher (only shown when authenticated) -->
     {#if authStore.isAuthenticated && cycles.length > 0}
-      <div class="relative flex items-center z-50 shrink-0">
+      <div class="relative flex items-center z-50 shrink-0 gap-1.5">
+        <!-- Cycle Switcher -->
         <DropdownMenu>
-          <DropdownMenuTrigger class="flex items-center gap-1 bg-muted/40 hover:bg-muted/70 text-[11px] font-semibold text-foreground px-2.5 py-1 rounded-lg border border-border/60 transition-colors duration-150 cursor-pointer">
+          <DropdownMenuTrigger class="flex items-center gap-1 {academicContext.isReadOnly ? 'bg-muted/60' : 'bg-muted/40'} hover:bg-muted/70 text-[11px] font-semibold text-foreground px-2.5 py-1 rounded-lg border border-border/60 transition-colors duration-150 cursor-pointer">
             <GraduationCap size={13} class="text-primary" />
             <span>{currentCycleName}</span>
+            {#if academicContext.isReadOnly}
+              <span class="text-[10px] opacity-60">🔒</span>
+            {/if}
             <ChevronDown size={10} class="opacity-60" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" class="w-56 bg-popover border border-border rounded-lg shadow-lg py-1 z-50">
@@ -191,13 +189,20 @@ function selectCycle(cycleId: string) {
                 class="flex items-center justify-between text-xs px-2.5 py-1.5 cursor-pointer rounded-md hover:bg-accent hover:text-accent-foreground"
               >
                 <span>{cycle.name_ar && getLocale() === "ar" ? cycle.name_ar : cycle.name}</span>
-                {#if academicStore.selectedCycleId === String(cycle.id)}
+                {#if academicContext.effectiveCycleId === String(cycle.id)}
                   <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
                 {/if}
               </DropdownMenuItem>
             {/each}
           </DropdownMenuContent>
         </DropdownMenu>
+
+        <!-- Phase Badge -->
+        {#if phaseLabel}
+          <Badge variant={phaseBadgeVariant} class="text-[10px] px-1.5 py-0 h-5">
+            {phaseLabel}
+          </Badge>
+        {/if}
       </div>
     {/if}
 
@@ -245,6 +250,38 @@ function selectCycle(cycleId: string) {
         <span class="whitespace-nowrap">Ask Orbis</span>
         <kbd class="ml-1 rounded px-1 py-0.5 font-mono text-[9px] font-medium text-zinc-400">Ctrl /</kbd>
       </Button>
+
+      <!-- Workflow Inbox Bell -->
+      {#if workflowInbox.hasActions}
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          class="relative rounded-[8px] shrink-0"
+          title={m.titlebar_inbox ? m.titlebar_inbox() : "Inbox"}
+          onclick={() => {
+            const orgId = authStore.orgId;
+            if (orgId) window.location.href = localizeHref(`/${orgId}/settings/approvals`);
+          }}
+        >
+          <Bell size={14} class="stroke-[2px]" />
+          <span class="absolute -top-0.5 -end-0.5 size-4 bg-destructive text-destructive-foreground text-[10px] rounded-full flex items-center justify-center font-semibold">
+            {workflowInbox.totalCount}
+          </span>
+        </Button>
+      {:else}
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          class="rounded-[8px] shrink-0"
+          title={m.titlebar_inbox ? m.titlebar_inbox() : "Inbox"}
+          onclick={() => {
+            const orgId = authStore.orgId;
+            if (orgId) window.location.href = localizeHref(`/${orgId}/settings/approvals`);
+          }}
+        >
+          <Bell size={14} class="stroke-[2px] text-muted-foreground" />
+        </Button>
+      {/if}
 
       <!-- What's New Megaphone (Original Header Design) -->
       <WhatsNewPopover />

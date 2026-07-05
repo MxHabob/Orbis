@@ -14,6 +14,7 @@ import {
   ClipboardList,
   ShieldCheck,
   CalendarDays,
+  CalendarClock,
   TrendingUp,
 } from "lucide-svelte";
 import MainViewport from "$lib/shell/main-viewport.svelte";
@@ -76,6 +77,11 @@ const navItems = $derived([
     path: "years",
     label: m.year_title(),
     icon: CalendarDays,
+  },
+  {
+    path: "calendar",
+    label: m.calendar_title ? m.calendar_title() : "Academic Calendar",
+    icon: CalendarClock,
   },
   {
     path: "promotion",
