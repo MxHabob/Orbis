@@ -4,6 +4,8 @@ import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
 import DragIndicator from "../components/drag-indicator.svelte";
 import * as m from "$lib/paraglide/messages";
+import { localizeHref } from "$lib/paraglide/runtime";
+import { ArrowRight } from "lucide-svelte";
 
 let {
   orgId,
@@ -30,19 +32,14 @@ async function loadData() {
   try {
     // Query stats to extract behavior details
     const res = await commands.dashboard.getStats(orgId);
-    if (res && res.behavior_summary) {
+    if (res && res.behavior_summary && (res.behavior_summary.critical_count || res.behavior_summary.major_count || res.behavior_summary.minor_count)) {
       summary = res.behavior_summary;
     } else {
-      // Fallback mock data
-      summary = {
-        total_records: 48,
-        critical_count: 5,
-        major_count: 15,
-        minor_count: 28,
-      };
+      summary = null;
     }
   } catch (e) {
     console.error("Error loading behavior reports:", e);
+    summary = null;
   } finally {
     isLoading = false;
   }
@@ -54,148 +51,119 @@ $effect(() => {
   }
 });
 
-// Donut variables
-const r = 55;
-const circumference = 2 * Math.PI * r; // ~345.57
-
-const segments = $derived.by(() => {
+const listItems = $derived.by(() => {
   if (!summary) return [];
   const critical = summary.critical_count ?? 0;
   const major = summary.major_count ?? 0;
   const minor = summary.minor_count ?? 0;
   const total = critical + major + minor || 1;
 
-  const dataList = [
+  return [
     {
-      name: "Critical",
+      name: "critical",
       label: m.reports_behavior_critical(),
       value: critical,
-      color: "var(--color-destructive)",
+      percent: Math.round((critical / total) * 100),
+      color: "bg-destructive",
     },
     {
-      name: "Major",
+      name: "major",
       label: m.reports_behavior_major(),
       value: major,
-      color: "oklch(0.65 0.15 80)",
+      percent: Math.round((major / total) * 100),
+      color: "bg-orange-500",
     },
     {
-      name: "Minor",
+      name: "minor",
       label: m.reports_behavior_minor(),
       value: minor,
-      color: "var(--color-primary)",
+      percent: Math.round((minor / total) * 100),
+      color: "bg-primary",
     },
   ];
-
-  let accumulatedPercent = 0;
-  return dataList.map((d) => {
-    const percent = d.value / total;
-    const dashArray = `${percent * circumference} ${circumference}`;
-    const dashOffset = -accumulatedPercent * circumference;
-    accumulatedPercent += percent;
-    return {
-      ...d,
-      percent: Math.round(percent * 100),
-      dashArray,
-      dashOffset,
-    };
-  });
 });
+
+// Determine display items list (uses placeholders when empty)
+const displayItems = $derived(
+  summary && listItems.length > 0 ? listItems : [
+    { name: "critical", label: m.reports_behavior_critical ? m.reports_behavior_critical() : "حرجة", value: 0, percent: 0, color: "bg-destructive" },
+    { name: "major", label: m.reports_behavior_major ? m.reports_behavior_major() : "متوسطة", value: 0, percent: 0, color: "bg-orange-500" },
+    { name: "minor", label: m.reports_behavior_minor ? m.reports_behavior_minor() : "طفيفة", value: 0, percent: 0, color: "bg-primary" },
+  ]
+);
 </script>
 
-<div class="card-tactile flex flex-col h-full relative group min-h-[460px]">
-	{#if isLoading}
-		<div class="mb-4 min-h-[100px] flex flex-col gap-2">
-			<Skeleton class="h-[14px] w-[180px]" />
-			<Skeleton class="h-[28px] w-[140px] mt-1" />
-		</div>
-		<div class="h-80 w-full bg-muted/5 border border-border/40 rounded-xl p-4">
-			<Skeleton class="h-full w-full rounded-lg" />
-		</div>
-	{:else}
-		<div class="mb-4 min-h-[100px]">
-			<div class="flex items-start justify-between h-7">
-				<h3 class="text-sm font-normal text-muted-foreground text-start">
-					{m.reports_behavior_severity_title()}
-				</h3>
-				{#if isEditing}
-					<div>
-						<DragIndicator />
-					</div>
-				{/if}
-			</div>
-			<p class="text-3xl font-semibold tracking-tight mt-1 text-start">
-				{summary?.total_records ?? 0} <span class="text-xs text-muted-foreground font-normal">{m.reports_total_incidents({ count: '' })}</span>
-			</p>
-		</div>
+<div class="card-tactile h-full relative group min-h-[235px] p-4 flex flex-col justify-between font-sans shadow-sm">
+  {#if isLoading}
+    <div class="flex-grow w-full relative flex items-center justify-center">
+      <Skeleton class="h-full w-full rounded-lg animate-pulse" />
+    </div>
+  {:else}
+    <!-- Top info bar with DragIndicator if editing, and small Releases-style label on the right -->
+    <div class="flex items-center justify-between w-full h-5 select-none text-[9px] font-bold text-muted-foreground/80">
+      <div class="flex items-center gap-2">
+        {#if isEditing}
+          <DragIndicator />
+        {/if}
+      </div>
+      <div class="flex items-center gap-1.5 font-sans font-extrabold uppercase tracking-wider text-[8px] text-muted-foreground/75">
+        <span class="h-1.5 w-1.5 rounded-full bg-rose-500 {summary ? 'animate-pulse' : ''}"></span>
+        {m.reports_behavior_severity_title()} {#if summary}• Total: <span class="text-foreground font-mono">{summary.total_records}</span>{/if}
+      </div>
+    </div>
 
-		<div class="h-80 w-full flex items-center justify-center bg-muted/10 border border-border/40 rounded-xl p-4 relative overflow-hidden">
-			{#if summary}
-				<svg viewBox="0 0 500 200" class="w-full h-full select-none overflow-visible">
-					<!-- Base circle -->
-					<circle
-						cx="120"
-						cy="100"
-						r={r}
-						fill="transparent"
-						class="stroke-border/30"
-						stroke-width="12"
-					/>
+    <!-- Main Content Area: Sentry-style horizontal ratios listing or Blurred Empty State -->
+    <div class="flex flex-col gap-4 mt-2 flex-grow justify-center w-full px-2 min-h-[140px] relative">
+      {#each displayItems as item, idx}
+        <div
+          class="flex items-center gap-4 text-[10px] w-full group/row cursor-pointer transition-opacity duration-200"
+          style="opacity: {hoveredIndex === null || hoveredIndex === idx ? 1 : 0.45}"
+          onmouseenter={() => { if (summary) hoveredIndex = idx; }}
+          onmouseleave={() => { hoveredIndex = null; }}
+        >
+          <!-- Category Label -->
+          <span class="w-[60px] font-bold text-muted-foreground text-start lowercase tracking-tight select-none">
+            {item.name}
+          </span>
 
-					<!-- Segments -->
-					{#each segments as seg, idx}
-						{#if seg.value > 0}
-							<circle
-								cx="120"
-								cy="100"
-								r={r}
-								fill="transparent"
-								stroke={seg.color}
-								stroke-width={hoveredIndex === idx ? 15 : 12}
-								stroke-dasharray={seg.dashArray}
-								stroke-dashoffset={seg.dashOffset}
-								transform="rotate(-90 120 100)"
-								stroke-linecap="round"
-								class="transition-all duration-200 cursor-pointer origin-center"
-								style="opacity: {hoveredIndex === null || hoveredIndex === idx ? 1 : 0.45}"
-								onmouseenter={() => hoveredIndex = idx}
-								onmouseleave={() => hoveredIndex = null}
-							/>
-						{/if}
-					{/each}
+          <!-- Progress Bar Bar -->
+          <div class="flex-grow h-2.5 bg-muted/40 border border-border/50 rounded-md overflow-hidden relative select-none">
+            <!-- Progress Fill (Rendered ONLY when summary is loaded) -->
+            {#if summary}
+              <div
+                class="h-full rounded-md transition-all duration-500 ease-out {item.color}"
+                style="width: {item.percent}%"
+              ></div>
+            {/if}
+          </div>
 
-					<!-- Donut Hole Labels -->
-					{#if hoveredIndex === null}
-						<text x="120" y="96" text-anchor="middle" class="text-[10px] fill-muted-foreground font-semibold uppercase tracking-wider">{m.reports_behavior_total()}</text>
-						<text x="120" y="118" text-anchor="middle" class="text-xl font-bold fill-foreground tracking-tight">{summary.total_records}</text>
-					{:else}
-						{@const seg = segments[hoveredIndex]}
-						<text x="120" y="96" text-anchor="middle" class="text-[10px] font-bold uppercase tracking-wider" fill={seg.color}>{seg.label}</text>
-						<text x="120" y="118" text-anchor="middle" class="text-xl font-bold fill-foreground tracking-tight">{seg.percent}%</text>
-					{/if}
+          <!-- Value Percentage Ratios -->
+          <span class="w-[85px] text-end font-extrabold font-mono text-foreground select-none">
+            {item.percent}% <span class="text-muted-foreground font-bold font-mono">({item.value})</span>
+          </span>
+        </div>
+      {/each}
 
-					<!-- Legend Details -->
-					<g transform="translate(250, 45)">
-						{#each segments as seg, idx}
-							<g
-								transform="translate(0, {idx * 40})"
-								class="cursor-pointer transition-opacity duration-200"
-								style="opacity: {hoveredIndex === null || hoveredIndex === idx ? 1 : 0.45}"
-								onmouseenter={() => hoveredIndex = idx}
-								onmouseleave={() => hoveredIndex = null}
-							>
-								<!-- Color Dot -->
-								<circle cx="0" cy="0" r="5" fill={seg.color} />
-								
-								<!-- Label and Description -->
-								<text x="15" y="4" class="text-xs font-semibold fill-foreground text-start">{seg.label}</text>
-								<text x="95" y="4" class="text-xs fill-muted-foreground text-start">{seg.value} {m.reports_incident_unit()} ({seg.percent}%)</text>
-							</g>
-						{/each}
-					</g>
-				</svg>
-			{:else}
-				<div class="text-xs text-muted-foreground">{m.reports_no_behavior()}</div>
-			{/if}
-		</div>
-	{/if}
+      <!-- Backdrop Blur Overlay (Floats on top of the list when empty) -->
+      {#if !summary}
+        <div class="absolute inset-0 flex flex-col items-center justify-center text-center select-none p-4 gap-1.5 backdrop-blur-[3.5px] bg-background/35 z-10 transition-all duration-300 rounded-xl">
+          <span class="font-bold text-xs text-foreground/90">لا توجد حوادث سلوكية مسجلة</span>
+          <span class="text-[9px] text-muted-foreground max-w-[280px] leading-relaxed">
+            لم يتم رصد أي مخالفات سلوكية. يتم تجميع الحالات تلقائياً فور تسجيل ملاحظة أو بلاغ سلوكي للطالب من ملفه الشخصي.
+          </span>
+        </div>
+      {/if}
+    </div>
+
+    <!-- Footer link matching Screenshot 1 -->
+    <div class="border-t border-border/40 pt-2 flex items-center justify-start w-full select-none text-[9px] font-bold">
+      <a
+        href={localizeHref(`/${orgId}/students`)}
+        class="text-primary hover:underline flex items-center gap-1 group/link"
+      >
+        <span>View all incidents</span>
+        <ArrowRight size={10} class="transition-transform group-hover/link:translate-x-0.5 rtl:rotate-180" />
+      </a>
+    </div>
+  {/if}
 </div>

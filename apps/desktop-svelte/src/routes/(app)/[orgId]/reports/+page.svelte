@@ -13,7 +13,7 @@ let { data }: { data: PageData } = $props();
 	<title>{m.page_title_reports()}</title>
 </svelte:head>
 
-<div class="h-full w-full overflow-auto">
+<div class="h-full w-full overflow-auto mx-4">
 	<div class="mx-auto w-full">
 		<MetricsView orgId={data.orgId} />
 	</div>
