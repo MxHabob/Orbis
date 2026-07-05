@@ -1,3 +1,4 @@
+use sea_orm::EntityTrait;
 use tauri::State;
 use std::sync::Arc;
 
@@ -93,7 +94,7 @@ pub async fn execute_calendar_event(
 
     // Find the event
     let event = core_domain::entities::academic_calendar_event::Entity::find_by_id(&event_id)
-        .one(&*service.repo.db)
+        .one(&service.repo.db)
         .await
         .map_err(|e| CommandError::from(e.to_string()))?
         .ok_or_else(|| CommandError::from("Calendar event not found".to_string()))?;

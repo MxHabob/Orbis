@@ -11,8 +11,15 @@
 //! a notification banner with actionable items.
 
 use std::sync::Arc;
-use tauri::{AppHandle, Manager};
-use tracing::{info, warn};
+use tauri::{AppHandle, Emitter, Manager};
+use sea_orm::ConnectionTrait;
+
+macro_rules! info {
+    ($($arg:tt)*) => { println!($($arg)*) };
+}
+macro_rules! warn {
+    ($($arg:tt)*) => { eprintln!($($arg)*) };
+}
 
 use crate::state::AppState;
 
@@ -48,7 +55,7 @@ pub async fn process_startup_events(app_handle: AppHandle) {
         Ok(_) => {
             // Use a query to get the actual org_id
             let result = sea_orm::ConnectionTrait::query_one(
-                &*service.repo.db,
+                &service.repo.db,
                 sea_orm::Statement::from_string(
                     sea_orm::DatabaseBackend::Sqlite,
                     "SELECT id FROM organizations LIMIT 1".to_string(),
