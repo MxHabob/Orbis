@@ -22,6 +22,7 @@ import {
   BookOpen,
   Receipt,
   Percent,
+  CheckSquare,
 } from "lucide-svelte";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
@@ -125,6 +126,13 @@ const navItems = $derived([
       ? m.settings_nav_discount_templates()
       : "الخصومات",
     icon: Percent,
+  },
+  {
+    path: "approvals",
+    label: m.settings_nav_approvals
+      ? m.settings_nav_approvals()
+      : "الموافقات",
+    icon: CheckSquare,
   },
 ]);
 </script>

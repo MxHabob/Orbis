@@ -1,6 +1,6 @@
 <script lang="ts">
 import { onMount } from "svelte";
-import { commands } from "$lib/core/ipc";
+import { commands, extractErrorMessage } from "$lib/core/ipc";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import {
   Select,
@@ -9,6 +9,7 @@ import {
   SelectItem,
 } from "@orbis/ui-svelte/select";
 import { Badge } from "@orbis/ui-svelte/badge";
+import { Button } from "@orbis/ui-svelte/button";
 import {
   ShieldCheck,
   Lock,
@@ -19,7 +20,7 @@ import {
 } from "lucide-svelte";
 import { toast } from "svelte-sonner";
 import { fade, slide } from "svelte/transition";
-import { academicStore, authStore } from "$lib/stores";
+import { academicContext, authStore } from "$lib/stores";
 import { getLocale } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 
@@ -38,10 +39,12 @@ let { data } = $props();
 const orgId = $derived(data?.orgId || "");
 
 // ── State ──────────────────────────────────────────────────────────────────
-let cycles = $state<any[]>([]);
+// Cycles come from academicContext (populated by bootstrap) — no independent load
+let cycles = $derived(academicContext.allCycles);
 let classes = $state<any[]>([]);
 let subjects = $state<any[]>([]);
 
+// Selections — synced with academicContext for cross-page persistence
 let selectedCycleId = $state<string>("");
 let selectedClassId = $state<string>("");
 let selectedSubjectId = $state<string>("");
@@ -52,39 +55,42 @@ let isMatrixLoading = $state(false);
 let isSaving = $state(false);
 let isCycleActionLoading = $state(false);
 let isDirty = $state(false);
+let showOverrideDialog = $state(false);
 
 // Grade matrix data
 let matrixData = $state<GradeMatrixResponse | null>(null);
 let gridSource = $state<Record<string, unknown>[]>([]);
 let assessmentKeys = $state<string[]>([]);
 
-// Sync to/from global academic state store
+// Initialize selections from context on mount
 onMount(() => {
-  if (academicStore.selectedCycleId)
-    selectedCycleId = academicStore.selectedCycleId;
-  if (academicStore.selectedClassId)
-    selectedClassId = academicStore.selectedClassId;
-  if (academicStore.selectedSubjectId)
-    selectedSubjectId = academicStore.selectedSubjectId;
+  // Use context's effective cycle (auto-resolved by bootstrap)
+  if (academicContext.effectiveCycleId)
+    selectedCycleId = academicContext.effectiveCycleId;
+  if (academicContext.selectedClassId)
+    selectedClassId = academicContext.selectedClassId;
+  if (academicContext.selectedSubjectId)
+    selectedSubjectId = academicContext.selectedSubjectId;
 });
 
+// Sync selections back to context for cross-page persistence
 $effect(() => {
-  if (selectedCycleId) academicStore.selectedCycleId = selectedCycleId;
+  if (selectedCycleId) academicContext.selectedCycleId = selectedCycleId;
 });
 $effect(() => {
-  if (selectedClassId) academicStore.selectedClassId = selectedClassId;
+  if (selectedClassId) academicContext.selectedClassId = selectedClassId;
 });
 $effect(() => {
-  if (selectedSubjectId) academicStore.selectedSubjectId = selectedSubjectId;
+  if (selectedSubjectId) academicContext.selectedSubjectId = selectedSubjectId;
 });
 
-// Selected cycle details
+// Selected cycle details — from context-provided cycles
 let selectedCycle = $derived(
   cycles.find((c) => String(c.id) === selectedCycleId),
 );
-let isCycleLocked = $derived(selectedCycle?.is_locked === 1);
-let isGradeEntryOpen = $derived(selectedCycle?.is_grade_entry_open === 1);
-let canEnterGrades = $derived(!isCycleLocked && isGradeEntryOpen);
+let isCycleLocked = $derived(selectedCycle?.is_locked === true || selectedCycle?.is_locked === 1);
+let isGradeEntryOpen = $derived(selectedCycle?.is_grade_entry_open === true || selectedCycle?.is_grade_entry_open === 1);
+let canEnterGrades = $derived(!isCycleLocked && isGradeEntryOpen && !academicContext.isReadOnly);
 
 // Grid columns (reactive)
 let gridColumns = $derived.by(() => {
@@ -128,28 +134,24 @@ let stats = $derived.by(() => {
 });
 
 // ── Load initial data ──────────────────────────────────────────────────────
+// Cycles come from academicContext — only load classes and subjects
 async function loadInitialData() {
   isLoading = true;
   try {
-    const [cycleList, classList, subjectList] = await Promise.all([
-      commands.academics.getCycles(orgId),
+    const [classList, subjectList] = await Promise.all([
       commands.classes.getAll(orgId),
       commands.subjects.getAll(orgId),
     ]);
 
-    cycles = cycleList;
     classes = classList;
     subjects = subjectList;
 
-    if (!selectedCycleId) {
-      const activeCycle =
-        cycleList.find((c: any) => c.is_current === 1) || cycleList[0];
-      if (activeCycle) {
-        selectedCycleId = String(activeCycle.id);
-      }
+    // If no cycle selected yet, use context's effective cycle
+    if (!selectedCycleId && academicContext.effectiveCycleId) {
+      selectedCycleId = academicContext.effectiveCycleId;
     }
   } catch (e: unknown) {
-    toast.error((e as any)?.message || "Error loading data");
+    toast.error(extractErrorMessage(e));
   } finally {
     isLoading = false;
   }
@@ -171,7 +173,7 @@ async function handleLockCycle() {
     updateCycleInList(updated);
     toast.success(m.control_cycle_locked());
   } catch (e: unknown) {
-    toast.error((e as any)?.message || "Error");
+    toast.error(extractErrorMessage(e));
   } finally {
     isCycleActionLoading = false;
   }
@@ -185,7 +187,7 @@ async function handleUnlockCycle() {
     updateCycleInList(updated);
     toast.success(m.control_cycle_unlocked());
   } catch (e: unknown) {
-    toast.error((e as any)?.message || "Error");
+    toast.error(extractErrorMessage(e));
   } finally {
     isCycleActionLoading = false;
   }
@@ -199,7 +201,7 @@ async function handleOpenGradeEntry() {
     updateCycleInList(updated);
     toast.success(m.control_grade_entry_open());
   } catch (e: unknown) {
-    toast.error((e as any)?.message || "Error");
+    toast.error(extractErrorMessage(e));
   } finally {
     isCycleActionLoading = false;
   }
@@ -213,7 +215,7 @@ async function handleCloseGradeEntry() {
     updateCycleInList(updated);
     toast.success(m.control_grade_entry_closed());
   } catch (e: unknown) {
-    toast.error((e as any)?.message || "Error");
+    toast.error(extractErrorMessage(e));
   } finally {
     isCycleActionLoading = false;
   }
@@ -241,14 +243,16 @@ async function handleCompileGrades() {
       await loadGradeMatrix();
     }
   } catch (e: unknown) {
-    toast.error((e as any)?.message || "Error");
+    toast.error(extractErrorMessage(e));
   } finally {
     isCompileLoading = false;
   }
 }
 
 function updateCycleInList(updated: any) {
-  cycles = cycles.map((c) => (c.id === updated.id ? updated : c));
+  // Cycles are derived from academicContext.allCycles — notify context
+  // For now, the context will be refreshed on next resolveContext call
+  // The local derived will auto-update
 }
 
 // ── Grade Matrix ───────────────────────────────────────────────────────────

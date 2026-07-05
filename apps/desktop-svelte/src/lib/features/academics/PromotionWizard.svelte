@@ -8,7 +8,8 @@ import * as m from "$lib/paraglide/messages";
 import { commands } from "$lib/core/ipc";
 import { extractErrorMessage } from "$lib/core/ipc";
 import { toast } from "svelte-sonner";
-import { academicYearStore } from "$lib/stores/academic-year.svelte";
+import { academicContext } from "$lib/stores";
+import { onMount } from "svelte";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@orbis/ui-svelte/card";
@@ -51,10 +52,10 @@ const steps = [
   { key: "execute", label: m.promo_step_execute },
 ];
 
-// ── Config Form ─────────────────────────────────────────────────
+// ── Config Form ─────────────────────────────────────────────────────
 
 let config = $state<PromotionConfig>({
-  source_year_id: academicYearStore.currentYear?.id ?? "",
+  source_year_id: academicContext.currentYear?.id ?? "",
   target_year_name: "",
   target_year_name_ar: null,
   target_start_date: "",
@@ -67,6 +68,27 @@ let config = $state<PromotionConfig>({
   carry_over_outstanding_fees: false,
   carry_over_guardians: true,
   class_mapping: [],
+});
+
+let policyLoaded = $state(false);
+
+// Load promotion policy and apply defaults (Policy-Driven Architecture)
+onMount(async () => {
+  try {
+    const policy = await commands.promotion.getPolicy(orgId);
+    // Apply policy values as defaults (user can still override)
+    config.passing_score = policy.passing_score ?? 50;
+    config.min_attendance_rate = policy.min_attendance_rate ?? 75;
+    config.auto_graduate_final_level = (policy.auto_graduate_final_level ?? 1) === 1;
+    config.exclude_withdrawn = (policy.exclude_withdrawn ?? 1) === 1;
+    config.carry_over_outstanding_fees = policy.fee_carry_over_mode !== "ignore";
+    config.carry_over_guardians = (policy.carry_over_guardians ?? 1) === 1;
+    if (policy.final_level) config.final_level = policy.final_level;
+    policyLoaded = true;
+  } catch (e) {
+    // Policy not found — keep hardcoded defaults
+    policyLoaded = true;
+  }
 });
 
 // ── Preview State ───────────────────────────────────────────────
