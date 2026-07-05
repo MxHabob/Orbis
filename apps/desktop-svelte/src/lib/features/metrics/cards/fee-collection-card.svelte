@@ -385,9 +385,9 @@ function formatCompact(val: number) {
       <!-- Backdrop Blur Overlay (Floats on top of BOTH columns when empty) -->
       {#if data.length === 0}
         <div class="absolute inset-0 flex flex-col items-center justify-center text-center select-none p-4 gap-1.5 backdrop-blur-[3.5px] bg-background/35 z-10 transition-all duration-300 rounded-xl">
-          <span class="font-bold text-xs text-foreground/90">لا توجد سجلات مالية متوفرة</span>
+          <span class="font-bold text-xs text-foreground/90">{m.reports_fees_empty_title()}</span>
           <span class="text-[10px] text-muted-foreground max-w-[280px] leading-relaxed">
-            لا توجد فواتير أو مدفوعات مسجلة. للبدء بالتحصيل المالي، قم بإنشاء رسوم مقررة للطلاب أو تسجيل سند قبض جديد من لوحة الحسابات.
+            {m.reports_fees_empty_desc()}
           </span>
         </div>
       {/if}

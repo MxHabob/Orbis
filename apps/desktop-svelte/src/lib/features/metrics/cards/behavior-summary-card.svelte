@@ -144,12 +144,12 @@ const displayItems = $derived(
         </div>
       {/each}
 
-      <!-- Backdrop Blur Overlay (Floats on top of the list when empty) -->
+      <!-- Backdrop Blur Overlay (No borders, no alert icons, frosted glass blur effect) -->
       {#if !summary}
-        <div class="absolute inset-0 flex flex-col items-center justify-center text-center select-none p-4 gap-1.5 backdrop-blur-[3.5px] bg-background/35 z-10 transition-all duration-300 rounded-xl">
-          <span class="font-bold text-xs text-foreground/90">لا توجد حوادث سلوكية مسجلة</span>
+        <div class="absolute inset-0 flex flex-col items-center justify-center text-center select-none p-4 gap-1.5 backdrop-blur-[3px] bg-background/35 z-10 transition-all duration-300 rounded-xl">
+          <span class="font-bold text-xs text-foreground/90">{m.reports_behavior_empty_title()}</span>
           <span class="text-[9px] text-muted-foreground max-w-[280px] leading-relaxed">
-            لم يتم رصد أي مخالفات سلوكية. يتم تجميع الحالات تلقائياً فور تسجيل ملاحظة أو بلاغ سلوكي للطالب من ملفه الشخصي.
+            {m.reports_behavior_empty_desc()}
           </span>
         </div>
       {/if}
@@ -161,7 +161,7 @@ const displayItems = $derived(
         href={localizeHref(`/${orgId}/students`)}
         class="text-primary hover:underline flex items-center gap-1 group/link"
       >
-        <span>View all incidents</span>
+        <span>{m.reports_behavior_view_all ? m.reports_behavior_view_all() : "View all incidents"}</span>
         <ArrowRight size={10} class="transition-transform group-hover/link:translate-x-0.5 rtl:rotate-180" />
       </a>
     </div>

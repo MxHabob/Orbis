@@ -286,9 +286,9 @@ function handleMouseLeave() {
       <!-- Backdrop Blur Overlay (No borders, no alert icons, frosted glass blur effect) -->
       {#if data.length === 0}
         <div class="absolute inset-0 flex flex-col items-center justify-center text-center select-none p-4 gap-1.5 backdrop-blur-[3px] bg-background/35 z-10 transition-all duration-300 rounded-xl">
-          <span class="font-bold text-xs text-foreground/90">لا توجد بيانات حضور متوفرة</span>
+          <span class="font-bold text-xs text-foreground/90">{m.reports_attendance_empty_title()}</span>
           <span class="text-[9px] text-muted-foreground max-w-[280px] leading-relaxed">
-            لم تسجل أي بيانات حضور في هذه الفترة. يمكنك البدء بتسجيل حضور الطلاب اليومي من خلال جدول الفصول لتنشيط مخطط التحليلات.
+            {m.reports_attendance_empty_desc()}
           </span>
         </div>
       {/if}

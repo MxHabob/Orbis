@@ -301,9 +301,9 @@ function handleMouseLeave() {
       <!-- Backdrop Blur Overlay (No borders, no alert icons, frosted glass blur effect) -->
       {#if data.length === 0}
         <div class="absolute inset-0 flex flex-col items-center justify-center text-center select-none p-4 gap-1.5 backdrop-blur-[3.5px] bg-background/35 z-10 transition-all duration-300 rounded-xl">
-          <span class="font-bold text-xs text-foreground/90">لا توجد سجلات مالية متوفرة</span>
+          <span class="font-bold text-xs text-foreground/90">{m.finance_overview_empty_records()}</span>
           <span class="text-[9px] text-muted-foreground max-w-[340px] leading-relaxed">
-            لا توجد فواتير أو مدفوعات مسجلة للحسابات. للبدء بالتحصيل المالي، قم بإنشاء رسوم مقررة للطلاب أو تسجيل سند قبض جديد.
+            {m.finance_overview_empty_records_desc()}
           </span>
         </div>
       {/if}

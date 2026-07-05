@@ -274,9 +274,9 @@ function handleMouseLeave() {
       <!-- Backdrop Blur Overlay (No borders, no alert icons, frosted glass blur effect) -->
       {#if !stats}
         <div class="absolute inset-0 flex flex-col items-center justify-center text-center select-none p-4 gap-1.5 backdrop-blur-[3.5px] bg-background/35 z-10 transition-all duration-300 rounded-xl">
-          <span class="font-bold text-xs text-foreground/90">لا توجد درجات أو تقديرات متوفرة</span>
+          <span class="font-bold text-xs text-foreground/90">{m.reports_grades_empty_title()}</span>
           <span class="text-[10px] text-muted-foreground max-w-[280px] leading-relaxed">
-            لا توجد درجات اختبارات مسجلة للطلبة في هذا الفصل. للبدء بمشاهدة التوزيع التحليلي، قم بإضافة درجات المواد من سجل الأكاديميات.
+            {m.reports_grades_empty_desc()}
           </span>
         </div>
       {/if}

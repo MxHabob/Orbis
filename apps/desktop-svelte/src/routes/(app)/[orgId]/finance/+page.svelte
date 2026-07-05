@@ -13,6 +13,14 @@ import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Avatar, AvatarFallback } from "@orbis/ui-svelte/avatar";
 import {
+  Table,
+  TableHeader,
+  TableRow,
+  TableHead,
+  TableBody,
+  TableCell
+} from "@orbis/ui-svelte/table";
+import {
   Wallet,
   CreditCard,
   Landmark,
@@ -237,26 +245,26 @@ const recentPayments = $derived.by(() => {
           </div>
 
           <div class="w-full overflow-hidden border border-border/50 rounded-xl bg-card/20 mt-3 flex-grow">
-            <table class="w-full text-start border-collapse text-xs">
-              <thead>
-                <tr class="border-b border-border/75 bg-muted/20 text-muted-foreground text-[10px] font-bold uppercase tracking-wider select-none">
-                  <th class="p-2.5 text-start">{m.finance_overview_student ? m.finance_overview_student() : "الطالب"}</th>
-                  <th class="p-2.5 text-start">{m.finance_overview_class ? m.finance_overview_class() : "الصف"}</th>
-                  <th class="p-2.5 text-start">{m.finance_overview_remaining ? m.finance_overview_remaining() : "المبلغ المتبقي"}</th>
-                  <th class="p-2.5 text-start">{m.finance_overview_status ? m.finance_overview_status() : "الحالة"}</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table class="w-full text-start border-collapse text-xs">
+              <TableHeader>
+                <TableRow class="border-b border-border/75 bg-muted/20 text-muted-foreground text-[10px] font-bold uppercase tracking-wider select-none hover:bg-transparent">
+                  <TableHead class="p-2.5 text-start h-auto text-muted-foreground">{m.finance_overview_student ? m.finance_overview_student() : "الطالب"}</TableHead>
+                  <TableHead class="p-2.5 text-start h-auto text-muted-foreground">{m.finance_overview_class ? m.finance_overview_class() : "الصف"}</TableHead>
+                  <TableHead class="p-2.5 text-start h-auto text-muted-foreground">{m.finance_overview_remaining ? m.finance_overview_remaining() : "المبلغ المتبقي"}</TableHead>
+                  <TableHead class="p-2.5 text-start h-auto text-muted-foreground">{m.finance_overview_status ? m.finance_overview_status() : "الحالة"}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {#if lateStudents.length === 0}
-                  <tr>
-                    <td colspan="4" class="p-8 text-center text-muted-foreground select-none">
-                      لا يوجد طلاب متأخرين عن السداد حالياً.
-                    </td>
-                  </tr>
+                  <TableRow class="hover:bg-transparent">
+                    <TableCell colspan="4" class="p-8 text-center text-muted-foreground select-none">
+                      {m.finance_overview_no_late_students()}
+                    </TableCell>
+                  </TableRow>
                 {:else}
                   {#each lateStudents as item, i (item.feeId)}
-                    <tr class="border-b border-border/50 hover:bg-muted/10 transition-colors">
-                      <td class="p-2 flex items-center gap-2.5">
+                    <TableRow class="border-b border-border/50 hover:bg-muted/10 transition-colors">
+                      <TableCell class="p-2 flex items-center gap-2.5">
                         <Avatar class="h-6 w-6 border border-border/70 select-none">
                           <AvatarFallback class="text-[9px] font-bold bg-primary/5 text-primary">
                             {item.studentName.slice(0, 2).toUpperCase()}
@@ -266,14 +274,14 @@ const recentPayments = $derived.by(() => {
                           <span class="font-bold text-foreground truncate max-w-[140px] text-[11px]">{item.studentName}</span>
                           <span class="text-[8px] text-muted-foreground font-mono">{item.studentNum}</span>
                         </div>
-                      </td>
-                      <td class="p-2 font-semibold text-muted-foreground select-none text-[11px]">
+                      </TableCell>
+                      <TableCell class="p-2 font-semibold text-muted-foreground select-none text-[11px]">
                         {item.className}
-                      </td>
-                      <td class="p-2 font-bold font-mono text-foreground select-none text-[11px]">
+                      </TableCell>
+                      <TableCell class="p-2 font-bold font-mono text-foreground select-none text-[11px]">
                         {formatCurrency(item.remaining, "YER")}
-                      </td>
-                      <td class="p-2 select-none">
+                      </TableCell>
+                      <TableCell class="p-2 select-none">
                         {#if item.daysLate > 0}
                           <Badge variant="destructive" class="text-[8px] px-1.5 py-0.5 font-bold">
                             {m.finance_overview_days_overdue ? m.finance_overview_days_overdue({ days: item.daysLate }) : `متأخر ${item.daysLate} يوم`}
@@ -283,12 +291,12 @@ const recentPayments = $derived.by(() => {
                             يستحق قريباً
                           </Badge>
                         {/if}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   {/each}
                 {/if}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </Card>
 
@@ -347,7 +355,7 @@ const recentPayments = $derived.by(() => {
           <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 mt-3 flex-grow">
             {#if recentPayments.length === 0}
               <div class="col-span-2 py-8 text-center text-muted-foreground text-xs select-none">
-                لم تسجل أي عمليات قبض للمدفوعات بعد.
+                {m.finance_overview_no_payments()}
               </div>
             {:else}
               {#each recentPayments as p (p.id)}
@@ -389,7 +397,7 @@ const recentPayments = $derived.by(() => {
           <div class="flex flex-col gap-2 mt-3 w-full flex-grow">
             {#if treasuries.length === 0}
               <div class="py-8 text-center text-muted-foreground text-xs select-none">
-                لا توجد حسابات خزينة مسجلة.
+                {m.finance_overview_no_treasuries()}
               </div>
             {:else}
               {#each treasuries.slice(0, 3) as t (t.id)}
