@@ -809,10 +809,10 @@ function handleWindowClick(event: MouseEvent) {
                 <TableHeader class="bg-muted/40 select-none print:bg-transparent">
                   <TableRow class="hover:bg-transparent border-b border-border/80 text-[10px] font-bold text-foreground">
                     <TableHead class="w-10 border-l border-border/40 text-center font-bold font-mono">#</TableHead>
-                    <TableHead colspan="2" class="border-l border-border/40 text-center bg-primary/5 text-primary">ريال يمني (YER)</TableHead>
-                    <TableHead colspan="2" class="border-l border-border/40 text-center bg-emerald-500/5 text-emerald-600">سعودي (SAR)</TableHead>
-                    <TableHead colspan="2" class="border-l border-border/40 text-center bg-blue-500/5 text-blue-600">دولار (USD)</TableHead>
-                    <TableHead colspan="2" class="border-l border-border/40 text-center bg-purple-500/5 text-purple-600">درهم (AED)</TableHead>
+                    <TableHead colspan={2} class="border-l border-border/40 text-center bg-primary/5 text-primary">ريال يمني (YER)</TableHead>
+                    <TableHead colspan={2} class="border-l border-border/40 text-center bg-emerald-500/5 text-emerald-600">سعودي (SAR)</TableHead>
+                    <TableHead colspan={2} class="border-l border-border/40 text-center bg-blue-500/5 text-blue-600">دولار (USD)</TableHead>
+                    <TableHead colspan={2} class="border-l border-border/40 text-center bg-purple-500/5 text-purple-600">درهم (AED)</TableHead>
                     <TableHead class="text-start border-l border-border/40">اسم الحساب الطرفي</TableHead>
                     <TableHead class="text-center border-l border-border/40 w-24">الكود</TableHead>
                     <TableHead class="text-center w-16">إجراء</TableHead>
