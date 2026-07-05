@@ -39,6 +39,7 @@ pub mod academic_year;
 pub mod academic_context;
 pub mod calendar;
 pub mod promotion;
+pub mod promotion_policy;
 
 pub mod student_ordering;
 pub mod exam_numbers;

@@ -437,6 +437,8 @@ pub fn run() {
             commands::promotion::override_promotion_decision,
             commands::promotion::execute_promotion,
             commands::promotion::rollback_promotion,
+            commands::promotion::get_promotion_policy,
+            commands::promotion::update_promotion_policy,
         ])
         .setup(move |app| {
             // Add updater plugin conditionally for desktop

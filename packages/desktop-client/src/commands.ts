@@ -28,6 +28,7 @@ import type {
   CalendarProcessingReport,
   EventProcessingResult,
   OrgAcademicPolicy,
+  PromotionPolicy,
   CreateAcademicYearRequest,
   PromotionJob,
   PromotionDetail,
@@ -1029,6 +1030,12 @@ export const commands = {
 
     rollback: (jobId: string, userId: string) =>
       invoke<void>("rollback_promotion", { jobId, userId }),
+
+    getPolicy: (orgId: string) =>
+      invoke<PromotionPolicy>("get_promotion_policy", { orgId }),
+
+    updatePolicy: (orgId: string, request: JsonRecord) =>
+      invoke<PromotionPolicy>("update_promotion_policy", { orgId, request }),
   },
 } as const;
 

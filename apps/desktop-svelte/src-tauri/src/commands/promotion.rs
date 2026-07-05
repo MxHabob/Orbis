@@ -497,3 +497,29 @@ pub async fn rollback_promotion(
 
     Ok(())
 }
+
+// ── Promotion Policies ─────────────────────────────────────────────
+
+#[tauri::command]
+pub async fn get_promotion_policy(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+) -> CmdResult<core_domain::entities::promotion_policy::Model> {
+    state.service().await
+        .get_promotion_policy(&org_id)
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
+pub async fn update_promotion_policy(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    request: core_domain::service::promotion_policy::UpdatePromotionPolicyRequest,
+) -> CmdResult<core_domain::entities::promotion_policy::Model> {
+    state.provider.ensure_writable().await.map_err(CommandError::from)?;
+    state.service().await
+        .update_promotion_policy(&org_id, request)
+        .await
+        .map_err(CommandError::from)
+}

@@ -330,3 +330,26 @@ export interface OverrideRequest {
   reason: string;
   user_id: string;
 }
+
+// ── Promotion Policy ─────────────────────────────────────────────────────────
+
+export type FeeCarryOverMode = "ignore" | "carry_all" | "carry_selected" | "require_approval";
+
+export interface PromotionPolicy {
+  id: string;
+  org_id: string;
+  passing_score: number;
+  min_attendance_rate: number;
+  auto_graduate_final_level: number;
+  final_level?: string | null;
+  exclude_withdrawn: number;
+  fee_carry_over_mode: FeeCarryOverMode;
+  fee_carry_over_categories?: string | null;
+  carry_over_guardians: number;
+  carry_over_time_slots: number;
+  carry_over_class_subjects: number;
+  auto_create_cycles: number;
+  cycle_template?: string | null;
+  created_at: string;
+  updated_at: string;
+}
