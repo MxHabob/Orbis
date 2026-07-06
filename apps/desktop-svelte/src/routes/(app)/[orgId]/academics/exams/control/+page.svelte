@@ -411,7 +411,7 @@ onMount(() => {
 });
 </script>
 
-<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-5 select-none" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
+<div class="h-full w-full overflow-y-auto scrollbar-hide p-6 flex flex-col gap-5 select-none" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
   <!-- Header -->
   <div
     class="bg-card border border-border rounded-xl p-5 flex items-center justify-between"

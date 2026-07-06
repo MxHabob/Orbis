@@ -101,7 +101,7 @@ const cards = $derived([
 ]);
 </script>
 
-<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 select-none">
+<div class="h-full w-full overflow-y-auto scrollbar-hide p-6 flex flex-col gap-6 select-none">
   <!-- Header Banner -->
   <div
     class="card-tactile bg-gradient-to-br from-card to-card/50 p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4"

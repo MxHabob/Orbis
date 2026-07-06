@@ -92,7 +92,7 @@ function handlePrint() {
 }
 </script>
 
-<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-5 select-none">
+<div class="h-full w-full overflow-y-auto scrollbar-hide p-6 flex flex-col gap-5 select-none">
 	<!-- Header -->
 	<div class="card-tactile bg-gradient-to-br from-card to-card/50 p-5 flex items-center gap-4" in:fade={{ duration: 150 }}>
 		<div class="h-10 w-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">

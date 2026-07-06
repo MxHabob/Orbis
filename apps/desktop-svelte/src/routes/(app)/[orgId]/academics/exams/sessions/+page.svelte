@@ -21,23 +21,17 @@ import {
 import * as m from "$lib/paraglide/messages";
 import ExamStatusBadge from "$lib/features/exams/components/status-badge.svelte";
 import SessionCreateSheet from "$lib/features/exams/components/session-create-sheet.svelte";
-import { examsStore } from "$lib/features/exams/store.svelte";
+import { createExamSessionsQuery } from "$lib/features/exams/queries";
 
 let { data }: { data: { orgId: string } } = $props();
 
 let searchQuery = $state("");
 let isSheetOpen = $state(false);
 
-// Load from database on mount
-onMount(() => {
-  if (data.orgId) {
-    examsStore.loadSessions(data.orgId);
-  }
-});
-
-// Reactive state from store
-const sessions = $derived(examsStore.sessions);
-const isLoading = $derived(examsStore.isLoading);
+// Reactive state from TanStack Query
+const sessionsQuery = createExamSessionsQuery(data.orgId);
+const sessions = $derived($sessionsQuery.data || []);
+const isLoading = $derived($sessionsQuery.isLoading);
 
 const filtered = $derived(
   sessions.filter((s) => {
@@ -79,7 +73,7 @@ function getTypeLabel(type: string): string {
 
 	<!-- Search -->
 	<div class="relative">
-		<Search size={14} class="absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+		<Search size={14} class="absolute inset-s-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
 		<Input
 			placeholder={m.exams_sessions_search()}
 			class="ps-9 h-9 text-xs"
