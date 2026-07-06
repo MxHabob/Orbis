@@ -26,16 +26,7 @@ let {
 </script>
 
 <Sheet bind:open>
-	<SheetContent class="flex flex-col h-full sm:max-w-md">
-		<SheetHeader class="text-start select-none">
-			<SheetTitle class="text-xl font-bold text-foreground">
-				{m.subject_sheet_title()}
-			</SheetTitle>
-			<SheetDescription class="text-sm text-muted-foreground mt-1">
-				{m.subject_sheet_subtitle()}
-			</SheetDescription>
-		</SheetHeader>
-
+	<SheetContent class="flex flex-col h-full sm:max-w-md overflow-hidden p-0 gap-0">
 		<SubjectForm 
 			{orgId} 
 			onSuccess={() => {

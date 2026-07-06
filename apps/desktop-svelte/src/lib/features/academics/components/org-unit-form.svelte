@@ -2,6 +2,13 @@
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
+import { SheetHeader, SheetTitle } from "@orbis/ui-svelte/sheet";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
@@ -112,176 +119,187 @@ async function handleSubmit(e: SubmitEvent) {
 }
 </script>
 
-<form onsubmit={handleSubmit} class="flex-1 overflow-y-auto py-6 flex flex-col gap-5 scrollbar-hide text-start">
-  <!-- Names (Arabic & English) -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <!-- Arabic Name -->
-    <div class="flex flex-col gap-2">
-      <label for="unit_name_ar" class="text-xs font-semibold text-foreground">
-        Arabic Name
-      </label>
-      <Input
-        id="unit_name_ar"
-        type="text"
-        bind:value={nameAr}
-        placeholder="مثلاً: مبنى الإدارة أو الصف الأول"
-        disabled={isSubmitting}
-      />
+<form onsubmit={handleSubmit} class="flex flex-col h-full overflow-hidden gap-0">
+  <SheetHeader class="text-start select-none px-6 py-4 border-b border-border/40 shrink-0">
+    <SheetTitle class="text-xl font-bold text-foreground">
+      {isEdit ? "Edit Organizational Unit" : "Create Organizational Unit"}
+    </SheetTitle>
+  </SheetHeader>
+
+  <div class="flex-1 overflow-y-auto p-6 flex flex-col gap-5 scrollbar-hide text-start">
+    <!-- Names (Arabic & English) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Arabic Name -->
+      <div class="flex flex-col gap-2">
+        <label for="unit_name_ar" class="text-xs font-semibold text-foreground">
+          Arabic Name
+        </label>
+        <Input
+          id="unit_name_ar"
+          type="text"
+          bind:value={nameAr}
+          placeholder="مثلاً: مبنى الإدارة أو الصف الأول"
+          disabled={isSubmitting}
+        />
+      </div>
+
+      <!-- English Name -->
+      <div class="flex flex-col gap-2">
+        <label for="unit_name_en" class="text-xs font-semibold text-foreground">
+          English Name <span class="text-destructive">*</span>
+        </label>
+        <Input
+          id="unit_name_en"
+          type="text"
+          bind:value={name}
+          placeholder="e.g. Administration Building or Grade 1"
+          required
+          disabled={isSubmitting}
+        />
+      </div>
     </div>
 
-    <!-- English Name -->
-    <div class="flex flex-col gap-2">
-      <label for="unit_name_en" class="text-xs font-semibold text-foreground">
-        English Name <span class="text-destructive">*</span>
-      </label>
-      <Input
-        id="unit_name_en"
-        type="text"
-        bind:value={name}
-        placeholder="e.g. Administration Building or Grade 1"
-        required
-        disabled={isSubmitting}
-      />
-    </div>
-  </div>
+    <!-- Type & Parent -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Unit Type -->
+      <div class="flex flex-col gap-2">
+        <label for="unit_type" class="text-xs font-semibold text-foreground">
+          Unit Type
+        </label>
+        {@const unitTypeLabels = { branch: "Branch / Site", building: "Building", department: "Department", classroom: "Classroom / Room", office: "Office / Lab", other: "Other" }}
+        <Select type="single" value={unitType} onValueChange={(v) => (unitType = v ?? "classroom")}>
+          <SelectTrigger class="h-9 text-sm w-full">
+            {unitTypeLabels[unitType as keyof typeof unitTypeLabels] || unitType}
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="branch">Branch / Site</SelectItem>
+            <SelectItem value="building">Building</SelectItem>
+            <SelectItem value="department">Department</SelectItem>
+            <SelectItem value="classroom">Classroom / Room</SelectItem>
+            <SelectItem value="office">Office / Lab</SelectItem>
+            <SelectItem value="other">Other</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-  <!-- Type & Parent -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <!-- Unit Type -->
-    <div class="flex flex-col gap-2">
-      <label for="unit_type" class="text-xs font-semibold text-foreground">
-        Unit Type
-      </label>
-      <select
-        id="unit_type"
-        bind:value={unitType}
-        class="bg-background text-foreground border border-border rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-ring outline-none h-9 w-full cursor-pointer"
-        disabled={isSubmitting}
-      >
-        <option value="branch">Branch / Site</option>
-        <option value="building">Building</option>
-        <option value="department">Department</option>
-        <option value="classroom">Classroom / Room</option>
-        <option value="office">Office / Lab</option>
-        <option value="other">Other</option>
-      </select>
-    </div>
-
-    <!-- Parent Unit -->
-    <div class="flex flex-col gap-2">
-      <label for="unit_parent" class="text-xs font-semibold text-foreground">
-        Parent Unit
-      </label>
-      <select
-        id="unit_parent"
-        bind:value={parentId}
-        class="bg-background text-foreground border border-border rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-ring outline-none h-9 w-full cursor-pointer"
-        disabled={isSubmitting}
-      >
-        <option value="">— None (Root Unit) —</option>
-        {#each unitsList as u}
-          <option value={u.id}>{u.name_ar || u.name} ({u.unit_type})</option>
-        {/each}
-      </select>
-    </div>
-  </div>
-
-  <!-- Code & Head of Unit -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <!-- Code -->
-    <div class="flex flex-col gap-2">
-      <label for="unit_code" class="text-xs font-semibold text-foreground">
-        Code
-      </label>
-      <Input
-        id="unit_code"
-        type="text"
-        bind:value={code}
-        placeholder="e.g. BLD-A"
-        disabled={isSubmitting}
-      />
+      <!-- Parent Unit -->
+      <div class="flex flex-col gap-2">
+        <label for="unit_parent" class="text-xs font-semibold text-foreground">
+          Parent Unit
+        </label>
+        <Select type="single" value={parentId} onValueChange={(v) => (parentId = v ?? "")}>
+          <SelectTrigger class="h-9 text-sm w-full">
+            {unitsList.find(u => String(u.id) === parentId) ? `${unitsList.find(u => String(u.id) === parentId).name_ar || unitsList.find(u => String(u.id) === parentId).name} (${unitsList.find(u => String(u.id) === parentId).unit_type})` : "— None (Root Unit) —"}
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">— None (Root Unit) —</SelectItem>
+            {#each unitsList as u}
+              <SelectItem value={String(u.id)}>{u.name_ar || u.name} ({u.unit_type})</SelectItem>
+            {#empty}
+              <div class="p-2 text-xs text-muted-foreground">لا توجد وحدات</div>
+            {/each}
+          </SelectContent>
+        </Select>
+      </div>
     </div>
 
-    <!-- Head of Unit -->
-    <div class="flex flex-col gap-2">
-      <label for="unit_head" class="text-xs font-semibold text-foreground">
-        Head of Unit
-      </label>
-      <select
-        id="unit_head"
-        bind:value={headId}
-        class="bg-background text-foreground border border-border rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-ring outline-none h-9 w-full cursor-pointer"
-        disabled={isSubmitting}
-      >
-        <option value="">— None —</option>
-        {#each staffList as s}
-          <option value={s.id}>{s.name_ar || s.full_name}</option>
-        {/each}
-      </select>
-    </div>
-  </div>
+    <!-- Code & Head of Unit -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Code -->
+      <div class="flex flex-col gap-2">
+        <label for="unit_code" class="text-xs font-semibold text-foreground">
+          Code
+        </label>
+        <Input
+          id="unit_code"
+          type="text"
+          bind:value={code}
+          placeholder="e.g. BLD-A"
+          disabled={isSubmitting}
+        />
+      </div>
 
-  <!-- Building, Floor, Room Number, Capacity -->
-  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-    <!-- Building -->
-    <div class="flex flex-col gap-2">
-      <label for="unit_bld" class="text-xs font-semibold text-foreground">
-        Building
-      </label>
-      <Input
-        id="unit_bld"
-        type="text"
-        bind:value={building}
-        placeholder="e.g. A"
-        disabled={isSubmitting}
-      />
-    </div>
-
-    <!-- Floor -->
-    <div class="flex flex-col gap-2">
-      <label for="unit_floor" class="text-xs font-semibold text-foreground">
-        Floor
-      </label>
-      <Input
-        id="unit_floor"
-        type="number"
-        bind:value={floor}
-        placeholder="e.g. 1"
-        disabled={isSubmitting}
-      />
+      <!-- Head of Unit -->
+      <div class="flex flex-col gap-2">
+        <label for="unit_head" class="text-xs font-semibold text-foreground">
+          Head of Unit
+        </label>
+        <Select type="single" value={headId} onValueChange={(v) => (headId = v ?? "")}>
+          <SelectTrigger class="h-9 text-sm w-full">
+            {staffList.find(s => String(s.id) === headId) ? (staffList.find(s => String(s.id) === headId).name_ar || staffList.find(s => String(s.id) === headId).full_name) : "— None —"}
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">— None —</SelectItem>
+            {#each staffList as s}
+              <SelectItem value={String(s.id)}>{s.name_ar || s.full_name}</SelectItem>
+            {/each}
+          </SelectContent>
+        </Select>
+      </div>
     </div>
 
-    <!-- Room Number -->
-    <div class="flex flex-col gap-2">
-      <label for="unit_room" class="text-xs font-semibold text-foreground">
-        Room Number
-      </label>
-      <Input
-        id="unit_room"
-        type="text"
-        bind:value={roomNumber}
-        placeholder="e.g. 102"
-        disabled={isSubmitting}
-      />
-    </div>
+    <!-- Building, Floor, Room Number, Capacity -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <!-- Building -->
+      <div class="flex flex-col gap-2">
+        <label for="unit_bld" class="text-xs font-semibold text-foreground">
+          Building
+        </label>
+        <Input
+          id="unit_bld"
+          type="text"
+          bind:value={building}
+          placeholder="e.g. A"
+          disabled={isSubmitting}
+        />
+      </div>
 
-    <!-- Capacity -->
-    <div class="flex flex-col gap-2">
-      <label for="unit_cap" class="text-xs font-semibold text-foreground">
-        Capacity
-      </label>
-      <Input
-        id="unit_cap"
-        type="number"
-        bind:value={capacity}
-        placeholder="e.g. 35"
-        disabled={isSubmitting}
-      />
+      <!-- Floor -->
+      <div class="flex flex-col gap-2">
+        <label for="unit_floor" class="text-xs font-semibold text-foreground">
+          Floor
+        </label>
+        <Input
+          id="unit_floor"
+          type="number"
+          bind:value={floor}
+          placeholder="e.g. 1"
+          disabled={isSubmitting}
+        />
+      </div>
+
+      <!-- Room Number -->
+      <div class="flex flex-col gap-2">
+        <label for="unit_room" class="text-xs font-semibold text-foreground">
+          Room Number
+        </label>
+        <Input
+          id="unit_room"
+          type="text"
+          bind:value={roomNumber}
+          placeholder="e.g. 102"
+          disabled={isSubmitting}
+        />
+      </div>
+
+      <!-- Capacity -->
+      <div class="flex flex-col gap-2">
+        <label for="unit_cap" class="text-xs font-semibold text-foreground">
+          Capacity
+        </label>
+        <Input
+          id="unit_cap"
+          type="number"
+          bind:value={capacity}
+          placeholder="e.g. 35"
+          disabled={isSubmitting}
+        />
+      </div>
     </div>
   </div>
 
   <!-- Actions -->
-  <div class="flex gap-2 justify-end mt-auto pt-6 border-t border-border/40">
+  <div class="px-6 py-4 border-t border-border/40 flex gap-2 justify-end shrink-0 bg-background/50">
     <Button
       type="button"
       variant="ghost"

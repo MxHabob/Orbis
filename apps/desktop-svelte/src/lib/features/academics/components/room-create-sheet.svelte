@@ -30,16 +30,7 @@ const isEdit = $derived(!!room);
 </script>
 
 <Sheet bind:open>
-  <SheetContent class="flex flex-col h-full sm:max-w-xl overflow-hidden">
-    <SheetHeader class="text-start select-none border-b border-border/40 pb-4">
-      <SheetTitle class="text-lg font-bold text-foreground">
-        {isEdit ? "Edit Room Details" : m.rooms_add()}
-      </SheetTitle>
-      <SheetDescription class="text-xs text-muted-foreground mt-1">
-        Configure classrooms, laboratory capacities, and building details.
-      </SheetDescription>
-    </SheetHeader>
-
+  <SheetContent class="flex flex-col h-full sm:max-w-xl overflow-hidden p-0 gap-0">
     <RoomForm
       {orgId}
       {room}

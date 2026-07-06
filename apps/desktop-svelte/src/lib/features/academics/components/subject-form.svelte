@@ -2,6 +2,7 @@
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
+import { SheetHeader, SheetTitle } from "@orbis/ui-svelte/sheet";
 import InputColor from "$lib/shared/components/input-color.svelte";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
@@ -59,62 +60,70 @@ async function handleSubmit(e: SubmitEvent) {
 }
 </script>
 
-<form onsubmit={handleSubmit} class="flex-1 overflow-y-auto py-6 flex flex-col gap-6 scrollbar-hide">
-	<!-- Name (Arabic) -->
-	<div class="flex flex-col gap-2 text-start">
-		<label for="sub_name_ar" class="text-sm font-medium text-foreground">
-			{m.subject_label_name_ar()}
-		</label>
-		<InputColor
-			placeholder={m.subject_placeholder_name_ar()}
-			bind:value={nameAr}
-			bind:color={color}
-			required
-		/>
-	</div>
+<form onsubmit={handleSubmit} class="flex flex-col h-full overflow-hidden gap-0">
+	<SheetHeader class="text-start select-none px-6 py-4 border-b border-border/40 shrink-0">
+		<SheetTitle class="text-xl font-bold text-foreground">
+			{m.subject_sheet_title()}
+		</SheetTitle>
+	</SheetHeader>
 
-	<!-- Name (English) -->
-	<div class="flex flex-col gap-2 text-start">
-		<label for="sub_name_en" class="text-sm font-medium text-foreground">
-			{m.subject_label_name_en()}
-		</label>
-		<Input 
-			id="sub_name_en"
-			type="text" 
-			bind:value={name}
-			placeholder="e.g., Mathematics"
-		/>
-	</div>
+	<div class="flex-1 overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide">
+		<!-- Name (Arabic) -->
+		<div class="flex flex-col gap-2 text-start">
+			<label for="sub_name_ar" class="text-sm font-medium text-foreground">
+				{m.subject_label_name_ar()}
+			</label>
+			<InputColor
+				placeholder={m.subject_placeholder_name_ar()}
+				bind:value={nameAr}
+				bind:color={color}
+				required
+			/>
+		</div>
 
-	<!-- Subject Code -->
-	<div class="flex flex-col gap-2 text-start">
-		<label for="sub_code" class="text-sm font-medium text-foreground">
-			{m.subject_label_code()}
-		</label>
-		<Input 
-			id="sub_code"
-			type="text" 
-			bind:value={code}
-			placeholder="e.g., MATH-101"
-		/>
-	</div>
+		<!-- Name (English) -->
+		<div class="flex flex-col gap-2 text-start">
+			<label for="sub_name_en" class="text-sm font-medium text-foreground">
+				{m.subject_label_name_en()}
+			</label>
+			<Input 
+				id="sub_name_en"
+				type="text" 
+				bind:value={name}
+				placeholder="e.g., Mathematics"
+			/>
+		</div>
 
-	<!-- Credit Hours -->
-	<div class="flex flex-col gap-2 text-start">
-		<label for="sub_weight" class="text-sm font-medium text-foreground">
-			{m.subject_label_periods()}
-		</label>
-		<Input 
-			id="sub_weight"
-			type="number" 
-			bind:value={creditHours}
-			min="1"
-			max="20"
-		/>
+		<!-- Subject Code -->
+		<div class="flex flex-col gap-2 text-start">
+			<label for="sub_code" class="text-sm font-medium text-foreground">
+				{m.subject_label_code()}
+			</label>
+			<Input 
+				id="sub_code"
+				type="text" 
+				bind:value={code}
+				placeholder="e.g., MATH-101"
+			/>
+		</div>
+
+		<!-- Credit Hours -->
+		<div class="flex flex-col gap-2 text-start">
+			<label for="sub_weight" class="text-sm font-medium text-foreground">
+				{m.subject_label_periods()}
+			</label>
+			<Input 
+				id="sub_weight"
+				type="number" 
+				bind:value={creditHours}
+				min="1"
+				max="20"
+			/>
+		</div>
 	</div>
 
 	<!-- Form Actions -->
-	<div class="flex gap-2 justify-end mt-auto pt-6">
+	<div class="px-6 py-4 border-t border-border/40 flex gap-2 justify-end shrink-0 bg-background/50">
 		<Button 
 			type="button" 
 			variant="ghost" 

@@ -32,16 +32,7 @@ const isEdit = $derived(!!unit);
 </script>
 
 <Sheet bind:open>
-  <SheetContent class="flex flex-col h-full sm:max-w-xl overflow-hidden">
-    <SheetHeader class="text-start select-none border-b border-border/40 pb-4">
-      <SheetTitle class="text-lg font-bold text-foreground">
-        {isEdit ? "Edit Organizational Unit" : "Create Organizational Unit"}
-      </SheetTitle>
-      <SheetDescription class="text-xs text-muted-foreground mt-1">
-        Configure sites, buildings, departments, or classrooms.
-      </SheetDescription>
-    </SheetHeader>
-
+  <SheetContent class="flex flex-col h-full sm:max-w-xl overflow-hidden p-0 gap-0">
     <OrgUnitForm
       {orgId}
       {unit}

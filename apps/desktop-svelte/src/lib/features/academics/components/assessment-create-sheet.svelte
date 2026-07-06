@@ -33,17 +33,7 @@ let {
 </script>
 
 <Sheet bind:open>
-	<SheetContent class="flex flex-col h-full sm:max-w-md">
-		<SheetHeader class="text-start select-none">
-			<SheetTitle class="text-xl font-bold text-foreground flex items-center gap-2">
-				<Award size={18} class="text-primary" />
-				<span>{m.assessment_sheet_title()}</span>
-			</SheetTitle>
-			<SheetDescription class="text-sm text-muted-foreground mt-1">
-				{m.assessment_sheet_subtitle()}
-			</SheetDescription>
-		</SheetHeader>
-
+	<SheetContent class="flex flex-col h-full sm:max-w-md overflow-hidden p-0 gap-0">
 		<AssessmentForm 
 			{classId} 
 			{subjectId} 

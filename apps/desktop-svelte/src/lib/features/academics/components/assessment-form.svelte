@@ -2,6 +2,14 @@
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
+import { SheetHeader, SheetTitle } from "@orbis/ui-svelte/sheet";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui-svelte/select";
+import { Award } from "lucide-svelte";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 
@@ -73,84 +81,95 @@ async function handleSubmit(e: SubmitEvent) {
 }
 </script>
 
-<form onsubmit={handleSubmit} class="flex-1 overflow-y-auto py-6 flex flex-col gap-6 scrollbar-hide">
-	<!-- Name (Arabic) -->
-	<div class="flex flex-col gap-2 text-start">
-		<label for="ass_name_ar" class="text-sm font-medium text-foreground">
-			{m.assessment_label_name_ar()}
-		</label>
-		<Input 
-			id="ass_name_ar"
-			type="text" 
-			bind:value={nameAr}
-			placeholder={m.assessment_placeholder_name_ar()}
-			required
-		/>
-	</div>
+<form onsubmit={handleSubmit} class="flex flex-col h-full overflow-hidden gap-0">
+	<SheetHeader class="text-start select-none px-6 py-4 border-b border-border/40 shrink-0">
+		<SheetTitle class="text-xl font-bold text-foreground flex items-center gap-2">
+			<Award size={18} class="text-primary" />
+			<span>{m.assessment_sheet_title()}</span>
+		</SheetTitle>
+	</SheetHeader>
 
-	<!-- Name (English) -->
-	<div class="flex flex-col gap-2 text-start">
-		<label for="ass_name_en" class="text-sm font-medium text-foreground">
-			{m.assessment_label_name_en()}
-		</label>
-		<Input 
-			id="ass_name_en"
-			type="text" 
-			bind:value={name}
-			placeholder="e.g., Midterm Mathematics Exam"
-		/>
-	</div>
-
-	<!-- Assessment Type -->
-	<div class="flex flex-col gap-2 text-start">
-		<label for="ass_type" class="text-sm font-medium text-foreground">
-			{m.assessment_label_type()}
-		</label>
-		<select 
-			id="ass_type"
-			bind:value={assessmentType}
-			class="bg-background text-foreground border border-border rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-ring outline-none h-9"
-		>
-			<option value="exam">{m.assessment_option_exam()}</option>
-			<option value="quiz">{m.assessment_option_quiz()}</option>
-			<option value="homework">{m.assessment_option_homework()}</option>
-			<option value="classwork">{m.assessment_option_classwork()}</option>
-		</select>
-	</div>
-
-	<!-- Two columns for scores -->
-	<div class="grid grid-cols-2 gap-4">
-		<!-- Max Score -->
+	<div class="flex-1 overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide">
+		<!-- Name (Arabic) -->
 		<div class="flex flex-col gap-2 text-start">
-			<label for="ass_max" class="text-sm font-medium text-foreground">
-				{m.assessment_label_max()}
+			<label for="ass_name_ar" class="text-sm font-medium text-foreground">
+				{m.assessment_label_name_ar()}
 			</label>
 			<Input 
-				id="ass_max"
-				type="number" 
-				bind:value={maxScore}
-				min="1"
-				max="1000"
+				id="ass_name_ar"
+				type="text" 
+				bind:value={nameAr}
+				placeholder={m.assessment_placeholder_name_ar()}
+				required
 			/>
 		</div>
 
-		<!-- Weight -->
+		<!-- Name (English) -->
 		<div class="flex flex-col gap-2 text-start">
-			<label for="ass_weight" class="text-sm font-medium text-foreground">
-				{m.assessment_label_weight()}
+			<label for="ass_name_en" class="text-sm font-medium text-foreground">
+				{m.assessment_label_name_en()}
 			</label>
 			<Input 
-				id="ass_weight"
-				type="number" 
-				bind:value={weight}
-				min="1"
-				max="100"
+				id="ass_name_en"
+				type="text" 
+				bind:value={name}
+				placeholder="e.g., Midterm Mathematics Exam"
 			/>
+		</div>
+
+		<!-- Assessment Type -->
+		<div class="flex flex-col gap-2 text-start">
+			<label for="ass_type" class="text-sm font-medium text-foreground">
+				{m.assessment_label_type()}
+			</label>
+			{@const typeLabels = { exam: m.assessment_option_exam(), quiz: m.assessment_option_quiz(), homework: m.assessment_option_homework(), classwork: m.assessment_option_classwork() }}
+			<Select type="single" value={assessmentType} onValueChange={(v) => (assessmentType = (v as any) ?? "exam")}>
+				<SelectTrigger class="h-9 text-sm w-full">
+					{typeLabels[assessmentType] || assessmentType}
+				</SelectTrigger>
+				<SelectContent>
+					<SelectItem value="exam">{m.assessment_option_exam()}</SelectItem>
+					<SelectItem value="quiz">{m.assessment_option_quiz()}</SelectItem>
+					<SelectItem value="homework">{m.assessment_option_homework()}</SelectItem>
+					<SelectItem value="classwork">{m.assessment_option_classwork()}</SelectItem>
+				</SelectContent>
+			</Select>
+		</div>
+
+		<!-- Two columns for scores -->
+		<div class="grid grid-cols-2 gap-4">
+			<!-- Max Score -->
+			<div class="flex flex-col gap-2 text-start">
+				<label for="ass_max" class="text-sm font-medium text-foreground">
+					{m.assessment_label_max()}
+				</label>
+				<Input 
+					id="ass_max"
+					type="number" 
+					bind:value={maxScore}
+					min="1"
+					max="1000"
+				/>
+			</div>
+
+			<!-- Weight -->
+			<div class="flex flex-col gap-2 text-start">
+				<label for="ass_weight" class="text-sm font-medium text-foreground">
+					{m.assessment_label_weight()}
+				</label>
+				<Input 
+					id="ass_weight"
+					type="number" 
+					bind:value={weight}
+					min="1"
+					max="100"
+				/>
+			</div>
 		</div>
 	</div>
 
 	<!-- Form Actions -->
-	<div class="flex gap-2 justify-end mt-auto pt-6">
+	<div class="px-6 py-4 border-t border-border/40 flex gap-2 justify-end shrink-0 bg-background/50">
 		<Button 
 			type="button" 
 			variant="ghost" 

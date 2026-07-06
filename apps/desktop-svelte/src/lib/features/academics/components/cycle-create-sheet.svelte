@@ -30,16 +30,7 @@ const isEdit = $derived(!!cycle);
 </script>
 
 <Sheet bind:open>
-  <SheetContent class="flex flex-col h-full sm:max-w-xl overflow-hidden">
-    <SheetHeader class="text-start select-none border-b border-border/40 pb-4">
-      <SheetTitle class="text-lg font-bold text-foreground">
-        {isEdit ? "Edit Academic Cycle" : m.cycle_form_title_create()}
-      </SheetTitle>
-      <SheetDescription class="text-xs text-muted-foreground mt-1">
-        {m.cycle_form_desc()}
-      </SheetDescription>
-    </SheetHeader>
-
+  <SheetContent class="flex flex-col h-full sm:max-w-xl overflow-hidden p-0 gap-0">
     <CycleForm
       {orgId}
       {cycle}

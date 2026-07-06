@@ -47,17 +47,7 @@ const weekdays = $derived([
 </script>
 
 <Sheet bind:open>
-	<SheetContent class="flex flex-col h-full sm:max-w-md">
-		<SheetHeader class="text-start select-none">
-			<SheetTitle class="text-xl font-bold text-foreground flex items-center gap-2">
-				<Calendar size={18} class="text-primary" />
-				<span>{m.lesson_sheet_title()}</span>
-			</SheetTitle>
-			<SheetDescription class="text-sm text-muted-foreground mt-1">
-				{m.lesson_sheet_subtitle_prefix()}{weekdays.find(w => w.value === dayOfWeek)?.label}
-			</SheetDescription>
-		</SheetHeader>
-
+	<SheetContent class="flex flex-col h-full sm:max-w-md overflow-hidden p-0 gap-0">
 		<LessonForm 
 			{orgId} 
 			{cycleId} 

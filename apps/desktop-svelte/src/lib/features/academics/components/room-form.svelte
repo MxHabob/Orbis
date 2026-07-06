@@ -2,6 +2,13 @@
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
+import { SheetHeader, SheetTitle } from "@orbis/ui-svelte/sheet";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 
@@ -70,108 +77,117 @@ async function handleSubmit(e: SubmitEvent) {
 }
 </script>
 
-<form onsubmit={handleSubmit} class="flex-1 overflow-y-auto py-6 flex flex-col gap-5 scrollbar-hide text-start">
-  <!-- Names (Arabic & English) -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <!-- Arabic Name -->
-    <div class="flex flex-col gap-2">
-      <label for="room_name_ar" class="text-xs font-semibold text-foreground">
-        Arabic Name
-      </label>
-      <Input
-        id="room_name_ar"
-        type="text"
-        bind:value={nameAr}
-        placeholder="مثلاً: قاعة 101 أو مختبر الحاسوب"
-        disabled={isSubmitting}
-      />
+<form onsubmit={handleSubmit} class="flex flex-col h-full overflow-hidden gap-0">
+  <SheetHeader class="text-start select-none px-6 py-4 border-b border-border/40 shrink-0">
+    <SheetTitle class="text-xl font-bold text-foreground">
+      {isEdit ? "Edit Room Details" : m.rooms_add()}
+    </SheetTitle>
+  </SheetHeader>
+
+  <div class="flex-1 overflow-y-auto p-6 flex flex-col gap-5 scrollbar-hide text-start">
+    <!-- Names (Arabic & English) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Arabic Name -->
+      <div class="flex flex-col gap-2">
+        <label for="room_name_ar" class="text-xs font-semibold text-foreground">
+          Arabic Name
+        </label>
+        <Input
+          id="room_name_ar"
+          type="text"
+          bind:value={nameAr}
+          placeholder="مثلاً: قاعة 101 أو مختبر الحاسوب"
+          disabled={isSubmitting}
+        />
+      </div>
+
+      <!-- English Name -->
+      <div class="flex flex-col gap-2">
+        <label for="room_name_en" class="text-xs font-semibold text-foreground">
+          English Name <span class="text-destructive">*</span>
+        </label>
+        <Input
+          id="room_name_en"
+          type="text"
+          bind:value={name}
+          placeholder="e.g. Room 101 or Computer Lab"
+          required
+          disabled={isSubmitting}
+        />
+      </div>
     </div>
 
-    <!-- English Name -->
-    <div class="flex flex-col gap-2">
-      <label for="room_name_en" class="text-xs font-semibold text-foreground">
-        English Name <span class="text-destructive">*</span>
-      </label>
-      <Input
-        id="room_name_en"
-        type="text"
-        bind:value={name}
-        placeholder="e.g. Room 101 or Computer Lab"
-        required
-        disabled={isSubmitting}
-      />
-    </div>
-  </div>
+    <!-- Type & Capacity -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Room Type -->
+      <div class="flex flex-col gap-2">
+        <label for="room_type" class="text-xs font-semibold text-foreground">
+          Room Type
+        </label>
+        {@const roomTypeLabels = { classroom: "Classroom", laboratory: "Laboratory", lecture_hall: "Lecture Hall", office: "Staff Office", other: "Other" }}
+        <Select type="single" value={roomType} onValueChange={(v) => (roomType = v ?? "classroom")}>
+          <SelectTrigger class="h-9 text-sm w-full">
+            {roomTypeLabels[roomType as keyof typeof roomTypeLabels] || roomType}
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="classroom">Classroom</SelectItem>
+            <SelectItem value="laboratory">Laboratory</SelectItem>
+            <SelectItem value="lecture_hall">Lecture Hall</SelectItem>
+            <SelectItem value="office">Staff Office</SelectItem>
+            <SelectItem value="other">Other</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-  <!-- Type & Capacity -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <!-- Room Type -->
-    <div class="flex flex-col gap-2">
-      <label for="room_type" class="text-xs font-semibold text-foreground">
-        Room Type
-      </label>
-      <select
-        id="room_type"
-        bind:value={roomType}
-        class="bg-background text-foreground border border-border rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-ring outline-none h-9 w-full cursor-pointer"
-        disabled={isSubmitting}
-      >
-        <option value="classroom">Classroom</option>
-        <option value="laboratory">Laboratory</option>
-        <option value="lecture_hall">Lecture Hall</option>
-        <option value="office">Staff Office</option>
-        <option value="other">Other</option>
-      </select>
-    </div>
-
-    <!-- Capacity -->
-    <div class="flex flex-col gap-2">
-      <label for="room_capacity" class="text-xs font-semibold text-foreground">
-        {m.rooms_col_capacity()}
-      </label>
-      <Input
-        id="room_capacity"
-        type="number"
-        bind:value={capacity}
-        placeholder="e.g. 40"
-        disabled={isSubmitting}
-      />
-    </div>
-  </div>
-
-  <!-- Location (Building & Floor) -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <!-- Building -->
-    <div class="flex flex-col gap-2">
-      <label for="room_building" class="text-xs font-semibold text-foreground">
-        Building
-      </label>
-      <Input
-        id="room_building"
-        type="text"
-        bind:value={building}
-        placeholder="e.g. Main Building"
-        disabled={isSubmitting}
-      />
+      <!-- Capacity -->
+      <div class="flex flex-col gap-2">
+        <label for="room_capacity" class="text-xs font-semibold text-foreground">
+          {m.rooms_col_capacity()}
+        </label>
+        <Input
+          id="room_capacity"
+          type="number"
+          bind:value={capacity}
+          placeholder="e.g. 40"
+          disabled={isSubmitting}
+        />
+      </div>
     </div>
 
-    <!-- Floor -->
-    <div class="flex flex-col gap-2">
-      <label for="room_floor" class="text-xs font-semibold text-foreground">
-        Floor
-      </label>
-      <Input
-        id="room_floor"
-        type="number"
-        bind:value={floor}
-        placeholder="e.g. 1"
-        disabled={isSubmitting}
-      />
+    <!-- Location (Building & Floor) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Building -->
+      <div class="flex flex-col gap-2">
+        <label for="room_building" class="text-xs font-semibold text-foreground">
+          Building
+        </label>
+        <Input
+          id="room_building"
+          type="text"
+          bind:value={building}
+          placeholder="e.g. Main Building"
+          disabled={isSubmitting}
+        />
+      </div>
+
+      <!-- Floor -->
+      <div class="flex flex-col gap-2">
+        <label for="room_floor" class="text-xs font-semibold text-foreground">
+          Floor
+        </label>
+        <Input
+          id="room_floor"
+          type="number"
+          bind:value={floor}
+          placeholder="e.g. 1"
+          disabled={isSubmitting}
+        />
+      </div>
     </div>
   </div>
 
   <!-- Actions -->
-  <div class="flex gap-2 justify-end mt-auto pt-6 border-t border-border/40">
+  <div class="px-6 py-4 border-t border-border/40 flex gap-2 justify-end shrink-0 bg-background/50">
     <Button
       type="button"
       variant="ghost"

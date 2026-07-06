@@ -14,6 +14,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
+import * as Sheet from "@orbis/ui-svelte/sheet";
 import { commands } from "$lib/core/ipc";
 import type { GuardianLink, JsonRecord } from "@orbis/desktop-client";
 import { toast } from "svelte-sonner";
@@ -183,87 +184,95 @@ async function handleSubmit() {
 </script>
 
 <form
-  class="flex flex-col gap-5"
+  class="flex flex-col h-full overflow-hidden gap-0"
   onsubmit={(e) => {
     e.preventDefault();
     handleSubmit();
   }}
 >
-  <!-- User Search + Select -->
-  <div class="flex flex-col gap-1.5">
-    <Label class="text-xs font-semibold text-muted-foreground">{m.guardians_form_user()} *</Label>
-    <Input
-      type="text"
-      placeholder={m.guardians_form_select_user()}
-      bind:value={searchQuery}
-      class="h-8 text-xs mb-1"
-    />
-    <div class="max-h-40 overflow-y-auto rounded-lg border border-border/40 bg-card/50">
-      {#if filteredUsers.length === 0}
-        <div class="p-3 text-xs text-muted-foreground text-center">لا توجد نتائج</div>
-      {:else}
-        {#each filteredUsers.slice(0, 20) as u (u.id)}
-          <button
-            type="button"
-            class="w-full text-start px-3 py-2 text-xs hover:bg-accent/60 transition-colors flex items-center justify-between
-              {guardianUserId === String(u.id) ? 'bg-primary/10 text-primary font-semibold' : 'text-foreground'}"
-            onclick={() => (guardianUserId = String(u.id))}
-          >
-            <span>{String(u.full_name ?? u.email ?? u.id)}</span>
-            {#if u.email}
-              <span class="text-[10px] text-muted-foreground font-mono">{String(u.email)}</span>
-            {/if}
-          </button>
-        {/each}
+  <Sheet.Header class="px-6 py-4 border-b border-border/40 shrink-0 text-start">
+    <Sheet.Title class="text-base font-bold text-foreground">
+      {isEditMode ? m.guardians_sheet_edit_title() : m.guardians_sheet_create_title()}
+    </Sheet.Title>
+  </Sheet.Header>
+
+  <div class="flex-1 overflow-y-auto p-6 flex flex-col gap-5 scrollbar-hide">
+    <!-- User Search + Select -->
+    <div class="flex flex-col gap-1.5">
+      <Label class="text-xs font-semibold text-muted-foreground">{m.guardians_form_user()} *</Label>
+      <Input
+        type="text"
+        placeholder={m.guardians_form_select_user()}
+        bind:value={searchQuery}
+        class="h-8 text-xs mb-1"
+      />
+      <div class="max-h-40 overflow-y-auto rounded-lg border border-border/40 bg-card/50">
+        {#if filteredUsers.length === 0}
+          <div class="p-3 text-xs text-muted-foreground text-center">لا توجد نتائج</div>
+        {:else}
+          {#each filteredUsers.slice(0, 20) as u (u.id)}
+            <button
+              type="button"
+              class="w-full text-start px-3 py-2 text-xs hover:bg-accent/60 transition-colors flex items-center justify-between
+                {guardianUserId === String(u.id) ? 'bg-primary/10 text-primary font-semibold' : 'text-foreground'}"
+              onclick={() => (guardianUserId = String(u.id))}
+            >
+              <span>{String(u.full_name ?? u.email ?? u.id)}</span>
+              {#if u.email}
+                <span class="text-[10px] text-muted-foreground font-mono">{String(u.email)}</span>
+              {/if}
+            </button>
+          {/each}
+        {/if}
+      </div>
+      {#if selectedUser}
+        <p class="text-[10px] text-primary font-medium">
+          ✓ تم اختيار: {String(selectedUser.full_name ?? selectedUser.email)}
+        </p>
       {/if}
     </div>
-    {#if selectedUser}
-      <p class="text-[10px] text-primary font-medium">
-        ✓ تم اختيار: {String(selectedUser.full_name ?? selectedUser.email)}
-      </p>
-    {/if}
-  </div>
 
-  <!-- Relation -->
-  <div class="flex flex-col gap-1.5">
-    <Label class="text-xs font-semibold text-muted-foreground">{m.guardians_form_relation()} *</Label>
-    <Select type="single" value={relation} onValueChange={(v) => (relation = v ?? "father")}>
-      <SelectTrigger class="h-9 text-sm">
-        {selectedRelation?.label ?? relation}
-      </SelectTrigger>
-      <SelectContent>
-        {#each relations as r (r.value)}
-          <SelectItem value={r.value}>{r.label}</SelectItem>
-        {/each}
-      </SelectContent>
-    </Select>
-  </div>
-
-  <!-- Job -->
-  <div class="flex flex-col gap-1.5">
-    <Label class="text-xs font-semibold text-muted-foreground">{m.guardians_form_job()}</Label>
-    <Input
-      type="text"
-      bind:value={job}
-      placeholder="مثال: مهندس، معلم، موظف..."
-      class="h-9 text-sm"
-    />
-  </div>
-
-  <!-- Is Payer -->
-  <div class="flex items-center justify-between p-3 rounded-lg bg-muted/20 border border-border/30">
-    <div>
-      <p class="text-xs font-semibold text-foreground">{m.guardians_form_is_payer()}</p>
-      <p class="text-[10px] text-muted-foreground">سيتمكن من استلام فواتير الرسوم</p>
+    <!-- Relation -->
+    <div class="flex flex-col gap-1.5">
+      <Label class="text-xs font-semibold text-muted-foreground">{m.guardians_form_relation()} *</Label>
+      <Select type="single" value={relation} onValueChange={(v) => (relation = v ?? "father")}>
+        <SelectTrigger class="h-9 text-sm">
+          {selectedRelation?.label ?? relation}
+        </SelectTrigger>
+        <SelectContent>
+          {#each relations as r (r.value)}
+            <SelectItem value={r.value}>{r.label}</SelectItem>
+          {/each}
+        </SelectContent>
+      </Select>
     </div>
-    <Switch
-      checked={isPayer}
-      onCheckedChange={(checked) => isPayer = checked}
-    />
+
+    <!-- Job -->
+    <div class="flex flex-col gap-1.5">
+      <Label class="text-xs font-semibold text-muted-foreground">{m.guardians_form_job()}</Label>
+      <Input
+        type="text"
+        bind:value={job}
+        placeholder="مثال: مهندس، معلم، موظف..."
+        class="h-9 text-sm"
+      />
+    </div>
+
+    <!-- Is Payer -->
+    <div class="flex items-center justify-between p-3 rounded-lg bg-muted/20 border border-border/30">
+      <div>
+        <p class="text-xs font-semibold text-foreground">{m.guardians_form_is_payer()}</p>
+        <p class="text-[10px] text-muted-foreground">سيتمكن من استلام فواتير الرسوم</p>
+      </div>
+      <Switch
+        checked={isPayer}
+        onCheckedChange={(checked) => isPayer = checked}
+      />
+    </div>
   </div>
 
   <!-- Actions -->
-  <div class="flex gap-2 pt-2 border-t border-border/40">
+  <div class="px-6 py-4 border-t border-border/40 flex gap-2 shrink-0 bg-background/50">
     <Button
       type="button"
       variant="outline"

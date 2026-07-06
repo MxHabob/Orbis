@@ -9,10 +9,15 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetDescription,
 } from "@orbis/ui-svelte/sheet";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui-svelte/select";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { commands } from "$lib/core/ipc";
@@ -128,129 +133,135 @@ async function handleSubmit() {
 </script>
 
 <Sheet bind:open>
-  <SheetContent class="flex flex-col h-full sm:max-w-md overflow-hidden">
-    <SheetHeader class="text-start select-none border-b border-border/40 pb-4">
-      <SheetTitle class="text-lg font-bold text-foreground">
-        {m.exams_subjects_add()}
-      </SheetTitle>
-      <SheetDescription class="text-xs text-muted-foreground mt-1">
-        إضافة أو إنشاء مادة دراسية لدورة الامتحانات
-      </SheetDescription>
-    </SheetHeader>
-
-    <div class="flex-1 overflow-y-auto py-4 flex flex-col gap-4 px-1">
-      
-      <!-- Mode Selection Tabs -->
-      <div class="flex bg-muted/40 p-0.5 rounded-lg border border-border/40 text-[10px] font-medium">
-        <button
-          type="button"
-          class="flex-1 py-1.5 rounded-md transition-all cursor-pointer {mode === 'select' ? 'bg-card text-foreground font-semibold shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
-          onclick={() => mode = "select"}
-        >
-          مادة موجودة في المدرسة
-        </button>
-        <button
-          type="button"
-          class="flex-1 py-1.5 rounded-md transition-all cursor-pointer {mode === 'create' ? 'bg-card text-foreground font-semibold shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
-          onclick={() => mode = "create"}
-        >
-          إنشاء مادة جديدة كلياً
-        </button>
-      </div>
-
-      {#if mode === "select"}
-        <!-- Existing Subjects Selection Dropdown -->
-        <div class="flex flex-col gap-1.5">
-          <label for="subject-select" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
-            اختر المادة
-          </label>
-          <select
-            id="subject-select"
-            bind:value={subjectId}
-            class="h-9 px-3 text-xs rounded-lg border border-border bg-background text-foreground focus:ring-1 focus:ring-primary w-full"
-          >
-            <option value="" disabled>اختر مادة دراسية...</option>
-            {#each subjectsList as s}
-              <option value={s.id}>{s.name_ar || s.name} ({s.code})</option>
-            {/each}
-          </select>
-        </div>
-      {:else}
-        <!-- New Subject Form Fields -->
-        <div class="flex flex-col gap-3 p-3 rounded-lg border border-dashed border-border/60 bg-muted/20">
-          <span class="text-[9px] font-bold text-primary uppercase">بيانات المادة الجديدة</span>
-          
-          <div class="flex flex-col gap-1.5">
-            <label for="new-sub-name-ar" class="text-[10px] font-medium text-muted-foreground">
-              اسم المادة (عربي) *
-            </label>
-            <Input id="new-sub-name-ar" bind:value={newSubjectNameAr} placeholder="مثال: الرياضيات" class="text-xs h-8" />
-          </div>
-
-          <div class="flex flex-col gap-1.5">
-            <label for="new-sub-name-en" class="text-[10px] font-medium text-muted-foreground">
-              اسم المادة (إنجليزي)
-            </label>
-            <Input id="new-sub-name-en" bind:value={newSubjectName} placeholder="e.g. Mathematics" class="text-xs h-8" />
-          </div>
-
-          <div class="flex flex-col gap-1.5">
-            <label for="new-sub-code" class="text-[10px] font-medium text-muted-foreground">
-              رمز المادة *
-            </label>
-            <Input id="new-sub-code" bind:value={newSubjectCode} placeholder="مثال: MATH" class="text-xs h-8 uppercase font-mono" />
-          </div>
-        </div>
-      {/if}
-
-      <div class="border-t border-border/40 my-1"></div>
-
-      <!-- Max Score -->
-      <div class="flex flex-col gap-1.5">
-        <label for="max-score" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
-          {m.exams_subjects_score()}
-        </label>
-        <Input id="max-score" type="number" bind:value={maxScore} class="text-xs h-9 font-mono" />
-      </div>
-
-      <!-- Duration -->
-      <div class="flex flex-col gap-1.5">
-        <label for="duration" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
-          {m.exams_subjects_duration()}
-        </label>
-        <Input id="duration" type="number" bind:value={durationMinutes} class="text-xs h-9 font-mono" />
-      </div>
-
-      <!-- Exam Type -->
-      <div class="flex flex-col gap-1.5">
-        <label for="exam-type" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
-          {m.exams_subjects_type()}
-        </label>
-        <select
-          id="exam-type"
-          bind:value={examType}
-          class="h-9 px-3 text-xs rounded-lg border border-border bg-background text-foreground focus:ring-1 focus:ring-primary"
-        >
-          <option value="written">تحريري</option>
-          <option value="oral">شفوي</option>
-          <option value="practical">عملي</option>
-          <option value="mixed">مختلط</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- Footer -->
-    <div class="border-t border-border/40 pt-4 flex items-center justify-end gap-2">
-      <Button variant="ghost" class="h-8 px-4 text-xs cursor-pointer" onclick={() => { resetForm(); open = false; }}>
-        إلغاء
-      </Button>
-      <Button variant="default" class="h-8 px-4 text-xs cursor-pointer" disabled={isSaving} onclick={handleSubmit}>
-        {#if isSaving}
-          جاري الحفظ...
-        {:else}
+  <SheetContent class="flex flex-col h-full sm:max-w-md overflow-hidden p-0 gap-0">
+    <form
+      class="flex flex-col h-full overflow-hidden gap-0"
+      onsubmit={(e) => {
+        e.preventDefault();
+        handleSubmit();
+      }}
+    >
+      <SheetHeader class="text-start select-none px-6 py-4 border-b border-border/40 shrink-0">
+        <SheetTitle class="text-lg font-bold text-foreground">
           {m.exams_subjects_add()}
+        </SheetTitle>
+      </SheetHeader>
+
+      <div class="flex-1 overflow-y-auto p-6 flex flex-col gap-4 scrollbar-hide">
+        <!-- Mode Selection Tabs -->
+        <div class="flex bg-muted/40 p-0.5 rounded-lg border border-border/40 text-[10px] font-medium shrink-0">
+          <button
+            type="button"
+            class="flex-1 py-1.5 rounded-md transition-all cursor-pointer {mode === 'select' ? 'bg-card text-foreground font-semibold shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
+            onclick={() => mode = "select"}
+          >
+            مادة موجودة في المدرسة
+          </button>
+          <button
+            type="button"
+            class="flex-1 py-1.5 rounded-md transition-all cursor-pointer {mode === 'create' ? 'bg-card text-foreground font-semibold shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
+            onclick={() => mode = "create"}
+          >
+            إنشاء مادة جديدة كلياً
+          </button>
+        </div>
+
+        {#if mode === "select"}
+          <!-- Existing Subjects Selection Dropdown -->
+          <div class="flex flex-col gap-1.5">
+            <label for="subject-select" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
+              اختر المادة
+            </label>
+            <Select type="single" value={subjectId} onValueChange={(v) => (subjectId = v ?? "")}>
+              <SelectTrigger class="h-9 text-xs w-full">
+                {subjectsList.find(s => String(s.id) === subjectId)?.name_ar || subjectsList.find(s => String(s.id) === subjectId)?.name || "اختر مادة دراسية..."}
+              </SelectTrigger>
+              <SelectContent>
+                {#each subjectsList as s}
+                  <SelectItem value={String(s.id)}>{s.name_ar || s.name} ({s.code})</SelectItem>
+                {/each}
+              </SelectContent>
+            </Select>
+          </div>
+        {:else}
+          <!-- New Subject Form Fields -->
+          <div class="flex flex-col gap-3 p-3 rounded-lg border border-dashed border-border/60 bg-muted/20">
+            <span class="text-[9px] font-bold text-primary uppercase">بيانات المادة الجديدة</span>
+            
+            <div class="flex flex-col gap-1.5">
+              <label for="new-sub-name-ar" class="text-[10px] font-medium text-muted-foreground">
+                اسم المادة (عربي) *
+              </label>
+              <Input id="new-sub-name-ar" bind:value={newSubjectNameAr} placeholder="مثال: الرياضيات" class="text-xs h-8" />
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+              <label for="new-sub-name-en" class="text-[10px] font-medium text-muted-foreground">
+                اسم المادة (إنجليزي)
+              </label>
+              <Input id="new-sub-name-en" bind:value={newSubjectName} placeholder="e.g. Mathematics" class="text-xs h-8" />
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+              <label for="new-sub-code" class="text-[10px] font-medium text-muted-foreground">
+                رمز المادة *
+              </label>
+              <Input id="new-sub-code" bind:value={newSubjectCode} placeholder="مثال: MATH" class="text-xs h-8 uppercase font-mono" />
+            </div>
+          </div>
         {/if}
-      </Button>
-    </div>
+
+        <div class="border-t border-border/40 my-1"></div>
+
+        <!-- Max Score -->
+        <div class="flex flex-col gap-1.5">
+          <label for="max-score" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
+            {m.exams_subjects_score()}
+          </label>
+          <Input id="max-score" type="number" bind:value={maxScore} class="text-xs h-9 font-mono" />
+        </div>
+
+        <!-- Duration -->
+        <div class="flex flex-col gap-1.5">
+          <label for="duration" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
+            {m.exams_subjects_duration()}
+          </label>
+          <Input id="duration" type="number" bind:value={durationMinutes} class="text-xs h-9 font-mono" />
+        </div>
+
+        <!-- Exam Type -->
+        <div class="flex flex-col gap-1.5">
+          <label for="exam-type" class="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
+            {m.exams_subjects_type()}
+          </label>
+          {@const examTypeLabels = { written: "تحريري", oral: "شفوي", practical: "عملي", mixed: "مختلط" }}
+          <Select type="single" value={examType} onValueChange={(v) => (examType = v ?? "written")}>
+            <SelectTrigger class="h-9 text-xs w-full">
+              {examTypeLabels[examType as keyof typeof examTypeLabels] || examType}
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="written">تحريري</SelectItem>
+              <SelectItem value="oral">شفوي</SelectItem>
+              <SelectItem value="practical">عملي</SelectItem>
+              <SelectItem value="mixed">مختلط</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="px-6 py-4 border-t border-border/40 flex items-center justify-end gap-2 shrink-0 bg-background/50">
+        <Button variant="ghost" class="h-8 px-4 text-xs cursor-pointer" onclick={() => { resetForm(); open = false; }}>
+          إلغاء
+        </Button>
+        <Button type="submit" variant="default" class="h-8 px-4 text-xs cursor-pointer" disabled={isSaving}>
+          {#if isSaving}
+            جاري الحفظ...
+          {:else}
+            {m.exams_subjects_add()}
+          {/if}
+        </Button>
+      </div>
+    </form>
   </SheetContent>
 </Sheet>

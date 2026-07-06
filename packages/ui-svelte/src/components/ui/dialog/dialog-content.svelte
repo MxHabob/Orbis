@@ -35,9 +35,9 @@ let {
 	>
 		{@render children?.()}
 		{#if showCloseButton}
-			<DialogPrimitive.Close data-slot="dialog-close">
+			<DialogPrimitive.Close data-slot="dialog-close" asChild>
 				{#snippet child({ props })}
-					<Button variant="ghost" class="absolute top-2 right-2" size="icon-sm" {...props}>
+					<Button variant="ghost" {...props} class={cn("absolute top-2 end-2", props.class)} size="icon-sm">
 						<XIcon  />
 						<span class="sr-only">Close</span>
 					</Button>
