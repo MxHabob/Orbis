@@ -177,8 +177,7 @@ const menuItems = $derived([
         </Badge>
       {/if}
     {:else}
-      <span class="text-sm text-muted-foreground font-sans"
-        >{m.error_not_found ? m.error_not_found() : "غير موجود"}</span
+      <span class="text-sm text-muted-foreground font-sans">{ m.error_not_found() || "غير موجود"}</span
       >
     {/if}
   </DetailPageHeader>

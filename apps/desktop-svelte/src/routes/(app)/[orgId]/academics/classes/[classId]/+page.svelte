@@ -234,7 +234,7 @@ function handleTriggerAction(issue: any) {
 }
 </script>
 
-<div class="h-full w-full overflow-y-auto scrollbar-hide p-6 flex flex-col gap-6 font-sans">
+<div class="h-full w-full overflow-y-auto scrollbar-hide flex flex-col gap-6 font-sans">
   {#if isLoading}
     <Skeleton class="h-20 w-full rounded-xl animate-pulse" />
     <Skeleton class="h-10 w-full rounded-xl animate-pulse" />
