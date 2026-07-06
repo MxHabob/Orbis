@@ -16,6 +16,7 @@ import {
   Select, SelectTrigger, SelectContent, SelectItem,
 } from "@orbis/ui-svelte/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@orbis/ui-svelte/card";
+import { Separator } from "@orbis/ui-svelte/separator";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
