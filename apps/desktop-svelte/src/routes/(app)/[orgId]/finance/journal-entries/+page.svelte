@@ -1,23 +1,22 @@
 <!--
   @page JournalEntriesPage
-  Redesigned to match the professional double-entry ledger statement page aesthetics.
-  Incorporates a highly optimized, compact ERP "Simple Journal Entry" (سند قيد بسيط) form layout
-  with school-focused inputs (From Account, To Account, Amount, Date, Description).
+  Rebuilt to support single/multiple journal entry inputs dynamically within a single row-based grid without tabs.
+  Fully uses @orbis/ui-svelte components and Paraglide-JS localization. No page title.
 -->
 <script lang="ts">
 import { onMount } from "svelte";
-import { commands } from "$lib/core/ipc";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@orbis/ui-svelte";
+import { commands, dedup, extractErrorMessage } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
+import { Label } from "@orbis/ui-svelte/label";
+import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui-svelte/select";
+import { ComboboxDropdown } from "@orbis/ui-svelte/combobox-dropdown";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@orbis/ui-svelte/table";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
+import { Badge } from "@orbis/ui-svelte/badge";
+import { Switch } from "@orbis/ui-svelte/switch";
+import { Card, CardContent } from "@orbis/ui-svelte/card";
+import { Separator } from "@orbis/ui-svelte/separator";
 import { toast } from "svelte-sonner";
 import {
   BookOpen,
@@ -29,6 +28,11 @@ import {
   QrCode,
   Printer,
   FileText,
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
+  FileSpreadsheet,
+  AlertCircle
 } from "lucide-svelte";
 import { formatDate } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
@@ -47,36 +51,56 @@ let currencies = $state<{ code: string; name: string }[]>([
 let isLoading = $state(true);
 let error = $state<string | null>(null);
 
-// Form Fields State
-let selectedEntry = $state<any | null>(null);
-let id = $state("");
-let transactionRef = $state("");
-let accountingDate = $state(new Date().toISOString().split("T")[0]);
-let amount = $state<number | null>(null);
-let currency = $state("YER");
-let debitAccountId = $state("");
-let creditAccountId = $state("");
-let descriptionAr = $state("");
-
-// Filter & Sub-bar Options
-let searchQuery = $state("");
-let statusFilter = $state("all");
-let showUserRecords = $state(true);
-let filterByDate = $state(false);
-let startDateFilter = $state("");
-let endDateFilter = $state("");
-
 // Dialog and Printing states
 let showQrModal = $state(false);
 let printMode = $state<"list" | "voucher">("list");
+let selectedEntry = $state<any | null>(null);
 
+// Date filtering options
+let filterMode = $state<"day" | "all">("day");
+let selectedFilterDate = $state(new Date().toISOString().split("T")[0]);
+let showUserRecords = $state(true);
+
+// Rebuilt Entry Form States (Unified Input Grid)
+interface EntryRow {
+  debitAccountId: string;
+  creditAccountId: string;
+  amount: number | null;
+  description: string;
+}
+let entryDate = $state(new Date().toISOString().split("T")[0]);
+let entryCurrency = $state("YER");
+let entryRows = $state<EntryRow[]>([
+  { debitAccountId: "", creditAccountId: "", amount: null, description: "" }
+]);
+
+// Search query
+let searchQuery = $state("");
+let statusFilter = $state("all");
+
+// Helper to extract only the actual account name (ignoring parent prefixes)
+function cleanAccountName(name: string): string {
+  if (!name) return "";
+  const parts = name.split(" - ");
+  return parts[parts.length - 1];
+}
+
+// GL Accounts mapping for Combobox
+const accountItems = $derived.by(() => {
+  return ledgers.map((l) => ({
+    value: l.id,
+    label: `${l.code} - ${cleanAccountName(l.name_ar || l.name)}`,
+  }));
+});
+
+// Load ledger accounts, currencies, and journal entries
 async function loadData() {
   isLoading = true;
   error = null;
   try {
     const [entriesList, ledgersList] = await Promise.all([
-      commands.finance.getJournalEntries(data.orgId),
-      commands.finance.getTransactionAccounts(data.orgId),
+      dedup(`journal_entries:${data.orgId}`, () => commands.finance.getJournalEntries(data.orgId)),
+      dedup(`ledger_accounts:${data.orgId}`, () => commands.finance.getTransactionAccounts(data.orgId)),
     ]);
 
     journalEntries = entriesList.map((je) => ({
@@ -91,7 +115,7 @@ async function loadData() {
     await loadCurrencies();
   } catch (e) {
     console.error("Error loading journal entries data:", e);
-    error = e instanceof Error ? e.message : String(e);
+    error = extractErrorMessage(e);
   } finally {
     isLoading = false;
   }
@@ -114,18 +138,32 @@ async function loadCurrencies() {
 onMount(() => {
   if (data.orgId) {
     loadData();
-    const today = new Date();
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(today.getDate() - 30);
-    startDateFilter = thirtyDaysAgo.toISOString().split("T")[0];
-    endDateFilter = today.toISOString().split("T")[0];
+    selectedFilterDate = new Date().toISOString().split("T")[0];
   }
 });
 
+// Date filtering navigation
+function nextDay() {
+  const d = new Date(selectedFilterDate);
+  d.setDate(d.getDate() + 1);
+  selectedFilterDate = d.toISOString().split("T")[0];
+}
+
+function prevDay() {
+  const d = new Date(selectedFilterDate);
+  d.setDate(d.getDate() - 1);
+  selectedFilterDate = d.toISOString().split("T")[0];
+}
+
+function jumpToToday() {
+  selectedFilterDate = new Date().toISOString().split("T")[0];
+}
+
+// GL Account label helper
 function getAccountLabel(accountId: string): string {
   const acc = ledgers.find((l) => l.id === accountId);
   if (!acc) return accountId || "-";
-  return `${acc.name_ar || acc.name} (${acc.code})`;
+  return `${cleanAccountName(acc.name_ar || acc.name)} (${acc.code})`;
 }
 
 function localFormatCurrency(val: number, currCode: string) {
@@ -142,80 +180,100 @@ function localFormatCurrency(val: number, currCode: string) {
 
 function selectRow(entry: any) {
   selectedEntry = entry;
-  id = entry.id;
-  transactionRef = entry.transaction_ref;
-  accountingDate = entry.accounting_date
-    ? entry.accounting_date.split("T")[0]
-    : "";
-  amount = entry.amount;
-  currency = entry.currency || "YER";
-  debitAccountId = entry.debit_account_id || "";
-  creditAccountId = entry.credit_account_id || "";
-  descriptionAr = entry.description_ar || entry.description || "";
-
-  toast.info(`تم اختيار القيد رقم ${entry.transaction_ref}`);
+  
+  // Set fields to entry values to view/copy them
+  entryDate = entry.accounting_date ? entry.accounting_date.split("T")[0] : "";
+  entryCurrency = entry.currency || "YER";
+  entryRows = [{
+    debitAccountId: entry.debit_account_id || "",
+    creditAccountId: entry.credit_account_id || "",
+    amount: entry.amount,
+    description: entry.description_ar || entry.description || "",
+  }];
 }
 
-function clearForm() {
-  selectedEntry = null;
-  id = "";
-  transactionRef = "";
-  accountingDate = new Date().toISOString().split("T")[0];
-  amount = null;
-  currency = "YER";
-  debitAccountId = "";
-  creditAccountId = "";
-  descriptionAr = "";
+// Unified input grid row actions
+function addEntryRow() {
+  entryRows = [...entryRows, { debitAccountId: "", creditAccountId: "", amount: null, description: "" }];
 }
 
-async function handleAdd() {
-  if (!amount || amount <= 0) {
-    toast.error("الرجاء إدخال مبلغ صحيح");
+function deleteEntryRow(index: number) {
+  if (entryRows.length <= 1) {
+    toast.warning("يجب أن يحتوي جدول القيود على سطر واحد على الأقل");
     return;
   }
-  if (!debitAccountId) {
-    toast.error("الرجاء اختيار الحساب المدين");
-    return;
-  }
-  if (!creditAccountId) {
-    toast.error("الرجاء اختيار الحساب الدائن");
-    return;
-  }
-  if (debitAccountId === creditAccountId) {
-    toast.error("لا يمكن أن يكون الحساب المدين والدائن متطابقين");
+  entryRows = entryRows.filter((_, i) => i !== index);
+}
+
+function clearEntryTable() {
+  entryRows = [
+    { debitAccountId: "", creditAccountId: "", amount: null, description: "" }
+  ];
+  entryDate = new Date().toISOString().split("T")[0];
+}
+
+async function handlePostEntries() {
+  if (entryRows.length === 0) {
+    toast.error("الرجاء إضافة سطر قيد محاسبي واحد على الأقل");
     return;
   }
 
-  const randomRef = "JV-" + String(Math.floor(148000 + Math.random() * 10000));
+  // Validate all rows
+  for (let i = 0; i < entryRows.length; i++) {
+    const row = entryRows[i];
+    const rowNum = i + 1;
+    if (!row.amount || row.amount <= 0) {
+      toast.error(m.finance_je_invalid_amount({ row: rowNum }));
+      return;
+    }
+    if (!row.debitAccountId) {
+      toast.error(m.finance_je_select_debit({ row: rowNum }));
+      return;
+    }
+    if (!row.creditAccountId) {
+      toast.error(m.finance_je_select_credit({ row: rowNum }));
+      return;
+    }
+    if (row.debitAccountId === row.creditAccountId) {
+      toast.error(m.finance_je_debit_credit_equal({ row: rowNum }));
+      return;
+    }
+  }
 
+  let successCount = 0;
   try {
-    const newEntry = await commands.finance.createJournalEntry(data.orgId, {
-      transaction_ref: randomRef,
-      accounting_date: accountingDate,
-      fiscal_period_id: "2026-cycle", // default active cycle representation
-      amount,
-      debit_account_id: debitAccountId,
-      credit_account_id: creditAccountId,
-      currency,
-      exchange_rate: 1.0,
-      description: descriptionAr || "Manual Journal Entry",
-      description_ar: descriptionAr || null,
-      source_type: "manual",
-    });
+    for (const row of entryRows) {
+      const randomRef = "JV-" + String(Math.floor(148000 + Math.random() * 10000));
+      const newEntry = await commands.finance.createJournalEntry(data.orgId, {
+        transaction_ref: randomRef,
+        accounting_date: entryDate,
+        fiscal_period_id: "2026-cycle",
+        amount: row.amount!,
+        debit_account_id: row.debitAccountId,
+        credit_account_id: row.creditAccountId,
+        currency: entryCurrency,
+        exchange_rate: 1.0,
+        description: row.description || "Manual Journal Entry",
+        description_ar: row.description || null,
+        source_type: "manual",
+      });
 
-    journalEntries = [
-      {
-        ...newEntry,
-        prints_count: 0,
-        user: "U78",
-        branch: "المركز الرئيسي",
-      },
-      ...journalEntries,
-    ];
-    toast.success(`تم حفظ وترحيل القيد رقم ${randomRef} بنجاح`);
-    clearForm();
+      journalEntries = [
+        {
+          ...newEntry,
+          prints_count: 0,
+          user: "U78",
+          branch: "المركز الرئيسي",
+        },
+        ...journalEntries,
+      ];
+      successCount++;
+    }
+
+    toast.success(m.finance_je_batch_post_success({ count: successCount }));
+    clearEntryTable();
   } catch (e) {
-    toast.error("فشل حفظ القيد: " + String(e));
+    toast.error("فشل ترحيل القيود: " + extractErrorMessage(e));
   }
 }
 
@@ -228,7 +286,7 @@ function handleVoid() {
   const deletedRef = selectedEntry.transaction_ref;
   journalEntries = journalEntries.filter((je) => je.id !== selectedEntry.id);
   toast.success(`تم إلغاء وعكس القيد رقم ${deletedRef} بنجاح`);
-  clearForm();
+  selectedEntry = null;
 }
 
 function handlePrintList() {
@@ -258,339 +316,410 @@ function handlePrintVoucher() {
   }, 50);
 }
 
+// Derived filtered list of entries
 const filteredEntries = $derived.by(() => {
   return journalEntries.filter((je) => {
     const textMatch =
       searchQuery.trim() === "" ||
-      String(je.transaction_ref)
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
-      String(je.description || "")
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
-      String(je.description_ar || "")
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase());
+      String(je.transaction_ref).toLowerCase().includes(searchQuery.toLowerCase()) ||
+      String(je.description || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      String(je.description_ar || "").toLowerCase().includes(searchQuery.toLowerCase());
 
     const statusMatch = statusFilter === "all" || je.status === statusFilter;
 
     let dateMatch = true;
-    if (filterByDate && startDateFilter && endDateFilter) {
-      const entryDate = je.accounting_date
-        ? je.accounting_date.split("T")[0]
-        : "";
-      dateMatch = entryDate >= startDateFilter && entryDate <= endDateFilter;
+    if (filterMode === "day") {
+      const entryDate = je.accounting_date ? je.accounting_date.split("T")[0] : "";
+      dateMatch = entryDate === selectedFilterDate;
     }
 
     return textMatch && statusMatch && dateMatch;
   });
 });
+
 </script>
 
-<div class="h-full flex flex-col overflow-hidden bg-background p-4 font-sans text-start">
-  <!-- Main Content Scroll Area (Includes Form + Table) -->
-  <div class="flex-1 overflow-y-auto py-3 space-y-4 print:hidden">
-    
-    <!-- Redesigned Voucher Input Form Card -->
-    <div class="border border-border/60 rounded-xl bg-card/25 backdrop-blur-md p-4 shadow-sm space-y-3">
-      
-      <!-- Voucher Header -->
-      <div class="flex items-center justify-between border-b border-border/40 pb-2 mb-1 select-none">
-        <div class="flex items-center gap-1.5">
-          <span class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">رقم السند</span>
-          <span class="text-[11px] font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-            {transactionRef || "قيد جديد"}
-          </span>
-        </div>
-        <h2 class="text-xs font-extrabold text-foreground tracking-tight flex items-center gap-1.5">
-          <span class="w-1 h-1 rounded-full bg-primary animate-pulse"></span>
-          سند قيد بسيط
-        </h2>
-        <div class="flex items-center gap-1.5">
-          <span class="text-[11px] text-muted-foreground">التاريخ المالي:</span>
-          <span class="text-[11px] font-mono font-bold text-foreground">{accountingDate}</span>
+<div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide text-start font-sans">
+  <div class="max-w-7xl mx-auto p-4 md:p-6 flex flex-col gap-6 print:hidden">
+
+    <!-- Voucher Form Card (Unified Row-Based Input) -->
+    <Card class="border border-border/60 shadow-sm overflow-hidden bg-card">
+      <div class="bg-muted/45 border-b border-border/60 p-4 flex flex-wrap items-center justify-between gap-4 select-none">
+        <div class="flex flex-wrap items-center gap-4">
+          <div class="flex flex-col gap-1.5">
+            <Label class="text-xs font-bold text-muted-foreground">تاريخ القيد</Label>
+            <Input
+              type="date"
+              bind:value={entryDate}
+              class="h-8 text-xs font-mono bg-background/50 border-border w-40"
+            />
+          </div>
+          
+          <div class="flex flex-col gap-1.5">
+            <Label class="text-xs font-bold text-muted-foreground">العملة</Label>
+            <Select type="single" bind:value={entryCurrency}>
+              <SelectTrigger class="h-8 text-xs bg-background/50 w-32 border-border cursor-pointer">
+                {entryCurrency}
+              </SelectTrigger>
+              <SelectContent>
+                {#each currencies as curr}
+                  <SelectItem value={curr.code}>{curr.code}</SelectItem>
+                {/each}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
-      <!-- Form Inputs Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-        
-        <!-- Field 1: Amount & Currency Combined -->
-        <div class="flex flex-col gap-0.5 text-start">
-          <label class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">المبلغ والعملة</label>
-          <div class="flex gap-2">
-            <Input 
-              type="number" 
-              bind:value={amount} 
-              min="0" 
-              class="h-8 text-[11px] font-mono text-emerald-500 font-extrabold flex-1 bg-background/50" 
-              placeholder="0.00" 
-            />
-            <select 
-              bind:value={currency} 
-              class="bg-background text-foreground border border-border rounded-md px-2 h-8 text-[11px] focus:ring-1 focus:ring-ring outline-none cursor-pointer w-20"
-            >
-              {#each currencies as curr}
-                <option value={curr.code}>{curr.code}</option>
-              {/each}
-            </select>
+      <div class="p-4 md:p-6 flex flex-col gap-4">
+        <!-- Dynamic Row Grid -->
+        <div class="border border-border/60 rounded-xl bg-muted/10 p-4 shadow-sm flex flex-col gap-2">
+          <!-- Headers -->
+          <div class="hidden md:grid grid-cols-[30px_1fr_1fr_150px_1fr_40px] gap-3 px-2 text-xs font-bold text-muted-foreground select-none pb-2 border-b border-border/40">
+            <div class="text-center">#</div>
+            <div>من حساب (المدين)</div>
+            <div>إلى حساب (الدائن)</div>
+            <div class="ps-2">المبلغ</div>
+            <div class="ps-2">البيان / الملاحظات</div>
+            <div class="text-center">{m.finance_je_col_actions()}</div>
+          </div>
+
+          <!-- Input Rows -->
+          <div class="flex flex-col gap-3 md:gap-2">
+            {#each entryRows as row, index}
+              <div class="grid grid-cols-1 md:grid-cols-[30px_1fr_1fr_150px_1fr_40px] gap-3 items-center bg-muted/30 md:bg-transparent p-3 md:p-0 rounded-lg border border-border/45 md:border-none">
+                <!-- Row Number -->
+                <div class="text-start md:text-center font-mono text-xs font-bold text-muted-foreground">
+                  <span class="md:hidden">السطر </span>{index + 1}
+                </div>
+                
+                <!-- Debit Account -->
+                <div class="flex flex-col gap-1 md:block">
+                  <span class="text-[10px] font-bold text-muted-foreground md:hidden">من حساب (المدين)</span>
+                  <ComboboxDropdown
+                    placeholder={m.finance_je_debit_placeholder()}
+                    searchPlaceholder={m.finance_je_search_acc_placeholder()}
+                    selectedItem={accountItems.find((item) => item.value === row.debitAccountId)}
+                    items={accountItems}
+                    onSelect={(item) => { row.debitAccountId = item ? item.value : ""; }}
+                    class="w-full text-xs h-9 bg-background border-border/60"
+                  />
+                </div>
+
+                <!-- Credit Account -->
+                <div class="flex flex-col gap-1 md:block">
+                  <span class="text-[10px] font-bold text-muted-foreground md:hidden">إلى حساب (الدائن)</span>
+                  <ComboboxDropdown
+                    placeholder={m.finance_je_credit_placeholder()}
+                    searchPlaceholder={m.finance_je_search_acc_placeholder()}
+                    selectedItem={accountItems.find((item) => item.value === row.creditAccountId)}
+                    items={accountItems}
+                    onSelect={(item) => { row.creditAccountId = item ? item.value : ""; }}
+                    class="w-full text-xs h-9 bg-background border-border/60"
+                  />
+                </div>
+
+                <!-- Amount -->
+                <div class="flex flex-col gap-1 md:block">
+                  <span class="text-[10px] font-bold text-muted-foreground md:hidden">المبلغ</span>
+                  <Input
+                    type="number"
+                    bind:value={row.amount}
+                    min="0"
+                    class="h-9 text-xs font-mono text-emerald-600 font-extrabold w-full bg-background border-border/60"
+                    placeholder="0.00"
+                  />
+                </div>
+
+                <!-- Description -->
+                <div class="flex flex-col gap-1 md:block">
+                  <span class="text-[10px] font-bold text-muted-foreground md:hidden">البيان / الملاحظات</span>
+                  <Input
+                    type="text"
+                    bind:value={row.description}
+                    class="h-9 text-xs w-full bg-background border-border/60"
+                    placeholder="البيان الخاص بهذا السطر..."
+                  />
+                </div>
+
+                <!-- Actions -->
+                <div class="flex justify-end md:justify-center">
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    onclick={() => deleteEntryRow(index)}
+                    class="text-destructive hover:bg-destructive/10 cursor-pointer h-8 w-8"
+                  >
+                    <Trash2 size={14} />
+                  </Button>
+                </div>
+              </div>
+            {/each}
           </div>
         </div>
 
-        <!-- Field 2: From Account (من حساب) -->
-        <div class="flex flex-col gap-0.5 text-start">
-          <label class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">من حساب (المدين)</label>
-          <select 
-            bind:value={debitAccountId} 
-            class="bg-background text-foreground border border-border rounded-md px-2.5 h-8 text-[11px] focus:ring-1 focus:ring-ring outline-none cursor-pointer w-full"
+        <!-- Add Row and Action Ribbon -->
+        <div class="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-border/40 select-none">
+          <Button
+            variant="outline"
+            size="sm"
+            onclick={addEntryRow}
+            class="font-bold text-xs h-8 px-4 flex items-center gap-1.5 cursor-pointer border-border text-foreground hover:bg-muted"
           >
-            <option value="">-- اختر الحساب المدين --</option>
-            {#each ledgers as acc}
-              <option value={acc.id}>{acc.code} - {acc.name_ar || acc.name}</option>
-            {/each}
-          </select>
+            <Plus size={14} />
+            <span>{m.finance_je_btn_add_row()}</span>
+          </Button>
+          
+          <div class="flex items-center gap-3">
+            <Button
+              variant="default"
+              size="sm"
+              onclick={handlePostEntries}
+              class="bg-primary hover:bg-primary/95 text-primary-foreground font-bold text-xs h-8 px-5 flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-[0.98] transition-all"
+            >
+              <FileSpreadsheet size={14} />
+              <span>ترحيل القيود</span>
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onclick={clearEntryTable}
+              class="font-bold text-xs h-8 px-4 flex items-center gap-1.5 cursor-pointer active:scale-[0.98] transition-all border-border text-foreground hover:bg-muted"
+            >
+              <Trash2 size={14} />
+              <span>{m.finance_je_btn_clear_batch()}</span>
+            </Button>
+          </div>
+        </div>
+      </div>
+    </Card>
+
+    <!-- Entries Log Card -->
+    <Card class="border border-border/60 shadow-sm overflow-hidden flex flex-col bg-card">
+      <!-- Card Sub-Bar / Filtering & Actions Header -->
+      <div class="bg-muted/45 border-b border-border/60 p-4 flex flex-col gap-4">
+        
+        <!-- Top controls row -->
+        <div class="flex flex-wrap items-center justify-between gap-4 select-none">
+          <h2 class="text-sm font-bold text-foreground flex items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+            سجل قيود اليومية
+          </h2>
+
+          <div class="flex flex-wrap items-center gap-3">
+            <!-- Print Actions -->
+            <Button
+              variant="outline"
+              size="sm"
+              onclick={handlePrintList}
+              class="h-8 text-xs font-semibold flex items-center gap-1.5 cursor-pointer border-border hover:bg-muted text-foreground"
+            >
+              <Printer size={12} />
+              <span>طباعة الجدول</span>
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onclick={handlePrintVoucher}
+              disabled={!selectedEntry}
+              class="h-8 text-xs font-semibold flex items-center gap-1.5 cursor-pointer border-border hover:bg-muted text-foreground"
+            >
+              <FileText size={12} />
+              <span>طباعة السند المحدد</span>
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onclick={() => { if (selectedEntry) showQrModal = true; else toast.error('الرجاء اختيار سند أولاً'); }}
+              disabled={!selectedEntry}
+              class="h-8 text-xs font-semibold flex items-center gap-1.5 cursor-pointer border-border hover:bg-muted text-foreground"
+            >
+              <QrCode size={12} />
+              <span>QR Code</span>
+            </Button>
+
+            <span class="text-border hidden md:inline">|</span>
+
+            <!-- Void Action -->
+            <Button
+              variant="destructive"
+              size="sm"
+              onclick={handleVoid}
+              disabled={!selectedEntry}
+              class="font-bold text-xs h-8 px-4 flex items-center gap-1.5 cursor-pointer active:scale-[0.98] transition-all"
+            >
+              <Trash2 size={12} />
+              <span>إلغاء القيد (Void)</span>
+            </Button>
+          </div>
         </div>
 
-        <!-- Field 3: To Account (إلى حساب) -->
-        <div class="flex flex-col gap-0.5 text-start">
-          <label class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">إلى حساب (الدائن)</label>
-          <select 
-            bind:value={creditAccountId} 
-            class="bg-background text-foreground border border-border rounded-md px-2.5 h-8 text-[11px] focus:ring-1 focus:ring-ring outline-none cursor-pointer w-full"
-          >
-            <option value="">-- اختر الحساب الدائن --</option>
-            {#each ledgers as acc}
-              <option value={acc.id}>{acc.code} - {acc.name_ar || acc.name}</option>
-            {/each}
-          </select>
-        </div>
+        <Separator class="bg-border/60" />
 
-        <!-- Field 4: Date Picker -->
-        <div class="flex flex-col gap-0.5 text-start">
-          <label class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">تاريخ القيد</label>
-          <Input 
-            type="date" 
-            bind:value={accountingDate} 
-            class="h-8 text-[11px] font-mono bg-background/50 w-full" 
-          />
-        </div>
+        <!-- Date navigation and filter bar -->
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div class="flex flex-wrap items-center gap-4">
+            
+            <!-- Filter Date Mode Select -->
+            <div class="min-w-[120px]">
+              <Select type="single" bind:value={filterMode}>
+                <SelectTrigger class="h-8 text-xs bg-background/50 border-border cursor-pointer">
+                  {filterMode === "day" ? m.finance_je_filter_day() : m.finance_je_filter_all()}
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="day">{m.finance_je_filter_day()}</SelectItem>
+                  <SelectItem value="all">{m.finance_je_filter_all()}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-        <!-- Field 5: Notes/Remarks -->
-        <div class="flex flex-col gap-0.5 text-start col-span-1 md:col-span-2">
-          <label class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">ملاحظات / البيان</label>
-          <Input 
-            type="text" 
-            bind:value={descriptionAr} 
-            class="h-8 text-[11px] bg-background/50 w-full" 
-            placeholder="أدخل البيان التفصيلي لوصف العملية المالية..." 
-          />
+            <!-- Date picker and navigation buttons (visible when day mode is active) -->
+            {#if filterMode === "day"}
+              <div class="flex items-center gap-1 bg-background/80 rounded-lg p-0.5 border border-border/85" in:slide={{ axis: "x", duration: 150 }}>
+                <Button variant="ghost" size="icon-xs" onclick={prevDay} class="h-7 w-7 text-muted-foreground hover:text-foreground cursor-pointer rounded-md">
+                  <ChevronRight size={14} />
+                </Button>
+                
+                <div class="flex items-center gap-1 px-1">
+                  <Calendar size={12} class="text-primary/70" />
+                  <input
+                    type="date"
+                    bind:value={selectedFilterDate}
+                    class="bg-transparent text-foreground border-none font-mono text-xs focus:ring-0 outline-none w-28 cursor-pointer font-bold"
+                  />
+                </div>
+
+                <Button variant="ghost" size="icon-xs" onclick={nextDay} class="h-7 w-7 text-muted-foreground hover:text-foreground cursor-pointer rounded-md">
+                  <ChevronLeft size={14} />
+                </Button>
+              </div>
+
+              <Button
+                variant="outline"
+                size="xs"
+                onclick={jumpToToday}
+                class="h-8 px-3 font-semibold text-xs border-border cursor-pointer hover:bg-muted text-foreground"
+              >
+                {m.finance_je_date_nav_today()}
+              </Button>
+            {/if}
+
+            <span class="text-border">|</span>
+
+            <!-- Show User Records Switch -->
+            <div class="flex items-center gap-2 select-none">
+              <Switch bind:checked={showUserRecords} id="show-user-records" class="cursor-pointer" />
+              <Label for="show-user-records" class="text-xs font-semibold text-muted-foreground cursor-pointer">
+                عرض سجلات المستخدم
+              </Label>
+            </div>
+
+          </div>
+
+          <!-- Text Search & Status -->
+          <div class="flex items-center gap-3 flex-1 max-w-md md:ms-auto">
+            <!-- Search bar -->
+            <div class="relative flex-1 text-start">
+              <Search class="absolute left-2.5 top-2.5 h-3 w-3 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="البحث بالرقم أو البيان..."
+                bind:value={searchQuery}
+                class="pl-8 h-8 text-[11px] bg-background/50 border-border"
+              />
+            </div>
+
+            <!-- Status Filter Select -->
+            <div class="w-32">
+              <Select type="single" bind:value={statusFilter}>
+                <SelectTrigger class="h-8 text-xs bg-background/50 border-border cursor-pointer">
+                  {statusFilter === "all" ? "كل الحالات" : statusFilter === "draft" ? "مسودة" : "مرحل"}
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">كل الحالات</SelectItem>
+                  <SelectItem value="draft">مسودة</SelectItem>
+                  <SelectItem value="posted">مرحل</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </div>
 
       </div>
 
-      <!-- Action Ribbon Bar -->
-      <div class="flex flex-wrap items-center justify-center gap-3 pt-3 border-t border-border/40 select-none">
-        
-        <Button 
-          variant="default" 
-          size="sm" 
-          onclick={handleAdd} 
-          class="bg-primary hover:bg-primary/95 text-primary-foreground font-bold text-xs h-8 px-4 flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-[0.98] transition-all"
-        >
-          <Plus size={12} />
-          <span>إضافة قيد</span>
-        </Button>
-        
-        <Button 
-          variant="destructive" 
-          size="sm" 
-          onclick={handleVoid} 
-          disabled={!selectedEntry} 
-          class="font-bold text-xs h-8 px-4 flex items-center gap-1.5 cursor-pointer active:scale-[0.98] transition-all"
-        >
-          <Trash2 size={12} />
-          <span>إلغاء القيد (Void)</span>
-        </Button>
-        
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onclick={loadData} 
-          class="font-bold text-xs h-8 px-4 flex items-center gap-1.5 cursor-pointer active:scale-[0.98] transition-all"
-        >
-          <RefreshCw size={12} />
-          <span>تحديث البيانات</span>
-        </Button>
-
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onclick={clearForm} 
-          class="font-bold text-xs h-8 px-4 flex items-center gap-1.5 cursor-pointer active:scale-[0.98] transition-all"
-        >
-          <LogOut size={12} />
-          <span>إلغاء وتفريغ</span>
-        </Button>
-      </div>
-
-    </div>
-
-    <!-- Filter & Sub-Action Bar (Directly Above the Grid) -->
-    <div class="flex flex-wrap items-center justify-between gap-3 py-2 select-none border-b border-border/40">
-      
-      <div class="flex flex-wrap items-center gap-3 flex-1">
-        
-        <!-- Search input -->
-        <div class="relative w-full max-w-xs text-start">
-          <Search class="absolute left-2 top-2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder="البحث بالرقم أو البيان..."
-            bind:value={searchQuery}
-            class="pl-8 h-8 text-[11px]"
-          />
-        </div>
-
-        <!-- Status Filter Select -->
-        <select 
-          bind:value={statusFilter}
-          class="bg-background text-foreground border border-border rounded-md px-2 py-1 text-[11px] focus:ring-1 focus:ring-ring outline-none h-8 cursor-pointer"
-        >
-          <option value="all">كل الحالات</option>
-          <option value="draft">مسودة</option>
-          <option value="posted">مرحل</option>
-        </select>
-
-        <span class="text-border hidden md:inline">|</span>
-
-        <!-- Checkbox: User Records -->
-        <label class="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground cursor-pointer select-none">
-          <input 
-            type="checkbox" 
-            bind:checked={showUserRecords} 
-            class="rounded border-border text-primary focus:ring-primary w-3.5 h-3.5 cursor-pointer" 
-          />
-          <span>عرض سجلات المستخدم</span>
-        </label>
-
-        <span class="text-border">|</span>
-
-        <!-- Checkbox: Date filtering -->
-        <label class="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground cursor-pointer select-none">
-          <input 
-            type="checkbox" 
-            bind:checked={filterByDate} 
-            class="rounded border-border text-primary focus:ring-primary w-3.5 h-3.5 cursor-pointer" 
-          />
-          <span>فحص التاريخ</span>
-        </label>
-
-        {#if filterByDate}
-          <div class="flex items-center gap-2" in:slide={{ axis: "x", duration: 150 }}>
-            <Input type="date" bind:value={startDateFilter} class="h-7 text-xs w-[120px]" />
-            <span class="text-xs text-muted-foreground">إلى</span>
-            <Input type="date" bind:value={endDateFilter} class="h-7 text-xs w-[120px]" />
+      <!-- Table Content Area -->
+      <CardContent class="p-0 flex-grow min-h-[300px]">
+        {#if isLoading}
+          <div class="p-6 flex flex-col gap-2.5">
+            {#each Array(4) as _}
+              <Skeleton class="h-10 w-full rounded-lg" />
+            {/each}
+          </div>
+        {:else if error}
+          <div in:fade={{ duration: 150 }} class="m-6 border border-destructive/20 bg-destructive/10 text-destructive rounded-xl p-4 flex items-center gap-3 text-sm text-start">
+            <AlertCircle class="h-4 w-4" />
+            <div>خطأ في تحميل القيود: {error}</div>
+          </div>
+        {:else if filteredEntries.length === 0}
+          <div class="border-t border-border/40 p-16 flex flex-col items-center justify-center text-center gap-2 select-none">
+            <BookOpen size={36} class="text-muted-foreground/60 mb-2" />
+            <h4 class="text-sm font-bold text-foreground">لا توجد قيود مطابقة للبحث</h4>
+            <p class="text-xs text-muted-foreground">لم يتم العثور على أي قيود محاسبية بناءً على معايير التصفية الحالية.</p>
+          </div>
+        {:else}
+          <div in:fade={{ duration: 150 }} class="border-t border-border/40 overflow-x-auto">
+            <Table>
+              <TableHeader class="bg-muted/40 select-none border-b border-border/60">
+                <TableRow>
+                  <TableHead class="text-start font-bold text-xs">الرقم</TableHead>
+                  <TableHead class="text-start font-bold text-xs">التاريخ</TableHead>
+                  <TableHead class="text-end font-bold text-xs text-emerald-600">المبلغ</TableHead>
+                  <TableHead class="text-center font-bold text-xs">العملة</TableHead>
+                  <TableHead class="text-start font-bold text-xs">من حساب (المدين)</TableHead>
+                  <TableHead class="text-start font-bold text-xs">إلى حساب (الدائن)</TableHead>
+                  <TableHead class="text-start font-bold text-xs">البيان / ملاحظات</TableHead>
+                  <TableHead class="text-center font-bold text-xs w-16">الحالة</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {#each filteredEntries as je (je.id)}
+                  {#if showUserRecords || je.user === "U78"}
+                    <TableRow
+                      class="hover:bg-muted/20 transition-all duration-150 cursor-pointer select-none {selectedEntry?.id === je.id ? 'bg-primary/10 border-primary border-s-2 hover:bg-primary/15' : ''}"
+                      onclick={() => selectRow(je)}
+                    >
+                      <TableCell class="text-start font-mono text-[11px] text-foreground font-extrabold whitespace-nowrap">{je.transaction_ref}</TableCell>
+                      <TableCell class="text-start text-[11px] text-muted-foreground whitespace-nowrap">{formatDate(je.accounting_date)}</TableCell>
+                      <TableCell class="text-end text-[11px] font-bold font-mono text-emerald-600 whitespace-nowrap">
+                        {localFormatCurrency(je.amount, je.currency || 'YER')}
+                      </TableCell>
+                      <TableCell class="text-center text-[11px] font-semibold font-mono">{je.currency || 'YER'}</TableCell>
+                      <TableCell class="text-start text-[11px] text-foreground font-semibold max-w-[160px] truncate">
+                        {getAccountLabel(je.debit_account_id)}
+                      </TableCell>
+                      <TableCell class="text-start text-[11px] text-foreground font-semibold max-w-[160px] truncate">
+                        {getAccountLabel(je.credit_account_id)}
+                      </TableCell>
+                      <TableCell class="text-start text-[11px] text-muted-foreground max-w-[200px] truncate">
+                        {je.description_ar || je.description || '-'}
+                      </TableCell>
+                      <TableCell class="text-center">
+                        <Badge variant={je.status === 'posted' ? 'lime' : 'secondary'} class="text-[10px] font-bold py-0.5 px-2">
+                          {je.status === 'posted' ? m.je_status_posted() : m.je_status_draft()}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  {/if}
+                {/each}
+              </TableBody>
+            </Table>
           </div>
         {/if}
-
-      </div>
-
-      <!-- Action buttons -->
-      <div class="flex items-center gap-2">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onclick={handlePrintList} 
-          class="h-8 text-[11px] flex items-center gap-1.5 cursor-pointer hover:bg-muted"
-        >
-          <Printer size={12} />
-          <span>طباعة الجدول</span>
-        </Button>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onclick={handlePrintVoucher} 
-          disabled={!selectedEntry} 
-          class="h-8 text-[11px] flex items-center gap-1.5 cursor-pointer hover:bg-muted"
-        >
-          <FileText size={12} />
-          <span>طباعة السند</span>
-        </Button>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onclick={() => { if(selectedEntry) showQrModal = true; else toast.error('الرجاء اختيار سند أولاً'); }} 
-          class="h-8 text-[11px] flex items-center gap-1.5 cursor-pointer hover:bg-muted"
-        >
-          <QrCode size={12} />
-          <span>QR</span>
-        </Button>
-      </div>
-
-    </div>
-
-    <!-- Table Grid container -->
-    <div class="overflow-hidden">
-      {#if isLoading}
-        <div class="flex flex-col gap-2">
-          {#each Array(4) as _}
-            <Skeleton class="h-10 w-full rounded-lg" />
-          {/each}
-        </div>
-      {:else if error}
-        <div in:fade={{ duration: 150 }} class="border border-destructive/20 bg-destructive/10 text-destructive rounded-xl p-4 flex items-center gap-3 text-sm text-start">
-          <div>خطأ في تحميل القيود: {error}</div>
-        </div>
-      {:else if filteredEntries.length === 0}
-        <div class="border border-dashed border-border/80 rounded-2xl p-16 flex flex-col items-center justify-center text-center gap-2 select-none">
-          <BookOpen size={32} class="text-muted-foreground mb-2" />
-          <h4 class="text-sm font-bold text-foreground">لا توجد قيود مطابقة للبحث</h4>
-          <p class="text-xs text-muted-foreground">لم يتم العثور على أي قيود محاسبية بناءً على معايير التصفية الحالية.</p>
-        </div>
-      {:else}
-        <div in:fade={{ duration: 150 }} class="border border-border/60 rounded-xl overflow-hidden bg-card/30 shadow-sm">
-          <Table>
-            <TableHeader class="bg-muted/40 select-none">
-              <TableRow>
-                <TableHead class="text-start font-bold text-xs">الرقم</TableHead>
-                <TableHead class="text-start font-bold text-xs">التاريخ</TableHead>
-                <TableHead class="text-end font-bold text-xs text-emerald-500">المبلغ</TableHead>
-                <TableHead class="text-center font-bold text-xs">العملة</TableHead>
-                <TableHead class="text-start font-bold text-xs">من حساب (المدين)</TableHead>
-                <TableHead class="text-start font-bold text-xs">إلى حساب (الدائن)</TableHead>
-                <TableHead class="text-start font-bold text-xs">البيان / ملاحظات</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {#each filteredEntries as je (je.id)}
-                {#if showUserRecords || je.user === "U78"}
-                  <TableRow 
-                    class="hover:bg-muted/20 transition-all duration-150 cursor-pointer select-none {selectedEntry?.id === je.id ? 'bg-primary/10 border-primary border-l-2 hover:bg-primary/15' : ''}"
-                    onclick={() => selectRow(je)}
-                  >
-                    <TableCell class="text-start font-mono text-[11px] text-foreground font-extrabold whitespace-nowrap">{je.transaction_ref}</TableCell>
-                    <TableCell class="text-start text-[11px] text-muted-foreground whitespace-nowrap">{formatDate(je.accounting_date)}</TableCell>
-                    <TableCell class="text-end text-[11px] font-bold font-mono text-emerald-500 whitespace-nowrap">
-                      {localFormatCurrency(je.amount, je.currency || 'YER')}
-                    </TableCell>
-                    <TableCell class="text-center text-[11px] font-semibold font-mono">{je.currency || 'YER'}</TableCell>
-                    <TableCell class="text-start text-[11px] text-foreground font-semibold max-w-[150px] truncate">
-                      {getAccountLabel(je.debit_account_id)}
-                    </TableCell>
-                    <TableCell class="text-start text-[11px] text-foreground font-semibold max-w-[150px] truncate">
-                      {getAccountLabel(je.credit_account_id)}
-                    </TableCell>
-                    <TableCell class="text-start text-[11px] text-muted-foreground max-w-[200px] truncate">
-                      {je.description_ar || je.description || '-'}
-                    </TableCell>
-                  </TableRow>
-                {/if}
-              {/each}
-            </TableBody>
-          </Table>
-        </div>
-      {/if}
-    </div>
+      </CardContent>
+    </Card>
 
   </div>
 
@@ -612,7 +741,7 @@ const filteredEntries = $derived.by(() => {
           <div><span class="font-bold text-foreground">البيان:</span> {selectedEntry.description_ar || selectedEntry.description || '-'}</div>
         </div>
         
-        <Button variant="outline" size="sm" class="mt-4 w-full cursor-pointer hover:bg-muted" onclick={() => showQrModal = false}>
+        <Button variant="outline" size="sm" class="mt-4 w-full cursor-pointer hover:bg-muted text-foreground border-border" onclick={() => showQrModal = false}>
           إغلاق النافذة
         </Button>
       </div>
