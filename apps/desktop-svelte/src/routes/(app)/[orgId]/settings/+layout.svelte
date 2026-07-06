@@ -49,11 +49,6 @@ const navItems = $derived([
     icon: Bell,
   },
   {
-    path: "security",
-    label: m.settings_nav_security(),
-    icon: Lock,
-  },
-  {
     path: "users",
     label: m.settings_nav_users(),
     icon: Users,

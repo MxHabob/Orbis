@@ -173,9 +173,7 @@ async function handleSaveAvatar(e: Event) {
   </title>
 </svelte:head>
 
-<div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
-  <div class="w-full p-6 flex flex-col gap-6">
-
+<div class="flex flex-col gap-6">
     {#if isLoading}
       <!-- Loading state skeleton -->
       <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card">
@@ -223,5 +221,4 @@ async function handleSaveAvatar(e: Event) {
         onsave={handleSaveAvatar}
       />
     {/if}
-  </div>
 </div>
