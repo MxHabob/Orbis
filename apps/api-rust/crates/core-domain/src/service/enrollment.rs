@@ -572,6 +572,9 @@ impl super::Service {
         org_id: &str,
         stage: &str,
     ) -> Result<String, String> {
+        use sea_orm::{EntityTrait, QueryFilter, ColumnTrait, PaginatorTrait};
+        use crate::entities::enrollment;
+
         let org = self.repo.get_organization_by_id(org_id).await
             .map_err(|e| e.to_string())?
             .ok_or_else(|| "organization not found".to_string())?;
@@ -591,17 +594,37 @@ impl super::Service {
             "STU-{YEAR}-{SEQ}".to_string()
         };
 
-        let count = self.repo.get_enrollment_count(org_id).await
+        // Count enrollments that have a permanent student number
+        let base_count = enrollment::Entity::find()
+            .filter(enrollment::Column::OrgId.eq(org_id))
+            .filter(enrollment::Column::StudentNumber.not_like("STU-TEMP-%"))
+            .count(&self.repo.db)
+            .await
             .map_err(|e| e.to_string())?;
-        let seq_str = format!("{:06}", count + 1);
+
+        let mut offset = 1;
         let year_str = chrono::Utc::now().format("%Y").to_string();
 
-        let formatted = pattern
-            .replace("{YEAR}", &year_str)
-            .replace("{STAGE}", stage)
-            .replace("{SEQ}", &seq_str);
+        loop {
+            let seq_str = format!("{:06}", base_count + offset);
+            let formatted = pattern
+                .replace("{YEAR}", &year_str)
+                .replace("{STAGE}", stage)
+                .replace("{SEQ}", &seq_str);
 
-        Ok(formatted)
+            // Check if this student number already exists in the database
+            let exists = enrollment::Entity::find()
+                .filter(enrollment::Column::OrgId.eq(org_id))
+                .filter(enrollment::Column::StudentNumber.eq(&formatted))
+                .one(&self.repo.db)
+                .await
+                .map_err(|e| e.to_string())?;
+
+            if exists.is_none() {
+                return Ok(formatted);
+            }
+            offset += 1;
+        }
     }
 
     pub async fn transition_enrollment_status(
