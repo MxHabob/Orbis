@@ -24,7 +24,7 @@ $effect(() => {
   }
 });
 
-const basePath = $derived(`/${data.orgId}/academics/exams`);
+const basePath = $derived(`/${data.orgId}/exams`);
 
 const navItems = $derived([
   {

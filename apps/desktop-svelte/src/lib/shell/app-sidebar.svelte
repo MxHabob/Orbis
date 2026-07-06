@@ -21,6 +21,7 @@ import {
   BarChart3,
   Settings,
   FileText,
+  ClipboardList,
 } from "lucide-svelte";
 import { authStore } from "$lib/stores";
 import OrgSidebarSwitcher from "./org-sidebar-switcher.svelte";
@@ -105,6 +106,12 @@ const navItems = $derived([
     href: `/${orgId}/academics`,
     icon: BookOpen,
     label: m.nav_academics(),
+    match: "prefix",
+  },
+  {
+    href: `/${orgId}/exams`,
+    label: m.nav_exams(),
+    icon: ClipboardList,
     match: "prefix",
   },
   {

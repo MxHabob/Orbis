@@ -62,11 +62,6 @@ const navItems = $derived([
     icon: Calendar,
   },
   {
-    path: "exams",
-    label: m.nav_exams(),
-    icon: ClipboardList,
-  },
-  {
     path: "control",
     label: m.academics_control_label ? m.academics_control_label() : "الكنترول",
     icon: ShieldCheck,
