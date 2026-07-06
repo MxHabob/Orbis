@@ -8,6 +8,7 @@
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
 import {
+    Card,
   Table,
   TableBody,
   TableCell,
@@ -17,7 +18,10 @@ import {
 } from "@orbis/ui-svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
+import { Label } from "@orbis/ui-svelte/label";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
+import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui-svelte/select";
+import { ComboboxDropdown } from "@orbis/ui-svelte/combobox-dropdown";
 import { toast } from "svelte-sonner";
 import {
   Plus,
@@ -31,6 +35,8 @@ import {
   LogOut,
   QrCode,
   Printer,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-svelte";
 import { formatCurrency, formatDate } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
@@ -74,6 +80,13 @@ let isLoading = $state(true);
 let isLoadingFees = $state(false);
 let error = $state<string | null>(null);
 
+// Helper to extract only the actual account name (ignoring parent prefixes)
+function cleanAccountName(name: string): string {
+  if (!name) return "";
+  const parts = name.split(" - ");
+  return parts[parts.length - 1];
+}
+
 // Form Fields State
 let selectedPayment = $state<any | null>(null);
 let receiptNumber = $state("");
@@ -94,9 +107,31 @@ let notes = $state("");
 let searchQuery = $state("");
 let methodFilter = $state("all");
 let showUserRecords = $state(true);
-let filterByDate = $state(false);
+let filterMode = $state<"day" | "range" | "all">("day");
+let selectedFilterDate = $state("");
 let startDateFilter = $state("");
 let endDateFilter = $state("");
+
+// Derived States for Dropdowns
+const studentItems = $derived.by(() => {
+  return students.map((s) => ({
+    value: String(s.id),
+    label: s.full_name || s.student_number || String(s.id),
+  }));
+});
+
+const treasuryItems = $derived.by(() => {
+  return treasuries.map((tr) => ({
+    value: tr.id,
+    label: `${tr.code || '12110013'} - ${cleanAccountName(tr.name_ar || tr.name)}`,
+  }));
+});
+
+const studentName = $derived(
+  selectedPayment?.student_name || 
+  getStudentName(paymentRows[0]?.studentEnrollmentId) || 
+  ""
+);
 
 // Dialog and Printing states
 let showQrModal = $state(false);
@@ -158,76 +193,50 @@ async function loadCurrencies() {
   }
 }
 
-async function loadStudentFees(enrollId: string) {
-  if (!enrollId || !data.orgId) return;
-  isLoadingFees = true;
-  try {
-    const list = await commands.finance.getStudentFees(data.orgId, enrollId);
-    fees = list.filter((f) => f.status !== "paid");
-    selectedFeeIds = [];
-    selectedFeesInfo = [];
-    amount = null;
-    notes = "";
-  } catch (e) {
-    console.error("Error loading student fees:", e);
-    fees = [];
-    selectedFeeIds = [];
-    selectedFeesInfo = [];
-  } finally {
-    isLoadingFees = false;
-  }
+interface PaymentRow {
+  studentEnrollmentId: string;
+  notes: string;
+  availableFees: any[];
+  isLoadingFees: boolean;
+  selectedFees: Set<string>;
+  feeAmounts: Record<string, number>;
 }
+
+let paymentRows = $state<PaymentRow[]>([
+  { studentEnrollmentId: "", notes: "", availableFees: [], isLoadingFees: false, selectedFees: new Set<string>(), feeAmounts: {} }
+]);
 
 onMount(() => {
   if (data.orgId) {
     loadData();
+    const todayStr = new Date().toISOString().split("T")[0];
+    selectedFilterDate = todayStr;
+    
     const today = new Date();
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(today.getDate() - 30);
     startDateFilter = thirtyDaysAgo.toISOString().split("T")[0];
-    endDateFilter = today.toISOString().split("T")[0];
+    endDateFilter = todayStr;
   }
 });
 
-$effect(() => {
-  if (selectedEnrollmentId) {
-    loadStudentFees(selectedEnrollmentId);
-  } else {
-    fees = [];
-    selectedFeeIds = [];
-    selectedFeesInfo = [];
-  }
-});
+// Date filtering navigation
+function nextDay() {
+  if (!selectedFilterDate) return;
+  const d = new Date(selectedFilterDate);
+  d.setDate(d.getDate() + 1);
+  selectedFilterDate = d.toISOString().split("T")[0];
+}
 
-function toggleFeeSelection(feeId: string, balance: number) {
-  const fee = fees.find((f) => String(f.id) === feeId);
-  if (!fee) return;
+function prevDay() {
+  if (!selectedFilterDate) return;
+  const d = new Date(selectedFilterDate);
+  d.setDate(d.getDate() - 1);
+  selectedFilterDate = d.toISOString().split("T")[0];
+}
 
-  if (selectedFeeIds.includes(feeId)) {
-    selectedFeeIds = selectedFeeIds.filter((id) => id !== feeId);
-    selectedFeesInfo = selectedFeesInfo.filter((info) => info.id !== feeId);
-  } else {
-    selectedFeeIds = [...selectedFeeIds, feeId];
-    selectedFeesInfo = [
-      ...selectedFeesInfo,
-      {
-        id: feeId,
-        amount: balance,
-        notes: fee.notes || "رسوم دراسية",
-      },
-    ];
-  }
-
-  const sum = selectedFeesInfo.reduce((acc, curr) => acc + curr.amount, 0);
-  amount = sum;
-
-  if (selectedFeesInfo.length > 0) {
-    notes =
-      `سداد رسوم الطالب ${getStudentName(selectedEnrollmentId)}: ` +
-      selectedFeesInfo.map((f) => f.notes).join("، ");
-  } else {
-    notes = "";
-  }
+function jumpToToday() {
+  selectedFilterDate = new Date().toISOString().split("T")[0];
 }
 
 function getStudentName(enrollId: string): string {
@@ -235,7 +244,72 @@ function getStudentName(enrollId: string): string {
   return s ? s.full_name : "";
 }
 
-function selectRow(p: any) {
+function addPaymentRow() {
+  paymentRows = [...paymentRows, {
+    studentEnrollmentId: "",
+    notes: "",
+    availableFees: [],
+    isLoadingFees: false,
+    selectedFees: new Set<string>(),
+    feeAmounts: {}
+  }];
+}
+
+function deletePaymentRow(index: number) {
+  if (paymentRows.length <= 1) {
+    toast.warning("يجب أن يحتوي السند على سطر واحد على الأقل");
+    return;
+  }
+  paymentRows = paymentRows.filter((_, i) => i !== index);
+}
+
+async function handleStudentChange(index: number, studentId: string) {
+  paymentRows[index].studentEnrollmentId = studentId;
+  paymentRows[index].notes = "";
+  paymentRows[index].availableFees = [];
+  paymentRows[index].selectedFees = new Set<string>();
+  paymentRows[index].feeAmounts = {};
+
+  if (!studentId || !data.orgId) return;
+
+  paymentRows[index].isLoadingFees = true;
+  try {
+    const list = await commands.finance.getStudentFees(data.orgId, studentId);
+    paymentRows[index].availableFees = list.filter((f) => f.status !== "paid");
+  } catch (e) {
+    console.error("Failed to load student fees for row:", e);
+    paymentRows[index].availableFees = [];
+  } finally {
+    paymentRows[index].isLoadingFees = false;
+  }
+}
+
+function handleToggleFee(rowIndex: number, fee: any) {
+  const row = paymentRows[rowIndex];
+  const feeId = String(fee.id);
+  if (row.selectedFees.has(feeId)) {
+    row.selectedFees.delete(feeId);
+    delete row.feeAmounts[feeId];
+  } else {
+    row.selectedFees.add(feeId);
+    row.feeAmounts[feeId] = fee.balance || fee.total_amount || 0;
+  }
+  row.selectedFees = new Set(row.selectedFees); // trigger reactivity
+}
+
+function handleFeeAmountChange(rowIndex: number, feeId: string, val: number) {
+  paymentRows[rowIndex].feeAmounts[feeId] = val;
+}
+
+function calculateRowTotal(row: PaymentRow): number {
+  let sum = 0;
+  for (const feeId of row.selectedFees) {
+    sum += Number(row.feeAmounts[feeId] || 0);
+  }
+  return sum;
+}
+
+async function selectRow(p: any) {
   selectedPayment = p;
   receiptNumber = p.receipt_number || p.id.slice(0, 8);
   paymentDate = p.payment_date
@@ -248,34 +322,44 @@ function selectRow(p: any) {
     treasuries.find((t) => t.name === p.treasury_name)?.id ||
     "";
   paymentMethod = p.payment_method || "Cash";
-  amount = p.amount;
   currency = p.currency || "YER";
+  checkInfo = p.check_info || "";
 
+  // Set single row with selected payment
+  let enrollId = "";
   const student = students.find((s) => s.full_name === p.student_name);
   if (student) {
-    selectedEnrollmentId = String(student.id);
+    enrollId = String(student.id);
   } else {
-    selectedEnrollmentId = p.enrollment_id || "";
+    enrollId = p.enrollment_id || "";
   }
 
+  // Load fees dynamically for this selected student row
+  let rowFees: any[] = [];
+  if (enrollId && data.orgId) {
+    try {
+      const list = await commands.finance.getStudentFees(data.orgId, enrollId);
+      rowFees = list.filter((f) => f.status !== "paid" || String(f.id) === String(p.fee_id));
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  const selectedSet = new Set<string>();
+  const amountsMap: Record<string, number> = {};
   if (p.fee_id) {
-    selectedFeeIds = [String(p.fee_id)];
-    selectedFeesInfo = [
-      {
-        id: String(p.fee_id),
-        amount: p.amount,
-        notes: p.notes || "رسوم دراسية",
-      },
-    ];
-  } else {
-    selectedFeeIds = [];
-    selectedFeesInfo = [];
+    selectedSet.add(String(p.fee_id));
+    amountsMap[String(p.fee_id)] = p.amount;
   }
 
-  checkInfo = p.check_info || "";
-  notes = p.notes || "";
-
-  toast.info(`تم اختيار السند رقم ${receiptNumber}`);
+  paymentRows = [{
+    studentEnrollmentId: enrollId,
+    notes: p.notes || "",
+    availableFees: rowFees,
+    isLoadingFees: false,
+    selectedFees: selectedSet,
+    feeAmounts: amountsMap
+  }];
 }
 
 function clearForm() {
@@ -286,29 +370,41 @@ function clearForm() {
     treasuryId = treasuries[0].id;
   }
   paymentMethod = "Cash";
-  amount = null;
   currency = "YER";
-  selectedEnrollmentId = "";
-  selectedFeeIds = [];
-  selectedFeesInfo = [];
-  fees = [];
   checkInfo = "";
-  notes = "";
+  paymentRows = [
+    { studentEnrollmentId: "", notes: "", availableFees: [], isLoadingFees: false, selectedFees: new Set<string>(), feeAmounts: {} }
+  ];
 }
 
 async function handleAdd() {
-  if (!amount || amount <= 0) {
-    toast.error("الرجاء إدخال مبلغ صحيح");
-    return;
+  // Validate all rows
+  let hasCheckedFee = false;
+  for (let i = 0; i < paymentRows.length; i++) {
+    const row = paymentRows[i];
+    const rowNum = i + 1;
+    if (!row.studentEnrollmentId) {
+      toast.error(`الرجاء اختيار الطالب في السطر ${rowNum}`);
+      return;
+    }
+    if (row.selectedFees.size > 0) {
+      hasCheckedFee = true;
+      for (const feeId of row.selectedFees) {
+        const amt = row.feeAmounts[feeId];
+        if (amt === undefined || amt === null || amt <= 0) {
+          const fee = row.availableFees.find(f => String(f.id) === feeId);
+          toast.error(`الرجاء إدخال مبلغ دفع صحيح للرسم "${fee?.notes || 'رسوم'}" في السطر ${rowNum}`);
+          return;
+        }
+      }
+    }
   }
-  if (!selectedEnrollmentId) {
-    toast.error("الرجاء اختيار الطالب");
-    return;
-  }
-  if (selectedFeeIds.length === 0) {
+
+  if (!hasCheckedFee) {
     toast.error("الرجاء تحديد رسوم مستحقة واحدة على الأقل للسداد");
     return;
   }
+
   if (!treasuryId) {
     toast.error("الرجاء اختيار الصندوق");
     return;
@@ -319,28 +415,31 @@ async function handleAdd() {
   const newRefNum = `005${Math.floor(1000 + Math.random() * 9000)}`;
 
   try {
-    for (const feeInfo of selectedFeesInfo) {
-      const request = {
-        fee_id: feeInfo.id,
-        amount: Number(feeInfo.amount),
-        method:
-          paymentMethod === "Cash"
-            ? "cash"
-            : paymentMethod === "Check"
-              ? "bank_transfer"
-              : "card",
-        reference: newRefNum,
-        notes:
-          notes ||
-          `سداد رسوم الطالب ${getStudentName(selectedEnrollmentId)} - ${feeInfo.notes}`,
-        treasury_id: treasuryId,
-        currency: currency.trim().toUpperCase(),
-      };
-      await commands.finance.recordPayment(data.orgId, createdBy, request);
+    for (const row of paymentRows) {
+      for (const feeId of row.selectedFees) {
+        const feeAmount = row.feeAmounts[feeId];
+        const fee = row.availableFees.find((f) => String(f.id) === feeId);
+
+        const request = {
+          fee_id: feeId,
+          amount: Number(feeAmount),
+          method:
+            paymentMethod === "Cash"
+              ? "cash"
+              : paymentMethod === "Check"
+                ? "bank_transfer"
+                : "card",
+          reference: newRefNum,
+          notes: row.notes || `سداد رسوم الطالب ${getStudentName(row.studentEnrollmentId)} - ${fee?.notes || "رسوم دراسية"}`,
+          treasury_id: treasuryId,
+          currency: currency.trim().toUpperCase(),
+        };
+        await commands.finance.recordPayment(data.orgId, createdBy, request);
+      }
     }
 
     toast.success(
-      `تم تسجيل ${selectedFeesInfo.length} رسوم بنجاح بسند رقم ${randomRef}`,
+      `تم تسجيل سندات قبض بنجاح برقم ${randomRef}`,
     );
     await loadData();
     clearForm();
@@ -350,32 +449,40 @@ async function handleAdd() {
       e,
     );
 
-    const newPayment = {
-      id: Math.random().toString(36).substring(2, 9),
-      receipt_number: randomRef,
-      payment_date: paymentDate,
-      created_at: new Date().toISOString(),
-      amount,
-      currency,
-      payment_method: paymentMethod,
-      treasury_id: treasuryId,
-      treasury_name:
-        treasuries.find((t) => t.id === treasuryId)?.name || "صندوق التحصيلات",
-      student_name: getStudentName(selectedEnrollmentId),
-      student_number:
-        students.find((s) => String(s.id) === selectedEnrollmentId)
-          ?.student_number || "",
-      check_info: checkInfo,
-      notes:
-        notes || `سداد رسوم الطالب ${getStudentName(selectedEnrollmentId)}`,
-      reference_number: newRefNum,
-      prints_count: 0,
-      user: "U78",
-      branch: "المركز الرئيسي",
-    };
+    // Simulated local additions
+    for (const row of paymentRows) {
+      for (const feeId of row.selectedFees) {
+        const feeAmount = row.feeAmounts[feeId];
+        const fee = row.availableFees.find((f) => String(f.id) === feeId);
 
-    payments = [newPayment, ...payments];
-    toast.success(`تم إضافة سند القبض محلياً برقم ${randomRef}`);
+        const newPayment = {
+          id: Math.random().toString(36).substring(2, 9),
+          receipt_number: randomRef,
+          payment_date: paymentDate,
+          created_at: new Date().toISOString(),
+          amount: feeAmount,
+          currency,
+          payment_method: paymentMethod,
+          treasury_id: treasuryId,
+          treasury_name:
+            treasuries.find((t) => t.id === treasuryId)?.name || "صندوق التحصيلات",
+          student_name: getStudentName(row.studentEnrollmentId),
+          student_number:
+            students.find((s) => String(s.id) === row.studentEnrollmentId)
+              ?.student_number || "",
+          check_info: checkInfo,
+          notes: row.notes || `سداد رسوم الطالب ${getStudentName(row.studentEnrollmentId)} - ${fee?.notes || "رسوم دراسية"}`,
+          reference_number: newRefNum,
+          prints_count: 0,
+          user: "U78",
+          branch: "المركز الرئيسي",
+          fee_id: feeId,
+        };
+        payments = [newPayment, ...payments];
+      }
+    }
+    
+    toast.success(`تم إضافة سندات القبض محلياً برقم ${randomRef}`);
     clearForm();
   }
 }
@@ -463,12 +570,14 @@ const filteredPayments = $derived.by(() => {
     }
 
     let dateMatch = true;
-    if (filterByDate && startDateFilter && endDateFilter) {
-      const entryDate = p.payment_date
-        ? p.payment_date.split("T")[0]
-        : p.created_at
-          ? p.created_at.split("T")[0]
-          : "";
+    const entryDate = p.payment_date
+      ? p.payment_date.split("T")[0]
+      : p.created_at
+        ? p.created_at.split("T")[0]
+        : "";
+    if (filterMode === "day") {
+      dateMatch = entryDate === selectedFilterDate;
+    } else if (filterMode === "range" && startDateFilter && endDateFilter) {
       dateMatch = entryDate >= startDateFilter && entryDate <= endDateFilter;
     }
 
@@ -482,208 +591,253 @@ const filteredPayments = $derived.by(() => {
   <div class="flex-1 overflow-y-auto py-3 space-y-4 print:hidden">
     
     <!-- Redesigned Receipt Voucher Input Form Card -->
-    <div class="border border-border/60 rounded-xl bg-card/25 backdrop-blur-md p-4 shadow-sm space-y-3">
-      
-      <!-- Voucher Header -->
-      <div class="flex items-center justify-between border-b border-border/40 pb-2 mb-1 select-none">
+    <Card class="border border-border/60 shadow-sm overflow-hidden bg-card">
+      <!-- Voucher Header & Shared Controls -->
+      <div class="bg-muted/45 border-b border-border/60 p-4 flex flex-wrap items-center justify-between gap-4 select-none">
         <div class="flex items-center gap-1.5">
           <span class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">رقم السند</span>
           <span class="text-[11px] font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
             {receiptNumber || "قبض جديد"}
           </span>
         </div>
-        <h2 class="text-xs font-extrabold text-foreground tracking-tight flex items-center gap-1">
-          <span class="w-1 h-1 rounded-full bg-emerald-500 animate-pulse"></span>
-          سند قبض عملاء
-        </h2>
-        <div class="flex items-center gap-1.5">
-          <span class="text-[11px] text-muted-foreground">التاريخ:</span>
-          <span class="text-[11px] font-mono font-bold text-foreground">{paymentDate}</span>
+
+        <div class="flex flex-wrap items-center gap-4">
+          <!-- Treasury select -->
+          <div class="flex flex-col gap-1 text-start">
+            <Label class="text-[9px] font-bold text-muted-foreground">الصندوق</Label>
+            <Select type="single" bind:value={treasuryId}>
+              <SelectTrigger class="h-8 text-xs bg-background/50 w-48 border-border/60 cursor-pointer text-start">
+                {treasuryItems.find(t => t.value === treasuryId)?.label || "اختر الصندوق..."}
+              </SelectTrigger>
+              <SelectContent>
+                {#each treasuryItems as tr}
+                  <SelectItem value={tr.value}>{tr.label}</SelectItem>
+                {/each}
+                {#if treasuryItems.length === 0}
+                  <SelectItem value="">12110013 - صندوق التحصيلات</SelectItem>
+                {/if}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <!-- Method select -->
+          <div class="flex flex-col gap-1 text-start">
+            <Label class="text-[9px] font-bold text-muted-foreground">طريقة القبض</Label>
+            <Select type="single" bind:value={paymentMethod}>
+              <SelectTrigger class="h-8 text-xs bg-background/50 w-32 border-border/60 cursor-pointer text-start">
+                {paymentMethods.find(m => m.value === paymentMethod)?.label || "اختر الطريقة..."}
+              </SelectTrigger>
+              <SelectContent>
+                {#each paymentMethods as pm}
+                  <SelectItem value={pm.value}>{pm.label}</SelectItem>
+                {/each}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <!-- Currency select -->
+          <div class="flex flex-col gap-1 text-start">
+            <Label class="text-[9px] font-bold text-muted-foreground">العملة</Label>
+            <Select type="single" bind:value={currency}>
+              <SelectTrigger class="h-8 text-xs bg-background/50 w-24 border-border/60 cursor-pointer">
+                {currency}
+              </SelectTrigger>
+              <SelectContent>
+                {#each currencies as curr}
+                  <SelectItem value={curr.code}>{curr.code}</SelectItem>
+                {/each}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <!-- Date picker -->
+          <div class="flex flex-col gap-1 text-start">
+            <Label class="text-[9px] font-bold text-muted-foreground">التاريخ</Label>
+            <Input 
+              type="date" 
+              bind:value={paymentDate} 
+              class="h-8 text-xs font-mono bg-background/50 border-border/60 w-36" 
+            />
+          </div>
+
+          <!-- Check Info (if method is Check) -->
+          {#if paymentMethod === 'Check'}
+            <div in:slide={{ duration: 150 }} class="flex flex-col gap-1 text-start">
+              <Label class="text-[9px] font-bold text-muted-foreground">معلومات الشيك</Label>
+              <Input 
+                type="text" 
+                bind:value={checkInfo} 
+                class="h-8 text-xs bg-background/50 border-border/60 w-44" 
+                placeholder="رقم الشيك والبنك..." 
+              />
+            </div>
+          {/if}
         </div>
       </div>
 
-      <!-- Form Inputs Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-        
-        <!-- Field 1: Student Account Selection -->
-        <div class="flex flex-col gap-0.5 text-start">
-          <label class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">اسم الحساب (الطالب)</label>
-          <select 
-            bind:value={selectedEnrollmentId} 
-            class="bg-background text-foreground border border-border rounded-md px-2.5 h-8 text-[11px] focus:ring-1 focus:ring-ring outline-none cursor-pointer w-full"
-          >
-            <option value="">-- اختر حساب الطالب --</option>
-            {#each students as s (s.id)}
-              <option value={String(s.id)}>{s.full_name || s.student_number || s.id}</option>
-            {/each}
-          </select>
-        </div>
-
-        <!-- Field 2: Amount Input -->
-        <div class="flex flex-col gap-0.5 text-start">
-          <label class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">المبلغ والعملة</label>
-          <div class="flex gap-2">
-            <Input 
-              type="number" 
-              bind:value={amount} 
-              min="0" 
-              class="h-8 text-[11px] font-mono text-emerald-500 font-extrabold flex-1 bg-background/50" 
-              placeholder="0.00" 
-            />
-            <select 
-              bind:value={currency} 
-              class="bg-background text-foreground border border-border rounded-md px-2 h-8 text-[11px] focus:ring-1 focus:ring-ring outline-none cursor-pointer w-20"
-            >
-              {#each currencies as curr}
-                <option value={curr.code}>{curr.code}</option>
-              {/each}
-            </select>
+      <div class="p-4 md:p-6 flex flex-col gap-4">
+        <!-- Dynamic Row Grid -->
+        <div class="border border-border/60 rounded-xl bg-muted/10 p-4 shadow-sm flex flex-col gap-2">
+          <!-- Headers -->
+          <div class="hidden md:grid grid-cols-[30px_1.2fr_2.5fr_1fr_40px] gap-4 px-2 text-xs font-bold text-muted-foreground select-none pb-2 border-b border-border/40">
+            <div class="text-center">#</div>
+            <div>اسم الحساب (الطالب) / الملاحظات</div>
+            <div>الرسوم المستحقة والمدفوعة</div>
+            <div class="text-center">إجمالي المدفوع</div>
+            <div class="text-center">{m.finance_je_col_actions()}</div>
           </div>
-        </div>
 
-        <!-- Field 3: Treasury/Collection Box -->
-        <div class="flex flex-col gap-0.5 text-start">
-          <label class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">الصندوق</label>
-          <select 
-            bind:value={treasuryId} 
-            class="bg-background text-foreground border border-border rounded-md px-2.5 h-8 text-[11px] focus:ring-1 focus:ring-ring outline-none cursor-pointer w-full"
-          >
-            {#each treasuries as tr}
-              <option value={tr.id}>{tr.code || '12110013'} - {tr.name_ar || tr.name}</option>
-            {/each}
-            {#if treasuries.length === 0}
-              <option value="">12110013 - صندوق التحصيلات</option>
-            {/if}
-          </select>
-        </div>
-
-        <!-- Field 4: Receipt Method -->
-        <div class="flex flex-col gap-0.5 text-start">
-          <label class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">طريقة القبض</label>
-          <select 
-            bind:value={paymentMethod} 
-            class="bg-background text-foreground border border-border rounded-md px-2.5 h-8 text-[11px] focus:ring-1 focus:ring-ring outline-none cursor-pointer w-full"
-          >
-            {#each paymentMethods as pm}
-              <option value={pm.value}>{pm.label}</option>
-            {/each}
-          </select>
-        </div>
-
-        <!-- Field 5: Date Picker -->
-        <div class="flex flex-col gap-0.5 text-start">
-          <label class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">التاريخ</label>
-          <Input 
-            type="date" 
-            bind:value={paymentDate} 
-            class="h-8 text-[11px] font-mono bg-background/50" 
-          />
-        </div>
-
-        <!-- Field 6: Check Info (Conditionally rendered) -->
-        {#if paymentMethod === 'Check'}
-          <div in:slide={{ duration: 150 }} class="flex flex-col gap-0.5 text-start">
-            <label class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">معلومات الشيك</label>
-            <Input 
-              type="text" 
-              bind:value={checkInfo} 
-              class="h-8 text-[11px] bg-background/50 w-full" 
-              placeholder="رقم الشيك والبنك..." 
-            />
-          </div>
-        {/if}
-
-        <!-- Field 7: Notes -->
-        <div class="flex flex-col gap-0.5 text-start {paymentMethod === 'Check' ? 'col-span-1 md:col-span-2' : 'col-span-1 md:col-span-2 lg:col-span-3'}">
-          <label class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">ملاحظات السند</label>
-          <Input 
-            type="text" 
-            bind:value={notes} 
-            class="h-8 text-[11px] bg-background/50 w-full" 
-            placeholder="تفاصيل سداد السند..." 
-          />
-        </div>
-
-        <!-- Field 8: Multiple Outstanding Fees Selection -->
-        {#if selectedEnrollmentId && fees.length > 0}
-          <div in:slide={{ duration: 150 }} class="flex flex-col gap-1.5 text-start col-span-1 md:col-span-2 lg:col-span-3 border border-border/40 bg-background/40 p-3 rounded-lg">
-            <div class="flex items-center justify-between">
-              <span class="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">الرسوم المدرسية المستحقة (تحديد متعدد لعملية سداد واحدة)</span>
-              <span class="text-[9px] font-extrabold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                تم اختيار {selectedFeeIds.length} رسوم
-              </span>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-32 overflow-y-auto pr-1">
-              {#each fees as f (f.id)}
-                <label class="flex items-center justify-between p-2 rounded-lg border border-border/50 bg-card/10 hover:bg-card/20 cursor-pointer transition-all select-none">
-                  <div class="flex items-center gap-2">
-                    <input 
-                      type="checkbox" 
-                      checked={selectedFeeIds.includes(String(f.id))}
-                      onchange={() => toggleFeeSelection(String(f.id), Number(f.balance || f.total_amount || 0))}
-                      class="rounded border-border text-primary focus:ring-primary w-3.5 h-3.5 cursor-pointer"
+          <!-- Input Rows -->
+          <div class="flex flex-col gap-3 md:gap-2">
+            {#each paymentRows as row, index}
+              <div class="grid grid-cols-1 md:grid-cols-[30px_1.2fr_2.5fr_1fr_40px] gap-4 items-start bg-muted/30 md:bg-transparent p-4 md:p-0 rounded-lg border border-border/45 md:border-none">
+                <!-- Row Number -->
+                <div class="text-start md:text-center font-mono text-xs font-bold text-muted-foreground pt-2">
+                  <span class="md:hidden">السطر </span>{index + 1}
+                </div>
+                
+                <!-- Student Selection & Notes -->
+                <div class="flex flex-col gap-2">
+                  <div class="flex flex-col gap-1">
+                    <span class="text-[10px] font-bold text-muted-foreground md:hidden">اسم الحساب (الطالب)</span>
+                    <ComboboxDropdown
+                      placeholder="-- اختر حساب الطالب --"
+                      searchPlaceholder="ابحث باسم الطالب..."
+                      selectedItem={studentItems.find((item) => item.value === row.studentEnrollmentId)}
+                      items={studentItems}
+                      onSelect={(item) => { handleStudentChange(index, item ? item.value : ""); }}
+                      class="w-full text-xs h-9 bg-background border-border/60"
                     />
-                    <div class="flex flex-col">
-                      <span class="text-[11px] font-semibold text-foreground">{f.notes || 'رسوم دراسية'}</span>
-                      <span class="text-[9px] text-muted-foreground">الإجمالي: {formatCurrency(f.total_amount, currency)}</span>
-                    </div>
                   </div>
-                  <span class="text-[11px] font-bold font-mono text-emerald-500">
-                    {formatCurrency(f.balance, currency)}
-                  </span>
-                </label>
-              {/each}
-            </div>
+                  <div class="flex flex-col gap-1">
+                    <span class="text-[10px] font-bold text-muted-foreground md:hidden">ملاحظات السند</span>
+                    <Input
+                      type="text"
+                      bind:value={row.notes}
+                      class="h-9 text-xs w-full bg-background border-border/60"
+                      placeholder="ملاحظات التحصيل لهذا الطالب..."
+                    />
+                  </div>
+                </div>
+
+                <!-- Fees List checkboxes & amount inputs -->
+                <div class="flex flex-col gap-1 text-start">
+                  <span class="text-[10px] font-bold text-muted-foreground md:hidden">الرسوم المستحقة والمدفوعة</span>
+                  {#if row.isLoadingFees}
+                    <div class="space-y-1">
+                      <Skeleton class="h-8 w-full rounded-md" />
+                      <Skeleton class="h-8 w-full rounded-md" />
+                    </div>
+                  {:else if row.availableFees.length === 0}
+                    <div class="text-xs text-muted-foreground/70 italic py-2">
+                      {row.studentEnrollmentId ? "لا توجد رسوم مستحقة غير مدفوعة لهذا الطالب" : "الرجاء اختيار طالب لعرض رسومه"}
+                    </div>
+                  {:else}
+                    <div class="flex flex-col gap-2 bg-background border border-border/65 p-2 rounded-lg max-h-48 overflow-y-auto">
+                      {#each row.availableFees as f}
+                        <div class="flex items-center justify-between gap-3 text-xs border-b border-border/30 last:border-b-0 pb-1.5 last:pb-0">
+                          <!-- Checkbox & Label -->
+                          <label class="flex items-center gap-2 cursor-pointer select-none flex-1">
+                            <input
+                              type="checkbox"
+                              checked={row.selectedFees.has(String(f.id))}
+                              onchange={() => handleToggleFee(index, f)}
+                              class="rounded border-border text-primary focus:ring-primary w-3.5 h-3.5 cursor-pointer"
+                            />
+                            <div class="flex flex-col text-start">
+                              <span class="font-bold text-foreground text-[11px]">{f.notes || "رسوم دراسية"}</span>
+                              <span class="text-[10px] text-muted-foreground">المستحق: {formatCurrency(f.balance, currency)}</span>
+                            </div>
+                          </label>
+
+                          <!-- Amount Input -->
+                          <div class="w-32 flex items-center">
+                            <Input
+                              type="number"
+                              disabled={!row.selectedFees.has(String(f.id))}
+                              value={row.feeAmounts[String(f.id)] || ""}
+                              oninput={(e) => handleFeeAmountChange(index, String(f.id), Number(e.currentTarget.value))}
+                              class="h-8 text-xs font-mono text-emerald-500 font-extrabold text-end w-full bg-background border-border/60"
+                              placeholder="0.00"
+                            />
+                          </div>
+                        </div>
+                      {/each}
+                    </div>
+                  {/if}
+                </div>
+
+                <!-- Row Total Paid -->
+                <div class="flex flex-col gap-1 items-stretch md:items-center">
+                  <span class="text-[10px] font-bold text-muted-foreground md:hidden text-center">إجمالي المدفوع</span>
+                  <div class="bg-background border border-border px-2 py-2 rounded-lg h-9 flex items-center justify-center font-mono font-extrabold text-emerald-500 text-xs w-full text-center">
+                    {formatCurrency(calculateRowTotal(row), currency)}
+                  </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex justify-end md:justify-center pt-1">
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    onclick={() => deletePaymentRow(index)}
+                    class="text-destructive hover:bg-destructive/10 cursor-pointer h-8 w-8"
+                  >
+                    <Trash2 size={14} />
+                  </Button>
+                </div>
+              </div>
+            {/each}
           </div>
-        {/if}
+        </div>
 
+        <!-- Add Row and Action Ribbon -->
+        <div class="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-border/40 select-none">
+          <Button
+            variant="outline"
+            size="sm"
+            onclick={addPaymentRow}
+            class="font-bold text-xs h-8 px-4 flex items-center gap-1.5 cursor-pointer border-border text-foreground hover:bg-muted"
+          >
+            <Plus size={14} />
+            <span>إضافة سطر</span>
+          </Button>
+          
+          <div class="flex items-center gap-3">
+            <Button
+              variant="default"
+              size="sm"
+              onclick={handleAdd}
+              class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-8 px-5 flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-[0.98] transition-all"
+            >
+              <Plus size={14} />
+              <span>ترحيل السندات</span>
+            </Button>
+            
+            <Button
+              variant="destructive"
+              size="sm"
+              onclick={handleVoid}
+              disabled={!selectedPayment}
+              class="font-bold text-xs h-8 px-4 flex items-center gap-1.5 cursor-pointer active:scale-[0.98] transition-all"
+            >
+              <Trash2 size={14} />
+              <span>إلغاء السند (Void)</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onclick={clearForm}
+              class="font-bold text-xs h-8 px-4 flex items-center gap-1.5 cursor-pointer active:scale-[0.98] transition-all border-border text-foreground hover:bg-muted"
+            >
+              <LogOut size={14} />
+              <span>تفريغ الحقول</span>
+            </Button>
+          </div>
+        </div>
       </div>
-
-      <!-- Action Ribbon Bar -->
-      <div class="flex flex-wrap items-center justify-center gap-3 pt-3 border-t border-border/40 select-none">
-        <Button 
-          variant="default" 
-          size="sm" 
-          onclick={handleAdd} 
-          class="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-800 text-white font-bold text-xs h-8 px-4 flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-[0.98] transition-all"
-        >
-          <Plus size={12} />
-          <span>إضافة سند</span>
-        </Button>
-        
-        <Button 
-          variant="destructive" 
-          size="sm" 
-          onclick={handleVoid} 
-          disabled={!selectedPayment} 
-          class="font-bold text-xs h-8 px-4 flex items-center gap-1.5 cursor-pointer active:scale-[0.98] transition-all"
-        >
-          <Trash2 size={12} />
-          <span>إلغاء السند (Void)</span>
-        </Button>
-        
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onclick={loadData} 
-          class="font-bold text-xs h-8 px-4 flex items-center gap-1.5 cursor-pointer active:scale-[0.98] transition-all"
-        >
-          <RefreshCw size={12} />
-          <span>تحديث</span>
-        </Button>
-
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onclick={clearForm} 
-          class="font-bold text-xs h-8 px-4 flex items-center gap-1.5 cursor-pointer active:scale-[0.98] transition-all"
-        >
-          <LogOut size={12} />
-          <span>تفريغ الحقول</span>
-        </Button>
-      </div>
-
-    </div>
+    </Card>
 
     <!-- Statistics summary row -->
     {#if !isLoading && payments.length > 0}
@@ -733,16 +887,76 @@ const filteredPayments = $derived.by(() => {
         </div>
 
         <!-- Method filter -->
-        <select 
-          bind:value={methodFilter}
-          class="bg-background text-foreground border border-border rounded-md px-2 py-1 text-[11px] focus:ring-1 focus:ring-ring outline-none h-8 cursor-pointer"
-        >
-          <option value="all">طريقة القبض (الكل)</option>
-          <option value="Cash">نقداً</option>
-          <option value="Check">شيك</option>
-        </select>
+        <Select type="single" bind:value={methodFilter}>
+          <SelectTrigger class="h-8 text-xs bg-background border-border w-40 cursor-pointer text-start">
+            {methodFilter === "all" ? "طريقة القبض (الكل)" : (methodFilter === "Cash" ? "نقداً" : "شيك")}
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">طريقة القبض (الكل)</SelectItem>
+            <SelectItem value="Cash">نقداً</SelectItem>
+            <SelectItem value="Check">شيك</SelectItem>
+          </SelectContent>
+        </Select>
 
         <span class="text-border hidden md:inline">|</span>
+
+        <!-- Filter Mode Select -->
+        <Select type="single" bind:value={filterMode}>
+          <SelectTrigger class="h-8 text-xs bg-background border-border w-28 cursor-pointer text-start">
+            {filterMode === "day" ? "تاريخ اليوم" : (filterMode === "range" ? "فترة محددة" : "كل التواريخ")}
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="day">تاريخ اليوم</SelectItem>
+            <SelectItem value="range">فترة محددة</SelectItem>
+            <SelectItem value="all">كل التواريخ</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <!-- Day Filter controls -->
+        {#if filterMode === "day"}
+          <div class="flex items-center gap-1.5 bg-muted/40 p-0.5 rounded-lg border border-border/50">
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              onclick={prevDay}
+              class="h-7 w-7 cursor-pointer hover:bg-background"
+            >
+              <ChevronRight size={14} class="rtl:rotate-180" />
+            </Button>
+            
+            <Input
+              type="date"
+              bind:value={selectedFilterDate}
+              class="h-7 text-xs font-mono bg-transparent border-0 w-28 focus-visible:ring-0 p-0 text-center"
+            />
+            
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              onclick={nextDay}
+              class="h-7 w-7 cursor-pointer hover:bg-background"
+            >
+              <ChevronLeft size={14} class="rtl:rotate-180" />
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="xs"
+              onclick={jumpToToday}
+              class="h-7 text-[10px] font-bold px-2 cursor-pointer hover:bg-background"
+            >
+              اليوم
+            </Button>
+          </div>
+        {:else if filterMode === "range"}
+          <div class="flex items-center gap-2" in:slide={{ axis: "x", duration: 150 }}>
+            <Input type="date" bind:value={startDateFilter} class="h-7 text-xs w-[120px]" />
+            <span class="text-xs text-muted-foreground">إلى</span>
+            <Input type="date" bind:value={endDateFilter} class="h-7 text-xs w-[120px]" />
+          </div>
+        {/if}
+
+        <span class="text-border">|</span>
 
         <!-- Checkbox: User Records -->
         <label class="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground cursor-pointer select-none">
@@ -753,27 +967,6 @@ const filteredPayments = $derived.by(() => {
           />
           <span>عرض سجلات المستخدم</span>
         </label>
-
-        <span class="text-border">|</span>
-
-        <!-- Checkbox: Date filtering -->
-        <label class="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground cursor-pointer select-none">
-          <input 
-            type="checkbox" 
-            bind:checked={filterByDate} 
-            class="rounded border-border text-primary focus:ring-primary w-3.5 h-3.5 cursor-pointer" 
-          />
-          <span>فحص التاريخ</span>
-        </label>
-
-        {#if filterByDate}
-          <div class="flex items-center gap-2" in:slide={{ axis: "x", duration: 150 }}>
-            <Input type="date" bind:value={startDateFilter} class="h-7 text-xs w-[120px]" />
-            <span class="text-xs text-muted-foreground">إلى</span>
-            <Input type="date" bind:value={endDateFilter} class="h-7 text-xs w-[120px]" />
-          </div>
-        {/if}
-
       </div>
 
       <!-- Action buttons -->
@@ -874,7 +1067,7 @@ const filteredPayments = $derived.by(() => {
                       {formatCurrency(Number(p.amount || 0), p.currency || 'YER')}
                     </TableCell>
                     <TableCell class="text-center text-[11px] font-semibold font-mono">{p.currency || 'YER'}</TableCell>
-                    <TableCell class="text-start text-[11px] text-foreground max-w-[150px] truncate">{p.treasury_name || 'صندوق التحصيلات'}</TableCell>
+                    <TableCell class="text-start text-[11px] text-foreground max-w-[150px] truncate">{cleanAccountName(p.treasury_name) || 'صندوق التحصيلات'}</TableCell>
                     <TableCell class="text-start text-[11px] text-foreground font-semibold max-w-[180px] truncate">{p.student_name || '-'}</TableCell>
                     <TableCell class="text-start text-[11px] text-muted-foreground max-w-[200px] truncate">{p.notes || '-'}</TableCell>
                   </TableRow>

@@ -2,6 +2,15 @@
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
+import { Label } from "@orbis/ui-svelte/label";
+import { Checkbox } from "@orbis/ui-svelte/checkbox";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui-svelte/select";
+import * as Sheet from "@orbis/ui-svelte/sheet";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 
@@ -19,8 +28,6 @@ let {
 
 // Form state
 let isSubmitting = $state(false);
-let ledgers = $state<any[]>([]);
-let isLoadingLedgers = $state(false);
 
 let name = $state("");
 let nameAr = $state("");
@@ -28,8 +35,6 @@ let code = $state("");
 let category = $state("tuition");
 let amount = $state<number>(0);
 let frequency = $state("yearly");
-let revenueAccountId = $state("");
-let receivableAccountId = $state("");
 let isMandatory = $state(true);
 let isActive = $state(true);
 
@@ -40,6 +45,31 @@ let uniqueLevels = $state<{ level: string; label: string }[]>([]);
 let applyToAllGrades = $state(true);
 let selectedLevels = $state<string[]>([]);
 
+// Derived categories and frequencies for Orbis Select components
+const categories = $derived([
+  { value: "tuition", label: m.ft_category_tuition ? m.ft_category_tuition() : "رسوم دراسية" },
+  { value: "transport", label: m.ft_category_transport ? m.ft_category_transport() : "نقل" },
+  { value: "books", label: m.ft_category_books ? m.ft_category_books() : "كتب" },
+  { value: "uniform", label: m.ft_category_uniform ? m.ft_category_uniform() : "زي مدرسي" },
+  { value: "exam", label: m.ft_category_exam ? m.ft_category_exam() : "رسوم امتحانات" },
+  { value: "other", label: m.ft_category_other ? m.ft_category_other() : "أخرى" },
+]);
+const categoryLabels = $derived(
+  categories.reduce((acc, c) => ({ ...acc, [c.value]: c.label }), {} as Record<string, string>)
+);
+const selectedCategoryLabel = $derived(categoryLabels[category] ?? category);
+
+const frequencies = $derived([
+  { value: "once", label: m.ft_frequency_once ? m.ft_frequency_once() : "مرة واحدة" },
+  { value: "monthly", label: m.ft_frequency_monthly ? m.ft_frequency_monthly() : "شهري" },
+  { value: "termly", label: m.ft_frequency_termly ? m.ft_frequency_termly() : "فصلي" },
+  { value: "yearly", label: m.ft_frequency_yearly ? m.ft_frequency_yearly() : "سنوي" },
+]);
+const frequencyLabels = $derived(
+  frequencies.reduce((acc, f) => ({ ...acc, [f.value]: f.label }), {} as Record<string, string>)
+);
+const selectedFrequencyLabel = $derived(frequencyLabels[frequency] ?? frequency);
+
 // Initialize form if in edit mode
 $effect(() => {
   if (template) {
@@ -48,8 +78,6 @@ $effect(() => {
     code = template.code || "";
     category = template.category || "tuition";
     frequency = template.frequency || "yearly";
-    revenueAccountId = template.revenue_account_id || "";
-    receivableAccountId = template.receivable_account_id || "";
     isMandatory = template.is_mandatory === 1;
     isActive = template.is_active === 1;
 
@@ -78,35 +106,6 @@ $effect(() => {
     }
   }
 });
-
-async function loadLedgerAccounts() {
-  if (!orgId) return;
-  isLoadingLedgers = true;
-  try {
-    const list = await commands.finance.getLedgerAccounts(orgId);
-    ledgers = list;
-
-    // Auto-select revenue and receivable accounts if not set
-    if (!revenueAccountId) {
-      const rev = list.find(
-        (l: any) => String(l.item_type || "").toLowerCase() === "revenue",
-      );
-      if (rev) revenueAccountId = rev.id;
-    }
-    if (!receivableAccountId) {
-      const rec = list.find(
-        (l: any) =>
-          String(l.item_type || "").toLowerCase() === "asset" ||
-          String(l.item_type || "").toLowerCase() === "receivable",
-      );
-      if (rec) receivableAccountId = rec.id;
-    }
-  } catch (e) {
-    console.error("Error loading ledger accounts in fee template form:", e);
-  } finally {
-    isLoadingLedgers = false;
-  }
-}
 
 async function loadClasses() {
   if (!orgId) return;
@@ -155,23 +154,13 @@ async function loadClasses() {
 
 $effect(() => {
   if (orgId) {
-    loadLedgerAccounts();
     loadClasses();
   }
 });
 
-async function handleSubmit(e: SubmitEvent) {
-  e.preventDefault();
+async function handleSubmit() {
   if (!name.trim()) {
     toast.error("Name (English) is required");
-    return;
-  }
-  if (!revenueAccountId) {
-    toast.error("Revenue Account is required");
-    return;
-  }
-  if (!receivableAccountId) {
-    toast.error("Receivable Account is required");
     return;
   }
   if (!applyToAllGrades && selectedLevels.length === 0) {
@@ -191,8 +180,8 @@ async function handleSubmit(e: SubmitEvent) {
       code: code.trim() || null,
       category,
       default_amount: Number(amount || 0),
-      revenue_account_id: revenueAccountId,
-      receivable_account_id: receivableAccountId,
+      revenue_account_id: "", // Managed automatically by backend
+      receivable_account_id: "", // Managed automatically by backend
       applicable_levels:
         !applyToAllGrades && selectedLevels.length > 0
           ? JSON.stringify({ levels: selectedLevels })
@@ -230,260 +219,216 @@ async function handleSubmit(e: SubmitEvent) {
 }
 </script>
 
-<form onsubmit={handleSubmit} class="flex-1 overflow-y-auto py-4 flex flex-col gap-5 scrollbar-hide">
-  <!-- Name (Arabic) -->
-  <div class="flex flex-col gap-1.5 text-start">
-    <label for="ft_form_name_ar" class="text-xs font-semibold text-foreground">
-      {m.ft_form_name ? m.ft_form_name() : "اسم القالب بالعربية"}
-    </label>
-    <Input 
-      id="ft_form_name_ar"
-      type="text" 
-      bind:value={nameAr}
-      placeholder="مثال: رسوم تسجيل الصف الأول"
-      disabled={isSubmitting}
-    />
-  </div>
+<form 
+  onsubmit={(e) => {
+    e.preventDefault();
+    handleSubmit();
+  }} 
+  class="flex flex-col h-full overflow-hidden gap-0"
+>
+  <Sheet.Header class="px-6 py-4 border-b border-border/40 shrink-0 text-start">
+    <Sheet.Title class="text-base font-bold text-foreground">
+      {template 
+        ? (m.ft_sheet_edit_title ? m.ft_sheet_edit_title() : "تعديل قالب الرسوم") 
+        : (m.ft_sheet_create_title ? m.ft_sheet_create_title() : "إنشاء قالب رسوم")}
+    </Sheet.Title>
+  </Sheet.Header>
 
-  <!-- Name (English) -->
-  <div class="flex flex-col gap-1.5 text-start">
-    <label for="ft_form_name_en" class="text-xs font-semibold text-foreground">
-      {m.ft_form_name_en ? m.ft_form_name_en() : "Name (English)"}
-    </label>
-    <Input 
-      id="ft_form_name_en"
-      type="text" 
-      bind:value={name}
-      placeholder="e.g., Grade 1 Enrollment Fees"
-      required
-      disabled={isSubmitting}
-    />
-  </div>
-
-  <!-- Code/Symbol -->
-  <div class="flex flex-col gap-1.5 text-start">
-    <label for="ft_form_code" class="text-xs font-semibold text-foreground">
-      {m.attendance_status_unknown() === "غير محدد" ? "رمز القالب / الكود" : "Template Code"}
-    </label>
-    <Input 
-      id="ft_form_code"
-      type="text" 
-      bind:value={code}
-      placeholder="e.g., FEES_GR1"
-      disabled={isSubmitting}
-    />
-  </div>
-
-  <!-- Category & Frequency Grid -->
-  <div class="grid grid-cols-2 gap-4">
-    <!-- Category -->
+  <div class="flex-1 overflow-y-auto p-6 flex flex-col gap-5 scrollbar-hide">
+    <!-- Name (Arabic) -->
     <div class="flex flex-col gap-1.5 text-start">
-      <label for="ft_form_category" class="text-xs font-semibold text-foreground">
-        {m.ft_form_category ? m.ft_form_category() : "الفئة"}
-      </label>
-      <select 
-        id="ft_form_category"
-        bind:value={category}
-        class="bg-background text-foreground border border-border rounded-md px-3 py-2 text-xs focus:ring-1 focus:ring-ring outline-none h-9 w-full"
+      <Label for="ft_form_name_ar" class="text-xs font-semibold text-muted-foreground">
+        {m.ft_form_name ? m.ft_form_name() : "اسم القالب بالعربية"}
+      </Label>
+      <Input 
+        id="ft_form_name_ar"
+        type="text" 
+        bind:value={nameAr}
+        placeholder="مثال: رسوم تسجيل الصف الأول"
         disabled={isSubmitting}
-      >
-        <option value="tuition">{m.ft_category_tuition ? m.ft_category_tuition() : "رسوم دراسية"}</option>
-        <option value="transport">{m.ft_category_transport ? m.ft_category_transport() : "نقل"}</option>
-        <option value="books">{m.ft_category_books ? m.ft_category_books() : "كتب"}</option>
-        <option value="uniform">{m.ft_category_uniform ? m.ft_category_uniform() : "زي مدرسي"}</option>
-        <option value="exam">{m.ft_category_exam ? m.ft_category_exam() : "رسوم امتحانات"}</option>
-        <option value="other">{m.ft_category_other ? m.ft_category_other() : "أخرى"}</option>
-      </select>
-    </div>
-
-    <!-- Frequency -->
-    <div class="flex flex-col gap-1.5 text-start">
-      <label for="ft_form_frequency" class="text-xs font-semibold text-foreground">
-        {m.ft_form_frequency ? m.ft_form_frequency() : "التكرار"}
-      </label>
-      <select 
-        id="ft_form_frequency"
-        bind:value={frequency}
-        class="bg-background text-foreground border border-border rounded-md px-3 py-2 text-xs focus:ring-1 focus:ring-ring outline-none h-9 w-full"
-        disabled={isSubmitting}
-      >
-        <option value="once">{m.ft_frequency_once ? m.ft_frequency_once() : "مرة واحدة"}</option>
-        <option value="monthly">{m.ft_frequency_monthly ? m.ft_frequency_monthly() : "شهري"}</option>
-        <option value="termly">{m.ft_frequency_termly ? m.ft_frequency_termly() : "فصلي"}</option>
-        <option value="yearly">{m.ft_frequency_yearly ? m.ft_frequency_yearly() : "سنوي"}</option>
-      </select>
-    </div>
-  </div>
-
-  <!-- Amount -->
-  <div class="flex flex-col gap-1.5 text-start">
-    <label for="ft_form_amount" class="text-xs font-semibold text-foreground">
-      {m.ft_form_amount ? m.ft_form_amount() : "المبلغ"}
-    </label>
-    <Input 
-      id="ft_form_amount"
-      type="number" 
-      min="0"
-      step="0.01"
-      bind:value={amount}
-      placeholder="e.g., 150000"
-      required
-      disabled={isSubmitting}
-    />
-  </div>
-
-  <!-- Grade Level Applicability -->
-  <div class="flex flex-col gap-3 p-3 bg-muted/40 rounded-lg border border-border/60">
-    <span class="text-xs font-bold text-muted-foreground uppercase tracking-wider text-start">
-      {m.attendance_status_unknown() === "غير محدد" ? "الصفوف المستهدفة بالرسم" : "Target Grade Levels"}
-    </span>
-    
-    <label class="flex items-center gap-2 cursor-pointer select-none text-xs font-semibold text-start">
-      <input 
-        type="checkbox" 
-        bind:checked={applyToAllGrades} 
-        disabled={isSubmitting}
-        class="w-4 h-4 rounded text-primary focus:ring-primary border-border"
       />
-      <span>{m.attendance_status_unknown() === "غير محدد" ? "يطبق على جميع الصفوف" : "Apply to all grades"}</span>
-    </label>
+    </div>
 
-    {#if !applyToAllGrades}
-      {#if isLoadingClasses}
-        <span class="text-xs text-muted-foreground text-start">{m.loading()}</span>
-      {:else}
-        <div class="grid grid-cols-2 gap-2 mt-1">
-          {#each uniqueLevels as lvl}
-            <label class="flex items-center gap-2 cursor-pointer select-none text-xs text-start">
-              <input 
-                type="checkbox" 
-                value={lvl.level}
-                checked={selectedLevels.includes(lvl.level)}
-                disabled={isSubmitting}
-                onchange={(e) => {
-                  const target = e.target as HTMLInputElement;
-                  if (target.checked) {
-                    selectedLevels = [...selectedLevels, lvl.level];
-                  } else {
-                    selectedLevels = selectedLevels.filter(x => x !== lvl.level);
-                  }
-                }}
-                class="w-4 h-4 rounded text-primary focus:ring-primary border-border"
-              />
-              <span>{lvl.label}</span>
-            </label>
-          {/each}
-          {#if uniqueLevels.length === 0}
-            <span class="text-xs text-muted-foreground col-span-2 text-start">
-              {m.attendance_status_unknown() === "غير محدد" ? "لا توجد صفوف دراسية مضافة. يرجى إعداد الفصول أولاً." : "No grade levels found. Please set up classes first."}
-            </span>
-          {/if}
-        </div>
+    <!-- Name (English) -->
+    <div class="flex flex-col gap-1.5 text-start">
+      <Label for="ft_form_name_en" class="text-xs font-semibold text-muted-foreground">
+        {m.ft_form_name_en ? m.ft_form_name_en() : "Name (English)"} *
+      </Label>
+      <Input 
+        id="ft_form_name_en"
+        type="text" 
+        bind:value={name}
+        placeholder="e.g., Grade 1 Enrollment Fees"
+        required
+        disabled={isSubmitting}
+      />
+    </div>
+
+    <!-- Code/Symbol -->
+    <div class="flex flex-col gap-1.5 text-start">
+      <Label for="ft_form_code" class="text-xs font-semibold text-muted-foreground">
+        {m.attendance_status_unknown() === "غير محدد" ? "رمز القالب / الكود" : "Template Code"}
+      </Label>
+      <Input 
+        id="ft_form_code"
+        type="text" 
+        bind:value={code}
+        placeholder="e.g., FEES_GR1"
+        disabled={isSubmitting}
+      />
+    </div>
+
+    <!-- Category & Frequency Grid -->
+    <div class="grid grid-cols-2 gap-4">
+      <!-- Category -->
+      <div class="flex flex-col gap-1.5 text-start">
+        <Label class="text-xs font-semibold text-muted-foreground">
+          {m.ft_form_category ? m.ft_form_category() : "الفئة"} *
+        </Label>
+        <Select type="single" value={category} onValueChange={(v) => (category = v ?? "tuition")} disabled={isSubmitting}>
+          <SelectTrigger class="h-9 text-sm">
+            {selectedCategoryLabel}
+          </SelectTrigger>
+          <SelectContent>
+            {#each categories as c (c.value)}
+              <SelectItem value={c.value}>{c.label}</SelectItem>
+            {/each}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <!-- Frequency -->
+      <div class="flex flex-col gap-1.5 text-start">
+        <Label class="text-xs font-semibold text-muted-foreground">
+          {m.ft_form_frequency ? m.ft_form_frequency() : "التكرار"} *
+        </Label>
+        <Select type="single" value={frequency} onValueChange={(v) => (frequency = v ?? "yearly")} disabled={isSubmitting}>
+          <SelectTrigger class="h-9 text-sm">
+            {selectedFrequencyLabel}
+          </SelectTrigger>
+          <SelectContent>
+            {#each frequencies as f (f.value)}
+              <SelectItem value={f.value}>{f.label}</SelectItem>
+            {/each}
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+
+    <!-- Amount -->
+    <div class="flex flex-col gap-1.5 text-start">
+      <Label for="ft_form_amount" class="text-xs font-semibold text-muted-foreground">
+        {m.ft_form_amount ? m.ft_form_amount() : "المبلغ"} *
+      </Label>
+      <Input 
+        id="ft_form_amount"
+        type="number" 
+        min="0"
+        step="0.01"
+        bind:value={amount}
+        placeholder="e.g., 150000"
+        required
+        disabled={isSubmitting}
+      />
+    </div>
+
+    <!-- Grade Level Applicability -->
+    <div class="flex flex-col gap-3 p-4 bg-muted/20 rounded-lg border border-border/30">
+      <span class="text-xs font-bold text-foreground text-start">
+        {m.attendance_status_unknown() === "غير محدد" ? "الصفوف المستهدفة بالرسم" : "Target Grade Levels"}
+      </span>
+      
+      <div class="flex items-center gap-2">
+        <Checkbox 
+          id="ft_form_apply_all" 
+          checked={applyToAllGrades} 
+          onCheckedChange={(val) => applyToAllGrades = !!val} 
+          disabled={isSubmitting}
+        />
+        <Label for="ft_form_apply_all" class="text-xs cursor-pointer">
+          {m.attendance_status_unknown() === "غير محدد" ? "يطبق على جميع الصفوف" : "Apply to all grades"}
+        </Label>
+      </div>
+
+      {#if !applyToAllGrades}
+        {#if isLoadingClasses}
+          <span class="text-xs text-muted-foreground text-start">{m.loading()}</span>
+        {:else}
+          <div class="grid grid-cols-2 gap-2 mt-1">
+            {#each uniqueLevels as lvl}
+              <div class="flex items-center gap-2">
+                <Checkbox 
+                  id={`ft_level_${lvl.level}`} 
+                  checked={selectedLevels.includes(lvl.level)} 
+                  onCheckedChange={(val) => {
+                    if (val) {
+                      selectedLevels = [...selectedLevels, lvl.level];
+                    } else {
+                      selectedLevels = selectedLevels.filter(x => x !== lvl.level);
+                    }
+                  }}
+                  disabled={isSubmitting}
+                />
+                <Label for={`ft_level_${lvl.level}`} class="text-xs cursor-pointer text-start">
+                  {lvl.label}
+                </Label>
+              </div>
+            {/each}
+            {#if uniqueLevels.length === 0}
+              <span class="text-xs text-muted-foreground col-span-2 text-start">
+                {m.attendance_status_unknown() === "غير محدد" ? "لا توجد صفوف دراسية مضافة. يرجى إعداد الفصول أولاً." : "No grade levels found. Please set up classes first."}
+              </span>
+            {/if}
+          </div>
+        {/if}
       {/if}
-    {/if}
-  </div>
-
-  <!-- Accounts mapping -->
-  <div class="flex flex-col gap-4 p-3 bg-muted/40 rounded-lg border border-border/60">
-    <span class="text-xs font-bold text-muted-foreground uppercase tracking-wider text-start">
-      {m.attendance_status_unknown() === "غير محدد" ? "الربط المحاسبي والدفاتر" : "GL Account Mapping"}
-    </span>
-    
-    <!-- Revenue Account Select -->
-    <div class="flex flex-col gap-1.5 text-start">
-      <label for="ft_form_rev_acc" class="text-[11px] font-semibold text-muted-foreground">
-        {m.ft_form_revenue_account ? m.ft_form_revenue_account() : "حساب الإيرادات (الدائن)"}
-      </label>
-      <select 
-        id="ft_form_rev_acc"
-        bind:value={revenueAccountId}
-        class="bg-background text-foreground border border-border rounded-md px-3 py-2 text-xs focus:ring-1 focus:ring-ring outline-none h-9 w-full"
-        disabled={isLoadingLedgers || isSubmitting}
-      >
-        {#if isLoadingLedgers}
-          <option>{m.loading()}</option>
-        {:else}
-          {#each ledgers.filter(l => String(l.item_type || "").toLowerCase() === "revenue") as l (l.id)}
-            <option value={String(l.id)}>{l.name_ar || l.name} ({l.code})</option>
-          {/each}
-          {#if ledgers.filter(l => String(l.item_type || "").toLowerCase() === "revenue").length === 0}
-            <option value="">-- No Revenue Accounts found --</option>
-            {#each ledgers as l (l.id)}
-              <option value={String(l.id)}>{l.name_ar || l.name} ({l.code})</option>
-            {/each}
-          {/if}
-        {/if}
-      </select>
     </div>
 
-    <!-- Receivable Account Select -->
-    <div class="flex flex-col gap-1.5 text-start">
-      <label for="ft_form_rec_acc" class="text-[11px] font-semibold text-muted-foreground">
-        {m.ft_form_receivable_account ? m.ft_form_receivable_account() : "حساب المدينين (المدين)"}
-      </label>
-      <select 
-        id="ft_form_rec_acc"
-        bind:value={receivableAccountId}
-        class="bg-background text-foreground border border-border rounded-md px-3 py-2 text-xs focus:ring-1 focus:ring-ring outline-none h-9 w-full"
-        disabled={isLoadingLedgers || isSubmitting}
-      >
-        {#if isLoadingLedgers}
-          <option>{m.loading()}</option>
-        {:else}
-          {#each ledgers.filter(l => String(l.item_type || "").toLowerCase() === "asset" || String(l.item_type || "").toLowerCase() === "receivable") as l (l.id)}
-            <option value={String(l.id)}>{l.name_ar || l.name} ({l.code})</option>
-          {/each}
-          {#if ledgers.filter(l => String(l.item_type || "").toLowerCase() === "asset" || String(l.item_type || "").toLowerCase() === "receivable").length === 0}
-            <option value="">-- No Receivable Accounts found --</option>
-            {#each ledgers as l (l.id)}
-              <option value={String(l.id)}>{l.name_ar || l.name} ({l.code})</option>
-            {/each}
-          {/if}
-        {/if}
-      </select>
+    <!-- Checkboxes -->
+    <div class="flex gap-6 mt-2">
+      <!-- Mandatory Switch -->
+      <div class="flex items-center gap-2">
+        <Checkbox 
+          id="ft_mandatory_chk" 
+          checked={isMandatory} 
+          onCheckedChange={(val) => isMandatory = !!val} 
+          disabled={isSubmitting}
+        />
+        <Label for="ft_mandatory_chk" class="text-xs cursor-pointer">
+          {m.attendance_status_unknown() === "غير محدد" ? "إلزامي لجميع الطلاب" : "Mandatory for all students"}
+        </Label>
+      </div>
+
+      <!-- Active Switch -->
+      <div class="flex items-center gap-2">
+        <Checkbox 
+          id="ft_active_chk" 
+          checked={isActive} 
+          onCheckedChange={(val) => isActive = !!val} 
+          disabled={isSubmitting}
+        />
+        <Label for="ft_active_chk" class="text-xs cursor-pointer">
+          {m.ft_form_is_active ? m.ft_form_is_active() : "نشط"}
+        </Label>
+      </div>
     </div>
   </div>
 
-  <!-- Checkboxes -->
-  <div class="flex gap-6 mt-2">
-    <!-- Mandatory Switch -->
-    <label class="flex items-center gap-2 cursor-pointer select-none text-xs font-semibold">
-      <input 
-        type="checkbox" 
-        bind:checked={isMandatory} 
-        disabled={isSubmitting}
-        class="w-4 h-4 rounded text-primary focus:ring-primary border-border"
-      />
-      <span>{m.attendance_status_unknown() === "غير محدد" ? "إلزامي لجميع الطلاب" : "Mandatory for all students"}</span>
-    </label>
-
-    <!-- Active Switch -->
-    <label class="flex items-center gap-2 cursor-pointer select-none text-xs font-semibold">
-      <input 
-        type="checkbox" 
-        bind:checked={isActive} 
-        disabled={isSubmitting}
-        class="w-4 h-4 rounded text-primary focus:ring-primary border-border"
-      />
-      <span>{m.ft_form_is_active ? m.ft_form_is_active() : "نشط"}</span>
-    </label>
-  </div>
-
-  <!-- Form Actions -->
-  <div class="flex items-center justify-end gap-2 pt-4 border-t border-border mt-auto">
+  <!-- Actions -->
+  <div class="px-6 py-4 border-t border-border/40 flex gap-2 shrink-0 bg-background/50">
     <Button 
       type="button" 
-      variant="ghost" 
+      variant="outline" 
       onclick={onCancel}
       disabled={isSubmitting}
-      class="text-xs font-bold px-4 cursor-pointer"
+      class="flex-1 h-9 text-sm"
     >
       {m.ft_form_cancel ? m.ft_form_cancel() : "إلغاء"}
     </Button>
     <Button 
       type="submit" 
       disabled={isSubmitting}
-      class="text-xs font-bold px-4 cursor-pointer"
+      class="flex-1 h-9 text-sm font-semibold"
     >
       {#if isSubmitting}
         {m.ft_form_saving ? m.ft_form_saving() : "جاري الحفظ..."}

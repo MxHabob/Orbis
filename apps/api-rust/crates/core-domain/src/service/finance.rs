@@ -604,16 +604,118 @@ impl super::Service {
     pub async fn get_fee_templates(&self, org_id: &str) -> Result<Vec<fee_template::Model>, String> {
         self.repo.get_fee_templates(org_id).await.map_err(|e| e.to_string())
     }
+}
 
-    pub async fn create_fee_template(&self, org_id: &str, req: CreateFeeTemplateRequest) -> Result<fee_template::Model, String> {
-        // Validate that chosen accounts are leaf accounts
-        let rev_leaf = self.repo.is_leaf_account(&req.revenue_account_id).await.map_err(|e| e.to_string())?;
-        if !rev_leaf {
-            return Err("Revenue account must be a leaf account".to_string());
+fn resolve_fee_template_accounts(
+    category: &str,
+    applicable_levels: &Option<String>,
+    ledgers: &[crate::entities::ledger_account::Model],
+    org_id: &str,
+) -> (String, String) {
+    let receivable_code;
+    let revenue_code;
+
+    match category.to_lowercase().as_str() {
+        "tuition" => {
+            receivable_code = "110301"; // ذمم الرسوم الدراسية
+            let mut temp_rev = "410301"; // Default: primary stage tuition fees
+            if let Some(ref levels_str) = applicable_levels {
+                if let Ok(levels_json) = serde_json::from_str::<serde_json::Value>(levels_str) {
+                    if let Some(levels) = levels_json.get("levels").and_then(|l| l.as_array()) {
+                        let mut all_kg = true;
+                        let mut all_primary = true;
+                        let mut all_middle = true;
+                        let mut all_high = true;
+                        let mut has_any = false;
+
+                        for lvl_val in levels {
+                            if let Some(lvl) = lvl_val.as_str() {
+                                has_any = true;
+                                let lvl_lower = lvl.to_lowercase();
+                                if !lvl_lower.starts_with("kg") {
+                                    all_kg = false;
+                                }
+                                if !lvl_lower.starts_with("grade") || !["grade1", "grade2", "grade3", "grade4", "grade5", "grade6"].contains(&lvl_lower.as_str()) {
+                                    all_primary = false;
+                                }
+                                if !lvl_lower.starts_with("grade") || !["grade7", "grade8", "grade9"].contains(&lvl_lower.as_str()) {
+                                    all_middle = false;
+                                }
+                                if !lvl_lower.starts_with("grade") || !["grade10", "grade11", "grade12"].contains(&lvl_lower.as_str()) {
+                                    all_high = false;
+                                }
+                            }
+                        }
+
+                        if has_any {
+                            if all_kg {
+                                temp_rev = "410304";
+                            } else if all_primary {
+                                temp_rev = "410301";
+                            } else if all_middle {
+                                temp_rev = "410302";
+                            } else if all_high {
+                                temp_rev = "410303";
+                            }
+                        }
+                    }
+                }
+            }
+            revenue_code = temp_rev;
         }
-        let rec_leaf = self.repo.is_leaf_account(&req.receivable_account_id).await.map_err(|e| e.to_string())?;
+        "transport" => {
+            receivable_code = "110303"; // ذمم النقل
+            revenue_code = "420201"; // رسوم نقل طلابي
+        }
+        "books" => {
+            receivable_code = "110308"; // ذمم أخرى
+            revenue_code = "450103"; // إيرادات بيع الكتب
+        }
+        "uniform" => {
+            receivable_code = "110308"; // ذمم أخرى
+            revenue_code = "450301"; // إيرادات بيع الزي المدرسي
+        }
+        "exam" => {
+            receivable_code = "110308"; // ذمم أخرى
+            revenue_code = "450503"; // إيرادات خدمات فحص واختبار
+        }
+        _ => {
+            receivable_code = "110308"; // ذمم أخرى
+            revenue_code = "450706"; // إيرادات أخرى
+        }
+    }
+
+    let revenue_id = ledgers.iter()
+        .find(|l| l.code == revenue_code)
+        .map(|l| l.id.clone())
+        .unwrap_or_else(|| format!("{}_{}", org_id, revenue_code));
+
+    let receivable_id = ledgers.iter()
+        .find(|l| l.code == receivable_code)
+        .map(|l| l.id.clone())
+        .unwrap_or_else(|| format!("{}_{}", org_id, receivable_code));
+
+    (revenue_id, receivable_id)
+}
+
+impl super::Service {
+    pub async fn create_fee_template(&self, org_id: &str, req: CreateFeeTemplateRequest) -> Result<fee_template::Model, String> {
+        let ledgers = self.repo.get_ledger_accounts(org_id).await.map_err(|e| e.to_string())?;
+        let (resolved_revenue_id, resolved_receivable_id) = resolve_fee_template_accounts(
+            &req.category,
+            &req.applicable_levels,
+            &ledgers,
+            org_id,
+        );
+
+        // Validate that resolved accounts are leaf accounts
+        let rev_leaf = self.repo.is_leaf_account(&resolved_revenue_id).await.map_err(|e| e.to_string())?;
+        if !rev_leaf {
+            return Err("Resolved Revenue account must be a leaf account".to_string());
+        }
+        let rec_leaf = self.repo.is_leaf_account(&resolved_receivable_id).await.map_err(|e| e.to_string())?;
         if !rec_leaf {
-            return Err("Receivable account must be a leaf account".to_string());
+            return Err("Resolved Receivable account must be a leaf account".to_string());
         }
 
         let tpl = fee_template::Model {
@@ -624,8 +726,8 @@ impl super::Service {
             code: req.code,
             category: req.category,
             default_amount: req.default_amount,
-            revenue_account_id: req.revenue_account_id,
-            receivable_account_id: req.receivable_account_id,
+            revenue_account_id: resolved_revenue_id,
+            receivable_account_id: resolved_receivable_id,
             applicable_levels: req.applicable_levels,
             frequency: req.frequency,
             installment_config: req.installment_config,
@@ -648,14 +750,22 @@ impl super::Service {
             return Err("Unauthorized".to_string());
         }
 
-        // Validate leaf accounts
-        let rev_leaf = self.repo.is_leaf_account(&req.revenue_account_id).await.map_err(|e| e.to_string())?;
+        let ledgers = self.repo.get_ledger_accounts(org_id).await.map_err(|e| e.to_string())?;
+        let (resolved_revenue_id, resolved_receivable_id) = resolve_fee_template_accounts(
+            &req.category,
+            &req.applicable_levels,
+            &ledgers,
+            org_id,
+        );
+
+        // Validate resolved leaf accounts
+        let rev_leaf = self.repo.is_leaf_account(&resolved_revenue_id).await.map_err(|e| e.to_string())?;
         if !rev_leaf {
-            return Err("Revenue account must be a leaf account".to_string());
+            return Err("Resolved Revenue account must be a leaf account".to_string());
         }
-        let rec_leaf = self.repo.is_leaf_account(&req.receivable_account_id).await.map_err(|e| e.to_string())?;
+        let rec_leaf = self.repo.is_leaf_account(&resolved_receivable_id).await.map_err(|e| e.to_string())?;
         if !rec_leaf {
-            return Err("Receivable account must be a leaf account".to_string());
+            return Err("Resolved Receivable account must be a leaf account".to_string());
         }
 
         let mut active: fee_template::ActiveModel = tpl.into();
@@ -664,8 +774,8 @@ impl super::Service {
         active.code = sea_orm::ActiveValue::Set(req.code);
         active.category = sea_orm::ActiveValue::Set(req.category);
         active.default_amount = sea_orm::ActiveValue::Set(req.default_amount);
-        active.revenue_account_id = sea_orm::ActiveValue::Set(req.revenue_account_id);
-        active.receivable_account_id = sea_orm::ActiveValue::Set(req.receivable_account_id);
+        active.revenue_account_id = sea_orm::ActiveValue::Set(resolved_revenue_id);
+        active.receivable_account_id = sea_orm::ActiveValue::Set(resolved_receivable_id);
         active.applicable_levels = sea_orm::ActiveValue::Set(req.applicable_levels);
         active.frequency = sea_orm::ActiveValue::Set(req.frequency);
         active.installment_config = sea_orm::ActiveValue::Set(req.installment_config);
