@@ -11,13 +11,18 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
+import { Badge } from "@orbis/ui-svelte/badge";
+import AttendanceTrendsCard from "$lib/features/metrics/cards/attendance-trends-card.svelte";
+import GradeDistributionCard from "$lib/features/metrics/cards/grade-distribution-card.svelte";
+import { BrainCircuit } from "lucide-svelte";
+import { onMount } from "svelte";
 import { toast } from "svelte-sonner";
 import { fade } from "svelte/transition";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
 import { createEnrollmentsQuery } from "$lib/features/students";
 import { createClassesQuery } from "$lib/features/academics";
-import { commands } from "$lib/core/ipc";
+import { commands, extractErrorMessage } from "$lib/core/ipc";
 import { queryClient } from "$lib/core/query/client";
 
 const orgId = $derived(page.params.orgId || "");
@@ -112,6 +117,137 @@ $effect(() => {
   }
 });
 
+// Evaluation State & Loading
+let evaluationLoading = $state(true);
+let gradesReport = $state<any>(null);
+let attendanceReport = $state<any>(null);
+let behaviorRecords = $state<any[]>([]);
+
+onMount(async () => {
+  evaluationLoading = true;
+  try {
+    const [gRes, aRes, bRes] = await Promise.all([
+      commands.grades.getReportCard(studentId).catch(() => null),
+      commands.attendance.getReport(studentId).catch(() => null),
+      commands.behavior.getRecords(orgId, { enrollment_id: studentId }).catch(() => [])
+    ]);
+    gradesReport = gRes;
+    attendanceReport = aRes;
+    behaviorRecords = bRes;
+  } catch (e) {
+    console.error("Failed to load evaluation reports:", e);
+  } finally {
+    evaluationLoading = false;
+  }
+});
+
+// Derived performance statistics
+const academicStats = $derived.by(() => {
+  const list = gradesReport?.grades || [];
+  if (list.length === 0) return { avg: 0, passed: 0, failed: 0, gradeLetter: "—" };
+  let totalPct = 0;
+  let passed = 0;
+  let failed = 0;
+  for (const g of list) {
+    const max = Number(g.max_score || 100);
+    const score = Number(g.score || 0);
+    const pctVal = max > 0 ? (score / max) * 100 : score;
+    totalPct += pctVal;
+    if (pctVal >= 50) {
+      passed++;
+    } else {
+      failed++;
+    }
+  }
+  const avg = Math.round(totalPct / list.length);
+  let letter = "F";
+  if (avg >= 90) letter = "A";
+  else if (avg >= 85) letter = "B+";
+  else if (avg >= 80) letter = "B";
+  else if (avg >= 75) letter = "C+";
+  else if (avg >= 70) letter = "C";
+  else if (avg >= 60) letter = "D";
+  else if (avg >= 50) letter = "E";
+  return { avg, passed, failed, gradeLetter: letter };
+});
+
+const behaviorStats = $derived.by(() => {
+  let positive = 0;
+  let negative = 0;
+  let points = 100; // start with baseline 100 behavior score
+  for (const rec of behaviorRecords) {
+    const type = String(rec.behavior_type || "").toLowerCase();
+    const pts = Number(rec.points || 0);
+    if (type === "positive") {
+      positive++;
+      points += pts;
+    } else {
+      negative++;
+      points -= pts;
+    }
+  }
+  return { positive, negative, points };
+});
+
+const decisionHelper = $derived.by(() => {
+  const acadAvg = academicStats.avg;
+  const attRate = attendanceReport ? Number(attendanceReport.rate ?? 100) : 100;
+  const negBeh = behaviorStats.negative;
+
+  const hasNoGrades = (gradesReport?.grades || []).length === 0;
+  const hasNoAttendance = !attendanceReport || (
+    (attendanceReport.present_count ?? 0) === 0 &&
+    (attendanceReport.absent_count ?? 0) === 0 &&
+    (attendanceReport.late_count ?? 0) === 0
+  );
+  const hasNoBehavior = behaviorRecords.length === 0;
+  const hasNoData = hasNoGrades && hasNoAttendance && hasNoBehavior;
+
+  if (hasNoData) {
+    return {
+      status: "no_data",
+      badge: m.student_evaluation_decision_title(),
+      badgeVariant: "outline" as const,
+      rec: m.student_evaluation_no_data(),
+      colorClass: "text-muted-foreground bg-muted/25 border-border/60"
+    };
+  }
+
+  if (acadAvg >= 85 && attRate >= 95 && negBeh === 0) {
+    return {
+      status: "excellent",
+      badge: m.student_evaluation_status_excellent(),
+      badgeVariant: "lime" as const,
+      rec: m.student_evaluation_rec_excellent(),
+      colorClass: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20"
+    };
+  } else if (acadAvg <= 45 || attRate <= 70 || negBeh >= 4) {
+    return {
+      status: "critical",
+      badge: m.student_evaluation_status_critical(),
+      badgeVariant: "destructive" as const,
+      rec: m.student_evaluation_rec_critical(),
+      colorClass: "text-destructive bg-destructive/10 border-destructive/20"
+    };
+  } else if (acadAvg < 60 || attRate < 85 || negBeh >= 2) {
+    return {
+      status: "warning",
+      badge: m.student_evaluation_status_warning(),
+      badgeVariant: "secondary" as const,
+      rec: m.student_evaluation_rec_warning(),
+      colorClass: "text-amber-500 bg-amber-500/10 border-amber-500/20"
+    };
+  } else {
+    return {
+      status: "good",
+      badge: m.student_evaluation_status_good(),
+      badgeVariant: "default" as const,
+      rec: m.student_evaluation_rec_good(),
+      colorClass: "text-primary bg-primary/10 border-primary/20"
+    };
+  }
+});
+
 async function saveStudentDetails(e: Event) {
   e.preventDefault();
   if (!student || !student.student_id) return;
@@ -173,21 +309,70 @@ async function saveStudentDetails(e: Event) {
     initialized = false; // re-populate form with updated data
   } catch (e: any) {
     console.error("Save error:", e);
-    toast.error(m.form_error_save({ error: e.message || String(e) }));
+    toast.error(extractErrorMessage(e));
   } finally {
     isSaving = false;
   }
 }
 </script>
 
-<div class="h-full w-full overflow-y-auto scrollbar-hide text-start" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
+<div class="h-full w-full overflow-y-auto scrollbar-hide text-start pb-10" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
   {#if isLoading}
     <div class="flex flex-col gap-6">
       <Skeleton class="h-32 w-full rounded-xl" />
       <Skeleton class="h-48 w-full rounded-xl" />
     </div>
   {:else}
-    <form onsubmit={saveStudentDetails} in:fade={{ duration: 100 }} class="flex flex-col gap-6">
+    <div class="flex flex-col gap-8 w-full max-w-6xl mx-auto p-1">
+      
+      <!-- Evaluation Dashboard Section -->
+      <div class="flex flex-col gap-4">
+
+
+        {#if evaluationLoading}
+          <div class="flex flex-col gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <Skeleton class="lg:col-span-2 h-[260px] rounded-xl" />
+              <Skeleton class="h-[260px] rounded-xl" />
+            </div>
+            <Skeleton class="h-16 w-full rounded-xl" />
+          </div>
+        {:else}
+          <div class="flex flex-col gap-6">
+            <!-- Charts Section (Same split layout as class details page) -->
+            {#if classId}
+              <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Left: Attendance Trends Card (2/3 width) -->
+                <div class="lg:col-span-2">
+                  <AttendanceTrendsCard orgId={orgId} selectedClass={classId} />
+                </div>
+
+                <!-- Right: Grade Distribution Card (1/3 width) -->
+                <div>
+                  <GradeDistributionCard orgId={orgId} selectedClass={classId} />
+                </div>
+              </div>
+            {/if}
+
+            <!-- Decision Helper Banner -->
+            <div class="p-4 rounded-xl border flex items-center justify-between gap-4 shadow-sm {decisionHelper.colorClass}">
+              <div class="flex items-center gap-3">
+                <BrainCircuit size={18} class="shrink-0" />
+                <div class="flex flex-col gap-0.5 text-start">
+                  <span class="text-xs font-bold text-foreground">{m.student_evaluation_recommendation_title()}</span>
+                  <p class="text-[10px] leading-relaxed font-semibold">{decisionHelper.rec}</p>
+                </div>
+              </div>
+              <Badge variant={decisionHelper.badgeVariant} class="text-[9px] font-semibold py-0.5 px-2 rounded shrink-0">
+                {decisionHelper.badge}
+              </Badge>
+            </div>
+          </div>
+        {/if}
+      </div>
+
+      <!-- Profile Edit Form -->
+      <form onsubmit={saveStudentDetails} in:fade={{ duration: 100 }} class="flex flex-col gap-6">
       
       <!-- Organization Settings style Card -->
       <div class="border border-border rounded-xl overflow-hidden flex flex-col">
@@ -398,5 +583,6 @@ async function saveStudentDetails(e: Event) {
       </div>
 
     </form>
+    </div>
   {/if}
 </div>

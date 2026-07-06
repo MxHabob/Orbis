@@ -23,6 +23,7 @@ import { uiStore } from "$lib/stores";
 import { bootstrapApp } from "$lib/core/bootstrap";
 import type { Snippet } from "svelte";
 import { slide } from "svelte/transition";
+import { page } from "$app/state";
 import { onMount } from "svelte";
 
 let {
@@ -67,7 +68,9 @@ function handleKeyDown(e: KeyboardEvent) {
 		</div>
 		{#if uiStore.showAskOrbis}
 			{#await import("./ask-orbis-sidebar.svelte") then { default: AskOrbisSidebar }}
-				<AskOrbisSidebar />
+				{#key page.url.searchParams.get("ask_orbis")}
+					<AskOrbisSidebar />
+				{/key}
 			{/await}
 		{/if}
 	</div>

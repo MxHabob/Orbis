@@ -30,6 +30,7 @@ import type { Snippet } from "svelte";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
+import AskOrbisButton from "$lib/shared/components/AskOrbisButton.svelte";
 
 let { children }: { children: Snippet } = $props();
 
@@ -117,6 +118,14 @@ const menuItems = $derived([
 
     {#snippet actions()}
       {#if student}
+        <AskOrbisButton
+          query={m.student_evaluation_ai_ask_orbis_query({ name: student.full_name || student.name_ar || "" })}
+          label={m.student_evaluation_ask_orbis_btn({ name: student.full_name || student.name_ar || "" })}
+          variant="secondary"
+          size="sm"
+          class="h-8 text-[11px]"
+        />
+
         <Button
           variant="outline"
           size="sm"

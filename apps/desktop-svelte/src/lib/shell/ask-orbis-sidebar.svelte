@@ -24,6 +24,8 @@ import { getLocale } from "$lib/paraglide/runtime";
 import { isDesktopApp } from "$lib/core/ipc";
 import { toast } from "svelte-sonner";
 import ChatHistoryPopover from "./chat-history-popover.svelte";
+import { page } from "$app/state";
+import { goto } from "$app/navigation";
 
 let { isStandalone = false }: { isStandalone?: boolean } = $props();
 
@@ -48,7 +50,7 @@ const orgName = $derived(
   null
 );
 
-let inputValue = $state("");
+let inputValue = $state(page.url.searchParams.get("ask_orbis") || "");
 const suggestions = $derived([
   m.agent_suggest_1(),
   m.agent_suggest_2(),
@@ -82,6 +84,15 @@ function handleSuggestionClick(suggestion: string) {
 
 function handleClose() {
   uiStore.setAskOrbis(false);
+  if (page.url.searchParams.has("ask_orbis")) {
+    const newUrl = new URL(page.url.href);
+    newUrl.searchParams.delete("ask_orbis");
+    goto(newUrl.pathname + newUrl.search, {
+      replaceState: true,
+      keepFocus: true,
+      noScroll: true
+    });
+  }
 }
 
 async function openStandaloneWindow() {
@@ -104,6 +115,18 @@ async function submitMessage(query: string) {
   if (!query.trim()) return;
 
   inputValue = "";
+
+  // Clear query parameter from URL so it doesn't persist in history
+  if (page.url.searchParams.has("ask_orbis")) {
+    const newUrl = new URL(page.url.href);
+    newUrl.searchParams.delete("ask_orbis");
+    goto(newUrl.pathname + newUrl.search, {
+      replaceState: true,
+      keepFocus: true,
+      noScroll: true
+    });
+  }
+
   const isNewChat = messages.length === 0;
 
   messages.push({
@@ -125,8 +148,6 @@ async function submitMessage(query: string) {
     role: "assistant",
     content: "",
   });
-
-
 
   scrollToBottom();
 }

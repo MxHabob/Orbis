@@ -14,9 +14,9 @@ let {
   isEditing = false,
 }: {
   orgId: string;
-  selectedClass: string;
-  selectedTerm: string;
-  period: string;
+  selectedClass?: string;
+  selectedTerm?: string;
+  period?: string;
   isEditing?: boolean;
 } = $props();
 
