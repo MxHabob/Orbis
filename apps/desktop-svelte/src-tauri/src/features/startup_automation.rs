@@ -12,7 +12,6 @@
 
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager};
-use sea_orm::ConnectionTrait;
 
 macro_rules! info {
     ($($arg:tt)*) => { println!($($arg)*) };
@@ -49,26 +48,15 @@ pub async fn process_startup_events(app_handle: AppHandle) {
     let today = chrono::Local::now().date_naive().to_string();
 
     // Get org_id from the first organization in the DB
-    let org_id = match service.repo.db.execute_unprepared(
-        "SELECT id FROM organizations LIMIT 1"
-    ).await {
-        Ok(_) => {
-            // Use a query to get the actual org_id
-            let result = sea_orm::ConnectionTrait::query_one(
-                &service.repo.db,
-                sea_orm::Statement::from_string(
-                    sea_orm::DatabaseBackend::Sqlite,
-                    "SELECT id FROM organizations LIMIT 1".to_string(),
-                ),
-            ).await;
-            match result {
-                Ok(Some(row)) => {
-                    sea_orm::QueryResult::try_get::<String>(&row, "", "id").unwrap_or_default()
-                }
-                _ => String::new(),
-            }
+    let org_id = {
+        use sea_orm::EntityTrait;
+        match core_domain::entities::organization::Entity::find()
+            .one(&service.repo.db)
+            .await
+        {
+            Ok(Some(org)) => org.id,
+            _ => String::new(),
         }
-        Err(_) => String::new(),
     };
 
     if org_id.is_empty() {

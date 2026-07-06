@@ -330,7 +330,7 @@ function runRegistryDatabaseMigration(db: Database) {
 
 async function handleDatabaseReset(isDev = false) {
   printHeader("Orbis Database Reset Tool");
-  const dbPaths = getDbPaths(isDev);
+  const dbPaths = [...getDbPaths(isDev), ...getRegistryDbPaths(isDev)];
 
   let foundAny = false;
   for (const dbPath of dbPaths) {
