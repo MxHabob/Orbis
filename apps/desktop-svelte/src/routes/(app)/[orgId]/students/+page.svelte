@@ -235,6 +235,7 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 					{:else}
 						<StudentTable
 							students={filteredStudents}
+							classes={classes}
 							enableSelection={true}
 							bind:selectedIds={selectedStudentIds}
 						/>
@@ -248,8 +249,7 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 	{#snippet rightSnippet()}
 		<div class="h-full border-l border-border bg-card/45 flex flex-col overflow-hidden">
 			<StudentInspector 
-				studentId={studentsStore.selectedId!} 
-				orgId={data.orgId}
+				student={enrollments.find(e => e.id === studentsStore.selectedId)} 
 				onClose={() => studentsStore.selectedId = null} 
 			/>
 		</div>

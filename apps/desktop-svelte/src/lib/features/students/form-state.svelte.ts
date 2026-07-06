@@ -1,5 +1,5 @@
 import { goto } from "$app/navigation";
-import { studentsStore, authStore } from "$lib/stores";
+import { authStore } from "$lib/stores";
 import { commands } from "$lib/core/ipc";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
@@ -9,6 +9,8 @@ export class StudentFormState {
   orgId: string;
   studentId?: string;
   isEditMode: boolean;
+  classes = $state<any[]>([]);
+  originalStudent = $state<any>(null);
 
   // Student details
   nameAr = $state("");
@@ -120,12 +122,7 @@ export class StudentFormState {
 
   async init() {
     try {
-      // 1. Ensure studentsStore is loaded so we can find class details and student records
-      if (studentsStore.list.length === 0 || studentsStore.classes.length === 0) {
-        await studentsStore.load(this.orgId);
-      }
-
-      // 2. Fetch active fee templates and discount templates
+      // 1. Fetch active fee templates and discount templates
       const [feeTpls, discountTpls] = await Promise.all([
         commands.finance.getActiveFeeTemplates(this.orgId),
         commands.finance.getActiveDiscountTemplates(this.orgId),
@@ -190,7 +187,13 @@ export class StudentFormState {
 
       // 6. In edit mode, load student profile, guardians, documents, and fees
       if (this.isEditMode && this.studentId) {
-        const originalStudent = studentsStore.list.find((s) => s.id === this.studentId) as any;
+        let originalStudent: any = null;
+        try {
+          originalStudent = await commands.enrollments.getById(this.studentId);
+        } catch (err) {
+          console.error("Failed to load student by ID from backend:", err);
+        }
+        this.originalStudent = originalStudent;
         if (originalStudent) {
           this.nameAr = originalStudent.full_name || originalStudent.name_ar || "";
           this.nameEn = originalStudent.name_en || "";
@@ -391,13 +394,13 @@ export class StudentFormState {
 
   // Financial Live Calculations (Svelte 5 class getters refer to active states)
   get classLevel() {
-    return studentsStore.classes.find((c) => String(c.id) === this.classId)?.level || "";
+    return this.classes.find((c) => String(c.id) === this.classId)?.level || "";
   }
 
   get selectedClassName() {
     return (
-      studentsStore.classes.find((c) => String(c.id) === this.classId)?.name ||
-      studentsStore.classes.find((c) => String(c.id) === this.classId)?.name_ar ||
+      this.classes.find((c) => String(c.id) === this.classId)?.name ||
+      this.classes.find((c) => String(c.id) === this.classId)?.name_ar ||
       m.form_select_class()
     );
   }
@@ -466,7 +469,7 @@ export class StudentFormState {
   }
 
   // Save operation
-  async handleSave() {
+  async handleSave(queryClient?: any) {
     if (!this.nameAr.trim()) {
       toast.error(m.form_error_name_required());
       return;
@@ -517,7 +520,7 @@ export class StudentFormState {
       };
 
       if (this.isEditMode) {
-        const originalStudent = studentsStore.list.find((s) => s.id === this.studentId);
+        const originalStudent = this.originalStudent;
         if (!originalStudent) {
           throw new Error(m.form_error_enrollment_not_found());
         }
@@ -591,7 +594,9 @@ export class StudentFormState {
           address: studentUser.address,
         };
 
-        studentsStore.list = [mergedEnrollment, ...studentsStore.list];
+        if (queryClient) {
+          queryClient.invalidateQueries({ queryKey: ["enrollments", this.orgId] });
+        }
         toast.success(m.form_success_create());
       }
 

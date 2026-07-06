@@ -31,7 +31,9 @@ import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { commands } from "$lib/core/ipc";
-import { studentsStore, authStore } from "$lib/stores";
+import { authStore } from "$lib/stores";
+import { useQueryClient } from "@tanstack/svelte-query";
+import { createClassesQuery } from "$lib/features/academics";
 
 import BulkGrid from "$lib/features/bulk-input/bulk-grid.svelte";
 import BulkSummary from "$lib/features/bulk-input/bulk-summary.svelte";
@@ -51,6 +53,10 @@ let { data } = $props();
 const locale = getLocale();
 const isRtl = locale === "ar";
 
+const queryClient = useQueryClient();
+const classesQuery = createClassesQuery(data.orgId);
+const classes = $derived($classesQuery.data ?? []);
+
 // ── State ──────────────────────────────────────────────────────────
 let rows = $state<Record<string, unknown>[]>([]);
 let selectedClassId = $state("");
@@ -67,7 +73,7 @@ let validationTimeout: ReturnType<typeof setTimeout> | null = null;
 function runValidation() {
   if (validationTimeout) clearTimeout(validationTimeout);
   validationTimeout = setTimeout(() => {
-    const classIds = new Set(studentsStore.classes.map((c: any) => c.id));
+    const classIds = new Set(classes.map((c: any) => c.id));
     validationResults = validateStudentRows(rows, classIds);
     rows = [...rows]; // trigger reactivity for cell styling
   }, 300);
@@ -99,7 +105,7 @@ const labels: Record<string, string> = {
 
 // Columns (reactive to extended column toggle)
 let columns = $derived(
-  buildStudentColumns(labels, visibleExtended, studentsStore.classes),
+  buildStudentColumns(labels, visibleExtended, classes),
 );
 
 function toggleExtended(prop: string) {
@@ -180,8 +186,8 @@ async function handleSubmit() {
       );
     }
 
-    // Refresh students store
-    await studentsStore.load(data.orgId);
+    // Refresh enrollments query
+    queryClient.invalidateQueries({ queryKey: ["enrollments", data.orgId] });
   } catch (e: unknown) {
     const msg = (e as any)?.message || "Unknown error";
     toast.error(msg);
@@ -189,13 +195,6 @@ async function handleSubmit() {
     isSubmitting = false;
   }
 }
-
-// ── Init ───────────────────────────────────────────────────────────
-$effect(() => {
-  if (studentsStore.classes.length === 0 && data.orgId) {
-    studentsStore.load(data.orgId);
-  }
-});
 </script>
 
 <div
@@ -219,14 +218,14 @@ $effect(() => {
         <Select type="single" value={selectedClassId} onValueChange={(v) => (selectedClassId = v)}>
           <SelectTrigger class="w-52 h-8 text-xs">
             {#if selectedClassId}
-              {studentsStore.classes.find((c: any) => c.id === selectedClassId)?.name ?? selectedClassId}
+              {classes.find((c: any) => c.id === selectedClassId)?.name ?? selectedClassId}
             {:else}
               {m.bulk_class_all()}
             {/if}
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="">{m.bulk_class_per_row()}</SelectItem>
-            {#each studentsStore.classes as cls}
+            {#each classes as cls}
               <SelectItem value={cls.id}>{cls.name}</SelectItem>
             {/each}
           </SelectContent>

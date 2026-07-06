@@ -5,7 +5,6 @@ Matches the column layout and styling of the React dashboard precisely.
 -->
 <script lang="ts">
 import { DataTable } from "$lib/tables";
-import { studentsStore } from "$lib/features/students/store.svelte";
 import type { Enrollment } from "$lib/core/ipc";
 import * as m from "$lib/paraglide/messages";
 import { formatDate } from "$lib/core/i18n";
@@ -15,11 +14,13 @@ import { GraduationCap } from "lucide-svelte";
 
 let {
   students,
+  classes = [],
   enableSelection = false,
   selectedIds = $bindable(new Set()),
   onSelectionChange,
 }: {
   students: Enrollment[];
+  classes?: any[];
   enableSelection?: boolean;
   selectedIds?: Set<string>;
   onSelectionChange?: (ids: Set<string>) => void;
@@ -28,7 +29,7 @@ let {
 // ── Helpers ────────────────────────────────────────────────────────
 
 function getClassName(classId: string): string {
-  const cls = studentsStore.classes.find((c) => c.id === classId);
+  const cls = classes.find((c) => c.id === classId);
   return cls
     ? String(cls.name || cls.name_ar || classId)
     : m.table_not_enrolled();

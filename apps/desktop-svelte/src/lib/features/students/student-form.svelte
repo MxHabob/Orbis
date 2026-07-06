@@ -24,6 +24,8 @@ import {
 import * as m from "$lib/paraglide/messages";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { StudentFormState } from "./form-state.svelte";
+import { createClassesQuery } from "$lib/features/academics";
+import { useQueryClient } from "@tanstack/svelte-query";
 
 // Sections
 import ProfileSection from "./sections/profile-section.svelte";
@@ -36,6 +38,21 @@ let { studentId, orgId }: { studentId?: string; orgId: string } = $props();
 
 // Instantiate the form state manager
 const state = new StudentFormState(orgId || "", studentId);
+const queryClient = useQueryClient();
+
+async function handleSave(status?: string) {
+  if (status) state.registrationStatus = status;
+  await state.handleSave(queryClient);
+}
+
+// Fetch classes via TanStack Query (complying with AGENTS.md §8.1)
+const classesQuery = createClassesQuery(orgId);
+
+$effect(() => {
+  if ($classesQuery.data) {
+    state.classes = $classesQuery.data;
+  }
+});
 
 onMount(async () => {
   if (orgId) {
@@ -185,29 +202,29 @@ onMount(async () => {
         </DropdownMenuTrigger>
         <DropdownMenuContent class="p-1 min-w-[160px] text-start" align="end">
           {#if !state.isEditMode}
-            <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => { state.registrationStatus = "draft"; state.handleSave(); }}>
+            <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => handleSave("draft")}>
               {m.form_save_draft()}
             </DropdownMenuItem>
-            <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => { state.registrationStatus = "pending_review"; state.handleSave(); }}>
+            <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => handleSave("pending_review")}>
               {m.form_submit_review()}
             </DropdownMenuItem>
-            <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => { state.registrationStatus = "approved"; state.handleSave(); }}>
+            <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => handleSave("approved")}>
               {m.form_direct_enroll()}
             </DropdownMenuItem>
           {:else}
-            <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => { state.registrationStatus = "draft"; state.handleSave(); }}>
+            <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => handleSave("draft")}>
               {m.form_status_draft()}
             </DropdownMenuItem>
-            <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => { state.registrationStatus = "pending_review"; state.handleSave(); }}>
+            <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => handleSave("pending_review")}>
               {m.form_status_pending_review()}
             </DropdownMenuItem>
-            <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => { state.registrationStatus = "approved"; state.handleSave(); }}>
+            <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => handleSave("approved")}>
               {m.form_status_approved()}
             </DropdownMenuItem>
-            <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => { state.registrationStatus = "withdrawn"; state.handleSave(); }}>
+            <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => handleSave("withdrawn")}>
               {state.registrationStatus === "withdrawn" ? "تعديل كـ منسحب" : m.form_status_withdrawn()}
             </DropdownMenuItem>
-            <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => { state.registrationStatus = "graduated"; state.handleSave(); }}>
+            <DropdownMenuItem class="text-xs cursor-pointer py-1.5 px-2.5 flex items-center gap-1.5" onclick={() => handleSave("graduated")}>
               {state.registrationStatus === "graduated" ? "تعديل كـ خريج" : m.form_status_graduated()}
             </DropdownMenuItem>
           {/if}

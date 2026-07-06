@@ -4,7 +4,6 @@ Renders a slide-over/inspector side panel with details and actions for the selec
 Updated to support multi-guardian displaying and student lifecycle status transition actions.
 -->
 <script lang="ts">
-import { studentsStore } from "$lib/features/students/store.svelte";
 import { authStore } from "$lib/stores";
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
@@ -21,12 +20,11 @@ import { localizeHref } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate, formatPercent } from "$lib/core/i18n";
 
 let {
-  studentId,
-  orgId,
+  student,
   onClose,
-}: { studentId: string; orgId: string; onClose: () => void } = $props();
+}: { student: any; onClose: () => void } = $props();
 
-const student = $derived(studentsStore.list.find((s) => s.id === studentId));
+const studentId = $derived(student?.id || "");
 
 let balanceDue = $state<string>(m.loading());
 let gradeSummary = $state<string>(m.loading());

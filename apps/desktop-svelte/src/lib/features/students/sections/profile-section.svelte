@@ -3,7 +3,6 @@ import { Label } from "@orbis/ui-svelte/label";
 import { Input } from "@orbis/ui-svelte/input";
 import { Button } from "@orbis/ui-svelte/button";
 import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui-svelte/select";
-import { studentsStore } from "$lib/stores";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
 import type { StudentFormState } from "../student-form-state.svelte";
@@ -207,7 +206,7 @@ const monthsList = $derived([
             <span>{state.selectedClassName}</span>
           </SelectTrigger>
           <SelectContent class="text-start max-h-48 overflow-y-auto" align="end">
-            {#each studentsStore.classes as cls (cls.id)}
+            {#each state.classes as cls (cls.id)}
               <SelectItem value={String(cls.id)} class="text-xs text-start justify-start cursor-pointer">
                 {cls.name || cls.name_ar}
               </SelectItem>

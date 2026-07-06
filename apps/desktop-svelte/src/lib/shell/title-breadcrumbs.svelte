@@ -11,7 +11,9 @@ import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { authStore } from "$lib/stores";
-import { studentsStore } from "$lib/stores";
+import { useQueryClient } from "@tanstack/svelte-query";
+
+const queryClient = useQueryClient();
 
 // Breadcrumb items generator based on active route
 const breadcrumbs = $derived.by(() => {
@@ -38,7 +40,8 @@ const breadcrumbs = $derived.by(() => {
     if (pathname.includes("/students/new")) {
       items.push({ label: m.breadcrumb_new_student() });
     } else if (studentId) {
-      const student = studentsStore.list.find((s) => s.id === studentId);
+      const enrollments = queryClient.getQueryData<any[]>(["enrollments", currentOrgId]) || [];
+      const student = enrollments.find((s) => s.id === studentId);
       const studentName =
         (student?.full_name as string) ||
         (student?.name_ar as string) ||
