@@ -11,8 +11,16 @@ import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@orbis/ui-svelte/dropdown-menu";
 import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
 import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
+import AskOrbisButton from "$lib/shared/components/AskOrbisButton.svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { toast } from "svelte-sonner";
 import {
@@ -97,35 +105,60 @@ const menuItems = $derived([
 
 {#snippet headerActions()}
   <div class="flex flex-wrap items-center gap-2 select-none">
+    {#if classData}
+      <AskOrbisButton
+        query={m.class_evaluation_ai_ask_orbis_query({ name: classData.name || classData.name_ar || "" })}
+        label={m.class_evaluation_ask_orbis_btn({ name: classData.name || classData.name_ar || "" })}
+        variant="outline"
+        size="sm"
+        class="h-8 text-[11px]"
+      />
+    {/if}
+
     <!-- Bell icon-button -->
     <Button
       variant="outline"
-      size="icon-xs"
-      class="h-7 w-7 rounded-lg cursor-pointer text-muted-foreground hover:text-foreground"
+      size="sm"
+      class="h-8 text-[11px] gap-1.5 font-semibold shrink-0"
       onclick={() => toast.success(m.academics_class_overview_notifs_enabled ? m.academics_class_overview_notifs_enabled() : "Notifications enabled for this class")}
     >
-      <Bell size={11} />
+      <Bell size={12} />
+      {m.header_notifications ? m.header_notifications() : "Notifications"}
     </Button>
 
-    <!-- Share icon-button -->
-    <Button
-      variant="outline"
-      size="icon-xs"
-      class="h-7 w-7 rounded-lg cursor-pointer text-muted-foreground hover:text-foreground"
-      onclick={() => toast.success(m.academics_class_overview_link_copied ? m.academics_class_overview_link_copied() : "Diagnostics link copied to clipboard")}
-    >
-      <Share2 size={11} />
-    </Button>
+    <DropdownMenu>
+      <DropdownMenuTrigger>
+        {#snippet child({ props })}
+          <Button
+            variant="outline"
+            size="sm"
+            class="h-8 w-8 p-0 cursor-pointer"
+            {...props}
+          >
+            <MoreHorizontal size={14} />
+          </Button>
+        {/snippet}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" class="w-48 p-1 z-50 bg-popover border border-border shadow-md rounded-md select-none">
+        <DropdownMenuItem
+          class="flex items-center gap-2 px-2.5 py-2 text-[11px] font-semibold cursor-pointer text-foreground hover:bg-accent rounded-sm text-start"
+          onclick={() => toast.success(m.academics_class_overview_link_copied ? m.academics_class_overview_link_copied() : "Diagnostics link copied to clipboard")}
+        >
+          <Share2 size={12} class="text-muted-foreground shrink-0" />
+          <span>{m.class_layout_share_link()}</span>
+        </DropdownMenuItem>
 
-    <!-- More actions -->
-    <Button
-      variant="outline"
-      size="icon-xs"
-      class="h-7 w-7 rounded-lg cursor-pointer text-muted-foreground hover:text-foreground"
-      onclick={() => toast.info(m.academics_class_overview_more_opts ? m.academics_class_overview_more_opts() : "More diagnostic options")}
-    >
-      <MoreHorizontal size={11} />
-    </Button>
+        <DropdownMenuSeparator class="bg-border/60 my-1" />
+
+        <DropdownMenuItem
+          class="flex items-center gap-2 px-2.5 py-2 text-[11px] font-semibold cursor-pointer text-foreground hover:bg-accent rounded-sm text-start"
+          onclick={() => toast.info(m.academics_class_overview_more_opts ? m.academics_class_overview_more_opts() : "More diagnostic options")}
+        >
+          <MoreHorizontal size={12} class="text-muted-foreground shrink-0" />
+          <span>{m.class_layout_more_options()}</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
 
     <!-- Separator divider -->
     <div class="h-4 w-[1px] bg-border/60 mx-1"></div>
