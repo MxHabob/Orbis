@@ -153,7 +153,7 @@ function getTypeBadgeVariant(type: string): any {
   switch (type) {
     case "string": return "secondary";
     case "number": return "brand";
-    case "date": return "lime";
+    case "date": return "success";
     case "boolean": return "outline";
     case "image": return "ghost";
     case "array": return "destructive";

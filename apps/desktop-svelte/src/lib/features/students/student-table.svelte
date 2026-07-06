@@ -112,7 +112,7 @@ const columns: OrbisColumnDef[] = [
     cellRenderer: ({ h, row }) => {
       const status = String(row.status || "").toLowerCase();
       if (status === "active") {
-        return h("span", { class: "badge-brand-lime py-0.5 px-2 text-[10px]" }, m.status_active());
+        return h("span", { class: "badge-brand-success py-0.5 px-2 text-[10px]" }, m.status_active());
       } else if (status === "withdrawn") {
         return h("span", { class: "badge-brand-destructive py-0.5 px-2 text-[10px]" }, m.status_withdrawn());
       } else {

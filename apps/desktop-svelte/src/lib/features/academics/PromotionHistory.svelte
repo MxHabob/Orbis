@@ -60,7 +60,7 @@ function statusIcon(status: string) {
 
 function statusVariant(status: string) {
   switch (status) {
-    case "completed": return "lime" as const;
+    case "completed": return "success" as const;
     case "failed": return "destructive" as const;
     case "rolled_back": return "secondary" as const;
     case "executing": return "brand" as const;

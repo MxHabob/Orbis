@@ -135,7 +135,7 @@ async function fetchStats() {
 				<div class="space-y-1">
 				  <h3 class="text-sm font-bold text-foreground">{student.full_name || student.name_ar || ''}</h3>
           <div class="flex justify-center">
-            <Badge variant={student.status === 'active' ? 'lime' : student.status === 'draft' ? 'outline' : 'secondary'} class="text-[9px] scale-95 font-semibold px-2 py-0.5">
+            <Badge variant={student.status === 'active' ? 'success' : student.status === 'draft' ? 'outline' : 'secondary'} class="text-[9px] scale-95 font-semibold px-2 py-0.5">
               {student.status === 'active' ? m.form_status_active() : 
                student.status === 'draft' ? m.form_status_draft() :
                student.status === 'pending_review' ? m.form_status_pending_review() :
@@ -232,7 +232,7 @@ async function fetchStats() {
                   <span class="text-[10px] text-muted-foreground font-mono">{g.phone || 'بلا هاتف'}</span>
                 </div>
                 {#if g.is_primary}
-                  <Badge variant="lime" class="text-[8px] scale-90 px-1.5 py-0.5 shrink-0 font-semibold uppercase">{m.form_guardian_role_primary()}</Badge>
+                  <Badge variant="success" class="text-[8px] scale-90 px-1.5 py-0.5 shrink-0 font-semibold uppercase">{m.form_guardian_role_primary()}</Badge>
                 {/if}
               </div>
             {/each}

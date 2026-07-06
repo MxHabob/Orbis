@@ -134,7 +134,7 @@ function jumpToState(index: number) {
             </div>
 
             <!-- Step number -->
-            <Badge variant={isCurrent ? "lime" : "ghost"} class="text-[7px] h-3 px-1 shrink-0">
+            <Badge variant={isCurrent ? "success" : "ghost"} class="text-[7px] h-3 px-1 shrink-0">
               {i + 1}
             </Badge>
           </button>

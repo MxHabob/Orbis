@@ -105,7 +105,7 @@ function riskBadgeVariant(level: string) {
 
 function statusBadgeVariant(status: string) {
   switch (status) {
-    case "approved": return "lime" as const;
+    case "approved": return "success" as const;
     case "rejected": return "destructive" as const;
     case "pending": return "secondary" as const;
     case "escalated": return "brand" as const;

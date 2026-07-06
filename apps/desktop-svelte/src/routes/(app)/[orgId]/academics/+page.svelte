@@ -13,12 +13,11 @@ import {
   Calendar,
   Award,
   ArrowRight,
-  ShieldCheck,
   Milestone,
   Compass,
 } from "lucide-svelte";
-import { getLocale, localizeHref } from "$lib/paraglide/runtime";
-import { fade, scale } from "svelte/transition";
+import { localizeHref } from "$lib/paraglide/runtime";
+import { fade } from "svelte/transition";
 import * as m from "$lib/paraglide/messages";
 
 let { data }: { data: { orgId: string } } = $props();
@@ -98,7 +97,7 @@ const cards = $derived([
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 select-none">
 	<!-- Welcome Banner & Info -->
 	<div 
-		class="card-tactile bg-gradient-to-br from-card to-card/50 p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+		class="card-tactile bg-linear-to-br from-card to-card/50 p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
 		in:fade={{ duration: 150 }}
 	>
 		<div class="flex items-center gap-4 text-start">

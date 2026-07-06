@@ -186,7 +186,7 @@ onMount(() => {
             </div>
             
             {#if session.active}
-              <Badge variant="lime" class="text-[9px] font-bold uppercase py-0.5 px-2 rounded-full">
+              <Badge variant="success" class="text-[9px] font-bold uppercase py-0.5 px-2 rounded-full">
                 Active Now
               </Badge>
             {:else}

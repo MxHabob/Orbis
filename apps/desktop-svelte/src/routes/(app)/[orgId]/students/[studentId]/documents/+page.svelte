@@ -304,7 +304,7 @@ async function handleUploadFile() {
               
               <TableCell class="text-start">
                 {#if isUploaded}
-                  <span class="badge-brand-lime py-0.5 px-2 text-[9px] flex items-center w-fit gap-1 font-semibold">
+                  <span class="badge-brand-success py-0.5 px-2 text-[9px] flex items-center w-fit gap-1 font-semibold">
                     <CheckCircle2 size={10} />
                     {m.docs_status_uploaded()}
                   </span>

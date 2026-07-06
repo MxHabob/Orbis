@@ -74,7 +74,7 @@ let {
       <Card class="flex flex-col h-full">
         <CardHeader class="pb-3">
           <div class="flex items-start justify-between gap-2">
-            <Badge variant={template.status === 'published' ? 'lime' : (template.status === 'archived' ? 'outline' : 'secondary')}>
+            <Badge variant={template.status === 'published' ? 'success' : (template.status === 'archived' ? 'outline' : 'secondary')}>
               {template.status === 'published' ? m.templates_status_active() : (template.status === 'archived' ? m.templates_status_archived() : m.templates_status_draft())}
             </Badge>
             <div class="text-[10px] text-muted-foreground">v{template.version}</div>

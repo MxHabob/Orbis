@@ -10,14 +10,13 @@ import { commands, extractErrorMessage } from "$lib/core/ipc";
 import { academicContext, authStore } from "$lib/stores";
 import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
-import { createCalendarEventsQuery, createPendingCalendarEventsQuery } from "$lib/features/academics";
+import { createCalendarEventsQuery } from "$lib/features/academics";
 import { useQueryClient } from "@tanstack/svelte-query";
 import {
   Card, CardContent, CardHeader, CardTitle,
 } from "@orbis/ui-svelte/card";
 import { Button } from "@orbis/ui-svelte/button";
 import { Badge } from "@orbis/ui-svelte/badge";
-import { Separator } from "@orbis/ui-svelte/separator";
 import {
   Table, TableBody, TableHead, TableHeader, TableRow, TableCell,
 } from "@orbis/ui-svelte/table";
@@ -293,7 +292,7 @@ function statusColor(event: CalendarEvent): string {
 
 function modeBadgeVariant(mode: CalendarExecutionMode) {
   switch (mode) {
-    case "automatic": return "lime" as const;
+    case "automatic": return "success" as const;
     case "suggested": return "secondary" as const;
     case "manual": return "outline" as const;
   }

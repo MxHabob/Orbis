@@ -79,7 +79,7 @@ async function handleArchive() {
 
 function statusVariant(status: string) {
   switch (status) {
-    case "active": return "lime" as const;
+    case "active": return "success" as const;
     case "archived": return "secondary" as const;
     case "promoting": return "brand" as const;
     default: return "outline" as const;

@@ -4,7 +4,6 @@ Wraps all Academics routes inside a resizable double-sidebar layout
 using <MainViewport>. Uses the shared SidebarNav component.
 -->
 <script lang="ts">
-import { page } from "$app/state";
 import { commands } from "$lib/core/ipc";
 import { onMount } from "svelte";
 import {

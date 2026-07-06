@@ -346,7 +346,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
             </div>
             <div class="flex items-center justify-between text-[10px] text-muted-foreground border-b border-border/40 pb-2">
               <span>{m.print_multi_up_items_per_sheet()}</span>
-              <Badge variant="lime" class="text-[10px]">{multiUpLayout.itemsPerSheet}</Badge>
+              <Badge variant="success" class="text-[10px]">{multiUpLayout.itemsPerSheet}</Badge>
             </div>
             <div class="flex items-center justify-between text-[10px] text-muted-foreground border-b border-border/40 pb-2">
               <span>{m.print_multi_up_sheets_needed()}</span>

@@ -159,7 +159,7 @@ function toggleCollapse(yearId: string) {
                     
                     <!-- Status Badges -->
                     {#if year.is_current === 1}
-                      <Badge variant="lime" class="text-[9px] px-2 py-0 h-4.5 rounded-full font-bold">
+                      <Badge variant="success" class="text-[9px] px-2 py-0 h-4.5 rounded-full font-bold">
                         {m.settings_cycles_status_active()}
                       </Badge>
                     {:else}
@@ -236,7 +236,7 @@ function toggleCollapse(yearId: string) {
                           </span>
                           
                           {#if term.is_current === 1}
-                            <Badge variant="lime" class="text-[8px] px-1.5 py-0 h-4 rounded font-bold">
+                            <Badge variant="success" class="text-[8px] px-1.5 py-0 h-4 rounded font-bold">
                               Active
                             </Badge>
                           {:else if term.is_locked === 1}

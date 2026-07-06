@@ -64,7 +64,7 @@ const phaseLabel = $derived.by(() => {
 const phaseBadgeVariant = $derived.by(() => {
   const phase = academicContext.cyclePhase;
   switch (phase) {
-    case "active": return "lime" as const;
+    case "active": return "success" as const;
     case "grade_entry": return "brand" as const;
     case "exams": return "secondary" as const;
     case "closed": return "outline" as const;

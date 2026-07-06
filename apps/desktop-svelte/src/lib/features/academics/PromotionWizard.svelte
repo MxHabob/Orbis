@@ -168,7 +168,7 @@ async function executePromotion() {
 
 function decisionVariant(d: string) {
   switch (d) {
-    case "promoted": return "lime" as const;
+    case "promoted": return "success" as const;
     case "retained": return "destructive" as const;
     case "graduated": return "brand" as const;
     case "excluded": return "secondary" as const;

@@ -108,7 +108,7 @@ const nextCycle = $derived.by(() => {
 							<span class="font-bold text-foreground text-[11px] leading-tight">
 								{l(academicContext.activeCycle.name_ar, academicContext.activeCycle.name)}
 							</span>
-							<Badge variant="lime" class="text-[9px] h-3.5 px-1 shrink-0">
+							<Badge variant="success" class="text-[9px] h-3.5 px-1 shrink-0">
 								{m.sidebar_status_active_cycle ? m.sidebar_status_active_cycle() : "Active"}
 							</Badge>
 						</div>
@@ -187,7 +187,7 @@ const nextCycle = $derived.by(() => {
 									<span class="font-bold text-foreground leading-tight">
 										{l(event.title_ar, event.title)}
 									</span>
-									<Badge variant={event.execution_mode === 'automatic' ? 'lime' : 'secondary'} class="text-[8px] h-3 px-1 shrink-0">
+									<Badge variant={event.execution_mode === 'automatic' ? 'success' : 'secondary'} class="text-[8px] h-3 px-1 shrink-0">
 										{event.execution_mode === 'automatic' 
 											? (m.calendar_field_mode_automatic ? m.calendar_field_mode_automatic() : "Auto") 
 											: (m.calendar_field_mode_suggested ? m.calendar_field_mode_suggested() : "Suggested")}

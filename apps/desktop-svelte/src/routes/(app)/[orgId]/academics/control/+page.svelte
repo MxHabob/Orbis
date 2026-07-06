@@ -394,9 +394,9 @@ async function handleSaveAll() {
 
 function getCycleStatusVariant(
   cycle: any,
-): "destructive" | "lime" | "secondary" {
+): "destructive" | "success" | "secondary" {
   if (cycle.is_locked === 1) return "destructive";
-  if (cycle.is_grade_entry_open === 1) return "lime";
+  if (cycle.is_grade_entry_open === 1) return "success";
   return "secondary";
 }
 

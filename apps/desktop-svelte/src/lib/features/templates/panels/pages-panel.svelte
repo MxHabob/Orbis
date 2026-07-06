@@ -223,7 +223,7 @@ function reassignIds(node: any) {
                 صفحة {i + 1}
               </span>
               {#if isActive}
-                <Badge variant="lime" class="text-[7px] h-3 px-1">نشطة</Badge>
+                <Badge variant="success" class="text-[7px] h-3 px-1">نشطة</Badge>
               {/if}
             </div>
             <span class="text-[8px] text-muted-foreground">

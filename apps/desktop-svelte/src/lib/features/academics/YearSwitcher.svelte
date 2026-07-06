@@ -68,7 +68,7 @@ const currentLabel = $derived(store.yearLabel || m.year_current());
                 <Archive class="size-3 text-muted-foreground" />
               {/if}
               {#if yearInfo.is_active_in_app}
-                <Badge variant="lime" class="text-[10px] px-1.5 py-0">
+                <Badge variant="success" class="text-[10px] px-1.5 py-0">
                   {m.year_status_active()}
                 </Badge>
               {/if}

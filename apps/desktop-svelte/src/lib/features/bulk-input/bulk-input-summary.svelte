@@ -35,7 +35,7 @@ let { totalFilledRows, validCount, errorCount, errorDetails }: Props = $props();
     <div class="flex items-center gap-1.5">
       <CircleCheck size={13} class="text-primary" />
       <span class="text-xs font-medium text-muted-foreground">{m.bulk_input_valid()}:</span>
-      <Badge variant="lime" class="text-xs px-2 py-0.5">{validCount}</Badge>
+      <Badge variant="success" class="text-xs px-2 py-0.5">{validCount}</Badge>
     </div>
 
     <div class="flex items-center gap-1.5">

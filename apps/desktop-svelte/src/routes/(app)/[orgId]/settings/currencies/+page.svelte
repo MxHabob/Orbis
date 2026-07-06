@@ -403,7 +403,7 @@ let baseCurrencyCode = $derived(
                 </TableCell>
                 <TableCell class="text-start text-xs">
                   {#if c.is_base === 1}
-                    <Badge variant="lime" class="text-[9px] font-bold">
+                    <Badge variant="success" class="text-[9px] font-bold">
                       {m.settings_currencies_type_base()}
                     </Badge>
                   {:else}
@@ -414,7 +414,7 @@ let baseCurrencyCode = $derived(
                 </TableCell>
                 <TableCell class="text-start text-xs">
                   {#if c.is_active === 1}
-                    <Badge variant="lime" class="text-[9px] font-bold">
+                    <Badge variant="success" class="text-[9px] font-bold">
                       {m.settings_currencies_status_active()}
                     </Badge>
                   {:else}

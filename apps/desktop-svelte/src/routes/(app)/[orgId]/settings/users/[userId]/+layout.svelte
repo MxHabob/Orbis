@@ -153,7 +153,7 @@ const menuItems = $derived([
       </h1>
       {#if isActiveState}
         <Badge
-          variant="lime"
+          variant="success"
           class="text-[9px] py-0 px-1.5 h-4.5 rounded shrink-0"
         >
           {m.settings_user_detail_badge_active()}

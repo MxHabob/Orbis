@@ -107,7 +107,7 @@ onMount(loadSessions);
               <span>{session.device}</span>
               {#if session.active}
                 <Badge
-                  variant="lime"
+                  variant="success"
                   class="text-[8px] font-semibold uppercase py-0 px-1.5 h-4.5 rounded"
                 >
                   {m.settings_user_detail_session_active_now()}
