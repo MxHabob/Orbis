@@ -14,8 +14,8 @@ import BackgroundPattern from "$lib/features/auth/components/background-pattern.
 import LoginForm from "$lib/features/auth/components/login-form.svelte";
 import EnvironmentSelect from "$lib/features/auth/components/environment-select.svelte";
 
-let selectedBranch = $state("main_branch");
-let selectedYear = $state("2026_2027");
+let selectedBranch = $state("org-sanaa-model");
+let selectedYear = $state("");
 </script>
 
 <svelte:head>

@@ -497,8 +497,32 @@ pub async fn initialize_school_setup(
     .map_err(|e| e.to_string())
     .map_err(CommandError::from)?;
 
-    // 9. Seeding Chart of Accounts (COA) & default currencies
-    // state.service().await.seed_default_financials(&org_id_for_seeding).await.map_err(CommandError::from)?;
+    // 8.5. Register the year in the registry database
+    if let Some(root_cycle) = config.cycles.iter().find(|c| c.parent_id.is_none()) {
+        use sea_orm::ConnectionTrait;
+        let registry_db = state.provider.registry();
+        let reg_backend = registry_db.get_database_backend();
+        
+        let _ = registry_db.execute(Statement::from_sql_and_values(
+            reg_backend,
+            "INSERT OR IGNORE INTO academic_years (id, org_id, name, name_ar, start_date, end_date, hijri_start_date, hijri_end_date, db_filename, status, is_current, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NULL, NULL, 'orbis.db', 'active', 1, ?, ?)",
+            vec![
+                root_cycle.id.clone().into(),
+                org_id.clone().into(),
+                root_cycle.name.clone().into(),
+                root_cycle.name_ar.clone().into(),
+                root_cycle.start_date.clone().into(),
+                root_cycle.end_date.clone().into(),
+                now_str.clone().into(),
+                now_str.clone().into(),
+            ]
+        ))
+        .await
+        .map_err(|e| CommandError::from(e.to_string()))?;
+        
+        // Also set this year as active in provider
+        let _ = state.provider.switch_year(&root_cycle.id).await;
+    }
 
     Ok(())
 }

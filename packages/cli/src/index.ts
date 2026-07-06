@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
+import { Database } from "bun:sqlite";
+import { existsSync, mkdirSync, readFileSync, unlinkSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { existsSync, mkdirSync, readFileSync, unlinkSync } from "node:fs";
-import { Database } from "bun:sqlite";
 import readline from "node:readline";
 
 // ── Clack-style CLI Styling Helpers ────────────────────────────────────────
@@ -159,6 +159,44 @@ function getDbPaths(isDevExplicit = false): string[] {
   return Array.from(new Set(paths));
 }
 
+function getRegistryDbPath(identifier: string): string {
+  const home = os.homedir();
+  let appDataDir = "";
+
+  if (process.platform === "win32") {
+    const appData =
+      process.env.APPDATA || path.join(home, "AppData", "Roaming");
+    appDataDir = path.join(appData, identifier);
+  } else if (process.platform === "darwin") {
+    appDataDir = path.join(home, "Library", "Application Support", identifier);
+  } else {
+    const xdgData =
+      process.env.XDG_DATA_HOME || path.join(home, ".local", "share");
+    appDataDir = path.join(xdgData, identifier);
+  }
+
+  return path.join(appDataDir, "orbis_registry.db");
+}
+
+function getRegistryDbPaths(isDevExplicit = false): string[] {
+  const paths: string[] = [];
+
+  if (isDevExplicit) {
+    paths.push(getRegistryDbPath("com.mulverse.orbis.dev"));
+  } else {
+    // production registry
+    paths.push(getRegistryDbPath("com.mulverse.orbis.svelte"));
+
+    // Auto-detect dev directory
+    const devPath = path.dirname(getDbPathSingle("com.mulverse.orbis.dev"));
+    if (existsSync(devPath)) {
+      paths.push(getRegistryDbPath("com.mulverse.orbis.dev"));
+    }
+  }
+
+  return Array.from(new Set(paths));
+}
+
 // ── Help & Usage Guides ─────────────────────────────────────────────────────
 
 function printHelp() {
@@ -237,9 +275,51 @@ function runDatabaseMigration(db: Database) {
       if (cleaned.length > 0) {
         try {
           db.run(cleaned);
-        } catch (err) {
+        } catch (_err) {
           // Ignore table duplicate warnings if running repeatedly
         }
+      }
+    }
+  }
+  db.run("PRAGMA foreign_keys = ON;");
+}
+
+function runRegistryDatabaseMigration(db: Database) {
+  const dbDir = path.resolve(
+    __dirname,
+    "..",
+    "..",
+    "..",
+    "apps",
+    "api-rust",
+    "crates",
+    "core-domain",
+    "src",
+    "database",
+  );
+  const registrySchemaPath = path.join(dbDir, "registry_schema.sql");
+
+  if (!existsSync(registrySchemaPath)) {
+    printError(`Registry Schema SQL file not found in: ${dbDir}`);
+    process.exit(1);
+  }
+
+  const registrySchemaSql = readFileSync(registrySchemaPath, "utf-8");
+
+  db.run("PRAGMA foreign_keys = OFF;");
+  const statements = registrySchemaSql.split(";");
+  for (const statement of statements) {
+    const cleaned = statement
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => !line.startsWith("--") && line.length > 0)
+      .join("\n")
+      .trim();
+    if (cleaned.length > 0) {
+      try {
+        db.run(cleaned);
+      } catch (_err) {
+        // Ignore table duplicate warnings
       }
     }
   }
@@ -600,7 +680,7 @@ async function handleInstallation(isDev = false) {
       if (check && check.name === "organizations") {
         tablesExist = true;
       }
-    } catch (e) {}
+    } catch (_e) {}
 
     if (!tablesExist) {
       printInfo(
@@ -621,7 +701,7 @@ async function handleInstallation(isDev = false) {
     if (adminCount && adminCount.count > 0) {
       adminExists = true;
     }
-  } catch (e) {}
+  } catch (_e) {}
   primaryDb.close();
 
   if (adminExists) {
@@ -712,8 +792,38 @@ async function handleInstallation(isDev = false) {
       .replace(/(^-|-$)/g, "") || "school";
   const now = new Date().toISOString();
 
+  const registryDbPaths = getRegistryDbPaths(isDev);
+
   // Populate all target databases
-  for (const dbPath of dbPaths) {
+  for (let i = 0; i < dbPaths.length; i++) {
+    const dbPath = dbPaths[i];
+    const registryDbPath = registryDbPaths[i];
+
+    // Ensure registry directory exists and seed registry DB
+    if (registryDbPath) {
+      const regDir = path.dirname(registryDbPath);
+      if (!existsSync(regDir)) {
+        mkdirSync(regDir, { recursive: true });
+      }
+
+      const regDb = new Database(registryDbPath);
+      try {
+        runRegistryDatabaseMigration(regDb);
+        regDb.run("PRAGMA foreign_keys = OFF;");
+        regDb.run(
+          `INSERT OR IGNORE INTO academic_years (
+            id, org_id, name, name_ar, start_date, end_date, hijri_start_date, hijri_end_date, db_filename, status, is_current, created_at, updated_at
+          ) VALUES ('cycle-1447', ?, 'Academic Year 1447 Hijri', 'العام الدراسي 1447 هـ', '2026-06-21', '2027-02-21', '1447-01-01', '1447-12-29', 'orbis.db', 'active', 1, ?, ?)`,
+          [orgId, now, now],
+        );
+        regDb.run("PRAGMA foreign_keys = ON;");
+      } catch (err) {
+        printError(`Failed to initialize registry database: ${err}`);
+      } finally {
+        regDb.close();
+      }
+    }
+
     const db = new Database(dbPath);
     db.run("PRAGMA foreign_keys = OFF;");
 
@@ -760,6 +870,57 @@ async function handleInstallation(isDev = false) {
 
     // Automatically seed Default Currencies, Chart of Accounts, and default permissions
     seedDefaultFinancialsAndPermissions(db, orgId, currency);
+
+    // Insert Default Year into Year Database (academic_cycles table)
+    const cycleId = "cycle-1447";
+    db.run(
+      `INSERT OR IGNORE INTO academic_cycles (
+        id, org_id, name, name_ar, start_date, end_date, type, grading_system, is_current, is_locked, is_enrollment_open, created_at, updated_at
+      ) VALUES (?, ?, 'Academic Year 1447 Hijri', 'العام الدراسي 1447 هـ', '2026-06-21', '2027-02-21', 'year', 'percentage', 1, 0, 1, ?, ?)`,
+      [cycleId, orgId, now, now],
+    );
+
+    // Insert Semesters and Month sub-cycles
+    const subCycles = [
+      {
+        id: "cycle-1447-s1",
+        name: "Semester 1",
+        nameAr: "الفصل الدراسي الأول",
+        type: "term",
+        start: "2026-06-21",
+        end: "2026-10-21",
+        weight: 50,
+      },
+      {
+        id: "cycle-1447-s2",
+        name: "Semester 2",
+        nameAr: "الفصل الدراسي الثاني",
+        type: "term",
+        start: "2026-10-22",
+        end: "2027-02-21",
+        weight: 50,
+      },
+    ];
+    for (const sc of subCycles) {
+      db.run(
+        `INSERT OR IGNORE INTO academic_cycles (
+          id, org_id, name, name_ar, parent_id, start_date, end_date, type, grading_system, weight, is_current, is_locked, is_enrollment_open, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'percentage', ?, 0, 0, 1, ?, ?)`,
+        [
+          sc.id,
+          orgId,
+          sc.name,
+          sc.nameAr,
+          cycleId,
+          sc.start,
+          sc.end,
+          sc.type,
+          sc.weight,
+          now,
+          now,
+        ],
+      );
+    }
 
     db.run("PRAGMA foreign_keys = ON;");
     db.close();

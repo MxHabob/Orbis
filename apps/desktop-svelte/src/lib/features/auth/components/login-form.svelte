@@ -21,6 +21,7 @@ let error = $state<string | null>(null);
 let isLoading = $state(false);
 
 async function handleSubmit(e: SubmitEvent) {
+  e.preventDefault();
   if (!email || !password) {
     error = m.login_fill_all_fields();
     return;

@@ -1,59 +1,61 @@
 <script lang="ts">
 import { Label } from "@orbis/ui-svelte/label";
-import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui-svelte/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@orbis/ui-svelte/select";
+import { onMount } from "svelte";
+import { commands } from "$lib/core/ipc";
 import * as m from "$lib/paraglide/messages";
 
-let { selectedBranch = $bindable("main_branch"), selectedYear = $bindable("2026_2027") } = $props<{
+let {
+  selectedBranch = $bindable("org-sanaa-model"),
+  selectedYear = $bindable(""),
+} = $props<{
   selectedBranch?: string;
   selectedYear?: string;
 }>();
 
-const branches = $derived([
-  { value: "main_branch", label: m.login_default_branch() },
-  { value: "secondary_branch", label: m.login_other_branch() }
-]);
+let academicYears = $state<{ value: string; label: string }[]>([]);
 
-const academicYears = $derived([
-  { value: "2026_2027", label: m.login_current_year() },
-  { value: "2027_2028", label: m.login_next_year() }
-]);
+async function loadYears() {
+  const orgId = selectedBranch || "org-sanaa-model";
+  try {
+    const years = await commands.academicYears.list(orgId);
+    academicYears = years.map((y) => ({
+      value: y.year.id,
+      label: y.year.name_ar || y.year.name,
+    }));
+    if (academicYears.length > 0) {
+      const activeYear = years.find((y) => y.is_active_in_app);
+      if (activeYear) {
+        selectedYear = activeYear.year.id;
+      } else {
+        selectedYear = academicYears[0].value;
+      }
+    }
+  } catch (err) {
+    console.warn("Failed to load academic years for org:", orgId, err);
+    academicYears = [];
+    selectedYear = "";
+  }
+}
+
+onMount(() => {
+  loadYears();
+});
 </script>
 
-<div class="flex flex-col gap-1 text-start mb-2">
+<div class="flex flex-col gap-1 text-start">
 	<h3 class="text-sm font-semibold text-foreground select-none">
 		{m.login_env_title()}
 	</h3>
-	<p class="text-xs text-muted-foreground leading-normal select-none">
-		{m.login_env_desc()}
-	</p>
-</div>
-
-<!-- Branch Select -->
-<div class="flex flex-col gap-2 text-start">
-	<Label class="text-xs font-semibold text-foreground select-none uppercase tracking-wider">
-		{m.login_select_org()}
-	</Label>
-	<Select
-		type="single"
-		value={selectedBranch}
-		onValueChange={(v: string | undefined) => (selectedBranch = v ?? "")}
-	>
-		<SelectTrigger class="h-10 text-xs focus-visible:ring-primary bg-background/50 border-input w-full flex justify-between items-center px-3">
-			{branches.find(b => b.value === selectedBranch)?.label || selectedBranch}
-		</SelectTrigger>
-		<SelectContent>
-			{#each branches as b}
-				<SelectItem value={b.value}>{b.label}</SelectItem>
-			{/each}
-		</SelectContent>
-	</Select>
 </div>
 
 <!-- Academic Year Select -->
-<div class="flex flex-col gap-2 text-start mt-2">
-	<Label class="text-xs font-semibold text-foreground select-none uppercase tracking-wider">
-		{m.login_select_year()}
-	</Label>
+<div class="flex flex-col gap-2 text-start">
 	<Select
 		type="single"
 		value={selectedYear}
