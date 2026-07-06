@@ -19,7 +19,6 @@ import {
 } from "lucide-svelte";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
-import YearSwitcher from "$lib/features/academics/YearSwitcher.svelte";
 import ArchivedBanner from "$lib/features/academics/ArchivedBanner.svelte";
 import type { Snippet } from "svelte";
 import * as m from "$lib/paraglide/messages";
@@ -95,8 +94,6 @@ const navItems = $derived([
   <MainViewport name="academics-workspace" leftWidth={{ default: 240, min: 200 }}>
     {#snippet left()}
       <div class="flex flex-col h-full">
-        <YearSwitcher orgId={data.orgId} />
-        <div class="h-px bg-border/60 mx-3 my-1"></div>
         <div class="flex-1 overflow-y-auto">
           <SidebarNav
             items={navItems}

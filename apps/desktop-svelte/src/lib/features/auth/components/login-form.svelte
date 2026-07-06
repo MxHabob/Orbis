@@ -9,6 +9,8 @@ import * as m from "$lib/paraglide/messages";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { toast } from "svelte-sonner";
 
+import { commands } from "$lib/core/ipc";
+
 // Prop indicators if any
 let { selectedBranch = "", selectedYear = "" } = $props<{ selectedBranch?: string; selectedYear?: string }>();
 
@@ -19,7 +21,6 @@ let error = $state<string | null>(null);
 let isLoading = $state(false);
 
 async function handleSubmit(e: SubmitEvent) {
-  e.preventDefault();
   if (!email || !password) {
     error = m.login_fill_all_fields();
     return;
@@ -32,7 +33,23 @@ async function handleSubmit(e: SubmitEvent) {
     // Authenticate with authStore
     await authStore.login(email, password);
     
-    // Future integration can save branch & year to preferences / profile if needed here
+    // Switch to the selected academic year if specified
+    if (selectedYear && authStore.orgId) {
+      try {
+        const years = await commands.academicYears.list(authStore.orgId);
+        const normalized = selectedYear.replace("_", "-");
+        const targetYear = years.find(
+          (y) => y.year.name.includes(normalized) || y.year.name === normalized
+        );
+        if (targetYear) {
+          await commands.academicYears.switch(targetYear.year.id);
+          console.log("Switched academic year on login to:", targetYear.year.name);
+        }
+      } catch (switchErr) {
+        console.warn("Failed to switch academic year on login:", switchErr);
+      }
+    }
+
     console.log("Logged in with branch:", selectedBranch, "year:", selectedYear);
 
     goto(localizeHref(`/${authStore.orgId}`));
