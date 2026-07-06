@@ -73,14 +73,36 @@ const relations = $derived([
   { value: "other", label: m.guardians_relation_other() },
 ]);
 
+let studentLastName = $state("");
+
 const filteredUsers = $derived(
-  allUsers.filter((u) => {
-    const q = searchQuery.toLowerCase();
-    if (!q) return true;
-    const name = String(u.full_name ?? "").toLowerCase();
-    const email = String(u.email ?? "").toLowerCase();
-    return name.includes(q) || email.includes(q);
-  }),
+  allUsers
+    .filter((u) => {
+      const q = searchQuery.toLowerCase();
+      if (!q) return true;
+      const name = String(u.full_name ?? u.name_ar ?? "").toLowerCase();
+      const email = String(u.email ?? "").toLowerCase();
+      return name.includes(q) || email.includes(q);
+    })
+    .sort((a, b) => {
+      if (!studentLastName) return 0;
+      
+      const nameA = String(a.full_name ?? a.name_ar ?? "").toLowerCase();
+      const nameB = String(b.full_name ?? b.name_ar ?? "").toLowerCase();
+      
+      const partsA = nameA.trim().split(/\s+/);
+      const partsB = nameB.trim().split(/\s+/);
+      
+      const lastNameA = partsA.length > 0 ? partsA[partsA.length - 1] : "";
+      const lastNameB = partsB.length > 0 ? partsB[partsB.length - 1] : "";
+      
+      const matchA = lastNameA === studentLastName;
+      const matchB = lastNameB === studentLastName;
+      
+      if (matchA && !matchB) return -1;
+      if (!matchA && matchB) return 1;
+      return 0;
+    })
 );
 
 const selectedUser = $derived(
@@ -92,10 +114,22 @@ const selectedRelation = $derived(relations.find((r) => r.value === relation));
 onMount(async () => {
   isLoading = true;
   try {
-    const users = await commands.users.getUsers(orgId);
+    const [users, enrollments] = await Promise.all([
+      commands.users.getUsers(orgId, { role: "parent" }),
+      commands.enrollments.getAll(orgId),
+    ]);
     allUsers = users as unknown as JsonRecord[];
+
+    const student = (enrollments as any[]).find((s) => String(s.id) === String(studentId));
+    if (student) {
+      const studentName = (student.full_name || student.name_ar || "").trim();
+      const nameParts = studentName.split(/\s+/);
+      if (nameParts.length > 0) {
+        studentLastName = nameParts[nameParts.length - 1].toLowerCase();
+      }
+    }
   } catch (e) {
-    console.error("Failed to load users", e);
+    console.error("Failed to load data for guardian linking:", e);
   } finally {
     isLoading = false;
   }
