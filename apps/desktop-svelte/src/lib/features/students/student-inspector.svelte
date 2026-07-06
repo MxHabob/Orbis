@@ -25,6 +25,7 @@ let {
 }: { student: any; onClose: () => void } = $props();
 
 const studentId = $derived(student?.id || "");
+const orgId = $derived(authStore.orgId || "");
 
 let balanceDue = $state<string>(m.loading());
 let gradeSummary = $state<string>(m.loading());
@@ -41,7 +42,6 @@ async function fetchStats() {
   gradeSummary = m.loading();
   guardiansList = [];
   try {
-    const orgId = authStore.orgId;
     if (!orgId || !student) return;
 
     // Fetch finances

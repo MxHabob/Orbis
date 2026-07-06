@@ -188,9 +188,12 @@ let revoColumns = $derived.by(() => {
         if (col.cellClass) classes.push(col.cellClass);
         if (col.align === "center") classes.push("cell-number-input");
 
+        const row = params?.model || {};
+        const rowIndex = params?.rowIndex ?? 0;
+        const prop = col.prop;
+
         let customProps: Record<string, any> = {};
         if (col.cellProperties) {
-          const row = params?.model || {};
           customProps = col.cellProperties(row) || {};
         }
 
@@ -198,12 +201,47 @@ let revoColumns = $derived.by(() => {
           classes.push(customProps.class);
         }
 
-        return {
+        const cellProps: Record<string, any> = {
           ...customProps,
           class: classes.join(" ").trim(),
-          "data-row": params?.rowIndex ?? 0,
-          "data-prop": col.prop,
+          "data-row": rowIndex,
+          "data-prop": prop,
         };
+
+        // Attach cell-level click/dblclick only for standard, non-custom rendered columns
+        const isCustom = col.cellRenderer !== undefined;
+        const isSelection = prop === "__selected";
+
+        if (!isCustom && !isSelection) {
+          const clickHandler = (e: MouseEvent) => {
+            if (!onaction) return;
+            onaction({
+              actionId: "select",
+              row,
+              rowIndex,
+              prop,
+              originalEvent: e,
+            });
+          };
+
+          const doubleClickHandler = (e: MouseEvent) => {
+            if (!onaction) return;
+            onaction({
+              actionId: "dblclick",
+              row,
+              rowIndex,
+              prop,
+              originalEvent: e,
+            });
+          };
+
+          cellProps.onClick = clickHandler;
+          cellProps.onclick = clickHandler;
+          cellProps.onDblClick = doubleClickHandler;
+          cellProps.ondblclick = doubleClickHandler;
+        }
+
+        return cellProps;
       },
     };
 
@@ -299,6 +337,7 @@ function handleBeforePaste(event: CustomEvent) {
 
 function handleGridClick(e: MouseEvent) {
   if (!onaction) return;
+
   const target = (e.target as HTMLElement).closest<HTMLElement>(
     "[data-grid-action]",
   );
@@ -317,6 +356,30 @@ function handleGridClick(e: MouseEvent) {
     originalEvent: e,
   });
 }
+
+function handleGridDblClick(e: MouseEvent) {
+  if (!onaction) return;
+
+  const target = (e.target as HTMLElement).closest<HTMLElement>(
+    "[data-grid-action]",
+  );
+  if (!target) return;
+
+  const actionId = target.dataset.gridAction!;
+  const rowIndex = Number(target.dataset.rowIndex ?? -1);
+  const prop = target.dataset.prop ?? "";
+  if (rowIndex < 0 || rowIndex >= source.length) return;
+
+  if (actionId === "select") {
+    onaction({
+      actionId: "dblclick",
+      row: source[rowIndex]!,
+      rowIndex,
+      prop,
+      originalEvent: e,
+    });
+  }
+}
 </script>
 
 {#if gridReady && RevoGridComponent && isBrowser}
@@ -326,6 +389,7 @@ function handleGridClick(e: MouseEvent) {
     style="height: {height}; width: 100%;"
     dir={rtl ? "rtl" : "ltr"}
     onclick={handleGridClick}
+    ondblclick={handleGridDblClick}
   >
     <svelte:component
       this={RevoGridComponent}

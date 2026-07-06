@@ -238,6 +238,7 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 							classes={classes}
 							enableSelection={true}
 							bind:selectedIds={selectedStudentIds}
+							orgId={data.orgId}
 						/>
 					{/if}
 				</div>

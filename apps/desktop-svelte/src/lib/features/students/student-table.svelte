@@ -11,6 +11,10 @@ import { formatDate } from "$lib/core/i18n";
 import { createInitials, type OrbisColumnDef } from "@orbis/data-grid";
 import type { GridActionEvent } from "@orbis/data-grid";
 import { GraduationCap } from "lucide-svelte";
+import { goto } from "$app/navigation";
+import { localizeHref } from "$lib/paraglide/runtime";
+import { studentsStore } from "$lib/features/students";
+import { onDestroy } from "svelte";
 
 let {
   students,
@@ -18,12 +22,14 @@ let {
   enableSelection = false,
   selectedIds = $bindable(new Set()),
   onSelectionChange,
+  orgId,
 }: {
   students: Enrollment[];
   classes?: any[];
   enableSelection?: boolean;
   selectedIds?: Set<string>;
   onSelectionChange?: (ids: Set<string>) => void;
+  orgId: string;
 } = $props();
 
 // ── Helpers ────────────────────────────────────────────────────────
@@ -149,6 +155,7 @@ let gridSource = $derived(
     ...student,
     __idx: i + 1,
     class_name: getClassName(String(student.class_id)),
+    __selected: selectedIds.has(String(student.id)),
   }))
 );
 
@@ -162,10 +169,10 @@ let activeColumns = $derived.by(() => {
       readonly: true,
       pin: "colPinStart",
       cellProperties: (row) => ({
-        class: selectedIds.has(String(row.id)) ? "orbis-cell-selected" : "orbis-cell-checkbox",
+        class: row.__selected ? "orbis-cell-selected" : "orbis-cell-checkbox",
       }),
       cellRenderer: ({ h, row, rowIndex }) => {
-        const isSelected = selectedIds.has(String(row.id));
+        const isSelected = !!row.__selected;
         return h("span", {
           class: `cursor-pointer block w-full h-full flex items-center justify-center`,
           "data-grid-action": "toggle-select",
@@ -184,9 +191,30 @@ let activeColumns = $derived.by(() => {
   return cols;
 });
 
+let clickTimeout: ReturnType<typeof setTimeout> | null = null;
+
+onDestroy(() => {
+  if (clickTimeout) {
+    clearTimeout(clickTimeout);
+  }
+});
+
 function handleGridAction(event: GridActionEvent) {
   if (event.actionId === "select") {
-    studentsStore.selectedId = String(event.row.id);
+    if (clickTimeout) {
+      clearTimeout(clickTimeout);
+      clickTimeout = null;
+    }
+    clickTimeout = setTimeout(() => {
+      studentsStore.selectedId = String(event.row.id);
+      clickTimeout = null;
+    }, 220);
+  } else if (event.actionId === "dblclick") {
+    if (clickTimeout) {
+      clearTimeout(clickTimeout);
+      clickTimeout = null;
+    }
+    goto(localizeHref(`/${orgId}/students/${event.row.id}`));
   } else if (event.actionId === "toggle-select") {
     const id = String(event.row.id);
     const newSet = new Set(selectedIds);
