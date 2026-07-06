@@ -12,7 +12,7 @@ import { createInitials, type OrbisColumnDef } from "@orbis/data-grid";
 import type { GridActionEvent } from "@orbis/data-grid";
 import { GraduationCap } from "lucide-svelte";
 import { goto } from "$app/navigation";
-import { localizeHref } from "$lib/paraglide/runtime";
+import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import { studentsStore } from "$lib/features/students";
 import { onDestroy } from "svelte";
 
@@ -140,7 +140,7 @@ const columns: OrbisColumnDef[] = [
   },
   {
     prop: "enrollment_date",
-    name: "Enrolled At",
+    name: m.table_enrolled_at(),
     size: 150,
     cellRenderer: ({ h, row }) => {
       const date = row.enrollment_date as string | undefined;
@@ -233,6 +233,7 @@ function handleGridAction(event: GridActionEvent) {
   columns={activeColumns}
   source={gridSource}
   height="100%"
+  rtl={getLocale() === "ar"}
   onaction={handleGridAction}
   emptyIcon={GraduationCap}
   emptyTitle={m.table_no_students()}

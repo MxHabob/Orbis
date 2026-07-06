@@ -257,6 +257,7 @@
   "table_student": "Student",
   "table_student_number": "Academic ID",
   "table_class": "Class",
+  "table_enrolled_at": "Enrolled At",
   "table_email": "Email",
   "table_status": "Status",
   "table_no_students": "No students found",

@@ -256,6 +256,7 @@
   "table_student": "الطالب",
   "table_student_number": "الرقم الأكاديمي",
   "table_class": "الصف",
+  "table_enrolled_at": "تاريخ التسجيل",
   "table_email": "البريد الإلكتروني",
   "table_status": "الحالة",
   "table_no_students": "لم يتم العثور على طلاب",
