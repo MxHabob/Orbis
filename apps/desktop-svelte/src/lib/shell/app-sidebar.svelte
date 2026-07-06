@@ -109,12 +109,6 @@ const navItems = $derived([
     match: "prefix",
   },
   {
-    href: `/${orgId}/exams`,
-    label: m.nav_exams(),
-    icon: ClipboardList,
-    match: "prefix",
-  },
-  {
     href: `/${orgId}/finance`,
     icon: Wallet,
     label: m.nav_finance(),

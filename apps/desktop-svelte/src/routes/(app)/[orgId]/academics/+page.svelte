@@ -136,13 +136,6 @@ const directoryItems = $derived([
     badge: m.academics_overview_card_schedule_badge(),
   },
   {
-    path: `/${data.orgId}/academics/control`,
-    title: m.academics_overview_card_control_title(),
-    desc: m.academics_overview_card_control_desc(),
-    icon: ShieldCheck,
-    badge: m.academics_overview_card_control_badge(),
-  },
-  {
     path: `/${data.orgId}/academics/years`,
     title: m.academics_overview_card_years_title(),
     desc: m.academics_overview_card_years_desc(),
@@ -164,7 +157,7 @@ const directoryItems = $derived([
     badge: m.academics_overview_card_promotion_badge(),
   },
   {
-    path: `/${data.orgId}/exams`, // Top level exam management
+    path: `/${data.orgId}/academics/exams`, // Moved under academics
     title: m.academics_overview_card_exams_title(),
     desc: m.academics_overview_card_exams_desc(),
     icon: ClipboardList,

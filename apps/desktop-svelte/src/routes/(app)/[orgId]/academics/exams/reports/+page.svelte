@@ -3,7 +3,6 @@
 Reports and printing page with 7 report type cards.
 -->
 <script lang="ts">
-import { onMount } from "svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { toast } from "svelte-sonner";
 import { fade } from "svelte/transition";
@@ -110,8 +109,9 @@ function handlePrint() {
 	<!-- Report Type Cards Grid -->
 	<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3" in:fade={{ delay: 50, duration: 200 }}>
 		{#each reportTypes as report (report.id)}
-			<button
-				class="card-tactile bg-card p-4 flex flex-col items-center gap-3 text-center transition-all duration-200 hover:-translate-y-1 cursor-pointer group
+			<Button
+				variant="ghost"
+				class="card-tactile bg-card p-4 flex flex-col items-center gap-3 text-center transition-all duration-200 hover:-translate-y-1 cursor-pointer group h-auto w-full
 					{selectedReport === report.id ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}"
 				onclick={() => handleSelectReport(report.id)}
 			>
@@ -121,7 +121,7 @@ function handlePrint() {
 				<span class="text-[10px] font-bold text-foreground group-hover:text-primary transition-colors leading-tight">
 					{report.title}
 				</span>
-			</button>
+			</Button>
 		{/each}
 	</div>
 

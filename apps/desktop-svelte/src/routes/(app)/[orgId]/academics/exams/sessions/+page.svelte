@@ -7,7 +7,6 @@ import { onMount } from "svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import { toast } from "svelte-sonner";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
 import {
