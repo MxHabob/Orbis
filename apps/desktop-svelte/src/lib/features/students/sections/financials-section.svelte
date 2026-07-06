@@ -8,6 +8,7 @@ import { Separator } from "@orbis/ui-svelte/separator";
 import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui-svelte/select";
 import * as m from "$lib/paraglide/messages";
 import type { StudentFormState } from "../student-form-state.svelte";
+import { formatCurrency } from "$lib/core/i18n";
 
 let { state }: { state: StudentFormState } = $props();
 </script>
@@ -35,8 +36,12 @@ let { state }: { state: StudentFormState } = $props();
           <!-- Discount Type -->
           <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
             <div class="flex flex-col gap-1 text-start">
-              <Label class="text-xs font-semibold text-foreground">نوع الخصم</Label>
-              <span class="text-[11px] text-muted-foreground leading-relaxed">تطبيق خصم من قالب مسبق الإعداد أو تحديد قيمة مخصصة</span>
+              <Label class="text-xs font-semibold text-foreground">
+                {m.form_discount_type_label ? m.form_discount_type_label() : "Discount Type"}
+              </Label>
+              <span class="text-[11px] text-muted-foreground leading-relaxed">
+                {m.form_discount_type_desc ? m.form_discount_type_desc() : "Apply discount from a pre-configured template or specify a custom amount"}
+              </span>
             </div>
             <div class="w-full md:w-[480px] shrink-0 flex gap-2">
               <Button
@@ -62,20 +67,24 @@ let { state }: { state: StudentFormState } = $props();
           {#if state.discountType === 'template'}
             <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between last:border-b-0 gap-4">
               <div class="flex flex-col gap-1 text-start">
-                <Label class="text-xs font-semibold text-foreground">قالب الخصم</Label>
-                <span class="text-[11px] text-muted-foreground leading-relaxed">اختر أحد قوالب الخصم المعتمدة في النظام</span>
+                <Label class="text-xs font-semibold text-foreground">
+                  {m.form_discount_template_label ? m.form_discount_template_label() : "Discount Template"}
+                </Label>
+                <span class="text-[11px] text-muted-foreground leading-relaxed">
+                  {m.form_discount_template_desc ? m.form_discount_template_desc() : "Select one of the approved discount templates in the system"}
+                </span>
               </div>
               <div class="w-full md:w-[480px] shrink-0">
                 <Select bind:value={state.selectedDiscountTemplateId} type="single">
                   <SelectTrigger class="w-full h-9 text-xs text-start flex items-center justify-between bg-background">
                     <span class="truncate">
-                      {state.discountTemplates.find(d => d.id === state.selectedDiscountTemplateId)?.name || "اختر القالب..."}
+                      {state.discountTemplates.find(d => d.id === state.selectedDiscountTemplateId)?.name || (m.form_discount_template_placeholder ? m.form_discount_template_placeholder() : "Select template...")}
                     </span>
                   </SelectTrigger>
                   <SelectContent class="text-start max-h-48 overflow-y-auto" align="end">
                     {#each state.discountTemplates as tpl}
                       <SelectItem value={tpl.id} class="text-xs text-start cursor-pointer justify-start">
-                        {tpl.name} ({tpl.value}{tpl.calculation_method === 'percentage' ? '%' : ' YER'})
+                        {tpl.name} ({tpl.calculation_method === 'percentage' ? `${tpl.value}%` : formatCurrency(Number(tpl.value))})
                       </SelectItem>
                     {/each}
                   </SelectContent>
@@ -86,14 +95,16 @@ let { state }: { state: StudentFormState } = $props();
             <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between last:border-b-0 gap-4">
               <div class="flex flex-col gap-1 text-start">
                 <Label for="customDiscount" class="text-xs font-semibold text-foreground">{m.form_discount_custom_amount()}</Label>
-                <span class="text-[11px] text-muted-foreground leading-relaxed">أدخل مبلغ الخصم المالي المباشر بالريال اليمني</span>
+                <span class="text-[11px] text-muted-foreground leading-relaxed">
+                  {m.form_discount_custom_desc ? m.form_discount_custom_desc() : "Enter direct discount amount"}
+                </span>
               </div>
               <div class="w-full md:w-[480px] shrink-0">
                 <Input 
                   id="customDiscount"
                   type="number"
                   min="0"
-                  placeholder="مثال: 50000"
+                  placeholder={m.form_discount_custom_placeholder ? m.form_discount_custom_placeholder() : "e.g. 50000"}
                   class="h-9 w-full bg-background font-mono"
                   bind:value={state.customDiscountAmount}
                 />
@@ -113,7 +124,7 @@ let { state }: { state: StudentFormState } = $props();
       <div class="p-6">
         {#if state.optionalFeesList.length === 0}
           <p class="text-xs text-muted-foreground text-center py-4">
-            لا توجد رسوم إضافية مسجلة كـ "اختيارية" في النظام حالياً.
+            {m.form_no_optional_fees ? m.form_no_optional_fees() : "No optional fees registered in the system currently."}
           </p>
         {:else}
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -145,7 +156,9 @@ let { state }: { state: StudentFormState } = $props();
                     class="text-xs h-8 text-center font-bold px-1 bg-background font-mono"
                     bind:value={state.selectedOptionalFees[fTpl.id].amount}
                   />
-                  <span class="text-[10px] text-muted-foreground">ر.ي</span>
+                  <span class="text-[10px] text-muted-foreground">
+                    {m.form_currency_symbol ? m.form_currency_symbol() : "YER"}
+                  </span>
                 </div>
               </div>
             {/each}
@@ -167,19 +180,19 @@ let { state }: { state: StudentFormState } = $props();
         <!-- Mandatory Fees -->
         <div class="flex justify-between items-center text-xs">
           <span class="text-muted-foreground">{m.form_summary_mandatory()}:</span>
-          <span class="font-bold text-foreground font-mono">{state.mandatoryTotal.toLocaleString()} ر.ي</span>
+          <span class="font-bold text-foreground font-mono">{formatCurrency(state.mandatoryTotal)}</span>
         </div>
 
         <!-- Optional Fees -->
         <div class="flex justify-between items-center text-xs">
           <span class="text-muted-foreground">{m.form_summary_optional()}:</span>
-          <span class="font-bold text-foreground font-mono">+{state.optionalTotal.toLocaleString()} ر.ي</span>
+          <span class="font-bold text-foreground font-mono">+{formatCurrency(state.optionalTotal)}</span>
         </div>
 
         <!-- Discount Total -->
         <div class="flex justify-between items-center text-xs">
           <span class="text-muted-foreground">{m.form_summary_discount()}:</span>
-          <span class="font-bold text-destructive font-mono">-{state.discountTotal.toLocaleString()} ر.ي</span>
+          <span class="font-bold text-destructive font-mono">-{formatCurrency(state.discountTotal)}</span>
         </div>
 
         <Separator class="bg-border/60 my-1" />
@@ -187,21 +200,21 @@ let { state }: { state: StudentFormState } = $props();
         <!-- Net Total -->
         <div class="flex justify-between items-center">
           <span class="text-xs font-bold text-foreground">{m.form_summary_net()}:</span>
-          <span class="text-sm font-extrabold text-primary font-mono">{state.netTotal.toLocaleString()} ريال يمني</span>
+          <span class="text-sm font-extrabold text-primary font-mono">{formatCurrency(state.netTotal)}</span>
         </div>
 
         <!-- Mandatory Breakdown -->
         {#if state.mandatoryFeesList.length > 0}
           <div class="mt-4 p-3 rounded-lg bg-muted/20 border border-border space-y-2 select-none">
             <span class="text-[10px] font-bold text-muted-foreground block border-b border-border/40 pb-1">
-              تفاصيل الرسوم الأساسية المعتمدة للصف:
+              {m.form_summary_mandatory_breakdown ? m.form_summary_mandatory_breakdown() : "Approved basic fees details for class:"}
             </span>
             {#each state.mandatoryFeesList as feeTpl}
               <div class="flex justify-between items-center text-[10px]">
                 <span class="text-muted-foreground truncate max-w-[150px]">
                   {feeTpl.name_ar || feeTpl.name}
                 </span>
-                <span class="font-mono text-foreground">{feeTpl.default_amount.toLocaleString()} ر.ي</span>
+                <span class="font-mono text-foreground">{formatCurrency(feeTpl.default_amount)}</span>
               </div>
             {/each}
           </div>
