@@ -122,7 +122,10 @@ function getFallbackLabel(
 					<div class="h-full w-full flex flex-col items-center py-4 select-none">
 						<Button
 							class="h-8 w-8 flex items-center justify-center cursor-pointer duration-150 mb-4"
-							onclick={() => leftPreferredWidth = pxToRem(leftWidth.default)}
+							onclick={() => {
+								leftPreferredWidth = pxToRem(leftWidth.default);
+								localStorage.setItem(`resizer:viewport-${name}-left`, String(leftPreferredWidth));
+							}}
 							title="Expand Sidebar"
 						>
                           <svg
@@ -198,7 +201,10 @@ function getFallbackLabel(
 						<button
 							type="button"
 							class="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground cursor-pointer transition-colors duration-150 mb-4"
-							onclick={() => rightPreferredWidth = pxToRem(rightWidth.default)}
+							onclick={() => {
+								rightPreferredWidth = pxToRem(rightWidth.default);
+								localStorage.setItem(`resizer:viewport-${name}-right`, String(rightPreferredWidth));
+							}}
 							title="Expand Sidebar"
 						>
 							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
