@@ -145,7 +145,7 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 </script>
 
 <TooltipProvider delayDuration={150}>
-	<div class="flex h-full w-15 shrink-0 flex-col items-center justify-between py-3 select-none">
+	<div class="flex h-full w-12 shrink-0 flex-col items-center justify-between py-3 select-none">
 		<div class="flex flex-col items-center gap-3">
 			<OrgSidebarSwitcher {orgId} orgName={orgNameDisplay} />
 
