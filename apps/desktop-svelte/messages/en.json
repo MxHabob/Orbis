@@ -2456,6 +2456,12 @@
   "sidebar_status_title": "System Status",
   "sidebar_status_phase": "Phase",
   "sidebar_status_year": "Year",
+  "sidebar_status_timeline_title": "Academic Cycles Timeline",
+  "sidebar_status_active_cycle": "Active",
+  "sidebar_status_next_cycle": "Next",
+  "sidebar_status_no_active_cycle": "No active cycle",
+  "sidebar_status_no_next_cycle": "No upcoming cycle",
+  "sidebar_status_starts_on": "Starts on {date}",
   "sidebar_quick_actions": "Quick Actions",
   "sidebar_no_actions": "No actions available",
 

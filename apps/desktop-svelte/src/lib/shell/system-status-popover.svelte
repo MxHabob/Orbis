@@ -11,12 +11,12 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@orbis/ui-svelte";
-import { Activity, ExternalLink } from "lucide-svelte";
+import { Activity } from "lucide-svelte";
 import { academicContext, workflowInbox } from "$lib/stores";
 import * as m from "$lib/paraglide/messages";
+import { l, formatDate } from "$lib/core/i18n";
 
-const phaseLabel = $derived.by(() => {
-  const phase = academicContext.cyclePhase;
+function getPhaseLabel(phase: string) {
   switch (phase) {
     case "pre_start": return m.phase_pre_start ? m.phase_pre_start() : "Pre-Start";
     case "active": return m.phase_active ? m.phase_active() : "Active";
@@ -25,6 +25,31 @@ const phaseLabel = $derived.by(() => {
     case "closed": return m.phase_closed ? m.phase_closed() : "Closed";
     default: return "";
   }
+}
+
+const phaseLabel = $derived(getPhaseLabel(academicContext.cyclePhase));
+
+const nextCycle = $derived.by(() => {
+  const active = academicContext.activeCycle;
+  const cycles = academicContext.allCycles;
+  if (!cycles || cycles.length === 0) return null;
+
+  // Chronologically sorted cycles. Let's sort them by start_date ascending.
+  const sorted = [...cycles].sort((a, b) => a.start_date.localeCompare(b.start_date));
+
+  if (active) {
+    const activeIndex = sorted.findIndex(c => c.id === active.id);
+    if (activeIndex !== -1 && activeIndex + 1 < sorted.length) {
+      return sorted[activeIndex + 1];
+    }
+  }
+
+  // If no active cycle, look for the first cycle that starts in the future
+  const nowStr = new Date().toISOString().split("T")[0];
+  const upcoming = sorted.find(c => c.start_date > nowStr);
+  if (upcoming) return upcoming;
+
+  return null;
 });
 </script>
 
@@ -60,62 +85,63 @@ const phaseLabel = $derived.by(() => {
 			<p class="text-xs font-semibold text-foreground">{m.sidebar_status_title ? m.sidebar_status_title() : "System Status"}</p>
 		</div>
 
-		<!-- Incident Ingestion Alerts (Sentry-like layout) -->
+		<!-- Academic Cycles Timeline -->
 		<div class="p-4 border-b border-border flex flex-col gap-3">
-			<div class="space-y-1">
-				<h4 class="text-xs font-bold text-foreground leading-normal text-start">
-					{m.sidebar_status_ingestion_stopped()}
-				</h4>
-				<a 
-					href="https://status.orbis.edu" 
-					target="_blank" 
-					rel="noopener noreferrer" 
-					class="inline-flex items-center gap-1 text-[10px] text-primary hover:underline font-medium text-start"
-				>
-					<span>{m.sidebar_status_incident_details()}</span>
-					<ExternalLink size={10} />
-				</a>
-				<p class="text-[10px] text-muted-foreground text-start">
-					{m.sidebar_status_incident_started({ hours: "6" })}
-				</p>
-			</div>
+			<h4 class="text-xs font-bold text-foreground leading-normal text-start">
+				{m.sidebar_status_timeline_title ? m.sidebar_status_timeline_title() : "Academic Cycles Timeline"}
+			</h4>
 
 			<!-- Vertical Timeline -->
-			<div class="relative ps-4 border-s border-border mt-2 space-y-4">
-				<!-- Item 1 (Monitoring) -->
+			<div class="relative ps-4 border-s border-border mt-2 space-y-5">
+				<!-- Active Cycle -->
 				<div class="relative text-start">
-					<span class="absolute -start-[21px] top-1 size-2 rounded-full bg-yellow-500 border border-background"></span>
-					<div class="flex items-center gap-1.5 text-[10px]">
-						<span class="font-bold text-yellow-500">{m.sidebar_status_monitoring_label()}</span>
-						<span class="text-muted-foreground">(4h ago)</span>
-					</div>
-					<p class="text-[10px] text-muted-foreground leading-normal mt-0.5">
-						{m.sidebar_status_monitoring_recovery()}
-					</p>
+					{#if academicContext.activeCycle}
+						<span class="absolute -start-[21px] top-1 size-2 rounded-full bg-primary border border-background animate-pulse"></span>
+						<div class="flex items-center justify-between gap-1.5">
+							<span class="font-bold text-foreground text-[11px] leading-tight">
+								{l(academicContext.activeCycle.name_ar, academicContext.activeCycle.name)}
+							</span>
+							<Badge variant="lime" class="text-[9px] h-3.5 px-1 shrink-0">
+								{m.sidebar_status_active_cycle ? m.sidebar_status_active_cycle() : "Active"}
+							</Badge>
+						</div>
+						<p class="text-[10px] text-muted-foreground leading-normal mt-1">
+							{formatDate(academicContext.activeCycle.start_date)} - {formatDate(academicContext.activeCycle.end_date)}
+						</p>
+						{#if getPhaseLabel(academicContext.cyclePhase)}
+							<p class="text-[9px] text-primary/80 font-medium mt-0.5">
+								{m.sidebar_status_phase ? m.sidebar_status_phase() : "Phase"}: {getPhaseLabel(academicContext.cyclePhase)}
+							</p>
+						{/if}
+					{:else}
+						<span class="absolute -start-[21px] top-1 size-2 rounded-full bg-muted border border-background"></span>
+						<span class="font-bold text-muted-foreground text-[11px]">
+							{m.sidebar_status_no_active_cycle ? m.sidebar_status_no_active_cycle() : "No active cycle"}
+						</span>
+					{/if}
 				</div>
 
-				<!-- Item 2 (Monitoring) -->
+				<!-- Next Cycle -->
 				<div class="relative text-start">
-					<span class="absolute -start-[21px] top-1 size-2 rounded-full bg-yellow-500 border border-background"></span>
-					<div class="flex items-center gap-1.5 text-[10px]">
-						<span class="font-bold text-yellow-500">{m.sidebar_status_monitoring_label()}</span>
-						<span class="text-muted-foreground">(6h ago)</span>
-					</div>
-					<p class="text-[10px] text-muted-foreground leading-normal mt-0.5">
-						{m.sidebar_status_monitoring_fixed()}
-					</p>
-				</div>
-
-				<!-- Item 3 (Investigating) -->
-				<div class="relative text-start">
-					<span class="absolute -start-[21px] top-1 size-2 rounded-full bg-destructive border border-background"></span>
-					<div class="flex items-center gap-1.5 text-[10px]">
-						<span class="font-bold text-destructive">{m.sidebar_status_investigating_label()}</span>
-						<span class="text-muted-foreground">(6h ago)</span>
-					</div>
-					<p class="text-[10px] text-muted-foreground leading-normal mt-0.5">
-						{m.sidebar_status_investigating()}
-					</p>
+					{#if nextCycle}
+						<span class="absolute -start-[21px] top-1 size-2 rounded-full bg-muted-foreground/60 border border-background"></span>
+						<div class="flex items-center justify-between gap-1.5">
+							<span class="font-bold text-foreground text-[11px] leading-tight">
+								{l(nextCycle.name_ar, nextCycle.name)}
+							</span>
+							<Badge variant="secondary" class="text-[9px] h-3.5 px-1 shrink-0">
+								{m.sidebar_status_next_cycle ? m.sidebar_status_next_cycle() : "Next"}
+							</Badge>
+						</div>
+						<p class="text-[10px] text-muted-foreground leading-normal mt-1">
+							{m.sidebar_status_starts_on ? m.sidebar_status_starts_on({ date: formatDate(nextCycle.start_date) }) : `Starts on ${formatDate(nextCycle.start_date)}`}
+						</p>
+					{:else}
+						<span class="absolute -start-[21px] top-1 size-2 rounded-full bg-muted border border-background"></span>
+						<span class="font-medium text-muted-foreground text-[11px]">
+							{m.sidebar_status_no_next_cycle ? m.sidebar_status_no_next_cycle() : "No upcoming cycle"}
+						</span>
+					{/if}
 				</div>
 			</div>
 		</div>

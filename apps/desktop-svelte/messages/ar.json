@@ -2461,6 +2461,12 @@
   "sidebar_status_title": "حالة النظام",
   "sidebar_status_phase": "المرحلة",
   "sidebar_status_year": "السنة",
+  "sidebar_status_timeline_title": "الجدول الزمني للدورات الأكاديمية",
+  "sidebar_status_active_cycle": "نشطة",
+  "sidebar_status_next_cycle": "التالية",
+  "sidebar_status_no_active_cycle": "لا توجد دورة نشطة",
+  "sidebar_status_no_next_cycle": "لا توجد دورة قادمة",
+  "sidebar_status_starts_on": "تبدأ في {date}",
   "sidebar_quick_actions": "إجراءات سريعة",
   "sidebar_no_actions": "لا توجد إجراءات متاحة",
 
