@@ -149,27 +149,6 @@ onMount(() => {
       </div>
     {/if}
 
-    <!-- Academic Context Indicator (auto-resolved — read-only display) -->
-    {#if authStore.isAuthenticated && cycles.length > 0}
-      <div class="relative flex items-center z-50 shrink-0 gap-1.5">
-        <!-- Cycle context pill — informational, not a selector -->
-        <div class="flex items-center gap-1 bg-muted/40 text-[11px] font-semibold text-foreground px-2.5 py-1 rounded-lg border border-border/60">
-          <GraduationCap size={13} class="text-primary" />
-          <span>{currentCycleName}</span>
-          {#if academicContext.isReadOnly}
-            <span class="text-[10px] opacity-60">🔒</span>
-          {/if}
-        </div>
-
-        <!-- Phase Badge -->
-        {#if phaseLabel}
-          <Badge variant={phaseBadgeVariant} class="text-[10px] px-1.5 py-0 h-5">
-            {phaseLabel}
-          </Badge>
-        {/if}
-      </div>
-    {/if}
-
     <!-- Breadcrumb -->
     {#if authStore.isAuthenticated}
       <div class="w-px h-4 bg-border/60 mx-1 shrink-0" data-tauri-drag-region></div>
