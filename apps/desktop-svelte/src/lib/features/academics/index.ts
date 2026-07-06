@@ -1,4 +1,3 @@
-export { academicStore } from "./store.svelte";
 export * from "./queries";
 export * from "./queries-calendar";
 export * from "./queries-policy";

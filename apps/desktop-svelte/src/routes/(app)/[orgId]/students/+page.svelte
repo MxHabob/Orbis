@@ -7,9 +7,10 @@ and right detailed student inspector.
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
-import { Plus, Search, FilterX, Download, Printer, Upload } from "lucide-svelte";
+import { Plus, Search, FilterX, Download, Printer, Upload, ShieldAlert } from "lucide-svelte";
 import { studentsStore, createEnrollmentsQuery } from "$lib/features/students";
 import { createClassesQuery } from "$lib/features/academics";
+import { academicContext, authStore } from "$lib/stores";
 import StudentsTableSkeleton from "$lib/shared/skeletons/students-table-skeleton.svelte";
 import PrintDialog from "$lib/shared/components/print-dialog.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
@@ -33,6 +34,17 @@ const classesQuery = createClassesQuery(data.orgId);
 const enrollments = $derived($enrollmentsQuery.data ?? []);
 const classes = $derived($classesQuery.data ?? []);
 const filteredStudents = $derived(studentsStore.filterList(enrollments));
+
+// Capability-based enrollment
+const canCreateStudent = $derived(
+  !academicContext.isReadOnly && academicContext.canEnroll
+);
+const canRequestLateEnrollment = $derived(
+  !academicContext.isReadOnly &&
+  !academicContext.canEnroll &&
+  ["admin", "registrar", "super_admin"].includes(authStore.user?.role ?? "")
+);
+let showOverrideDialog = $state(false);
 const isLoading = $derived($enrollmentsQuery.isLoading || $classesQuery.isLoading);
 const error = $derived($enrollmentsQuery.error || $classesQuery.error);
 
@@ -189,14 +201,25 @@ let selectedStudentIds = $state<Set<string>>(new Set());
 							<Download size={13} class="me-1.5" />
 							{m.students_export()}
 						</Button>
-						<Button 
-							variant="lime" 
-							class="text-xs h-9 px-3" 
-							onclick={() => goto(localizeHref(`/${data.orgId}/students/new`))}
-						>
-							<Plus size={14} class="me-1.5" />
-							{m.students_new()}
-						</Button>
+						{#if canCreateStudent}
+							<Button 
+								variant="lime" 
+								class="text-xs h-9 px-3" 
+								onclick={() => goto(localizeHref(`/${data.orgId}/students/new`))}
+							>
+								<Plus size={14} class="me-1.5" />
+								{m.students_new()}
+							</Button>
+						{:else if canRequestLateEnrollment}
+							<Button 
+								variant="outline" 
+								class="text-xs h-9 px-3" 
+								onclick={() => { showOverrideDialog = true; }}
+							>
+								<ShieldAlert size={14} class="me-1.5" />
+								{m.students_request_late_enrollment ? m.students_request_late_enrollment() : "Request Late Enrollment"}
+							</Button>
+						{/if}
 					</div>
 				</div>
 

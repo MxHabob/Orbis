@@ -218,8 +218,3 @@ class AcademicContextStore {
 
 export const academicContext = new AcademicContextStore();
 
-/**
- * @deprecated Use `academicContext` instead.
- * Backward-compatible alias for `academicContext`.
- */
-export const academicYearStore = academicContext;

@@ -25,10 +25,28 @@ import {
   Settings,
   MoreHorizontal,
   Zap,
-  Radio,
+  Activity,
   FileText,
+  UserPlus,
+  CalendarClock,
+  CheckSquare,
+  ShieldCheck,
+  CreditCard,
 } from "lucide-svelte";
-import { authStore, uiStore } from "$lib/stores";
+import { authStore, uiStore, academicContext, workflowInbox } from "$lib/stores";
+import { Badge } from "@orbis/ui-svelte/badge";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@orbis/ui-svelte/popover";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@orbis/ui-svelte/dropdown-menu";
 import OrgSidebarSwitcher from "./org-sidebar-switcher.svelte";
 import UserSidebarMenu from "./user-sidebar-menu.svelte";
 import OnboardingPopover from "./onboarding-popover.svelte";
@@ -144,6 +162,48 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
   if (match === "exact") return unlocalizedPathname === href;
   return unlocalizedPathname.startsWith(href);
 }
+
+// Current page segment for context-aware quick actions
+const currentSegment = $derived.by(() => {
+  const parts = deLocalizeUrl(page.url).pathname.split("/").filter(Boolean);
+  return parts[1] ?? "dashboard";
+});
+
+// Phase label for the activity status
+const phaseLabel = $derived.by(() => {
+  const phase = academicContext.cyclePhase;
+  switch (phase) {
+    case "pre_start": return m.phase_pre_start ? m.phase_pre_start() : "Pre-Start";
+    case "active": return m.phase_active ? m.phase_active() : "Active";
+    case "exams": return m.phase_exams ? m.phase_exams() : "Exams";
+    case "grade_entry": return m.phase_grade_entry ? m.phase_grade_entry() : "Grade Entry";
+    case "closed": return m.phase_closed ? m.phase_closed() : "Closed";
+    default: return "";
+  }
+});
+
+// Context-aware quick actions based on current page
+const quickActions = $derived.by(() => {
+  const seg = currentSegment;
+  const actions: Array<{ label: string; icon: typeof UserPlus; href: string }> = [];
+
+  if (seg === "students" || seg === "dashboard") {
+    if (academicContext.canEnroll) {
+      actions.push({ label: m.action_enroll_student(), icon: UserPlus, href: `/${orgId}/students/new` });
+    }
+  }
+  if (seg === "finance" || seg === "dashboard") {
+    actions.push({ label: m.action_record_payment(), icon: CreditCard, href: `/${orgId}/finance/payments` });
+  }
+  if (seg === "academics" || seg === "dashboard") {
+    actions.push({ label: m.calendar_title ? m.calendar_title() : "Calendar", icon: CalendarClock, href: `/${orgId}/academics/calendar` });
+    actions.push({ label: m.academics_control_label ? m.academics_control_label() : "Control", icon: ShieldCheck, href: `/${orgId}/academics/control` });
+  }
+  if (workflowInbox.hasActions) {
+    actions.push({ label: m.settings_nav_approvals ? m.settings_nav_approvals() : "Approvals", icon: CheckSquare, href: `/${orgId}/settings/approvals` });
+  }
+  return actions;
+});
 </script>
 
 <TooltipProvider delayDuration={150}>
@@ -205,8 +265,9 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 					</TooltipContent>
 				</Tooltip>
 
-				<Tooltip>
-					<TooltipTrigger>
+				<!-- Activity Status Popover -->
+				<Popover>
+					<PopoverTrigger>
 						{#snippet child({ props })}
 							<Button 
 								{...props}
@@ -214,18 +275,57 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 								size="icon-sm" 
 								class="relative cursor-pointer rounded-[10px]"
 							>
-								<Radio size={16} strokeWidth={1.8} class="text-foreground" />
-								<span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary border border-background"></span>
+								<Activity size={16} strokeWidth={1.8} class="text-foreground" />
+								{#if workflowInbox.hasActions}
+									<span class="absolute -top-0.5 -end-0.5 w-1.5 h-1.5 rounded-full bg-destructive border border-background animate-pulse"></span>
+								{:else}
+									<span class="absolute -top-0.5 -end-0.5 w-1.5 h-1.5 rounded-full bg-primary border border-background"></span>
+								{/if}
 							</Button>
 						{/snippet}
-					</TooltipTrigger>
-					<TooltipContent side="right" sideOffset={12}>
-						{m.nav_configure_seer_tooltip()}
-					</TooltipContent>
-				</Tooltip>
+					</PopoverTrigger>
+					<PopoverContent side="right" sideOffset={12} class="w-56 p-0">
+						<div class="p-3 border-b border-border/40">
+							<p class="text-xs font-semibold text-foreground">{m.sidebar_status_title ? m.sidebar_status_title() : "System Status"}</p>
+						</div>
+						<div class="p-3 flex flex-col gap-2.5">
+							<!-- Academic Phase -->
+							<div class="flex items-center justify-between text-xs">
+								<span class="text-muted-foreground">{m.sidebar_status_phase ? m.sidebar_status_phase() : "Phase"}</span>
+								{#if phaseLabel}
+									<Badge variant="secondary" class="text-[10px] h-4 px-1.5">{phaseLabel}</Badge>
+								{:else}
+									<span class="text-muted-foreground">—</span>
+								{/if}
+							</div>
+							<!-- Year Status -->
+							<div class="flex items-center justify-between text-xs">
+								<span class="text-muted-foreground">{m.sidebar_status_year ? m.sidebar_status_year() : "Year"}</span>
+								<span class="font-medium text-foreground">{academicContext.yearLabel || "—"}</span>
+							</div>
+							<!-- Pending Approvals -->
+							<div class="flex items-center justify-between text-xs">
+								<span class="text-muted-foreground">{m.approvals_tab_pending ? m.approvals_tab_pending() : "Pending"}</span>
+								{#if workflowInbox.hasActions}
+									<Badge variant="destructive" class="text-[10px] h-4 px-1.5">{workflowInbox.totalCount}</Badge>
+								{:else}
+									<span class="text-primary text-[10px] font-medium">✓</span>
+								{/if}
+							</div>
+							<!-- Read-Only Mode -->
+							{#if academicContext.isReadOnly}
+								<div class="flex items-center gap-1.5 text-[10px] text-muted-foreground bg-muted/50 rounded px-2 py-1">
+									<span>🔒</span>
+									<span>{m.year_archived_banner ? m.year_archived_banner() : "Read-only mode"}</span>
+								</div>
+							{/if}
+						</div>
+					</PopoverContent>
+				</Popover>
 
-				<Tooltip>
-					<TooltipTrigger>
+				<!-- Quick Actions Dropdown -->
+				<DropdownMenu>
+					<DropdownMenuTrigger>
 						{#snippet child({ props })}
 							<Button 
 								{...props}
@@ -234,13 +334,35 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 								class="relative cursor-pointer rounded-[10px]"
 							>
 								<MoreHorizontal size={16} strokeWidth={1.8} class="text-foreground" />
+								{#if quickActions.length > 0}
+									<span class="absolute -top-0.5 -end-0.5 size-3.5 bg-primary text-primary-foreground text-[8px] rounded-full flex items-center justify-center font-bold border border-background">
+										{quickActions.length}
+									</span>
+								{/if}
 							</Button>
 						{/snippet}
-					</TooltipTrigger>
-					<TooltipContent side="right" sideOffset={12}>
-						{m.nav_more_tooltip()}
-					</TooltipContent>
-				</Tooltip>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent side="right" sideOffset={12} class="w-52">
+						<div class="px-2.5 py-1.5 text-[10px] font-semibold text-muted-foreground border-b border-border/40 mb-1">
+							{m.sidebar_quick_actions ? m.sidebar_quick_actions() : "Quick Actions"}
+						</div>
+						{#if quickActions.length > 0}
+							{#each quickActions as action (action.href)}
+								{@const Icon = action.icon}
+								<DropdownMenuItem class="text-xs cursor-pointer">
+									<a href={localizeHref(action.href)} class="flex items-center gap-2 w-full">
+										<Icon class="size-3.5 shrink-0" />
+										<span>{action.label}</span>
+									</a>
+								</DropdownMenuItem>
+							{/each}
+						{:else}
+							<div class="px-2.5 py-3 text-xs text-muted-foreground text-center">
+								{m.sidebar_no_actions ? m.sidebar_no_actions() : "No actions available"}
+							</div>
+						{/if}
+					</DropdownMenuContent>
+				</DropdownMenu>
 			</div>
 
 			<UserSidebarMenu {orgId} />

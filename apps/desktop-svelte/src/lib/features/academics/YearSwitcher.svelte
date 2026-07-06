@@ -4,7 +4,7 @@ Compact year selector dropdown for the sidebar/header.
 Shows the current year and allows switching between available years.
 -->
 <script lang="ts">
-import { academicYearStore } from "$lib/stores/academic-year.svelte";
+import { academicContext } from "$lib/stores";
 import * as m from "$lib/paraglide/messages";
 import {
   Select,
@@ -18,7 +18,7 @@ import { CalendarDays, Archive, Loader2 } from "lucide-svelte";
 
 let { orgId }: { orgId: string } = $props();
 
-const store = academicYearStore;
+const store = academicContext;
 
 $effect(() => {
   if (orgId) {

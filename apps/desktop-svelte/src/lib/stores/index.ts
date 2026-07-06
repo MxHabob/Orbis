@@ -3,16 +3,11 @@ export { authStore } from "./auth.svelte";
 export { themeStore } from "./theme.svelte";
 export { uiStore } from "./ui.svelte";
 
-// ── Academic Context (unified store — replaces separate year + academic stores)
-export { academicContext, academicYearStore } from "./academic-context.svelte";
+// ── Academic Context (unified store — single source of truth)
+export { academicContext } from "./academic-context.svelte";
 
 // ── Workflow Inbox (pending action counts for Title Bar badge)
 export { workflowInbox } from "./workflow-inbox.svelte";
-
-// ── Backward Compatibility: re-export old academicStore from new context ──
-// The old `academicStore` had selectedCycleId/selectedClassId/selectedSubjectId
-// which are now part of `academicContext`. Re-export for gradual migration.
-export { academicStore } from "$lib/features/academics/store.svelte";
 
 // ── Feature Stores (lazy-loaded — only when their page is visited) ──
 // Import these directly in the page/component that needs them:

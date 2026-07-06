@@ -18,6 +18,7 @@ import {
 } from "lucide-svelte";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
+import ArchivedBanner from "$lib/features/academics/ArchivedBanner.svelte";
 import type { Snippet } from "svelte";
 import * as m from "$lib/paraglide/messages";
 
@@ -105,9 +106,13 @@ const navItems = $derived([
     {/snippet}
 
     {#snippet middle()}
-      <div class="h-full w-full overflow-hidden">
-        {@render children()}
+      <div class="h-full w-full flex flex-col overflow-hidden">
+        <ArchivedBanner />
+        <div class="flex-1 overflow-hidden">
+          {@render children()}
+        </div>
       </div>
     {/snippet}
   </MainViewport>
 </div>
+

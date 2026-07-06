@@ -16,9 +16,6 @@ import {
   Copy,
   X,
   GraduationCap,
-  Wifi,
-  WifiOff,
-  ChevronDown,
   Sun,
   Moon,
   Search,
@@ -26,16 +23,9 @@ import {
 } from "lucide-svelte";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
-import { toast } from "svelte-sonner";
-import { page } from "$app/state";
 import WhatsNewPopover from "./whats-new-popover.svelte";
 import TitleBreadcrumbs from "./title-breadcrumbs.svelte";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@orbis/ui-svelte/dropdown-menu";
+
 
 // Window states
 let appWindow = $state<any>(null);
@@ -138,16 +128,9 @@ onMount(() => {
 
 // No $effect for loading cycles — academicContext is populated by bootstrap.
 // Cycles are reactive via $derived above.
-
-function selectCycle(cycleId: string) {
-  academicContext.selectedCycleId = cycleId;
-  const active = cycles.find((c) => String(c.id) === cycleId);
-  if (active) {
-    const name =
-      active.name_ar && getLocale() === "ar" ? active.name_ar : active.name;
-    toast.success(m.titlebar_cycle_selected({ name }));
-  }
-}
+// No selectCycle function — the title bar is now a read-only display.
+// Cycle switching is done via the sidebar YearSwitcher for year-level,
+// and inside academic pages (e.g. Control) for cycle-level.
 </script>
 
 <div 
@@ -166,36 +149,17 @@ function selectCycle(cycleId: string) {
       </div>
     {/if}
 
-    <!-- Cycle Switcher (only shown when authenticated) -->
+    <!-- Academic Context Indicator (auto-resolved — read-only display) -->
     {#if authStore.isAuthenticated && cycles.length > 0}
       <div class="relative flex items-center z-50 shrink-0 gap-1.5">
-        <!-- Cycle Switcher -->
-        <DropdownMenu>
-          <DropdownMenuTrigger class="flex items-center gap-1 {academicContext.isReadOnly ? 'bg-muted/60' : 'bg-muted/40'} hover:bg-muted/70 text-[11px] font-semibold text-foreground px-2.5 py-1 rounded-lg border border-border/60 transition-colors duration-150 cursor-pointer">
-            <GraduationCap size={13} class="text-primary" />
-            <span>{currentCycleName}</span>
-            {#if academicContext.isReadOnly}
-              <span class="text-[10px] opacity-60">🔒</span>
-            {/if}
-            <ChevronDown size={10} class="opacity-60" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" class="w-56 bg-popover border border-border rounded-lg shadow-lg py-1 z-50">
-            <div class="px-2.5 py-1.5 text-[10px] font-semibold text-muted-foreground border-b border-border/40 mb-1">
-              {m.titlebar_cycle_select()}
-            </div>
-            {#each cycles as cycle}
-              <DropdownMenuItem 
-                onclick={() => selectCycle(String(cycle.id))}
-                class="flex items-center justify-between text-xs px-2.5 py-1.5 cursor-pointer rounded-md hover:bg-accent hover:text-accent-foreground"
-              >
-                <span>{cycle.name_ar && getLocale() === "ar" ? cycle.name_ar : cycle.name}</span>
-                {#if academicContext.effectiveCycleId === String(cycle.id)}
-                  <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
-                {/if}
-              </DropdownMenuItem>
-            {/each}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <!-- Cycle context pill — informational, not a selector -->
+        <div class="flex items-center gap-1 bg-muted/40 text-[11px] font-semibold text-foreground px-2.5 py-1 rounded-lg border border-border/60">
+          <GraduationCap size={13} class="text-primary" />
+          <span>{currentCycleName}</span>
+          {#if academicContext.isReadOnly}
+            <span class="text-[10px] opacity-60">🔒</span>
+          {/if}
+        </div>
 
         <!-- Phase Badge -->
         {#if phaseLabel}
