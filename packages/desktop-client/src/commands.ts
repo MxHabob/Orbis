@@ -68,6 +68,9 @@ export const commands = {
     getOrganization: (orgId: string) =>
       invoke<JsonRecord>("get_organization", { orgId }),
 
+    getMainOrganization: () =>
+      invoke<JsonRecord | null>("get_main_organization"),
+
     updateOrganization: (orgId: string, request: JsonRecord) =>
       invoke<JsonRecord>("update_organization", { orgId, request }),
 

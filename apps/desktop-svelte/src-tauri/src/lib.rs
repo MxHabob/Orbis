@@ -190,6 +190,7 @@ pub fn run() {
             // Users & organization commands
             commands::users::get_organization,
             commands::users::update_organization,
+            commands::users::get_main_organization,
             commands::users::get_users,
             commands::users::get_user,
             commands::users::create_user,

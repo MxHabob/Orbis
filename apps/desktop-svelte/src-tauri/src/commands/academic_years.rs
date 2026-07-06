@@ -13,7 +13,6 @@ use super::error::{CmdResult, CommandError};
 /// Response type for academic year list.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AcademicYearInfo {
-    #[serde(flatten)]
     pub year: academic_year::Model,
     pub is_active_in_app: bool,
 }

@@ -39,6 +39,19 @@ pub async fn update_organization(
         .map_err(CommandError::from)
 }
 
+#[tauri::command]
+pub async fn get_main_organization(
+    state: State<'_, Arc<AppState>>,
+) -> CmdResult<Option<organization::Model>> {
+    use sea_orm::EntityTrait;
+    let svc = state.service().await;
+    let org = organization::Entity::find()
+        .one(&svc.repo.db)
+        .await
+        .map_err(|e| CommandError::from(e.to_string()))?;
+    Ok(org)
+}
+
 // ── Users ──────────────────────────────────────────────────────────────────
 
 #[tauri::command]

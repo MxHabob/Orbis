@@ -11,7 +11,7 @@ import { commands } from "$lib/core/ipc";
 import * as m from "$lib/paraglide/messages";
 
 let {
-  selectedBranch = $bindable("org-sanaa-model"),
+  selectedBranch = $bindable(""),
   selectedYear = $bindable(""),
 } = $props<{
   selectedBranch?: string;
@@ -21,9 +21,19 @@ let {
 let academicYears = $state<{ value: string; label: string }[]>([]);
 
 async function loadYears() {
-  const orgId = selectedBranch || "org-sanaa-model";
+  let orgId = selectedBranch;
   try {
-    const years = await commands.academicYears.list(orgId);
+    const org = await commands.users.getMainOrganization();
+    if (org && org.id) {
+      orgId = org.id;
+      selectedBranch = org.id;
+    }
+  } catch (err) {
+    console.warn("Failed to fetch main organization:", err);
+  }
+
+  try {
+    const years = await commands.academicYears.list(orgId || "org-sanaa-model");
     academicYears = years.map((y) => ({
       value: y.year.id,
       label: y.year.name_ar || y.year.name,
