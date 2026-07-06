@@ -27,3 +27,14 @@ export function createUpdateOrganizationMutation() {
     },
   });
 }
+
+/** Get all users for an organization. */
+export function createUsersQuery(orgId: string) {
+  return createQuery({
+    queryKey: ["users", orgId],
+    queryFn: () => commands.users.getUsers(orgId),
+    enabled: !!orgId,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+

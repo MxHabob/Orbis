@@ -28,8 +28,43 @@ import ChatHistoryPopover from "./chat-history-popover.svelte";
 import ChatInput from "./chat-input.svelte";
 import { page } from "$app/state";
 import { goto } from "$app/navigation";
+import { createQuery } from "@tanstack/svelte-query";
+import { commands } from "$lib/core/ipc";
 
 let { isStandalone = false }: { isStandalone?: boolean } = $props();
+
+const currentOrgId = $derived(page.params.orgId || authStore.orgId || "");
+
+// TanStack query caching for autocomplete using reactive config closures
+const enrollmentsQuery = createQuery(() => ({
+  queryKey: ["enrollments", currentOrgId],
+  queryFn: () => commands.enrollments.getAll(currentOrgId),
+  enabled: !!currentOrgId,
+  staleTime: 2 * 60 * 1000,
+}));
+
+const usersQuery = createQuery(() => ({
+  queryKey: ["users", currentOrgId],
+  queryFn: () => commands.users.getUsers(currentOrgId),
+  enabled: !!currentOrgId,
+  staleTime: 5 * 60 * 1000,
+}));
+
+const students = $derived($enrollmentsQuery.data || []);
+const users = $derived($usersQuery.data || []);
+
+const slashPages = [
+  { label: "الطلاب", path: "/students", cleanLabel: "الطلاب" },
+  { label: "الصفوف الدراسية", path: "/academics/classes", cleanLabel: "الصفوف الدراسية" },
+  { label: "المواد الدراسية", path: "/settings/subjects", cleanLabel: "المواد الدراسية" },
+  { label: "الرسوم الدراسية", path: "/finance/fees", cleanLabel: "الرسوم الدراسية" },
+  { label: "المدفوعات والمقبوضات", path: "/finance/payments", cleanLabel: "المدفوعات والمقبوضات" },
+  { label: "الحسابات والصناديق", path: "/finance/treasuries", cleanLabel: "الحسابات والصناديق" },
+  { label: "التقارير", path: "/reports", cleanLabel: "التقارير" },
+  { label: "القوالب", path: "/templates", cleanLabel: "القوالب" },
+  { label: "الإعدادات العامة", path: "/settings", cleanLabel: "الإعدادات العامة" },
+  { label: "الجدول الدراسي", path: "/academics/schedule", cleanLabel: "الجدول الدراسي" }
+];
 
 function pxToRem(px: number): number {
   if (typeof document === "undefined") return px / 16;
@@ -162,7 +197,83 @@ function handleSelectHistoryItem(messagesToLoad: Message[]) {
   messages = [...messagesToLoad];
   scrollToBottom();
 }
+
+function parseMarkdownLinks(text: string) {
+  const regex = /\[([^\]]+)\]/g;
+  const parts: Array<{ type: "text" | "link"; content?: string; label?: string; href?: string }> = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push({ type: "text", content: text.substring(lastIndex, match.index) });
+    }
+
+    const fullLabel = match[1];
+    let isMention = false;
+    let label = fullLabel;
+
+    if (fullLabel.startsWith("@")) {
+      isMention = true;
+      label = fullLabel.substring(1);
+    }
+
+    let resolvedHref = "";
+
+    if (isMention) {
+      // Look up student by name
+      const studentMatch = students.find((s: any) =>
+        (s.full_name || s.name_ar || s.name_en || "").toLowerCase() === label.toLowerCase()
+      );
+      if (studentMatch) {
+        resolvedHref = `/${currentOrgId}/students/${studentMatch.id}/grades`;
+      } else {
+        // Look up user by name
+        const userMatch = users.find((u: any) =>
+          (u.full_name || u.name_ar || u.name_en || "").toLowerCase() === label.toLowerCase()
+        );
+        if (userMatch) {
+          resolvedHref = `/${currentOrgId}/settings/users/${userMatch.id}/profile`;
+        }
+      }
+    } else {
+      // Look up slash pages by label
+      const matchedPage = slashPages.find(p =>
+        p.cleanLabel.toLowerCase() === label.toLowerCase() ||
+        p.label.toLowerCase() === label.toLowerCase()
+      );
+      if (matchedPage) {
+        resolvedHref = `/${currentOrgId}${matchedPage.path}`;
+      }
+    }
+
+    if (resolvedHref) {
+      parts.push({
+        type: "link",
+        label: fullLabel, // Keep the @ if it was a mention, or clean label
+        href: resolvedHref,
+      });
+    } else {
+      // Not resolved to a route, treat as normal text but keep brackets
+      parts.push({ type: "text", content: match[0] });
+    }
+
+    lastIndex = regex.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push({ type: "text", content: text.substring(lastIndex) });
+  }
+
+  return parts.length > 0 ? parts : [{ type: "text", content: text }];
+}
+
+function handleLinkClick(e: MouseEvent, href: string) {
+  e.preventDefault();
+  goto(href);
+}
 </script>
+
 
 <div
   bind:this={sidebarDiv}
@@ -290,32 +401,62 @@ function handleSelectHistoryItem(messagesToLoad: Message[]) {
             <!-- User message bubble on the right -->
             <div class="flex justify-end w-full">
               <div class="max-w-[85%] bg-muted text-foreground px-4 py-2.5 rounded-2xl text-[12.5px] leading-relaxed break-words font-medium shadow-sm">
-                {msg.content}
+                {#each parseMarkdownLinks(msg.content) as part}
+                  {#if part.type === 'link'}
+                    <a
+                      href={part.href}
+                      onclick={(e) => handleLinkClick(e, part.href!)}
+                      class="border border-transparent border-b-dotted border-b-foreground/60 rounded px-1.5 py-0.5 bg-transparent hover:bg-card hover:border-border/60 hover:border-solid text-foreground transition-all duration-150 inline mx-0.5 cursor-pointer select-none font-semibold align-baseline"
+                    >
+                      {part.label}
+                    </a>
+                  {:else}
+                    {part.content}
+                  {/if}
+                {/each}
               </div>
             </div>
           {:else}
             <!-- Agent response on the left -->
             <div class="flex flex-col gap-3 w-full text-start text-[13px] text-foreground/90 leading-relaxed font-normal">
-              <p>
-                {#if orgName}
-                  {m.agent_response_greeting_with_org({
-                    user: userName,
-                    org: orgName,
-                  })}
-                {:else}
-                  {m.agent_response_greeting_without_org({
-                    user: userName,
-                  })}
-                {/if}
-              </p>
-              <p class="mt-1">
-                {m.agent_response_question()}
-              </p>
-              <ul class="list-disc ps-5 flex flex-col gap-2 mt-1">
-                <li>{m.agent_response_bullet_1()}</li>
-                <li>{m.agent_response_bullet_2()}</li>
-                <li>{m.agent_response_bullet_3()}</li>
-              </ul>
+              {#if msg.content}
+                <div class="break-words">
+                  {#each parseMarkdownLinks(msg.content) as part}
+                    {#if part.type === 'link'}
+                      <a
+                        href={part.href}
+                        onclick={(e) => handleLinkClick(e, part.href!)}
+                        class="border border-transparent border-b-dotted border-b-foreground/60 rounded px-1.5 py-0.5 bg-transparent hover:bg-card hover:border-border/60 hover:border-solid text-foreground transition-all duration-150 inline mx-0.5 cursor-pointer select-none font-semibold align-baseline"
+                      >
+                        {part.label}
+                      </a>
+                    {:else}
+                      {part.content}
+                    {/if}
+                  {/each}
+                </div>
+              {:else}
+                <p>
+                  {#if orgName}
+                    {m.agent_response_greeting_with_org({
+                      user: userName,
+                      org: orgName,
+                    })}
+                  {:else}
+                    {m.agent_response_greeting_without_org({
+                      user: userName,
+                    })}
+                  {/if}
+                </p>
+                <p class="mt-1">
+                  {m.agent_response_question()}
+                </p>
+                <ul class="list-disc ps-5 flex flex-col gap-2 mt-1">
+                  <li>{m.agent_response_bullet_1()}</li>
+                  <li>{m.agent_response_bullet_2()}</li>
+                  <li>{m.agent_response_bullet_3()}</li>
+                </ul>
+              {/if}
             </div>
           {/if}
         {/each}
