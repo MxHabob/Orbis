@@ -277,10 +277,13 @@ async function handleMoveLesson(
       return;
     }
 
-    await commands.schedule.updateLessonTime(
+    await commands.schedule.updateLesson(
+      data.orgId,
       lesson.id,
-      targetDay,
-      targetSlotId,
+      {
+        day_of_week: targetDay,
+        time_slot_id: targetSlotId,
+      }
     );
     toast.success(
       getLocale() === "ar" ? "تم نقل الحصة بنجاح" : "Lesson moved successfully",
