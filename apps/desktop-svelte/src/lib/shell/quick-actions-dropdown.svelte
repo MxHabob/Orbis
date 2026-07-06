@@ -65,12 +65,8 @@ const iconClass = "text-muted-foreground shrink-0";
       </Tooltip>
     {/snippet}
   </DropdownMenuTrigger>
-  
-  <DropdownMenuContent 
-    side="right" 
-    sideOffset={12} 
-    class="w-56 text-start"
-  >
+    <DropdownMenuPortal>
+    <DropdownMenuContent align="end" side="right" sideOffset={12} class="w-64 p-1 z-50 bg-popover border border-border shadow-md rounded-md select-none overflow-visible">
     <!-- Resources Submenu -->
     <DropdownMenuSub>
       <DropdownMenuSubTrigger class={subTriggerClass}>
@@ -167,4 +163,5 @@ const iconClass = "text-muted-foreground shrink-0";
       <span>{m.sidebar_help_tour?.() ?? "Tour the new navigation"}</span>
     </DropdownMenuItem>
   </DropdownMenuContent>
+  </DropdownMenuPortal>
 </DropdownMenu>

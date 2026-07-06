@@ -86,8 +86,12 @@ const nextCycle = $derived.by(() => {
 			</Tooltip>
 		{/snippet}
 	</PopoverTrigger>
-	<PopoverContent side="right" sideOffset={12} class="w-80 p-0 overflow-hidden bg-card border-border shadow-xl rounded-xl">
-		<!-- Header -->
+	  <PopoverContent
+    side="right"
+    align="end"
+    sideOffset={12}
+    class="w-[360px] rounded-xl p-0 overflow-hidden z-50 flex flex-col font-sans text-start onboarding-popover-panel relative text-card-foreground"
+  >
 		<div class="px-4 py-3 border-b border-border bg-muted/30">
 			<p class="text-xs font-semibold text-foreground">{m.sidebar_status_title ? m.sidebar_status_title() : "System Status"}</p>
 		</div>

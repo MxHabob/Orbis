@@ -28,7 +28,7 @@ import OrgSidebarSwitcher from "./org-sidebar-switcher.svelte";
 import UserSidebarMenu from "./user-sidebar-menu.svelte";
 import OnboardingPopover from "./onboarding-popover.svelte";
 import UpgradeButton from "./upgrade-button.svelte";
-import GitIntegrationPopover from "./git-integration-popover.svelte";
+import GitIntegrationPopover from "./mulverse-integration-popover.svelte";
 import SystemStatusPopover from "./system-status-popover.svelte";
 import QuickActionsDropdown from "./quick-actions-dropdown.svelte";
 import * as m from "$lib/paraglide/messages";
