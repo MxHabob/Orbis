@@ -16,3 +16,14 @@ export function createPromotionPolicyQuery(orgId: string) {
     staleTime: 30 * 60 * 1000, // 30 minutes — policies rarely change
   });
 }
+
+/** Organization academic policy (automation level, enrollment/grade policies, etc.). */
+export function createOrgAcademicPolicyQuery(orgId: string) {
+  return createQuery({
+    queryKey: ["org-academic-policy", orgId],
+    queryFn: () => commands.calendar.getPolicy(orgId),
+    enabled: !!orgId,
+    staleTime: 30 * 60 * 1000, // 30 minutes
+  });
+}
+

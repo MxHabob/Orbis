@@ -2445,6 +2445,27 @@
   "sidebar_status_phase": "المرحلة",
   "sidebar_status_year": "السنة",
   "sidebar_quick_actions": "إجراءات سريعة",
-  "sidebar_no_actions": "لا توجد إجراءات متاحة"
+  "sidebar_no_actions": "لا توجد إجراءات متاحة",
+
+  "settings_academic_policy_title": "السياسات الأكاديمية والأتمتة",
+  "settings_academic_policy_desc": "تهيئة القواعد العامة للمؤسسة التعليمية الخاصة بأتمتة التقويم، والقبول، ورصد الدرجات.",
+  "settings_nav_academic_policy": "السياسات الأكاديمية",
+  "settings_policy_load_error": "فشل تحميل السياسات الأكاديمية",
+  "policy_card_automation": "التقويم والأتمتة",
+  "policy_card_automation_desc": "تحديد كيفية تأثير أحداث التقويم الأكاديمي على تغيير مراحل رصد وتسجيل النظام.",
+  "policy_field_exec_mode": "الوضع الافتراضي لتنفيذ الأحداث",
+  "policy_card_enrollment": "قواعد التسجيل والقبول",
+  "policy_card_enrollment_desc": "وضع الضوابط والسياسات الخاصة بتسجيل الطلاب الجدد.",
+  "policy_field_allow_late": "السماح بالتسجيل المتأخر",
+  "policy_field_late_approval": "التسجيل المتأخر يتطلب موافقة الإدارة",
+  "policy_field_auto_close_capacity": "الإغلاق التلقائي للشعب عند اكتمال السعة",
+  "policy_card_grading": "التقييم ورصد الدرجات",
+  "policy_card_grading_desc": "تحديد علامات النجاح وعتبات التقييم وضوابط تعديل العلامات.",
+  "policy_field_grading_system": "نظام التقييم الافتراضي",
+  "policy_field_passing_grade": "درجة النجاح",
+  "policy_field_max_grade": "الدرجة العظمى",
+  "policy_field_close_deadline": "الإغلاق التلقائي للإدخال عند انتهاء المهلة",
+  "policy_field_allow_mod_after_close": "السماح بتعديل الدرجات بعد إغلاق الدورة",
+  "policy_field_mod_approval": "تعديل الدرجات بعد الإغلاق يتطلب موافقة"
 }
 

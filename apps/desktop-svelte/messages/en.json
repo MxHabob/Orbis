@@ -2440,7 +2440,28 @@
   "sidebar_status_phase": "Phase",
   "sidebar_status_year": "Year",
   "sidebar_quick_actions": "Quick Actions",
-  "sidebar_no_actions": "No actions available"
+  "sidebar_no_actions": "No actions available",
+
+  "settings_academic_policy_title": "Academic Policy & Automation",
+  "settings_academic_policy_desc": "Configure organization-wide rules for calendar automation, enrollment, and grading.",
+  "settings_nav_academic_policy": "Academic Policy",
+  "settings_policy_load_error": "Failed to load academic policies",
+  "policy_card_automation": "Calendar & Automation",
+  "policy_card_automation_desc": "Define how calendar events trigger system phases.",
+  "policy_field_exec_mode": "Default Event Execution Mode",
+  "policy_card_enrollment": "Enrollment Rules",
+  "policy_card_enrollment_desc": "Establish controls for student registrations.",
+  "policy_field_allow_late": "Allow Late Enrollment",
+  "policy_field_late_approval": "Late Enrollment Requires Approval",
+  "policy_field_auto_close_capacity": "Auto Close on Capacity",
+  "policy_card_grading": "Assessment & Grading",
+  "policy_card_grading_desc": "Define passing thresholds and modification behaviors.",
+  "policy_field_grading_system": "Default Grading System",
+  "policy_field_passing_grade": "Passing Score",
+  "policy_field_max_grade": "Max Score",
+  "policy_field_close_deadline": "Auto Close on Deadline",
+  "policy_field_allow_mod_after_close": "Allow Modifications After Close",
+  "policy_field_mod_approval": "Modifications Require Approval"
 }
 
 

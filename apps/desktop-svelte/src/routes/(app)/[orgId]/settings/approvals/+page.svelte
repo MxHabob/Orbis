@@ -178,6 +178,7 @@ function parseApprovalChain(chainJson: string): Array<{ role: string; status: st
         {:else}
           <div class="flex flex-col gap-4 mt-4">
             {#each pendingItems as request (request.id)}
+              {@const chain = parseApprovalChain(request.approval_chain)}
               <Card>
                 <CardContent class="p-4">
                   <div class="flex flex-col gap-3">
@@ -222,7 +223,6 @@ function parseApprovalChain(chainJson: string): Array<{ role: string; status: st
                     </div>
 
                     <!-- Approval chain progress -->
-                    {@const chain = parseApprovalChain(request.approval_chain)}
                     {#if chain.length > 0}
                       <div class="flex items-center gap-2 text-[10px]">
                         {#each chain as step}

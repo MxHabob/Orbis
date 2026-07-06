@@ -23,6 +23,7 @@ import {
   Receipt,
   Percent,
   CheckSquare,
+  Sliders,
 } from "lucide-svelte";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
@@ -126,6 +127,13 @@ const navItems = $derived([
       ? m.settings_nav_discount_templates()
       : "الخصومات",
     icon: Percent,
+  },
+  {
+    path: "academic-policy",
+    label: m.settings_nav_academic_policy
+      ? m.settings_nav_academic_policy()
+      : "السياسات الأكاديمية",
+    icon: Sliders,
   },
   {
     path: "approvals",
