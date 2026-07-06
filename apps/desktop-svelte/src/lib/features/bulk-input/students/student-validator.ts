@@ -90,21 +90,27 @@ export function validateStudentRows(
       }
     }
 
-    // ── sex: optional, must be male/female ──
+    // ── sex: required, must be male/female ──
     const sex = str(row.sex).toLowerCase();
-    if (sex && !VALID_SEX.includes(sex)) {
+    if (!sex) {
+      errors.set("sex", "الجنس مطلوب");
+    } else if (!VALID_SEX.includes(sex)) {
       errors.set("sex", "الجنس يجب أن يكون male أو female");
     }
 
-    // ── date_of_birth: optional, YYYY-MM-DD ──
+    // ── date_of_birth: required, YYYY-MM-DD ──
     const dob = str(row.date_of_birth);
-    if (dob && !DATE_RE.test(dob)) {
+    if (!dob) {
+      errors.set("date_of_birth", "تاريخ الميلاد مطلوب");
+    } else if (!DATE_RE.test(dob)) {
       errors.set("date_of_birth", "التاريخ بصيغة YYYY-MM-DD");
     }
 
-    // ── class_id: validate against available classes ──
+    // ── class_id: required, validate against available classes ──
     const classInput = str(row.class_id);
-    if (classInput && availableClasses) {
+    if (!classInput) {
+      errors.set("class_id", "الفصل مطلوب");
+    } else if (availableClasses) {
       const match = availableClasses.find(
         (c) => c.name.trim().toLowerCase() === classInput.toLowerCase() || c.id === classInput
       );

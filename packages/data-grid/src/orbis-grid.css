@@ -458,8 +458,8 @@ revo-grid .orbis-editor-input {
   height: 100%;
   border: none;
   outline: none;
-  background: transparent;
-  color: inherit;
+  background: var(--card) !important;
+  color: var(--foreground) !important;
   font-family: inherit;
   font-size: 12px;
   font-variant-numeric: tabular-nums;
