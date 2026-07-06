@@ -27,7 +27,7 @@ import * as m from "$lib/paraglide/messages";
 						aria-label={m.sidebar_git_connect_title()}
 					>
 						<GitBranch size={16} strokeWidth={1.8} class="text-foreground" />
-						<span class="absolute -top-0.5 -end-0.5 w-1.5 h-1.5 rounded-full bg-indigo-500 border border-background"></span>
+						<span class="absolute -top-0.5 -inset-e-0.5 w-1.5 h-1.5 rounded-full bg-indigo-500 border border-background"></span>
 					</Button>
 				</TooltipTrigger>
 				<TooltipContent side="right" sideOffset={12}>

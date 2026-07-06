@@ -74,9 +74,9 @@ const nextCycle = $derived.by(() => {
 					>
 						<Activity size={16} strokeWidth={1.8} class="text-foreground" />
 						{#if workflowInbox.hasActions}
-							<span class="absolute -top-0.5 -end-0.5 w-1.5 h-1.5 rounded-full bg-destructive border border-background animate-pulse"></span>
+							<span class="absolute -top-0.5 -inset-e-0.5 w-1.5 h-1.5 rounded-full bg-destructive border border-background animate-pulse"></span>
 						{:else}
-							<span class="absolute -top-0.5 -end-0.5 w-1.5 h-1.5 rounded-full bg-primary border border-background"></span>
+							<span class="absolute -top-0.5 -inset-e-0.5 w-1.5 h-1.5 rounded-full bg-primary border border-background"></span>
 						{/if}
 					</Button>
 				</TooltipTrigger>
