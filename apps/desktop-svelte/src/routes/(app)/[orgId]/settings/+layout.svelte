@@ -70,14 +70,12 @@ const navItems = $derived([
   },
   {
     path: "rooms",
-    label: m.settings_nav_rooms ? m.settings_nav_rooms() : "الغرف والقاعات",
+    label: m.settings_nav_rooms(),
     icon: MapPin,
   },
   {
     path: "subjects",
-    label: m.settings_nav_subjects
-      ? m.settings_nav_subjects()
-      : "المواد الدراسية",
+    label: m.settings_nav_subjects(),
     icon: BookOpen,
   },
   {
@@ -92,49 +90,38 @@ const navItems = $derived([
   },
   {
     path: "currencies",
-    label: m.settings_nav_currencies
-      ? m.settings_nav_currencies()
-      : "العملات وأسعار الصرف",
+    label: m.settings_nav_currencies(),
     icon: Coins,
   },
   {
     path: "ordering",
-    label: m.settings_nav_ordering ? m.settings_nav_ordering() : "ترتيب الطلاب",
+    label: m.settings_nav_ordering(),
     icon: ListOrdered,
   },
   {
     path: "registration",
-    label:
-      getLocale() === "ar" ? "قواعد وإعدادات التسجيل" : "Registration Settings",
+    label: m.settings_nav_registration(),
     icon: FileText,
   },
 
   {
     path: "fee-templates",
-    label: m.settings_nav_fee_templates
-      ? m.settings_nav_fee_templates()
-      : "الرسوم",
+    label: m.settings_nav_fee_templates(),
     icon: Receipt,
   },
   {
     path: "discount-templates",
-    label: m.settings_nav_discount_templates
-      ? m.settings_nav_discount_templates()
-      : "الخصومات",
+    label: m.settings_nav_discount_templates(),
     icon: Percent,
   },
   {
     path: "academic-policy",
-    label: m.settings_nav_academic_policy
-      ? m.settings_nav_academic_policy()
-      : "السياسات الأكاديمية",
+    label: m.settings_nav_academic_policy(),
     icon: Sliders,
   },
   {
     path: "approvals",
-    label: m.settings_nav_approvals
-      ? m.settings_nav_approvals()
-      : "الموافقات",
+    label: m.settings_nav_approvals(),
     icon: CheckSquare,
   },
 ]);
