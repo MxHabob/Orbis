@@ -4,9 +4,9 @@ Displays a prominent banner when viewing an archived (read-only) year.
 Place at the top of the main content area.
 -->
 <script lang="ts">
-import { academicContext } from "$lib/stores";
-import * as m from "$lib/paraglide/messages";
 import { Lock } from "lucide-svelte";
+import * as m from "$lib/paraglide/messages";
+import { academicContext } from "$lib/stores";
 </script>
 
 {#if academicContext.isReadOnly}
