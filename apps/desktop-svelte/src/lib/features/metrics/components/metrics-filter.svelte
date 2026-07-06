@@ -88,7 +88,7 @@ const className = $derived(() => {
 <div class="flex items-center gap-2">
 	<DropdownMenu>
 		<DropdownMenuTrigger>
-			{#snippet child({ props })}
+			{#snippet child({ props }: { props: any })}
 				<Button {...props} variant="outline" class="gap-2 px-2.5 h-8 text-xs font-medium bg-background border-border hover:bg-muted/40 cursor-pointer">
 					<Filter size={13} class="text-[#666]" />
 					<span>{m.metrics_filters()}</span>

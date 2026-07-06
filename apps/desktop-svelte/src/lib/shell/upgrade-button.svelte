@@ -12,7 +12,7 @@ import * as m from "$lib/paraglide/messages";
 
 <Tooltip>
 	<TooltipTrigger>
-		{#snippet child({ props })}
+		{#snippet child({ props }: { props: any })}
 					<Button 
 						{...props}
 						variant="outline" 

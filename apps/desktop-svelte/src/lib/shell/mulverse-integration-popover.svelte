@@ -16,7 +16,7 @@ import * as m from "$lib/paraglide/messages";
 
 <Popover>
 	<PopoverTrigger>
-		{#snippet child({ props })}
+		{#snippet child({ props }: { props: any })}
 			<Tooltip>
 				<TooltipTrigger>
 					<Button 

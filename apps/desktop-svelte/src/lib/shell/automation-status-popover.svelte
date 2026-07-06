@@ -62,7 +62,7 @@ const nextCycle = $derived.by(() => {
 
 <Popover>
 	<PopoverTrigger>
-		{#snippet child({ props })}
+		{#snippet child({ props }: { props: any })}
 			<Tooltip>
 				<TooltipTrigger>
 					<Button 
@@ -81,7 +81,7 @@ const nextCycle = $derived.by(() => {
 					</Button>
 				</TooltipTrigger>
 				<TooltipContent side="right" sideOffset={12}>
-					{m.sidebar_status_title ? m.sidebar_status_title() : "System Status"}
+					{m.sidebar_automation_title ? m.sidebar_automation_title() : "Automation"}
 				</TooltipContent>
 			</Tooltip>
 		{/snippet}
@@ -107,7 +107,7 @@ const nextCycle = $derived.by(() => {
 				<!-- Active Cycle -->
 				<div class="relative text-start">
 					{#if academicContext.activeCycle}
-						<span class="absolute -start-[21px] top-1 size-2 rounded-full bg-primary border border-background animate-pulse"></span>
+						<span class="absolute inset-s-[-21px] top-1 size-2 rounded-full bg-primary border border-background animate-pulse"></span>
 						<div class="flex items-center justify-between gap-1.5">
 							<span class="font-bold text-foreground text-[11px] leading-tight">
 								{l(academicContext.activeCycle.name_ar, academicContext.activeCycle.name)}
@@ -125,7 +125,7 @@ const nextCycle = $derived.by(() => {
 							</p>
 						{/if}
 					{:else}
-						<span class="absolute -start-[21px] top-1 size-2 rounded-full bg-muted border border-background"></span>
+						<span class="absolute inset-s-[-21px] top-1 size-2 rounded-full bg-muted border border-background"></span>
 						<span class="font-bold text-muted-foreground text-[11px]">
 							{m.sidebar_status_no_active_cycle ? m.sidebar_status_no_active_cycle() : "No active cycle"}
 						</span>
@@ -135,7 +135,7 @@ const nextCycle = $derived.by(() => {
 				<!-- Next Cycle -->
 				<div class="relative text-start">
 					{#if nextCycle}
-						<span class="absolute -start-[21px] top-1 size-2 rounded-full bg-muted-foreground/60 border border-background"></span>
+						<span class="absolute inset-s-[-21px] top-1 size-2 rounded-full bg-muted-foreground/60 border border-background"></span>
 						<div class="flex items-center justify-between gap-1.5">
 							<span class="font-bold text-foreground text-[11px] leading-tight">
 								{l(nextCycle.name_ar, nextCycle.name)}
@@ -148,7 +148,7 @@ const nextCycle = $derived.by(() => {
 							{m.sidebar_status_starts_on ? m.sidebar_status_starts_on({ date: formatDate(nextCycle.start_date) }) : `Starts on ${formatDate(nextCycle.start_date)}`}
 						</p>
 					{:else}
-						<span class="absolute -start-[21px] top-1 size-2 rounded-full bg-muted border border-background"></span>
+						<span class="absolute inset-s-[-21px] top-1 size-2 rounded-full bg-muted border border-background"></span>
 						<span class="font-medium text-muted-foreground text-[11px]">
 							{m.sidebar_status_no_next_cycle ? m.sidebar_status_no_next_cycle() : "No upcoming cycle"}
 						</span>
@@ -180,11 +180,11 @@ const nextCycle = $derived.by(() => {
 							<div class="relative">
 								<!-- Dot status indicator -->
 								{#if event.executed_at}
-									<span class="absolute -start-[21px] top-1 size-2 rounded-full bg-primary border border-background"></span>
+									<span class="absolute inset-s-[-21px] top-1 size-2 rounded-full bg-primary border border-background"></span>
 								{:else if event.execution_mode === "automatic"}
-									<span class="absolute -start-[21px] top-1 size-2 rounded-full bg-blue-500 border border-background animate-pulse"></span>
+									<span class="absolute inset-s-[-21px] top-1 size-2 rounded-full bg-blue-500 border border-background animate-pulse"></span>
 								{:else}
-									<span class="absolute -start-[21px] top-1 size-2 rounded-full bg-yellow-500 border border-background"></span>
+									<span class="absolute inset-s-[-21px] top-1 size-2 rounded-full bg-yellow-500 border border-background"></span>
 								{/if}
 
 								<div class="flex items-center justify-between gap-1.5 text-[10px]">

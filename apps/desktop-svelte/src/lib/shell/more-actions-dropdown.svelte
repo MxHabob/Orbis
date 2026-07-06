@@ -38,7 +38,6 @@ function openUrl(url: string) {
   window.open(url, "_blank");
 }
 
-// ✅ كائن مركزي للـ classes المشتركة
 const menuItemClass = "flex items-center gap-2.5 px-2.5 py-2 text-xs cursor-pointer hover:bg-accent rounded-sm";
 const subTriggerClass = "flex items-center justify-between text-xs cursor-pointer px-2.5 py-2 hover:bg-accent rounded-sm";
 const iconClass = "text-muted-foreground shrink-0";
@@ -46,7 +45,7 @@ const iconClass = "text-muted-foreground shrink-0";
 
 <DropdownMenu>
   <DropdownMenuTrigger>
-    {#snippet child({ props })}
+    {#snippet child({ props }: { props: any })}
       <Tooltip>
         <TooltipTrigger>
           <Button 
@@ -54,13 +53,13 @@ const iconClass = "text-muted-foreground shrink-0";
             variant="outline" 
             size="icon-sm" 
             class="relative cursor-pointer rounded-[10px]"
-            aria-label={m.sidebar_quick_actions?.() ?? "More Options"}
+            aria-label={m.sidebar_more_actions?.() ?? "More Options"}
           >
             <MoreHorizontal size={16} strokeWidth={1.8} class="text-foreground" />
           </Button>
         </TooltipTrigger>
         <TooltipContent side="right" sideOffset={12}>
-          {m.sidebar_quick_actions?.() ?? "More Options"}
+          {m.sidebar_more_actions?.() ?? "More Options"}
         </TooltipContent>
       </Tooltip>
     {/snippet}

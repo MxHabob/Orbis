@@ -83,10 +83,10 @@ const tasksList = $derived([
 
 <Popover>
   <PopoverTrigger>
-    {#snippet child({ props: popoverProps })}
+    {#snippet child({ props: popoverProps }: { props: any })}
       <Tooltip>
         <TooltipTrigger>
-          {#snippet child({ props: tooltipProps })}
+          {#snippet child({ props: tooltipProps }: { props: any })}
             <span {...tooltipProps} class="inline-block">
               <Button
                 {...popoverProps}

@@ -2633,9 +2633,9 @@
   "calendar_field_mode_automatic": "تلقائي",
   "calendar_field_mode_suggested": "مقترح",
   "calendar_field_mode_manual": "يدوي",
-  "sidebar_quick_actions": "إجراءات سريعة",
+  "sidebar_more_actions": "المزيد من الإجراءات",
   "sidebar_no_actions": "لا توجد إجراءات متاحة",
-
+  "sidebar_automation_title": "الطيار الالي",
   "settings_academic_policy_title": "السياسات الأكاديمية والأتمتة",
   "settings_academic_policy_desc": "تهيئة القواعد العامة للمؤسسة التعليمية الخاصة بأتمتة التقويم، والقبول، ورصد الدرجات.",
   "settings_nav_academic_policy": "السياسات الأكاديمية",

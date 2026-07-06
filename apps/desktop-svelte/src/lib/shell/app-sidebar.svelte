@@ -21,7 +21,6 @@ import {
   BarChart3,
   Settings,
   FileText,
-  ClipboardList,
 } from "lucide-svelte";
 import { authStore } from "$lib/stores";
 import OrgSidebarSwitcher from "./org-sidebar-switcher.svelte";
@@ -29,8 +28,8 @@ import UserSidebarMenu from "./user-sidebar-menu.svelte";
 import OnboardingPopover from "./onboarding-popover.svelte";
 import UpgradeButton from "./upgrade-button.svelte";
 import GitIntegrationPopover from "./mulverse-integration-popover.svelte";
-import SystemStatusPopover from "./system-status-popover.svelte";
-import QuickActionsDropdown from "./quick-actions-dropdown.svelte";
+import AutomationStatusPopover from "./automation-status-popover.svelte";
+import MoreActionsDropdown from "./more-actions-dropdown.svelte";
 import * as m from "$lib/paraglide/messages";
 import { deLocalizeUrl, localizeHref } from "$lib/paraglide/runtime";
 import { onboardingState } from "$lib/features/onboarding/state.svelte";
@@ -130,13 +129,6 @@ const navItems = $derived([
   },
  ] as const);
 
-const userInitials = $derived(
-  (authStore.user?.full_name ?? "User").trim().charAt(0).toUpperCase() || "U",
-);
-
-const orgInitials = $derived(
-  orgNameDisplay.trim().charAt(0).toUpperCase() || "O",
-);
 
 function isActive(href: string, match: "exact" | "prefix"): boolean {
   const unlocalizedPathname = decodeURIComponent(deLocalizeUrl(page.url).pathname);
@@ -154,14 +146,7 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 			<div class="w-8 h-px bg-slate-200/80 dark:bg-zinc-700  self-center"></div>
 
 			{#each navItems as item (item.href)}
-				<div
-					class="flex"
-					onmouseenter={() => {
-						// Prefetch data for the destination page on hover
-						const segment = item.href.split('/').pop() || 'dashboard';
-						prefetchRouteData(segment, orgId);
-					}}
-				>
+				<div class="flex">
 					<Tooltip>
 						<TooltipTrigger>
 							<Button
@@ -170,6 +155,11 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 								class="rounded-[10px]"
 								aria-label={item.label}
 								aria-current={isActive(item.href, item.match) ? 'page' : undefined}
+								onmouseenter={() => {
+									// Prefetch data for the destination page on hover
+									const segment = item.href.split('/').pop() || 'dashboard';
+									prefetchRouteData(segment, orgId);
+								}}
 							>
 								<item.icon size={20} strokeWidth={1.8} />
 							</Button>
@@ -185,8 +175,8 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 				<OnboardingPopover />
 				<GitIntegrationPopover />
 				<UpgradeButton />
-				<SystemStatusPopover {orgId} />
-				<QuickActionsDropdown {orgId} />
+				<AutomationStatusPopover {orgId} />
+				<MoreActionsDropdown {orgId} />
 			</div>
 
 			<UserSidebarMenu {orgId} />
