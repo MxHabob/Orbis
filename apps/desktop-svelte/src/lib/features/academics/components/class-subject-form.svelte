@@ -34,14 +34,21 @@ let {
 const isEditMode = $derived(!!editData);
 
 // Form state
-let classId = $state(editData ? String(editData.class_id ?? "") : "");
-let subjectId = $state(editData ? String(editData.subject_id ?? "") : "");
-let teacherId = $state(editData ? String(editData.teacher_id ?? "") : "");
-let assistantTeacherId = $state(
-  editData ? String(editData.assistant_teacher_id ?? "") : "",
-);
-let weeklyHours = $state(editData ? Number(editData.weekly_hours ?? 4) : 4);
-let cycleId = $state(editData ? String(editData.cycle_id ?? "") : "");
+let classId = $state("");
+let subjectId = $state("");
+let teacherId = $state("");
+let assistantTeacherId = $state("");
+let weeklyHours = $state(4);
+let cycleId = $state("");
+
+$effect(() => {
+  classId = editData ? String(editData.class_id ?? "") : "";
+  subjectId = editData ? String(editData.subject_id ?? "") : "";
+  teacherId = editData ? String(editData.teacher_id ?? "") : "";
+  assistantTeacherId = editData ? String(editData.assistant_teacher_id ?? "") : "";
+  weeklyHours = editData ? Number(editData.weekly_hours ?? 4) : 4;
+  cycleId = editData ? String(editData.cycle_id ?? "") : "";
+});
 
 // Remote data
 let classes = $state<JsonRecord[]>([]);

@@ -40,45 +40,63 @@ let {
 const isEditMode = $derived(!!editData);
 
 // Form state
-let guardianUserId = $state(editData ? String(editData.guardian_id ?? "") : "");
+let guardianUserId = $state("");
 let fullName = $state("");
 let phone = $state("");
 let email = $state("");
 let nationalId = $state("");
-let relation = $state(
-  editData
+let relation = $state("father");
+let job = $state("");
+let isPrimary = $state(false);
+let isEmergencyContact = $state(false);
+let isPayer = $state(false);
+let paymentSharePercent = $state(0);
+
+$effect(() => {
+  guardianUserId = editData ? String(editData.guardian_id ?? "") : "";
+  relation = editData
     ? String(editData.relationship ?? editData.relation ?? "father")
-    : "father",
-);
-let job = $state(
-  editData
+    : "father";
+  job = editData
     ? String(
         (editData as JsonRecord).occupation ??
           (editData as JsonRecord).job ??
           "",
       )
-    : "",
-);
-let isPrimary = $state(
-  editData
+    : "";
+  isPrimary = editData
     ? Boolean(editData.is_primary === 1 || editData.is_primary === true)
-    : false,
-);
-let isEmergencyContact = $state(
-  editData
+    : false;
+  isEmergencyContact = editData
     ? Boolean(editData.is_emergency_contact === 1 || editData.is_emergency_contact === true)
-    : false,
-);
-let isPayer = $state(
-  editData
+    : false;
+  isPayer = editData
     ? Boolean(editData.is_payer === 1 || editData.is_payer === true)
-    : false,
-);
-let paymentSharePercent = $state(
-  editData
+    : false;
+  paymentSharePercent = editData
     ? Number(editData.payment_share_percent ?? 0)
-    : 0,
-);
+    : 0;
+
+  if (editData && editData.guardian_id) {
+    commands.users.getUser(String(editData.guardian_id))
+      .then((u) => {
+        if (u) {
+          fullName = String(u.full_name ?? u.name_ar ?? "");
+          phone = String(u.phone ?? u.phone_number ?? "");
+          email = String(u.email ?? "");
+          nationalId = String(u.national_id ?? "");
+        }
+      })
+      .catch((e) => {
+        console.error("Failed to load guardian details:", e);
+      });
+  } else {
+    fullName = "";
+    phone = "";
+    email = "";
+    nationalId = "";
+  }
+});
 
 let searchQuery = $state("");
 
@@ -147,20 +165,6 @@ onMount(async () => {
       if (nameParts.length > 0) {
         studentLastName = nameParts[nameParts.length - 1].toLowerCase();
       }
-    }
-
-    // Load guardian details if in edit mode
-    if (editData && editData.guardian_id) {
-      const u = await commands.users.getUser(String(editData.guardian_id));
-      if (u) {
-        fullName = String(u.full_name ?? u.name_ar ?? "");
-        phone = String(u.phone ?? u.phone_number ?? "");
-        email = String(u.email ?? "");
-        nationalId = String(u.national_id ?? "");
-      }
-      isPrimary = editData.is_primary === 1 || editData.is_primary === true;
-      isEmergencyContact = editData.is_emergency_contact === 1 || editData.is_emergency_contact === true;
-      paymentSharePercent = Number(editData.payment_share_percent ?? 0);
     }
   } catch (e) {
     console.error("Failed to load data for guardian linking:", e);
@@ -311,13 +315,6 @@ async function handleSubmit() {
         {#if !guardianUserId}
           <div class="rounded-lg border border-border/40 bg-card/50 overflow-hidden">
             {#if searchQuery.trim().length === 0}
-              <!-- Suggested/Recommended parents list (first 3 matching student last name) -->
-              <div class="p-2 border-b border-border/30 bg-muted/30 text-[10px] font-semibold text-muted-foreground flex items-center justify-between">
-                <span>{m.guardians_sheet_suggested_title()}</span>
-                {#if studentLastName}
-                  <Badge variant="outline" class="text-[9px] font-normal font-mono">{studentLastName}</Badge>
-                {/if}
-              </div>
               {#if filteredUsers.length === 0}
                 <div class="p-3 text-xs text-muted-foreground text-center">{m.guardians_sheet_no_results()}</div>
               {:else}
