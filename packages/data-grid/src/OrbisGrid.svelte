@@ -403,6 +403,7 @@ function handleGridDblClick(e: MouseEvent) {
       useClipboard={clipboard}
       autoSizeColumn={autoSize}
       {editors}
+      hideAttribution={true}
       on:afteredit={handleAfterEdit}
       on:beforeedit={handleBeforeEdit}
       on:beforepaste={handleBeforePaste}

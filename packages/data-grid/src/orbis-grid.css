@@ -483,3 +483,15 @@ revo-grid .orbis-editor-error {
   color: var(--destructive);
   background: color-mix(in oklch, var(--destructive), transparent 92%);
 }
+
+/* Hide RevoGrid attribution/watermark */
+revogr-attribution,
+.revogr-attribution,
+revo-grid::part(attribution) {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  height: 0 !important;
+  width: 0 !important;
+}
