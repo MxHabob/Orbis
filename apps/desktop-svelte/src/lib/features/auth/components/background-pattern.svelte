@@ -34,10 +34,10 @@
 			<path d="M-12 8 L-17 13 L-6 14 Z" fill="none" stroke="currentColor" stroke-width="1.5" />
 			<path d="M-17 13 L-19 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
 			<path d="M-7 -17 L18 8" stroke="currentColor" stroke-width="1.5" />
-			<line x1="-3 -13" x2="0 -16" stroke="currentColor" stroke-width="0.8" />
-			<line x1="2 -8" x2="5 -11" stroke="currentColor" stroke-width="0.8" />
-			<line x1="7 -3" x2="10 -6" stroke="currentColor" stroke-width="0.8" />
-			<line x1="12 2" x2="15 -1" stroke="currentColor" stroke-width="0.8" />
+			<line x1="-3" y1="-13" x2="0" y2="-16" stroke="currentColor" stroke-width="0.8" />
+			<line x1="2" y1="-8" x2="5" y2="-11" stroke="currentColor" stroke-width="0.8" />
+			<line x1="7" y1="-3" x2="10" y2="-6" stroke="currentColor" stroke-width="0.8" />
+			<line x1="12" y1="2" x2="15" y2="-1" stroke="currentColor" stroke-width="0.8" />
 		</g>
 		
 		<!-- Lightbulb (Centered at 0,0) -->
