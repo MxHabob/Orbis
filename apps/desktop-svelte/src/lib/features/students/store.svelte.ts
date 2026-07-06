@@ -3,6 +3,7 @@
 // No server data is stored directly in $state.
 
 import type { Enrollment } from "$lib/core/ipc";
+import { matchStudent } from "$lib/shared/utils/search";
 
 class StudentsStore {
   selectedId = $state<string | null>(null);
@@ -19,17 +20,7 @@ class StudentsStore {
     return list.filter((student) => {
       // 1. Search Query Match
       if (this.searchQuery) {
-        const query = this.searchQuery.toLowerCase().trim();
-        const fullName = String(student.full_name || "").toLowerCase();
-        const studentNumber = String(
-          student.student_number || "",
-        ).toLowerCase();
-        const email = String(student.email || "").toLowerCase();
-        if (
-          !fullName.includes(query) &&
-          !studentNumber.includes(query) &&
-          !email.includes(query)
-        ) {
+        if (!matchStudent(student, this.searchQuery)) {
           return false;
         }
       }

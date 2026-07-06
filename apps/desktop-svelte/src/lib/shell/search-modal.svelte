@@ -7,7 +7,7 @@ import { uiStore, authStore } from "$lib/stores";
 import { commands } from "$lib/core/ipc";
 import { queryClient } from "$lib/core/query/client";
 import * as m from "$lib/paraglide/messages";
-import { getLocale } from "$lib/paraglide/runtime";
+import { matchStudent } from "$lib/shared/utils/search";
 import {
   Search,
   Zap,
@@ -298,18 +298,7 @@ const filteredItems = $derived.by(() => {
   // 3. Add matching students
   if (query.length >= 1) {
     const matchedStudents = students
-      .filter(
-        (s) =>
-          String(s.full_name || "")
-            .toLowerCase()
-            .includes(query) ||
-          String(s.student_number || "")
-            .toLowerCase()
-            .includes(query) ||
-          String(s.email || "")
-            .toLowerCase()
-            .includes(query),
-      )
+      .filter((s) => matchStudent(s, query))
       .map((s) => ({
         id: `student-${s.id}`,
         title: s.full_name || s.name_ar || s.name_en || "Student",

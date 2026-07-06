@@ -27,6 +27,7 @@ import {
   Plus,
 } from "lucide-svelte";
 import { getLocale } from "$lib/paraglide/runtime";
+import { matchStudent } from "$lib/shared/utils/search";
 import { formatCurrency, formatDate } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
 import * as m from "$lib/paraglide/messages";
@@ -67,20 +68,8 @@ let isSubmitting = $state(false);
 // Filter students locally based on search query
 const filteredStudents = $derived.by(() => {
   if (!searchQuery.trim()) return [];
-  const q = searchQuery.toLowerCase().trim();
   return students
-    .filter(
-      (s) =>
-        String(s.full_name || "")
-          .toLowerCase()
-          .includes(q) ||
-        String(s.student_number || "")
-          .toLowerCase()
-          .includes(q) ||
-        String(s.id || "")
-          .toLowerCase()
-          .includes(q),
-    )
+    .filter((s) => matchStudent(s, searchQuery))
     .slice(0, 8); // Limit to 8 quick results
 });
 
