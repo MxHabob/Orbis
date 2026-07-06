@@ -15,6 +15,13 @@ import { Activity } from "lucide-svelte";
 import { academicContext, workflowInbox } from "$lib/stores";
 import * as m from "$lib/paraglide/messages";
 import { l, formatDate } from "$lib/core/i18n";
+import { createCalendarEventsQuery } from "$lib/features/academics";
+import { Skeleton } from "@orbis/ui-svelte/skeleton";
+
+let { orgId = "" }: { orgId?: string } = $props();
+const cycleId = $derived(academicContext.effectiveCycleId);
+const eventsQuery = createCalendarEventsQuery(orgId, cycleId);
+const events = $derived($eventsQuery.data ?? []);
 
 function getPhaseLabel(phase: string) {
   switch (phase) {
@@ -144,6 +151,64 @@ const nextCycle = $derived.by(() => {
 					{/if}
 				</div>
 			</div>
+		</div>
+
+		<!-- Automation Tasks -->
+		<div class="p-4 border-b border-border flex flex-col gap-3">
+			<h4 class="text-xs font-bold text-foreground leading-normal text-start font-serif">
+				{m.sidebar_status_automation_title ? m.sidebar_status_automation_title() : "System Automation Tasks"}
+			</h4>
+
+			{#if $eventsQuery.isLoading}
+				<div class="space-y-2">
+					<Skeleton class="h-6 w-full rounded-md" />
+					<Skeleton class="h-6 w-full rounded-md" />
+				</div>
+			{:else}
+				{@const autoEvents = events.filter(e => e.execution_mode === "automatic" || e.execution_mode === "suggested")}
+				{#if autoEvents.length === 0}
+					<p class="text-[10px] text-muted-foreground text-start">
+						{m.sidebar_status_no_automation ? m.sidebar_status_no_automation() : "No automated tasks configured for this cycle."}
+					</p>
+				{:else}
+					<div class="relative ps-4 border-s border-border mt-1 space-y-4 text-start">
+						{#each autoEvents as event}
+							<div class="relative">
+								<!-- Dot status indicator -->
+								{#if event.executed_at}
+									<span class="absolute -start-[21px] top-1 size-2 rounded-full bg-primary border border-background"></span>
+								{:else if event.execution_mode === "automatic"}
+									<span class="absolute -start-[21px] top-1 size-2 rounded-full bg-blue-500 border border-background animate-pulse"></span>
+								{:else}
+									<span class="absolute -start-[21px] top-1 size-2 rounded-full bg-yellow-500 border border-background"></span>
+								{/if}
+
+								<div class="flex items-center justify-between gap-1.5 text-[10px]">
+									<span class="font-bold text-foreground leading-tight">
+										{l(event.title_ar, event.title)}
+									</span>
+									<Badge variant={event.execution_mode === 'automatic' ? 'lime' : 'secondary'} class="text-[8px] h-3 px-1 shrink-0">
+										{event.execution_mode === 'automatic' 
+											? (m.calendar_field_mode_automatic ? m.calendar_field_mode_automatic() : "Auto") 
+											: (m.calendar_field_mode_suggested ? m.calendar_field_mode_suggested() : "Suggested")}
+									</Badge>
+								</div>
+								
+								<p class="text-[9px] text-muted-foreground leading-normal mt-0.5">
+									{#if event.executed_at}
+										<span class="text-primary font-medium">✓ {m.calendar_status_done ? m.calendar_status_done() : "Done"}</span>
+										{#if event.executed_at}
+											<span class="text-muted-foreground"> ({formatDate(event.executed_at)})</span>
+										{/if}
+									{:else}
+										<span>{m.sidebar_status_scheduled_for ? m.sidebar_status_scheduled_for({ date: formatDate(event.start_date) }) : `Scheduled for ${formatDate(event.start_date)}`}</span>
+									{/if}
+								</p>
+							</div>
+						{/each}
+					</div>
+				{/if}
+			{/if}
 		</div>
 
 		<!-- School Metadata / Status -->

@@ -28,6 +28,7 @@ import {
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
 import { Textarea } from "@orbis/ui-svelte/textarea";
+import { Checkbox } from "@orbis/ui-svelte/checkbox";
 import {
   Select, SelectTrigger, SelectContent, SelectItem,
 } from "@orbis/ui-svelte/select";
@@ -37,11 +38,11 @@ import {
   CheckCircle2, Clock, AlertCircle, XCircle, Pencil,
 } from "lucide-svelte";
 import type { CalendarEvent, CalendarExecutionMode, CalendarEventType } from "@orbis/desktop-client/types";
+import { gregorianToHijri, hijriToGregorian, HIJRI_MONTHS_EN, HIJRI_MONTHS_AR } from "$lib/core/i18n/hijri";
 
 let { data }: { data: { orgId: string } } = $props();
 const orgId = $derived(data?.orgId ?? "");
 const cycleId = $derived(academicContext.effectiveCycleId ?? "");
-const isAdmin = $derived(["admin", "super_admin", "principal"].includes(authStore.user?.role ?? ""));
 
 // TanStack Query
 const queryClient = useQueryClient();
@@ -80,11 +81,134 @@ let newEvent = $state({
   description: "",
 });
 
+let useHijri = $state(false);
+
+let hijriStartYear = $state(1447);
+let hijriStartMonth = $state(1);
+let hijriStartDay = $state(1);
+
+let hijriEndYear = $state(1447);
+let hijriEndMonth = $state(1);
+let hijriEndDay = $state(1);
+
+// Sync from Gregorian to Hijri when Gregorian changes
+function syncHijriFromGregorian() {
+  if (useHijri) return;
+
+  if (newEvent.start_date) {
+    const parts = newEvent.start_date.split("-");
+    if (parts.length === 3) {
+      const y = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10);
+      const d = parseInt(parts[2], 10);
+      const h = gregorianToHijri(new Date(y, m - 1, d));
+      if (h) {
+        hijriStartYear = h.hy;
+        hijriStartMonth = h.hm;
+        hijriStartDay = h.hd;
+      }
+    }
+  }
+
+  if (newEvent.end_date) {
+    const parts = newEvent.end_date.split("-");
+    if (parts.length === 3) {
+      const y = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10);
+      const d = parseInt(parts[2], 10);
+      const h = gregorianToHijri(new Date(y, m - 1, d));
+      if (h) {
+        hijriEndYear = h.hy;
+        hijriEndMonth = h.hm;
+        hijriEndDay = h.hd;
+      }
+    }
+  }
+}
+
+// Update Gregorian from Hijri when Hijri inputs are edited (and useHijri is true)
+function handleHijriStartChange() {
+  if (!useHijri) return;
+  const g = hijriToGregorian(hijriStartYear, hijriStartMonth, hijriStartDay);
+  const yyyy = g.getFullYear();
+  const mm = String(g.getMonth() + 1).padStart(2, "0");
+  const dd = String(g.getDate()).padStart(2, "0");
+  newEvent.start_date = `${yyyy}-${mm}-${dd}`;
+}
+
+function handleHijriEndChange() {
+  if (!useHijri) return;
+  const g = hijriToGregorian(hijriEndYear, hijriEndMonth, hijriEndDay);
+  const yyyy = g.getFullYear();
+  const mm = String(g.getMonth() + 1).padStart(2, "0");
+  const dd = String(g.getDate()).padStart(2, "0");
+  newEvent.end_date = `${yyyy}-${mm}-${dd}`;
+}
+
+function formatHijriDateString(y: number, m: number, d: number) {
+  const months = getLocale() === "ar" ? HIJRI_MONTHS_AR : HIJRI_MONTHS_EN;
+  const monthName = months[m - 1] || "";
+  const suffix = getLocale() === "ar" ? "هـ" : "AH";
+  return `${d} ${monthName} ${y} ${suffix}`;
+}
+
+const computedHijriStart = $derived.by(() => {
+  if (!newEvent.start_date) return "";
+  const parts = newEvent.start_date.split("-");
+  if (parts.length === 3) {
+    const y = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10);
+    const d = parseInt(parts[2], 10);
+    const h = gregorianToHijri(new Date(y, m - 1, d));
+    if (h) {
+      return formatHijriDateString(h.hy, h.hm, h.hd);
+    }
+  }
+  return "";
+});
+
+const computedHijriEnd = $derived.by(() => {
+  if (!newEvent.end_date) return "";
+  const parts = newEvent.end_date.split("-");
+  if (parts.length === 3) {
+    const y = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10);
+    const d = parseInt(parts[2], 10);
+    const h = gregorianToHijri(new Date(y, m - 1, d));
+    if (h) {
+      return formatHijriDateString(h.hy, h.hm, h.hd);
+    }
+  }
+  return "";
+});
+
+function getHijriRangeString(startStr: string, endStr: string) {
+  if (!startStr || !endStr) return "";
+  const parseDate = (s: string) => {
+    const parts = s.split("-");
+    if (parts.length === 3) {
+      return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    }
+    return null;
+  };
+  
+  const start = parseDate(startStr);
+  const end = parseDate(endStr);
+  if (!start || !end) return "";
+  
+  const hs = gregorianToHijri(start);
+  const he = gregorianToHijri(end);
+  if (!hs || !he) return "";
+  
+  return `${formatHijriDateString(hs.hy, hs.hm, hs.hd)} → ${formatHijriDateString(he.hy, he.hm, he.hd)}`;
+}
+
 function resetForm() {
   newEvent = {
     title: "", title_ar: "", event_type: "custom",
     execution_mode: "manual", start_date: "", end_date: "", description: "",
   };
+  useHijri = false;
 }
 
 async function createEvent() {
@@ -197,14 +321,14 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
           </p>
         </div>
       </div>
-      {#if isAdmin && !academicContext.isReadOnly}
+      {#if !academicContext.isReadOnly}
         <div class="flex items-center gap-2 flex-nowrap shrink-0">
           {#if events.length === 0}
             <Button variant="outline" class="text-xs" onclick={generateDefaults} disabled={isSubmitting}>
               {m.calendar_generate_defaults ? m.calendar_generate_defaults() : "Generate Defaults"}
             </Button>
           {/if}
-          <Button variant="lime" class="text-xs" onclick={() => { showCreateDialog = true; }}>
+          <Button variant="lime" class="text-xs" onclick={() => { showCreateDialog = true; syncHijriFromGregorian(); }}>
             <Plus size={14} class="me-1.5" />
             {m.calendar_add_event ? m.calendar_add_event() : "Add Event"}
           </Button>
@@ -258,7 +382,7 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
             <p class="text-sm text-muted-foreground">
               {m.calendar_empty ? m.calendar_empty() : "No calendar events for this cycle"}
             </p>
-            {#if isAdmin && !academicContext.isReadOnly}
+            {#if !academicContext.isReadOnly}
               <Button variant="outline" class="text-xs" onclick={generateDefaults}>
                 {m.calendar_generate_defaults ? m.calendar_generate_defaults() : "Generate Defaults"}
               </Button>
@@ -274,7 +398,7 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
                 <TableHead>{m.calendar_col_dates ? m.calendar_col_dates() : "Dates"}</TableHead>
                 <TableHead>{m.calendar_col_mode ? m.calendar_col_mode() : "Mode"}</TableHead>
                 <TableHead>{m.calendar_col_status ? m.calendar_col_status() : "Status"}</TableHead>
-                {#if isAdmin && !academicContext.isReadOnly}
+                {#if !academicContext.isReadOnly}
                   <TableHead class="text-end">{m.calendar_col_actions ? m.calendar_col_actions() : "Actions"}</TableHead>
                 {/if}
               </TableRow>
@@ -294,8 +418,11 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
                   <TableCell class="font-medium text-sm">
                     {getLocale() === "ar" && event.title_ar ? event.title_ar : event.title}
                   </TableCell>
-                  <TableCell class="text-xs text-muted-foreground">
-                    {event.start_date} → {event.end_date}
+                  <TableCell class="text-xs text-muted-foreground flex flex-col gap-0.5">
+                    <span class="font-mono">{event.start_date} → {event.end_date}</span>
+                    {#if getHijriRangeString(event.start_date, event.end_date)}
+                      <span class="text-[10px] text-primary/80 font-medium">{getHijriRangeString(event.start_date, event.end_date)}</span>
+                    {/if}
                   </TableCell>
                   <TableCell>
                     <Badge variant={modeBadgeVariant(event.execution_mode)} class="text-[10px] capitalize">
@@ -313,7 +440,7 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
                       </span>
                     {/if}
                   </TableCell>
-                  {#if isAdmin && !academicContext.isReadOnly}
+                  {#if !academicContext.isReadOnly}
                     <TableCell class="text-end">
                       <div class="flex items-center justify-end gap-1 flex-nowrap shrink-0">
                         {#if !event.executed_at}
@@ -373,16 +500,124 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
         </div>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="flex flex-col gap-2">
-          <Label>{m.calendar_field_start ? m.calendar_field_start() : "Start Date"}</Label>
-          <Input type="date" bind:value={newEvent.start_date} />
-        </div>
-        <div class="flex flex-col gap-2">
-          <Label>{m.calendar_field_end ? m.calendar_field_end() : "End Date"}</Label>
-          <Input type="date" bind:value={newEvent.end_date} />
+      <!-- Hijri Calendar Toggle -->
+      <div class="flex items-center gap-2 bg-muted/40 p-3 rounded-lg border border-border/50 text-start">
+        <Checkbox id="use_hijri" checked={useHijri} onCheckedChange={(val) => { useHijri = !!val; }} />
+        <div class="grid gap-0.5">
+          <Label for="use_hijri" class="text-xs font-semibold cursor-pointer">
+            {m.calendar_use_hijri ? m.calendar_use_hijri() : "Use Hijri Date"}
+          </Label>
+          <span class="text-[10px] text-muted-foreground leading-relaxed">
+            {m.calendar_use_hijri_desc ? m.calendar_use_hijri_desc() : "Convert Hijri months and days to calendar dates"}
+          </span>
         </div>
       </div>
+
+      {#if !useHijri}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-start">
+          <div class="flex flex-col gap-2">
+            <Label>{m.calendar_field_start ? m.calendar_field_start() : "Start Date"}</Label>
+            <Input type="date" bind:value={newEvent.start_date} oninput={syncHijriFromGregorian} onchange={syncHijriFromGregorian} />
+            {#if computedHijriStart}
+              <p class="text-[10px] text-primary font-medium">
+                {m.calendar_hijri_equivalent ? m.calendar_hijri_equivalent() : "Equivalent Hijri"}: {computedHijriStart}
+              </p>
+            {/if}
+          </div>
+          <div class="flex flex-col gap-2">
+            <Label>{m.calendar_field_end ? m.calendar_field_end() : "End Date"}</Label>
+            <Input type="date" bind:value={newEvent.end_date} oninput={syncHijriFromGregorian} onchange={syncHijriFromGregorian} />
+            {#if computedHijriEnd}
+              <p class="text-[10px] text-primary font-medium">
+                {m.calendar_hijri_equivalent ? m.calendar_hijri_equivalent() : "Equivalent Hijri"}: {computedHijriEnd}
+              </p>
+            {/if}
+          </div>
+        </div>
+      {:else}
+        <!-- Hijri Inputs -->
+        <div class="space-y-4 text-start">
+          <!-- Hijri Start -->
+          <div class="flex flex-col gap-2">
+            <Label class="text-xs font-bold text-foreground">
+              {m.calendar_field_start ? m.calendar_field_start() : "Start Date"} ({m.calendar_use_hijri ? m.calendar_use_hijri() : "Hijri"})
+            </Label>
+            <div class="grid grid-cols-3 gap-2">
+              <div class="flex flex-col gap-1">
+                <span class="text-[10px] text-muted-foreground">{m.calendar_hijri_day ? m.calendar_hijri_day() : "Day"}</span>
+                <Select type="single" value={String(hijriStartDay)} onValueChange={(v) => { if (v) { hijriStartDay = parseInt(v, 10); handleHijriStartChange(); } }}>
+                  <SelectTrigger class="h-9 text-xs">{hijriStartDay}</SelectTrigger>
+                  <SelectContent>
+                    {#each Array(30) as _, i}
+                      <SelectItem value={String(i + 1)}>{i + 1}</SelectItem>
+                    {/each}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-[10px] text-muted-foreground">{m.calendar_hijri_month ? m.calendar_hijri_month() : "Month"}</span>
+                <Select type="single" value={String(hijriStartMonth)} onValueChange={(v) => { if (v) { hijriStartMonth = parseInt(v, 10); handleHijriStartChange(); } }}>
+                  <SelectTrigger class="h-9 text-xs">
+                    {(getLocale() === "ar" ? HIJRI_MONTHS_AR : HIJRI_MONTHS_EN)[hijriStartMonth - 1]}
+                  </SelectTrigger>
+                  <SelectContent>
+                    {#each (getLocale() === "ar" ? HIJRI_MONTHS_AR : HIJRI_MONTHS_EN) as monthName, i}
+                      <SelectItem value={String(i + 1)}>{monthName}</SelectItem>
+                    {/each}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-[10px] text-muted-foreground">{m.calendar_hijri_year ? m.calendar_hijri_year() : "Year"}</span>
+                <Input type="number" bind:value={hijriStartYear} oninput={handleHijriStartChange} class="h-9 font-mono" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Hijri End -->
+          <div class="flex flex-col gap-2">
+            <Label class="text-xs font-bold text-foreground">
+              {m.calendar_field_end ? m.calendar_field_end() : "End Date"} ({m.calendar_use_hijri ? m.calendar_use_hijri() : "Hijri"})
+            </Label>
+            <div class="grid grid-cols-3 gap-2">
+              <div class="flex flex-col gap-1">
+                <span class="text-[10px] text-muted-foreground">{m.calendar_hijri_day ? m.calendar_hijri_day() : "Day"}</span>
+                <Select type="single" value={String(hijriEndDay)} onValueChange={(v) => { if (v) { hijriEndDay = parseInt(v, 10); handleHijriEndChange(); } }}>
+                  <SelectTrigger class="h-9 text-xs">{hijriEndDay}</SelectTrigger>
+                  <SelectContent>
+                    {#each Array(30) as _, i}
+                      <SelectItem value={String(i + 1)}>{i + 1}</SelectItem>
+                    {/each}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-[10px] text-muted-foreground">{m.calendar_hijri_month ? m.calendar_hijri_month() : "Month"}</span>
+                <Select type="single" value={String(hijriEndMonth)} onValueChange={(v) => { if (v) { hijriEndMonth = parseInt(v, 10); handleHijriEndChange(); } }}>
+                  <SelectTrigger class="h-9 text-xs">
+                    {(getLocale() === "ar" ? HIJRI_MONTHS_AR : HIJRI_MONTHS_EN)[hijriEndMonth - 1]}
+                  </SelectTrigger>
+                  <SelectContent>
+                    {#each (getLocale() === "ar" ? HIJRI_MONTHS_AR : HIJRI_MONTHS_EN) as monthName, i}
+                      <SelectItem value={String(i + 1)}>{monthName}</SelectItem>
+                    {/each}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-[10px] text-muted-foreground">{m.calendar_hijri_year ? m.calendar_hijri_year() : "Year"}</span>
+                <Input type="number" bind:value={hijriEndYear} oninput={handleHijriEndChange} class="h-9 font-mono" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Gregorian Equivalent Preview -->
+          <div class="bg-primary/5 border border-primary/20 rounded-lg p-2.5 flex items-center justify-between text-xs">
+            <span class="text-muted-foreground">Gregorian Preview / المعاينة بالميلادي:</span>
+            <span class="font-bold text-primary font-mono">{newEvent.start_date || "—"} → {newEvent.end_date || "—"}</span>
+          </div>
+        </div>
+      {/if}
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="flex flex-col gap-2">

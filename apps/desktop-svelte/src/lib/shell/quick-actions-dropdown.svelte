@@ -1,11 +1,15 @@
 <script lang="ts">
-import { page } from "$app/state";
 import { Button } from "@orbis/ui-svelte/button";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuPortal,
 } from "@orbis/ui-svelte/dropdown-menu";
 import {
   Tooltip,
@@ -14,90 +18,153 @@ import {
 } from "@orbis/ui-svelte";
 import {
   MoreHorizontal,
-  UserPlus,
-  CreditCard,
-  CalendarClock,
-  ShieldCheck,
-  CheckSquare,
+  HelpCircle,
+  Users,
+  Scale,
+  Megaphone,
+  Globe,
+  Compass,
+  FileText,
+  SquareCode,
+  Headphones,
+  MessageSquare,
+  Twitter,
+  Github,
+  Lock,
 } from "lucide-svelte";
-import { academicContext, workflowInbox } from "$lib/stores";
 import * as m from "$lib/paraglide/messages";
-import { deLocalizeUrl, localizeHref } from "$lib/paraglide/runtime";
 
-let { orgId }: { orgId: string } = $props();
+function openUrl(url: string) {
+  window.open(url, "_blank");
+}
 
-const currentSegment = $derived.by(() => {
-  const parts = deLocalizeUrl(page.url).pathname.split("/").filter(Boolean);
-  return parts[1] ?? "dashboard";
-});
-
-const quickActions = $derived.by(() => {
-  const seg = currentSegment;
-  const actions: Array<{ label: string; icon: typeof UserPlus; href: string }> = [];
-
-  if (seg === "students" || seg === "dashboard") {
-    if (academicContext.canEnroll) {
-      actions.push({ label: m.action_enroll_student(), icon: UserPlus, href: `/${orgId}/students/new` });
-    }
-  }
-  if (seg === "finance" || seg === "dashboard") {
-    actions.push({ label: m.action_record_payment(), icon: CreditCard, href: `/${orgId}/finance/payments` });
-  }
-  if (seg === "academics" || seg === "dashboard") {
-    actions.push({ label: m.calendar_title ? m.calendar_title() : "Calendar", icon: CalendarClock, href: `/${orgId}/academics/calendar` });
-    actions.push({ label: m.academics_control_label ? m.academics_control_label() : "Control", icon: ShieldCheck, href: `/${orgId}/academics/control` });
-  }
-  if (workflowInbox.hasActions) {
-    actions.push({ label: m.settings_nav_approvals ? m.settings_nav_approvals() : "Approvals", icon: CheckSquare, href: `/${orgId}/settings/approvals` });
-  }
-  return actions;
-});
+// ✅ كائن مركزي للـ classes المشتركة
+const menuItemClass = "flex items-center gap-2.5 px-2.5 py-2 text-xs cursor-pointer hover:bg-accent rounded-sm";
+const subTriggerClass = "flex items-center justify-between text-xs cursor-pointer px-2.5 py-2 hover:bg-accent rounded-sm";
+const iconClass = "text-muted-foreground shrink-0";
 </script>
 
 <DropdownMenu>
-	<DropdownMenuTrigger>
-		{#snippet child({ props })}
-			<Tooltip>
-				<TooltipTrigger>
-					<Button 
-						{...props}
-						variant="outline" 
-						size="icon-sm" 
-						class="relative cursor-pointer rounded-[10px]"
-						aria-label={m.sidebar_quick_actions ? m.sidebar_quick_actions() : "Quick Actions"}
-					>
-						<MoreHorizontal size={16} strokeWidth={1.8} class="text-foreground" />
-						{#if quickActions.length > 0}
-							<span class="absolute -top-0.5 -end-0.5 size-3.5 bg-primary text-primary-foreground text-[8px] rounded-full flex items-center justify-center font-bold border border-background">
-								{quickActions.length}
-							</span>
-						{/if}
-					</Button>
-				</TooltipTrigger>
-				<TooltipContent side="right" sideOffset={12}>
-					{m.sidebar_quick_actions ? m.sidebar_quick_actions() : "Quick Actions"}
-				</TooltipContent>
-			</Tooltip>
-		{/snippet}
-	</DropdownMenuTrigger>
-	<DropdownMenuContent side="right" sideOffset={12} class="w-52">
-		<div class="px-2.5 py-1.5 text-[10px] font-semibold text-muted-foreground border-b border-border/40 mb-1">
-			{m.sidebar_quick_actions ? m.sidebar_quick_actions() : "Quick Actions"}
-		</div>
-		{#if quickActions.length > 0}
-			{#each quickActions as action (action.href)}
-				{@const Icon = action.icon}
-				<DropdownMenuItem class="text-xs cursor-pointer">
-					<a href={localizeHref(action.href)} class="flex items-center gap-2 w-full">
-						<Icon class="size-3.5 shrink-0" />
-						<span>{action.label}</span>
-					</a>
-				</DropdownMenuItem>
-			{/each}
-		{:else}
-			<div class="px-2.5 py-3 text-xs text-muted-foreground text-center">
-				{m.sidebar_no_actions ? m.sidebar_no_actions() : "No actions available"}
-			</div>
-		{/if}
-	</DropdownMenuContent>
+  <DropdownMenuTrigger>
+    {#snippet child({ props })}
+      <Tooltip>
+        <TooltipTrigger>
+          <Button 
+            {...props}
+            variant="outline" 
+            size="icon-sm" 
+            class="relative cursor-pointer rounded-[10px]"
+            aria-label={m.sidebar_quick_actions?.() ?? "More Options"}
+          >
+            <MoreHorizontal size={16} strokeWidth={1.8} class="text-foreground" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="right" sideOffset={12}>
+          {m.sidebar_quick_actions?.() ?? "More Options"}
+        </TooltipContent>
+      </Tooltip>
+    {/snippet}
+  </DropdownMenuTrigger>
+  
+  <DropdownMenuContent 
+    side="right" 
+    sideOffset={12} 
+    class="w-56 text-start"
+  >
+    <!-- Resources Submenu -->
+    <DropdownMenuSub>
+      <DropdownMenuSubTrigger class={subTriggerClass}>
+        <div class="flex items-center gap-2.5">
+          <HelpCircle size={14} class={iconClass} />
+          <span>{m.sidebar_help_resources?.() ?? "Resources"}</span>
+        </div>
+      </DropdownMenuSubTrigger>
+      <DropdownMenuPortal>
+        <DropdownMenuSubContent sideOffset={4} class="w-48 text-start">
+          <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://orbis.edu/welcome')}>
+            <Compass size={13} class={iconClass} />
+            <span>{m.sidebar_help_welcome_page?.() ?? "Welcome Page"}</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://docs.orbis.edu')}>
+            <FileText size={13} class={iconClass} />
+            <span>{m.sidebar_help_documentation?.() ?? "Documentation"}</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://docs.orbis.edu/api')}>
+            <SquareCode size={13} class={iconClass} />
+            <span>{m.sidebar_help_api_docs?.() ?? "API Docs"}</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://help.orbis.edu')}>
+            <HelpCircle size={13} class={iconClass} />
+            <span>{m.sidebar_help_help_center?.() ?? "Help Center"}</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://orbis.edu/support')}>
+            <Headphones size={13} class={iconClass} />
+            <span>{m.sidebar_help_contact_support?.() ?? "Contact Support"}</span>
+          </DropdownMenuItem>
+        </DropdownMenuSubContent>
+      </DropdownMenuPortal>
+    </DropdownMenuSub>
+
+    <!-- Community Submenu -->
+    <DropdownMenuSub>
+      <DropdownMenuSubTrigger class={subTriggerClass}>
+        <div class="flex items-center gap-2.5">
+          <Users size={14} class={iconClass} />
+          <span>{m.sidebar_help_community?.() ?? "Community"}</span>
+        </div>
+      </DropdownMenuSubTrigger>
+      <DropdownMenuPortal>
+        <DropdownMenuSubContent sideOffset={4} class="w-48 text-start">
+          <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://discord.gg/orbis')}>
+            <MessageSquare size={13} class={iconClass} />
+            <span>{m.sidebar_help_discord?.() ?? "Discord"}</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://x.com/orbis')}>
+            <Twitter size={13} class={iconClass} />
+            <span>{m.sidebar_help_twitter?.() ?? "Twitter / X"}</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://github.com/orbis')}>
+            <Github size={13} class={iconClass} />
+            <span>{m.sidebar_help_github?.() ?? "GitHub"}</span>
+          </DropdownMenuItem>
+        </DropdownMenuSubContent>
+      </DropdownMenuPortal>
+    </DropdownMenuSub>
+
+    <!-- Legal Submenu -->
+    <DropdownMenuSub>
+      <DropdownMenuSubTrigger class={subTriggerClass}>
+        <div class="flex items-center gap-2.5">
+          <Scale size={14} class={iconClass} />
+          <span>{m.sidebar_help_legal?.() ?? "Legal"}</span>
+        </div>
+      </DropdownMenuSubTrigger>
+      <DropdownMenuPortal>
+        <DropdownMenuSubContent sideOffset={4} class="w-48 text-start">
+          <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://orbis.edu/terms')}>
+            <FileText size={13} class={iconClass} />
+            <span>{m.sidebar_help_terms?.() ?? "Terms of Service"}</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://orbis.edu/privacy')}>
+            <Lock size={13} class={iconClass} />
+            <span>{m.sidebar_help_privacy?.() ?? "Privacy Policy"}</span>
+          </DropdownMenuItem>
+        </DropdownMenuSubContent>
+      </DropdownMenuPortal>
+    </DropdownMenuSub>
+
+    <DropdownMenuSeparator />
+
+    <!-- Give Feedback -->
+    <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('mailto:feedback@orbis.edu')}>
+      <Megaphone size={14} class={iconClass} />
+      <span>{m.sidebar_help_feedback?.() ?? "Give feedback"}</span>
+    </DropdownMenuItem>
+
+    <!-- Tour Navigation -->
+    <DropdownMenuItem class={menuItemClass} onclick={() => alert('Tour is coming soon!')}>
+      <Globe size={14} class={iconClass} />
+      <span>{m.sidebar_help_tour?.() ?? "Tour the new navigation"}</span>
+    </DropdownMenuItem>
+  </DropdownMenuContent>
 </DropdownMenu>

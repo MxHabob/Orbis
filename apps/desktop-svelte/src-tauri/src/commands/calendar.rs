@@ -25,7 +25,22 @@ pub async fn get_calendar_events(
     org_id: String,
     cycle_id: String,
 ) -> CmdResult<Vec<academic_calendar_event::Model>> {
-    state.service().await
+    let service = state.service().await;
+    
+    // Auto-execute any due automatic events for this cycle
+    let is_writable = !state.provider.is_current_archived().await;
+    if is_writable {
+        let today = chrono::Local::now().date_naive().to_string();
+        if let Ok(pending) = service.get_pending_events(&org_id, &today).await {
+            for event in pending {
+                if event.cycle_id == cycle_id && event.execution_mode == "automatic" {
+                    let _ = service.execute_calendar_event_action(&event, "system").await;
+                }
+            }
+        }
+    }
+
+    service
         .get_calendar_events(&org_id, &cycle_id)
         .await
         .map_err(CommandError::from)
@@ -36,8 +51,22 @@ pub async fn get_pending_calendar_events(
     state: State<'_, Arc<AppState>>,
     org_id: String,
 ) -> CmdResult<Vec<academic_calendar_event::Model>> {
+    let service = state.service().await;
     let today = chrono::Local::now().date_naive().to_string();
-    state.service().await
+    
+    // Auto-execute any due automatic events first
+    let is_writable = !state.provider.is_current_archived().await;
+    if is_writable {
+        if let Ok(pending) = service.get_pending_events(&org_id, &today).await {
+            for event in pending {
+                if event.execution_mode == "automatic" {
+                    let _ = service.execute_calendar_event_action(&event, "system").await;
+                }
+            }
+        }
+    }
+
+    service
         .get_pending_events(&org_id, &today)
         .await
         .map_err(CommandError::from)
@@ -50,10 +79,26 @@ pub async fn create_calendar_event(
     request: CreateCalendarEventRequest,
 ) -> CmdResult<academic_calendar_event::Model> {
     state.provider.ensure_writable().await.map_err(CommandError::from)?;
-    state.service().await
+    let service = state.service().await;
+    let event = service
         .create_calendar_event(&org_id, request)
         .await
-        .map_err(CommandError::from)
+        .map_err(CommandError::from)?;
+
+    // If the event is automatic and due now/past, execute it immediately!
+    let today = chrono::Local::now().date_naive().to_string();
+    if event.execution_mode == "automatic" && event.start_date <= today {
+        let _ = service.execute_calendar_event_action(&event, "system").await;
+        // Refetch updated event model to return the executed one
+        if let Ok(Some(updated)) = core_domain::entities::academic_calendar_event::Entity::find_by_id(&event.id)
+            .one(&service.repo.db)
+            .await 
+        {
+            return Ok(updated);
+        }
+    }
+
+    Ok(event)
 }
 
 #[tauri::command]
@@ -63,10 +108,26 @@ pub async fn update_calendar_event(
     request: UpdateCalendarEventRequest,
 ) -> CmdResult<academic_calendar_event::Model> {
     state.provider.ensure_writable().await.map_err(CommandError::from)?;
-    state.service().await
+    let service = state.service().await;
+    let event = service
         .update_calendar_event(&event_id, request)
         .await
-        .map_err(CommandError::from)
+        .map_err(CommandError::from)?;
+
+    // If the event is automatic and due now/past, execute it immediately!
+    let today = chrono::Local::now().date_naive().to_string();
+    if event.execution_mode == "automatic" && event.start_date <= today {
+        let _ = service.execute_calendar_event_action(&event, "system").await;
+        // Refetch updated event model
+        if let Ok(Some(updated)) = core_domain::entities::academic_calendar_event::Entity::find_by_id(&event.id)
+            .one(&service.repo.db)
+            .await 
+        {
+            return Ok(updated);
+        }
+    }
+
+    Ok(event)
 }
 
 #[tauri::command]

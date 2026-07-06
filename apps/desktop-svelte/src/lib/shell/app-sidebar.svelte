@@ -30,7 +30,6 @@ import UpgradeButton from "./upgrade-button.svelte";
 import GitIntegrationPopover from "./git-integration-popover.svelte";
 import SystemStatusPopover from "./system-status-popover.svelte";
 import QuickActionsDropdown from "./quick-actions-dropdown.svelte";
-import HelpSupportDropdown from "./help-support-dropdown.svelte";
 import * as m from "$lib/paraglide/messages";
 import { deLocalizeUrl, localizeHref } from "$lib/paraglide/runtime";
 import { onboardingState } from "$lib/features/onboarding/state.svelte";
@@ -185,9 +184,8 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 				<OnboardingPopover />
 				<GitIntegrationPopover />
 				<UpgradeButton />
-				<SystemStatusPopover />
+				<SystemStatusPopover {orgId} />
 				<QuickActionsDropdown {orgId} />
-				<HelpSupportDropdown />
 			</div>
 
 			<UserSidebarMenu {orgId} />
