@@ -67,6 +67,8 @@ impl DatabaseProvider {
 
         let (year_service, year_id, is_archived) = if let Some(year) = years.first() {
             // Open the current year's database
+            let years_dir = registry::years_dir(app_data_dir);
+            std::fs::create_dir_all(&years_dir)?;
             let db_path = registry::year_db_path(app_data_dir, &year.db_filename);
             let service = Self::create_service_for_path(&db_path).await?;
             info!("🗃️ Opened current year: {} ({})", year.name, year.db_filename);

@@ -40,6 +40,28 @@ try {
     `).run(orgId);
   }
 
+  // Helper to detect current Hijri year dynamically
+  function getHijriYear(): number {
+    try {
+      const formatted = new Intl.DateTimeFormat('ar-TN-u-ca-islamic', { year: 'numeric' }).format(new Date());
+      const match = formatted.match(/\d+/);
+      return match ? parseInt(match[0], 10) : 1447;
+    } catch {
+      return 1447;
+    }
+  }
+
+  const currentHijriYear = getHijriYear();
+  const currentGregorianYear = new Date().getFullYear();
+  const nextGregorianYear = currentGregorianYear + 1;
+  const cycleId = `cycle-${currentHijriYear}`;
+  const academicYearNameEn = `Academic Year ${currentHijriYear} Hijri`;
+  const academicYearNameAr = `العام الدراسي ${currentHijriYear} هـ`;
+  const startGregorian = `${currentGregorianYear}-06-21`;
+  const endGregorian = `${nextGregorianYear}-02-21`;
+  const hijriStart = `${currentHijriYear}-01-01`;
+  const hijriEnd = `${currentHijriYear}-12-29`;
+
   // Connect to orbis_registry.db and seed the academic year
   let registryDbPath = "";
   const regPaths = [
@@ -59,8 +81,8 @@ try {
       regDb.prepare("DELETE FROM academic_years WHERE org_id = ?").run(orgId);
       regDb.prepare(`
         INSERT INTO academic_years (id, org_id, name, name_ar, start_date, end_date, hijri_start_date, hijri_end_date, db_filename, status, is_current, archived_at, archived_by, promotion_source_year_id, db_size_bytes, student_count, teacher_count, class_count, notes, created_at, updated_at)
-        VALUES ('cycle-1447', ?, 'Academic Year 1447 Hijri', 'العام الدراسي 1447 هـ', '2026-06-21', '2027-02-21', '1447-01-01', '1447-12-29', 'orbis.db', 'active', 1, NULL, NULL, NULL, NULL, 0, 0, 0, 'Initial seeded year', datetime('now'), datetime('now'))
-      `).run(orgId);
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, '../orbis.db', 'active', 1, NULL, NULL, NULL, NULL, 0, 0, 0, 'Initial seeded year', datetime('now'), datetime('now'))
+      `).run(cycleId, orgId, academicYearNameEn, academicYearNameAr, startGregorian, endGregorian, hijriStart, hijriEnd);
       console.log("✅ Seeded academic year in registry database");
     } catch (regErr) {
       console.error("❌ Failed to seed registry database:", regErr);
@@ -89,120 +111,119 @@ try {
     VALUES (?, ?, 'admin', ?, 'org', 1, datetime('now'))
   `).run(crypto.randomUUID(), adminId, orgId);
 
-  // 1. Create Academic Cycle (Hijri 1447)
-  const cycleId = "cycle-1447";
+  // 1. Create Academic Cycle (Hijri)
   db.prepare("DELETE FROM academic_cycles WHERE org_id = ?").run(orgId);
-  console.log("Creating academic cycle: 1447 Hijri and sub-cycles...");
+  console.log(`Creating academic cycle: ${currentHijriYear} Hijri and sub-cycles...`);
   db.prepare(`
     INSERT INTO academic_cycles (id, org_id, name, name_ar, start_date, end_date, type, grading_system, is_current, is_locked, is_enrollment_open, created_at, updated_at)
-    VALUES (?, ?, 'Academic Year 1447 Hijri', 'العام الدراسي 1447 هـ', '2026-06-21', '2027-02-21', 'year', 'percentage', 1, 0, 1, datetime('now'), datetime('now'))
-  `).run(cycleId, orgId);
+    VALUES (?, ?, ?, ?, ?, ?, 'year', 'percentage', 1, 0, 1, datetime('now'), datetime('now'))
+  `).run(cycleId, orgId, academicYearNameEn, academicYearNameAr, startGregorian, endGregorian);
 
   // Semesters & Month cycles for Sanaa Model School
   const subCycles = [
     // Semesters
     {
-      id: "cycle-1447-s1",
+      id: `${cycleId}-s1`,
       name: "Semester 1",
       name_ar: "الفصل الدراسي الأول",
       type: "term",
       parent_id: cycleId,
-      start: "2026-06-21",
-      end: "2026-10-21",
+      start: `${currentGregorianYear}-06-21`,
+      end: `${currentGregorianYear}-10-21`,
       weight: 50,
     },
     {
-      id: "cycle-1447-s2",
+      id: `${cycleId}-s2`,
       name: "Semester 2",
       name_ar: "الفصل الدراسي الثاني",
       type: "term",
       parent_id: cycleId,
-      start: "2026-10-22",
-      end: "2027-02-21",
+      start: `${currentGregorianYear}-10-22`,
+      end: `${nextGregorianYear}-02-21`,
       weight: 50,
     },
 
-    // Semester 1 Months (Assessment periods + Midterm Exam)
+    // Semester 1 Months
     {
-      id: "cycle-1447-s1-m1",
+      id: `${cycleId}-s1-m1`,
       name: "Muharram",
       name_ar: "محرم",
       type: "month",
-      parent_id: "cycle-1447-s1",
-      start: "2026-06-21",
-      end: "2026-07-20",
+      parent_id: `${cycleId}-s1`,
+      start: `${currentGregorianYear}-06-21`,
+      end: `${currentGregorianYear}-07-20`,
       weight: 20,
     },
     {
-      id: "cycle-1447-s1-m2",
+      id: `${cycleId}-s1-m2`,
       name: "Safar",
       name_ar: "صفر",
       type: "month",
-      parent_id: "cycle-1447-s1",
-      start: "2026-07-21",
-      end: "2026-08-20",
+      parent_id: `${cycleId}-s1`,
+      start: `${currentGregorianYear}-07-21`,
+      end: `${currentGregorianYear}-08-20`,
       weight: 20,
     },
     {
-      id: "cycle-1447-s1-m3",
+      id: `${cycleId}-s1-m3`,
       name: "Rabi' al-Awwal",
       name_ar: "ربيع الأول",
       type: "month",
-      parent_id: "cycle-1447-s1",
-      start: "2026-08-21",
-      end: "2026-09-20",
+      parent_id: `${cycleId}-s1`,
+      start: `${currentGregorianYear}-08-21`,
+      end: `${currentGregorianYear}-09-20`,
       weight: 20,
     },
     {
-      id: "cycle-1447-s1-m4",
+      id: `${cycleId}-s1-m4`,
       name: "Rabi' al-Thani (Midterm)",
       name_ar: "ربيع الثاني (منتصف العام)",
       type: "month",
-      parent_id: "cycle-1447-s1",
-      start: "2026-09-21",
-      end: "2026-10-21",
+      parent_id: `${cycleId}-s1`,
+      start: `${currentGregorianYear}-09-21`,
+      end: `${currentGregorianYear}-10-21`,
       weight: 30,
     },
 
-    // Semester 2 Months (Assessment periods + Final Exam)
+    // Semester 2 Months
     {
-      id: "cycle-1447-s2-m1",
+      id: `${cycleId}-s2-m1`,
       name: "Jumada al-Ula",
       name_ar: "جمادى الأولى",
       type: "month",
-      parent_id: "cycle-1447-s2",
-      start: "2026-10-22",
-      end: "2026-11-21",
+      parent_id: `${cycleId}-s2`,
+      start: `${currentGregorianYear}-10-22`,
+      end: `${currentGregorianYear}-11-21`,
       weight: 20,
     },
     {
-      id: "cycle-1447-s2-m2",
+      id: `${cycleId}-s2-m2`,
       name: "Jumada al-Thania",
       name_ar: "جمادى الثانية",
       type: "month",
-      parent_id: "cycle-1447-s2",
-      start: "2026-11-22",
-      end: "2026-12-21",
+      parent_id: `${cycleId}-s2`,
+      start: `${currentGregorianYear}-11-22`,
+      end: `${currentGregorianYear}-12-21`,
       weight: 20,
     },
     {
-      id: "cycle-1447-s2-m3",
+      id: `${cycleId}-s2-m3`,
       name: "Rajab",
       name_ar: "رجب",
       type: "month",
-      parent_id: "cycle-1447-s2",
-      start: "2026-12-22",
-      end: "2027-01-20",
+      parent_id: `${cycleId}-s2`,
+      start: `${currentGregorianYear}-12-22`,
+      end: `${nextGregorianYear}-01-20`,
       weight: 20,
     },
     {
-      id: "cycle-1447-s2-m4",
+      id: `${cycleId}-s2-m4`,
       name: "Sha'ban (Final)",
       name_ar: "شعبان (النهائي)",
       type: "month",
-      parent_id: "cycle-1447-s2",
-      start: "2027-01-21",
-      end: "2027-02-21",
+      parent_id: `${cycleId}-s2`,
+      start: `${nextGregorianYear}-01-21`,
+      end: `${nextGregorianYear}-02-21`,
       weight: 30,
     },
   ];

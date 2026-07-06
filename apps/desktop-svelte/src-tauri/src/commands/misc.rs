@@ -508,7 +508,7 @@ pub async fn initialize_school_setup(
         
         let _ = registry_db.execute(Statement::from_sql_and_values(
             reg_backend,
-            "INSERT OR IGNORE INTO academic_years (id, org_id, name, name_ar, start_date, end_date, hijri_start_date, hijri_end_date, db_filename, status, is_current, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NULL, NULL, 'orbis.db', 'active', 1, ?, ?)",
+            "INSERT OR IGNORE INTO academic_years (id, org_id, name, name_ar, start_date, end_date, hijri_start_date, hijri_end_date, db_filename, status, is_current, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NULL, NULL, '../orbis.db', 'active', 1, ?, ?)",
             vec![
                 root_id.clone().into(),
                 org_id_for_registry.into(),

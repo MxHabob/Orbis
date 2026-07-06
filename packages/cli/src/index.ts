@@ -792,6 +792,28 @@ async function handleInstallation(isDev = false) {
       .replace(/(^-|-$)/g, "") || "school";
   const now = new Date().toISOString();
 
+  // Helper to detect current Hijri year dynamically
+  function getHijriYear(): number {
+    try {
+      const formatted = new Intl.DateTimeFormat('ar-TN-u-ca-islamic', { year: 'numeric' }).format(new Date());
+      const match = formatted.match(/\d+/);
+      return match ? parseInt(match[0], 10) : 1447;
+    } catch {
+      return 1447;
+    }
+  }
+
+  const currentHijriYear = getHijriYear();
+  const currentGregorianYear = new Date().getFullYear();
+  const nextGregorianYear = currentGregorianYear + 1;
+  const cycleId = `cycle-${currentHijriYear}`;
+  const academicYearNameEn = `Academic Year ${currentHijriYear} Hijri`;
+  const academicYearNameAr = `العام الدراسي ${currentHijriYear} هـ`;
+  const startGregorian = `${currentGregorianYear}-06-21`;
+  const endGregorian = `${nextGregorianYear}-02-21`;
+  const hijriStart = `${currentHijriYear}-01-01`;
+  const hijriEnd = `${currentHijriYear}-12-29`;
+
   const registryDbPaths = getRegistryDbPaths(isDev);
 
   // Populate all target databases
@@ -799,11 +821,15 @@ async function handleInstallation(isDev = false) {
     const dbPath = dbPaths[i];
     const registryDbPath = registryDbPaths[i];
 
-    // Ensure registry directory exists and seed registry DB
+    // Ensure registry directory and years subdirectory exist
     if (registryDbPath) {
       const regDir = path.dirname(registryDbPath);
       if (!existsSync(regDir)) {
         mkdirSync(regDir, { recursive: true });
+      }
+      const yearsDir = path.join(regDir, "years");
+      if (!existsSync(yearsDir)) {
+        mkdirSync(yearsDir, { recursive: true });
       }
 
       const regDb = new Database(registryDbPath);
@@ -813,8 +839,8 @@ async function handleInstallation(isDev = false) {
         regDb.run(
           `INSERT OR IGNORE INTO academic_years (
             id, org_id, name, name_ar, start_date, end_date, hijri_start_date, hijri_end_date, db_filename, status, is_current, created_at, updated_at
-          ) VALUES ('cycle-1447', ?, 'Academic Year 1447 Hijri', 'العام الدراسي 1447 هـ', '2026-06-21', '2027-02-21', '1447-01-01', '1447-12-29', 'orbis.db', 'active', 1, ?, ?)`,
-          [orgId, now, now],
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, '../orbis.db', 'active', 1, ?, ?)`,
+          [cycleId, orgId, academicYearNameEn, academicYearNameAr, startGregorian, endGregorian, hijriStart, hijriEnd, now, now],
         );
         regDb.run("PRAGMA foreign_keys = ON;");
       } catch (err) {
@@ -872,32 +898,31 @@ async function handleInstallation(isDev = false) {
     seedDefaultFinancialsAndPermissions(db, orgId, currency);
 
     // Insert Default Year into Year Database (academic_cycles table)
-    const cycleId = "cycle-1447";
     db.run(
       `INSERT OR IGNORE INTO academic_cycles (
         id, org_id, name, name_ar, start_date, end_date, type, grading_system, is_current, is_locked, is_enrollment_open, created_at, updated_at
-      ) VALUES (?, ?, 'Academic Year 1447 Hijri', 'العام الدراسي 1447 هـ', '2026-06-21', '2027-02-21', 'year', 'percentage', 1, 0, 1, ?, ?)`,
-      [cycleId, orgId, now, now],
+      ) VALUES (?, ?, ?, ?, ?, ?, 'year', 'percentage', 1, 0, 1, ?, ?)`,
+      [cycleId, orgId, academicYearNameEn, academicYearNameAr, startGregorian, endGregorian, now, now],
     );
 
     // Insert Semesters and Month sub-cycles
     const subCycles = [
       {
-        id: "cycle-1447-s1",
+        id: `${cycleId}-s1`,
         name: "Semester 1",
         nameAr: "الفصل الدراسي الأول",
         type: "term",
-        start: "2026-06-21",
-        end: "2026-10-21",
+        start: `${currentGregorianYear}-06-21`,
+        end: `${currentGregorianYear}-10-21`,
         weight: 50,
       },
       {
-        id: "cycle-1447-s2",
+        id: `${cycleId}-s2`,
         name: "Semester 2",
         nameAr: "الفصل الدراسي الثاني",
         type: "term",
-        start: "2026-10-22",
-        end: "2027-02-21",
+        start: `${currentGregorianYear}-10-22`,
+        end: `${nextGregorianYear}-02-21`,
         weight: 50,
       },
     ];
