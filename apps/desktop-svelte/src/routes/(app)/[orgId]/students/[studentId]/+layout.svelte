@@ -9,6 +9,13 @@ import { Button } from "@orbis/ui-svelte/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@orbis/ui-svelte/avatar";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { Badge } from "@orbis/ui-svelte/badge";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@orbis/ui-svelte/dropdown-menu";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
 import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
@@ -23,6 +30,7 @@ import {
   Users,
   Users2,
   FileText,
+  MoreHorizontal,
 } from "lucide-svelte";
 import { createEnrollmentsQuery } from "$lib/features/students";
 import { createClassesQuery } from "$lib/features/academics";
@@ -121,7 +129,7 @@ const menuItems = $derived([
         <AskOrbisButton
           query={m.student_evaluation_ai_ask_orbis_query({ name: student.full_name || student.name_ar || "" })}
           label={m.student_evaluation_ask_orbis_btn({ name: student.full_name || student.name_ar || "" })}
-          variant="secondary"
+          variant="outline"
           size="sm"
           class="h-8 text-[11px]"
         />
@@ -144,25 +152,39 @@ const menuItems = $derived([
           {m.detail_call_guardian()}
         </Button>
 
-        <Button
-          variant="outline"
-          size="sm"
-          class="h-8 text-[11px] gap-1.5 font-semibold"
-          onclick={() => toast.info(m.student_layout_transfer_coming_soon())}
-        >
-          <Users size={12} />
-          {m.student_layout_transfer_class()}
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger>
+            {#snippet child({ props })}
+              <Button
+                variant="outline"
+                size="sm"
+                class="h-8 w-8 p-0 cursor-pointer"
+                {...props}
+              >
+                <MoreHorizontal size={14} />
+              </Button>
+            {/snippet}
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" class="w-48 p-1 z-50 bg-popover border border-border shadow-md rounded-md select-none">
+            <DropdownMenuItem
+              class="flex items-center gap-2 px-2.5 py-2 text-[11px] font-semibold cursor-pointer text-foreground hover:bg-accent rounded-sm text-start"
+              onclick={() => toast.info(m.student_layout_transfer_coming_soon())}
+            >
+              <Users size={12} class="text-muted-foreground shrink-0" />
+              <span>{m.student_layout_transfer_class()}</span>
+            </DropdownMenuItem>
 
-        <Button
-          variant="outline"
-          size="sm"
-          class="h-8 text-[11px] gap-1.5 font-semibold text-destructive border-destructive/20 hover:bg-destructive/5 hover:text-destructive"
-          onclick={() => toast.info(m.student_layout_withdraw_coming_soon())}
-        >
-          <ShieldAlert size={12} />
-          {m.student_layout_withdraw_student()}
-        </Button>
+            <DropdownMenuSeparator class="bg-border/60 my-1" />
+
+            <DropdownMenuItem
+              class="flex items-center gap-2 px-2.5 py-2 text-[11px] font-semibold cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/5 hover:bg-destructive/5 rounded-sm text-start"
+              onclick={() => toast.info(m.student_layout_withdraw_coming_soon())}
+            >
+              <ShieldAlert size={12} class="text-destructive shrink-0" />
+              <span>{m.student_layout_withdraw_student()}</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       {/if}
     {/snippet}
   </DetailPageHeader>
