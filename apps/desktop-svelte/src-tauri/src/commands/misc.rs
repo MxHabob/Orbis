@@ -535,19 +535,27 @@ pub async fn get_setup_status(
     state: State<'_, Arc<AppState>>,
     org_id: String,
 ) -> CmdResult<bool> {
-    use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
-    use core_domain::entities::academic_cycle;
+    use sea_orm::EntityTrait;
+    use core_domain::entities::organization;
 
     let svc = state.service().await;
     let db = &svc.repo.db;
-    let exists = academic_cycle::Entity::find()
-        .filter(academic_cycle::Column::OrgId.eq(&org_id))
+    let org = organization::Entity::find_by_id(&org_id)
         .one(db)
         .await
         .map_err(|e| e.to_string())
-        .map_err(CommandError::from)?
-        .is_some();
+        .map_err(CommandError::from)?;
 
-    Ok(exists)
+    let is_complete = if let Some(o) = org {
+        if let Some(settings_str) = o.settings {
+            settings_str.contains("registration_config")
+        } else {
+            false
+        }
+    } else {
+        false
+    };
+
+    Ok(is_complete)
 }
 
