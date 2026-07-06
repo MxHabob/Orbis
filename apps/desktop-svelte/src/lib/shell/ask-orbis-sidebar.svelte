@@ -8,6 +8,7 @@ import { uiStore, authStore } from "$lib/stores";
 import Resizer from "./resizer.svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
+import { Textarea } from "@orbis/ui-svelte/textarea";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import * as m from "$lib/paraglide/messages";
 import { onboardingState } from "$lib/features/onboarding/state.svelte";
@@ -24,6 +25,7 @@ import { getLocale } from "$lib/paraglide/runtime";
 import { isDesktopApp } from "$lib/core/ipc";
 import { toast } from "svelte-sonner";
 import ChatHistoryPopover from "./chat-history-popover.svelte";
+import ChatInput from "./chat-input.svelte";
 import { page } from "$app/state";
 import { goto } from "$app/navigation";
 
@@ -150,18 +152,6 @@ async function submitMessage(query: string) {
   });
 
   scrollToBottom();
-}
-
-function handleSubmit(e: SubmitEvent | KeyboardEvent) {
-  if (e) e.preventDefault();
-  submitMessage(inputValue);
-}
-
-function handleKeyDown(e: KeyboardEvent) {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    handleSubmit(e);
-  }
 }
 
 function handleNewChat() {
@@ -348,29 +338,12 @@ function handleSelectHistoryItem(messagesToLoad: Message[]) {
   </div>
 
   <!-- Footer Input Area -->
-  <div class="p-3.5 shrink-0 select-none">
-    <form 
-      onsubmit={handleSubmit} 
-      class="flex items-center gap-2.5 w-full"
-    >
-        <Input
-          type="text"
-          bind:value={inputValue}
-          onkeydown={handleKeyDown}
-          placeholder={m.agent_input_placeholder()}
-          class="flex-1 outline-none text-[11.5px] px-1 h-8 shadow-none"
-        />
-      <Button
-        type="submit"
-        disabled={!inputValue.trim() && !isThinking}
-        class="w-8 h-8 flex items-center justify-center rounded-lg bg-muted/40 hover:bg-muted/80 text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:hover:bg-muted/40 disabled:hover:text-muted-foreground cursor-pointer border border-border/50 transition-colors shrink-0"
-      >
-        {#if isRtl}
-          <ArrowLeft size={14} strokeWidth={2.2} />
-        {:else}
-          <ArrowRight size={14} strokeWidth={2.2} />
-        {/if}
-      </Button>
-    </form>
-  </div>
+  <ChatInput
+    bind:value={inputValue}
+    isThinking={isThinking}
+    messagesLength={messages.length}
+    isRtl={isRtl}
+    onsubmit={submitMessage}
+    onnewchat={handleNewChat}
+  />
 </div>

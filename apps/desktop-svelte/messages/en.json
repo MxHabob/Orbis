@@ -1707,6 +1707,8 @@
   "agent_title": "Orbis Agent",
   "agent_subtitle": "Ask Orbis anything about your school, students, or classes.",
   "agent_input_placeholder": "Ask Orbis a question, or press / for commands.",
+  "agent_input_new_chat": "New chat",
+  "agent_input_newline_tip": "Shift+Enter for newline",
   "agent_suggest_1": "Which students have unpaid tuition fees this month?",
   "agent_suggest_2": "Show me the top performing classes in the recent exam.",
   "agent_suggest_3": "Walk me through how to add a new academic calendar semester.",
