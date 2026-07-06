@@ -24,10 +24,18 @@ let {
 } = $props();
 
 function isActive(itemPath: string): boolean {
-  const unlocalizedPathname = deLocalizeUrl(page.url).pathname;
-  const fullPath = itemPath ? `${basePath}/${itemPath}` : basePath;
+  const unlocalizedPathname = deLocalizeUrl(page.url).pathname.replace(/\/$/, "");
+  const cleanBasePath = basePath.replace(/\/$/, "");
+  const fullPath = itemPath ? `${cleanBasePath}/${itemPath}` : cleanBasePath;
+  console.log("SecondaryMenu isActive debug:", {
+    unlocalizedPathname,
+    cleanBasePath,
+    fullPath,
+    itemPath,
+    isEqual: unlocalizedPathname === fullPath
+  });
   if (itemPath === "") {
-    return unlocalizedPathname === basePath;
+    return unlocalizedPathname === cleanBasePath;
   }
   return (
     unlocalizedPathname === fullPath ||

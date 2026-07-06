@@ -1,5 +1,6 @@
 <script lang="ts">
 import { onMount } from "svelte";
+import { page } from "$app/state";
 import { commands } from "$lib/core/ipc";
 import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
@@ -145,10 +146,19 @@ async function initializeSchedule() {
         u.primary_role === "super_admin",
     );
 
-    if (classes.length > 0) {
+    const paramClassId = page.url.searchParams.get("classId") || page.url.searchParams.get("class");
+    if (paramClassId && classList.some((c: any) => String(c.id) === paramClassId)) {
+      selectedClassId = paramClassId;
+      viewMode = "class";
+    } else if (classes.length > 0) {
       selectedClassId = String(classes[0].id);
     }
-    if (teachers.length > 0) {
+
+    const paramTeacherId = page.url.searchParams.get("teacherId") || page.url.searchParams.get("teacher");
+    if (paramTeacherId && userList.some((u: any) => String(u.id) === paramTeacherId)) {
+      selectedTeacherId = paramTeacherId;
+      viewMode = "teacher";
+    } else if (teachers.length > 0) {
       selectedTeacherId = String(teachers[0].id);
     }
 

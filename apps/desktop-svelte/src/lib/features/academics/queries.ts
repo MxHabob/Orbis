@@ -34,3 +34,28 @@ export function createSubjectsQuery(orgId: string) {
     staleTime: 10 * 60 * 1000, // Subjects rarely change
   });
 }
+
+/** Class subjects / assignments. */
+export function createClassSubjectsQuery(classId?: string, cycleId?: string) {
+  return createQuery({
+    queryKey: ["class-subjects", classId, cycleId],
+    queryFn: () => commands.schedule.getClassSubjects(classId, cycleId),
+    enabled: !!classId,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** Assessments for a class. */
+export function createAssessmentsQuery(params: {
+  classId?: string;
+  subjectId?: string;
+  termId?: string;
+}) {
+  return createQuery({
+    queryKey: ["assessments", params.classId, params.subjectId, params.termId],
+    queryFn: () => commands.assessments.getByClass(params),
+    enabled: !!params.classId,
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
