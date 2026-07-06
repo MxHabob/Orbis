@@ -7,7 +7,6 @@ Right side: Linear-style diagnostics panel with Orbis Advisor insights.
 -->
 <script lang="ts">
 import { Button } from "@orbis/ui-svelte/button";
-import { Card } from "@orbis/ui-svelte/card";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { Badge } from "@orbis/ui-svelte/badge";
 import {
@@ -20,9 +19,6 @@ import {
   ClipboardList,
   ArrowRight,
   Milestone,
-  Compass,
-  BookOpen,
-  Users,
   AlertCircle,
   Sparkles,
   Info,
@@ -36,7 +32,8 @@ import {
   createSubjectsQuery,
   createCyclesQuery,
 } from "$lib/features/academics";
-import { createCurrentYearQuery } from "$lib/features/academics/year-queries";
+import { createCurrentYearQuery, createPromotionJobsQuery } from "$lib/features/academics/year-queries";
+import { createExamSessionsQuery } from "$lib/features/exams/queries";
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -45,25 +42,33 @@ const classesQuery = createClassesQuery(data.orgId);
 const subjectsQuery = createSubjectsQuery(data.orgId);
 const cyclesQuery = createCyclesQuery(data.orgId);
 const currentYearQuery = createCurrentYearQuery();
+const promotionJobsQuery = createPromotionJobsQuery(data.orgId);
+const examSessionsQuery = createExamSessionsQuery(data.orgId);
 
 // Derived Data
 const classes = $derived($classesQuery.data ?? []);
 const subjects = $derived($subjectsQuery.data ?? []);
 const cycles = $derived($cyclesQuery.data ?? []);
 const currentYear = $derived($currentYearQuery.data ?? null);
+const promotionJobs = $derived($promotionJobsQuery.data ?? []);
+const examSessions = $derived($examSessionsQuery.data ?? []);
 
 const isLoading = $derived(
   $classesQuery.isLoading ||
     $subjectsQuery.isLoading ||
     $cyclesQuery.isLoading ||
-    $currentYearQuery.isLoading,
+    $currentYearQuery.isLoading ||
+    $promotionJobsQuery.isLoading ||
+    $examSessionsQuery.isLoading,
 );
 
 const error = $derived(
   $classesQuery.error ||
     $subjectsQuery.error ||
     $cyclesQuery.error ||
-    $currentYearQuery.error,
+    $currentYearQuery.error ||
+    $promotionJobsQuery.error ||
+    $examSessionsQuery.error,
 );
 
 function refetchAll() {
@@ -71,6 +76,8 @@ function refetchAll() {
   $subjectsQuery.refetch();
   $cyclesQuery.refetch();
   $currentYearQuery.refetch();
+  $promotionJobsQuery.refetch();
+  $examSessionsQuery.refetch();
 }
 
 // Active Academic Year name
@@ -169,7 +176,7 @@ const directoryItems = $derived([
 const advisorInsights = $derived.by(() => {
   const insights = [];
   
-  // Grade Entry Insight
+  // 1. Grade Entry Insight
   if (activeCycleName) {
     insights.push({
       id: "grade-entry",
@@ -181,7 +188,7 @@ const advisorInsights = $derived.by(() => {
     });
   }
 
-  // Schedule Insight (Check schedule solver jobs or conflict states)
+  // 2. Schedule Insight
   insights.push({
     id: "schedule",
     text: classes.length > 0 
@@ -191,21 +198,59 @@ const advisorInsights = $derived.by(() => {
     icon: Calendar,
   });
 
-  // Student Promotion Insight
-  insights.push({
-    id: "promotion",
-    text: m.academics_overview_insight_promo_ready(),
-    variant: "neutral" as const,
-    icon: TrendingUp,
-  });
+  // 3. Student Promotion Insight
+  const activePromoJob = promotionJobs.find(
+    (job) => job.status === "dry_run" || job.status === "promoting" || job.status === "pending"
+  );
+  if (activePromoJob) {
+    if (activePromoJob.status === "promoting") {
+      insights.push({
+        id: "promotion",
+        text: m.academics_overview_insight_promo_running(),
+        variant: "warning" as const,
+        icon: TrendingUp,
+      });
+    } else {
+      insights.push({
+        id: "promotion",
+        text: m.academics_overview_insight_promo_ready({
+          promoted: activePromoJob.promoted_count ?? 0,
+          retained: activePromoJob.retained_count ?? 0,
+        }),
+        variant: "success" as const,
+        icon: TrendingUp,
+      });
+    }
+  } else {
+    insights.push({
+      id: "promotion",
+      text: m.academics_overview_insight_promo_none(),
+      variant: "neutral" as const,
+      icon: TrendingUp,
+    });
+  }
 
-  // Exams Hall Insight (Demo warning)
-  insights.push({
-    id: "exams-conflict",
-    text: m.academics_overview_insight_exams_warn(),
-    variant: "warning" as const,
-    icon: ClipboardList,
-  });
+  // 4. Exams Insight
+  const activeExamSession = examSessions.find(
+    (s) => s.status === "active" || s.status === "running"
+  );
+  if (activeExamSession) {
+    insights.push({
+      id: "exams-active",
+      text: m.academics_overview_insight_exams_active({
+        session: activeExamSession.name_ar || activeExamSession.name,
+      }),
+      variant: "success" as const,
+      icon: ClipboardList,
+    });
+  } else {
+    insights.push({
+      id: "exams-none",
+      text: m.academics_overview_insight_exams_none(),
+      variant: "neutral" as const,
+      icon: ClipboardList,
+    });
+  }
 
   return insights;
 });
