@@ -37,6 +37,14 @@ let roomType = $state(room?.room_type || "classroom");
 let building = $state(room?.building || "");
 let floor = $state<number | null>(room?.floor ? Number(room.floor) : null);
 
+const roomTypeLabels = {
+  classroom: "Classroom",
+  laboratory: "Laboratory",
+  lecture_hall: "Lecture Hall",
+  office: "Staff Office",
+  other: "Other",
+};
+
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
 
@@ -124,7 +132,6 @@ async function handleSubmit(e: SubmitEvent) {
         <label for="room_type" class="text-xs font-semibold text-foreground">
           Room Type
         </label>
-        {@const roomTypeLabels = { classroom: "Classroom", laboratory: "Laboratory", lecture_hall: "Lecture Hall", office: "Staff Office", other: "Other" }}
         <Select type="single" value={roomType} onValueChange={(v) => (roomType = v ?? "classroom")}>
           <SelectTrigger class="h-9 text-sm w-full">
             {roomTypeLabels[roomType as keyof typeof roomTypeLabels] || roomType}
