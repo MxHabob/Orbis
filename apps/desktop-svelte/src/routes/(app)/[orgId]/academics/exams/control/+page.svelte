@@ -445,25 +445,6 @@ onMount(() => {
         </h2>
       </div>
 
-      <!-- Cycle Selector -->
-      <div class="flex items-center gap-3 flex-wrap">
-        <Select type="single" value={selectedCycleId} onValueChange={(v) => { if (v) selectedCycleId = v; }}>
-          <SelectTrigger class="min-w-[200px] text-xs h-9">
-            <div class="flex items-center gap-2">
-              <span class="truncate">{selectedCycle ? selectedCycle.name_ar || selectedCycle.name : m.control_select_cycle()}</span>
-              {#if selectedCycle}
-                <Badge variant={getCycleStatusVariant(selectedCycle)} class="text-[9px] scale-90 px-1 py-0">{getCycleStatusLabel(selectedCycle)}</Badge>
-              {/if}
-            </div>
-          </SelectTrigger>
-          <SelectContent>
-            {#each cycles as cycle}
-              <SelectItem value={String(cycle.id)}>{cycle.name_ar || cycle.name}</SelectItem>
-            {/each}
-          </SelectContent>
-        </Select>
-      </div>
-
       {#if selectedCycle}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <ControlSidebar

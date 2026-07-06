@@ -137,3 +137,5 @@ export {
   BreadcrumbEllipsis,
 } from "./breadcrumb/index.js";
 export { Calendar } from "./calendar/index.js";
+export { Logo } from "./logo/index.js";
+

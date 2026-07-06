@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
 import { Card } from "@orbis/ui-svelte/card";
-import { Zap } from "lucide-svelte";
+import { Logo } from "@orbis/ui-svelte/logo";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
 
@@ -33,7 +33,7 @@ let selectedYear = $state("");
 			<!-- Accent Left Sidebar -->
 			<div class="w-full md:w-20 bg-brand-purple-dark flex md:flex-col items-center justify-between md:justify-start p-4 md:py-8 gap-4 text-primary-foreground shrink-0 select-none">
 				<div class="flex items-center justify-center text-primary-foreground">
-					<Zap class="size-6 fill-current" />
+					<Logo class="size-8 text-primary-foreground" dotClass="fill-white" />
 				</div>
 			</div>
 

@@ -9,7 +9,7 @@ import {
   workflowInbox,
 } from "$lib/stores";
 import { Button } from "@orbis/ui-svelte/button";
-import { Badge } from "@orbis/ui-svelte/badge";
+import { Logo } from "@orbis/ui-svelte/logo";
 import {
   Minimize2,
   Square,
@@ -140,13 +140,8 @@ onMount(() => {
   <!-- Start Side: Spacing for Mac traffic lights OR Logo + Cycle Switcher + Breadcrumb -->
   <div class="flex items-center gap-2.5 min-w-0 max-w-[55%]" class:ps-[76px]={isMac} data-tauri-drag-region>
     {#if !isMac}
-      <!-- App Logo icon -->
-      <div class="w-5 h-5 flex items-center justify-center text-primary shrink-0" data-tauri-drag-region>
-        <svg class="w-4.5 h-4.5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 3l8.5 14.7a1 1 0 0 1-.9 1.3H4.4a1 1 0 0 1-.9-1.3L12 3z" />
-          <path d="M12 15a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" />
-        </svg>
-      </div>
+      <!-- App Logo -->
+      <Logo class="w-6 h-6 text-foreground shrink-0" data-tauri-drag-region />
     {/if}
 
     <!-- Breadcrumb -->
