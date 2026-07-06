@@ -39,9 +39,18 @@ pub async fn list_academic_years(
     let registry_db = state.provider.registry();
     let current_year_id = state.provider.current_year_id().await;
 
-    let years = AcademicYearRepo::get_all(registry_db, &org_id)
+    let mut years = AcademicYearRepo::get_all(registry_db, &org_id)
         .await
         .map_err(|e| CommandError::from(e.to_string()))?;
+
+    if years.is_empty() {
+        use sea_orm::{EntityTrait, QueryOrder};
+        years = academic_year::Entity::find()
+            .order_by_desc(academic_year::Column::StartDate)
+            .all(registry_db)
+            .await
+            .map_err(|e| CommandError::from(e.to_string()))?;
+    }
 
     let infos = years
         .into_iter()
