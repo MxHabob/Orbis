@@ -248,6 +248,7 @@ pub fn run() {
 
             // Finance commands
             commands::finance::get_ledger_accounts,
+            commands::finance::get_transaction_accounts,
             commands::finance::create_ledger_account,
             commands::finance::get_treasuries,
             commands::finance::create_treasury,

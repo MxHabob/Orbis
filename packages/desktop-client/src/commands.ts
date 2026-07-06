@@ -308,6 +308,9 @@ export const commands = {
     getLedgerAccounts: (orgId: string) =>
       invoke<JsonRecord[]>("get_ledger_accounts", { orgId }),
 
+    getTransactionAccounts: (orgId: string) =>
+      invoke<JsonRecord[]>("get_transaction_accounts", { orgId }),
+
     createLedgerAccount: (orgId: string, request: JsonRecord) =>
       invoke<JsonRecord>("create_ledger_account", { orgId, request }),
 

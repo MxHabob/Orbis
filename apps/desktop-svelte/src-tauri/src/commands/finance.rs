@@ -29,6 +29,17 @@ pub async fn get_ledger_accounts(
 }
 
 #[tauri::command]
+pub async fn get_transaction_accounts(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+) -> CmdResult<Vec<LedgerAccountResponse>> {
+    state.service().await
+        .get_transaction_accounts(&org_id)
+        .await
+        .map_err(CommandError::from)
+}
+
+#[tauri::command]
 pub async fn create_ledger_account(
     state: State<'_, Arc<AppState>>,
     org_id: String,

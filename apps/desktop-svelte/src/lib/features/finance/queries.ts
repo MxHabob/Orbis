@@ -45,6 +45,16 @@ export function createLedgerAccountsQuery(orgId: string) {
   });
 }
 
+/** Transaction/leaf accounts query. */
+export function createTransactionAccountsQuery(orgId: string) {
+  return createQuery({
+    queryKey: ["transaction-accounts", orgId],
+    queryFn: () => commands.finance.getTransactionAccounts(orgId),
+    enabled: !!orgId,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 /** Detailed account statement query. */
 export function createAccountStatementQuery(orgId: string, accountId: string, startDate: string, endDate: string) {
   return createQuery({

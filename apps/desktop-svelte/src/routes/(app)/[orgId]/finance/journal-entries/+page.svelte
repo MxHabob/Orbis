@@ -76,7 +76,7 @@ async function loadData() {
   try {
     const [entriesList, ledgersList] = await Promise.all([
       commands.finance.getJournalEntries(data.orgId),
-      commands.finance.getLedgerAccounts(data.orgId),
+      commands.finance.getTransactionAccounts(data.orgId),
     ]);
 
     journalEntries = entriesList.map((je) => ({

@@ -245,7 +245,105 @@ impl super::Service {
             }
         }
 
-        let mut result: Vec<LedgerAccountResponse> = response_map.into_values().collect();
+        // Only return control accounts (depth < 4)
+        let mut result: Vec<LedgerAccountResponse> = response_map.into_values()
+            .filter(|acc| acc.depth < 4)
+            .collect();
+        result.sort_by(|a, b| a.code.cmp(&b.code));
+        Ok(result)
+    }
+
+    pub async fn get_transaction_accounts(&self, org_id: &str) -> Result<Vec<LedgerAccountResponse>, String> {
+        let accounts = self.repo.get_ledger_accounts(org_id).await.map_err(|e| e.to_string())?;
+        let entries = self.repo.get_journal_entries(org_id).await.map_err(|e| e.to_string())?;
+
+        use std::collections::HashMap;
+        let mut response_map: HashMap<String, LedgerAccountResponse> = accounts.iter().map(|acc| {
+            let mut debit_yer = 0.0;
+            let mut credit_yer = 0.0;
+            let mut debit_sar = 0.0;
+            let mut credit_sar = 0.0;
+            let mut debit_usd = 0.0;
+            let mut credit_usd = 0.0;
+            let mut debit_aed = 0.0;
+            let mut credit_aed = 0.0;
+
+            let ob = acc.opening_balance.unwrap_or(0.0);
+            if ob > 0.0 {
+                let is_debit_type = match acc.item_type.to_lowercase().as_str() {
+                    "asset" | "expense" => true,
+                    _ => false,
+                };
+                match acc.currency.to_uppercase().as_str() {
+                    "YER" => { if is_debit_type { debit_yer = ob; } else { credit_yer = ob; } }
+                    "SAR" => { if is_debit_type { debit_sar = ob; } else { credit_sar = ob; } }
+                    "USD" => { if is_debit_type { debit_usd = ob; } else { credit_usd = ob; } }
+                    "AED" => { if is_debit_type { debit_aed = ob; } else { credit_aed = ob; } }
+                    _ => {}
+                }
+            }
+
+            (acc.id.clone(), LedgerAccountResponse {
+                id: acc.id.clone(),
+                org_id: acc.org_id.clone(),
+                code: acc.code.clone(),
+                name: acc.name.clone(),
+                name_ar: acc.name_ar.clone(),
+                item_type: acc.item_type.clone(),
+                sub_type: acc.sub_type.clone(),
+                parent_id: acc.parent_id.clone(),
+                path: acc.path.clone(),
+                depth: acc.depth,
+                currency: acc.currency.clone(),
+                opening_balance: acc.opening_balance,
+                current_balance: acc.current_balance,
+                entity_type: acc.entity_type.clone(),
+                entity_id: acc.entity_id.clone(),
+                is_control_account: acc.is_control_account,
+                is_system_account: acc.is_system_account,
+                is_active: acc.is_active,
+                created_at: acc.created_at.clone(),
+                updated_at: acc.updated_at.clone(),
+                debit_yer,
+                credit_yer,
+                debit_sar,
+                credit_sar,
+                debit_usd,
+                credit_usd,
+                debit_aed,
+                credit_aed,
+            })
+        }).collect();
+
+        for je in entries {
+            let currency = je.currency.to_uppercase();
+            let amount = je.amount;
+
+            if let Some(res) = response_map.get_mut(&je.debit_account_id) {
+                match currency.as_str() {
+                    "YER" => res.debit_yer += amount,
+                    "SAR" => res.debit_sar += amount,
+                    "USD" => res.debit_usd += amount,
+                    "AED" => res.debit_aed += amount,
+                    _ => {}
+                }
+            }
+
+            if let Some(res) = response_map.get_mut(&je.credit_account_id) {
+                match currency.as_str() {
+                    "YER" => res.credit_yer += amount,
+                    "SAR" => res.credit_sar += amount,
+                    "USD" => res.credit_usd += amount,
+                    "AED" => res.credit_aed += amount,
+                    _ => {}
+                }
+            }
+        }
+
+        // Only return transaction accounts (depth >= 4)
+        let mut result: Vec<LedgerAccountResponse> = response_map.into_values()
+            .filter(|acc| acc.depth >= 4)
+            .collect();
         result.sort_by(|a, b| a.code.cmp(&b.code));
         Ok(result)
     }
