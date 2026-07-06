@@ -138,7 +138,7 @@ const orgInitials = $derived(
 );
 
 function isActive(href: string, match: "exact" | "prefix"): boolean {
-  const unlocalizedPathname = deLocalizeUrl(page.url).pathname;
+  const unlocalizedPathname = decodeURIComponent(deLocalizeUrl(page.url).pathname);
   if (match === "exact") return unlocalizedPathname === href;
   return unlocalizedPathname.startsWith(href);
 }

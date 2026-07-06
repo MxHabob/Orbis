@@ -24,7 +24,7 @@ let {
 } = $props();
 
 function isActive(itemPath: string): boolean {
-  const unlocalizedPathname = deLocalizeUrl(page.url).pathname.replace(/\/$/, "");
+  const unlocalizedPathname = decodeURIComponent(deLocalizeUrl(page.url).pathname).replace(/\/$/, "");
   const cleanBasePath = basePath.replace(/\/$/, "");
   const fullPath = itemPath ? `${cleanBasePath}/${itemPath}` : cleanBasePath;
   console.log("SecondaryMenu isActive debug:", {
