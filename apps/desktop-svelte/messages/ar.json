@@ -2671,6 +2671,26 @@
   "policy_field_max_grade": "الدرجة العظمى",
   "policy_field_close_deadline": "الإغلاق التلقائي للإدخال عند انتهاء المهلة",
   "policy_field_allow_mod_after_close": "السماح بتعديل الدرجات بعد إغلاق الدورة",
-  "policy_field_mod_approval": "تعديل الدرجات بعد الإغلاق يتطلب موافقة"
+  "policy_field_mod_approval": "تعديل الدرجات بعد الإغلاق يتطلب موافقة",
+  "ledger_tab_gl": "الحساب العام",
+  "ledger_tab_treasury": "الخزائن والبنوك",
+  "ledger_tab_entity": "حساب الكيانات المساعدة",
+  "ledger_label_parent": "الحساب الأب",
+  "ledger_placeholder_parent": "اختر الحساب الأب الرقابي...",
+  "ledger_label_treasury_type": "نوع الخزينة",
+  "ledger_type_cash": "صندوق نقدي (كاش)",
+  "ledger_type_bank": "حساب بنكي",
+  "ledger_label_bank_name": "اسم البنك",
+  "ledger_placeholder_bank_name": "مثال: بنك اليمن الدولي",
+  "ledger_label_account_number": "رقم الحساب البنكي",
+  "ledger_placeholder_account_number": "مثال: 123456789",
+  "ledger_label_entity_type": "نوع الكيان المالي",
+  "ledger_entity_vendor": "مورد (Supplier / Vendor)",
+  "ledger_entity_partner": "شريك (Partner)",
+  "ledger_entity_employee": "موظف (Employee)",
+  "ledger_label_opening_balance": "الرصيد الافتتاحي",
+  "ledger_btn_add_account": "إضافة حساب / صندوق",
+  "ledger_dialog_add_title": "إضافة حساب أو صندوق جديد",
+  "ledger_dialog_add_desc": "قم بفتح حساب أستاذ عام، صندوق، أو حساب مساعد للكيانات في مكانه الهيكلي الصحيح."
 }
 

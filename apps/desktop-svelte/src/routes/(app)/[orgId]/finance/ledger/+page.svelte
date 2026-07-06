@@ -19,6 +19,7 @@ import {
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@orbis/ui-svelte/dialog";
 import { toast } from "svelte-sonner";
 import {
   Printer,
@@ -47,6 +48,12 @@ let fees = $state<any[]>([]);
 let treasuries = $state<any[]>([]);
 let isLoading = $state(true);
 let error = $state<string | null>(null);
+let isAddDialogOpen = $state(false);
+
+function handleSuccess() {
+  isAddDialogOpen = false;
+  loadData();
+}
 
 // Filter states
 let activeTab = $state<"all" | "single">("all");
@@ -1235,6 +1242,16 @@ function exitPage() {
 
     <!-- Toolbar controls and Print actions -->
     <div class="flex items-center gap-3">
+      <!-- Add Account / Treasury -->
+      <Button
+        variant="ghost"
+        class="text-xs h-9 px-4 border border-border flex items-center gap-2 bg-gradient-to-b hover:from-muted/20 hover:to-muted/30 font-bold rounded-md shadow-sm text-primary"
+        onclick={() => isAddDialogOpen = true}
+      >
+        <FolderOpen size={13} />
+        <span>{m.ledger_btn_add_account()}</span>
+      </Button>
+
       <!-- 1. Print Selected -->
       <Button
         variant="ghost"
@@ -1646,9 +1663,27 @@ function exitPage() {
         {/if}
       {/if}
     </div>
-
-
-  </div>
+  <Dialog bind:open={isAddDialogOpen}>
+    <DialogContent class="max-w-xl text-start select-none h-[80vh] flex flex-col p-6 bg-card border-border/80">
+      <DialogHeader class="shrink-0 mb-4 text-start">
+        <DialogTitle class="text-base font-extrabold text-foreground">
+          {m.ledger_dialog_add_title()}
+        </DialogTitle>
+        <DialogDescription class="text-[11px] text-muted-foreground leading-relaxed">
+          {m.ledger_dialog_add_desc()}
+        </DialogDescription>
+      </DialogHeader>
+      {#if isAddDialogOpen}
+        {#await import("$lib/features/finance/components/ledger-form.svelte") then { default: LedgerForm }}
+          <LedgerForm
+            orgId={data.orgId}
+            onSuccess={handleSuccess}
+            onCancel={() => isAddDialogOpen = false}
+          />
+        {/await}
+      {/if}
+    </DialogContent>
+  </Dialog>
 
 </div>
 

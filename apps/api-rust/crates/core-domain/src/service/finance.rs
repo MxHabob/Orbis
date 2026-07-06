@@ -347,27 +347,97 @@ impl super::Service {
     }
 
     pub async fn create_ledger_account(&self, org_id: &str, req: CreateLedgerAccountRequest) -> Result<ledger_account::Model, String> {
-        let (path, depth) = if let Some(ref pid) = req.parent_id {
-            let parent = self.repo.get_ledger_account_by_id(pid).await
+        // 1. Resolve parent account
+        let parent = if let Some(ref pid) = req.parent_id {
+            if pid.is_empty() {
+                None
+            } else {
+                let p = self.repo.get_ledger_account_by_id(pid).await
+                    .map_err(|e| e.to_string())?
+                    .ok_or_else(|| "Parent account not found".to_string())?;
+                Some(p)
+            }
+        } else if let Some(ref sub_type) = req.sub_type {
+            let parent_code = match sub_type.to_lowercase().as_str() {
+                "vendor" => "210106",
+                "partner" => "310101",
+                "employee" => "210401",
+                "student" => "110301",
+                "guardian" => "110308",
+                _ => return Err(format!("Unsupported sub_type for auto parent: {}", sub_type)),
+            };
+            let parent_id = format!("{}_{}", org_id, parent_code);
+            let p = self.repo.get_ledger_account_by_id(&parent_id).await
                 .map_err(|e| e.to_string())?
-                .ok_or_else(|| "Parent account not found".to_string())?;
-            (format!("{}/{}", parent.path, req.code), parent.depth + 1)
+                .ok_or_else(|| format!("Parent control account '{}' not found. Did you seed default financials?", parent_code))?;
+            Some(p)
         } else {
-            (format!("{}_{}", org_id, req.code), 0)
+            None
+        };
+
+        // 2. Resolve code (auto-generate if empty)
+        let final_code = if req.code.is_empty() {
+            if let Some(ref p) = parent {
+                let children = ledger_account::Entity::find()
+                    .filter(ledger_account::Column::OrgId.eq(org_id))
+                    .filter(ledger_account::Column::ParentId.eq(Some(p.id.clone())))
+                    .all(&self.repo.db)
+                    .await
+                    .map_err(|e| e.to_string())?;
+
+                let next_suffix = if children.is_empty() {
+                    1
+                } else {
+                    let mut max_suf = 0;
+                    for child in children {
+                        if child.code.starts_with(&p.code) && child.code.len() > p.code.len() {
+                            let suffix_str = &child.code[p.code.len()..];
+                            if let Ok(num) = suffix_str.parse::<u32>() {
+                                if num > max_suf {
+                                    max_suf = num;
+                                }
+                            }
+                        }
+                    }
+                    max_suf + 1
+                };
+                format!("{}{:05}", p.code, next_suffix)
+            } else {
+                return Err("Account code cannot be empty if there is no parent account".to_string());
+            }
+        } else {
+            req.code.clone()
+        };
+
+        // 3. Resolve path, depth, parent_id, currency, and type
+        let (parent_id, path, depth, currency, item_type) = if let Some(ref p) = parent {
+            let pid = Some(p.id.clone());
+            let path = format!("{}/{}", p.path, final_code);
+            let depth = p.depth + 1;
+            let currency = p.currency.clone();
+            let item_type = p.item_type.clone();
+            (pid, path, depth, currency, item_type)
+        } else {
+            let pid = None;
+            let path = format!("{}_{}", org_id, final_code);
+            let depth = 0;
+            let currency = req.currency.clone();
+            let item_type = req.item_type.clone();
+            (pid, path, depth, currency, item_type)
         };
 
         let la = ledger_account::Model {
             id: Uuid::new_v4().to_string(),
             org_id: org_id.to_string(),
-            code: req.code,
+            code: final_code,
             name: req.name,
             name_ar: req.name_ar,
-            item_type: req.item_type,
+            item_type,
             sub_type: req.sub_type,
-            parent_id: req.parent_id,
+            parent_id,
             path,
             depth,
-            currency: req.currency,
+            currency,
             opening_balance: req.opening_balance,
             current_balance: req.opening_balance.or(Some(0.0)),
             entity_type: None,

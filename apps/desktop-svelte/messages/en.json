@@ -2668,7 +2668,27 @@
   "policy_field_max_grade": "Max Score",
   "policy_field_close_deadline": "Auto Close on Deadline",
   "policy_field_allow_mod_after_close": "Allow Modifications After Close",
-  "policy_field_mod_approval": "Modifications Require Approval"
+  "policy_field_mod_approval": "Modifications Require Approval",
+  "ledger_tab_gl": "GL Account",
+  "ledger_tab_treasury": "Treasury",
+  "ledger_tab_entity": "Entity Account",
+  "ledger_label_parent": "Parent Account",
+  "ledger_placeholder_parent": "Select parent account...",
+  "ledger_label_treasury_type": "Treasury Type",
+  "ledger_type_cash": "Cash Box",
+  "ledger_type_bank": "Bank Account",
+  "ledger_label_bank_name": "Bank Name",
+  "ledger_placeholder_bank_name": "e.g., International Bank of Yemen",
+  "ledger_label_account_number": "Account Number",
+  "ledger_placeholder_account_number": "e.g., 123456789",
+  "ledger_label_entity_type": "Entity Type",
+  "ledger_entity_vendor": "Supplier / Vendor",
+  "ledger_entity_partner": "Partner",
+  "ledger_entity_employee": "Employee",
+  "ledger_label_opening_balance": "Opening Balance",
+  "ledger_btn_add_account": "Add Account",
+  "ledger_dialog_add_title": "Add New Account / Treasury",
+  "ledger_dialog_add_desc": "Create general ledger accounts, treasuries, or sub-ledger entities in the correct spot."
 }
 
 

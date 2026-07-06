@@ -12,8 +12,7 @@ import { Plus, Landmark, Layers } from "lucide-svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency } from "$lib/core/i18n";
 import { fade } from "svelte/transition";
-import TreasuryCreateSheet from "$lib/features/finance/components/treasury-create-sheet.svelte";
-import LedgerCreateSheet from "$lib/features/finance/components/ledger-create-sheet.svelte";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@orbis/ui-svelte/dialog";
 import * as m from "$lib/paraglide/messages";
 
 import { DataTable } from "$lib/tables";
@@ -29,8 +28,13 @@ let { data }: { data: { orgId: string } } = $props();
 let treasuries = $state<any[]>([]);
 let ledgers = $state<any[]>([]);
 let isLoading = $state(true);
-let isTreasurySheetOpen = $state(false);
-let isLedgerSheetOpen = $state(false);
+let activeTabType = $state<"gl" | "treasury" | "entity">("gl");
+let isAddDialogOpen = $state(false);
+
+function handleSuccess() {
+  isAddDialogOpen = false;
+  loadData();
+}
 
 // ── Data Loading ────────────────────────────────────────────────────────
 
@@ -152,7 +156,7 @@ const rtl = $derived(getLocale() === "ar");
               {m.finance_total_cash_assets({ balance: formatCurrency(totalBalance, "YER") })}
             </span>
           </div>
-          <Button variant="outline" class="text-[10px] h-7 px-2" onclick={() => isTreasurySheetOpen = true}>
+          <Button variant="outline" class="text-[10px] h-7 px-2" onclick={() => { activeTabType = "treasury"; isAddDialogOpen = true; }}>
             <Plus size={12} class="me-1" />
             {m.finance_new_treasury_button()}
           </Button>
@@ -180,7 +184,7 @@ const rtl = $derived(getLocale() === "ar");
               {m.finance_ledger_accounts_count({ count: ledgers.length })}
             </span>
           </div>
-          <Button variant="outline" class="text-[10px] h-7 px-2" onclick={() => isLedgerSheetOpen = true}>
+          <Button variant="outline" class="text-[10px] h-7 px-2" onclick={() => { activeTabType = "gl"; isAddDialogOpen = true; }}>
             <Plus size={12} class="me-1" />
             {m.finance_new_ledger_button()}
           </Button>
@@ -199,13 +203,25 @@ const rtl = $derived(getLocale() === "ar");
   {/if}
 </div>
 
-<TreasuryCreateSheet
-  bind:open={isTreasurySheetOpen}
-  orgId={data.orgId}
-  onSuccess={loadData}
-/>
-<LedgerCreateSheet
-  bind:open={isLedgerSheetOpen}
-  orgId={data.orgId}
-  onSuccess={loadData}
-/>
+<Dialog bind:open={isAddDialogOpen}>
+  <DialogContent class="max-w-xl text-start select-none h-[80vh] flex flex-col p-6 bg-card border-border/80">
+    <DialogHeader class="shrink-0 mb-4 text-start">
+      <DialogTitle class="text-base font-extrabold text-foreground">
+        {m.ledger_dialog_add_title()}
+      </DialogTitle>
+      <DialogDescription class="text-[11px] text-muted-foreground leading-relaxed">
+        {m.ledger_dialog_add_desc()}
+      </DialogDescription>
+    </DialogHeader>
+    {#if isAddDialogOpen}
+      {#await import("$lib/features/finance/components/ledger-form.svelte") then { default: LedgerForm }}
+        <LedgerForm
+          orgId={data.orgId}
+          onSuccess={handleSuccess}
+          onCancel={() => isAddDialogOpen = false}
+          defaultTab={activeTabType}
+        />
+      {/await}
+    {/if}
+  </DialogContent>
+</Dialog>
