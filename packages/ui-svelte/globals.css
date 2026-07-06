@@ -679,31 +679,19 @@
 
 .skeleton {
   @apply relative overflow-hidden rounded-md bg-muted;
-  &::after {
-    content: "";
-    @apply absolute inset-0;
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      oklch(0.52 0.12 280 / 0.06) 40%,
-      oklch(0.52 0.12 280 / 0.12) 50%,
-      oklch(0.52 0.12 280 / 0.06) 60%,
-      transparent 100%
-    );
-    background-size: 200% 100%;
-    animation: shimmer 2.5s linear infinite;
-  }
 }
 
-.dark .skeleton::after {
+.skeleton::after {
+  content: "";
+  @apply absolute inset-0;
   background: linear-gradient(
     90deg,
     transparent 0%,
-    oklch(0.6 0.12 280 / 0.08) 40%,
-    oklch(0.6 0.12 280 / 0.16) 50%,
-    oklch(0.6 0.12 280 / 0.08) 60%,
+    color-mix(in oklch, var(--color-background) 40%, transparent) 50%,
     transparent 100%
   );
+  background-size: 200% 100%;
+  animation: shimmer 2.5s linear infinite;
 }
 
 @layer utilities {

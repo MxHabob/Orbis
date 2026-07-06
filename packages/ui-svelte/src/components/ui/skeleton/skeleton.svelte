@@ -9,13 +9,23 @@ import type { HTMLAttributes } from "svelte/elements";
 let {
   ref = $bindable(null),
   class: className,
+  animate = true,
   ...restProps
-}: WithoutChildren<WithElementRef<HTMLAttributes<HTMLDivElement>>> = $props();
+}: WithoutChildren<WithElementRef<HTMLAttributes<HTMLDivElement>>> & {
+  animate?: boolean;
+} = $props();
 </script>
 
 <div
 	bind:this={ref}
 	data-slot="skeleton"
-	class={cn("skeleton", className)}
+	class={cn(
+		"relative overflow-hidden",
+		"bg-gradient-to-r from-transparent via-primary/10 to-transparent dark:via-primary/10",
+		"bg-[length:200%_100%]",
+		"rounded-none",
+		animate && "animate-shimmer",
+		className
+	)}
 	{...restProps}
 ></div>
