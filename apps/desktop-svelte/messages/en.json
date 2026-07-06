@@ -50,6 +50,7 @@
   "login_env_desc": "Select institution branch and active academic year.",
   "login_select_org": "Organization / Branch",
   "login_select_year": "Academic Year",
+  "login_no_years_found": "No academic years found",
   "login_default_branch": "Main Branch",
   "login_other_branch": "Secondary Branch",
   "login_current_year": "Current Year (2026-2027)",

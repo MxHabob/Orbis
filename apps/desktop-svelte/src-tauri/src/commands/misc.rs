@@ -248,6 +248,9 @@ pub async fn initialize_school_setup(
 
     // Cache values we need outside or multiple times to avoid borrow moves
     let root_cycle_id = config.cycles.first().map(|c| c.id.clone()).unwrap_or_default();
+    let root_cycle = config.cycles.iter().find(|c| c.parent_id.is_none()).map(|c| (c.id.clone(), c.name.clone(), c.name_ar.clone(), c.start_date.clone(), c.end_date.clone()));
+    let org_id_for_registry = org_id.clone();
+    let now_str_for_registry = now_str.clone();
 
     db.transaction::<_, (), String>(move |txn| {
         let org_id = org_id.clone();
@@ -498,7 +501,7 @@ pub async fn initialize_school_setup(
     .map_err(CommandError::from)?;
 
     // 8.5. Register the year in the registry database
-    if let Some(root_cycle) = config.cycles.iter().find(|c| c.parent_id.is_none()) {
+    if let Some((root_id, root_name, root_name_ar, root_start, root_end)) = root_cycle {
         use sea_orm::ConnectionTrait;
         let registry_db = state.provider.registry();
         let reg_backend = registry_db.get_database_backend();
@@ -507,21 +510,21 @@ pub async fn initialize_school_setup(
             reg_backend,
             "INSERT OR IGNORE INTO academic_years (id, org_id, name, name_ar, start_date, end_date, hijri_start_date, hijri_end_date, db_filename, status, is_current, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NULL, NULL, 'orbis.db', 'active', 1, ?, ?)",
             vec![
-                root_cycle.id.clone().into(),
-                org_id.clone().into(),
-                root_cycle.name.clone().into(),
-                root_cycle.name_ar.clone().into(),
-                root_cycle.start_date.clone().into(),
-                root_cycle.end_date.clone().into(),
-                now_str.clone().into(),
-                now_str.clone().into(),
+                root_id.clone().into(),
+                org_id_for_registry.into(),
+                root_name.into(),
+                root_name_ar.into(),
+                root_start.into(),
+                root_end.into(),
+                now_str_for_registry.clone().into(),
+                now_str_for_registry.into(),
             ]
         ))
         .await
         .map_err(|e| CommandError::from(e.to_string()))?;
         
         // Also set this year as active in provider
-        let _ = state.provider.switch_year(&root_cycle.id).await;
+        let _ = state.provider.switch_year(&root_id).await;
     }
 
     Ok(())

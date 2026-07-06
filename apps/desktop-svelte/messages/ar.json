@@ -50,6 +50,7 @@
   "login_env_desc": "اختر فرع المؤسسة والسنة الدراسية النشطة.",
   "login_select_org": "المؤسسة / الفرع",
   "login_select_year": "السنة الدراسية",
+  "login_no_years_found": "لم يتم العثور على أعوام دراسية",
   "login_default_branch": "الفرع الرئيسي",
   "login_other_branch": "الفرع الثاني",
   "login_current_year": "السنة الحالية (2026-2027)",
