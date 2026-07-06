@@ -116,7 +116,7 @@ async function handleSubmit(e: SubmitEvent) {
   <title>{m.user_form_title_create()} | Orbis</title>
 </svelte:head>
 
-<div class="h-full w-full flex flex-col overflow-hidden bg-background">
+<div class="h-full w-full flex flex-col overflow-hidden">
   <!-- Sticky Page Header -->
   <DetailPageHeader
     backHref={`/${orgId}/settings/users`}
@@ -133,8 +133,8 @@ async function handleSubmit(e: SubmitEvent) {
   </DetailPageHeader>
 
   <!-- Scrollable Form Container -->
-  <div class="flex-1 overflow-y-auto bg-background/50 scrollbar-hide">
-    <div class="max-w-4xl mx-auto p-6 flex flex-col gap-6">
+  <div class="flex-1 overflow-y-auto scrollbar-hide">
+    <div class="max-w-6xl mx-auto p-6 flex flex-col gap-6">
       <form onsubmit={handleSubmit} class="flex flex-col gap-6 text-start">
         
         <!-- Section 1: Personal Information -->

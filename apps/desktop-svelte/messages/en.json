@@ -900,6 +900,7 @@
   "assessment_sheet_subtitle": "Create an exam, test, quiz or assignment record.",
   "assessment_label_name_ar": "Assessment Title (Arabic) *",
   "assessment_placeholder_name_ar": "e.g., Midterm Mathematics Exam",
+  "assessment_placeholder_name_en": "e.g., Midterm Mathematics Exam",
   "assessment_label_name_en": "Assessment Title (English)",
   "assessment_label_type": "Assessment Category",
   "assessment_option_exam": "Final / Midterm Exam",

@@ -2,6 +2,7 @@
 import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
+import { Label } from "@orbis/ui-svelte/label";
 import { SheetHeader, SheetTitle } from "@orbis/ui-svelte/sheet";
 import {
   Select,
@@ -36,6 +37,13 @@ let nameAr = $state("");
 let maxScore = $state<number>(100);
 let weight = $state<number>(15);
 let assessmentType = $state<"exam" | "quiz" | "homework" | "classwork">("exam");
+
+const typeLabels: Record<"exam" | "quiz" | "homework" | "classwork", string> = $derived({
+  exam: m.assessment_option_exam(),
+  quiz: m.assessment_option_quiz(),
+  homework: m.assessment_option_homework(),
+  classwork: m.assessment_option_classwork(),
+});
 
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
@@ -92,9 +100,9 @@ async function handleSubmit(e: SubmitEvent) {
 	<div class="flex-1 overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide">
 		<!-- Name (Arabic) -->
 		<div class="flex flex-col gap-2 text-start">
-			<label for="ass_name_ar" class="text-sm font-medium text-foreground">
+			<Label for="ass_name_ar" class="text-sm font-medium text-foreground">
 				{m.assessment_label_name_ar()}
-			</label>
+			</Label>
 			<Input 
 				id="ass_name_ar"
 				type="text" 
@@ -106,23 +114,22 @@ async function handleSubmit(e: SubmitEvent) {
 
 		<!-- Name (English) -->
 		<div class="flex flex-col gap-2 text-start">
-			<label for="ass_name_en" class="text-sm font-medium text-foreground">
+			<Label for="ass_name_en" class="text-sm font-medium text-foreground">
 				{m.assessment_label_name_en()}
-			</label>
+			</Label>
 			<Input 
 				id="ass_name_en"
 				type="text" 
 				bind:value={name}
-				placeholder="e.g., Midterm Mathematics Exam"
+				placeholder={m.assessment_placeholder_name_en()}
 			/>
 		</div>
 
 		<!-- Assessment Type -->
 		<div class="flex flex-col gap-2 text-start">
-			<label for="ass_type" class="text-sm font-medium text-foreground">
+			<Label for="ass_type" class="text-sm font-medium text-foreground">
 				{m.assessment_label_type()}
-			</label>
-			{@const typeLabels = { exam: m.assessment_option_exam(), quiz: m.assessment_option_quiz(), homework: m.assessment_option_homework(), classwork: m.assessment_option_classwork() }}
+			</Label>
 			<Select type="single" value={assessmentType} onValueChange={(v) => (assessmentType = (v as any) ?? "exam")}>
 				<SelectTrigger class="h-9 text-sm w-full">
 					{typeLabels[assessmentType] || assessmentType}
@@ -140,9 +147,9 @@ async function handleSubmit(e: SubmitEvent) {
 		<div class="grid grid-cols-2 gap-4">
 			<!-- Max Score -->
 			<div class="flex flex-col gap-2 text-start">
-				<label for="ass_max" class="text-sm font-medium text-foreground">
+				<Label for="ass_max" class="text-sm font-medium text-foreground">
 					{m.assessment_label_max()}
-				</label>
+				</Label>
 				<Input 
 					id="ass_max"
 					type="number" 
@@ -154,9 +161,9 @@ async function handleSubmit(e: SubmitEvent) {
 
 			<!-- Weight -->
 			<div class="flex flex-col gap-2 text-start">
-				<label for="ass_weight" class="text-sm font-medium text-foreground">
+				<Label for="ass_weight" class="text-sm font-medium text-foreground">
 					{m.assessment_label_weight()}
-				</label>
+				</Label>
 				<Input 
 					id="ass_weight"
 					type="number" 

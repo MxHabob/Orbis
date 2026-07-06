@@ -899,6 +899,7 @@
   "assessment_sheet_subtitle": "يرجى تحديد تفاصيل الاختبار أو الواجب المراد إضافته.",
   "assessment_label_name_ar": "عنوان التقييم (بالعربية) *",
   "assessment_placeholder_name_ar": "مثال: اختبار الرياضيات الفتري",
+  "assessment_placeholder_name_en": "مثال: اختبار الرياضيات الفتري",
   "assessment_label_name_en": "عنوان التقييم (بالإنجليزية)",
   "assessment_label_type": "تصنيف التقييم",
   "assessment_option_exam": "اختبار نهائي / فتري",
