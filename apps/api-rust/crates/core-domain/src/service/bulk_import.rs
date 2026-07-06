@@ -101,21 +101,18 @@ impl super::Service {
             }
 
             let trimmed_email = row.email.trim().to_lowercase();
-            if trimmed_email.is_empty() {
-                errors.push(BulkRowError {
-                    row_index,
-                    field: "email".to_string(),
-                    message: "البريد الإلكتروني مطلوب".to_string(),
-                });
-                failed += 1;
-                continue;
-            }
+            let is_email_auto = trimmed_email.is_empty();
+            let user_email = if is_email_auto {
+                format!("temp_stu_{}@temp.orbis", &uuid::Uuid::new_v4().to_string()[..8])
+            } else {
+                trimmed_email.clone()
+            };
 
             // ── Use create_user_in_org (same as single-entry) ──
             let password = row.password.as_deref().unwrap_or("Orbis@2026").to_string();
 
             let req = CreateUserRequest {
-                email: trimmed_email.clone(),
+                email: user_email,
                 password,
                 full_name: trimmed_name.to_string(),
                 name_ar: row.name_ar.clone(),
@@ -169,6 +166,7 @@ impl super::Service {
             }
 
             // ── Create enrollment if class_id provided ──
+            let mut generated_student_number: Option<String> = None;
             if let Some(ref class_id) = row.class_id {
                 let trimmed_class = class_id.trim();
                 if !trimmed_class.is_empty() {
@@ -182,15 +180,49 @@ impl super::Service {
                         status: row.enrollment_status.clone(),
                     };
 
-                    if let Err(e) = self.create_enrollment(org_id, enroll_req).await {
-                        // User created but enrollment failed — log error but don't fail the row
-                        errors.push(BulkRowError {
-                            row_index,
-                            field: "enrollment".to_string(),
-                            message: format!("تم إنشاء المستخدم لكن فشل التسجيل: {}", e),
-                        });
+                    match self.create_enrollment(org_id, enroll_req).await {
+                        Ok(enr) => {
+                            generated_student_number = Some(enr.student_number);
+                        }
+                        Err(e) => {
+                            // User created but enrollment failed — log error but don't fail the row
+                            errors.push(BulkRowError {
+                                row_index,
+                                field: "enrollment".to_string(),
+                                message: format!("تم إنشاء المستخدم لكن فشل التسجيل: {}", e),
+                            });
+                        }
                     }
                 }
+            }
+
+            // ── Update email with the student number if email is auto-generated ──
+            if is_email_auto {
+                let final_email = if let Some(ref student_num) = generated_student_number {
+                    format!("{}@orbis.edu", student_num.to_lowercase())
+                } else {
+                    format!("stu-temp-{}@orbis.edu", &uuid::Uuid::new_v4().to_string()[..8])
+                };
+                let update_email_req = crate::service::user::UpdateUserRequest {
+                    full_name: None,
+                    name_ar: None,
+                    name_en: None,
+                    email: Some(final_email),
+                    phone: None,
+                    sex: None,
+                    date_of_birth: None,
+                    nationality: None,
+                    national_id: None,
+                    address: None,
+                    city: None,
+                    country: None,
+                    emergency_contact: None,
+                    blood_type: None,
+                    medical_conditions: None,
+                    avatar: None,
+                    status: None,
+                };
+                let _ = self.update_user(&user.id, update_email_req).await;
             }
 
             // ── Create guardian if provided ──

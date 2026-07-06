@@ -22,7 +22,7 @@ const VALID_STATUS = ["draft", "pending_review", "active", "approved"];
  */
 export function validateStudentRows(
   rows: Record<string, unknown>[],
-  availableClassIds?: Set<string>,
+  availableClasses?: Array<{ id: string; name: string }>,
 ): RowValidation[] {
   // Pre-collect for batch duplicate detection
   const emailIndex = new Map<string, number[]>();
@@ -62,16 +62,16 @@ export function validateStudentRows(
       errors.set("full_name", "الاسم يجب أن يكون حرفان على الأقل");
     }
 
-    // ── email: required, valid format, no batch duplicates ──
+    // ── email: optional, valid format, no batch duplicates ──
     const email = str(row.email).toLowerCase();
-    if (!email) {
-      errors.set("email", "البريد الإلكتروني مطلوب");
-    } else if (!EMAIL_RE.test(email)) {
-      errors.set("email", "صيغة البريد غير صحيحة");
-    } else {
-      const dups = emailIndex.get(email);
-      if (dups && dups.length > 1) {
-        errors.set("email", "بريد إلكتروني مكرر في هذه الدفعة");
+    if (email) {
+      if (!EMAIL_RE.test(email)) {
+        errors.set("email", "صيغة البريد غير صحيحة");
+      } else {
+        const dups = emailIndex.get(email);
+        if (dups && dups.length > 1) {
+          errors.set("email", "بريد إلكتروني مكرر في هذه الدفعة");
+        }
       }
     }
 
@@ -103,9 +103,14 @@ export function validateStudentRows(
     }
 
     // ── class_id: validate against available classes ──
-    const classId = str(row.class_id);
-    if (classId && availableClassIds && !availableClassIds.has(classId)) {
-      errors.set("class_id", "الفصل غير موجود في النظام");
+    const classInput = str(row.class_id);
+    if (classInput && availableClasses) {
+      const match = availableClasses.find(
+        (c) => c.name.trim().toLowerCase() === classInput.toLowerCase() || c.id === classInput
+      );
+      if (!match) {
+        errors.set("class_id", "الفصل غير موجود في النظام");
+      }
     }
 
     // ── enrollment_status: optional, valid values ──

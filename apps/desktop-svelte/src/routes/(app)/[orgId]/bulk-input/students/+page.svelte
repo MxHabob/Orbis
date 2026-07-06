@@ -73,10 +73,49 @@ let validationTimeout: ReturnType<typeof setTimeout> | null = null;
 function runValidation() {
   if (validationTimeout) clearTimeout(validationTimeout);
   validationTimeout = setTimeout(() => {
-    const classIds = new Set(classes.map((c: any) => c.id));
-    validationResults = validateStudentRows(rows, classIds);
-    rows = [...rows]; // trigger reactivity for cell styling
+    let updated = false;
+    for (let i = 0; i < rows.length; i++) {
+      const classInput = String(rows[i].class_id ?? "").trim();
+      if (classInput) {
+        const match = classes.find(
+          (c: any) => c.name.trim().toLowerCase() === classInput.toLowerCase() || c.id === classInput
+        );
+        if (match && match.name !== classInput) {
+          rows[i].class_id = match.name;
+          updated = true;
+        }
+      }
+    }
+
+    validationResults = validateStudentRows(rows, classes);
+    if (updated) {
+      rows = [...rows]; // trigger reactivity for cell styling
+    }
   }, 300);
+}
+
+function handleTopClassChange(v: string) {
+  selectedClassId = v;
+  if (v) {
+    const selectedClass = classes.find((c: any) => c.id === v);
+    if (selectedClass) {
+      const isRowEmpty = (row: Record<string, unknown>) => {
+        for (const [k, val] of Object.entries(row)) {
+          if (k.startsWith("__")) continue;
+          if (val !== "" && val !== null && val !== undefined) return false;
+        }
+        return true;
+      };
+
+      rows = rows.map((r) => {
+        if (!isRowEmpty(r)) {
+          return { ...r, class_id: selectedClass.name };
+        }
+        return r;
+      });
+      runValidation();
+    }
+  }
 }
 
 // Column labels
@@ -158,8 +197,17 @@ async function handleSubmit() {
         for (const prop of STUDENT_DATA_PROPS) {
           row[prop] = r[prop] ?? "";
         }
-        // Apply global class selection if row doesn't have one
-        if (!String(row.class_id ?? "").trim() && selectedClassId) {
+        // Resolve class name/ID to ID
+        const classInput = String(row.class_id ?? "").trim();
+        if (classInput) {
+          const match = classes.find(
+            (c: any) => c.name.trim().toLowerCase() === classInput.toLowerCase() || c.id === classInput
+          );
+          if (match) {
+            row.class_id = match.id;
+          }
+        } else if (selectedClassId) {
+          // Apply global class selection if row doesn't have one
           row.class_id = selectedClassId;
         }
         return row;
@@ -184,6 +232,12 @@ async function handleSubmit() {
       toast.error(
         m.bulk_input_failed_rows({ count: result.failed }),
       );
+      console.error("Bulk Import failures:", result.errors);
+      if (result.errors && Array.isArray(result.errors)) {
+        for (const err of result.errors) {
+          toast.error(`الصف ${err.row_index} (${err.field}): ${err.message}`);
+        }
+      }
     }
 
     // Refresh enrollments query
@@ -215,7 +269,7 @@ async function handleSubmit() {
           <ArrowLeft class="h-4 w-4 rtl:rotate-180" />
         </Button>
       <div class="flex items-center gap-2">
-        <Select type="single" value={selectedClassId} onValueChange={(v) => (selectedClassId = v)}>
+        <Select type="single" value={selectedClassId} onValueChange={handleTopClassChange}>
           <SelectTrigger class="w-52 h-8 text-xs">
             {#if selectedClassId}
               {classes.find((c: any) => c.id === selectedClassId)?.name ?? selectedClassId}
