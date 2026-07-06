@@ -12,8 +12,8 @@ import * as m from "$lib/paraglide/messages";
 let { data }: { data: { orgId: string } } = $props();
 </script>
 
-<div class="h-full w-full bg-background/50 overflow-y-auto scrollbar-hide">
-  <div class="max-w-4xl mx-auto p-6 flex flex-col gap-6">
+<div class="h-full w-full overflow-y-auto scrollbar-hide">
+  <div class="max-w-6xl mx-auto p-6 flex flex-col gap-6">
     <Tabs value="wizard" class="w-full">
       <TabsList class="grid w-full grid-cols-2">
         <TabsTrigger value="wizard">{m.promo_wizard_title()}</TabsTrigger>

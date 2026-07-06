@@ -33,18 +33,6 @@ import {
   TableCell,
 } from "@orbis/ui-svelte/table";
 import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-} from "@orbis/ui-svelte/select";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "@orbis/ui-svelte/tabs";
-import {
   AlertDialog,
   AlertDialogContent,
   AlertDialogHeader,
@@ -242,15 +230,7 @@ function decisionLabel(d: string) {
 </script>
 
 <div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide">
-  <div class="max-w-4xl mx-auto p-6 flex flex-col gap-6">
-
-    <!-- Header -->
-    <div>
-      <h1 class="text-2xl font-bold text-foreground">{m.promo_wizard_title()}</h1>
-      <p class="text-sm text-muted-foreground mt-1">{m.promo_subtitle()}</p>
-    </div>
-
-    <!-- Step Indicator -->
+  <div class="max-w-6xl mx-auto p-6 flex flex-col gap-6">
     <div class="flex items-center gap-1">
       {#each steps as step, i}
         <button

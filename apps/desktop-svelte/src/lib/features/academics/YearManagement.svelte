@@ -140,7 +140,7 @@ function statusLabel(status: string) {
 </script>
 
 <div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide">
-  <div class="max-w-4xl mx-auto p-6 flex flex-col gap-6">
+  <div class="max-w-6xl mx-auto p-6 flex flex-col gap-6">
 
     <!-- Header -->
     <div class="flex items-center justify-between">
