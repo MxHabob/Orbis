@@ -94,7 +94,7 @@ const navItems = $derived([
 <div class="h-full w-full bg-background overflow-hidden">
   <MainViewport name="academics-workspace" leftWidth={{ default: 240, min: 200 }}>
     {#snippet left()}
-      <div class="flex flex-col h-full border-r border-border/60 bg-muted/30">
+      <div class="flex flex-col h-full">
         <YearSwitcher orgId={data.orgId} />
         <div class="h-px bg-border/60 mx-3 my-1"></div>
         <div class="flex-1 overflow-y-auto">
