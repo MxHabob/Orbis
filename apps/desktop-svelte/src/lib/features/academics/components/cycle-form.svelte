@@ -41,6 +41,17 @@ let gradingSystem = $state(cycle?.grading_system || "percentage");
 let passingGrade = $state<number>(cycle?.passing_grade || 50);
 let maxGrade = $state<number>(cycle?.max_grade || 100);
 
+const cycleTypeLabels = $derived({
+  year: m.cycle_form_type_year(),
+  term: m.cycle_form_type_term(),
+});
+
+const gradingLabels = $derived({
+  percentage: m.cycle_form_grading_percentage(),
+  letter: m.cycle_form_grading_letter(),
+  gpa: m.cycle_form_grading_gpa(),
+});
+
 async function loadParentYears() {
   if (!orgId) return;
   try {
@@ -160,7 +171,6 @@ async function handleSubmit(e: SubmitEvent) {
         <label for="cyc_type" class="text-xs font-semibold text-foreground">
           {m.cycle_form_type()}
         </label>
-        {@const cycleTypeLabels = { year: m.cycle_form_type_year(), term: m.cycle_form_type_term() }}
         <Select type="single" value={cycleType} onValueChange={(v) => (cycleType = v ?? "year")} disabled={isEdit}>
           <SelectTrigger class="h-9 text-sm w-full">
             {cycleTypeLabels[cycleType as keyof typeof cycleTypeLabels] || cycleType}
@@ -245,7 +255,6 @@ async function handleSubmit(e: SubmitEvent) {
         <label for="cyc_grading" class="text-xs font-semibold text-foreground">
           {m.cycle_form_grading()}
         </label>
-        {@const gradingLabels = { percentage: m.cycle_form_grading_percentage(), letter: m.cycle_form_grading_letter(), gpa: m.cycle_form_grading_gpa() }}
         <Select type="single" value={gradingSystem} onValueChange={(v) => (gradingSystem = v ?? "percentage")}>
           <SelectTrigger class="h-9 text-sm w-full">
             {gradingLabels[gradingSystem as keyof typeof gradingLabels] || gradingSystem}

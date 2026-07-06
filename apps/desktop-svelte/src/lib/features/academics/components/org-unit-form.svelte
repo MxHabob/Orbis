@@ -47,6 +47,15 @@ let floor = $state<number | null>(unit?.floor ? Number(unit.floor) : null);
 let building = $state(unit?.building || "");
 let headId = $state(unit?.head_id || "");
 
+const unitTypeLabels = {
+  branch: "Branch / Site",
+  building: "Building",
+  department: "Department",
+  classroom: "Classroom / Room",
+  office: "Office / Lab",
+  other: "Other",
+};
+
 async function loadReferenceData() {
   if (!orgId) return;
   try {
@@ -166,7 +175,6 @@ async function handleSubmit(e: SubmitEvent) {
         <label for="unit_type" class="text-xs font-semibold text-foreground">
           Unit Type
         </label>
-        {@const unitTypeLabels = { branch: "Branch / Site", building: "Building", department: "Department", classroom: "Classroom / Room", office: "Office / Lab", other: "Other" }}
         <Select type="single" value={unitType} onValueChange={(v) => (unitType = v ?? "classroom")}>
           <SelectTrigger class="h-9 text-sm w-full">
             {unitTypeLabels[unitType as keyof typeof unitTypeLabels] || unitType}
@@ -195,7 +203,7 @@ async function handleSubmit(e: SubmitEvent) {
             <SelectItem value="">— None (Root Unit) —</SelectItem>
             {#each unitsList as u}
               <SelectItem value={String(u.id)}>{u.name_ar || u.name} ({u.unit_type})</SelectItem>
-            {#empty}
+            {:else}
               <div class="p-2 text-xs text-muted-foreground">لا توجد وحدات</div>
             {/each}
           </SelectContent>
