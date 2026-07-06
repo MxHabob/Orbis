@@ -1,4 +1,5 @@
 @import "@orbis/ui-svelte/globals.css";
+@import "../lib/tables/renderers/renderers.css";
 
 @source "../../../../packages/ui-svelte/src";
 
