@@ -1,13 +1,14 @@
 <!--
   @component GuardianForm
-  Form for linking a user as a guardian to a student with relation and payer status.
-  Fixes API type mismatches by formatting boolean flags as integer values (1 / 0) and correcting property names.
+  Form for linking a user as a guardian to a student with relation, contact permissions, and payer status.
+  Supports creating a new parent user inline if they do not exist.
 -->
 <script lang="ts">
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
-import { Switch } from "@orbis/ui-svelte/switch";
+import { Checkbox } from "@orbis/ui-svelte/checkbox";
+import { Badge } from "@orbis/ui-svelte/badge";
 import {
   Select,
   SelectTrigger,
@@ -16,6 +17,7 @@ import {
 } from "@orbis/ui-svelte/select";
 import * as Sheet from "@orbis/ui-svelte/sheet";
 import { commands } from "$lib/core/ipc";
+import { authStore } from "$lib/stores";
 import type { GuardianLink, JsonRecord } from "@orbis/desktop-client";
 import { toast } from "svelte-sonner";
 import { onMount } from "svelte";
@@ -39,15 +41,14 @@ const isEditMode = $derived(!!editData);
 
 // Form state
 let guardianUserId = $state(editData ? String(editData.guardian_id ?? "") : "");
+let fullName = $state("");
+let phone = $state("");
+let email = $state("");
+let nationalId = $state("");
 let relation = $state(
   editData
     ? String(editData.relationship ?? editData.relation ?? "father")
     : "father",
-);
-let isPayer = $state(
-  editData
-    ? Boolean(editData.is_payer === 1 || editData.is_payer === true)
-    : false,
 );
 let job = $state(
   editData
@@ -58,6 +59,27 @@ let job = $state(
       )
     : "",
 );
+let isPrimary = $state(
+  editData
+    ? Boolean(editData.is_primary === 1 || editData.is_primary === true)
+    : false,
+);
+let isEmergencyContact = $state(
+  editData
+    ? Boolean(editData.is_emergency_contact === 1 || editData.is_emergency_contact === true)
+    : false,
+);
+let isPayer = $state(
+  editData
+    ? Boolean(editData.is_payer === 1 || editData.is_payer === true)
+    : false,
+);
+let paymentSharePercent = $state(
+  editData
+    ? Number(editData.payment_share_percent ?? 0)
+    : 0,
+);
+
 let searchQuery = $state("");
 
 // Remote data
@@ -82,8 +104,9 @@ const filteredUsers = $derived(
       const q = searchQuery.toLowerCase();
       if (!q) return true;
       const name = String(u.full_name ?? u.name_ar ?? "").toLowerCase();
-      const email = String(u.email ?? "").toLowerCase();
-      return name.includes(q) || email.includes(q);
+      const emailVal = String(u.email ?? "").toLowerCase();
+      const phoneVal = String(u.phone ?? u.phone_number ?? "").toLowerCase();
+      return name.includes(q) || emailVal.includes(q) || phoneVal.includes(q);
     })
     .sort((a, b) => {
       if (!studentLastName) return 0;
@@ -106,10 +129,6 @@ const filteredUsers = $derived(
     })
 );
 
-const selectedUser = $derived(
-  allUsers.find((u) => String(u.id) === guardianUserId),
-);
-
 const selectedRelation = $derived(relations.find((r) => r.value === relation));
 
 onMount(async () => {
@@ -129,6 +148,20 @@ onMount(async () => {
         studentLastName = nameParts[nameParts.length - 1].toLowerCase();
       }
     }
+
+    // Load guardian details if in edit mode
+    if (editData && editData.guardian_id) {
+      const u = await commands.users.getUser(String(editData.guardian_id));
+      if (u) {
+        fullName = String(u.full_name ?? u.name_ar ?? "");
+        phone = String(u.phone ?? u.phone_number ?? "");
+        email = String(u.email ?? "");
+        nationalId = String(u.national_id ?? "");
+      }
+      isPrimary = editData.is_primary === 1 || editData.is_primary === true;
+      isEmergencyContact = editData.is_emergency_contact === 1 || editData.is_emergency_contact === true;
+      paymentSharePercent = Number(editData.payment_share_percent ?? 0);
+    }
   } catch (e) {
     console.error("Failed to load data for guardian linking:", e);
   } finally {
@@ -136,27 +169,94 @@ onMount(async () => {
   }
 });
 
+function selectUser(u: JsonRecord) {
+  guardianUserId = String(u.id);
+  fullName = String(u.full_name ?? u.name_ar ?? "");
+  phone = String(u.phone ?? u.phone_number ?? "");
+  email = String(u.email ?? "");
+  nationalId = String(u.national_id ?? "");
+  searchQuery = ""; // Close search results
+}
+
+function clearSelectedUser() {
+  guardianUserId = "";
+  fullName = "";
+  phone = "";
+  email = "";
+  nationalId = "";
+}
+
 async function handleSubmit() {
-  if (!guardianUserId || !relation) {
-    toast.error("يرجى اختيار المستخدم وتحديد صلة القرابة");
+  if (!fullName.trim()) {
+    toast.error("يرجى إدخال الاسم الكامل لولي الأمر");
+    return;
+  }
+  if (!phone.trim()) {
+    toast.error("يرجى إدخال رقم الهاتف لولي الأمر");
+    return;
+  }
+  if (!relation) {
+    toast.error("يرجى تحديد صلة القرابة");
     return;
   }
 
   isSaving = true;
   try {
+    const createdBy = authStore.user?.id || "";
+    let finalGuardianUserId = guardianUserId;
+
+    if (!finalGuardianUserId) {
+      // Check if user already exists in db by phone
+      const checkExisting = await commands.guardians.search(orgId, phone.trim());
+      if (checkExisting && checkExisting.length > 0) {
+        finalGuardianUserId = checkExisting[0].id;
+        // Optionally update the existing user info
+        await commands.users.updateUser(finalGuardianUserId, {
+          full_name: fullName.trim(),
+          name_ar: fullName.trim(),
+          phone: phone.trim() || null,
+          national_id: nationalId.trim() || null,
+        });
+      } else {
+        // Create a new parent user
+        const guardEmail = email.trim() || `parent.${Date.now()}@orbis.local`;
+        const guardUser = await commands.users.createUser(orgId, createdBy, {
+          email: guardEmail,
+          password: "Orbis123456",
+          full_name: fullName.trim(),
+          name_ar: fullName.trim(),
+          primary_role: "parent",
+          phone: phone.trim() || null,
+          sex: "male",
+          national_id: nationalId.trim() || null,
+          date_of_birth: null,
+        });
+        finalGuardianUserId = guardUser.id;
+      }
+    } else {
+      // Update existing parent user details
+      await commands.users.updateUser(finalGuardianUserId, {
+        full_name: fullName.trim(),
+        name_ar: fullName.trim(),
+        phone: phone.trim() || null,
+        national_id: nationalId.trim() || null,
+      });
+    }
+
     const relationAr =
-      relation === "father" ? "أب" : relation === "mother" ? "أم" : "قريب";
+      relation === "father" ? "أب" : relation === "mother" ? "أم" : relation === "uncle" ? "عم" : "آخر/قريب";
 
     // Construct request conforming exactly to CreateGuardianLinkRequest / UpdateGuardianLinkRequest
     const request: JsonRecord = {
       student_id: studentId,
-      guardian_id: guardianUserId,
+      guardian_id: finalGuardianUserId,
       relationship: relation,
       relationship_ar: relationAr,
-      is_primary: relation === "father" ? 1 : 0,
-      is_emergency_contact: relation === "father" ? 1 : 0,
-      is_payer: isPayer ? 1 : 0, // Cast boolean to i32
-      occupation: job.trim() || null, // Map to occupation instead of job
+      is_primary: isPrimary ? 1 : 0,
+      is_emergency_contact: isEmergencyContact ? 1 : 0,
+      is_payer: isPayer ? 1 : 0,
+      payment_share_percent: isPayer ? paymentSharePercent : 0,
+      occupation: job.trim() || null,
       can_view_grades: 1,
       can_view_attendance: 1,
       can_view_behavior: 1,
@@ -197,39 +297,131 @@ async function handleSubmit() {
   </Sheet.Header>
 
   <div class="flex-1 overflow-y-auto p-6 flex flex-col gap-5 scrollbar-hide">
-    <!-- User Search + Select -->
-    <div class="flex flex-col gap-1.5">
-      <Label class="text-xs font-semibold text-muted-foreground">{m.guardians_form_user()} *</Label>
-      <Input
-        type="text"
-        placeholder={m.guardians_form_select_user()}
-        bind:value={searchQuery}
-        class="h-8 text-xs mb-1"
-      />
-      <div class="max-h-40 overflow-y-auto rounded-lg border border-border/40 bg-card/50">
-        {#if filteredUsers.length === 0}
-          <div class="p-3 text-xs text-muted-foreground text-center">لا توجد نتائج</div>
-        {:else}
-          {#each filteredUsers.slice(0, 20) as u (u.id)}
-            <button
-              type="button"
-              class="w-full text-start px-3 py-2 text-xs hover:bg-accent/60 transition-colors flex items-center justify-between
-                {guardianUserId === String(u.id) ? 'bg-primary/10 text-primary font-semibold' : 'text-foreground'}"
-              onclick={() => (guardianUserId = String(u.id))}
-            >
-              <span>{String(u.full_name ?? u.email ?? u.id)}</span>
-              {#if u.email}
-                <span class="text-[10px] text-muted-foreground font-mono">{String(u.email)}</span>
+    <!-- User Search + Select (only show in create mode) -->
+    {#if !isEditMode}
+      <div class="flex flex-col gap-1.5">
+        <Label class="text-xs font-semibold text-muted-foreground">{m.form_guardian_search_label()}</Label>
+        <Input
+          type="text"
+          placeholder={m.form_guardian_search_placeholder()}
+          bind:value={searchQuery}
+          class="h-8 text-xs mb-1"
+        />
+        
+        {#if !guardianUserId}
+          <div class="rounded-lg border border-border/40 bg-card/50 overflow-hidden">
+            {#if searchQuery.trim().length === 0}
+              <!-- Suggested/Recommended parents list (first 3 matching student last name) -->
+              <div class="p-2 border-b border-border/30 bg-muted/30 text-[10px] font-semibold text-muted-foreground flex items-center justify-between">
+                <span>{m.guardians_sheet_suggested_title()}</span>
+                {#if studentLastName}
+                  <Badge variant="outline" class="text-[9px] font-normal font-mono">{studentLastName}</Badge>
+                {/if}
+              </div>
+              {#if filteredUsers.length === 0}
+                <div class="p-3 text-xs text-muted-foreground text-center">{m.guardians_sheet_no_results()}</div>
+              {:else}
+                {#each filteredUsers.slice(0, 3) as u (u.id)}
+                  <button
+                    type="button"
+                    class="w-full text-start px-3 py-2 text-xs hover:bg-accent/60 transition-colors flex items-center justify-between border-b border-border/30 last:border-b-0
+                      {guardianUserId === String(u.id) ? 'bg-primary/10 text-primary font-semibold' : 'text-foreground'}"
+                    onclick={() => selectUser(u)}
+                  >
+                    <span>{String(u.full_name ?? u.email ?? u.id)}</span>
+                    {#if u.phone}
+                      <span class="text-[10px] text-muted-foreground font-mono">{String(u.phone)}</span>
+                    {/if}
+                  </button>
+                {/each}
               {/if}
-            </button>
-          {/each}
+            {:else}
+              <!-- Search query active - show scrollable list -->
+              <div class="max-h-40 overflow-y-auto">
+                {#if filteredUsers.length === 0}
+                  <div class="p-3 text-xs text-muted-foreground text-center">{m.guardians_sheet_no_results()}</div>
+                {:else}
+                  {#each filteredUsers.slice(0, 20) as u (u.id)}
+                    <button
+                      type="button"
+                      class="w-full text-start px-3 py-2 text-xs hover:bg-accent/60 transition-colors flex items-center justify-between border-b border-border/30 last:border-b-0
+                        {guardianUserId === String(u.id) ? 'bg-primary/10 text-primary font-semibold' : 'text-foreground'}"
+                      onclick={() => selectUser(u)}
+                    >
+                      <span>{String(u.full_name ?? u.email ?? u.id)}</span>
+                      {#if u.phone}
+                        <span class="text-[10px] text-muted-foreground font-mono">{String(u.phone)}</span>
+                      {/if}
+                    </button>
+                  {/each}
+                {/if}
+              </div>
+            {/if}
+          </div>
+        {/if}
+
+        {#if guardianUserId}
+          <div class="flex items-center justify-between p-2 rounded bg-primary/10 border border-primary/20 text-xs mt-1">
+            <span class="text-primary font-medium">
+              ✓ {m.guardians_sheet_selected_label({ name: fullName })}
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              class="h-5 px-1.5 text-[10px] text-destructive hover:bg-destructive/10"
+              onclick={clearSelectedUser}
+            >
+              {m.guardians_sheet_clear_selection()}
+            </Button>
+          </div>
         {/if}
       </div>
-      {#if selectedUser}
-        <p class="text-[10px] text-primary font-medium">
-          ✓ تم اختيار: {String(selectedUser.full_name ?? selectedUser.email)}
-        </p>
-      {/if}
+    {/if}
+
+    <!-- Full Name -->
+    <div class="flex flex-col gap-1.5">
+      <Label class="text-xs font-semibold text-muted-foreground">{m.form_guardian_name_label()} *</Label>
+      <Input
+        type="text"
+        bind:value={fullName}
+        placeholder="الاسم الكامل لولي الأمر"
+        class="h-9 text-sm"
+      />
+    </div>
+
+    <!-- Phone -->
+    <div class="flex flex-col gap-1.5">
+      <Label class="text-xs font-semibold text-muted-foreground">{m.form_guardian_phone_label()} *</Label>
+      <Input
+        type="text"
+        bind:value={phone}
+        placeholder="777000000"
+        class="h-9 text-sm font-mono text-start"
+        dir="ltr"
+      />
+    </div>
+
+    <!-- Email -->
+    <div class="flex flex-col gap-1.5">
+      <Label class="text-xs font-semibold text-muted-foreground">البريد الإلكتروني (اختياري)</Label>
+      <Input
+        type="email"
+        bind:value={email}
+        placeholder="example@orbis.local"
+        class="h-9 text-sm text-start"
+        dir="ltr"
+      />
+    </div>
+
+    <!-- National ID -->
+    <div class="flex flex-col gap-1.5">
+      <Label class="text-xs font-semibold text-muted-foreground">{m.form_guardian_national_id_label()}</Label>
+      <Input
+        type="text"
+        bind:value={nationalId}
+        placeholder="رقم هوية ولي الأمر"
+        class="h-9 text-sm font-mono"
+      />
     </div>
 
     <!-- Relation -->
@@ -253,21 +445,41 @@ async function handleSubmit() {
       <Input
         type="text"
         bind:value={job}
-        placeholder="مثال: مهندس، معلم، موظف..."
+        placeholder="المهنة الحالية لولي الأمر"
         class="h-9 text-sm"
       />
     </div>
 
-    <!-- Is Payer -->
-    <div class="flex items-center justify-between p-3 rounded-lg bg-muted/20 border border-border/30">
-      <div>
-        <p class="text-xs font-semibold text-foreground">{m.guardians_form_is_payer()}</p>
-        <p class="text-[10px] text-muted-foreground">سيتمكن من استلام فواتير الرسوم</p>
+    <!-- Permissions and Financial Responsibility -->
+    <div class="flex flex-col gap-3 p-4 rounded-lg bg-muted/20 border border-border/30">
+      <p class="text-xs font-bold text-foreground">الصلاحيات والمسؤوليات</p>
+      
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="flex items-center gap-2">
+          <Checkbox id="primary_chk" checked={isPrimary} onCheckedChange={(val) => isPrimary = !!val} />
+          <Label for="primary_chk" class="text-xs cursor-pointer">{m.form_guardian_role_primary()}</Label>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <Checkbox id="emergency_chk" checked={isEmergencyContact} onCheckedChange={(val) => isEmergencyContact = !!val} />
+          <Label for="emergency_chk" class="text-xs cursor-pointer">{m.form_guardian_role_emergency()}</Label>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <Checkbox id="payer_chk" checked={isPayer} onCheckedChange={(val) => isPayer = !!val} />
+          <Label for="payer_chk" class="text-xs cursor-pointer">{m.form_guardian_role_payer()}</Label>
+        </div>
       </div>
-      <Switch
-        checked={isPayer}
-        onCheckedChange={(checked) => isPayer = checked}
-      />
+
+      {#if isPayer}
+        <div class="flex items-center justify-start gap-2 pt-2 border-t border-border/40">
+          <Label class="text-xs text-muted-foreground">{m.form_guardian_payment_share()}</Label>
+          <div class="flex items-center gap-1">
+            <Input type="number" min="0" max="100" class="h-8 w-16 text-center font-bold px-1 bg-background" bind:value={paymentSharePercent} />
+            <span class="text-xs text-muted-foreground">%</span>
+          </div>
+        </div>
+      {/if}
     </div>
   </div>
 
@@ -284,7 +496,7 @@ async function handleSubmit() {
     <Button
       type="submit"
       class="flex-1 h-9 text-sm font-semibold"
-      disabled={isSaving || isLoading || !guardianUserId || !relation}
+      disabled={isSaving || isLoading || !fullName || !phone || !relation}
     >
       {isSaving ? m.guardians_form_saving() : m.guardians_form_save()}
     </Button>

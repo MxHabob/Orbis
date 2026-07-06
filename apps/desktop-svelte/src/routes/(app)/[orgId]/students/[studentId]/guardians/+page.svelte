@@ -8,17 +8,8 @@ import { onMount } from "svelte";
 import { toast } from "svelte-sonner";
 import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import { Avatar, AvatarFallback } from "@orbis/ui-svelte/avatar";
-import {
-  Plus,
-  Users2,
-  Edit2,
-  Trash2,
-  Phone,
-  Briefcase,
-  CheckCircle,
-  XCircle,
-} from "lucide-svelte";
+import { Badge } from "@orbis/ui-svelte/badge";
+import { Plus, Users2, Edit2, Trash2 } from "lucide-svelte";
 import { commands } from "$lib/core/ipc";
 import type { GuardianLink, JsonRecord } from "@orbis/desktop-client";
 import GuardianLinkSheet from "$lib/features/students/components/guardian-link-sheet.svelte";
@@ -139,74 +130,132 @@ async function handleDelete(link: GuardianLink) {
       </Button>
     </div>
   {:else}
-    <!-- Guardian Cards -->
-    <div class="grid grid-cols-1 gap-3">
-      {#each guardians as link (link.id)}
+    <!-- Guardian Cards Redesigned -->
+    <div class="grid grid-cols-1 gap-6">
+      {#each guardians as link, index (link.id)}
         {@const user = getGuardianUser(link)}
-        <div
-          class="group relative flex items-center gap-4 p-4 rounded-xl border border-border/40
-            bg-card/30 hover:bg-card/60 transition-all duration-150 hover:border-border/60"
-        >
-          <!-- Avatar -->
-          <Avatar class="h-12 w-12 ring-2 ring-border/30 shrink-0">
-            <AvatarFallback class="bg-primary/10 text-primary font-bold text-base">
-              {String(user?.full_name ?? "?").charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-
-          <!-- Info -->
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2 flex-wrap">
-              <span class="font-bold text-sm text-foreground">
-                {String(user?.full_name ?? m.guardians_col_name())}
-              </span>
-              <span class="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold">
-                {getRelationLabel(String(link.relation ?? ""))}
-              </span>
-              {#if link.is_payer}
-                <span class="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 font-semibold">
-                  <CheckCircle size={9} />
-                  دافع الرسوم
-                </span>
-              {/if}
-            </div>
-
-            <div class="flex items-center gap-4 mt-1.5">
-              {#if user?.phone_number}
-                <div class="flex items-center gap-1 text-[11px] text-muted-foreground">
-                  <Phone size={10} />
-                  <span class="font-mono">{String(user.phone_number)}</span>
-                </div>
-              {/if}
-              {#if (link as JsonRecord).job}
-                <div class="flex items-center gap-1 text-[11px] text-muted-foreground">
-                  <Briefcase size={10} />
-                  <span>{String((link as JsonRecord).job)}</span>
-                </div>
-              {/if}
+        <div class="border border-border rounded-md overflow-hidden flex flex-col bg-card/10">
+          <!-- Guardian Block Header -->
+          <div class="bg-muted/50 px-6 py-3 border-b border-border flex justify-between items-center select-none">
+            <span class="text-[11px] font-bold text-foreground uppercase tracking-wider">
+              {m.form_guardian_number()} {index + 1}
+            </span>
+            <div class="flex items-center gap-1.5 flex-nowrap shrink-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                class="h-7 px-2.5 text-xs text-primary hover:bg-primary/10 gap-1"
+                onclick={() => openEdit(link)}
+              >
+                <Edit2 size={12} />
+                تعديل
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                class="h-7 px-2.5 text-xs text-destructive hover:bg-destructive/10 gap-1"
+                onclick={() => handleDelete(link)}
+              >
+                <Trash2 size={12} />
+                إلغاء الربط
+              </Button>
             </div>
           </div>
 
-          <!-- Actions -->
-          <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-            <Button
-              variant="ghost"
-              size="icon"
-              class="h-7 w-7 hover:bg-primary/10 hover:text-primary"
-              onclick={() => openEdit(link)}
-              title="تعديل"
-            >
-              <Edit2 size={13} />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              class="h-7 w-7 hover:bg-destructive/10 hover:text-destructive"
-              onclick={() => handleDelete(link)}
-              title="إلغاء الربط"
-            >
-              <Trash2 size={13} />
-            </Button>
+          <div class="flex flex-col">
+            <!-- Guardian Full Name -->
+            <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+              <div class="flex flex-col gap-1 text-start">
+                <span class="text-xs font-semibold text-foreground">{m.form_guardian_name_label()}</span>
+                <span class="text-[11px] text-muted-foreground leading-relaxed">الاسم الكامل لولي الأمر</span>
+              </div>
+              <div class="w-full md:w-[480px] shrink-0 text-start font-medium text-sm text-foreground">
+                {user?.full_name ?? user?.name_ar ?? "—"}
+              </div>
+            </div>
+
+            <!-- Phone Number -->
+            <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+              <div class="flex flex-col gap-1 text-start">
+                <span class="text-xs font-semibold text-foreground">{m.form_guardian_phone_label()}</span>
+                <span class="text-[11px] text-muted-foreground leading-relaxed">رقم هاتف المحمول لولي الأمر</span>
+              </div>
+              <div class="w-full md:w-[480px] shrink-0 text-start font-mono text-sm text-foreground" dir="ltr">
+                {user?.phone ?? user?.phone_number ?? "—"}
+              </div>
+            </div>
+
+            <!-- Email -->
+            {#if user?.email && !String(user.email).endsWith("@orbis.local")}
+              <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+                <div class="flex flex-col gap-1 text-start">
+                  <span class="text-xs font-semibold text-foreground">البريد الإلكتروني</span>
+                  <span class="text-[11px] text-muted-foreground leading-relaxed">البريد الإلكتروني لولي الأمر</span>
+                </div>
+                <div class="w-full md:w-[480px] shrink-0 text-start font-mono text-sm text-foreground" dir="ltr">
+                  {String(user.email)}
+                </div>
+              </div>
+            {/if}
+
+            <!-- Relationship -->
+            <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+              <div class="flex flex-col gap-1 text-start">
+                <span class="text-xs font-semibold text-foreground">{m.form_guardian_relationship_label()}</span>
+                <span class="text-[11px] text-muted-foreground leading-relaxed">صلة القرابة بين ولي الأمر والطالب</span>
+              </div>
+              <div class="w-full md:w-[480px] shrink-0 text-start font-medium text-sm text-foreground">
+                {getRelationLabel(String(link.relationship || link.relation || ""))}
+              </div>
+            </div>
+
+            <!-- National ID -->
+            <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+              <div class="flex flex-col gap-1 text-start">
+                <span class="text-xs font-semibold text-foreground">{m.form_guardian_national_id_label()}</span>
+                <span class="text-[11px] text-muted-foreground leading-relaxed">رقم الهوية الوطنية أو البطاقة الشخصية لولي الأمر</span>
+              </div>
+              <div class="w-full md:w-[480px] shrink-0 text-start font-mono text-sm text-foreground">
+                {user?.national_id ?? "—"}
+              </div>
+            </div>
+
+            <!-- Occupation -->
+            <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
+              <div class="flex flex-col gap-1 text-start">
+                <span class="text-xs font-semibold text-foreground">المهنة / الوظيفة</span>
+                <span class="text-[11px] text-muted-foreground leading-relaxed">مهنة ولي الأمر الحالية وجهة العمل</span>
+              </div>
+              <div class="w-full md:w-[480px] shrink-0 text-start font-medium text-sm text-foreground">
+                {link.occupation ?? (link as any).job ?? "—"}
+              </div>
+            </div>
+
+            <!-- Permissions -->
+            <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between last:border-b-0 gap-4">
+              <div class="flex flex-col gap-1 text-start">
+                <span class="text-xs font-semibold text-foreground">الصلاحيات والمسؤوليات المالية</span>
+                <span class="text-[11px] text-muted-foreground leading-relaxed">تحديد أدوار ولي الأمر ومسؤولياته المالية</span>
+              </div>
+              <div class="w-full md:w-[480px] shrink-0 flex flex-col gap-3">
+                <div class="flex flex-wrap gap-2 justify-start">
+                  {#if link.is_primary === 1 || link.is_primary === true}
+                    <Badge variant="brand" class="text-[10px]">{m.form_guardian_role_primary()}</Badge>
+                  {/if}
+                  {#if link.is_emergency_contact === 1 || link.is_emergency_contact === true}
+                    <Badge variant="secondary" class="text-[10px]">{m.form_guardian_role_emergency()}</Badge>
+                  {/if}
+                  {#if link.is_payer === 1 || link.is_payer === true}
+                    <Badge variant="lime" class="text-[10px]">{m.form_guardian_role_payer()}</Badge>
+                  {/if}
+                </div>
+                {#if link.is_payer === 1 || link.is_payer === true}
+                  <div class="text-xs text-muted-foreground text-start">
+                    {m.form_guardian_payment_share()} <span class="font-bold text-foreground">{link.payment_share_percent ?? 0}%</span>
+                  </div>
+                {/if}
+              </div>
+            </div>
           </div>
         </div>
       {/each}
