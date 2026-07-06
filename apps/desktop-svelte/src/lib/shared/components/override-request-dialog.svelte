@@ -23,8 +23,12 @@ import { commands, extractErrorMessage } from "$lib/core/ipc";
 import { authStore } from "$lib/stores";
 import { toast } from "svelte-sonner";
 import {
-  Dialog, DialogContent, DialogHeader, DialogFooter,
-  DialogTitle, DialogDescription,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
 } from "@orbis/ui-svelte/dialog";
 import { Button } from "@orbis/ui-svelte/button";
 import { Textarea } from "@orbis/ui-svelte/textarea";
@@ -65,50 +69,93 @@ let isSubmitting = $state(false);
 // Derived labels
 const riskBadgeVariant = $derived.by(() => {
   switch (riskLevel) {
-    case "low": return "secondary" as const;
-    case "medium": return "default" as const;
-    case "high": return "destructive" as const;
-    case "critical": return "destructive" as const;
-    default: return "default" as const;
+    case "low":
+      return "secondary" as const;
+    case "medium":
+      return "default" as const;
+    case "high":
+      return "destructive" as const;
+    case "critical":
+      return "destructive" as const;
+    default:
+      return "default" as const;
   }
 });
 
 const riskLabel = $derived.by(() => {
   switch (riskLevel) {
-    case "low": return m.override_risk_low ? m.override_risk_low() : "Low";
-    case "medium": return m.override_risk_medium ? m.override_risk_medium() : "Medium";
-    case "high": return m.override_risk_high ? m.override_risk_high() : "High";
-    case "critical": return m.override_risk_critical ? m.override_risk_critical() : "Critical";
-    default: return riskLevel;
+    case "low":
+      return m.override_risk_low ? m.override_risk_low() : "Low";
+    case "medium":
+      return m.override_risk_medium ? m.override_risk_medium() : "Medium";
+    case "high":
+      return m.override_risk_high ? m.override_risk_high() : "High";
+    case "critical":
+      return m.override_risk_critical ? m.override_risk_critical() : "Critical";
+    default:
+      return riskLevel;
   }
 });
 
 const typeLabel = $derived.by(() => {
   switch (overrideType) {
-    case "grade_modification": return m.override_type_grade ? m.override_type_grade() : "Grade Modification";
-    case "late_enrollment": return m.override_type_enrollment ? m.override_type_enrollment() : "Late Enrollment";
-    case "attendance_correction": return m.override_type_attendance ? m.override_type_attendance() : "Attendance Correction";
-    case "fee_waiver": return m.override_type_fee ? m.override_type_fee() : "Fee Waiver";
-    case "cycle_unlock": return m.override_type_unlock ? m.override_type_unlock() : "Cycle Unlock";
-    case "deadline_extension": return m.override_type_deadline ? m.override_type_deadline() : "Deadline Extension";
-    case "promotion_override": return m.override_type_promotion ? m.override_type_promotion() : "Promotion Override";
-    default: return overrideType;
+    case "grade_modification":
+      return m.override_type_grade
+        ? m.override_type_grade()
+        : "Grade Modification";
+    case "late_enrollment":
+      return m.override_type_enrollment
+        ? m.override_type_enrollment()
+        : "Late Enrollment";
+    case "attendance_correction":
+      return m.override_type_attendance
+        ? m.override_type_attendance()
+        : "Attendance Correction";
+    case "fee_waiver":
+      return m.override_type_fee ? m.override_type_fee() : "Fee Waiver";
+    case "cycle_unlock":
+      return m.override_type_unlock ? m.override_type_unlock() : "Cycle Unlock";
+    case "deadline_extension":
+      return m.override_type_deadline
+        ? m.override_type_deadline()
+        : "Deadline Extension";
+    case "promotion_override":
+      return m.override_type_promotion
+        ? m.override_type_promotion()
+        : "Promotion Override";
+    default:
+      return overrideType;
   }
 });
 
 const approvalChainPreview = $derived.by(() => {
   switch (riskLevel) {
-    case "low": return m.override_chain_auto ? m.override_chain_auto() : "Auto-approved";
-    case "medium": return m.override_chain_manager ? m.override_chain_manager() : "Manager approval required";
-    case "high": return m.override_chain_admin ? m.override_chain_admin() : "Manager + Admin approval required";
-    case "critical": return m.override_chain_full ? m.override_chain_full() : "Full approval chain required";
-    default: return "";
+    case "low":
+      return m.override_chain_auto ? m.override_chain_auto() : "Auto-approved";
+    case "medium":
+      return m.override_chain_manager
+        ? m.override_chain_manager()
+        : "Manager approval required";
+    case "high":
+      return m.override_chain_admin
+        ? m.override_chain_admin()
+        : "Manager + Admin approval required";
+    case "critical":
+      return m.override_chain_full
+        ? m.override_chain_full()
+        : "Full approval chain required";
+    default:
+      return "";
   }
 });
 
 async function submit() {
   if (!reason.trim()) {
-    toast.error(m.override_reason_required ? m.override_reason_required() : "Please provide a reason");
+    toast.error(
+      m.override_reason_required
+        ? m.override_reason_required()
+        : "Please provide a reason",
+    );
     return;
   }
   isSubmitting = true;
@@ -125,7 +172,11 @@ async function submit() {
       requested_by: authStore.userId,
       requested_by_name: authStore.user?.full_name ?? null,
     });
-    toast.success(m.override_submitted ? m.override_submitted() : "Override request submitted");
+    toast.success(
+      m.override_submitted
+        ? m.override_submitted()
+        : "Override request submitted",
+    );
     reason = "";
     open = false;
     onSuccess?.();

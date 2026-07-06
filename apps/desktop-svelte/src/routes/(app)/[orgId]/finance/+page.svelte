@@ -18,7 +18,7 @@ import {
   TableRow,
   TableHead,
   TableBody,
-  TableCell
+  TableCell,
 } from "@orbis/ui-svelte/table";
 import {
   Wallet,
@@ -33,7 +33,7 @@ import {
   ArrowUpRight,
   Calendar,
   FileText,
-  Plus
+  Plus,
 } from "lucide-svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate } from "$lib/core/i18n";
@@ -44,7 +44,7 @@ import * as m from "$lib/paraglide/messages";
 import {
   createStudentFeesQuery,
   createTreasuriesQuery,
-  createPaymentsQuery
+  createPaymentsQuery,
 } from "$lib/features/finance";
 import { createEnrollmentsQuery } from "$lib/features/students";
 import { createClassesQuery } from "$lib/features/academics";
@@ -67,18 +67,18 @@ const classes = $derived($classesQuery.data ?? []);
 
 const isLoading = $derived(
   $feesQuery.isLoading ||
-  $paymentsQuery.isLoading ||
-  $treasuriesQuery.isLoading ||
-  $enrollmentsQuery.isLoading ||
-  $classesQuery.isLoading
+    $paymentsQuery.isLoading ||
+    $treasuriesQuery.isLoading ||
+    $enrollmentsQuery.isLoading ||
+    $classesQuery.isLoading,
 );
 
 const error = $derived(
   $feesQuery.error ||
-  $paymentsQuery.error ||
-  $treasuriesQuery.error ||
-  $enrollmentsQuery.error ||
-  $classesQuery.error
+    $paymentsQuery.error ||
+    $treasuriesQuery.error ||
+    $enrollmentsQuery.error ||
+    $classesQuery.error,
 );
 
 function refetchAll() {
@@ -91,21 +91,27 @@ function refetchAll() {
 
 // ── Financial KPI Computations ───────────────────────────────────────────
 const totalFees = $derived(
-  fees.reduce((sum, f) => sum + Number(f.net_amount || f.original_amount || 0), 0)
+  fees.reduce(
+    (sum, f) => sum + Number(f.net_amount || f.original_amount || 0),
+    0,
+  ),
 );
 
 const totalPaid = $derived(
-  payments.reduce((sum, p) => sum + Number(p.amount || 0), 0)
+  payments.reduce((sum, p) => sum + Number(p.amount || 0), 0),
 );
 
 const balanceDue = $derived(Math.max(0, totalFees - totalPaid));
 
 const collectionRate = $derived(
-  totalFees > 0 ? Math.round((totalPaid / totalFees) * 100) : 0
+  totalFees > 0 ? Math.round((totalPaid / totalFees) * 100) : 0,
 );
 
 const treasuryAssets = $derived(
-  treasuries.reduce((sum, t) => sum + Number(t.balance || t.current_balance || 0), 0)
+  treasuries.reduce(
+    (sum, t) => sum + Number(t.balance || t.current_balance || 0),
+    0,
+  ),
 );
 
 // ── Payments grouping mapping for Fee paid amounts ──────────────────────
@@ -141,7 +147,11 @@ const lateStudents = $derived.by(() => {
 
     const enrollment = enrollments.find((e) => e.id === f.enrollment_id);
     const studentName = enrollment
-      ? enrollment.full_name || enrollment.name_ar || enrollment.name_en || enrollment.student_number || "—"
+      ? enrollment.full_name ||
+        enrollment.name_ar ||
+        enrollment.name_en ||
+        enrollment.student_number ||
+        "—"
       : "—";
     const studentNum = enrollment ? enrollment.student_number : "—";
     const avatar = enrollment ? enrollment.avatar : null;
@@ -162,7 +172,7 @@ const lateStudents = $derived.by(() => {
       className,
       remaining,
       dueDate: f.due_date,
-      daysLate: diffDays > 0 ? diffDays : 0
+      daysLate: diffDays > 0 ? diffDays : 0,
     });
   }
 
@@ -182,12 +192,17 @@ const recentPayments = $derived.by(() => {
     const enrollment = enrollments.find((e) => e.id === p.enrollment_id);
     const studentName =
       p.student_name ||
-      (enrollment ? enrollment.full_name || enrollment.name_ar || enrollment.name_en || "—" : "—");
+      (enrollment
+        ? enrollment.full_name ||
+          enrollment.name_ar ||
+          enrollment.name_en ||
+          "—"
+        : "—");
 
     return {
       ...p,
       studentName,
-      receiptNumber: p.receipt_number || p.id.slice(0, 8)
+      receiptNumber: p.receipt_number || p.id.slice(0, 8),
     };
   });
 });

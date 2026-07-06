@@ -6,11 +6,7 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@orbis/ui-svelte/popover";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@orbis/ui-svelte";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@orbis/ui-svelte";
 import { Activity } from "lucide-svelte";
 import { academicContext, workflowInbox } from "$lib/stores";
 import * as m from "$lib/paraglide/messages";
@@ -25,12 +21,18 @@ const events = $derived($eventsQuery.data ?? []);
 
 function getPhaseLabel(phase: string) {
   switch (phase) {
-    case "pre_start": return m.phase_pre_start ? m.phase_pre_start() : "Pre-Start";
-    case "active": return m.phase_active ? m.phase_active() : "Active";
-    case "exams": return m.phase_exams ? m.phase_exams() : "Exams";
-    case "grade_entry": return m.phase_grade_entry ? m.phase_grade_entry() : "Grade Entry";
-    case "closed": return m.phase_closed ? m.phase_closed() : "Closed";
-    default: return "";
+    case "pre_start":
+      return m.phase_pre_start ? m.phase_pre_start() : "Pre-Start";
+    case "active":
+      return m.phase_active ? m.phase_active() : "Active";
+    case "exams":
+      return m.phase_exams ? m.phase_exams() : "Exams";
+    case "grade_entry":
+      return m.phase_grade_entry ? m.phase_grade_entry() : "Grade Entry";
+    case "closed":
+      return m.phase_closed ? m.phase_closed() : "Closed";
+    default:
+      return "";
   }
 }
 
@@ -42,10 +44,12 @@ const nextCycle = $derived.by(() => {
   if (!cycles || cycles.length === 0) return null;
 
   // Chronologically sorted cycles. Let's sort them by start_date ascending.
-  const sorted = [...cycles].sort((a, b) => a.start_date.localeCompare(b.start_date));
+  const sorted = [...cycles].sort((a, b) =>
+    a.start_date.localeCompare(b.start_date),
+  );
 
   if (active) {
-    const activeIndex = sorted.findIndex(c => c.id === active.id);
+    const activeIndex = sorted.findIndex((c) => c.id === active.id);
     if (activeIndex !== -1 && activeIndex + 1 < sorted.length) {
       return sorted[activeIndex + 1];
     }
@@ -53,7 +57,7 @@ const nextCycle = $derived.by(() => {
 
   // If no active cycle, look for the first cycle that starts in the future
   const nowStr = new Date().toISOString().split("T")[0];
-  const upcoming = sorted.find(c => c.start_date > nowStr);
+  const upcoming = sorted.find((c) => c.start_date > nowStr);
   if (upcoming) return upcoming;
 
   return null;

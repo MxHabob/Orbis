@@ -8,10 +8,7 @@ interface Props {
   isSaving?: boolean;
 }
 
-let {
-  primaryColor = $bindable(),
-  isSaving = false,
-}: Props = $props();
+let { primaryColor = $bindable(), isSaving = false }: Props = $props();
 </script>
 
 <div class="border border-border rounded-md overflow-hidden flex flex-col">

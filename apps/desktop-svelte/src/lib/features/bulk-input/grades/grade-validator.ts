@@ -30,7 +30,10 @@ export function validateGradeRows(
     // ── student_identifier: required ──
     const sid = str(row.student_identifier);
     if (!sid) {
-      errors.set("student_identifier", "معرّف الطالب مطلوب (بريد، رقم أكاديمي، أو اسم)");
+      errors.set(
+        "student_identifier",
+        "معرّف الطالب مطلوب (بريد، رقم أكاديمي، أو اسم)",
+      );
     }
 
     // ── subject_name: required ──
@@ -83,7 +86,11 @@ export function getGradeValidationSummary(
   let totalFilled = 0;
   let valid = 0;
   let errorCount = 0;
-  const errorDetails: Array<{ rowIndex: number; field: string; message: string }> = [];
+  const errorDetails: Array<{
+    rowIndex: number;
+    field: string;
+    message: string;
+  }> = [];
 
   for (const r of results) {
     if (isRowEmpty(rows[r.rowIndex])) continue;

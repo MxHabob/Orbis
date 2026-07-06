@@ -7,10 +7,7 @@ real-time validation, and error highlighting.
 import { OrbisGrid, addRowIndices } from "@orbis/data-grid";
 import type { CellEditEvent } from "@orbis/data-grid";
 import { getLocale } from "$lib/paraglide/runtime";
-import {
-  type BulkInputType,
-  getColumnsForType,
-} from "./bulk-input-config";
+import { type BulkInputType, getColumnsForType } from "./bulk-input-config";
 import { getDataProps } from "./bulk-input-config";
 import {
   validateRows,

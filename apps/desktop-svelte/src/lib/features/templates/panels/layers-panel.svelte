@@ -44,28 +44,47 @@ function toggleCollapse(id: string) {
 
 function getIcon(type: string) {
   switch (type) {
-    case "Text": return Type;
-    case "Image": return ImageIcon;
-    case "Shape": return Square;
-    case "Frame": case "Grid": return LayoutGrid;
-    case "Table": return Table;
-    case "Barcode": return Barcode;
-    case "QRCode": return QrCode;
-    case "Separator": return Minus;
-    default: return FileText;
+    case "Text":
+      return Type;
+    case "Image":
+      return ImageIcon;
+    case "Shape":
+      return Square;
+    case "Frame":
+    case "Grid":
+      return LayoutGrid;
+    case "Table":
+      return Table;
+    case "Barcode":
+      return Barcode;
+    case "QRCode":
+      return QrCode;
+    case "Separator":
+      return Minus;
+    default:
+      return FileText;
   }
 }
 
 function getIconColor(type: string): string {
   switch (type) {
-    case "Text": return "text-emerald-500";
-    case "Image": return "text-violet-500";
-    case "Shape": return "text-blue-500";
-    case "Frame": case "Grid": return "text-amber-500";
-    case "Table": return "text-cyan-500";
-    case "Barcode": return "text-orange-500";
-    case "QRCode": return "text-purple-500";
-    default: return "text-muted-foreground";
+    case "Text":
+      return "text-emerald-500";
+    case "Image":
+      return "text-violet-500";
+    case "Shape":
+      return "text-blue-500";
+    case "Frame":
+    case "Grid":
+      return "text-amber-500";
+    case "Table":
+      return "text-cyan-500";
+    case "Barcode":
+      return "text-orange-500";
+    case "QRCode":
+      return "text-purple-500";
+    default:
+      return "text-muted-foreground";
   }
 }
 </script>

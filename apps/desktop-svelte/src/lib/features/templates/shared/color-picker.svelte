@@ -42,17 +42,41 @@ const MAX_RECENT = 12;
 // Preset swatches — curated palette
 const presetColors = [
   // Row 1: Neutrals
-  "#000000", "#1a1a1a", "#333333", "#555555",
-  "#777777", "#999999", "#cccccc", "#ffffff",
+  "#000000",
+  "#1a1a1a",
+  "#333333",
+  "#555555",
+  "#777777",
+  "#999999",
+  "#cccccc",
+  "#ffffff",
   // Row 2: Primary colors
-  "#ef4444", "#f97316", "#eab308", "#22c55e",
-  "#06b6d4", "#3b82f6", "#8b5cf6", "#ec4899",
+  "#ef4444",
+  "#f97316",
+  "#eab308",
+  "#22c55e",
+  "#06b6d4",
+  "#3b82f6",
+  "#8b5cf6",
+  "#ec4899",
   // Row 3: Light variants
-  "#fecaca", "#fed7aa", "#fef08a", "#bbf7d0",
-  "#a5f3fc", "#bfdbfe", "#ddd6fe", "#fbcfe8",
+  "#fecaca",
+  "#fed7aa",
+  "#fef08a",
+  "#bbf7d0",
+  "#a5f3fc",
+  "#bfdbfe",
+  "#ddd6fe",
+  "#fbcfe8",
   // Row 4: Dark variants
-  "#991b1b", "#9a3412", "#854d0e", "#166534",
-  "#155e75", "#1e40af", "#5b21b6", "#9d174d",
+  "#991b1b",
+  "#9a3412",
+  "#854d0e",
+  "#166534",
+  "#155e75",
+  "#1e40af",
+  "#5b21b6",
+  "#9d174d",
 ];
 
 // ── Handlers ─────────────────────────────────────────────────

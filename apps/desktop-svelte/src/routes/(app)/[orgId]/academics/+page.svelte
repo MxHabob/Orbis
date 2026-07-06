@@ -32,7 +32,10 @@ import {
   createSubjectsQuery,
   createCyclesQuery,
 } from "$lib/features/academics";
-import { createCurrentYearQuery, createPromotionJobsQuery } from "$lib/features/academics/year-queries";
+import {
+  createCurrentYearQuery,
+  createPromotionJobsQuery,
+} from "$lib/features/academics/year-queries";
 import { createExamSessionsQuery } from "$lib/features/exams/queries";
 
 let { data }: { data: { orgId: string } } = $props();
@@ -96,7 +99,10 @@ const activeCycleName = $derived(
 
 // Grade entry status (based on active cycle/term)
 const isGradeEntryOpen = $derived(
-  activeCycle ? activeCycle.grade_entry_status === "open" || activeCycle.is_grade_entry_open === 1 : false,
+  activeCycle
+    ? activeCycle.grade_entry_status === "open" ||
+        activeCycle.is_grade_entry_open === 1
+    : false,
 );
 
 // Dynamic counters for KPIs
@@ -168,15 +174,15 @@ const directoryItems = $derived([
 // Diagnostic Advisor Alerts
 const advisorInsights = $derived.by(() => {
   const insights = [];
-  
+
   // 1. Grade Entry Insight
   if (activeCycleName) {
     insights.push({
       id: "grade-entry",
-      text: isGradeEntryOpen 
-        ? m.academics_overview_insight_grades_open({ cycle: activeCycleName }) 
+      text: isGradeEntryOpen
+        ? m.academics_overview_insight_grades_open({ cycle: activeCycleName })
         : m.academics_overview_insight_grades_closed(),
-      variant: isGradeEntryOpen ? "warning" as const : "neutral" as const,
+      variant: isGradeEntryOpen ? ("warning" as const) : ("neutral" as const),
       icon: ShieldCheck,
     });
   }
@@ -184,16 +190,20 @@ const advisorInsights = $derived.by(() => {
   // 2. Schedule Insight
   insights.push({
     id: "schedule",
-    text: classes.length > 0 
-      ? m.academics_overview_insight_schedule_ok() 
-      : m.academics_overview_insight_schedule_warn(),
-    variant: classes.length > 0 ? "success" as const : "warning" as const,
+    text:
+      classes.length > 0
+        ? m.academics_overview_insight_schedule_ok()
+        : m.academics_overview_insight_schedule_warn(),
+    variant: classes.length > 0 ? ("success" as const) : ("warning" as const),
     icon: Calendar,
   });
 
   // 3. Student Promotion Insight
   const activePromoJob = promotionJobs.find(
-    (job) => job.status === "dry_run" || job.status === "promoting" || job.status === "pending"
+    (job) =>
+      job.status === "dry_run" ||
+      job.status === "promoting" ||
+      job.status === "pending",
   );
   if (activePromoJob) {
     if (activePromoJob.status === "promoting") {
@@ -225,7 +235,7 @@ const advisorInsights = $derived.by(() => {
 
   // 4. Exams Insight
   const activeExamSession = examSessions.find(
-    (s) => s.status === "active" || s.status === "running"
+    (s) => s.status === "active" || s.status === "running",
   );
   if (activeExamSession) {
     insights.push({

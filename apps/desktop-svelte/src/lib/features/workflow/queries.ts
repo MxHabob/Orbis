@@ -8,7 +8,10 @@ import { createQuery } from "@tanstack/svelte-query";
 import { commands } from "$lib/core/ipc";
 
 /** Override requests pending the current user's role approval. */
-export function createPendingApprovalsQuery(orgId: string, approverRole: string) {
+export function createPendingApprovalsQuery(
+  orgId: string,
+  approverRole: string,
+) {
   return createQuery({
     queryKey: ["pending-approvals", orgId, approverRole],
     queryFn: () => commands.overrides.getPending(orgId, approverRole),

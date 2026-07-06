@@ -68,7 +68,10 @@ $effect(() => {
     ? Boolean(editData.is_primary === 1 || editData.is_primary === true)
     : false;
   isEmergencyContact = editData
-    ? Boolean(editData.is_emergency_contact === 1 || editData.is_emergency_contact === true)
+    ? Boolean(
+        editData.is_emergency_contact === 1 ||
+          editData.is_emergency_contact === true,
+      )
     : false;
   isPayer = editData
     ? Boolean(editData.is_payer === 1 || editData.is_payer === true)
@@ -78,7 +81,8 @@ $effect(() => {
     : 0;
 
   if (editData && editData.guardian_id) {
-    commands.users.getUser(String(editData.guardian_id))
+    commands.users
+      .getUser(String(editData.guardian_id))
       .then((u) => {
         if (u) {
           fullName = String(u.full_name ?? u.name_ar ?? "");
@@ -128,23 +132,23 @@ const filteredUsers = $derived(
     })
     .sort((a, b) => {
       if (!studentLastName) return 0;
-      
+
       const nameA = String(a.full_name ?? a.name_ar ?? "").toLowerCase();
       const nameB = String(b.full_name ?? b.name_ar ?? "").toLowerCase();
-      
+
       const partsA = nameA.trim().split(/\s+/);
       const partsB = nameB.trim().split(/\s+/);
-      
+
       const lastNameA = partsA.length > 0 ? partsA[partsA.length - 1] : "";
       const lastNameB = partsB.length > 0 ? partsB[partsB.length - 1] : "";
-      
+
       const matchA = lastNameA === studentLastName;
       const matchB = lastNameB === studentLastName;
-      
+
       if (matchA && !matchB) return -1;
       if (!matchA && matchB) return 1;
       return 0;
-    })
+    }),
 );
 
 const selectedRelation = $derived(relations.find((r) => r.value === relation));
@@ -158,7 +162,9 @@ onMount(async () => {
     ]);
     allUsers = users as unknown as JsonRecord[];
 
-    const student = (enrollments as any[]).find((s) => String(s.id) === String(studentId));
+    const student = (enrollments as any[]).find(
+      (s) => String(s.id) === String(studentId),
+    );
     if (student) {
       const studentName = (student.full_name || student.name_ar || "").trim();
       const nameParts = studentName.split(/\s+/);
@@ -211,7 +217,10 @@ async function handleSubmit() {
 
     if (!finalGuardianUserId) {
       // Check if user already exists in db by phone
-      const checkExisting = await commands.guardians.search(orgId, phone.trim());
+      const checkExisting = await commands.guardians.search(
+        orgId,
+        phone.trim(),
+      );
       if (checkExisting && checkExisting.length > 0) {
         finalGuardianUserId = checkExisting[0].id;
         // Optionally update the existing user info
@@ -248,7 +257,13 @@ async function handleSubmit() {
     }
 
     const relationAr =
-      relation === "father" ? "أب" : relation === "mother" ? "أم" : relation === "uncle" ? "عم" : "آخر/قريب";
+      relation === "father"
+        ? "أب"
+        : relation === "mother"
+          ? "أم"
+          : relation === "uncle"
+            ? "عم"
+            : "آخر/قريب";
 
     // Construct request conforming exactly to CreateGuardianLinkRequest / UpdateGuardianLinkRequest
     const request: JsonRecord = {

@@ -32,8 +32,12 @@ let {
 
 const node = $derived(store.selectedNode);
 const nodeType = $derived(node?.type ?? null);
-const props = $derived(node && "props" in node ? (node as any).props || {} : {});
-const position = $derived(node && "position" in node ? (node as any).position || {} : {});
+const props = $derived(
+  node && "props" in node ? (node as any).props || {} : {},
+);
+const position = $derived(
+  node && "position" in node ? (node as any).position || {} : {},
+);
 
 function updateProp(key: string, value: unknown) {
   store.updateSelectedProps({ props: { ...props, [key]: value } } as any);

@@ -45,7 +45,9 @@ $effect(() => {
   classId = editData ? String(editData.class_id ?? "") : "";
   subjectId = editData ? String(editData.subject_id ?? "") : "";
   teacherId = editData ? String(editData.teacher_id ?? "") : "";
-  assistantTeacherId = editData ? String(editData.assistant_teacher_id ?? "") : "";
+  assistantTeacherId = editData
+    ? String(editData.assistant_teacher_id ?? "")
+    : "";
   weeklyHours = editData ? Number(editData.weekly_hours ?? 4) : 4;
   cycleId = editData ? String(editData.cycle_id ?? "") : "";
 });

@@ -2,7 +2,13 @@
 import { Button } from "@orbis/ui-svelte/button";
 import { Checkbox } from "@orbis/ui-svelte/checkbox";
 import { Label } from "@orbis/ui-svelte/label";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@orbis/ui-svelte/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardFooter,
+} from "@orbis/ui-svelte/card";
 import AvatarUpload from "$lib/shared/components/avatar-upload.svelte";
 import * as m from "$lib/paraglide/messages";
 

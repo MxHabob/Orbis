@@ -89,15 +89,17 @@ const padding = { left: 40, right: 15, top: 15, bottom: 20 };
 
 // Determine display dataset (uses placeholders for grid when empty)
 const displayData = $derived(
-  data.length > 0 ? data : [
-    { date: "09-01", rate: 0 },
-    { date: "10-01", rate: 0 },
-    { date: "11-01", rate: 0 },
-    { date: "12-01", rate: 0 },
-    { date: "01-01", rate: 0 },
-    { date: "02-01", rate: 0 },
-    { date: "03-01", rate: 0 },
-  ]
+  data.length > 0
+    ? data
+    : [
+        { date: "09-01", rate: 0 },
+        { date: "10-01", rate: 0 },
+        { date: "11-01", rate: 0 },
+        { date: "12-01", rate: 0 },
+        { date: "01-01", rate: 0 },
+        { date: "02-01", rate: 0 },
+        { date: "03-01", rate: 0 },
+      ],
 );
 
 // Derive min and max rates with pad for scaling

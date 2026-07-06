@@ -1,10 +1,6 @@
 <script lang="ts">
 import { Button } from "@orbis/ui-svelte/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@orbis/ui-svelte";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@orbis/ui-svelte";
 import { Zap } from "lucide-svelte";
 import { uiStore } from "$lib/stores";
 import * as m from "$lib/paraglide/messages";

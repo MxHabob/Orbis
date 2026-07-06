@@ -1,7 +1,12 @@
 <script lang="ts">
 import PromotionWizard from "$lib/features/academics/PromotionWizard.svelte";
 import PromotionHistory from "$lib/features/academics/PromotionHistory.svelte";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui-svelte/tabs";
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "@orbis/ui-svelte/tabs";
 import * as m from "$lib/paraglide/messages";
 
 let { data }: { data: { orgId: string } } = $props();

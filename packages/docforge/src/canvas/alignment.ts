@@ -95,7 +95,12 @@ export function calcDistribution(
   nodes: { id: string; bounds: BoundingBox }[],
   direction: DistributeDirection,
 ): AlignmentResult[] {
-  if (nodes.length < 3) return nodes.map((n) => ({ nodeId: n.id, newX: n.bounds.x, newY: n.bounds.y }));
+  if (nodes.length < 3)
+    return nodes.map((n) => ({
+      nodeId: n.id,
+      newX: n.bounds.x,
+      newY: n.bounds.y,
+    }));
 
   const isHorizontal = direction === "horizontal";
 
@@ -108,7 +113,7 @@ export function calcDistribution(
   const last = sorted[sorted.length - 1]!;
 
   if (isHorizontal) {
-    const totalSpan = (last.bounds.x + last.bounds.width) - first.bounds.x;
+    const totalSpan = last.bounds.x + last.bounds.width - first.bounds.x;
     const totalNodeWidth = sorted.reduce((sum, n) => sum + n.bounds.width, 0);
     const gap = (totalSpan - totalNodeWidth) / (sorted.length - 1);
 
@@ -123,7 +128,7 @@ export function calcDistribution(
       return result;
     });
   } else {
-    const totalSpan = (last.bounds.y + last.bounds.height) - first.bounds.y;
+    const totalSpan = last.bounds.y + last.bounds.height - first.bounds.y;
     const totalNodeHeight = sorted.reduce((sum, n) => sum + n.bounds.height, 0);
     const gap = (totalSpan - totalNodeHeight) / (sorted.length - 1);
 
@@ -190,8 +195,16 @@ export function calcSmartSnap(
   const hTargets: number[] = []; // horizontal lines (y positions)
 
   // Page edges
-  vTargets.push(pageBounds.x, pageBounds.x + pageBounds.width, pageBounds.x + pageBounds.width / 2);
-  hTargets.push(pageBounds.y, pageBounds.y + pageBounds.height, pageBounds.y + pageBounds.height / 2);
+  vTargets.push(
+    pageBounds.x,
+    pageBounds.x + pageBounds.width,
+    pageBounds.x + pageBounds.width / 2,
+  );
+  hTargets.push(
+    pageBounds.y,
+    pageBounds.y + pageBounds.height,
+    pageBounds.y + pageBounds.height / 2,
+  );
 
   // Other nodes
   for (const b of otherNodes) {
@@ -258,11 +271,11 @@ export function calcSmartSnap(
 
 // ── Helpers ──────────────────────────────────────────────────
 
-function computeReferenceBounds(
-  nodes: { bounds: BoundingBox }[],
-): BoundingBox {
-  let minX = Infinity, minY = Infinity;
-  let maxX = -Infinity, maxY = -Infinity;
+function computeReferenceBounds(nodes: { bounds: BoundingBox }[]): BoundingBox {
+  let minX = Infinity,
+    minY = Infinity;
+  let maxX = -Infinity,
+    maxY = -Infinity;
 
   for (const { bounds } of nodes) {
     minX = Math.min(minX, bounds.x);

@@ -56,15 +56,60 @@ let selectedIndex = $state(0);
 
 const slashPages = [
   { label: "الطلاب", path: "/students", key: "students", cleanLabel: "الطلاب" },
-  { label: "الصفوف الدراسية", path: "/academics/classes", key: "classes", cleanLabel: "الصفوف الدراسية" },
-  { label: "المواد الدراسية", path: "/settings/subjects", key: "subjects", cleanLabel: "المواد الدراسية" },
-  { label: "الرسوم الدراسية", path: "/finance/fees", key: "fees", cleanLabel: "الرسوم الدراسية" },
-  { label: "المدفوعات والمقبوضات", path: "/finance/payments", key: "payments", cleanLabel: "المدفوعات والمقبوضات" },
-  { label: "الحسابات والصناديق", path: "/finance/treasuries", key: "treasuries", cleanLabel: "الحسابات والصناديق" },
-  { label: "التقارير", path: "/reports", key: "reports", cleanLabel: "التقارير" },
-  { label: "القوالب", path: "/templates", key: "templates", cleanLabel: "القوالب" },
-  { label: "الإعدادات العامة", path: "/settings", key: "settings", cleanLabel: "الإعدادات العامة" },
-  { label: "الجدول الدراسي", path: "/academics/schedule", key: "schedule", cleanLabel: "الجدول الدراسي" }
+  {
+    label: "الصفوف الدراسية",
+    path: "/academics/classes",
+    key: "classes",
+    cleanLabel: "الصفوف الدراسية",
+  },
+  {
+    label: "المواد الدراسية",
+    path: "/settings/subjects",
+    key: "subjects",
+    cleanLabel: "المواد الدراسية",
+  },
+  {
+    label: "الرسوم الدراسية",
+    path: "/finance/fees",
+    key: "fees",
+    cleanLabel: "الرسوم الدراسية",
+  },
+  {
+    label: "المدفوعات والمقبوضات",
+    path: "/finance/payments",
+    key: "payments",
+    cleanLabel: "المدفوعات والمقبوضات",
+  },
+  {
+    label: "الحسابات والصناديق",
+    path: "/finance/treasuries",
+    key: "treasuries",
+    cleanLabel: "الحسابات والصناديق",
+  },
+  {
+    label: "التقارير",
+    path: "/reports",
+    key: "reports",
+    cleanLabel: "التقارير",
+  },
+  {
+    label: "القوالب",
+    path: "/templates",
+    key: "templates",
+    cleanLabel: "القوالب",
+  },
+  {
+    label: "الإعدادات العامة",
+    path: "/settings",
+    key: "settings",
+    cleanLabel: "الإعدادات العامة",
+  },
+  {
+    label: "الجدول الدراسي",
+    path: "/academics/schedule",
+    key: "schedule",
+    cleanLabel: "الجدول الدراسي",
+  },
 ];
 
 const filteredSuggestions = $derived.by(() => {
@@ -73,18 +118,23 @@ const filteredSuggestions = $derived.by(() => {
 
   if (trigger === "/") {
     return slashPages
-      .filter(p => p.label.toLowerCase().includes(q))
-      .map(p => ({
+      .filter((p) => p.label.toLowerCase().includes(q))
+      .map((p) => ({
         id: `slash-${p.key}`,
         label: p.label,
         subtitle: `/${currentOrgId}${p.path}`,
         path: `/${currentOrgId}${p.path}`,
-        insertLabel: p.cleanLabel
+        insertLabel: p.cleanLabel,
       }));
   } else if (trigger === "@") {
     const matchedStudents = students
       .filter((s: any) => {
-        const name = (s.full_name || s.name_ar || s.name_en || "").toLowerCase();
+        const name = (
+          s.full_name ||
+          s.name_ar ||
+          s.name_en ||
+          ""
+        ).toLowerCase();
         const num = (s.student_number || "").toLowerCase();
         return name.includes(q) || num.includes(q);
       })
@@ -93,14 +143,21 @@ const filteredSuggestions = $derived.by(() => {
         return {
           id: `student-${s.id}`,
           label: name,
-          subtitle: isRtl ? `طالب (رقم: ${s.student_number || '—'})` : `Student (ID: ${s.student_number || '—'})`,
-          path: `/${currentOrgId}/students/${s.id}/grades`
+          subtitle: isRtl
+            ? `طالب (رقم: ${s.student_number || "—"})`
+            : `Student (ID: ${s.student_number || "—"})`,
+          path: `/${currentOrgId}/students/${s.id}/grades`,
         };
       });
 
     const matchedUsers = users
       .filter((u: any) => {
-        const name = (u.full_name || u.name_ar || u.name_en || "").toLowerCase();
+        const name = (
+          u.full_name ||
+          u.name_ar ||
+          u.name_en ||
+          ""
+        ).toLowerCase();
         const email = (u.email || "").toLowerCase();
         return name.includes(q) || email.includes(q);
       })
@@ -111,7 +168,7 @@ const filteredSuggestions = $derived.by(() => {
           id: `user-${u.id}`,
           label: name,
           subtitle: isRtl ? `كادر: ${roleStr}` : `Staff: ${roleStr}`,
-          path: `/${currentOrgId}/settings/users/${u.id}/profile`
+          path: `/${currentOrgId}/settings/users/${u.id}/profile`,
         };
       });
 
@@ -125,7 +182,7 @@ function getActiveMentionOrSlash(text: string, cursorIndex: number) {
   let index = cursorIndex - 1;
   while (index >= 0) {
     const char = text[index];
-    if (char === '@' || char === '/') {
+    if (char === "@" || char === "/") {
       if (index === 0 || /\s/.test(text[index - 1])) {
         const query = text.substring(index + 1, cursorIndex);
         if (!/\s/.test(query)) {
@@ -146,12 +203,14 @@ function getPlaintextFromHtml(html: string): string {
   if (typeof document === "undefined") return html;
   const tempDiv = document.createElement("div");
   tempDiv.innerHTML = html;
-  
+
   const spans = tempDiv.querySelectorAll("span[data-type='mention']");
-  spans.forEach(span => {
+  spans.forEach((span) => {
     const isMention = span.getAttribute("data-mention") === "true";
     const label = span.textContent || "";
-    const textNode = document.createTextNode(isMention ? `[@${label}]` : `[${label}]`);
+    const textNode = document.createTextNode(
+      isMention ? `[@${label}]` : `[${label}]`,
+    );
     span.parentNode?.replaceChild(textNode, span);
   });
 
@@ -161,13 +220,13 @@ function getPlaintextFromHtml(html: string): string {
 function getCaretPosition(element: HTMLElement): number {
   const selection = window.getSelection();
   if (!selection || selection.rangeCount === 0) return 0;
-  
+
   const range = selection.getRangeAt(0);
   if (!element.contains(range.endContainer)) return 0;
 
   const preCaretRange = range.cloneRange();
   preCaretRange.selectNodeContents(element);
-  
+
   try {
     preCaretRange.setEnd(range.endContainer, range.endOffset);
     return preCaretRange.toString().length;
@@ -214,9 +273,9 @@ function insertHtmlAtCaret(html: string) {
     while ((node = el.firstChild)) {
       lastNode = frag.appendChild(node);
     }
-    
+
     range.insertNode(frag);
-    
+
     if (lastNode) {
       const nextRange = range.cloneRange();
       nextRange.setStartAfter(lastNode);
@@ -229,23 +288,27 @@ function insertHtmlAtCaret(html: string) {
   }
 }
 
-function selectSuggestion(item: { label: string; path: string; insertLabel?: string }) {
+function selectSuggestion(item: {
+  label: string;
+  path: string;
+  insertLabel?: string;
+}) {
   if (!inputEl) return;
-  
+
   const sel = window.getSelection();
   if (sel && sel.rangeCount > 0) {
     const range = sel.getRangeAt(0);
     const node = range.startContainer;
     const offset = range.startOffset;
-    
+
     const queryLength = triggerQuery.length + 1;
     const startReplaceOffset = Math.max(0, offset - queryLength);
-    
+
     if (node.nodeType === Node.TEXT_NODE) {
-      node.textContent = 
-        node.textContent!.substring(0, startReplaceOffset) + 
+      node.textContent =
+        node.textContent!.substring(0, startReplaceOffset) +
         node.textContent!.substring(offset);
-        
+
       range.setStart(node, startReplaceOffset);
       range.collapse(true);
     }
@@ -254,7 +317,7 @@ function selectSuggestion(item: { label: string; path: string; insertLabel?: str
   const isMention = trigger === "@";
   const insertText = item.insertLabel || item.label;
   const displayLabel = isMention ? `@${insertText}` : insertText;
-  
+
   const badgeHtml = `<span data-type="mention" data-mention="${isMention}" data-path="${item.path}" contenteditable="false" class="border border-transparent border-b-dotted border-b-foreground/60 rounded px-1.5 py-0.5 bg-transparent hover:bg-card hover:border-border/60 hover:border-solid text-foreground transition-all duration-150 inline mx-0.5 cursor-pointer select-none font-semibold">${displayLabel}</span>&nbsp;`;
 
   insertHtmlAtCaret(badgeHtml);
@@ -282,13 +345,13 @@ function handleInputClick(e: MouseEvent) {
   const target = e.target as HTMLElement;
   const mentionSpan = target.closest('span[data-type="mention"]');
   if (mentionSpan) {
-    const path = mentionSpan.getAttribute('data-path');
+    const path = mentionSpan.getAttribute("data-path");
     if (path) {
       goto(path);
       return;
     }
   }
-  
+
   const currentTarget = e.currentTarget as HTMLDivElement;
   checkTrigger(currentTarget);
 }
@@ -319,7 +382,9 @@ function handleKeyDown(e: KeyboardEvent) {
     }
     if (e.key === "ArrowUp") {
       e.preventDefault();
-      selectedIndex = (selectedIndex - 1 + filteredSuggestions.length) % filteredSuggestions.length;
+      selectedIndex =
+        (selectedIndex - 1 + filteredSuggestions.length) %
+        filteredSuggestions.length;
       return;
     }
     if (e.key === "Enter" || e.key === "Tab") {
@@ -356,7 +421,9 @@ $effect(() => {
 
 $effect(() => {
   if (showSuggestions && suggestionsContainer) {
-    const activeEl = suggestionsContainer.querySelector('[aria-selected="true"]');
+    const activeEl = suggestionsContainer.querySelector(
+      '[aria-selected="true"]',
+    );
     if (activeEl) {
       activeEl.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }

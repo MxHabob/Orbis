@@ -115,14 +115,16 @@ const padding = { left: 45, right: 15, top: 15, bottom: 20 };
 
 // Determine display dataset (uses empty months placeholders when empty)
 const displayData = $derived(
-  data.length > 0 ? data : [
-    { month: "Oct", collected: 0, pending: 0 },
-    { month: "Nov", collected: 0, pending: 0 },
-    { month: "Dec", collected: 0, pending: 0 },
-    { month: "Jan", collected: 0, pending: 0 },
-    { month: "Feb", collected: 0, pending: 0 },
-    { month: "Mar", collected: 0, pending: 0 },
-  ]
+  data.length > 0
+    ? data
+    : [
+        { month: "Oct", collected: 0, pending: 0 },
+        { month: "Nov", collected: 0, pending: 0 },
+        { month: "Dec", collected: 0, pending: 0 },
+        { month: "Jan", collected: 0, pending: 0 },
+        { month: "Feb", collected: 0, pending: 0 },
+        { month: "Mar", collected: 0, pending: 0 },
+      ],
 );
 
 const maxVal = $derived(

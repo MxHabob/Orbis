@@ -151,11 +151,19 @@ export function computeMultiUpLayout(config: MultiUpConfig): MultiUpLayout {
   } else {
     columns = Math.max(
       1,
-      computeMaxItems(printableW, config.templateWidthMm, config.gapHorizontalMm),
+      computeMaxItems(
+        printableW,
+        config.templateWidthMm,
+        config.gapHorizontalMm,
+      ),
     );
     rows = Math.max(
       1,
-      computeMaxItems(printableH, config.templateHeightMm, config.gapVerticalMm),
+      computeMaxItems(
+        printableH,
+        config.templateHeightMm,
+        config.gapVerticalMm,
+      ),
     );
   }
 
@@ -163,8 +171,7 @@ export function computeMultiUpLayout(config: MultiUpConfig): MultiUpLayout {
 
   // Step 4: Compute slot positions in mm
   const contentBlockW =
-    config.templateWidthMm * columns +
-    config.gapHorizontalMm * (columns - 1);
+    config.templateWidthMm * columns + config.gapHorizontalMm * (columns - 1);
   const contentBlockH =
     config.templateHeightMm * rows + config.gapVerticalMm * (rows - 1);
 
@@ -193,8 +200,7 @@ export function computeMultiUpLayout(config: MultiUpConfig): MultiUpLayout {
         offsetX +
         physicalCol * (config.templateWidthMm + config.gapHorizontalMm);
       const y =
-        offsetY +
-        rowIdx * (config.templateHeightMm + config.gapVerticalMm);
+        offsetY + rowIdx * (config.templateHeightMm + config.gapVerticalMm);
 
       const sequentialIndex = rowIdx * columns + colIdx;
 
@@ -262,7 +268,10 @@ export function suggestLayouts(
 
   for (const orientation of orientations) {
     for (const gap of gaps) {
-      const config = createDefaultMultiUpConfig(templateWidthMm, templateHeightMm);
+      const config = createDefaultMultiUpConfig(
+        templateWidthMm,
+        templateHeightMm,
+      );
       config.sheetSize = sheetSize;
       config.sheetOrientation = orientation;
       config.gapHorizontalMm = gap;

@@ -56,10 +56,21 @@ export function createTransactionAccountsQuery(orgId: string) {
 }
 
 /** Detailed account statement query. */
-export function createAccountStatementQuery(orgId: string, accountId: string, startDate: string, endDate: string) {
+export function createAccountStatementQuery(
+  orgId: string,
+  accountId: string,
+  startDate: string,
+  endDate: string,
+) {
   return createQuery({
     queryKey: ["account-statement", orgId, accountId, startDate, endDate],
-    queryFn: () => commands.finance.getAccountStatement(orgId, accountId, startDate, endDate),
+    queryFn: () =>
+      commands.finance.getAccountStatement(
+        orgId,
+        accountId,
+        startDate,
+        endDate,
+      ),
     enabled: !!orgId && !!accountId && !!startDate && !!endDate,
     staleTime: 1 * 60 * 1000,
   });

@@ -32,7 +32,13 @@ async function loadData() {
   try {
     // Query stats to extract behavior details
     const res = await commands.dashboard.getStats(orgId);
-    if (res && res.behavior_summary && (res.behavior_summary.critical_count || res.behavior_summary.major_count || res.behavior_summary.minor_count)) {
+    if (
+      res &&
+      res.behavior_summary &&
+      (res.behavior_summary.critical_count ||
+        res.behavior_summary.major_count ||
+        res.behavior_summary.minor_count)
+    ) {
       summary = res.behavior_summary;
     } else {
       summary = null;
@@ -85,11 +91,37 @@ const listItems = $derived.by(() => {
 
 // Determine display items list (uses placeholders when empty)
 const displayItems = $derived(
-  summary && listItems.length > 0 ? listItems : [
-    { name: "critical", label: m.reports_behavior_critical ? m.reports_behavior_critical() : "حرجة", value: 0, percent: 0, color: "bg-destructive" },
-    { name: "major", label: m.reports_behavior_major ? m.reports_behavior_major() : "متوسطة", value: 0, percent: 0, color: "bg-orange-500" },
-    { name: "minor", label: m.reports_behavior_minor ? m.reports_behavior_minor() : "طفيفة", value: 0, percent: 0, color: "bg-primary" },
-  ]
+  summary && listItems.length > 0
+    ? listItems
+    : [
+        {
+          name: "critical",
+          label: m.reports_behavior_critical
+            ? m.reports_behavior_critical()
+            : "حرجة",
+          value: 0,
+          percent: 0,
+          color: "bg-destructive",
+        },
+        {
+          name: "major",
+          label: m.reports_behavior_major
+            ? m.reports_behavior_major()
+            : "متوسطة",
+          value: 0,
+          percent: 0,
+          color: "bg-orange-500",
+        },
+        {
+          name: "minor",
+          label: m.reports_behavior_minor
+            ? m.reports_behavior_minor()
+            : "طفيفة",
+          value: 0,
+          percent: 0,
+          color: "bg-primary",
+        },
+      ],
 );
 </script>
 

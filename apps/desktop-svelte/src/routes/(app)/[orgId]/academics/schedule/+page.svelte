@@ -146,16 +146,26 @@ async function initializeSchedule() {
         u.primary_role === "super_admin",
     );
 
-    const paramClassId = page.url.searchParams.get("classId") || page.url.searchParams.get("class");
-    if (paramClassId && classList.some((c: any) => String(c.id) === paramClassId)) {
+    const paramClassId =
+      page.url.searchParams.get("classId") ||
+      page.url.searchParams.get("class");
+    if (
+      paramClassId &&
+      classList.some((c: any) => String(c.id) === paramClassId)
+    ) {
       selectedClassId = paramClassId;
       viewMode = "class";
     } else if (classes.length > 0) {
       selectedClassId = String(classes[0].id);
     }
 
-    const paramTeacherId = page.url.searchParams.get("teacherId") || page.url.searchParams.get("teacher");
-    if (paramTeacherId && userList.some((u: any) => String(u.id) === paramTeacherId)) {
+    const paramTeacherId =
+      page.url.searchParams.get("teacherId") ||
+      page.url.searchParams.get("teacher");
+    if (
+      paramTeacherId &&
+      userList.some((u: any) => String(u.id) === paramTeacherId)
+    ) {
       selectedTeacherId = paramTeacherId;
       viewMode = "teacher";
     } else if (teachers.length > 0) {
@@ -267,11 +277,13 @@ async function handleMoveLesson(
       return;
     }
 
-    await commands.schedule.updateLessonTime(lesson.id, targetDay, targetSlotId);
+    await commands.schedule.updateLessonTime(
+      lesson.id,
+      targetDay,
+      targetSlotId,
+    );
     toast.success(
-      getLocale() === "ar"
-        ? "تم نقل الحصة بنجاح"
-        : "Lesson moved successfully",
+      getLocale() === "ar" ? "تم نقل الحصة بنجاح" : "Lesson moved successfully",
     );
     await loadScheduleLessons();
   } catch (e: any) {

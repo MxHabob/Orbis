@@ -9,14 +9,15 @@ import {
   DangerZoneSettingsCard,
 } from "$lib/features/settings";
 
-let { org, isSaving, onsave, onsaveavatar, onremove, onlanguagechange } = $props<{
-  org: any;
-  isSaving: boolean;
-  onsave: (request: any) => void;
-  onsaveavatar: (logo: string | null) => void;
-  onremove: () => void;
-  onlanguagechange: (newLocale: string, currentValues: any) => void;
-}>();
+let { org, isSaving, onsave, onsaveavatar, onremove, onlanguagechange } =
+  $props<{
+    org: any;
+    isSaving: boolean;
+    onsave: (request: any) => void;
+    onsaveavatar: (logo: string | null) => void;
+    onremove: () => void;
+    onlanguagechange: (newLocale: string, currentValues: any) => void;
+  }>();
 
 // Form state initialized once with props
 let name = $state(org.name || "");

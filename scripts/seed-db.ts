@@ -43,7 +43,9 @@ try {
   // Helper to detect current Hijri year dynamically
   function getHijriYear(): number {
     try {
-      const formatted = new Intl.DateTimeFormat('ar-TN-u-ca-islamic', { year: 'numeric' }).format(new Date());
+      const formatted = new Intl.DateTimeFormat("ar-TN-u-ca-islamic", {
+        year: "numeric",
+      }).format(new Date());
       const match = formatted.match(/\d+/);
       return match ? parseInt(match[0], 10) : 1447;
     } catch {
@@ -65,8 +67,16 @@ try {
   // Connect to orbis_registry.db and seed the academic year
   let registryDbPath = "";
   const regPaths = [
-    path.join(process.env.APPDATA || "", "com.mulverse.orbis.dev", "orbis_registry.db"),
-    path.join(process.env.APPDATA || "", "com.mulverse.orbis", "orbis_registry.db"),
+    path.join(
+      process.env.APPDATA || "",
+      "com.mulverse.orbis.dev",
+      "orbis_registry.db",
+    ),
+    path.join(
+      process.env.APPDATA || "",
+      "com.mulverse.orbis",
+      "orbis_registry.db",
+    ),
   ];
   for (const p of regPaths) {
     if (fs.existsSync(p)) {
@@ -79,10 +89,21 @@ try {
     const regDb = new Database(registryDbPath);
     try {
       regDb.prepare("DELETE FROM academic_years WHERE org_id = ?").run(orgId);
-      regDb.prepare(`
+      regDb
+        .prepare(`
         INSERT INTO academic_years (id, org_id, name, name_ar, start_date, end_date, hijri_start_date, hijri_end_date, db_filename, status, is_current, archived_at, archived_by, promotion_source_year_id, db_size_bytes, student_count, teacher_count, class_count, notes, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, '../orbis.db', 'active', 1, NULL, NULL, NULL, NULL, 0, 0, 0, 'Initial seeded year', datetime('now'), datetime('now'))
-      `).run(cycleId, orgId, academicYearNameEn, academicYearNameAr, startGregorian, endGregorian, hijriStart, hijriEnd);
+      `)
+        .run(
+          cycleId,
+          orgId,
+          academicYearNameEn,
+          academicYearNameAr,
+          startGregorian,
+          endGregorian,
+          hijriStart,
+          hijriEnd,
+        );
       console.log("✅ Seeded academic year in registry database");
     } catch (regErr) {
       console.error("❌ Failed to seed registry database:", regErr);
@@ -113,11 +134,20 @@ try {
 
   // 1. Create Academic Cycle (Hijri)
   db.prepare("DELETE FROM academic_cycles WHERE org_id = ?").run(orgId);
-  console.log(`Creating academic cycle: ${currentHijriYear} Hijri and sub-cycles...`);
+  console.log(
+    `Creating academic cycle: ${currentHijriYear} Hijri and sub-cycles...`,
+  );
   db.prepare(`
     INSERT INTO academic_cycles (id, org_id, name, name_ar, start_date, end_date, type, grading_system, is_current, is_locked, is_enrollment_open, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, 'year', 'percentage', 1, 0, 1, datetime('now'), datetime('now'))
-  `).run(cycleId, orgId, academicYearNameEn, academicYearNameAr, startGregorian, endGregorian);
+  `).run(
+    cycleId,
+    orgId,
+    academicYearNameEn,
+    academicYearNameAr,
+    startGregorian,
+    endGregorian,
+  );
 
   // Semesters & Month cycles for Sanaa Model School
   const subCycles = [

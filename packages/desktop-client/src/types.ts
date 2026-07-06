@@ -81,7 +81,12 @@ export interface BatchJobStatus {
 
 // ── Academic Context ─────────────────────────────────────────────────────────
 
-export type CyclePhase = "pre_start" | "active" | "exams" | "grade_entry" | "closed";
+export type CyclePhase =
+  | "pre_start"
+  | "active"
+  | "exams"
+  | "grade_entry"
+  | "closed";
 
 export interface AcademicCycleSummary {
   id: string;
@@ -121,15 +126,26 @@ export interface AcademicContextResponse {
 // ── Academic Calendar ────────────────────────────────────────────────────────
 
 export type CalendarEventType =
-  | "enrollment_open" | "enrollment_close"
-  | "add_drop_open" | "add_drop_close"
-  | "classes_start" | "classes_end"
-  | "exam_prep_start" | "exam_start" | "exam_end"
-  | "grade_entry_open" | "grade_entry_close"
+  | "enrollment_open"
+  | "enrollment_close"
+  | "add_drop_open"
+  | "add_drop_close"
+  | "classes_start"
+  | "classes_end"
+  | "exam_prep_start"
+  | "exam_start"
+  | "exam_end"
+  | "grade_entry_open"
+  | "grade_entry_close"
   | "results_announcement"
-  | "holiday" | "break" | "teacher_training"
-  | "promotion_window_open" | "promotion_window_close"
-  | "cycle_start" | "cycle_end" | "custom";
+  | "holiday"
+  | "break"
+  | "teacher_training"
+  | "promotion_window_open"
+  | "promotion_window_close"
+  | "cycle_start"
+  | "cycle_end"
+  | "custom";
 
 export type CalendarExecutionMode = "manual" | "suggested" | "automatic";
 
@@ -333,7 +349,11 @@ export interface OverrideRequest {
 
 // ── Promotion Policy ─────────────────────────────────────────────────────────
 
-export type FeeCarryOverMode = "ignore" | "carry_all" | "carry_selected" | "require_approval";
+export type FeeCarryOverMode =
+  | "ignore"
+  | "carry_all"
+  | "carry_selected"
+  | "require_approval";
 
 export interface PromotionPolicy {
   id: string;
@@ -357,14 +377,25 @@ export interface PromotionPolicy {
 // ── Override & Approval ──────────────────────────────────────────────────────
 
 export type OverrideType =
-  | "grade_modification" | "attendance_correction" | "enrollment_exception"
-  | "late_enrollment" | "fee_waiver" | "promotion_override"
-  | "cycle_unlock" | "deadline_extension" | "custom";
+  | "grade_modification"
+  | "attendance_correction"
+  | "enrollment_exception"
+  | "late_enrollment"
+  | "fee_waiver"
+  | "promotion_override"
+  | "cycle_unlock"
+  | "deadline_extension"
+  | "custom";
 
 export type RiskLevel = "low" | "medium" | "high" | "critical";
 
 export type OverrideStatus =
-  | "pending" | "approved" | "rejected" | "escalated" | "expired" | "cancelled";
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "escalated"
+  | "expired"
+  | "cancelled";
 
 export interface ApprovalStep {
   role: string;

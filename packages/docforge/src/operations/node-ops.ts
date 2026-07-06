@@ -337,34 +337,48 @@ export function updateNodeProps(
 ): TemplateDocument {
   return {
     ...doc,
-    pages: getPages(doc).map((page) =>
-      updateNodeInTree(page, nodeId, (node) => {
-        const rootKeys = [
-          "id", "type", "name", "locked", "visible", 
-          "opacity", "rotation", "zIndex", "groupId", 
-          "styleRef", "position", "positionMode"
-        ];
-        
-        const rootUpdates: Record<string, any> = {};
-        const innerUpdates: Record<string, any> = {};
+    pages: getPages(doc).map(
+      (page) =>
+        updateNodeInTree(page, nodeId, (node) => {
+          const rootKeys = [
+            "id",
+            "type",
+            "name",
+            "locked",
+            "visible",
+            "opacity",
+            "rotation",
+            "zIndex",
+            "groupId",
+            "styleRef",
+            "position",
+            "positionMode",
+          ];
 
-        for (const [key, val] of Object.entries(props)) {
-          if (key === "props" && val && typeof val === "object") {
-            // Unpack nested props if passed as { props: { ... } }
-            Object.assign(innerUpdates, val);
-          } else if (rootKeys.includes(key)) {
-            rootUpdates[key] = val;
-          } else {
-            innerUpdates[key] = val;
+          const rootUpdates: Record<string, any> = {};
+          const innerUpdates: Record<string, any> = {};
+
+          for (const [key, val] of Object.entries(props)) {
+            if (key === "props" && val && typeof val === "object") {
+              // Unpack nested props if passed as { props: { ... } }
+              Object.assign(innerUpdates, val);
+            } else if (rootKeys.includes(key)) {
+              rootUpdates[key] = val;
+            } else {
+              innerUpdates[key] = val;
+            }
           }
-        }
 
-        const updated = { ...node, ...rootUpdates } as any;
-        if (Object.keys(innerUpdates).length > 0 && "props" in updated && updated.props) {
-          updated.props = { ...updated.props, ...innerUpdates };
-        }
-        return updated as TemplateNode;
-      }) as PageNode,
+          const updated = { ...node, ...rootUpdates } as any;
+          if (
+            Object.keys(innerUpdates).length > 0 &&
+            "props" in updated &&
+            updated.props
+          ) {
+            updated.props = { ...updated.props, ...innerUpdates };
+          }
+          return updated as TemplateNode;
+        }) as PageNode,
     ),
   };
 }
@@ -381,19 +395,20 @@ export function addNode(
 ): TemplateDocument {
   return {
     ...doc,
-    pages: getPages(doc).map((page) =>
-      updateNodeInTree(page, parentId, (parent) => {
-        if (!isContainerNode(parent)) {
-          throw new Error(`Node ${parentId} is not a container`);
-        }
-        const children = [...parent.children];
-        if (index !== undefined && index >= 0 && index <= children.length) {
-          children.splice(index, 0, node);
-        } else {
-          children.push(node);
-        }
-        return { ...parent, children } as TemplateNode;
-      }) as PageNode,
+    pages: getPages(doc).map(
+      (page) =>
+        updateNodeInTree(page, parentId, (parent) => {
+          if (!isContainerNode(parent)) {
+            throw new Error(`Node ${parentId} is not a container`);
+          }
+          const children = [...parent.children];
+          if (index !== undefined && index >= 0 && index <= children.length) {
+            children.splice(index, 0, node);
+          } else {
+            children.push(node);
+          }
+          return { ...parent, children } as TemplateNode;
+        }) as PageNode,
     ),
   };
 }
@@ -421,9 +436,7 @@ export function removeNode(
   // Otherwise, remove from within pages
   return {
     ...doc,
-    pages: pages.map(
-      (page) => removeNodeFromTree(page, nodeId) as PageNode,
-    ),
+    pages: pages.map((page) => removeNodeFromTree(page, nodeId) as PageNode),
   };
 }
 

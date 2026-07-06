@@ -40,7 +40,7 @@ async function handleLanguageChange(newLocale: string, currentValues: any) {
 
 async function handleSaveAvatar(logo: string | null) {
   if (!orgId) return;
-  
+
   $updateOrgMutation.mutate(
     {
       orgId,
@@ -53,9 +53,11 @@ async function handleSaveAvatar(logo: string | null) {
         toast.success(m.settings_general_save_success());
       },
       onError: (e: unknown) => {
-        toast.error(m.settings_general_save_error({ error: extractErrorMessage(e) }));
+        toast.error(
+          m.settings_general_save_error({ error: extractErrorMessage(e) }),
+        );
       },
-    }
+    },
   );
 }
 
@@ -65,7 +67,7 @@ function handleRemoveOrganization() {
 
 async function handleSave(request: any) {
   if (!orgId) return;
-  
+
   $updateOrgMutation.mutate(
     {
       orgId,
@@ -76,9 +78,11 @@ async function handleSave(request: any) {
         toast.success(m.settings_general_save_success());
       },
       onError: (e: unknown) => {
-        toast.error(m.settings_general_save_error({ error: extractErrorMessage(e) }));
+        toast.error(
+          m.settings_general_save_error({ error: extractErrorMessage(e) }),
+        );
       },
-    }
+    },
   );
 }
 </script>

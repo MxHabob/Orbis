@@ -43,7 +43,9 @@ function generateTicks() {
   return result;
 }
 
-const cursorPx = $derived(mmToPx(Math.max(0, cursorMm), viewport.dpi, viewport.zoom));
+const cursorPx = $derived(
+  mmToPx(Math.max(0, cursorMm), viewport.dpi, viewport.zoom),
+);
 </script>
 
 {#if isHorizontal}

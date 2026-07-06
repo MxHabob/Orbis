@@ -68,9 +68,7 @@ let isSubmitting = $state(false);
 // Filter students locally based on search query
 const filteredStudents = $derived.by(() => {
   if (!searchQuery.trim()) return [];
-  return students
-    .filter((s) => matchStudent(s, searchQuery))
-    .slice(0, 8); // Limit to 8 quick results
+  return students.filter((s) => matchStudent(s, searchQuery)).slice(0, 8); // Limit to 8 quick results
 });
 
 // Load basic startup data

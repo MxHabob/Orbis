@@ -9,9 +9,21 @@ import { commands, dedup, extractErrorMessage } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
-import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui-svelte/select";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui-svelte/select";
 import { ComboboxDropdown } from "@orbis/ui-svelte/combobox-dropdown";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@orbis/ui-svelte/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@orbis/ui-svelte/table";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Switch } from "@orbis/ui-svelte/switch";
@@ -32,7 +44,7 @@ import {
   ChevronRight,
   Calendar,
   FileSpreadsheet,
-  AlertCircle
+  AlertCircle,
 } from "lucide-svelte";
 import { formatDate } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
@@ -71,7 +83,7 @@ interface EntryRow {
 let entryDate = $state(new Date().toISOString().split("T")[0]);
 let entryCurrency = $state("YER");
 let entryRows = $state<EntryRow[]>([
-  { debitAccountId: "", creditAccountId: "", amount: null, description: "" }
+  { debitAccountId: "", creditAccountId: "", amount: null, description: "" },
 ]);
 
 // Search query
@@ -99,8 +111,12 @@ async function loadData() {
   error = null;
   try {
     const [entriesList, ledgersList] = await Promise.all([
-      dedup(`journal_entries:${data.orgId}`, () => commands.finance.getJournalEntries(data.orgId)),
-      dedup(`ledger_accounts:${data.orgId}`, () => commands.finance.getTransactionAccounts(data.orgId)),
+      dedup(`journal_entries:${data.orgId}`, () =>
+        commands.finance.getJournalEntries(data.orgId),
+      ),
+      dedup(`ledger_accounts:${data.orgId}`, () =>
+        commands.finance.getTransactionAccounts(data.orgId),
+      ),
     ]);
 
     journalEntries = entriesList.map((je) => ({
@@ -180,21 +196,26 @@ function localFormatCurrency(val: number, currCode: string) {
 
 function selectRow(entry: any) {
   selectedEntry = entry;
-  
+
   // Set fields to entry values to view/copy them
   entryDate = entry.accounting_date ? entry.accounting_date.split("T")[0] : "";
   entryCurrency = entry.currency || "YER";
-  entryRows = [{
-    debitAccountId: entry.debit_account_id || "",
-    creditAccountId: entry.credit_account_id || "",
-    amount: entry.amount,
-    description: entry.description_ar || entry.description || "",
-  }];
+  entryRows = [
+    {
+      debitAccountId: entry.debit_account_id || "",
+      creditAccountId: entry.credit_account_id || "",
+      amount: entry.amount,
+      description: entry.description_ar || entry.description || "",
+    },
+  ];
 }
 
 // Unified input grid row actions
 function addEntryRow() {
-  entryRows = [...entryRows, { debitAccountId: "", creditAccountId: "", amount: null, description: "" }];
+  entryRows = [
+    ...entryRows,
+    { debitAccountId: "", creditAccountId: "", amount: null, description: "" },
+  ];
 }
 
 function deleteEntryRow(index: number) {
@@ -207,7 +228,7 @@ function deleteEntryRow(index: number) {
 
 function clearEntryTable() {
   entryRows = [
-    { debitAccountId: "", creditAccountId: "", amount: null, description: "" }
+    { debitAccountId: "", creditAccountId: "", amount: null, description: "" },
   ];
   entryDate = new Date().toISOString().split("T")[0];
 }
@@ -243,7 +264,8 @@ async function handlePostEntries() {
   let successCount = 0;
   try {
     for (const row of entryRows) {
-      const randomRef = "JV-" + String(Math.floor(148000 + Math.random() * 10000));
+      const randomRef =
+        "JV-" + String(Math.floor(148000 + Math.random() * 10000));
       const newEntry = await commands.finance.createJournalEntry(data.orgId, {
         transaction_ref: randomRef,
         accounting_date: entryDate,
@@ -321,22 +343,29 @@ const filteredEntries = $derived.by(() => {
   return journalEntries.filter((je) => {
     const textMatch =
       searchQuery.trim() === "" ||
-      String(je.transaction_ref).toLowerCase().includes(searchQuery.toLowerCase()) ||
-      String(je.description || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-      String(je.description_ar || "").toLowerCase().includes(searchQuery.toLowerCase());
+      String(je.transaction_ref)
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+      String(je.description || "")
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+      String(je.description_ar || "")
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
 
     const statusMatch = statusFilter === "all" || je.status === statusFilter;
 
     let dateMatch = true;
     if (filterMode === "day") {
-      const entryDate = je.accounting_date ? je.accounting_date.split("T")[0] : "";
+      const entryDate = je.accounting_date
+        ? je.accounting_date.split("T")[0]
+        : "";
       dateMatch = entryDate === selectedFilterDate;
     }
 
     return textMatch && statusMatch && dateMatch;
   });
 });
-
 </script>
 
 <div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide text-start font-sans">

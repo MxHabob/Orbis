@@ -25,9 +25,12 @@ let {
 function getSnapColor(line: SnapLine): string {
   const type = (line as any).snapType || "edge";
   switch (type) {
-    case "center": return "#ec4899"; // pink — center alignment
-    case "page": return "#22c55e";   // green — page boundary
-    default: return "#06b6d4";       // cyan — edge alignment
+    case "center":
+      return "#ec4899"; // pink — center alignment
+    case "page":
+      return "#22c55e"; // green — page boundary
+    default:
+      return "#06b6d4"; // cyan — edge alignment
   }
 }
 </script>

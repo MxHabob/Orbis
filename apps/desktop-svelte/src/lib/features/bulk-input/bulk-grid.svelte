@@ -141,12 +141,10 @@ function handleClipboardPaste(e: ClipboardEvent) {
   const targetEl = e.target as HTMLElement;
 
   // Find closest cell container
-  const cell = (
-    activeEl?.closest(".rgCell") ||
+  const cell = (activeEl?.closest(".rgCell") ||
     targetEl?.closest(".rgCell") ||
     // RevoGrid overlays selection elements outside cells, check if target is near selection
-    document.querySelector("revo-grid .rgCell.focus")
-  ) as HTMLElement;
+    document.querySelector("revo-grid .rgCell.focus")) as HTMLElement;
 
   let startRow = findFirstEmptyRow();
   let startColProp = dataProps[0];

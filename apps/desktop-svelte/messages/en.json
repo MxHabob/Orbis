@@ -2689,7 +2689,6 @@
   "override_chain_admin": "Manager + Admin approval required",
   "override_chain_full": "Full approval chain required",
 
-
   "students_request_late_enrollment": "Request Late Enrollment",
 
   "sidebar_status_title": "System Status",
@@ -2758,5 +2757,3 @@
   "ledger_dialog_add_title": "Add New Account / Treasury",
   "ledger_dialog_add_desc": "Create general ledger accounts, treasuries, or sub-ledger entities in the correct spot."
 }
-
-

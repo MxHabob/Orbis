@@ -1,15 +1,15 @@
 <script lang="ts">
-	import type { SVGAttributes } from "svelte/elements";
-	import { cn, type WithElementRef } from "../../../utils.js";
+import type { SVGAttributes } from "svelte/elements";
+import { cn, type WithElementRef } from "../../../utils.js";
 
-	let {
-		ref = $bindable(null),
-		class: className,
-		dotClass,
-		...restProps
-	}: WithElementRef<SVGAttributes<SVGSVGElement>> & {
-		dotClass?: string;
-	} = $props();
+let {
+  ref = $bindable(null),
+  class: className,
+  dotClass,
+  ...restProps
+}: WithElementRef<SVGAttributes<SVGSVGElement>> & {
+  dotClass?: string;
+} = $props();
 </script>
 
 <svg

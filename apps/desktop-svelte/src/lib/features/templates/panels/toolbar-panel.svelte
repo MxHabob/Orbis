@@ -55,7 +55,12 @@ let {
   onpreview: () => void;
 } = $props();
 
-const tools: { id: EditorTool; icon: any; label: string; draggable: boolean }[] = [
+const tools: {
+  id: EditorTool;
+  icon: any;
+  label: string;
+  draggable: boolean;
+}[] = [
   { id: "select", icon: MousePointer2, label: "Select", draggable: false },
   { id: "text", icon: Type, label: "Text", draggable: true },
   { id: "image", icon: ImageIcon, label: "Image", draggable: true },

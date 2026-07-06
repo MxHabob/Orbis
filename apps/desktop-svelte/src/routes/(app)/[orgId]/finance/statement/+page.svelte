@@ -39,14 +39,14 @@ import {
   ArrowUpRight,
   ArrowDownLeft,
   TrendingUp,
-  FileSpreadsheet
+  FileSpreadsheet,
 } from "lucide-svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate } from "$lib/core/i18n";
 import * as m from "$lib/paraglide/messages";
 import {
   createLedgerAccountsQuery,
-  createAccountStatementQuery
+  createAccountStatementQuery,
 } from "$lib/features/finance";
 
 let { data }: { data: { orgId: string } } = $props();
@@ -61,11 +61,9 @@ let searchQuery = $state<string>("");
 
 // Date Range filters
 let startDate = $state<string>(
-  new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
+  new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
 );
-let endDate = $state<string>(
-  new Date().toISOString().split("T")[0]
-);
+let endDate = $state<string>(new Date().toISOString().split("T")[0]);
 
 // Sidebar tree expanded states
 let expandedCategories = $state<Record<string, boolean>>({
@@ -139,12 +137,16 @@ const statementQuery = createAccountStatementQuery(
   orgId,
   selectedAccountId,
   startDate,
-  endDate
+  endDate,
 );
-const statement = $derived($statementQuery.data as AccountStatement | undefined);
+const statement = $derived(
+  $statementQuery.data as AccountStatement | undefined,
+);
 const isLoadingStatement = $derived($statementQuery.isLoading);
 const statementError = $derived(
-  $statementQuery.error ? ($statementQuery.error as any).message || String($statementQuery.error) : null
+  $statementQuery.error
+    ? ($statementQuery.error as any).message || String($statementQuery.error)
+    : null,
 );
 
 // Setup onMount
@@ -183,8 +185,12 @@ const searchedAccountsByName = $derived.by(() => {
   if (!q) return ledgers;
   return ledgers.filter(
     (l) =>
-      String(l.name_ar || "").toLowerCase().includes(q) ||
-      String(l.name || "").toLowerCase().includes(q)
+      String(l.name_ar || "")
+        .toLowerCase()
+        .includes(q) ||
+      String(l.name || "")
+        .toLowerCase()
+        .includes(q),
   );
 });
 
@@ -199,12 +205,10 @@ function selectAccount(acc: any) {
 
 // Tree and leaf calculation logic
 const parentIds = $derived(
-  new Set(ledgers.map((l) => l.parent_id).filter(Boolean) as string[])
+  new Set(ledgers.map((l) => l.parent_id).filter(Boolean) as string[]),
 );
 
-const leafAccounts = $derived(
-  ledgers.filter((l) => !parentIds.has(l.id))
-);
+const leafAccounts = $derived(ledgers.filter((l) => !parentIds.has(l.id)));
 
 // Get leaf accounts recursively under any selected node
 const selectedLeafAccounts = $derived.by(() => {
@@ -231,7 +235,7 @@ const selectedLeafAccounts = $derived.by(() => {
 
   const childIds = getDescendantIds(selectedAcc.id);
   return leafAccounts.filter(
-    (l) => childIds.includes(l.id) || l.id === selectedAcc.id
+    (l) => childIds.includes(l.id) || l.id === selectedAcc.id,
   );
 });
 
@@ -245,8 +249,12 @@ const filteredLedgerRows = $derived.by(() => {
     rows = rows.filter(
       (r) =>
         String(r.code).includes(q) ||
-        String(r.name || "").toLowerCase().includes(q) ||
-        String(r.name_ar || "").toLowerCase().includes(q)
+        String(r.name || "")
+          .toLowerCase()
+          .includes(q) ||
+        String(r.name_ar || "")
+          .toLowerCase()
+          .includes(q),
     );
   }
 
@@ -254,10 +262,14 @@ const filteredLedgerRows = $derived.by(() => {
   if (movementFilter === "active") {
     rows = rows.filter(
       (r) =>
-        (r.debit_yer || 0) > 0 || (r.credit_yer || 0) > 0 ||
-        (r.debit_sar || 0) > 0 || (r.credit_sar || 0) > 0 ||
-        (r.debit_usd || 0) > 0 || (r.credit_usd || 0) > 0 ||
-        (r.debit_aed || 0) > 0 || (r.credit_aed || 0) > 0
+        (r.debit_yer || 0) > 0 ||
+        (r.credit_yer || 0) > 0 ||
+        (r.debit_sar || 0) > 0 ||
+        (r.credit_sar || 0) > 0 ||
+        (r.debit_usd || 0) > 0 ||
+        (r.credit_usd || 0) > 0 ||
+        (r.debit_aed || 0) > 0 ||
+        (r.credit_aed || 0) > 0,
     );
   }
 
@@ -266,10 +278,14 @@ const filteredLedgerRows = $derived.by(() => {
 
 // Calculate totals for "All Accounts"
 const allAccountsTotals = $derived.by(() => {
-  let debY = 0, credY = 0;
-  let debS = 0, credS = 0;
-  let debU = 0, credU = 0;
-  let debA = 0, credA = 0;
+  let debY = 0,
+    credY = 0;
+  let debS = 0,
+    credS = 0;
+  let debU = 0,
+    credU = 0;
+  let debA = 0,
+    credA = 0;
 
   for (const r of filteredLedgerRows) {
     debY += r.debit_yer || 0;
@@ -304,9 +320,15 @@ const filteredItems = $derived.by(() => {
   if (!q) return statement.items;
   return statement.items.filter(
     (item: any) =>
-      String(item.reference || "").toLowerCase().includes(q) ||
-      String(item.description || "").toLowerCase().includes(q) ||
-      String(item.description_ar || "").toLowerCase().includes(q)
+      String(item.reference || "")
+        .toLowerCase()
+        .includes(q) ||
+      String(item.description || "")
+        .toLowerCase()
+        .includes(q) ||
+      String(item.description_ar || "")
+        .toLowerCase()
+        .includes(q),
   );
 });
 
@@ -353,14 +375,50 @@ function arabicNumberToWords(num: number): string {
   const decimalPart = Math.round((num - integerPart) * 100);
 
   const ones = [
-    "", "واحد", "اثنان", "ثلاثة", "أربعة", "خمسة", "ستة", "سبعة", "ثمانية", "تسعة", "عشرة",
-    "أحد عشر", "اثنا عشر", "ثلاثة عشر", "أربعة عشر", "خمسة عشر", "ستة عشر", "سبعة عشر", "ثمانية عشر", "تسعة عشر"
+    "",
+    "واحد",
+    "اثنان",
+    "ثلاثة",
+    "أربعة",
+    "خمسة",
+    "ستة",
+    "سبعة",
+    "ثمانية",
+    "تسعة",
+    "عشرة",
+    "أحد عشر",
+    "اثنا عشر",
+    "ثلاثة عشر",
+    "أربعة عشر",
+    "خمسة عشر",
+    "ستة عشر",
+    "سبعة عشر",
+    "ثمانية عشر",
+    "تسعة عشر",
   ];
   const tens = [
-    "", "", "عشرون", "ثلاثون", "أربعون", "خمسون", "ستون", "سبعون", "ثمانون", "تسعون"
+    "",
+    "",
+    "عشرون",
+    "ثلاثون",
+    "أربعون",
+    "خمسون",
+    "ستون",
+    "سبعون",
+    "ثمانون",
+    "تسعون",
   ];
   const hundreds = [
-    "", "مائة", "مائتان", "ثلاثمائة", "أربعمائة", "خمسمائة", "ستمائة", "سبعمائة", "ثمانمائة", "تسعمائة"
+    "",
+    "مائة",
+    "مائتان",
+    "ثلاثمائة",
+    "أربعمائة",
+    "خمسمائة",
+    "ستمائة",
+    "سبعمائة",
+    "ثمانمائة",
+    "تسعمائة",
   ];
 
   function convertGroup(n: number): string {
@@ -393,7 +451,11 @@ function arabicNumberToWords(num: number): string {
   temp %= 1000000000;
   if (billions > 0) {
     parts.push(
-      billions === 1 ? "مليار" : billions === 2 ? "ملياران" : `${convertGroup(billions)} مليارات`
+      billions === 1
+        ? "مليار"
+        : billions === 2
+          ? "ملياران"
+          : `${convertGroup(billions)} مليارات`,
     );
   }
 
@@ -401,7 +463,11 @@ function arabicNumberToWords(num: number): string {
   temp %= 1000000;
   if (millions > 0) {
     parts.push(
-      millions === 1 ? "مليون" : millions === 2 ? "مليونان" : `${convertGroup(millions)} ملايين`
+      millions === 1
+        ? "مليون"
+        : millions === 2
+          ? "مليونان"
+          : `${convertGroup(millions)} ملايين`,
     );
   }
 
@@ -409,7 +475,11 @@ function arabicNumberToWords(num: number): string {
   temp %= 1000;
   if (thousands > 0) {
     parts.push(
-      thousands === 1 ? "ألف" : thousands === 2 ? "ألفان" : `${convertGroup(thousands)} آلاف`
+      thousands === 1
+        ? "ألف"
+        : thousands === 2
+          ? "ألفان"
+          : `${convertGroup(thousands)} آلاف`,
     );
   }
 
@@ -440,7 +510,8 @@ function exportToCsv() {
   let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // UTF-8 BOM for Excel Arabic support
 
   if (activeTab === "all") {
-    csvContent += "كود الحساب,اسم الحساب,مدين يمني,دائن يمني,مدين سعودي,دائن سعودي,مدين دولار,دائن دولار,مدين درهم,دائن درهم\n";
+    csvContent +=
+      "كود الحساب,اسم الحساب,مدين يمني,دائن يمني,مدين سعودي,دائن سعودي,مدين دولار,دائن دولار,مدين درهم,دائن درهم\n";
     for (const r of filteredLedgerRows) {
       csvContent += `="${r.code}","${r.name_ar || r.name}",${r.debit_yer},${r.credit_yer},${r.debit_sar},${r.credit_sar},${r.debit_usd},${r.credit_usd},${r.debit_aed},${r.credit_aed}\n`;
     }
@@ -460,7 +531,9 @@ function exportToCsv() {
   link.setAttribute("href", encodedUri);
   link.setAttribute(
     "download",
-    activeTab === "all" ? "ledger_all_accounts.csv" : `statement_${statement?.account_code || "account"}.csv`
+    activeTab === "all"
+      ? "ledger_all_accounts.csv"
+      : `statement_${statement?.account_code || "account"}.csv`,
   );
   document.body.appendChild(link);
   link.click();

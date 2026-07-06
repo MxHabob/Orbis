@@ -937,8 +937,18 @@ export const commands = {
     createTeachers: (orgId: string, createdBy: string, rows: JsonRecord[]) =>
       invoke<JsonRecord>("bulk_create_teachers", { orgId, createdBy, rows }),
 
-    createGrades: (orgId: string, gradedBy: string, cycleId: string | null, rows: JsonRecord[]) =>
-      invoke<JsonRecord>("bulk_create_grades", { orgId, gradedBy, cycleId, rows }),
+    createGrades: (
+      orgId: string,
+      gradedBy: string,
+      cycleId: string | null,
+      rows: JsonRecord[],
+    ) =>
+      invoke<JsonRecord>("bulk_create_grades", {
+        orgId,
+        gradedBy,
+        cycleId,
+        rows,
+      }),
   },
 
   window: {
@@ -955,8 +965,7 @@ export const commands = {
     resolveActiveCycle: (orgId: string) =>
       invoke<JsonRecord | null>("resolve_active_cycle", { orgId }),
 
-    isWritable: () =>
-      invoke<boolean>("is_year_writable", {}),
+    isWritable: () => invoke<boolean>("is_year_writable", {}),
   },
 
   // ── Academic Calendar ──────────────────────────────────────────────────
@@ -977,19 +986,28 @@ export const commands = {
       invoke<void>("delete_calendar_event", { eventId }),
 
     execute: (eventId: string, userId: string) =>
-      invoke<EventProcessingResult>("execute_calendar_event", { eventId, userId }),
+      invoke<EventProcessingResult>("execute_calendar_event", {
+        eventId,
+        userId,
+      }),
 
     generateDefaults: (orgId: string, cycleId: string) =>
       invoke<CalendarEvent[]>("generate_default_events", { orgId, cycleId }),
 
     processPending: (orgId: string, userId: string) =>
-      invoke<CalendarProcessingReport>("process_pending_events", { orgId, userId }),
+      invoke<CalendarProcessingReport>("process_pending_events", {
+        orgId,
+        userId,
+      }),
 
     getPolicy: (orgId: string) =>
       invoke<OrgAcademicPolicy>("get_org_academic_policy", { orgId }),
 
     updatePolicy: (orgId: string, request: JsonRecord) =>
-      invoke<OrgAcademicPolicy>("update_org_academic_policy", { orgId, request }),
+      invoke<OrgAcademicPolicy>("update_org_academic_policy", {
+        orgId,
+        request,
+      }),
   },
 
   // ── Academic Year Management ──────────────────────────────────────────
@@ -1009,8 +1027,7 @@ export const commands = {
     archive: (yearId: string, userId: string) =>
       invoke<AcademicYear>("archive_academic_year", { yearId, userId }),
 
-    isArchived: () =>
-      invoke<boolean>("is_current_year_archived", {}),
+    isArchived: () => invoke<boolean>("is_current_year_archived", {}),
 
     setActive: (orgId: string, yearId: string) =>
       invoke<void>("set_active_academic_year", { orgId, yearId }),
@@ -1049,22 +1066,37 @@ export const commands = {
   // ── Override & Approval ─────────────────────────────────────────────
   overrides: {
     create: (orgId: string, request: JsonRecord) =>
-      invoke<AcademicOverrideRequest>("create_override_request", { orgId, request }),
+      invoke<AcademicOverrideRequest>("create_override_request", {
+        orgId,
+        request,
+      }),
 
     processApproval: (requestId: string, action: ApprovalAction) =>
-      invoke<AcademicOverrideRequest>("process_approval", { requestId, action }),
+      invoke<AcademicOverrideRequest>("process_approval", {
+        requestId,
+        action,
+      }),
 
     cancel: (requestId: string, userId: string) =>
-      invoke<AcademicOverrideRequest>("cancel_override_request", { requestId, userId }),
+      invoke<AcademicOverrideRequest>("cancel_override_request", {
+        requestId,
+        userId,
+      }),
 
     list: (orgId: string, params?: JsonRecord) =>
-      invoke<AcademicOverrideRequest[]>("list_override_requests", { orgId, params: params ?? {} }),
+      invoke<AcademicOverrideRequest[]>("list_override_requests", {
+        orgId,
+        params: params ?? {},
+      }),
 
     get: (requestId: string) =>
       invoke<AcademicOverrideRequest>("get_override_request", { requestId }),
 
     getPending: (orgId: string, approverRole: string) =>
-      invoke<AcademicOverrideRequest[]>("get_pending_approvals", { orgId, approverRole }),
+      invoke<AcademicOverrideRequest[]>("get_pending_approvals", {
+        orgId,
+        approverRole,
+      }),
   },
 } as const;
 

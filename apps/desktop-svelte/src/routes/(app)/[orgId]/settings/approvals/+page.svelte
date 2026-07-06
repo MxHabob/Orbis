@@ -10,24 +10,43 @@ import { commands, extractErrorMessage } from "$lib/core/ipc";
 import { authStore, workflowInbox } from "$lib/stores";
 import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
-import { createPendingApprovalsQuery, createOverrideRequestsQuery } from "$lib/features/workflow/queries";
+import {
+  createPendingApprovalsQuery,
+  createOverrideRequestsQuery,
+} from "$lib/features/workflow/queries";
 import { useQueryClient } from "@tanstack/svelte-query";
 import {
-  Card, CardContent, CardHeader, CardTitle, CardDescription,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
 } from "@orbis/ui-svelte/card";
 import { Button } from "@orbis/ui-svelte/button";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Textarea } from "@orbis/ui-svelte/textarea";
 import {
-  Tabs, TabsList, TabsTrigger, TabsContent,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
 } from "@orbis/ui-svelte/tabs";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { Separator } from "@orbis/ui-svelte/separator";
 import {
-  CheckSquare, Shield, CheckCircle2, XCircle, ArrowUpCircle,
-  Clock, AlertTriangle, Loader2,
+  CheckSquare,
+  Shield,
+  CheckCircle2,
+  XCircle,
+  ArrowUpCircle,
+  Clock,
+  AlertTriangle,
+  Loader2,
 } from "lucide-svelte";
-import type { AcademicOverrideRequest, ApprovalAction } from "@orbis/desktop-client/types";
+import type {
+  AcademicOverrideRequest,
+  ApprovalAction,
+} from "@orbis/desktop-client/types";
 
 let { data }: { data: { orgId: string } } = $props();
 const orgId = $derived(data?.orgId ?? "");
@@ -37,18 +56,27 @@ const userId = $derived(authStore.userId);
 // TanStack Queries
 const queryClient = useQueryClient();
 const pendingQuery = createPendingApprovalsQuery(orgId, userRole);
-const myRequestsQuery = createOverrideRequestsQuery(orgId, { requested_by: userId });
+const myRequestsQuery = createOverrideRequestsQuery(orgId, {
+  requested_by: userId,
+});
 const logQuery = createOverrideRequestsQuery(orgId, {});
 
-const pendingItems = $derived(($pendingQuery.data ?? []) as AcademicOverrideRequest[]);
-const myRequests = $derived(($myRequestsQuery.data ?? []) as AcademicOverrideRequest[]);
+const pendingItems = $derived(
+  ($pendingQuery.data ?? []) as AcademicOverrideRequest[],
+);
+const myRequests = $derived(
+  ($myRequestsQuery.data ?? []) as AcademicOverrideRequest[],
+);
 const logItems = $derived(($logQuery.data ?? []) as AcademicOverrideRequest[]);
 
 // Action state
 let processingId = $state<string | null>(null);
 let actionNotes = $state("");
 
-async function processApproval(requestId: string, action: "approve" | "reject" | "escalate") {
+async function processApproval(
+  requestId: string,
+  action: "approve" | "reject" | "escalate",
+) {
   processingId = requestId;
   try {
     const approvalAction: ApprovalAction = {
@@ -60,11 +88,18 @@ async function processApproval(requestId: string, action: "approve" | "reject" |
     };
     await commands.overrides.processApproval(requestId, approvalAction);
 
-    const actionLabel = action === "approve"
-      ? (m.approval_approved ? m.approval_approved() : "Approved")
-      : action === "reject"
-        ? (m.approval_rejected ? m.approval_rejected() : "Rejected")
-        : (m.approval_escalated ? m.approval_escalated() : "Escalated");
+    const actionLabel =
+      action === "approve"
+        ? m.approval_approved
+          ? m.approval_approved()
+          : "Approved"
+        : action === "reject"
+          ? m.approval_rejected
+            ? m.approval_rejected()
+            : "Rejected"
+          : m.approval_escalated
+            ? m.approval_escalated()
+            : "Escalated";
 
     toast.success(actionLabel);
     actionNotes = "";
@@ -84,7 +119,9 @@ async function cancelRequest(requestId: string) {
   processingId = requestId;
   try {
     await commands.overrides.cancel(requestId, userId);
-    toast.success(m.approval_cancelled ? m.approval_cancelled() : "Request cancelled");
+    toast.success(
+      m.approval_cancelled ? m.approval_cancelled() : "Request cancelled",
+    );
     queryClient.invalidateQueries({ queryKey: ["override-requests"] });
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e));
@@ -95,25 +132,37 @@ async function cancelRequest(requestId: string) {
 
 function riskBadgeVariant(level: string) {
   switch (level) {
-    case "low": return "secondary" as const;
-    case "medium": return "default" as const;
-    case "high": return "destructive" as const;
-    case "critical": return "destructive" as const;
-    default: return "outline" as const;
+    case "low":
+      return "secondary" as const;
+    case "medium":
+      return "default" as const;
+    case "high":
+      return "destructive" as const;
+    case "critical":
+      return "destructive" as const;
+    default:
+      return "outline" as const;
   }
 }
 
 function statusBadgeVariant(status: string) {
   switch (status) {
-    case "approved": return "success" as const;
-    case "rejected": return "destructive" as const;
-    case "pending": return "secondary" as const;
-    case "escalated": return "brand" as const;
-    default: return "outline" as const;
+    case "approved":
+      return "success" as const;
+    case "rejected":
+      return "destructive" as const;
+    case "pending":
+      return "secondary" as const;
+    case "escalated":
+      return "brand" as const;
+    default:
+      return "outline" as const;
   }
 }
 
-function parseApprovalChain(chainJson: string): Array<{ role: string; status: string; by: string; at: string }> {
+function parseApprovalChain(
+  chainJson: string,
+): Array<{ role: string; status: string; by: string; at: string }> {
   try {
     return JSON.parse(chainJson) || [];
   } catch {

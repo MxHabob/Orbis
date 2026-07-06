@@ -61,7 +61,9 @@ let {
 
 const node = $derived(store.selectedNode);
 const nodeType = $derived(node?.type ?? null);
-const props = $derived(node && "props" in node ? (node as any).props || {} : {});
+const props = $derived(
+  node && "props" in node ? (node as any).props || {} : {},
+);
 const hasSelection = $derived(store.selectedIds.length > 0);
 const isMultiSelect = $derived(store.selectedIds.length > 1);
 

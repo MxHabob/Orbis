@@ -53,7 +53,7 @@ const columns: OrbisColumnDef[] = [
       const name = String(row.full_name || row.name_ar || "");
       const src = row.avatar as string | undefined;
       const initials = createInitials(name);
-      
+
       const innerEl = src
         ? h("img", {
             class: "orbis-r-avatar__img",
@@ -62,34 +62,55 @@ const columns: OrbisColumnDef[] = [
             loading: "lazy",
           })
         : h("span", { class: "orbis-r-avatar__fallback-text" }, initials);
-        
+
       const avatarEl = h(
         "span",
         {
           class: `orbis-r-avatar__root orbis-r-avatar--md ${
-            src ? "orbis-r-avatar__root--has-img" : "orbis-r-avatar__root--has-fallback"
+            src
+              ? "orbis-r-avatar__root--has-img"
+              : "orbis-r-avatar__root--has-fallback"
           }`,
         },
         [innerEl],
       );
-      
+
       const nameLines = [
-        h("span", { class: "text-xs font-bold text-foreground truncate block" }, name)
+        h(
+          "span",
+          { class: "text-xs font-bold text-foreground truncate block" },
+          name,
+        ),
       ];
       if (row.name_en) {
         nameLines.push(
-          h("span", { class: "text-[10px] text-muted-foreground font-mono truncate block" }, String(row.name_en))
+          h(
+            "span",
+            {
+              class:
+                "text-[10px] text-muted-foreground font-mono truncate block",
+            },
+            String(row.name_en),
+          ),
         );
       }
-      
-      const textContainer = h("div", { class: "flex flex-col text-start min-w-0" }, nameLines);
-      
-      return h("div", {
-        class: "flex items-center gap-2.5 cursor-pointer w-full h-full",
-        "data-grid-action": "select",
-        "data-row-index": String(rowIndex),
-      }, [avatarEl, textContainer]);
-    }
+
+      const textContainer = h(
+        "div",
+        { class: "flex flex-col text-start min-w-0" },
+        nameLines,
+      );
+
+      return h(
+        "div",
+        {
+          class: "flex items-center gap-2.5 cursor-pointer w-full h-full",
+          "data-grid-action": "select",
+          "data-row-index": String(rowIndex),
+        },
+        [avatarEl, textContainer],
+      );
+    },
   },
   {
     prop: "student_number",
@@ -100,11 +121,12 @@ const columns: OrbisColumnDef[] = [
       return h(
         "span",
         {
-          class: "inline-flex items-center rounded-md border border-border px-2 py-0.5 text-[10px] font-mono font-medium text-foreground bg-background",
+          class:
+            "inline-flex items-center rounded-md border border-border px-2 py-0.5 text-[10px] font-mono font-medium text-foreground bg-background",
         },
-        num
+        num,
       );
-    }
+    },
   },
   {
     prop: "class_name",
@@ -118,13 +140,25 @@ const columns: OrbisColumnDef[] = [
     cellRenderer: ({ h, row }) => {
       const status = String(row.status || "").toLowerCase();
       if (status === "active") {
-        return h("span", { class: "badge-brand-success py-0.5 px-2 text-[10px]" }, m.status_active());
+        return h(
+          "span",
+          { class: "badge-brand-success py-0.5 px-2 text-[10px]" },
+          m.status_active(),
+        );
       } else if (status === "withdrawn") {
-        return h("span", { class: "badge-brand-destructive py-0.5 px-2 text-[10px]" }, m.status_withdrawn());
+        return h(
+          "span",
+          { class: "badge-brand-destructive py-0.5 px-2 text-[10px]" },
+          m.status_withdrawn(),
+        );
       } else {
-        return h("span", { class: "badge-brand-default py-0.5 px-2 text-[10px]" }, String(row.status || m.status_undefined()));
+        return h(
+          "span",
+          { class: "badge-brand-default py-0.5 px-2 text-[10px]" },
+          String(row.status || m.status_undefined()),
+        );
       }
-    }
+    },
   },
   {
     prop: "sex",
@@ -136,7 +170,7 @@ const columns: OrbisColumnDef[] = [
       if (sex === "male") label = m.form_male();
       else if (sex === "female") label = m.form_female();
       return h("span", { class: "capitalize text-xs" }, label);
-    }
+    },
   },
   {
     prop: "enrollment_date",
@@ -146,8 +180,8 @@ const columns: OrbisColumnDef[] = [
       const date = row.enrollment_date as string | undefined;
       const label = date ? formatDate(date) : "-";
       return h("span", { class: "text-xs text-muted-foreground" }, label);
-    }
-  }
+    },
+  },
 ];
 
 let gridSource = $derived(
@@ -156,7 +190,7 @@ let gridSource = $derived(
     __idx: i + 1,
     class_name: getClassName(String(student.class_id)),
     __selected: selectedIds.has(String(student.id)),
-  }))
+  })),
 );
 
 let activeColumns = $derived.by(() => {
@@ -173,19 +207,23 @@ let activeColumns = $derived.by(() => {
       }),
       cellRenderer: ({ h, row, rowIndex }) => {
         const isSelected = !!row.__selected;
-        return h("span", {
-          class: `cursor-pointer block w-full h-full flex items-center justify-center`,
-          "data-grid-action": "toggle-select",
-          "data-row-index": String(rowIndex),
-        }, [
-          h("input", {
-            type: "checkbox",
-            checked: isSelected,
-            class: "cursor-pointer",
-            onclick: (e: any) => e.preventDefault(),
-          })
-        ]);
-      }
+        return h(
+          "span",
+          {
+            class: `cursor-pointer block w-full h-full flex items-center justify-center`,
+            "data-grid-action": "toggle-select",
+            "data-row-index": String(rowIndex),
+          },
+          [
+            h("input", {
+              type: "checkbox",
+              checked: isSelected,
+              class: "cursor-pointer",
+              onclick: (e: any) => e.preventDefault(),
+            }),
+          ],
+        );
+      },
     });
   }
   return cols;

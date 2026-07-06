@@ -5,11 +5,7 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@orbis/ui-svelte/popover";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@orbis/ui-svelte";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@orbis/ui-svelte";
 import { GitBranch } from "lucide-svelte";
 import * as m from "$lib/paraglide/messages";
 </script>

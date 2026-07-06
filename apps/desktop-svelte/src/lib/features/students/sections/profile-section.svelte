@@ -2,7 +2,12 @@
 import { Label } from "@orbis/ui-svelte/label";
 import { Input } from "@orbis/ui-svelte/input";
 import { Button } from "@orbis/ui-svelte/button";
-import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui-svelte/select";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui-svelte/select";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
 import type { StudentFormState } from "../student-form-state.svelte";

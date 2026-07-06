@@ -41,7 +41,9 @@ class WorkflowInboxStore {
       // Load pending approvals count
       // We use the 'list' endpoint with status filter — counts the results
       // This is lightweight since we only need the count
-      const pending = await commands.overrides.list(orgId, { status: "pending" });
+      const pending = await commands.overrides.list(orgId, {
+        status: "pending",
+      });
       this.pendingApprovals = Array.isArray(pending) ? pending.length : 0;
 
       // Calendar suggestions are loaded via Tauri events from startup_automation

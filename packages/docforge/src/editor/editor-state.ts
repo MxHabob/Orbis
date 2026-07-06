@@ -281,10 +281,13 @@ export class EditorState {
   reorderPage(fromIndex: number, toIndex: number): void {
     const pages = [...getPages(this._document)];
     if (
-      fromIndex < 0 || fromIndex >= pages.length ||
-      toIndex < 0 || toIndex >= pages.length ||
+      fromIndex < 0 ||
+      fromIndex >= pages.length ||
+      toIndex < 0 ||
+      toIndex >= pages.length ||
       fromIndex === toIndex
-    ) return;
+    )
+      return;
 
     this._pushHistory("Reorder pages");
     const [moved] = pages.splice(fromIndex, 1);

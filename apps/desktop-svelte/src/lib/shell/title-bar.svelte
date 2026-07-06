@@ -26,7 +26,6 @@ import * as m from "$lib/paraglide/messages";
 import WhatsNewPopover from "./whats-new-popover.svelte";
 import TitleBreadcrumbs from "./title-breadcrumbs.svelte";
 
-
 // Window states
 let appWindow = $state<any>(null);
 let isMaximized = $state(false);
@@ -52,23 +51,34 @@ const phaseLabel = $derived.by(() => {
   const phase = academicContext.cyclePhase;
   if (!phase) return "";
   switch (phase) {
-    case "pre_start": return m.phase_pre_start ? m.phase_pre_start() : "Pre-Start";
-    case "active": return m.phase_active ? m.phase_active() : "Active";
-    case "exams": return m.phase_exams ? m.phase_exams() : "Exams";
-    case "grade_entry": return m.phase_grade_entry ? m.phase_grade_entry() : "Grade Entry";
-    case "closed": return m.phase_closed ? m.phase_closed() : "Closed";
-    default: return "";
+    case "pre_start":
+      return m.phase_pre_start ? m.phase_pre_start() : "Pre-Start";
+    case "active":
+      return m.phase_active ? m.phase_active() : "Active";
+    case "exams":
+      return m.phase_exams ? m.phase_exams() : "Exams";
+    case "grade_entry":
+      return m.phase_grade_entry ? m.phase_grade_entry() : "Grade Entry";
+    case "closed":
+      return m.phase_closed ? m.phase_closed() : "Closed";
+    default:
+      return "";
   }
 });
 
 const phaseBadgeVariant = $derived.by(() => {
   const phase = academicContext.cyclePhase;
   switch (phase) {
-    case "active": return "success" as const;
-    case "grade_entry": return "brand" as const;
-    case "exams": return "secondary" as const;
-    case "closed": return "outline" as const;
-    default: return "ghost" as const;
+    case "active":
+      return "success" as const;
+    case "grade_entry":
+      return "brand" as const;
+    case "exams":
+      return "secondary" as const;
+    case "closed":
+      return "outline" as const;
+    default:
+      return "ghost" as const;
   }
 });
 

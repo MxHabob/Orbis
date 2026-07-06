@@ -55,10 +55,14 @@ const assetEntries = $derived(
 
 function getAssetIcon(type: string) {
   switch (type) {
-    case "logo": return Star;
-    case "stamp": return Stamp;
-    case "background": return FolderOpen;
-    default: return ImageIcon;
+    case "logo":
+      return Star;
+    case "stamp":
+      return Stamp;
+    case "background":
+      return FolderOpen;
+    default:
+      return ImageIcon;
   }
 }
 

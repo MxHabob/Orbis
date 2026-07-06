@@ -26,4 +26,3 @@ export function createOrgAcademicPolicyQuery(orgId: string) {
     staleTime: 30 * 60 * 1000, // 30 minutes
   });
 }
-

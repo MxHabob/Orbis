@@ -88,9 +88,16 @@ $effect(() => {
 let selectedCycle = $derived(
   cycles.find((c) => String(c.id) === selectedCycleId),
 );
-let isCycleLocked = $derived(selectedCycle?.is_locked === true || selectedCycle?.is_locked === 1);
-let isGradeEntryOpen = $derived(selectedCycle?.is_grade_entry_open === true || selectedCycle?.is_grade_entry_open === 1);
-let canEnterGrades = $derived(!isCycleLocked && isGradeEntryOpen && !academicContext.isReadOnly);
+let isCycleLocked = $derived(
+  selectedCycle?.is_locked === true || selectedCycle?.is_locked === 1,
+);
+let isGradeEntryOpen = $derived(
+  selectedCycle?.is_grade_entry_open === true ||
+    selectedCycle?.is_grade_entry_open === 1,
+);
+let canEnterGrades = $derived(
+  !isCycleLocked && isGradeEntryOpen && !academicContext.isReadOnly,
+);
 
 // Grid columns (reactive)
 let gridColumns = $derived.by(() => {

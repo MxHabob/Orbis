@@ -8,10 +8,7 @@ import { Label } from "@orbis/ui-svelte/label";
 import { Button } from "@orbis/ui-svelte/button";
 import { Separator } from "@orbis/ui-svelte/separator";
 import ColorPicker from "../shared/color-picker.svelte";
-import {
-  FileText,
-  RotateCcw,
-} from "lucide-svelte";
+import { FileText, RotateCcw } from "lucide-svelte";
 
 let {
   store,
@@ -53,7 +50,8 @@ function updateMargin(side: string, value: number) {
 
 function toggleOrientation() {
   updatePageSetup({
-    orientation: pageSetup.orientation === "portrait" ? "landscape" : "portrait",
+    orientation:
+      pageSetup.orientation === "portrait" ? "landscape" : "portrait",
   });
 }
 </script>

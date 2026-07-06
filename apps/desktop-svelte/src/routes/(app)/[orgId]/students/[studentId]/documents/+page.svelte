@@ -41,7 +41,9 @@ import { formatDate } from "$lib/core/i18n";
 const orgId = $derived(page.params.orgId || "");
 const studentId = $derived(page.params.studentId || "");
 const enrollmentsQuery = createEnrollmentsQuery(orgId);
-const student = $derived($enrollmentsQuery.data?.find((s) => s.id === studentId));
+const student = $derived(
+  $enrollmentsQuery.data?.find((s) => s.id === studentId),
+);
 const studentUserId = $derived(student?.student_id || "");
 
 let documents = $state<any[]>([]);

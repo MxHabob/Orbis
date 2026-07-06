@@ -30,33 +30,43 @@ const ROTATION_OFFSET = 14; // px above the element
 
 // Compute selection bounds for each selected node
 const selectionRects = $derived(
-  store.selectedIds.map((id) => {
-    const node = findNode(store.document, id);
-    if (!node || !("position" in node) || !(node as any).position) return null;
-    const pos = (node as any).position;
-    const x = mmToPx(pos.x ?? 0, vp.dpi, vp.zoom);
-    const y = mmToPx(pos.y ?? 0, vp.dpi, vp.zoom);
+  store.selectedIds
+    .map((id) => {
+      const node = findNode(store.document, id);
+      if (!node || !("position" in node) || !(node as any).position)
+        return null;
+      const pos = (node as any).position;
+      const x = mmToPx(pos.x ?? 0, vp.dpi, vp.zoom);
+      const y = mmToPx(pos.y ?? 0, vp.dpi, vp.zoom);
 
-    let w: number;
-    if (typeof pos.width === "string" && pos.width.endsWith("%")) {
-      w = (parseFloat(pos.width) / 100) * pageSizePx.width;
-    } else {
-      w = mmToPx(Number(pos.width) || 50, vp.dpi, vp.zoom);
-    }
+      let w: number;
+      if (typeof pos.width === "string" && pos.width.endsWith("%")) {
+        w = (parseFloat(pos.width) / 100) * pageSizePx.width;
+      } else {
+        w = mmToPx(Number(pos.width) || 50, vp.dpi, vp.zoom);
+      }
 
-    let h: number;
-    if (pos.height == null) {
-      h = mmToPx(20, vp.dpi, vp.zoom);
-    } else if (typeof pos.height === "string" && pos.height.endsWith("%")) {
-      h = (parseFloat(pos.height) / 100) * pageSizePx.height;
-    } else {
-      h = mmToPx(Number(pos.height) || 20, vp.dpi, vp.zoom);
-    }
+      let h: number;
+      if (pos.height == null) {
+        h = mmToPx(20, vp.dpi, vp.zoom);
+      } else if (typeof pos.height === "string" && pos.height.endsWith("%")) {
+        h = (parseFloat(pos.height) / 100) * pageSizePx.height;
+      } else {
+        h = mmToPx(Number(pos.height) || 20, vp.dpi, vp.zoom);
+      }
 
-    const rotation = (node as any).rotation ?? 0;
+      const rotation = (node as any).rotation ?? 0;
 
-    return { id, x, y, w, h, rotation };
-  }).filter(Boolean) as { id: string; x: number; y: number; w: number; h: number; rotation: number }[],
+      return { id, x, y, w, h, rotation };
+    })
+    .filter(Boolean) as {
+    id: string;
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    rotation: number;
+  }[],
 );
 
 // ── Drag State ───────────────────────────────────────────────
@@ -135,8 +145,14 @@ function onDragMove(e: MouseEvent) {
       const pageBounds: BoundingBox = {
         x: pageSetup.margins.left,
         y: pageSetup.margins.top,
-        width: getPageW(pageSetup) - pageSetup.margins.left - pageSetup.margins.right,
-        height: getPageH(pageSetup) - pageSetup.margins.top - pageSetup.margins.bottom,
+        width:
+          getPageW(pageSetup) -
+          pageSetup.margins.left -
+          pageSetup.margins.right,
+        height:
+          getPageH(pageSetup) -
+          pageSetup.margins.top -
+          pageSetup.margins.bottom,
       };
 
       const snapResult = calcSmartSnap(
@@ -161,9 +177,15 @@ function onDragMove(e: MouseEvent) {
     let newY = dragOrigY;
 
     if (dragHandle.includes("right")) newW = dragOrigW + dx;
-    if (dragHandle.includes("left")) { newW = dragOrigW - dx; newX = dragOrigX + dx; }
+    if (dragHandle.includes("left")) {
+      newW = dragOrigW - dx;
+      newX = dragOrigX + dx;
+    }
     if (dragHandle.includes("bottom")) newH = dragOrigH + dy;
-    if (dragHandle.includes("top")) { newH = dragOrigH - dy; newY = dragOrigY + dy; }
+    if (dragHandle.includes("top")) {
+      newH = dragOrigH - dy;
+      newY = dragOrigY + dy;
+    }
 
     // Shift key: constrain aspect ratio
     if (e.shiftKey && dragOrigW > 0 && dragOrigH > 0) {
@@ -175,8 +197,14 @@ function onDragMove(e: MouseEvent) {
       }
     }
 
-    const wMm = Math.max(5, Math.round(pxToMm(newW, vp.dpi, vp.zoom) * 10) / 10);
-    const hMm = Math.max(5, Math.round(pxToMm(newH, vp.dpi, vp.zoom) * 10) / 10);
+    const wMm = Math.max(
+      5,
+      Math.round(pxToMm(newW, vp.dpi, vp.zoom) * 10) / 10,
+    );
+    const hMm = Math.max(
+      5,
+      Math.round(pxToMm(newH, vp.dpi, vp.zoom) * 10) / 10,
+    );
 
     store.resizeSelected(wMm, hMm);
     if (dragHandle.includes("left") || dragHandle.includes("top")) {
@@ -201,7 +229,11 @@ function onDragEnd() {
 
 // ── Rotation Handlers ────────────────────────────────────────
 
-function startRotation(e: MouseEvent, nodeId: string, rect: { x: number; y: number; w: number; h: number }) {
+function startRotation(
+  e: MouseEvent,
+  nodeId: string,
+  rect: { x: number; y: number; w: number; h: number },
+) {
   e.stopPropagation();
   e.preventDefault();
   isRotating = true;
@@ -225,7 +257,9 @@ function startRotation(e: MouseEvent, nodeId: string, rect: { x: number; y: numb
     const offsetY = gRect ? gRect.top - svgRect.top : 0;
     const mouseX = e.clientX - svgRect.left - offsetX;
     const mouseY = e.clientY - svgRect.top - offsetY;
-    rotateStartAngle = Math.atan2(mouseY - rotateCenterY, mouseX - rotateCenterX) * (180 / Math.PI);
+    rotateStartAngle =
+      Math.atan2(mouseY - rotateCenterY, mouseX - rotateCenterX) *
+      (180 / Math.PI);
   }
 
   window.addEventListener("mousemove", onRotateMove);
@@ -245,7 +279,9 @@ function onRotateMove(e: MouseEvent) {
   const mouseX = e.clientX - svgRect.left - offsetX;
   const mouseY = e.clientY - svgRect.top - offsetY;
 
-  const currentAngle = Math.atan2(mouseY - rotateCenterY, mouseX - rotateCenterX) * (180 / Math.PI);
+  const currentAngle =
+    Math.atan2(mouseY - rotateCenterY, mouseX - rotateCenterX) *
+    (180 / Math.PI);
   let delta = currentAngle - rotateStartAngle;
   let newAngle = rotateOrigAngle + delta;
 
@@ -269,7 +305,11 @@ function onRotateEnd() {
 
 // ── Rubber Band Selection ────────────────────────────────────
 
-export function startRubberBand(e: MouseEvent, canvasX: number, canvasY: number) {
+export function startRubberBand(
+  e: MouseEvent,
+  canvasX: number,
+  canvasY: number,
+) {
   isRubberBanding = true;
   rubberBandStartX = canvasX;
   rubberBandStartY = canvasY;
@@ -306,11 +346,22 @@ function onRubberBandEnd() {
         const pos = (child as any).position;
         const nx = mmToPx(pos.x ?? 0, vp.dpi, vp.zoom);
         const ny = mmToPx(pos.y ?? 0, vp.dpi, vp.zoom);
-        const nw = typeof pos.width === "number" ? mmToPx(pos.width, vp.dpi, vp.zoom) : 50;
-        const nh = typeof pos.height === "number" ? mmToPx(pos.height, vp.dpi, vp.zoom) : 20;
+        const nw =
+          typeof pos.width === "number"
+            ? mmToPx(pos.width, vp.dpi, vp.zoom)
+            : 50;
+        const nh =
+          typeof pos.height === "number"
+            ? mmToPx(pos.height, vp.dpi, vp.zoom)
+            : 20;
 
         // Check if element intersects with rubber band
-        if (nx < rb.x + rb.w && nx + nw > rb.x && ny < rb.y + rb.h && ny + nh > rb.y) {
+        if (
+          nx < rb.x + rb.w &&
+          nx + nw > rb.x &&
+          ny < rb.y + rb.h &&
+          ny + nh > rb.y
+        ) {
           matchIds.push(child.id);
         }
       }
@@ -347,17 +398,48 @@ function collectOtherNodeBounds(excludeId: string): BoundingBox[] {
 
 function getPageW(setup: any): number {
   const sizes: Record<string, number> = {
-    A4: 210, A3: 297, A5: 148, Letter: 216, Legal: 216, ID_CARD: 85.6, BADGE: 86,
+    A4: 210,
+    A3: 297,
+    A5: 148,
+    Letter: 216,
+    Legal: 216,
+    ID_CARD: 85.6,
+    BADGE: 86,
   };
-  const w = setup.size === "Custom" ? (setup.width ?? 210) : (sizes[setup.size] ?? 210);
-  const h = setup.size === "Custom" ? (setup.height ?? 297) : ({ A4: 297, A3: 420, A5: 210, Letter: 279, Legal: 356, ID_CARD: 53.98, BADGE: 54 } as any)[setup.size] ?? 297;
+  const w =
+    setup.size === "Custom" ? (setup.width ?? 210) : (sizes[setup.size] ?? 210);
+  const h =
+    setup.size === "Custom"
+      ? (setup.height ?? 297)
+      : ((
+          {
+            A4: 297,
+            A3: 420,
+            A5: 210,
+            Letter: 279,
+            Legal: 356,
+            ID_CARD: 53.98,
+            BADGE: 54,
+          } as any
+        )[setup.size] ?? 297);
   return setup.orientation === "landscape" ? h : w;
 }
 
 function getPageH(setup: any): number {
   const w = getPageW({ ...setup, orientation: "portrait" });
-  const sizes: Record<string, number> = { A4: 297, A3: 420, A5: 210, Letter: 279, Legal: 356, ID_CARD: 53.98, BADGE: 54 };
-  const h = setup.size === "Custom" ? (setup.height ?? 297) : (sizes[setup.size] ?? 297);
+  const sizes: Record<string, number> = {
+    A4: 297,
+    A3: 420,
+    A5: 210,
+    Letter: 279,
+    Legal: 356,
+    ID_CARD: 53.98,
+    BADGE: 54,
+  };
+  const h =
+    setup.size === "Custom"
+      ? (setup.height ?? 297)
+      : (sizes[setup.size] ?? 297);
   return setup.orientation === "landscape" ? w : h;
 }
 
@@ -366,13 +448,48 @@ function getHandles(r: { x: number; y: number; w: number; h: number }) {
   const hs = HANDLE_SIZE / 2;
   return [
     { id: "top-left", cx: r.x - hs, cy: r.y - hs, cursor: "nwse-resize" },
-    { id: "top-center", cx: r.x + r.w / 2 - hs, cy: r.y - hs, cursor: "ns-resize" },
-    { id: "top-right", cx: r.x + r.w - hs, cy: r.y - hs, cursor: "nesw-resize" },
-    { id: "middle-left", cx: r.x - hs, cy: r.y + r.h / 2 - hs, cursor: "ew-resize" },
-    { id: "middle-right", cx: r.x + r.w - hs, cy: r.y + r.h / 2 - hs, cursor: "ew-resize" },
-    { id: "bottom-left", cx: r.x - hs, cy: r.y + r.h - hs, cursor: "nesw-resize" },
-    { id: "bottom-center", cx: r.x + r.w / 2 - hs, cy: r.y + r.h - hs, cursor: "ns-resize" },
-    { id: "bottom-right", cx: r.x + r.w - hs, cy: r.y + r.h - hs, cursor: "nwse-resize" },
+    {
+      id: "top-center",
+      cx: r.x + r.w / 2 - hs,
+      cy: r.y - hs,
+      cursor: "ns-resize",
+    },
+    {
+      id: "top-right",
+      cx: r.x + r.w - hs,
+      cy: r.y - hs,
+      cursor: "nesw-resize",
+    },
+    {
+      id: "middle-left",
+      cx: r.x - hs,
+      cy: r.y + r.h / 2 - hs,
+      cursor: "ew-resize",
+    },
+    {
+      id: "middle-right",
+      cx: r.x + r.w - hs,
+      cy: r.y + r.h / 2 - hs,
+      cursor: "ew-resize",
+    },
+    {
+      id: "bottom-left",
+      cx: r.x - hs,
+      cy: r.y + r.h - hs,
+      cursor: "nesw-resize",
+    },
+    {
+      id: "bottom-center",
+      cx: r.x + r.w / 2 - hs,
+      cy: r.y + r.h - hs,
+      cursor: "ns-resize",
+    },
+    {
+      id: "bottom-right",
+      cx: r.x + r.w - hs,
+      cy: r.y + r.h - hs,
+      cursor: "nwse-resize",
+    },
   ];
 }
 </script>

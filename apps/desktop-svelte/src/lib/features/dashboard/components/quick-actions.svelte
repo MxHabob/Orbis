@@ -2,8 +2,13 @@
 import { Button } from "@orbis/ui-svelte/button";
 import { Badge } from "@orbis/ui-svelte/badge";
 import {
-  UserPlus, Wallet, BookOpen, BarChart3,
-  ShieldCheck, CalendarClock, ClipboardCheck,
+  UserPlus,
+  Wallet,
+  BookOpen,
+  BarChart3,
+  ShieldCheck,
+  CalendarClock,
+  ClipboardCheck,
 } from "lucide-svelte";
 import * as m from "$lib/paraglide/messages";
 import { localizeHref } from "$lib/paraglide/runtime";
@@ -46,7 +51,9 @@ const ACTIONS = $derived.by(() => {
     },
     // Phase-specific actions
     {
-      label: m.academics_control_label ? m.academics_control_label() : "Control",
+      label: m.academics_control_label
+        ? m.academics_control_label()
+        : "Control",
       icon: ShieldCheck,
       href: `/${orgId}/academics/control`,
       show: phase === "grade_entry" || phase === "exams",
@@ -65,11 +72,16 @@ const ACTIONS = $derived.by(() => {
     },
     // Pending approvals shortcut (only when there are pending items)
     {
-      label: m.settings_nav_approvals ? m.settings_nav_approvals() : "Approvals",
+      label: m.settings_nav_approvals
+        ? m.settings_nav_approvals()
+        : "Approvals",
       icon: ClipboardCheck,
       href: `/${orgId}/settings/approvals`,
       show: workflowInbox.hasActions && isAdmin,
-      badge: workflowInbox.totalCount > 0 ? String(workflowInbox.totalCount) : undefined,
+      badge:
+        workflowInbox.totalCount > 0
+          ? String(workflowInbox.totalCount)
+          : undefined,
     },
   ];
 

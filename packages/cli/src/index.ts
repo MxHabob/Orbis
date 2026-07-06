@@ -795,7 +795,9 @@ async function handleInstallation(isDev = false) {
   // Helper to detect current Hijri year dynamically
   function getHijriYear(): number {
     try {
-      const formatted = new Intl.DateTimeFormat('ar-TN-u-ca-islamic', { year: 'numeric' }).format(new Date());
+      const formatted = new Intl.DateTimeFormat("ar-TN-u-ca-islamic", {
+        year: "numeric",
+      }).format(new Date());
       const match = formatted.match(/\d+/);
       return match ? parseInt(match[0], 10) : 1447;
     } catch {
@@ -840,7 +842,18 @@ async function handleInstallation(isDev = false) {
           `INSERT OR IGNORE INTO academic_years (
             id, org_id, name, name_ar, start_date, end_date, hijri_start_date, hijri_end_date, db_filename, status, is_current, created_at, updated_at
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, '../orbis.db', 'active', 1, ?, ?)`,
-          [cycleId, orgId, academicYearNameEn, academicYearNameAr, startGregorian, endGregorian, hijriStart, hijriEnd, now, now],
+          [
+            cycleId,
+            orgId,
+            academicYearNameEn,
+            academicYearNameAr,
+            startGregorian,
+            endGregorian,
+            hijriStart,
+            hijriEnd,
+            now,
+            now,
+          ],
         );
         regDb.run("PRAGMA foreign_keys = ON;");
       } catch (err) {
@@ -902,7 +915,16 @@ async function handleInstallation(isDev = false) {
       `INSERT OR IGNORE INTO academic_cycles (
         id, org_id, name, name_ar, start_date, end_date, type, grading_system, is_current, is_locked, is_enrollment_open, created_at, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, 'year', 'percentage', 1, 0, 1, ?, ?)`,
-      [cycleId, orgId, academicYearNameEn, academicYearNameAr, startGregorian, endGregorian, now, now],
+      [
+        cycleId,
+        orgId,
+        academicYearNameEn,
+        academicYearNameAr,
+        startGregorian,
+        endGregorian,
+        now,
+        now,
+      ],
     );
 
     // Insert Semesters and Month sub-cycles

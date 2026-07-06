@@ -10,18 +10,18 @@ import type {
   PageNode,
   PageSetup,
 } from "@docforge/core";
-import {
-  getPages,
-  getPrimaryPage,
+import { getPages, getPrimaryPage } from "@docforge/core";
+import { findNode, addNode, removeNode, cloneNode } from "@docforge/core";
+import type {
+  ViewportTransform,
+  BoundingBox,
+  NodeLayoutInfo,
 } from "@docforge/core";
 import {
-  findNode,
-  addNode,
-  removeNode,
-  cloneNode,
+  createDefaultViewport,
+  clampZoom,
+  calcZoomToFit,
 } from "@docforge/core";
-import type { ViewportTransform, BoundingBox, NodeLayoutInfo } from "@docforge/core";
-import { createDefaultViewport, clampZoom, calcZoomToFit } from "@docforge/core";
 import type { EditorCommand } from "./command-system";
 import {
   UpdatePropsCommand,
@@ -76,7 +76,14 @@ export function createEditorStore(initialDoc: TemplateDocument) {
   let guidesVisible = $state(true);
 
   // ── Layout UI (Canva-style) ──────────────────────────────
-  type RailPanel = "templates" | "elements" | "text" | "uploads" | "tools" | "page-setup" | null;
+  type RailPanel =
+    | "templates"
+    | "elements"
+    | "text"
+    | "uploads"
+    | "tools"
+    | "page-setup"
+    | null;
   let activeRailPanel = $state<RailPanel>(null);
   let flyoutWidth = $state(320);
 
@@ -96,11 +103,14 @@ export function createEditorStore(initialDoc: TemplateDocument) {
       descriptionAr: e.cmd.descriptionAr,
       timestamp: (e.cmd as any).timestamp,
     })),
-    ...redoStack.slice().reverse().map((e) => ({
-      description: e.cmd.description,
-      descriptionAr: e.cmd.descriptionAr,
-      timestamp: (e.cmd as any).timestamp,
-    })),
+    ...redoStack
+      .slice()
+      .reverse()
+      .map((e) => ({
+        description: e.cmd.description,
+        descriptionAr: e.cmd.descriptionAr,
+        timestamp: (e.cmd as any).timestamp,
+      })),
   ]);
   const historyIndex = $derived(undoStack.length - 1);
 
@@ -110,12 +120,16 @@ export function createEditorStore(initialDoc: TemplateDocument) {
 
   // ── Derived ──────────────────────────────────────────────
   const pages = $derived(getPages(document));
-  const activePage = $derived<PageNode | null>(pages[activePageIndex] ?? pages[0] ?? null);
+  const activePage = $derived<PageNode | null>(
+    pages[activePageIndex] ?? pages[0] ?? null,
+  );
   const isDirty = $derived(JSON.stringify(document) !== savedSnapshot);
   const canUndo = $derived(undoStack.length > 0);
   const canRedo = $derived(redoStack.length > 0);
   const selectedNodes = $derived(
-    selectedIds.map((id) => findNode(document, id)).filter(Boolean) as TemplateNode[],
+    selectedIds
+      .map((id) => findNode(document, id))
+      .filter(Boolean) as TemplateNode[],
   );
   const selectedNode = $derived<TemplateNode | null>(selectedNodes[0] ?? null);
   const pageCount = $derived(pages.length);
@@ -135,7 +149,9 @@ export function createEditorStore(initialDoc: TemplateDocument) {
           cmd: merged,
           docBefore: last.docBefore,
         };
-        document = merged.execute(JSON.parse(last.docBefore) as TemplateDocument);
+        document = merged.execute(
+          JSON.parse(last.docBefore) as TemplateDocument,
+        );
         redoStack = [];
         scheduleAutoSave();
         return;
@@ -162,7 +178,10 @@ export function createEditorStore(initialDoc: TemplateDocument) {
     const entry = redoStack[redoStack.length - 1]!;
     document = JSON.parse(entry.docAfter) as TemplateDocument;
     redoStack = redoStack.slice(0, -1);
-    undoStack = [...undoStack, { cmd: entry.cmd, docBefore: JSON.stringify(document) }];
+    undoStack = [
+      ...undoStack,
+      { cmd: entry.cmd, docBefore: JSON.stringify(document) },
+    ];
   }
 
   // ── Selection ────────────────────────────────────────────
@@ -228,7 +247,12 @@ export function createEditorStore(initialDoc: TemplateDocument) {
 
   // ── Node Operations ──────────────────────────────────────
 
-  function addElement(type: string, props: Record<string, unknown> = {}, x?: number, y?: number): void {
+  function addElement(
+    type: string,
+    props: Record<string, unknown> = {},
+    x?: number,
+    y?: number,
+  ): void {
     const parentId = activePage?.id;
     if (!parentId) return;
 
@@ -252,9 +276,7 @@ export function createEditorStore(initialDoc: TemplateDocument) {
         new UpdatePropsCommand(selectedIds[0]!, props, selectedNode?.name),
       );
     } else {
-      const cmds = selectedIds.map(
-        (id) => new UpdatePropsCommand(id, props),
-      );
+      const cmds = selectedIds.map((id) => new UpdatePropsCommand(id, props));
       executeCommand(new BatchCommand(cmds, "Update multiple", "تحديث متعدد"));
     }
   }
@@ -358,43 +380,113 @@ export function createEditorStore(initialDoc: TemplateDocument) {
 
   return {
     // State (readonly reactive)
-    get document() { return document; },
-    get pages() { return pages; },
-    get activePage() { return activePage; },
-    get activePageIndex() { return activePageIndex; },
-    get selectedIds() { return selectedIds; },
-    get selectedNode() { return selectedNode; },
-    get selectedNodes() { return selectedNodes; },
-    get isDirty() { return isDirty; },
-    get canUndo() { return canUndo; },
-    get canRedo() { return canRedo; },
-    get viewport() { return viewport; },
-    get zoomPercent() { return zoomPercent; },
-    get pageCount() { return pageCount; },
-    get activeTool() { return activeTool; },
-    get editorMode() { return editorMode; },
-    get gridVisible() { return gridVisible; },
-    get gridSize() { return gridSize; },
-    get snapEnabled() { return snapEnabled; },
-    get rulersVisible() { return rulersVisible; },
-    get guidesVisible() { return guidesVisible; },
-    get nodeLayouts() { return nodeLayouts; },
-    get undoHistory() { return undoStack.map((e) => e.cmd.description); },
-    get commandHistory() { return commandHistory; },
-    get historyIndex() { return historyIndex; },
-    get activeRailPanel() { return activeRailPanel; },
-    get flyoutWidth() { return flyoutWidth; },
+    get document() {
+      return document;
+    },
+    get pages() {
+      return pages;
+    },
+    get activePage() {
+      return activePage;
+    },
+    get activePageIndex() {
+      return activePageIndex;
+    },
+    get selectedIds() {
+      return selectedIds;
+    },
+    get selectedNode() {
+      return selectedNode;
+    },
+    get selectedNodes() {
+      return selectedNodes;
+    },
+    get isDirty() {
+      return isDirty;
+    },
+    get canUndo() {
+      return canUndo;
+    },
+    get canRedo() {
+      return canRedo;
+    },
+    get viewport() {
+      return viewport;
+    },
+    get zoomPercent() {
+      return zoomPercent;
+    },
+    get pageCount() {
+      return pageCount;
+    },
+    get activeTool() {
+      return activeTool;
+    },
+    get editorMode() {
+      return editorMode;
+    },
+    get gridVisible() {
+      return gridVisible;
+    },
+    get gridSize() {
+      return gridSize;
+    },
+    get snapEnabled() {
+      return snapEnabled;
+    },
+    get rulersVisible() {
+      return rulersVisible;
+    },
+    get guidesVisible() {
+      return guidesVisible;
+    },
+    get nodeLayouts() {
+      return nodeLayouts;
+    },
+    get undoHistory() {
+      return undoStack.map((e) => e.cmd.description);
+    },
+    get commandHistory() {
+      return commandHistory;
+    },
+    get historyIndex() {
+      return historyIndex;
+    },
+    get activeRailPanel() {
+      return activeRailPanel;
+    },
+    get flyoutWidth() {
+      return flyoutWidth;
+    },
 
     // Setters
-    set activeTool(t: EditorTool) { activeTool = t; },
-    set editorMode(m: EditorMode) { editorMode = m; },
-    set gridVisible(v: boolean) { gridVisible = v; },
-    set gridSize(s: number) { gridSize = s; },
-    set snapEnabled(v: boolean) { snapEnabled = v; },
-    set rulersVisible(v: boolean) { rulersVisible = v; },
-    set guidesVisible(v: boolean) { guidesVisible = v; },
-    set activeRailPanel(p: RailPanel) { activeRailPanel = p; },
-    set flyoutWidth(w: number) { flyoutWidth = Math.max(280, Math.min(480, w)); },
+    set activeTool(t: EditorTool) {
+      activeTool = t;
+    },
+    set editorMode(m: EditorMode) {
+      editorMode = m;
+    },
+    set gridVisible(v: boolean) {
+      gridVisible = v;
+    },
+    set gridSize(s: number) {
+      gridSize = s;
+    },
+    set snapEnabled(v: boolean) {
+      snapEnabled = v;
+    },
+    set rulersVisible(v: boolean) {
+      rulersVisible = v;
+    },
+    set guidesVisible(v: boolean) {
+      guidesVisible = v;
+    },
+    set activeRailPanel(p: RailPanel) {
+      activeRailPanel = p;
+    },
+    set flyoutWidth(w: number) {
+      flyoutWidth = Math.max(280, Math.min(480, w));
+    },
     toggleRailPanel(panel: string) {
       if (activeRailPanel === panel) {
         activeRailPanel = null;
@@ -534,26 +626,53 @@ export type EditorStore = ReturnType<typeof createEditorStore>;
 function getEffectivePageWidth(setup: PageSetup): number {
   if (setup.size === "Custom" && setup.width) return setup.width;
   const sizes: Record<string, number> = {
-    A4: 210, A3: 297, A5: 148, Letter: 216, Legal: 216,
-    ID_CARD: 85.6, BADGE: 86,
+    A4: 210,
+    A3: 297,
+    A5: 148,
+    Letter: 216,
+    Legal: 216,
+    ID_CARD: 85.6,
+    BADGE: 86,
   };
   const w = sizes[setup.size] ?? 210;
-  const h = ({ A4: 297, A3: 420, A5: 210, Letter: 279, Legal: 356, ID_CARD: 53.98, BADGE: 54 } as Record<string, number>)[setup.size] ?? 297;
+  const h =
+    (
+      {
+        A4: 297,
+        A3: 420,
+        A5: 210,
+        Letter: 279,
+        Legal: 356,
+        ID_CARD: 53.98,
+        BADGE: 54,
+      } as Record<string, number>
+    )[setup.size] ?? 297;
   return setup.orientation === "landscape" ? h : w;
 }
 
 function getEffectivePageHeight(setup: PageSetup): number {
   if (setup.size === "Custom" && setup.height) return setup.height;
-  const w = getEffectivePageWidth({ ...setup, orientation: "portrait" } as PageSetup);
+  const w = getEffectivePageWidth({
+    ...setup,
+    orientation: "portrait",
+  } as PageSetup);
   const sizes: Record<string, number> = {
-    A4: 297, A3: 420, A5: 210, Letter: 279, Legal: 356,
-    ID_CARD: 53.98, BADGE: 54,
+    A4: 297,
+    A3: 420,
+    A5: 210,
+    Letter: 279,
+    Legal: 356,
+    ID_CARD: 53.98,
+    BADGE: 54,
   };
   const h = sizes[setup.size] ?? 297;
   return setup.orientation === "landscape" ? w : h;
 }
 
-function createDefaultNode(type: string, overrides: Record<string, unknown> = {}): TemplateNode {
+function createDefaultNode(
+  type: string,
+  overrides: Record<string, unknown> = {},
+): TemplateNode {
   const id = generateNodeId(type.toLowerCase());
   const base = { id, name: type, visible: true, locked: false };
 

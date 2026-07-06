@@ -129,10 +129,7 @@ export function hitTestRect(
   layouts: NodeLayoutInfo[],
   opts: HitTestOptions = {},
 ): string[] {
-  const {
-    includeLockedNodes = false,
-    includeHiddenNodes = false,
-  } = opts;
+  const { includeLockedNodes = false, includeHiddenNodes = false } = opts;
 
   const hits: string[] = [];
 
@@ -178,28 +175,91 @@ export function detectResizeHandle(
   // Rotation handle (above top-center)
   const rotateY = y - hs * 3;
   const rotateCx = x + w / 2;
-  if (isPointInBounds(pointMm, { x: rotateCx - hs, y: rotateY - hs, width: hs * 2, height: hs * 2 })) {
+  if (
+    isPointInBounds(pointMm, {
+      x: rotateCx - hs,
+      y: rotateY - hs,
+      width: hs * 2,
+      height: hs * 2,
+    })
+  ) {
     return "rotate";
   }
 
   // Corner handles (checked first — they take priority)
-  if (isPointInBounds(pointMm, { x: x - hs, y: y - hs, width: hs * 2, height: hs * 2 }))
+  if (
+    isPointInBounds(pointMm, {
+      x: x - hs,
+      y: y - hs,
+      width: hs * 2,
+      height: hs * 2,
+    })
+  )
     return "top-left";
-  if (isPointInBounds(pointMm, { x: x + w - hs, y: y - hs, width: hs * 2, height: hs * 2 }))
+  if (
+    isPointInBounds(pointMm, {
+      x: x + w - hs,
+      y: y - hs,
+      width: hs * 2,
+      height: hs * 2,
+    })
+  )
     return "top-right";
-  if (isPointInBounds(pointMm, { x: x - hs, y: y + h - hs, width: hs * 2, height: hs * 2 }))
+  if (
+    isPointInBounds(pointMm, {
+      x: x - hs,
+      y: y + h - hs,
+      width: hs * 2,
+      height: hs * 2,
+    })
+  )
     return "bottom-left";
-  if (isPointInBounds(pointMm, { x: x + w - hs, y: y + h - hs, width: hs * 2, height: hs * 2 }))
+  if (
+    isPointInBounds(pointMm, {
+      x: x + w - hs,
+      y: y + h - hs,
+      width: hs * 2,
+      height: hs * 2,
+    })
+  )
     return "bottom-right";
 
   // Edge handles
-  if (isPointInBounds(pointMm, { x: x + w / 2 - hs, y: y - hs, width: hs * 2, height: hs * 2 }))
+  if (
+    isPointInBounds(pointMm, {
+      x: x + w / 2 - hs,
+      y: y - hs,
+      width: hs * 2,
+      height: hs * 2,
+    })
+  )
     return "top-center";
-  if (isPointInBounds(pointMm, { x: x + w / 2 - hs, y: y + h - hs, width: hs * 2, height: hs * 2 }))
+  if (
+    isPointInBounds(pointMm, {
+      x: x + w / 2 - hs,
+      y: y + h - hs,
+      width: hs * 2,
+      height: hs * 2,
+    })
+  )
     return "bottom-center";
-  if (isPointInBounds(pointMm, { x: x - hs, y: y + h / 2 - hs, width: hs * 2, height: hs * 2 }))
+  if (
+    isPointInBounds(pointMm, {
+      x: x - hs,
+      y: y + h / 2 - hs,
+      width: hs * 2,
+      height: hs * 2,
+    })
+  )
     return "middle-left";
-  if (isPointInBounds(pointMm, { x: x + w - hs, y: y + h / 2 - hs, width: hs * 2, height: hs * 2 }))
+  if (
+    isPointInBounds(pointMm, {
+      x: x + w - hs,
+      y: y + h / 2 - hs,
+      width: hs * 2,
+      height: hs * 2,
+    })
+  )
     return "middle-right";
 
   return null;

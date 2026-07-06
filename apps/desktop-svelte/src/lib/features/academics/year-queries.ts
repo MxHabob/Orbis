@@ -2,7 +2,11 @@
  * Academic Year & Promotion queries — TanStack Query hooks.
  * Wraps IPC commands with automatic caching & deduplication.
  */
-import { createQuery, createMutation, useQueryClient } from "@tanstack/svelte-query";
+import {
+  createQuery,
+  createMutation,
+  useQueryClient,
+} from "@tanstack/svelte-query";
 import { commands } from "$lib/core/ipc";
 import type {
   AcademicYearInfo,

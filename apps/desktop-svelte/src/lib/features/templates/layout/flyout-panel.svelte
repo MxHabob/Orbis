@@ -22,12 +22,7 @@ import {
   TabsTrigger,
   TabsContent,
 } from "@orbis/ui-svelte/tabs";
-import {
-  Layers,
-  Variable,
-  History,
-  Search,
-} from "lucide-svelte";
+import { Layers, Variable, History, Search } from "lucide-svelte";
 import { Input } from "@orbis/ui-svelte/input";
 
 let {

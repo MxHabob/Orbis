@@ -98,7 +98,9 @@ class AcademicContextStore {
   // ── Derived ─────────────────────────────────────────────────────
 
   /** Whether the current year is archived (read-only mode). */
-  isReadOnly = $derived(this._isReadOnly || this.currentYear?.status === "archived");
+  isReadOnly = $derived(
+    this._isReadOnly || this.currentYear?.status === "archived",
+  );
 
   /** Whether any years exist (for first-launch experience). */
   hasYears = $derived(this.years.length > 0);
@@ -169,7 +171,10 @@ class AcademicContextStore {
 
       this.isInitialized = true;
     } catch (e: unknown) {
-      console.warn("Failed to resolve academic context:", extractErrorMessage(e));
+      console.warn(
+        "Failed to resolve academic context:",
+        extractErrorMessage(e),
+      );
     } finally {
       this.isLoading = false;
     }
@@ -217,4 +222,3 @@ class AcademicContextStore {
 }
 
 export const academicContext = new AcademicContextStore();
-

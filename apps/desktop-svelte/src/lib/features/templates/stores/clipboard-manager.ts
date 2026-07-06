@@ -8,7 +8,11 @@ import type { TemplateDocument, TemplateNode } from "@docforge/core";
 import { findNode, addNode, removeNode, cloneNode } from "@docforge/core";
 import { getPages } from "@docforge/core";
 import type { EditorCommand } from "./command-system";
-import { AddNodeCommand, RemoveNodeCommand, BatchCommand } from "./command-system";
+import {
+  AddNodeCommand,
+  RemoveNodeCommand,
+  BatchCommand,
+} from "./command-system";
 
 const CLIPBOARD_MIME = "application/x-docforge-nodes";
 

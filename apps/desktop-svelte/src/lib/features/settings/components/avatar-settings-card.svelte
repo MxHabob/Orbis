@@ -10,12 +10,7 @@ interface Props {
   onsave: (e: Event) => void;
 }
 
-let {
-  logo = $bindable(),
-  name,
-  isSaving = false,
-  onsave,
-}: Props = $props();
+let { logo = $bindable(), name, isSaving = false, onsave }: Props = $props();
 </script>
 
 <div class="border border-border rounded-md overflow-hidden flex flex-col">

@@ -53,7 +53,13 @@ export function groupNodes(
 
   // Process pages: find the parent containing all nodeIds and replace
   const newPages = getPages(doc).map((page) => {
-    const result = groupNodesInParent(page, nodeIds, groupFrame, combinedBounds, layouts);
+    const result = groupNodesInParent(
+      page,
+      nodeIds,
+      groupFrame,
+      combinedBounds,
+      layouts,
+    );
     return result as PageNode;
   });
 

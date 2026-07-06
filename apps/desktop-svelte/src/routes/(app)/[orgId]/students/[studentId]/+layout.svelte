@@ -50,9 +50,13 @@ const enrollmentsQuery = createEnrollmentsQuery(orgId);
 const classesQuery = createClassesQuery(orgId);
 
 // Find active student in query data
-const student = $derived($enrollmentsQuery.data?.find((s) => s.id === studentId));
+const student = $derived(
+  $enrollmentsQuery.data?.find((s) => s.id === studentId),
+);
 const currentClass = $derived(
-  student ? $classesQuery.data?.find((c) => String(c.id) === String(student.class_id)) : null,
+  student
+    ? $classesQuery.data?.find((c) => String(c.id) === String(student.class_id))
+    : null,
 );
 
 const basePath = $derived(`/${orgId}/students/${studentId}`);

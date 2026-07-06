@@ -53,9 +53,11 @@ async function handleSave(registrationConfig: any) {
         toast.success(m.settings_registration_save_success());
       },
       onError: (e: unknown) => {
-        toast.error(m.settings_registration_save_error({ error: extractErrorMessage(e) }));
+        toast.error(
+          m.settings_registration_save_error({ error: extractErrorMessage(e) }),
+        );
       },
-    }
+    },
   );
 }
 </script>

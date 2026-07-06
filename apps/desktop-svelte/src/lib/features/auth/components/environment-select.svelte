@@ -10,10 +10,7 @@ import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
 import * as m from "$lib/paraglide/messages";
 
-let {
-  selectedBranch = $bindable(""),
-  selectedYear = $bindable(""),
-} = $props<{
+let { selectedBranch = $bindable(""), selectedYear = $bindable("") } = $props<{
   selectedBranch?: string;
   selectedYear?: string;
 }>();

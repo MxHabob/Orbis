@@ -2,7 +2,11 @@
  * Settings domain queries and mutations.
  * Wraps IPC commands with TanStack Query for automatic caching and state updates.
  */
-import { createQuery, createMutation, useQueryClient } from "@tanstack/svelte-query";
+import {
+  createQuery,
+  createMutation,
+  useQueryClient,
+} from "@tanstack/svelte-query";
 import { commands } from "$lib/core/ipc";
 
 /** Get the organization details. */
@@ -23,7 +27,9 @@ export function createUpdateOrganizationMutation() {
       commands.users.updateOrganization(variables.orgId, variables.request),
     onSuccess: (_, variables) => {
       // Invalidate organization query to trigger updates in UI
-      queryClient.invalidateQueries({ queryKey: ["organization", variables.orgId] });
+      queryClient.invalidateQueries({
+        queryKey: ["organization", variables.orgId],
+      });
     },
   });
 }
@@ -37,4 +43,3 @@ export function createUsersQuery(orgId: string) {
     staleTime: 5 * 60 * 1000,
   });
 }
-

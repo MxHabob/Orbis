@@ -12,13 +12,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
-import {
-  ArrowLeft,
-  Upload,
-  Info,
-  Trash2,
-  CalendarDays,
-} from "lucide-svelte";
+import { ArrowLeft, Upload, Info, Trash2, CalendarDays } from "lucide-svelte";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
@@ -139,14 +133,10 @@ async function handleSubmit() {
     }
 
     if (result.created > 0) {
-      toast.success(
-        m.bulk_input_success_grades({ count: result.created }),
-      );
+      toast.success(m.bulk_input_success_grades({ count: result.created }));
     }
     if (result.failed > 0) {
-      toast.error(
-        m.bulk_input_failed_rows({ count: result.failed }),
-      );
+      toast.error(m.bulk_input_failed_rows({ count: result.failed }));
     }
   } catch (e: unknown) {
     const msg = (e as any)?.message || "Unknown error";

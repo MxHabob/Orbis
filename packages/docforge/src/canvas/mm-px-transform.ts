@@ -20,12 +20,20 @@ export const MM_PER_INCH = 25.4;
 // ── Conversion Functions ─────────────────────────────────────
 
 /** Convert mm to canvas pixels at a given DPI and zoom level */
-export function mmToPx(mm: number, dpi = DEFAULT_CANVAS_DPI, zoom = 1.0): number {
+export function mmToPx(
+  mm: number,
+  dpi = DEFAULT_CANVAS_DPI,
+  zoom = 1.0,
+): number {
   return (mm / MM_PER_INCH) * dpi * zoom;
 }
 
 /** Convert canvas pixels to mm at a given DPI and zoom level */
-export function pxToMm(px: number, dpi = DEFAULT_CANVAS_DPI, zoom = 1.0): number {
+export function pxToMm(
+  px: number,
+  dpi = DEFAULT_CANVAS_DPI,
+  zoom = 1.0,
+): number {
   return (px / (dpi * zoom)) * MM_PER_INCH;
 }
 
@@ -57,7 +65,9 @@ export interface ViewportTransform {
 }
 
 /** Create a default viewport transform */
-export function createDefaultViewport(dpi = DEFAULT_CANVAS_DPI): ViewportTransform {
+export function createDefaultViewport(
+  dpi = DEFAULT_CANVAS_DPI,
+): ViewportTransform {
   return {
     panX: 0,
     panY: 0,
@@ -120,7 +130,9 @@ export const MAX_ZOOM = 5.0;
 export const ZOOM_STEP = 0.1;
 
 /** Standard zoom presets */
-export const ZOOM_PRESETS = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 3.0, 4.0] as const;
+export const ZOOM_PRESETS = [
+  0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 3.0, 4.0,
+] as const;
 
 /**
  * Calculate zoom-to-fit for a page within a container.

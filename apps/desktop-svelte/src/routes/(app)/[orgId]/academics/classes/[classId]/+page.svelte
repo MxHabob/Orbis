@@ -38,7 +38,7 @@ import {
   Landmark,
   FileText,
   AlertCircle,
-  BookOpen
+  BookOpen,
 } from "lucide-svelte";
 import { fade } from "svelte/transition";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
@@ -73,7 +73,8 @@ const assessmentsQuery = createQuery({
 
 const gradesQuery = createQuery({
   queryKey: ["grades", orgId, classId],
-  queryFn: () => commands.grades.getAll(orgId, { class_id: classId }).catch(() => []),
+  queryFn: () =>
+    commands.grades.getAll(orgId, { class_id: classId }).catch(() => []),
   enabled: !!orgId && !!classId,
   staleTime: 2 * 60 * 1000,
 });
@@ -87,12 +88,13 @@ const attendanceQuery = createQuery({
 });
 
 const filteredStudents = $derived(
-  (enrollmentsQuery.data || []).filter((s) => String(s.class_id) === classId)
+  (enrollmentsQuery.data || []).filter((s) => String(s.class_id) === classId),
 );
 
 const studentsCount = $derived(filteredStudents.length);
 const subjectsCount = $derived(
-  new Set((classSubjectsQuery.data || []).map((cs) => String(cs.subject_id))).size
+  new Set((classSubjectsQuery.data || []).map((cs) => String(cs.subject_id)))
+    .size,
 );
 const assessmentsCount = $derived((assessmentsQuery.data || []).length);
 
@@ -104,23 +106,23 @@ const avgGradeScore = $derived.by(() => {
   return Math.round(sum / list.length);
 });
 const classHealthIndex = $derived(
-  Math.min(100, Math.round(attendanceRate * 0.6 + avgGradeScore * 0.4))
+  Math.min(100, Math.round(attendanceRate * 0.6 + avgGradeScore * 0.4)),
 );
 
 const isLoading = $derived(
   enrollmentsQuery.isLoading ||
-  classSubjectsQuery.isLoading ||
-  assessmentsQuery.isLoading ||
-  gradesQuery.isLoading ||
-  attendanceQuery.isLoading
+    classSubjectsQuery.isLoading ||
+    assessmentsQuery.isLoading ||
+    gradesQuery.isLoading ||
+    attendanceQuery.isLoading,
 );
 
 const error = $derived(
   enrollmentsQuery.error ||
-  classSubjectsQuery.error ||
-  assessmentsQuery.error ||
-  gradesQuery.error ||
-  attendanceQuery.error
+    classSubjectsQuery.error ||
+    assessmentsQuery.error ||
+    gradesQuery.error ||
+    attendanceQuery.error,
 );
 
 function refetchAll() {
@@ -148,7 +150,8 @@ const cycleId = $derived(academicContext.effectiveCycleId);
 
 const gradeMatrixQuery = createQuery({
   queryKey: ["grade-matrix", orgId, cycleId, classId, selectedSubjectId],
-  queryFn: () => commands.grades.getGradeMatrix(orgId, cycleId, classId, selectedSubjectId),
+  queryFn: () =>
+    commands.grades.getGradeMatrix(orgId, cycleId, classId, selectedSubjectId),
   enabled: !!orgId && !!cycleId && !!classId && !!selectedSubjectId,
   staleTime: 2 * 60 * 1000,
 });
@@ -175,7 +178,7 @@ let resolvedAlerts = $state<Record<string, boolean>>({});
 
 const diagnosticIssues = $derived.by(() => {
   const issues = [];
-  
+
   if (studentsCount === 0) {
     issues.push({
       id: "no-students",
@@ -186,8 +189,11 @@ const diagnosticIssues = $derived.by(() => {
       actionText: m.academics_class_overview_view_students(),
     });
   }
-  
-  if (studentsCount > 0 && (!gradesQuery.data || gradesQuery.data.length === 0)) {
+
+  if (
+    studentsCount > 0 &&
+    (!gradesQuery.data || gradesQuery.data.length === 0)
+  ) {
     issues.push({
       id: "no-grades",
       type: "academic",
@@ -197,31 +203,37 @@ const diagnosticIssues = $derived.by(() => {
       actionText: m.academics_class_overview_record_grades(),
     });
   }
-  
-  const failingRecords = (gradesQuery.data || []).filter((g) => g.score !== null && g.score < 50);
+
+  const failingRecords = (gradesQuery.data || []).filter(
+    (g) => g.score !== null && g.score < 50,
+  );
   if (failingRecords.length > 0) {
     issues.push({
       id: "low-performance",
       type: "academic",
       title: m.academics_class_overview_low_performance_title(),
-      desc: m.academics_class_overview_low_performance_desc({ count: String(failingRecords.length) }),
+      desc: m.academics_class_overview_low_performance_desc({
+        count: String(failingRecords.length),
+      }),
       priority: "high",
       actionText: m.academics_class_overview_view_grades(),
     });
   }
-  
+
   if (attendanceRate < 90) {
     issues.push({
       id: "low-attendance",
       type: "attendance",
       title: m.academics_class_overview_low_attendance_title(),
-      desc: m.academics_class_overview_low_attendance_desc({ rate: String(Math.round(attendanceRate)) }),
+      desc: m.academics_class_overview_low_attendance_desc({
+        rate: String(Math.round(attendanceRate)),
+      }),
       priority: "critical",
       actionText: m.academics_class_overview_contact_parents(),
     });
   }
-  
-  return issues.filter(issue => !resolvedAlerts[issue.id]);
+
+  return issues.filter((issue) => !resolvedAlerts[issue.id]);
 });
 
 function handleResolveIssue(id: string) {
@@ -230,7 +242,9 @@ function handleResolveIssue(id: string) {
 }
 
 function handleTriggerAction(issue: any) {
-  toast.info(`${m.academics_class_overview_action_triggered()} ${issue.actionText}`);
+  toast.info(
+    `${m.academics_class_overview_action_triggered()} ${issue.actionText}`,
+  );
 }
 </script>
 

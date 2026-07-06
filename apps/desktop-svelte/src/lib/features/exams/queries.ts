@@ -2,7 +2,11 @@
  * Exams domain queries and mutations.
  * Wraps IPC commands with TanStack Query for automatic caching and state updates.
  */
-import { createQuery, createMutation, useQueryClient } from "@tanstack/svelte-query";
+import {
+  createQuery,
+  createMutation,
+  useQueryClient,
+} from "@tanstack/svelte-query";
 import { commands } from "$lib/core/ipc";
 import type { ExamSession, ExamSubject } from "./store.svelte";
 
@@ -10,7 +14,8 @@ import type { ExamSession, ExamSubject } from "./store.svelte";
 export function createExamSessionsQuery(orgId: string, cycleId?: string) {
   return createQuery({
     queryKey: ["exam-sessions", orgId, cycleId || "all"],
-    queryFn: () => commands.exams.getSessions(orgId, cycleId) as Promise<ExamSession[]>,
+    queryFn: () =>
+      commands.exams.getSessions(orgId, cycleId) as Promise<ExamSession[]>,
     enabled: !!orgId,
     staleTime: 5 * 60 * 1000,
   });
@@ -20,7 +25,8 @@ export function createExamSessionsQuery(orgId: string, cycleId?: string) {
 export function createExamSessionQuery(orgId: string, sessionId: string) {
   return createQuery({
     queryKey: ["exam-session", orgId, sessionId],
-    queryFn: () => commands.exams.getSession(orgId, sessionId) as Promise<ExamSession>,
+    queryFn: () =>
+      commands.exams.getSession(orgId, sessionId) as Promise<ExamSession>,
     enabled: !!orgId && !!sessionId,
     staleTime: 5 * 60 * 1000,
   });
@@ -30,7 +36,8 @@ export function createExamSessionQuery(orgId: string, sessionId: string) {
 export function createExamSubjectsQuery(orgId: string, sessionId: string) {
   return createQuery({
     queryKey: ["exam-subjects", orgId, sessionId],
-    queryFn: () => commands.exams.getSubjects(orgId, sessionId) as Promise<ExamSubject[]>,
+    queryFn: () =>
+      commands.exams.getSubjects(orgId, sessionId) as Promise<ExamSubject[]>,
     enabled: !!orgId && !!sessionId,
     staleTime: 5 * 60 * 1000,
   });
@@ -61,7 +68,9 @@ export function createSessionMutation() {
         cycle_id: variables.data.cycle_id || "",
       }) as Promise<ExamSession>,
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["exam-sessions", variables.orgId] });
+      queryClient.invalidateQueries({
+        queryKey: ["exam-sessions", variables.orgId],
+      });
     },
   });
 }
@@ -81,8 +90,12 @@ export function updateSessionMutation() {
         variables.updates,
       ) as Promise<ExamSession>,
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["exam-sessions", variables.orgId] });
-      queryClient.invalidateQueries({ queryKey: ["exam-session", variables.orgId, variables.sessionId] });
+      queryClient.invalidateQueries({
+        queryKey: ["exam-sessions", variables.orgId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["exam-session", variables.orgId, variables.sessionId],
+      });
     },
   });
 }
@@ -96,9 +109,14 @@ export function addExamSubjectMutation() {
       sessionId: string;
       request: Record<string, unknown>;
     }) =>
-      commands.exams.createSubject(variables.orgId, variables.request) as Promise<ExamSubject>,
+      commands.exams.createSubject(
+        variables.orgId,
+        variables.request,
+      ) as Promise<ExamSubject>,
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["exam-subjects", variables.orgId, variables.sessionId] });
+      queryClient.invalidateQueries({
+        queryKey: ["exam-subjects", variables.orgId, variables.sessionId],
+      });
     },
   });
 }

@@ -9,20 +9,12 @@ import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@orbis/ui-svelte";
 import { Badge } from "@orbis/ui-svelte/badge";
-import {
-  X,
-  ExternalLink,
-  CreditCard,
-  Award
-} from "lucide-svelte";
+import { X, ExternalLink, CreditCard, Award } from "lucide-svelte";
 import * as m from "$lib/paraglide/messages";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate, formatPercent } from "$lib/core/i18n";
 
-let {
-  student,
-  onClose,
-}: { student: any; onClose: () => void } = $props();
+let { student, onClose }: { student: any; onClose: () => void } = $props();
 
 const studentId = $derived(student?.id || "");
 const orgId = $derived(authStore.orgId || "");
@@ -96,7 +88,6 @@ async function fetchStats() {
     gradeSummary = m.loading_no_grades();
   }
 }
-
 </script>
 
 {#if student}

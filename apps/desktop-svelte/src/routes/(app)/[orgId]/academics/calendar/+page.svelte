@@ -13,31 +13,63 @@ import { getLocale } from "$lib/paraglide/runtime";
 import { createCalendarEventsQuery } from "$lib/features/academics";
 import { useQueryClient } from "@tanstack/svelte-query";
 import {
-  Card, CardContent, CardHeader, CardTitle,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
 } from "@orbis/ui-svelte/card";
 import { Button } from "@orbis/ui-svelte/button";
 import { Badge } from "@orbis/ui-svelte/badge";
 import {
-  Table, TableBody, TableHead, TableHeader, TableRow, TableCell,
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+  TableCell,
 } from "@orbis/ui-svelte/table";
 import {
-  Dialog, DialogContent, DialogHeader, DialogFooter,
-  DialogTitle, DialogDescription,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
 } from "@orbis/ui-svelte/dialog";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
 import { Textarea } from "@orbis/ui-svelte/textarea";
 import { Checkbox } from "@orbis/ui-svelte/checkbox";
 import {
-  Select, SelectTrigger, SelectContent, SelectItem,
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
 } from "@orbis/ui-svelte/select";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import {
-  CalendarClock, Play, Plus, Trash2, Loader2,
-  CheckCircle2, Clock, AlertCircle, XCircle, Pencil,
+  CalendarClock,
+  Play,
+  Plus,
+  Trash2,
+  Loader2,
+  CheckCircle2,
+  Clock,
+  AlertCircle,
+  XCircle,
+  Pencil,
 } from "lucide-svelte";
-import type { CalendarEvent, CalendarExecutionMode, CalendarEventType } from "@orbis/desktop-client/types";
-import { gregorianToHijri, hijriToGregorian, HIJRI_MONTHS_EN, HIJRI_MONTHS_AR } from "$lib/core/i18n/hijri";
+import type {
+  CalendarEvent,
+  CalendarExecutionMode,
+  CalendarEventType,
+} from "@orbis/desktop-client/types";
+import {
+  gregorianToHijri,
+  hijriToGregorian,
+  HIJRI_MONTHS_EN,
+  HIJRI_MONTHS_AR,
+} from "$lib/core/i18n/hijri";
 
 let { data }: { data: { orgId: string } } = $props();
 const orgId = $derived(data?.orgId ?? "");
@@ -50,8 +82,12 @@ const events = $derived(($eventsQuery.data ?? []) as CalendarEvent[]);
 
 // Phase progress — derived from events
 const PHASE_ORDER: CalendarEventType[] = [
-  "enrollment_open", "classes_start", "exam_start",
-  "grade_entry_open", "grade_entry_close", "results_announcement",
+  "enrollment_open",
+  "classes_start",
+  "exam_start",
+  "grade_entry_open",
+  "grade_entry_close",
+  "results_announcement",
 ];
 
 const phaseProgress = $derived.by(() => {
@@ -186,26 +222,35 @@ function getHijriRangeString(startStr: string, endStr: string) {
   const parseDate = (s: string) => {
     const parts = s.split("-");
     if (parts.length === 3) {
-      return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+      return new Date(
+        parseInt(parts[0], 10),
+        parseInt(parts[1], 10) - 1,
+        parseInt(parts[2], 10),
+      );
     }
     return null;
   };
-  
+
   const start = parseDate(startStr);
   const end = parseDate(endStr);
   if (!start || !end) return "";
-  
+
   const hs = gregorianToHijri(start);
   const he = gregorianToHijri(end);
   if (!hs || !he) return "";
-  
+
   return `${formatHijriDateString(hs.hy, hs.hm, hs.hd)} → ${formatHijriDateString(he.hy, he.hm, he.hd)}`;
 }
 
 function resetForm() {
   newEvent = {
-    title: "", title_ar: "", event_type: "custom",
-    execution_mode: "manual", start_date: "", end_date: "", description: "",
+    title: "",
+    title_ar: "",
+    event_type: "custom",
+    execution_mode: "manual",
+    start_date: "",
+    end_date: "",
+    description: "",
   };
   useHijri = false;
 }
@@ -221,10 +266,14 @@ async function createEvent() {
       cycle_id: cycleId,
       ...newEvent,
     });
-    toast.success(m.calendar_event_created ? m.calendar_event_created() : "Event created");
+    toast.success(
+      m.calendar_event_created ? m.calendar_event_created() : "Event created",
+    );
     showCreateDialog = false;
     resetForm();
-    queryClient.invalidateQueries({ queryKey: ["calendar-events", orgId, cycleId] });
+    queryClient.invalidateQueries({
+      queryKey: ["calendar-events", orgId, cycleId],
+    });
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e));
   } finally {
@@ -237,13 +286,19 @@ async function executeEvent(eventId: string) {
   try {
     const result = await commands.calendar.execute(eventId, authStore.userId);
     if (result.outcome === "executed") {
-      toast.success(m.calendar_event_executed ? m.calendar_event_executed() : "Event executed");
+      toast.success(
+        m.calendar_event_executed
+          ? m.calendar_event_executed()
+          : "Event executed",
+      );
     } else if (result.outcome === "blocked") {
       toast.error(result.message ?? "Event blocked — prerequisites not met");
     } else {
       toast.info(result.message ?? "Event processed");
     }
-    queryClient.invalidateQueries({ queryKey: ["calendar-events", orgId, cycleId] });
+    queryClient.invalidateQueries({
+      queryKey: ["calendar-events", orgId, cycleId],
+    });
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e));
   } finally {
@@ -254,8 +309,12 @@ async function executeEvent(eventId: string) {
 async function deleteEvent(eventId: string) {
   try {
     await commands.calendar.delete(eventId);
-    toast.success(m.calendar_event_deleted ? m.calendar_event_deleted() : "Event deleted");
-    queryClient.invalidateQueries({ queryKey: ["calendar-events", orgId, cycleId] });
+    toast.success(
+      m.calendar_event_deleted ? m.calendar_event_deleted() : "Event deleted",
+    );
+    queryClient.invalidateQueries({
+      queryKey: ["calendar-events", orgId, cycleId],
+    });
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e));
   }
@@ -265,8 +324,14 @@ async function generateDefaults() {
   isSubmitting = true;
   try {
     await commands.calendar.generateDefaults(orgId, cycleId);
-    toast.success(m.calendar_defaults_generated ? m.calendar_defaults_generated() : "Default events generated");
-    queryClient.invalidateQueries({ queryKey: ["calendar-events", orgId, cycleId] });
+    toast.success(
+      m.calendar_defaults_generated
+        ? m.calendar_defaults_generated()
+        : "Default events generated",
+    );
+    queryClient.invalidateQueries({
+      queryKey: ["calendar-events", orgId, cycleId],
+    });
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e));
   } finally {
@@ -285,16 +350,20 @@ function statusIcon(event: CalendarEvent) {
 function statusColor(event: CalendarEvent): string {
   if (event.executed_at) return "text-primary";
   const today = new Date().toISOString().split("T")[0]!;
-  if (event.start_date <= today && event.end_date >= today) return "text-yellow-500";
+  if (event.start_date <= today && event.end_date >= today)
+    return "text-yellow-500";
   if (event.start_date > today) return "text-muted-foreground";
   return "text-destructive";
 }
 
 function modeBadgeVariant(mode: CalendarExecutionMode) {
   switch (mode) {
-    case "automatic": return "success" as const;
-    case "suggested": return "secondary" as const;
-    case "manual": return "outline" as const;
+    case "automatic":
+      return "success" as const;
+    case "suggested":
+      return "secondary" as const;
+    case "manual":
+      return "outline" as const;
   }
 }
 </script>

@@ -8,7 +8,7 @@
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
 import {
-    Card,
+  Card,
   Table,
   TableBody,
   TableCell,
@@ -20,7 +20,12 @@ import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui-svelte/select";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui-svelte/select";
 import { ComboboxDropdown } from "@orbis/ui-svelte/combobox-dropdown";
 import { toast } from "svelte-sonner";
 import {
@@ -123,14 +128,14 @@ const studentItems = $derived.by(() => {
 const treasuryItems = $derived.by(() => {
   return treasuries.map((tr) => ({
     value: tr.id,
-    label: `${tr.code || '12110013'} - ${cleanAccountName(tr.name_ar || tr.name)}`,
+    label: `${tr.code || "12110013"} - ${cleanAccountName(tr.name_ar || tr.name)}`,
   }));
 });
 
 const studentName = $derived(
-  selectedPayment?.student_name || 
-  getStudentName(paymentRows[0]?.studentEnrollmentId) || 
-  ""
+  selectedPayment?.student_name ||
+    getStudentName(paymentRows[0]?.studentEnrollmentId) ||
+    "",
 );
 
 // Dialog and Printing states
@@ -203,7 +208,14 @@ interface PaymentRow {
 }
 
 let paymentRows = $state<PaymentRow[]>([
-  { studentEnrollmentId: "", notes: "", availableFees: [], isLoadingFees: false, selectedFees: new Set<string>(), feeAmounts: {} }
+  {
+    studentEnrollmentId: "",
+    notes: "",
+    availableFees: [],
+    isLoadingFees: false,
+    selectedFees: new Set<string>(),
+    feeAmounts: {},
+  },
 ]);
 
 onMount(() => {
@@ -211,7 +223,7 @@ onMount(() => {
     loadData();
     const todayStr = new Date().toISOString().split("T")[0];
     selectedFilterDate = todayStr;
-    
+
     const today = new Date();
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(today.getDate() - 30);
@@ -245,14 +257,17 @@ function getStudentName(enrollId: string): string {
 }
 
 function addPaymentRow() {
-  paymentRows = [...paymentRows, {
-    studentEnrollmentId: "",
-    notes: "",
-    availableFees: [],
-    isLoadingFees: false,
-    selectedFees: new Set<string>(),
-    feeAmounts: {}
-  }];
+  paymentRows = [
+    ...paymentRows,
+    {
+      studentEnrollmentId: "",
+      notes: "",
+      availableFees: [],
+      isLoadingFees: false,
+      selectedFees: new Set<string>(),
+      feeAmounts: {},
+    },
+  ];
 }
 
 function deletePaymentRow(index: number) {
@@ -339,7 +354,9 @@ async function selectRow(p: any) {
   if (enrollId && data.orgId) {
     try {
       const list = await commands.finance.getStudentFees(data.orgId, enrollId);
-      rowFees = list.filter((f) => f.status !== "paid" || String(f.id) === String(p.fee_id));
+      rowFees = list.filter(
+        (f) => f.status !== "paid" || String(f.id) === String(p.fee_id),
+      );
     } catch (e) {
       console.error(e);
     }
@@ -352,14 +369,16 @@ async function selectRow(p: any) {
     amountsMap[String(p.fee_id)] = p.amount;
   }
 
-  paymentRows = [{
-    studentEnrollmentId: enrollId,
-    notes: p.notes || "",
-    availableFees: rowFees,
-    isLoadingFees: false,
-    selectedFees: selectedSet,
-    feeAmounts: amountsMap
-  }];
+  paymentRows = [
+    {
+      studentEnrollmentId: enrollId,
+      notes: p.notes || "",
+      availableFees: rowFees,
+      isLoadingFees: false,
+      selectedFees: selectedSet,
+      feeAmounts: amountsMap,
+    },
+  ];
 }
 
 function clearForm() {
@@ -373,7 +392,14 @@ function clearForm() {
   currency = "YER";
   checkInfo = "";
   paymentRows = [
-    { studentEnrollmentId: "", notes: "", availableFees: [], isLoadingFees: false, selectedFees: new Set<string>(), feeAmounts: {} }
+    {
+      studentEnrollmentId: "",
+      notes: "",
+      availableFees: [],
+      isLoadingFees: false,
+      selectedFees: new Set<string>(),
+      feeAmounts: {},
+    },
   ];
 }
 
@@ -392,8 +418,10 @@ async function handleAdd() {
       for (const feeId of row.selectedFees) {
         const amt = row.feeAmounts[feeId];
         if (amt === undefined || amt === null || amt <= 0) {
-          const fee = row.availableFees.find(f => String(f.id) === feeId);
-          toast.error(`الرجاء إدخال مبلغ دفع صحيح للرسم "${fee?.notes || 'رسوم'}" في السطر ${rowNum}`);
+          const fee = row.availableFees.find((f) => String(f.id) === feeId);
+          toast.error(
+            `الرجاء إدخال مبلغ دفع صحيح للرسم "${fee?.notes || "رسوم"}" في السطر ${rowNum}`,
+          );
           return;
         }
       }
@@ -430,7 +458,9 @@ async function handleAdd() {
                 ? "bank_transfer"
                 : "card",
           reference: newRefNum,
-          notes: row.notes || `سداد رسوم الطالب ${getStudentName(row.studentEnrollmentId)} - ${fee?.notes || "رسوم دراسية"}`,
+          notes:
+            row.notes ||
+            `سداد رسوم الطالب ${getStudentName(row.studentEnrollmentId)} - ${fee?.notes || "رسوم دراسية"}`,
           treasury_id: treasuryId,
           currency: currency.trim().toUpperCase(),
         };
@@ -438,9 +468,7 @@ async function handleAdd() {
       }
     }
 
-    toast.success(
-      `تم تسجيل سندات قبض بنجاح برقم ${randomRef}`,
-    );
+    toast.success(`تم تسجيل سندات قبض بنجاح برقم ${randomRef}`);
     await loadData();
     clearForm();
   } catch (e) {
@@ -465,13 +493,16 @@ async function handleAdd() {
           payment_method: paymentMethod,
           treasury_id: treasuryId,
           treasury_name:
-            treasuries.find((t) => t.id === treasuryId)?.name || "صندوق التحصيلات",
+            treasuries.find((t) => t.id === treasuryId)?.name ||
+            "صندوق التحصيلات",
           student_name: getStudentName(row.studentEnrollmentId),
           student_number:
             students.find((s) => String(s.id) === row.studentEnrollmentId)
               ?.student_number || "",
           check_info: checkInfo,
-          notes: row.notes || `سداد رسوم الطالب ${getStudentName(row.studentEnrollmentId)} - ${fee?.notes || "رسوم دراسية"}`,
+          notes:
+            row.notes ||
+            `سداد رسوم الطالب ${getStudentName(row.studentEnrollmentId)} - ${fee?.notes || "رسوم دراسية"}`,
           reference_number: newRefNum,
           prints_count: 0,
           user: "U78",
@@ -481,7 +512,7 @@ async function handleAdd() {
         payments = [newPayment, ...payments];
       }
     }
-    
+
     toast.success(`تم إضافة سندات القبض محلياً برقم ${randomRef}`);
     clearForm();
   }

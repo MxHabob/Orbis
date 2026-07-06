@@ -6,10 +6,7 @@
 
 import type { TemplateDocument } from "@docforge/core";
 import type { TemplateNode, PageNode, NodeType } from "@docforge/core";
-import {
-  getPages,
-  isContainerNode,
-} from "@docforge/core";
+import { getPages, isContainerNode } from "@docforge/core";
 import {
   findNode,
   addNode,
@@ -113,13 +110,21 @@ export class MoveNodeCommand implements EditorCommand {
       this.prevY = (node as any).position.y;
     }
     return updateNodeProps(doc, this.nodeId, {
-      position: { ...((findNode(doc, this.nodeId) as any)?.position || {}), x: this.newX, y: this.newY },
+      position: {
+        ...((findNode(doc, this.nodeId) as any)?.position || {}),
+        x: this.newX,
+        y: this.newY,
+      },
     } as any);
   }
 
   undo(doc: TemplateDocument): TemplateDocument {
     return updateNodeProps(doc, this.nodeId, {
-      position: { ...((findNode(doc, this.nodeId) as any)?.position || {}), x: this.prevX, y: this.prevY },
+      position: {
+        ...((findNode(doc, this.nodeId) as any)?.position || {}),
+        x: this.prevX,
+        y: this.prevY,
+      },
     } as any);
   }
 
@@ -243,7 +248,12 @@ export class DuplicateNodeCommand implements EditorCommand {
     }
     const parentInfo = findParentOfNode(doc, this.nodeId);
     if (!parentInfo) return doc;
-    return addNode(doc, parentInfo.parentId, this.clonedNode, parentInfo.index + 1);
+    return addNode(
+      doc,
+      parentInfo.parentId,
+      this.clonedNode,
+      parentInfo.index + 1,
+    );
   }
 
   undo(doc: TemplateDocument): TemplateDocument {

@@ -26,7 +26,11 @@ import { RefreshCw } from "lucide-svelte";
 
 import { deserializeDocument, serializeDocument } from "@docforge/core";
 import { createEditorStore } from "$lib/features/templates/stores/editor-store.svelte";
-import { copyNodes, cutNodes, pasteNodes } from "$lib/features/templates/stores/clipboard-manager";
+import {
+  copyNodes,
+  cutNodes,
+  pasteNodes,
+} from "$lib/features/templates/stores/clipboard-manager";
 import CanvasRoot from "$lib/features/templates/canvas/canvas-root.svelte";
 import CanvasContextMenu from "$lib/features/templates/canvas/canvas-context-menu.svelte";
 
@@ -171,9 +175,13 @@ async function generatePreview() {
 
 function handleKeydown(e: KeyboardEvent) {
   const isCtrl = e.ctrlKey || e.metaKey;
-  const isInputFocused = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
+  const isInputFocused =
+    e.target instanceof HTMLInputElement ||
+    e.target instanceof HTMLTextAreaElement;
 
-  if (contextMenuVisible) { contextMenuVisible = false; }
+  if (contextMenuVisible) {
+    contextMenuVisible = false;
+  }
 
   // Close flyout on Escape
   if (e.key === "Escape" && store.activeRailPanel) {
@@ -182,22 +190,33 @@ function handleKeydown(e: KeyboardEvent) {
     return;
   }
 
-  if (isCtrl && e.key === "z") { e.preventDefault(); store.undo(); }
-  else if (isCtrl && e.key === "y") { e.preventDefault(); store.redo(); }
-  else if (isCtrl && e.key === "s") { e.preventDefault(); saveTemplate(); }
-  else if (isCtrl && e.key === "d") { e.preventDefault(); store.duplicateSelected(); }
-  else if (isCtrl && e.key === "a" && !isInputFocused) { e.preventDefault(); store.selectAll(); }
-  else if (isCtrl && e.key === "c" && !isInputFocused) {
+  if (isCtrl && e.key === "z") {
+    e.preventDefault();
+    store.undo();
+  } else if (isCtrl && e.key === "y") {
+    e.preventDefault();
+    store.redo();
+  } else if (isCtrl && e.key === "s") {
+    e.preventDefault();
+    saveTemplate();
+  } else if (isCtrl && e.key === "d") {
+    e.preventDefault();
+    store.duplicateSelected();
+  } else if (isCtrl && e.key === "a" && !isInputFocused) {
+    e.preventDefault();
+    store.selectAll();
+  } else if (isCtrl && e.key === "c" && !isInputFocused) {
     e.preventDefault();
     copyNodes(store.document, store.selectedIds);
-  }
-  else if (isCtrl && e.key === "x" && !isInputFocused) {
+  } else if (isCtrl && e.key === "x" && !isInputFocused) {
     e.preventDefault();
     cutNodes(store.document, store.selectedIds).then((cmd) => {
-      if (cmd) { store.executeCommand(cmd); store.clearSelection(); }
+      if (cmd) {
+        store.executeCommand(cmd);
+        store.clearSelection();
+      }
     });
-  }
-  else if (isCtrl && e.key === "v" && !isInputFocused) {
+  } else if (isCtrl && e.key === "v" && !isInputFocused) {
     e.preventDefault();
     const parentId = store.activePage?.id;
     if (parentId) {
@@ -205,22 +224,26 @@ function handleKeydown(e: KeyboardEvent) {
         if (cmd) store.executeCommand(cmd);
       });
     }
-  }
-  else if (e.key === "Delete" || e.key === "Backspace") {
+  } else if (e.key === "Delete" || e.key === "Backspace") {
     if (store.selectedIds.length > 0 && !isInputFocused) {
       e.preventDefault();
       store.deleteSelected();
     }
-  }
-  else if (e.key === "Escape") { store.clearSelection(); }
-  else if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key) && !isInputFocused) {
+  } else if (e.key === "Escape") {
+    store.clearSelection();
+  } else if (
+    ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key) &&
+    !isInputFocused
+  ) {
     if (store.selectedIds.length > 0 && store.selectedNode) {
       e.preventDefault();
       const nudge = e.shiftKey ? 10 : 1;
       const pos = (store.selectedNode as any).position;
       if (pos) {
-        const dx = e.key === "ArrowLeft" ? -nudge : e.key === "ArrowRight" ? nudge : 0;
-        const dy = e.key === "ArrowUp" ? -nudge : e.key === "ArrowDown" ? nudge : 0;
+        const dx =
+          e.key === "ArrowLeft" ? -nudge : e.key === "ArrowRight" ? nudge : 0;
+        const dy =
+          e.key === "ArrowUp" ? -nudge : e.key === "ArrowDown" ? nudge : 0;
         store.moveSelected(
           Math.round((pos.x + dx) * 10) / 10,
           Math.round((pos.y + dy) * 10) / 10,

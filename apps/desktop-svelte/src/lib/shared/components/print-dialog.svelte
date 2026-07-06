@@ -85,9 +85,7 @@ let isBatchProcessing = $state(false);
 let batchStatusText = $state("");
 
 // Multi-Up config (initialized when template is selected)
-let multiUpConfig = $state<MultiUpConfig>(
-  createDefaultMultiUpConfig(90, 50),
-);
+let multiUpConfig = $state<MultiUpConfig>(createDefaultMultiUpConfig(90, 50));
 let previewPage = $state(1);
 
 // ── Derived ──────────────────────────────────────────────────
@@ -97,12 +95,18 @@ const isRtl = $derived(getLocale() === "ar");
 
 // Compute layout reactively whenever config changes
 const multiUpLayout = $derived(computeMultiUpLayout(multiUpConfig));
-const totalSheets = $derived(computeTotalSheets(entityIds.length, multiUpLayout.itemsPerSheet));
+const totalSheets = $derived(
+  computeTotalSheets(entityIds.length, multiUpLayout.itemsPerSheet),
+);
 
 // Suggested layouts for the current template dimensions
 const suggestions = $derived(
   multiUpConfig.templateWidthMm > 0 && multiUpConfig.templateHeightMm > 0
-    ? suggestLayouts(multiUpConfig.templateWidthMm, multiUpConfig.templateHeightMm, multiUpConfig.sheetSize)
+    ? suggestLayouts(
+        multiUpConfig.templateWidthMm,
+        multiUpConfig.templateHeightMm,
+        multiUpConfig.sheetSize,
+      )
     : [],
 );
 
@@ -239,7 +243,9 @@ async function handlePrintAction() {
       );
       batchProgress = 100;
       batchStatusText = m.print_multi_up_complete();
-      toast.success(m.print_multi_up_complete_detail({ count: String(entityIds.length) }));
+      toast.success(
+        m.print_multi_up_complete_detail({ count: String(entityIds.length) }),
+      );
 
       setTimeout(() => {
         isBatchProcessing = false;
@@ -263,7 +269,9 @@ function triggerDownload() {
 function applySuggestion(suggestion: MultiUpLayout) {
   // Update config to match the suggestion's orientation
   multiUpConfig.sheetOrientation =
-    suggestion.sheetWidthMm < suggestion.sheetHeightMm ? "portrait" : "landscape";
+    suggestion.sheetWidthMm < suggestion.sheetHeightMm
+      ? "portrait"
+      : "landscape";
   // Recalculate will happen automatically via $derived
   pdfUrl = null;
 }

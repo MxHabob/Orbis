@@ -30,7 +30,9 @@ export function validateRows(
   const nidCount = new Map<string, number[]>();
 
   rows.forEach((row, idx) => {
-    const email = String(row.email ?? row.student_email ?? "").trim().toLowerCase();
+    const email = String(row.email ?? row.student_email ?? "")
+      .trim()
+      .toLowerCase();
     if (email) {
       if (!emailCount.has(email)) emailCount.set(email, []);
       emailCount.get(email)!.push(idx);
@@ -96,7 +98,9 @@ function validateUserRow(
   }
 
   // email: required, valid format, no duplicates
-  const email = String(row.email ?? "").trim().toLowerCase();
+  const email = String(row.email ?? "")
+    .trim()
+    .toLowerCase();
   if (!email) {
     errors.set("email", "البريد الإلكتروني مطلوب");
   } else if (!EMAIL_REGEX.test(email)) {
@@ -124,7 +128,9 @@ function validateUserRow(
   }
 
   // sex: if present, must be male or female
-  const sex = String(row.sex ?? "").trim().toLowerCase();
+  const sex = String(row.sex ?? "")
+    .trim()
+    .toLowerCase();
   if (sex && sex !== "male" && sex !== "female") {
     errors.set("sex", "الجنس يجب أن يكون male أو female");
   }
@@ -143,7 +149,9 @@ function validateGradeRow(
   emailCount: Map<string, number[]>,
 ): void {
   // student_email: required, valid format
-  const email = String(row.student_email ?? "").trim().toLowerCase();
+  const email = String(row.student_email ?? "")
+    .trim()
+    .toLowerCase();
   if (!email) {
     errors.set("student_email", "بريد الطالب مطلوب");
   } else if (!EMAIL_REGEX.test(email)) {
@@ -202,7 +210,11 @@ export function getValidationSummary(
   let totalFilledRows = 0;
   let validCount = 0;
   let errorCount = 0;
-  const errorDetails: Array<{ rowIndex: number; field: string; message: string }> = [];
+  const errorDetails: Array<{
+    rowIndex: number;
+    field: string;
+    message: string;
+  }> = [];
 
   for (const result of results) {
     // Skip empty rows from stats

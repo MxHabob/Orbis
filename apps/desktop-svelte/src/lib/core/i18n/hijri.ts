@@ -11,7 +11,9 @@ export interface HijriDate {
 /**
  * Converts a Gregorian Date to Hijri.
  */
-export function gregorianToHijri(date: Date | string | null | undefined): HijriDate | null {
+export function gregorianToHijri(
+  date: Date | string | null | undefined,
+): HijriDate | null {
   if (!date) return null;
   const d = typeof date === "string" ? new Date(date) : date;
   if (isNaN(d.getTime())) return null;
@@ -24,8 +26,14 @@ export function gregorianToHijri(date: Date | string | null | undefined): HijriD
     }).formatToParts(d);
 
     const hd = parseInt(parts.find((p) => p.type === "day")?.value || "1", 10);
-    const hm = parseInt(parts.find((p) => p.type === "month")?.value || "1", 10);
-    const hy = parseInt(parts.find((p) => p.type === "year")?.value || "1447", 10);
+    const hm = parseInt(
+      parts.find((p) => p.type === "month")?.value || "1",
+      10,
+    );
+    const hy = parseInt(
+      parts.find((p) => p.type === "year")?.value || "1447",
+      10,
+    );
 
     return { hy, hm, hd };
   } catch (e) {
@@ -41,13 +49,18 @@ export function hijriToGregorian(hy: number, hm: number, hd: number): Date {
   // 1447-01-01 Hijri was approx 2025-06-26 Gregorian
   const baseGregorian = new Date(2025, 5, 26);
   const hijriYearDiff = hy - 1447;
-  const approxDays = Math.floor(hijriYearDiff * 354.367) + (hm - 1) * 29.5 + (hd - 1);
+  const approxDays =
+    Math.floor(hijriYearDiff * 354.367) + (hm - 1) * 29.5 + (hd - 1);
 
-  const targetDate = new Date(baseGregorian.getTime() + approxDays * 24 * 60 * 60 * 1000);
+  const targetDate = new Date(
+    baseGregorian.getTime() + approxDays * 24 * 60 * 60 * 1000,
+  );
 
   // Search within +/- 15 days to find the exact match
   for (let offset = -15; offset <= 15; offset++) {
-    const checkDate = new Date(targetDate.getTime() + offset * 24 * 60 * 60 * 1000);
+    const checkDate = new Date(
+      targetDate.getTime() + offset * 24 * 60 * 60 * 1000,
+    );
     const result = gregorianToHijri(checkDate);
     if (result && result.hy === hy && result.hm === hm && result.hd === hd) {
       return checkDate;
@@ -68,7 +81,7 @@ export const HIJRI_MONTHS_EN = [
   "Ramadan",
   "Shawwal",
   "Dhu al-Qadah",
-  "Dhu al-Hijjah"
+  "Dhu al-Hijjah",
 ];
 
 export const HIJRI_MONTHS_AR = [
@@ -83,5 +96,5 @@ export const HIJRI_MONTHS_AR = [
   "رمضان",
   "شوال",
   "ذو القعدة",
-  "ذو الحجة"
+  "ذو الحجة",
 ];

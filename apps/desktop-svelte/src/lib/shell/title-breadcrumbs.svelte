@@ -40,7 +40,8 @@ const breadcrumbs = $derived.by(() => {
     if (pathname.includes("/students/new")) {
       items.push({ label: m.breadcrumb_new_student() });
     } else if (studentId) {
-      const enrollments = queryClient.getQueryData<any[]>(["enrollments", currentOrgId]) || [];
+      const enrollments =
+        queryClient.getQueryData<any[]>(["enrollments", currentOrgId]) || [];
       const student = enrollments.find((s) => s.id === studentId);
       const studentName =
         (student?.full_name as string) ||
@@ -121,7 +122,10 @@ const breadcrumbs = $derived.by(() => {
           : "القيود اليومية",
         href: `/${currentOrgId}/finance/journal-entries`,
       });
-    } else if (pathname.includes("/ledger") || pathname.includes("/statement")) {
+    } else if (
+      pathname.includes("/ledger") ||
+      pathname.includes("/statement")
+    ) {
       items.push({
         label: m.finance_layout_nav_ledger
           ? m.finance_layout_nav_ledger()

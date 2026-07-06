@@ -49,7 +49,10 @@ function getNodePosition() {
   let ph: number;
   if (position.height == null) {
     ph = mmToPx(20, vp.dpi, vp.zoom); // auto-height default
-  } else if (typeof position.height === "string" && position.height.endsWith("%")) {
+  } else if (
+    typeof position.height === "string" &&
+    position.height.endsWith("%")
+  ) {
     ph = (parseFloat(position.height) / 100) * pageSizePx.height;
   } else {
     ph = mmToPx(Number(position.height) || 20, vp.dpi, vp.zoom);
@@ -91,7 +94,9 @@ function commitEdit() {
   if (!isEditing || !editEl) return;
   const newContent = editEl.innerText || "";
   if (newContent !== props.content) {
-    store.updateSelectedProps({ props: { ...props, content: newContent } } as any);
+    store.updateSelectedProps({
+      props: { ...props, content: newContent },
+    } as any);
   }
   isEditing = false;
 }
@@ -109,7 +114,9 @@ function handleEditKeydown(e: KeyboardEvent) {
 const props = $derived("props" in node ? (node as any).props || {} : {});
 
 // Parse text content into segments: literal text and variable expressions
-type ContentSegment = { type: "text"; value: string } | { type: "variable"; key: string };
+type ContentSegment =
+  | { type: "text"; value: string }
+  | { type: "variable"; key: string };
 function parseContentSegments(content: string): ContentSegment[] {
   const segments: ContentSegment[] = [];
   const regex = /\{\{([^}]+)\}\}/g;
@@ -117,7 +124,10 @@ function parseContentSegments(content: string): ContentSegment[] {
   let match;
   while ((match = regex.exec(content)) !== null) {
     if (match.index > lastIndex) {
-      segments.push({ type: "text", value: content.slice(lastIndex, match.index) });
+      segments.push({
+        type: "text",
+        value: content.slice(lastIndex, match.index),
+      });
     }
     segments.push({ type: "variable", key: match[1]!.trim() });
     lastIndex = regex.lastIndex;

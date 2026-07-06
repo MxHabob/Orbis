@@ -112,7 +112,9 @@ export function validateStudentRows(
       errors.set("class_id", "الفصل مطلوب");
     } else if (availableClasses) {
       const match = availableClasses.find(
-        (c) => c.name.trim().toLowerCase() === classInput.toLowerCase() || c.id === classInput
+        (c) =>
+          c.name.trim().toLowerCase() === classInput.toLowerCase() ||
+          c.id === classInput,
       );
       if (!match) {
         errors.set("class_id", "الفصل غير موجود في النظام");
@@ -122,13 +124,19 @@ export function validateStudentRows(
     // ── enrollment_status: optional, valid values ──
     const status = str(row.enrollment_status).toLowerCase();
     if (status && !VALID_STATUS.includes(status)) {
-      errors.set("enrollment_status", `الحالة غير صحيحة. المتاح: ${VALID_STATUS.join(", ")}`);
+      errors.set(
+        "enrollment_status",
+        `الحالة غير صحيحة. المتاح: ${VALID_STATUS.join(", ")}`,
+      );
     }
 
     // ── blood_type: optional, valid values ──
     const blood = str(row.blood_type).toUpperCase();
     if (blood && !VALID_BLOOD.includes(blood)) {
-      errors.set("blood_type", `فصيلة الدم غير صحيحة. المتاح: ${VALID_BLOOD.join(", ")}`);
+      errors.set(
+        "blood_type",
+        `فصيلة الدم غير صحيحة. المتاح: ${VALID_BLOOD.join(", ")}`,
+      );
     }
 
     // Apply to row for cell styling
@@ -149,7 +157,11 @@ export function getStudentValidationSummary(
   let totalFilled = 0;
   let valid = 0;
   let errorCount = 0;
-  const errorDetails: Array<{ rowIndex: number; field: string; message: string }> = [];
+  const errorDetails: Array<{
+    rowIndex: number;
+    field: string;
+    message: string;
+  }> = [];
 
   for (const r of results) {
     if (isRowEmpty(rows[r.rowIndex])) continue;

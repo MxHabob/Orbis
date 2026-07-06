@@ -13,15 +13,29 @@ import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
 import { Switch } from "@orbis/ui-svelte/switch";
 import {
-  Select, SelectTrigger, SelectContent, SelectItem,
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
 } from "@orbis/ui-svelte/select";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@orbis/ui-svelte/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@orbis/ui-svelte/card";
 import { Separator } from "@orbis/ui-svelte/separator";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
 import {
-  Settings, ShieldAlert, Award, Calendar, Loader2, Save,
+  Settings,
+  ShieldAlert,
+  Award,
+  Calendar,
+  Loader2,
+  Save,
 } from "lucide-svelte";
 import SettingsFormSkeleton from "$lib/shared/skeletons/settings-form-skeleton.svelte";
 
@@ -54,13 +68,19 @@ $effect(() => {
       default_grading_system: d.default_grading_system || "percentage",
       default_passing_grade: d.default_passing_grade ?? 50,
       default_max_grade: d.default_max_grade ?? 100,
-      enrollment_auto_close_on_capacity: d.enrollment_auto_close_on_capacity === 1,
+      enrollment_auto_close_on_capacity:
+        d.enrollment_auto_close_on_capacity === 1,
       allow_late_enrollment: d.allow_late_enrollment === 1,
-      late_enrollment_requires_approval: d.late_enrollment_requires_approval === 1,
-      grade_entry_auto_close_on_deadline: d.grade_entry_auto_close_on_deadline === 1,
-      allow_grade_modification_after_close: d.allow_grade_modification_after_close === 1,
-      grade_modification_requires_approval: d.grade_modification_requires_approval === 1,
-      default_event_execution_mode: d.default_event_execution_mode || "suggested",
+      late_enrollment_requires_approval:
+        d.late_enrollment_requires_approval === 1,
+      grade_entry_auto_close_on_deadline:
+        d.grade_entry_auto_close_on_deadline === 1,
+      allow_grade_modification_after_close:
+        d.allow_grade_modification_after_close === 1,
+      grade_modification_requires_approval:
+        d.grade_modification_requires_approval === 1,
+      default_event_execution_mode:
+        d.default_event_execution_mode || "suggested",
     };
   }
 });
@@ -73,18 +93,29 @@ async function handleSave(e: Event) {
       default_grading_system: form.default_grading_system,
       default_passing_grade: form.default_passing_grade,
       default_max_grade: form.default_max_grade,
-      enrollment_auto_close_on_capacity: form.enrollment_auto_close_on_capacity ? 1 : 0,
+      enrollment_auto_close_on_capacity: form.enrollment_auto_close_on_capacity
+        ? 1
+        : 0,
       allow_late_enrollment: form.allow_late_enrollment ? 1 : 0,
-      late_enrollment_requires_approval: form.late_enrollment_requires_approval ? 1 : 0,
-      grade_entry_auto_close_on_deadline: form.grade_entry_auto_close_on_deadline ? 1 : 0,
-      allow_grade_modification_after_close: form.allow_grade_modification_after_close ? 1 : 0,
-      grade_modification_requires_approval: form.grade_modification_requires_approval ? 1 : 0,
+      late_enrollment_requires_approval: form.late_enrollment_requires_approval
+        ? 1
+        : 0,
+      grade_entry_auto_close_on_deadline:
+        form.grade_entry_auto_close_on_deadline ? 1 : 0,
+      allow_grade_modification_after_close:
+        form.allow_grade_modification_after_close ? 1 : 0,
+      grade_modification_requires_approval:
+        form.grade_modification_requires_approval ? 1 : 0,
       default_event_execution_mode: form.default_event_execution_mode,
       settings: null,
     };
 
     await commands.calendar.updatePolicy(orgId, payload);
-    toast.success(m.settings_general_save_success ? m.settings_general_save_success() : "Settings saved successfully");
+    toast.success(
+      m.settings_general_save_success
+        ? m.settings_general_save_success()
+        : "Settings saved successfully",
+    );
     queryClient.invalidateQueries({ queryKey: ["org-academic-policy", orgId] });
   } catch (err: unknown) {
     toast.error(extractErrorMessage(err));

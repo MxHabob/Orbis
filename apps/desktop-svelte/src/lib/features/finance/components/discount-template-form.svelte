@@ -43,23 +43,43 @@ let isActive = $state(true);
 // Options for Type
 const itemTypes = $derived([
   { value: "manual", label: m.dt_type_manual ? m.dt_type_manual() : "يدوي" },
-  { value: "scholarship", label: m.dt_type_scholarship ? m.dt_type_scholarship() : "منحة دراسية" },
-  { value: "system", label: m.dt_type_system ? m.dt_type_system() : "تلقائي بالنظام" },
+  {
+    value: "scholarship",
+    label: m.dt_type_scholarship ? m.dt_type_scholarship() : "منحة دراسية",
+  },
+  {
+    value: "system",
+    label: m.dt_type_system ? m.dt_type_system() : "تلقائي بالنظام",
+  },
 ]);
 const itemTypeLabels = $derived(
-  itemTypes.reduce((acc, t) => ({ ...acc, [t.value]: t.label }), {} as Record<string, string>)
+  itemTypes.reduce(
+    (acc, t) => ({ ...acc, [t.value]: t.label }),
+    {} as Record<string, string>,
+  ),
 );
 const selectedItemTypeLabel = $derived(itemTypeLabels[itemType] ?? itemType);
 
 // Options for Calculation Method
 const calculationMethods = $derived([
-  { value: "percentage", label: m.dt_method_percentage ? m.dt_method_percentage() : "نسبة مئوية (%)" },
-  { value: "fixed", label: m.dt_method_fixed ? m.dt_method_fixed() : "مبلغ ثابت" },
+  {
+    value: "percentage",
+    label: m.dt_method_percentage ? m.dt_method_percentage() : "نسبة مئوية (%)",
+  },
+  {
+    value: "fixed",
+    label: m.dt_method_fixed ? m.dt_method_fixed() : "مبلغ ثابت",
+  },
 ]);
 const calculationMethodLabels = $derived(
-  calculationMethods.reduce((acc, cm) => ({ ...acc, [cm.value]: cm.label }), {} as Record<string, string>)
+  calculationMethods.reduce(
+    (acc, cm) => ({ ...acc, [cm.value]: cm.label }),
+    {} as Record<string, string>,
+  ),
 );
-const selectedCalculationMethodLabel = $derived(calculationMethodLabels[calculationMethod] ?? calculationMethod);
+const selectedCalculationMethodLabel = $derived(
+  calculationMethodLabels[calculationMethod] ?? calculationMethod,
+);
 
 // Initialize form if in edit mode
 $effect(() => {
@@ -79,11 +99,19 @@ $effect(() => {
 
 async function handleSubmit() {
   if (!name.trim()) {
-    toast.error(m.attendance_status_unknown() === "غير محدد" ? "الاسم مطلوب" : "Name is required");
+    toast.error(
+      m.attendance_status_unknown() === "غير محدد"
+        ? "الاسم مطلوب"
+        : "Name is required",
+    );
     return;
   }
   if (value < 0) {
-    toast.error(m.attendance_status_unknown() === "غير محدد" ? "يجب أن تكون القيمة رقمًا موجبًا" : "Value must be a positive number");
+    toast.error(
+      m.attendance_status_unknown() === "غير محدد"
+        ? "يجب أن تكون القيمة رقمًا موجبًا"
+        : "Value must be a positive number",
+    );
     return;
   }
 

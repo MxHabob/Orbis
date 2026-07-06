@@ -16,12 +16,27 @@ let {
   label,
   variant = "outline",
   size = "sm",
-  class: className = ""
+  class: className = "",
 }: {
   query: string;
   label: string;
-  variant?: "default" | "lime" | "outline" | "ghost" | "destructive" | "secondary" | "link";
-  size?: "default" | "sm" | "xs" | "lg" | "icon" | "icon-sm" | "icon-xs" | "icon-lg";
+  variant?:
+    | "default"
+    | "lime"
+    | "outline"
+    | "ghost"
+    | "destructive"
+    | "secondary"
+    | "link";
+  size?:
+    | "default"
+    | "sm"
+    | "xs"
+    | "lg"
+    | "icon"
+    | "icon-sm"
+    | "icon-xs"
+    | "icon-lg";
   class?: string;
 } = $props();
 
@@ -31,7 +46,7 @@ function askOrbis() {
   goto(newUrl.pathname + newUrl.search, {
     replaceState: true,
     keepFocus: true,
-    noScroll: true
+    noScroll: true,
   });
 }
 </script>

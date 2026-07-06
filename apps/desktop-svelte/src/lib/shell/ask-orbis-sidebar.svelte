@@ -55,15 +55,43 @@ const users = $derived($usersQuery.data || []);
 
 const slashPages = [
   { label: "الطلاب", path: "/students", cleanLabel: "الطلاب" },
-  { label: "الصفوف الدراسية", path: "/academics/classes", cleanLabel: "الصفوف الدراسية" },
-  { label: "المواد الدراسية", path: "/settings/subjects", cleanLabel: "المواد الدراسية" },
-  { label: "الرسوم الدراسية", path: "/finance/fees", cleanLabel: "الرسوم الدراسية" },
-  { label: "المدفوعات والمقبوضات", path: "/finance/payments", cleanLabel: "المدفوعات والمقبوضات" },
-  { label: "الحسابات والصناديق", path: "/finance/treasuries", cleanLabel: "الحسابات والصناديق" },
+  {
+    label: "الصفوف الدراسية",
+    path: "/academics/classes",
+    cleanLabel: "الصفوف الدراسية",
+  },
+  {
+    label: "المواد الدراسية",
+    path: "/settings/subjects",
+    cleanLabel: "المواد الدراسية",
+  },
+  {
+    label: "الرسوم الدراسية",
+    path: "/finance/fees",
+    cleanLabel: "الرسوم الدراسية",
+  },
+  {
+    label: "المدفوعات والمقبوضات",
+    path: "/finance/payments",
+    cleanLabel: "المدفوعات والمقبوضات",
+  },
+  {
+    label: "الحسابات والصناديق",
+    path: "/finance/treasuries",
+    cleanLabel: "الحسابات والصناديق",
+  },
   { label: "التقارير", path: "/reports", cleanLabel: "التقارير" },
   { label: "القوالب", path: "/templates", cleanLabel: "القوالب" },
-  { label: "الإعدادات العامة", path: "/settings", cleanLabel: "الإعدادات العامة" },
-  { label: "الجدول الدراسي", path: "/academics/schedule", cleanLabel: "الجدول الدراسي" }
+  {
+    label: "الإعدادات العامة",
+    path: "/settings",
+    cleanLabel: "الإعدادات العامة",
+  },
+  {
+    label: "الجدول الدراسي",
+    path: "/academics/schedule",
+    cleanLabel: "الجدول الدراسي",
+  },
 ];
 
 function pxToRem(px: number): number {
@@ -79,12 +107,14 @@ const maxWidth = $derived(pxToRem(650));
 
 const isRtl = $derived(getLocale() === "ar");
 
-const userName = $derived(authStore.user?.full_name || (isRtl ? "مستخدم" : "User"));
+const userName = $derived(
+  authStore.user?.full_name || (isRtl ? "مستخدم" : "User"),
+);
 const orgName = $derived(
   (authStore.user as any)?.org_name ||
-  (authStore.user as any)?.organization_name ||
-  (authStore.user as any)?.org?.name ||
-  null
+    (authStore.user as any)?.organization_name ||
+    (authStore.user as any)?.org?.name ||
+    null,
 );
 
 let inputValue = $state(page.url.searchParams.get("ask_orbis") || "");
@@ -127,7 +157,7 @@ function handleClose() {
     goto(newUrl.pathname + newUrl.search, {
       replaceState: true,
       keepFocus: true,
-      noScroll: true
+      noScroll: true,
     });
   }
 }
@@ -160,7 +190,7 @@ async function submitMessage(query: string) {
     goto(newUrl.pathname + newUrl.search, {
       replaceState: true,
       keepFocus: true,
-      noScroll: true
+      noScroll: true,
     });
   }
 
@@ -200,13 +230,21 @@ function handleSelectHistoryItem(messagesToLoad: Message[]) {
 
 function parseMarkdownLinks(text: string) {
   const regex = /\[([^\]]+)\]/g;
-  const parts: Array<{ type: "text" | "link"; content?: string; label?: string; href?: string }> = [];
+  const parts: Array<{
+    type: "text" | "link";
+    content?: string;
+    label?: string;
+    href?: string;
+  }> = [];
   let lastIndex = 0;
   let match;
 
   while ((match = regex.exec(text)) !== null) {
     if (match.index > lastIndex) {
-      parts.push({ type: "text", content: text.substring(lastIndex, match.index) });
+      parts.push({
+        type: "text",
+        content: text.substring(lastIndex, match.index),
+      });
     }
 
     const fullLabel = match[1];
@@ -222,15 +260,19 @@ function parseMarkdownLinks(text: string) {
 
     if (isMention) {
       // Look up student by name
-      const studentMatch = students.find((s: any) =>
-        (s.full_name || s.name_ar || s.name_en || "").toLowerCase() === label.toLowerCase()
+      const studentMatch = students.find(
+        (s: any) =>
+          (s.full_name || s.name_ar || s.name_en || "").toLowerCase() ===
+          label.toLowerCase(),
       );
       if (studentMatch) {
         resolvedHref = `/${currentOrgId}/students/${studentMatch.id}/grades`;
       } else {
         // Look up user by name
-        const userMatch = users.find((u: any) =>
-          (u.full_name || u.name_ar || u.name_en || "").toLowerCase() === label.toLowerCase()
+        const userMatch = users.find(
+          (u: any) =>
+            (u.full_name || u.name_ar || u.name_en || "").toLowerCase() ===
+            label.toLowerCase(),
         );
         if (userMatch) {
           resolvedHref = `/${currentOrgId}/settings/users/${userMatch.id}/profile`;
@@ -238,9 +280,10 @@ function parseMarkdownLinks(text: string) {
       }
     } else {
       // Look up slash pages by label
-      const matchedPage = slashPages.find(p =>
-        p.cleanLabel.toLowerCase() === label.toLowerCase() ||
-        p.label.toLowerCase() === label.toLowerCase()
+      const matchedPage = slashPages.find(
+        (p) =>
+          p.cleanLabel.toLowerCase() === label.toLowerCase() ||
+          p.label.toLowerCase() === label.toLowerCase(),
       );
       if (matchedPage) {
         resolvedHref = `/${currentOrgId}${matchedPage.path}`;

@@ -47,8 +47,12 @@ const pageWidthPx = $derived(mmToPx(pageWidthMm, vp.dpi, vp.zoom));
 const pageHeightPx = $derived(mmToPx(pageHeightMm, vp.dpi, vp.zoom));
 
 // Canvas center offset for page centering
-const offsetX = $derived(Math.max(0, (containerWidth - pageWidthPx) / 2) + vp.panX);
-const offsetY = $derived(Math.max(0, (containerHeight - pageHeightPx) / 2) + vp.panY);
+const offsetX = $derived(
+  Math.max(0, (containerWidth - pageWidthPx) / 2) + vp.panX,
+);
+const offsetY = $derived(
+  Math.max(0, (containerHeight - pageHeightPx) / 2) + vp.panY,
+);
 
 // ── Lifecycle ────────────────────────────────────────────────
 
@@ -124,7 +128,11 @@ function handleMouseDown(e: MouseEvent) {
   }
 
   // Left click on empty canvas area → rubber band selection or clear
-  if (e.button === 0 && (e.target === svgEl || (e.target as Element)?.classList?.contains('canvas-bg'))) {
+  if (
+    e.button === 0 &&
+    (e.target === svgEl ||
+      (e.target as Element)?.classList?.contains("canvas-bg"))
+  ) {
     // Start rubber band selection
     if (selectionOverlay && svgEl) {
       const rect = svgEl.getBoundingClientRect();
@@ -145,11 +153,18 @@ function handleMouseUp() {
 
 function getPageDimensionMm(dim: "width" | "height"): number {
   const sizes: Record<string, { w: number; h: number }> = {
-    A4: { w: 210, h: 297 }, A3: { w: 297, h: 420 }, A5: { w: 148, h: 210 },
-    Letter: { w: 216, h: 279 }, Legal: { w: 216, h: 356 },
-    ID_CARD: { w: 85.6, h: 53.98 }, BADGE: { w: 86, h: 54 },
+    A4: { w: 210, h: 297 },
+    A3: { w: 297, h: 420 },
+    A5: { w: 148, h: 210 },
+    Letter: { w: 216, h: 279 },
+    Legal: { w: 216, h: 356 },
+    ID_CARD: { w: 85.6, h: 53.98 },
+    BADGE: { w: 86, h: 54 },
   };
-  const size = sizes[pageSetup.size] ?? { w: pageSetup.width ?? 210, h: pageSetup.height ?? 297 };
+  const size = sizes[pageSetup.size] ?? {
+    w: pageSetup.width ?? 210,
+    h: pageSetup.height ?? 297,
+  };
   const isLandscape = pageSetup.orientation === "landscape";
   if (dim === "width") return isLandscape ? size.h : size.w;
   return isLandscape ? size.w : size.h;
@@ -194,16 +209,24 @@ function handleDrop(e: DragEvent) {
     if (selectedNode && selectedNode.type === "Text") {
       const currentContent = (selectedNode as any).props?.content || "";
       store.updateSelectedProps({
-        props: { ...(selectedNode as any).props, content: currentContent + `{{${varName}}}` },
+        props: {
+          ...(selectedNode as any).props,
+          content: currentContent + `{{${varName}}}`,
+        },
       } as any);
     } else {
       // Create a new text node with the variable
-      store.addElement("Text", {
-        content: `{{${varName}}}`,
-        fontSize: 12,
-        fontFamily: "Rubik",
-        direction: "rtl",
-      }, docPos.x, docPos.y);
+      store.addElement(
+        "Text",
+        {
+          content: `{{${varName}}}`,
+          fontSize: 12,
+          fontFamily: "Rubik",
+          direction: "rtl",
+        },
+        docPos.x,
+        docPos.y,
+      );
     }
     return;
   }
@@ -212,13 +235,18 @@ function handleDrop(e: DragEvent) {
   const assetRef = e.dataTransfer.getData("application/x-docforge-asset");
   if (assetRef) {
     const asset = store.document.assets[assetRef];
-    store.addElement("Image", {
-      assetRef,
-      src: asset?.url || "",
-      width: 40,
-      height: 30,
-      fit: "contain",
-    }, docPos.x, docPos.y);
+    store.addElement(
+      "Image",
+      {
+        assetRef,
+        src: asset?.url || "",
+        width: 40,
+        height: 30,
+        fit: "contain",
+      },
+      docPos.x,
+      docPos.y,
+    );
     return;
   }
 }

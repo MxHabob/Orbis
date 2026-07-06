@@ -26,9 +26,7 @@ let {
 
 // Derived values
 const totalPages = $derived(
-  layout.itemsPerSheet > 0
-    ? Math.ceil(totalRecords / layout.itemsPerSheet)
-    : 1,
+  layout.itemsPerSheet > 0 ? Math.ceil(totalRecords / layout.itemsPerSheet) : 1,
 );
 
 const startIndex = $derived((currentPage - 1) * layout.itemsPerSheet);

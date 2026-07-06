@@ -132,7 +132,11 @@ $effect(() => {
         if (!oncellspaste) return;
         const detail = e.detail;
         if (detail?.parsed) {
-          oncellspaste(detail.parsed, detail.rowIndex ?? 0, detail.colIndex ?? 0);
+          oncellspaste(
+            detail.parsed,
+            detail.rowIndex ?? 0,
+            detail.colIndex ?? 0,
+          );
         }
       };
 

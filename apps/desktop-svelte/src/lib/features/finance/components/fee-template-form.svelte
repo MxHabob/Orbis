@@ -47,28 +47,66 @@ let selectedLevels = $state<string[]>([]);
 
 // Derived categories and frequencies for Orbis Select components
 const categories = $derived([
-  { value: "tuition", label: m.ft_category_tuition ? m.ft_category_tuition() : "رسوم دراسية" },
-  { value: "transport", label: m.ft_category_transport ? m.ft_category_transport() : "نقل" },
-  { value: "books", label: m.ft_category_books ? m.ft_category_books() : "كتب" },
-  { value: "uniform", label: m.ft_category_uniform ? m.ft_category_uniform() : "زي مدرسي" },
-  { value: "exam", label: m.ft_category_exam ? m.ft_category_exam() : "رسوم امتحانات" },
-  { value: "other", label: m.ft_category_other ? m.ft_category_other() : "أخرى" },
+  {
+    value: "tuition",
+    label: m.ft_category_tuition ? m.ft_category_tuition() : "رسوم دراسية",
+  },
+  {
+    value: "transport",
+    label: m.ft_category_transport ? m.ft_category_transport() : "نقل",
+  },
+  {
+    value: "books",
+    label: m.ft_category_books ? m.ft_category_books() : "كتب",
+  },
+  {
+    value: "uniform",
+    label: m.ft_category_uniform ? m.ft_category_uniform() : "زي مدرسي",
+  },
+  {
+    value: "exam",
+    label: m.ft_category_exam ? m.ft_category_exam() : "رسوم امتحانات",
+  },
+  {
+    value: "other",
+    label: m.ft_category_other ? m.ft_category_other() : "أخرى",
+  },
 ]);
 const categoryLabels = $derived(
-  categories.reduce((acc, c) => ({ ...acc, [c.value]: c.label }), {} as Record<string, string>)
+  categories.reduce(
+    (acc, c) => ({ ...acc, [c.value]: c.label }),
+    {} as Record<string, string>,
+  ),
 );
 const selectedCategoryLabel = $derived(categoryLabels[category] ?? category);
 
 const frequencies = $derived([
-  { value: "once", label: m.ft_frequency_once ? m.ft_frequency_once() : "مرة واحدة" },
-  { value: "monthly", label: m.ft_frequency_monthly ? m.ft_frequency_monthly() : "شهري" },
-  { value: "termly", label: m.ft_frequency_termly ? m.ft_frequency_termly() : "فصلي" },
-  { value: "yearly", label: m.ft_frequency_yearly ? m.ft_frequency_yearly() : "سنوي" },
+  {
+    value: "once",
+    label: m.ft_frequency_once ? m.ft_frequency_once() : "مرة واحدة",
+  },
+  {
+    value: "monthly",
+    label: m.ft_frequency_monthly ? m.ft_frequency_monthly() : "شهري",
+  },
+  {
+    value: "termly",
+    label: m.ft_frequency_termly ? m.ft_frequency_termly() : "فصلي",
+  },
+  {
+    value: "yearly",
+    label: m.ft_frequency_yearly ? m.ft_frequency_yearly() : "سنوي",
+  },
 ]);
 const frequencyLabels = $derived(
-  frequencies.reduce((acc, f) => ({ ...acc, [f.value]: f.label }), {} as Record<string, string>)
+  frequencies.reduce(
+    (acc, f) => ({ ...acc, [f.value]: f.label }),
+    {} as Record<string, string>,
+  ),
 );
-const selectedFrequencyLabel = $derived(frequencyLabels[frequency] ?? frequency);
+const selectedFrequencyLabel = $derived(
+  frequencyLabels[frequency] ?? frequency,
+);
 
 // Initialize form if in edit mode
 $effect(() => {

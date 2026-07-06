@@ -17,8 +17,16 @@ export function normalizeArabic(text: string): string {
 export function normalizeDigits(text: string): string {
   if (!text) return "";
   const map: Record<string, string> = {
-    "٠": "0", "١": "1", "٢": "2", "٣": "3", "٤": "4",
-    "٥": "5", "٦": "6", "٧": "7", "٨": "8", "٩": "9"
+    "٠": "0",
+    "١": "1",
+    "٢": "2",
+    "٣": "3",
+    "٤": "4",
+    "٥": "5",
+    "٦": "6",
+    "٧": "7",
+    "٨": "8",
+    "٩": "9",
   };
   return text.replace(/[٠-٩]/g, (char) => map[char] || char);
 }
@@ -39,7 +47,9 @@ export function matchStudent(student: any, query: string): boolean {
   if (queryWords.length === 0) return true;
 
   // Gather and normalize student fields
-  const fullName = normalizeArabic(String(student.full_name || "").toLowerCase());
+  const fullName = normalizeArabic(
+    String(student.full_name || "").toLowerCase(),
+  );
   const nameAr = normalizeArabic(String(student.name_ar || "").toLowerCase());
   const nameEn = String(student.name_en || "").toLowerCase();
   const email = String(student.email || "").toLowerCase();
@@ -64,8 +74,8 @@ export function matchStudent(student: any, query: string): boolean {
   const numberMatch =
     cleanQueryForNumber.length > 0 &&
     (cleanStudentNumber.includes(cleanQueryForNumber) ||
-     rawStudentNumber.includes(cleanQuery) ||
-     cleanId.includes(cleanQueryForNumber));
+      rawStudentNumber.includes(cleanQuery) ||
+      cleanId.includes(cleanQueryForNumber));
 
   return nameMatch || numberMatch;
 }

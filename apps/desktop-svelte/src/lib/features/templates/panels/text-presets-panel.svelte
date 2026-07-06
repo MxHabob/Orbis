@@ -31,62 +31,113 @@ const presets: TextPreset[] = [
     label: "عنوان رئيسي",
     sampleAr: "أضف عنواناً رئيسياً",
     sampleEn: "Add a heading",
-    style: { fontSize: 32, fontWeight: "700", fontFamily: "Rubik", color: "#000000", lineHeight: 1.2 },
+    style: {
+      fontSize: 32,
+      fontWeight: "700",
+      fontFamily: "Rubik",
+      color: "#000000",
+      lineHeight: 1.2,
+    },
   },
   {
     id: "heading2",
     label: "عنوان فرعي",
     sampleAr: "أضف عنواناً فرعياً",
     sampleEn: "Add a subheading",
-    style: { fontSize: 22, fontWeight: "600", fontFamily: "Rubik", color: "#1a1a1a", lineHeight: 1.3 },
+    style: {
+      fontSize: 22,
+      fontWeight: "600",
+      fontFamily: "Rubik",
+      color: "#1a1a1a",
+      lineHeight: 1.3,
+    },
   },
   {
     id: "heading3",
     label: "عنوان صغير",
     sampleAr: "أضف عنواناً صغيراً",
     sampleEn: "Add a small heading",
-    style: { fontSize: 16, fontWeight: "600", fontFamily: "Rubik", color: "#333333", lineHeight: 1.4 },
+    style: {
+      fontSize: 16,
+      fontWeight: "600",
+      fontFamily: "Rubik",
+      color: "#333333",
+      lineHeight: 1.4,
+    },
   },
   {
     id: "body",
     label: "نص أساسي",
     sampleAr: "أضف نصاً أساسياً",
     sampleEn: "Add body text",
-    style: { fontSize: 14, fontWeight: "400", fontFamily: "Rubik", color: "#333333", lineHeight: 1.5 },
+    style: {
+      fontSize: 14,
+      fontWeight: "400",
+      fontFamily: "Rubik",
+      color: "#333333",
+      lineHeight: 1.5,
+    },
   },
   {
     id: "body-small",
     label: "نص صغير",
     sampleAr: "أضف نصاً صغيراً",
     sampleEn: "Add small text",
-    style: { fontSize: 11, fontWeight: "400", fontFamily: "Rubik", color: "#555555", lineHeight: 1.5 },
+    style: {
+      fontSize: 11,
+      fontWeight: "400",
+      fontFamily: "Rubik",
+      color: "#555555",
+      lineHeight: 1.5,
+    },
   },
   {
     id: "caption",
     label: "تسمية توضيحية",
     sampleAr: "أضف تسمية توضيحية",
     sampleEn: "Add a caption",
-    style: { fontSize: 9, fontWeight: "400", fontFamily: "Rubik", color: "#777777", lineHeight: 1.4 },
+    style: {
+      fontSize: 9,
+      fontWeight: "400",
+      fontFamily: "Rubik",
+      color: "#777777",
+      lineHeight: 1.4,
+    },
   },
   {
     id: "label",
     label: "عنوان حقل",
     sampleAr: "عنوان الحقل",
     sampleEn: "Field Label",
-    style: { fontSize: 10, fontWeight: "600", fontFamily: "Rubik", color: "#555555", lineHeight: 1.3 },
+    style: {
+      fontSize: 10,
+      fontWeight: "600",
+      fontFamily: "Rubik",
+      color: "#555555",
+      lineHeight: 1.3,
+    },
   },
   {
     id: "number",
     label: "رقم كبير",
     sampleAr: "١٢٣٤",
     sampleEn: "1234",
-    style: { fontSize: 36, fontWeight: "700", fontFamily: "Rubik", color: "#1a1a1a", lineHeight: 1.1 },
+    style: {
+      fontSize: 36,
+      fontWeight: "700",
+      fontFamily: "Rubik",
+      color: "#1a1a1a",
+      lineHeight: 1.1,
+    },
   },
 ];
 
 function handleDragStart(e: DragEvent, preset: TextPreset) {
   e.dataTransfer?.setData("application/x-docforge-element", "Text");
-  e.dataTransfer?.setData("application/x-docforge-text-preset", JSON.stringify(preset.style));
+  e.dataTransfer?.setData(
+    "application/x-docforge-text-preset",
+    JSON.stringify(preset.style),
+  );
   e.dataTransfer?.setData("text/plain", preset.sampleAr);
   if (e.dataTransfer) e.dataTransfer.effectAllowed = "copy";
 }

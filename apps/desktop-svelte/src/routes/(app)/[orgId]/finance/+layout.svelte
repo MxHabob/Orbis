@@ -84,7 +84,9 @@ const navItems = $derived([
   },
   {
     path: "statement",
-    label: m.finance_layout_nav_ledger ? m.finance_layout_nav_ledger() : "كشف الحساب",
+    label: m.finance_layout_nav_ledger
+      ? m.finance_layout_nav_ledger()
+      : "كشف الحساب",
     icon: ClipboardList,
   },
   {

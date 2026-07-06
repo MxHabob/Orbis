@@ -9,9 +9,18 @@ import * as m from "$lib/paraglide/messages";
 import { commands } from "$lib/core/ipc";
 import { extractErrorMessage } from "$lib/core/ipc";
 import { toast } from "svelte-sonner";
-import { createAcademicYearsQuery, createAcademicYearMutation, createArchiveYearMutation } from "$lib/features/academics/year-queries";
 import {
-  Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter,
+  createAcademicYearsQuery,
+  createAcademicYearMutation,
+  createArchiveYearMutation,
+} from "$lib/features/academics/year-queries";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter,
 } from "@orbis/ui-svelte/card";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
@@ -20,17 +29,37 @@ import { Textarea } from "@orbis/ui-svelte/textarea";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Separator } from "@orbis/ui-svelte/separator";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from "@orbis/ui-svelte/dialog";
 import {
-  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
-  AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
 } from "@orbis/ui-svelte/alert-dialog";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import {
-  CalendarDays, Plus, Archive, Users, GraduationCap, Building2, Database,
+  CalendarDays,
+  Plus,
+  Archive,
+  Users,
+  GraduationCap,
+  Building2,
+  Database,
 } from "lucide-svelte";
-import type { CreateAcademicYearRequest, AcademicYearInfo } from "@orbis/desktop-client/types";
+import type {
+  CreateAcademicYearRequest,
+  AcademicYearInfo,
+} from "@orbis/desktop-client/types";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -57,7 +86,13 @@ async function handleCreate() {
     await $createMutation.mutateAsync(createForm);
     toast.success(m.year_create());
     showCreate = false;
-    createForm = { name: "", name_ar: null, start_date: "", end_date: "", notes: null };
+    createForm = {
+      name: "",
+      name_ar: null,
+      start_date: "",
+      end_date: "",
+      notes: null,
+    };
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e));
   }
@@ -79,19 +114,27 @@ async function handleArchive() {
 
 function statusVariant(status: string) {
   switch (status) {
-    case "active": return "success" as const;
-    case "archived": return "secondary" as const;
-    case "promoting": return "brand" as const;
-    default: return "outline" as const;
+    case "active":
+      return "success" as const;
+    case "archived":
+      return "secondary" as const;
+    case "promoting":
+      return "brand" as const;
+    default:
+      return "outline" as const;
   }
 }
 
 function statusLabel(status: string) {
   switch (status) {
-    case "active": return m.year_status_active();
-    case "archived": return m.year_status_archived();
-    case "promoting": return m.year_status_promoting();
-    default: return status;
+    case "active":
+      return m.year_status_active();
+    case "archived":
+      return m.year_status_archived();
+    case "promoting":
+      return m.year_status_promoting();
+    default:
+      return status;
   }
 }
 </script>

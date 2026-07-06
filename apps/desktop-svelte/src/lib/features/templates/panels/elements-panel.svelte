@@ -37,15 +37,78 @@ type ElementItem = {
 };
 
 const elements: ElementItem[] = [
-  { id: "text", type: "Text", icon: Type, label: "Text", labelAr: "نص", category: "basic" },
-  { id: "image", type: "Image", icon: Image, label: "Image", labelAr: "صورة", category: "basic" },
-  { id: "shape-rect", type: "Shape", icon: Square, label: "Rectangle", labelAr: "مستطيل", category: "shapes" },
-  { id: "shape-circle", type: "Shape", icon: Circle, label: "Circle", labelAr: "دائرة", category: "shapes" },
-  { id: "separator", type: "Separator", icon: Minus, label: "Separator", labelAr: "فاصل", category: "basic" },
-  { id: "table", type: "Table", icon: Table, label: "Table", labelAr: "جدول", category: "data" },
-  { id: "barcode", type: "Barcode", icon: Barcode, label: "Barcode", labelAr: "باركود", category: "data" },
-  { id: "qrcode", type: "QRCode", icon: QrCode, label: "QR Code", labelAr: "رمز QR", category: "data" },
-  { id: "frame", type: "Frame", icon: Frame, label: "Frame", labelAr: "إطار", category: "layout" },
+  {
+    id: "text",
+    type: "Text",
+    icon: Type,
+    label: "Text",
+    labelAr: "نص",
+    category: "basic",
+  },
+  {
+    id: "image",
+    type: "Image",
+    icon: Image,
+    label: "Image",
+    labelAr: "صورة",
+    category: "basic",
+  },
+  {
+    id: "shape-rect",
+    type: "Shape",
+    icon: Square,
+    label: "Rectangle",
+    labelAr: "مستطيل",
+    category: "shapes",
+  },
+  {
+    id: "shape-circle",
+    type: "Shape",
+    icon: Circle,
+    label: "Circle",
+    labelAr: "دائرة",
+    category: "shapes",
+  },
+  {
+    id: "separator",
+    type: "Separator",
+    icon: Minus,
+    label: "Separator",
+    labelAr: "فاصل",
+    category: "basic",
+  },
+  {
+    id: "table",
+    type: "Table",
+    icon: Table,
+    label: "Table",
+    labelAr: "جدول",
+    category: "data",
+  },
+  {
+    id: "barcode",
+    type: "Barcode",
+    icon: Barcode,
+    label: "Barcode",
+    labelAr: "باركود",
+    category: "data",
+  },
+  {
+    id: "qrcode",
+    type: "QRCode",
+    icon: QrCode,
+    label: "QR Code",
+    labelAr: "رمز QR",
+    category: "data",
+  },
+  {
+    id: "frame",
+    type: "Frame",
+    icon: Frame,
+    label: "Frame",
+    labelAr: "إطار",
+    category: "layout",
+  },
 ];
 
 const categories = [
@@ -57,11 +120,12 @@ const categories = [
 
 const filteredElements = $derived(
   searchQuery
-    ? elements.filter((el) =>
-        el.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        el.labelAr.includes(searchQuery)
+    ? elements.filter(
+        (el) =>
+          el.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          el.labelAr.includes(searchQuery),
       )
-    : elements
+    : elements,
 );
 
 function handleDragStart(e: DragEvent, item: ElementItem) {

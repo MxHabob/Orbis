@@ -20,13 +20,7 @@ import {
 } from "@orbis/ui-svelte/popover";
 import { Checkbox } from "@orbis/ui-svelte/checkbox";
 import { Label } from "@orbis/ui-svelte/label";
-import {
-  ArrowLeft,
-  Upload,
-  Columns3,
-  Trash2,
-  Info,
-} from "lucide-svelte";
+import { ArrowLeft, Upload, Columns3, Trash2, Info } from "lucide-svelte";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
@@ -78,7 +72,9 @@ function runValidation() {
       const classInput = String(rows[i].class_id ?? "").trim();
       if (classInput) {
         const match = classes.find(
-          (c: any) => c.name.trim().toLowerCase() === classInput.toLowerCase() || c.id === classInput
+          (c: any) =>
+            c.name.trim().toLowerCase() === classInput.toLowerCase() ||
+            c.id === classInput,
         );
         if (match && match.name !== classInput) {
           rows[i].class_id = match.name;
@@ -143,9 +139,7 @@ const labels: Record<string, string> = {
 };
 
 // Columns (reactive to extended column toggle)
-let columns = $derived(
-  buildStudentColumns(labels, visibleExtended, classes),
-);
+let columns = $derived(buildStudentColumns(labels, visibleExtended, classes));
 
 function toggleExtended(prop: string) {
   const newSet = new Set(visibleExtended);
@@ -201,7 +195,9 @@ async function handleSubmit() {
         const classInput = String(row.class_id ?? "").trim();
         if (classInput) {
           const match = classes.find(
-            (c: any) => c.name.trim().toLowerCase() === classInput.toLowerCase() || c.id === classInput
+            (c: any) =>
+              c.name.trim().toLowerCase() === classInput.toLowerCase() ||
+              c.id === classInput,
           );
           if (match) {
             row.class_id = match.id;
@@ -224,14 +220,10 @@ async function handleSubmit() {
     submitProgress = 100;
 
     if (result.created > 0) {
-      toast.success(
-        m.bulk_input_success_students({ count: result.created }),
-      );
+      toast.success(m.bulk_input_success_students({ count: result.created }));
     }
     if (result.failed > 0) {
-      toast.error(
-        m.bulk_input_failed_rows({ count: result.failed }),
-      );
+      toast.error(m.bulk_input_failed_rows({ count: result.failed }));
       console.error("Bulk Import failures:", result.errors);
       if (result.errors && Array.isArray(result.errors)) {
         for (const err of result.errors) {

@@ -81,7 +81,8 @@ export function buildGradeColumns(
 export function createEmptyGradeRow(): Record<string, unknown> {
   const row: Record<string, unknown> = {};
   for (const prop of GRADE_DATA_PROPS) {
-    row[prop] = prop === "max_score" ? "100" : prop === "exam_type" ? "final" : "";
+    row[prop] =
+      prop === "max_score" ? "100" : prop === "exam_type" ? "final" : "";
   }
   row.__errors = new Map<string, string>();
   return row;

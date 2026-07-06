@@ -6,7 +6,12 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
-import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui-svelte/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "@orbis/ui-svelte/card";
 import LocaleSettings from "$lib/shared/components/locale-settings.svelte";
 import * as m from "$lib/paraglide/messages";
 

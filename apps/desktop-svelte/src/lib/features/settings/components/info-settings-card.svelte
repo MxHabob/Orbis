@@ -10,12 +10,7 @@ interface Props {
   isSaving?: boolean;
 }
 
-let {
-  slug,
-  name = $bindable(),
-  id,
-  isSaving = false,
-}: Props = $props();
+let { slug, name = $bindable(), id, isSaving = false }: Props = $props();
 </script>
 
 <div class="border border-border rounded-md overflow-hidden flex flex-col">

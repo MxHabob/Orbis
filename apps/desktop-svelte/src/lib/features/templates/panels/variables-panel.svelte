@@ -15,9 +15,7 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@orbis/ui-svelte/tooltip";
-import {
-  ScrollArea,
-} from "@orbis/ui-svelte/scroll-area";
+import { ScrollArea } from "@orbis/ui-svelte/scroll-area";
 import {
   Variable,
   Search,
@@ -86,7 +84,10 @@ function insertVariable(varName: string) {
   if (selectedNode && selectedNode.type === "Text") {
     const currentContent = (selectedNode as any).props?.content || "";
     store.updateSelectedProps({
-      props: { ...(selectedNode as any).props, content: currentContent + `{{${varName}}}` },
+      props: {
+        ...(selectedNode as any).props,
+        content: currentContent + `{{${varName}}}`,
+      },
     } as any);
   }
 }
@@ -139,25 +140,39 @@ function toggleGroup(group: string) {
 
 function getTypeIcon(type: string) {
   switch (type) {
-    case "string": return TypeIcon;
-    case "number": return Hash;
-    case "date": return Calendar;
-    case "boolean": return ToggleLeft;
-    case "image": return ImageIcon;
-    case "array": return List;
-    default: return Variable;
+    case "string":
+      return TypeIcon;
+    case "number":
+      return Hash;
+    case "date":
+      return Calendar;
+    case "boolean":
+      return ToggleLeft;
+    case "image":
+      return ImageIcon;
+    case "array":
+      return List;
+    default:
+      return Variable;
   }
 }
 
 function getTypeBadgeVariant(type: string): any {
   switch (type) {
-    case "string": return "secondary";
-    case "number": return "brand";
-    case "date": return "success";
-    case "boolean": return "outline";
-    case "image": return "ghost";
-    case "array": return "destructive";
-    default: return "secondary";
+    case "string":
+      return "secondary";
+    case "number":
+      return "brand";
+    case "date":
+      return "success";
+    case "boolean":
+      return "outline";
+    case "image":
+      return "ghost";
+    case "array":
+      return "destructive";
+    default:
+      return "secondary";
   }
 }
 

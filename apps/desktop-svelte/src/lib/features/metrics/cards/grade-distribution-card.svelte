@@ -30,7 +30,11 @@ async function loadData() {
     if (selectedTerm !== "all") params.cycle_id = selectedTerm;
 
     const res = await commands.grades.getAnalytics(orgId, params);
-    if (res && res.grade_distribution && Object.values(res.grade_distribution).some(v => Number(v) > 0)) {
+    if (
+      res &&
+      res.grade_distribution &&
+      Object.values(res.grade_distribution).some((v) => Number(v) > 0)
+    ) {
       stats = res;
     } else {
       stats = null;
@@ -68,17 +72,19 @@ const distributionArray = $derived.by(() => {
 
 // Derive display distribution list (uses empty placeholding bars when empty)
 const displayArray = $derived(
-  stats && distributionArray.length > 0 ? distributionArray : [
-    { name: "A+", value: 0 },
-    { name: "A", value: 0 },
-    { name: "B+", value: 0 },
-    { name: "B", value: 0 },
-    { name: "C+", value: 0 },
-    { name: "C", value: 0 },
-    { name: "D+", value: 0 },
-    { name: "D", value: 0 },
-    { name: "F", value: 0 }
-  ]
+  stats && distributionArray.length > 0
+    ? distributionArray
+    : [
+        { name: "A+", value: 0 },
+        { name: "A", value: 0 },
+        { name: "B+", value: 0 },
+        { name: "B", value: 0 },
+        { name: "C+", value: 0 },
+        { name: "C", value: 0 },
+        { name: "D+", value: 0 },
+        { name: "D", value: 0 },
+        { name: "F", value: 0 },
+      ],
 );
 
 // SVG calculation - Shorter height
@@ -86,14 +92,10 @@ const width = 500;
 const height = 150;
 const padding = { left: 30, right: 10, top: 15, bottom: 20 };
 
-const maxValue = $derived(
-  Math.max(1, ...displayArray.map((d) => d.value)),
-);
+const maxValue = $derived(Math.max(1, ...displayArray.map((d) => d.value)));
 const chartWidth = $derived(width - padding.left - padding.right);
 const chartHeight = $derived(height - padding.top - padding.bottom);
-const barWidth = $derived(
-  Math.max(5, chartWidth / displayArray.length - 12),
-);
+const barWidth = $derived(Math.max(5, chartWidth / displayArray.length - 12));
 
 const bars = $derived.by(() => {
   return displayArray.map((item, idx) => {

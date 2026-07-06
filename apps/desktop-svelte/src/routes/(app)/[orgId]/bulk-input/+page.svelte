@@ -14,12 +14,7 @@ import {
   CardContent,
 } from "@orbis/ui-svelte/card";
 import { Badge } from "@orbis/ui-svelte/badge";
-import {
-  ArrowLeft,
-  Users,
-  GraduationCap,
-  ArrowRight,
-} from "lucide-svelte";
+import { ArrowLeft, Users, GraduationCap, ArrowRight } from "lucide-svelte";
 import * as m from "$lib/paraglide/messages";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 

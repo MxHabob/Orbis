@@ -47,11 +47,12 @@ const pos = $derived.by(() => {
 
   const x = mmToPx(p.x ?? 0, vp.dpi, vp.zoom) + offsetX;
   const y = mmToPx(p.y ?? 0, vp.dpi, vp.zoom) + offsetY;
-  const w = typeof p.width === "number" ? mmToPx(p.width, vp.dpi, vp.zoom) : 100;
+  const w =
+    typeof p.width === "number" ? mmToPx(p.width, vp.dpi, vp.zoom) : 100;
 
   return {
     x: x + w / 2, // center horizontally
-    y: y - 40,     // above the element
+    y: y - 40, // above the element
   };
 });
 

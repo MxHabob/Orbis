@@ -34,23 +34,31 @@ let { org, isSaving, onsave } = $props<{
 }>();
 
 // Parse initial config
-const regConfig = org.settings ? (() => {
-  try {
-    return JSON.parse(org.settings).registration_config || {};
-  } catch {
-    return {};
-  }
-})() : {};
+const regConfig = org.settings
+  ? (() => {
+      try {
+        return JSON.parse(org.settings).registration_config || {};
+      } catch {
+        return {};
+      }
+    })()
+  : {};
 
 // Form state initialized once with props
 let institutionType = $state(regConfig.institution_type || "school");
-let studentNumberPattern = $state(regConfig.student_number_pattern || "STU-{YEAR}-{SEQ}");
-let rawStages = $state<string[]>(regConfig.stages || ["primary", "middle", "high"]);
+let studentNumberPattern = $state(
+  regConfig.student_number_pattern || "STU-{YEAR}-{SEQ}",
+);
+let rawStages = $state<string[]>(
+  regConfig.stages || ["primary", "middle", "high"],
+);
 let stageInput = $state("");
-let requiredDocuments = $state<string[]>(regConfig.required_documents || [
-  "Birth Certificate",
-  "National ID or Passport",
-]);
+let requiredDocuments = $state<string[]>(
+  regConfig.required_documents || [
+    "Birth Certificate",
+    "National ID or Passport",
+  ],
+);
 let documentInput = $state("");
 
 // Field configurations
@@ -64,7 +72,7 @@ let requiredFields = $state<Record<string, boolean>>({
   mother_name: false,
   previous_school: false,
   documents: true,
-  ...(regConfig.required_fields || {})
+  ...(regConfig.required_fields || {}),
 });
 
 let activeFields = $state<Record<string, boolean>>({
@@ -77,14 +85,14 @@ let activeFields = $state<Record<string, boolean>>({
   mother_name: true,
   previous_school: true,
   documents: true,
-  ...(regConfig.active_fields || {})
+  ...(regConfig.active_fields || {}),
 });
 
 let preventDuplicates = $state<Record<string, boolean>>({
   national_id: true,
   email: false,
   phone: false,
-  ...(regConfig.prevent_duplicates || {})
+  ...(regConfig.prevent_duplicates || {}),
 });
 
 function addStage() {

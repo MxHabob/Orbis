@@ -1,16 +1,18 @@
 <script lang="ts">
 import { Badge } from "@orbis/ui-svelte/badge";
-import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui-svelte/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "@orbis/ui-svelte/card";
 import * as m from "$lib/paraglide/messages";
 
 interface Props {
   activeSessions: any[];
 }
 
-let {
-  activeSessions,
-  ...restProps
-}: Props & Record<string, any> = $props();
+let { activeSessions, ...restProps }: Props & Record<string, any> = $props();
 </script>
 
 <Card {...restProps}>

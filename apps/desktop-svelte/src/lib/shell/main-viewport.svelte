@@ -57,7 +57,9 @@ const COLLAPSED_WIDTH = 3;
 let _cachedBaseFontSize: number | null = null;
 function pxToRem(px: number): number {
   if (typeof document === "undefined") return px / 16;
-  _cachedBaseFontSize ??= parseFloat(getComputedStyle(document.documentElement).fontSize);
+  _cachedBaseFontSize ??= parseFloat(
+    getComputedStyle(document.documentElement).fontSize,
+  );
   return px / _cachedBaseFontSize;
 }
 

@@ -35,7 +35,9 @@ const classesQuery = createClassesQuery(orgId);
 const enrollments = $derived($enrollmentsQuery.data ?? []);
 const classes = $derived($classesQuery.data ?? []);
 const student = $derived(enrollments.find((s) => s.id === studentId));
-const isLoading = $derived($enrollmentsQuery.isLoading || $classesQuery.isLoading);
+const isLoading = $derived(
+  $enrollmentsQuery.isLoading || $classesQuery.isLoading,
+);
 
 let isSaving = $state(false);
 
@@ -129,7 +131,9 @@ onMount(async () => {
     const [gRes, aRes, bRes] = await Promise.all([
       commands.grades.getReportCard(studentId).catch(() => null),
       commands.attendance.getReport(studentId).catch(() => null),
-      commands.behavior.getRecords(orgId, { enrollment_id: studentId }).catch(() => [])
+      commands.behavior
+        .getRecords(orgId, { enrollment_id: studentId })
+        .catch(() => []),
     ]);
     gradesReport = gRes;
     attendanceReport = aRes;
@@ -144,7 +148,8 @@ onMount(async () => {
 // Derived performance statistics
 const academicStats = $derived.by(() => {
   const list = gradesReport?.grades || [];
-  if (list.length === 0) return { avg: 0, passed: 0, failed: 0, gradeLetter: "—" };
+  if (list.length === 0)
+    return { avg: 0, passed: 0, failed: 0, gradeLetter: "—" };
   let totalPct = 0;
   let passed = 0;
   let failed = 0;
@@ -195,11 +200,11 @@ const decisionHelper = $derived.by(() => {
   const negBeh = behaviorStats.negative;
 
   const hasNoGrades = (gradesReport?.grades || []).length === 0;
-  const hasNoAttendance = !attendanceReport || (
-    (attendanceReport.present_count ?? 0) === 0 &&
-    (attendanceReport.absent_count ?? 0) === 0 &&
-    (attendanceReport.late_count ?? 0) === 0
-  );
+  const hasNoAttendance =
+    !attendanceReport ||
+    ((attendanceReport.present_count ?? 0) === 0 &&
+      (attendanceReport.absent_count ?? 0) === 0 &&
+      (attendanceReport.late_count ?? 0) === 0);
   const hasNoBehavior = behaviorRecords.length === 0;
   const hasNoData = hasNoGrades && hasNoAttendance && hasNoBehavior;
 
@@ -209,7 +214,7 @@ const decisionHelper = $derived.by(() => {
       badge: m.student_evaluation_decision_title(),
       badgeVariant: "outline" as const,
       rec: m.student_evaluation_no_data(),
-      colorClass: "text-muted-foreground bg-muted/25 border-border/60"
+      colorClass: "text-muted-foreground bg-muted/25 border-border/60",
     };
   }
 
@@ -219,7 +224,7 @@ const decisionHelper = $derived.by(() => {
       badge: m.student_evaluation_status_excellent(),
       badgeVariant: "lime" as const,
       rec: m.student_evaluation_rec_excellent(),
-      colorClass: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20"
+      colorClass: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
     };
   } else if (acadAvg <= 45 || attRate <= 70 || negBeh >= 4) {
     return {
@@ -227,7 +232,7 @@ const decisionHelper = $derived.by(() => {
       badge: m.student_evaluation_status_critical(),
       badgeVariant: "destructive" as const,
       rec: m.student_evaluation_rec_critical(),
-      colorClass: "text-destructive bg-destructive/10 border-destructive/20"
+      colorClass: "text-destructive bg-destructive/10 border-destructive/20",
     };
   } else if (acadAvg < 60 || attRate < 85 || negBeh >= 2) {
     return {
@@ -235,7 +240,7 @@ const decisionHelper = $derived.by(() => {
       badge: m.student_evaluation_status_warning(),
       badgeVariant: "secondary" as const,
       rec: m.student_evaluation_rec_warning(),
-      colorClass: "text-amber-500 bg-amber-500/10 border-amber-500/20"
+      colorClass: "text-amber-500 bg-amber-500/10 border-amber-500/20",
     };
   } else {
     return {
@@ -243,7 +248,7 @@ const decisionHelper = $derived.by(() => {
       badge: m.student_evaluation_status_good(),
       badgeVariant: "default" as const,
       rec: m.student_evaluation_rec_good(),
-      colorClass: "text-primary bg-primary/10 border-primary/20"
+      colorClass: "text-primary bg-primary/10 border-primary/20",
     };
   }
 });
@@ -288,7 +293,10 @@ async function saveStudentDetails(e: Event) {
     };
 
     // Update student user details
-    await commands.users.updateUser(String(student.student_id), studentUserData);
+    await commands.users.updateUser(
+      String(student.student_id),
+      studentUserData,
+    );
 
     // If class has changed, invoke transfer command
     if (student.class_id !== classId) {
@@ -298,7 +306,10 @@ async function saveStudentDetails(e: Event) {
     }
 
     // Transition enrollment status if it was draft/pending_review and active switch is checked
-    if ((student.status === "draft" || student.status === "pending_review") && isActiveState) {
+    if (
+      (student.status === "draft" || student.status === "pending_review") &&
+      isActiveState
+    ) {
       await commands.enrollments.transitionStatus(orgId, studentId, "active");
     }
 

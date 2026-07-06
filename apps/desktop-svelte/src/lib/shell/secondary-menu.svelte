@@ -24,7 +24,9 @@ let {
 } = $props();
 
 function isActive(itemPath: string): boolean {
-  const unlocalizedPathname = decodeURIComponent(deLocalizeUrl(page.url).pathname).replace(/\/$/, "");
+  const unlocalizedPathname = decodeURIComponent(
+    deLocalizeUrl(page.url).pathname,
+  ).replace(/\/$/, "");
   const cleanBasePath = basePath.replace(/\/$/, "");
   const fullPath = itemPath ? `${cleanBasePath}/${itemPath}` : cleanBasePath;
   const isEqual = unlocalizedPathname === fullPath;

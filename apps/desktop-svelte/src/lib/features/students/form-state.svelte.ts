@@ -50,21 +50,23 @@ export class StudentFormState {
   }
 
   // Guardians
-  linkedGuardians = $state<Array<{
-    id?: string;
-    user_id?: string;
-    full_name: string;
-    phone: string;
-    email: string;
-    national_id: string;
-    relationship: string;
-    relationship_ar: string;
-    is_primary: boolean;
-    is_emergency_contact: boolean;
-    is_payer: boolean;
-    payment_share_percent: number;
-    occupation: string;
-  }>>([
+  linkedGuardians = $state<
+    Array<{
+      id?: string;
+      user_id?: string;
+      full_name: string;
+      phone: string;
+      email: string;
+      national_id: string;
+      relationship: string;
+      relationship_ar: string;
+      is_primary: boolean;
+      is_emergency_contact: boolean;
+      is_payer: boolean;
+      payment_share_percent: number;
+      occupation: string;
+    }>
+  >([
     {
       full_name: "",
       phone: "",
@@ -110,7 +112,9 @@ export class StudentFormState {
   discountType = $state("template"); // template | custom
   selectedDiscountTemplateId = $state("");
   customDiscountAmount = $state<number | null>(null);
-  selectedOptionalFees = $state<Record<string, { checked: boolean; amount: number }>>({});
+  selectedOptionalFees = $state<
+    Record<string, { checked: boolean; amount: number }>
+  >({});
 
   isDownloadingForm = $state(false);
 
@@ -154,10 +158,16 @@ export class StudentFormState {
             this.orgRequiredDocuments = regConfig.required_documents || [];
 
             if (regConfig.required_fields) {
-              this.requiredFields = { ...this.requiredFields, ...regConfig.required_fields };
+              this.requiredFields = {
+                ...this.requiredFields,
+                ...regConfig.required_fields,
+              };
             }
             if (regConfig.active_fields) {
-              this.activeFields = { ...this.activeFields, ...regConfig.active_fields };
+              this.activeFields = {
+                ...this.activeFields,
+                ...regConfig.active_fields,
+              };
             }
             if (regConfig.prevent_duplicates) {
               this.preventDuplicates = {
@@ -173,10 +183,13 @@ export class StudentFormState {
 
       // 5. Load document templates for printing
       try {
-        const templatesList = await commands.documentTemplates.getTemplates(this.orgId, {
-          entity_type: "student",
-          status: "published",
-        });
+        const templatesList = await commands.documentTemplates.getTemplates(
+          this.orgId,
+          {
+            entity_type: "student",
+            status: "published",
+          },
+        );
         this.availableTemplates = templatesList || [];
         if (this.availableTemplates.length > 0) {
           this.selectedTemplateId = this.availableTemplates[0].id;
@@ -195,11 +208,14 @@ export class StudentFormState {
         }
         this.originalStudent = originalStudent;
         if (originalStudent) {
-          this.nameAr = originalStudent.full_name || originalStudent.name_ar || "";
+          this.nameAr =
+            originalStudent.full_name || originalStudent.name_ar || "";
           this.nameEn = originalStudent.name_en || "";
           this.nationalId = originalStudent.national_id || "";
-          
-          const birth = originalStudent.birth_date ? String(originalStudent.birth_date).slice(0, 10) : "";
+
+          const birth = originalStudent.birth_date
+            ? String(originalStudent.birth_date).slice(0, 10)
+            : "";
           if (birth) {
             const parts = birth.split("-");
             if (parts.length === 3) {
@@ -213,29 +229,37 @@ export class StudentFormState {
           this.classId = String(originalStudent.class_id || "");
           this.studentNumber = originalStudent.student_number || "";
           this.email = originalStudent.email || "";
-          this.phone = originalStudent.phone_number || originalStudent.phone || "";
+          this.phone =
+            originalStudent.phone_number || originalStudent.phone || "";
           this.address = originalStudent.address || "";
           this.registrationStatus = originalStudent.status || "active";
 
           // Discount details
           if (originalStudent.discount_template_id) {
-            this.selectedDiscountTemplateId = String(originalStudent.discount_template_id);
+            this.selectedDiscountTemplateId = String(
+              originalStudent.discount_template_id,
+            );
             this.discountType = "template";
             this.applyDiscount = true;
           } else if (originalStudent.custom_discount_amount) {
-            this.customDiscountAmount = Number(originalStudent.custom_discount_amount) || null;
+            this.customDiscountAmount =
+              Number(originalStudent.custom_discount_amount) || null;
             this.discountType = "custom";
             this.applyDiscount = true;
           }
 
           // Fetch student fees to check which optional fees are assigned
           try {
-            const studentFees = await commands.finance.getStudentFees(this.orgId, this.studentId);
+            const studentFees = await commands.finance.getStudentFees(
+              this.orgId,
+              this.studentId,
+            );
             for (const fee of studentFees as any[]) {
               const feeTemplateId = fee.fee_template_id as string;
               if (feeTemplateId && this.selectedOptionalFees[feeTemplateId]) {
                 this.selectedOptionalFees[feeTemplateId].checked = true;
-                this.selectedOptionalFees[feeTemplateId].amount = Number(fee.amount) || 0;
+                this.selectedOptionalFees[feeTemplateId].amount =
+                  Number(fee.amount) || 0;
               }
             }
           } catch (feeErr) {
@@ -244,11 +268,15 @@ export class StudentFormState {
 
           // Fetch guardians
           try {
-            const guardiansList = await commands.guardians.getByStudent(originalStudent.student_id);
+            const guardiansList = await commands.guardians.getByStudent(
+              originalStudent.student_id,
+            );
             const populatedGuardians = [];
             for (const link of guardiansList) {
               try {
-                const u = await commands.users.getUser(String(link.guardian_id));
+                const u = await commands.users.getUser(
+                  String(link.guardian_id),
+                );
                 if (u) {
                   populatedGuardians.push({
                     id: String(link.id),
@@ -262,7 +290,8 @@ export class StudentFormState {
                     is_primary: link.is_primary === 1,
                     is_emergency_contact: link.is_emergency_contact === 1,
                     is_payer: link.is_payer === 1,
-                    payment_share_percent: Number(link.payment_share_percent) || 0,
+                    payment_share_percent:
+                      Number(link.payment_share_percent) || 0,
                     occupation: String(link.occupation || ""),
                   });
                 }
@@ -284,14 +313,19 @@ export class StudentFormState {
               ownerId: originalStudent.student_id,
             });
             const submitted = [];
-            const requiredDocNames = this.orgRequiredDocuments.length > 0
-              ? this.orgRequiredDocuments
-              : ["birth_certificate", "national_id", "previous_record"];
+            const requiredDocNames =
+              this.orgRequiredDocuments.length > 0
+                ? this.orgRequiredDocuments
+                : ["birth_certificate", "national_id", "previous_record"];
             for (const rDoc of requiredDocNames) {
               const hasDoc = studentDocs.some((d: any) => {
                 const title = String(d.title || d.name || "").toLowerCase();
                 const rName = rDoc.toLowerCase();
-                return title === rName || title.includes(rName) || rName.includes(title);
+                return (
+                  title === rName ||
+                  title.includes(rName) ||
+                  rName.includes(title)
+                );
               });
               if (hasDoc) {
                 submitted.push(rDoc);
@@ -310,7 +344,10 @@ export class StudentFormState {
   }
 
   // Live duplicate check triggers
-  async triggerDuplicateCheck(field: "national_id" | "email" | "phone", value: string) {
+  async triggerDuplicateCheck(
+    field: "national_id" | "email" | "phone",
+    value: string,
+  ) {
     if (!value.trim() || !this.preventDuplicates[field]) return;
     try {
       const params = {
@@ -318,7 +355,10 @@ export class StudentFormState {
         email: field === "email" ? value : undefined,
         phone: field === "phone" ? value : undefined,
       };
-      const duplicates = await commands.enrollments.checkDuplicate(this.orgId, params);
+      const duplicates = await commands.enrollments.checkDuplicate(
+        this.orgId,
+        params,
+      );
       if (duplicates && duplicates.length > 0) {
         const match = duplicates[0];
         this.duplicateWarnings = {
@@ -344,7 +384,10 @@ export class StudentFormState {
     }
     this.activeSearchIndex = index;
     try {
-      this.parentSearchResults = await commands.guardians.search(this.orgId, query);
+      this.parentSearchResults = await commands.guardians.search(
+        this.orgId,
+        query,
+      );
     } catch (err) {
       console.error("Guardian search error:", err);
     }
@@ -435,7 +478,9 @@ export class StudentFormState {
   get discountTotal() {
     if (!this.applyDiscount) return 0;
     if (this.discountType === "template" && this.selectedDiscountTemplateId) {
-      const tpl = this.discountTemplates.find((t) => t.id === this.selectedDiscountTemplateId);
+      const tpl = this.discountTemplates.find(
+        (t) => t.id === this.selectedDiscountTemplateId,
+      );
       if (tpl) {
         const val = (tpl.value as number) || 0;
         if (String(tpl.calculation_method).toLowerCase() === "percentage") {
@@ -451,7 +496,9 @@ export class StudentFormState {
   }
 
   get optionalFeesList() {
-    return this.feeTemplates.filter((t) => t.is_mandatory === 0 && t.is_active === 1);
+    return this.feeTemplates.filter(
+      (t) => t.is_mandatory === 0 && t.is_active === 1,
+    );
   }
 
   get optionalTotal() {
@@ -465,7 +512,10 @@ export class StudentFormState {
   }
 
   get netTotal() {
-    return Math.max(0, this.mandatoryTotal + this.optionalTotal - this.discountTotal);
+    return Math.max(
+      0,
+      this.mandatoryTotal + this.optionalTotal - this.discountTotal,
+    );
   }
 
   // Save operation
@@ -538,24 +588,28 @@ export class StudentFormState {
           await commands.enrollments.transitionStatus(
             this.orgId,
             this.studentId!,
-            this.registrationStatus
+            this.registrationStatus,
           );
         }
 
         toast.success(m.form_success_update());
       } else {
         const tempEmail = this.email.trim() || `stu.${Date.now()}@orbis.local`;
-        const studentUser = await commands.users.createUser(this.orgId, createdBy, {
-          email: tempEmail,
-          password: "Orbis123456",
-          full_name: this.nameAr.trim(),
-          name_ar: this.nameAr.trim(),
-          primary_role: "student",
-          sex: this.sex,
-          phone: this.phone.trim() || null,
-          national_id: this.nationalId.trim() || null,
-          date_of_birth: this.birthDate || null,
-        });
+        const studentUser = await commands.users.createUser(
+          this.orgId,
+          createdBy,
+          {
+            email: tempEmail,
+            password: "Orbis123456",
+            full_name: this.nameAr.trim(),
+            name_ar: this.nameAr.trim(),
+            primary_role: "student",
+            sex: this.sex,
+            phone: this.phone.trim() || null,
+            national_id: this.nationalId.trim() || null,
+            date_of_birth: this.birthDate || null,
+          },
+        );
         targetStudentId = studentUser.id;
 
         await commands.users.updateUser(studentUser.id, {
@@ -578,7 +632,10 @@ export class StudentFormState {
           status: this.registrationStatus,
         };
 
-        const res = await commands.enrollments.create(this.orgId, enrollmentRequest);
+        const res = await commands.enrollments.create(
+          this.orgId,
+          enrollmentRequest,
+        );
         targetEnrollmentId = String(res.id);
 
         const mergedEnrollment = {
@@ -595,7 +652,9 @@ export class StudentFormState {
         };
 
         if (queryClient) {
-          queryClient.invalidateQueries({ queryKey: ["enrollments", this.orgId] });
+          queryClient.invalidateQueries({
+            queryKey: ["enrollments", this.orgId],
+          });
         }
         toast.success(m.form_success_create());
       }
@@ -607,23 +666,31 @@ export class StudentFormState {
 
         if (!guardianUserId) {
           // Search if already exists
-          const checkExisting = await commands.guardians.search(this.orgId, guardian.phone);
+          const checkExisting = await commands.guardians.search(
+            this.orgId,
+            guardian.phone,
+          );
           if (checkExisting && checkExisting.length > 0) {
             guardianUserId = checkExisting[0].id;
           } else {
             // Create new parent user
-            const guardEmail = guardian.email.trim() || `parent.${Date.now()}@orbis.local`;
-            const guardUser = await commands.users.createUser(this.orgId, createdBy, {
-              email: guardEmail,
-              password: "Orbis123456",
-              full_name: guardian.full_name.trim(),
-              name_ar: guardian.full_name.trim(),
-              primary_role: "parent",
-              phone: guardian.phone.trim() || null,
-              sex: "male",
-              national_id: guardian.national_id.trim() || null,
-              date_of_birth: null,
-            });
+            const guardEmail =
+              guardian.email.trim() || `parent.${Date.now()}@orbis.local`;
+            const guardUser = await commands.users.createUser(
+              this.orgId,
+              createdBy,
+              {
+                email: guardEmail,
+                password: "Orbis123456",
+                full_name: guardian.full_name.trim(),
+                name_ar: guardian.full_name.trim(),
+                primary_role: "parent",
+                phone: guardian.phone.trim() || null,
+                sex: "male",
+                national_id: guardian.national_id.trim() || null,
+                date_of_birth: null,
+              },
+            );
             guardianUserId = guardUser.id;
           }
         } else {
@@ -637,8 +704,11 @@ export class StudentFormState {
         }
 
         // Check if link exists
-        const existingLinks = await commands.guardians.getByStudent(targetStudentId);
-        const matchedLink = existingLinks.find((l) => l.guardian_id === guardianUserId);
+        const existingLinks =
+          await commands.guardians.getByStudent(targetStudentId);
+        const matchedLink = existingLinks.find(
+          (l) => l.guardian_id === guardianUserId,
+        );
 
         const linkRequest = {
           student_id: targetStudentId,
@@ -659,14 +729,20 @@ export class StudentFormState {
         };
 
         if (matchedLink) {
-          await commands.guardians.updateLink(String(matchedLink.id), linkRequest);
+          await commands.guardians.updateLink(
+            String(matchedLink.id),
+            linkRequest,
+          );
         } else {
           await commands.guardians.createLink(linkRequest);
         }
       }
 
       // Assign optional/custom fees (only if status is active/approved)
-      if (this.registrationStatus === "active" || this.registrationStatus === "approved") {
+      if (
+        this.registrationStatus === "active" ||
+        this.registrationStatus === "approved"
+      ) {
         const today = new Date().toISOString().slice(0, 10);
         for (const key in this.selectedOptionalFees) {
           if (this.selectedOptionalFees[key].checked) {
@@ -711,10 +787,12 @@ export class StudentFormState {
     try {
       const templateRecord = await commands.documentTemplates.getTemplate(
         this.orgId,
-        this.selectedTemplateId
+        this.selectedTemplateId,
       );
       if (!templateRecord) {
-        toast.error(`القالب '${this.selectedTemplateId}' غير موجود في قاعدة البيانات`);
+        toast.error(
+          `القالب '${this.selectedTemplateId}' غير موجود في قاعدة البيانات`,
+        );
         return;
       }
       const documentModel = JSON.parse(templateRecord.document_json as string);
@@ -742,7 +820,7 @@ export class StudentFormState {
 
       const pdfBytes = await commands.docforge.previewDocumentTemplate(
         JSON.stringify(documentModel),
-        JSON.stringify(printVariables)
+        JSON.stringify(printVariables),
       );
 
       if (pdfBytes && pdfBytes.length > 0) {

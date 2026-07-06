@@ -7,23 +7,46 @@ import * as m from "$lib/paraglide/messages";
 import { commands } from "$lib/core/ipc";
 import { extractErrorMessage } from "$lib/core/ipc";
 import { toast } from "svelte-sonner";
-import { createPromotionJobsQuery, createRollbackMutation } from "$lib/features/academics/year-queries";
 import {
-  Card, CardContent, CardHeader, CardTitle,
+  createPromotionJobsQuery,
+  createRollbackMutation,
+} from "$lib/features/academics/year-queries";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
 } from "@orbis/ui-svelte/card";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Button } from "@orbis/ui-svelte/button";
 import { Separator } from "@orbis/ui-svelte/separator";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import {
-  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
-  AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
 } from "@orbis/ui-svelte/alert-dialog";
 import {
-  Table, TableBody, TableHead, TableHeader, TableRow, TableCell,
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+  TableCell,
 } from "@orbis/ui-svelte/table";
 import {
-  History, Undo2, CheckCircle2, XCircle, Clock, Loader2, AlertTriangle,
+  History,
+  Undo2,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Loader2,
+  AlertTriangle,
 } from "lucide-svelte";
 import type { PromotionJob } from "@orbis/desktop-client/types";
 
@@ -50,21 +73,31 @@ async function handleRollback() {
 
 function statusIcon(status: string) {
   switch (status) {
-    case "completed": return CheckCircle2;
-    case "failed": return XCircle;
-    case "executing": return Loader2;
-    case "rolled_back": return Undo2;
-    default: return Clock;
+    case "completed":
+      return CheckCircle2;
+    case "failed":
+      return XCircle;
+    case "executing":
+      return Loader2;
+    case "rolled_back":
+      return Undo2;
+    default:
+      return Clock;
   }
 }
 
 function statusVariant(status: string) {
   switch (status) {
-    case "completed": return "success" as const;
-    case "failed": return "destructive" as const;
-    case "rolled_back": return "secondary" as const;
-    case "executing": return "brand" as const;
-    default: return "outline" as const;
+    case "completed":
+      return "success" as const;
+    case "failed":
+      return "destructive" as const;
+    case "rolled_back":
+      return "secondary" as const;
+    case "executing":
+      return "brand" as const;
+    default:
+      return "outline" as const;
   }
 }
 

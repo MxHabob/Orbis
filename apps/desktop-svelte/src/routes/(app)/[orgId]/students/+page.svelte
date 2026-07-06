@@ -7,7 +7,15 @@ and right detailed student inspector.
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
-import { Plus, Search, FilterX, Download, Printer, Upload, ShieldAlert } from "lucide-svelte";
+import {
+  Plus,
+  Search,
+  FilterX,
+  Download,
+  Printer,
+  Upload,
+  ShieldAlert,
+} from "lucide-svelte";
 import { studentsStore, createEnrollmentsQuery } from "$lib/features/students";
 import { createClassesQuery } from "$lib/features/academics";
 import { academicContext, authStore } from "$lib/stores";
@@ -37,15 +45,17 @@ const filteredStudents = $derived(studentsStore.filterList(enrollments));
 
 // Capability-based enrollment
 const canCreateStudent = $derived(
-  !academicContext.isReadOnly && academicContext.canEnroll
+  !academicContext.isReadOnly && academicContext.canEnroll,
 );
 const canRequestLateEnrollment = $derived(
   !academicContext.isReadOnly &&
-  !academicContext.canEnroll &&
-  ["admin", "registrar", "super_admin"].includes(authStore.user?.role ?? "")
+    !academicContext.canEnroll &&
+    ["admin", "registrar", "super_admin"].includes(authStore.user?.role ?? ""),
 );
 let showOverrideDialog = $state(false);
-const isLoading = $derived($enrollmentsQuery.isLoading || $classesQuery.isLoading);
+const isLoading = $derived(
+  $enrollmentsQuery.isLoading || $classesQuery.isLoading,
+);
 const error = $derived($enrollmentsQuery.error || $classesQuery.error);
 
 // Helper to count students matching a criteria

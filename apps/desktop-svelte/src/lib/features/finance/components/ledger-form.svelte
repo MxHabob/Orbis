@@ -4,8 +4,18 @@ import { commands } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Label } from "@orbis/ui-svelte/label";
-import { Select, SelectTrigger, SelectContent, SelectItem } from "@orbis/ui-svelte/select";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui-svelte/tabs";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui-svelte/select";
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "@orbis/ui-svelte/tabs";
 import { ComboboxDropdown } from "@orbis/ui-svelte/combobox-dropdown";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
@@ -92,13 +102,17 @@ const parentItems = $derived.by(() => {
 });
 
 const selectedParentItem = $derived(
-  parentItems.find((item) => item.value === glParentId)
+  parentItems.find((item) => item.value === glParentId),
 );
 
-function handleParentSelect(item: { id: string; label: string; value: string }) {
+function handleParentSelect(item: {
+  id: string;
+  label: string;
+  value: string;
+}) {
   glParentId = item.value;
   // Inherit account type from selected parent
-  const parentAcc = ledgers.find(l => l.id === item.value);
+  const parentAcc = ledgers.find((l) => l.id === item.value);
   if (parentAcc) {
     glAccountType = parentAcc.item_type;
   }
@@ -142,13 +156,12 @@ async function handleSubmit(e: SubmitEvent) {
 
       await commands.finance.createLedgerAccount(orgId, request);
       toast.success(m.ledger_toast_success());
-      
+
       // Reset
       glParentId = "";
       glNameAr = "";
       glNameEn = "";
       glOpeningBalance = "0";
-      
     } else if (activeTab === "treasury") {
       if (!trNameAr && !trNameEn) {
         toast.error("يرجى إدخال اسم الخزينة / البنك");
@@ -162,19 +175,19 @@ async function handleSubmit(e: SubmitEvent) {
         item_type: trType,
         currency: baseCurrency, // Default treasury to base currency
         bank_name: trType === "bank" ? trBankName.trim() || null : null,
-        account_number: trType === "bank" ? trAccountNumber.trim() || null : null,
+        account_number:
+          trType === "bank" ? trAccountNumber.trim() || null : null,
         ledger_account_id: undefined,
       };
 
       await commands.finance.createTreasury(orgId, request);
       toast.success("تم إنشاء الصندوق/البنك بنجاح");
-      
+
       // Reset
       trNameAr = "";
       trNameEn = "";
       trBankName = "";
       trAccountNumber = "";
-      
     } else if (activeTab === "entity") {
       if (!enNameAr && !enNameEn) {
         toast.error("يرجى إدخال اسم الكيان المالي");

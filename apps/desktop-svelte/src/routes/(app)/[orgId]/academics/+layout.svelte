@@ -63,7 +63,9 @@ const navItems = $derived([
   },
   {
     path: "exams",
-    label: m.exams_layout_panel_title ? m.exams_layout_panel_title() : "الامتحانات",
+    label: m.exams_layout_panel_title
+      ? m.exams_layout_panel_title()
+      : "الامتحانات",
     icon: ClipboardList,
   },
   {

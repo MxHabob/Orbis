@@ -4,7 +4,11 @@ Displays a popover of recent chats with search capability.
 -->
 <script lang="ts">
 import { Button } from "@orbis/ui-svelte/button";
-import { Popover, PopoverTrigger, PopoverContent } from "@orbis/ui-svelte/popover";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@orbis/ui-svelte/popover";
 import { History } from "lucide-svelte";
 import SearchField from "$lib/shared/components/search-field.svelte";
 
@@ -34,8 +38,8 @@ const staticItems: HistoryItem[] = [
     timeAgo: "7 minutes ago",
     messages: [
       { id: "m1", role: "user", content: "Hi" },
-      { id: "m2", role: "assistant", content: "" }
-    ]
+      { id: "m2", role: "assistant", content: "" },
+    ],
   },
   {
     id: "hist-2",
@@ -43,26 +47,39 @@ const staticItems: HistoryItem[] = [
     timeAgo: "4 days ago",
     messages: [
       { id: "m3", role: "user", content: "غير الوضع الى الليلي" },
-      { id: "m4", role: "assistant", content: "تم تغيير المظهر إلى الوضع الليلي بنجاح!" }
-    ]
+      {
+        id: "m4",
+        role: "assistant",
+        content: "تم تغيير المظهر إلى الوضع الليلي بنجاح!",
+      },
+    ],
   },
   {
     id: "hist-3",
     title: "You are generating a Sentry dashboard. Follo...",
     timeAgo: "5 days ago",
     messages: [
-      { id: "m5", role: "user", content: "أنت تقوم بإنشاء لوحة تحكم Sentry. اتبع هذه التعليمات." },
-      { id: "m6", role: "assistant", content: "أنا مستعد لمساعدتك في بناء لوحة تحكم Sentry بناءً على المقاييس الخاصة بك." }
-    ]
-  }
+      {
+        id: "m5",
+        role: "user",
+        content: "أنت تقوم بإنشاء لوحة تحكم Sentry. اتبع هذه التعليمات.",
+      },
+      {
+        id: "m6",
+        role: "assistant",
+        content:
+          "أنا مستعد لمساعدتك في بناء لوحة تحكم Sentry بناءً على المقاييس الخاصة بك.",
+      },
+    ],
+  },
 ];
 
 let searchQuery = $state("");
 
 const filteredItems = $derived(
   staticItems.filter((item) =>
-    item.title.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+    item.title.toLowerCase().includes(searchQuery.toLowerCase()),
+  ),
 );
 </script>
 

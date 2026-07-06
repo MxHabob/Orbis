@@ -19,7 +19,13 @@ import {
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@orbis/ui-svelte/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@orbis/ui-svelte/dialog";
 import { toast } from "svelte-sonner";
 import {
   Printer,

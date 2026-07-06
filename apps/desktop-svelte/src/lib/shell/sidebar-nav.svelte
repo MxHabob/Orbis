@@ -39,7 +39,9 @@ let {
 
 function isActive(pathSegment: string): boolean {
   if (!basePath) return false;
-  const unlocalizedPathname = decodeURIComponent(deLocalizeUrl(page.url).pathname);
+  const unlocalizedPathname = decodeURIComponent(
+    deLocalizeUrl(page.url).pathname,
+  );
   if (pathSegment === "") {
     return unlocalizedPathname === basePath;
   }

@@ -11,11 +11,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuPortal,
 } from "@orbis/ui-svelte/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@orbis/ui-svelte";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@orbis/ui-svelte";
 import {
   MoreHorizontal,
   HelpCircle,
@@ -38,8 +34,10 @@ function openUrl(url: string) {
   window.open(url, "_blank");
 }
 
-const menuItemClass = "flex items-center gap-2.5 px-2.5 py-2 text-xs cursor-pointer hover:bg-accent rounded-sm";
-const subTriggerClass = "flex items-center justify-between text-xs cursor-pointer px-2.5 py-2 hover:bg-accent rounded-sm";
+const menuItemClass =
+  "flex items-center gap-2.5 px-2.5 py-2 text-xs cursor-pointer hover:bg-accent rounded-sm";
+const subTriggerClass =
+  "flex items-center justify-between text-xs cursor-pointer px-2.5 py-2 hover:bg-accent rounded-sm";
 const iconClass = "text-muted-foreground shrink-0";
 </script>
 

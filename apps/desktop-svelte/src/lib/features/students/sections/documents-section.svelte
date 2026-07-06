@@ -9,7 +9,10 @@ let { state }: { state: StudentFormState } = $props();
 
 const docTypes = $derived.by(() => {
   if (state.orgRequiredDocuments.length > 0) {
-    return state.orgRequiredDocuments.map((name) => ({ id: name, label: name }));
+    return state.orgRequiredDocuments.map((name) => ({
+      id: name,
+      label: name,
+    }));
   }
   // Fallback
   return [

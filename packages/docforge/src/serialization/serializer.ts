@@ -82,7 +82,10 @@ function migrateDocument(raw: Record<string, unknown>): TemplateDocument {
   }
 
   // Unknown future version — pass through with version bump
-  return { ...(raw as unknown as TemplateDocument), version: DOCUMENT_SCHEMA_VERSION };
+  return {
+    ...(raw as unknown as TemplateDocument),
+    version: DOCUMENT_SCHEMA_VERSION,
+  };
 }
 
 // ── Document Diff ────────────────────────────────────────────

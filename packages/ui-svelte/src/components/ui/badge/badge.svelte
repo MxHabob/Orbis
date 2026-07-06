@@ -9,8 +9,10 @@ export const badgeVariants = tv({
       secondary: "badge-brand-default",
       destructive:
         "badge-brand-destructive focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40",
-      outline: "border-border text-foreground bg-background rounded-md px-2 py-0.5 text-[10px] font-semibold border",
-      ghost: "bg-transparent text-muted-foreground border-transparent rounded-md px-2 py-0.5 text-[10px] font-semibold",
+      outline:
+        "border-border text-foreground bg-background rounded-md px-2 py-0.5 text-[10px] font-semibold border",
+      ghost:
+        "bg-transparent text-muted-foreground border-transparent rounded-md px-2 py-0.5 text-[10px] font-semibold",
       lime: "badge-brand-lime",
       brand: "badge-brand-brand",
       link: "text-primary underline underline-offset-4 text-[10px] font-semibold",

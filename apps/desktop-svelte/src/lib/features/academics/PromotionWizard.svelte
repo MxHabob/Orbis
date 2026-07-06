@@ -11,7 +11,11 @@ import { toast } from "svelte-sonner";
 import { academicContext } from "$lib/stores";
 import { onMount } from "svelte";
 import {
-  Card, CardContent, CardDescription, CardHeader, CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from "@orbis/ui-svelte/card";
 import { Button } from "@orbis/ui-svelte/button";
 import { Input } from "@orbis/ui-svelte/input";
@@ -21,24 +25,56 @@ import { Checkbox } from "@orbis/ui-svelte/checkbox";
 import { Badge } from "@orbis/ui-svelte/badge";
 import { Separator } from "@orbis/ui-svelte/separator";
 import {
-  Table, TableBody, TableHead, TableHeader, TableRow, TableCell,
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+  TableCell,
 } from "@orbis/ui-svelte/table";
 import {
-  Select, SelectTrigger, SelectContent, SelectItem,
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
 } from "@orbis/ui-svelte/select";
 import {
-  Tabs, TabsList, TabsTrigger, TabsContent,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
 } from "@orbis/ui-svelte/tabs";
 import {
-  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
-  AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
 } from "@orbis/ui-svelte/alert-dialog";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import {
-  ArrowLeft, ArrowRight, Play, Check, Loader2, Plus, Trash2,
-  Users, UserCheck, UserX, GraduationCap, Ban,
+  ArrowLeft,
+  ArrowRight,
+  Play,
+  Check,
+  Loader2,
+  Plus,
+  Trash2,
+  Users,
+  UserCheck,
+  UserX,
+  GraduationCap,
+  Ban,
 } from "lucide-svelte";
-import type { PromotionConfig, PromotionJob, PromotionDetail, ClassMapping } from "@orbis/desktop-client/types";
+import type {
+  PromotionConfig,
+  PromotionJob,
+  PromotionDetail,
+  ClassMapping,
+} from "@orbis/desktop-client/types";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -79,9 +115,11 @@ onMount(async () => {
     // Apply policy values as defaults (user can still override)
     config.passing_score = policy.passing_score ?? 50;
     config.min_attendance_rate = policy.min_attendance_rate ?? 75;
-    config.auto_graduate_final_level = (policy.auto_graduate_final_level ?? 1) === 1;
+    config.auto_graduate_final_level =
+      (policy.auto_graduate_final_level ?? 1) === 1;
     config.exclude_withdrawn = (policy.exclude_withdrawn ?? 1) === 1;
-    config.carry_over_outstanding_fees = policy.fee_carry_over_mode !== "ignore";
+    config.carry_over_outstanding_fees =
+      policy.fee_carry_over_mode !== "ignore";
     config.carry_over_guardians = (policy.carry_over_guardians ?? 1) === 1;
     if (policy.final_level) config.final_level = policy.final_level;
     policyLoaded = true;
@@ -96,7 +134,13 @@ onMount(async () => {
 let isAnalyzing = $state(false);
 let previewJob = $state<PromotionJob | null>(null);
 let previewDetails = $state<PromotionDetail[]>([]);
-let previewStats = $state({ total: 0, promoted: 0, retained: 0, graduated: 0, excluded: 0 });
+let previewStats = $state({
+  total: 0,
+  promoted: 0,
+  retained: 0,
+  graduated: 0,
+  excluded: 0,
+});
 
 // ── Execute State ───────────────────────────────────────────────
 
@@ -108,9 +152,9 @@ let executionResult = $state<PromotionJob | null>(null);
 
 const isConfigValid = $derived(
   config.source_year_id &&
-  config.target_year_name &&
-  config.target_start_date &&
-  config.target_end_date
+    config.target_year_name &&
+    config.target_start_date &&
+    config.target_end_date,
 );
 
 const isMappingValid = $derived(config.class_mapping.length > 0);
@@ -168,21 +212,31 @@ async function executePromotion() {
 
 function decisionVariant(d: string) {
   switch (d) {
-    case "promoted": return "success" as const;
-    case "retained": return "destructive" as const;
-    case "graduated": return "brand" as const;
-    case "excluded": return "secondary" as const;
-    default: return "outline" as const;
+    case "promoted":
+      return "success" as const;
+    case "retained":
+      return "destructive" as const;
+    case "graduated":
+      return "brand" as const;
+    case "excluded":
+      return "secondary" as const;
+    default:
+      return "outline" as const;
   }
 }
 
 function decisionLabel(d: string) {
   switch (d) {
-    case "promoted": return m.promo_promoted();
-    case "retained": return m.promo_retained();
-    case "graduated": return m.promo_graduated();
-    case "excluded": return m.promo_excluded();
-    default: return d;
+    case "promoted":
+      return m.promo_promoted();
+    case "retained":
+      return m.promo_retained();
+    case "graduated":
+      return m.promo_graduated();
+    case "excluded":
+      return m.promo_excluded();
+    default:
+      return d;
   }
 }
 </script>

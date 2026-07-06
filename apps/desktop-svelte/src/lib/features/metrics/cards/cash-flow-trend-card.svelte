@@ -38,7 +38,8 @@ async function loadData() {
     const feesList = await commands.finance.getStudentFees(orgId);
 
     if (paymentsList && paymentsList.length > 0) {
-      const monthsMap: Record<string, { invoiced: number; collected: number }> = {};
+      const monthsMap: Record<string, { invoiced: number; collected: number }> =
+        {};
 
       for (const p of paymentsList) {
         const dateStr = (p.payment_date || p.created_at || "") as string;
@@ -58,7 +59,9 @@ async function loadData() {
           if (!monthsMap[monthKey]) {
             monthsMap[monthKey] = { invoiced: 0, collected: 0 };
           }
-          monthsMap[monthKey].invoiced += Number(f.net_amount || f.original_amount || 0);
+          monthsMap[monthKey].invoiced += Number(
+            f.net_amount || f.original_amount || 0,
+          );
         }
       }
 
@@ -114,18 +117,21 @@ const innerHeight = chartHeight - padding.top - padding.bottom;
 
 // Determine display dataset (uses empty months placeholders when empty)
 const displayData = $derived(
-  data.length > 0 ? data : [
-    { label: "Oct", invoiced: 0, collected: 0 },
-    { label: "Nov", invoiced: 0, collected: 0 },
-    { label: "Dec", invoiced: 0, collected: 0 },
-    { label: "Jan", invoiced: 0, collected: 0 },
-    { label: "Feb", invoiced: 0, collected: 0 },
-    { label: "Mar", invoiced: 0, collected: 0 },
-  ]
+  data.length > 0
+    ? data
+    : [
+        { label: "Oct", invoiced: 0, collected: 0 },
+        { label: "Nov", invoiced: 0, collected: 0 },
+        { label: "Dec", invoiced: 0, collected: 0 },
+        { label: "Jan", invoiced: 0, collected: 0 },
+        { label: "Feb", invoiced: 0, collected: 0 },
+        { label: "Mar", invoiced: 0, collected: 0 },
+      ],
 );
 
 const maxVal = $derived(
-  Math.max(1000, ...displayData.map((d) => Math.max(d.invoiced, d.collected))) * 1.15
+  Math.max(1000, ...displayData.map((d) => Math.max(d.invoiced, d.collected))) *
+    1.15,
 );
 
 const groupWidth = $derived(innerWidth / (displayData.length || 1));
@@ -133,7 +139,8 @@ const barWidth = $derived(Math.max(6, (groupWidth - 20) / 2));
 
 const bars = $derived.by(() => {
   return displayData.map((item, idx) => {
-    const xInv = padding.left + idx * groupWidth + (groupWidth - 2 * barWidth - 4) / 2;
+    const xInv =
+      padding.left + idx * groupWidth + (groupWidth - 2 * barWidth - 4) / 2;
     const xCol = xInv + barWidth + 4;
 
     const pctInv = item.invoiced / maxVal;
@@ -151,15 +158,15 @@ const bars = $derived.by(() => {
         y: yInv,
         width: barWidth,
         height: hInv,
-        val: item.invoiced
+        val: item.invoiced,
       },
       col: {
         x: xCol,
         y: yCol,
         width: barWidth,
         height: hCol,
-        val: item.collected
-      }
+        val: item.collected,
+      },
     };
   });
 });
@@ -184,7 +191,9 @@ function handleMouseMove(e: MouseEvent & { currentTarget: SVGSVGElement }) {
   hoveredIdx = idx;
 
   const activeBar = bars[idx];
-  tooltipX = ((activeBar.inv.x + activeBar.col.x + barWidth) / 2 / chartWidth) * rect.width;
+  tooltipX =
+    ((activeBar.inv.x + activeBar.col.x + barWidth) / 2 / chartWidth) *
+    rect.width;
   const highestY = Math.min(activeBar.inv.y, activeBar.col.y);
   tooltipY = (highestY / chartHeight) * rect.height - 10;
 }

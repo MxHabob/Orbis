@@ -12,7 +12,13 @@ import { Plus, Landmark, Layers } from "lucide-svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency } from "$lib/core/i18n";
 import { fade } from "svelte/transition";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@orbis/ui-svelte/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@orbis/ui-svelte/dialog";
 import * as m from "$lib/paraglide/messages";
 
 import { DataTable } from "$lib/tables";
