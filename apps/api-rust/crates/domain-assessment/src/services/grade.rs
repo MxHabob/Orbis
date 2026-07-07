@@ -4,7 +4,7 @@ use std::sync::Arc;
 use uuid::Uuid;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
-use sea_orm::{EntityTrait, QueryFilter, ColumnTrait, ActiveValue::Set, ActiveModelTrait};
+use sea_orm::{EntityTrait, ColumnTrait, ActiveValue::Set, ActiveModelTrait};
 
 use shared_kernel::errors::AppError;
 use crate::entities::{grade, grade_history};
@@ -214,32 +214,20 @@ impl GradeService {
             .ok_or_else(|| AppError::not_found("academic_cycle", cycle_id))?;
 
         if cycle.is_locked == 1 {
-            return Err(AppError::Forbidden {
-                action: "grade_entry".into(),
-                reason: "Academic cycle is locked".into(),
-            });
+            return Err(AppError::unauthorized("Academic cycle is locked"));
         }
 
         if cycle.is_grade_entry_open == 0 {
-            return Err(AppError::Forbidden {
-                action: "grade_entry".into(),
-                reason: "Grade entry window is closed".into(),
-            });
+            return Err(AppError::unauthorized("Grade entry window is closed"));
         }
 
         if let (Some(ref start), Some(ref end)) = (&cycle.grade_entry_start, &cycle.grade_entry_end) {
             let now = Utc::now().to_rfc3339();
             if now < *start {
-                return Err(AppError::Forbidden {
-                    action: "grade_entry".into(),
-                    reason: format!("Grade entry has not started yet. Starts: {}", start),
-                });
+                return Err(AppError::unauthorized(format!("Grade entry has not started yet. Starts: {}", start)));
             }
             if now > *end {
-                return Err(AppError::Forbidden {
-                    action: "grade_entry".into(),
-                    reason: format!("Grade entry ended on: {}", end),
-                });
+                return Err(AppError::unauthorized(format!("Grade entry ended on: {}", end)));
             }
         }
 

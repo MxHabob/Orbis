@@ -176,10 +176,7 @@ impl AssessmentService {
             .ok_or_else(|| AppError::not_found("academic_cycle", &assess.cycle_id))?;
 
         if cycle.is_locked == 1 {
-            return Err(AppError::Forbidden {
-                action: "update_assessment".into(),
-                reason: "Cycle is locked".into(),
-            });
+            return Err(AppError::unauthorized("Cycle is locked"));
         }
 
         let mut active: assessment::ActiveModel = assess.into();
@@ -208,10 +205,7 @@ impl AssessmentService {
             .ok_or_else(|| AppError::not_found("academic_cycle", &assess.cycle_id))?;
 
         if cycle.is_locked == 1 {
-            return Err(AppError::Forbidden {
-                action: "delete_assessment".into(),
-                reason: "Cycle is locked".into(),
-            });
+            return Err(AppError::unauthorized("Cycle is locked"));
         }
 
         assessment::Entity::delete_by_id(assess.id)
