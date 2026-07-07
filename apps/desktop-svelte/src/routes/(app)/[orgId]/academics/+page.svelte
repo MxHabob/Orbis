@@ -142,13 +142,6 @@ const directoryItems = $derived([
     badge: m.academics_overview_card_schedule_badge(),
   },
   {
-    path: `/${data.orgId}/academics/years`,
-    title: m.academics_overview_card_years_title(),
-    desc: m.academics_overview_card_years_desc(),
-    icon: CalendarDays,
-    badge: m.academics_overview_card_years_badge(),
-  },
-  {
     path: `/${data.orgId}/academics/calendar`,
     title: m.academics_overview_card_calendar_title(),
     desc: m.academics_overview_card_calendar_desc(),

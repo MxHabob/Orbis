@@ -18,7 +18,7 @@ import {
 } from "lucide-svelte";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
-import ArchivedBanner from "$lib/features/academics/ArchivedBanner.svelte";
+import ArchivedBanner from "$lib/features/academics/archived-banner.svelte";
 import type { Snippet } from "svelte";
 import * as m from "$lib/paraglide/messages";
 

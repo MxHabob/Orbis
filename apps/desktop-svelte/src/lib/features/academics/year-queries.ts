@@ -20,16 +20,6 @@ import type {
 
 // ── Academic Years ──────────────────────────────────────────────────
 
-/** All academic years for an organization. */
-export function createAcademicYearsQuery(orgId: string) {
-  return createQuery({
-    queryKey: ["academicYears", orgId],
-    queryFn: () => commands.academicYears.list(orgId),
-    enabled: !!orgId,
-    staleTime: 10 * 60 * 1000, // Years rarely change — 10 min
-  });
-}
-
 /** The currently active academic year. */
 export function createCurrentYearQuery() {
   return createQuery({
@@ -48,18 +38,6 @@ export function createIsArchivedQuery() {
   });
 }
 
-/** Create a new academic year. */
-export function createAcademicYearMutation(orgId: string) {
-  const queryClient = useQueryClient();
-  return createMutation({
-    mutationFn: (request: CreateAcademicYearRequest) =>
-      commands.academicYears.create(orgId, request),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["academicYears"] });
-    },
-  });
-}
-
 /** Switch to a different academic year. */
 export function createSwitchYearMutation() {
   const queryClient = useQueryClient();
@@ -68,18 +46,6 @@ export function createSwitchYearMutation() {
     onSuccess: () => {
       // Invalidate ALL queries since the database has changed
       queryClient.invalidateQueries();
-    },
-  });
-}
-
-/** Archive an academic year. */
-export function createArchiveYearMutation() {
-  const queryClient = useQueryClient();
-  return createMutation({
-    mutationFn: ({ yearId, userId }: { yearId: string; userId: string }) =>
-      commands.academicYears.archive(yearId, userId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["academicYears"] });
     },
   });
 }
