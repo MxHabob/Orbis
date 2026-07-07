@@ -6,16 +6,15 @@
 //!   3. Creates tasks for events currently in their active window
 //!   4. Syncs cycle state with reality (dates vs actual flags)
 
-use chrono::Utc;
-use sea_orm::{DatabaseConnection, EntityTrait, ColumnTrait, QueryFilter, ActiveModelTrait, Set};
+use sea_orm::DatabaseConnection;
 use serde::Serialize;
 use tracing::{info, warn};
 
 use shared_kernel::errors::AppError;
-use domain_lifecycle::entities::academic_calendar_event;
+
 
 use crate::config::ResolvedConfig;
-use crate::evaluator::{Evaluator, SystemSnapshot};
+use crate::evaluator::Evaluator;
 use crate::planner::Planner;
 
 /// Report of what happened during catch-up.

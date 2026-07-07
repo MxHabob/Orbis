@@ -1,10 +1,10 @@
 //! Assessment query repository — read operations.
 
-use crate::entities::{grade, assessment, attendance, attendance_daily, attendance_summary, behavior_record};
+use crate::entities::{grade, assessment, attendance, behavior_record};
 use crate::params::{BehaviorParams, GradeParams, AttendanceParams};
 use domain_academic::entities::enrollment;
 use sea_orm::{entity::prelude::*, QueryFilter, QueryOrder, QuerySelect, EntityTrait, ColumnTrait};
-use std::collections::HashMap;
+
 use super::AssessmentQueryRepo;
 
 impl AssessmentQueryRepo {

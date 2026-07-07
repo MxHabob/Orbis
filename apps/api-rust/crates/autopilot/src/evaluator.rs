@@ -9,7 +9,7 @@
 
 use chrono::{NaiveDate, Utc};
 use sea_orm::{DatabaseConnection, EntityTrait, ColumnTrait, QueryFilter, QueryOrder};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use tracing::debug;
 
 use shared_kernel::errors::AppError;

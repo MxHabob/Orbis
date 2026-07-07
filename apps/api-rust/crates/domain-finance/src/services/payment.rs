@@ -8,7 +8,7 @@ use sea_orm::EntityTrait;
 use domain_academic::entities::enrollment;
 
 use shared_kernel::errors::AppError;
-use crate::entities::{student_fee, payment, journal_entry, treasury_transaction};
+use crate::entities::{payment, journal_entry, treasury_transaction};
 use crate::params::PaymentParams;
 use crate::repository::{FinanceCommandRepo, FinanceQueryRepo};
 use crate::services::ledger::LedgerService;

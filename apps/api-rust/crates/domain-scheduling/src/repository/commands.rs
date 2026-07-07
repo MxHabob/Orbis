@@ -1,6 +1,6 @@
 //! Scheduling command repository — write operations.
 
-use crate::entities::{time_slot, scheduled_lesson, room, teacher_availability, solve_job};
+use crate::entities::{time_slot, scheduled_lesson, room, solve_job};
 use sea_orm::{ActiveModelTrait, ActiveValue::Set, DbErr, EntityTrait};
 use super::SchedulingCommandRepo;
 

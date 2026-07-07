@@ -1,6 +1,6 @@
 use tauri::State;
 use std::sync::Arc;
-use sea_orm::{EntityTrait, ColumnTrait, QueryFilter, Statement, ActiveModelTrait, ActiveValue::Set};
+use sea_orm::{EntityTrait, ColumnTrait, QueryFilter, Statement};
 use crate::state::AppState;
 use crate::commands::error::{CmdResult, CommandError};
 
@@ -365,7 +365,7 @@ pub async fn bulk_subject_grade_entry(
 #[tauri::command]
 pub async fn get_grade_matrix(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
+    _org_id: String,
     cycle_id: String,
     class_id: String,
     subject_id: String,

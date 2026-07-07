@@ -4,7 +4,7 @@ use std::sync::Arc;
 use uuid::Uuid;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
-use sea_orm::{EntityTrait, ColumnTrait, ActiveValue::Set, ActiveModelTrait};
+use sea_orm::{EntityTrait, ActiveValue::Set};
 
 use shared_kernel::errors::AppError;
 use crate::entities::{grade, grade_history};

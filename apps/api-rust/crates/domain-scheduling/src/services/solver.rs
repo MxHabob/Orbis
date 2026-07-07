@@ -8,7 +8,7 @@ use uuid::Uuid;
 use tokio::time::sleep;
 use tracing::{error, info, warn};
 use serde::{Deserialize, Serialize};
-use sea_orm::{EntityTrait, QueryFilter, ColumnTrait, ActiveValue::Set};
+use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
 
 use shared_kernel::errors::AppError;
 use crate::entities::solve_job;
@@ -17,7 +17,7 @@ use crate::repository::{SchedulingCommandRepo, SchedulingQueryRepo};
 use crate::services::schedule::{LessonPlacement, ScheduleService};
 
 use domain_academic::entities::{class, class_subject};
-use domain_lifecycle::entities::academic_cycle;
+
 
 use infra_scheduler::{
     JobStatus, LessonAssignmentDto, PinnedLessonDto, ScheduleSolver, SolveMode,

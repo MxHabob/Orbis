@@ -1,4 +1,3 @@
-use std::sync::Arc;
 use std::path::{Path, PathBuf};
 use tokio::sync::RwLock;
 use sea_orm::{entity::prelude::*, DatabaseConnection, EntityTrait, QueryFilter, ColumnTrait};

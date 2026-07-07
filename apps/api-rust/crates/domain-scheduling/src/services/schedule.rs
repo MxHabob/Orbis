@@ -4,11 +4,11 @@ use std::sync::Arc;
 use uuid::Uuid;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, EntityTrait, QueryFilter, ColumnTrait};
+use sea_orm::{ActiveModelTrait, EntityTrait, QueryFilter, ColumnTrait};
 
 use shared_kernel::errors::AppError;
-use crate::entities::{time_slot, scheduled_lesson, room, teacher_availability};
-use crate::params::{ScheduleParams, RoomParams};
+use crate::entities::{time_slot, scheduled_lesson};
+use crate::params::ScheduleParams;
 use crate::repository::{SchedulingCommandRepo, SchedulingQueryRepo};
 
 use domain_academic::entities::class_subject;

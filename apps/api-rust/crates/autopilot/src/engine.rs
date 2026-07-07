@@ -14,7 +14,7 @@ use std::sync::Arc;
 use chrono::Utc;
 use sea_orm::{DatabaseConnection, EntityTrait, ColumnTrait, QueryFilter, ActiveModelTrait, Set};
 use serde::Serialize;
-use tracing::{info, error, warn};
+use tracing::{info, error};
 
 use shared_kernel::errors::AppError;
 use shared_kernel::event_bus::{EventBus, EventEnvelope};
@@ -22,9 +22,9 @@ use shared_kernel::event_bus::{EventBus, EventEnvelope};
 use crate::config::ResolvedConfig;
 use crate::diagnostics::{Diagnostics, HealthReport, HealthStatus};
 use crate::entities::autopilot_config;
-use crate::evaluator::{Evaluator, SystemSnapshot};
-use crate::executor::{Executor, ExecutionResult};
-use crate::planner::{Planner, PlanResult};
+use crate::evaluator::Evaluator;
+use crate::executor::Executor;
+use crate::planner::Planner;
 use crate::resumption::{ResumptionService, CatchUpReport};
 
 /// Result of a single tick.

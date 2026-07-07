@@ -270,7 +270,7 @@ pub async fn promote_students(
 #[tauri::command]
 pub async fn transition_enrollment_status(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
+    _org_id: String,
     enrollment_id: String,
     target_status: String,
     withdrawal_reason: Option<String>,

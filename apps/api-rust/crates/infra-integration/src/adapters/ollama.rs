@@ -80,6 +80,7 @@ struct OllamaOptions {
 struct OllamaChatResponse {
     message: OllamaMessage,
     #[serde(default)]
+    #[allow(dead_code)]
     done: bool,
     #[serde(default)]
     eval_count: u32,

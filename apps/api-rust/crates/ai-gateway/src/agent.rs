@@ -14,7 +14,7 @@ use uuid::Uuid;
 use shared_kernel::errors::AppError;
 use shared_kernel::types::RiskLevel;
 
-use crate::entities::ai_agent_session::{self, agent_type, session_status};
+use crate::entities::ai_agent_session::{self, session_status};
 
 /// Request to create a new AI agent session.
 pub struct CreateSessionRequest {

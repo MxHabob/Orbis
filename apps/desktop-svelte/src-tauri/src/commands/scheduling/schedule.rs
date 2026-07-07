@@ -445,7 +445,7 @@ pub async fn create_room(
 #[tauri::command]
 pub async fn update_room(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
+    _org_id: String,
     id: String,
     request: UpdateRoomRequest,
 ) -> CmdResult<domain_scheduling::entities::room::Model> {

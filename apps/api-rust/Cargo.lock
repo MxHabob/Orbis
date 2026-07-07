@@ -1646,9 +1646,11 @@ version = "2.0.0"
 dependencies = [
  "chrono",
  "sea-orm",
+ "serde",
  "shared-kernel",
  "tokio",
  "tracing",
+ "uuid",
 ]
 
 [[package]]

@@ -4,7 +4,7 @@ use std::sync::Arc;
 use uuid::Uuid;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
-use sea_orm::{EntityTrait, QueryFilter, ColumnTrait, ActiveValue::Set};
+use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
 use domain_iam::entities::user;
 
 use shared_kernel::errors::AppError;

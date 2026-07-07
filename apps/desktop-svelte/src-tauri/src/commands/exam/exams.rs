@@ -342,7 +342,7 @@ pub async fn create_exam_hall(
 #[tauri::command]
 pub async fn get_exam_proctors(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
+    _org_id: String,
     session_id: String,
     schedule_id: Option<String>,
 ) -> CmdResult<Vec<domain_exam::entities::exam_proctor::Model>> {

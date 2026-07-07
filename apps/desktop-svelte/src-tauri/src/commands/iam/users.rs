@@ -1,6 +1,6 @@
 use tauri::State;
 use std::sync::Arc;
-use sea_orm::{EntityTrait, ColumnTrait, QueryFilter, ActiveModelTrait, ActiveValue::Set, QuerySelect, QueryOrder};
+use sea_orm::{EntityTrait, ColumnTrait, QueryFilter, ActiveModelTrait, ActiveValue::Set, QueryOrder};
 use domain_iam::entities::{user, user_session};
 use domain_lifecycle::entities::organization;
 use crate::state::AppState;
@@ -140,7 +140,7 @@ pub async fn get_user(
 pub async fn create_user(
     state: State<'_, Arc<AppState>>,
     org_id: String,
-    created_by: String,
+    _created_byy: String,
     request: CreateUserRequest,
 ) -> CmdResult<user::Model> {
     let db = state.active_db().await;

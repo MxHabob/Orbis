@@ -1,7 +1,7 @@
 use tauri::State;
 use std::sync::Arc;
 use serde::{Deserialize, Serialize};
-use sea_orm::{EntityTrait, ColumnTrait, QueryFilter, ActiveModelTrait, ActiveValue::Set, DatabaseConnection};
+use sea_orm::{EntityTrait, ColumnTrait, QueryFilter, ActiveModelTrait, ActiveValue::Set};
 use domain_lifecycle::entities::{promotion_job, promotion_detail};
 use crate::state::AppState;
 use crate::commands::error::{CmdResult, CommandError};
@@ -213,7 +213,7 @@ pub async fn rollback_promotion(
     user_id: String,
 ) -> CmdResult<()> {
     let registry_db = state.provider.registry();
-    let year_db = state.active_db().await;
+    let _year_db = state.active_db().await;
     
     let cmd = Arc::new(domain_lifecycle::repository::LifecycleCommandRepo::new(registry_db.clone()));
     let query = Arc::new(domain_lifecycle::repository::LifecycleQueryRepo::new(registry_db.clone()));
