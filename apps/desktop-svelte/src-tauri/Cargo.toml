@@ -31,12 +31,25 @@ tauri-plugin-dialog = "2.2.2"
 tauri-plugin-process = "2.2.1"
 tauri-plugin-fs = "2"
 tokio = { version = "1.38", features = ["full"] }
-core-domain = { package = "core-domain", path = "../../api-rust/crates/core-domain" }
+shared-kernel = { path = "../../api-rust/crates/shared-kernel" }
+domain-iam = { path = "../../api-rust/crates/domain-iam" }
+domain-lifecycle = { path = "../../api-rust/crates/domain-lifecycle" }
+domain-academic = { path = "../../api-rust/crates/domain-academic" }
+domain-assessment = { path = "../../api-rust/crates/domain-assessment" }
+domain-scheduling = { path = "../../api-rust/crates/domain-scheduling" }
+domain-finance = { path = "../../api-rust/crates/domain-finance" }
+domain-exam = { path = "../../api-rust/crates/domain-exam" }
+autopilot = { path = "../../api-rust/crates/autopilot" }
+ai-gateway = { path = "../../api-rust/crates/ai-gateway" }
+infra-persistence = { path = "../../api-rust/crates/infra-persistence" }
+infra-scheduler = { path = "../../api-rust/crates/infra-scheduler" }
+infra-integration = { path = "../../api-rust/crates/infra-integration" }
 docforge-orbis = { path = "../../api-rust/crates/docforge-orbis" }
 docforge-engine = { path = "../../api-rust/crates/docforge-engine" }
 sea-orm = { version = "1.1.0", features = ["sqlx-sqlite", "runtime-tokio-native-tls", "macros"] }
 uuid = { version = "1.9.1", features = ["v4", "serde"] }
 chrono = { version = "0.4.38", features = ["serde"] }
+bcrypt = "0.15.1"
 
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]

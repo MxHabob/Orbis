@@ -12,6 +12,7 @@
 
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager};
+use sea_orm::{EntityTrait, ColumnTrait, QueryFilter};
 
 macro_rules! info {
     ($($arg:tt)*) => { println!($($arg)*) };
@@ -44,19 +45,16 @@ pub async fn process_startup_events(app_handle: AppHandle) {
         return;
     }
 
-    let service = state.service().await;
+    let db = state.active_db().await;
     let today = chrono::Local::now().date_naive().to_string();
 
     // Get org_id from the first organization in the DB
-    let org_id = {
-        use sea_orm::EntityTrait;
-        match core_domain::entities::organization::Entity::find()
-            .one(&service.repo.db)
-            .await
-        {
-            Ok(Some(org)) => org.id,
-            _ => String::new(),
-        }
+    let org_id = match domain_lifecycle::entities::organization::Entity::find()
+        .one(&db)
+        .await
+    {
+        Ok(Some(org)) => org.id,
+        _ => String::new(),
     };
 
     if org_id.is_empty() {
@@ -65,7 +63,14 @@ pub async fn process_startup_events(app_handle: AppHandle) {
     }
 
     // Fetch pending events
-    let pending = match service.get_pending_events(&org_id, &today).await {
+    let pending = match domain_lifecycle::entities::academic_calendar_event::Entity::find()
+        .filter(domain_lifecycle::entities::academic_calendar_event::Column::OrgId.eq(&org_id))
+        .filter(domain_lifecycle::entities::academic_calendar_event::Column::ExecutedAt.is_null())
+        .filter(domain_lifecycle::entities::academic_calendar_event::Column::StartDate.lte(&today))
+        .filter(domain_lifecycle::entities::academic_calendar_event::Column::IsActive.eq(1))
+        .all(&db)
+        .await
+    {
         Ok(events) => events,
         Err(e) => {
             warn!("⚠️ Startup automation: Failed to fetch pending events: {}", e);
@@ -88,16 +93,16 @@ pub async fn process_startup_events(app_handle: AppHandle) {
         match event.execution_mode.as_str() {
             "automatic" => {
                 if !is_writable {
-                    info!("  ⏭️ Skipping automatic event '{}' — year is archived", event.title);
+                    info!("  Skip automatic event '{}' — year is archived", event.title);
                     continue;
                 }
-                match service.execute_calendar_event_action(event, "system").await {
+                match crate::commands::lifecycle::calendar::execute_calendar_event_action(&db, event, "system").await {
                     Ok(result) => {
-                        info!("  ✅ Auto-executed: {} ({})", event.title, result.message.as_deref().unwrap_or("ok"));
+                        info!("  Auto-executed: {} ({})", event.title, result.message.as_deref().unwrap_or("ok"));
                         auto_executed += 1;
                     }
                     Err(e) => {
-                        warn!("  ❌ Auto-execute failed for '{}': {}", event.title, e);
+                        warn!("  Auto-execute failed for '{}': {}", event.title, e);
                     }
                 }
             }

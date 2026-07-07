@@ -2,7 +2,7 @@
 
 export interface CommandError {
   message: string;
-  code?: string | null;
+  code: string;
 }
 
 export interface User {
@@ -25,29 +25,344 @@ export interface LoginResponse {
 
 export type JsonRecord = Record<string, unknown>;
 
-export type AcademicCycle = JsonRecord;
-export type Class = JsonRecord;
-export type Enrollment = JsonRecord;
-export type Grade = JsonRecord;
-export type Attendance = JsonRecord;
-export type Document = JsonRecord;
-export type DocumentTemplate = JsonRecord;
-export type Subject = JsonRecord;
-export type Assessment = JsonRecord;
-export type Notification = JsonRecord;
-export type Organization = JsonRecord;
-export type DashboardStats = JsonRecord;
-export type GradeAnalytics = JsonRecord;
+export interface AcademicCycle {
+  id: string;
+  org_id: string;
+  name: string;
+  name_ar?: string | null;
+  cycle_type: string;
+  parent_id?: string | null;
+  start_date: string;
+  end_date: string;
+  hijri_start_date?: string | null;
+  hijri_end_date?: string | null;
+  exam_start_date?: string | null;
+  exam_end_date?: string | null;
+  weight?: number | null;
+  grading_system: string;
+  passing_grade?: number | null;
+  max_grade?: number | null;
+  is_current: number;
+  is_locked: number;
+  is_enrollment_open: number;
+  is_grade_entry_open: number;
+  grade_entry_start?: string | null;
+  grade_entry_end?: string | null;
+  locked_at?: string | null;
+  locked_by?: string | null;
+  settings?: string | null;
+  sort_order?: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Class {
+  id: string;
+  org_id: string;
+  unit_id: string;
+  cycle_id: string;
+  name: string;
+  name_ar?: string | null;
+  level: string;
+  division?: string | null;
+  homeroom_teacher_id?: string | null;
+  capacity?: number | null;
+  current_students?: number | null;
+  room_id?: string | null;
+  color?: string | null;
+  is_active: number;
+  is_deleted: number;
+  deleted_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Enrollment {
+  id: string;
+  org_id: string;
+  cycle_id: string;
+  student_id: string;
+  class_id: string;
+  student_number: string;
+  status: string;
+  enrollment_date: string;
+  enrollment_type: string;
+  withdrawal_date?: string | null;
+  withdrawal_reason?: string | null;
+  final_grade?: string | null;
+  final_score?: number | null;
+  final_rank?: number | null;
+  is_promoted?: number | null;
+  promotion_decision?: string | null;
+  promotion_notes?: string | null;
+  meta?: string | null;
+  created_at: string;
+  updated_at: string;
+
+  // Merged student/user fields accessed in detail/edit views
+  full_name?: string | null;
+  name_ar?: string | null;
+  name_en?: string | null;
+  birth_date?: string | null;
+  sex?: string | null;
+  email?: string | null;
+  phone_number?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  student_name?: string | null;
+  student_email?: string | null;
+  class_name?: string | null;
+  class_name_ar?: string | null;
+  avatar?: string | null;
+  guardian_name?: string | null;
+  guardian_phone?: string | null;
+}
+
+export interface Grade {
+  id: string;
+  org_id: string;
+  cycle_id: string;
+  enrollment_id: string;
+  assessment_id?: string | null;
+  class_subject_id?: string | null;
+  subject_name: string;
+  subject_name_ar?: string | null;
+  score: number;
+  max_score: number;
+  weight: number;
+  grade_letter?: string | null;
+  grade_points?: number | null;
+  exam_type: string;
+  semester: string;
+  notes?: string | null;
+  graded_by: string;
+  graded_at: string;
+  is_final: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Attendance {
+  id: string;
+  org_id: string;
+  cycle_id: string;
+  enrollment_id: string;
+  class_id: string;
+  date: string;
+  status: string;
+  check_in_time?: string | null;
+  check_out_time?: string | null;
+  period?: string | null;
+  subject_name?: string | null;
+  notes?: string | null;
+  excuse_type?: string | null;
+  is_excused: number;
+  recorded_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Document {
+  id: string;
+  org_id: string;
+  name: string;
+  file_path: string;
+  file_size: number;
+  mime_type: string;
+  entity_type: string;
+  entity_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DocumentTemplate {
+  id: string;
+  org_id: string;
+  name: string;
+  name_ar?: string | null;
+  template_type: string;
+  content: string;
+  engine_type: string;
+  is_active: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Subject {
+  id: string;
+  org_id: string;
+  code: string;
+  name: string;
+  name_ar?: string | null;
+  department?: string | null;
+  description?: string | null;
+  credit_hours: number;
+  is_active: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Assessment {
+  id: string;
+  org_id: string;
+  cycle_id: string;
+  class_subject_id: string;
+  title: string;
+  title_ar?: string | null;
+  description?: string | null;
+  item_type: string;
+  max_score: number;
+  weight: number;
+  grade_group_name: string;
+  assessment_date?: string | null;
+  due_date?: string | null;
+  is_published: number;
+  is_locked: number;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Notification {
+  id: string;
+  org_id: string;
+  user_id: string;
+  title: string;
+  content: string;
+  is_read: number;
+  created_at: string;
+}
+
+export interface Organization {
+  id: string;
+  name: string;
+  name_ar?: string | null;
+  primary_color?: string | null;
+  logo_url?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DashboardStats {
+  student_count: number;
+  teacher_count: number;
+  class_count: number;
+  attendance_today: number;
+}
+
+export interface GradeAnalytics {
+  overall_average: number;
+  pass_rate: number;
+  highest_score: number;
+  lowest_score: number;
+  total_graded: number;
+}
 
 // ── Schedule ─────────────────────────────────────────────────────────────────
-export type TimeSlot = JsonRecord;
-export type ClassSubject = JsonRecord;
-export type ScheduledLesson = JsonRecord;
-export type ScheduleConflict = JsonRecord;
-export type SolveJob = JsonRecord;
+export interface TimeSlot {
+  id: string;
+  org_id: string;
+  cycle_id: string;
+  slot_number: number;
+  name?: string | null;
+  name_ar?: string | null;
+  start_time: string;
+  end_time: string;
+  duration_minutes: number;
+  is_break: number;
+  break_type?: string | null;
+  applicable_days?: string | null;
+  sort_order?: number | null;
+  is_active: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ClassSubject {
+  id: string;
+  class_id: string;
+  subject_id: string;
+  cycle_id: string;
+  primary_teacher_id: string;
+  assistant_teacher_id?: string | null;
+  substitute_teacher_id?: string | null;
+  grade_groups?: string | null;
+  weekly_hours?: number | null;
+  theory_hours?: number | null;
+  practical_hours?: number | null;
+  assessment_config?: string | null;
+  is_active: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ScheduledLesson {
+  id: string;
+  org_id: string;
+  cycle_id: string;
+  class_id: string;
+  class_subject_id: string;
+  subject_id: string;
+  teacher_id: string;
+  substitute_teacher_id?: string | null;
+  time_slot_id: string;
+  day_of_week: number;
+  room_id?: string | null;
+  room_name?: string | null;
+  status: string;
+  is_substituted: number;
+  substitution_reason?: string | null;
+  topic?: string | null;
+  topic_ar?: string | null;
+  objectives?: string | null;
+  materials?: string | null;
+  homework?: string | null;
+  homework_due_date?: string | null;
+  attendance_taken: number;
+  attendance_taken_at?: string | null;
+  attendance_taken_by?: string | null;
+  attendance_method?: string | null;
+  notes?: string | null;
+  cancellation_reason?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ScheduleConflict {
+  lesson_id: string;
+  conflict_type: string;
+  message: string;
+}
+
+export interface SolveJob {
+  id: string;
+  org_id: string;
+  status: string;
+  progress: number;
+  error_message?: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 // ── Guardians ────────────────────────────────────────────────────────────────
-export type GuardianLink = JsonRecord;
+export interface GuardianLink {
+  id: string;
+  org_id: string;
+  student_id: string;
+  guardian_id: string;
+  relationship: string;
+  is_primary: number | boolean;
+  emergency_contact: number;
+  created_at: string;
+  updated_at: string;
+
+  // Extensively used optional properties in svelte templates
+  relation?: string | null;
+  occupation?: string | null;
+  is_emergency_contact?: number | boolean | null;
+  is_payer?: number | boolean | null;
+  payment_share_percent?: number | null;
+}
 
 export interface UserSession {
   id: string;
@@ -439,4 +754,132 @@ export interface ApprovalAction {
   user_name?: string | null;
   user_role: string;
   notes?: string | null;
+}
+
+// ── AI & Autopilot ───────────────────────────────────────────────────────────
+
+export interface AutopilotConfig {
+  id: string;
+  org_id: string;
+  mode: "automatic" | "suggested" | "manual";
+  check_interval_minutes: number;
+  timezone: string;
+  require_backup_before_critical: number;
+  max_auto_retries: number;
+  pause_on_error: number;
+  is_enabled: number;
+  last_tick_at?: string | null;
+  last_tick_result?: string | null;
+  paused_at?: string | null;
+  pause_reason?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AutopilotTask {
+  id: string;
+  org_id: string;
+  calendar_event_id?: string | null;
+  task_type: string;
+  scheduled_at: string;
+  deadline_at?: string | null;
+  target_entity_type?: string | null;
+  target_entity_id?: string | null;
+  params?: string | null;
+  prerequisites?: string | null;
+  status: "pending" | "ready" | "executing" | "completed" | "failed" | "skipped" | "suggested" | "approved" | "cancelled";
+  execution_mode: string;
+  attempts: number;
+  last_attempt_at?: string | null;
+  last_error?: string | null;
+  suggested_at?: string | null;
+  approved_by?: string | null;
+  approved_at?: string | null;
+  rejection_reason?: string | null;
+  completed_at?: string | null;
+  result?: string | null;
+  idempotency_key: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AutopilotTickResult {
+  org_id: string;
+  tick_at: string;
+  snapshot_summary: {
+    active_events: number;
+    missed_events: number;
+    upcoming_events: number;
+    pending_tasks: number;
+    failed_tasks: number;
+  };
+  plan: {
+    tasks_created: number;
+    already_planned: number;
+    missed_event_count: number;
+  };
+  execution: {
+    executed: number;
+    succeeded: number;
+    failed: number;
+    skipped: number;
+  };
+  health: AutopilotHealthReport;
+  status: "ok" | "warning" | "error" | "paused" | "disabled";
+  error?: string | null;
+}
+
+export interface AutopilotHealthReport {
+  org_id: string;
+  checked_at: string;
+  stuck_tasks: string[];
+  overdue_tasks: string[];
+  status: "healthy" | "warning" | "critical";
+}
+
+export interface AgentSession {
+  id: string;
+  org_id: string;
+  agent_type: "assistant" | "autopilot" | "analyst" | "guardian" | "external";
+  agent_version?: string | null;
+  acting_as_user_id: string;
+  acting_as_role: string;
+  conversation_id?: string | null;
+  status: "active" | "completed" | "suspended" | "revoked";
+  max_risk_level: string;
+  requires_approval_above: string;
+  actions_executed: number;
+  actions_suggested: number;
+  started_at: string;
+  last_active_at: string;
+  ended_at?: string | null;
+  created_at: string;
+}
+
+export interface AgentActionLog {
+  id: string;
+  org_id: string;
+  session_id: string;
+  correlation_id?: string | null;
+  action_code: string;
+  input_data?: string | null;
+  output_data?: string | null;
+  reasoning: string;
+  confidence?: number | null;
+  status: "pending" | "approved" | "executed" | "rejected" | "failed" | "rolled_back";
+  risk_level: string;
+  approval_required: number;
+  approved_by?: string | null;
+  approved_at?: string | null;
+  rejection_reason?: string | null;
+  affected_entities?: string | null;
+  idempotency_key?: string | null;
+  duration_ms?: number | null;
+  error?: string | null;
+  is_reversible: number;
+  rollback_data?: string | null;
+  reversed_at?: string | null;
+  reversed_by?: string | null;
+  executed_at: string;
+  created_at: string;
 }

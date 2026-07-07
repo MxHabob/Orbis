@@ -3,6 +3,7 @@
 use std::sync::Arc;
 use uuid::Uuid;
 use chrono::Utc;
+use sea_orm::EntityTrait;
 
 use shared_kernel::errors::AppError;
 use crate::entities::enrollment;

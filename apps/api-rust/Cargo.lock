@@ -819,6 +819,7 @@ dependencies = [
  "domain-lifecycle",
  "domain-scheduling",
  "infra-persistence",
+ "infra-scheduler",
  "sea-orm",
  "serde",
  "serde_json",

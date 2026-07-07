@@ -39,5 +39,51 @@ impl From<&str> for CommandError {
     }
 }
 
+impl From<shared_kernel::errors::AppError> for CommandError {
+    fn from(err: shared_kernel::errors::AppError) -> Self {
+        use shared_kernel::errors::AppError;
+        match err {
+            AppError::NotFound { entity_type, id } => Self {
+                message: format!("{} not found: {}", entity_type, id),
+                code: Some("NOT_FOUND".to_string()),
+            },
+            AppError::Validation { message, field } => Self {
+                message: match field {
+                    Some(f) => format!("Validation failed on field '{}': {}", f, message),
+                    None => format!("Validation failed: {}", message),
+                },
+                code: Some("VALIDATION_ERROR".to_string()),
+            },
+            AppError::Unauthorized { reason } => Self {
+                message: reason,
+                code: Some("UNAUTHORIZED".to_string()),
+            },
+            AppError::Conflict { message } => Self {
+                message,
+                code: Some("CONFLICT".to_string()),
+            },
+            AppError::BusinessRule { rule, details } => Self {
+                message: match details {
+                    Some(d) => format!("{}: {}", rule, d),
+                    None => rule,
+                },
+                code: Some("BUSINESS_RULE_VIOLATION".to_string()),
+            },
+            AppError::Database(msg) => Self {
+                message: msg,
+                code: Some("DATABASE_ERROR".to_string()),
+            },
+            AppError::Internal(msg) => Self {
+                message: msg,
+                code: Some("INTERNAL_ERROR".to_string()),
+            },
+            other => Self {
+                message: other.to_string(),
+                code: Some("UNKNOWN_ERROR".to_string()),
+            },
+        }
+    }
+}
+
 /// Convenience type alias used by every Tauri command.
 pub type CmdResult<T> = Result<T, CommandError>;

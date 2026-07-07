@@ -373,22 +373,6 @@ impl ExamCommandRepo {
     // ── Exam Proctors ──
 
     pub async fn insert_exam_proctor(&self, model: exam_proctor::Model) -> Result<exam_proctor::Model, DbErr> {
-        let active = exam_proctor::ActiveModel {
-            id: Set(model.id),
-            org_id: Set(model.org_id),
-            exam_session_id: Set(model.exam_session_id),
-            exam_schedule_id: Set(model.exam_schedule_id),
-            exam_hall_id: Set(model.exam_hall_id),
-            teacher_id: Set(model.teacher_id),
-            role: Set(model.role),
-            is_confirmed: Set(model.is_confirmed),
-            confirmed_at: Set(model.confirmed_at),
-            attendance_status: Set(model.attendance_status),
-            check_in_time: Set(model.check_in_time),
-            notes: Set(model.notes),
-            created_at: Set(model.created_at),
-            updated_at: Set(model.updated_at),
-        };
         self.cmd_insert_exam_proctor(model).await
     }
 

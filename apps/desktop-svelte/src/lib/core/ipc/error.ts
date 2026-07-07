@@ -11,10 +11,28 @@
  * }
  * ```
  */
+export type ErrorCode =
+  | "UNAUTHORIZED"
+  | "FORBIDDEN"
+  | "NOT_FOUND"
+  | "VALIDATION_ERROR"
+  | "INTERNAL_ERROR"
+  | "CONFLICT"
+  | "DB_ERROR"
+  | "UNKNOWN";
+
+export interface StructuredError {
+  message: string;
+  code: ErrorCode;
+  details?: Record<string, unknown> | null;
+}
+
 export function extractErrorMessage(e: unknown): string {
   // Tauri CommandError — plain object with `message` field
-  if (typeof e === "object" && e !== null && "message" in e) {
-    return String((e as { message: unknown }).message);
+  if (typeof e === "object" && e !== null) {
+    if ("message" in e) {
+      return String((e as { message: unknown }).message);
+    }
   }
   // Standard JS Error
   if (e instanceof Error) return e.message;

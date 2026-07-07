@@ -9,3 +9,5 @@ pub mod academic_override_request;
 pub mod promotion_job;
 pub mod promotion_detail;
 pub mod student_registry_entry;
+pub mod academic_year;
+

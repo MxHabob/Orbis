@@ -2,6 +2,10 @@
 
 pub mod commands;
 pub mod queries;
+pub mod academic_year;
+
+pub use academic_year::AcademicYearRepo;
+
 
 use sea_orm::DatabaseConnection;
 

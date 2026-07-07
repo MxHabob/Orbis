@@ -12,6 +12,8 @@ use shared_kernel::errors::AppError;
 use crate::entities::exam_schedule;
 use crate::repository::{ExamCommandRepo, ExamQueryRepo};
 use crate::services::exam_session::ExamSessionService;
+use crate::params::ExamScheduleParams;
+use sea_orm::EntityTrait;
 
 use infra_scheduler::{JobStatus, ExamProblem, ExamTimeSlotDto, ExamAssignmentDto, ScheduleSolver};
 
@@ -92,8 +94,7 @@ impl ExamAutoScheduleService {
         let active = self.query.count_active_solve_jobs(org_id, "exam").await?;
         if active >= 1 {
             return Err(AppError::Conflict {
-                entity: "solve_job".into(),
-                details: "An exam solve job is already running for this organization".into(),
+                message: "An exam solve job is already running for this organization".into(),
             });
         }
 

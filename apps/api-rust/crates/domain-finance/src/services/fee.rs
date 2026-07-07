@@ -4,7 +4,7 @@ use std::sync::Arc;
 use uuid::Uuid;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
-use sea_orm::ActiveValue;
+use sea_orm::{ActiveValue, EntityTrait};
 
 use shared_kernel::errors::AppError;
 use crate::entities::{fee_template, student_fee, ledger_account, journal_entry};
