@@ -1,6 +1,6 @@
 <!--
 @component ChatHistoryPopover
-Displays a popover of recent chats with search capability.
+Displays a popover of recent agent sessions with search capability.
 -->
 <script lang="ts">
 import { Button } from "@orbis/ui-svelte/button";
@@ -11,121 +11,91 @@ import {
 } from "@orbis/ui-svelte/popover";
 import { History } from "lucide-svelte";
 import SearchField from "$lib/shared/components/search-field.svelte";
-
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-}
-
-interface HistoryItem {
-  id: string;
-  title: string;
-  timeAgo: string;
-  messages: Message[];
-}
+import { createAgentSessionsQuery } from "$lib/features/ai/queries";
+import { formatDate } from "$lib/core/i18n";
+import { Skeleton } from "@orbis/ui-svelte/skeleton";
+import { Badge } from "@orbis/ui-svelte/badge";
 
 let {
-  onSelect,
+  orgId = "",
+  onSelectSession,
 }: {
-  onSelect: (messages: Message[]) => void;
+  orgId?: string;
+  onSelectSession?: (sessionId: string) => void;
 } = $props();
 
-const staticItems: HistoryItem[] = [
-  {
-    id: "hist-1",
-    title: "Hi",
-    timeAgo: "7 minutes ago",
-    messages: [
-      { id: "m1", role: "user", content: "Hi" },
-      { id: "m2", role: "assistant", content: "" },
-    ],
-  },
-  {
-    id: "hist-2",
-    title: "غير الوضع الى الليلي",
-    timeAgo: "4 days ago",
-    messages: [
-      { id: "m3", role: "user", content: "غير الوضع الى الليلي" },
-      {
-        id: "m4",
-        role: "assistant",
-        content: "تم تغيير المظهر إلى الوضع الليلي بنجاح!",
-      },
-    ],
-  },
-  {
-    id: "hist-3",
-    title: "You are generating a Sentry dashboard. Follo...",
-    timeAgo: "5 days ago",
-    messages: [
-      {
-        id: "m5",
-        role: "user",
-        content: "أنت تقوم بإنشاء لوحة تحكم Sentry. اتبع هذه التعليمات.",
-      },
-      {
-        id: "m6",
-        role: "assistant",
-        content:
-          "أنا مستعد لمساعدتك في بناء لوحة تحكم Sentry بناءً على المقاييس الخاصة بك.",
-      },
-    ],
-  },
-];
+const sessionsQuery = createAgentSessionsQuery(orgId);
+const sessions = $derived($sessionsQuery.data ?? []);
 
 let searchQuery = $state("");
 
-const filteredItems = $derived(
-  staticItems.filter((item) =>
-    item.title.toLowerCase().includes(searchQuery.toLowerCase()),
-  ),
+const filteredSessions = $derived(
+  sessions.filter((session) =>
+    session.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    session.agent_type.toLowerCase().includes(searchQuery.toLowerCase())
+  )
 );
 </script>
 
 <Popover>
   <PopoverTrigger>
-    <Button
-      variant="ghost"
-      size="icon-xs"
-      class="w-6 h-6 flex items-center justify-center rounded-md cursor-pointer"
-      title="History"
-    >
-      <History size={13} />
-    </Button>
+    {#snippet child({ props }: { props: any })}
+      <Button
+        {...props}
+        variant="ghost"
+        size="icon-xs"
+        class="w-6 h-6 flex items-center justify-center rounded-md cursor-pointer"
+        title="History"
+      >
+        <History size={13} />
+      </Button>
+    {/snippet}
   </PopoverTrigger>
   
   <PopoverContent 
-    align={""}
-    class="w-58 space-y-2 z-50 select-none"
+    align="end"
+    class="w-64 space-y-2 z-50 select-none bg-popover text-popover-foreground border border-border/60"
   >
     <div class="text-[10px] font-semibold text-foreground px-0.5 text-start tracking-wide">
-      Chat history
+      Agent history
     </div>
     
     <SearchField
       bind:value={searchQuery}
-      placeholder="Search chats..."
+      placeholder="Search sessions..."
       class="w-full max-w-full md:max-w-full"
     />
     
 
-    <div class="flex flex-col gap-4.5 max-h-56 overflow-y-auto scrollbar-hide text-start px-0.5">
-      {#if filteredItems.length === 0}
+    <div class="flex flex-col gap-2 max-h-56 overflow-y-auto scrollbar-hide text-start px-0.5">
+      {#if $sessionsQuery.isLoading}
+        <div class="space-y-2 py-2">
+          <Skeleton class="h-10 w-full rounded" />
+          <Skeleton class="h-10 w-full rounded" />
+        </div>
+      {:else if $sessionsQuery.isError}
+        <div class="text-center text-[10px] text-destructive/80 py-4 px-1 leading-relaxed">
+          {orgId ? "خدمة الوكيل غير متوفرة حالياً" : "Agent service offline"}
+        </div>
+      {:else if filteredSessions.length === 0}
         <div class="text-center text-[11.5px] text-muted-foreground py-6">
-          No chats found
+          No sessions found
         </div>
       {:else}
-        {#each filteredItems as item}
+        {#each filteredSessions as session}
           <button
-            onclick={() => onSelect(item.messages)}
-            class="w-full text-start bg-transparent hover:bg-transparent transition-all cursor-pointer group flex flex-col gap-1 focus:outline-none"
+            onclick={() => onSelectSession?.(session.id)}
+            class="w-full text-start bg-transparent hover:bg-muted/40 p-2 rounded-md transition-all cursor-pointer group flex flex-col gap-1 focus:outline-none"
           >
-            <div class="text-[12.5px] font-normal leading-normal text-foreground group-hover:text-primary transition-colors break-words">
-              {item.title}
+            <div class="text-[12.5px] font-bold font-mono text-foreground group-hover:text-primary transition-colors flex justify-between items-center">
+              <span>#{session.id.substring(0, 8)}</span>
+              <Badge variant={session.status === 'active' ? 'lime' : 'secondary'} class="text-[7px] h-3.5 px-1 shrink-0">
+                {session.status}
+              </Badge>
             </div>
-            <div class="text-[10px] text-muted-foreground/80 underline decoration-muted-foreground/40 underline-offset-2 tracking-wide group-hover:text-primary/90 transition-colors">
-              {item.timeAgo}
+            <div class="text-[9px] text-muted-foreground leading-normal flex justify-between items-center w-full mt-0.5">
+              <span>{session.agent_type}</span>
+              <span>{formatDate(session.started_at)}</span>
             </div>
           </button>
         {/each}

@@ -162,12 +162,12 @@ const filteredSuggestions = $derived.by(() => {
         return name.includes(q) || email.includes(q);
       })
       .map((u: any) => {
-        const name = u.full_name || u.name_ar || u.name_en || "User";
-        const roleStr = u.primary_role || u.role || (isRtl ? "موظف" : "Staff");
+        const name = u.full_name || u.name_ar || u.name_en || m.agent_default_user_name();
+        const roleStr = u.primary_role || u.role || m.agent_default_role_staff();
         return {
           id: `user-${u.id}`,
           label: name,
-          subtitle: isRtl ? `كادر: ${roleStr}` : `Staff: ${roleStr}`,
+          subtitle: m.agent_user_role_label({ role: roleStr }),
           path: `/${currentOrgId}/settings/users/${u.id}/profile`,
         };
       });

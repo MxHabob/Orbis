@@ -7,14 +7,23 @@ import {
   PopoverContent,
 } from "@orbis/ui-svelte/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@orbis/ui-svelte";
-import { Activity, Settings } from "lucide-svelte";
+import { Activity, Settings, RefreshCw, AlertTriangle } from "lucide-svelte";
 import { academicContext, workflowInbox } from "$lib/stores";
 import * as m from "$lib/paraglide/messages";
 import { l, formatDate } from "$lib/core/i18n";
-import { createCalendarEventsQuery, createOrgPolicyQuery } from "$lib/features/academics";
+import { createCalendarEventsQuery } from "$lib/features/academics";
+import {
+  createAutopilotConfigQuery,
+  createAutopilotTasksQuery,
+  createAutopilotDiagnosticsQuery,
+  useConfigureAutopilot,
+  useRunAutopilotTick,
+} from "$lib/features/ai/queries";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { localizeHref } from "$lib/paraglide/runtime";
 import type { CalendarEventType, CyclePhase } from "@orbis/desktop-client/types";
+import { toast } from "svelte-sonner";
+import { extractErrorMessage } from "$lib/core/ipc/error";
 
 let { orgId = "" }: { orgId?: string } = $props();
 const cycleId = $derived(academicContext.effectiveCycleId);
@@ -52,14 +61,27 @@ function isEventInPhase(eventType: CalendarEventType, phase: CyclePhase): boolea
   }
 }
 
-// Query calendar events for the timeline
+// Queries
 const eventsQuery = createCalendarEventsQuery(orgId, cycleId);
 const events = $derived($eventsQuery.data ?? []);
 
-// Query global academic policy for the Autopilot configuration state
-const policyQuery = createOrgPolicyQuery(orgId);
-const policy = $derived($policyQuery.data);
-const executionMode = $derived(policy?.default_event_execution_mode ?? "suggested");
+const configQuery = createAutopilotConfigQuery(orgId);
+const config = $derived($configQuery.data);
+
+const tasksQuery = createAutopilotTasksQuery(orgId);
+const autopilotTasks = $derived($tasksQuery.data ?? []);
+
+const diagnosticsQuery = createAutopilotDiagnosticsQuery(orgId);
+const diagnostics = $derived($diagnosticsQuery.data);
+
+// Mutations
+const runTickMutation = useRunAutopilotTick();
+const configureMutation = useConfigureAutopilot();
+
+function getEventTaskStatus(eventId: string) {
+  const task = autopilotTasks.find(t => t.calendar_event_id === eventId);
+  return task?.status;
+}
 
 function getPhaseLabel(phase: string) {
   switch (phase) {
@@ -75,6 +97,42 @@ function getPhaseLabel(phase: string) {
       return m.phase_closed ? m.phase_closed() : "Closed";
     default:
       return "";
+  }
+}
+
+async function handleRunTick() {
+  if (!orgId) return;
+  try {
+    toast.promise($runTickMutation.mutateAsync({ orgId }), {
+      loading: m.calendar_processing() || "جاري تشغيل فحص الأتمتة الفوري...",
+      success: () => "تم تشغيل الفحص وتحديث حالة الأتمتة بنجاح.",
+      error: (e) => extractErrorMessage(e) || "فشل تشغيل فحص الأتمتة الفوري.",
+    });
+  } catch (e: unknown) {
+    toast.error(extractErrorMessage(e));
+  }
+}
+
+async function togglePause() {
+  if (!orgId || !config) return;
+  const isEnabled = config.is_enabled === 1;
+  const isCurrentlyPaused = config.paused_at != null;
+  const nextPaused = !isCurrentlyPaused;
+  
+  try {
+    await $configureMutation.mutateAsync({
+      orgId,
+      isEnabled,
+      paused: nextPaused,
+      mode: config.mode,
+    });
+    toast.success(
+      nextPaused
+        ? "تم إيقاف الأتمتة مؤقتاً بنجاح."
+        : "تم استئناف تشغيل الأتمتة بنجاح."
+    );
+  } catch (e: unknown) {
+    toast.error(extractErrorMessage(e));
   }
 }
 
@@ -94,10 +152,12 @@ const phaseLabel = $derived(getPhaseLabel(academicContext.cyclePhase));
 						aria-label={m.sidebar_orbis_autopilot ? m.sidebar_orbis_autopilot() : "Orbis AutoPilot"}
 					>
 						<Activity size={16} strokeWidth={1.8} class="text-foreground" />
-						{#if workflowInbox.hasActions}
+						{#if workflowInbox.hasActions || (diagnostics && (diagnostics.stuck_tasks.length > 0 || diagnostics.overdue_tasks.length > 0))}
 							<span class="absolute -top-0.5 -inset-e-0.5 w-1.5 h-1.5 rounded-full bg-destructive border border-background animate-pulse"></span>
-						{:else}
+						{:else if config?.is_enabled === 1 && !config?.paused_at}
 							<span class="absolute -top-0.5 -inset-e-0.5 w-1.5 h-1.5 rounded-full bg-brand-lime border border-background"></span>
+						{:else}
+							<span class="absolute -top-0.5 -inset-e-0.5 w-1.5 h-1.5 rounded-full bg-muted-foreground/60 border border-background"></span>
 						{/if}
 					</Button>
 				</TooltipTrigger>
@@ -115,20 +175,33 @@ const phaseLabel = $derived(getPhaseLabel(academicContext.cyclePhase));
 	>
 		<!-- Header -->
 		<div class="px-4 py-3 border-b border-border bg-muted/30 flex items-center justify-between">
-			<div class="flex items-center gap-2">
+			<div class="flex items-center gap-1.5">
 				<Activity size={16} class="text-primary animate-pulse" />
 				<span class="text-xs font-semibold text-foreground">{m.sidebar_orbis_autopilot() || "Orbis AutoPilot"}</span>
-				{#if executionMode === "automatic"}
-					<Badge variant="lime" class="text-[8px] h-3.5 px-1 font-bold uppercase tracking-wider">
-						{m.calendar_field_mode_automatic ? m.calendar_field_mode_automatic() : "Auto"}
+				
+				{#if !config}
+					<Skeleton class="h-3.5 w-10 rounded" />
+				{:else if config.is_enabled === 0}
+					<Badge variant="outline" class="text-[8px] h-3.5 px-1 font-bold uppercase text-muted-foreground">
+						{m.sidebar_orbis_autopilot_status_disabled ? m.sidebar_orbis_autopilot_status_disabled() : "Disabled"}
 					</Badge>
-				{:else if executionMode === "suggested"}
-					<Badge variant="secondary" class="text-[8px] h-3.5 px-1 font-bold uppercase bg-amber-500/10 text-amber-500 border-none">
-						{m.calendar_field_mode_suggested ? m.calendar_field_mode_suggested() : "Suggested"}
+				{:else if config.paused_at}
+					<Badge variant="secondary" class="text-[8px] h-3.5 px-1 font-bold uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 border-none">
+						{m.sidebar_orbis_autopilot_status_paused ? m.sidebar_orbis_autopilot_status_paused() : "Paused"}
 					</Badge>
 				{:else}
+					<Badge variant="lime" class="text-[8px] h-3.5 px-1 font-bold uppercase tracking-wider">
+						{m.sidebar_orbis_autopilot_status_active ? m.sidebar_orbis_autopilot_status_active() : "Active"}
+					</Badge>
+				{/if}
+
+				{#if config}
 					<Badge variant="outline" class="text-[8px] h-3.5 px-1 font-bold uppercase text-muted-foreground">
-						{m.calendar_field_mode_manual ? m.calendar_field_mode_manual() : "Manual"}
+						{config.mode === 'automatic' 
+							? (m.calendar_field_mode_automatic ? m.calendar_field_mode_automatic() : "Auto") 
+							: config.mode === 'suggested'
+								? (m.calendar_field_mode_suggested ? m.calendar_field_mode_suggested() : "Suggested")
+								: (m.calendar_field_mode_manual ? m.calendar_field_mode_manual() : "Manual")}
 					</Badge>
 				{/if}
 			</div>
@@ -143,6 +216,16 @@ const phaseLabel = $derived(getPhaseLabel(academicContext.cyclePhase));
 				<Settings size={14} />
 			</Button>
 		</div>
+
+		<!-- Diagnostics Panel (Optional Alert) -->
+		{#if diagnostics && (diagnostics.stuck_tasks.length > 0 || diagnostics.overdue_tasks.length > 0)}
+			<div class="px-4 py-2 border-b border-border bg-destructive/5 text-[10px] text-destructive flex items-center gap-1.5">
+				<AlertTriangle size={12} class="shrink-0" />
+				<span class="font-medium">
+					{diagnostics.stuck_tasks.length + diagnostics.overdue_tasks.length} {m.sidebar_no_actions ? m.sidebar_no_actions() : "stuck/overdue automation tasks detected."}
+				</span>
+			</div>
+		{/if}
 
 		<!-- Unified Timeline Section -->
 		<div class="p-4 border-b border-border flex flex-col gap-3">
@@ -164,20 +247,25 @@ const phaseLabel = $derived(getPhaseLabel(academicContext.cyclePhase));
 				{:else}
 					<div class="max-h-[220px] overflow-y-auto scrollbar-hide mt-1 relative ps-4 border-s border-border space-y-4 text-start">
 						{#each sortedEvents as event}
-							{@const isExecuted = event.executed_at != null}
-							{@const isActivePhase = isEventInPhase(event.event_type, academicContext.cyclePhase)}
+							{@const taskStatus = event.id ? getEventTaskStatus(event.id) : null}
+							{@const isExecuted = event.executed_at != null || taskStatus === "completed"}
+							{@const isActivePhase = isEventInPhase(event.event_type, academicContext.cyclePhase) || taskStatus === "executing"}
 							<div class="relative">
-								<!-- Timeline indicator dot -->
-								{#if isExecuted}
-									<span class="absolute inset-s-[-21px] top-1 size-2 rounded-full bg-primary border border-background"></span>
-								{:else if isActivePhase}
-									<span class="absolute inset-s-[-21px] top-1 size-2 rounded-full bg-brand-lime border border-background animate-pulse"></span>
+								<!-- Timeline indicator dot center-aligned with the border-s line -->
+								{#if taskStatus === "completed" || isExecuted}
+									<span class="absolute -start-[21px] top-1.5 size-2 rounded-full bg-primary border border-background"></span>
+								{:else if taskStatus === "failed"}
+									<span class="absolute -start-[21px] top-1.5 size-2 rounded-full bg-destructive border border-background"></span>
+								{:else if taskStatus === "executing" || isActivePhase}
+									<span class="absolute -start-[21px] top-1.5 size-2 rounded-full bg-brand-lime border border-background animate-pulse"></span>
+								{:else if taskStatus === "suggested"}
+									<span class="absolute -start-[21px] top-1.5 size-2 rounded-full bg-accent border border-background"></span>
 								{:else if event.execution_mode === "automatic"}
-									<span class="absolute inset-s-[-21px] top-1 size-2 rounded-full bg-blue-500/85 border border-background"></span>
+									<span class="absolute -start-[21px] top-1.5 size-2 rounded-full bg-primary/80 border border-background"></span>
 								{:else if event.execution_mode === "suggested"}
-									<span class="absolute inset-s-[-21px] top-1 size-2 rounded-full bg-amber-500/85 border border-background"></span>
+									<span class="absolute -start-[21px] top-1.5 size-2 rounded-full bg-accent/80 border border-background"></span>
 								{:else}
-									<span class="absolute inset-s-[-21px] top-1 size-2 rounded-full bg-muted-foreground/60 border border-background"></span>
+									<span class="absolute -start-[21px] top-1.5 size-2 rounded-full bg-muted-foreground/50 border border-background"></span>
 								{/if}
 
 								<div class="flex items-center justify-between gap-1.5 text-[10px]">
@@ -197,11 +285,17 @@ const phaseLabel = $derived(getPhaseLabel(academicContext.cyclePhase));
 								</div>
 								
 								<p class="text-[9px] text-muted-foreground leading-normal mt-0.5">
-									{#if isExecuted}
+									{#if taskStatus === "completed" || isExecuted}
 										<span class="text-primary font-medium">✓ {m.calendar_status_done ? m.calendar_status_done() : "Done"}</span>
 										{#if event.executed_at}
 											<span class="text-muted-foreground"> ({formatDate(event.executed_at)})</span>
 										{/if}
+									{:else if taskStatus === "failed"}
+										<span class="text-destructive font-medium">✗ Failed</span>
+									{:else if taskStatus === "executing"}
+										<span class="text-brand-lime font-medium animate-pulse">Running...</span>
+									{:else if taskStatus === "suggested"}
+										<span class="text-accent-foreground font-medium">Requires Approval</span>
 									{:else}
 										<span>{m.sidebar_orbis_autopilot_scheduled_for ? m.sidebar_orbis_autopilot_scheduled_for({ date: formatDate(event.start_date) }) : `Scheduled for ${formatDate(event.start_date)}`}</span>
 									{/if}
@@ -211,6 +305,38 @@ const phaseLabel = $derived(getPhaseLabel(academicContext.cyclePhase));
 					</div>
 				{/if}
 			{/if}
+		</div>
+
+		<!-- Control Actions -->
+		<div class="px-4 py-3 border-b border-border bg-muted/10 flex items-center justify-between gap-3">
+			<Button
+				variant="outline"
+				size="sm"
+				class="w-full text-[10px] h-8 font-semibold cursor-pointer flex items-center justify-center gap-1.5"
+				onclick={handleRunTick}
+				disabled={$runTickMutation.isPending}
+			>
+				<RefreshCw size={12} class={$runTickMutation.isPending ? "animate-spin" : ""} />
+				{#if $runTickMutation.isPending}
+					{m.calendar_processing() || "Executing..."}
+				{:else}
+					{m.sidebar_orbis_autopilot_run_now() || "Run AutoPilot Tick"}
+				{/if}
+			</Button>
+
+			<Button
+				variant="ghost"
+				size="sm"
+				class="text-[10px] h-8 text-muted-foreground hover:text-foreground cursor-pointer shrink-0"
+				onclick={togglePause}
+				disabled={$configureMutation.isPending || !config}
+			>
+				{#if config?.paused_at}
+					▶ {m.sidebar_orbis_autopilot_resume() || "Resume"}
+				{:else}
+					⏸ {m.sidebar_orbis_autopilot_pause() || "Pause"}
+				{/if}
+			</Button>
 		</div>
 
 		<!-- School Metadata / Status -->
