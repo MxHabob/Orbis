@@ -10,7 +10,7 @@ description = "Orbis adapter for docforge-engine — bridges template engine wit
 docforge-engine = { path = "../docforge-engine" }
 
 # Orbis domain
-core-domain = { workspace = true }
+shared-kernel = { workspace = true }
 
 # Database
 sea-orm = { workspace = true }

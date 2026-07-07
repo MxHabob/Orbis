@@ -1,9 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/shared-common",
     "crates/shared-kernel",
-    "crates/core-domain",
     "crates/domain-iam",
     "crates/domain-lifecycle",
     "crates/domain-academic",
@@ -51,9 +49,7 @@ axum-extra = { version = "0.9.4", features = ["multipart"] }
 utoipa = { version = "4.2.3", features = ["axum_extras"] }
 
 # Inter-workspace dependencies
-shared-common = { path = "crates/shared-common" }
 shared-kernel = { path = "crates/shared-kernel" }
-core-domain = { path = "crates/core-domain" }
 domain-iam = { path = "crates/domain-iam" }
 domain-lifecycle = { path = "crates/domain-lifecycle" }
 domain-academic = { path = "crates/domain-academic" }

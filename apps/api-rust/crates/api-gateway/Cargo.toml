@@ -11,11 +11,15 @@ path = "src/lib.rs"
 name = "api-gateway"
 path = "src/main.rs"
 
-[dependencies]
-core-domain = { workspace = true }
+domain-iam = { workspace = true }
+domain-lifecycle = { workspace = true }
+domain-academic = { workspace = true }
+domain-assessment = { workspace = true }
+domain-scheduling = { workspace = true }
+domain-finance = { workspace = true }
+domain-exam = { workspace = true }
 infra-persistence = { workspace = true }
 infra-scheduler = { workspace = true }
-shared-common = { workspace = true }
 shared-kernel = { workspace = true }
 
 # Web Framework
