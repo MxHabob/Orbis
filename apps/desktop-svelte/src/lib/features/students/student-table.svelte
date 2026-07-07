@@ -47,7 +47,7 @@ const columns: OrbisColumnDef[] = [
   {
     prop: "full_name",
     name: m.table_student(),
-    size: 250,
+    size: 320,
     pin: "colPinStart",
     cellRenderer: ({ h, row, rowIndex }) => {
       const name = String(row.full_name || row.student_name || row.name_ar || "");
@@ -82,18 +82,6 @@ const columns: OrbisColumnDef[] = [
           name,
         ),
       ];
-      if (row.name_en) {
-        nameLines.push(
-          h(
-            "span",
-            {
-              class:
-                "text-[10px] text-muted-foreground font-mono truncate block",
-            },
-            String(row.name_en),
-          ),
-        );
-      }
 
       const textContainer = h(
         "div",
@@ -104,7 +92,7 @@ const columns: OrbisColumnDef[] = [
       return h(
         "div",
         {
-          class: "flex items-center gap-2.5 cursor-pointer w-full h-full",
+          class: "flex items-center gap-3 cursor-pointer w-full h-full px-4 text-start",
           "data-grid-action": "select",
           "data-row-index": String(rowIndex),
         },
@@ -271,6 +259,7 @@ function handleGridAction(event: GridActionEvent) {
   columns={activeColumns}
   source={gridSource}
   height="100%"
+  rowSize={48}
   rtl={getLocale() === "ar"}
   onaction={handleGridAction}
   emptyIcon={GraduationCap}
