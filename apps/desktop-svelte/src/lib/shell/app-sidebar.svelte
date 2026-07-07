@@ -28,7 +28,7 @@ import UserSidebarMenu from "./user-sidebar-menu.svelte";
 import OnboardingPopover from "./onboarding-popover.svelte";
 import UpgradeButton from "./upgrade-button.svelte";
 import GitIntegrationPopover from "./mulverse-integration-popover.svelte";
-import AutomationStatusPopover from "./automation-status-popover.svelte";
+import AutomationStatusPopover from "./orbis-autopilot-popover.svelte";
 import MoreActionsDropdown from "./more-actions-dropdown.svelte";
 import * as m from "$lib/paraglide/messages";
 import { deLocalizeUrl, localizeHref } from "$lib/paraglide/runtime";
