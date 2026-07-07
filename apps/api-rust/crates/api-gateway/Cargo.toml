@@ -13,11 +13,10 @@ path = "src/main.rs"
 
 [dependencies]
 core-domain = { workspace = true }
+infra-persistence = { workspace = true }
 infra-scheduler = { workspace = true }
-infra-database = { workspace = true }
-infra-ai = { workspace = true }
-infra-notifications = { workspace = true }
 shared-common = { workspace = true }
+shared-kernel = { workspace = true }
 
 # Web Framework
 axum = { workspace = true }

@@ -1,0 +1,12 @@
+[package]
+name = "infra-persistence"
+version = "2.0.0"
+edition = "2021"
+description = "Orbis database infrastructure — connection, pragmas, migrations, registry"
+
+[dependencies]
+shared-kernel = { workspace = true }
+sea-orm = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+chrono = { workspace = true }

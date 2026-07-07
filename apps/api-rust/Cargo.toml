@@ -2,10 +2,16 @@
 resolver = "2"
 members = [
     "crates/shared-common",
+    "crates/shared-kernel",
     "crates/core-domain",
-    "crates/infra-database",
-    "crates/infra-ai",
-    "crates/infra-notifications",
+    "crates/domain-iam",
+    "crates/domain-lifecycle",
+    "crates/domain-academic",
+    "crates/domain-assessment",
+    "crates/domain-scheduling",
+    "crates/domain-finance",
+    "crates/domain-exam",
+    "crates/infra-persistence",
     "crates/infra-scheduler",
     "crates/api-gateway",
     "crates/docforge-engine",
@@ -46,10 +52,16 @@ utoipa = { version = "4.2.3", features = ["axum_extras"] }
 
 # Inter-workspace dependencies
 shared-common = { path = "crates/shared-common" }
+shared-kernel = { path = "crates/shared-kernel" }
 core-domain = { path = "crates/core-domain" }
-infra-database = { path = "crates/infra-database" }
-infra-ai = { path = "crates/infra-ai" }
-infra-notifications = { path = "crates/infra-notifications" }
+domain-iam = { path = "crates/domain-iam" }
+domain-lifecycle = { path = "crates/domain-lifecycle" }
+domain-academic = { path = "crates/domain-academic" }
+domain-assessment = { path = "crates/domain-assessment" }
+domain-scheduling = { path = "crates/domain-scheduling" }
+domain-finance = { path = "crates/domain-finance" }
+domain-exam = { path = "crates/domain-exam" }
+infra-persistence = { path = "crates/infra-persistence" }
 infra-scheduler = { path = "crates/infra-scheduler" }
 api-gateway = { path = "crates/api-gateway" }
 docforge-engine = { path = "crates/docforge-engine" }

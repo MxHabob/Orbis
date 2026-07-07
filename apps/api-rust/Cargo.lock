@@ -65,14 +65,12 @@ dependencies = [
  "chrono",
  "core-domain",
  "csv",
- "infra-ai",
- "infra-database",
- "infra-notifications",
  "infra-scheduler",
  "jsonwebtoken",
  "serde",
  "serde_json",
  "shared-common",
+ "shared-kernel",
  "tokio",
  "tower-http 0.5.2",
  "tracing",
@@ -1460,40 +1458,6 @@ dependencies = [
  "hashbrown 0.17.1",
  "serde",
  "serde_core",
-]
-
-[[package]]
-name = "infra-ai"
-version = "2.0.0"
-dependencies = [
- "core-domain",
- "serde",
- "shared-common",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "infra-database"
-version = "2.0.0"
-dependencies = [
- "core-domain",
- "sea-orm",
- "serde",
- "shared-common",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "infra-notifications"
-version = "2.0.0"
-dependencies = [
- "core-domain",
- "serde",
- "shared-common",
- "tokio",
- "tracing",
 ]
 
 [[package]]
@@ -3054,6 +3018,20 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "shared-kernel"
+version = "2.0.0"
+dependencies = [
+ "chrono",
+ "sea-orm",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "uuid",
 ]
 
 [[package]]
