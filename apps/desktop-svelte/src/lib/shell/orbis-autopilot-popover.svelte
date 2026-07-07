@@ -104,9 +104,9 @@ async function handleRunTick() {
   if (!orgId) return;
   try {
     toast.promise($runTickMutation.mutateAsync({ orgId }), {
-      loading: m.calendar_processing() || "جاري تشغيل فحص الأتمتة الفوري...",
-      success: () => "تم تشغيل الفحص وتحديث حالة الأتمتة بنجاح.",
-      error: (e) => extractErrorMessage(e) || "فشل تشغيل فحص الأتمتة الفوري.",
+      loading: m.sidebar_orbis_autopilot_run_tick_loading ? m.sidebar_orbis_autopilot_run_tick_loading() : "جاري تشغيل فحص الأتمتة الفوري...",
+      success: () => m.sidebar_orbis_autopilot_run_tick_success ? m.sidebar_orbis_autopilot_run_tick_success() : "تم تشغيل الفحص وتحديث حالة الأتمتة بنجاح.",
+      error: (e) => extractErrorMessage(e) || (m.sidebar_orbis_autopilot_run_tick_error ? m.sidebar_orbis_autopilot_run_tick_error() : "فشل تشغيل فحص الأتمتة الفوري."),
     });
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e));
@@ -128,8 +128,8 @@ async function togglePause() {
     });
     toast.success(
       nextPaused
-        ? "تم إيقاف الأتمتة مؤقتاً بنجاح."
-        : "تم استئناف تشغيل الأتمتة بنجاح."
+        ? (m.sidebar_orbis_autopilot_paused ? m.sidebar_orbis_autopilot_paused() : "تم إيقاف الأتمتة مؤقتاً بنجاح.")
+        : (m.sidebar_orbis_autopilot_resumed ? m.sidebar_orbis_autopilot_resumed() : "تم استئناف تشغيل الأتمتة بنجاح.")
     );
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e));
@@ -291,11 +291,11 @@ const phaseLabel = $derived(getPhaseLabel(academicContext.cyclePhase));
 											<span class="text-muted-foreground"> ({formatDate(event.executed_at)})</span>
 										{/if}
 									{:else if taskStatus === "failed"}
-										<span class="text-destructive font-medium">✗ Failed</span>
+										<span class="text-destructive font-medium">✗ {m.calendar_status_failed ? m.calendar_status_failed() : "Failed"}</span>
 									{:else if taskStatus === "executing"}
-										<span class="text-brand-lime font-medium animate-pulse">Running...</span>
+										<span class="text-brand-lime font-medium animate-pulse">{m.calendar_status_running ? m.calendar_status_running() : "Running..."}</span>
 									{:else if taskStatus === "suggested"}
-										<span class="text-accent-foreground font-medium">Requires Approval</span>
+										<span class="text-accent-foreground font-medium">{m.calendar_status_requires_approval ? m.calendar_status_requires_approval() : "Requires Approval"}</span>
 									{:else}
 										<span>{m.sidebar_orbis_autopilot_scheduled_for ? m.sidebar_orbis_autopilot_scheduled_for({ date: formatDate(event.start_date) }) : `Scheduled for ${formatDate(event.start_date)}`}</span>
 									{/if}
@@ -318,9 +318,9 @@ const phaseLabel = $derived(getPhaseLabel(academicContext.cyclePhase));
 			>
 				<RefreshCw size={12} class={$runTickMutation.isPending ? "animate-spin" : ""} />
 				{#if $runTickMutation.isPending}
-					{m.calendar_processing() || "Executing..."}
+					{m.calendar_processing ? m.calendar_processing() : "Executing..."}
 				{:else}
-					{m.sidebar_orbis_autopilot_run_now() || "Run AutoPilot Tick"}
+					{m.sidebar_orbis_autopilot_run_now ? m.sidebar_orbis_autopilot_run_now() : "Run AutoPilot Tick"}
 				{/if}
 			</Button>
 

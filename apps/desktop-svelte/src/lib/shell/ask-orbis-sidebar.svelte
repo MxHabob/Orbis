@@ -288,14 +288,16 @@ function handleSelectHistoryItem(messagesToLoad: Message[]) {
   scrollToBottom();
 }
 
-function parseMarkdownLinks(text: string) {
+interface ParsedLinkPart {
+  type: "text" | "link";
+  content?: string;
+  label?: string;
+  href?: string;
+}
+
+function parseMarkdownLinks(text: string): ParsedLinkPart[] {
   const regex = /\[([^\]]+)\]/g;
-  const parts: Array<{
-    type: "text" | "link";
-    content?: string;
-    label?: string;
-    href?: string;
-  }> = [];
+  const parts: ParsedLinkPart[] = [];
   let lastIndex = 0;
   let match;
 
