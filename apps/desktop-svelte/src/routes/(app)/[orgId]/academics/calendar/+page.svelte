@@ -522,7 +522,7 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
                           <Button
                             variant="ghost" size="icon-xs"
                             onclick={() => deleteEvent(event.id)}
-                            title={m.delete ? m.delete() : "Delete"}
+                            title={m.calendar_delete()}
                             class="text-destructive hover:text-destructive hover:bg-destructive/5"
                           >
                             <Trash2 class="size-3.5" />
@@ -716,7 +716,7 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
 
     <DialogFooter class="flex-nowrap shrink-0">
       <Button variant="outline" onclick={() => { showCreateDialog = false; resetForm(); }} disabled={isSubmitting}>
-        {m.cancel ? m.cancel() : "Cancel"}
+        {m.calendar_cancel()}
       </Button>
       <Button onclick={createEvent} disabled={isSubmitting}>
         {#if isSubmitting}

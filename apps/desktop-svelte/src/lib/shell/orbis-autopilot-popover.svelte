@@ -253,19 +253,19 @@ const phaseLabel = $derived(getPhaseLabel(academicContext.cyclePhase));
 							<div class="relative">
 								<!-- Timeline indicator dot center-aligned with the border-s line -->
 								{#if taskStatus === "completed" || isExecuted}
-									<span class="absolute -start-[21px] top-1.5 size-2 rounded-full bg-primary border border-background"></span>
+									<span class="absolute inset-s-[-21px] top-1.5 size-2 rounded-full bg-primary border border-background"></span>
 								{:else if taskStatus === "failed"}
-									<span class="absolute -start-[21px] top-1.5 size-2 rounded-full bg-destructive border border-background"></span>
+									<span class="absolute inset-s-[-21px] top-1.5 size-2 rounded-full bg-destructive border border-background"></span>
 								{:else if taskStatus === "executing" || isActivePhase}
-									<span class="absolute -start-[21px] top-1.5 size-2 rounded-full bg-brand-lime border border-background animate-pulse"></span>
+									<span class="absolute inset-s-[-21px] top-1.5 size-2 rounded-full bg-brand-lime border border-background animate-pulse"></span>
 								{:else if taskStatus === "suggested"}
-									<span class="absolute -start-[21px] top-1.5 size-2 rounded-full bg-accent border border-background"></span>
+									<span class="absolute inset-s-[-21px] top-1.5 size-2 rounded-full bg-accent border border-background"></span>
 								{:else if event.execution_mode === "automatic"}
-									<span class="absolute -start-[21px] top-1.5 size-2 rounded-full bg-primary/80 border border-background"></span>
+									<span class="absolute inset-s-[-21px] top-1.5 size-2 rounded-full bg-primary/80 border border-background"></span>
 								{:else if event.execution_mode === "suggested"}
-									<span class="absolute -start-[21px] top-1.5 size-2 rounded-full bg-accent/80 border border-background"></span>
+									<span class="absolute inset-s-[-21px] top-1.5 size-2 rounded-full bg-accent/80 border border-background"></span>
 								{:else}
-									<span class="absolute -start-[21px] top-1.5 size-2 rounded-full bg-muted-foreground/50 border border-background"></span>
+									<span class="absolute inset-s-[-21px] top-1.5 size-2 rounded-full bg-muted-foreground/50 border border-background"></span>
 								{/if}
 
 								<div class="flex items-center justify-between gap-1.5 text-[10px]">
@@ -273,7 +273,7 @@ const phaseLabel = $derived(getPhaseLabel(academicContext.cyclePhase));
 										{l(event.title_ar, event.title)}
 									</span>
 									<Badge 
-										variant={event.execution_mode === 'automatic' ? 'lime' : event.execution_mode === 'suggested' ? 'secondary' : 'outline'} 
+										variant={event.execution_mode === 'automatic' ? 'success' : event.execution_mode === 'suggested' ? 'secondary' : 'outline'} 
 										class="text-[8px] h-3 px-1 shrink-0"
 									>
 										{event.execution_mode === 'automatic' 
