@@ -2686,6 +2686,8 @@
   "calendar_field_type": "نوع الحدث",
   "calendar_field_mode": "وضع التنفيذ",
   "calendar_field_description": "الوصف",
+  "calendar_phase_progress": "تقدم مراحل السنة الدراسية",
+  "calendar_gregorian_preview": "المعاينة بالميلادي",
 
   "settings_nav_approvals": "الموافقات",
   "approvals_desc": "إدارة طلبات التجاوز وسير عمل الموافقات",

@@ -373,51 +373,31 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide">
-  <div class="max-w-6xl mx-auto p-6 flex flex-col gap-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between flex-nowrap shrink-0">
-      <div class="flex items-center gap-3">
-        <div class="flex items-center justify-center size-10 rounded-xl bg-primary/10">
-          <CalendarClock class="size-5 text-primary" />
-        </div>
-        <div>
-          <h1 class="text-lg font-bold text-foreground">
-            {m.calendar_title ? m.calendar_title() : "Academic Calendar"}
-          </h1>
-          <p class="text-xs text-muted-foreground">
-            {academicContext.yearLabel} — {academicContext.effectiveCycleId ? academicContext.effectiveCycleId : ""}
-          </p>
-        </div>
-      </div>
-      {#if !academicContext.isReadOnly}
-        <div class="flex items-center gap-2 flex-nowrap shrink-0">
-          {#if events.length === 0}
-            <Button variant="outline" class="text-xs" onclick={generateDefaults} disabled={isSubmitting}>
-              {m.calendar_generate_defaults ? m.calendar_generate_defaults() : "Generate Defaults"}
-            </Button>
-          {/if}
-          <Button variant="lime" class="text-xs" onclick={() => { showCreateDialog = true; syncHijriFromGregorian(); }}>
-            <Plus size={14} class="me-1.5" />
-            {m.calendar_add_event ? m.calendar_add_event() : "Add Event"}
-          </Button>
-        </div>
-      {/if}
-    </div>
+  <div class="w-full p-6 flex flex-col gap-6">
 
-    <!-- Phase Progress Stepper -->
+    <!-- Phase Progress Card -->
     {#if phaseProgress.some((p) => p.exists)}
-      <Card>
-        <CardContent class="py-4">
-          <div class="flex items-center gap-1 justify-between overflow-x-auto">
+      <Card class="w-full">
+        <CardHeader class="bg-muted/50 px-6 py-3 border-b border-border">
+          <CardTitle class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
+            {m.calendar_phase_progress()}
+          </CardTitle>
+        </CardHeader>
+        <CardContent class="p-6">
+          <div class="flex items-center gap-2 justify-between overflow-x-auto select-none">
             {#each phaseProgress as phase, i}
               {#if phase.exists}
-                <div class="flex items-center gap-1 shrink-0">
-                  <div class="flex flex-col items-center gap-1">
-                    <div class="size-3 rounded-full {phase.executed ? 'bg-primary' : 'bg-muted-foreground/30'}"></div>
-                    <span class="text-[10px] text-muted-foreground whitespace-nowrap capitalize">{phase.label}</span>
+                <div class="flex items-center gap-2 shrink-0">
+                  <div class="flex flex-col items-center gap-1.5">
+                    <div class="size-5 rounded-full flex items-center justify-center {phase.executed ? 'bg-primary text-primary-foreground' : 'border border-muted-foreground/30 bg-muted/20'}">
+                      {#if phase.executed}
+                        <CheckCircle2 class="size-4 text-primary-foreground" />
+                      {/if}
+                    </div>
+                    <span class="text-[10px] font-semibold text-muted-foreground whitespace-nowrap capitalize">{phase.label}</span>
                   </div>
                   {#if i < phaseProgress.filter((p) => p.exists).length - 1}
-                    <div class="h-px w-6 bg-border/60 mt-[-12px]"></div>
+                    <div class="h-px w-8 bg-border/60 mt-[-16px]"></div>
                   {/if}
                 </div>
               {/if}
@@ -427,124 +407,140 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
       </Card>
     {/if}
 
-    <!-- Events Table -->
-    <Card>
-      <CardHeader class="pb-3">
-        <CardTitle class="text-sm">
-          {m.calendar_events_title ? m.calendar_events_title() : "Events"}
+    <!-- Events Table Card -->
+    <Card class="w-full">
+      <CardHeader class="bg-muted/50 px-6 py-3 border-b border-border flex flex-row items-center justify-between">
+        <CardTitle class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none flex items-center gap-2">
+          <span>{m.calendar_events_title ? m.calendar_events_title() : "Events"}</span>
           {#if events.length > 0}
-            <Badge variant="secondary" class="ms-2 text-[10px]">{events.length}</Badge>
+            <Badge variant="secondary" class="text-[10px] py-0.5 px-1.5 font-sans">{events.length}</Badge>
           {/if}
         </CardTitle>
+        {#if !academicContext.isReadOnly}
+          <div class="flex items-center gap-2 flex-nowrap shrink-0">
+            {#if events.length === 0}
+              <Button variant="outline" size="sm" onclick={generateDefaults} disabled={isSubmitting} class="h-8 border-border text-xs flex-nowrap shrink-0">
+                {m.calendar_generate_defaults ? m.calendar_generate_defaults() : "Generate Defaults"}
+              </Button>
+            {/if}
+            <Button variant="lime" size="sm" onclick={() => { showCreateDialog = true; syncHijriFromGregorian(); }} class="h-8 text-xs font-bold flex-nowrap shrink-0">
+              <Plus size={14} class="me-1.5" />
+              {m.calendar_add_event ? m.calendar_add_event() : "Add Event"}
+            </Button>
+          </div>
+        {/if}
       </CardHeader>
-      <CardContent>
+      <CardContent class="p-0">
         {#if $eventsQuery.isLoading}
-          <div class="flex flex-col gap-3">
+          <div class="p-6 flex flex-col gap-3">
             {#each Array(5) as _}
               <Skeleton class="h-10 w-full rounded-md" />
             {/each}
           </div>
         {:else if events.length === 0}
-          <div class="flex flex-col items-center justify-center py-12 text-center gap-3">
+          <div class="flex flex-col items-center justify-center py-16 text-center gap-3">
             <CalendarClock class="size-10 text-muted-foreground/40" />
             <p class="text-sm text-muted-foreground">
               {m.calendar_empty ? m.calendar_empty() : "No calendar events for this cycle"}
             </p>
             {#if !academicContext.isReadOnly}
-              <Button variant="outline" class="text-xs" onclick={generateDefaults}>
+              <Button variant="outline" size="sm" class="text-xs border-border" onclick={generateDefaults}>
                 {m.calendar_generate_defaults ? m.calendar_generate_defaults() : "Generate Defaults"}
               </Button>
             {/if}
           </div>
         {:else}
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead class="w-8"></TableHead>
-                <TableHead>{m.calendar_col_type ? m.calendar_col_type() : "Type"}</TableHead>
-                <TableHead>{m.calendar_col_title ? m.calendar_col_title() : "Title"}</TableHead>
-                <TableHead>{m.calendar_col_dates ? m.calendar_col_dates() : "Dates"}</TableHead>
-                <TableHead>{m.calendar_col_mode ? m.calendar_col_mode() : "Mode"}</TableHead>
-                <TableHead>{m.calendar_col_status ? m.calendar_col_status() : "Status"}</TableHead>
-                {#if !academicContext.isReadOnly}
-                  <TableHead class="text-end">{m.calendar_col_actions ? m.calendar_col_actions() : "Actions"}</TableHead>
-                {/if}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {#each events as event (event.id)}
-                {@const StatusIcon = statusIcon(event)}
+          <div class="overflow-x-auto">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell>
-                    <StatusIcon class="size-4 {statusColor(event)}" />
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" class="text-[10px] capitalize">
-                      {event.event_type.replace(/_/g, " ")}
-                    </Badge>
-                  </TableCell>
-                  <TableCell class="font-medium text-sm">
-                    {getLocale() === "ar" && event.title_ar ? event.title_ar : event.title}
-                  </TableCell>
-                  <TableCell class="text-xs text-muted-foreground flex flex-col gap-0.5">
-                    <span class="font-mono">{event.start_date} → {event.end_date}</span>
-                    {#if getHijriRangeString(event.start_date, event.end_date)}
-                      <span class="text-[10px] text-primary/80 font-medium">{getHijriRangeString(event.start_date, event.end_date)}</span>
-                    {/if}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={modeBadgeVariant(event.execution_mode)} class="text-[10px] capitalize">
-                      {event.execution_mode}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {#if event.executed_at}
-                      <span class="text-[10px] text-primary font-medium">
-                        {m.calendar_status_done ? m.calendar_status_done() : "Done"}
-                      </span>
-                    {:else}
-                      <span class="text-[10px] text-muted-foreground">
-                        {m.calendar_status_pending ? m.calendar_status_pending() : "Pending"}
-                      </span>
-                    {/if}
-                  </TableCell>
+                  <TableHead class="w-12 text-start"></TableHead>
+                  <TableHead class="text-start">{m.calendar_col_type ? m.calendar_col_type() : "Type"}</TableHead>
+                  <TableHead class="text-start">{m.calendar_col_title ? m.calendar_col_title() : "Title"}</TableHead>
+                  <TableHead class="text-start">{m.calendar_col_dates ? m.calendar_col_dates() : "Dates"}</TableHead>
+                  <TableHead class="text-start">{m.calendar_col_mode ? m.calendar_col_mode() : "Mode"}</TableHead>
+                  <TableHead class="text-start">{m.calendar_col_status ? m.calendar_col_status() : "Status"}</TableHead>
                   {#if !academicContext.isReadOnly}
-                    <TableCell class="text-end">
-                      <div class="flex items-center justify-end gap-1 flex-nowrap shrink-0">
-                        {#if !event.executed_at}
-                          <Button
-                            variant="ghost" size="icon-xs"
-                            onclick={() => executeEvent(event.id)}
-                            disabled={executingId === event.id}
-                            title={m.calendar_execute ? m.calendar_execute() : "Execute"}
-                          >
-                            {#if executingId === event.id}
-                              <Loader2 class="size-3.5 animate-spin" />
-                            {:else}
-                              <Play class="size-3.5" />
-                            {/if}
-                          </Button>
-                        {/if}
-                        <Button
-                          variant="ghost" size="icon-xs"
-                          onclick={() => deleteEvent(event.id)}
-                          title={m.delete ? m.delete() : "Delete"}
-                          class="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 class="size-3.5" />
-                        </Button>
-                      </div>
-                    </TableCell>
+                    <TableHead class="text-end px-6">{m.calendar_col_actions ? m.calendar_col_actions() : "Actions"}</TableHead>
                   {/if}
                 </TableRow>
-              {/each}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {#each events as event (event.id)}
+                  {@const StatusIcon = statusIcon(event)}
+                  <TableRow>
+                    <TableCell class="ps-6">
+                      <StatusIcon class="size-4 {statusColor(event)}" />
+                    </TableCell>
+                    <TableCell class="text-start">
+                      <Badge variant="outline" class="text-[10px] capitalize font-sans">
+                        {event.event_type.replace(/_/g, " ")}
+                      </Badge>
+                    </TableCell>
+                    <TableCell class="font-medium text-sm text-start font-serif">
+                      {getLocale() === "ar" && event.title_ar ? event.title_ar : event.title}
+                    </TableCell>
+                    <TableCell class="text-xs text-muted-foreground text-start flex flex-col gap-0.5 font-sans">
+                      <span class="font-mono">{event.start_date} → {event.end_date}</span>
+                      {#if getHijriRangeString(event.start_date, event.end_date)}
+                        <span class="text-[10px] text-primary/80 font-medium">{getHijriRangeString(event.start_date, event.end_date)}</span>
+                      {/if}
+                    </TableCell>
+                    <TableCell class="text-start">
+                      <Badge variant={modeBadgeVariant(event.execution_mode)} class="text-[10px] capitalize font-sans">
+                        {event.execution_mode}
+                      </Badge>
+                    </TableCell>
+                    <TableCell class="text-start">
+                      {#if event.executed_at}
+                        <span class="text-[10px] text-primary font-medium font-sans">
+                          {m.calendar_status_done ? m.calendar_status_done() : "Done"}
+                        </span>
+                      {:else}
+                        <span class="text-[10px] text-muted-foreground font-sans">
+                          {m.calendar_status_pending ? m.calendar_status_pending() : "Pending"}
+                        </span>
+                      {/if}
+                    </TableCell>
+                    {#if !academicContext.isReadOnly}
+                      <TableCell class="text-end pe-6">
+                        <div class="flex items-center justify-end gap-1 flex-nowrap shrink-0">
+                          {#if !event.executed_at}
+                            <Button
+                              variant="ghost" size="icon-xs"
+                              onclick={() => executeEvent(event.id)}
+                              disabled={executingId === event.id}
+                              title={m.calendar_execute ? m.calendar_execute() : "Execute"}
+                            >
+                              {#if executingId === event.id}
+                                <Loader2 class="size-3.5 animate-spin" />
+                              {:else}
+                                <Play class="size-3.5" />
+                              {/if}
+                            </Button>
+                          {/if}
+                          <Button
+                            variant="ghost" size="icon-xs"
+                            onclick={() => deleteEvent(event.id)}
+                            title={m.delete ? m.delete() : "Delete"}
+                            class="text-destructive hover:text-destructive hover:bg-destructive/5"
+                          >
+                            <Trash2 class="size-3.5" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    {/if}
+                  </TableRow>
+                {/each}
+              </TableBody>
+            </Table>
+          </div>
         {/if}
       </CardContent>
     </Card>
   </div>
 </div>
+
 
 <!-- Create Event Dialog -->
 <Dialog bind:open={showCreateDialog}>
@@ -680,8 +676,8 @@ function modeBadgeVariant(mode: CalendarExecutionMode) {
           </div>
 
           <!-- Gregorian Equivalent Preview -->
-          <div class="bg-primary/5 border border-primary/20 rounded-lg p-2.5 flex items-center justify-between text-xs">
-            <span class="text-muted-foreground">Gregorian Preview / المعاينة بالميلادي:</span>
+          <div class="bg-primary/5 border border-primary/20 rounded-lg p-2.5 flex items-center justify-between text-xs font-sans">
+            <span class="text-muted-foreground">{m.calendar_gregorian_preview()}:</span>
             <span class="font-bold text-primary font-mono">{newEvent.start_date || "—"} → {newEvent.end_date || "—"}</span>
           </div>
         </div>

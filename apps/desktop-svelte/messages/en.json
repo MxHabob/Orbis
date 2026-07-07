@@ -2681,6 +2681,8 @@
   "calendar_field_type": "Event Type",
   "calendar_field_mode": "Execution Mode",
   "calendar_field_description": "Description",
+  "calendar_phase_progress": "Phase Progress",
+  "calendar_gregorian_preview": "Gregorian Preview",
 
   "settings_nav_approvals": "Approvals",
   "approvals_desc": "Manage override requests and approval workflows",
