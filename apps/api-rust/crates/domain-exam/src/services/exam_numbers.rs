@@ -89,7 +89,7 @@ impl ExamNumbersService {
             .ok_or_else(|| AppError::not_found("exam_session", exam_session_id))?;
 
         if session.org_id != org_id {
-            return Err(AppError::forbidden("exam_session", "generate_seating"));
+            return Err(AppError::unauthorized("Not authorized to generate seating numbers for this session"));
         }
 
         if session.status != "draft" && session.status != "scheduled" {
@@ -170,7 +170,7 @@ impl ExamNumbersService {
             .ok_or_else(|| AppError::not_found("exam_session", exam_session_id))?;
 
         if session.org_id != org_id {
-            return Err(AppError::forbidden("exam_session", "get_seating"));
+            return Err(AppError::unauthorized("Not authorized to access seating numbers for this session"));
         }
 
         let params = SeatingNumberParams {
@@ -193,7 +193,7 @@ impl ExamNumbersService {
             .ok_or_else(|| AppError::not_found("exam_session", exam_session_id))?;
 
         if session.org_id != org_id {
-            return Err(AppError::forbidden("exam_session", "generate_secrets"));
+            return Err(AppError::unauthorized("Not authorized to generate secret numbers for this session"));
         }
 
         if session.status != "draft" && session.status != "scheduled" {
@@ -277,7 +277,7 @@ impl ExamNumbersService {
             .ok_or_else(|| AppError::not_found("exam_session", exam_session_id))?;
 
         if session.org_id != org_id {
-            return Err(AppError::forbidden("exam_session", "reveal_secrets"));
+            return Err(AppError::unauthorized("Not authorized to reveal secret numbers for this session"));
         }
 
         if session.status != "grading" && session.status != "completed" {

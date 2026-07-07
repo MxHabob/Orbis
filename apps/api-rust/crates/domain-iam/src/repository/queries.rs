@@ -4,7 +4,7 @@
 //! They use SQL joins and projections instead of N+1 ORM queries.
 
 use crate::entities::{user, user_session, user_role, audit_log, permission, user_permission};
-use sea_orm::{entity::prelude::*, QueryFilter, QueryOrder, EntityTrait, ColumnTrait};
+use sea_orm::{entity::prelude::*, QueryFilter, QueryOrder, EntityTrait, ColumnTrait, QuerySelect};
 use std::collections::HashMap;
 use super::IamQueryRepo;
 

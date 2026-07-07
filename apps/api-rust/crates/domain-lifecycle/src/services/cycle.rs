@@ -50,10 +50,7 @@ impl CycleService {
         let cycle = self.get(cycle_id).await?;
 
         if cycle.is_locked == 1 {
-            return Err(AppError::Conflict {
-                entity: "academic_cycle".into(),
-                details: "Cycle is already locked".into(),
-            });
+            return Err(AppError::conflict("Cycle is already locked"));
         }
 
         let mut active: academic_cycle::ActiveModel = cycle.into();
@@ -72,10 +69,7 @@ impl CycleService {
         let cycle = self.get(cycle_id).await?;
 
         if cycle.is_locked == 0 {
-            return Err(AppError::Conflict {
-                entity: "academic_cycle".into(),
-                details: "Cycle is not locked".into(),
-            });
+            return Err(AppError::conflict("Cycle is not locked"));
         }
 
         let mut active: academic_cycle::ActiveModel = cycle.into();

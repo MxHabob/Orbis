@@ -50,10 +50,7 @@ impl UserService {
         // Check for duplicate email
         if let Some(email) = email {
             if self.query.get_user_by_email(email).await?.is_some() {
-                return Err(AppError::Conflict {
-                    entity: "user".into(),
-                    details: format!("Email '{}' already registered", email),
-                });
+                return Err(AppError::conflict(format!("Email '{}' already registered", email)));
             }
         }
 

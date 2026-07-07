@@ -30,10 +30,7 @@ impl EnrollmentService {
     ) -> Result<enrollment::Model, AppError> {
         // Check for duplicate enrollment
         if let Some(_existing) = self.query.get_enrollment_by_student(student_id, cycle_id).await? {
-            return Err(AppError::Conflict {
-                entity: "enrollment".into(),
-                details: "Student is already enrolled in this cycle".into(),
-            });
+            return Err(AppError::conflict("Student is already enrolled in this cycle"));
         }
 
         // Check class capacity
@@ -43,10 +40,7 @@ impl EnrollmentService {
         if let Some(cap) = class.capacity {
             let current = self.query.count_enrollments_by_class(class_id, cycle_id).await?;
             if current as i32 >= cap {
-                return Err(AppError::Conflict {
-                    entity: "enrollment".into(),
-                    details: format!("Class '{}' is at capacity ({}/{})", class.name, current, cap),
-                });
+                return Err(AppError::conflict(format!("Class '{}' is at capacity ({}/{})", class.name, current, cap)));
             }
         }
 
@@ -95,7 +89,7 @@ impl EnrollmentService {
             .ok_or_else(|| AppError::not_found("class", new_class_id))?;
 
         // Load enrollment and update
-        let enrollment = sea_orm::EntityTrait::find_by_id(enrollment_id.to_string())
+        let enrollment = enrollment::Entity::find_by_id(enrollment_id.to_string())
             .one(&self.query.db)
             .await?
             .ok_or_else(|| AppError::not_found("enrollment", enrollment_id))?;

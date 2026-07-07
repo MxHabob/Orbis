@@ -10,7 +10,7 @@ path = "src/lib.rs"
 [[bin]]
 name = "api-gateway"
 path = "src/main.rs"
-
+[dependencies]
 domain-iam = { workspace = true }
 domain-lifecycle = { workspace = true }
 domain-academic = { workspace = true }

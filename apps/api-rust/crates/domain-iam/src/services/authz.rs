@@ -203,10 +203,7 @@ impl AuthzService {
         if let Some(ctx) = ctx {
             if let Some(ref target_org_id) = ctx.target_org_id {
                 if target_org_id != &user.org_id {
-                    return Err(AppError::Forbidden {
-                        action: format!("{:?}", permission),
-                        reason: "Cannot access resources outside of your organization".into(),
-                    });
+                    return Err(AppError::unauthorized("Cannot access resources outside of your organization"));
                 }
             }
         }
@@ -219,19 +216,13 @@ impl AuthzService {
             .filter(role_permission::Column::DocumentType.eq(doc_type))
             .one(db)
             .await?
-            .ok_or_else(|| AppError::Forbidden {
-                action: format!("{:?}", permission),
-                reason: format!("No permission rule for document type '{}'", doc_type),
-            })?;
+            .ok_or_else(|| AppError::unauthorized(format!("No permission rule for document type '{}'", doc_type)))?;
 
         let actions: Vec<String> = serde_json::from_str(&rule.actions)
             .map_err(|e| AppError::internal(format!("Failed to parse actions: {}", e)))?;
 
         if !actions.iter().any(|a| a == action) {
-            return Err(AppError::Forbidden {
-                action: action.to_string(),
-                reason: format!("Action '{}' not permitted for '{}'", action, doc_type),
-            });
+            return Err(AppError::unauthorized(format!("Action '{}' not permitted for '{}'", action, doc_type)));
         }
 
         // 4. Creator-only check
@@ -242,10 +233,7 @@ impl AuthzService {
                 .unwrap_or(false);
 
             if !is_creator {
-                return Err(AppError::Forbidden {
-                    action: action.to_string(),
-                    reason: "Operation only allowed for the creator".into(),
-                });
+                return Err(AppError::unauthorized("Operation only allowed for the creator"));
             }
         }
 

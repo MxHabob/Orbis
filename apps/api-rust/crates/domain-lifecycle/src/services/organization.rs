@@ -42,10 +42,7 @@ impl OrganizationService {
     ) -> Result<organization::Model, AppError> {
         // Check for duplicate slug
         if self.query.get_organization_by_slug(slug).await?.is_some() {
-            return Err(AppError::Conflict {
-                entity: "organization".into(),
-                details: format!("Slug '{}' already exists", slug),
-            });
+            return Err(AppError::conflict(format!("Slug '{}' already exists", slug)));
         }
 
         let now = Utc::now().naive_utc().to_string();
