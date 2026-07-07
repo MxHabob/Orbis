@@ -91,10 +91,7 @@ impl AssessmentService {
             .ok_or_else(|| AppError::not_found("academic_cycle", &req.cycle_id))?;
 
         if cycle.is_locked == 1 {
-            return Err(AppError::Forbidden {
-                action: "create_assessment".into(),
-                reason: "Cycle is locked".into(),
-            });
+            return Err(AppError::unauthorized("Cycle is locked"));
         }
 
         let class_subject_id = match class_subject::Entity::find()

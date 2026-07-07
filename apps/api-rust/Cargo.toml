@@ -9,7 +9,10 @@ members = [
     "crates/domain-scheduling",
     "crates/domain-finance",
     "crates/domain-exam",
+    "crates/autopilot",
+    "crates/ai-gateway",
     "crates/infra-persistence",
+    "crates/infra-integration",
     "crates/infra-scheduler",
     "crates/api-gateway",
     "crates/docforge-engine",
@@ -57,7 +60,10 @@ domain-assessment = { path = "crates/domain-assessment" }
 domain-scheduling = { path = "crates/domain-scheduling" }
 domain-finance = { path = "crates/domain-finance" }
 domain-exam = { path = "crates/domain-exam" }
+autopilot = { path = "crates/autopilot" }
+ai-gateway = { path = "crates/ai-gateway" }
 infra-persistence = { path = "crates/infra-persistence" }
+infra-integration = { path = "crates/infra-integration" }
 infra-scheduler = { path = "crates/infra-scheduler" }
 api-gateway = { path = "crates/api-gateway" }
 docforge-engine = { path = "crates/docforge-engine" }

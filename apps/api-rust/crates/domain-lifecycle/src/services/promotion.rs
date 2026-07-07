@@ -11,7 +11,6 @@ use crate::entities::{promotion_job, promotion_detail, student_registry_entry};
 use crate::repository::{LifecycleCommandRepo, LifecycleQueryRepo};
 
 use domain_academic::entities::{class, enrollment};
-use domain_iam::entities::user;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PromotionConfig {
@@ -299,6 +298,9 @@ impl PromotionService {
         let source_db_filename = infra_persistence::registry::year_db_filename(&source_year.name);
         let source_db_path = infra_persistence::registry::year_db_path(app_data_dir, &source_db_filename);
 
+        let backup_filename = infra_persistence::registry::backup_filename(&source_year.name);
+        let backup_path = infra_persistence::registry::backups_dir(app_data_dir).join(&backup_filename);
+
         infra_persistence::registry::backup_database(&source_db_path, &backup_path).await
             .map_err(|e| AppError::internal(e))?;
         info!("💾 Backup created: {:?}", backup_path);
@@ -306,7 +308,9 @@ impl PromotionService {
         // 4. Create target year database with schema
         let target_db_filename = infra_persistence::registry::year_db_filename(&config.target_year_name);
         let target_db_path = infra_persistence::registry::year_db_path(app_data_dir, &target_db_filename);
-        let target_db = infra_persistence::registry::create_year_database(&target_db_path).await?;
+        let target_url = infra_persistence::registry::sqlite_url_rwc(&target_db_path);
+        let target_db = infra_persistence::connection::connect_year(&target_url).await
+            .map_err(|e| AppError::Database(e.to_string()))?;
 
         // 5. Copy reference data
         Self::copy_reference_data(source_db, &target_db, &config).await?;
@@ -332,7 +336,7 @@ impl PromotionService {
             org_id: job.org_id.clone(),
             name: config.target_year_name.clone(),
             name_ar: config.target_year_name_ar.clone(),
-            code: target_db_filename.clone(),
+            code: Some(target_db_filename.clone()),
             cycle_type: "year".to_string(),
             parent_id: None,
             start_date: config.target_start_date.clone(),
@@ -341,8 +345,8 @@ impl PromotionService {
             hijri_end_date: None,
             exam_start_date: None,
             exam_end_date: None,
-            weight: Some(1.0),
-            grading_system: None,
+            weight: Some(1),
+            grading_system: "percentage".to_string(),
             passing_grade: None,
             max_grade: None,
             is_current: 0,
@@ -482,7 +486,7 @@ impl PromotionService {
                 sql,
                 vec![org_id.into()],
             )
-        ).await.map_err(|e| AppError::database(e.to_string()))?;
+        ).await.map_err(|e| AppError::Database(e.to_string()))?;
 
         let mut data = Vec::new();
         for row in results {
@@ -602,7 +606,7 @@ impl PromotionService {
         let pragma_sql = format!("PRAGMA table_info({})", table);
         let columns_result = source_db.query_all(
             sea_orm::Statement::from_string(sea_orm::DatabaseBackend::Sqlite, pragma_sql)
-        ).await.map_err(|e| AppError::database(e.to_string()))?;
+        ).await.map_err(|e| AppError::Database(e.to_string()))?;
 
         if columns_result.is_empty() {
             return Ok(());
@@ -625,7 +629,7 @@ impl PromotionService {
         let select_sql = format!("SELECT {} FROM {} {}", cols_csv, table, where_clause);
         let source_rows = source_db.query_all(
             sea_orm::Statement::from_string(sea_orm::DatabaseBackend::Sqlite, select_sql)
-        ).await.map_err(|e| AppError::database(e.to_string()))?;
+        ).await.map_err(|e| AppError::Database(e.to_string()))?;
 
         if source_rows.is_empty() {
             return Ok(());
