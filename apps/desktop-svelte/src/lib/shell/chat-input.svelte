@@ -30,19 +30,19 @@ let suggestionsContainer = $state<HTMLDivElement | null>(null);
 const currentOrgId = $derived(page.params.orgId || authStore.orgId || "");
 
 // TanStack query caching for autocomplete using reactive config closures
-const enrollmentsQuery = createQuery(() => ({
-  queryKey: ["enrollments", currentOrgId],
+const enrollmentsQuery = createQuery({
+  get queryKey() { return ["enrollments", currentOrgId]; },
   queryFn: () => commands.enrollments.getAll(currentOrgId),
-  enabled: !!currentOrgId,
+  get enabled() { return !!currentOrgId; },
   staleTime: 2 * 60 * 1000,
-}));
+});
 
-const usersQuery = createQuery(() => ({
-  queryKey: ["users", currentOrgId],
+const usersQuery = createQuery({
+  get queryKey() { return ["users", currentOrgId]; },
   queryFn: () => commands.users.getUsers(currentOrgId),
-  enabled: !!currentOrgId,
+  get enabled() { return !!currentOrgId; },
   staleTime: 5 * 60 * 1000,
-}));
+});
 
 const students = $derived($enrollmentsQuery.data || []);
 const users = $derived($usersQuery.data || []);
