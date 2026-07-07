@@ -12,6 +12,7 @@ use sea_orm::{EntityTrait, QueryFilter, ColumnTrait, ActiveValue::Set};
 
 use shared_kernel::errors::AppError;
 use crate::entities::solve_job;
+use crate::params::RoomParams;
 use crate::repository::{SchedulingCommandRepo, SchedulingQueryRepo};
 use crate::services::schedule::{LessonPlacement, ScheduleService};
 
@@ -120,10 +121,7 @@ impl TimetableSolverService {
     ) -> Result<SolveJobResponse, AppError> {
         let active = self.query.count_active_solve_jobs(org_id, "timetable").await?;
         if active >= MAX_CONCURRENT_JOBS_PER_ORG {
-            return Err(AppError::Conflict {
-                entity: "solve_job".into(),
-                details: "A solve job is already running for this organization".into(),
-            });
+            return Err(AppError::conflict("A solve job is already running for this organization"));
         }
 
         let mode = req.mode.clone();

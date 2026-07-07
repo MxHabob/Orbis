@@ -4,7 +4,7 @@ use std::sync::Arc;
 use uuid::Uuid;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
-use sea_orm::{ActiveModelTrait, EntityTrait, QueryFilter, ColumnTrait};
+use sea_orm::ActiveValue;
 
 use shared_kernel::errors::AppError;
 use crate::entities::{fee_template, student_fee, ledger_account, journal_entry};
@@ -116,7 +116,7 @@ impl FeeService {
             .ok_or_else(|| AppError::not_found("fee_template", id))?;
 
         if tpl.org_id != org_id {
-            return Err(AppError::forbidden("fee_template", "update"));
+            return Err(AppError::unauthorized("Not authorized to update this fee template"));
         }
 
         let ledgers = self.query.get_ledger_accounts(org_id, crate::params::LedgerAccountParams { item_type: None, is_active: None }).await?;
@@ -136,23 +136,23 @@ impl FeeService {
             return Err(AppError::validation("Resolved Receivable account must be a leaf account"));
         }
 
-        let mut active: fee_template::ActiveModel = tpl.into();
-        active.name = sea_orm::ActiveValue::Set(req.name);
-        active.name_ar = sea_orm::ActiveValue::Set(req.name_ar);
-        active.code = sea_orm::ActiveValue::Set(req.code);
-        active.category = sea_orm::ActiveValue::Set(req.category);
-        active.default_amount = sea_orm::ActiveValue::Set(req.default_amount);
-        active.revenue_account_id = sea_orm::ActiveValue::Set(resolved_revenue_id);
-        active.receivable_account_id = sea_orm::ActiveValue::Set(resolved_receivable_id);
-        active.applicable_levels = sea_orm::ActiveValue::Set(req.applicable_levels);
-        active.frequency = sea_orm::ActiveValue::Set(req.frequency);
-        active.installment_config = sea_orm::ActiveValue::Set(req.installment_config);
-        active.late_fee_rules = sea_orm::ActiveValue::Set(req.late_fee_rules);
-        active.is_mandatory = sea_orm::ActiveValue::Set(req.is_mandatory);
-        active.is_active = sea_orm::ActiveValue::Set(req.is_active);
-        active.updated_at = sea_orm::ActiveValue::Set(Utc::now().to_rfc3339());
+        let mut model = tpl;
+        model.name = req.name;
+        model.name_ar = req.name_ar;
+        model.code = req.code;
+        model.category = req.category;
+        model.default_amount = req.default_amount;
+        model.revenue_account_id = resolved_revenue_id;
+        model.receivable_account_id = resolved_receivable_id;
+        model.applicable_levels = req.applicable_levels;
+        model.frequency = req.frequency;
+        model.installment_config = req.installment_config;
+        model.late_fee_rules = req.late_fee_rules;
+        model.is_mandatory = req.is_mandatory;
+        model.is_active = req.is_active;
+        model.updated_at = Utc::now().to_rfc3339();
 
-        Ok(self.cmd.update_fee_template(active.into_value().unwrap()).await?)
+        Ok(self.cmd.update_fee_template(model).await?)
     }
 
     pub async fn delete_fee_template(&self, org_id: &str, id: &str) -> Result<u64, AppError> {

@@ -1,7 +1,7 @@
 //! Assessment command repository — write operations.
 
 use crate::entities::{grade, grade_history, assessment, attendance, attendance_daily, attendance_summary, behavior_record};
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, DbErr, EntityTrait};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, DbErr};
 use super::AssessmentCommandRepo;
 
 impl AssessmentCommandRepo {

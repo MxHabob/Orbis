@@ -12,7 +12,7 @@ use crate::params::PaymentParams;
 use crate::repository::{FinanceCommandRepo, FinanceQueryRepo};
 use crate::services::ledger::LedgerService;
 
-use domain_academic::entities::enrollment;
+
 
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct RecordPaymentRequest {

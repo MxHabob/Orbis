@@ -4,7 +4,7 @@ use std::sync::Arc;
 use uuid::Uuid;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, EntityTrait};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, EntityTrait, QueryFilter, ColumnTrait};
 
 use shared_kernel::errors::AppError;
 use crate::entities::{time_slot, scheduled_lesson, room, teacher_availability};
@@ -400,10 +400,7 @@ impl ScheduleService {
             teacher_id, &lesson.class_id, room_id.map(|s| s.as_str()),
         ).await?;
         if !conflicts.is_empty() {
-            return Err(AppError::Conflict {
-                entity: "scheduled_lesson".into(),
-                details: format!("Schedule conflict: {}", conflicts[0].message),
-            });
+            return Err(AppError::conflict(format!("Schedule conflict: {}", conflicts[0].message)));
         }
 
         if let Some(rid) = &req.room_id {
@@ -462,10 +459,7 @@ impl ScheduleService {
         ).await?;
 
         if !conflicts.is_empty() {
-            return Err(AppError::Conflict {
-                entity: "scheduled_lesson".into(),
-                details: format!("Schedule conflict: {}", conflicts[0].message),
-            });
+            return Err(AppError::conflict(format!("Schedule conflict: {}", conflicts[0].message)));
         }
 
         if let Some(ref rid) = placement.room_id {

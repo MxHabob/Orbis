@@ -124,6 +124,3 @@ impl EnrollmentService {
         Ok(self.cmd.update_enrollment(active).await?)
     }
 }
-
-use sea_orm::EntityTrait;
-use crate::entities::enrollment::Entity;

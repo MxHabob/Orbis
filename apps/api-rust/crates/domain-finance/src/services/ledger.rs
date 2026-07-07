@@ -11,7 +11,6 @@ use crate::entities::{ledger_account, journal_entry};
 use crate::params::LedgerAccountParams;
 use crate::repository::{FinanceCommandRepo, FinanceQueryRepo};
 
-use domain_iam::entities::user;
 
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct CreateLedgerAccountRequest {

@@ -11,7 +11,7 @@ use crate::entities::{grade, grade_history};
 use crate::params::GradeParams;
 use crate::repository::{AssessmentCommandRepo, AssessmentQueryRepo};
 
-use domain_academic::entities::{enrollment, class_subject, subject};
+use domain_academic::entities::enrollment;
 use domain_lifecycle::entities::academic_cycle;
 
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]

@@ -1,7 +1,7 @@
 //! IAM command repository — write operations.
 
 use crate::entities::{user, user_session, user_role, audit_log};
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, DbErr, EntityTrait};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, DbErr};
 use super::IamCommandRepo;
 
 impl IamCommandRepo {

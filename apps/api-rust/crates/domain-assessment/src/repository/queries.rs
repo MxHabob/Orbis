@@ -3,7 +3,7 @@
 use crate::entities::{grade, assessment, attendance, attendance_daily, attendance_summary, behavior_record};
 use crate::params::{BehaviorParams, GradeParams, AttendanceParams};
 use domain_academic::entities::enrollment;
-use sea_orm::{entity::prelude::*, QueryFilter, QueryOrder, EntityTrait, ColumnTrait};
+use sea_orm::{entity::prelude::*, QueryFilter, QueryOrder, QuerySelect, EntityTrait, ColumnTrait};
 use std::collections::HashMap;
 use super::AssessmentQueryRepo;
 

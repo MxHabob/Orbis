@@ -72,26 +72,26 @@ impl DiscountService {
             .ok_or_else(|| AppError::not_found("discount_template", id))?;
 
         if tpl.org_id != org_id {
-            return Err(AppError::forbidden("discount_template", "update"));
+            return Err(AppError::unauthorized("Not authorized to update this discount template"));
         }
 
-        let mut active: discount_template::ActiveModel = tpl.into();
-        active.name = sea_orm::ActiveValue::Set(req.name);
-        active.code = sea_orm::ActiveValue::Set(req.code);
-        active.item_type = sea_orm::ActiveValue::Set(req.item_type);
-        active.calculation_method = sea_orm::ActiveValue::Set(req.calculation_method);
-        active.value = sea_orm::ActiveValue::Set(req.value);
-        active.eligibility_rules = sea_orm::ActiveValue::Set(req.eligibility_rules);
-        active.limits = sea_orm::ActiveValue::Set(req.limits);
-        active.requires_approval = sea_orm::ActiveValue::Set(req.requires_approval);
-        active.approver_roles = sea_orm::ActiveValue::Set(req.approver_roles);
-        active.is_auto_apply = sea_orm::ActiveValue::Set(req.is_auto_apply);
-        active.is_stackable = sea_orm::ActiveValue::Set(req.is_stackable);
-        active.priority = sea_orm::ActiveValue::Set(req.priority);
-        active.is_active = sea_orm::ActiveValue::Set(req.is_active);
-        active.updated_at = sea_orm::ActiveValue::Set(Utc::now().to_rfc3339());
+        let mut model = tpl;
+        model.name = req.name;
+        model.code = req.code;
+        model.item_type = req.item_type;
+        model.calculation_method = req.calculation_method;
+        model.value = req.value;
+        model.eligibility_rules = req.eligibility_rules;
+        model.limits = req.limits;
+        model.requires_approval = req.requires_approval;
+        model.approver_roles = req.approver_roles;
+        model.is_auto_apply = req.is_auto_apply;
+        model.is_stackable = req.is_stackable;
+        model.priority = req.priority;
+        model.is_active = req.is_active;
+        model.updated_at = Utc::now().to_rfc3339();
 
-        Ok(self.cmd.update_discount_template(active.into_value().unwrap()).await?)
+        Ok(self.cmd.update_discount_template(model).await?)
     }
 
     pub async fn delete_discount_template(&self, org_id: &str, id: &str) -> Result<u64, AppError> {
