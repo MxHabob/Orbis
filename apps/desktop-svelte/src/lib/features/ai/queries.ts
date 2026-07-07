@@ -58,21 +58,27 @@ export function useRunAutopilotTick() {
 }
 
 /** Agent sessions list. */
-export function createAgentSessionsQuery(orgId: string) {
+export function createAgentSessionsQuery(orgId: string | (() => string)) {
+  const getOrgId = typeof orgId === "function" ? orgId : () => orgId;
   return createQuery({
-    queryKey: ["agent-sessions", orgId],
-    queryFn: () => commands.ai.agent.getSessions(orgId),
-    enabled: !!orgId,
+    get queryKey() { return ["agent-sessions", getOrgId()]; },
+    queryFn: () => commands.ai.agent.getSessions(getOrgId()),
+    get enabled() { return !!getOrgId(); },
     staleTime: 2 * 60 * 1000,
   });
 }
 
 /** Agent session activity logs. */
-export function createAgentSessionLogsQuery(orgId: string, sessionId: string) {
+export function createAgentSessionLogsQuery(
+  orgId: string | (() => string),
+  sessionId: string | (() => string),
+) {
+  const getOrgId = typeof orgId === "function" ? orgId : () => orgId;
+  const getSessionId = typeof sessionId === "function" ? sessionId : () => sessionId;
   return createQuery({
-    queryKey: ["agent-session-logs", orgId, sessionId],
-    queryFn: () => commands.ai.agent.getSessionLogs(orgId, sessionId),
-    enabled: !!orgId && !!sessionId,
+    get queryKey() { return ["agent-session-logs", getOrgId(), getSessionId()]; },
+    queryFn: () => commands.ai.agent.getSessionLogs(getOrgId(), getSessionId()),
+    get enabled() { return !!getOrgId() && !!getSessionId(); },
     staleTime: 1 * 60 * 1000,
   });
 }

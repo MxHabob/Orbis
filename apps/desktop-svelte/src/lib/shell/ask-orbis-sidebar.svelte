@@ -66,12 +66,12 @@ const users = $derived($usersQuery.data || []);
 // Agent Session & Action Log Cockpit States
 let selectedSessionId = $state<string | null>(null);
 
-const sessionsQuery = createAgentSessionsQuery(currentOrgId);
+const sessionsQuery = createAgentSessionsQuery(() => currentOrgId);
 const sessions = $derived($sessionsQuery.data ?? []);
 
 const effectiveSessionId = $derived(selectedSessionId || (sessions.length > 0 ? sessions[0].id : null));
 
-const logsQuery = createAgentSessionLogsQuery(currentOrgId, effectiveSessionId || "");
+const logsQuery = createAgentSessionLogsQuery(() => currentOrgId, () => effectiveSessionId || "");
 const logs = $derived($logsQuery.data ?? []);
 
 const approveActionMutation = useApproveAgentAction();
@@ -195,10 +195,11 @@ let isThinking = $state(false);
 let chatContainer = $state<HTMLDivElement>();
 
 function scrollToBottom() {
-  if (chatContainer) {
+  const container = chatContainer;
+  if (container) {
     setTimeout(() => {
-      chatContainer.scrollTo({
-        top: chatContainer.scrollHeight,
+      container.scrollTo({
+        top: container.scrollHeight,
         behavior: "smooth",
       });
     }, 50);
