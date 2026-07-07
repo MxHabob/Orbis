@@ -50,7 +50,7 @@ const columns: OrbisColumnDef[] = [
     size: 250,
     pin: "colPinStart",
     cellRenderer: ({ h, row, rowIndex }) => {
-      const name = String(row.full_name || row.name_ar || "");
+      const name = String(row.full_name || row.student_name || row.name_ar || "");
       const src = row.avatar as string | undefined;
       const initials = createInitials(name);
 

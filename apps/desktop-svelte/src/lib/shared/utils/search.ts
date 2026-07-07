@@ -48,7 +48,7 @@ export function matchStudent(student: any, query: string): boolean {
 
   // Gather and normalize student fields
   const fullName = normalizeArabic(
-    String(student.full_name || "").toLowerCase(),
+    String(student.full_name || student.student_name || "").toLowerCase(),
   );
   const nameAr = normalizeArabic(String(student.name_ar || "").toLowerCase());
   const nameEn = String(student.name_en || "").toLowerCase();
