@@ -1098,6 +1098,40 @@ export const commands = {
         approverRole,
       }),
   },
+
+  // ── AI & Autopilot ───────────────────────────────────────────────────────────
+  ai: {
+    autopilot: {
+      getStatus: (orgId: string) =>
+        invoke<AutopilotConfig | null>("get_autopilot_status", { orgId }),
+
+      getTasks: (orgId: string) =>
+        invoke<AutopilotTask[]>("get_autopilot_tasks", { orgId }),
+
+      getDiagnostics: (orgId: string) =>
+        invoke<AutopilotHealthReport>("get_autopilot_diagnostics", { orgId }),
+
+      configure: (orgId: string, isEnabled: boolean, paused: boolean, mode: string) =>
+        invoke<AutopilotConfig>("configure_autopilot", { orgId, isEnabled, paused, mode }),
+
+      runTick: (orgId: string) =>
+        invoke<AutopilotTickResult>("run_autopilot_tick", { orgId }),
+    },
+
+    agent: {
+      getSessions: (orgId: string) =>
+        invoke<AgentSession[]>("get_agent_sessions", { orgId }),
+
+      getSessionLogs: (orgId: string, sessionId: string) =>
+        invoke<AgentActionLog[]>("get_agent_session_logs", { orgId, sessionId }),
+
+      approveAction: (orgId: string, actionLogId: string, approvedBy: string) =>
+        invoke<AgentActionLog>("approve_agent_action", { orgId, actionLogId, approvedBy }),
+
+      rejectAction: (orgId: string, actionLogId: string, rejectedBy: string, reason: string) =>
+        invoke<AgentActionLog>("reject_agent_action", { orgId, actionLogId, rejectedBy, reason }),
+    },
+  },
 } as const;
 
 /** @deprecated Use `commands` — alias for specta migration path */

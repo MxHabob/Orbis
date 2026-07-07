@@ -37,7 +37,7 @@ pub async fn get_agent_session_logs(
 #[tauri::command]
 pub async fn approve_agent_action(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
+    _org_id: String,
     action_log_id: String,
     approved_by: String,
 ) -> CmdResult<ai_gateway::entities::ai_action_log::Model> {
@@ -61,7 +61,7 @@ pub async fn approve_agent_action(
 #[tauri::command]
 pub async fn reject_agent_action(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
+    _org_id: String,
     action_log_id: String,
     rejected_by: String,
     reason: String,
