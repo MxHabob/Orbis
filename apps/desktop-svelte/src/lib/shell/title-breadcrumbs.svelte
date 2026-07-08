@@ -215,7 +215,7 @@ const breadcrumbs = $derived.by(() => {
 </script>
 
 <Breadcrumb class="min-w-0 overflow-hidden" data-tauri-drag-region>
-  <BreadcrumbList class="flex items-center gap-1 text-[10px] font-semibold text-muted-foreground select-none flex-nowrap" data-tauri-drag-region>
+  <BreadcrumbList class="flex items-center gap-1 text-[12px] font-semibold text-muted-foreground select-none flex-nowrap" data-tauri-drag-region>
     {#each breadcrumbs as item, index}
       <BreadcrumbItem class="min-w-0">
         {#if item.href && index < breadcrumbs.length - 1}
