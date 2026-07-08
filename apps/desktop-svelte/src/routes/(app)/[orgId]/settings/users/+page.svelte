@@ -111,7 +111,7 @@ async function handleAction(event: GridActionEvent) {
   const user = event.row as User;
   if (event.actionId === "__menu__") {
     overlayEl?.show(event);
-  } else if (event.actionId === "edit") {
+  } else if (event.actionId === "edit" || event.actionId === "dblclick") {
     goto(localizeHref(`/${data.orgId}/settings/users/${user.id}`));
   } else if (event.actionId === "delete") {
     if (confirm(`Are you sure you want to delete ${user.full_name}?`)) {

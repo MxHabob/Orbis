@@ -14,7 +14,6 @@ import { GraduationCap } from "lucide-svelte";
 import { goto } from "$app/navigation";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import { studentsStore } from "$lib/features/students";
-import { onDestroy } from "svelte";
 
 let {
   students,
@@ -43,132 +42,63 @@ function getClassName(classId: string): string {
 
 // ── Column Definitions ─────────────────────────────────────────────
 
+import { AvatarCell, BadgeCell } from "$lib/tables";
+
+// ── Column Definitions ─────────────────────────────────────────────
+
 const columns = $derived.by<OrbisColumnDef[]>(() => [
   {
+    id: "full_name",
     prop: "full_name",
+    header: m.table_student(),
     name: m.table_student(),
+    width: 320,
     size: 320,
     pin: "colPinStart",
-    cellRenderer: ({ h, row, rowIndex }) => {
-      const name = String(row.full_name || row.student_name || row.name_ar || "");
-      const src = row.avatar as string | undefined;
-      const initials = createInitials(name);
-
-      const innerEl = src
-        ? h("img", {
-            class: "orbis-r-avatar__img",
-            src,
-            alt: name,
-            loading: "lazy",
-          })
-        : h("span", { class: "orbis-r-avatar__fallback-text" }, initials);
-
-      const avatarEl = h(
-        "span",
-        {
-          class: `orbis-r-avatar__root orbis-r-avatar--md ${
-            src
-              ? "orbis-r-avatar__root--has-img"
-              : "orbis-r-avatar__root--has-fallback"
-          }`,
-        },
-        [innerEl],
-      );
-
-      const nameLines = [
-        h(
-          "span",
-          { class: "text-xs font-bold text-foreground truncate block" },
-          name,
-        ),
-      ];
-
-      const textContainer = h(
-          "div",
-          { class: "flex flex-col text-start min-w-0" },
-          nameLines,
-        );
-
-      return h(
-        "div",
-        {
-          class: "flex items-center gap-3 cursor-pointer w-full h-full px-4 text-start",
-          "data-grid-action": "select",
-          "data-row-index": String(rowIndex),
-        },
-        [avatarEl, textContainer],
-      );
-    },
+    cell: AvatarCell,
   },
   {
+    id: "student_number",
     prop: "student_number",
+    header: m.table_student_number(),
     name: m.table_student_number(),
+    width: 150,
     size: 150,
-    cellRenderer: ({ h, row }) => {
-      const num = String(row.student_number || row.id || "-");
-      return h(
-        "span",
-        {
-          class:
-            "inline-flex items-center rounded-md border border-border px-2 py-0.5 text-[10px] font-mono font-medium text-foreground bg-background",
-        },
-        num,
-      );
-    },
+    cellClass: "inline-flex items-center rounded-md border border-border px-2 py-0.5 text-[10px] font-mono font-medium text-foreground bg-background",
   },
   {
+    id: "class_name",
     prop: "class_name",
+    header: m.table_class(),
     name: m.table_class(),
+    width: 150,
     size: 150,
   },
   {
+    id: "status",
     prop: "status",
+    header: m.table_status(),
     name: m.table_status(),
+    width: 120,
     size: 120,
-    cellRenderer: ({ h, row }) => {
-      const status = String(row.status || "").toLowerCase();
-      if (status === "active") {
-        return h(
-          "span",
-          { class: "badge-brand-success py-0.5 px-2 text-[10px]" },
-          m.status_active(),
-        );
-      } else if (status === "withdrawn") {
-        return h(
-          "span",
-          { class: "badge-brand-destructive py-0.5 px-2 text-[10px]" },
-          m.status_withdrawn(),
-        );
-      } else {
-        return h(
-          "span",
-          { class: "badge-brand-default py-0.5 px-2 text-[10px]" },
-          String(row.status || m.status_undefined()),
-        );
-      }
-    },
+    cell: BadgeCell,
   },
   {
-    prop: "sex",
+    id: "sex_display",
+    prop: "sex_display",
+    header: m.form_sex(),
     name: m.form_sex(),
+    width: 100,
     size: 100,
-    cellRenderer: ({ h, row }) => {
-      const sex = String(row.sex || "").toLowerCase();
-      let label = String(row.sex || "-");
-      if (sex === "male") label = m.form_male();
-      else if (sex === "female") label = m.form_female();
-      return h("span", { class: "capitalize text-xs" }, label);
-    },
   },
   {
-    prop: "enrollment_date",
+    id: "enrollment_date_display",
+    prop: "enrollment_date_display",
+    header: m.table_enrolled_at(),
     name: m.table_enrolled_at(),
+    width: 150,
     size: 150,
-    cellRenderer: ({ h, row }) => {
-      const date = row.enrollment_date as string | undefined;
-      const label = date ? formatDate(date) : "-";
-      return h("span", { class: "text-xs text-muted-foreground" }, label);
-    },
+    cellClass: "text-xs text-muted-foreground",
   },
 ]);
 
@@ -177,6 +107,8 @@ let gridSource = $derived(
     ...student,
     __idx: i + 1,
     class_name: getClassName(String(student.class_id)),
+    sex_display: student.sex === "male" ? m.form_male() : student.sex === "female" ? m.form_female() : "-",
+    enrollment_date_display: student.enrollment_date ? formatDate(student.enrollment_date) : "-",
     __selected: selectedIds.has(String(student.id)),
   })),
 );
@@ -185,61 +117,22 @@ let activeColumns = $derived.by(() => {
   const cols = [...columns];
   if (enableSelection) {
     cols.unshift({
+      id: "__selected",
       prop: "__selected",
+      header: "",
       name: "",
+      width: 40,
       size: 40,
       readonly: true,
       pin: "colPinStart",
-      cellProperties: (row) => ({
-        class: row.__selected ? "orbis-cell-selected" : "orbis-cell-checkbox",
-      }),
-      cellRenderer: ({ h, row, rowIndex }) => {
-        const isSelected = !!row.__selected;
-        return h(
-          "span",
-          {
-            class: `cursor-pointer block w-full h-full flex items-center justify-center`,
-            "data-grid-action": "toggle-select",
-            "data-row-index": String(rowIndex),
-          },
-          [
-            h("input", {
-              type: "checkbox",
-              checked: isSelected,
-              class: "cursor-pointer",
-              onclick: (e: any) => e.preventDefault(),
-            }),
-          ],
-        );
-      },
+      editor: "checkbox"
     });
   }
   return cols;
 });
 
-let clickTimeout: ReturnType<typeof setTimeout> | null = null;
-
-onDestroy(() => {
-  if (clickTimeout) {
-    clearTimeout(clickTimeout);
-  }
-});
-
 function handleGridAction(event: GridActionEvent) {
-  if (event.actionId === "select") {
-    if (clickTimeout) {
-      clearTimeout(clickTimeout);
-      clickTimeout = null;
-    }
-    clickTimeout = setTimeout(() => {
-      studentsStore.selectedId = String(event.row.id);
-      clickTimeout = null;
-    }, 220);
-  } else if (event.actionId === "dblclick") {
-    if (clickTimeout) {
-      clearTimeout(clickTimeout);
-      clickTimeout = null;
-    }
+  if (event.actionId === "dblclick") {
     goto(localizeHref(`/${orgId}/students/${event.row.id}`));
   } else if (event.actionId === "toggle-select") {
     const id = String(event.row.id);

@@ -12,9 +12,9 @@ import { formatCurrency } from "$lib/core/i18n";
 import { toast } from "svelte-sonner";
 import DiscountTemplateSheet from "$lib/features/finance/components/discount-template-sheet.svelte";
 import * as m from "$lib/paraglide/messages";
-
 import { DataTable } from "$lib/tables";
 import { discountTemplates as dtDef, withIndex } from "$lib/tables/definitions";
+import type { GridActionEvent } from "@orbis/svelte-grid";
 
 let { data }: { data: { orgId: string } } = $props();
 
@@ -89,9 +89,18 @@ const columns = $derived(
   }),
 );
 
+
+
 function handleCreate() {
   selectedTemplate = null;
   isSheetOpen = true;
+}
+
+function handleGridAction(event: GridActionEvent) {
+  if (event.actionId === "dblclick" || event.actionId === "edit") {
+    selectedTemplate = event.row as any;
+    isSheetOpen = true;
+  }
 }
 </script>
 
@@ -123,6 +132,7 @@ function handleCreate() {
       rtl={getLocale() === "ar"}
       refreshable
       onRefresh={loadTemplates}
+      onaction={handleGridAction}
     />
   </div>
 </div>

@@ -90,9 +90,18 @@ const columns = $derived(
 
 // ── Sheet Controls ──────────────────────────────────────────────────────
 
+import type { GridActionEvent } from "@orbis/svelte-grid";
+
 function handleCreate() {
   selectedTemplate = null;
   isSheetOpen = true;
+}
+
+function handleGridAction(event: GridActionEvent) {
+  if (event.actionId === "dblclick" || event.actionId === "edit") {
+    selectedTemplate = event.row as any;
+    isSheetOpen = true;
+  }
 }
 </script>
 
@@ -124,6 +133,7 @@ function handleCreate() {
       rtl={getLocale() === "ar"}
       refreshable
       onRefresh={loadTemplates}
+      onaction={handleGridAction}
     />
   </div>
 </div>

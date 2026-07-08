@@ -35,45 +35,57 @@ export function buildGradeColumns(
       prop: "student_identifier",
       name: labels.student_id ?? "Student (Email/ID/Name)",
       size: 220,
+      editor: "text",
       cellProperties: errorCellProps("student_identifier"),
     },
     {
       prop: "subject_name",
       name: labels.subject ?? "Subject",
       size: 160,
+      editor: "text",
       cellProperties: errorCellProps("subject_name"),
     },
     {
       prop: "score",
       name: labels.score ?? "Score",
       size: 95,
-      editor: "number",
-      editorConfig: { min: 0, max: 999, step: 0.5 },
+      editor: "text",
       cellProperties: errorCellProps("score"),
     },
     {
       prop: "max_score",
       name: labels.max_score ?? "Max Score",
       size: 105,
-      editor: "number",
-      editorConfig: { min: 1, max: 999, step: 1 },
+      editor: "text",
       cellProperties: errorCellProps("max_score"),
     },
     {
       prop: "exam_type",
       name: labels.exam_type ?? "Exam Type",
       size: 120,
+      editor: "combo",
+      options: [
+        { id: "final", label: "Final" },
+        { id: "midterm", label: "Midterm" },
+        { id: "quiz", label: "Quiz" }
+      ]
     },
     {
       prop: "semester",
       name: labels.semester ?? "Semester",
       size: 120,
+      editor: "combo",
+      options: [
+        { id: "semester_1", label: "Semester 1" },
+        { id: "semester_2", label: "Semester 2" }
+      ],
       cellProperties: errorCellProps("semester"),
     },
     {
       prop: "notes",
       name: labels.notes ?? "Notes",
       size: 160,
+      editor: "text",
     },
   ];
 }

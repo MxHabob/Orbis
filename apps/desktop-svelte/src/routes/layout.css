@@ -24,13 +24,12 @@ html:not(.dark) {
   color-scheme: light !important;
 }
 
-/* Hide all scrollbars globally while keeping scroll functionality active */
-::-webkit-scrollbar,
-*::-webkit-scrollbar {
+/* Hide scrollbars only on elements with the scrollbar-hide utility class */
+.scrollbar-hide::-webkit-scrollbar {
   display: none !important;
 }
 
-* {
+.scrollbar-hide {
   -ms-overflow-style: none !important; /* IE and Edge */
   scrollbar-width: none !important; /* Firefox */
 }

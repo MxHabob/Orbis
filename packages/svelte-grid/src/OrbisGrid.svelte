@@ -41,6 +41,7 @@
 
   let api: any = $state(null);
   let isDark = $state(false);
+  let lastSelectedRowId = $state<string | null>(null);
 
   // Map incoming columns to SVAR-compatible structure
   let mappedColumns = $derived.by(() => {
@@ -109,6 +110,42 @@
 
       oncelledit(editEvent);
     });
+
+    api.on("select-row", (ev: any) => {
+      if (ev && ev.id !== undefined) {
+        lastSelectedRowId = String(ev.id);
+        
+        if (onaction) {
+          const rowData = source.find(r => String(r[rowIdKey]) === lastSelectedRowId);
+          const rowIndex = source.findIndex(r => String(r[rowIdKey]) === lastSelectedRowId);
+          if (rowData && rowIndex !== -1) {
+            onaction({
+              actionId: "select",
+              row: rowData,
+              rowIndex,
+              prop: "",
+              originalEvent: new MouseEvent("click")
+            });
+          }
+        }
+      }
+    });
+  }
+
+  function handleDblClick(e: MouseEvent) {
+    if (!api || !onaction || !lastSelectedRowId) return;
+
+    const rowData = source.find(r => String(r[rowIdKey]) === lastSelectedRowId);
+    const rowIndex = source.findIndex(r => String(r[rowIdKey]) === lastSelectedRowId);
+    if (rowData && rowIndex !== -1) {
+      onaction({
+        actionId: "dblclick",
+        row: rowData,
+        rowIndex,
+        prop: "",
+        originalEvent: e
+      });
+    }
   }
 
   // ── Exported API Methods ─────────────────────────────────────────────────
@@ -167,7 +204,11 @@
   }
 </script>
 
-<div class="orbis-grid-table-wrapper w-full h-full overflow-hidden" style="height: {height};">
+<div
+  class="orbis-grid-table-wrapper w-full h-full overflow-hidden"
+  style="height: {height};"
+  ondblclick={handleDblClick}
+>
   {#if isDark}
     <WillowDark>
       <HeaderMenu {api}>
