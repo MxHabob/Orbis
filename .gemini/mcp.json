@@ -1,7 +1,7 @@
 {
   "mcpServers": {
-    "RevoGrid": {
-      "url": "https://mcp.rv-grid.com",
+    "SVAR": {
+      "url": "https://docs.svar.dev/mcp",
       "type": "http"
     }
   }
