@@ -4,23 +4,26 @@ Highly-customizable, resizable sidebar panel for managing AI Timetable optimizat
 Includes constraints tuning, direct weekly subjects hours management, polling, and draft preview mode.
 -->
 <script lang="ts">
-import { commands } from "$lib/core/ipc";
+import { commands, extractErrorMessage } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
+import { Checkbox } from "@orbis/ui-svelte/checkbox";
+import { Label } from "@orbis/ui-svelte/label";
+import { Badge } from "@orbis/ui-svelte/badge";
 import { toast } from "svelte-sonner";
 import { getLocale } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
 import {
-  Sparkles,
   Cpu,
   Clock,
   Square,
   CheckCircle2,
   AlertCircle,
   History,
-  BookOpen,
+  Trash2,
 } from "lucide-svelte";
 import { authStore } from "$lib/stores/auth.svelte";
 import Resizer from "$lib/shell/resizer.svelte";
+import * as m from "$lib/paraglide/messages";
 
 let {
   orgId,
@@ -99,9 +102,7 @@ function getSubjectName(subjectId: string) {
   const sub = subjects.find((s) => String(s.id) === String(subjectId));
   return sub
     ? sub.name_ar || sub.name
-    : getLocale() === "ar"
-      ? "مادة غير معروفة"
-      : "Unknown Subject";
+    : m.schedule_page_unknown_subject();
 }
 
 async function adjustSubjectHours(csId: string, delta: number) {
@@ -117,13 +118,9 @@ async function adjustSubjectHours(csId: string, delta: number) {
     });
     await loadClassSubjects();
     onApply(); // Notify parent to refresh schedule grid
-    toast.success(
-      getLocale() === "ar"
-        ? "تم تحديث الساعات بنجاح"
-        : "Weekly hours updated successfully",
-    );
+    toast.success(m.schedule_ai_weekly_hours_updated());
   } catch (e) {
-    toast.error(e instanceof Error ? e.message : String(e));
+    toast.error(extractErrorMessage(e));
   } finally {
     isUpdatingSubjectHours = false;
   }
@@ -164,15 +161,11 @@ async function triggerSolving() {
     };
     const job = await commands.schedule.startSolve(orgId, userId, req);
     activeJob = job;
-    toast.success(
-      getLocale() === "ar"
-        ? "تم بدء الجدولة التلقائية في الخلفية"
-        : "Started auto-scheduling in the background",
-    );
+    toast.success(m.schedule_ai_optimization_started());
     startPollingJob(String(job.id));
   } catch (e) {
     isSolving = false;
-    solveError = e instanceof Error ? e.message : String(e);
+    solveError = extractErrorMessage(e);
     toast.error(solveError);
   }
 }
@@ -201,18 +194,10 @@ async function startPollingJob(jobId: string) {
         isSolving = false;
         await loadSolveJobs();
         if (job.status === "completed") {
-          toast.success(
-            getLocale() === "ar"
-              ? "اكتملت عملية الجدولة التلقائية بنجاح!"
-              : "Timetable optimization completed successfully!",
-          );
+          toast.success(m.schedule_ai_optimization_completed());
           previewDraft = true;
         } else if (job.status === "failed") {
-          solveError =
-            (job.error_message as string) ||
-            (getLocale() === "ar"
-              ? "فشلت عملية الجدولة"
-              : "Optimization job failed");
+          solveError = (job.error_message as string) || m.schedule_ai_optimization_failed();
           toast.error(solveError);
         }
       }
@@ -240,54 +225,59 @@ async function cancelSolving() {
     activeJob = job;
     stopPolling();
     isSolving = false;
-    toast.info(
-      getLocale() === "ar"
-        ? "تم إلغاء الجدولة التلقائية"
-        : "Optimization job cancelled",
-    );
+    toast.info(m.schedule_ai_optimization_cancelled());
     await loadSolveJobs();
   } catch (e) {
-    toast.error(e instanceof Error ? e.message : String(e));
+    toast.error(extractErrorMessage(e));
   }
 }
 
 async function applySolving() {
   if (!activeJob) return;
   try {
-    toast.loading(
-      getLocale() === "ar" ? "جاري تطبيق الجدول..." : "Applying timetable...",
-    );
+    toast.loading(m.schedule_ai_applying_timetable());
     await commands.schedule.applySolve(orgId, activeJob.id);
     activeJob = null;
     previewDraft = false;
     toast.dismiss();
-    toast.success(
-      getLocale() === "ar"
-        ? "تم تطبيق الجدول وحفظه بنجاح!"
-        : "Timetable applied and saved successfully!",
-    );
+    toast.success(m.schedule_ai_timetable_applied());
     onApply();
     await loadSolveJobs();
   } catch (e) {
     toast.dismiss();
-    toast.error(e instanceof Error ? e.message : String(e));
+    toast.error(extractErrorMessage(e));
   }
 }
 
 function discardDraft() {
   activeJob = null;
   previewDraft = false;
-  toast.info(
-    getLocale() === "ar"
-      ? "تم تجاهل مسودة الجدول المقترح"
-      : "Draft timetable discarded",
-  );
+  toast.info(m.schedule_ai_draft_discarded());
 }
 
 function formatTime(seconds: number): string {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
   return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+}
+
+async function deleteSolveJob(jobId: string) {
+  try {
+    await commands.schedule.deleteSolveJob(orgId, jobId);
+    toast.success(m.schedule_ai_record_deleted());
+    
+    // Clear state if deleting currently active job
+    if (activeJob && String(activeJob.id) === String(jobId)) {
+      activeJob = null;
+      isSolving = false;
+      previewDraft = false;
+      stopPolling();
+    }
+    
+    await loadSolveJobs();
+  } catch (e) {
+    toast.error(extractErrorMessage(e));
+  }
 }
 </script>
 
@@ -314,69 +304,70 @@ function formatTime(seconds: number): string {
 	{#if preferredWidth <= 3}
 		<!-- Collapsed vertical strip -->
 		<div class="h-full w-full flex flex-col items-center py-4 bg-card/30 select-none">
-			<button
-				type="button"
-				class="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground cursor-pointer transition-colors duration-150 mb-4"
+			<Button
+				variant="ghost"
+				size="icon"
+				class="mb-4 text-muted-foreground hover:text-foreground"
 				onclick={() => preferredWidth = defaultValue}
-				title={getLocale() === "ar" ? "توسيع اللوحة" : "Expand Panel"}
+				title={m.schedule_ai_expand_panel()}
 			>
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 					<rect width="18" height="18" x="3" y="3" rx="2" />
 					<path d="M15 3v18" />
 				</svg>
-			</button>
+			</Button>
 
 			<span class="vertical-text text-[10px] font-bold text-muted-foreground tracking-wider uppercase whitespace-nowrap">
-				{getLocale() === "ar" ? "الجدولة الذكية (AI)" : "AI Auto-Scheduler"}
+				{m.schedule_ai_auto_scheduler()}
 			</span>
 		</div>
 	{:else}
 		<!-- Panel Header -->
 		<div class="flex items-center justify-between pb-3 border-b border-border/80">
 			<div class="flex items-center gap-2">
-				<Sparkles size={16} class="text-purple-500 animate-pulse" />
 				<span class="text-xs font-bold text-foreground tracking-wide">
-					{getLocale() === "ar" ? "الجدولة الذكية (AI)" : "AI Auto-Scheduler"}
+					{m.schedule_ai_auto_scheduler()}
 				</span>
 			</div>
-			<span class="text-[9px] font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+			<Badge variant="brand" class="text-[9px] uppercase tracking-wider">
 				Orbis AI v1.0
-			</span>
+			</Badge>
 		</div>
 
 		<!-- Direct Weekly Load Editor section -->
 		{#if classSubjects.length > 0}
-			<div class="flex flex-col gap-2.5 pb-2.5 border-b border-border/60" in:fade={{ duration: 150 }}>
+			<div class="flex flex-col gap-2.5 pb-2.5" in:fade={{ duration: 150 }}>
 				<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-					<BookOpen size={12} class="text-purple-500" />
-					<span>{getLocale() === "ar" ? "نصاب الساعات الأسبوعية" : "Weekly Subject Hours"}</span>
+					<span>{m.schedule_ai_weekly_subject_hours()}</span>
 				</span>
 				<div class="flex flex-col gap-1.5 max-h-[160px] overflow-y-auto pr-1 scrollbar-hide">
 					{#each classSubjects as cs (cs.id)}
-						<div class="flex items-center justify-between p-1.5 bg-background border border-border/50 rounded-lg text-[9.5px]">
+						<div class="flex items-center justify-between p-1.5 text-[9.5px]">
 							<span class="font-bold text-foreground truncate max-w-[130px]" title={getSubjectName(cs.subject_id)}>
 								{getSubjectName(cs.subject_id)}
 							</span>
 							<div class="flex items-center gap-1.5">
-								<button 
-									type="button"
-									class="h-5 w-5 rounded bg-muted hover:bg-muted-foreground/10 text-foreground flex items-center justify-center font-bold cursor-pointer disabled:opacity-50 border border-border/60"
+								<Button 
+									variant="secondary"
+									size="icon-xs"
+									class="cursor-pointer text-[10px] font-bold"
 									onclick={() => adjustSubjectHours(cs.id, -1)}
 									disabled={isUpdatingSubjectHours}
 								>
 									-
-								</button>
+								</Button>
 								<span class="font-mono font-bold w-4 text-center text-foreground">
 									{cs.weekly_hours || 0}
 								</span>
-								<button 
-									type="button"
-									class="h-5 w-5 rounded bg-muted hover:bg-muted-foreground/10 text-foreground flex items-center justify-center font-bold cursor-pointer disabled:opacity-50 border border-border/60"
+								<Button 
+									variant="secondary"
+									size="icon-xs"
+									class="cursor-pointer text-[10px] font-bold"
 									onclick={() => adjustSubjectHours(cs.id, 1)}
 									disabled={isUpdatingSubjectHours}
 								>
 									+
-								</button>
+								</Button>
 							</div>
 						</div>
 					{/each}
@@ -390,65 +381,61 @@ function formatTime(seconds: number): string {
 				<!-- Solver Mode -->
 				<div class="flex flex-col gap-1.5">
 					<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-						{getLocale() === "ar" ? "وضع الجدولة التلقائية" : "Scheduling Optimization Mode"}
+						{m.schedule_ai_opt_mode()}
 					</span>
 					<div class="grid grid-cols-2 p-0.5 rounded-lg bg-muted border border-border/60">
-						<button 
-							type="button"
-							class="text-[10px] font-bold py-1.5 rounded-md transition-all duration-150 cursor-pointer {solverMode === 'incremental' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}"
+						<Button 
+							variant={solverMode === 'incremental' ? 'secondary' : 'ghost'} 
+							class="text-[10px] font-bold py-1 rounded-md h-7 transition-all duration-150 cursor-pointer"
 							onclick={() => solverMode = 'incremental'}
 						>
-							{getLocale() === "ar" ? "تدريجي (مسودة)" : "Incremental"}
-						</button>
-						<button 
-							type="button"
-							class="text-[10px] font-bold py-1.5 rounded-md transition-all duration-150 cursor-pointer {solverMode === 'full' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}"
+							{m.schedule_ai_mode_incremental()}
+						</Button>
+						<Button 
+							variant={solverMode === 'full' ? 'secondary' : 'ghost'} 
+							class="text-[10px] font-bold py-1 rounded-md h-7 transition-all duration-150 cursor-pointer"
 							onclick={() => solverMode = 'full'}
 						>
-							{getLocale() === "ar" ? "إعادة بالكامل" : "Full Reset"}
-						</button>
+							{m.schedule_ai_mode_full()}
+						</Button>
 					</div>
 					<p class="text-[9px] text-muted-foreground leading-normal mt-0.5">
-						{solverMode === 'incremental' 
-							? (getLocale() === "ar" ? "يحافظ على الحصص الحالية المجدولة يدوياً، ويملأ الساعات الشاغرة فقط." : "Preserves current manual schedule, only schedules unassigned weekly hours.") 
-							: (getLocale() === "ar" ? "يمسح الحصص الحالية في هذه الحلقة، ويعيد الجدولة بالكامل من الصفر." : "Clears all lessons in this cycle and generates a completely fresh schedule.")
-						}
+						{solverMode === 'incremental' ? m.schedule_ai_desc_incremental() : m.schedule_ai_desc_full()}
 					</p>
 				</div>
 
 				<!-- AI Constraints Config -->
-				<div class="flex flex-col gap-2 bg-muted/40 p-2.5 rounded-lg border border-border/60">
+				<div class="flex flex-col gap-2.5 bg-muted/40 p-2.5 rounded-lg border border-border/60">
 					<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-						{getLocale() === "ar" ? "محددات قيود الجدولة (AI)" : "AI Constraints Config"}
+						{m.schedule_ai_constraints_config()}
 					</span>
-					<label class="flex items-center justify-between cursor-pointer py-0.5">
-						<span class="text-[9px] font-semibold text-foreground">
-							{getLocale() === "ar" ? "تجنب فراغات الطلاب" : "Minimize student gaps"}
-						</span>
-						<input type="checkbox" bind:checked={minimizeStudentGaps} class="rounded text-purple-600 focus:ring-purple-500 accent-purple-600 cursor-pointer h-3.5 w-3.5" />
-					</label>
-					<label class="flex items-center justify-between cursor-pointer py-0.5">
-						<span class="text-[9px] font-semibold text-foreground">
-							{getLocale() === "ar" ? "تجنب فراغات المدرسين" : "Minimize teacher gaps"}
-						</span>
-						<input type="checkbox" bind:checked={minimizeTeacherGaps} class="rounded text-purple-600 focus:ring-purple-500 accent-purple-600 cursor-pointer h-3.5 w-3.5" />
-					</label>
-					<label class="flex items-center justify-between cursor-pointer py-0.5">
-						<span class="text-[9px] font-semibold text-foreground">
-							{getLocale() === "ar" ? "حظر مشاركة القاعات بالكامل" : "Strict Room Capacity"}
-						</span>
-						<input type="checkbox" bind:checked={strictRoomCapacity} class="rounded text-purple-600 focus:ring-purple-500 accent-purple-600 cursor-pointer h-3.5 w-3.5" />
-					</label>
+					<div class="flex items-center justify-between py-0.5">
+						<Label class="text-[9px] font-semibold text-foreground cursor-pointer" for="min-student-gaps">
+							{m.schedule_ai_min_student_gaps()}
+						</Label>
+						<Checkbox id="min-student-gaps" checked={minimizeStudentGaps} onCheckedChange={(v) => minimizeStudentGaps = Boolean(v)} />
+					</div>
+					<div class="flex items-center justify-between py-0.5">
+						<Label class="text-[9px] font-semibold text-foreground cursor-pointer" for="min-teacher-gaps">
+							{m.schedule_ai_min_teacher_gaps()}
+						</Label>
+						<Checkbox id="min-teacher-gaps" checked={minimizeTeacherGaps} onCheckedChange={(v) => minimizeTeacherGaps = Boolean(v)} />
+					</div>
+					<div class="flex items-center justify-between py-0.5">
+						<Label class="text-[9px] font-semibold text-foreground cursor-pointer" for="strict-capacity">
+							{m.schedule_ai_strict_room_capacity()}
+						</Label>
+						<Checkbox id="strict-capacity" checked={strictRoomCapacity} onCheckedChange={(v) => strictRoomCapacity = Boolean(v)} />
+					</div>
 				</div>
 
 				<Button 
-					variant="lime" 
 					class="w-full text-xs font-semibold flex items-center justify-center gap-1.5 py-1.5 h-9" 
 					onclick={triggerSolving}
 					disabled={isSolving}
 				>
 					<Cpu size={13} />
-					<span>{getLocale() === "ar" ? "تشغيل المحسّن التلقائي" : "Run AI Optimizer"}</span>
+					<span>{m.schedule_ai_run_optimizer()}</span>
 				</Button>
 			</div>
 		{/if}
@@ -458,11 +445,11 @@ function formatTime(seconds: number): string {
 			<div class="bg-muted/40 border border-border/80 rounded-lg p-3.5 flex flex-col gap-3" in:fade={{ duration: 150 }}>
 				<div class="flex items-center justify-between">
 					<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-						{getLocale() === "ar" ? "الحالة الجارية" : "Optimizer Status"}
+						{m.schedule_ai_optimizer_status()}
 					</span>
-					<span class="text-[9px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold uppercase tracking-wider animate-pulse">
-						{getLocale() === "ar" ? "جاري البحث..." : "Solving..."}
-					</span>
+					<Badge variant="secondary" class="text-[9px] font-mono font-bold uppercase tracking-wider animate-pulse">
+						{m.schedule_ai_solving()}
+					</Badge>
 				</div>
 
 				<!-- Time counter -->
@@ -473,7 +460,7 @@ function formatTime(seconds: number): string {
 
 				<!-- Score progression -->
 				<div class="flex flex-col gap-1">
-					<span class="text-[9px] text-muted-foreground">{getLocale() === "ar" ? "مؤشر القيود المؤقت:" : "Current Constraint Score:"}</span>
+					<span class="text-[9px] text-muted-foreground">{m.schedule_ai_current_score()}</span>
 					<div class="bg-background border border-border/60 rounded p-2 font-mono text-[10px] flex justify-between">
 						<span class="text-destructive font-semibold">
 							{activeJob.score ? activeJob.score.split('hard/')[0] : '0'} Hard
@@ -490,7 +477,7 @@ function formatTime(seconds: number): string {
 					onclick={cancelSolving}
 				>
 					<Square size={10} />
-					<span>{getLocale() === "ar" ? "إلغاء التشغيل" : "Cancel Solving"}</span>
+					<span>{m.schedule_ai_cancel_solving()}</span>
 				</Button>
 			</div>
 		{/if}
@@ -500,16 +487,16 @@ function formatTime(seconds: number): string {
 			<div class="bg-purple-500/5 border border-purple-500/20 rounded-lg p-3.5 flex flex-col gap-3" in:fade={{ duration: 150 }}>
 				<div class="flex items-center justify-between">
 					<span class="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">
-						{getLocale() === "ar" ? "المسودة المقترحة" : "Proposed Solution"}
+						{m.schedule_ai_proposed_solution()}
 					</span>
-					<span class="text-[9px] font-mono px-2 py-0.5 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold uppercase tracking-wider">
-						{getLocale() === "ar" ? "جاهزة" : "Ready"}
-					</span>
+					<Badge variant="brand" class="text-[9px] font-mono font-bold uppercase tracking-wider">
+						{m.schedule_ai_ready()}
+					</Badge>
 				</div>
 
 				<!-- Final Score -->
 				<div class="flex flex-col gap-1.5">
-					<span class="text-[9px] text-muted-foreground">{getLocale() === "ar" ? "النقاط المحققة:" : "Optimized Score Summary:"}</span>
+					<span class="text-[9px] text-muted-foreground">{m.schedule_ai_score_summary()}</span>
 					<div class="bg-background border border-border/60 rounded p-2.5 font-mono text-[10px] flex justify-between">
 						<span class="text-destructive font-bold">
 							{activeJob.score ? activeJob.score.split('hard/')[0] : '0'} Hard
@@ -521,16 +508,12 @@ function formatTime(seconds: number): string {
 				</div>
 
 				<!-- Toggle preview -->
-				<label class="flex items-center justify-between p-2 rounded bg-background border border-border/60 cursor-pointer select-none">
-					<span class="text-[10px] font-bold text-foreground">
-						{getLocale() === "ar" ? "معاينة الحصص المقترحة" : "Preview draft on grid"}
-					</span>
-					<input 
-						type="checkbox" 
-						bind:checked={previewDraft} 
-						class="rounded text-purple-600 focus:ring-purple-500 accent-purple-600 cursor-pointer h-3.5 w-3.5"
-					/>
-				</label>
+				<div class="flex items-center justify-between p-2 rounded bg-background border border-border/60">
+					<Label class="text-[10px] font-bold text-foreground cursor-pointer" for="preview-draft">
+						{m.schedule_ai_preview_draft()}
+					</Label>
+					<Checkbox id="preview-draft" checked={previewDraft} onCheckedChange={(v) => previewDraft = Boolean(v)} />
+				</div>
 
 				<!-- Apply / Discard Actions -->
 				<div class="flex gap-2 mt-1">
@@ -540,14 +523,14 @@ function formatTime(seconds: number): string {
 						onclick={applySolving}
 					>
 						<CheckCircle2 size={11} />
-						<span>{getLocale() === "ar" ? "اعتماد الجدول" : "Apply Table"}</span>
+						<span>{m.schedule_ai_apply_table()}</span>
 					</Button>
 					<Button 
 						variant="outline" 
 						class="flex-1 text-xs font-semibold py-1.5 h-8 text-muted-foreground hover:bg-muted"
 						onclick={discardDraft}
 					>
-						<span>{getLocale() === "ar" ? "تجاهل" : "Discard"}</span>
+						<span>{m.schedule_ai_discard()}</span>
 					</Button>
 				</div>
 			</div>
@@ -558,7 +541,7 @@ function formatTime(seconds: number): string {
 			<div class="bg-destructive/5 border border-destructive/20 rounded-lg p-3 flex items-start gap-2 text-destructive text-[10px]" in:fade={{ duration: 150 }}>
 				<AlertCircle size={14} class="shrink-0 mt-0.5" />
 				<div class="flex flex-col gap-1">
-					<span class="font-bold">{getLocale() === "ar" ? "خطأ في عملية الجدولة:" : "Optimizer Error:"}</span>
+					<span class="font-bold">{m.schedule_ai_optimizer_error()}</span>
 					<span class="leading-normal">{solveError}</span>
 				</div>
 			</div>
@@ -570,21 +553,35 @@ function formatTime(seconds: number): string {
 				<div class="flex items-center gap-1.5 pb-1 border-b border-border/60">
 					<History size={12} class="text-muted-foreground" />
 					<span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-						{getLocale() === "ar" ? "سجل الجدولة والتحسين" : "Optimization History"}
+						{m.schedule_ai_optimization_history()}
 					</span>
 				</div>
 				<div class="flex flex-col gap-1.5 max-h-[140px] overflow-y-auto pr-1 scrollbar-hide">
 					{#each solveJobs.slice(0, 5) as job (job.id)}
 						<div class="flex flex-col p-2 bg-muted/30 border border-border/50 rounded-lg text-[9px] leading-tight select-text">
 							<div class="flex items-center justify-between font-bold text-foreground">
-								<span class="capitalize">{job.mode === 'full' ? (getLocale() === "ar" ? "كامل" : "Full") : (getLocale() === "ar" ? "تدريجي" : "Incremental")}</span>
-								<span class="text-[8px] font-mono opacity-85">{new Date(job.created_at).toLocaleString(getLocale() === "ar" ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+								<span class="capitalize">{job.mode === 'full' ? m.schedule_ai_mode_full() : m.schedule_ai_mode_incremental()}</span>
+								<div class="flex items-center gap-1.5 select-none font-normal">
+									<span class="text-[8px] font-mono opacity-85">{new Date(job.created_at).toLocaleTimeString(getLocale(), { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+									<Button 
+										variant="ghost" 
+										size="icon-xs"
+										class="h-4 w-4 text-muted-foreground/60 hover:text-destructive p-0 cursor-pointer flex items-center justify-center rounded-sm"
+										onclick={() => deleteSolveJob(job.id)}
+										title={getLocale() === "ar" ? "حذف السجل" : "Delete record"}
+									>
+										<Trash2 size={10} />
+									</Button>
+								</div>
 							</div>
 							<div class="flex items-center justify-between text-muted-foreground mt-1">
-								<span>{getLocale() === "ar" ? "النتيجة:" : "Score:"} <strong class="font-mono text-foreground">{job.score || 'N/A'}</strong></span>
-								<span class="font-semibold uppercase tracking-wider text-[8px] px-1 rounded {job.status === 'completed' ? 'bg-primary/10 text-primary' : job.status === 'failed' ? 'bg-destructive/10 text-destructive' : 'bg-muted text-muted-foreground'}">
-									{job.status === 'completed' ? (getLocale() === "ar" ? "ناجح" : "Done") : job.status === 'failed' ? (getLocale() === "ar" ? "فشل" : "Fail") : job.status}
-								</span>
+								<span>{m.schedule_ai_score()} <strong class="font-mono text-foreground">{job.score || 'N/A'}</strong></span>
+								<Badge 
+									variant={job.status === 'completed' ? 'lime' : job.status === 'failed' ? 'destructive' : 'secondary'} 
+									class="uppercase tracking-wider text-[8px] px-1 py-0.5"
+								>
+									{job.status === 'completed' ? m.schedule_ai_status_done() : job.status === 'failed' ? m.schedule_ai_status_fail() : job.status}
+								</Badge>
 							</div>
 						</div>
 					{/each}

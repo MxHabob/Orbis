@@ -58,3 +58,33 @@ export function createAssessmentsQuery(params: {
     staleTime: 2 * 60 * 1000,
   });
 }
+
+/** Time slots for an organization's academic cycle. */
+export function createTimeSlotsQuery(orgId: string, cycleId?: string) {
+  return createQuery({
+    queryKey: ["time-slots", orgId, cycleId],
+    queryFn: () => commands.schedule.getTimeSlots(orgId, cycleId!),
+    enabled: !!orgId && !!cycleId,
+    staleTime: 10 * 60 * 1000,
+  });
+}
+
+/** Class schedule lessons. */
+export function createClassScheduleQuery(orgId: string, cycleId?: string, classId?: string) {
+  return createQuery({
+    queryKey: ["class-schedule", orgId, cycleId, classId],
+    queryFn: () => commands.schedule.getClassSchedule(orgId, cycleId!, classId!),
+    enabled: !!orgId && !!cycleId && !!classId,
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
+/** Teacher schedule lessons. */
+export function createTeacherScheduleQuery(orgId: string, cycleId?: string, teacherId?: string) {
+  return createQuery({
+    queryKey: ["teacher-schedule", orgId, cycleId, teacherId],
+    queryFn: () => commands.schedule.getTeacherSchedule(orgId, cycleId!, teacherId!),
+    enabled: !!orgId && !!cycleId && !!teacherId,
+    staleTime: 2 * 60 * 1000,
+  });
+}

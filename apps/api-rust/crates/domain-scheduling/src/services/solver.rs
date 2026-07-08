@@ -286,6 +286,28 @@ impl TimetableSolverService {
         Ok(updated.into())
     }
 
+    pub async fn delete_schedule_solve_job(
+        &self,
+        org_id: &str,
+        job_id: &str,
+    ) -> Result<(), AppError> {
+        let job = self.query.get_solve_job_by_id(job_id).await?
+            .ok_or_else(|| AppError::not_found("solve_job", job_id))?;
+
+        if job.org_id != org_id {
+            return Err(AppError::not_found("solve_job", job_id));
+        }
+
+        // If active (pending or running), cancel solver execution first
+        if job.status == "pending" || job.status == "running" {
+            let _ = self.scheduler.cancel(job_id).await;
+        }
+
+        self.cmd.delete_solve_job(job_id).await?;
+        Ok(())
+    }
+
+
     async fn build_timetable_problem(
         &self,
         org_id: &str,

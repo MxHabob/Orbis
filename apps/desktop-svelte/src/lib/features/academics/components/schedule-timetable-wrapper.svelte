@@ -3,6 +3,7 @@ import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { Timetable } from "@orbis/ui-svelte/timetable";
 import { getLocale } from "$lib/paraglide/runtime";
+import { Clock } from "lucide-svelte";
 import * as m from "$lib/paraglide/messages";
 
 interface Props {
@@ -55,6 +56,20 @@ let {
     <p class="text-xs text-destructive font-semibold">{m.schedule_page_error()}</p>
     <p class="text-xs text-muted-foreground">{error}</p>
     <Button variant="outline" class="text-xs" onclick={onRetry}>{m.error_retry()}</Button>
+  </div>
+{:else if !timeSlots || timeSlots.length === 0}
+  <div class="flex-1 flex flex-col items-center justify-center p-12 border border-border/60 bg-card rounded-2xl text-center gap-4 max-w-lg mx-auto my-8">
+    <div class="p-3 bg-primary/10 rounded-full text-primary">
+      <Clock size={28} />
+    </div>
+    <div class="flex flex-col gap-1">
+      <h3 class="font-bold text-sm text-foreground">
+        {m.schedule_page_no_timeslots_title()}
+      </h3>
+      <p class="text-xs text-muted-foreground leading-relaxed">
+        {m.schedule_page_no_timeslots_desc()}
+      </p>
+    </div>
   </div>
 {:else}
   <Timetable

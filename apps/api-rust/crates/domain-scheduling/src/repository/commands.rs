@@ -156,5 +156,14 @@ impl SchedulingCommandRepo {
             .await?;
         Ok(result.rows_affected)
     }
+
+    pub async fn delete_solve_job(&self, id: &str) -> Result<u64, DbErr> {
+        use sea_orm::{ColumnTrait, QueryFilter};
+        let result = solve_job::Entity::delete_many()
+            .filter(solve_job::Column::Id.eq(id))
+            .exec(&self.db)
+            .await?;
+        Ok(result.rows_affected)
+    }
 }
 

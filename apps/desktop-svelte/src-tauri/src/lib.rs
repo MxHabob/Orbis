@@ -350,6 +350,7 @@ pub fn run() {
             commands::scheduling::schedule::list_schedule_solve_jobs,
             commands::scheduling::schedule::cancel_schedule_solve,
             commands::scheduling::schedule::apply_schedule_solve,
+            commands::scheduling::schedule::delete_schedule_solve_job,
             commands::scheduling::schedule::get_rooms,
             commands::scheduling::schedule::create_room,
             commands::scheduling::schedule::update_room,

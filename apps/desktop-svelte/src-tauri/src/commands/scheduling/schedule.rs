@@ -490,3 +490,18 @@ pub async fn delete_room(
         .map_err(|e| CommandError::new(e.to_string()))?;
     Ok(())
 }
+
+#[tauri::command]
+pub async fn delete_schedule_solve_job(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    job_id: String,
+) -> CmdResult<()> {
+    state.provider.ensure_writable().await.map_err(CommandError::from)?;
+    let db = state.active_db().await;
+    let (_, solver_service) = get_schedule_services(db);
+    solver_service.delete_schedule_solve_job(&org_id, &job_id)
+        .await
+        .map_err(|e| CommandError::new(e.to_string()))
+}
+

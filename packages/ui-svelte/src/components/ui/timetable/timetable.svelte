@@ -97,20 +97,20 @@ function handleDrop(e: DragEvent, targetDay: number, targetSlotId: string) {
 }
 </script>
 
-<!-- Period-Based School Timetable Component with Premium Aesthetics -->
-<div class="timetable-container flex-1 w-full border rounded-2xl flex flex-col overflow-hidden shadow-sm select-none">
+<!-- Period-Based School Timetable Component with Premium Aesthetics and Design Tokens -->
+<div class="flex-1 w-full border border-border bg-card rounded-2xl flex flex-col overflow-hidden shadow-sm select-none">
   
   <div 
-    class="grid gap-px text-xs w-full bg-border-line"
+    class="grid gap-px text-xs w-full bg-border"
     style="grid-template-columns: 145px repeat({weekdays.length}, 1fr);"
     in:fade={{ duration: 150 }}
   >
     <!-- 1. Header Row -->
-    <div class="timetable-header p-4 font-bold text-center flex items-center justify-center border-b uppercase text-[10px] tracking-wider">
+    <div class="bg-card text-muted-foreground p-4 font-bold text-center flex items-center justify-center border-b border-border uppercase text-[10px] tracking-wider">
       {locale === "ar" ? "الحصة / الوقت" : "Period / Time"}
     </div>
     {#each weekdays as day (day.value)}
-      <div class="timetable-header p-4 font-bold text-center flex items-center justify-center border-b uppercase text-[10px] tracking-wider">
+      <div class="bg-card text-muted-foreground p-4 font-bold text-center flex items-center justify-center border-b border-border uppercase text-[10px] tracking-wider">
         {day.label}
       </div>
     {/each}
@@ -120,11 +120,11 @@ function handleDrop(e: DragEvent, targetDay: number, targetSlotId: string) {
       {@const isBreak = slot.is_break === 1 || slot.is_break === true}
 
       <!-- Row Period Info Column -->
-      <div class="timetable-period-info p-3 font-semibold text-center flex flex-col justify-center items-center gap-1.5 h-[100px] border-b">
+      <div class="bg-muted/30 border-border p-3 font-semibold text-center flex flex-col justify-center items-center gap-1.5 h-[100px] border-b">
         <span class="text-[11px] tracking-wide font-extrabold text-foreground">
           {locale === "ar" ? (slot.name_ar || slot.name) : (slot.name || slot.name_ar)}
         </span>
-        <span class="timetable-time-badge text-[9px] font-mono font-bold px-2 py-0.5 rounded border flex items-center gap-1">
+        <span class="bg-card border border-border text-muted-foreground text-[9px] font-mono font-bold px-2 py-0.5 rounded flex items-center gap-1">
           <Clock size={10} class="opacity-70" />
           <span>{slot.start_time} - {slot.end_time}</span>
         </span>
@@ -134,7 +134,7 @@ function handleDrop(e: DragEvent, targetDay: number, targetSlotId: string) {
       {#if isBreak}
         <!-- Break row spans across all weekdays -->
         <div 
-          class="timetable-break-row bg-muted/40 text-muted-foreground border-b font-extrabold uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 h-[100px]"
+          class="bg-muted/50 text-muted-foreground border-b border-border font-extrabold uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 h-[100px]"
           style="grid-column: span {weekdays.length};"
         >
           <span>{locale === "ar" ? "فترة راحة" : "BREAK INTERVAL"}</span>
@@ -148,7 +148,7 @@ function handleDrop(e: DragEvent, targetDay: number, targetSlotId: string) {
           <!-- Cell Container -->
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <div 
-            class="timetable-cell p-2.5 text-center align-middle h-[100px] relative flex items-center justify-center transition-all duration-200 border-b
+            class="bg-card border-border p-2.5 text-center align-middle h-[100px] relative flex items-center justify-center transition-all duration-200 border-b hover:bg-muted/40
               {isDragOver ? 'bg-primary/[0.08] ring-2 ring-primary/40 ring-inset border-dashed' : ''}"
             ondragover={(e) => handleDragOver(e, day.value, slot.id)}
             ondragleave={handleDragLeave}
@@ -171,7 +171,7 @@ function handleDrop(e: DragEvent, targetDay: number, targetSlotId: string) {
               <button 
                 type="button"
                 onclick={() => onCellClick(day.value, slot.id)}
-                class="timetable-add-btn w-full h-full border border-dashed border-transparent hover:border-primary/30 hover:bg-primary/[0.03] rounded-xl flex items-center justify-center text-muted-foreground/0 hover:text-primary transition-all duration-200 cursor-pointer"
+                class="w-full h-full border border-dashed border-transparent hover:border-primary/30 hover:bg-primary/[0.03] rounded-xl flex items-center justify-center text-muted-foreground/0 hover:text-primary transition-all duration-200 cursor-pointer"
                 disabled={viewMode !== "class"}
                 title={locale === "ar" ? "إضافة حصة جديدة" : "Schedule new lesson"}
               >
@@ -184,85 +184,3 @@ function handleDrop(e: DragEvent, targetDay: number, targetSlotId: string) {
     {/each}
   </div>
 </div>
-
-<style>
-  /* 1. Container styling */
-  .timetable-container {
-    background-color: #ffffff;
-    border-color: #e5e7eb; /* border-gray-200 */
-  }
-  :global(.dark) .timetable-container {
-    background-color: #121214 !important; /* dark bg zinc-950 */
-    border-color: #27272a !important;
-  }
-
-  /* Grid line border colors */
-  .bg-border-line {
-    background-color: #e5e7eb;
-  }
-  :global(.dark) .bg-border-line {
-    background-color: #27272a !important;
-  }
-
-  /* 2. Headers styling */
-  .timetable-header {
-    border-color: #e5e7eb;
-    color: #6b7280; /* text-gray-500 */
-    background-color: #ffffff;
-  }
-  :global(.dark) .timetable-header {
-    border-color: #27272a;
-    color: #a1a1aa; /* text-zinc-400 */
-    background-color: #121214 !important;
-  }
-
-  /* 3. Period info column scale styling */
-  .timetable-period-info {
-    border-color: #e5e7eb;
-    background-color: #fcfcfd;
-  }
-  :global(.dark) .timetable-period-info {
-    border-color: #27272a;
-    background-color: #151518 !important;
-  }
-
-  /* Period time range badges */
-  .timetable-time-badge {
-    border-color: #e5e7eb;
-    background-color: #ffffff;
-    color: #4b5563; /* gray-600 */
-  }
-  :global(.dark) .timetable-time-badge {
-    border-color: #27272a;
-    background-color: #121214 !important;
-    color: #a1a1aa !important;
-  }
-
-  /* 4. Cell styling */
-  .timetable-cell {
-    border-color: #e5e7eb;
-    background-color: #ffffff;
-  }
-  .timetable-cell:hover {
-    background-color: #fafafa;
-  }
-  :global(.dark) .timetable-cell {
-    border-color: #27272a;
-    background-color: #121214 !important;
-  }
-  :global(.dark) .timetable-cell:hover {
-    background-color: #161619 !important;
-  }
-
-  /* 5. Break Row styling */
-  .timetable-break-row {
-    border-color: #e5e7eb;
-    background-color: #f9fafb;
-    color: #6b7280;
-  }
-  :global(.dark) .timetable-break-row {
-    border-color: #27272a;
-    background-color: #18181b !important;
-    color: #a1a1aa !important;
-  }
-</style>

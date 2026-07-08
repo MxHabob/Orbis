@@ -608,6 +608,9 @@ export const commands = {
     applySolve: (orgId: string, jobId: string) =>
       invoke<JsonRecord>("apply_schedule_solve", { orgId, jobId }),
 
+    deleteSolveJob: (orgId: string, jobId: string) =>
+      invoke<void>("delete_schedule_solve_job", { orgId, jobId }),
+
     // ── Rooms ──────────────────────────────────────────────────────────────
     getRooms: (orgId: string) => invoke<JsonRecord[]>("get_rooms", { orgId }),
 
