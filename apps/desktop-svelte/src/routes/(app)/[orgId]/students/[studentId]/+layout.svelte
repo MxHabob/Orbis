@@ -38,7 +38,7 @@ import type { Snippet } from "svelte";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
-import AskOrbisButton from "$lib/shared/components/AskOrbisButton.svelte";
+import AskOrbisButton from "$lib/shared/components/ask-orbis-button.svelte";
 
 let { children }: { children: Snippet } = $props();
 

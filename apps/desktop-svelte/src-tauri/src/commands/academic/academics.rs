@@ -1,6 +1,6 @@
 use tauri::State;
 use std::sync::Arc;
-use sea_orm::{EntityTrait, ColumnTrait, QueryFilter, ActiveModelTrait, ActiveValue::Set, DbErr, Statement, QueryOrder, QuerySelect};
+use sea_orm::{EntityTrait, ColumnTrait, QueryFilter, ActiveModelTrait, ActiveValue::Set, DbErr, Statement, QueryOrder, QuerySelect, PaginatorTrait};
 use crate::state::AppState;
 use crate::commands::error::{CmdResult, CommandError};
 
@@ -81,11 +81,36 @@ pub struct UpdateOrgUnitRequest {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+pub struct AttendanceOverview {
+    pub present_rate: f64,
+    pub late_rate: f64,
+    pub absent_rate: f64,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+pub struct BehaviorSummary {
+    pub net_points: i64,
+    pub critical_count: i64,
+    pub major_count: i64,
+    pub minor_count: i64,
+    pub total_records: i64,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 pub struct DashboardStats {
     pub student_count: i64,
     pub teacher_count: i64,
     pub class_count: i64,
     pub attendance_today: f64,
+
+    pub total_students: i64,
+    pub total_classes: i64,
+    pub total_teachers: i64,
+    pub total_staff: i64,
+    pub attendance_overview: AttendanceOverview,
+    pub behavior_summary: BehaviorSummary,
+    pub enrollment_rate: f64,
+    pub total_enrollments: i64,
 }
 
 // ── Academic Cycle Commands ──────────────────────────────────────────────────
@@ -559,7 +584,6 @@ pub async fn get_dashboard_stats(
     org_id: String,
 ) -> CmdResult<DashboardStats> {
     let db = state.active_db().await;
-    use sea_orm::PaginatorTrait;
     
     let student_count = domain_academic::entities::enrollment::Entity::find()
         .filter(domain_academic::entities::enrollment::Column::OrgId.eq(&org_id))
@@ -568,26 +592,111 @@ pub async fn get_dashboard_stats(
         .await
         .map_err(|e| CommandError::new(e.to_string()))? as i64;
 
-    let class_count = domain_academic::entities::class::Entity::find()
-        .filter(domain_academic::entities::class::Column::OrgId.eq(&org_id))
-        .filter(domain_academic::entities::class::Column::IsDeleted.eq(0))
+    let total_enrollments = domain_academic::entities::enrollment::Entity::find()
+        .filter(domain_academic::entities::enrollment::Column::OrgId.eq(&org_id))
         .count(&db)
         .await
         .map_err(|e| CommandError::new(e.to_string()))? as i64;
+
+    let classes = domain_academic::entities::class::Entity::find()
+        .filter(domain_academic::entities::class::Column::OrgId.eq(&org_id))
+        .filter(domain_academic::entities::class::Column::IsDeleted.eq(0))
+        .all(&db)
+        .await
+        .map_err(|e| CommandError::new(e.to_string()))?;
+
+    let class_count = classes.len() as i64;
+    let total_capacity: i64 = classes.iter().map(|c| c.capacity.unwrap_or(30) as i64).sum();
+    
+    let enrollment_rate = if total_capacity > 0 {
+        (student_count as f64 / total_capacity as f64) * 100.0
+    } else {
+        0.0
+    };
 
     let teacher_count = domain_iam::entities::user::Entity::find()
         .filter(domain_iam::entities::user::Column::OrgId.eq(&org_id))
         .filter(domain_iam::entities::user::Column::PrimaryRole.eq("teacher"))
+        .filter(domain_iam::entities::user::Column::IsDeleted.eq(0))
         .count(&db)
         .await
         .map_err(|e| CommandError::new(e.to_string()))? as i64;
 
-    let attendance_today = 94.5;
+    let total_staff = domain_iam::entities::user::Entity::find()
+        .filter(domain_iam::entities::user::Column::OrgId.eq(&org_id))
+        .filter(domain_iam::entities::user::Column::PrimaryRole.ne("student"))
+        .filter(domain_iam::entities::user::Column::PrimaryRole.ne("guardian"))
+        .filter(domain_iam::entities::user::Column::IsDeleted.eq(0))
+        .count(&db)
+        .await
+        .map_err(|e| CommandError::new(e.to_string()))? as i64;
+
+    let attendance_records = domain_assessment::entities::attendance::Entity::find()
+        .filter(domain_assessment::entities::attendance::Column::OrgId.eq(&org_id))
+        .all(&db)
+        .await
+        .map_err(|e| CommandError::new(e.to_string()))?;
+
+    let total_attendance = attendance_records.len() as f64;
+    let (present_rate, late_rate, absent_rate) = if total_attendance > 0.0 {
+        let present = attendance_records.iter().filter(|r| r.status == "present").count() as f64;
+        let late = attendance_records.iter().filter(|r| r.status == "late").count() as f64;
+        let absent = attendance_records.iter().filter(|r| r.status == "absent").count() as f64;
+        (
+            ((present + late) / total_attendance) * 100.0,
+            (late / total_attendance) * 100.0,
+            (absent / total_attendance) * 100.0,
+        )
+    } else {
+        (100.0, 0.0, 0.0)
+    };
+
+    let behavior_records = domain_assessment::entities::behavior_record::Entity::find()
+        .filter(domain_assessment::entities::behavior_record::Column::OrgId.eq(&org_id))
+        .all(&db)
+        .await
+        .map_err(|e| CommandError::new(e.to_string()))?;
+
+    let behavior_total_records = behavior_records.len() as i64;
+    let behavior_critical_count = behavior_records
+        .iter()
+        .filter(|r| r.severity == "critical")
+        .count() as i64;
+    let behavior_major_count = behavior_records
+        .iter()
+        .filter(|r| r.severity == "major")
+        .count() as i64;
+    let behavior_minor_count = behavior_records
+        .iter()
+        .filter(|r| r.severity == "minor")
+        .count() as i64;
+    let behavior_net_points = behavior_records
+        .iter()
+        .map(|r| r.points.unwrap_or(0) as i64)
+        .sum::<i64>();
 
     Ok(DashboardStats {
         student_count,
         teacher_count,
         class_count,
-        attendance_today,
+        attendance_today: present_rate,
+        total_students: student_count,
+        total_classes: class_count,
+        total_teachers: teacher_count,
+        total_staff,
+        attendance_overview: AttendanceOverview {
+            present_rate,
+            late_rate,
+            absent_rate,
+        },
+        behavior_summary: BehaviorSummary {
+            net_points: behavior_net_points,
+            critical_count: behavior_critical_count,
+            major_count: behavior_major_count,
+            minor_count: behavior_minor_count,
+            total_records: behavior_total_records,
+        },
+        enrollment_rate,
+        total_enrollments,
     })
 }

@@ -242,12 +242,34 @@ export interface Organization {
   created_at: string;
   updated_at: string;
 }
+export interface AttendanceOverview {
+  present_rate: number;
+  late_rate: number;
+  absent_rate: number;
+}
+
+export interface BehaviorSummary {
+  net_points: number;
+  critical_count: number;
+  major_count: number;
+  minor_count: number;
+  total_records: number;
+}
 
 export interface DashboardStats {
   student_count: number;
   teacher_count: number;
   class_count: number;
   attendance_today: number;
+
+  total_students: number;
+  total_classes: number;
+  total_teachers: number;
+  total_staff: number;
+  attendance_overview: AttendanceOverview;
+  behavior_summary: BehaviorSummary;
+  enrollment_rate: number;
+  total_enrollments: number;
 }
 
 export interface GradeAnalytics {

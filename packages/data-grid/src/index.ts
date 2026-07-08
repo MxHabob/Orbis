@@ -21,6 +21,7 @@ export {
 
 // Editors
 export { NumberEditor, TextEditor } from "./editors/index";
+
 // Grade-specific helpers
 export {
   buildGradeColumns,
@@ -30,8 +31,10 @@ export {
   scoreToGradeLetter,
   transformMatrixToSource,
 } from "./grade-helpers";
+
 // Main component
 export { default as OrbisGrid } from "./OrbisGrid.svelte";
+
 // Types
 export type {
   CellEditEvent,

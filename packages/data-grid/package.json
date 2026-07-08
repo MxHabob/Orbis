@@ -2,23 +2,38 @@
   "name": "@orbis/data-grid",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "svelte": "./src/index.ts",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./OrbisGrid.svelte": "./src/OrbisGrid.svelte",
-    "./editors": "./src/editors/index.ts",
-    "./types": "./src/types.ts"
+    ".": {
+      "svelte": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./OrbisGrid.svelte": {
+      "svelte": "./src/OrbisGrid.svelte",
+      "default": "./src/OrbisGrid.svelte"
+    },
+    "./editors": {
+      "svelte": "./src/editors/index.ts",
+      "default": "./src/editors/index.ts"
+    },
+    "./types": {
+      "svelte": "./src/types.ts",
+      "default": "./src/types.ts"
+    }
   },
   "dependencies": {
-    "@revolist/svelte-datagrid": "^4.13.2",
-    "@revolist/revogrid": "^4.23.20"
+    "@revolist/svelte-datagrid": "4.23.21",
+    "@revolist/revogrid": "4.23.21",
+    "@orbis/ui-svelte": "workspace:*",
+    "svelte-sonner": "^1.1.0"
   },
   "peerDependencies": {
     "svelte": "^5.0.0"
   },
   "devDependencies": {
-    "typescript": "^6.0.3"
+    "typescript": "^5.9.3"
   }
 }

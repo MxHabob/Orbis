@@ -20,7 +20,7 @@ import {
 } from "@orbis/ui-svelte/dropdown-menu";
 import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
 import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
-import AskOrbisButton from "$lib/shared/components/AskOrbisButton.svelte";
+import AskOrbisButton from "$lib/shared/components/ask-orbis-button.svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { toast } from "svelte-sonner";
 import {

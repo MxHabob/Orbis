@@ -8,6 +8,7 @@
  */
 
 import type { OrbisColumnDef, GradeMatrixResponse } from "./types";
+import { createInitials } from "./renderers";
 
 // ── Grade Letter Conversion (mirrors Rust: Service::score_to_grade_letter) ──
 
@@ -93,6 +94,43 @@ export function buildGradeColumns(
     readonly: true,
     sortable: true,
     cellClass: "cell-student-name",
+    cellRenderer: ({ h, row }) => {
+      const name = String(row.student_name_display || "");
+      const src = row.avatar as string | undefined;
+      const initials = createInitials(name);
+
+      const innerEl = src
+        ? h("img", {
+            class: "orbis-r-avatar__img",
+            src,
+            alt: name,
+            loading: "lazy",
+          })
+        : h("span", { class: "orbis-r-avatar__fallback-text" }, initials);
+
+      const avatarEl = h(
+        "span",
+        {
+          class: `orbis-r-avatar__root orbis-r-avatar--sm ${
+            src
+              ? "orbis-r-avatar__root--has-img"
+              : "orbis-r-avatar__root--has-fallback"
+          }`,
+        },
+        [innerEl],
+      );
+
+      return h(
+        "div",
+        {
+          class: "flex items-center gap-2 cursor-pointer w-full h-full px-2 text-start",
+        },
+        [
+          avatarEl,
+          h("span", { class: "text-xs font-medium text-foreground truncate" }, name),
+        ],
+      );
+    },
   });
 
   // 3. Assessment columns (editable)
@@ -182,6 +220,7 @@ export function transformMatrixToSource(
       student_id: student.student_id,
       student_name: student.student_name,
       student_name_ar: student.student_name_ar,
+      avatar: (student as any).avatar || null,
       student_name_display:
         isAr && student.student_name_ar
           ? student.student_name_ar

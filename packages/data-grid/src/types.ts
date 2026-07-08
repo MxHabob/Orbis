@@ -17,11 +17,12 @@ export type CellVariant =
   | "excellent"
   | "good";
 
+import type { ColumnRegular } from "@revolist/revogrid";
 import type { CellRenderer } from "./renderers/types";
 
 // ── Column Definition ────────────────────────────────────────────────────────
 
-export interface OrbisColumnDef {
+export interface OrbisColumnDef extends Omit<Partial<ColumnRegular>, "prop" | "name" | "cellProperties"> {
   /** The data property key to bind to */
   prop: string;
   /** Display name (header label) */

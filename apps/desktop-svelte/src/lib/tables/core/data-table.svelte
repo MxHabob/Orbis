@@ -280,14 +280,4 @@ function handleSearchKeydown(e: KeyboardEvent) {
       </div>
     {/if}
   </div>
-
-  <!-- ── Footer / Status Bar ──────────────────────────────────────────── -->
-  {#if !loading && hasData}
-    <div class="flex items-center justify-between px-2 pt-2 text-[10px] text-muted-foreground">
-      <span>{source.length} rows</span>
-      {#if effectiveSearch}
-        <span>Filtered by: "{effectiveSearch}"</span>
-      {/if}
-    </div>
-  {/if}
 </div>

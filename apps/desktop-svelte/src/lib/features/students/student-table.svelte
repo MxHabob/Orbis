@@ -43,7 +43,7 @@ function getClassName(classId: string): string {
 
 // ── Column Definitions ─────────────────────────────────────────────
 
-const columns: OrbisColumnDef[] = [
+const columns = $derived.by<OrbisColumnDef[]>(() => [
   {
     prop: "full_name",
     name: m.table_student(),
@@ -84,10 +84,10 @@ const columns: OrbisColumnDef[] = [
       ];
 
       const textContainer = h(
-        "div",
-        { class: "flex flex-col text-start min-w-0" },
-        nameLines,
-      );
+          "div",
+          { class: "flex flex-col text-start min-w-0" },
+          nameLines,
+        );
 
       return h(
         "div",
@@ -170,7 +170,7 @@ const columns: OrbisColumnDef[] = [
       return h("span", { class: "text-xs text-muted-foreground" }, label);
     },
   },
-];
+]);
 
 let gridSource = $derived(
   (students || []).map((student, i) => ({

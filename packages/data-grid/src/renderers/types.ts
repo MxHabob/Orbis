@@ -18,12 +18,6 @@ export interface RenderContext {
   /**
    * RevoGrid's hyperscript function — creates VNode DOM elements.
    * Signature: h(tag, attributes?, children?)
-   *
-   * @example
-   * h('div', { class: 'wrapper' }, [
-   *   h('img', { src: url, alt: name }),
-   *   h('span', {}, 'Hello'),
-   * ])
    */
   h: (tag: any, attrs?: any, children?: any) => any;
   /** Cell value (raw from source data) */
@@ -47,29 +41,12 @@ export interface RenderContext {
  * a VNode tree via hyperscript h(). No Svelte, no framework, just DOM.
  *
  * Performance: ~0.05ms per cell — identical to RevoGrid's native rendering.
- *
- * @example
- * // Inline renderer
- * const bold: CellRenderer = ({ h, value }) =>
- *   h('span', { style: { fontWeight: '700' } }, String(value ?? ''));
- *
- * // Used in column definition
- * const col = { prop: 'name', cellRenderer: bold };
  */
 export type CellRenderer = (ctx: RenderContext) => any;
 
 /**
  * A factory function that creates a CellRenderer with pre-configured options.
  * All built-in renderers in the consumer app follow this pattern.
- *
- * @example
- * // Define in consumer app:
- * const avatarRenderer: RendererFactory<AvatarConfig> = (config) => {
- *   return ({ h, value, row }) => h('div', ...);
- * };
- *
- * // Use:
- * const col = { cellRenderer: avatarRenderer({ size: 'md' }) };
  */
 export type RendererFactory<TConfig = any> = (config?: TConfig) => CellRenderer;
 

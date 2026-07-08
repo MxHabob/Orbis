@@ -20,7 +20,7 @@ import { Users, ClipboardList, Download, RefreshCcw } from "lucide-svelte";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
-import { DataTable } from "$lib/tables";
+import { DataTable, avatarRenderer } from "$lib/tables";
 import type { OrbisColumnDef } from "@orbis/data-grid";
 
 const orgId = $derived(page.params.orgId);
@@ -165,7 +165,12 @@ const gridColumns = $derived.by(() => {
       pin: "colPinStart",
       readonly: true,
       sortable: true,
-      cellProperties: () => ({ class: "orbis-cell-student" }),
+      cellRenderer: avatarRenderer({
+        srcKey: "avatar",
+        nameKey: "student_name",
+        size: "sm",
+        showName: true,
+      }),
     },
   ];
 
@@ -224,6 +229,7 @@ const gridSource = $derived.by(() => {
       student_id: studentId,
       student_name:
         student.full_name || student.name_ar || student.name || studentId,
+      avatar: student.avatar || null,
     };
 
     let total = 0;

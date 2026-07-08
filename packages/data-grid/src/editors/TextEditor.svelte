@@ -1,22 +1,23 @@
 <!--
 @component TextEditor
-Custom RevoGrid cell editor for text inputs.
-Integrates with S.C.R.A.P.S. design tokens for light/dark mode compatibility.
+Custom RevoGrid cell editor for text input using Svelte 5 Runes.
+Uses @orbis/ui-svelte/input for visual alignment with the design system.
 -->
 <script lang="ts">
 import { onMount } from "svelte";
+import { Input } from "@orbis/ui-svelte/input";
 
-interface EditorProps {
+interface Props {
   val?: unknown;
-  column?: { prop: string; meta?: Record<string, unknown> };
+  column?: { prop: string | number; meta?: Record<string, unknown> };
   save?: (value: unknown, preventFocus?: boolean) => void;
   close?: (focusNext?: boolean) => void;
 }
 
-let { val, save, close }: EditorProps = $props();
+let { val, save, close }: Props = $props();
 
-let inputEl: HTMLInputElement | undefined = $state();
-let inputValue = $state(val != null ? String(val) : "");
+let inputRef: HTMLInputElement | null = $state(null);
+let inputValue = $state("");
 
 function handleInput(e: Event) {
   const target = e.target as HTMLInputElement;
@@ -43,34 +44,25 @@ function handleBlur() {
 }
 
 onMount(() => {
-  if (inputEl) {
-    inputEl.focus();
-    inputEl.select();
+  inputValue = val != null ? String(val) : "";
+  if (inputRef) {
+    inputRef.focus();
+    inputRef.select();
   }
 });
+
+// Expose getValue method so RevoGrid's SvelteEditorAdapter can read the value
+export function getValue() {
+  return inputValue;
+}
 </script>
 
-<input
-  bind:this={inputEl}
+<Input
+  bind:ref={inputRef}
   type="text"
   value={inputValue}
   oninput={handleInput}
   onkeydown={handleKeyDown}
   onblur={handleBlur}
-  class="orbis-editor-input text-start"
+  class="h-full w-full text-start outline-none ring-0 border-0"
 />
-
-<style>
-  .orbis-editor-input {
-    width: 100%;
-    height: 100%;
-    border: none;
-    outline: none;
-    background: transparent !important;
-    color: var(--foreground) !important;
-    font-family: inherit;
-    font-size: 12.5px;
-    padding: 0 12px;
-    box-sizing: border-box;
-  }
-</style>

@@ -112,6 +112,7 @@ const gridSource = $derived(
     filteredFees.map((f) => ({
       ...f,
       student_name: f.student_name || f.enrollment_id || "—",
+      student_avatar: f.student_avatar || f.avatar || null,
       template_name: f.description || m.fees_default_description(),
       total_amount: formatCurrency(Number(f.amount || 0), f.currency || "YER"),
       paid_amount: formatCurrency(

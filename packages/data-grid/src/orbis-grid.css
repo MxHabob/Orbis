@@ -11,6 +11,9 @@
 /* ── Base Grid Container ──────────────────────────────────────────────────── */
 
 revo-grid {
+  display: block;
+  height: 100%;
+  width: 100%;
   --font-sans: "Rubik", system-ui, sans-serif;
   --rgFontFamily: var(--font-sans);
   --rgFontSize: 12px;
@@ -319,24 +322,26 @@ revo-grid .cell-number-input {
 
 /* ══════════════════════════════════════════════════════════════════════════
    Scrollbar Styling
+   Enhance visibility of internal scrollbars so they stand out.
    ══════════════════════════════════════════════════════════════════════════ */
 
 revo-grid ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px !important;
+  height: 8px !important;
 }
 
 revo-grid ::-webkit-scrollbar-track {
-  background: transparent;
+  background: transparent !important;
 }
 
 revo-grid ::-webkit-scrollbar-thumb {
-  background: color-mix(in oklch, var(--muted-foreground), transparent 80%);
-  border-radius: 3px;
+  background: color-mix(in oklch, var(--muted-foreground), transparent 60%) !important;
+  border-radius: 4px !important;
+  border: 1px solid transparent !important;
 }
 
 revo-grid ::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in oklch, var(--muted-foreground), transparent 65%);
+  background: var(--muted-foreground) !important;
 }
 
 /* ── RTL Adjustments ──────────────────────────────────────────────────────── */
@@ -449,9 +454,9 @@ revo-grid .orbis-cell-student {
   color: oklch(0.75 0.14 230);
 }
 
-/* ══════════════════════════════════════════════════════════════════════════
-   Editor Input — shared styles for all cell editors
-   ══════════════════════════════════════════════════════════════════════════ */
+/* ── Editor Input — shared styles for all cell editors
+   Make sure it matches S.C.R.A.P.S. design language.
+   ── */
 
 revo-grid .orbis-editor-input {
   width: 100%;

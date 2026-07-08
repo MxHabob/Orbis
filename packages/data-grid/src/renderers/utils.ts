@@ -10,12 +10,6 @@
 /**
  * Extract initials from a name string.
  * Handles Latin and Arabic names.
- *
- * @example
- * createInitials("Ali Hassan")  // → "AH"
- * createInitials("سارة أحمد")   // → "سأ"
- * createInitials("A")           // → "A"
- * createInitials("")            // → "?"
  */
 export function createInitials(name: string, maxChars = 2): string {
   if (!name || !name.trim()) return "?";
@@ -42,13 +36,6 @@ export interface Threshold {
 /**
  * Resolve a numeric value to a variant string based on thresholds.
  * Thresholds are checked from highest `min` to lowest.
- *
- * @example
- * resolveThreshold(85, [
- *   { min: 90, variant: 'success' },
- *   { min: 70, variant: 'warning' },
- *   { min: 0, variant: 'error' },
- * ]) // → 'warning'
  */
 export function resolveThreshold(
   value: number,
@@ -113,9 +100,6 @@ const _icons: Record<string, string> = {
 
 /**
  * Register a custom icon SVG path for use in renderers.
- *
- * @example
- * registerIcon('CustomIcon', 'M12 2L2 22h20Z');
  */
 export function registerIcon(name: string, svgPath: string): void {
   _icons[name] = svgPath;
@@ -124,10 +108,6 @@ export function registerIcon(name: string, svgPath: string): void {
 /**
  * Generate a minimal inline SVG string for a Lucide icon.
  * Designed for use inside h() renderers via innerHTML.
- *
- * @example
- * // In a renderer:
- * h('span', { class: 'icon', innerHTML: iconSvg('Pencil', 14) })
  */
 export function iconSvg(name: string, size = 16): string {
   const path = _icons[name];

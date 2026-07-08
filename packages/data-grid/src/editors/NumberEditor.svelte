@@ -1,30 +1,24 @@
 <!--
 @component NumberEditor
-Custom RevoGrid cell editor for numeric grade input.
-Uses S.C.R.A.P.S. design tokens for validation feedback.
-
-Features:
-- Min/max validation with visual feedback
-- Step support (0.5 increments)
-- Auto-select on focus
-- Enter/Tab/Arrow key navigation
-- Error state uses S.C.R.A.P.S. destructive token
+Custom RevoGrid cell editor for numeric input using Svelte 5 Runes.
+Uses @orbis/ui-svelte/input for visual alignment with the design system.
 -->
 <script lang="ts">
 import { onMount } from "svelte";
+import { Input } from "@orbis/ui-svelte/input";
 
-// RevoGrid editor interface
-interface EditorProps {
+// RevoGrid editor interface props
+interface Props {
   val?: unknown;
-  column?: { prop: string; meta?: Record<string, unknown> };
+  column?: { prop: string | number; meta?: Record<string, unknown> };
   save?: (value: unknown, preventFocus?: boolean) => void;
   close?: (focusNext?: boolean) => void;
 }
 
-let { val, column, save, close }: EditorProps = $props();
+let { val, column, save, close }: Props = $props();
 
-let inputEl: HTMLInputElement | undefined = $state();
-let inputValue = $state(val != null ? String(val) : "");
+let inputRef: HTMLInputElement | null = $state(null);
+let inputValue = $state("");
 let hasError = $state(false);
 
 // Get constraints from column meta
@@ -68,16 +62,23 @@ function handleBlur() {
 }
 
 onMount(() => {
-  // Auto-focus and select content on mount
-  if (inputEl) {
-    inputEl.focus();
-    inputEl.select();
+  inputValue = val != null ? String(val) : "";
+  // Focus and select input content on mount
+  if (inputRef) {
+    inputRef.focus();
+    inputRef.select();
   }
 });
+
+// Expose getValue method so RevoGrid's SvelteEditorAdapter can read the value
+export function getValue() {
+  if (hasError) return val;
+  return inputValue === "" ? null : parseFloat(inputValue);
+}
 </script>
 
-<input
-  bind:this={inputEl}
+<Input
+  bind:ref={inputRef}
   type="number"
   min={minScore}
   max={maxScore}
@@ -86,6 +87,5 @@ onMount(() => {
   oninput={handleInput}
   onkeydown={handleKeyDown}
   onblur={handleBlur}
-  class="orbis-editor-input"
-  class:orbis-editor-error={hasError}
+  class="h-full w-full text-center font-mono outline-none ring-0 border-0 {!validate(inputValue) ? 'text-destructive bg-destructive/10 border border-destructive' : ''}"
 />
