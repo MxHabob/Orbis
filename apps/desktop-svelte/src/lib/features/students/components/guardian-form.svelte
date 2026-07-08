@@ -59,8 +59,8 @@ $effect(() => {
     : "father";
   job = editData
     ? String(
-        (editData as JsonRecord).occupation ??
-          (editData as JsonRecord).job ??
+        (editData as unknown as JsonRecord).occupation ??
+          (editData as unknown as JsonRecord).job ??
           "",
       )
     : "";
@@ -271,17 +271,18 @@ async function handleSubmit() {
       guardian_id: finalGuardianUserId,
       relationship: relation,
       relationship_ar: relationAr,
-      is_primary: isPrimary ? 1 : 0,
-      is_emergency_contact: isEmergencyContact ? 1 : 0,
-      is_payer: isPayer ? 1 : 0,
+      is_primary: isPrimary,
+      is_emergency_contact: isEmergencyContact,
+      is_authorized_pickup: false,
+      is_payer: isPayer,
       payment_share_percent: isPayer ? paymentSharePercent : 0,
       occupation: job.trim() || null,
-      can_view_grades: 1,
-      can_view_attendance: 1,
-      can_view_behavior: 1,
-      can_view_finance: isPayer ? 1 : 0,
-      can_view_schedule: 1,
-      can_receive_notifications: 1,
+      can_view_grades: true,
+      can_view_attendance: true,
+      can_view_behavior: true,
+      can_view_finance: isPayer,
+      can_view_schedule: true,
+      can_receive_notifications: true,
     };
 
     if (isEditMode && editData?.id) {
