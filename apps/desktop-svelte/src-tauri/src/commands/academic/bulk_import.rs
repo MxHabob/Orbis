@@ -18,6 +18,7 @@ pub struct BulkStudentRow {
     pub birth_date: Option<String>,
     pub nationality: Option<String>,
     pub address: Option<String>,
+    pub class_id: Option<String>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
@@ -51,87 +52,162 @@ pub async fn bulk_create_students(
 ) -> CmdResult<BulkImportResult> {
     state.provider.ensure_writable().await.map_err(CommandError::from)?;
     let db = state.active_db().await;
-    let mut success_count = 0;
-    let mut failure_count = 0;
-    let mut errors = Vec::new();
     let total_rows = rows.len();
     let now = chrono::Utc::now().to_rfc3339();
 
-    for (idx, row) in rows.into_iter().enumerate() {
-        let id = uuid::Uuid::new_v4().to_string();
-        let cost = if cfg!(debug_assertions) { 4 } else { 10 };
-        let password_hash = bcrypt::hash(row.password.as_deref().unwrap_or("123456"), cost)
-            .unwrap_or_default();
+    use sea_orm::TransactionTrait;
+    db.transaction::<_, BulkImportResult, sea_orm::DbErr>(move |txn| {
+        let org_id = org_id.clone();
+        let created_by = created_by.clone();
+        let rows = rows.clone();
+        let now = now.clone();
 
-        let user = domain_iam::entities::user::Model {
-            id,
-            org_id: org_id.clone(),
-            email: row.email,
-            email_verified: 1,
-            email_verified_at: Some(now.clone()),
-            phone: row.phone,
-            phone_verified: 0,
-            phone_verified_at: None,
-            password_hash: Some(password_hash),
-            password_changed_at: None,
-            password_expires_at: None,
-            mfa_enabled: 0,
-            mfa_secret: None,
-            mfa_backup_codes: None,
-            full_name: row.name,
-            name_ar: None,
-            name_en: None,
-            avatar: None,
-            sex: row.gender,
-            date_of_birth: row.birth_date,
-            place_of_birth: None,
-            nationality: row.nationality,
-            national_id: row.national_id,
-            passport_number: None,
-            address: row.address,
-            city: None,
-            country: None,
-            postal_code: None,
-            emergency_contact: None,
-            blood_type: None,
-            allergies: None,
-            medical_conditions: None,
-            medical_notes: None,
-            social_links: None,
-            bio: None,
-            primary_role: "student".to_string(),
-            status: "active".to_string(),
-            last_login_at: None,
-            last_login_ip: None,
-            login_count: Some(0),
-            failed_logins: Some(0),
-            locked_until: None,
-            prefs: "{}".to_string(),
-            meta: "{}".to_string(),
-            is_deleted: 0,
-            deleted_at: None,
-            deleted_by: None,
-            created_at: now.clone(),
-            updated_at: now.clone(),
-            created_by: Some(created_by.clone()),
-        };
+        Box::pin(async move {
+            let mut success_count = 0;
 
-        let active: domain_iam::entities::user::ActiveModel = user.into();
-        match active.insert(&db).await {
-            Ok(_) => success_count += 1,
-            Err(e) => {
-                failure_count += 1;
-                errors.push(format!("Row {}: Failed to insert student user: {}", idx + 1, e));
+            for (idx, row) in rows.into_iter().enumerate() {
+                // ── 1. Check for Duplicate Student User Accounts ──
+                if let Some(nid) = &row.national_id {
+                    if !nid.trim().is_empty() {
+                        let existing = domain_iam::entities::user::Entity::find()
+                            .filter(domain_iam::entities::user::Column::OrgId.eq(&org_id))
+                            .filter(domain_iam::entities::user::Column::NationalId.eq(nid))
+                            .one(txn)
+                            .await?;
+                        if existing.is_some() {
+                            return Err(sea_orm::DbErr::Custom(format!(
+                                "الصف {}: الرقم الوطني '{}' مسجل مسبقاً لطالب آخر",
+                                idx + 1, nid
+                            )));
+                        }
+                    }
+                }
+
+                if let Some(email) = &row.email {
+                    if !email.trim().is_empty() {
+                        let existing = domain_iam::entities::user::Entity::find()
+                            .filter(domain_iam::entities::user::Column::OrgId.eq(&org_id))
+                            .filter(domain_iam::entities::user::Column::Email.eq(email))
+                            .one(txn)
+                            .await?;
+                        if existing.is_some() {
+                            return Err(sea_orm::DbErr::Custom(format!(
+                                "الصف {}: البريد الإلكتروني '{}' مسجل مسبقاً لطالب آخر",
+                                idx + 1, email
+                            )));
+                        }
+                    }
+                }
+
+                // ── 2. Create Student User Record ──
+                let id = uuid::Uuid::new_v4().to_string();
+                let cost = if cfg!(debug_assertions) { 4 } else { 10 };
+                let password_hash = bcrypt::hash(row.password.as_deref().unwrap_or("123456"), cost)
+                    .unwrap_or_default();
+
+                let user = domain_iam::entities::user::Model {
+                    id: id.clone(),
+                    org_id: org_id.clone(),
+                    email: row.email,
+                    email_verified: 1,
+                    email_verified_at: Some(now.clone()),
+                    phone: row.phone,
+                    phone_verified: 0,
+                    phone_verified_at: None,
+                    password_hash: Some(password_hash),
+                    password_changed_at: None,
+                    password_expires_at: None,
+                    mfa_enabled: 0,
+                    mfa_secret: None,
+                    mfa_backup_codes: None,
+                    full_name: row.name,
+                    name_ar: None,
+                    name_en: None,
+                    avatar: None,
+                    sex: row.gender,
+                    date_of_birth: row.birth_date,
+                    place_of_birth: None,
+                    nationality: row.nationality,
+                    national_id: row.national_id,
+                    passport_number: None,
+                    address: row.address,
+                    city: None,
+                    country: None,
+                    postal_code: None,
+                    emergency_contact: None,
+                    blood_type: None,
+                    allergies: None,
+                    medical_conditions: None,
+                    medical_notes: None,
+                    social_links: None,
+                    bio: None,
+                    primary_role: "student".to_string(),
+                    status: "active".to_string(),
+                    last_login_at: None,
+                    last_login_ip: None,
+                    login_count: Some(0),
+                    failed_logins: Some(0),
+                    locked_until: None,
+                    prefs: "{}".to_string(),
+                    meta: "{}".to_string(),
+                    is_deleted: 0,
+                    deleted_at: None,
+                    deleted_by: None,
+                    created_at: now.clone(),
+                    updated_at: now.clone(),
+                    created_by: Some(created_by.clone()),
+                };
+
+                let active: domain_iam::entities::user::ActiveModel = user.into();
+                active.insert(txn).await.map_err(|e| sea_orm::DbErr::Custom(format!(
+                    "الصف {}: فشل إضافة مستخدم الطالب: {}",
+                    idx + 1, e
+                )))?;
+
+                // ── 3. Create Class Enrollment Record ──
+                if let Some(class_id) = &row.class_id {
+                    if !class_id.trim().is_empty() {
+                        let enrollment_model = domain_academic::entities::enrollment::Model {
+                            id: uuid::Uuid::new_v4().to_string(),
+                            org_id: org_id.clone(),
+                            cycle_id: "".to_string(),
+                            student_id: id.clone(),
+                            class_id: class_id.clone(),
+                            student_number: format!("ST{}", uuid::Uuid::new_v4().to_string()[..8].to_uppercase()),
+                            status: "active".to_string(),
+                            enrollment_date: now.clone(),
+                            enrollment_type: "standard".to_string(),
+                            withdrawal_date: None,
+                            withdrawal_reason: None,
+                            final_grade: None,
+                            final_score: None,
+                            final_rank: None,
+                            is_promoted: None,
+                            promotion_decision: None,
+                            promotion_notes: None,
+                            meta: None,
+                            created_at: now.clone(),
+                            updated_at: now.clone(),
+                        };
+                        let enrollment_active: domain_academic::entities::enrollment::ActiveModel = enrollment_model.into();
+                        enrollment_active.insert(txn).await.map_err(|e| sea_orm::DbErr::Custom(format!(
+                            "الصف {}: فشل إدخال الطالب في الفصل المحدد: {}",
+                            idx + 1, e
+                        )))?;
+                    }
+                }
+
+                success_count += 1;
             }
-        }
-    }
 
-    Ok(BulkImportResult {
-        total_rows,
-        success_count,
-        failure_count,
-        errors,
-    })
+            Ok(BulkImportResult {
+                total_rows,
+                success_count,
+                failure_count: 0,
+                errors: Vec::new(),
+            })
+        })
+    }).await.map_err(|e| CommandError::new(e.to_string()))
 }
 
 #[tauri::command]

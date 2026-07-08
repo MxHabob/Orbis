@@ -115,7 +115,7 @@ pub async fn get_users(
     let users = user_service.list_users(
         &org_id,
         params.role.as_deref(),
-        params.limit.unwrap_or(50),
+        params.limit.unwrap_or(100000),
         params.offset.unwrap_or(0),
     ).await.map_err(CommandError::from)?;
     
