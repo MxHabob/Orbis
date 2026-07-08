@@ -140,9 +140,10 @@ pub async fn get_user(
 pub async fn create_user(
     state: State<'_, Arc<AppState>>,
     org_id: String,
-    _created_byy: String,
+    created_by: String,
     request: CreateUserRequest,
 ) -> CmdResult<user::Model> {
+    let _ = created_by;
     let db = state.active_db().await;
     let cmd = Arc::new(domain_iam::repository::IamCommandRepo::new(db.clone()));
     let query = Arc::new(domain_iam::repository::IamQueryRepo::new(db.clone()));
