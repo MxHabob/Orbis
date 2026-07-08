@@ -244,10 +244,10 @@ async function handleSubmit() {
 </script>
 
 <div
-  class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide text-foreground"
+  class="h-full w-full overflow-hidden bg-background/50 text-foreground"
   dir={isRtl ? "rtl" : "ltr"}
 >
-  <div class="max-w-[1600px] mx-auto p-6 flex flex-col gap-4">
+  <div class="max-w-[1600px] w-full h-full mx-auto p-6 flex flex-col gap-4 overflow-hidden">
     <!-- Header -->
     <div class="flex items-center justify-between gap-4 flex-nowrap shrink-0">
       <div class="flex items-center gap-3">

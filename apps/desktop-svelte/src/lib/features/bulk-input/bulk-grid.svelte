@@ -248,16 +248,16 @@ $effect(() => {
 }} />
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="flex flex-col gap-1 w-full max-w-full min-w-0 overflow-hidden">
+<div class="flex flex-col gap-1 w-full max-w-full min-w-0 overflow-hidden flex-grow min-h-0 h-full">
   <div
     bind:this={gridWrapper}
-    class="bulk-grid-wrapper"
+    class="bulk-grid-wrapper flex-grow min-h-0 h-full"
   >
     <OrbisGrid
       bind:this={gridRef}
       {columns}
       source={indexedSource}
-      height="calc(100vh - 180px)"
+      height="100%"
       rtl={isRtl}
       readonly={false}
       oncelledit={handleCellEdit}
@@ -270,6 +270,9 @@ $effect(() => {
     width: 100%;
     max-width: 100%;
     min-width: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
     border-radius: var(--radius, 0.75rem);
     overflow: hidden;
     border: 1px solid var(--border);
