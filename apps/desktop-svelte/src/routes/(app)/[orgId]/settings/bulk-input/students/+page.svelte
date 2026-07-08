@@ -297,7 +297,7 @@ async function handleSubmit() {
                 <div class="flex items-center gap-2">
                   <Checkbox
                     checked={visibleExtended.has(prop)}
-                    onCheckedChange={() => toggleExtended(prop)}
+                    onclick={() => toggleExtended(prop)}
                   />
                   <Label class="text-xs text-muted-foreground cursor-pointer">
                     {labels[prop] ?? prop}

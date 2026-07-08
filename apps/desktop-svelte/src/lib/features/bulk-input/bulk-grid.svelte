@@ -44,13 +44,16 @@ let {
 
 const isRtl = getLocale() === "ar";
 
+let gridWrapper = $state<HTMLElement | null>(null);
+let gridRef = $state<any>(null);
+
 // ── Indexed source for display ─────────────────────────────────────
 let indexedSource = $derived(addRowIndices(rows));
 
 // ── Cell Edit Handler ──────────────────────────────────────────────
 // Called by OrbisGrid after RevoGrid applies edits (including from paste)
 function handleCellEdit(event: CellEditEvent) {
-  const { rowIndex, prop, newValue } = event;
+  const { rowIndex, columnId: prop, newValue } = event;
   if (rowIndex < 0 || rowIndex >= rows.length) return;
 
   rows[rowIndex][prop] = newValue;
@@ -138,23 +141,25 @@ function handleClipboardPaste(e: ClipboardEvent) {
   if (pastedRows.length === 0) return;
 
   // ── Find active cell coordinates ──
-  const activeEl = document.activeElement as HTMLElement;
-  const targetEl = e.target as HTMLElement;
-
-  // Find closest cell container
-  const cell = (activeEl?.closest(".rgCell") ||
-    targetEl?.closest(".rgCell") ||
-    // RevoGrid overlays selection elements outside cells, check if target is near selection
-    document.querySelector("revo-grid .rgCell.focus")) as HTMLElement;
-
   let startRow = findFirstEmptyRow();
   let startColProp = dataProps[0];
 
-  if (cell) {
-    const r = cell.getAttribute("data-row");
-    const p = cell.getAttribute("data-prop");
-    if (r !== null) startRow = Number(r);
-    if (p !== null) startColProp = p;
+  const api = gridRef?.getGridElement();
+  if (api) {
+    const { focusCell } = api.getState();
+    if (focusCell) {
+      const rowId = focusCell.row;
+      const colId = focusCell.column;
+      if (rowId !== undefined && rowId !== null) {
+        const foundRow = indexedSource.find((r: any) => String(r.id) === String(rowId));
+        if (foundRow && foundRow.__rowIndex !== undefined) {
+          startRow = foundRow.__rowIndex - 1;
+        }
+      }
+      if (colId !== undefined && colId !== null) {
+        startColProp = colId;
+      }
+    }
   }
 
   const startColIdx = dataProps.indexOf(startColProp);
@@ -236,23 +241,26 @@ $effect(() => {
 });
 </script>
 
+<svelte:document onpaste={(e) => {
+  if (gridWrapper && (gridWrapper === document.activeElement || gridWrapper.contains(document.activeElement))) {
+    handleClipboardPaste(e);
+  }
+}} />
+
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="flex flex-col gap-1 w-full">
   <div
+    bind:this={gridWrapper}
     class="bulk-grid-wrapper"
-    onpaste={handleClipboardPaste}
   >
     <OrbisGrid
+      bind:this={gridRef}
       {columns}
       source={indexedSource}
       height="calc(100vh - 180px)"
       rtl={isRtl}
       readonly={false}
-      theme="compact"
-      range={true}
-      clipboard={true}
       oncelledit={handleCellEdit}
-      oncellspaste={handlePaste}
     />
   </div>
 </div>

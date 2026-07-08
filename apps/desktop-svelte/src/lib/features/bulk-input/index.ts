@@ -1,1 +1,1 @@
-export { default as BulkInputGrid } from "./components/bulk-input-grid.svelte";
+export { default as BulkInputGrid } from "./bulk-input-grid.svelte";

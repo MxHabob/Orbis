@@ -24,6 +24,8 @@
     oncelledit?: (event: CellEditEvent) => void;
     /** Fired when a custom cell button is clicked */
     onaction?: (event: GridActionEvent) => void;
+    /** Dynamic cell style callback */
+    cellStyle?: (row: any, col: any) => string;
   }
 
   let {
@@ -33,6 +35,7 @@
     rtl = false,
     readonly = false,
     rowIdKey = "id",
+    cellStyle,
     oncelledit,
     onaction,
   }: Props = $props();
@@ -67,6 +70,33 @@
     });
   });
 
+  // Combine internal validation cell error styling with user-provided cellStyle
+  const effectiveCellStyle = (row: any, col: any) => {
+    let classes = "";
+    const errors = row.__errors as Map<string, string> | undefined;
+    const prop = col.id || col.prop || "";
+    if (errors && errors.has(prop)) {
+      classes += " orbis-cell-error";
+    }
+    if (cellStyle) {
+      const customClass = cellStyle(row, col);
+      if (customClass) {
+        classes += " " + customClass;
+      }
+    }
+    return classes.trim();
+  };
+
+  // Pinned column counts for SVAR split prop mapping
+  let leftSplit = $derived(columns.filter(c => c.pin === "left").length);
+  let rightSplit = $derived(columns.filter(c => c.pin === "right").length);
+  let splitProp = $derived.by(() => {
+    const s: Record<string, number> = {};
+    if (leftSplit > 0) s.left = leftSplit;
+    if (rightSplit > 0) s.right = rightSplit;
+    return Object.keys(s).length > 0 ? s : undefined;
+  });
+
   // Provide parent action handler to all custom cells via Svelte Context
   setContext("orbis-grid-onaction", (event: GridActionEvent) => {
     if (onaction) {
@@ -96,16 +126,24 @@
   function handleInit(gridApi: any) {
     api = gridApi;
 
-    api.on("editor", (ev: any) => {
+    api.on("update-cell", (ev: any) => {
       if (!oncelledit) return;
 
-      const editEvent: CellEditEvent = {
-        row: ev.row || {},
-        rowIndex: source.findIndex(r => r[rowIdKey] === ev.row?.[rowIdKey]),
-        columnId: ev.column?.id || "",
-        oldValue: ev.oldValue,
+      const rowId = ev.id;
+      const rowIndex = source.findIndex(r => String(r[rowIdKey]) === String(rowId));
+      if (rowIndex === -1) return;
+
+      const row = source[rowIndex];
+      const columnId = ev.column || "";
+
+      const editEvent: CellEditEvent & { prop: string } = {
+        row,
+        rowIndex,
+        columnId,
+        prop: columnId,
+        oldValue: row[columnId] ?? "",
         newValue: ev.value,
-        action: ev.action,
+        action: "update",
         event: ev
       };
 
@@ -210,31 +248,37 @@
   style="height: {height};"
   ondblclick={handleDblClick}
 >
-  {#if isDark}
-    <WillowDark>
-      <HeaderMenu {api}>
-        <Grid
-          data={source}
-          columns={mappedColumns}
-          init={handleInit}
-          rowHeight={40}
-          headerHeight={40}
-        />
-      </HeaderMenu>
-    </WillowDark>
-  {:else}
-    <Willow>
-      <HeaderMenu {api}>
-        <Grid
-          data={source}
-          columns={mappedColumns}
-          init={handleInit}
-          rowHeight={40}
-          headerHeight={40}
-        />
-      </HeaderMenu>
-    </Willow>
-  {/if}
+  {#key columns}
+    {#if isDark}
+      <WillowDark>
+        <HeaderMenu {api}>
+          <Grid
+            data={source}
+            columns={mappedColumns}
+            init={handleInit}
+            cellStyle={effectiveCellStyle}
+            split={splitProp}
+            rowHeight={40}
+            headerHeight={40}
+          />
+        </HeaderMenu>
+      </WillowDark>
+    {:else}
+      <Willow>
+        <HeaderMenu {api}>
+          <Grid
+            data={source}
+            columns={mappedColumns}
+            init={handleInit}
+            cellStyle={effectiveCellStyle}
+            split={splitProp}
+            rowHeight={40}
+            headerHeight={40}
+          />
+        </HeaderMenu>
+      </Willow>
+    {/if}
+  {/key}
 </div>
 
 <style>
@@ -305,5 +349,12 @@
     border-right: 1px solid var(--border) !important;
     border-left: 1px solid var(--border) !important;
     color: var(--foreground) !important;
+  }
+
+  /* Red cell error highlight styling */
+  :global(.orbis-grid-table-wrapper .wx-cell.orbis-cell-error) {
+    background-color: rgba(239, 68, 68, 0.15) !important;
+    border: 1px solid rgb(239, 68, 68) !important;
+    color: rgb(248, 113, 113) !important;
   }
 </style>

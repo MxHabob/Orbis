@@ -8,14 +8,13 @@ import { OrbisGrid } from "@orbis/svelte-grid";
 import type { CellEditEvent } from "@orbis/svelte-grid";
 import { addRowIndices } from "$lib/tables";
 import { getLocale } from "$lib/paraglide/runtime";
-import { type BulkInputType, getColumnsForType } from "./bulk-input-config";
-import { getDataProps } from "./bulk-input-config";
+import { type BulkInputType, getColumnsForType } from "./config";
+import { getDataProps } from "./config";
 import {
   validateRows,
-  getValidationSummary,
   type RowValidationResult,
-} from "./bulk-input-validator";
-import { parseExcelPaste, detectHeaderRow } from "./paste-handler";
+} from "./validator";
+import { parseTSV, mapTSVToRows } from "./paste-handler";
 
 // ── Props ──────────────────────────────────────────────────────────
 interface Props {
@@ -38,6 +37,8 @@ let {
 
 const locale = getLocale();
 const isRtl = locale === "ar";
+
+let gridWrapper = $state<HTMLElement | null>(null);
 
 // ── Dynamic Columns ────────────────────────────────────────────────
 let config = $derived(getColumnsForType(type, labels));
@@ -70,7 +71,7 @@ function runValidation() {
 
 // ── Cell Edit Handler ──────────────────────────────────────────────
 function handleCellEdit(event: CellEditEvent) {
-  const { rowIndex, prop, newValue } = event;
+  const { rowIndex, columnId: prop, newValue } = event;
   if (rowIndex >= 0 && rowIndex < rows.length) {
     rows[rowIndex][prop] = newValue;
 
@@ -98,19 +99,16 @@ function handleClipboardPaste(e: ClipboardEvent) {
   e.preventDefault();
   e.stopPropagation();
 
-  let pastedRows = parseExcelPaste(text, type);
+  let pastedData = parseTSV(text);
+  if (pastedData.length === 0) return;
 
-  // Detect and skip header row
-  if (pastedRows.length > 1 && detectHeaderRow(pastedRows[0], type)) {
-    pastedRows = pastedRows.slice(1);
-  }
-
+  const dataProps = getDataProps(type);
+  const pastedRows = mapTSVToRows(pastedData, dataProps);
   if (pastedRows.length === 0) return;
 
   // Find the first empty slot or append
-  const dataProps = getDataProps(type);
   let insertAt = rows.findIndex((r) =>
-    dataProps.every((p) => !String(r[p] ?? "").trim()),
+    dataProps.every((p: string) => !String(r[p] ?? "").trim()),
   );
   if (insertAt === -1) insertAt = rows.length;
 
@@ -175,10 +173,16 @@ $effect(() => {
 });
 </script>
 
+<svelte:document onpaste={(e) => {
+  if (gridWrapper && (gridWrapper === document.activeElement || gridWrapper.contains(document.activeElement))) {
+    handleClipboardPaste(e);
+  }
+}} />
+
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
+  bind:this={gridWrapper}
   class="bulk-grid-wrapper"
-  onpaste={handleClipboardPaste}
 >
   <OrbisGrid
     columns={config.columns}
@@ -186,11 +190,7 @@ $effect(() => {
     height="calc(100vh - 360px)"
     rtl={isRtl}
     readonly={false}
-    theme="compact"
-    range={true}
-    clipboard={true}
     oncelledit={handleCellEdit}
-    onpaste={handlePaste}
   />
 </div>
 
