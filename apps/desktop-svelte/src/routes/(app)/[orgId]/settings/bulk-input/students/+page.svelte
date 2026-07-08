@@ -256,7 +256,7 @@ async function handleSubmit() {
           size="icon-sm"
           class="cursor-pointer"
           onclick={() =>
-            goto(localizeHref(`/${data.orgId}/students/bulk-input`))}
+            goto(localizeHref(`/${data.orgId}/settings/bulk-input`))}
         >
           <ArrowLeft class="h-4 w-4 rtl:rotate-180" />
         </Button>

@@ -5,15 +5,13 @@ Bulk grade entry page with smart student matching and active cycle display.
 <script lang="ts">
 import { goto } from "$app/navigation";
 import { Button } from "@orbis/ui-svelte/button";
-import { Label } from "@orbis/ui-svelte/label";
 import {
   Select,
   SelectTrigger,
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
-import { ArrowLeft, Upload, Info, Trash2, CalendarDays } from "lucide-svelte";
-import { Badge } from "@orbis/ui-svelte/badge";
+import { ArrowLeft, Upload, Trash2 } from "lucide-svelte";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
@@ -160,7 +158,7 @@ async function handleSubmit() {
           size="icon-sm"
           class="cursor-pointer"
           onclick={() =>
-            goto(localizeHref(`/${data.orgId}/students/bulk-input`))}
+            goto(localizeHref(`/${data.orgId}/settings/bulk-input`))}
         >
           <ArrowLeft class="h-4 w-4 rtl:rotate-180" />
         </Button>

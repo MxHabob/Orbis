@@ -84,7 +84,7 @@ const navItems = $derived([
     icon: History,
   },
   {
-    path: "import-export",
+    path: "bulk-input",
     label: m.settings_nav_import_export(),
     icon: FileDown,
   },

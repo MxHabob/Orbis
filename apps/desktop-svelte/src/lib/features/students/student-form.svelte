@@ -10,12 +10,6 @@ import {
   TabsContent,
 } from "@orbis/ui-svelte/tabs";
 import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-} from "@orbis/ui-svelte/select";
-import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
@@ -72,8 +66,8 @@ onMount(async () => {
     <!-- Header: Simple Back button and Actions dropdown -->
     <div class="flex items-center justify-between gap-4 flex-nowrap shrink-0 border-b border-border/60 pb-3 mb-2 select-none">
       <Button 
-        variant="ghost" 
-        class="text-xs h-9 px-3 gap-1.5 text-muted-foreground hover:text-foreground cursor-pointer font-semibold shrink-0"
+        variant="secondary" 
+        class="text-xs h-8 px-2 gap-1.5 shrink-0"
         onclick={() => goto(localizeHref(`/${orgId}/students`))}
       >
         <ArrowLeft class="h-4 w-4 rtl:rotate-180" />

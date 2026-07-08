@@ -28,7 +28,7 @@ let {
   <div class="flex items-center gap-3 text-start shrink min-w-0">
     <Button
       href={localizeHref(backHref)}
-      variant="ghost"
+      variant="secondary"
       size="icon"
       class="h-8 w-8 hover:bg-accent/80 cursor-pointer shrink-0"
       title={backLabel}

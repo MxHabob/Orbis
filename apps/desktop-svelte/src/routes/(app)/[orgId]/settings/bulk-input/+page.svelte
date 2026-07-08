@@ -23,14 +23,13 @@ const isRtl = getLocale() === "ar";
 </script>
 
 <div
-  class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide text-foreground"
+  class="h-full w-full overflow-y-auto scrollbar-hide"
   dir={isRtl ? "rtl" : "ltr"}
 >
-  <div class="max-w-4xl mx-auto p-6 flex flex-col gap-6">
-    <!-- Header -->
-    <div class="flex items-center gap-3 border-b border-border/60 pb-4">
+  <div class="max-w-7xl mx-auto p-6 flex flex-col gap-6">
+    <div class="flex items-center gap-3 pb-4">
       <Button
-        variant="ghost"
+        variant="secondary"
         size="icon-sm"
         class="cursor-pointer"
         onclick={() => goto(localizeHref(`/${data.orgId}/students`))}
@@ -41,21 +40,17 @@ const isRtl = getLocale() === "ar";
         <h1 class="text-xl font-bold tracking-tight text-foreground">
           {m.bulk_hub_title()}
         </h1>
-        <p class="text-xs text-muted-foreground">
-          {m.bulk_hub_desc()}
-        </p>
       </div>
     </div>
 
     <!-- Cards Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <!-- Students Card -->
       <button
         class="text-start w-full"
         onclick={() =>
-          goto(localizeHref(`/${data.orgId}/bulk-input/students`))}
+          goto(localizeHref(`/${data.orgId}/settings/bulk-input/students`))}
       >
-        <Card class="h-full cursor-pointer transition-all duration-200 hover:border-primary/40 hover:shadow-md group">
+        <Card class="h-full cursor-pointer p-4">
           <CardHeader class="pb-3">
             <div class="flex items-center justify-between">
               <div class="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -89,13 +84,12 @@ const isRtl = getLocale() === "ar";
         </Card>
       </button>
 
-      <!-- Grades Card -->
       <button
         class="text-start w-full"
         onclick={() =>
-          goto(localizeHref(`/${data.orgId}/bulk-input/grades`))}
+          goto(localizeHref(`/${data.orgId}/settings/bulk-input/grades`))}
       >
-        <Card class="h-full cursor-pointer transition-all duration-200 hover:border-primary/40 hover:shadow-md group">
+        <Card class="h-full cursor-pointer p-4">
           <CardHeader class="pb-3">
             <div class="flex items-center justify-between">
               <div class="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
