@@ -238,8 +238,71 @@
 
 <style>
   :global(.orbis-grid-table-wrapper) {
+    position: relative;
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
     --svar-grid-font-family: "Rubik", system-ui, sans-serif;
     --svar-grid-font-size: 12.5px;
     --svar-grid-header-font-weight: 600;
+
+    /* Theme Variable Overrides */
+    --wx-background: var(--background);
+    --wx-table-background: var(--background);
+    --wx-table-header-background: var(--muted);
+    --wx-table-border: 1px solid var(--border);
+    --wx-table-cell-border: 1px solid var(--border);
+    --wx-table-header-border: 1px solid var(--border);
+    --wx-table-header-cell-border: var(--border);
+    --wx-table-footer-cell-border: var(--border);
+    
+    /* Text colors */
+    --wx-table-color: var(--foreground);
+    --wx-table-header-color: var(--foreground);
+    
+    /* Hover and Selection */
+    --wx-table-row-hover-background: var(--accent);
+    --wx-table-select-background: var(--accent);
+    --wx-table-select-focus-background: var(--accent);
+    --wx-table-select-color: var(--foreground);
+    --wx-table-select-border: inset 3px 0 var(--primary);
+    
+    /* editor & dropdowns */
+    --wx-table-editor-dropdown-border: 1px solid var(--border);
+    --wx-table-editor-dropdown-shadow: 0px 4px 20px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Force background matching and remove SVAR hardcoded defaults */
+  :global(.orbis-grid-table-wrapper .wx-grid) {
+    background-color: var(--background) !important;
+    border-color: var(--border) !important;
+  }
+  :global(.orbis-grid-table-wrapper .wx-header) {
+    background-color: var(--muted) !important;
+    color: var(--foreground) !important;
+    border-bottom: 1px solid var(--border) !important;
+  }
+  :global(.orbis-grid-table-wrapper .wx-h-row) {
+    background-color: var(--muted) !important;
+  }
+  :global(.orbis-grid-table-wrapper .wx-header .wx-cell) {
+    background-color: var(--muted) !important;
+    color: var(--foreground) !important;
+    border-bottom: 1px solid var(--border) !important;
+    border-right: 1px solid var(--border) !important;
+    border-left: 1px solid var(--border) !important;
+  }
+  :global(.orbis-grid-table-wrapper .wx-row) {
+    background-color: var(--background) !important;
+    color: var(--foreground) !important;
+    border-bottom: 1px solid var(--border) !important;
+  }
+  :global(.orbis-grid-table-wrapper .wx-row:hover) {
+    background-color: var(--accent) !important;
+  }
+  :global(.orbis-grid-table-wrapper .wx-row .wx-cell) {
+    border-right: 1px solid var(--border) !important;
+    border-left: 1px solid var(--border) !important;
+    color: var(--foreground) !important;
   }
 </style>
