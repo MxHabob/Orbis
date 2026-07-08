@@ -2307,14 +2307,12 @@
   "grid_selection_export": "تصدير",
   "grid_selection_clear": "إلغاء التحديد",
   "grid_selection_select_all": "تحديد الكل",
-
   "td_title": "محرر القوالب",
   "td_loading": "جاري تحميل المحرر...",
   "td_save": "حفظ",
   "td_preview": "معاينة",
   "td_back_to_editor": "العودة للمحرر",
   "td_unsaved": "تغييرات غير محفوظة",
-
   "td_tool_select": "تحديد",
   "td_tool_text": "نص",
   "td_tool_image": "صورة",
@@ -2325,27 +2323,23 @@
   "td_tool_qrcode": "رمز QR",
   "td_tool_separator": "فاصل",
   "td_tool_pan": "تحريك",
-
   "td_align_left": "محاذاة لليسار",
   "td_align_center": "توسيط",
   "td_align_right": "محاذاة لليمين",
   "td_align_top": "محاذاة للأعلى",
   "td_align_middle": "توسيط عمودي",
   "td_align_bottom": "محاذاة للأسفل",
-
   "td_duplicate": "تكرار",
   "td_delete": "حذف",
   "td_undo": "تراجع",
   "td_redo": "إعادة",
   "td_grid": "الشبكة",
   "td_rulers": "المساطر",
-
   "td_layers": "الطبقات",
   "td_pages": "الصفحات",
   "td_variables": "المتغيرات",
   "td_inspector": "الخصائص",
   "td_properties": "الخصائص",
-
   "td_page_empty": "الصفحة فارغة — استخدم شريط الأدوات لإضافة عناصر",
   "td_add_page": "إضافة صفحة جديدة",
   "td_remove_page": "حذف الصفحة",
@@ -2353,7 +2347,6 @@
   "td_move_page_up": "نقل للأعلى",
   "td_move_page_down": "نقل للأسفل",
   "td_page_active": "نشطة",
-
   "td_var_search": "بحث...",
   "td_var_add": "إضافة متغير",
   "td_var_name": "اسم المتغير",
@@ -2363,7 +2356,6 @@
   "td_var_remove": "حذف",
   "td_var_empty": "لا توجد متغيرات — أضف متغيرات لربطها بالعناصر",
   "td_var_drag_hint": "اسحب المتغير إلى عنصر نص — أو اضغط + لإدراجه في العنصر المحدد",
-
   "td_inspector_name": "الاسم",
   "td_inspector_position": "الموقع والأبعاد",
   "td_inspector_appearance": "المظهر",
@@ -2373,7 +2365,6 @@
   "td_inspector_locked": "مقفل",
   "td_inspector_rotation": "الدوران",
   "td_inspector_no_selection": "اختر عنصراً من اللوحة أو شجرة الطبقات لتعديل خصائصه",
-
   "td_ctx_copy": "نسخ",
   "td_ctx_cut": "قص",
   "td_ctx_paste": "لصق",
@@ -2386,24 +2377,19 @@
   "td_ctx_show": "إظهار",
   "td_ctx_hide": "إخفاء",
   "td_ctx_select_all": "تحديد الكل",
-
   "td_text_content": "المحتوى",
   "td_text_font_size": "حجم الخط",
   "td_text_font_weight": "الوزن",
   "td_text_font_family": "الخط",
   "td_text_align": "المحاذاة",
   "td_text_color": "اللون",
-
   "td_shape_type": "الشكل",
   "td_shape_fill": "لون التعبئة",
   "td_shape_stroke": "لون الإطار",
-
   "td_barcode_data": "البيانات",
   "td_barcode_format": "الصيغة",
   "td_qr_data": "البيانات",
-
   "td_saved_success": "تم حفظ القالب بنجاح",
-
   "td_assets": "الأصول",
   "td_asset_search": "بحث...",
   "td_asset_add": "إضافة أصل",
@@ -2413,23 +2399,19 @@
   "td_asset_drag_hint": "اسحب الأصل إلى اللوحة لإنشاء عنصر صورة",
   "td_asset_remove": "حذف",
   "td_asset_insert": "إدراج كصورة",
-
   "td_history": "السجل",
   "td_history_empty": "لا يوجد سجل أوامر بعد",
   "td_history_initial": "الحالة الأصلية",
   "td_history_commands": "أمر",
-
   "td_drag_drop_hint": "أفلت لإنشاء عنصر",
   "td_snap_enabled": "الالتصاق مفعّل",
   "td_snap_disabled": "الالتصاق معطّل",
-
   "td_rail_templates": "قوالب",
   "td_rail_elements": "عناصر",
   "td_rail_text": "نص",
   "td_rail_uploads": "رفع",
   "td_rail_tools": "أدوات",
   "td_rail_page_setup": "إعدادات",
-
   "td_flyout_templates": "القوالب",
   "td_flyout_elements": "العناصر",
   "td_flyout_text": "أنماط النص",
@@ -2439,7 +2421,6 @@
   "td_flyout_coming_soon": "قريباً",
   "td_flyout_search_templates": "ابحث في القوالب...",
   "td_flyout_search_elements": "ابحث في العناصر...",
-
   "td_ctx_back": "رجوع",
   "td_ctx_undo": "تراجع",
   "td_ctx_redo": "إعادة",
@@ -2456,29 +2437,23 @@
   "td_ctx_data": "البيانات",
   "td_ctx_format": "الصيغة",
   "td_ctx_selected_elements": "عناصر محددة",
-
   "td_fab_duplicate": "تكرار",
   "td_fab_delete": "حذف",
   "td_fab_lock": "قفل",
   "td_fab_unlock": "فتح القفل",
   "td_fab_bring_front": "للأمام",
   "td_fab_send_back": "للخلف",
-
   "td_status_page": "الصفحة",
   "td_status_zoom_in": "تكبير",
   "td_status_zoom_out": "تصغير",
   "td_status_fit": "ملء الشاشة",
   "td_status_snap_on": "إيقاف الالتصاق",
   "td_status_snap_off": "تفعيل الالتصاق",
-
-  "td_back_to_editor": "العودة للمحرر",
   "td_loading_editor": "جاري تحميل المحرر...",
-
   "td_inline_edit_hint": "انقر مرتين لتعديل النص",
   "td_rotation_snap": "اضغط Shift للتدوير بزيادات 15°",
   "td_rubber_band_hint": "اسحب على منطقة فارغة لتحديد عناصر متعددة",
   "td_aspect_ratio_hint": "اضغط Shift للحفاظ على نسبة الأبعاد",
-
   "bulk_input_submit": "حفظ الكل",
   "bulk_input_submitting": "جاري الحفظ...",
   "bulk_input_clear": "مسح الكل",
@@ -2548,7 +2523,6 @@
   "bulk_col_semester": "الفصل الدراسي",
   "bulk_col_notes": "ملاحظات",
   "nav_bulk_input": "الإدخال الجماعي",
-
   "year_title": "السنوات الدراسية",
   "year_current": "السنة الحالية",
   "year_switch": "تبديل السنة",
@@ -2575,7 +2549,6 @@
   "year_notes": "ملاحظات",
   "year_no_years": "لا توجد سنوات دراسية بعد",
   "year_no_years_desc": "أنشئ أول سنة دراسية للبدء",
-
   "promo_title": "الترفيع الأكاديمي",
   "promo_subtitle": "ترفيع الطلاب إلى السنة الدراسية التالية",
   "promo_wizard_title": "معالج الترفيع",
@@ -2650,15 +2623,12 @@
   "promo_desc_target_level": "اسم المرحلة الدراسية المستهدفة للطلاب المرفعين",
   "promo_desc_target_classes": "أسماء الفصول الجديدة مفصولة بفواصل",
   "promo_desc_history_subtitle": "سجل بكافة عمليات الترفيع الأكاديمي السابقة وحالة كل عملية",
-
   "phase_pre_start": "قبل البدء",
   "phase_active": "نشط",
   "phase_exams": "اختبارات",
   "phase_grade_entry": "إدخال الدرجات",
   "phase_closed": "مغلق",
-
   "titlebar_inbox": "صندوق الوارد",
-
   "calendar_title": "التقويم الأكاديمي",
   "calendar_events_title": "الأحداث",
   "calendar_add_event": "إضافة حدث",
@@ -2690,7 +2660,6 @@
   "calendar_field_description": "الوصف",
   "calendar_phase_progress": "تقدم مراحل السنة الدراسية",
   "calendar_gregorian_preview": "المعاينة بالميلادي",
-
   "settings_nav_approvals": "الموافقات",
   "approvals_desc": "إدارة طلبات التجاوز وسير عمل الموافقات",
   "approvals_tab_pending": "قيد الانتظار",
@@ -2708,7 +2677,6 @@
   "approval_rejected": "تم الرفض",
   "approval_escalated": "تم التصعيد",
   "approval_cancelled": "تم إلغاء الطلب",
-
   "override_request_title": "طلب تجاوز",
   "override_request_desc": "هذا الإجراء يتطلب موافقة. قدم طلباً مع التبرير.",
   "override_type_label": "النوع",
@@ -2732,9 +2700,7 @@
   "override_chain_manager": "تتطلب موافقة المدير",
   "override_chain_admin": "تتطلب موافقة المدير + المسؤول",
   "override_chain_full": "تتطلب سلسلة موافقات كاملة",
-
   "students_request_late_enrollment": "طلب تسجيل متأخر",
-
   "sidebar_orbis_autopilot": "الطيار الآلي",
   "sidebar_orbis_autopilot_phase": "المرحلة",
   "sidebar_orbis_autopilot_year": "السنة",
@@ -2812,5 +2778,25 @@
   "ledger_label_opening_balance": "الرصيد الافتتاحي",
   "ledger_btn_add_account": "إضافة حساب / صندوق",
   "ledger_dialog_add_title": "إضافة حساب أو صندوق جديد",
-  "ledger_dialog_add_desc": "قم بفتح حساب أستاذ عام، صندوق، أو حساب مساعد للكيانات في مكانه الهيكلي الصحيح."
+  "ledger_dialog_add_desc": "قم بفتح حساب أستاذ عام، صندوق، أو حساب مساعد للكيانات في مكانه الهيكلي الصحيح.",
+  "reports_attendance_rate_title": "معدل الحضور",
+  "reports_attendance_rate_daily_avg": "المعدل اليومي",
+  "reports_attendance_rate_target_rate": "المعدل المستهدف",
+  "reports_total_students_title": "إجمالي الطلاب",
+  "reports_total_students_monthly_enrollment": "التسجيل الشهري",
+  "reports_total_students_average": "المتوسط",
+  "reports_gender_dist_title": "توزيع الجنسين",
+  "reports_gender_dist_total_students": "{count} إجمالي الطلاب",
+  "reports_gender_dist_female": "إناث",
+  "reports_gender_dist_male": "ذكور",
+  "reports_class_dist_title": "توزيع الفصول",
+  "reports_class_dist_active_classes": "{count} فصول نشطة",
+  "reports_class_dist_student_population": "عدد الطلاب",
+  "reports_revenue_trend_title": "اتجاه الإيرادات الشهري",
+  "reports_revenue_trend_last_year": "السنة الماضية",
+  "reports_revenue_trend_this_year": "السنة الحالية",
+  "reports_revenue_trend_average": "المتوسط",
+  "reports_profit_title": "الأرباح",
+  "reports_profit_avg_profit": "متوسط أرباحك خلال {months} أشهر هو {amount}",
+  "reports_profit_detailed_graph": "عرض الرسم البياني التفصيلي"
 }

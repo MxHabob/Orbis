@@ -27,7 +27,6 @@ let isLoading = $state(true);
 async function loadData() {
   isLoading = true;
   try {
-    // Query analytics for attendance
     const params: any = {};
     if (selectedClass !== "all") params.class_id = selectedClass;
     if (selectedTerm !== "all") params.cycle_id = selectedTerm;
@@ -38,10 +37,8 @@ async function loadData() {
     )) as any;
     overallRate = analytics ? analytics.overall_rate : 0;
 
-    // Query raw attendance to group for the chart trend
     const records = (await commands.attendance.getAll(orgId, params)) as any[];
     if (records && records.length > 0) {
-      // Group by date
       const groups: Record<string, { present: number; total: number }> = {};
       for (const r of records) {
         if (!groups[r.date]) {
@@ -53,13 +50,18 @@ async function loadData() {
         groups[r.date].total += 1;
       }
 
-      // Sort dates chronologically
       const sortedDates = Object.keys(groups).sort();
       data = sortedDates.map((date) => {
         const g = groups[date]!;
         const rate = g.total > 0 ? (g.present / g.total) * 100 : 100;
+        // Shorten label to month name or simple format
+        const dateObj = new Date(date);
+        const label = isNaN(dateObj.getTime())
+          ? date.substring(5)
+          : new Intl.DateTimeFormat(getLocale(), { month: "short" }).format(dateObj);
         return {
-          date: date.substring(5), // mm-dd
+          date: label,
+          rawDate: date,
           rate: Math.round(rate * 10) / 10,
         };
       });
@@ -82,219 +84,198 @@ $effect(() => {
   }
 });
 
-// SVG Dimensions - Shorter height to utilize screen space cleanly
+// SVG Chart dimensions
 const width = 500;
 const height = 150;
-const padding = { left: 40, right: 15, top: 15, bottom: 20 };
+const padding = { left: 35, right: 15, top: 15, bottom: 20 };
+const chartWidth = width - padding.left - padding.right;
+const chartHeight = height - padding.top - padding.bottom;
+const targetY = padding.top + chartHeight - 0.95 * chartHeight;
 
-// Determine display dataset (uses placeholders for grid when empty)
-const displayData = $derived(
-  data.length > 0
-    ? data
-    : [
-        { date: "09-01", rate: 0 },
-        { date: "10-01", rate: 0 },
-        { date: "11-01", rate: 0 },
-        { date: "12-01", rate: 0 },
-        { date: "01-01", rate: 0 },
-        { date: "02-01", rate: 0 },
-        { date: "03-01", rate: 0 },
-      ],
-);
-
-// Derive min and max rates with pad for scaling
-const minRate = $derived.by(() => {
-  if (data.length === 0) return 0;
-  const rates = data.map((d) => d.rate);
-  return Math.max(0, Math.min(...rates) - 2);
+// Generate path command for SVG line chart
+const linePath = $derived.by(() => {
+  if (data.length === 0) return "";
+  const points = data.map((d, idx) => {
+    const x = padding.left + (idx / (data.length - 1 || 1)) * chartWidth;
+    const y = padding.top + chartHeight - (d.rate / 100) * chartHeight;
+    return `${x},${y}`;
+  });
+  return `M ${points.join(" L ")}`;
 });
 
-const maxRate = $derived.by(() => {
-  if (data.length === 0) return 100;
-  const rates = data.map((d) => d.rate);
-  return Math.min(100, Math.max(...rates) + 2);
-});
-
-const chartWidth = $derived(width - padding.left - padding.right);
-const chartHeight = $derived(height - padding.top - padding.bottom);
-const barWidth = $derived(Math.max(6, chartWidth / displayData.length - 16));
-
-// Compute vertical column bars
-const bars = $derived.by(() => {
-  return displayData.map((item, idx) => {
-    const xStep = chartWidth / displayData.length;
-    const x = padding.left + idx * xStep + (xStep - barWidth) / 2;
-    const range = maxRate - minRate || 1;
-    const pct = (item.rate - minRate) / range;
-    const h = pct * chartHeight;
-    const y = height - padding.bottom - h;
-    return { x, y, width: barWidth, height: h, item };
+const dataPoints = $derived.by(() => {
+  if (data.length === 0) return [];
+  return data.map((d, idx) => {
+    const x = padding.left + (idx / (data.length - 1 || 1)) * chartWidth;
+    const y = padding.top + chartHeight - (d.rate / 100) * chartHeight;
+    return { x, y, item: d };
   });
 });
 
-// Interactive Hover State
-let hoveredIndex = $state<number | null>(null);
+let hoveredPointIdx = $state<number | null>(null);
 let tooltipPos = $state<{ x: number; y: number } | null>(null);
 
 function handleMouseMove(e: MouseEvent & { currentTarget: SVGSVGElement }) {
-  if (data.length === 0 || bars.length === 0) return;
+  if (data.length === 0) return;
   const rect = e.currentTarget.getBoundingClientRect();
-  const containerRect = e.currentTarget.parentElement!.getBoundingClientRect();
+  const mouseX = e.clientX - rect.left;
+  const mouseY = e.clientY - rect.top;
+  const svgX = (mouseX / rect.width) * width;
 
-  const localX = e.clientX - containerRect.left;
-  const localY = e.clientY - containerRect.top;
-  tooltipPos = { x: localX, y: localY };
+  // Find closest point
+  let closestIdx = 0;
+  let minDistance = Infinity;
 
-  const mouseSVGX = ((e.clientX - rect.left) / rect.width) * width;
-
-  let closestIdx: number | null = null;
-  bars.forEach((bar, idx) => {
-    const barLeft = bar.x - 6;
-    const barRight = bar.x + bar.width + 6;
-    if (mouseSVGX >= barLeft && mouseSVGX <= barRight) {
+  dataPoints.forEach((pt, idx) => {
+    const dist = Math.abs(pt.x - svgX);
+    if (dist < minDistance) {
+      minDistance = dist;
       closestIdx = idx;
     }
   });
 
-  if (closestIdx === null) {
-    let minDiff = Infinity;
-    bars.forEach((bar, idx) => {
-      const center = bar.x + bar.width / 2;
-      const diff = Math.abs(center - mouseSVGX);
-      if (diff < minDiff) {
-        minDiff = diff;
-        closestIdx = idx;
-      }
-    });
-  }
-  hoveredIndex = closestIdx;
+  hoveredPointIdx = closestIdx;
+  tooltipPos = { x: mouseX, y: mouseY };
 }
 
 function handleMouseLeave() {
-  hoveredIndex = null;
+  hoveredPointIdx = null;
   tooltipPos = null;
 }
 </script>
 
-<div class="card-tactile h-full relative group min-h-[235px] p-4 flex flex-col justify-between font-sans shadow-sm">
+<div class="card-tactile h-full relative group min-h-[265px] p-5 flex flex-col justify-between font-sans border border-border/60 bg-card shadow-sm">
   {#if isLoading}
     <div class="flex-grow w-full relative flex items-center justify-center">
       <Skeleton class="h-full w-full rounded-lg animate-pulse" />
     </div>
   {:else}
-    <!-- Top info bar with DragIndicator if editing, and small Releases-style label on the right -->
-    <div class="flex items-center justify-between w-full h-5 select-none text-[9px] font-bold text-muted-foreground/80">
-      <div class="flex items-center gap-2">
+    <!-- Top Row layout matching exactly screenshots -->
+    <div class="flex flex-col w-full text-start select-none">
+      <div class="flex items-center justify-between w-full h-5">
+        <span class="text-xs text-muted-foreground">{m.reports_attendance_rate_title()}</span>
         {#if isEditing}
           <DragIndicator />
         {/if}
       </div>
-      <div class="flex items-center gap-1.5 font-sans font-extrabold uppercase tracking-wider text-[8px] text-muted-foreground/75">
-        <span class="h-1.5 w-1.5 rounded-full bg-primary {data.length > 0 ? 'animate-pulse' : ''}"></span>
-        {m.reports_attendance_trends_title()} {#if data.length > 0}• Average: <span class="text-foreground font-mono">{overallRate}%</span>{/if}
+      <div class="text-4xl font-light tracking-tight mt-1 text-foreground">
+        {Math.round(overallRate)}%
+      </div>
+      
+      <!-- Subtitle legend matching exactly: Daily Average (circle dot) and Target Rate (dashed line) -->
+      <div class="flex items-center gap-4 text-[10px] text-muted-foreground mt-2 font-medium">
+        <div class="flex items-center gap-1.5">
+          <span class="h-2 w-2 rounded-full bg-foreground inline-block"></span>
+          <span>{m.reports_attendance_rate_daily_avg()}</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="font-mono text-muted-foreground/60 select-none">--</span>
+          <span>{m.reports_attendance_rate_target_rate()}</span>
+        </div>
       </div>
     </div>
 
-    <!-- Main Content Area: Full Width SVG Chart Card (No side panel) -->
-    <div class="flex-grow relative w-full h-full min-h-[160px] select-none mt-2 flex items-center justify-center" onmouseleave={handleMouseLeave}>
-      <svg
-        viewBox={`0 0 ${width} ${height}`}
-        class="w-full h-full text-primary select-none overflow-visible {data.length > 0 ? 'cursor-crosshair' : ''}"
-      >
-        <!-- Grid Lines & Y-Axis percentages -->
-        {#each [0, 0.25, 0.5, 0.75, 1] as tick}
-          {@const y = padding.top + tick * chartHeight}
+    <!-- Main Chart Area -->
+    <div class="flex-grow relative w-full h-full min-h-[165px] select-none mt-4 flex items-center justify-center">
+      {#if data.length === 0}
+        <!-- Dotted rectangle outline placeholder matching screenshot 4 left -->
+        <div class="w-full h-full border border-dashed border-border/60 rounded-xl flex items-center justify-center bg-muted/5 transition-colors">
+          <div class="flex flex-col items-center gap-1 px-4 text-center">
+            <span class="text-xs font-semibold text-foreground/80">{m.reports_attendance_empty_title()}</span>
+            <span class="text-[9px] text-muted-foreground max-w-[260px] leading-relaxed">
+              {m.reports_attendance_empty_desc()}
+            </span>
+          </div>
+        </div>
+      {:else}
+        <!-- Interactive line chart -->
+        <svg
+          viewBox={`0 0 ${width} ${height}`}
+          preserveAspectRatio="none"
+          class="w-full h-full text-foreground select-none overflow-visible cursor-crosshair"
+          onmousemove={handleMouseMove}
+          onmouseleave={handleMouseLeave}
+        >
+          <!-- Grid Lines -->
+          {#each [0, 0.25, 0.5, 0.75, 1] as tick}
+            {@const y = padding.top + tick * chartHeight}
+            <line
+              x1={padding.left}
+              y1={y}
+              x2={width - padding.right}
+              y2={y}
+              class="stroke-border/40"
+              stroke-width="1"
+              stroke-dasharray="3,3"
+            />
+            {@const labelVal = Math.round((1 - tick) * 100)}
+            <text
+              x={padding.left - 8}
+              y={y + 3}
+              class="text-[8px] font-bold fill-muted-foreground/80 font-mono"
+              text-anchor="end"
+            >
+              {labelVal}%
+            </text>
+          {/each}
+
+          <!-- Horizontal Target Rate line (95%) -->
           <line
             x1={padding.left}
-            y1={y}
+            y1={targetY}
             x2={width - padding.right}
-            y2={y}
-            class="stroke-border/40"
+            y2={targetY}
+            class="stroke-muted-foreground/60"
             stroke-width="1"
-            stroke-dasharray="3,3"
+            stroke-dasharray="4,4"
           />
-          {@const labelVal = Math.round((1 - tick) * (maxRate - minRate) + minRate)}
-          <text
-            x={padding.left - 8}
-            y={y + 3}
-            class="text-[8px] font-bold fill-muted-foreground/80 font-mono"
-            text-anchor="end"
-          >
-            {labelVal}%
-          </text>
-        {/each}
 
-        <!-- Active Column Slice Highlight background -->
-        {#if hoveredIndex !== null && data.length > 0}
-          {@const bar = bars[hoveredIndex]}
-          <rect
-            x={bar.x - 6}
-            y={padding.top}
-            width={bar.width + 12}
-            height={chartHeight}
-            class="fill-primary/5"
-            rx={2}
+          <!-- Trend Line -->
+          <path
+            d={linePath}
+            fill="none"
+            class="stroke-foreground"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
           />
-        {/if}
 
-        <!-- Bars (Rendered ONLY when there is actual data in the database) -->
-        {#if data.length > 0}
-          {#each bars as bar, idx}
-            <rect
-              x={bar.x}
-              y={bar.y}
-              width={bar.width}
-              height={Math.max(2, bar.height)}
-              rx={2}
-              class="transition-colors duration-200 {hoveredIndex === idx ? 'fill-primary' : 'fill-primary/80'}"
+          <!-- Data Points -->
+          {#each dataPoints as pt, idx}
+            <circle
+              cx={pt.x}
+              cy={pt.y}
+              r={hoveredPointIdx === idx ? 5 : 3}
+              class="fill-background stroke-foreground transition-all duration-100"
+              stroke-width="1.5"
             />
           {/each}
-        {/if}
 
-        <!-- X-Axis Labels -->
-        {#each bars as bar}
-          <text
-            x={bar.x + bar.width / 2}
-            y={height - 3}
-            class="text-[8px] font-bold fill-muted-foreground/80 font-mono"
-            text-anchor="middle"
+          <!-- X-Axis Labels -->
+          {#each dataPoints as pt}
+            <text
+              x={pt.x}
+              y={height - 2}
+              class="text-[8px] font-bold fill-muted-foreground/80 font-mono"
+              text-anchor="middle"
+            >
+              {pt.item.date}
+            </text>
+          {/each}
+        </svg>
+
+        <!-- Floating Tooltip -->
+        {#if hoveredPointIdx !== null && tooltipPos}
+          {@const activePt = dataPoints[hoveredPointIdx]}
+          <div
+            class="absolute z-30 p-2 text-[10px] font-sans border bg-card border-border text-foreground rounded-lg shadow-xl pointer-events-none transition-all duration-700 flex flex-col gap-0.5 min-w-[100px] text-start"
+            style="left: {tooltipPos.x + 15}px; top: {tooltipPos.y - 25}px;"
           >
-            {bar.item.date}
-          </text>
-        {/each}
-      </svg>
-
-      <!-- Interactive hover overlay tracker -->
-      {#if data.length > 0}
-        <svg
-          class="absolute inset-0 w-full h-full opacity-0 cursor-crosshair"
-          viewBox={`0 0 ${width} ${height}`}
-          onmousemove={handleMouseMove}
-        ></svg>
-      {/if}
-
-      <!-- Floating Interactive Tooltip -->
-      {#if hoveredIndex !== null && tooltipPos && data.length > 0}
-        {@const activeBar = bars[hoveredIndex]}
-        <div
-          class="absolute z-30 p-2 text-[10px] font-sans border bg-card border-border text-foreground rounded-lg shadow-xl pointer-events-none transition-all duration-100 flex flex-col gap-0.5 min-w-[100px] text-start"
-          style="left: {tooltipPos.x + 12}px; top: {tooltipPos.y - 45}px;"
-        >
-          <span class="text-muted-foreground font-bold border-b border-border/40 pb-0.5 mb-1">{activeBar.item.date}</span>
-          <span class="font-bold text-foreground font-mono">{m.reports_attendance_rate_tooltip({ rate: String(activeBar.item.rate) })}</span>
-        </div>
-      {/if}
-
-      <!-- Backdrop Blur Overlay (No borders, no alert icons, frosted glass blur effect) -->
-      {#if data.length === 0}
-        <div class="absolute inset-0 flex flex-col items-center justify-center text-center select-none p-4 gap-1.5 backdrop-blur-[3px] bg-background/35 z-10 transition-all duration-300 rounded-xl">
-          <span class="font-bold text-xs text-foreground/90">{m.reports_attendance_empty_title()}</span>
-          <span class="text-[9px] text-muted-foreground max-w-[280px] leading-relaxed">
-            {m.reports_attendance_empty_desc()}
-          </span>
-        </div>
+            <span class="text-muted-foreground font-bold border-b border-border/40 pb-0.5 mb-1">{activePt.item.rawDate}</span>
+            <span class="font-bold text-foreground font-mono">{m.reports_attendance_rate_tooltip({ rate: String(activePt.item.rate) })}</span>
+          </div>
+        {/if}
       {/if}
     </div>
-
   {/if}
 </div>

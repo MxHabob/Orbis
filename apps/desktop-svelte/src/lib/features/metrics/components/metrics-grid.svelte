@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { Snippet } from "svelte";
-import type { ChartLayoutItem, ColSpan, ChartId } from "../utils/chart-types";
+import type { ChartLayoutItem, ColSpan, ChartId } from "../utils/types";
 
 let {
   layout = $bindable(),

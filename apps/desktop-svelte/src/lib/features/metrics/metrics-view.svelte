@@ -8,8 +8,12 @@ import DraggableChartCard from "./components/draggable-chart-card.svelte";
 
 // Cards
 import AttendanceTrendsCard from "./cards/attendance-trends-card.svelte";
-import GradeDistributionCard from "./cards/grade-distribution-card.svelte";
+import TotalStudentsCard from "./cards/total-students-card.svelte";
+import GenderDistributionCard from "./cards/gender-distribution-card.svelte";
+import ClassDistributionCard from "./cards/class-distribution-card.svelte";
 import FeeCollectionCard from "./cards/fee-collection-card.svelte";
+import ProfitCard from "./cards/profit-card.svelte";
+import GradeDistributionCard from "./cards/grade-distribution-card.svelte";
 import BehaviorSummaryCard from "./cards/behavior-summary-card.svelte";
 
 let { orgId }: { orgId: string } = $props();
@@ -64,8 +68,24 @@ function handleResizeChart(id: ChartId, newColSpan: ColSpan) {
 						{selectedClass}
 						{selectedTerm}
 					/>
-				{:else if chartId === "grade-distribution"}
-					<GradeDistributionCard
+				{:else if chartId === "total-students"}
+					<TotalStudentsCard
+						{orgId}
+						{isEditing}
+						{period}
+						{selectedClass}
+						{selectedTerm}
+					/>
+				{:else if chartId === "gender-distribution"}
+					<GenderDistributionCard
+						{orgId}
+						{isEditing}
+						{period}
+						{selectedClass}
+						{selectedTerm}
+					/>
+				{:else if chartId === "class-distribution"}
+					<ClassDistributionCard
 						{orgId}
 						{isEditing}
 						{period}
@@ -74,6 +94,22 @@ function handleResizeChart(id: ChartId, newColSpan: ColSpan) {
 					/>
 				{:else if chartId === "fee-collection"}
 					<FeeCollectionCard
+						{orgId}
+						{isEditing}
+						{period}
+						{selectedClass}
+						{selectedTerm}
+					/>
+				{:else if chartId === "profit"}
+					<ProfitCard
+						{orgId}
+						{isEditing}
+						{period}
+						{selectedClass}
+						{selectedTerm}
+					/>
+				{:else if chartId === "grade-distribution"}
+					<GradeDistributionCard
 						{orgId}
 						{isEditing}
 						{period}

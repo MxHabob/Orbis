@@ -148,7 +148,7 @@ const displayItems = $derived(
     <div class="flex flex-col gap-4 mt-2 flex-grow justify-center w-full px-2 min-h-[140px] relative">
       {#each displayItems as item, idx}
         <div
-          class="flex items-center gap-4 text-[10px] w-full group/row cursor-pointer transition-opacity duration-200"
+          class="flex items-center gap-4 text-[10px] w-full group/row cursor-pointer transition-opacity duration-200 hover:bg-foreground/5 p-1 rounded-md"
           style="opacity: {hoveredIndex === null || hoveredIndex === idx ? 1 : 0.45}"
           onmouseenter={() => { if (summary) hoveredIndex = idx; }}
           onmouseleave={() => { hoveredIndex = null; }}
@@ -158,12 +158,12 @@ const displayItems = $derived(
             {item.name}
           </span>
 
-          <!-- Progress Bar Bar -->
-          <div class="flex-grow h-2.5 bg-muted/40 border border-border/50 rounded-md overflow-hidden relative select-none">
+          <!-- Progress Bar Bar (Tactile Sunken Track) -->
+          <div class="flex-grow h-2.5 bg-muted/40 border border-border/40 rounded-md overflow-hidden relative select-none shadow-[inset_0_1px_2.5px_rgba(0,0,0,0.08)] dark:shadow-[inset_0_1px_3px_rgba(0,0,0,0.35)]">
             <!-- Progress Fill (Rendered ONLY when summary is loaded) -->
             {#if summary}
               <div
-                class="h-full rounded-md transition-all duration-500 ease-out {item.color}"
+                class="h-full rounded-md transition-all duration-500 ease-out {item.color} shadow-[0_1.5px_0_0_rgba(0,0,0,0.15)] border-b border-black/10"
                 style="width: {item.percent}%"
               ></div>
             {/if}

@@ -87,63 +87,34 @@ const displayArray = $derived(
       ],
 );
 
-// SVG calculation - Shorter height
-const width = 500;
-const height = 150;
-const padding = { left: 30, right: 10, top: 15, bottom: 20 };
-
 const maxValue = $derived(Math.max(1, ...displayArray.map((d) => d.value)));
-const chartWidth = $derived(width - padding.left - padding.right);
-const chartHeight = $derived(height - padding.top - padding.bottom);
-const barWidth = $derived(Math.max(5, chartWidth / displayArray.length - 12));
 
 const bars = $derived.by(() => {
   return displayArray.map((item, idx) => {
-    const xStep = chartWidth / displayArray.length;
-    const x = padding.left + idx * xStep + (xStep - barWidth) / 2;
-    const pct = item.value / maxValue;
-    const h = pct * chartHeight;
-    const y = height - padding.bottom - h;
-    return { x, y, width: barWidth, height: h, item };
+    return {
+      name: item.name,
+      value: item.value,
+      pct: Math.min(100, (item.value / maxValue) * 100)
+    };
   });
 });
 
-// Interactive Hover State
 let hoveredIndex = $state<number | null>(null);
 let tooltipPos = $state<{ x: number; y: number } | null>(null);
 
-function handleMouseMove(e: MouseEvent & { currentTarget: SVGSVGElement }) {
+function handleMouseMove(e: MouseEvent & { currentTarget: HTMLDivElement }) {
   if (!stats || bars.length === 0) return;
   const rect = e.currentTarget.getBoundingClientRect();
-  const containerRect = e.currentTarget.parentElement!.getBoundingClientRect();
+  const mouseX = e.clientX - rect.left;
+  const mouseY = e.clientY - rect.top;
 
-  const localX = e.clientX - containerRect.left;
-  const localY = e.clientY - containerRect.top;
-  tooltipPos = { x: localX, y: localY };
+  const isRtl = document.documentElement.dir === "rtl";
+  const colWidth = rect.width / displayArray.length;
+  const rawIdx = Math.floor(mouseX / colWidth);
+  const idx = Math.min(displayArray.length - 1, Math.max(0, isRtl ? (displayArray.length - 1 - rawIdx) : rawIdx));
 
-  const mouseSVGX = ((e.clientX - rect.left) / rect.width) * width;
-
-  let closestIdx: number | null = null;
-  bars.forEach((bar, idx) => {
-    const barLeft = bar.x - 6;
-    const barRight = bar.x + bar.width + 6;
-    if (mouseSVGX >= barLeft && mouseSVGX <= barRight) {
-      closestIdx = idx;
-    }
-  });
-
-  if (closestIdx === null) {
-    let minDiff = Infinity;
-    bars.forEach((bar, idx) => {
-      const center = bar.x + bar.width / 2;
-      const diff = Math.abs(center - mouseSVGX);
-      if (diff < minDiff) {
-        minDiff = diff;
-        closestIdx = idx;
-      }
-    });
-  }
-  hoveredIndex = closestIdx;
+  hoveredIndex = idx;
+  tooltipPos = { x: mouseX, y: mouseY };
 }
 
 function handleMouseLeave() {
@@ -152,7 +123,7 @@ function handleMouseLeave() {
 }
 </script>
 
-<div class="card-tactile h-full relative group min-h-[235px] p-4 flex flex-col justify-between font-sans shadow-sm">
+<div class="card-tactile h-full relative group min-h-[235px] p-4 flex flex-col justify-between font-sans shadow-sm border border-border/60 bg-card">
   {#if isLoading}
     <div class="flex-grow w-full relative flex items-center justify-center">
       <Skeleton class="h-full w-full rounded-lg animate-pulse" />
@@ -171,95 +142,60 @@ function handleMouseLeave() {
       </div>
     </div>
 
-    <!-- Main Content Area: Full Width SVG Chart (No side panel) -->
-    <div class="flex-grow relative w-full h-full min-h-[160px] select-none mt-2 flex items-center justify-center" onmouseleave={handleMouseLeave}>
-      <svg
-        viewBox={`0 0 ${width} ${height}`}
-        class="w-full h-full select-none overflow-visible {stats ? 'cursor-crosshair' : ''}"
-      >
-        <!-- Grid Lines and Y-Axis Counts -->
+    <!-- Main Content Area: Full Width HTML Chart -->
+    <div 
+      class="flex-grow relative w-full h-[160px] select-none mt-2 flex flex-col justify-between" 
+      onmouseleave={handleMouseLeave}
+    >
+      <!-- Grid Lines and Y-Axis Counts -->
+      <div class="absolute inset-0 flex flex-col justify-between pb-8 pt-4 pointer-events-none">
         {#each [0, 0.25, 0.5, 0.75, 1] as tick}
-          {@const y = padding.top + tick * chartHeight}
-          <line
-            x1={padding.left}
-            y1={y}
-            x2={width - padding.right}
-            y2={y}
-            class="stroke-border/40"
-            stroke-width="1"
-            stroke-dasharray="3,3"
-          />
-          {@const labelVal = Math.round((1 - tick) * maxValue)}
-          <text
-            x={padding.left - 8}
-            y={y + 3}
-            class="text-[8px] font-bold fill-muted-foreground/80 font-mono"
-            text-anchor="end"
-          >
-            {labelVal}
-          </text>
+          {@const tickVal = Math.round((1 - tick) * maxValue)}
+          <div class="flex items-center w-full h-0">
+            <span class="w-8 text-end text-[8px] font-bold text-muted-foreground/80 font-mono pr-2 select-none">
+              {tickVal}
+            </span>
+            <div class="flex-grow border-t border-dashed border-border/40"></div>
+          </div>
         {/each}
+      </div>
 
-        <!-- Active Column Slice Highlight background -->
-        {#if hoveredIndex !== null && stats}
-          {@const bar = bars[hoveredIndex]}
-          <rect
-            x={bar.x - 6}
-            y={padding.top}
-            width={bar.width + 12}
-            height={chartHeight}
-            class="fill-primary/5"
-            rx={2}
-          />
-        {/if}
-
-        <!-- Bars with rounded top corners rx=2 (Rendered ONLY when stats is not null) -->
-        {#if stats}
-          {#each bars as bar, idx}
-            <rect
-              x={bar.x}
-              y={bar.y}
-              width={bar.width}
-              height={Math.max(2, bar.height)}
-              rx={2}
-              class="transition-colors duration-200 {hoveredIndex === idx ? 'fill-primary' : 'fill-primary/80'}"
-            />
+      <!-- Columns Container -->
+      <div 
+        class="absolute inset-0 flex items-end justify-between pl-8 pr-2 pb-8 pt-4 {stats ? 'cursor-crosshair' : ''}"
+        onmousemove={handleMouseMove}
+      >
+        {#each bars as bar, idx}
+          {@const isActive = hoveredIndex === idx}
+          <div class="flex-grow flex flex-col items-center justify-end h-full relative group/col">
+            <!-- Active slice highlight background -->
+            {#if isActive && stats}
+              <div class="absolute inset-x-1 top-0 bottom-0 bg-foreground/5 rounded-md pointer-events-none"></div>
+            {/if}
 
             <!-- Value Label overlay above bar -->
-            {#if bar.item.value > 0}
-              <text
-                x={bar.x + bar.width / 2}
-                y={bar.y - 6}
-                class="text-[8px] font-extrabold fill-foreground font-mono"
-                text-anchor="middle"
-              >
-                {bar.item.value}
-              </text>
+            {#if bar.value > 0 && stats}
+              <span class="text-[8px] font-extrabold text-foreground mb-1 select-none font-mono z-10">
+                {bar.value}
+              </span>
             {/if}
-          {/each}
-        {/if}
 
-        <!-- X-Axis Labels -->
-        {#each bars as bar}
-          <text
-            x={bar.x + bar.width / 2}
-            y={height - 3}
-            class="text-[8px] font-bold fill-muted-foreground/80 font-mono"
-            text-anchor="middle"
-          >
-            {bar.item.name}
-          </text>
+            <!-- Bar (tactile primary button style) -->
+            {#if stats}
+              <div 
+                class="w-3 sm:w-4 bg-primary shadow-[0_3px_0_0_oklch(0.35_0.1_280)] dark:shadow-[0_3px_0_0_oklch(0.3_0.1_280)] hover:-translate-y-1 transition-all rounded-t-md cursor-pointer duration-150 z-10"
+                style="height: {bar.pct}%"
+                title="{bar.name}: {bar.value}"
+              ></div>
+            {/if}
+
+            <!-- X-Axis Label Centered Under Bars -->
+            <div class="absolute bottom-[-24px] text-[8px] font-bold text-muted-foreground/90 font-mono select-none">
+              {bar.name}
+            </div>
+          </div>
         {/each}
-      </svg>
-
-      <!-- Interactive hover overlay tracker -->
-      {#if stats}
-        <svg
-          class="absolute inset-0 w-full h-full opacity-0 cursor-crosshair"
-          viewBox={`0 0 ${width} ${height}`}
-          onmousemove={handleMouseMove}
-        ></svg>
-      {/if}
+      </div>
 
       <!-- Floating Interactive Tooltip -->
       {#if hoveredIndex !== null && tooltipPos && stats}
@@ -268,12 +204,12 @@ function handleMouseLeave() {
           class="absolute z-30 p-2 text-[10px] font-sans border bg-card border-border text-foreground rounded-lg shadow-xl pointer-events-none transition-all duration-100 flex flex-col gap-0.5 min-w-[100px] text-start"
           style="left: {tooltipPos.x + 12}px; top: {tooltipPos.y - 50}px;"
         >
-          <span class="text-muted-foreground font-bold border-b border-border/40 pb-0.5 mb-1">{m.reports_grade_label({ grade: activeBar.item.name })}</span>
-          <span class="font-bold text-foreground font-mono">{m.reports_students_count({ count: String(activeBar.item.value) })}</span>
+          <span class="text-muted-foreground font-bold border-b border-border/40 pb-0.5 mb-1">{m.reports_grade_label({ grade: activeBar.name })}</span>
+          <span class="font-bold text-foreground font-mono">{m.reports_students_count({ count: String(activeBar.value) })}</span>
         </div>
       {/if}
 
-      <!-- Backdrop Blur Overlay (No borders, no alert icons, frosted glass blur effect) -->
+      <!-- Backdrop Blur Overlay -->
       {#if !stats}
         <div class="absolute inset-0 flex flex-col items-center justify-center text-center select-none p-4 gap-1.5 backdrop-blur-[3.5px] bg-background/35 z-10 transition-all duration-300 rounded-xl">
           <span class="font-bold text-xs text-foreground/90">{m.reports_grades_empty_title()}</span>
@@ -283,6 +219,5 @@ function handleMouseLeave() {
         </div>
       {/if}
     </div>
-
   {/if}
 </div>

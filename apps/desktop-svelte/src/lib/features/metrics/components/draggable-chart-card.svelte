@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { Snippet } from "svelte";
-import type { ColSpan } from "../utils/chart-types";
+import type { ColSpan } from "../utils/types";
 
 let {
   id,
@@ -75,7 +75,7 @@ function startResize(e: PointerEvent, side: "left" | "right") {
 <div
 	{id}
 	bind:this={cardEl}
-	class="relative transition-opacity duration-150 scroll-mt-24"
+	class="relative transition-opacity duration-150 scroll-mt-24 h-full flex flex-col"
 >
 	{@render children()}
 

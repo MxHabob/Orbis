@@ -2302,14 +2302,12 @@
   "grid_selection_export": "Export",
   "grid_selection_clear": "Clear Selection",
   "grid_selection_select_all": "Select All",
-
   "td_title": "Template Designer",
   "td_loading": "Loading editor...",
   "td_save": "Save",
   "td_preview": "Preview",
   "td_back_to_editor": "Back to Editor",
   "td_unsaved": "Unsaved changes",
-
   "td_tool_select": "Select",
   "td_tool_text": "Text",
   "td_tool_image": "Image",
@@ -2320,27 +2318,23 @@
   "td_tool_qrcode": "QR Code",
   "td_tool_separator": "Separator",
   "td_tool_pan": "Pan",
-
   "td_align_left": "Align Left",
   "td_align_center": "Align Center",
   "td_align_right": "Align Right",
   "td_align_top": "Align Top",
   "td_align_middle": "Align Middle",
   "td_align_bottom": "Align Bottom",
-
   "td_duplicate": "Duplicate",
   "td_delete": "Delete",
   "td_undo": "Undo",
   "td_redo": "Redo",
   "td_grid": "Grid",
   "td_rulers": "Rulers",
-
   "td_layers": "Layers",
   "td_pages": "Pages",
   "td_variables": "Variables",
   "td_inspector": "Inspector",
   "td_properties": "Properties",
-
   "td_page_empty": "Empty page — use the toolbar to add elements",
   "td_add_page": "Add new page",
   "td_remove_page": "Remove page",
@@ -2348,7 +2342,6 @@
   "td_move_page_up": "Move up",
   "td_move_page_down": "Move down",
   "td_page_active": "Active",
-
   "td_var_search": "Search...",
   "td_var_add": "Add Variable",
   "td_var_name": "Variable name",
@@ -2358,7 +2351,6 @@
   "td_var_remove": "Remove",
   "td_var_empty": "No variables — add variables to bind data",
   "td_var_drag_hint": "Drag a variable onto a text element — or click + to insert into the selected element",
-
   "td_inspector_name": "Name",
   "td_inspector_position": "Position & Size",
   "td_inspector_appearance": "Appearance",
@@ -2368,7 +2360,6 @@
   "td_inspector_locked": "Locked",
   "td_inspector_rotation": "Rotation",
   "td_inspector_no_selection": "Select an element from the canvas or layer tree to edit its properties",
-
   "td_ctx_copy": "Copy",
   "td_ctx_cut": "Cut",
   "td_ctx_paste": "Paste",
@@ -2381,24 +2372,19 @@
   "td_ctx_show": "Show",
   "td_ctx_hide": "Hide",
   "td_ctx_select_all": "Select All",
-
   "td_text_content": "Content",
   "td_text_font_size": "Font Size",
   "td_text_font_weight": "Weight",
   "td_text_font_family": "Font",
   "td_text_align": "Alignment",
   "td_text_color": "Color",
-
   "td_shape_type": "Shape",
   "td_shape_fill": "Fill Color",
   "td_shape_stroke": "Stroke Color",
-
   "td_barcode_data": "Data",
   "td_barcode_format": "Format",
   "td_qr_data": "Data",
-
   "td_saved_success": "Template saved successfully",
-
   "td_assets": "Assets",
   "td_asset_search": "Search...",
   "td_asset_add": "Add Asset",
@@ -2408,23 +2394,19 @@
   "td_asset_drag_hint": "Drag an asset onto the canvas to create an image element",
   "td_asset_remove": "Remove",
   "td_asset_insert": "Insert as image",
-
   "td_history": "History",
   "td_history_empty": "No command history yet",
   "td_history_initial": "Initial State",
   "td_history_commands": "commands",
-
   "td_drag_drop_hint": "Drop to create element",
   "td_snap_enabled": "Snap enabled",
   "td_snap_disabled": "Snap disabled",
-
   "td_rail_templates": "Templates",
   "td_rail_elements": "Elements",
   "td_rail_text": "Text",
   "td_rail_uploads": "Uploads",
   "td_rail_tools": "Tools",
   "td_rail_page_setup": "Page Setup",
-
   "td_flyout_templates": "Templates",
   "td_flyout_elements": "Elements",
   "td_flyout_text": "Text Presets",
@@ -2434,7 +2416,6 @@
   "td_flyout_coming_soon": "Coming soon",
   "td_flyout_search_templates": "Search templates...",
   "td_flyout_search_elements": "Search elements...",
-
   "td_ctx_back": "Back",
   "td_ctx_undo": "Undo",
   "td_ctx_redo": "Redo",
@@ -2451,29 +2432,23 @@
   "td_ctx_data": "Data",
   "td_ctx_format": "Format",
   "td_ctx_selected_elements": "selected elements",
-
   "td_fab_duplicate": "Duplicate",
   "td_fab_delete": "Delete",
   "td_fab_lock": "Lock",
   "td_fab_unlock": "Unlock",
   "td_fab_bring_front": "Bring to Front",
   "td_fab_send_back": "Send to Back",
-
   "td_status_page": "Page",
   "td_status_zoom_in": "Zoom In",
   "td_status_zoom_out": "Zoom Out",
   "td_status_fit": "Fit to screen",
   "td_status_snap_on": "Disable snap",
   "td_status_snap_off": "Enable snap",
-
-  "td_back_to_editor": "Back to Editor",
   "td_loading_editor": "Loading editor...",
-
   "td_inline_edit_hint": "Double-click to edit text",
   "td_rotation_snap": "Hold Shift for 15° increments",
   "td_rubber_band_hint": "Drag on empty area to select multiple elements",
   "td_aspect_ratio_hint": "Hold Shift to constrain aspect ratio",
-
   "bulk_input_submit": "Save All",
   "bulk_input_submitting": "Saving...",
   "bulk_input_clear": "Clear All",
@@ -2543,7 +2518,6 @@
   "bulk_col_semester": "Semester",
   "bulk_col_notes": "Notes",
   "nav_bulk_input": "Bulk Import",
-
   "year_title": "Academic Years",
   "year_current": "Current Year",
   "year_switch": "Switch Year",
@@ -2570,7 +2544,6 @@
   "year_notes": "Notes",
   "year_no_years": "No academic years yet",
   "year_no_years_desc": "Create your first academic year to get started",
-
   "promo_title": "Academic Promotion",
   "promo_subtitle": "Promote students to the next academic year",
   "promo_wizard_title": "Promotion Wizard",
@@ -2645,15 +2618,12 @@
   "promo_desc_target_level": "The destination academic level/grade after promotion.",
   "promo_desc_target_classes": "Target class/division names, separated by commas.",
   "promo_desc_history_subtitle": "Log of all past academic promotion executions and their statuses.",
-
   "phase_pre_start": "Pre-Start",
   "phase_active": "Active",
   "phase_exams": "Exams",
   "phase_grade_entry": "Grade Entry",
   "phase_closed": "Closed",
-
   "titlebar_inbox": "Inbox",
-
   "calendar_title": "Academic Calendar",
   "calendar_events_title": "Events",
   "calendar_add_event": "Add Event",
@@ -2685,7 +2655,6 @@
   "calendar_field_description": "Description",
   "calendar_phase_progress": "Phase Progress",
   "calendar_gregorian_preview": "Gregorian Preview",
-
   "settings_nav_approvals": "Approvals",
   "approvals_desc": "Manage override requests and approval workflows",
   "approvals_tab_pending": "Pending",
@@ -2703,7 +2672,6 @@
   "approval_rejected": "Rejected",
   "approval_escalated": "Escalated",
   "approval_cancelled": "Request cancelled",
-
   "override_request_title": "Override Request",
   "override_request_desc": "This action requires approval. Submit a request with justification.",
   "override_type_label": "Type",
@@ -2727,9 +2695,7 @@
   "override_chain_manager": "Manager approval required",
   "override_chain_admin": "Manager + Admin approval required",
   "override_chain_full": "Full approval chain required",
-
   "students_request_late_enrollment": "Request Late Enrollment",
-
   "sidebar_orbis_autopilot": "Orbis AutoPilot",
   "sidebar_orbis_autopilot_phase": "Phase",
   "sidebar_orbis_autopilot_year": "Year",
@@ -2768,7 +2734,6 @@
   "calendar_field_mode_manual": "Manual",
   "sidebar_quick_actions": "Quick Actions",
   "sidebar_no_actions": "No actions available",
-
   "settings_academic_policy_title": "Academic Policy & Automation",
   "settings_academic_policy_desc": "Configure organization-wide rules for calendar automation, enrollment, and grading.",
   "settings_nav_academic_policy": "Academic Policy",
@@ -2808,5 +2773,25 @@
   "ledger_label_opening_balance": "Opening Balance",
   "ledger_btn_add_account": "Add Account",
   "ledger_dialog_add_title": "Add New Account / Treasury",
-  "ledger_dialog_add_desc": "Create general ledger accounts, treasuries, or sub-ledger entities in the correct spot."
+  "ledger_dialog_add_desc": "Create general ledger accounts, treasuries, or sub-ledger entities in the correct spot.",
+  "reports_attendance_rate_title": "Attendance Rate",
+  "reports_attendance_rate_daily_avg": "Daily Average",
+  "reports_attendance_rate_target_rate": "Target Rate",
+  "reports_total_students_title": "Total Students",
+  "reports_total_students_monthly_enrollment": "Monthly Enrollment",
+  "reports_total_students_average": "Average",
+  "reports_gender_dist_title": "Gender Distribution",
+  "reports_gender_dist_total_students": "{count} Total Students",
+  "reports_gender_dist_female": "Female",
+  "reports_gender_dist_male": "Male",
+  "reports_class_dist_title": "Class Distribution",
+  "reports_class_dist_active_classes": "{count} Active Classes",
+  "reports_class_dist_student_population": "Student Population",
+  "reports_revenue_trend_title": "Monthly Revenue Trend",
+  "reports_revenue_trend_last_year": "Last year",
+  "reports_revenue_trend_this_year": "This year",
+  "reports_revenue_trend_average": "Average",
+  "reports_profit_title": "Profit",
+  "reports_profit_avg_profit": "Your average profit during {months} months is {amount}",
+  "reports_profit_detailed_graph": "See detailed graph"
 }
