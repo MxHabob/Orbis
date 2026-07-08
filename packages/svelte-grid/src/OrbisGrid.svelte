@@ -56,6 +56,7 @@
         header,
         width,
         sort: col.sort !== false,
+        resize: col.resize !== false,
       };
 
       if (readonly || col.readonly) {
