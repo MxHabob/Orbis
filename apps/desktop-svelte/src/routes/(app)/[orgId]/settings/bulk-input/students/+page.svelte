@@ -191,6 +191,15 @@ async function handleSubmit() {
         for (const prop of STUDENT_DATA_PROPS) {
           row[prop] = r[prop] ?? "";
         }
+        
+        // Resolve sex input to database enum value (male/female)
+        const sexInput = String(row.sex ?? "").trim().toLowerCase();
+        if (sexInput === "ذكر" || sexInput === "male") {
+          row.sex = "male";
+        } else if (sexInput === "أنثى" || sexInput === "انثى" || sexInput === "female") {
+          row.sex = "female";
+        }
+
         // Resolve class name/ID to ID
         const classInput = String(row.class_id ?? "").trim();
         if (classInput) {

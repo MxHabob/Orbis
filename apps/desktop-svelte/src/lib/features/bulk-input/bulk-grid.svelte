@@ -12,7 +12,7 @@ import { OrbisGrid } from "@orbis/svelte-grid";
 import type { CellEditEvent, OrbisColumnDef } from "@orbis/svelte-grid";
 import { addRowIndices } from "$lib/tables";
 import { getLocale } from "$lib/paraglide/runtime";
-import { parseTSV, mapTSVToRows, isHeaderRow } from "./paste-handler";
+import { parseTSV, mapTSVToRows, isHeaderRow, normalizeSex, normalizeDate } from "./paste-handler";
 
 // ── Props ──────────────────────────────────────────────────────────
 interface Props {
@@ -175,19 +175,32 @@ function handleClipboardPaste(e: ClipboardEvent) {
 
     // Write pasted columns matching the starting column offset
     const maxCols = Math.min(dataProps.length - startColIdx, dataProps.length);
+    const updatedRow = { ...newRows[targetRowIdx] };
+
     for (let c = 0; c < maxCols; c++) {
       const sourceColProp = dataProps[c]; // raw column property name
       const targetColProp = dataProps[startColIdx + c]; // offset destination property
 
       if (pastedRows[r][sourceColProp] !== undefined && targetColProp) {
-        newRows[targetRowIdx][targetColProp] = pastedRows[r][sourceColProp];
+        let val = pastedRows[r][sourceColProp];
+        
+        // Normalize val based on the target column property
+        if (targetColProp === "sex") {
+          val = normalizeSex(val);
+        } else if (targetColProp === "date_of_birth") {
+          val = normalizeDate(val);
+        }
+
+        updatedRow[targetColProp] = val;
       }
     }
 
     // Reset validation errors for updated row
-    if (newRows[targetRowIdx].__errors instanceof Map) {
-      (newRows[targetRowIdx].__errors as Map<string, string>).clear();
+    if (updatedRow.__errors instanceof Map) {
+      updatedRow.__errors = new Map<string, string>();
     }
+
+    newRows[targetRowIdx] = updatedRow;
   }
 
   // Maintain minimum tail of empty rows

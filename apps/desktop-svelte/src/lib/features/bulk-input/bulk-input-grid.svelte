@@ -14,7 +14,7 @@ import {
   validateRows,
   type RowValidationResult,
 } from "./validator";
-import { parseTSV, mapTSVToRows } from "./paste-handler";
+import { parseTSV, mapTSVToRows, normalizeSex, normalizeDate } from "./paste-handler";
 
 // ── Props ──────────────────────────────────────────────────────────
 interface Props {
@@ -118,15 +118,29 @@ function handleClipboardPaste(e: ClipboardEvent) {
     const targetIdx = insertAt + i;
     if (targetIdx < newRows.length) {
       // Overwrite existing empty row
+      const updatedRow = { ...newRows[targetIdx] };
       for (const prop of dataProps) {
-        newRows[targetIdx][prop] = pastedRows[i][prop];
+        let val = pastedRows[i][prop] ?? "";
+        if (prop === "sex") {
+          val = normalizeSex(val);
+        } else if (prop === "date_of_birth") {
+          val = normalizeDate(val);
+        }
+        updatedRow[prop] = val;
       }
-      newRows[targetIdx].__errors = new Map<string, string>();
+      updatedRow.__errors = new Map<string, string>();
+      newRows[targetIdx] = updatedRow;
     } else {
       // Append new row
-      const emptyRow = config.emptyRow();
+      const emptyRow = { ...config.emptyRow() };
       for (const prop of dataProps) {
-        emptyRow[prop] = pastedRows[i][prop];
+        let val = pastedRows[i][prop] ?? "";
+        if (prop === "sex") {
+          val = normalizeSex(val);
+        } else if (prop === "date_of_birth") {
+          val = normalizeDate(val);
+        }
+        emptyRow[prop] = val;
       }
       emptyRow.__rowIndex = targetIdx + 1;
       newRows.push(emptyRow);

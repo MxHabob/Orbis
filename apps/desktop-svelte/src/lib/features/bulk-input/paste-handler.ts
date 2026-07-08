@@ -15,6 +15,43 @@ export function parseTSV(text: string): string[][] {
     .map((line) => line.split("\t"));
 }
 
+export function normalizeSex(val: string): string {
+  const clean = val.trim().toLowerCase();
+  if (!clean) return "";
+  if (clean === "male" || clean === "m" || clean === "ذكر" || clean === "ولد") {
+    return "male";
+  }
+  if (clean === "female" || clean === "f" || clean === "أنثى" || clean === "انثى" || clean === "بنت") {
+    return "female";
+  }
+  return val;
+}
+
+export function normalizeDate(val: string): string {
+  let clean = val.trim().replace(/\s+/g, "");
+  if (!clean) return "";
+
+  // Match DD/MM/YYYY or DD-MM-YYYY
+  let match = clean.match(/^(\d{1,2})[/\-](\d{1,2})[/\-](\d{4})$/);
+  if (match) {
+    const day = match[1].padStart(2, "0");
+    const month = match[2].padStart(2, "0");
+    const year = match[3];
+    return `${year}-${month}-${day}`;
+  }
+
+  // Match YYYY/MM/DD or YYYY-MM-DD
+  match = clean.match(/^(\d{4})[/\-](\d{1,2})[/\-](\d{1,2})$/);
+  if (match) {
+    const year = match[1];
+    const month = match[2].padStart(2, "0");
+    const day = match[3].padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  return val;
+}
+
 /**
  * Convert a 2D TSV array into row objects using provided column props.
  * Each column prop maps to the corresponding TSV column index.
@@ -34,8 +71,16 @@ export function mapTSVToRows(
     let hasData = false;
 
     for (let i = 0; i < props.length; i++) {
-      const val = cells[i]?.trim() ?? "";
-      row[props[i]] = val;
+      let val = cells[i]?.trim() ?? "";
+      const prop = props[i];
+
+      if (prop === "sex") {
+        val = normalizeSex(val);
+      } else if (prop === "date_of_birth") {
+        val = normalizeDate(val);
+      }
+
+      row[prop] = val;
       if (val) hasData = true;
     }
 

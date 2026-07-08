@@ -128,11 +128,7 @@ export function buildStudentColumns(
     prop: "sex",
     name: labels.sex ?? "Sex",
     size: 85,
-    editor: "combo",
-    options: [
-      { id: "male", label: m.form_male() },
-      { id: "female", label: m.form_female() }
-    ],
+    editor: "text",
     cellProperties: errorCellProps("sex"),
   });
 

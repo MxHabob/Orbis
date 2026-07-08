@@ -90,12 +90,15 @@ export function validateStudentRows(
       }
     }
 
-    // ── sex: required, must be male/female ──
-    const sex = str(row.sex).toLowerCase();
+    // ── sex: required, must be male/female/ذكر/أنثى ──
+    const sex = str(row.sex).trim().toLowerCase();
     if (!sex) {
       errors.set("sex", "الجنس مطلوب");
-    } else if (!VALID_SEX.includes(sex)) {
-      errors.set("sex", "الجنس يجب أن يكون male أو female");
+    } else {
+      const isValid = ["male", "female", "ذكر", "أنثى", "انثى"].includes(sex);
+      if (!isValid) {
+        errors.set("sex", "الجنس يجب أن يكون 'ذكر' أو 'أنثى'");
+      }
     }
 
     // ── date_of_birth: required, YYYY-MM-DD ──
