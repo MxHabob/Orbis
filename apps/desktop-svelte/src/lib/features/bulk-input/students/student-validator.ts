@@ -167,7 +167,8 @@ export function getStudentValidationSummary(
   }> = [];
 
   for (const r of results) {
-    if (isRowEmpty(rows[r.rowIndex])) continue;
+    const row = rows[r.rowIndex];
+    if (!row || isRowEmpty(row)) continue;
     totalFilled++;
     if (r.isValid) {
       valid++;
@@ -187,7 +188,8 @@ function str(v: unknown): string {
   return String(v ?? "").trim();
 }
 
-function isRowEmpty(row: Record<string, unknown>): boolean {
+function isRowEmpty(row: Record<string, unknown> | undefined | null): boolean {
+  if (!row) return true;
   for (const [k, v] of Object.entries(row)) {
     if (k.startsWith("__")) continue;
     if (v !== "" && v !== null && v !== undefined) return false;

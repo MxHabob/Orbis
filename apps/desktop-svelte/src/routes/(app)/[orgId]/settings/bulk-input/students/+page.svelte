@@ -5,6 +5,7 @@ paste from Excel, real-time validation, and submit via create_user_in_org + crea
 -->
 <script lang="ts">
 import { goto } from "$app/navigation";
+import { onMount } from "svelte";
 import { Button } from "@orbis/ui-svelte/button";
 import { Badge } from "@orbis/ui-svelte/badge";
 import {
@@ -53,6 +54,42 @@ const classes = $derived($classesQuery.data ?? []);
 
 // ── State ──────────────────────────────────────────────────────────
 let rows = $state<Record<string, unknown>[]>([]);
+
+// Persistent state: Load from localStorage on mount
+onMount(() => {
+  const saved = localStorage.getItem("orbis_bulk_students_rows");
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        rows = parsed.map((r: any) => ({
+          ...r,
+          __errors: new Map<string, string>(),
+        }));
+      }
+    } catch (e) {
+      console.error("Failed to parse saved bulk import rows:", e);
+    }
+  }
+});
+
+// Save rows to localStorage whenever they change
+$effect(() => {
+  if (rows && rows.length > 0) {
+    const clean = rows.map((r) => {
+      const copy: Record<string, any> = {};
+      for (const [k, v] of Object.entries(r)) {
+        if (k === "__errors") continue;
+        copy[k] = v;
+      }
+      return copy;
+    });
+    localStorage.setItem("orbis_bulk_students_rows", JSON.stringify(clean));
+  } else {
+    localStorage.removeItem("orbis_bulk_students_rows");
+  }
+});
+
 let selectedClassId = $state("");
 let visibleExtended = $state<Set<string>>(new Set());
 let isSubmitting = $state(false);
@@ -161,6 +198,7 @@ function handleClearAll() {
     if (!confirm(m.bulk_input_confirm_clear())) return;
   }
   rows = [];
+  validationResults = [];
 }
 
 async function handleSubmit() {
@@ -250,6 +288,10 @@ async function handleSubmit() {
           toast.error(`الصف ${err.row_index} (${err.field}): ${err.message}`);
         }
       }
+    } else {
+      // Clear rows if everything was imported successfully
+      rows = [];
+      validationResults = [];
     }
 
     // Refresh enrollments query

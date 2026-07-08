@@ -59,7 +59,8 @@ pub async fn bulk_create_students(
 
     for (idx, row) in rows.into_iter().enumerate() {
         let id = uuid::Uuid::new_v4().to_string();
-        let password_hash = bcrypt::hash(row.password.as_deref().unwrap_or("123456"), bcrypt::DEFAULT_COST)
+        let cost = if cfg!(debug_assertions) { 4 } else { 10 };
+        let password_hash = bcrypt::hash(row.password.as_deref().unwrap_or("123456"), cost)
             .unwrap_or_default();
 
         let user = domain_iam::entities::user::Model {
@@ -150,7 +151,8 @@ pub async fn bulk_create_teachers(
 
     for (idx, row) in rows.into_iter().enumerate() {
         let id = uuid::Uuid::new_v4().to_string();
-        let password_hash = bcrypt::hash(row.password.as_deref().unwrap_or("123456"), bcrypt::DEFAULT_COST)
+        let cost = if cfg!(debug_assertions) { 4 } else { 10 };
+        let password_hash = bcrypt::hash(row.password.as_deref().unwrap_or("123456"), cost)
             .unwrap_or_default();
 
         let user = domain_iam::entities::user::Model {
