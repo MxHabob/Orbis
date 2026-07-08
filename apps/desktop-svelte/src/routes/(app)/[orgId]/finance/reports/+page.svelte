@@ -217,12 +217,14 @@ const totalEquity = $derived.by(() => {
           />
         </div>
 
-        <div class="bg-card border border-border rounded-xl p-6 flex flex-col gap-4 text-start justify-between select-none shadow-sm">
+        <div class="bg-card border border-border/60 rounded-xl p-6 flex flex-col gap-4 text-start justify-between select-none shadow-sm card-tactile transition-all duration-200">
           <div class="flex flex-col gap-3">
-            <h3 class="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
-              <Landmark size={13} class="text-primary" />
-              <span>{m.reports_finance_audit_title ? m.reports_finance_audit_title() : "التدقيق المالي التلقائي"}</span>
-            </h3>
+            <div class="flex items-center justify-between w-full select-none text-[9px] font-bold text-muted-foreground/80 mb-1">
+              <div class="flex items-center gap-1.5 font-sans font-extrabold uppercase tracking-wider text-[8px] text-muted-foreground/75">
+                <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                {m.reports_finance_audit_title ? m.reports_finance_audit_title() : "التدقيق المالي التلقائي"}
+              </div>
+            </div>
             <p class="text-xs text-muted-foreground leading-relaxed">
               يقوم النظام بتدقيق الحركات المالية ومطابقة القيد المزدوج للتأكد من توازن الدفاتر المحاسبية.
             </p>

@@ -353,11 +353,12 @@ function handleTriggerAction(issue: any) {
           </div>
 
           <!-- Alert / Issues list card (like Sentry Events details) -->
-          <Card class="p-5 bg-card/60 border border-border flex flex-col justify-between shadow-sm text-start">
-            <div class="border-b border-border/40 pb-2 mb-3 select-none">
-              <h3 class="text-xs font-bold text-foreground">
+          <Card class="p-5 bg-card border border-border/60 flex flex-col justify-between shadow-sm text-start card-tactile transition-all duration-200">
+            <div class="flex items-center justify-between w-full select-none text-[9px] font-bold text-muted-foreground/80 mb-3.5">
+              <div class="flex items-center gap-1.5 font-sans font-extrabold uppercase tracking-wider text-[8px] text-muted-foreground/75">
+                <span class="h-1.5 w-1.5 rounded-full bg-destructive animate-pulse"></span>
                 {m.academics_class_overview_active_alerts()}
-              </h3>
+              </div>
             </div>
 
             <div class="flex flex-col gap-3">
@@ -394,7 +395,7 @@ function handleTriggerAction(issue: any) {
         <div class="flex flex-col gap-6 text-start">
           
           <!-- Orbis AI Class Advisor (Sentry Seer Autofix panel) -->
-          <div class="border border-primary/20 bg-primary/5 rounded-xl p-4 relative overflow-hidden flex flex-col justify-between shadow-sm">
+          <div class="card-tactile bg-primary/5 border border-primary/20 p-4 relative overflow-hidden flex flex-col justify-between shadow-sm transition-all duration-200">
             <div class="absolute -top-10 -right-10 w-20 h-20 bg-primary/10 rounded-full blur-xl pointer-events-none"></div>
             
             <div class="select-none border-b border-primary/15 pb-2 mb-3">
@@ -450,11 +451,14 @@ function handleTriggerAction(issue: any) {
           </div>
 
           <!-- External Links -->
-          <Card class="p-4 bg-card/60 border border-border flex flex-col justify-between shadow-sm">
-            <div class="border-b border-border/40 pb-2 mb-2 select-none text-[9px] font-bold text-muted-foreground uppercase">
-              {m.academics_class_overview_external_links()}
+          <Card class="p-4 bg-card border border-border/60 flex flex-col justify-between shadow-sm card-tactile transition-all duration-200">
+            <div class="flex items-center justify-between w-full select-none text-[9px] font-bold text-muted-foreground/80 mb-2">
+              <div class="flex items-center gap-1.5 font-sans font-extrabold uppercase tracking-wider text-[8px] text-muted-foreground/75">
+                <span class="h-1.5 w-1.5 rounded-full bg-brand-lime"></span>
+                {m.academics_class_overview_external_links()}
+              </div>
             </div>
-            <div class="flex flex-col gap-2 mt-1 text-[10px] font-bold">
+            <div class="flex flex-col gap-2 mt-1 text-[10px] font-bold text-start">
               <a href={localizeHref(`/${orgId}/academics/schedule?classId=${classId}`)} class="flex items-center gap-1.5 text-primary hover:underline">
                 <Landmark size={12} />
                 <span>{m.academics_class_overview_weekly_timetable()}</span>

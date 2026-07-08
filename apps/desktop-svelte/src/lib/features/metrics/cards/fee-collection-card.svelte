@@ -205,7 +205,7 @@ function formatTooltipVal(val: number) {
       <div class="absolute inset-0 flex flex-col justify-between pb-8 pt-4 pointer-events-none">
         {#each yTicks.slice().reverse() as tickVal}
           <div class="flex items-center w-full h-0">
-            <span class="w-10 text-end text-[9px] font-bold text-muted-foreground/80 font-mono pr-2 select-none">
+            <span class="w-10 text-end text-[9px] font-bold text-muted-foreground/80 font-mono pe-2 select-none">
               {formatVal(tickVal)}
             </span>
             <div class="flex-grow border-t border-dashed border-border/40"></div>
@@ -215,7 +215,7 @@ function formatTooltipVal(val: number) {
 
       <!-- Columns Container -->
       <div 
-        class="absolute inset-0 flex items-end justify-between pl-10 pr-2 pb-8 pt-4 cursor-crosshair"
+        class="absolute inset-0 flex items-end justify-between ps-10 pe-2 pb-8 pt-4 cursor-crosshair"
         onmousemove={handleMouseMove}
       >
         {#each bars as bar, idx}
