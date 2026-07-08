@@ -44,12 +44,11 @@ let {
     
     <!-- Title & Avatar -->
     <span class="text-[12px] font-semibold tracking-wide text-foreground flex items-center gap-1.5 select-none">
-      <Avatar hat={userHat} width="24px" height="24px" />
+      {#if messagesLength > 0}
+        <Avatar hat={userHat} width="32px" height="32px" />
+      {/if}
       <span class="flex items-center gap-0.5">
         {headerTitle}
-        {#if messagesLength > 0}
-          <span class="text-[9px] text-muted-foreground ml-0.5">▼</span>
-        {/if}
       </span>
     </span>
   </div>
