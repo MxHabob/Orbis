@@ -252,7 +252,7 @@ async function handleSubmit() {
     <div class="flex items-center justify-between gap-4 flex-nowrap shrink-0">
       <div class="flex items-center gap-3">
         <Button
-          variant="ghost"
+          variant="secondary"
           size="icon-sm"
           class="cursor-pointer"
           onclick={() =>
