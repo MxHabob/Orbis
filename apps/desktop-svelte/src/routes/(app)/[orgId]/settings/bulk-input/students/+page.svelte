@@ -187,21 +187,32 @@ async function handleSubmit() {
         return false;
       })
       .map((r) => {
-        const row: Record<string, unknown> = {};
-        for (const prop of STUDENT_DATA_PROPS) {
-          row[prop] = r[prop] ?? "";
-        }
+        const row: Record<string, unknown> = {
+          name: String(r.full_name ?? "").trim(),
+          email: r.email ? String(r.email).trim() : null,
+          phone: r.phone ? String(r.phone).trim() : null,
+          national_id: r.national_id ? String(r.national_id).trim() : null,
+          nationality: r.nationality ? String(r.nationality).trim() : null,
+          address: r.address ? String(r.address).trim() : null,
+          username: null,
+          password: null,
+        };
         
-        // Resolve sex input to database enum value (male/female)
-        const sexInput = String(row.sex ?? "").trim().toLowerCase();
+        // Resolve sex input to database enum value (male/female) expected by the backend
+        const sexInput = String(r.sex ?? "").trim().toLowerCase();
         if (sexInput === "ذكر" || sexInput === "male") {
-          row.sex = "male";
+          row.gender = "male";
         } else if (sexInput === "أنثى" || sexInput === "انثى" || sexInput === "female") {
-          row.sex = "female";
+          row.gender = "female";
+        } else {
+          row.gender = null;
         }
 
-        // Resolve class name/ID to ID
-        const classInput = String(row.class_id ?? "").trim();
+        // Map birth date
+        row.birth_date = r.date_of_birth ? String(r.date_of_birth).trim() : null;
+
+        // Resolve class name/ID to ID (extra info if needed by client/logging)
+        const classInput = String(r.class_id ?? "").trim();
         if (classInput) {
           const match = classes.find(
             (c: any) =>
