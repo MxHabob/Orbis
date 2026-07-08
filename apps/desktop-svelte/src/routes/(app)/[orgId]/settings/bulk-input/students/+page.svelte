@@ -24,7 +24,7 @@ import { ArrowLeft, Upload, Columns3, Trash2, Info } from "lucide-svelte";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
-import { commands } from "$lib/core/ipc";
+import { commands, extractErrorMessage } from "$lib/core/ipc";
 import { authStore } from "$lib/stores";
 import { useQueryClient } from "@tanstack/svelte-query";
 import { createClassesQuery } from "$lib/features/academics";
@@ -244,8 +244,7 @@ async function handleSubmit() {
     // Refresh enrollments query
     queryClient.invalidateQueries({ queryKey: ["enrollments", data.orgId] });
   } catch (e: unknown) {
-    const msg = (e as any)?.message || "Unknown error";
-    toast.error(msg);
+    toast.error(extractErrorMessage(e));
   } finally {
     isSubmitting = false;
   }
