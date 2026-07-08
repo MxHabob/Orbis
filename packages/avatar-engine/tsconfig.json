@@ -1,0 +1,16 @@
+{
+  "extends": "@orbis/tsconfig/base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "ignoreDeprecations": "6.0"
+  },
+  "include": [
+    "AvatarController.svelte.ts",
+    "AvatarStateMachine.ts",
+    "index.ts",
+    "ambient.d.ts",
+    "animations/**/*.ts"
+  ],
+  "exclude": ["node_modules"]
+}

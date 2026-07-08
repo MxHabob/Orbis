@@ -1,0 +1,31 @@
+{
+  "name": "@orbis/avatar-engine",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./index.ts",
+  "scripts": {
+    "clean": "rm -rf .turbo node_modules",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "typecheck": "tsc --noEmit"
+  },
+  "exports": {
+    ".": {
+      "svelte": "./index.ts",
+      "default": "./index.ts"
+    },
+    "./Avatar.svelte": {
+      "svelte": "./Avatar.svelte",
+      "default": "./Avatar.svelte"
+    }
+  },
+  "peerDependencies": {
+    "svelte": "^5"
+  },
+  "devDependencies": {
+    "@orbis/tsconfig": "workspace:*",
+    "svelte": "^5.56.1",
+    "typescript": "^6.0.3"
+  }
+}

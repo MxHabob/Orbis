@@ -5,6 +5,7 @@ import { fly } from "svelte/transition";
 import { quadOut } from "svelte/easing";
 import * as m from "$lib/paraglide/messages";
 import { localizeHref } from "$lib/paraglide/runtime";
+import { Avatar, AvatarController } from "@orbis/avatar-engine";
 
 let {
   type,
@@ -12,6 +13,8 @@ let {
   orgId,
 }: { type?: "greeting" | "summary" | "both"; stats?: any; orgId: string } =
   $props();
+
+const avatarController = new AvatarController();
 
 // Greeting Logic
 let hourState = $state(new Date().getHours());
@@ -25,6 +28,7 @@ onMount(() => {
 
 onDestroy(() => {
   if (greetingInterval) clearInterval(greetingInterval);
+  avatarController.destroy();
 });
 
 const greeting = $derived.by(() => {
@@ -34,6 +38,14 @@ const greeting = $derived.by(() => {
 });
 
 const firstName = $derived(authStore.user?.full_name?.split(" ")[0]);
+
+const userHat = $derived.by(() => {
+  const role = authStore.user?.role ?? "viewer";
+  if (role === "admin" || role === "super_admin") return "crown";
+  if (role === "teacher") return "graduation";
+  if (role === "registrar") return "firefighter";
+  return "none";
+});
 
 // Ticker / Insights Logic
 let index = $state(0);
@@ -182,12 +194,31 @@ function handleMouseLeave() {
 </script>
 
 {#if type === "greeting" || type === "both" || !type}
-	<h1 class="text-[38px] font-serif leading-tight text-center">
-		{greeting}
-		{#if firstName}
-			, <span class="text-muted-foreground">{firstName}</span>
-		{/if}
-	</h1>
+	<div class="flex flex-col sm:flex-row items-center justify-center gap-5 mb-5 text-center sm:text-start">
+		<button
+			type="button"
+			class="cursor-pointer focus:outline-none transition-all duration-150 ease-out hover:-translate-y-1.5 active:translate-y-0.5 shrink-0"
+			onclick={() => {
+				const rand = Math.random();
+				if (rand < 0.33) {
+					avatarController.happy();
+				} else if (rand < 0.66) {
+					avatarController.think();
+				} else {
+					avatarController.blink();
+				}
+			}}
+			aria-label="Interactive Avatar"
+		>
+			<Avatar controller={avatarController} hat={userHat} width="80px" height="80px" />
+		</button>
+		<h1 class="text-[38px] font-serif leading-tight">
+			{greeting}
+			{#if firstName}
+				, <span class="text-muted-foreground">{firstName}</span>
+			{/if}
+		</h1>
+	</div>
 {/if}
 
 {#if type === "summary" || type === "both" || !type}

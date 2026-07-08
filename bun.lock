@@ -101,6 +101,7 @@
       "dependencies": {
         "@docforge/core": "workspace:*",
         "@internationalized/date": "^3.12.0",
+        "@orbis/avatar-engine": "workspace:*",
         "@orbis/data-grid": "workspace:*",
         "@orbis/desktop-client": "workspace:*",
         "@orbis/location": "workspace:*",
@@ -131,6 +132,18 @@
         "tailwindcss": "^4.3.0",
         "typescript": "^6.0.3",
         "vite": "^8.0.16",
+      },
+    },
+    "packages/avatar-engine": {
+      "name": "@orbis/avatar-engine",
+      "version": "1.0.0",
+      "devDependencies": {
+        "@orbis/tsconfig": "workspace:*",
+        "svelte": "^5.56.1",
+        "typescript": "^6.0.3",
+      },
+      "peerDependencies": {
+        "svelte": "^5",
       },
     },
     "packages/cli": {
@@ -700,6 +713,8 @@
     "@opentelemetry/semantic-conventions": ["@opentelemetry/semantic-conventions@1.36.0", "", {}, "sha512-TtxJSRD8Ohxp6bKkhrm27JRHAxPczQA7idtcTOMYI+wQRRrfgqxHv1cFbCApcSnNjtXkmzFozn6jQtFrOmbjPQ=="],
 
     "@orbis/api-rust": ["@orbis/api-rust@workspace:apps/api-rust"],
+
+    "@orbis/avatar-engine": ["@orbis/avatar-engine@workspace:packages/avatar-engine"],
 
     "@orbis/cli": ["@orbis/cli@workspace:packages/cli"],
 
@@ -2406,6 +2421,8 @@
     "@opentelemetry/resources/@opentelemetry/semantic-conventions": ["@opentelemetry/semantic-conventions@1.41.1", "", {}, "sha512-/UhIkaZgPutTFmQ7RnIJGgDXZmtEJ7Dvi86xNTFWcnRxVRNk/aotsqDJYeEvDP+FSMB2SdW+pQzNMcWP0rwuNA=="],
 
     "@opentelemetry/sdk-trace-base/@opentelemetry/semantic-conventions": ["@opentelemetry/semantic-conventions@1.41.1", "", {}, "sha512-/UhIkaZgPutTFmQ7RnIJGgDXZmtEJ7Dvi86xNTFWcnRxVRNk/aotsqDJYeEvDP+FSMB2SdW+pQzNMcWP0rwuNA=="],
+
+    "@orbis/avatar-engine/typescript": ["typescript@6.0.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw=="],
 
     "@orbis/desktop-svelte/typescript": ["typescript@6.0.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw=="],
 
