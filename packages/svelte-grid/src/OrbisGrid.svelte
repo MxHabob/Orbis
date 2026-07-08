@@ -244,9 +244,10 @@
 </script>
 
 <div
-  class="orbis-grid-table-wrapper w-full h-full overflow-hidden"
+  class="orbis-grid-table-wrapper w-full h-full overflow-hidden {rtl ? 'grid-rtl' : ''}"
   style="height: {height};"
   ondblclick={handleDblClick}
+  dir="ltr"
 >
   {#key columns}
     {#if isDark}
@@ -349,6 +350,14 @@
     border-right: 1px solid var(--border) !important;
     border-left: 1px solid var(--border) !important;
     color: var(--foreground) !important;
+  }
+
+  /* Right-align text for RTL layout alignment inside the LTR scroll container */
+  :global(.orbis-grid-table-wrapper.grid-rtl .wx-row .wx-cell) {
+    text-align: right !important;
+  }
+  :global(.orbis-grid-table-wrapper.grid-rtl .wx-header .wx-cell) {
+    text-align: right !important;
   }
 
   /* Red cell error highlight styling */

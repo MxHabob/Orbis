@@ -197,6 +197,8 @@ $effect(() => {
 <style>
   .bulk-grid-wrapper {
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
     border-radius: var(--radius, 0.75rem);
     overflow: hidden;
     border: 1px solid var(--border);

@@ -248,7 +248,7 @@ $effect(() => {
 }} />
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="flex flex-col gap-1 w-full">
+<div class="flex flex-col gap-1 w-full max-w-full min-w-0 overflow-hidden">
   <div
     bind:this={gridWrapper}
     class="bulk-grid-wrapper"
@@ -268,6 +268,8 @@ $effect(() => {
 <style>
   .bulk-grid-wrapper {
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
     border-radius: var(--radius, 0.75rem);
     overflow: hidden;
     border: 1px solid var(--border);
