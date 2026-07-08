@@ -38,7 +38,7 @@ $effect(() => {
 	{#if isLoading}
 		<div class="flex flex-col items-center text-center pt-6 pb-10 w-full">
 			<WelcomeSection type="greeting" {orgId} />
-			<div class="mt-3 w-full">
+			<div class="mt-0 w-full">
 				<OverviewSkeleton type="summary"/>
 			</div>
 		</div>

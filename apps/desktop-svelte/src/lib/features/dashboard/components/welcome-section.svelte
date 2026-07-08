@@ -39,13 +39,23 @@ const greeting = $derived.by(() => {
 
 const firstName = $derived(authStore.user?.full_name?.split(" ")[0]);
 
+let manualHat = $state<"none" | "crown" | "graduation" | "firefighter" | null>(null);
+
 const userHat = $derived.by(() => {
-  const role = authStore.user?.role ?? "viewer";
+  if (manualHat !== null) return manualHat;
+  const rawRole = authStore.user?.role || authStore.user?.primary_role || "viewer";
+  const role = String(rawRole).toLowerCase();
   if (role === "admin" || role === "super_admin") return "crown";
   if (role === "teacher") return "graduation";
   if (role === "registrar") return "firefighter";
   return "none";
 });
+
+function cycleHat() {
+  const hatList = ["none", "crown", "graduation", "firefighter"] as const;
+  const currentIndex = hatList.indexOf(userHat);
+  manualHat = hatList[(currentIndex + 1) % hatList.length];
+}
 
 // Ticker / Insights Logic
 let index = $state(0);
@@ -194,11 +204,12 @@ function handleMouseLeave() {
 </script>
 
 {#if type === "greeting" || type === "both" || !type}
-	<div class="flex flex-col sm:flex-row items-center justify-center gap-5 mb-5 text-center sm:text-start">
+	<div class="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 mb-0 text-center sm:text-start">
 		<button
 			type="button"
-			class="cursor-pointer focus:outline-none transition-all duration-150 ease-out hover:-translate-y-1.5 active:translate-y-0.5 shrink-0"
+			class="cursor-pointer focus:outline-none transition-all duration-150 ease-out -translate-y-1 hover:-translate-y-2 active:translate-y-0 shrink-0"
 			onclick={() => {
+				cycleHat();
 				const rand = Math.random();
 				if (rand < 0.33) {
 					avatarController.happy();
@@ -213,17 +224,14 @@ function handleMouseLeave() {
 			<Avatar controller={avatarController} hat={userHat} width="80px" height="80px" />
 		</button>
 		<h1 class="text-[38px] font-serif leading-tight">
-			{greeting}
-			{#if firstName}
-				, <span class="text-muted-foreground">{firstName}</span>
-			{/if}
+			{greeting}{#if firstName}, <span class="text-muted-foreground">{firstName}</span>{/if}
 		</h1>
 	</div>
 {/if}
 
 {#if type === "summary" || type === "both" || !type}
 	<div
-		class="flex flex-col items-center max-w-lg w-full gap-3 mt-3 justify-center text-center mx-auto"
+		class="flex flex-col items-center max-w-lg w-full gap-3 mt-1 justify-center text-center mx-auto"
 		role="region"
 		aria-label="Insights summary slider"
 		onmouseenter={handleMouseEnter}
