@@ -20,7 +20,7 @@ import {
 } from "lucide-svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
-import { OrbisGrid } from "@orbis/data-grid";
+import { OrbisGrid } from "@orbis/svelte-grid";
 
 interface Props {
   selectedClassId: string;

@@ -4,8 +4,8 @@
  * Organized in groups: Essential, Enrollment, Location, Guardian, Medical, Financial.
  */
 
-import type { OrbisColumnDef } from "@orbis/data-grid";
-import { indexColumn } from "@orbis/data-grid";
+import type { OrbisColumnDef } from "@orbis/svelte-grid";
+import { indexColumn } from "$lib/tables";
 
 /** All data property keys in column order (for paste mapping) */
 export const STUDENT_DATA_PROPS = [

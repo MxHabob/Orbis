@@ -1,5 +1,5 @@
 {
-  "name": "@orbis/data-grid",
+  "name": "@orbis/svelte-grid",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -15,20 +15,15 @@
       "svelte": "./src/OrbisGrid.svelte",
       "default": "./src/OrbisGrid.svelte"
     },
-    "./editors": {
-      "svelte": "./src/editors/index.ts",
-      "default": "./src/editors/index.ts"
-    },
     "./types": {
       "svelte": "./src/types.ts",
       "default": "./src/types.ts"
     }
   },
   "dependencies": {
-    "@revolist/svelte-datagrid": "4.23.21",
-    "@revolist/revogrid": "4.23.21",
+    "@svar-ui/svelte-grid": "^2.0.0",
     "@orbis/ui-svelte": "workspace:*",
-    "svelte-sonner": "^1.1.0"
+    "lucide-svelte": "^0.460.0"
   },
   "peerDependencies": {
     "svelte": "^5.0.0"

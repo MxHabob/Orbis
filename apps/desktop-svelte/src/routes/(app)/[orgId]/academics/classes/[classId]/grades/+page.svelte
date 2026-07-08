@@ -20,8 +20,8 @@ import { Users, ClipboardList, Download, RefreshCcw } from "lucide-svelte";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
-import { DataTable, avatarRenderer } from "$lib/tables";
-import type { OrbisColumnDef } from "@orbis/data-grid";
+import { DataTable, AvatarCell } from "$lib/tables";
+import type { OrbisColumnDef } from "@orbis/svelte-grid";
 
 const orgId = $derived(page.params.orgId);
 const classId = $derived(page.params.classId);
@@ -148,29 +148,30 @@ const rtl = $derived(getLocale() === "ar");
 const gridColumns = $derived.by(() => {
   const cols: OrbisColumnDef[] = [
     {
+      id: "__rowIndex",
       prop: "__rowIndex",
+      header: "#",
       name: "#",
+      width: 50,
       size: 50,
       pin: "colPinStart",
       readonly: true,
-      sortable: false,
+      sort: false,
       align: "center",
-      cellProperties: () => ({ class: "orbis-cell-index" }),
+      cellClass: "orbis-cell-index",
     },
     {
+      id: "student_name",
       prop: "student_name",
+      header: m.grades_col_student(),
       name: m.grades_col_student(),
+      width: 180,
       size: 180,
       minSize: 140,
       pin: "colPinStart",
       readonly: true,
-      sortable: true,
-      cellRenderer: avatarRenderer({
-        srcKey: "avatar",
-        nameKey: "student_name",
-        size: "sm",
-        showName: true,
-      }),
+      sort: true,
+      cell: AvatarCell,
     },
   ];
 

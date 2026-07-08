@@ -17,8 +17,9 @@ import {
   buildGradeColumns,
   transformMatrixToSource,
   recalculateRowTotals,
-} from "@orbis/data-grid";
-import type { CellEditEvent, GradeMatrixResponse } from "@orbis/data-grid";
+} from "$lib/tables";
+import type { GradeMatrixResponse } from "$lib/tables";
+import type { CellEditEvent } from "@orbis/svelte-grid";
 
 let { data } = $props();
 const orgId = $derived(data?.orgId || "");

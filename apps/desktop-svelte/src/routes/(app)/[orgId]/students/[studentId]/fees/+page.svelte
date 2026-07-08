@@ -14,7 +14,7 @@ import { formatCurrency, formatDate } from "$lib/core/i18n";
 
 import { DataTable } from "$lib/tables";
 import { studentFees as sfDef, withIndex } from "$lib/tables/definitions";
-import type { OrbisColumnDef } from "@orbis/data-grid";
+import type { OrbisColumnDef } from "@orbis/svelte-grid";
 
 const orgId = $derived(page.params.orgId);
 const studentId = $derived(page.params.studentId);

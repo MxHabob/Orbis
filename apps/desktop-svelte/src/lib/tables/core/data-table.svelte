@@ -24,12 +24,19 @@ import {
   type OrbisColumnDef,
   type CellEditEvent,
   type GridActionEvent,
-} from "@orbis/data-grid";
+} from "@orbis/svelte-grid";
 import { Input } from "@orbis/ui-svelte/input";
 import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
-import { Search, Download, RefreshCcw, TableProperties } from "lucide-svelte";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@orbis/ui-svelte/dropdown-menu";
+import { Search, Download, RefreshCcw, TableProperties, SlidersHorizontal } from "lucide-svelte";
 import type { Snippet, Component } from "svelte";
+import { DefaultCell } from "../index";
 
 // ── Props ──────────────────────────────────────────────────────────────
 
@@ -127,6 +134,13 @@ let localSearch = $state("");
 
 // ── Derived ───────────────────────────────────────────────────────────
 
+let mappedColumns = $derived(
+  columns.map((col) => ({
+    ...col,
+    cell: col.cell || DefaultCell,
+  }))
+);
+
 let hasData = $derived(source.length > 0);
 let showGrid = $derived(!loading && hasData);
 let showEmpty = $derived(!loading && !hasData);
@@ -150,6 +164,16 @@ function handleSearchKeydown(e: KeyboardEvent) {
     searchValue = "";
     onSearch?.("");
   }
+}
+
+function toggleColumnVisibility(colId: string) {
+  columns = columns.map(col => {
+    const id = col.id || col.prop || "";
+    if (id === colId) {
+      return { ...col, hidden: !col.hidden };
+    }
+    return col;
+  });
 }
 </script>
 
@@ -217,6 +241,37 @@ function handleSearchKeydown(e: KeyboardEvent) {
             <Download size={14} />
           </Button>
         {/if}
+
+        <DropdownMenu>
+          <DropdownMenuTrigger>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              class="text-muted-foreground cursor-pointer"
+              title="تخصيص الأعمدة"
+            >
+              <SlidersHorizontal size={14} />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" class="min-w-[180px]">
+            {#each columns as col}
+              {@const id = col.id || col.prop || ""}
+              {@const header = col.header || col.name || ""}
+              {#if id && header}
+                <DropdownMenuItem
+                  class="flex items-center justify-between gap-2 text-xs cursor-pointer"
+                  closeOnSelect={false}
+                  onclick={() => toggleColumnVisibility(id)}
+                >
+                  <span>{header}</span>
+                  <span class="text-[10px] font-bold text-primary">
+                    {col.hidden ? "✕ مخفي" : "✓ ظاهر"}
+                  </span>
+                </DropdownMenuItem>
+              {/if}
+            {/each}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   {/if}
@@ -250,7 +305,7 @@ function handleSearchKeydown(e: KeyboardEvent) {
     {:else if showGrid}
       <!-- OrbisGrid -->
       <OrbisGrid
-        {columns}
+        columns={mappedColumns}
         {source}
         {readonly}
         {rtl}

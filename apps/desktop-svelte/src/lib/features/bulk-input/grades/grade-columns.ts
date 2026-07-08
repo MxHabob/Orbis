@@ -3,8 +3,8 @@
  * Column definitions for bulk grade import grid.
  */
 
-import type { OrbisColumnDef } from "@orbis/data-grid";
-import { indexColumn } from "@orbis/data-grid";
+import type { OrbisColumnDef } from "@orbis/svelte-grid";
+import { indexColumn } from "$lib/tables";
 
 export const GRADE_DATA_PROPS = [
   "student_identifier",

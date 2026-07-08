@@ -10,7 +10,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@orbis/ui-svelte/dropdown-menu";
-import type { ActionItem, GridActionEvent } from "@orbis/data-grid";
+import type { ActionItem, GridActionEvent } from "@orbis/svelte-grid";
 
 interface Props {
   /** Complete list of possible menu actions */

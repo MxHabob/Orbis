@@ -1,16 +1,32 @@
-/**
- * @orbis/data-grid — Grade-specific helpers
- *
- * Utility functions for the grade entry grid:
- * - Score → grade letter mapping (matches Rust backend)
- * - Grade → CSS class mapping
- * - Column builder for grade matrix
- */
+import type { OrbisColumnDef } from "@orbis/svelte-grid";
+import { AvatarCell } from "..";
 
-import type { OrbisColumnDef, GradeMatrixResponse } from "./types";
-import { createInitials } from "./renderers";
+export interface GradeCell {
+  grade_id?: string | null;
+  assessment_id?: string | null;
+  exam_type: string;
+  score?: number | null;
+  max_score: number;
+}
 
-// ── Grade Letter Conversion (mirrors Rust: Service::score_to_grade_letter) ──
+export interface GradeMatrixStudent {
+  enrollment_id: string;
+  student_id: string;
+  student_name: string;
+  student_name_ar?: string | null;
+  grades: GradeCell[];
+  total: number;
+  max_total: number;
+  percentage: number;
+  grade_letter: string;
+}
+
+export interface GradeMatrixResponse {
+  cycle_id: string;
+  class_subject_id: string;
+  students: GradeMatrixStudent[];
+  assessment_types: string[];
+}
 
 export function scoreToGradeLetter(percentage: number): string {
   if (percentage >= 90) return "ممتاز";
@@ -21,21 +37,6 @@ export function scoreToGradeLetter(percentage: number): string {
   return "راسب";
 }
 
-// ── Grade Color (oklch — S.C.R.A.P.S. aligned) ──────────────────────────────
-
-export function scoreToGradeColor(percentage: number): string {
-  if (percentage >= 90)
-    return "color: oklch(0.72 0.17 160)"; /* emerald — ممتاز */
-  if (percentage >= 80)
-    return "color: oklch(0.62 0.15 260)"; /* blue — جيد جداً */
-  if (percentage >= 70) return "color: oklch(0.68 0.14 230)"; /* sky — جيد */
-  if (percentage >= 60) return "color: oklch(0.78 0.16 75)"; /* amber — مقبول */
-  if (percentage >= 50) return "color: oklch(0.72 0.17 50)"; /* orange — ضعيف */
-  return "color: oklch(0.62 0.22 25)"; /* red — راسب */
-}
-
-// ── Grade CSS Class (for RevoGrid cells) ─────────────────────────────────────
-
 export function scoreToGradeClass(percentage: number): string {
   if (percentage >= 90) return "grade-excellent";
   if (percentage >= 80) return "grade-very-good";
@@ -45,12 +46,6 @@ export function scoreToGradeClass(percentage: number): string {
   return "grade-fail";
 }
 
-// ── Build Grade Matrix Columns ───────────────────────────────────────────────
-
-/**
- * Builds column definitions for the grade entry matrix.
- * Creates: Row# | Student Name | [Assessment 1] | [Assessment 2] | ... | Total | % | Grade
- */
 export function buildGradeColumns(
   matrixData: GradeMatrixResponse,
   options?: {
@@ -71,84 +66,51 @@ export function buildGradeColumns(
 
   const columns: OrbisColumnDef[] = [];
 
-  // 1. Row index column
   columns.push({
+    id: "__rowIndex",
     prop: "__rowIndex",
+    header: labels.rowIndex || "#",
     name: labels.rowIndex || "#",
-    size: 50,
-    pin: "colPinStart",
+    width: 50,
     readonly: true,
-    sortable: false,
-    resizable: false,
+    sort: false,
     align: "center",
     cellClass: "cell-row-index",
   });
 
-  // 2. Student name column (frozen/pinned)
   columns.push({
+    id: "student_name_display",
     prop: "student_name_display",
+    header: labels.studentName || (isRtl ? "الطالب" : "Student"),
     name: labels.studentName || (isRtl ? "الطالب" : "Student"),
-    size: 180,
-    minSize: 140,
-    pin: "colPinStart",
+    width: 180,
     readonly: true,
-    sortable: true,
+    sort: true,
     cellClass: "cell-student-name",
-    cellRenderer: ({ h, row }) => {
-      const name = String(row.student_name_display || "");
-      const src = row.avatar as string | undefined;
-      const initials = createInitials(name);
-
-      const innerEl = src
-        ? h("img", {
-            class: "orbis-r-avatar__img",
-            src,
-            alt: name,
-            loading: "lazy",
-          })
-        : h("span", { class: "orbis-r-avatar__fallback-text" }, initials);
-
-      const avatarEl = h(
-        "span",
-        {
-          class: `orbis-r-avatar__root orbis-r-avatar--sm ${
-            src
-              ? "orbis-r-avatar__root--has-img"
-              : "orbis-r-avatar__root--has-fallback"
-          }`,
-        },
-        [innerEl],
-      );
-
-      return h(
-        "div",
-        {
-          class: "flex items-center gap-2 cursor-pointer w-full h-full px-2 text-start",
-        },
-        [
-          avatarEl,
-          h("span", { class: "text-xs font-medium text-foreground truncate" }, name),
-        ],
-      );
-    },
+    cell: AvatarCell
   });
 
-  // 3. Assessment columns (editable)
   if (matrixData.students.length > 0) {
     const firstStudent = matrixData.students[0];
     if (firstStudent) {
       for (const grade of firstStudent.grades) {
         const assessmentKey = grade.assessment_id || grade.exam_type;
         columns.push({
+          id: `score_${assessmentKey}`,
           prop: `score_${assessmentKey}`,
+          header: grade.exam_type,
           name: grade.exam_type,
-          size: 100,
-          minSize: 70,
+          width: 100,
           readonly: isReadonly,
-          sortable: false,
+          sort: false,
           align: "center",
-          cellType: "number",
-          editor: isReadonly ? undefined : "number",
+          editor: isReadonly ? undefined : {
+            type: "text",
+            config: {
+              min: 0,
+              max: grade.max_score
+            }
+          },
           meta: {
             min: 0,
             max: grade.max_score,
@@ -163,50 +125,44 @@ export function buildGradeColumns(
     }
   }
 
-  // 4. Total column (pinned end, computed)
   columns.push({
+    id: "__total",
     prop: "__total",
+    header: labels.total || (isRtl ? "المجموع" : "Total"),
     name: labels.total || (isRtl ? "المجموع" : "Total"),
-    size: 85,
-    pin: "colPinEnd",
+    width: 85,
     readonly: true,
-    sortable: true,
+    sort: true,
     align: "center",
     cellClass: "cell-total",
   });
 
-  // 5. Percentage column (computed)
   columns.push({
+    id: "__percentage",
     prop: "__percentage",
+    header: labels.percentage || (isRtl ? "النسبة" : "%"),
     name: labels.percentage || (isRtl ? "النسبة" : "%"),
-    size: 70,
-    pin: "colPinEnd",
+    width: 70,
     readonly: true,
-    sortable: true,
+    sort: true,
     align: "center",
     cellClass: "cell-percentage",
   });
 
-  // 6. Grade letter column (computed)
   columns.push({
+    id: "__gradeLetter",
     prop: "__gradeLetter",
+    header: labels.gradeLetter || (isRtl ? "التقدير" : "Grade"),
     name: labels.gradeLetter || (isRtl ? "التقدير" : "Grade"),
-    size: 80,
-    pin: "colPinEnd",
+    width: 80,
     readonly: true,
-    sortable: true,
+    sort: true,
     align: "center",
   });
 
   return columns;
 }
 
-// ── Transform Matrix Data to Grid Source ──────────────────────────────────────
-
-/**
- * Transforms GradeMatrixResponse into flat row objects for RevoGrid.
- * Each row has: student info + score_{assessmentId} for each grade + computed totals.
- */
 export function transformMatrixToSource(
   matrixData: GradeMatrixResponse,
   locale?: string,
@@ -215,6 +171,7 @@ export function transformMatrixToSource(
 
   return matrixData.students.map((student, index) => {
     const row: Record<string, unknown> = {
+      id: student.student_id,
       __rowIndex: index + 1,
       enrollment_id: student.enrollment_id,
       student_id: student.student_id,
@@ -233,10 +190,9 @@ export function transformMatrixToSource(
         student.grade_letter || scoreToGradeLetter(student.percentage),
     };
 
-    // Flatten grade cells into row
     for (const grade of student.grades) {
       const key = `score_${grade.assessment_id || grade.exam_type}`;
-      row[key] = grade.score ?? null;
+      row[key] = grade.score ?? "";
       row[`__gradeId_${grade.assessment_id || grade.exam_type}`] =
         grade.grade_id;
       row[`__maxScore_${grade.assessment_id || grade.exam_type}`] =
@@ -247,12 +203,6 @@ export function transformMatrixToSource(
   });
 }
 
-// ── Recalculate Row Totals ───────────────────────────────────────────────────
-
-/**
- * Recalculates total, percentage, and grade letter for a single row
- * after a cell edit. Updates the row object in-place and returns it.
- */
 export function recalculateRowTotals(
   row: Record<string, unknown>,
   assessmentKeys: string[],
@@ -261,7 +211,8 @@ export function recalculateRowTotals(
   let maxTotal = 0;
 
   for (const key of assessmentKeys) {
-    const score = row[`score_${key}`];
+    const scoreVal = row[`score_${key}`];
+    const score = (scoreVal !== "" && scoreVal !== null) ? Number(scoreVal) : null;
     const maxScore = row[`__maxScore_${key}`];
 
     if (score != null && typeof score === "number" && !isNaN(score)) {

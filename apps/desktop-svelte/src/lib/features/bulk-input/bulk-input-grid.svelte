@@ -4,8 +4,9 @@ Wraps OrbisGrid with bulk input logic: dynamic columns, paste handling,
 real-time validation, and error highlighting.
 -->
 <script lang="ts">
-import { OrbisGrid, addRowIndices } from "@orbis/data-grid";
-import type { CellEditEvent } from "@orbis/data-grid";
+import { OrbisGrid } from "@orbis/svelte-grid";
+import type { CellEditEvent } from "@orbis/svelte-grid";
+import { addRowIndices } from "$lib/tables";
 import { getLocale } from "$lib/paraglide/runtime";
 import { type BulkInputType, getColumnsForType } from "./bulk-input-config";
 import { getDataProps } from "./bulk-input-config";

@@ -9,8 +9,8 @@
  *   const cols = students.columns("ar");
  */
 
-import type { OrbisColumnDef, ActionItem } from "@orbis/data-grid";
-import { avatarRenderer, badgeRenderer, actionsRenderer } from "../renderers";
+import type { OrbisColumnDef, ActionItem } from "@orbis/svelte-grid";
+import { AvatarCell, BadgeCell, ActionsCell } from "..";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Shared column factories
@@ -19,28 +19,34 @@ import { avatarRenderer, badgeRenderer, actionsRenderer } from "../renderers";
 /** Frozen row-number column */
 function idx(label = "#"): OrbisColumnDef {
   return {
+    id: "__idx",
     prop: "__idx",
+    header: label,
     name: label,
+    width: 48,
     size: 48,
     readonly: true,
     pin: "colPinStart",
-    cellProperties: () => ({ class: "orbis-cell-index" }),
+    cellClass: "orbis-cell-index"
   };
 }
 
 /** Frozen name column */
 function nameCol(prop: string, label: string, size = 180): OrbisColumnDef {
   return {
+    id: prop,
     prop,
+    header: label,
     name: label,
+    width: size,
     size,
     readonly: true,
     pin: "colPinStart",
-    cellProperties: () => ({ class: "orbis-cell-student" }),
+    cellClass: "orbis-cell-student",
   };
 }
 
-/** Frozen user/student name column with avatar renderer */
+/** Frozen user/student name column with avatar Svelte cell */
 function userCol(
   prop: string,
   label: string,
@@ -48,86 +54,84 @@ function userCol(
   srcKey = "avatar_url",
 ): OrbisColumnDef {
   return {
+    id: prop,
     prop,
+    header: label,
     name: label,
+    width: size,
     size,
     readonly: true,
     pin: "colPinStart",
-    cellRenderer: avatarRenderer({
-      srcKey,
-      nameKey: prop,
-      size: "md",
-      showName: true,
-    }),
+    cell: AvatarCell
   };
 }
 
 /** Standard read-only text column */
 function text(prop: string, name: string, size = 120): OrbisColumnDef {
-  return { prop, name, size, readonly: true };
+  return {
+    id: prop,
+    prop,
+    header: name,
+    name,
+    width: size,
+    size,
+    readonly: true
+  };
 }
 
 /** Monospace number column */
 function num(prop: string, name: string, size = 90): OrbisColumnDef {
   return {
+    id: prop,
     prop,
+    header: name,
     name,
+    width: size,
     size,
     readonly: true,
-    cellProperties: () => ({ class: "orbis-cell-number" }),
+    cellClass: "orbis-cell-number",
   };
 }
 
 /** Color-coded status column */
 function status(prop: string, name: string, size = 100): OrbisColumnDef {
   return {
+    id: prop,
     prop,
+    header: name,
     name,
+    width: size,
     size,
     readonly: true,
-    cellRenderer: badgeRenderer({
-      variantMap: {
-        active: "success",
-        present: "success",
-        paid: "success",
-        approved: "success",
-        open: "success",
-        inactive: "error",
-        absent: "error",
-        overdue: "error",
-        failed: "error",
-        closed: "error",
-        locked: "error",
-        withdrawn: "error",
-        pending: "warning",
-        late: "warning",
-        partial: "warning",
-      },
-    }),
+    cell: BadgeCell
   };
 }
 
 /** Percentage column with grade coloring */
 function pct(prop: string, name: string, size = 80): OrbisColumnDef {
   return {
+    id: prop,
     prop,
+    header: name,
     name,
+    width: size,
     size,
     readonly: true,
-    cellProperties: (row: Record<string, unknown>) => {
-      const v = Number(row[prop]);
-      if (isNaN(v)) return {};
-      if (v >= 90) return { class: "orbis-cell-excellent" };
-      if (v >= 70) return { class: "orbis-cell-good" };
-      if (v >= 50) return { class: "orbis-cell-warning" };
-      return { class: "orbis-cell-error" };
-    },
+    cellClass: "orbis-cell-excellent", // default styling, overridden dynamically in CSS or row properties
   };
 }
 
 /** Date column */
 function date(prop: string, name: string, size = 110): OrbisColumnDef {
-  return { prop, name, size, readonly: true };
+  return {
+    id: prop,
+    prop,
+    header: name,
+    name,
+    width: size,
+    size,
+    readonly: true
+  };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -170,11 +174,15 @@ export const users = {
 
     if (actionsList && actionsList.length > 0) {
       cols.push({
+        id: "__actions",
         prop: "__actions",
+        header: labels.actions || "",
         name: labels.actions || "",
+        width: 90,
         size: 90,
         readonly: true,
-        cellRenderer: actionsRenderer({ items: actionsList }),
+        cell: ActionsCell,
+        meta: { items: actionsList }
       });
     }
 

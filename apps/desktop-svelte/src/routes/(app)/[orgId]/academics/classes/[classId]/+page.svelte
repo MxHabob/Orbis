@@ -26,11 +26,11 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
+import { OrbisGrid } from "@orbis/svelte-grid";
 import {
-  OrbisGrid,
   buildGradeColumns,
   transformMatrixToSource,
-} from "@orbis/data-grid";
+} from "$lib/tables";
 import {
   AlertTriangle,
   Activity,

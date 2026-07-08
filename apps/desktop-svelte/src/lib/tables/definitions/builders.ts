@@ -1,11 +1,5 @@
-/**
- * @orbis/data-grid - Generic column/source helpers
- *
- * Reusable utilities for building OrbisGrid configurations
- * for common Orbis page patterns (students, attendance, fees, etc.)
- */
-
-import type { OrbisColumnDef } from "./types";
+import type { OrbisColumnDef } from "@orbis/svelte-grid";
+import { AvatarCell, BadgeCell } from "..";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Generic Column Builders
@@ -16,51 +10,49 @@ import type { OrbisColumnDef } from "./types";
  */
 export function indexColumn(label = "#"): OrbisColumnDef {
   return {
+    id: "__rowIndex",
     prop: "__rowIndex",
+    header: label,
     name: label,
-    size: 50,
+    width: 50,
     readonly: true,
-    pin: "colPinStart",
-    cellProperties: () => ({
-      class: "orbis-cell-index",
-    }),
+    cellClass: "orbis-cell-index",
+    sort: false
   };
 }
 
 /**
  * Build a selection checkbox column for multi-row selection.
- * Used by bulk actions (print, export, delete).
  */
 export function selectionColumn(): OrbisColumnDef {
   return {
+    id: "__selected",
     prop: "__selected",
+    header: "",
     name: "",
-    size: 40,
-    readonly: true,
-    pin: "colPinStart",
-    cellType: "custom",
-    cellProperties: (row: Record<string, unknown>) => ({
-      class: row.__selected ? "orbis-cell-selected" : "orbis-cell-checkbox",
-    }),
+    width: 40,
+    editor: "checkbox",
+    sort: false
   };
 }
 
 /**
- * Build a frozen student name column with RTL support
+ * Build a student name column with avatar Svelte component
  */
 export function studentNameColumn(
   opts: { label?: string; locale?: string; size?: number } = {},
 ): OrbisColumnDef {
-  const { label = "Student", locale = "en", size = 200 } = opts;
+  const { label = "Student", locale = "en", size = 180 } = opts;
+  const colId = locale === "ar" ? "student_name_ar" : "student_name";
   return {
-    prop: locale === "ar" ? "student_name_ar" : "student_name",
+    id: colId,
+    prop: colId,
+    header: label,
     name: label,
-    size,
+    width: size,
     readonly: true,
-    pin: "colPinStart",
-    cellProperties: () => ({
-      class: "orbis-cell-student",
-    }),
+    cell: AvatarCell,
+    sort: true
   };
 }
 
@@ -76,22 +68,20 @@ export function scoreColumn(opts: {
 }): OrbisColumnDef {
   const { prop, name, maxScore = 100, size = 90, readonly = false } = opts;
   return {
+    id: prop,
     prop,
+    header: name,
     name,
-    size,
-    readonly,
-    editor: readonly ? undefined : "number",
-    cellProperties: (row: Record<string, unknown>) => {
-      const val = Number(row[prop]);
-      if (Number.isNaN(val)) return {};
-      if (val < 0 || val > maxScore) return { class: "orbis-cell-error" };
-      return {};
+    width: size,
+    editor: readonly ? undefined : {
+      type: "text",
+      config: {
+        min: 0,
+        max: maxScore
+      }
     },
-    editorConfig: {
-      min: 0,
-      max: maxScore,
-      step: 0.5,
-    },
+    sort: true,
+    cellClass: "font-mono text-center"
   };
 }
 
@@ -102,15 +92,15 @@ export function textColumn(opts: {
   prop: string;
   name: string;
   size?: number;
-  pin?: "colPinStart" | "colPinEnd";
 }): OrbisColumnDef {
-  const { prop, name, size = 120, pin } = opts;
+  const { prop, name, size = 120 } = opts;
   return {
+    id: prop,
     prop,
+    header: name,
     name,
-    size,
-    readonly: true,
-    pin,
+    width: size,
+    sort: true
   };
 }
 
@@ -124,20 +114,13 @@ export function statusColumn(opts: {
 }): OrbisColumnDef {
   const { prop, name, size = 100 } = opts;
   return {
+    id: prop,
     prop,
+    header: name,
     name,
-    size,
-    readonly: true,
-    cellProperties: (row: Record<string, unknown>) => {
-      const val = String(row[prop] || "");
-      const cls =
-        val === "active" || val === "present" || val === "paid"
-          ? "orbis-cell-success"
-          : val === "absent" || val === "failed" || val === "overdue"
-            ? "orbis-cell-error"
-            : "";
-      return { class: cls };
-    },
+    width: size,
+    cell: BadgeCell,
+    sort: true
   };
 }
 
@@ -151,18 +134,13 @@ export function percentageColumn(opts: {
 }): OrbisColumnDef {
   const { prop, name, size = 80 } = opts;
   return {
+    id: prop,
     prop,
+    header: name,
     name,
-    size,
-    readonly: true,
-    cellProperties: (row: Record<string, unknown>) => {
-      const val = Number(row[prop]);
-      if (Number.isNaN(val)) return {};
-      if (val >= 90) return { class: "orbis-cell-excellent" };
-      if (val >= 70) return { class: "orbis-cell-good" };
-      if (val >= 50) return { class: "orbis-cell-warning" };
-      return { class: "orbis-cell-error" };
-    },
+    width: size,
+    sort: true,
+    cellClass: "font-medium"
   };
 }
 
@@ -184,7 +162,6 @@ export function addRowIndices<T extends Record<string, unknown>>(
 
 /**
  * Flatten nested objects into a grid-friendly flat record.
- * e.g. { student: { name: "Ali" } } → { "student.name": "Ali" }
  */
 export function flattenForGrid(
   data: Record<string, unknown>[],
@@ -212,10 +189,6 @@ export function flattenForGrid(
 // Attendance Grid Helpers
 // ═══════════════════════════════════════════════════════════════════════════
 
-/**
- * Build columns for an attendance grid:
- * [#] [Student Name] [Day1] [Day2] ... [DayN] [Present Count] [Absent Count] [Rate %]
- */
 export function buildAttendanceColumns(opts: {
   days: string[];
   readonly?: boolean;
@@ -239,27 +212,18 @@ export function buildAttendanceColumns(opts: {
     }),
   ];
 
-  // Day columns
   for (const day of days) {
     cols.push({
+      id: `day_${day}`,
       prop: `day_${day}`,
+      header: day,
       name: day,
-      size: 45,
-      readonly,
-      cellProperties: (row: Record<string, unknown>) => {
-        const val = String(row[`day_${day}`] || "");
-        if (val === "P" || val === "present")
-          return { class: "orbis-cell-success" };
-        if (val === "A" || val === "absent")
-          return { class: "orbis-cell-error" };
-        if (val === "L" || val === "late")
-          return { class: "orbis-cell-warning" };
-        return {};
-      },
+      width: 55,
+      editor: readonly ? undefined : "text",
+      sort: false
     });
   }
 
-  // Summary columns
   cols.push(
     textColumn({
       prop: "__presentCount",
@@ -281,10 +245,6 @@ export function buildAttendanceColumns(opts: {
 // Student List Grid Helpers
 // ═══════════════════════════════════════════════════════════════════════════
 
-/**
- * Build columns for a student list/directory view:
- * [#] [Name] [Class] [Status] [Phone] [Email] [Guardian]
- */
 export function buildStudentListColumns(opts: {
   locale?: string;
   labels?: {
@@ -326,10 +286,6 @@ export function buildStudentListColumns(opts: {
 // Fees Grid Helpers
 // ═══════════════════════════════════════════════════════════════════════════
 
-/**
- * Build columns for a fees/payments summary grid:
- * [#] [Student] [Total Fees] [Paid] [Discount] [Balance] [Status]
- */
 export function buildFeesColumns(opts: {
   locale?: string;
   currencySymbol?: string;
@@ -353,35 +309,40 @@ export function buildFeesColumns(opts: {
       size: 200,
     }),
     {
+      id: "total_fees",
       prop: "total_fees",
+      header: labels.totalFees || "Total Fees",
       name: labels.totalFees || "Total Fees",
-      size: 110,
+      width: 110,
       readonly: true,
-      cellProperties: () => ({ class: "orbis-cell-number" }),
+      sort: true
     },
     {
+      id: "total_paid",
       prop: "total_paid",
+      header: labels.paid || "Paid",
       name: labels.paid || "Paid",
-      size: 100,
+      width: 100,
       readonly: true,
-      cellProperties: () => ({ class: "orbis-cell-success" }),
+      sort: true
     },
     {
+      id: "total_discount",
       prop: "total_discount",
+      header: labels.discount || "Discount",
       name: labels.discount || "Discount",
-      size: 100,
+      width: 100,
       readonly: true,
+      sort: true
     },
     {
+      id: "balance",
       prop: "balance",
+      header: labels.balance || "Balance",
       name: labels.balance || "Balance",
-      size: 110,
+      width: 110,
       readonly: true,
-      cellProperties: (row: Record<string, unknown>) => {
-        const val = Number(row.balance);
-        if (val > 0) return { class: "orbis-cell-error" };
-        return { class: "orbis-cell-success" };
-      },
+      sort: true
     },
     statusColumn({
       prop: "payment_status",

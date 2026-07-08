@@ -8,8 +8,9 @@ beforepaste event) to expand rows when needed, and oncelledit for data model syn
 RevoGrid handles the actual cell population internally.
 -->
 <script lang="ts">
-import { OrbisGrid, addRowIndices } from "@orbis/data-grid";
-import type { CellEditEvent, OrbisColumnDef } from "@orbis/data-grid";
+import { OrbisGrid } from "@orbis/svelte-grid";
+import type { CellEditEvent, OrbisColumnDef } from "@orbis/svelte-grid";
+import { addRowIndices } from "$lib/tables";
 import { getLocale } from "$lib/paraglide/runtime";
 import { parseTSV, mapTSVToRows, isHeaderRow } from "./paste-handler";
 

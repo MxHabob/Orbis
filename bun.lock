@@ -102,9 +102,9 @@
         "@docforge/core": "workspace:*",
         "@internationalized/date": "^3.12.0",
         "@orbis/avatar-engine": "workspace:*",
-        "@orbis/data-grid": "workspace:*",
         "@orbis/desktop-client": "workspace:*",
         "@orbis/location": "workspace:*",
+        "@orbis/svelte-grid": "workspace:*",
         "@orbis/ui-svelte": "workspace:*",
         "@orbis/utils": "workspace:*",
         "@tanstack/svelte-query": "^5",
@@ -163,22 +163,6 @@
         "typescript": "^5.9.3",
       },
     },
-    "packages/data-grid": {
-      "name": "@orbis/data-grid",
-      "version": "1.0.0",
-      "dependencies": {
-        "@orbis/ui-svelte": "workspace:*",
-        "@revolist/revogrid": "4.23.21",
-        "@revolist/svelte-datagrid": "4.23.21",
-        "svelte-sonner": "^1.1.0",
-      },
-      "devDependencies": {
-        "typescript": "^5.9.3",
-      },
-      "peerDependencies": {
-        "svelte": "^5.0.0",
-      },
-    },
     "packages/desktop-client": {
       "name": "@orbis/desktop-client",
       "version": "0.1.0",
@@ -198,15 +182,6 @@
       "version": "0.1.0",
       "devDependencies": {
         "@orbis/tsconfig": "workspace:*",
-        "typescript": "^5.9.3",
-      },
-    },
-    "packages/import-export": {
-      "name": "@orbis/import-export",
-      "version": "1.0.0",
-      "devDependencies": {
-        "@orbis/tsconfig": "workspace:*",
-        "@types/node": "^24.10.1",
         "typescript": "^5.9.3",
       },
     },
@@ -238,6 +213,21 @@
         "@orbis/tsconfig": "workspace:*",
         "@types/node": "^24.10.1",
         "typescript": "^5.9.3",
+      },
+    },
+    "packages/svelte-grid": {
+      "name": "@orbis/svelte-grid",
+      "version": "1.0.0",
+      "dependencies": {
+        "@orbis/ui-svelte": "workspace:*",
+        "@svar-ui/svelte-grid": "^2.0.0",
+        "lucide-svelte": "^0.460.0",
+      },
+      "devDependencies": {
+        "typescript": "^5.9.3",
+      },
+      "peerDependencies": {
+        "svelte": "^5.0.0",
       },
     },
     "packages/tsconfig": {
@@ -720,19 +710,17 @@
 
     "@orbis/dashboard": ["@orbis/dashboard@workspace:apps/dashboard"],
 
-    "@orbis/data-grid": ["@orbis/data-grid@workspace:packages/data-grid"],
-
     "@orbis/desktop-client": ["@orbis/desktop-client@workspace:packages/desktop-client"],
 
     "@orbis/desktop-svelte": ["@orbis/desktop-svelte@workspace:apps/desktop-svelte"],
-
-    "@orbis/import-export": ["@orbis/import-export@workspace:packages/import-export"],
 
     "@orbis/location": ["@orbis/location@workspace:packages/location"],
 
     "@orbis/sdk": ["@orbis/sdk@workspace:packages/sdk"],
 
     "@orbis/storage": ["@orbis/storage@workspace:packages/storage"],
+
+    "@orbis/svelte-grid": ["@orbis/svelte-grid@workspace:packages/svelte-grid"],
 
     "@orbis/tsconfig": ["@orbis/tsconfig@workspace:packages/tsconfig"],
 
@@ -912,10 +900,6 @@
 
     "@remix-run/router": ["@remix-run/router@1.23.3", "", {}, "sha512-4An71tdz9X8+3sI4Qqqd2LWd9vS39J7sqd9EU4Scw7TJE/qB10Flv/UuqbPVgfQV9XoK8Np6jNquZitnZq5i+Q=="],
 
-    "@revolist/revogrid": ["@revolist/revogrid@4.23.21", "", {}, "sha512-a17F8GUlyXaIGfgHL7egFn8OVvR5EOLWJct2/wX3eCcrYptLolOhDIo5O2bd5O4qBPXMfVzibZ/EgJIJRLjaEQ=="],
-
-    "@revolist/svelte-datagrid": ["@revolist/svelte-datagrid@4.23.21", "", { "dependencies": { "@revolist/revogrid": "4.23.21" } }, "sha512-gBaKwznwlhuaLUbBK/OFsY4DEEoJGWPn0R0yPPjmhhlL7rIFKb4xR2SnlMq/Az7krbL4fakh9ADNUhoeotXvhg=="],
-
     "@rolldown/binding-android-arm64": ["@rolldown/binding-android-arm64@1.0.3", "", { "os": "android", "cpu": "arm64" }, "sha512-454rs7jHngixp/NMxd5srYD57OnzSlZ/eFTETjORQHLwJG1lRtmNOJcBerZlfu4GjKqeq8aCCIQrMdHyhI51Hw=="],
 
     "@rolldown/binding-darwin-arm64": ["@rolldown/binding-darwin-arm64@1.0.3", "", { "os": "darwin", "cpu": "arm64" }, "sha512-PcAhP+ynjURNyy8SKGl5DQP94aGuB/7JrXJb/t7P+hanXvQVMWzUvRRhBAcg/lNRadBhoUPqSoP4xw5tR/KBEA=="],
@@ -973,6 +957,30 @@
     "@standard-schema/spec": ["@standard-schema/spec@1.0.0", "", {}, "sha512-m2bOd0f2RT9k8QJx1JN85cZYyH1RqFBdlwtkSlf4tBDYLCiiZnv1fIIwacK6cqwXavOydf0NPToMQgpKq+dVlA=="],
 
     "@standard-schema/utils": ["@standard-schema/utils@0.3.0", "", {}, "sha512-e7Mew686owMaPJVNNLs55PUvgz371nKgwsc4vxE49zsODpJEnxgxRo2y/OKrqueavXgZNMDVj3DdHFlaSAeU8g=="],
+
+    "@svar-ui/core-locales": ["@svar-ui/core-locales@2.6.0", "", {}, "sha512-Sma/BkR3we76Ix/67NmSh511yvtKVpi8LFK06ZbWSiC3xEsCSoKsJ5AtLmi8dxaXPa5HuCWI/jMwJsKRwQ0F2Q=="],
+
+    "@svar-ui/grid-data-provider": ["@svar-ui/grid-data-provider@2.7.1", "", { "dependencies": { "@svar-ui/lib-data-provider": "1.7.2" } }, "sha512-smPXRTm8Qhb6xmLv403blTLnBgNvwie5UAE+b94Pqh2Fly3KnH7l2ZIH5qSfdnUXFBzZDBBxXvBgkuWrdW+yMg=="],
+
+    "@svar-ui/grid-locales": ["@svar-ui/grid-locales@2.7.1", "", {}, "sha512-TNcDdA/QbS/mPhrFJAifXGmq2IBzUsnmm2NhLn9Ps6LbBN5Sz9O+UcE2dzMxQW67XFDr0EJS1iQirqbf13MYNA=="],
+
+    "@svar-ui/grid-store": ["@svar-ui/grid-store@2.7.1", "", { "dependencies": { "@svar-ui/lib-dom": "0.12.1", "@svar-ui/lib-state": "1.9.6" } }, "sha512-H83DInIOFIefaZN3wNHfi81nnHM/hFsv7qY9pWYZMINWZ6sVWoEBSCksg8nGw00h/CsT0dMHlqtIOTe5xZl1kg=="],
+
+    "@svar-ui/lib-data-provider": ["@svar-ui/lib-data-provider@1.7.2", "", { "dependencies": { "@svar-ui/lib-state": "1.9.6" } }, "sha512-Od93Iiy0vBwVzgJm25WdizH3d4Xlli/HAA2kqoUj1pzeZ2SWBeFzvE59iihQz8NuIlfAtQJ6MMe168458T+2lQ=="],
+
+    "@svar-ui/lib-dom": ["@svar-ui/lib-dom@0.13.1", "", {}, "sha512-e9+RIEkppVkAUJqfHEr7KmiVXi3uf+qddr513h5mhgSx3PNYtG9eHwtI8OQf4JMc6Hvuu3y0iv+fL6jqE340yw=="],
+
+    "@svar-ui/lib-state": ["@svar-ui/lib-state@1.9.7", "", {}, "sha512-nxRdk+54m1RJjGT2yDH7NjxAM5KECxA39kdTZezEIj1ixykyefssB9BrgxKy2jIseYxJMtd6lPZvQ3SZXuvn2g=="],
+
+    "@svar-ui/lib-svelte": ["@svar-ui/lib-svelte@0.5.2", "", { "dependencies": { "@svar-ui/lib-state": "^1.9.6" } }, "sha512-i+hHMT3zctaGbRpyMDREt9im7YfLpvGwFYvH1ntEp/kYAwUrR/sxMJlEEKIid+Yg2EeMUstGxmYQbkWoMpPG7A=="],
+
+    "@svar-ui/svelte-core": ["@svar-ui/svelte-core@2.6.0", "", { "dependencies": { "@svar-ui/core-locales": "2.6.0", "@svar-ui/lib-dom": "0.13.1", "@svar-ui/lib-svelte": "0.5.2" } }, "sha512-5fnEm4FXjRpVZgU8EoOMisiZ0bkkj0gtP1RK66Pi5Jw9OWu+ytZleaeUyFkpBxWNPX9yENkqEEOMWUnitPYO6A=="],
+
+    "@svar-ui/svelte-grid": ["@svar-ui/svelte-grid@2.7.1", "", { "dependencies": { "@svar-ui/grid-data-provider": "2.7.1", "@svar-ui/grid-locales": "2.7.1", "@svar-ui/grid-store": "2.7.1", "@svar-ui/lib-dom": "0.13.1", "@svar-ui/lib-state": "1.9.7", "@svar-ui/lib-svelte": "0.5.2", "@svar-ui/svelte-core": "2.6.0", "@svar-ui/svelte-menu": "2.6.0", "@svar-ui/svelte-toolbar": "2.6.0" } }, "sha512-vGsEJt46qEwhCH3rWBWlOygdVYsbr4qlMrqSdi7Mlut4GY+smkNuWUL2L/OcR1bki2f+VlCmeYybaDwPHSOjDQ=="],
+
+    "@svar-ui/svelte-menu": ["@svar-ui/svelte-menu@2.6.0", "", { "dependencies": { "@svar-ui/lib-dom": "0.13.1", "@svar-ui/svelte-core": "2.6.0" } }, "sha512-1sXgVKG4hUhkrnbfrSKvfp0M/OqMjbHBnoYRMZKNLs9z1hWGJpKqzZZkUZg8ahH40SfitMjK8XjEgGMFBwC/7g=="],
+
+    "@svar-ui/svelte-toolbar": ["@svar-ui/svelte-toolbar@2.6.0", "", { "dependencies": { "@svar-ui/lib-dom": "0.13.1", "@svar-ui/svelte-core": "2.6.0" } }, "sha512-/LHwQdo2FTzuQHdNXzmV0rsnKONAMHvb1M+8jSv6WCzfSBtggEEZ1voItl4EB3NzoBeI42zKxwuiskjXpkHyoQ=="],
 
     "@sveltejs/acorn-typescript": ["@sveltejs/acorn-typescript@1.0.10", "", { "peerDependencies": { "acorn": "^8.9.0" } }, "sha512-4WfKk68eTih+MiJD4fSbxN7E8kVBmTMPWHUPYjvl2N0rMs53YLTT8/YjKU5Dtnz5LqDjl7LEw4U7lXR2W3J5WA=="],
 
@@ -2443,6 +2451,12 @@
     "@reduxjs/toolkit/immer": ["immer@11.1.8", "", {}, "sha512-/tbkHMW7y10Lx6i1crLjD4/OhNkRG+Fo7byZHtah0547nIeXYcpIXaUh0IAQY6gO5459qpGGYapcEOHtFXkIuA=="],
 
     "@rolldown/binding-wasm32-wasi/@emnapi/runtime": ["@emnapi/runtime@1.10.0", "", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-ewvYlk86xUoGI0zQRNq/mC+16R1QeDlKQy21Ki3oSYXNgLb45GV1P6A0M+/s6nyCuNDqe5VpaY84BzXGwVbwFA=="],
+
+    "@svar-ui/grid-store/@svar-ui/lib-dom": ["@svar-ui/lib-dom@0.12.1", "", {}, "sha512-srvDleQqR6stBBDijCgzDHMFTTffI6sv3XCpNPKmurrnE83L1MDNqezqg6j3+0dUVPd4AAEGOez2DvK6byblTQ=="],
+
+    "@svar-ui/grid-store/@svar-ui/lib-state": ["@svar-ui/lib-state@1.9.6", "", {}, "sha512-twoHa8wZvzdxtES68s6Wnp4Xi1WivScNaFFK6sJ6WDgqVYOzJw0ZhVVrdwHQgieLITTKl/DYh/U3nuqtMetKYw=="],
+
+    "@svar-ui/lib-data-provider/@svar-ui/lib-state": ["@svar-ui/lib-state@1.9.6", "", {}, "sha512-twoHa8wZvzdxtES68s6Wnp4Xi1WivScNaFFK6sJ6WDgqVYOzJw0ZhVVrdwHQgieLITTKl/DYh/U3nuqtMetKYw=="],
 
     "@sveltejs/kit/@standard-schema/spec": ["@standard-schema/spec@1.1.0", "", {}, "sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w=="],
 

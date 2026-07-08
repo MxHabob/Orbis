@@ -4,8 +4,8 @@
  * Dynamically switches columns based on selected data type.
  */
 
-import type { OrbisColumnDef, CellValidation } from "@orbis/data-grid";
-import { indexColumn } from "@orbis/data-grid";
+import type { OrbisColumnDef, CellValidation } from "@orbis/svelte-grid";
+import { indexColumn } from "$lib/tables";
 
 export type BulkInputType = "students" | "teachers" | "grades";
 

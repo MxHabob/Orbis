@@ -21,7 +21,7 @@
   "dependencies": {
     "@docforge/core": "workspace:*",
     "@internationalized/date": "^3.12.0",
-    "@orbis/data-grid": "workspace:*",
+    "@orbis/svelte-grid": "workspace:*",
     "@orbis/desktop-client": "workspace:*",
     "@orbis/location": "workspace:*",
     "@orbis/ui-svelte": "workspace:*",

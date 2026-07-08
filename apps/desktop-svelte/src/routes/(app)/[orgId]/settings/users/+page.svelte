@@ -24,7 +24,7 @@ let { data }: { data: { orgId: string } } = $props();
 
 import { goto } from "$app/navigation";
 import { ActionOverlay } from "$lib/tables";
-import type { GridActionEvent, ActionItem } from "@orbis/data-grid";
+import type { GridActionEvent, ActionItem } from "@orbis/svelte-grid";
 
 // ── State ──────────────────────────────────────────────────────────────
 let users = $state<User[]>([]);
