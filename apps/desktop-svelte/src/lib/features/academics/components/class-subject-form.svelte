@@ -13,11 +13,13 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui-svelte/select";
-import { commands } from "$lib/core/ipc";
+import { commands, extractErrorMessage } from "$lib/core/ipc";
 import type { ClassSubject, JsonRecord } from "@orbis/desktop-client";
 import { toast } from "svelte-sonner";
-import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
+import { createCyclesQuery, createClassesQuery, createSubjectsQuery } from "$lib/features/academics/queries";
+import { createUsersQuery } from "$lib/features/settings/queries";
+import { Skeleton } from "@orbis/ui-svelte/skeleton";
 
 let {
   orgId,
@@ -52,33 +54,28 @@ $effect(() => {
   cycleId = editData ? String(editData.cycle_id ?? "") : "";
 });
 
-// Remote data
-let classes = $state<JsonRecord[]>([]);
-let subjects = $state<JsonRecord[]>([]);
-let teachers = $state<JsonRecord[]>([]);
-let cycles = $state<JsonRecord[]>([]);
-let isLoading = $state(false);
-let isSaving = $state(false);
+// TanStack Queries
+const cyclesQuery = createCyclesQuery(orgId);
+const classesQuery = createClassesQuery(orgId);
+const subjectsQuery = createSubjectsQuery(orgId);
+const usersQuery = createUsersQuery(orgId);
 
-onMount(async () => {
-  isLoading = true;
-  try {
-    const [cls, subj, usr, cyc] = await Promise.all([
-      commands.classes.getAll(orgId),
-      commands.subjects.getAll(orgId),
-      commands.users.getUsers(orgId, { role: "teacher" }),
-      commands.academics.getCycles(orgId),
-    ]);
-    classes = cls as unknown as JsonRecord[];
-    subjects = subj as unknown as JsonRecord[];
-    teachers = usr as unknown as JsonRecord[];
-    cycles = cyc;
-  } catch (e) {
-    console.error("Failed to load form data", e);
-  } finally {
-    isLoading = false;
-  }
-});
+const cycles = $derived(($cyclesQuery.data as JsonRecord[]) ?? []);
+const classes = $derived(($classesQuery.data as JsonRecord[]) ?? []);
+const subjects = $derived(($subjectsQuery.data as JsonRecord[]) ?? []);
+const teachers = $derived(
+  (($usersQuery.data as JsonRecord[]) ?? []).filter(
+    (u) => String(u.primary_role ?? u.role) === "teacher",
+  ),
+);
+
+const isLoading = $derived(
+  $cyclesQuery.isLoading ||
+    $classesQuery.isLoading ||
+    $subjectsQuery.isLoading ||
+    $usersQuery.isLoading,
+);
+let isSaving = $state(false);
 
 // Derived label helpers
 const selectedClass = $derived(classes.find((c) => String(c.id) === classId));
@@ -120,8 +117,7 @@ async function handleSubmit() {
 
     onSuccess?.();
   } catch (e: unknown) {
-    const errMsg = e instanceof Error ? e.message : String(e);
-    toast.error(`فشل الحفظ: ${errMsg}`);
+    toast.error(extractErrorMessage(e));
   } finally {
     isSaving = false;
   }
@@ -129,131 +125,152 @@ async function handleSubmit() {
 </script>
 
 <form class="flex flex-col gap-5" onsubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
-  <!-- Cycle -->
-  <div class="flex flex-col gap-1.5">
-    <Label class="text-xs font-semibold text-muted-foreground">{m.cs_form_cycle()} *</Label>
-    <Select type="single" value={cycleId} onValueChange={(v) => (cycleId = v ?? "")}>
-      <SelectTrigger class="h-9 text-sm">
-        {selectedCycle
-          ? String(selectedCycle.name ?? selectedCycle.name_ar ?? "")
-          : m.cs_form_select_cycle()}
-      </SelectTrigger>
-      <SelectContent>
-        {#each cycles as cyc (cyc.id)}
-          <SelectItem value={String(cyc.id)}>
-            {String(cyc.name ?? cyc.name_ar ?? cyc.id)}
-          </SelectItem>
-        {/each}
-      </SelectContent>
-    </Select>
-  </div>
+  {#if isLoading}
+    <div class="flex flex-col gap-5 animate-pulse">
+      <div class="flex flex-col gap-1.5">
+        <Skeleton class="h-3.5 w-24" />
+        <Skeleton class="h-9 w-full rounded-md" />
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <Skeleton class="h-3.5 w-20" />
+        <Skeleton class="h-9 w-full rounded-md" />
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <Skeleton class="h-3.5 w-28" />
+        <Skeleton class="h-9 w-full rounded-md" />
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <Skeleton class="h-3.5 w-24" />
+        <Skeleton class="h-9 w-full rounded-md" />
+      </div>
+    </div>
+  {:else}
+    <!-- Cycle -->
+    <div class="flex flex-col gap-1.5">
+      <Label class="text-xs font-semibold text-muted-foreground">{m.cs_form_cycle()} *</Label>
+      <Select type="single" value={cycleId} onValueChange={(v) => (cycleId = v ?? "")}>
+        <SelectTrigger class="h-9 text-sm">
+          {selectedCycle
+            ? String(selectedCycle.name ?? selectedCycle.name_ar ?? "")
+            : m.cs_form_select_cycle()}
+        </SelectTrigger>
+        <SelectContent>
+          {#each cycles as cyc (cyc.id)}
+            <SelectItem value={String(cyc.id)}>
+              {String(cyc.name ?? cyc.name_ar ?? cyc.id)}
+            </SelectItem>
+          {/each}
+        </SelectContent>
+      </Select>
+    </div>
 
-  <!-- Class -->
-  <div class="flex flex-col gap-1.5">
-    <Label class="text-xs font-semibold text-muted-foreground">{m.cs_form_class()} *</Label>
-    <Select type="single" value={classId} onValueChange={(v) => (classId = v ?? "")}>
-      <SelectTrigger class="h-9 text-sm">
-        {selectedClass
-          ? String(selectedClass.name ?? selectedClass.name_ar ?? "")
-          : m.cs_form_select_class()}
-      </SelectTrigger>
-      <SelectContent>
-        {#each classes as cls (cls.id)}
-          <SelectItem value={String(cls.id)}>
-            {String(cls.name ?? cls.name_ar ?? cls.id)}
-          </SelectItem>
-        {/each}
-      </SelectContent>
-    </Select>
-  </div>
+    <!-- Class -->
+    <div class="flex flex-col gap-1.5">
+      <Label class="text-xs font-semibold text-muted-foreground">{m.cs_form_class()} *</Label>
+      <Select type="single" value={classId} onValueChange={(v) => (classId = v ?? "")}>
+        <SelectTrigger class="h-9 text-sm">
+          {selectedClass
+            ? String(selectedClass.name ?? selectedClass.name_ar ?? "")
+            : m.cs_form_select_class()}
+        </SelectTrigger>
+        <SelectContent>
+          {#each classes as cls (cls.id)}
+            <SelectItem value={String(cls.id)}>
+              {String(cls.name ?? cls.name_ar ?? cls.id)}
+            </SelectItem>
+          {/each}
+        </SelectContent>
+      </Select>
+    </div>
 
-  <!-- Subject -->
-  <div class="flex flex-col gap-1.5">
-    <Label class="text-xs font-semibold text-muted-foreground">{m.cs_form_subject()} *</Label>
-    <Select type="single" value={subjectId} onValueChange={(v) => (subjectId = v ?? "")}>
-      <SelectTrigger class="h-9 text-sm">
-        {selectedSubject
-          ? String(selectedSubject.name ?? selectedSubject.name_ar ?? "")
-          : m.cs_form_select_subject()}
-      </SelectTrigger>
-      <SelectContent>
-        {#each subjects as subj (subj.id)}
-          <SelectItem value={String(subj.id)}>
-            {String(subj.name ?? subj.name_ar ?? subj.id)}
-          </SelectItem>
-        {/each}
-      </SelectContent>
-    </Select>
-  </div>
+    <!-- Subject -->
+    <div class="flex flex-col gap-1.5">
+      <Label class="text-xs font-semibold text-muted-foreground">{m.cs_form_subject()} *</Label>
+      <Select type="single" value={subjectId} onValueChange={(v) => (subjectId = v ?? "")}>
+        <SelectTrigger class="h-9 text-sm">
+          {selectedSubject
+            ? String(selectedSubject.name ?? selectedSubject.name_ar ?? "")
+            : m.cs_form_select_subject()}
+        </SelectTrigger>
+        <SelectContent>
+          {#each subjects as subj (subj.id)}
+            <SelectItem value={String(subj.id)}>
+              {String(subj.name ?? subj.name_ar ?? subj.id)}
+            </SelectItem>
+          {/each}
+        </SelectContent>
+      </Select>
+    </div>
 
-  <!-- Primary Teacher -->
-  <div class="flex flex-col gap-1.5">
-    <Label class="text-xs font-semibold text-muted-foreground">{m.cs_form_teacher()} *</Label>
-    <Select type="single" value={teacherId} onValueChange={(v) => (teacherId = v ?? "")}>
-      <SelectTrigger class="h-9 text-sm">
-        {selectedTeacher
-          ? String(selectedTeacher.full_name ?? selectedTeacher.email ?? "")
-          : m.cs_form_select_teacher()}
-      </SelectTrigger>
-      <SelectContent>
-        {#each teachers as t (t.id)}
-          <SelectItem value={String(t.id)}>
-            {String(t.full_name ?? t.email ?? t.id)}
-          </SelectItem>
-        {/each}
-      </SelectContent>
-    </Select>
-  </div>
+    <!-- Primary Teacher -->
+    <div class="flex flex-col gap-1.5">
+      <Label class="text-xs font-semibold text-muted-foreground">{m.cs_form_teacher()} *</Label>
+      <Select type="single" value={teacherId} onValueChange={(v) => (teacherId = v ?? "")}>
+        <SelectTrigger class="h-9 text-sm">
+          {selectedTeacher
+            ? String(selectedTeacher.full_name ?? selectedTeacher.email ?? "")
+            : m.cs_form_select_teacher()}
+        </SelectTrigger>
+        <SelectContent>
+          {#each teachers as t (t.id)}
+            <SelectItem value={String(t.id)}>
+              {String(t.full_name ?? t.email ?? t.id)}
+            </SelectItem>
+          {/each}
+        </SelectContent>
+      </Select>
+    </div>
 
-  <!-- Assistant Teacher (optional) -->
-  <div class="flex flex-col gap-1.5">
-    <Label class="text-xs font-semibold text-muted-foreground">{m.cs_form_assistant()}</Label>
-    <Select type="single" value={assistantTeacherId} onValueChange={(v) => (assistantTeacherId = v ?? "")}>
-      <SelectTrigger class="h-9 text-sm">
-        {selectedAssistant
-          ? String(selectedAssistant.full_name ?? selectedAssistant.email ?? "")
-          : "— لا يوجد —"}
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="">— لا يوجد —</SelectItem>
-        {#each teachers.filter((t) => String(t.id) !== teacherId) as t (t.id)}
-          <SelectItem value={String(t.id)}>
-            {String(t.full_name ?? t.email ?? t.id)}
-          </SelectItem>
-        {/each}
-      </SelectContent>
-    </Select>
-  </div>
+    <!-- Assistant Teacher (optional) -->
+    <div class="flex flex-col gap-1.5">
+      <Label class="text-xs font-semibold text-muted-foreground">{m.cs_form_assistant()}</Label>
+      <Select type="single" value={assistantTeacherId} onValueChange={(v) => (assistantTeacherId = v ?? "")}>
+        <SelectTrigger class="h-9 text-sm">
+          {selectedAssistant
+            ? String(selectedAssistant.full_name ?? selectedAssistant.email ?? "")
+            : "— لا يوجد —"}
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="">— لا يوجد —</SelectItem>
+          {#each teachers.filter((t) => String(t.id) !== teacherId) as t (t.id)}
+            <SelectItem value={String(t.id)}>
+              {String(t.full_name ?? t.email ?? t.id)}
+            </SelectItem>
+          {/each}
+        </SelectContent>
+      </Select>
+    </div>
 
-  <!-- Weekly Hours -->
-  <div class="flex flex-col gap-1.5">
-    <Label class="text-xs font-semibold text-muted-foreground">{m.cs_form_hours()}</Label>
-    <Input
-      type="number"
-      min="1"
-      max="30"
-      value={weeklyHours}
-      oninput={(e) => (weeklyHours = parseInt((e.target as HTMLInputElement).value) || 4)}
-      class="h-9 text-sm"
-    />
-  </div>
+    <!-- Weekly Hours -->
+    <div class="flex flex-col gap-1.5">
+      <Label class="text-xs font-semibold text-muted-foreground">{m.cs_form_hours()}</Label>
+      <Input
+        type="number"
+        min="1"
+        max="30"
+        value={weeklyHours}
+        oninput={(e) => (weeklyHours = parseInt((e.target as HTMLInputElement).value) || 4)}
+        class="h-9 text-sm"
+      />
+    </div>
 
-  <!-- Actions -->
-  <div class="flex gap-2 pt-2 border-t border-border/40">
-    <Button
-      type="button"
-      variant="outline"
-      class="flex-1 h-9 text-sm"
-      onclick={onCancel}
-    >
-      {m.cs_form_cancel()}
-    </Button>
-    <Button
-      type="submit"
-      class="flex-1 h-9 text-sm"
-      disabled={isSaving || isLoading || !classId || !subjectId || !teacherId || !cycleId}
-    >
-      {isSaving ? m.cs_form_saving() : m.cs_form_save()}
-    </Button>
-  </div>
+    <!-- Actions -->
+    <div class="flex gap-2 pt-2 border-t border-border/40">
+      <Button
+        type="button"
+        variant="outline"
+        class="flex-1 h-9 text-sm"
+        onclick={onCancel}
+      >
+        {m.cs_form_cancel()}
+      </Button>
+      <Button
+        type="submit"
+        class="flex-1 h-9 text-sm"
+        disabled={isSaving || isLoading || !classId || !subjectId || !teacherId || !cycleId}
+      >
+        {isSaving ? m.cs_form_saving() : m.cs_form_save()}
+      </Button>
+    </div>
+  {/if}
 </form>
