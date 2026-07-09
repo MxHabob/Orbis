@@ -29,4 +29,30 @@ impl AppState {
     pub async fn active_db(&self) -> DatabaseConnection {
         self.provider.active_db().await
     }
+
+    /// Verify RBAC permissions for the current active user session in Tauri.
+    pub async fn check_tauri_permission(
+        &self,
+        db: &DatabaseConnection,
+        permission: domain_iam::services::authz::Permission,
+        context: Option<&domain_iam::services::authz::AuthzContext>,
+    ) -> Result<(), shared_kernel::errors::AppError> {
+        use sea_orm::{EntityTrait, QueryOrder, QueryFilter, ColumnTrait};
+        
+        let latest_session = domain_iam::entities::user_session::Entity::find()
+            .order_by_desc(domain_iam::entities::user_session::Column::CreatedAt)
+            .one(db)
+            .await?
+            .ok_or_else(|| shared_kernel::errors::AppError::unauthorized("No active session found"))?;
+
+        let user = domain_iam::entities::user::Entity::find_by_id(latest_session.user_id)
+            .one(db)
+            .await?
+            .ok_or_else(|| shared_kernel::errors::AppError::unauthorized("Active session user not found"))?;
+
+        let authz = domain_iam::services::authz::AuthzService::new();
+        authz.check_permission(db, &user, permission, context).await?;
+
+        Ok(())
+    }
 }
