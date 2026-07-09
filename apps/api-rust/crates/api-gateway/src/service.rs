@@ -704,7 +704,7 @@ impl Service {
     pub async fn get_organization_stats(&self, org_id: &str) -> Result<serde_json::Value, String> {
         let std_count = crate::entities::enrollment::Entity::find().filter(crate::entities::enrollment::Column::OrgId.eq(org_id)).filter(crate::entities::enrollment::Column::Status.eq("active")).count(&self.db).await.map_err(|e| e.to_string())?;
         let cls_count = crate::entities::class::Entity::find().filter(crate::entities::class::Column::OrgId.eq(org_id)).filter(crate::entities::class::Column::IsDeleted.eq(0)).count(&self.db).await.map_err(|e| e.to_string())?;
-        let usr_count = crate::entities::user::Entity::find().filter(crate::entities::user::Column::OrgId.eq(org_id)).count(&self.db).await.map_err(|e| e.to_string())?;
+        let usr_count = crate::entities::user::Entity::find().filter(crate::entities::user::Column::OrgId.eq(usr_count.to_string())).count(&self.db).await.map_err(|e| e.to_string())?;
         Ok(json!({
             "student_count": std_count,
             "class_count": cls_count,
@@ -1975,10 +1975,10 @@ pub struct AuthService;
 impl AuthService {
     pub fn new(_cmd: Arc<domain_iam::repository::IamCommandRepo>, _query: Arc<domain_iam::repository::IamQueryRepo>, _cfg: Arc<Config>) -> Self { Self }
     pub async fn login(&self, _email: &str, _password: &str) -> Result<domain_iam::services::auth::LoginResponse, AppError> {
-        Err(AppError::AuthError("unimplemented".to_string()))
+        Err(AppError::Internal("unimplemented".to_string()))
     }
     pub async fn validate_token(&self, _token: &str) -> Result<crate::entities::user::Model, AppError> {
-        Err(AppError::AuthError("unimplemented".to_string()))
+        Err(AppError::Internal("unimplemented".to_string()))
     }
     pub fn hash_password(pwd: &str) -> Result<String, AppError> {
         Ok(pwd.to_string())
@@ -2017,19 +2017,19 @@ impl UserService {
         })
     }
     pub async fn get(&self, _id: &str) -> Result<crate::entities::user::Model, AppError> {
-        Err(AppError::NotFound("unimplemented".to_string()))
+        Err(AppError::Internal("unimplemented".to_string()))
     }
     pub async fn update_user(&self, _id: &str, _req: user::UpdateUserRequest) -> Result<crate::entities::user::Model, AppError> {
-        Err(AppError::NotFound("unimplemented".to_string()))
+        Err(AppError::Internal("unimplemented".to_string()))
     }
     pub async fn delete_user(&self, _id: &str) -> Result<(), AppError> {
         Ok(())
     }
     pub async fn change_role(&self, _id: &str, _role: &str) -> Result<crate::entities::user::Model, AppError> {
-        Err(AppError::NotFound("unimplemented".to_string()))
+        Err(AppError::Internal("unimplemented".to_string()))
     }
     pub async fn change_password(&self, _id: &str, _hashed: &str) -> Result<crate::entities::user::Model, AppError> {
-        Err(AppError::NotFound("unimplemented".to_string()))
+        Err(AppError::Internal("unimplemented".to_string()))
     }
 }
 
@@ -2037,7 +2037,7 @@ pub struct CycleService;
 impl CycleService {
     pub fn new(_cmd: Arc<domain_lifecycle::repository::LifecycleCommandRepo>, _query: Arc<domain_lifecycle::repository::LifecycleQueryRepo>) -> Self { Self }
     pub async fn get(&self, _id: &str) -> Result<crate::entities::academic_cycle::Model, AppError> {
-        Err(AppError::NotFound("unimplemented".to_string()))
+        Err(AppError::Internal("unimplemented".to_string()))
     }
     pub async fn create(&self, org_id: &str, name: &str, name_ar: Option<&str>, c_type: &str, parent_id: Option<&str>, start_date: &str, end_date: &str, _grading: Option<&str>, _pass: Option<i32>, _max: Option<i32>) -> Result<crate::entities::academic_cycle::Model, AppError> {
         let now = Utc::now().to_rfc3339();
@@ -2067,19 +2067,19 @@ impl CycleService {
         })
     }
     pub async fn update(&self, _id: &str, _name: &str, _name_ar: Option<&str>, _start_date: &str, _end_date: &str, _exam_start: Option<&str>, _exam_end: Option<&str>, _enroll: Option<i32>) -> Result<crate::entities::academic_cycle::Model, AppError> {
-        Err(AppError::NotFound("unimplemented".to_string()))
+        Err(AppError::Internal("unimplemented".to_string()))
     }
     pub async fn activate(&self, _org_id: &str, _id: &str) -> Result<crate::entities::academic_cycle::Model, AppError> {
-        Err(AppError::NotFound("unimplemented".to_string()))
+        Err(AppError::Internal("unimplemented".to_string()))
     }
     pub async fn lock(&self, _id: &str, _actor: &str) -> Result<crate::entities::academic_cycle::Model, AppError> {
-        Err(AppError::NotFound("unimplemented".to_string()))
+        Err(AppError::Internal("unimplemented".to_string()))
     }
     pub async fn unlock(&self, _id: &str) -> Result<crate::entities::academic_cycle::Model, AppError> {
-        Err(AppError::NotFound("unimplemented".to_string()))
+        Err(AppError::Internal("unimplemented".to_string()))
     }
     pub async fn set_grade_entry_open(&self, _id: &str, _open: bool) -> Result<crate::entities::academic_cycle::Model, AppError> {
-        Err(AppError::NotFound("unimplemented".to_string()))
+        Err(AppError::Internal("unimplemented".to_string()))
     }
 }
 
@@ -2107,7 +2107,7 @@ impl OrganizationService {
         })
     }
     pub async fn get(&self, _id: &str) -> Result<crate::entities::organization::Model, AppError> {
-        Err(AppError::NotFound("unimplemented".to_string()))
+        Err(AppError::Internal("unimplemented".to_string()))
     }
 }
 
@@ -2134,7 +2134,7 @@ impl ClassService {
         })
     }
     pub async fn update(&self, _id: &str, _name: &str, _name_ar: Option<&str>, _level: &str, _division: Option<&str>) -> Result<crate::entities::class::Model, AppError> {
-        Err(AppError::NotFound("unimplemented".to_string()))
+        Err(AppError::Internal("unimplemented".to_string()))
     }
     pub async fn delete(&self, _id: &str) -> Result<(), AppError> {
         Ok(())
@@ -2163,10 +2163,10 @@ impl EnrollmentService {
         })
     }
     pub async fn withdraw(&self, _id: &str, _reason: &str) -> Result<crate::entities::enrollment::Model, AppError> {
-        Err(AppError::NotFound("unimplemented".to_string()))
+        Err(AppError::Internal("unimplemented".to_string()))
     }
     pub async fn transfer(&self, _id: &str, _new_class: &str) -> Result<crate::entities::enrollment::Model, AppError> {
-        Err(AppError::NotFound("unimplemented".to_string()))
+        Err(AppError::Internal("unimplemented".to_string()))
     }
 }
 
@@ -2189,19 +2189,19 @@ impl GradeService {
         })
     }
     pub async fn submit_subject_grades(&self, _org_id: &str, _graded_by: &str, _req: grade::BulkSubjectGradeEntry) -> Result<domain_assessment::services::grade::BulkSubjectGradeResult, AppError> {
-        Err(AppError::DatabaseError("unimplemented".to_string()))
+        Err(AppError::Internal("unimplemented".to_string()))
     }
     pub async fn get_grade_matrix(&self, _cycle_id: &str, _class_id: &str, _subject_id: &str) -> Result<domain_assessment::services::grade::GradeMatrixResponse, AppError> {
-        Err(AppError::DatabaseError("unimplemented".to_string()))
+        Err(AppError::Internal("unimplemented".to_string()))
     }
     pub async fn get_grade_analytics(&self, _class_id: &str, _subject: &str, _exam: &str) -> Result<domain_assessment::services::grade::GradeAnalytics, AppError> {
-        Err(AppError::DatabaseError("unimplemented".to_string()))
+        Err(AppError::Internal("unimplemented".to_string()))
     }
     pub async fn get_report_card(&self, _enrollment_id: &str) -> Result<domain_assessment::services::grade::GradeReportCard, AppError> {
-        Err(AppError::DatabaseError("unimplemented".to_string()))
+        Err(AppError::Internal("unimplemented".to_string()))
     }
     pub async fn update_grade(&self, _id: &str, _actor: &str, _req: grade::UpdateGradeRequest) -> Result<crate::entities::grade::Model, AppError> {
-        Err(AppError::NotFound("unimplemented".to_string()))
+        Err(AppError::Internal("unimplemented".to_string()))
     }
 }
 
@@ -2243,10 +2243,10 @@ impl AttendanceService {
         Ok(list)
     }
     pub async fn get_attendance_report(&self, _enrollment_id: &str) -> Result<domain_assessment::services::attendance::AttendanceReport, AppError> {
-        Err(AppError::DatabaseError("unimplemented".to_string()))
+        Err(AppError::Internal("unimplemented".to_string()))
     }
     pub async fn get_attendance_analytics(&self, _class_id: &str, _cycle_id: &str) -> Result<domain_assessment::services::attendance::AttendanceAnalytics, AppError> {
-        Err(AppError::DatabaseError("unimplemented".to_string()))
+        Err(AppError::Internal("unimplemented".to_string()))
     }
 }
 
@@ -2269,7 +2269,7 @@ impl BehaviorService {
         })
     }
     pub async fn update_behavior_record(&self, _id: &str, _req: behavior::UpdateBehaviorRequest) -> Result<crate::entities::behavior_record::Model, AppError> {
-        Err(AppError::NotFound("unimplemented".to_string()))
+        Err(AppError::Internal("unimplemented".to_string()))
     }
     pub async fn delete_behavior_record(&self, _id: &str) -> Result<(), AppError> {
         Ok(())
@@ -2401,7 +2401,7 @@ impl ScheduleService {
         })
     }
     pub async fn update_time_slot(&self, _id: &str, _req: schedule::UpdateTimeSlotRequest) -> Result<crate::entities::time_slot::Model, AppError> {
-        Err(AppError::NotFound("unimplemented".to_string()))
+        Err(AppError::Internal("unimplemented".to_string()))
     }
     pub async fn delete_time_slot(&self, _id: &str) -> Result<(), AppError> {
         Ok(())
@@ -2420,7 +2420,7 @@ impl ScheduleService {
         })
     }
     pub async fn update_class_subject(&self, _id: &str, _req: schedule::UpdateClassSubjectRequest) -> Result<crate::entities::class_subject::Model, AppError> {
-        Err(AppError::NotFound("unimplemented".to_string()))
+        Err(AppError::Internal("unimplemented".to_string()))
     }
     pub async fn delete_class_subject(&self, _id: &str) -> Result<(), AppError> {
         Ok(())
@@ -2449,7 +2449,7 @@ impl ScheduleService {
         })
     }
     pub async fn update_lesson(&self, _id: &str, _req: schedule::UpdateLessonRequest) -> Result<crate::entities::scheduled_lesson::Model, AppError> {
-        Err(AppError::NotFound("unimplemented".to_string()))
+        Err(AppError::Internal("unimplemented".to_string()))
     }
     pub async fn delete_lesson(&self, _id: &str) -> Result<(), AppError> {
         Ok(())
@@ -2474,17 +2474,29 @@ impl ExamSessionService {
             org_id: org_id.to_string(),
             cycle_id: req.cycle_id,
             name: req.name,
+            name_ar: None,
+            code: None,
             session_type: req.session_type,
+            status: "draft".to_string(),
             start_date: req.start_date,
             end_date: req.end_date,
-            status: "draft".to_string(),
+            hijri_start_date: None,
+            hijri_end_date: None,
+            applicable_levels: None,
+            applicable_class_ids: None,
+            settings: None,
+            grading_deadline: None,
+            results_publish_date: None,
+            is_results_published: 0,
             created_by: user_id.to_string(),
+            approved_by: None,
+            approved_at: None,
             created_at: now.clone(),
             updated_at: now,
         })
     }
     pub async fn update_session(&self, _id: &str, _req: exam_session::UpdateExamSessionRequest) -> Result<crate::entities::exam_session::Model, AppError> {
-        Err(AppError::NotFound("unimplemented".to_string()))
+        Err(AppError::Internal("unimplemented".to_string()))
     }
     pub async fn create_subject(&self, req: exam_session::CreateExamSubjectRequest) -> Result<crate::entities::exam_subject::Model, AppError> {
         let now = Utc::now().to_rfc3339();
@@ -2492,9 +2504,20 @@ impl ExamSessionService {
             id: uuid::Uuid::new_v4().to_string(),
             exam_session_id: req.exam_session_id,
             subject_id: req.subject_id,
+            class_subject_id: None,
             max_score: req.max_score,
             passing_score: req.passing_score,
-            weight: req.weight,
+            practical_score: None,
+            oral_score: None,
+            coursework_score: None,
+            exam_written_score: None,
+            duration_minutes: 90,
+            exam_type: "written".to_string(),
+            is_included: 1,
+            weight: req.weight.unwrap_or(1.0),
+            instructions: None,
+            instructions_ar: None,
+            sort_order: None,
             created_at: now.clone(),
             updated_at: now,
         })
@@ -2504,27 +2527,39 @@ impl ExamSessionService {
         Ok(crate::entities::exam_schedule::Model {
             id: uuid::Uuid::new_v4().to_string(),
             exam_session_id: req.exam_session_id,
-            subject_id: req.subject_id,
+            exam_subject_id: req.exam_subject_id,
             exam_date: req.exam_date,
             start_time: req.start_time,
             end_time: req.end_time,
+            period: "morning".to_string(),
+            applicable_class_ids: None,
+            room_ids: None,
             status: "scheduled".to_string(),
+            postponed_to: None,
+            postponement_reason: None,
+            notes: None,
             created_at: now.clone(),
             updated_at: now,
-            time_slot_id: None,
         })
     }
     pub async fn create_hall(&self, req: exam_session::CreateExamHallRequest) -> Result<crate::entities::exam_hall::Model, AppError> {
         let now = Utc::now().to_rfc3339();
         Ok(crate::entities::exam_hall::Model {
             id: uuid::Uuid::new_v4().to_string(),
+            org_id: "".to_string(),
             exam_session_id: req.exam_session_id,
-            name: req.name,
-            capacity: req.capacity,
+            room_id: req.room_id,
+            hall_number: req.hall_number,
+            capacity: req.capacity.unwrap_or(30),
+            allocated_count: 0,
+            seating_arrangement: None,
+            floor_number: None,
+            building: None,
+            is_accessible: req.is_accessible.unwrap_or(1),
+            status: "active".to_string(),
+            notes: None,
             created_at: now.clone(),
             updated_at: now,
-            name_ar: None,
-            room_id: "".to_string(),
         })
     }
 }
@@ -2534,10 +2569,11 @@ impl StudentOrderingService {
     pub fn new(_cmd: Arc<domain_exam::repository::ExamCommandRepo>, _query: Arc<domain_exam::repository::ExamQueryRepo>) -> Self { Self }
     pub async fn rebuild_ordering(&self, _org_id: &str, _cycle_id: &str, _strat: &str) -> Result<student_ordering::RebuildOrderingResult, AppError> {
         Ok(student_ordering::RebuildOrderingResult {
-            success: true,
             total_students: 0,
-            ordered: 0,
-            errors: vec![],
+            ordered_count: 0,
+            frozen_skipped: 0,
+            strategy: _strat.to_string(),
+            version: 1,
         })
     }
 }
@@ -2601,10 +2637,16 @@ impl ExamAutoScheduleService {
     }
     pub async fn start_exam_solve(&self, org_id: &str, _user_id: &str, req: exam_auto_schedule::AutoScheduleRequest) -> Result<domain_exam::services::exam_auto_schedule::SolveJobResponse, AppError> {
         Ok(domain_exam::services::exam_auto_schedule::SolveJobResponse {
+            id: uuid::Uuid::new_v4().to_string(),
             org_id: org_id.to_string(),
-            score: "0/0".to_string(),
+            exam_session_id: req.exam_session_id,
+            status: "pending".to_string(),
+            score: Some("0/0".to_string()),
             items_created: 0,
-            started_at: Utc::now().to_rfc3339(),
+            error_message: None,
+            started_at: Some(Utc::now().to_rfc3339()),
+            completed_at: None,
+            created_at: Utc::now().to_rfc3339(),
         })
     }
 }
