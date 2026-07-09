@@ -2,13 +2,13 @@
 resolver = "2"
 members = [
     "crates/shared-kernel",
-    "crates/domain-iam",
-    "crates/domain-lifecycle",
-    "crates/domain-academic",
-    "crates/domain-assessment",
-    "crates/domain-scheduling",
-    "crates/domain-finance",
-    "crates/domain-exam",
+    "crates/svc-iam",
+    "crates/svc-organization",
+    "crates/svc-academic",
+    "crates/svc-assessment",
+    "crates/svc-scheduling",
+    "crates/svc-finance",
+    "crates/svc-exam",
     "crates/autopilot",
     "crates/ai-gateway",
     "crates/infra-persistence",
@@ -51,15 +51,15 @@ axum-extra = { version = "0.9.4", features = ["multipart"] }
 # OpenAPI Specification Generation
 utoipa = { version = "4.2.3", features = ["axum_extras"] }
 
-# Inter-workspace dependencies
+# Inter-workspace dependencies (svc-* microservices)
 shared-kernel = { path = "crates/shared-kernel" }
-domain-iam = { path = "crates/domain-iam" }
-domain-lifecycle = { path = "crates/domain-lifecycle" }
-domain-academic = { path = "crates/domain-academic" }
-domain-assessment = { path = "crates/domain-assessment" }
-domain-scheduling = { path = "crates/domain-scheduling" }
-domain-finance = { path = "crates/domain-finance" }
-domain-exam = { path = "crates/domain-exam" }
+domain-iam = { path = "crates/svc-iam" }
+domain-lifecycle = { path = "crates/svc-organization" }
+domain-academic = { path = "crates/svc-academic" }
+domain-assessment = { path = "crates/svc-assessment" }
+domain-scheduling = { path = "crates/svc-scheduling" }
+domain-finance = { path = "crates/svc-finance" }
+domain-exam = { path = "crates/svc-exam" }
 autopilot = { path = "crates/autopilot" }
 ai-gateway = { path = "crates/ai-gateway" }
 infra-persistence = { path = "crates/infra-persistence" }
