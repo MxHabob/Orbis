@@ -6,14 +6,17 @@
 //! - **Calendar Events**: Academic milestones with execution modes
 //! - **Policies**: Academic grading defaults, promotion rules, overrides
 //!
-//! # Independence
+//! # Platform Trait Implementations
 //!
-//! No dependency on other domain crates. Users reference organizations
-//! via `org_id` (String). This crate is the source of truth for
-//! organization and cycle lifecycle.
+//! This crate provides concrete implementations for:
+//! - `SettingsProvider` → `OrgSettingsProvider` (reads org.settings JSON)
+//! - `PolicyEngine`     → `OrgPolicyEngine` (reads org_academic_policies)
 
 pub mod entities;
 pub mod repository;
 pub mod services;
 pub mod params;
 
+// ── Phase 1: New Microservice Modules ──────────────────────────
+pub mod contracts;
+pub mod ops;

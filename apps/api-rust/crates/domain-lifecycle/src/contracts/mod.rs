@@ -1,6 +1,5 @@
-//! Lifecycle contracts — commands, queries, responses, events.
+//! Organization contracts â€” commands, responses, events for svc-organization.
 
 pub mod commands;
 pub mod responses;
 pub mod events;
-
