@@ -336,7 +336,7 @@ pub async fn start_server(database_url: &str, port: u16) -> Result<(), Box<dyn s
     }
 
     // Connect to Database (SeaORM + SQLite)
-    let db = database::connect(&cfg.database_url).await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
+    let db = database::connect_year(&cfg.database_url).await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
 
     // Initialize Dependency Injection
     let repo = Repository::new(db);

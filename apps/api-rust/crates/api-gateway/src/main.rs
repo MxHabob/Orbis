@@ -1,6 +1,6 @@
 use tracing::{info, Level};
 use tracing_subscriber::FmtSubscriber;
-use shared_common::config::Config;
+use shared_kernel::config::Config;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

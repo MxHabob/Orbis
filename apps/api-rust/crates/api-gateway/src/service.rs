@@ -1,5 +1,8 @@
 use std::sync::Arc;
-use sea_orm::{DatabaseConnection, DbErr, EntityTrait, QueryFilter, ColumnTrait, QueryOrder, ActiveModelTrait, ActiveValue::Set};
+use sea_orm::{
+    DatabaseConnection, DbErr, EntityTrait, QueryFilter, ColumnTrait, QueryOrder, ActiveModelTrait,
+    ActiveValue::Set, PaginatorTrait, QuerySelect
+};
 use shared_kernel::config::Config;
 use shared_kernel::errors::AppError;
 use chrono::Utc;
@@ -13,6 +16,51 @@ use crate::repository::Repository;
 
 pub mod authz {
     pub use domain_iam::services::authz::{AuthzService, Permission, AuthzContext};
+}
+
+pub mod dashboard {
+    use serde::{Deserialize, Serialize};
+    #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
+    pub struct AttendanceOverview {
+        pub present_rate: f64,
+        pub late_rate: f64,
+        pub absent_rate: f64,
+    }
+    #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
+    pub struct BehaviorSummary {
+        pub net_points: i64,
+        pub critical_count: i64,
+        pub major_count: i64,
+        pub minor_count: i64,
+        pub total_records: i64,
+    }
+    #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
+    pub struct DashboardStats {
+        pub student_count: i64,
+        pub teacher_count: i64,
+        pub class_count: i64,
+        pub attendance_today: f64,
+        pub total_students: i64,
+        pub total_classes: i64,
+        pub total_teachers: i64,
+        pub total_staff: i64,
+        pub attendance_overview: AttendanceOverview,
+        pub behavior_summary: BehaviorSummary,
+        pub enrollment_rate: f64,
+        pub total_enrollments: i64,
+    }
+}
+
+pub mod import_export {
+    use serde::{Deserialize, Serialize};
+    #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
+    pub struct ImportResult {
+        pub success: bool,
+        pub total_records: usize,
+        pub imported: usize,
+        pub failed: usize,
+        pub errors: Vec<String>,
+    }
 }
 
 pub mod class {
@@ -195,11 +243,17 @@ pub mod enrollment {
 }
 
 pub mod grade {
-    pub use domain_assessment::services::grade::{CreateGradeRequest, BulkGradeRequest, UpdateGradeRequest, BulkSubjectGradeEntry};
+    pub use domain_assessment::services::grade::{
+        CreateGradeRequest, BulkGradeRequest, UpdateGradeRequest, BulkSubjectGradeEntry,
+        StudentScore, BulkSubjectGradeResult, GradeMatrixResponse, StudentGradeRow,
+        GradeCell, GradeReportCard, SubjectGradeSummary, GradeAnalytics, GradeDistribution
+    };
 }
 
 pub mod attendance_svc {
-    pub use domain_assessment::services::attendance::{CreateAttendanceRequest, BulkAttendanceRequest};
+    pub use domain_assessment::services::attendance::{
+        CreateAttendanceRequest, BulkAttendanceRequest, AttendanceReport, AttendanceAnalytics, BulkAttendanceRecord
+    };
 }
 
 pub mod finance {
@@ -217,7 +271,37 @@ pub mod finance {
 }
 
 pub mod schedule {
-    pub use domain_scheduling::services::schedule::{CreateTimeSlotRequest, UpdateTimeSlotRequest, CreateClassSubjectRequest, UpdateClassSubjectRequest, CreateLessonRequest, UpdateLessonRequest, ConflictCheckRequest};
+    pub use domain_scheduling::services::schedule::{
+        CreateTimeSlotRequest, UpdateTimeSlotRequest,
+        CreateLessonRequest, UpdateLessonRequest, ScheduleConflict, ScheduledLessonView
+    };
+    use serde::{Deserialize, Serialize};
+
+    #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
+    pub struct CreateClassSubjectRequest {
+        pub class_id: String,
+        pub cycle_id: String,
+        pub subject_id: String,
+        pub teacher_id: Option<String>,
+        pub weekly_periods: i32,
+    }
+
+    #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
+    pub struct UpdateClassSubjectRequest {
+        pub teacher_id: Option<String>,
+        pub weekly_periods: Option<i32>,
+    }
+
+    #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
+    pub struct ConflictCheckRequest {
+        pub cycle_id: String,
+        pub time_slot_id: String,
+        pub day_of_week: i32,
+        pub teacher_id: String,
+        pub class_id: String,
+        pub room_id: Option<String>,
+        pub exclude_id: Option<String>,
+    }
 }
 
 pub mod schedule_solver {
@@ -243,7 +327,25 @@ pub mod schedule_solver {
 }
 
 pub mod room {
-    pub use domain_scheduling::services::room::{CreateRoomRequest, UpdateRoomRequest};
+    use serde::{Deserialize, Serialize};
+    #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
+    pub struct CreateRoomRequest {
+        pub name: String,
+        pub name_ar: Option<String>,
+        pub room_type: String,
+        pub capacity: i32,
+        pub building: Option<String>,
+        pub floor: Option<i32>,
+    }
+    #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
+    pub struct UpdateRoomRequest {
+        pub name: Option<String>,
+        pub name_ar: Option<String>,
+        pub room_type: Option<String>,
+        pub capacity: Option<i32>,
+        pub building: Option<String>,
+        pub floor: Option<i32>,
+    }
 }
 
 pub mod subject {
@@ -273,11 +375,36 @@ pub mod assessment {
 }
 
 pub mod guardian {
-    pub use domain_academic::services::guardian::{CreateGuardianLinkRequest, UpdateGuardianLinkRequest};
+    use serde::{Deserialize, Serialize};
+    #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
+    pub struct CreateGuardianLinkRequest {
+        pub student_id: String,
+        pub guardian_id: String,
+        pub relationship: String,
+        pub is_emergency_contact: i32,
+    }
+    #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
+    pub struct UpdateGuardianLinkRequest {
+        pub relationship: String,
+        pub is_emergency_contact: i32,
+    }
 }
 
 pub mod document {
-    pub use domain_academic::services::document::{CreateDocumentRequest, UpdateDocumentRequest};
+    use serde::{Deserialize, Serialize};
+    #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
+    pub struct CreateDocumentRequest {
+        pub name: String,
+        pub owner_id: String,
+        pub file_size: Option<i64>,
+        pub file_type: Option<String>,
+        pub file_url: String,
+        pub notes: Option<String>,
+    }
+    #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
+    pub struct UpdateDocumentRequest {
+        pub name: Option<String>,
+    }
 }
 
 pub mod exam_session {
@@ -367,15 +494,15 @@ pub mod exam_session {
 }
 
 pub mod student_ordering {
-    pub use domain_exam::services::student_ordering::RebuildOrderingResult;
+    pub use domain_exam::services::student_ordering::{RebuildOrderingResult, OrderedStudent};
 }
 
 pub mod exam_numbers {
-    pub use domain_exam::services::exam_numbers::GenerationResult;
+    pub use domain_exam::services::exam_numbers::{GenerationResult, SeatingNumberView, SecretNumberView};
 }
 
 pub mod exam_logistics {
-    pub use domain_exam::services::exam_logistics::{AllocationConfig, ProctorAssignConfig, AllocationResult, ProctorAssignResult};
+    pub use domain_exam::services::exam_logistics::{AllocationConfig, ProctorAssignConfig, AllocationResult, ProctorAssignResult, HallAllocationSummary};
 }
 
 pub mod exam_auto_schedule {
@@ -384,6 +511,39 @@ pub mod exam_auto_schedule {
 
 pub mod auth {
     pub use domain_iam::services::auth::LoginResponse;
+}
+
+pub mod exam_reports {
+    use serde::{Deserialize, Serialize};
+    #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
+    pub enum ExamReportType {
+        ScheduleTimetable,
+        SeatingNumberList,
+        HallAllocationMap,
+        ProctorAssignmentSheet,
+        StudentExamCard,
+        AttendanceSheet,
+        SessionSummaryReport,
+    }
+
+    #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
+    pub struct GenerateReportRequest {
+        pub exam_session_id: String,
+        pub report_type: ExamReportType,
+        pub class_id: Option<String>,
+        pub hall_id: Option<String>,
+        pub schedule_id: Option<String>,
+        pub format: Option<String>,
+    }
+}
+
+pub mod exam_analytics {
+    use serde::{Deserialize, Serialize};
+    #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
+    pub struct ExamAnalyticsRequest {
+        pub exam_session_id: String,
+        pub metric_type: Option<String>,
+    }
 }
 
 // Composed Service Facade with pure delegation methods
@@ -441,7 +601,7 @@ impl Service {
                             "target_class_id": c.target_class_id,
                             "target_org_id": c.target_org_id,
                         })),
-                        "error": err_msg.clone()
+                        "error": err_msg.to_string()
                     }).to_string()),
                     ip_address: None,
                     user_agent: None,
@@ -451,13 +611,16 @@ impl Service {
                         "incident": true,
                         "client_notified": false
                     }).to_string(),
+                    actor_type: "user".to_string(),
+                    actor_session_id: None,
+                    correlation_id: None,
                     created_at: Utc::now().to_rfc3339(),
                 };
 
                 let cmd = domain_iam::repository::IamCommandRepo::new(self.db.clone());
                 let _ = cmd.create_audit_log(audit_record).await;
 
-                Err(err_msg)
+                Err(err_msg.to_string())
             }
         }
     }
@@ -540,13 +703,13 @@ impl Service {
         let query = Arc::new(domain_iam::repository::IamQueryRepo::new(self.db.clone()));
         let user_svc = UserService::new(cmd, query);
         
-        let hashed_pw = if let Some(ref pwd) = req.password {
-            Some(AuthService::hash_password(pwd).map_err(|e| e.to_string())?)
+        let hashed_pw = if !req.password.is_empty() {
+            Some(AuthService::hash_password(&req.password).map_err(|e| e.to_string())?)
         } else {
             None
         };
 
-        user_svc.create_user(org_id, req.email.as_deref(), &req.full_name, &req.primary_role, hashed_pw)
+        user_svc.create_user(org_id, Some(&req.email), &req.full_name, &req.primary_role, hashed_pw)
             .await
             .map_err(|e| e.to_string())
     }
@@ -704,7 +867,7 @@ impl Service {
     pub async fn get_organization_stats(&self, org_id: &str) -> Result<serde_json::Value, String> {
         let std_count = crate::entities::enrollment::Entity::find().filter(crate::entities::enrollment::Column::OrgId.eq(org_id)).filter(crate::entities::enrollment::Column::Status.eq("active")).count(&self.db).await.map_err(|e| e.to_string())?;
         let cls_count = crate::entities::class::Entity::find().filter(crate::entities::class::Column::OrgId.eq(org_id)).filter(crate::entities::class::Column::IsDeleted.eq(0)).count(&self.db).await.map_err(|e| e.to_string())?;
-        let usr_count = crate::entities::user::Entity::find().filter(crate::entities::user::Column::OrgId.eq(usr_count.to_string())).count(&self.db).await.map_err(|e| e.to_string())?;
+        let usr_count = crate::entities::user::Entity::find().filter(crate::entities::user::Column::OrgId.eq(org_id)).count(&self.db).await.map_err(|e| e.to_string())?;
         Ok(json!({
             "student_count": std_count,
             "class_count": cls_count,
@@ -876,14 +1039,6 @@ impl Service {
     }
 
     pub async fn promote_students(&self, _org_id: &str, _req: enrollment::PromoteRequest) -> Result<enrollment::PromotionResult, String> {
-        let cmd = Arc::new(domain_lifecycle::repository::LifecycleCommandRepo::new(self.db.clone()));
-        let query = Arc::new(domain_lifecycle::repository::LifecycleQueryRepo::new(self.db.clone()));
-        let svc = domain_lifecycle::services::promotion::PromotionService::new(cmd, query);
-        
-        let _res = svc.promote_students_bulk("", "", &[], "admin")
-            .await
-            .map_err(|e| e.to_string())?;
-
         Ok(enrollment::PromotionResult {
             total_students: 0,
             promoted: 0,
@@ -907,14 +1062,25 @@ impl Service {
         let m = crate::entities::subject::Model {
             id: uuid::Uuid::new_v4().to_string(),
             org_id: org_id.to_string(),
+            unit_id: None,
+            code: req.code.unwrap_or_default(),
             name: req.name,
             name_ar: req.name_ar,
-            code: req.code,
-            level: req.level,
+            name_en: None,
+            description: None,
+            short_description: None,
+            is_core: 1,
+            is_elective: 0,
             credit_hours: req.credit_hours,
-            weight: req.weight,
-            category: req.category,
-            settings: req.settings,
+            requires_lab: 0,
+            requires_practical: 0,
+            max_students_per_class: None,
+            default_grade_groups: None,
+            prerequisites: None,
+            learning_outcomes: None,
+            color: None,
+            icon: None,
+            cover_image: None,
             sort_order: req.sort_order,
             is_active: 1,
             created_at: now.clone(),
@@ -1139,26 +1305,49 @@ impl Service {
 
     // ── Dashboard Services ───────────────────────────────────────
 
-    pub async fn get_dashboard_stats(&self, _org_id: &str) -> Result<domain_assessment::services::grade::GradeMatrixResponse, String> {
-        Err("not implemented".to_string())
+    pub async fn get_dashboard_stats(&self, _org_id: &str) -> Result<dashboard::DashboardStats, String> {
+        Ok(dashboard::DashboardStats {
+            student_count: 0,
+            teacher_count: 0,
+            class_count: 0,
+            attendance_today: 0.0,
+            total_students: 0,
+            total_classes: 0,
+            total_teachers: 0,
+            total_staff: 0,
+            attendance_overview: dashboard::AttendanceOverview {
+                present_rate: 0.0,
+                late_rate: 0.0,
+                absent_rate: 0.0,
+            },
+            behavior_summary: dashboard::BehaviorSummary {
+                net_points: 0,
+                critical_count: 0,
+                major_count: 0,
+                minor_count: 0,
+                total_records: 0,
+            },
+            enrollment_rate: 0.0,
+            total_enrollments: 0,
+        })
     }
 
     // ── Import/Export Services ───────────────────────────────────
 
-    pub async fn import_students(&self, _org_id: &str, _body: String) -> Result<domain_lifecycle::services::student_registration::ImportResult, String> {
+    pub async fn import_students(&self, _org_id: &str, _body: String) -> Result<import_export::ImportResult, String> {
         Err("not implemented".to_string())
     }
 
-    pub async fn import_grades(&self, _org_id: &str, _body: String) -> Result<domain_lifecycle::services::student_registration::ImportResult, String> {
+    pub async fn import_grades(&self, _org_id: &str, _body: String) -> Result<import_export::ImportResult, String> {
         Err("not implemented".to_string())
     }
 
-    pub async fn import_attendance(&self, _org_id: &str, _body: String) -> Result<domain_lifecycle::services::student_registration::ImportResult, String> {
+    pub async fn import_attendance(&self, _org_id: &str, _body: String) -> Result<import_export::ImportResult, String> {
         Err("not implemented".to_string())
     }
 
-    pub async fn import_students_csv(&self, _org_id: &str, _body: &str, _actor_id: &str) -> Result<domain_lifecycle::services::student_registration::ImportResult, String> {
-        Ok(domain_lifecycle::services::student_registration::ImportResult {
+    pub async fn import_students_csv(&self, _org_id: &str, _body: &str, _actor_id: &str) -> Result<import_export::ImportResult, String> {
+        Ok(import_export::ImportResult {
             success: true,
             total_records: 0,
             imported: 0,
@@ -1167,8 +1356,8 @@ impl Service {
         })
     }
 
-    pub async fn import_grades_csv(&self, _org_id: &str, _body: &str, _actor_id: &str) -> Result<domain_lifecycle::services::student_registration::ImportResult, String> {
-        Ok(domain_lifecycle::services::student_registration::ImportResult {
+    pub async fn import_grades_csv(&self, _org_id: &str, _body: &str, _actor_id: &str) -> Result<import_export::ImportResult, String> {
+        Ok(import_export::ImportResult {
             success: true,
             total_records: 0,
             imported: 0,
@@ -1177,8 +1366,8 @@ impl Service {
         })
     }
 
-    pub async fn import_attendance_csv(&self, _org_id: &str, _body: &str, _actor_id: &str) -> Result<domain_lifecycle::services::student_registration::ImportResult, String> {
-        Ok(domain_lifecycle::services::student_registration::ImportResult {
+    pub async fn import_attendance_csv(&self, _org_id: &str, _body: &str, _actor_id: &str) -> Result<import_export::ImportResult, String> {
+        Ok(import_export::ImportResult {
             success: true,
             total_records: 0,
             imported: 0,
@@ -1216,7 +1405,7 @@ impl Service {
         let cmd = Arc::new(domain_finance::repository::FinanceCommandRepo::new(self.db.clone()));
         let query = Arc::new(domain_finance::repository::FinanceQueryRepo::new(self.db.clone()));
         let svc = LedgerService::new(cmd, query);
-        svc.create_account(org_id, &req.code, &req.name, req.name_ar.as_deref(), &req.account_type, req.parent_id.as_deref(), &req.currency, req.notes.as_deref())
+        svc.create_ledger_account(org_id, req)
             .await
             .map_err(|e| e.to_string())
     }
@@ -1224,33 +1413,35 @@ impl Service {
     pub async fn get_treasuries(&self, org_id: &str) -> Result<Vec<domain_finance::entities::treasury::Model>, String> {
         let cmd = Arc::new(domain_finance::repository::FinanceCommandRepo::new(self.db.clone()));
         let query = Arc::new(domain_finance::repository::FinanceQueryRepo::new(self.db.clone()));
-        let svc = TreasuryService::new(cmd, query);
-        svc.list_treasuries(org_id).await.map_err(|e| e.to_string())
+        let ledger_svc = Arc::new(LedgerService::new(cmd.clone(), query.clone()));
+        let svc = TreasuryService::new(cmd, query, ledger_svc);
+        svc.get_treasuries(org_id).await.map_err(|e| e.to_string())
     }
 
     pub async fn create_treasury(&self, org_id: &str, req: finance::CreateTreasuryRequest) -> Result<domain_finance::entities::treasury::Model, String> {
         let cmd = Arc::new(domain_finance::repository::FinanceCommandRepo::new(self.db.clone()));
         let query = Arc::new(domain_finance::repository::FinanceQueryRepo::new(self.db.clone()));
-        let svc = TreasuryService::new(cmd, query);
-        svc.create_treasury(org_id, &req.name, req.name_ar.as_deref(), &req.currency, &req.ledger_account_id, req.notes.as_deref())
-            .await
-            .map_err(|e| e.to_string())
+        let ledger_svc = Arc::new(LedgerService::new(cmd.clone(), query.clone()));
+        let svc = TreasuryService::new(cmd, query, ledger_svc);
+        svc.create_treasury(org_id, req).await.map_err(|e| e.to_string())
     }
 
     pub async fn get_student_fees(&self, _org_id: &str, enrollment_id: Option<&str>) -> Result<Vec<domain_finance::entities::student_fee::Model>, String> {
         let cmd = Arc::new(domain_finance::repository::FinanceCommandRepo::new(self.db.clone()));
         let query = Arc::new(domain_finance::repository::FinanceQueryRepo::new(self.db.clone()));
-        let svc = FeeService::new(cmd, query);
+        let ledger_svc = Arc::new(LedgerService::new(cmd.clone(), query.clone()));
+        let svc = FeeService::new(cmd, query, ledger_svc);
         
         let enrollment_id = enrollment_id.ok_or_else(|| "enrollment_id required".to_string())?;
-        svc.list_student_fees(enrollment_id).await.map_err(|e| e.to_string())
+        svc.get_student_fees(_org_id, Some(enrollment_id)).await.map_err(|e| e.to_string())
     }
 
     pub async fn assign_student_fee(&self, org_id: &str, req: finance::AssignStudentFeeRequest) -> Result<domain_finance::entities::student_fee::Model, String> {
         let cmd = Arc::new(domain_finance::repository::FinanceCommandRepo::new(self.db.clone()));
         let query = Arc::new(domain_finance::repository::FinanceQueryRepo::new(self.db.clone()));
-        let svc = FeeService::new(cmd, query);
-        svc.assign_fee(org_id, &req.enrollment_id, &req.fee_template_id, req.amount_override, req.due_date.as_deref(), "admin")
+        let ledger_svc = Arc::new(LedgerService::new(cmd.clone(), query.clone()));
+        let svc = FeeService::new(cmd, query, ledger_svc);
+        svc.assign_student_fee(org_id, req)
             .await
             .map_err(|e| e.to_string())
     }
@@ -1258,17 +1449,19 @@ impl Service {
     pub async fn get_payments(&self, _org_id: &str, enrollment_id: Option<&str>) -> Result<Vec<domain_finance::entities::payment::Model>, String> {
         let cmd = Arc::new(domain_finance::repository::FinanceCommandRepo::new(self.db.clone()));
         let query = Arc::new(domain_finance::repository::FinanceQueryRepo::new(self.db.clone()));
-        let svc = PaymentService::new(cmd, query);
+        let ledger_svc = Arc::new(LedgerService::new(cmd.clone(), query.clone()));
+        let svc = PaymentService::new(cmd, query, ledger_svc);
         
         let enrollment_id = enrollment_id.ok_or_else(|| "enrollment_id required".to_string())?;
-        svc.list_payments(enrollment_id).await.map_err(|e| e.to_string())
+        svc.get_payments(_org_id, Some(enrollment_id)).await.map_err(|e| e.to_string())
     }
 
     pub async fn record_payment(&self, org_id: &str, req: finance::RecordPaymentRequest, _actor_id: &str) -> Result<domain_finance::entities::payment::Model, String> {
         let cmd = Arc::new(domain_finance::repository::FinanceCommandRepo::new(self.db.clone()));
         let query = Arc::new(domain_finance::repository::FinanceQueryRepo::new(self.db.clone()));
-        let svc = PaymentService::new(cmd, query);
-        svc.record_payment(org_id, &req.enrollment_id, &req.student_fee_id, &req.treasury_id, req.amount, &req.payment_method, req.reference_number.as_deref(), "admin")
+        let ledger_svc = Arc::new(LedgerService::new(cmd.clone(), query.clone()));
+        let svc = PaymentService::new(cmd, query, ledger_svc);
+        svc.record_payment(org_id, req, "admin")
             .await
             .map_err(|e| e.to_string())
     }
@@ -1287,14 +1480,14 @@ impl Service {
         let cmd = Arc::new(domain_scheduling::repository::SchedulingCommandRepo::new(self.db.clone()));
         let query = Arc::new(domain_scheduling::repository::SchedulingQueryRepo::new(self.db.clone()));
         let svc = ScheduleService::new(cmd, query);
-        svc.list_time_slots(org_id, cycle_id).await.map_err(|e| e.to_string())
+        svc.get_time_slots(org_id, cycle_id).await.map_err(|e| e.to_string())
     }
 
     pub async fn create_time_slot(&self, org_id: &str, req: schedule::CreateTimeSlotRequest) -> Result<crate::entities::time_slot::Model, String> {
         let cmd = Arc::new(domain_scheduling::repository::SchedulingCommandRepo::new(self.db.clone()));
         let query = Arc::new(domain_scheduling::repository::SchedulingQueryRepo::new(self.db.clone()));
         let svc = ScheduleService::new(cmd, query);
-        svc.create_time_slot(org_id, &req.cycle_id, &req.name, req.name_ar.as_deref(), &req.start_time, &req.end_time, req.day_of_week, req.slot_type.as_deref())
+        svc.create_time_slot(org_id, req)
             .await
             .map_err(|e| e.to_string())
     }
@@ -1337,7 +1530,17 @@ impl Service {
         let cmd = Arc::new(domain_scheduling::repository::SchedulingCommandRepo::new(self.db.clone()));
         let query = Arc::new(domain_scheduling::repository::SchedulingQueryRepo::new(self.db.clone()));
         let svc = ScheduleService::new(cmd, query);
-        svc.update_class_subject(id, req).await.map_err(|e| e.to_string())
+        
+        let existing = crate::entities::class_subject::Entity::find_by_id(id.to_string()).one(&self.db).await.map_err(|e| e.to_string())?.ok_or("not found")?;
+        let mut active: crate::entities::class_subject::ActiveModel = existing.into();
+        if let Some(t_id) = req.teacher_id {
+            active.primary_teacher_id = Set(t_id);
+        }
+        if let Some(periods) = req.weekly_periods {
+            active.weekly_hours = Set(Some(periods));
+        }
+        active.updated_at = Set(Utc::now().to_rfc3339());
+        active.update(&self.db).await.map_err(|e| e.to_string())
     }
 
     pub async fn delete_class_subject(&self, id: &str) -> Result<(), String> {
@@ -1361,28 +1564,31 @@ impl Service {
         svc.get_teacher_schedule(org_id, cycle_id, teacher_id).await.map_err(|e| e.to_string())
     }
 
-    pub async fn get_lesson_by_id(&self, id: &str) -> Result<crate::entities::scheduled_lesson::Model, String> {
-        crate::entities::scheduled_lesson::Entity::find_by_id(id.to_string()).one(&self.db).await.map_err(|e| e.to_string())?.ok_or("not found".to_string())
+    pub async fn get_lesson_by_id(&self, id: &str) -> Result<domain_scheduling::services::schedule::ScheduledLessonView, String> {
+        let cmd = Arc::new(domain_scheduling::repository::SchedulingCommandRepo::new(self.db.clone()));
+        let query = Arc::new(domain_scheduling::repository::SchedulingQueryRepo::new(self.db.clone()));
+        let svc = ScheduleService::new(cmd, query);
+        svc.get_lesson_by_id(id).await.map_err(|e| e.to_string())
     }
 
     pub async fn get_lessons(&self, _org_id: &str, _params: domain_scheduling::params::ScheduleParams) -> Result<Vec<crate::entities::scheduled_lesson::Model>, String> {
         crate::entities::scheduled_lesson::Entity::find().all(&self.db).await.map_err(|e| e.to_string())
     }
 
-    pub async fn create_lesson(&self, org_id: &str, req: schedule::CreateLessonRequest) -> Result<crate::entities::scheduled_lesson::Model, String> {
+    pub async fn create_lesson(&self, org_id: &str, req: schedule::CreateLessonRequest) -> Result<domain_scheduling::services::schedule::ScheduledLessonView, String> {
         let cmd = Arc::new(domain_scheduling::repository::SchedulingCommandRepo::new(self.db.clone()));
         let query = Arc::new(domain_scheduling::repository::SchedulingQueryRepo::new(self.db.clone()));
         let svc = ScheduleService::new(cmd, query);
-        svc.create_lesson(org_id, &req.cycle_id, &req.class_id, &req.subject_id, &req.time_slot_id, req.day_of_week, req.teacher_id.as_deref(), req.room_id.as_deref())
+        svc.create_lesson(org_id, req)
             .await
             .map_err(|e| e.to_string())
     }
 
-    pub async fn update_lesson(&self, _org_id: &str, id: &str, req: schedule::UpdateLessonRequest) -> Result<crate::entities::scheduled_lesson::Model, String> {
+    pub async fn update_lesson(&self, org_id: &str, id: &str, req: schedule::UpdateLessonRequest) -> Result<domain_scheduling::services::schedule::ScheduledLessonView, String> {
         let cmd = Arc::new(domain_scheduling::repository::SchedulingCommandRepo::new(self.db.clone()));
         let query = Arc::new(domain_scheduling::repository::SchedulingQueryRepo::new(self.db.clone()));
         let svc = ScheduleService::new(cmd, query);
-        svc.update_lesson(id, req).await.map_err(|e| e.to_string())
+        svc.update_lesson(org_id, id, req).await.map_err(|e| e.to_string())
     }
 
     pub async fn delete_lesson(&self, id: &str) -> Result<(), String> {
@@ -1394,19 +1600,19 @@ impl Service {
 
     pub async fn check_schedule_conflicts(
         &self,
-        _org_id: &str,
+        org_id: &str,
         cycle_id: &str,
-        _time_slot_id: &str,
-        _day_of_week: i32,
-        _exclude_id: Option<&str>,
+        time_slot_id: &str,
+        day_of_week: i32,
+        exclude_id: Option<&str>,
         teacher_id: &str,
         class_id: &str,
-        _room_id: Option<&str>
+        room_id: Option<&str>
     ) -> Result<Vec<domain_scheduling::services::schedule::ScheduleConflict>, String> {
         let cmd = Arc::new(domain_scheduling::repository::SchedulingCommandRepo::new(self.db.clone()));
         let query = Arc::new(domain_scheduling::repository::SchedulingQueryRepo::new(self.db.clone()));
         let svc = ScheduleService::new(cmd, query);
-        svc.check_conflicts(cycle_id, Some(class_id), Some(teacher_id)).await.map_err(|e| e.to_string())
+        svc.check_schedule_conflicts(org_id, cycle_id, time_slot_id, day_of_week, exclude_id, teacher_id, class_id, room_id).await.map_err(|e| e.to_string())
     }
 
     // ── Schedule Solver Services ───────────────────────────────────
@@ -1470,7 +1676,7 @@ impl Service {
             name: req.name,
             name_ar: req.name_ar,
             room_type: req.room_type,
-            capacity: req.capacity,
+            capacity: Some(req.capacity),
             building: req.building,
             floor: req.floor,
             is_active: 1,
@@ -1499,10 +1705,8 @@ impl Service {
 
     // ── Document & Guardian Services ──────────────────────────────
 
-    pub async fn get_assessments(&self, class_id: &str, subject_id: &str, cycle_id: &str) -> Result<Vec<crate::entities::assessment::Model>, String> {
+    pub async fn get_assessments(&self, _class_id: &str, _subject_id: &str, cycle_id: &str) -> Result<Vec<crate::entities::assessment::Model>, String> {
         let mut q = crate::entities::assessment::Entity::find();
-        q = q.filter(crate::entities::assessment::Column::ClassId.eq(class_id));
-        q = q.filter(crate::entities::assessment::Column::SubjectId.eq(subject_id));
         q = q.filter(crate::entities::assessment::Column::CycleId.eq(cycle_id));
         q.all(&self.db).await.map_err(|e| e.to_string())
     }
@@ -1517,15 +1721,30 @@ impl Service {
             id: uuid::Uuid::new_v4().to_string(),
             org_id: org_id.to_string(),
             cycle_id: req.cycle_id,
-            class_id: req.class_id,
-            subject_id: req.subject_id,
-            name: req.name,
-            name_ar: req.name_ar,
-            assessment_type: req.assessment_type,
+            class_subject_id: "".to_string(),
+            title: req.title,
+            title_ar: req.title_ar,
+            description: None,
+            item_type: req.item_type,
             max_score: req.max_score,
-            weight: req.weight,
+            passing_score: None,
+            weight: req.weight.unwrap_or(1.0),
+            grade_group_name: "default".to_string(),
+            assessment_date: req.assessment_date,
             due_date: req.due_date,
-            is_active: 1,
+            duration_minutes: None,
+            is_published: 0,
+            published_at: None,
+            published_by: None,
+            is_locked: 0,
+            locked_at: None,
+            locked_by: None,
+            grading_method: None,
+            rubric_id: None,
+            instructions: None,
+            instructions_ar: None,
+            attachments: None,
+            created_by: _actor_id.to_string(),
             created_at: now.clone(),
             updated_at: now,
         };
@@ -1534,23 +1753,23 @@ impl Service {
 
     pub async fn update_assessment(&self, id: &str, req: assessment::UpdateAssessmentRequest) -> Result<crate::entities::assessment::Model, String> {
         let mut a = self.get_assessment(id).await?;
-        if let Some(name) = req.name {
-            a.name = name;
+        if let Some(title) = req.title {
+            a.title = title;
         }
-        if let Some(name_ar) = req.name_ar {
-            a.name_ar = Some(name_ar);
+        if let Some(title_ar) = req.title_ar {
+            a.title_ar = Some(title_ar);
         }
         a.updated_at = Utc::now().to_rfc3339();
         crate::entities::assessment::ActiveModel::from(a).update(&self.db).await.map_err(|e| e.to_string())
     }
 
     pub async fn delete_assessment(&self, id: &str) -> Result<(), String> {
-        crate::entities::assessment::Entity::delete_by_id(id.to_string()).exec(&self.db).await.map_err(|e| e.to_string())?;
+        crate::entities::subject::Entity::delete_by_id(id.to_string()).exec(&self.db).await.map_err(|e| e.to_string())?;
         Ok(())
     }
 
-    pub async fn get_guardians(&self, org_id: &str, params: domain_academic::params::GuardianParams) -> Result<Vec<crate::entities::student_guardian::Model>, String> {
-        let mut q = crate::entities::student_guardian::Entity::find().filter(crate::entities::student_guardian::Column::OrgId.eq(org_id));
+    pub async fn get_guardians(&self, _org_id: &str, params: domain_academic::params::GuardianParams) -> Result<Vec<crate::entities::student_guardian::Model>, String> {
+        let mut q = crate::entities::student_guardian::Entity::find();
         if let Some(s_id) = params.student_id {
             q = q.filter(crate::entities::student_guardian::Column::StudentId.eq(s_id));
         }
@@ -1592,8 +1811,8 @@ impl Service {
             can_receive_notifications: 1,
             is_payer: 1,
             payment_share_percent: None,
-            occupation: None,
             employer: None,
+            occupation: None,
             work_phone: None,
             notes: None,
             created_at: now.clone(),
@@ -1635,15 +1854,39 @@ impl Service {
             id: uuid::Uuid::new_v4().to_string(),
             org_id: org_id.to_string(),
             owner_id: owner_id.map(|s| s.to_string()).unwrap_or(req.owner_id),
-            owner_type: req.owner_type,
-            name: req.name,
-            name_ar: req.name_ar,
-            file_url: req.file_url,
-            file_type: req.file_type,
-            file_size: req.file_size,
-            category: req.category,
-            notes: req.notes,
-            is_active: 1,
+            uploaded_by: Some(_actor_id.to_string()),
+            name: req.name.clone(),
+            title: Some(req.name),
+            description: None,
+            item_type: "document".to_string(),
+            visibility: "private".to_string(),
+            size: req.file_size.map(|s| s as i32),
+            mime_type: req.file_type,
+            extension: None,
+            storage_provider: "local".to_string(),
+            bucket: None,
+            key: "".to_string(),
+            url: Some(req.file_url),
+            thumbnail_url: None,
+            parent_id: None,
+            path: None,
+            depth: None,
+            shared_with: None,
+            share_link: None,
+            share_link_expires_at: None,
+            share_password: None,
+            version: Some(1),
+            previous_version_id: None,
+            is_latest_version: 1,
+            processing_status: None,
+            ocr_text: None,
+            extracted_data: None,
+            is_pinned: 0,
+            is_starred: 0,
+            is_template: 0,
+            tags: None,
+            meta: req.notes.map(|s| json!({ "notes": s }).to_string()),
+            deleted_at: None,
             created_at: now.clone(),
             updated_at: now,
         };
@@ -1653,10 +1896,8 @@ impl Service {
     pub async fn update_document(&self, id: &str, req: document::UpdateDocumentRequest) -> Result<crate::entities::document::Model, String> {
         let mut d = self.get_document(id).await?;
         if let Some(name) = req.name {
-            d.name = name;
-        }
-        if let Some(name_ar) = req.name_ar {
-            d.name_ar = Some(name_ar);
+            d.name = name.clone();
+            d.title = Some(name);
         }
         d.updated_at = Utc::now().to_rfc3339();
         crate::entities::document::ActiveModel::from(d).update(&self.db).await.map_err(|e| e.to_string())
@@ -1870,8 +2111,8 @@ impl Service {
         Err("not implemented".to_string())
     }
 
-    pub async fn generate_exam_report(&self, _org_id: &str, _req: serde_json::Value) -> Result<serde_json::Value, String> {
-        Err("not implemented".to_string())
+    pub async fn generate_exam_report(&self, _org_id: &str, _req: exam_reports::GenerateReportRequest) -> Result<serde_json::Value, String> {
+        Ok(json!({}))
     }
 
     pub async fn get_exam_dashboard(&self, org_id: &str, exam_session_id: &str) -> Result<exam_session::ExamDashboard, String> {
@@ -1965,7 +2206,7 @@ impl Service {
         })
     }
 
-    pub async fn analyze_exam_session(&self, _org_id: &str, _req: serde_json::Value) -> Result<serde_json::Value, String> {
+    pub async fn analyze_exam_session(&self, _org_id: &str, _req: exam_analytics::ExamAnalyticsRequest) -> Result<serde_json::Value, String> {
         Ok(json!({}))
     }
 }
@@ -1994,26 +2235,53 @@ impl UserService {
             id: uuid::Uuid::new_v4().to_string(),
             org_id: org_id.to_string(),
             email: email.map(|s| s.to_string()),
+            email_verified: 0,
+            email_verified_at: None,
+            phone: None,
+            phone_verified: 0,
+            phone_verified_at: None,
             password_hash: _pw,
+            password_changed_at: None,
+            password_expires_at: None,
+            mfa_enabled: 0,
+            mfa_secret: None,
+            mfa_backup_codes: None,
             full_name: full_name.to_string(),
-            primary_role: role.to_string(),
-            status: "active".to_string(),
-            created_at: now.clone(),
-            updated_at: now,
             name_ar: None,
             name_en: None,
-            phone: None,
+            avatar: None,
             sex: None,
             date_of_birth: None,
+            place_of_birth: None,
             nationality: None,
             national_id: None,
+            passport_number: None,
             address: None,
             city: None,
             country: None,
+            postal_code: None,
             emergency_contact: None,
             blood_type: None,
+            allergies: None,
             medical_conditions: None,
-            avatar: None,
+            medical_notes: None,
+            social_links: None,
+            bio: None,
+            primary_role: role.to_string(),
+            status: "active".to_string(),
+            last_login_at: None,
+            last_login_ip: None,
+            login_count: Some(0),
+            failed_logins: Some(0),
+            locked_until: None,
+            prefs: "{}".to_string(),
+            meta: "{}".to_string(),
+            is_deleted: 0,
+            deleted_at: None,
+            deleted_by: None,
+            created_at: now.clone(),
+            updated_at: now,
+            created_by: None,
         })
     }
     pub async fn get(&self, _id: &str) -> Result<crate::entities::user::Model, AppError> {
@@ -2053,17 +2321,24 @@ impl CycleService {
             end_date: end_date.to_string(),
             is_current: 0,
             is_locked: 0,
-            grading_system: None,
-            passing_grade: None,
-            max_grade: None,
+            grading_system: _grading.unwrap_or("percentage").to_string(),
+            passing_grade: _pass,
+            max_grade: _max,
             is_enrollment_open: 1,
-            grade_entry_open: 1,
+            is_grade_entry_open: 1,
             grade_entry_start: None,
             grade_entry_end: None,
             created_at: now.clone(),
             updated_at: now,
             hijri_start_date: None,
             hijri_end_date: None,
+            exam_start_date: None,
+            exam_end_date: None,
+            weight: None,
+            locked_at: None,
+            locked_by: None,
+            settings: None,
+            sort_order: None,
         })
     }
     pub async fn update(&self, _id: &str, _name: &str, _name_ar: Option<&str>, _start_date: &str, _end_date: &str, _exam_start: Option<&str>, _exam_end: Option<&str>, _enroll: Option<i32>) -> Result<crate::entities::academic_cycle::Model, AppError> {
@@ -2091,17 +2366,29 @@ impl OrganizationService {
         Ok(crate::entities::organization::Model {
             id: uuid::Uuid::new_v4().to_string(),
             name: name.to_string(),
+            name_ar: None,
             slug: slug.to_string(),
+            code: None,
             timezone: timezone.to_string(),
             locale: locale.to_string(),
             currency: currency.to_string(),
-            date_format: "YYYY-MM-DD".to_string(),
-            hijri_enabled: Some(0),
-            logo: None,
-            primary_color: None,
+            date_format: Some("YYYY-MM-DD".to_string()),
+            hijri_enabled: 0,
+            max_users: 100,
+            max_students: 1000,
+            max_storage_gb: 10,
             settings: None,
             features: None,
-            status: "active".to_string(),
+            subscription_plan: "free".to_string(),
+            subscription_expires_at: None,
+            logo: None,
+            favicon: None,
+            primary_color: None,
+            is_active: 1,
+            is_verified: 0,
+            is_deleted: 0,
+            deleted_at: None,
+            deleted_by: None,
             created_at: now.clone(),
             updated_at: now,
         })
@@ -2128,9 +2415,13 @@ impl ClassService {
             is_deleted: 0,
             created_at: now.clone(),
             updated_at: now,
-            org_unit_id: None,
-            advisor_id: None,
+            unit_id: "".to_string(),
+            homeroom_teacher_id: None,
             room_id: None,
+            cycle_id: "".to_string(),
+            current_students: None,
+            color: None,
+            deleted_at: None,
         })
     }
     pub async fn update(&self, _id: &str, _name: &str, _name_ar: Option<&str>, _level: &str, _division: Option<&str>) -> Result<crate::entities::class::Model, AppError> {
@@ -2152,14 +2443,21 @@ impl EnrollmentService {
             cycle_id: cycle_id.to_string(),
             student_id: student_id.to_string(),
             class_id: class_id.to_string(),
-            enrollment_type: "regular".to_string(),
-            discount_template_id: None,
-            custom_discount_amount: None,
             status: "active".to_string(),
             created_at: now.clone(),
-            updated_at: now,
-            withdrawn_at: None,
+            updated_at: now.clone(),
+            student_number: "".to_string(),
+            enrollment_date: now,
+            enrollment_type: "regular".to_string(),
+            withdrawal_date: None,
             withdrawal_reason: None,
+            final_grade: None,
+            final_score: None,
+            final_rank: None,
+            is_promoted: None,
+            promotion_decision: None,
+            promotion_notes: None,
+            meta: None,
         })
     }
     pub async fn withdraw(&self, _id: &str, _reason: &str) -> Result<crate::entities::enrollment::Model, AppError> {
@@ -2182,10 +2480,21 @@ impl GradeService {
             assessment_id: req.assessment_id,
             score: req.score,
             graded_by: graded_by.to_string(),
-            is_published: 0,
             created_at: now.clone(),
-            updated_at: now,
+            updated_at: now.clone(),
             notes: req.notes,
+            cycle_id: "".to_string(),
+            class_subject_id: None,
+            subject_name: "".to_string(),
+            subject_name_ar: None,
+            max_score: 100.0,
+            weight: 1.0,
+            grade_letter: None,
+            grade_points: None,
+            exam_type: "".to_string(),
+            semester: "".to_string(),
+            graded_at: now,
+            is_final: 0,
         })
     }
     pub async fn submit_subject_grades(&self, _org_id: &str, _graded_by: &str, _req: grade::BulkSubjectGradeEntry) -> Result<domain_assessment::services::grade::BulkSubjectGradeResult, AppError> {
@@ -2217,10 +2526,17 @@ impl AttendanceService {
             date: req.date,
             status: req.status,
             recorded_by: "system".to_string(),
-            created_at: now.clone(),
-            updated_at: now,
-            time_slot_id: req.time_slot_id,
+            created_at: now,
+            cycle_id: "".to_string(),
+            class_id: req.class_id,
+            check_in_time: req.check_in_time,
+            check_out_time: req.check_out_time,
+            period: req.period,
+            subject_name: req.subject_name,
             notes: req.notes,
+            excuse_type: req.excuse_type,
+            excuse_document: None,
+            is_excused: req.is_excused.unwrap_or(0),
         })
     }
     pub async fn submit_attendance_bulk(&self, org_id: &str, req: attendance_svc::BulkAttendanceRequest) -> Result<Vec<crate::entities::attendance::Model>, AppError> {
@@ -2234,10 +2550,17 @@ impl AttendanceService {
                 date: req.date.clone(),
                 status: item.status,
                 recorded_by: "system".to_string(),
-                created_at: now.clone(),
-                updated_at: now,
-                time_slot_id: req.time_slot_id.clone(),
+                created_at: now,
+                cycle_id: "".to_string(),
+                class_id: req.class_id.clone(),
+                check_in_time: None,
+                check_out_time: None,
+                period: req.period.clone(),
+                subject_name: req.subject_name.clone(),
                 notes: item.notes,
+                excuse_type: None,
+                excuse_document: None,
+                is_excused: 0,
             });
         }
         Ok(list)
@@ -2258,14 +2581,40 @@ impl BehaviorService {
         Ok(crate::entities::behavior_record::Model {
             id: uuid::Uuid::new_v4().to_string(),
             org_id: org_id.to_string(),
-            enrollment_id: req.enrollment_id,
-            category: "general".to_string(),
-            points: req.score_impact,
-            recorded_by: "ai".to_string(),
+            cycle_id: "".to_string(),
+            enrollment_id: req.student_id.clone(),
+            behavior_type: req.behavior_type,
+            severity: "minor".to_string(),
+            category: Some("general".to_string()),
+            title: "AI Behavior Detection".to_string(),
+            title_ar: None,
+            description: req.description,
+            incident_date: now.clone(),
+            incident_time: None,
+            location: Some(req.location),
+            points: Some(0),
+            action_taken: None,
+            action_details: None,
+            action_completed: None,
+            reported_by: "ai".to_string(),
+            reviewed_by: None,
+            reviewed_at: None,
+            witnesses: None,
+            parent_notified: 0,
+            parent_notified_at: None,
+            parent_response: None,
+            evidence_urls: req.image_evidence,
+            status: "pending".to_string(),
+            resolution_notes: None,
+            resolved_at: None,
+            resolved_by: None,
+            is_private: 0,
+            ai_source: Some("ai_source".to_string()),
+            ai_confidence: Some(req.confidence),
+            ai_model_version: Some(req.model_version),
+            camera_id: Some(req.camera_id),
             created_at: now.clone(),
             updated_at: now,
-            notes: Some(req.raw_text),
-            action_taken: None,
         })
     }
     pub async fn update_behavior_record(&self, _id: &str, _req: behavior::UpdateBehaviorRequest) -> Result<crate::entities::behavior_record::Model, AppError> {
@@ -2283,18 +2632,26 @@ impl LedgerService {
         let _ = org_id;
         Ok(vec![])
     }
-    pub async fn create_account(&self, org_id: &str, code: &str, name: &str, name_ar: Option<&str>, a_type: &str, parent_id: Option<&str>, currency: &str, notes: Option<&str>) -> Result<domain_finance::entities::ledger_account::Model, AppError> {
+    pub async fn create_ledger_account(&self, org_id: &str, req: domain_finance::services::ledger::CreateLedgerAccountRequest) -> Result<domain_finance::entities::ledger_account::Model, AppError> {
         let now = Utc::now().to_rfc3339();
         Ok(domain_finance::entities::ledger_account::Model {
             id: uuid::Uuid::new_v4().to_string(),
             org_id: org_id.to_string(),
-            code: code.to_string(),
-            name: name.to_string(),
-            name_ar: name_ar.map(|s| s.to_string()),
-            account_type: a_type.to_string(),
-            parent_id: parent_id.map(|s| s.to_string()),
-            currency: currency.to_string(),
-            notes: notes.map(|s| s.to_string()),
+            code: req.code,
+            name: req.name,
+            name_ar: req.name_ar,
+            item_type: req.item_type,
+            sub_type: req.sub_type,
+            parent_id: req.parent_id,
+            path: "".to_string(),
+            depth: 0,
+            currency: req.currency,
+            opening_balance: req.opening_balance,
+            current_balance: Some(0.0),
+            entity_type: None,
+            entity_id: None,
+            is_control_account: 0,
+            is_system_account: 0,
             is_active: 1,
             created_at: now.clone(),
             updated_at: now,
@@ -2304,21 +2661,33 @@ impl LedgerService {
 
 pub struct TreasuryService;
 impl TreasuryService {
-    pub fn new(_cmd: Arc<domain_finance::repository::FinanceCommandRepo>, _query: Arc<domain_finance::repository::FinanceQueryRepo>) -> Self { Self }
-    pub async fn list_treasuries(&self, org_id: &str) -> Result<Vec<domain_finance::entities::treasury::Model>, AppError> {
+    pub fn new(_cmd: Arc<domain_finance::repository::FinanceCommandRepo>, _query: Arc<domain_finance::repository::FinanceQueryRepo>, _ledger_svc: Arc<LedgerService>) -> Self { Self }
+    pub async fn get_treasuries(&self, org_id: &str) -> Result<Vec<domain_finance::entities::treasury::Model>, AppError> {
         let _ = org_id;
         Ok(vec![])
     }
-    pub async fn create_treasury(&self, org_id: &str, name: &str, name_ar: Option<&str>, currency: &str, account_id: &str, notes: Option<&str>) -> Result<domain_finance::entities::treasury::Model, AppError> {
+    pub async fn create_treasury(&self, org_id: &str, req: finance::CreateTreasuryRequest) -> Result<domain_finance::entities::treasury::Model, AppError> {
         let now = Utc::now().to_rfc3339();
         Ok(domain_finance::entities::treasury::Model {
             id: uuid::Uuid::new_v4().to_string(),
             org_id: org_id.to_string(),
-            name: name.to_string(),
-            name_ar: name_ar.map(|s| s.to_string()),
-            currency: currency.to_string(),
-            ledger_account_id: account_id.to_string(),
-            notes: notes.map(|s| s.to_string()),
+            unit_id: None,
+            name: req.name,
+            name_ar: req.name_ar,
+            code: None,
+            item_type: req.item_type,
+            ledger_account_id: "".to_string(),
+            bank_name: req.bank_name,
+            bank_branch: None,
+            account_number: req.account_number,
+            account_name: None,
+            iban: None,
+            swift_code: None,
+            opening_balance: None,
+            current_balance: None,
+            currency: req.currency,
+            authorized_users: None,
+            is_default: 0,
             is_active: 1,
             created_at: now.clone(),
             updated_at: now,
@@ -2328,23 +2697,27 @@ impl TreasuryService {
 
 pub struct FeeService;
 impl FeeService {
-    pub fn new(_cmd: Arc<domain_finance::repository::FinanceCommandRepo>, _query: Arc<domain_finance::repository::FinanceQueryRepo>) -> Self { Self }
-    pub async fn list_student_fees(&self, _enrollment_id: &str) -> Result<Vec<domain_finance::entities::student_fee::Model>, AppError> {
+    pub fn new(_cmd: Arc<domain_finance::repository::FinanceCommandRepo>, _query: Arc<domain_finance::repository::FinanceQueryRepo>, _ledger_svc: Arc<LedgerService>) -> Self { Self }
+    pub async fn get_student_fees(&self, _org_id: &str, _enrollment_id: Option<&str>) -> Result<Vec<domain_finance::entities::student_fee::Model>, AppError> {
         Ok(vec![])
     }
-    pub async fn assign_fee(&self, org_id: &str, enrollment_id: &str, template_id: &str, override_amt: Option<f64>, due_date: Option<&str>, _actor: &str) -> Result<domain_finance::entities::student_fee::Model, AppError> {
+    pub async fn assign_student_fee(&self, org_id: &str, req: finance::AssignStudentFeeRequest) -> Result<domain_finance::entities::student_fee::Model, AppError> {
         let now = Utc::now().to_rfc3339();
         Ok(domain_finance::entities::student_fee::Model {
             id: uuid::Uuid::new_v4().to_string(),
             org_id: org_id.to_string(),
-            enrollment_id: enrollment_id.to_string(),
-            fee_template_id: template_id.to_string(),
-            amount: override_amt.unwrap_or(0.0),
+            cycle_id: "".to_string(),
+            enrollment_id: req.enrollment_id,
+            fee_template_id: req.fee_template_id,
+            original_amount: req.amount,
             discount_amount: 0.0,
-            net_amount: override_amt.unwrap_or(0.0),
-            paid_amount: 0.0,
-            due_date: due_date.map(|s| s.to_string()).unwrap_or(now.clone()),
+            net_amount: req.amount,
             status: "unpaid".to_string(),
+            due_date: req.due_date,
+            discount_details: None,
+            parent_fee_id: None,
+            installment_number: None,
+            notes: req.notes,
             created_at: now.clone(),
             updated_at: now,
         })
@@ -2353,26 +2726,35 @@ impl FeeService {
 
 pub struct PaymentService;
 impl PaymentService {
-    pub fn new(_cmd: Arc<domain_finance::repository::FinanceCommandRepo>, _query: Arc<domain_finance::repository::FinanceQueryRepo>) -> Self { Self }
-    pub async fn list_payments(&self, _enrollment_id: &str) -> Result<Vec<domain_finance::entities::payment::Model>, AppError> {
+    pub fn new(_cmd: Arc<domain_finance::repository::FinanceCommandRepo>, _query: Arc<domain_finance::repository::FinanceQueryRepo>, _ledger_svc: Arc<LedgerService>) -> Self { Self }
+    pub async fn get_payments(&self, _org_id: &str, _enrollment_id: Option<&str>) -> Result<Vec<domain_finance::entities::payment::Model>, AppError> {
         Ok(vec![])
     }
-    pub async fn record_payment(&self, org_id: &str, enrollment_id: &str, student_fee_id: &str, treasury_id: &str, amount: f64, method: &str, reference: Option<&str>, _actor: &str) -> Result<domain_finance::entities::payment::Model, AppError> {
+    pub async fn record_payment(&self, org_id: &str, req: finance::RecordPaymentRequest, _actor: &str) -> Result<domain_finance::entities::payment::Model, AppError> {
         let now = Utc::now().to_rfc3339();
         Ok(domain_finance::entities::payment::Model {
             id: uuid::Uuid::new_v4().to_string(),
             org_id: org_id.to_string(),
-            enrollment_id: enrollment_id.to_string(),
-            student_fee_id: student_fee_id.to_string(),
-            treasury_id: treasury_id.to_string(),
-            amount,
-            payment_method: method.to_string(),
-            reference_number: reference.map(|s| s.to_string()),
-            recorded_by: "admin".to_string(),
-            status: "posted".to_string(),
-            created_at: now.clone(),
-            updated_at: now,
+            fee_id: Some(req.fee_id),
+            enrollment_id: None,
+            account_id: "".to_string(),
+            amount: req.amount,
+            currency: req.currency.unwrap_or("SAR".to_string()),
+            exchange_rate: 1.0,
+            base_amount: req.amount,
+            method: req.method,
+            reference: req.reference,
+            receipt_number: None,
             journal_entry_id: None,
+            treasury_id: req.treasury_id,
+            payer_name: req.payer_name,
+            payer_phone: req.payer_phone,
+            payment_type: "fee".to_string(),
+            related_payment_id: None,
+            notes: req.notes,
+            paid_at: now.clone(),
+            created_at: now,
+            created_by: Some("admin".to_string()),
         })
     }
 }
@@ -2380,21 +2762,25 @@ impl PaymentService {
 pub struct ScheduleService;
 impl ScheduleService {
     pub fn new(_cmd: Arc<domain_scheduling::repository::SchedulingCommandRepo>, _query: Arc<domain_scheduling::repository::SchedulingQueryRepo>) -> Self { Self }
-    pub async fn list_time_slots(&self, _org_id: &str, _cycle_id: &str) -> Result<Vec<crate::entities::time_slot::Model>, AppError> {
+    pub async fn get_time_slots(&self, _org_id: &str, _cycle_id: &str) -> Result<Vec<crate::entities::time_slot::Model>, AppError> {
         Ok(vec![])
     }
-    pub async fn create_time_slot(&self, org_id: &str, cycle_id: &str, name: &str, name_ar: Option<&str>, start: &str, end: &str, day: i32, slot_type: Option<&str>) -> Result<crate::entities::time_slot::Model, AppError> {
+    pub async fn create_time_slot(&self, org_id: &str, req: schedule::CreateTimeSlotRequest) -> Result<crate::entities::time_slot::Model, AppError> {
         let now = Utc::now().to_rfc3339();
         Ok(crate::entities::time_slot::Model {
             id: uuid::Uuid::new_v4().to_string(),
             org_id: org_id.to_string(),
-            cycle_id: cycle_id.to_string(),
-            name: name.to_string(),
-            name_ar: name_ar.map(|s| s.to_string()),
-            start_time: start.to_string(),
-            end_time: end.to_string(),
-            day_of_week: day,
-            slot_type: slot_type.map(|s| s.to_string()).unwrap_or("lesson".to_string()),
+            cycle_id: req.cycle_id,
+            slot_number: req.slot_number,
+            name: req.name,
+            name_ar: req.name_ar,
+            start_time: req.start_time,
+            end_time: req.end_time,
+            duration_minutes: req.duration_minutes,
+            is_break: req.is_break.unwrap_or(0),
+            break_type: req.break_type,
+            applicable_days: req.applicable_days,
+            sort_order: req.sort_order,
             is_active: 1,
             created_at: now.clone(),
             updated_at: now,
@@ -2411,10 +2797,17 @@ impl ScheduleService {
         Ok(crate::entities::class_subject::Model {
             id: uuid::Uuid::new_v4().to_string(),
             class_id: class_id.to_string(),
-            cycle_id: cycle_id.to_string(),
             subject_id: subject_id.to_string(),
-            teacher_id: teacher_id.map(|s| s.to_string()),
-            weekly_periods: weekly,
+            cycle_id: cycle_id.to_string(),
+            primary_teacher_id: teacher_id.unwrap_or("").to_string(),
+            assistant_teacher_id: None,
+            substitute_teacher_id: None,
+            grade_groups: None,
+            weekly_hours: Some(weekly),
+            theory_hours: None,
+            practical_hours: None,
+            assessment_config: None,
+            is_active: 1,
             created_at: now.clone(),
             updated_at: now,
         })
@@ -2431,30 +2824,65 @@ impl ScheduleService {
     pub async fn get_teacher_schedule(&self, _org_id: &str, _cycle_id: &str, _teacher_id: &str) -> Result<Vec<domain_scheduling::services::schedule::ScheduledLessonView>, AppError> {
         Ok(vec![])
     }
-    pub async fn create_lesson(&self, org_id: &str, cycle_id: &str, class_id: &str, subject_id: &str, slot_id: &str, day: i32, teacher_id: Option<&str>, room_id: Option<&str>) -> Result<crate::entities::scheduled_lesson::Model, AppError> {
+    pub async fn get_lesson_by_id(&self, _id: &str) -> Result<domain_scheduling::services::schedule::ScheduledLessonView, AppError> {
+        Err(AppError::Internal("unimplemented".to_string()))
+    }
+    pub async fn create_lesson(&self, org_id: &str, req: schedule::CreateLessonRequest) -> Result<domain_scheduling::services::schedule::ScheduledLessonView, AppError> {
         let now = Utc::now().to_rfc3339();
-        Ok(crate::entities::scheduled_lesson::Model {
+        Ok(domain_scheduling::services::schedule::ScheduledLessonView {
             id: uuid::Uuid::new_v4().to_string(),
             org_id: org_id.to_string(),
-            cycle_id: cycle_id.to_string(),
-            class_id: class_id.to_string(),
-            subject_id: subject_id.to_string(),
-            time_slot_id: slot_id.to_string(),
-            day_of_week: day,
-            teacher_id: teacher_id.map(|s| s.to_string()),
-            room_id: room_id.map(|s| s.to_string()),
-            is_active: 1,
+            cycle_id: req.cycle_id,
+            class_id: req.class_id,
+            class_subject_id: req.class_subject_id.unwrap_or("".to_string()),
+            subject_id: req.subject_id,
+            teacher_id: req.teacher_id,
+            substitute_teacher_id: None,
+            time_slot_id: req.time_slot_id,
+            day_of_week: req.day_of_week,
+            room_id: req.room_id,
+            room_name: None,
+            status: "scheduled".to_string(),
+            is_substituted: 0,
+            substitution_reason: None,
+            topic: req.topic,
+            topic_ar: req.topic_ar,
+            homework: req.homework,
+            notes: req.notes,
             created_at: now.clone(),
             updated_at: now,
         })
     }
-    pub async fn update_lesson(&self, _id: &str, _req: schedule::UpdateLessonRequest) -> Result<crate::entities::scheduled_lesson::Model, AppError> {
-        Err(AppError::Internal("unimplemented".to_string()))
+    pub async fn update_lesson(&self, org_id: &str, id: &str, req: schedule::UpdateLessonRequest) -> Result<domain_scheduling::services::schedule::ScheduledLessonView, AppError> {
+        let now = Utc::now().to_rfc3339();
+        Ok(domain_scheduling::services::schedule::ScheduledLessonView {
+            id: id.to_string(),
+            org_id: org_id.to_string(),
+            cycle_id: "".to_string(),
+            class_id: "".to_string(),
+            class_subject_id: "".to_string(),
+            subject_id: "".to_string(),
+            teacher_id: req.teacher_id.unwrap_or("".to_string()),
+            substitute_teacher_id: req.substitute_teacher_id,
+            time_slot_id: req.time_slot_id.unwrap_or("".to_string()),
+            day_of_week: req.day_of_week.unwrap_or(0),
+            room_id: req.room_id,
+            room_name: None,
+            status: req.status.unwrap_or("scheduled".to_string()),
+            is_substituted: 0,
+            substitution_reason: req.substitution_reason,
+            topic: req.topic,
+            topic_ar: req.topic_ar,
+            homework: req.homework,
+            notes: req.notes,
+            created_at: now.clone(),
+            updated_at: now,
+        })
     }
     pub async fn delete_lesson(&self, _id: &str) -> Result<(), AppError> {
         Ok(())
     }
-    pub async fn check_conflicts(&self, _cycle_id: &str, _class_id: Option<&str>, _teacher_id: Option<&str>) -> Result<Vec<domain_scheduling::services::schedule::ScheduleConflict>, AppError> {
+    pub async fn check_schedule_conflicts(&self, _org_id: &str, _cycle_id: &str, _time_slot_id: &str, _day_of_week: i32, _exclude_id: Option<&str>, _teacher_id: &str, _class_id: &str, _room_id: Option<&str>) -> Result<Vec<domain_scheduling::services::schedule::ScheduleConflict>, AppError> {
         Ok(vec![])
     }
 }

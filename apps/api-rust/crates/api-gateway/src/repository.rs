@@ -1,4 +1,4 @@
-use sea_orm::{entity::prelude::*, DbErr, EntityTrait, QueryFilter, ColumnTrait, QueryOrder};
+use sea_orm::{entity::prelude::*, DbErr, EntityTrait, QueryFilter, ColumnTrait, QueryOrder, QuerySelect};
 use crate::entities::{enrollment, audit_log};
 
 #[derive(Clone)]
