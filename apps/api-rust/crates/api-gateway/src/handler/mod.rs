@@ -2,7 +2,15 @@ pub mod auth;
 pub mod class;
 pub mod behavior;
 pub mod notification;
-pub use core_domain::params;
+pub mod params {
+    pub use domain_lifecycle::params::{CycleParams, ExportParams};
+    pub use domain_academic::params::{ClassParams, OrgUnitParams, EnrollmentParams, DocumentParams, GuardianParams, ClassSubjectParams, NotificationParams};
+    pub use domain_iam::params::{UserParams, AuditLogParams};
+    pub use domain_assessment::params::{BehaviorParams, GradeParams, AttendanceParams, GradeMatrixParams, AssessmentParams};
+    pub use domain_scheduling::params::{ScheduleParams, RoomParams};
+    pub use domain_finance::params::{FeeTemplateParams, StudentFeeParams, PaymentParams, TreasuryParams, LedgerAccountParams};
+    pub use domain_exam::params::{ExamSessionParams, ExamScheduleParams, ExamHallParams, SeatingNumberParams, SecretNumberParams, ExamProctorParams, TeacherExamAvailabilityParams, StudentOrderingParams};
+}
 pub mod organization;
 pub mod user;
 pub mod academic_cycle;

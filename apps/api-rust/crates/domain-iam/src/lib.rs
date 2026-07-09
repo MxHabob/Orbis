@@ -14,3 +14,5 @@
 pub mod entities;
 pub mod services;
 pub mod repository;
+pub mod params;
+

@@ -3,8 +3,62 @@ use sea_orm::{ActiveModelTrait, ConnectionTrait, EntityTrait, QueryFilter, Colum
 use shared_kernel::errors::AppError;
 use domain_iam::entities::user;
 use domain_academic::entities::{enrollment, student_guardian};
-use domain_finance::entities::{fee_template, student_fee};
+mod local_finance {
+    use sea_orm::entity::prelude::*;
+    use serde::{Deserialize, Serialize};
+
+    #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize)]
+    #[sea_orm(table_name = "fee_templates")]
+    pub struct Model {
+        #[sea_orm(primary_key, auto_increment = false)]
+        pub id: String,
+        pub org_id: String,
+        pub name: String,
+        pub amount: f64,
+        pub is_mandatory: i32,
+        pub is_active: i32,
+    }
+
+    #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
+    pub enum Relation {}
+
+    impl ActiveModelBehavior for ActiveModel {}
+}
+
+mod local_student_fee {
+    use sea_orm::entity::prelude::*;
+    use serde::{Deserialize, Serialize};
+
+    #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize)]
+    #[sea_orm(table_name = "student_fees")]
+    pub struct Model {
+        #[sea_orm(primary_key, auto_increment = false)]
+        pub id: String,
+        pub org_id: String,
+        pub enrollment_id: String,
+        pub fee_template_id: String,
+        pub amount: f64,
+        pub discount_amount: f64,
+        pub net_amount: f64,
+        pub paid_amount: f64,
+        pub due_date: String,
+        pub status: String,
+        pub notes: Option<String>,
+        pub created_at: String,
+        pub updated_at: String,
+    }
+
+    #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
+    pub enum Relation {}
+
+    impl ActiveModelBehavior for ActiveModel {}
+}
+
+use local_finance as fee_template;
+use local_student_fee as student_fee;
+
 use crate::services::settings::OrganizationSettingsService;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -49,17 +103,17 @@ impl StudentRegistrationService {
             match field.as_str() {
                 "email" => {
                     if req.email.as_ref().map(|s| s.trim().is_empty()).unwrap_or(true) {
-                        return Err(AppError::validation("email", "Email is required by organization policy"));
+                        return Err(AppError::validation("Email is required by organization policy"));
                     }
                 }
                 "phone" => {
                     if req.phone.as_ref().map(|s| s.trim().is_empty()).unwrap_or(true) {
-                        return Err(AppError::validation("phone", "Phone is required by organization policy"));
+                        return Err(AppError::validation("Phone is required by organization policy"));
                     }
                 }
                 "national_id" => {
                     if req.national_id.as_ref().map(|s| s.trim().is_empty()).unwrap_or(true) {
-                        return Err(AppError::validation("national_id", "National ID is required by organization policy"));
+                        return Err(AppError::validation("National ID is required by organization policy"));
                     }
                 }
                 _ => {}
@@ -255,13 +309,25 @@ impl StudentRegistrationService {
                 // Create student-guardian link
                 let link = student_guardian::Model {
                     id: uuid::Uuid::new_v4().to_string(),
-                    org_id: org_id.to_string(),
                     student_id: student_user_id.clone(),
                     guardian_id,
                     relationship: req.guardian_relationship.unwrap_or_else(|| "father".to_string()),
+                    relationship_ar: None,
                     is_primary: 1,
-                    emergency_contact: 1,
-                    meta: None,
+                    is_emergency_contact: 1,
+                    is_authorized_pickup: 1,
+                    can_view_grades: 1,
+                    can_view_attendance: 1,
+                    can_view_behavior: 1,
+                    can_view_finance: 1,
+                    can_view_schedule: 1,
+                    can_receive_notifications: 1,
+                    is_payer: 1,
+                    payment_share_percent: None,
+                    occupation: None,
+                    employer: None,
+                    work_phone: None,
+                    notes: None,
                     created_at: now.clone(),
                     updated_at: now.clone(),
                 };

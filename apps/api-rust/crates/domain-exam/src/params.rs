@@ -41,6 +41,14 @@ pub struct ExamProctorParams {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, utoipa::ToSchema)]
+pub struct StudentOrderingParams {
+    pub cycle_id: Option<String>,
+    pub class_id: Option<String>,
+    pub strategy: Option<String>,
+}
+
+
+#[derive(Deserialize, Serialize, Debug, Clone, utoipa::ToSchema)]
 pub struct TeacherExamAvailabilityParams {
     pub exam_session_id: Option<String>,
     pub teacher_id: Option<String>,

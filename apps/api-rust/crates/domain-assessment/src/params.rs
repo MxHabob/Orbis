@@ -37,3 +37,18 @@ pub struct AttendanceParams {
     pub limit: Option<u64>,
     pub offset: Option<u64>,
 }
+
+#[derive(Deserialize, Serialize, Debug, Clone, utoipa::ToSchema)]
+pub struct GradeMatrixParams {
+    pub cycle_id: String,
+    pub class_id: String,
+    pub subject_id: String,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, utoipa::ToSchema)]
+pub struct AssessmentParams {
+    pub class_id: String,
+    pub subject_id: String,
+    pub cycle_id: String,
+}
+

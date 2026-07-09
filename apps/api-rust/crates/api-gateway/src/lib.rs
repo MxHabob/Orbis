@@ -11,7 +11,12 @@ use tower_http::cors::CorsLayer;
 use tracing::{info, Level};
 use tracing_subscriber::{EnvFilter, FmtSubscriber};
 
-use core_domain::{config, database, entities, repository, service};
+pub mod entities;
+pub mod repository;
+pub mod service;
+
+use shared_kernel::config as config;
+use infra_persistence::connection as database;
 mod handler;
 mod middleware;
 
@@ -20,6 +25,7 @@ use utoipa::OpenApi;
 use config::Config;
 use repository::Repository;
 use service::Service;
+
 
 #[derive(OpenApi)]
 #[openapi(

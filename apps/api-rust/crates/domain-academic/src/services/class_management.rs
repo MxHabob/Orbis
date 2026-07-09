@@ -84,4 +84,40 @@ impl ClassService {
 
         Ok(self.cmd.update_class(active).await?)
     }
+
+    /// Update class settings.
+    pub async fn update(
+        &self,
+        class_id: &str,
+        name: &str,
+        name_ar: Option<&str>,
+        level: &str,
+        division: Option<&str>,
+    ) -> Result<class::Model, AppError> {
+        use sea_orm::ActiveValue::Set;
+
+        let existing = self.get(class_id).await?;
+        let mut active: class::ActiveModel = existing.into();
+        active.name = Set(name.to_string());
+        active.name_ar = Set(name_ar.map(|s| s.to_string()));
+        active.level = Set(level.to_string());
+        active.division = Set(division.map(|s| s.to_string()));
+        active.updated_at = Set(Utc::now().to_rfc3339());
+
+        Ok(self.cmd.update_class(active).await?)
+    }
+
+    /// Delete class (soft delete).
+    pub async fn delete(&self, class_id: &str) -> Result<(), AppError> {
+        use sea_orm::ActiveValue::Set;
+
+        let existing = self.get(class_id).await?;
+        let mut active: class::ActiveModel = existing.into();
+        active.is_deleted = Set(1);
+        active.updated_at = Set(Utc::now().to_rfc3339());
+
+        let _ = self.cmd.update_class(active).await?;
+        Ok(())
+    }
 }
+

@@ -9,6 +9,7 @@ shared-kernel = { workspace = true }
 infra-persistence = { workspace = true }
 domain-academic = { workspace = true }
 domain-iam = { workspace = true }
+bcrypt = { workspace = true }
 sea-orm = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

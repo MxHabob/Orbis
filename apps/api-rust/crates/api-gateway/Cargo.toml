@@ -21,6 +21,7 @@ domain-exam = { workspace = true }
 infra-persistence = { workspace = true }
 infra-scheduler = { workspace = true }
 shared-kernel = { workspace = true }
+sea-orm = { workspace = true }
 
 # Web Framework
 axum = { workspace = true }
@@ -45,3 +46,4 @@ jsonwebtoken = "9.3.0"
 
 # Import/Export
 csv = "1.3"
+async-trait = "0.1"
