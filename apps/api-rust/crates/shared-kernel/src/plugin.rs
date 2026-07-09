@@ -14,6 +14,7 @@
 //!   - Initialize state at startup
 
 use std::sync::Arc;
+use async_trait::async_trait;
 use sea_orm::DatabaseConnection;
 use tracing::{debug, warn};
 
@@ -27,6 +28,7 @@ use crate::event_bus::EventEnvelope;
 /// ```rust,ignore
 /// struct NoorIntegrationPlugin;
 ///
+/// #[async_trait]
 /// impl OrbisPlugin for NoorIntegrationPlugin {
 ///     fn name(&self) -> &str { "noor-integration" }
 ///     fn version(&self) -> &str { "1.0.0" }
@@ -40,7 +42,7 @@ use crate::event_bus::EventEnvelope;
 ///     }
 /// }
 /// ```
-#[allow(async_fn_in_trait)]
+#[async_trait]
 pub trait OrbisPlugin: Send + Sync {
     /// Unique plugin name.
     fn name(&self) -> &str;

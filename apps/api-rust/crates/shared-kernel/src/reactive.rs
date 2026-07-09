@@ -12,6 +12,7 @@
 //! This transforms InsightEngine from batch analysis to real-time reactive intelligence.
 
 use std::sync::Arc;
+use async_trait::async_trait;
 use sea_orm::DatabaseConnection;
 use serde::Serialize;
 use tracing::debug;
@@ -48,7 +49,7 @@ pub struct DetectedInsight {
 ///
 /// Each analyzer declares which events it's interested in.
 /// The pipeline only calls `analyze()` for matching events.
-#[allow(async_fn_in_trait)]
+#[async_trait]
 pub trait EventAnalyzer: Send + Sync {
     /// Human-readable name of this analyzer.
     fn name(&self) -> &str;
@@ -102,22 +103,15 @@ impl ReactivePipeline {
                     event = %event.event_type,
                     "Running reactive analyzer"
                 );
-                match std::panic::AssertUnwindSafe(
-                    analyzer.analyze(db, org_id, event)
-                ).into_future().await {
-                    result => {
-                        // Analyzer produced insights normally
-                        let mut analyzer_insights = result;
-                        if !analyzer_insights.is_empty() {
-                            debug!(
-                                analyzer = analyzer.name(),
-                                count = analyzer_insights.len(),
-                                "Analyzer produced insights"
-                            );
-                        }
-                        insights.append(&mut analyzer_insights);
-                    }
+                let mut analyzer_insights = analyzer.analyze(db, org_id, event).await;
+                if !analyzer_insights.is_empty() {
+                    debug!(
+                        analyzer = analyzer.name(),
+                        count = analyzer_insights.len(),
+                        "Analyzer produced insights"
+                    );
                 }
+                insights.append(&mut analyzer_insights);
             }
         }
 
@@ -133,18 +127,5 @@ impl ReactivePipeline {
 impl Default for ReactivePipeline {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-/// Convenience extension — wraps a future to be panic-safe.
-trait IntoFuture {
-    type Output;
-    fn into_future(self) -> impl std::future::Future<Output = Self::Output>;
-}
-
-impl<F: std::future::Future> IntoFuture for std::panic::AssertUnwindSafe<F> {
-    type Output = F::Output;
-    async fn into_future(self) -> F::Output {
-        self.0.await
     }
 }
