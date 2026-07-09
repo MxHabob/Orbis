@@ -6,6 +6,69 @@ use sea_orm::DatabaseConnection;
 pub use infra_persistence::provider::DatabaseProvider;
 pub use shared_kernel::config::Config;
 
+use shared_kernel::context::ServiceContext;
+use shared_kernel::event_bus::EventBus;
+use shared_kernel::traits::Actor;
+
+/// Platform services container — holds all Arc'd trait implementations.
+/// Created once at startup, reused for all requests.
+pub struct PlatformServices {
+    pub permissions: Arc<dyn shared_kernel::traits::PermissionChecker>,
+    pub audit: Arc<dyn shared_kernel::traits::AuditLogger>,
+    pub settings: Arc<dyn shared_kernel::traits::SettingsProvider>,
+    pub policy: Arc<dyn shared_kernel::traits::PolicyEngine>,
+    pub notifier: Arc<dyn shared_kernel::traits::NotificationSender>,
+    pub fee_assigner: Arc<dyn shared_kernel::traits::FeeAssigner>,
+    pub event_bus: Arc<EventBus>,
+    pub event_store: Arc<shared_kernel::event_store::EventStore>,
+    pub reactive: Arc<shared_kernel::reactive::ReactivePipeline>,
+    pub plugins: Arc<shared_kernel::plugin::PluginRegistry>,
+}
+
+impl PlatformServices {
+    /// Build all platform services from a database connection.
+    pub fn new(db: DatabaseConnection, event_bus: Arc<EventBus>) -> Self {
+        use domain_iam::ops::permission_checker::IamPermissionChecker;
+        use domain_iam::ops::audit_logger::DbAuditLogger;
+        use domain_lifecycle::ops::settings::OrgSettingsProvider;
+        use domain_lifecycle::ops::policy::OrgPolicyEngine;
+        use domain_finance::ops::fee_assigner::FinanceFeeAssigner;
+        use infra_integration::notification_sender::LogNotificationSender;
+
+        Self {
+            permissions: Arc::new(IamPermissionChecker::new(db.clone())),
+            audit: Arc::new(DbAuditLogger::new(db.clone())),
+            settings: Arc::new(OrgSettingsProvider::new(db.clone())),
+            policy: Arc::new(OrgPolicyEngine::new(db.clone())),
+            notifier: Arc::new(LogNotificationSender::new()),
+            fee_assigner: Arc::new(FinanceFeeAssigner::new(db.clone())),
+            event_bus,
+            event_store: Arc::new(shared_kernel::event_store::EventStore::new(db)),
+            reactive: Arc::new(shared_kernel::reactive::ReactivePipeline::new()),
+            plugins: Arc::new(shared_kernel::plugin::PluginRegistry::new()),
+        }
+    }
+
+    /// Create a `ServiceContext` for a specific request.
+    pub fn context_for(&self, db: DatabaseConnection, org_id: &str, actor: Actor) -> ServiceContext {
+        ServiceContext::new(
+            db,
+            org_id,
+            actor,
+            self.permissions.clone(),
+            self.audit.clone(),
+            self.settings.clone(),
+            self.policy.clone(),
+            self.notifier.clone(),
+            self.fee_assigner.clone(),
+            self.event_bus.clone(),
+            self.event_store.clone(),
+            self.reactive.clone(),
+            self.plugins.clone(),
+        )
+    }
+}
+
 /// Shared application state passed to all Tauri commands.
 #[derive(Clone)]
 pub struct AppState {
@@ -14,15 +77,23 @@ pub struct AppState {
     
     /// Global application configuration.
     pub config: Arc<Config>,
+
+    /// Platform services (new architecture).
+    pub platform: Arc<PlatformServices>,
 }
 
 impl AppState {
-    /// Initialize the AppState.
+    /// Initialize the AppState with full platform services.
     pub async fn init(app_data_dir: &Path) -> Result<Self, Box<dyn std::error::Error>> {
         let provider = Arc::new(DatabaseProvider::init(app_data_dir).await?);
         let config = Arc::new(Config::load());
         
-        Ok(Self { provider, config })
+        // Initialize platform services with the active database
+        let db = provider.active_db().await;
+        let event_bus = Arc::new(EventBus::new());
+        let platform = Arc::new(PlatformServices::new(db, event_bus));
+        
+        Ok(Self { provider, config, platform })
     }
 
     /// Accessor for the active year's database connection.
@@ -30,7 +101,36 @@ impl AppState {
         self.provider.active_db().await
     }
 
-    /// Verify RBAC permissions for the current active user session in Tauri.
+    /// Build a ServiceContext for the current session.
+    ///
+    /// Resolves the active user from the latest session and creates
+    /// a fully-wired context for domain operations.
+    pub async fn build_context(&self, org_id: &str) -> Result<ServiceContext, shared_kernel::errors::AppError> {
+        let db = self.active_db().await;
+        
+        // Resolve current actor from the latest session
+        use sea_orm::{EntityTrait, QueryOrder};
+        let session = domain_iam::entities::user_session::Entity::find()
+            .order_by_desc(domain_iam::entities::user_session::Column::CreatedAt)
+            .one(&db)
+            .await?
+            .ok_or_else(|| shared_kernel::errors::AppError::unauthorized("No active session"))?;
+
+        let actor = Actor::User(session.user_id);
+        let mut ctx = self.platform.context_for(db, org_id, actor);
+        ctx.ensure_correlation_id();
+        Ok(ctx)
+    }
+
+    /// Build a system-level ServiceContext (for background tasks, events).
+    pub async fn build_system_context(&self, org_id: &str) -> ServiceContext {
+        let db = self.active_db().await;
+        let mut ctx = self.platform.context_for(db, org_id, Actor::System);
+        ctx.ensure_correlation_id();
+        ctx
+    }
+
+    /// Legacy: verify RBAC permissions for the current active user session.
     pub async fn check_tauri_permission(
         &self,
         db: &DatabaseConnection,
