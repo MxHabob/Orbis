@@ -1,0 +1,2 @@
+//! Exam response types.
+

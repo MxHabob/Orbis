@@ -1,0 +1,2 @@
+//! IAM response types.
+

@@ -1,0 +1,2 @@
+//! Lifecycle response types.
+
