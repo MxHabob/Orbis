@@ -67,6 +67,10 @@ impl DatabaseProvider {
         let registry_db = crate::connection::connect_registry_db(&registry_url).await?;
         info!("✅ Registry database connected at: {:?}", registry_db_path);
 
+        // Run migrations on registry database
+        let _ = crate::schemas::schema_v2::apply_v2_schema(&registry_db).await;
+        crate::schemas::schema_v2::apply_v2_cleanup(&registry_db).await;
+
         // 2. Find current active year
         let years = Entity::find()
             .filter(Column::IsCurrent.eq(1))
@@ -90,6 +94,13 @@ impl DatabaseProvider {
             };
             
             info!("🗃️ Opened current year: {} ({})", year.name, year.db_filename);
+            
+            // Run migrations on active year database (if not archived)
+            if year.status != "archived" {
+                let _ = crate::schemas::schema_v2::apply_v2_schema(&db).await;
+                crate::schemas::schema_v2::apply_v2_cleanup(&db).await;
+            }
+            
             (db, year.id.clone(), year.status == "archived")
         } else {
             // Fallback for first launch or legacy
@@ -102,6 +113,11 @@ impl DatabaseProvider {
             let db = crate::connection::connect_year(&url).await?;
             
             info!("🆕 Created default year database at: {:?}", db_path);
+            
+            // Run migrations on default active year database
+            let _ = crate::schemas::schema_v2::apply_v2_schema(&db).await;
+            crate::schemas::schema_v2::apply_v2_cleanup(&db).await;
+            
             (db, String::new(), false)
         };
 
@@ -141,6 +157,11 @@ impl DatabaseProvider {
         let db = crate::connection::connect_year(&url)
             .await
             .map_err(|e| e.to_string())?;
+            
+        // Run migrations on newly created year database
+        let _ = crate::schemas::schema_v2::apply_v2_schema(&db).await;
+        crate::schemas::schema_v2::apply_v2_cleanup(&db).await;
+        
         Ok(db)
     }
 
@@ -189,6 +210,12 @@ impl DatabaseProvider {
                 .await
                 .map_err(|e| format!("Failed to connect to active DB: {e}"))?
         };
+
+        // Run migrations on active database (if not archived)
+        if !is_archived {
+            let _ = crate::schemas::schema_v2::apply_v2_schema(&new_db).await;
+            crate::schemas::schema_v2::apply_v2_cleanup(&new_db).await;
+        }
 
         // Atomically update provider fields
         {

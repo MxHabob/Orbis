@@ -73,12 +73,31 @@ pub async fn execute_calendar_event_action(
     db: &DatabaseConnection,
     event: &academic_calendar_event::Model,
     user_id: &str,
+    registry_db: &DatabaseConnection,
 ) -> Result<EventProcessingResult, shared_kernel::errors::AppError> {
-    // 1. Update event status
-    let mut active: academic_calendar_event::ActiveModel = event.clone().into();
-    active.executed_at = Set(Some(chrono::Utc::now().to_rfc3339()));
-    active.executed_by = Set(Some(user_id.to_string()));
-    active.update(db).await?;
+    // 1. Resolve default mode
+    let config = autopilot::entities::autopilot_config::Entity::find()
+        .filter(autopilot::entities::autopilot_config::Column::OrgId.eq(&event.org_id))
+        .one(registry_db)
+        .await?
+        .unwrap_or(autopilot::entities::autopilot_config::Model {
+            id: format!("{}_config", event.org_id),
+            org_id: event.org_id.clone(),
+            mode: "suggested".to_string(),
+            check_interval_minutes: 60,
+            timezone: "Asia/Riyadh".to_string(),
+            require_backup_before_critical: 1,
+            max_auto_retries: 3,
+            pause_on_error: 1,
+            is_enabled: 1,
+            last_tick_at: None,
+            last_tick_result: None,
+            paused_at: None,
+            pause_reason: None,
+            created_at: chrono::Utc::now().to_rfc3339(),
+            updated_at: chrono::Utc::now().to_rfc3339(),
+        });
+    let default_mode = config.mode.clone();
 
     // 2. Perform cycle side effects
     match event.event_type.as_str() {
@@ -106,14 +125,108 @@ pub async fn execute_calendar_event_action(
         _ => {}
     }
 
+    // 3. Upsert a completed Autopilot Task in the registry DB
+    let now = chrono::Utc::now().to_rfc3339();
+    let idempotency_key = format!("event:{}:executed", event.id);
+
+    let existing_task = autopilot::entities::autopilot_task::Entity::find()
+        .filter(autopilot::entities::autopilot_task::Column::CalendarEventId.eq(Some(event.id.clone())))
+        .one(registry_db)
+        .await?;
+
+    if let Some(task) = existing_task {
+        let mut active: autopilot::entities::autopilot_task::ActiveModel = task.into();
+        active.status = Set("completed".to_string());
+        active.completed_at = Set(Some(now.clone()));
+        active.approved_by = Set(Some(user_id.to_string()));
+        active.approved_at = Set(Some(now.clone()));
+        active.result = Set(Some("Executed manually via Tauri command".to_string()));
+        active.update(registry_db).await?;
+    } else {
+        let new_task = autopilot::entities::autopilot_task::Model {
+            id: uuid::Uuid::new_v4().to_string(),
+            org_id: event.org_id.clone(),
+            calendar_event_id: Some(event.id.clone()),
+            task_type: event.event_type.clone(),
+            scheduled_at: event.start_date.clone(),
+            deadline_at: None,
+            target_entity_type: Some("academic_calendar_event".to_string()),
+            target_entity_id: Some(event.id.clone()),
+            params: None,
+            prerequisites: None,
+            status: "completed".to_string(),
+            execution_mode: default_mode.clone(),
+            attempts: 0,
+            last_attempt_at: None,
+            last_error: None,
+            suggested_at: None,
+            approved_by: Some(user_id.to_string()),
+            approved_at: Some(now.clone()),
+            rejection_reason: None,
+            completed_at: Some(now.clone()),
+            result: Some("Executed manually via Tauri command".to_string()),
+            idempotency_key,
+            created_at: now.clone(),
+            updated_at: now.clone(),
+        };
+        let active: autopilot::entities::autopilot_task::ActiveModel = new_task.into();
+        active.insert(registry_db).await?;
+    }
+
     Ok(EventProcessingResult {
         event_id: event.id.clone(),
         event_type: event.event_type.clone(),
         title: event.title.clone(),
-        execution_mode: event.execution_mode.clone(),
+        execution_mode: default_mode,
         outcome: "executed".to_string(),
         message: Some("Executed successfully".to_string()),
     })
+}
+
+async fn merge_event_with_task(
+    registry_db: &DatabaseConnection,
+    event: academic_calendar_event::Model,
+    default_mode: &str,
+) -> serde_json::Value {
+    let task = autopilot::entities::autopilot_task::Entity::find()
+        .filter(autopilot::entities::autopilot_task::Column::CalendarEventId.eq(Some(event.id.clone())))
+        .one(registry_db)
+        .await
+        .unwrap_or(None);
+
+    let (exec_mode, auto_action, prerequisites) = match event.event_type.as_str() {
+        "enrollment_open" => (default_mode.to_string(), Some(r#"{"action":"enrollment_opened"}"#.to_string()), None),
+        "enrollment_close" => (default_mode.to_string(), Some(r#"{"action":"enrollment_closed"}"#.to_string()), Some(r#"["enrollment_open"]"#.to_string())),
+        "grade_entry_open" => (default_mode.to_string(), Some(r#"{"action":"grade_entry_opened"}"#.to_string()), None),
+        "grade_entry_close" => (default_mode.to_string(), Some(r#"{"action":"grade_entry_closed"}"#.to_string()), Some(r#"["grade_entry_open"]"#.to_string())),
+        "cycle_lock" => (default_mode.to_string(), Some(r#"{"action":"cycle_locked"}"#.to_string()), Some(r#"["grade_entry_close"]"#.to_string())),
+        "report_generation" => (default_mode.to_string(), Some(r#"{"action":"reports_generated"}"#.to_string()), Some(r#"["cycle_lock"]"#.to_string())),
+        "backup" => ("automatic".to_string(), Some(r#"{"action":"backup_created"}"#.to_string()), None),
+        "promotion_dry_run" => (default_mode.to_string(), Some(r#"{"action":"promotion_dry_run_complete"}"#.to_string()), Some(r#"["cycle_lock"]"#.to_string())),
+        _ => ("manual".to_string(), None, None),
+    };
+
+    let mut val = serde_json::to_value(&event).unwrap_or(serde_json::Value::Null);
+    if let serde_json::Value::Object(ref mut map) = val {
+        if let Some(t) = task {
+            map.insert("execution_mode".to_string(), serde_json::Value::String(t.execution_mode));
+            map.insert("executed_at".to_string(), t.completed_at.map(serde_json::Value::String).unwrap_or(serde_json::Value::Null));
+            map.insert("executed_by".to_string(), t.approved_by.map(serde_json::Value::String).unwrap_or(serde_json::Value::Null));
+            map.insert("execution_result".to_string(), t.result.map(serde_json::Value::String).unwrap_or(serde_json::Value::Null));
+            map.insert("execution_notes".to_string(), t.last_error.map(serde_json::Value::String).unwrap_or(serde_json::Value::Null));
+            map.insert("auto_action".to_string(), t.params.map(serde_json::Value::String).unwrap_or(serde_json::Value::Null));
+            map.insert("prerequisites".to_string(), t.prerequisites.map(serde_json::Value::String).unwrap_or(serde_json::Value::Null));
+        } else {
+            map.insert("execution_mode".to_string(), serde_json::Value::String(exec_mode));
+            map.insert("executed_at".to_string(), serde_json::Value::Null);
+            map.insert("executed_by".to_string(), serde_json::Value::Null);
+            map.insert("execution_result".to_string(), serde_json::Value::Null);
+            map.insert("execution_notes".to_string(), serde_json::Value::Null);
+            map.insert("auto_action".to_string(), auto_action.map(serde_json::Value::String).unwrap_or(serde_json::Value::Null));
+            map.insert("prerequisites".to_string(), prerequisites.map(serde_json::Value::String).unwrap_or(serde_json::Value::Null));
+        }
+    }
+    val
 }
 
 // ── Calendar Events Commands ──────────────────────────────────────────────
@@ -123,30 +236,16 @@ pub async fn get_calendar_events(
     state: State<'_, Arc<AppState>>,
     org_id: String,
     cycle_id: String,
-) -> CmdResult<Vec<academic_calendar_event::Model>> {
+) -> CmdResult<Vec<serde_json::Value>> {
     let db = state.active_db().await;
-    
-    // Auto-execute any due automatic events for this cycle
-    let is_writable = !state.provider.is_current_archived().await;
-    let today = chrono::Local::now().date_naive().to_string();
-    
-    if is_writable {
-        let pending = academic_calendar_event::Entity::find()
-            .filter(academic_calendar_event::Column::OrgId.eq(&org_id))
-            .filter(academic_calendar_event::Column::CycleId.eq(&cycle_id))
-            .filter(academic_calendar_event::Column::ExecutedAt.is_null())
-            .filter(academic_calendar_event::Column::StartDate.lte(&today))
-            .filter(academic_calendar_event::Column::IsActive.eq(1))
-            .all(&db)
-            .await
-            .map_err(|e| CommandError::new(e.to_string()))?;
+    let registry_db = state.provider.registry();
 
-        for event in pending {
-            if event.execution_mode == "automatic" {
-                let _ = execute_calendar_event_action(&db, &event, "system").await;
-            }
-        }
-    }
+    let config = autopilot::entities::autopilot_config::Entity::find()
+        .filter(autopilot::entities::autopilot_config::Column::OrgId.eq(&org_id))
+        .one(registry_db)
+        .await
+        .map_err(|e| CommandError::new(e.to_string()))?;
+    let default_mode = config.map(|c| c.mode).unwrap_or("suggested".to_string());
 
     let events = academic_calendar_event::Entity::find()
         .filter(academic_calendar_event::Column::OrgId.eq(org_id))
@@ -157,26 +256,56 @@ pub async fn get_calendar_events(
         .await
         .map_err(|e| CommandError::new(e.to_string()))?;
 
-    Ok(events)
+    let mut merged = Vec::new();
+    for event in events {
+        merged.push(merge_event_with_task(registry_db, event, &default_mode).await);
+    }
+
+    Ok(merged)
 }
 
 #[tauri::command]
 pub async fn get_pending_calendar_events(
     state: State<'_, Arc<AppState>>,
     org_id: String,
-) -> CmdResult<Vec<academic_calendar_event::Model>> {
+) -> CmdResult<Vec<serde_json::Value>> {
     let db = state.active_db().await;
+    let registry_db = state.provider.registry();
     let today = chrono::Local::now().date_naive().to_string();
-    
-    let pending = academic_calendar_event::Entity::find()
+
+    let config = autopilot::entities::autopilot_config::Entity::find()
+        .filter(autopilot::entities::autopilot_config::Column::OrgId.eq(&org_id))
+        .one(registry_db)
+        .await
+        .map_err(|e| CommandError::new(e.to_string()))?;
+    let default_mode = config.map(|c| c.mode).unwrap_or("suggested".to_string());
+
+    // Fetch active events on or before today
+    let active_events = academic_calendar_event::Entity::find()
         .filter(academic_calendar_event::Column::OrgId.eq(org_id))
-        .filter(academic_calendar_event::Column::ExecutedAt.is_null())
         .filter(academic_calendar_event::Column::StartDate.lte(&today))
         .filter(academic_calendar_event::Column::IsActive.eq(1))
         .order_by_asc(academic_calendar_event::Column::StartDate)
         .all(&db)
         .await
         .map_err(|e| CommandError::new(e.to_string()))?;
+
+    // Fetch completed tasks to filter completed events
+    let completed_event_ids: std::collections::HashSet<String> = autopilot::entities::autopilot_task::Entity::find()
+        .filter(autopilot::entities::autopilot_task::Column::Status.eq("completed"))
+        .all(registry_db)
+        .await
+        .map_err(|e| CommandError::new(e.to_string()))?
+        .into_iter()
+        .flat_map(|t| t.calendar_event_id)
+        .collect();
+
+    let mut pending = Vec::new();
+    for event in active_events {
+        if !completed_event_ids.contains(&event.id) {
+            pending.push(merge_event_with_task(registry_db, event, &default_mode).await);
+        }
+    }
 
     Ok(pending)
 }
@@ -186,9 +315,10 @@ pub async fn create_calendar_event(
     state: State<'_, Arc<AppState>>,
     org_id: String,
     request: CreateCalendarEventRequest,
-) -> CmdResult<academic_calendar_event::Model> {
+) -> CmdResult<serde_json::Value> {
     state.provider.ensure_writable().await.map_err(CommandError::from)?;
     let db = state.active_db().await;
+    let registry_db = state.provider.registry();
     
     let now = chrono::Utc::now().to_rfc3339();
     let model = academic_calendar_event::Model {
@@ -203,13 +333,6 @@ pub async fn create_calendar_event(
         end_date: request.end_date,
         start_time: None,
         end_time: None,
-        execution_mode: request.execution_mode,
-        auto_action: None,
-        prerequisites: None,
-        executed_at: None,
-        executed_by: None,
-        execution_result: None,
-        execution_notes: None,
         is_recurring: 0,
         recurrence_rule: None,
         color: None,
@@ -217,22 +340,52 @@ pub async fn create_calendar_event(
         sort_order: Some(0),
         created_by: None,
         created_at: now.clone(),
-        updated_at: now,
+        updated_at: now.clone(),
     };
     
     let active: academic_calendar_event::ActiveModel = model.clone().into();
     let event = active.insert(&db).await.map_err(|e| CommandError::new(e.to_string()))?;
 
-    // If automatic and due now, execute it
-    let today = chrono::Local::now().date_naive().to_string();
-    if event.execution_mode == "automatic" && event.start_date <= today {
-        let _ = execute_calendar_event_action(&db, &event, "system").await;
-        if let Ok(Some(updated)) = academic_calendar_event::Entity::find_by_id(&event.id).one(&db).await {
-            return Ok(updated);
-        }
+    // Create autopilot task if mode is not manual
+    if request.execution_mode != "manual" {
+        let task_id = uuid::Uuid::new_v4().to_string();
+        let initial_status = match request.execution_mode.as_str() {
+            "automatic" => "ready",
+            "suggested" => "suggested",
+            _ => "pending",
+        };
+        let task = autopilot::entities::autopilot_task::Model {
+            id: task_id,
+            org_id: org_id.clone(),
+            calendar_event_id: Some(event.id.clone()),
+            task_type: event.event_type.clone(),
+            scheduled_at: event.start_date.clone(),
+            deadline_at: Some(event.end_date.clone()),
+            target_entity_type: Some("academic_calendar_event".to_string()),
+            target_entity_id: Some(event.id.clone()),
+            params: None,
+            prerequisites: None,
+            status: initial_status.to_string(),
+            execution_mode: request.execution_mode.clone(),
+            attempts: 0,
+            last_attempt_at: None,
+            last_error: None,
+            suggested_at: if initial_status == "suggested" { Some(now.clone()) } else { None },
+            approved_by: None,
+            approved_at: None,
+            rejection_reason: None,
+            completed_at: None,
+            result: None,
+            idempotency_key: format!("event:{}:{}", event.id, event.start_date),
+            created_at: now.clone(),
+            updated_at: now.clone(),
+        };
+        let active_task: autopilot::entities::autopilot_task::ActiveModel = task.into();
+        let _ = active_task.insert(registry_db).await.map_err(|e| CommandError::new(e.to_string()))?;
     }
 
-    Ok(event)
+    let merged = merge_event_with_task(registry_db, event, &request.execution_mode).await;
+    Ok(merged)
 }
 
 #[tauri::command]
@@ -240,9 +393,10 @@ pub async fn update_calendar_event(
     state: State<'_, Arc<AppState>>,
     event_id: String,
     request: UpdateCalendarEventRequest,
-) -> CmdResult<academic_calendar_event::Model> {
+) -> CmdResult<serde_json::Value> {
     state.provider.ensure_writable().await.map_err(CommandError::from)?;
     let db = state.active_db().await;
+    let registry_db = state.provider.registry();
     
     let existing = academic_calendar_event::Entity::find_by_id(&event_id)
         .one(&db)
@@ -250,33 +404,93 @@ pub async fn update_calendar_event(
         .map_err(|e| CommandError::new(e.to_string()))?
         .ok_or_else(|| CommandError::from("Event not found".to_string()))?;
 
-    let mut active: academic_calendar_event::ActiveModel = existing.into();
+    let org_id = existing.org_id.clone();
+    let mut active: academic_calendar_event::ActiveModel = existing.clone().into();
     if let Some(v) = request.title { active.title = Set(v); }
     if let Some(v) = request.description { active.description = Set(Some(v)); }
     if let Some(v) = request.start_date { active.start_date = Set(v); }
     if let Some(v) = request.end_date { active.end_date = Set(v); }
-    if let Some(v) = request.execution_mode { active.execution_mode = Set(v); }
-    if let Some(v) = request.status {
-        if v == "executed" {
-            active.executed_at = Set(Some(chrono::Utc::now().to_rfc3339()));
-        } else {
-            active.executed_at = Set(None);
-        }
-    }
     active.updated_at = Set(chrono::Utc::now().to_rfc3339());
     
     let event = active.update(&db).await.map_err(|e| CommandError::new(e.to_string()))?;
 
-    // If automatic and due now, execute it
-    let today = chrono::Local::now().date_naive().to_string();
-    if event.execution_mode == "automatic" && event.start_date <= today && event.executed_at.is_none() {
-        let _ = execute_calendar_event_action(&db, &event, "system").await;
-        if let Ok(Some(updated)) = academic_calendar_event::Entity::find_by_id(&event.id).one(&db).await {
-            return Ok(updated);
+    // Update corresponding autopilot task if exists
+    let existing_task = autopilot::entities::autopilot_task::Entity::find()
+        .filter(autopilot::entities::autopilot_task::Column::CalendarEventId.eq(Some(event.id.clone())))
+        .one(registry_db)
+        .await
+        .map_err(|e| CommandError::new(e.to_string()))?;
+
+    let default_mode = if let Some(ref t) = existing_task {
+        t.execution_mode.clone()
+    } else {
+        "suggested".to_string()
+    };
+
+    if let Some(task) = existing_task {
+        let mut active_task: autopilot::entities::autopilot_task::ActiveModel = task.into();
+        if let Some(ref v) = request.execution_mode {
+            active_task.execution_mode = Set(v.clone());
+            let status = match v.as_str() {
+                "automatic" => "ready",
+                "suggested" => "suggested",
+                _ => "pending",
+            };
+            active_task.status = Set(status.to_string());
+        }
+        if let Some(ref v) = request.status {
+            if v == "executed" {
+                active_task.status = Set("completed".to_string());
+                active_task.completed_at = Set(Some(chrono::Utc::now().to_rfc3339()));
+            } else {
+                active_task.status = Set("pending".to_string());
+                active_task.completed_at = Set(None);
+            }
+        }
+        let _ = active_task.update(registry_db).await.map_err(|e| CommandError::new(e.to_string()))?;
+    } else if let Some(ref v) = request.execution_mode {
+        // Create task if mode is not manual
+        if v != "manual" {
+            let task_id = uuid::Uuid::new_v4().to_string();
+            let initial_status = match v.as_str() {
+                "automatic" => "ready",
+                "suggested" => "suggested",
+                _ => "pending",
+            };
+            let task = autopilot::entities::autopilot_task::Model {
+                id: task_id,
+                org_id: org_id.clone(),
+                calendar_event_id: Some(event.id.clone()),
+                task_type: event.event_type.clone(),
+                scheduled_at: event.start_date.clone(),
+                deadline_at: Some(event.end_date.clone()),
+                target_entity_type: Some("academic_calendar_event".to_string()),
+                target_entity_id: Some(event.id.clone()),
+                params: None,
+                prerequisites: None,
+                status: initial_status.to_string(),
+                execution_mode: v.clone(),
+                attempts: 0,
+                last_attempt_at: None,
+                last_error: None,
+                suggested_at: if initial_status == "suggested" { Some(chrono::Utc::now().to_rfc3339()) } else { None },
+                approved_by: None,
+                approved_at: None,
+                rejection_reason: None,
+                completed_at: None,
+                result: None,
+                idempotency_key: format!("event:{}:{}", event.id, event.start_date),
+                created_at: chrono::Utc::now().to_rfc3339(),
+                updated_at: chrono::Utc::now().to_rfc3339(),
+            };
+            let active_task: autopilot::entities::autopilot_task::ActiveModel = task.into();
+            let _ = active_task.insert(registry_db).await.map_err(|e| CommandError::new(e.to_string()))?;
         }
     }
 
-    Ok(event)
+    let resolved_mode = request.execution_mode.unwrap_or(default_mode);
+    let merged = merge_event_with_task(registry_db, event, &resolved_mode).await;
+    Ok(merged)
 }
 
 #[tauri::command]
@@ -309,6 +523,7 @@ pub async fn execute_calendar_event(
 ) -> CmdResult<EventProcessingResult> {
     state.provider.ensure_writable().await.map_err(CommandError::from)?;
     let db = state.active_db().await;
+    let registry_db = state.provider.registry();
 
     let event = academic_calendar_event::Entity::find_by_id(&event_id)
         .one(&db)
@@ -316,7 +531,7 @@ pub async fn execute_calendar_event(
         .map_err(|e| CommandError::new(e.to_string()))?
         .ok_or_else(|| CommandError::from("Calendar event not found".to_string()))?;
 
-    let result = execute_calendar_event_action(&db, &event, &user_id)
+    let result = execute_calendar_event_action(&db, &event, &user_id, registry_db)
         .await
         .map_err(CommandError::from)?;
         
@@ -328,9 +543,10 @@ pub async fn generate_default_events(
     state: State<'_, Arc<AppState>>,
     org_id: String,
     cycle_id: String,
-) -> CmdResult<Vec<academic_calendar_event::Model>> {
+) -> CmdResult<Vec<serde_json::Value>> {
     state.provider.ensure_writable().await.map_err(CommandError::from)?;
     let db = state.active_db().await;
+    let registry_db = state.provider.registry();
 
     // Get the cycle
     let cycle = domain_lifecycle::entities::academic_cycle::Entity::find_by_id(&cycle_id)
@@ -367,12 +583,31 @@ pub async fn generate_default_events(
     let now = chrono::Utc::now().to_rfc3339();
 
     // Delete existing pending default events
-    academic_calendar_event::Entity::delete_many()
+    let events = academic_calendar_event::Entity::find()
         .filter(academic_calendar_event::Column::CycleId.eq(&cycle.id))
-        .filter(academic_calendar_event::Column::ExecutedAt.is_null())
-        .exec(&db)
+        .all(&db)
         .await
         .map_err(|e| CommandError::new(e.to_string()))?;
+
+    // Find completed task IDs
+    let completed_event_ids: std::collections::HashSet<String> = autopilot::entities::autopilot_task::Entity::find()
+        .filter(autopilot::entities::autopilot_task::Column::Status.eq("completed"))
+        .all(registry_db)
+        .await
+        .map_err(|e| CommandError::new(e.to_string()))?
+        .into_iter()
+        .flat_map(|t| t.calendar_event_id)
+        .collect();
+
+    // Delete events that have not been completed
+    for event in events {
+        if !completed_event_ids.contains(&event.id) {
+            academic_calendar_event::Entity::delete_by_id(event.id)
+                .exec(&db)
+                .await
+                .map_err(|e| CommandError::new(e.to_string()))?;
+        }
+    }
 
     // Start event
     let start_event = academic_calendar_event::Model {
@@ -387,13 +622,6 @@ pub async fn generate_default_events(
         end_date: cycle.start_date.clone(),
         start_time: None,
         end_time: None,
-        execution_mode: policy.default_event_execution_mode.clone(),
-        auto_action: None,
-        prerequisites: None,
-        executed_at: None,
-        executed_by: None,
-        execution_result: None,
-        execution_notes: None,
         is_recurring: 0,
         recurrence_rule: None,
         color: None,
@@ -405,7 +633,9 @@ pub async fn generate_default_events(
     };
     let active_start: academic_calendar_event::ActiveModel = start_event.clone().into();
     active_start.insert(&db).await.map_err(|e| CommandError::new(e.to_string()))?;
-    created.push(start_event);
+    
+    let merged_start = merge_event_with_task(registry_db, start_event, &policy.default_event_execution_mode).await;
+    created.push(merged_start);
 
     // End event
     let end_event = academic_calendar_event::Model {
@@ -420,13 +650,6 @@ pub async fn generate_default_events(
         end_date: cycle.end_date.clone(),
         start_time: None,
         end_time: None,
-        execution_mode: policy.default_event_execution_mode,
-        auto_action: None,
-        prerequisites: None,
-        executed_at: None,
-        executed_by: None,
-        execution_result: None,
-        execution_notes: None,
         is_recurring: 0,
         recurrence_rule: None,
         color: None,
@@ -438,7 +661,9 @@ pub async fn generate_default_events(
     };
     let active_end: academic_calendar_event::ActiveModel = end_event.clone().into();
     active_end.insert(&db).await.map_err(|e| CommandError::new(e.to_string()))?;
-    created.push(end_event);
+    
+    let merged_end = merge_event_with_task(registry_db, end_event, &policy.default_event_execution_mode).await;
+    created.push(merged_end);
 
     Ok(created)
 }
@@ -450,41 +675,71 @@ pub async fn process_pending_events(
     user_id: String,
 ) -> CmdResult<CalendarProcessingReport> {
     let db = state.active_db().await;
+    let registry_db = state.provider.registry();
     let today = chrono::Local::now().date_naive().to_string();
 
-    let pending = academic_calendar_event::Entity::find()
-        .filter(academic_calendar_event::Column::OrgId.eq(org_id))
-        .filter(academic_calendar_event::Column::ExecutedAt.is_null())
+    let config = autopilot::entities::autopilot_config::Entity::find()
+        .filter(autopilot::entities::autopilot_config::Column::OrgId.eq(&org_id))
+        .one(registry_db)
+        .await
+        .map_err(|e| CommandError::new(e.to_string()))?;
+    let default_mode = config.map(|c| c.mode).unwrap_or("suggested".to_string());
+
+    // Fetch active events on or before today
+    let active_events = academic_calendar_event::Entity::find()
+        .filter(academic_calendar_event::Column::OrgId.eq(&org_id))
         .filter(academic_calendar_event::Column::StartDate.lte(&today))
         .filter(academic_calendar_event::Column::IsActive.eq(1))
         .all(&db)
         .await
         .map_err(|e| CommandError::new(e.to_string()))?;
 
+    // Fetch completed tasks
+    let completed_event_ids: std::collections::HashSet<String> = autopilot::entities::autopilot_task::Entity::find()
+        .filter(autopilot::entities::autopilot_task::Column::Status.eq("completed"))
+        .all(registry_db)
+        .await
+        .map_err(|e| CommandError::new(e.to_string()))?
+        .into_iter()
+        .flat_map(|t| t.calendar_event_id)
+        .collect();
+
+    // Filter pending events
+    let pending: Vec<academic_calendar_event::Model> = active_events
+        .into_iter()
+        .filter(|e| !completed_event_ids.contains(&e.id))
+        .collect();
+
     let mut report = CalendarProcessingReport::new();
     let is_writable = !state.provider.is_current_archived().await;
 
     for event in &pending {
-        match event.execution_mode.as_str() {
+        let execution_mode = if event.event_type == "backup" {
+            "automatic".to_string()
+        } else {
+            default_mode.clone()
+        };
+
+        match execution_mode.as_str() {
             "automatic" => {
                 if !is_writable {
                     report.blocked.push(EventProcessingResult {
                         event_id: event.id.clone(),
                         event_type: event.event_type.clone(),
                         title: event.title.clone(),
-                        execution_mode: event.execution_mode.clone(),
+                        execution_mode: execution_mode.clone(),
                         outcome: "blocked".to_string(),
                         message: Some("Year is archived (read-only)".to_string()),
                     });
                     continue;
                 }
-                match execute_calendar_event_action(&db, event, &user_id).await {
+                match execute_calendar_event_action(&db, event, &user_id, registry_db).await {
                     Ok(result) => report.executed.push(result),
                     Err(e) => report.blocked.push(EventProcessingResult {
                         event_id: event.id.clone(),
                         event_type: event.event_type.clone(),
                         title: event.title.clone(),
-                        execution_mode: event.execution_mode.clone(),
+                        execution_mode: execution_mode.clone(),
                         outcome: "blocked".to_string(),
                         message: Some(e.to_string()),
                     }),
@@ -495,7 +750,7 @@ pub async fn process_pending_events(
                     event_id: event.id.clone(),
                     event_type: event.event_type.clone(),
                     title: event.title.clone(),
-                    execution_mode: event.execution_mode.clone(),
+                    execution_mode: execution_mode.clone(),
                     outcome: "suggested".to_string(),
                     message: Some(format!("Event '{}' is due. Review and execute.", event.title)),
                 });
@@ -505,7 +760,7 @@ pub async fn process_pending_events(
                     event_id: event.id.clone(),
                     event_type: event.event_type.clone(),
                     title: event.title.clone(),
-                    execution_mode: event.execution_mode.clone(),
+                    execution_mode: execution_mode.clone(),
                     outcome: "skipped".to_string(),
                     message: Some("Manual mode — requires explicit user action".to_string()),
                 });

@@ -80,6 +80,7 @@ dependencies = [
  "domain-iam",
  "domain-lifecycle",
  "domain-scheduling",
+ "infra-integration",
  "infra-persistence",
  "sea-orm",
  "serde",

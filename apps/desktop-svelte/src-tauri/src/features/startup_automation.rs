@@ -62,10 +62,23 @@ pub async fn process_startup_events(app_handle: AppHandle) {
         return;
     }
 
-    // Fetch pending events
-    let pending = match domain_lifecycle::entities::academic_calendar_event::Entity::find()
+    // Fetch completed event IDs from autopilot tasks
+    let completed_event_ids: std::collections::HashSet<String> = match autopilot::entities::autopilot_task::Entity::find()
+        .filter(autopilot::entities::autopilot_task::Column::OrgId.eq(&org_id))
+        .filter(autopilot::entities::autopilot_task::Column::Status.eq("completed"))
+        .all(state.provider.registry())
+        .await
+    {
+        Ok(tasks) => tasks.into_iter().flat_map(|t| t.calendar_event_id).collect(),
+        Err(e) => {
+            warn!("⚠️ Startup automation: Failed to fetch completed tasks: {}", e);
+            std::collections::HashSet::new()
+        }
+    };
+
+    // Fetch active events
+    let active_events = match domain_lifecycle::entities::academic_calendar_event::Entity::find()
         .filter(domain_lifecycle::entities::academic_calendar_event::Column::OrgId.eq(&org_id))
-        .filter(domain_lifecycle::entities::academic_calendar_event::Column::ExecutedAt.is_null())
         .filter(domain_lifecycle::entities::academic_calendar_event::Column::StartDate.lte(&today))
         .filter(domain_lifecycle::entities::academic_calendar_event::Column::IsActive.eq(1))
         .all(&db)
@@ -73,10 +86,15 @@ pub async fn process_startup_events(app_handle: AppHandle) {
     {
         Ok(events) => events,
         Err(e) => {
-            warn!("⚠️ Startup automation: Failed to fetch pending events: {}", e);
+            warn!("⚠️ Startup automation: Failed to fetch active events: {}", e);
             return;
         }
     };
+
+    let pending: Vec<domain_lifecycle::entities::academic_calendar_event::Model> = active_events
+        .into_iter()
+        .filter(|e| !completed_event_ids.contains(&e.id))
+        .collect();
 
     if pending.is_empty() {
         info!("📅 Startup automation: No pending events");
@@ -86,17 +104,32 @@ pub async fn process_startup_events(app_handle: AppHandle) {
     info!("📅 Startup automation: Processing {} pending events", pending.len());
 
     let is_writable = !state.provider.is_current_archived().await;
+    
+    // Fetch default execution mode from autopilot config
+    let config = autopilot::entities::autopilot_config::Entity::find()
+        .filter(autopilot::entities::autopilot_config::Column::OrgId.eq(&org_id))
+        .one(state.provider.registry())
+        .await
+        .unwrap_or(None);
+    let default_mode = config.map(|c| c.mode).unwrap_or("suggested".to_string());
+    
     let mut auto_executed = 0u32;
     let mut suggestions = Vec::new();
 
     for event in &pending {
-        match event.execution_mode.as_str() {
+        let execution_mode = if event.event_type == "backup" {
+            "automatic".to_string()
+        } else {
+            default_mode.clone()
+        };
+
+        match execution_mode.as_str() {
             "automatic" => {
                 if !is_writable {
                     info!("  Skip automatic event '{}' — year is archived", event.title);
                     continue;
                 }
-                match crate::commands::lifecycle::calendar::execute_calendar_event_action(&db, event, "system").await {
+                match crate::commands::lifecycle::calendar::execute_calendar_event_action(&db, event, "system", state.provider.registry()).await {
                     Ok(result) => {
                         info!("  Auto-executed: {} ({})", event.title, result.message.as_deref().unwrap_or("ok"));
                         auto_executed += 1;

@@ -78,7 +78,6 @@ impl LifecycleQueryRepo {
         academic_calendar_event::Entity::find()
             .filter(academic_calendar_event::Column::OrgId.eq(org_id))
             .filter(academic_calendar_event::Column::IsActive.eq(1))
-            .filter(academic_calendar_event::Column::ExecutedAt.is_null())
             .filter(academic_calendar_event::Column::StartDate.lte(before_date))
             .order_by_asc(academic_calendar_event::Column::StartDate)
             .all(&self.db)

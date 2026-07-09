@@ -22,19 +22,6 @@ pub struct Model {
     pub start_time: Option<String>,
     pub end_time: Option<String>,
 
-    // Execution mode: manual | suggested | automatic
-    pub execution_mode: String,
-
-    // Automated action (JSON)
-    pub auto_action: Option<String>,
-    pub prerequisites: Option<String>,
-
-    // Execution tracking
-    pub executed_at: Option<String>,
-    pub executed_by: Option<String>,
-    pub execution_result: Option<String>,
-    pub execution_notes: Option<String>,
-
     // Recurrence
     pub is_recurring: i32,
     pub recurrence_rule: Option<String>,

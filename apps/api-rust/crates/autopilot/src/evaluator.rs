@@ -58,7 +58,7 @@ impl Evaluator {
         let week_ahead = (today + chrono::Duration::days(7)).to_string();
 
         // ── Parallel queries ──────────────────────────────────────
-        let (calendar_events, current_cycle, pending_tasks, failed_tasks, config) = tokio::join!(
+        let (calendar_events, current_cycle, all_tasks, config) = tokio::join!(
             // All calendar events for the org (from year DB)
             academic_calendar_event::Entity::find()
                 .filter(academic_calendar_event::Column::OrgId.eq(org_id))
@@ -72,21 +72,9 @@ impl Evaluator {
                 .filter(academic_cycle::Column::IsCurrent.eq(1))
                 .one(registry_db),
 
-            // Pending/ready autopilot tasks (from registry)
+            // All autopilot tasks (from registry)
             autopilot_task::Entity::find()
                 .filter(autopilot_task::Column::OrgId.eq(org_id))
-                .filter(autopilot_task::Column::Status.is_in([
-                    autopilot_task::status::PENDING,
-                    autopilot_task::status::READY,
-                    autopilot_task::status::APPROVED,
-                ]))
-                .order_by_asc(autopilot_task::Column::ScheduledAt)
-                .all(registry_db),
-
-            // Failed tasks (from registry)
-            autopilot_task::Entity::find()
-                .filter(autopilot_task::Column::OrgId.eq(org_id))
-                .filter(autopilot_task::Column::Status.eq(autopilot_task::status::FAILED))
                 .all(registry_db),
 
             // Config (from registry)
@@ -97,9 +85,25 @@ impl Evaluator {
 
         let calendar_events = calendar_events?;
         let current_cycle = current_cycle?;
-        let pending_tasks = pending_tasks?;
-        let failed_tasks = failed_tasks?;
+        let all_tasks = all_tasks?;
         let config = config?;
+
+        // ── Filter tasks in memory ────────────────────────────────
+        let pending_tasks: Vec<autopilot_task::Model> = all_tasks
+            .iter()
+            .filter(|t| {
+                t.status == autopilot_task::status::PENDING
+                    || t.status == autopilot_task::status::READY
+                    || t.status == autopilot_task::status::APPROVED
+            })
+            .cloned()
+            .collect();
+
+        let failed_tasks: Vec<autopilot_task::Model> = all_tasks
+            .iter()
+            .filter(|t| t.status == autopilot_task::status::FAILED)
+            .cloned()
+            .collect();
 
         // ── Classify calendar events ──────────────────────────────
         let mut active_events = Vec::new();
@@ -107,7 +111,13 @@ impl Evaluator {
         let mut upcoming_events = Vec::new();
 
         for event in &calendar_events {
-            if event.end_date < today_str && event.executed_at.is_none() {
+            // Check if there is a completed task for this calendar event
+            let is_completed = all_tasks.iter().any(|t| {
+                t.calendar_event_id.as_ref() == Some(&event.id)
+                    && t.status == autopilot_task::status::COMPLETED
+            });
+
+            if event.end_date < today_str && !is_completed {
                 missed_events.push(event.clone());
             } else if event.start_date <= today_str && event.end_date >= today_str {
                 active_events.push(event.clone());

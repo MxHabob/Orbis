@@ -21,3 +21,4 @@ pub mod connection;
 pub mod migrations;
 pub mod registry;
 pub mod provider;
+pub mod schemas;

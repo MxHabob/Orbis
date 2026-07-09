@@ -27,3 +27,5 @@ pub mod semantic_resolver;
 pub mod insight_engine;
 pub mod data_quality;
 pub mod explainability;
+pub mod integration;
+

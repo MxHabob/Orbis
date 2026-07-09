@@ -56,12 +56,19 @@ impl Planner {
                 continue;
             }
 
-            // Resolve execution mode for this specific event
-            let event_mode_override = if event.execution_mode.is_empty() {
-                None
-            } else {
-                Some(event.execution_mode.as_str())
+            // Resolve execution details by convention based on event_type
+            let (event_mode_override, auto_action, prerequisites) = match event.event_type.as_str() {
+                "enrollment_open" => (None, Some(r#"{"action":"enrollment_opened"}"#.to_string()), None),
+                "enrollment_close" => (None, Some(r#"{"action":"enrollment_closed"}"#.to_string()), Some(r#"["enrollment_open"]"#.to_string())),
+                "grade_entry_open" => (None, Some(r#"{"action":"grade_entry_opened"}"#.to_string()), None),
+                "grade_entry_close" => (None, Some(r#"{"action":"grade_entry_closed"}"#.to_string()), Some(r#"["grade_entry_open"]"#.to_string())),
+                "cycle_lock" => (None, Some(r#"{"action":"cycle_locked"}"#.to_string()), Some(r#"["grade_entry_close"]"#.to_string())),
+                "report_generation" => (None, Some(r#"{"action":"reports_generated"}"#.to_string()), Some(r#"["cycle_lock"]"#.to_string())),
+                "backup" => (Some("automatic"), Some(r#"{"action":"backup_created"}"#.to_string()), None),
+                "promotion_dry_run" => (None, Some(r#"{"action":"promotion_dry_run_complete"}"#.to_string()), Some(r#"["cycle_lock"]"#.to_string())),
+                _ => (None, None, None),
             };
+
             let effective_mode = config.resolve_mode(event_mode_override);
 
             // Determine initial task status based on mode
@@ -83,8 +90,8 @@ impl Planner {
                 deadline_at: Set(Some(event.end_date.clone())),
                 target_entity_type: Set(Some("academic_calendar_event".to_string())),
                 target_entity_id: Set(Some(event.id.clone())),
-                params: Set(event.auto_action.clone()),
-                prerequisites: Set(event.prerequisites.clone()),
+                params: Set(auto_action),
+                prerequisites: Set(prerequisites),
                 status: Set(initial_status.to_string()),
                 execution_mode: Set(effective_mode.as_str().to_string()),
                 attempts: Set(0),

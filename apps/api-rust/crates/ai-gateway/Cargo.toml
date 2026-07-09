@@ -22,6 +22,7 @@ autopilot = { path = "../autopilot" }
 
 # Infrastructure
 infra-persistence = { workspace = true }
+infra-integration = { path = "../infra-integration" }
 
 # Database
 sea-orm = { workspace = true }

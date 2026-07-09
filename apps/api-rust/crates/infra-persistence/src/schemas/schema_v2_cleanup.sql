@@ -28,3 +28,14 @@ DROP TABLE IF EXISTS registry_audit_log;
 -- ── Drop redundant permissions table ────────────────────────
 -- Unified into role_permissions table.
 DROP TABLE IF EXISTS permissions;
+
+-- ── Clean up execution columns from academic_calendar_events ──
+-- Removed execution mode, actions, and execution tracking columns.
+-- Ignore errors in cleanup in case these columns don't exist anymore.
+ALTER TABLE academic_calendar_events DROP COLUMN execution_mode;
+ALTER TABLE academic_calendar_events DROP COLUMN auto_action;
+ALTER TABLE academic_calendar_events DROP COLUMN prerequisites;
+ALTER TABLE academic_calendar_events DROP COLUMN executed_at;
+ALTER TABLE academic_calendar_events DROP COLUMN executed_by;
+ALTER TABLE academic_calendar_events DROP COLUMN execution_result;
+ALTER TABLE academic_calendar_events DROP COLUMN execution_notes;

@@ -1,6 +1,6 @@
 use tauri::State;
 use std::sync::Arc;
-use sea_orm::{EntityTrait, ColumnTrait, QueryFilter, ActiveModelTrait, ActiveValue::Set};
+use sea_orm::{EntityTrait, ColumnTrait, QueryFilter, ActiveModelTrait, ActiveValue::Set, PaginatorTrait};
 use crate::state::AppState;
 use crate::commands::error::{CmdResult, CommandError};
 
@@ -204,13 +204,28 @@ pub async fn create_enrollment(
         return Err(CommandError::from("Student is already active in another class".to_string()));
     }
     
+    let sequence = domain_academic::entities::enrollment::Entity::find()
+        .filter(domain_academic::entities::enrollment::Column::OrgId.eq(&org_id))
+        .count(&db)
+        .await
+        .map_err(|e| CommandError::new(e.to_string()))? + 1;
+
+    let settings_service = domain_lifecycle::services::settings::OrganizationSettingsService::new(Arc::new(
+        domain_lifecycle::repository::LifecycleQueryRepo::new(db.clone()),
+    ));
+    let student_number = settings_service
+        .format_student_number(&org_id, sequence)
+        .await
+        .map_err(|e| CommandError::new(e.to_string()))?;
+
+    let enrollment_id = uuid::Uuid::new_v4().to_string();
     let model = domain_academic::entities::enrollment::Model {
-        id: uuid::Uuid::new_v4().to_string(),
-        org_id,
+        id: enrollment_id.clone(),
+        org_id: org_id.clone(),
         cycle_id: "".to_string(),
         student_id: request.student_id,
         class_id: request.class_id,
-        student_number: format!("ST{}", uuid::Uuid::new_v4().to_string()[..8].to_uppercase()),
+        student_number,
         status: "active".to_string(),
         enrollment_date: now.clone(),
         enrollment_type: "standard".to_string(),
@@ -224,11 +239,46 @@ pub async fn create_enrollment(
         promotion_notes: None,
         meta: None,
         created_at: now.clone(),
-        updated_at: now,
+        updated_at: now.clone(),
     };
     
     let active: domain_academic::entities::enrollment::ActiveModel = model.into();
     let created = active.insert(&db).await.map_err(|e| CommandError::new(e.to_string()))?;
+
+    // Auto-assign mandatory active fee templates (Initial invoicing)
+    let mandatory_templates = domain_finance::entities::fee_template::Entity::find()
+        .filter(domain_finance::entities::fee_template::Column::OrgId.eq(&org_id))
+        .filter(domain_finance::entities::fee_template::Column::IsActive.eq(1))
+        .filter(domain_finance::entities::fee_template::Column::IsMandatory.eq(1))
+        .all(&db)
+        .await
+        .map_err(|e| CommandError::new(e.to_string()))?;
+
+    for template in mandatory_templates {
+        let student_fee_id = uuid::Uuid::new_v4().to_string();
+        let due_date = (chrono::Utc::now() + chrono::Duration::days(30)).naive_utc().date().to_string();
+        let new_fee = domain_finance::entities::student_fee::Model {
+            id: student_fee_id,
+            org_id: org_id.clone(),
+            cycle_id: String::new(),
+            enrollment_id: enrollment_id.clone(),
+            fee_template_id: template.id.clone(),
+            original_amount: template.default_amount,
+            discount_amount: 0.0,
+            net_amount: template.default_amount,
+            status: "unpaid".to_string(),
+            due_date,
+            discount_details: None,
+            parent_fee_id: None,
+            installment_number: None,
+            notes: Some("Automatically assigned on registration".to_string()),
+            created_at: now.clone(),
+            updated_at: now.clone(),
+        };
+        let active_fee: domain_finance::entities::student_fee::ActiveModel = new_fee.into();
+        let _ = active_fee.insert(&db).await.map_err(|e| CommandError::new(e.to_string()))?;
+    }
+    
     Ok(created)
 }
 
