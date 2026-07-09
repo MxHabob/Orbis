@@ -1,2 +1,1 @@
-//! Academic operations — complete use cases with ServiceContext.
-
+//! Academic operations.

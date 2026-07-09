@@ -1,2 +1,2 @@
-//! Finance validation — business rule enforcement.
+//! Finance validation  - business rule enforcement.
 

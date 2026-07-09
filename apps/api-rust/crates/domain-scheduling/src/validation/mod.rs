@@ -1,2 +1,1 @@
-//! Scheduling validation — business rule enforcement.
-
+//! Scheduling validation.

@@ -837,6 +837,7 @@ dependencies = [
 name = "domain-finance"
 version = "2.0.0"
 dependencies = [
+ "async-trait",
  "chrono",
  "domain-academic",
  "domain-iam",
@@ -856,6 +857,7 @@ dependencies = [
 name = "domain-iam"
 version = "2.0.0"
 dependencies = [
+ "async-trait",
  "bcrypt",
  "chrono",
  "infra-persistence",

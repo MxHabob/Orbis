@@ -1,2 +1,1 @@
 //! Finance response types.
-

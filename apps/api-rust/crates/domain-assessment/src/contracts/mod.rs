@@ -1,6 +1,5 @@
-//! Assessment contracts — commands, queries, responses, events.
+//! Assessment contracts.
 
 pub mod commands;
 pub mod responses;
 pub mod events;
-

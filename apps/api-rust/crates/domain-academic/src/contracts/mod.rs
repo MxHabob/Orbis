@@ -1,6 +1,5 @@
-//! Academic contracts — commands, queries, responses, events.
+//! Academic contracts.
 
 pub mod commands;
 pub mod responses;
 pub mod events;
-

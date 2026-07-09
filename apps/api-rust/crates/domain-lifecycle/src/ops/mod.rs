@@ -1,4 +1,4 @@
-//! Organization operations — complete use cases with ServiceContext.
+//! Organization operations  - complete use cases with ServiceContext.
 
 pub mod organization;
 pub mod settings;

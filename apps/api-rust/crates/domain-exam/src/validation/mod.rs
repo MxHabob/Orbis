@@ -1,2 +1,1 @@
-//! Exam validation — business rule enforcement.
-
+//! Exam validation.

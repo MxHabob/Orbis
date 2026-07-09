@@ -1,4 +1,4 @@
-//! Finance contracts — commands, queries, responses, events.
+//! Finance contracts  - commands, queries, responses, events.
 
 pub mod commands;
 pub mod responses;

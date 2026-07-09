@@ -1,2 +1,3 @@
-//! Finance operations — complete use cases with ServiceContext.
+//! Finance operations  - FeeAssigner implementation + domain ops.
 
+pub mod fee_assigner;

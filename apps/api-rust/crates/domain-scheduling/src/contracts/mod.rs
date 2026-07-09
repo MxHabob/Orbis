@@ -1,6 +1,5 @@
-//! Scheduling contracts — commands, queries, responses, events.
+//! Scheduling contracts.
 
 pub mod commands;
 pub mod responses;
 pub mod events;
-

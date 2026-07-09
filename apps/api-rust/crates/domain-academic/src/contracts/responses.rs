@@ -1,2 +1,1 @@
 //! Academic response types.
-

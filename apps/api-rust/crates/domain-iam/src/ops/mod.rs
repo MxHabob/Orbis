@@ -1,2 +1,4 @@
-//! IAM operations — complete use cases with ServiceContext.
+//! IAM operations — PermissionChecker, AuditLogger implementations + auth/user ops.
 
+pub mod permission_checker;
+pub mod audit_logger;

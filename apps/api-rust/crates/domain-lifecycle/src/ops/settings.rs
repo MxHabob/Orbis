@@ -13,7 +13,7 @@ use shared_kernel::settings::{
     OrgSettings, RegistrationSettings, FinanceSettings, GradingSettings,
 };
 use shared_kernel::traits::{
-    Actor, AuditEntry, Permission, SettingsProvider,
+    AuditEntry, Permission, SettingsProvider,
 };
 
 use crate::contracts::commands::{
@@ -40,7 +40,7 @@ impl OrgSettingsProvider {
     }
 
     /// Parse the settings JSON string from the organization row.
-    fn parse_settings(settings_json: Option<&str>) -> OrgSettings {
+    pub fn parse_settings(settings_json: Option<&str>) -> OrgSettings {
         settings_json
             .and_then(|s| serde_json::from_str::<OrgSettings>(s).ok())
             .unwrap_or_default()

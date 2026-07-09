@@ -1,2 +1,1 @@
-//! Scheduling operations — complete use cases with ServiceContext.
-
+//! Scheduling operations.

@@ -1,6 +1,5 @@
-//! Exam contracts — commands, queries, responses, events.
+//! Exam contracts.
 
 pub mod commands;
 pub mod responses;
 pub mod events;
-

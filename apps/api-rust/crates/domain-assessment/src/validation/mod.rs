@@ -1,2 +1,1 @@
-//! Assessment validation — business rule enforcement.
-
+//! Assessment validation.

@@ -1,4 +1,4 @@
-//! Organization contracts — commands, responses, events for svc-organization.
+//! Organization contracts  - commands, responses, events for svc-organization.
 
 pub mod commands;
 pub mod responses;

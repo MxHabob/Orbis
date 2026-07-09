@@ -7,6 +7,7 @@ description = "Orbis Finance domain — ledgers, templates, student fees, paymen
 [dependencies]
 shared-kernel = { workspace = true }
 infra-persistence = { workspace = true }
+async-trait = { workspace = true }
 domain-academic = { workspace = true }
 domain-lifecycle = { workspace = true }
 domain-iam = { workspace = true }

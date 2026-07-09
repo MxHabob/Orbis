@@ -14,6 +14,7 @@ use tracing_subscriber::{EnvFilter, FmtSubscriber};
 pub mod entities;
 pub mod repository;
 pub mod service;
+pub mod platform;
 
 use shared_kernel::config as config;
 use infra_persistence::connection as database;

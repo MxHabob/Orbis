@@ -1,2 +1,1 @@
-//! Academic validation — business rule enforcement.
-
+//! Academic validation.

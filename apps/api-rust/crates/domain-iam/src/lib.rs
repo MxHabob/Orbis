@@ -6,13 +6,17 @@
 //! - **User Management**: CRUD, profiles, account settings
 //! - **Permission System**: Roles, permissions, grants
 //!
-//! # Independence
+//! # Platform Trait Implementations
 //!
-//! This crate has **no dependencies on other domain crates**.
-//! Other domains depend on `domain-iam` for user/permission types.
+//! - `PermissionChecker` → `IamPermissionChecker` (wraps AuthzService)
+//! - `AuditLogger`       → `DbAuditLogger` (writes to audit_log table)
 
 pub mod entities;
 pub mod services;
 pub mod repository;
 pub mod params;
 
+// ── Phase 2: New Microservice Modules ──────────────────────────
+pub mod contracts;
+pub mod ops;
+pub mod validation;
