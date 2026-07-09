@@ -1,0 +1,980 @@
+# الخطة المعمارية النهائية — Orbis Platform
+
+---
+
+## الرؤية
+
+```
+Microservices + Event Sourcing + Process Manager + Reactive AI + Plugin Architecture
+```
+
+كل عملية في النظام تمر عبر **ServiceContext** يضمن:
+- ✅ الصلاحيات (PermissionChecker)
+- ✅ الإعدادات (SettingsProvider) — تسجيل، مالية، تقييم
+- ✅ التدقيق (AuditLogger)
+- ✅ الأحداث (EventBus + EventStore)
+- ✅ السياسات (PolicyEngine) — موافقات، تجاوزات
+- ✅ الإشعارات (NotificationSender)
+- ✅ تاريخ كامل (Event Sourcing) للعمليات الحرجة
+- ✅ سلامة البيانات (Process Manager) للعمليات المعقدة
+- ✅ ذكاء لحظي (Reactive Pipeline) بعد كل حدث
+- ✅ قابلية التوسع (Plugin Architecture)
+
+---
+
+## ServiceContext — الكامل
+
+```rust
+pub struct ServiceContext {
+    // ── Core ──
+    pub db: DatabaseConnection,
+    pub org_id: String,
+    pub actor: Actor,
+    pub correlation_id: Option<String>,
+    
+    // ── Platform Services ──
+    pub event_bus: Arc<EventBus>,
+    pub permissions: Arc<dyn PermissionChecker>,
+    pub audit: Arc<dyn AuditLogger>,
+    pub settings: Arc<dyn SettingsProvider>,
+    pub policy: Arc<dyn PolicyEngine>,
+    pub notifier: Arc<dyn NotificationSender>,
+    pub fee_assigner: Arc<dyn FeeAssigner>,
+    
+    // ── Enhanced (الأنماط الأربعة) ──
+    pub event_store: Arc<EventStore>,           // Event Sourcing
+    pub reactive: Arc<ReactivePipeline>,        // Reactive AI
+    pub plugins: Arc<PluginRegistry>,           // Plugin system
+}
+```
+
+---
+
+## 1. Platform Layer — `shared-kernel`
+
+```
+shared-kernel/src/
+├── lib.rs
+├── errors.rs              # AppError (لا تغيير)
+├── types.rs               # Strongly-typed IDs (لا تغيير)
+├── config.rs              # JWT, DB paths, feature flags (لا تغيير)
+│
+│── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─
+│   الموجود (يُوسَّع)
+│── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─
+├── traits.rs              # 🔄 Platform Service Traits
+│                          #   PermissionChecker, AuditLogger,
+│                          #   SettingsProvider, PolicyEngine,
+│                          #   NotificationSender, FeeAssigner
+├── event_bus.rs           # EventBus (لا تغيير — tokio::broadcast)
+│
+│── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─
+│   جديد
+│── ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─
+├── context.rs             # 🆕 ServiceContext struct
+├── settings.rs            # 🆕 RegistrationSettings, FinanceSettings, GradingSettings
+├── event_store.rs         # 🆕 Event Sourcing — EventStore + StoredEvent
+├── process.rs             # 🆕 Process Manager — ProcessState, Step, Compensation
+├── reactive.rs            # 🆕 Reactive Pipeline — EventAnalyzer trait
+└── plugin.rs              # 🆕 Plugin Architecture — OrbisPlugin trait
+```
+
+### Platform Traits الكاملة
+
+```rust
+// shared-kernel/src/traits.rs
+
+#[async_trait]
+pub trait PermissionChecker: Send + Sync {
+    async fn check(&self, actor: &Actor, permission: Permission) -> Result<(), AppError>;
+    async fn check_with_context(&self, actor: &Actor, permission: Permission,
+                                 ctx: &AuthzContext) -> Result<(), AppError>;
+}
+
+#[async_trait]
+pub trait AuditLogger: Send + Sync {
+    async fn log(&self, entry: AuditEntry) -> Result<(), AppError>;
+}
+
+#[async_trait]
+pub trait SettingsProvider: Send + Sync {
+    async fn get_org_settings(&self, org_id: &str) -> Result<OrgSettings, AppError>;
+    async fn get_registration_settings(&self, org_id: &str) -> Result<RegistrationSettings, AppError>;
+    async fn get_finance_settings(&self, org_id: &str) -> Result<FinanceSettings, AppError>;
+    async fn get_grading_settings(&self, org_id: &str) -> Result<GradingSettings, AppError>;
+}
+
+#[async_trait]
+pub trait PolicyEngine: Send + Sync {
+    async fn requires_approval(&self, action: &str, org_id: &str) -> Result<bool, AppError>;
+    async fn check_override(&self, action: &str, org_id: &str,
+                             override_id: &str) -> Result<bool, AppError>;
+}
+
+#[async_trait]
+pub trait NotificationSender: Send + Sync {
+    async fn send(&self, notification: Notification) -> Result<(), AppError>;
+}
+
+#[async_trait]
+pub trait FeeAssigner: Send + Sync {
+    async fn assign_mandatory_fees(&self, org_id: &str, enrollment_id: &str,
+                                    class_id: &str) -> Result<Vec<String>, AppError>;
+}
+```
+
+### Settings Types الشاملة
+
+```rust
+// shared-kernel/src/settings.rs
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RegistrationSettings {
+    pub required_fields: Vec<String>,           // email, phone, national_id, guardian...
+    pub student_number_prefix: String,          // ST, STU...
+    pub student_number_digits: usize,           // 6
+    pub requires_approval: bool,
+    pub max_class_capacity: Option<u32>,
+    pub allow_no_guardian: bool,
+    pub allow_duplicate_national_id: bool,
+    pub auto_assign_fees: bool,
+    pub default_fee_template_ids: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FinanceSettings {
+    pub default_currency: String,
+    pub allow_partial_payment: bool,
+    pub allow_late_payment: bool,
+    pub late_fee_percentage: Option<f64>,
+    pub grace_period_days: Option<u32>,
+    pub allow_discounts: bool,
+    pub max_discount_percentage: Option<f64>,
+    pub default_revenue_account_id: Option<String>,
+    pub default_receivable_account_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GradingSettings {
+    pub grading_system: String,                 // percentage, gpa, letter
+    pub passing_grade: f64,
+    pub max_grade: f64,
+    pub allow_grade_entry_after_lock: bool,
+    pub allow_grade_edit_after_publish: bool,
+}
+```
+
+### Event Store
+
+```rust
+// shared-kernel/src/event_store.rs
+
+/// جدول domain_events — يُخزّن تاريخ كل aggregate حرج
+pub struct EventStore {
+    db: DatabaseConnection,
+}
+
+impl EventStore {
+    pub async fn append(
+        &self,
+        aggregate_type: &str,          // "enrollment", "grade", "payment"
+        aggregate_id: &str,
+        event_type: &str,              // "enrollment.created"
+        payload: &serde_json::Value,
+        actor: &Actor,
+        correlation_id: Option<&str>,
+    ) -> Result<u64, AppError> { /* INSERT INTO domain_events ... */ }
+
+    pub async fn get_history(
+        &self,
+        aggregate_type: &str,
+        aggregate_id: &str,
+    ) -> Result<Vec<StoredEvent>, AppError> { /* SELECT ... ORDER BY version */ }
+
+    pub async fn get_events_by_type(
+        &self,
+        event_type: &str,
+        since: &str,                   // ISO datetime
+        limit: u64,
+    ) -> Result<Vec<StoredEvent>, AppError> { /* for AI analysis */ }
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct StoredEvent {
+    pub id: i64,
+    pub aggregate_type: String,
+    pub aggregate_id: String,
+    pub event_type: String,
+    pub payload: serde_json::Value,
+    pub actor_id: String,
+    pub actor_type: String,
+    pub correlation_id: Option<String>,
+    pub version: i64,
+    pub created_at: String,
+}
+```
+
+```sql
+-- يُضاف في migration — جدول واحد لكل الأحداث
+CREATE TABLE IF NOT EXISTS domain_events (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    aggregate_type  TEXT NOT NULL,
+    aggregate_id    TEXT NOT NULL,
+    event_type      TEXT NOT NULL,
+    payload         TEXT NOT NULL,
+    actor_id        TEXT NOT NULL,
+    actor_type      TEXT NOT NULL,
+    correlation_id  TEXT,
+    version         INTEGER NOT NULL,
+    created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX idx_de_aggregate ON domain_events(aggregate_type, aggregate_id, version);
+CREATE INDEX idx_de_type ON domain_events(event_type, created_at);
+CREATE INDEX idx_de_correlation ON domain_events(correlation_id);
+```
+
+### Process Manager
+
+```rust
+// shared-kernel/src/process.rs
+
+/// Process Manager — للعمليات المعقدة متعددة الخطوات
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProcessState {
+    pub id: String,
+    pub process_type: String,          // "student_registration", "promotion"
+    pub org_id: String,
+    pub status: ProcessStatus,
+    pub steps: Vec<ProcessStep>,
+    pub current_step: usize,
+    pub started_at: String,
+    pub completed_at: Option<String>,
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum ProcessStatus {
+    InProgress,
+    AwaitingApproval { step: String, approval_id: String },
+    Completed,
+    Failed { step: String, error: String },
+    Compensating,                      // يتراجع عن الخطوات السابقة
+    Compensated,                       // تم التراجع بنجاح
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProcessStep {
+    pub name: String,
+    pub status: StepStatus,
+    pub result: Option<serde_json::Value>,
+    pub compensation: Option<CompensationAction>,
+    pub started_at: Option<String>,
+    pub completed_at: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum StepStatus { Pending, InProgress, Completed, Failed, Compensated }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum CompensationAction {
+    DeleteEntity { entity_type: String, id: String },
+    UpdateStatus { entity_type: String, id: String, status: String },
+    Custom { action: String, params: serde_json::Value },
+}
+
+impl ProcessState {
+    pub fn new(process_type: &str, org_id: &str, step_names: &[&str]) -> Self { /* ... */ }
+    pub fn begin_step(&mut self, name: &str) -> Result<(), AppError> { /* ... */ }
+    pub fn complete_step(&mut self, name: &str, result: serde_json::Value) -> Result<(), AppError> { /* ... */ }
+    pub fn fail_step(&mut self, name: &str, error: &str) -> AppError { /* ... */ }
+    pub fn add_compensation(&mut self, name: &str, action: CompensationAction) { /* ... */ }
+    
+    /// تراجع عن كل الخطوات المكتملة (بترتيب عكسي)
+    pub async fn compensate(&mut self, db: &DatabaseConnection) -> Result<(), AppError> { /* ... */ }
+}
+```
+
+### Reactive Pipeline
+
+```rust
+// shared-kernel/src/reactive.rs
+
+/// محلل أحداث — يتفاعل مع domain events وينتج insights
+#[async_trait]
+pub trait EventAnalyzer: Send + Sync {
+    fn name(&self) -> &str;
+    fn interested_in(&self) -> &[&str];       // ["enrollment.created", "grade.submitted"]
+    async fn analyze(
+        &self,
+        db: &DatabaseConnection,
+        org_id: &str,
+        event: &EventEnvelope,
+    ) -> Vec<DetectedInsight>;
+}
+
+/// Reactive Pipeline — يربط EventBus بـ EventAnalyzers
+pub struct ReactivePipeline {
+    analyzers: Vec<Arc<dyn EventAnalyzer>>,
+}
+
+impl ReactivePipeline {
+    pub fn new() -> Self { Self { analyzers: vec![] } }
+    
+    pub fn register(&mut self, analyzer: Arc<dyn EventAnalyzer>) {
+        self.analyzers.push(analyzer);
+    }
+    
+    /// يُستدعى بعد كل event — يشغّل المحللات المهتمة
+    pub async fn process(&self, db: &DatabaseConnection, org_id: &str, 
+                          event: &EventEnvelope) -> Vec<DetectedInsight> {
+        let mut insights = vec![];
+        for analyzer in &self.analyzers {
+            if analyzer.interested_in().contains(&event.event_type.as_str()) {
+                let mut result = analyzer.analyze(db, org_id, event).await;
+                insights.append(&mut result);
+            }
+        }
+        insights
+    }
+}
+```
+
+### Plugin Architecture
+
+```rust
+// shared-kernel/src/plugin.rs
+
+#[async_trait]
+pub trait OrbisPlugin: Send + Sync {
+    fn name(&self) -> &str;
+    fn version(&self) -> &str;
+    fn subscribed_events(&self) -> &[&str];
+    async fn on_event(&self, db: &DatabaseConnection, org_id: &str, 
+                       event: &EventEnvelope) -> Result<(), AppError>;
+    fn register_actions(&self) -> Vec<ActionDefinition> { vec![] }
+    async fn initialize(&self, db: &DatabaseConnection) -> Result<(), AppError> { Ok(()) }
+}
+
+pub struct PluginRegistry {
+    plugins: Vec<Arc<dyn OrbisPlugin>>,
+}
+
+impl PluginRegistry {
+    pub fn new() -> Self { Self { plugins: vec![] } }
+    pub fn register(&mut self, plugin: Arc<dyn OrbisPlugin>) { self.plugins.push(plugin); }
+    
+    /// يُستدعى بعد كل event — يُمرَّر للإضافات المهتمة
+    pub async fn dispatch(&self, db: &DatabaseConnection, org_id: &str, 
+                           event: &EventEnvelope) {
+        for plugin in &self.plugins {
+            if plugin.subscribed_events().contains(&event.event_type.as_str()) {
+                if let Err(e) = plugin.on_event(db, org_id, event).await {
+                    tracing::warn!(plugin = plugin.name(), error = %e, "Plugin error");
+                }
+            }
+        }
+    }
+}
+```
+
+---
+
+## 2. Microservices — البنية الداخلية الموحدة
+
+كل microservice يتبع نفس الهيكل:
+
+```
+svc-<name>/src/
+├── lib.rs              # Public API
+├── entities/           # SeaORM models
+├── repository/         # CQRS repos
+│   ├── commands.rs
+│   └── queries.rs
+├── services/           # Pure domain logic
+├── contracts/          # 🆕 DTOs
+│   ├── commands.rs     # Write commands
+│   ├── queries.rs      # Read queries
+│   ├── responses.rs    # Typed responses
+│   └── events.rs       # Domain event definitions
+├── ops/                # 🆕 Complete use cases (with ServiceContext)
+├── validation/         # 🆕 Business rule validation
+└── params.rs           # Query parameters
+```
+
+---
+
+## 3. تفصيل كل Microservice — مع الأنماط المتقدمة
+
+### 🔐 `svc-iam`
+
+**يُنفِّذ:** `PermissionChecker` + `AuditLogger`
+**Event Sourcing:** ❌ (CRUD عادي كافٍ)
+
+```
+svc-iam/src/
+├── ops/
+│   ├── auth.rs          # login, register, logout, validate_token
+│   ├── user.rs          # CRUD + search + change_role + change_password
+│   └── permission.rs    # role_permissions CRUD
+├── contracts/
+│   ├── commands.rs      # LoginCmd, RegisterCmd, CreateUserCmd...
+│   ├── responses.rs     # LoginResponse, UserResponse, PermissionResponse
+│   └── events.rs        # UserCreated, LoginSucceeded, LoginFailed, RoleChanged
+├── validation/
+│   ├── auth.rs          # email format, password strength
+│   └── user.rs          # duplicate check, required fields
+```
+
+### 🏫 `svc-organization` (مُستخرج من lifecycle)
+
+**يُنفِّذ:** `SettingsProvider` + `PolicyEngine`
+**Event Sourcing:** ❌
+
+```
+svc-organization/src/
+├── ops/
+│   ├── organization.rs  # create, update, get, stats
+│   ├── settings.rs      # get/update registration, finance, grading settings
+│   └── policy.rs        # approval rules, override policies
+├── contracts/
+│   ├── commands.rs      # UpdateOrgCmd, UpdateSettingsCmd
+│   ├── responses.rs     # OrgResponse, AllSettings
+│   └── events.rs        # SettingsChanged, PolicyChanged
+```
+
+### 📚 `svc-academic`
+
+**Event Sourcing:** ✅ على `enrollment` aggregate
+**Reactive AI:** ✅ `ClassBalanceAnalyzer`, `SiblingDetector`
+
+```
+svc-academic/src/
+├── ops/
+│   ├── enrollment.rs    # create, withdraw, transfer (+ Event Sourcing)
+│   ├── class.rs         # CRUD + get_students
+│   ├── subject.rs, class_subject.rs, guardian.rs, document.rs, org_unit.rs
+│   └── bulk_import.rs
+├── contracts/
+│   ├── commands.rs      # CreateEnrollmentCmd, WithdrawCmd, TransferCmd...
+│   ├── responses.rs     # EnrollmentResponse (with JOINs), ClassResponse...
+│   └── events.rs        # EnrollmentCreated, EnrollmentWithdrawn, EnrollmentTransferred,
+│                        # ClassCapacityExceeded
+├── validation/
+│   ├── enrollment.rs    # capacity check, duplicate check, settings validation
+│   └── import.rs        # CSV validation
+├── analyzers/           # 🆕 Reactive AI
+│   ├── class_balance.rs # "الفصل 3أ أصبح 35 طالب — اقترح فتح فصل"
+│   └── sibling.rs       # "عائلة لديها 3 طلاب — اقترح خصم أخوة"
+```
+
+**مثال enrollment.create مع Event Sourcing:**
+```rust
+pub async fn create(ctx: &ServiceContext, cmd: CreateEnrollmentCmd) -> Result<EnrollmentResponse, AppError> {
+    // 1. Permissions
+    ctx.permissions.check(&ctx.actor, Permission::EnrollmentWrite).await?;
+    
+    // 2. Settings-aware validation
+    let settings = ctx.settings.get_registration_settings(&ctx.org_id).await?;
+    validation::enrollment::validate_create(&ctx.db, &ctx.org_id, &cmd, &settings).await?;
+    
+    // 3. Policy check
+    if ctx.policy.requires_approval("enrollment.create", &ctx.org_id).await? {
+        return Err(AppError::ApprovalRequired { /* ... */ });
+    }
+    
+    // 4. Execute
+    let enrollment = insert_enrollment(&ctx.db, &ctx.org_id, &cmd).await?;
+    
+    // 5. Event Sourcing — تاريخ كامل
+    ctx.event_store.append(
+        "enrollment", &enrollment.id, "enrollment.created",
+        &serde_json::to_value(&cmd)?, &ctx.actor, ctx.correlation_id.as_deref(),
+    ).await?;
+    
+    // 6. Audit
+    ctx.audit.log(AuditEntry {
+        action: "enrollment.created",
+        entity_type: "enrollment", entity_id: &enrollment.id,
+        actor: &ctx.actor, new_data: Some(serde_json::to_value(&enrollment)?),
+        ..Default::default()
+    }).await?;
+    
+    // 7. EventBus → Finance assigns fees + Reactive AI analyzes + Plugins notified
+    let event = EventEnvelope {
+        event_type: "enrollment.created".into(),
+        entity_type: "enrollment".into(),
+        entity_id: enrollment.id.clone(),
+        org_id: ctx.org_id.clone(),
+        actor: ctx.actor.as_str().into(),
+        actor_type: ctx.actor.actor_type().into(),
+        correlation_id: ctx.correlation_id.clone(),
+        payload: serde_json::to_value(&enrollment)?,
+        chain_depth: 0,
+    };
+    ctx.event_bus.publish(event.clone());
+    
+    // 8. Reactive AI — تحليل لحظي
+    let insights = ctx.reactive.process(&ctx.db, &ctx.org_id, &event).await;
+    if !insights.is_empty() {
+        store_insights(&ctx.db, &ctx.org_id, &insights).await?;
+    }
+    
+    // 9. Plugins
+    ctx.plugins.dispatch(&ctx.db, &ctx.org_id, &event).await;
+    
+    Ok(enrollment)
+}
+```
+
+### 🔄 `svc-lifecycle`
+
+**Event Sourcing:** ✅ على `registration` process
+**Process Manager:** ✅ لتسجيل الطلاب والترقيات
+
+```
+svc-lifecycle/src/
+├── ops/
+│   ├── registration.rs  # 🔴 Process Manager: 6+ steps with compensation
+│   ├── promotion.rs     # 🔴 Process Manager: multi-step with rollback
+│   ├── cycle.rs         # create, update, activate, lock, unlock
+│   ├── calendar.rs      # 🔴 36KB من src-tauri → هنا
+│   ├── setup.rs         # 🔴 Process Manager: initial org setup
+│   ├── academic_year.rs # create, switch, archive
+│   ├── academic_context.rs # resolve current context
+│   └── override_approval.rs # request, approve, reject
+├── contracts/
+│   ├── commands.rs      # RegisterStudentCmd, PromoteCmd, CreateCycleCmd,
+│   │                    # CreateCalendarEventCmd, SetupOrgCmd
+│   ├── responses.rs     # RegistrationResponse, PromotionResult,
+│   │                    # CalendarEventResponse, SetupResponse
+│   └── events.rs        # StudentRegistered, PromotionCompleted,
+│                        # CalendarEventCreated, AcademicYearSwitched
+├── validation/
+│   ├── registration.rs  # required fields from settings, duplicate checks
+│   ├── promotion.rs     # eligibility, target class availability
+│   └── calendar.rs      # date conflicts, range validation
+├── processes/           # 🆕 Process Manager definitions
+│   ├── student_registration.rs  # 6-step process with compensations
+│   ├── promotion.rs             # multi-step promotion with rollback
+│   └── initial_setup.rs         # 8-step org setup process
+├── analyzers/           # 🆕 Reactive AI
+│   ├── calendar_reminder.rs     # "امتحانات بعد أسبوع — هل الدرجات جاهزة؟"
+│   └── promotion_readiness.rs   # "85% من الطلاب جاهزون للترقية"
+```
+
+**مثال Registration مع Process Manager:**
+```rust
+// svc-lifecycle/src/ops/registration.rs
+
+pub async fn register_student(ctx: &ServiceContext, cmd: RegisterStudentCmd) -> Result<RegistrationResponse, AppError> {
+    ctx.permissions.check(&ctx.actor, Permission::EnrollmentWrite).await?;
+    
+    let settings = ctx.settings.get_registration_settings(&ctx.org_id).await?;
+    
+    // ── إنشاء Process Manager ──
+    let mut process = ProcessState::new("student_registration", &ctx.org_id, &[
+        "validate", "create_user", "generate_number", 
+        "create_enrollment", "link_guardian", "assign_fees"
+    ]);
+
+    // ── Step 1: Validate ──
+    process.begin_step("validate")?;
+    validation::registration::validate(&cmd, &settings)?;
+    if settings.requires_approval {
+        process.status = ProcessStatus::AwaitingApproval { /* ... */ };
+        save_process(&ctx.db, &process).await?;
+        return Err(AppError::ApprovalRequired { /* ... */ });
+    }
+    process.complete_step("validate", serde_json::json!({"valid": true}))?;
+
+    // ── Step 2: Create User ──
+    process.begin_step("create_user")?;
+    let user = match create_student_user(&ctx.db, &ctx.org_id, &cmd).await {
+        Ok(u) => u,
+        Err(e) => {
+            process.fail_step("create_user", &e.to_string());
+            save_process(&ctx.db, &process).await?;
+            return Err(e);
+        }
+    };
+    process.add_compensation("create_user", CompensationAction::DeleteEntity {
+        entity_type: "user".into(), id: user.id.clone()
+    });
+    process.complete_step("create_user", serde_json::to_value(&user)?)?;
+
+    // ── Step 3: Generate Student Number ──
+    process.begin_step("generate_number")?;
+    let student_number = generate_student_number(&ctx.db, &ctx.org_id, &settings).await?;
+    process.complete_step("generate_number", serde_json::json!({"number": &student_number}))?;
+
+    // ── Step 4: Create Enrollment ──
+    process.begin_step("create_enrollment")?;
+    let enrollment = match create_enrollment(&ctx.db, &ctx.org_id, &user.id, &cmd, &student_number).await {
+        Ok(e) => e,
+        Err(e) => {
+            process.fail_step("create_enrollment", &e.to_string());
+            process.compensate(&ctx.db).await?;  // يتراجع عن create_user
+            save_process(&ctx.db, &process).await?;
+            return Err(e);
+        }
+    };
+    process.add_compensation("create_enrollment", CompensationAction::DeleteEntity {
+        entity_type: "enrollment".into(), id: enrollment.id.clone()
+    });
+    process.complete_step("create_enrollment", serde_json::to_value(&enrollment)?)?;
+
+    // ── Step 5: Link Guardian ──
+    process.begin_step("link_guardian")?;
+    if let Some(ref guardian_name) = cmd.guardian_name {
+        link_guardian(&ctx.db, &ctx.org_id, &user.id, guardian_name, 
+                      cmd.guardian_phone.as_deref(), cmd.guardian_relationship.as_deref()).await?;
+    }
+    process.complete_step("link_guardian", serde_json::json!({"linked": cmd.guardian_name.is_some()}))?;
+
+    // ── Step 6: Assign Fees ──
+    process.begin_step("assign_fees")?;
+    let fee_ids = if settings.auto_assign_fees {
+        match ctx.fee_assigner.assign_mandatory_fees(&ctx.org_id, &enrollment.id, 
+                                                      cmd.class_id.as_deref().unwrap_or("")).await {
+            Ok(ids) => ids,
+            Err(e) => {
+                // الرسوم فشلت — لكن لا نتراجع عن التسجيل (optional step)
+                tracing::warn!("Fee assignment failed: {}", e);
+                vec![]
+            }
+        }
+    } else { vec![] };
+    process.complete_step("assign_fees", serde_json::json!({"fee_ids": &fee_ids}))?;
+
+    // ── Process Complete ──
+    process.status = ProcessStatus::Completed;
+    process.completed_at = Some(chrono::Utc::now().to_rfc3339());
+
+    // Event Sourcing — تاريخ العملية الكاملة
+    ctx.event_store.append("registration", &process.id, "registration.completed",
+        &serde_json::to_value(&process)?, &ctx.actor, ctx.correlation_id.as_deref()).await?;
+
+    // EventBus + Reactive AI + Plugins
+    let event = EventEnvelope {
+        event_type: "student.registered".into(),
+        entity_id: enrollment.id.clone(),
+        org_id: ctx.org_id.clone(),
+        actor: ctx.actor.as_str().into(),
+        payload: serde_json::to_value(&RegistrationResponse {
+            student: user.clone(), enrollment: enrollment.clone(),
+            student_number: student_number.clone(), assigned_fee_ids: fee_ids.clone(),
+        })?,
+        ..Default::default()
+    };
+    ctx.event_bus.publish(event.clone());
+    ctx.reactive.process(&ctx.db, &ctx.org_id, &event).await;
+    ctx.plugins.dispatch(&ctx.db, &ctx.org_id, &event).await;
+
+    ctx.audit.log(AuditEntry {
+        action: "student.registered", entity_type: "enrollment",
+        entity_id: &enrollment.id, actor: &ctx.actor,
+        new_data: Some(serde_json::to_value(&process)?),
+        ..Default::default()
+    }).await?;
+
+    Ok(RegistrationResponse { student: user, enrollment, student_number, assigned_fee_ids: fee_ids })
+}
+```
+
+### 📝 `svc-assessment`
+
+**Event Sourcing:** ✅ على `grade` aggregate (مهم قانونياً)
+**Reactive AI:** ✅ `AtRiskPredictor`, `GradeAnomalyDetector`
+
+```
+svc-assessment/src/
+├── ops/
+│   ├── grade.rs         # submit, bulk, update + Event Sourcing
+│   ├── attendance.rs    # record, bulk + Event Sourcing
+│   └── behavior.rs      # record, AI-assisted
+├── analyzers/           # 🆕
+│   ├── at_risk.rs       # "طالب انخفضت درجاته 20% — معرّض للرسوب"
+│   ├── grade_anomaly.rs # "درجات متطابقة لـ 15 طالب — مشبوهة"
+│   └── attendance_pattern.rs # "غياب متكرر يوم الأحد — نمط"
+```
+
+**مثال grade.submit مع Event Sourcing:**
+```rust
+pub async fn submit_grade(ctx: &ServiceContext, cmd: SubmitGradeCmd) -> Result<GradeResponse, AppError> {
+    ctx.permissions.check(&ctx.actor, Permission::GradeWrite).await?;
+    
+    // Settings-aware validation
+    let grading = ctx.settings.get_grading_settings(&ctx.org_id).await?;
+    if cmd.score > grading.max_grade {
+        return Err(AppError::validation(format!("الدرجة تتجاوز الحد الأقصى {}", grading.max_grade)));
+    }
+    if !grading.allow_grade_entry_after_lock {
+        check_grade_entry_open(&ctx.db, &cmd.cycle_id).await?;
+    }
+    
+    let grade = insert_grade(&ctx.db, &ctx.org_id, &cmd).await?;
+    
+    // Event Sourcing — تاريخ الدرجة (من أدخلها؟ هل تم تعديلها؟)
+    ctx.event_store.append(
+        "grade", &grade.id, "grade.submitted",
+        &serde_json::to_value(&cmd)?, &ctx.actor, ctx.correlation_id.as_deref(),
+    ).await?;
+    
+    // EventBus + Reactive AI
+    let event = EventEnvelope { event_type: "grade.submitted".into(), /* ... */ };
+    ctx.event_bus.publish(event.clone());
+    
+    // AI يحلل فوراً: هل الطالب معرّض للرسوب؟
+    let insights = ctx.reactive.process(&ctx.db, &ctx.org_id, &event).await;
+    // ...
+    
+    Ok(grade)
+}
+```
+
+### 💰 `svc-finance`
+
+**Event Sourcing:** ✅ على transactions (مبدأ عدم التعديل في المحاسبة)
+**يُنفِّذ:** `FeeAssigner`
+**يسمع لأحداث:** `enrollment.created`
+
+```
+svc-finance/src/
+├── ops/
+│   ├── fee_template.rs  # CRUD
+│   ├── student_fee.rs   # assign, list (+ Event Sourcing)
+│   ├── payment.rs       # record, void, refund (+ Event Sourcing — immutable)
+│   ├── treasury.rs      # CRUD, transfers
+│   ├── ledger.rs        # journal entries, trial balance
+│   └── discount.rs      # create, apply
+├── listeners/           # 🆕 Event listeners
+│   └── enrollment.rs    # on "enrollment.created" → assign mandatory fees
+├── analyzers/           # 🆕
+│   ├── overdue.rs       # "5 طلاب تجاوزوا فترة السماح — إشعار"
+│   └── collection.rs    # "نسبة التحصيل هذا الشهر 72% — أقل من المعتاد"
+```
+
+### 📅 `svc-scheduling` + 🎓 `svc-exam`
+
+نفس النمط — `contracts/` + `ops/` + `validation/` مع ServiceContext.
+
+### 🤖 `svc-autopilot` + 🧠 `svc-ai-gateway`
+
+**يسمعان لكل الأحداث** عبر EventBus. يستخدمان EventStore لتحليل الأنماط عبر الزمن.
+
+---
+
+## 4. Dependency Graph النهائي
+
+```mermaid
+graph TB
+    SK["shared-kernel<br/>Types, Errors, EventBus, EventStore,<br/>ProcessManager, Reactive, Plugins,<br/>ServiceContext, Settings, Traits"]
+    
+    IP[infra-persistence]
+    II[infra-integration]
+    IS[infra-scheduler]
+    
+    SK --> IAM["svc-iam<br/>implements: PermissionChecker<br/>+ AuditLogger"]
+    SK --> ORG["svc-organization<br/>implements: SettingsProvider<br/>+ PolicyEngine"]
+    SK --> ACAD["svc-academic<br/>ES: enrollment"]
+    
+    SK & IAM & ACAD --> LIFE["svc-lifecycle<br/>PM: registration, promotion<br/>ES: registration process"]
+    SK & ACAD --> ASSESS["svc-assessment<br/>ES: grade, attendance"]
+    SK & ACAD --> FIN["svc-finance<br/>implements: FeeAssigner<br/>ES: payment"]
+    SK --> SCHED[svc-scheduling]
+    SK --> EXAM[svc-exam]
+    
+    LIFE & ACAD & ASSESS & FIN --> AUTO[svc-autopilot]
+    AUTO --> AI["svc-ai-gateway<br/>ActionRegistry + InsightEngine"]
+    
+    style SK fill:#2d3436,color:#fff
+    style IAM fill:#e74c3c,color:#fff
+    style ORG fill:#e67e22,color:#fff
+    style ACAD fill:#3498db,color:#fff
+    style FIN fill:#f1c40f,color:#000
+    style LIFE fill:#9b59b6,color:#fff
+```
+
+**ES** = Event Sourcing | **PM** = Process Manager
+
+---
+
+## 5. Folder Structure الكامل
+
+```
+api-rust/crates/
+├── shared-kernel/            # ⬛ Platform (+ EventStore, Process, Reactive, Plugin)
+├── infra-persistence/        # ⬛ Database
+├── infra-integration/        # ⬛ External Adapters
+├── infra-scheduler/          # ⬛ Timefold
+│
+├── svc-iam/                  # 🔐 Auth, Users, Permissions
+├── svc-organization/         # 🏫 Org, Settings, Policies (🆕)
+├── svc-academic/             # 📚 Classes, Enrollments (ES)
+├── svc-lifecycle/            # 🔄 Cycles, Calendar, Registration (PM+ES)
+├── svc-assessment/           # 📝 Grades, Attendance (ES)
+├── svc-finance/              # 💰 Fees, Payments (ES)
+├── svc-scheduling/           # 📅 Timetable
+├── svc-exam/                 # 🎓 Exams
+│
+├── svc-autopilot/            # 🤖 Automation
+├── svc-ai-gateway/           # 🧠 AI
+├── svc-docforge/             # 📄 Documents
+│
+└── api-gateway/              # 🟢 HTTP (thin handlers — service.rs deleted)
+
+desktop-svelte/
+├── src-tauri/src/commands/   # Thin IPC wrappers (5 lines each)
+├── src/lib/bindings/         # 🆕 specta auto-generated (replaces desktop-client)
+├── src/lib/core/platform/    # events.ts, desktop.ts, desktop-variants.ts (من desktop-client)
+└── src/lib/core/ipc/         # dedup, error, prefetch (لا تغيير)
+```
+
+---
+
+## 6. خطة الترحيل — 10 مراحل
+
+### المرحلة 0: التأسيس (أسبوع 1)
+
+**لا تغيير سلوكي — إعداد البنية فقط.**
+
+| العمل | الملف |
+|-------|-------|
+| إنشاء `ServiceContext` struct | `shared-kernel/src/context.rs` |
+| إنشاء Platform Traits | `shared-kernel/src/traits.rs` (توسيع) |
+| إنشاء Settings types | `shared-kernel/src/settings.rs` |
+| إنشاء `EventStore` | `shared-kernel/src/event_store.rs` |
+| إنشاء `ProcessState` | `shared-kernel/src/process.rs` |
+| إنشاء `ReactivePipeline` trait | `shared-kernel/src/reactive.rs` |
+| إنشاء `OrbisPlugin` trait | `shared-kernel/src/plugin.rs` |
+| إضافة migration: `domain_events` table | `infra-persistence/src/schemas/` |
+| إنشاء `contracts/` + `ops/` فارغة في كل crate | كل domain crate |
+
+### المرحلة 1: `svc-organization` (أسبوع 2)
+
+| العمل | التفاصيل |
+|-------|---------|
+| استخراج `Organization`, `OrgSettings`, `OrgPolicy` من domain-lifecycle | entities + repository |
+| تنفيذ `SettingsProvider` | يقرأ من org.settings JSON ويُرجع typed settings |
+| تنفيذ `PolicyEngine` | يقرأ approval policies |
+| إنشاء `ops/settings.rs` | get/update registration, finance, grading settings |
+
+### المرحلة 2: `svc-iam` (أسبوع 3)
+
+| العمل | التفاصيل |
+|-------|---------|
+| تنفيذ `PermissionChecker` | يلف `AuthzService` الموجود |
+| تنفيذ `AuditLogger` | يكتب في `audit_log` table |
+| نقل auth ops مع ServiceContext | login, register, logout, validate_token |
+| نقل user ops مع ServiceContext | CRUD + change_role + change_password |
+| حذف من service.rs | auth + user methods |
+
+### المرحلة 3: `svc-academic` + Event Sourcing (أسبوع 4-5)
+
+| العمل | التفاصيل |
+|-------|---------|
+| نقل enrollment ops مع ServiceContext | create, list, get, withdraw, transfer |
+| **تفعيل Event Sourcing على enrollment** | كل عملية تكتب في `domain_events` |
+| نقل class, subject, guardian, document, org_unit ops | CRUD مع ServiceContext |
+| إصلاح N+1 queries | JOIN بدلاً من queries منفصلة |
+| إنشاء `ClassBalanceAnalyzer` | أول Reactive AI analyzer |
+| **حذف** `src-tauri/features/student_registration.rs` | النسخة المكررة |
+
+### المرحلة 4: `svc-finance` + Event Sourcing (أسبوع 6)
+
+| العمل | التفاصيل |
+|-------|---------|
+| تنفيذ `FeeAssigner` trait | يلف FeeService الموجود |
+| نقل finance ops مع ServiceContext | fees, payments, treasury, ledger, discounts |
+| **تفعيل Event Sourcing على payments** | كل دفعة immutable في domain_events |
+| إنشاء event listener لـ `enrollment.created` | تخصيص الرسوم تلقائياً |
+| إنشاء `OverdueAnalyzer` | Reactive AI — كشف التأخير في الدفع |
+| إزالة dependency على domain-lifecycle | finance يعتمد فقط على academic |
+
+### المرحلة 5: `svc-lifecycle` + Process Manager (أسبوع 7-8)
+
+**الأكبر والأعقد:**
+
+| العمل | التفاصيل |
+|-------|---------|
+| إنشاء `StudentRegistrationProcess` | 6-step Process Manager مع compensations |
+| نقل `registration.rs` | العملية الكاملة مع Process Manager |
+| إنشاء `PromotionProcess` | multi-step مع rollback |
+| نقل `calendar.rs` (36KB!) | من src-tauri إلى ops/ |
+| نقل `setup.rs` (13KB) | Process Manager للإعداد الأولي |
+| نقل cycle, academic_year, academic_context ops | مع ServiceContext |
+| إنشاء `CalendarReminderAnalyzer` | Reactive AI |
+
+### المرحلة 6: `svc-assessment` + `svc-scheduling` + `svc-exam` (أسبوع 9)
+
+| العمل | التفاصيل |
+|-------|---------|
+| نقل grade ops + **Event Sourcing** | تاريخ كل درجة محفوظ |
+| نقل attendance ops + **Event Sourcing** | أنماط الحضور |
+| إنشاء `AtRiskPredictor` | Reactive AI — تنبؤ بالرسوب |
+| إنشاء `GradeAnomalyDetector` | Reactive AI — كشف درجات مشبوهة |
+| نقل scheduling + exam ops | مع ServiceContext |
+
+### المرحلة 7: Reactive AI Pipeline (أسبوع 10)
+
+| العمل | التفاصيل |
+|-------|---------|
+| ربط `ReactivePipeline` بـ `EventBus` | كل event يمر عبر analyzers |
+| ربط `InsightEngine` الموجود بالـ Pipeline | دمج التحليل الحالي |
+| ربط `Autopilot` بالأحداث الجديدة | الأحداث من domain_events تغذي Autopilot |
+| تفعيل `ActionRegistry` مع ops/ الجديدة | AI يستدعي ops/ مباشرة |
+
+### المرحلة 8: SDK + specta (أسبوع 11)
+
+| العمل | التفاصيل |
+|-------|---------|
+| تفعيل tauri-specta | auto-generate TypeScript types + commands |
+| إنشاء `desktop-svelte/src/lib/bindings/` | auto-generated |
+| نقل events.ts, platform.ts, desktop-variants.ts | من desktop-client إلى core/platform/ |
+| **حذف** `packages/desktop-client/` | 65KB — لم يعد ضرورياً |
+| تحديث imports في desktop-svelte | 16 ملف |
+
+### المرحلة 9: Plugin Architecture + Cleanup (أسبوع 12)
+
+| العمل | التفاصيل |
+|-------|---------|
+| تفعيل `PluginRegistry` | ربط بـ EventBus |
+| إنشاء plugin مثال: `NoorIntegrationPlugin` | proof of concept |
+| **حذف** `api-gateway/service.rs` (146KB) | لم يعد ضرورياً |
+| تحويل api-gateway handlers | كلها تستدعي ops/ مباشرة |
+| تشغيل جميع الاختبارات | cargo test لكل crate |
+| تحديث الوثائق | |
+
+---
+
+## 7. ملخص التأثير النهائي
+
+| المقياس | قبل | بعد |
+|---------|-----|-----|
+| **أماكن المنطق** | 3 | **1 (ops/)** |
+| **ServiceContext** | لا يوجد | **موحد — كل عملية** |
+| **تاريخ العمليات** | audit_log جزئي | **Event Sourcing كامل للعمليات الحرجة** |
+| **سلامة العمليات المعقدة** | لا compensation | **Process Manager مع rollback تلقائي** |
+| **ذكاء اصطناعي** | batch analysis (InsightEngine) | **real-time reactive (كل event → AI)** |
+| **قابلية التوسع** | تعديل الكود | **Plugin Architecture** |
+| **الإعدادات** | جزئية (registration فقط) | **شاملة (registration + finance + grading)** |
+| **الصلاحيات** | بعض العمليات | **كل عملية** |
+| **التدقيق** | جزئي | **كل عملية** |
+| **service.rs** | 146KB | **0** |
+| **desktop-client** | 65KB يدوي | **0 (auto-generated)** |
+| **كود مكرر** | 378KB | **0** |
+
+---
+
+## القرارات النهائية ✅
+
+> [!NOTE]
+> جميع القرارات مُقفلة — الخطة جاهزة للتنفيذ.
+
+| # | القرار | الخيار | المبرر |
+|---|--------|--------|--------|
+| 1 | استخراج `svc-organization` | ✅ **نعم** | الإعدادات تؤثر على كل خدمة — يجب أن تكون مستقلة |
+| 2 | إعادة تسمية الـ crates | ✅ **`domain-*` → `svc-*`** | تعكس المعمارية الجديدة بوضوح |
+| 3 | Process Manager | ✅ **في الذاكرة فقط** | أبسط — يتراجع فوراً عند الفشل. persistence يُضاف لاحقاً عند الحاجة |
+| 4 | specta Feature Flag | ✅ **Feature flag** | `#[cfg_attr(feature = "specta", derive(specta::Type))]` — يحافظ على استقلالية domain crates. API server لا يحتاج specta |
