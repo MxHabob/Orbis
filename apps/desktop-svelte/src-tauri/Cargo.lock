@@ -1405,6 +1405,7 @@ dependencies = [
 name = "domain-lifecycle"
 version = "2.0.0"
 dependencies = [
+ "bcrypt",
  "chrono",
  "domain-academic",
  "domain-iam",
