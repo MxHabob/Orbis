@@ -26,21 +26,19 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@orbis/ui-svelte/dialog";
-import { toast } from "svelte-sonner";
 import {
   Printer,
   ChevronRight,
   ChevronDown,
   RotateCw,
   LogOut,
-  Save,
   Folder,
   FolderOpen,
   CheckSquare,
   Square,
   FileText,
 } from "lucide-svelte";
-import { getLocale, deLocalizeUrl } from "$lib/paraglide/runtime";
+import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
 import * as m from "$lib/paraglide/messages";
@@ -70,18 +68,6 @@ let customStartDate = $state<string>(new Date().toISOString().split("T")[0]);
 let movementFilter = $state<string>("all"); // 'all' or 'active' (with movements)
 let debtorCreditorFilter = $state<string>("all"); // 'all', 'debtor', 'creditor'
 
-// Additional dynamic filter states matching screenshot options
-let detailedBalance = $state(true);
-let noOpeningBalance = $state(false);
-let minBalance = $state(false);
-let groupByDay = $state(false);
-let reportType = $state<"totals" | "balances">("balances");
-let groupByDoc = $state(true);
-let historyType = $state<"current" | "historical">("current");
-let hideEquivalent = $state(false);
-let inLocalEquivalent = $state(false);
-let paymentRequest = $state(false);
-let englishReport = $state(false);
 
 // Tree state
 let expandedCategories = $state<Record<string, boolean>>({
@@ -166,9 +152,9 @@ async function loadData() {
     treasuries = treasuryList;
 
     if (ledgerList.length > 0) {
-      selectedAccountId = ledgerList[0].id;
+      selectedAccountId = ledgerList[0].id as string;
       accountCodeQuery = String(ledgerList[0].code);
-      accountNameQuery = ledgerList[0].name_ar || ledgerList[0].name;
+      accountNameQuery = ledgerList[0].name_ar as string || ledgerList[0].name as string;
     }
 
     // Default select all accounts in tree selection
@@ -776,7 +762,7 @@ const filteredLedgerRows = $derived.by(() => {
     // 1. Account Filtering by Tab Mode
     if (activeTab === "single") {
       if (row.id !== selectedAccountId) return false;
-    } else if (activeTab === "custom") {
+    } else if (activeTab === "all") {
       if (!selectedTreeAccountIds.has(row.id)) return false;
     }
 
@@ -923,8 +909,6 @@ function exitPage() {
 
 <svelte:window onclick={handleWindowClick} />
 
-<div class="h-full w-full overflow-hidden flex flex-col font-sans bg-background text-foreground" dir={getLocale() === "ar" ? "rtl" : "ltr"}>
-  
 
 
   <!-- Main Filter Controls Box -->
@@ -1329,14 +1313,14 @@ function exitPage() {
                 <TableHeader class="bg-card">
                   <!-- Top Currency Header Row -->
                   <TableRow class="hover:bg-transparent border-b border-border/80">
-                    <TableHead rowspan="2" class="w-10 border-r border-border/60 text-center font-bold text-foreground">*</TableHead>
-                    <TableHead colspan="2" class="border-r border-border/60 text-center font-bold text-foreground bg-primary/5">ريال يمني</TableHead>
-                    <TableHead colspan="2" class="border-r border-border/60 text-center font-bold text-foreground bg-emerald-500/5">سعودي</TableHead>
-                    <TableHead colspan="2" class="border-r border-border/60 text-center font-bold text-foreground bg-blue-500/5">دولار</TableHead>
-                    <TableHead colspan="2" class="border-r border-border/60 text-center font-bold text-foreground bg-purple-500/5">درهم</TableHead>
-                    <TableHead rowspan="2" class="border-r border-border/60 text-start font-bold text-foreground">{m.ledger_col_name()}</TableHead>
-                    <TableHead rowspan="2" class="border-r border-border/60 text-center font-bold text-foreground w-28">{m.ledger_col_code()}</TableHead>
-                    <TableHead rowspan="2" class="text-start font-bold text-foreground w-64">{m.ledger_col_notes()}</TableHead>
+                    <TableHead rowspan={2} class="w-10 border-r border-border/60 text-center font-bold text-foreground">*</TableHead>
+                    <TableHead colspan={2} class="border-r border-border/60 text-center font-bold text-foreground bg-primary/5">ريال يمني</TableHead>
+                    <TableHead colspan={2} class="border-r border-border/60 text-center font-bold text-foreground bg-emerald-500/5">سعودي</TableHead>
+                    <TableHead colspan={2} class="border-r border-border/60 text-center font-bold text-foreground bg-blue-500/5">دولار</TableHead>
+                    <TableHead colspan={2} class="border-r border-border/60 text-center font-bold text-foreground bg-purple-500/5">درهم</TableHead>
+                    <TableHead rowspan={2} class="border-r border-border/60 text-start font-bold text-foreground">{m.ledger_col_name()}</TableHead>
+                    <TableHead rowspan={2} class="border-r border-border/60 text-center font-bold text-foreground w-28">{m.ledger_col_code()}</TableHead>
+                    <TableHead rowspan={2} class="text-start font-bold text-foreground w-64">{m.ledger_col_notes()}</TableHead>
                   </TableRow>
                   <!-- Sub-columns Debit / Credit -->
                   <TableRow class="hover:bg-transparent border-b border-border/80 text-[9px] font-bold">
@@ -1508,9 +1492,9 @@ function exitPage() {
                 <TableHeader class="bg-card">
                   <TableRow class="hover:bg-transparent border-b border-border/80 text-[10px] font-bold text-foreground">
                     <TableHead class="w-12 text-center font-bold border-r border-border/60">*</TableHead>
-                    <TableHead colspan="2" class="text-center font-bold border-r border-border/60">{getLocale() === "ar" ? "المبلـغ" : "Amount"}</TableHead>
+                    <TableHead colspan={2} class="text-center font-bold border-r border-border/60">{getLocale() === "ar" ? "المبلـغ" : "Amount"}</TableHead>
                     <TableHead class="text-center font-bold border-r border-border/60 w-32">{getLocale() === "ar" ? "الالعملة" : "Currency"}</TableHead>
-                    <TableHead colspan="2" class="text-center font-bold border-r border-border/60">{getLocale() === "ar" ? "المقابل بالريال اليمني" : "Equivalent in YER"}</TableHead>
+                    <TableHead colspan={2} class="text-center font-bold border-r border-border/60">{getLocale() === "ar" ? "المقابل بالريال اليمني" : "Equivalent in YER"}</TableHead>
                     <TableHead class="text-start font-bold">{getLocale() === "ar" ? "البيان" : "Description"}</TableHead>
                   </TableRow>
                   <TableRow class="hover:bg-transparent border-b border-border/80 text-[9px] font-bold">
@@ -1609,7 +1593,7 @@ function exitPage() {
                 <TableBody>
                   {#if ledgerTransactions.length === 0}
                     <TableRow>
-                      <TableCell colspan="8" class="text-center py-10 text-muted-foreground text-xs font-semibold">لا توجد قيود أو حركات مطابقة لهذا الحساب بالفترة المحددة</TableCell>
+                      <TableCell colspan={8} class="text-center py-10 text-muted-foreground text-xs font-semibold">لا توجد قيود أو حركات مطابقة لهذا الحساب بالفترة المحددة</TableCell>
                     </TableRow>
                   {:else}
                     {#each ledgerTransactions as row}
