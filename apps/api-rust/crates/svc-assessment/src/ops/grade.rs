@@ -85,10 +85,13 @@ async fn save_grade_history(
         grade_letter: existing.grade_letter.clone(),
         is_absent: None,
         is_excused: None,
+        comment: existing.notes.clone(),
         change_type: change_type.to_string(),
         change_reason,
-        changed_by: changed_by.to_string(),
+        changed_by: Some(changed_by.to_string()),
         changed_at: Utc::now().to_rfc3339(),
+        snapshot: Some(serde_json::to_string(existing).unwrap_or_default()),
+        created_at: Utc::now().to_rfc3339(),
     };
     let active: grade_history::ActiveModel = history.into();
     active.insert(&ctx.db).await?;

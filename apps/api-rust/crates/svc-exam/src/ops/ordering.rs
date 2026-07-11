@@ -42,19 +42,25 @@ pub async fn list_ordering(
         .all(&ctx.db).await?)
 }
 
-/// Generate seating & secret numbers for a session (delegated to solver service).
+/// Generate seating & secret numbers for a session (delegated to numbers service).
 pub async fn generate_ordering(
     ctx: &ServiceContext, session_id: &str,
 ) -> Result<(), AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ExamSessionWrite).await?;
 
-    let query_repo = crate::repository::ExamQueryRepo::new(ctx.db.clone());
-    let cmd_repo = crate::repository::ExamCommandRepo::new(ctx.db.clone());
-    let svc = crate::services::exam_ordering::ExamOrderingService::new(
-        std::sync::Arc::new(cmd_repo),
-        std::sync::Arc::new(query_repo),
+    let query_repo = std::sync::Arc::new(crate::repository::ExamQueryRepo::new(ctx.db.clone()));
+    let cmd_repo = std::sync::Arc::new(crate::repository::ExamCommandRepo::new(ctx.db.clone()));
+    let ordering_service = std::sync::Arc::new(crate::services::student_ordering::StudentOrderingService::new(
+        cmd_repo.clone(),
+        query_repo.clone(),
+    ));
+    let svc = crate::services::exam_numbers::ExamNumbersService::new(
+        cmd_repo.clone(),
+        query_repo.clone(),
+        ordering_service,
     );
-    svc.generate_ordering(&ctx.org_id, session_id).await?;
+    svc.generate_seating_numbers(&ctx.org_id, session_id, ctx.actor.as_str()).await?;
+    svc.generate_secret_numbers(&ctx.org_id, session_id, ctx.actor.as_str()).await?;
 
     ctx.audit.log(shared_kernel::traits::AuditEntry {
         org_id: ctx.org_id.clone(), actor: ctx.actor.clone(),

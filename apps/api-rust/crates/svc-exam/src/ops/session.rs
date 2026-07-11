@@ -10,7 +10,7 @@ use shared_kernel::event_bus::EventEnvelope;
 use shared_kernel::traits::{AuditEntry, Permission};
 
 use crate::contracts::events::event_types;
-use crate::entities::{exam_session, exam_subject};
+use crate::entities::exam_session;
 
 pub async fn list(ctx: &ServiceContext, cycle_id: &str) -> Result<Vec<exam_session::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ExamSessionRead).await?;
@@ -92,40 +92,4 @@ pub async fn update(
     active.updated_at = Set(Utc::now().to_rfc3339());
 
     Ok(active.update(&ctx.db).await?)
-}
-
-/// List subjects in an exam session.
-pub async fn list_subjects(
-    ctx: &ServiceContext, session_id: &str,
-) -> Result<Vec<exam_subject::Model>, AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::ExamSessionRead).await?;
-    Ok(exam_subject::Entity::find()
-        .filter(exam_subject::Column::SessionId.eq(session_id))
-        .order_by_asc(exam_subject::Column::ExamDate)
-        .all(&ctx.db).await?)
-}
-
-/// Add a subject to an exam session.
-pub async fn create_subject(
-    ctx: &ServiceContext,
-    session_id: String, subject_id: String, subject_name: String,
-    exam_date: String, start_time: String, end_time: String,
-    max_score: f64,
-) -> Result<exam_subject::Model, AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::ExamSessionWrite).await?;
-
-    let now = Utc::now().to_rfc3339();
-    let id = Uuid::new_v4().to_string();
-
-    let model = exam_subject::Model {
-        id: id.clone(), session_id, subject_id, subject_name,
-        subject_name_ar: None, exam_date, start_time, end_time,
-        duration_minutes: None, max_score, passing_score: None,
-        exam_type: "written".into(), instructions: None,
-        applicable_levels: None, status: "scheduled".into(),
-        created_at: now.clone(), updated_at: now,
-    };
-
-    let active: exam_subject::ActiveModel = model.into();
-    Ok(active.insert(&ctx.db).await?)
 }
