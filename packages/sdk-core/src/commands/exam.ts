@@ -20,4 +20,7 @@ export interface ExamCommands {
 
   listSeating(examSubjectId: string): Promise<SeatingNumber[]>;
   generateOrdering(sessionId: string): Promise<void>;
+  getOrdering(orgId: string, cycleId: string): Promise<any[]>;
+  rebuildOrdering(orgId: string, cycleId: string, strategy: string): Promise<any[]>;
+  freezeOrdering(orgId: string, cycleId: string, userId: string): Promise<void>;
 }

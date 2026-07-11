@@ -49,6 +49,7 @@ export const commands: OrbisCommands = {
     createCycle: (data) => http.post("/api/cycles", data),
     updateCycle: (cycleId, data) => http.put(`/api/cycles/${cycleId}`, data),
     setCurrentCycle: (cycleId) => http.post(`/api/cycles/${cycleId}/activate`),
+    activateCycle: (orgId, cycleId) => http.post(`/api/cycles/${cycleId}/activate`),
     lockCycle: (cycleId) => http.post(`/api/cycles/${cycleId}/lock`),
     unlockCycle: (cycleId) => http.post(`/api/cycles/${cycleId}/unlock`),
     toggleGradeEntry: (cycleId, open, _start?, _end?) => http.post(`/api/cycles/${cycleId}/grade-entry/${open ? "open" : "close"}`),
@@ -104,8 +105,9 @@ export const commands: OrbisCommands = {
     listTreasuries: () => http.get("/api/treasuries"),
     createTreasury: (data) => http.post("/api/treasuries", data),
 
-    listFeeTemplates: () => http.get("/api/fee-templates"),
-    listActiveFeeTemplates: () => http.get("/api/fee-templates?active=true"),
+    listFeeTemplates: (_orgId) => http.get("/api/fee-templates"),
+    getFeeTemplates: (_orgId) => http.get("/api/fee-templates"),
+    listActiveFeeTemplates: (_orgId) => http.get("/api/fee-templates?active=true"),
     createFeeTemplate: (data) => http.post("/api/fee-templates", data),
     updateFeeTemplate: (templateId, data) => http.put(`/api/fee-templates/${templateId}`, data),
     deleteFeeTemplate: (templateId) => http.del(`/api/fee-templates/${templateId}`),
@@ -116,11 +118,16 @@ export const commands: OrbisCommands = {
     listPayments: (_enrollmentId?, _feeId?) => http.get("/api/payments"),
     recordPayment: (data) => http.post("/api/payments", data),
 
-    listDiscountTemplates: () => http.get("/api/discount-templates"),
+    listDiscountTemplates: (_orgId) => http.get("/api/discount-templates"),
+    getDiscountTemplates: (_orgId) => http.get("/api/discount-templates"),
     createDiscountTemplate: (data) => http.post("/api/discount-templates", data),
 
     listCurrencies: () => http.get("/api/currencies"),
+    getCurrencies: (_orgId) => http.get("/api/currencies"),
     createCurrency: (data) => http.post("/api/currencies", data),
+    updateCurrency: (_orgId, code, data) => http.put(`/api/currencies/${code}`, data),
+    deleteCurrency: (_orgId, code) => http.del(`/api/currencies/${code}`),
+    seedDefaultFinancials: (_orgId) => http.post("/api/currencies/seed-default"),
 
     listJournalEntries: () => http.get("/api/journal-entries"),
   },
@@ -174,6 +181,9 @@ export const commands: OrbisCommands = {
 
     listSeating: (examSubjectId) => http.get(`/api/exam/seating/${examSubjectId}`),
     generateOrdering: (sessionId) => http.post(`/api/exam/sessions/${sessionId}/seating`),
+    getOrdering: (orgId, cycleId) => http.get(`/api/exam/ordering?orgId=${orgId}&cycleId=${cycleId}`),
+    rebuildOrdering: (orgId, cycleId, strategy) => http.post(`/api/exam/ordering/rebuild`, { orgId, cycleId, strategy }),
+    freezeOrdering: (orgId, cycleId, userId) => http.post(`/api/exam/ordering/freeze`, { orgId, cycleId, userId }),
   },
 
   // ═══════════════════════════════════════════════════════════════
@@ -267,4 +277,18 @@ export const commands: OrbisCommands = {
 
     listDocumentsByOwner: (_orgId, ownerId) => http.get(`/api/documents/${ownerId}`),
   },
+  docforge: {
+    previewDocumentTemplate: (templateJson, contextJson) => http.post("/api/docforge/preview", { templateJson, contextJson }),
+  },
+  permissions: {
+    getRolePermissions: () => http.get("/api/permissions/roles"),
+    saveRolePermissions: (role, rules) => http.post(`/api/permissions/roles/${role}`, rules),
+  },
+  bulkImport: {
+    createStudents: (orgId, data) => http.post("/api/import/students", data),
+    createGrades: (orgId, data) => http.post("/api/import/grades", data),
+  },
+  auditLogs: {
+    getAll: (orgId) => http.get(`/api/audit-logs?orgId=${orgId}`),
+  }
 };

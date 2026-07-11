@@ -5,18 +5,18 @@ import type { TimeSlot, ScheduledLesson, Room, SolveJob } from "../types";
 
 export interface SchedulingCommands {
   // ── Time Slots ──────────────────────────────────────────────
-  listTimeSlots(cycleId: string): Promise<TimeSlot[]>;
+  listTimeSlots(orgId: string, cycleId: string): Promise<TimeSlot[]>;
   createTimeSlot(data: { cycle_id: string; slot_number: number; name?: string; start_time: string; end_time: string; duration_minutes: number; is_break: boolean }): Promise<TimeSlot>;
   updateTimeSlot(slotId: string, data: { name?: string; start_time?: string; end_time?: string }): Promise<TimeSlot>;
   deleteTimeSlot(slotId: string): Promise<void>;
 
   // ── Lessons ─────────────────────────────────────────────────
-  listLessonsByClass(cycleId: string, classId: string): Promise<ScheduledLesson[]>;
-  listLessonsByTeacher(cycleId: string, teacherId: string): Promise<ScheduledLesson[]>;
+  listLessonsByClass(orgId: string, cycleId: string, classId: string): Promise<ScheduledLesson[]>;
+  listLessonsByTeacher(orgId: string, cycleId: string, teacherId: string): Promise<ScheduledLesson[]>;
   createLesson(data: { cycle_id: string; class_id: string; class_subject_id: string; subject_id: string; teacher_id: string; time_slot_id: string; day_of_week: number; room_id?: string }): Promise<ScheduledLesson>;
   updateLesson(lessonId: string, data: { teacher_id?: string; room_id?: string; topic?: string; status?: string }): Promise<ScheduledLesson>;
   deleteLesson(lessonId: string): Promise<void>;
-  checkConflicts(cycleId: string, teacherId: string, timeSlotId: string, dayOfWeek: number, roomId?: string): Promise<ScheduledLesson[]>;
+  checkConflicts(orgId: string, cycleId: string, teacherId: string, timeSlotId: string, dayOfWeek: number, roomId?: string): Promise<ScheduledLesson[]>;
 
   // ── Rooms ───────────────────────────────────────────────────
   listRooms(orgId: string): Promise<Room[]>;

@@ -47,7 +47,7 @@ async function loadData() {
       commands.iam.listUsers(data.orgId),
     ]);
     auditLogs = logsList.sort(
-      (a, b) =>
+      (a: any, b: any) =>
         new Date(b.created_at as string).getTime() -
         new Date(a.created_at as string).getTime(),
     );

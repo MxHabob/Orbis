@@ -28,7 +28,7 @@ export interface AcademicCommands {
 
   // ── Enrollments ─────────────────────────────────────────────
   listEnrollments(orgId: string, classId?: string, cycleId?: string): Promise<Enrollment[]>;
-  getEnrollment(enrollmentId: string): Promise<Enrollment>;
+  getEnrollment(orgId: string, enrollmentId: string): Promise<Enrollment>;
   createEnrollment(data: { org_id: string; cycle_id: string; student_id: string; class_id: string; student_number: string }): Promise<Enrollment>;
   withdrawEnrollment(orgId: string, enrollmentId: string, reason: string): Promise<Enrollment>;
   transferEnrollment(orgId: string, enrollmentId: string, newClassId: string): Promise<Enrollment>;
@@ -48,6 +48,7 @@ export interface AcademicCommands {
   createCycle(data: { name: string; name_ar?: string; cycle_type: string; parent_id?: string; start_date: string; end_date: string; grading_system: string }): Promise<AcademicCycle>;
   updateCycle(cycleId: string, data: { name?: string; start_date?: string; end_date?: string }): Promise<AcademicCycle>;
   setCurrentCycle(cycleId: string): Promise<AcademicCycle>;
+  activateCycle(orgId: string, cycleId: string): Promise<AcademicCycle>;
   lockCycle(cycleId: string): Promise<AcademicCycle>;
   unlockCycle(cycleId: string): Promise<AcademicCycle>;
   toggleGradeEntry(cycleId: string, open: boolean, start?: string, end?: string): Promise<AcademicCycle>;

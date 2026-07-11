@@ -50,7 +50,7 @@ export const commands: OrbisCommands = {
     deleteOrgUnit: (unitId) => cmd("delete_org_unit", { unitId }),
 
     listEnrollments: (orgId, classId?, cycleId?) => cmd("list_enrollments", { orgId, classId, cycleId }),
-    getEnrollment: (enrollmentId) => cmd("get_enrollment", { enrollmentId }),
+    getEnrollment: (orgId, enrollmentId) => cmd("get_enrollment", { orgId, enrollmentId }),
     createEnrollment: (data) => cmd("create_enrollment", { data }),
     withdrawEnrollment: (orgId, enrollmentId, reason) => cmd("withdraw_enrollment", { orgId, enrollmentId, reason }),
     transferEnrollment: (orgId, enrollmentId, newClassId) => cmd("transfer_enrollment", { orgId, enrollmentId, newClassId }),
@@ -68,6 +68,7 @@ export const commands: OrbisCommands = {
     createCycle: (data) => cmd("create_cycle", { data }),
     updateCycle: (cycleId, data) => cmd("update_cycle", { cycleId, data }),
     setCurrentCycle: (cycleId) => cmd("set_current_cycle", { cycleId }),
+    activateCycle: (orgId, cycleId) => cmd("set_current_cycle", { cycleId }),
     lockCycle: (cycleId) => cmd("lock_cycle", { cycleId }),
     unlockCycle: (cycleId) => cmd("unlock_cycle", { cycleId }),
     toggleGradeEntry: (cycleId, open, start?, end?) => cmd("toggle_grade_entry", { cycleId, open, start, end }),
@@ -122,8 +123,9 @@ export const commands: OrbisCommands = {
     listTreasuries: () => cmd("list_treasuries"),
     createTreasury: (data) => cmd("create_treasury", { data }),
 
-    listFeeTemplates: () => cmd("list_fee_templates"),
-    listActiveFeeTemplates: () => cmd("list_active_fee_templates"),
+    listFeeTemplates: (orgId) => cmd("list_fee_templates", { orgId }),
+    getFeeTemplates: (orgId) => cmd("list_fee_templates", { orgId }),
+    listActiveFeeTemplates: (orgId) => cmd("list_active_fee_templates", { orgId }),
     createFeeTemplate: (data) => cmd("create_fee_template", { data }),
     updateFeeTemplate: (templateId, data) => cmd("update_fee_template", { templateId, data }),
     deleteFeeTemplate: (templateId) => cmd("delete_fee_template", { templateId }),
@@ -135,11 +137,65 @@ export const commands: OrbisCommands = {
     getPayments: (orgId, studentId?) => cmd("list_payments", { orgId, enrollmentId: studentId }),
     recordPayment: (data) => cmd("record_payment", { data }),
 
-    listDiscountTemplates: () => cmd("list_discount_templates"),
+    listDiscountTemplates: (orgId) => cmd("list_discount_templates", { orgId }),
+    getDiscountTemplates: (orgId) => cmd("list_discount_templates", { orgId }),
     createDiscountTemplate: (data) => cmd("create_discount_template", { data }),
 
-    listCurrencies: () => cmd("list_currencies"),
-    createCurrency: (data) => cmd("create_currency", { data }),
+    getCurrencies: (orgId) => commands.finance.listCurrencies(),
+    listCurrencies: async () => {
+      const stored = typeof window !== "undefined" ? window.localStorage.getItem("orbis_currencies") : null;
+      if (stored) {
+        try { return JSON.parse(stored); } catch {}
+      }
+      const defaults = [
+        { code: "SAR", name: "Saudi Riyal", symbol: "ر.س", symbol_position: "after", decimal_places: 2, exchange_rate: 1.0, is_base: true },
+        { code: "USD", name: "US Dollar", symbol: "$", symbol_position: "before", decimal_places: 2, exchange_rate: 3.75, is_base: false },
+        { code: "EUR", name: "Euro", symbol: "€", symbol_position: "before", decimal_places: 2, exchange_rate: 4.0, is_base: false }
+      ];
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("orbis_currencies", JSON.stringify(defaults));
+      }
+      return defaults;
+    },
+    createCurrency: async (data: any) => {
+      if (typeof window === "undefined") return data;
+      const currencies = await commands.finance.listCurrencies();
+      const newCurr = {
+        code: data.code,
+        name: data.name,
+        symbol: data.symbol,
+        symbol_position: data.symbol_position || "after",
+        decimal_places: data.decimal_places || 2,
+        exchange_rate: Number(data.exchange_rate) || 1.0,
+        is_base: !!data.is_base
+      };
+      if (newCurr.is_base) {
+        currencies.forEach(c => c.is_base = false);
+      }
+      currencies.push(newCurr as any);
+      window.localStorage.setItem("orbis_currencies", JSON.stringify(currencies));
+      return newCurr as any;
+    },
+    updateCurrency: async (orgId, code, data) => {
+      if (typeof window === "undefined") return {} as any;
+      const currencies = await commands.finance.listCurrencies();
+      const target = currencies.find(c => c.code === code);
+      if (target) {
+        if (data.exchange_rate !== undefined) target.exchange_rate = Number(data.exchange_rate);
+        window.localStorage.setItem("orbis_currencies", JSON.stringify(currencies));
+        return target;
+      }
+      throw new Error("Currency not found");
+    },
+    deleteCurrency: async (orgId, code) => {
+      if (typeof window === "undefined") return;
+      let currencies = await commands.finance.listCurrencies();
+      currencies = currencies.filter(c => c.code !== code);
+      window.localStorage.setItem("orbis_currencies", JSON.stringify(currencies));
+    },
+    seedDefaultFinancials: async (orgId) => {
+      return;
+    },
 
     listJournalEntries: () => cmd("list_journal_entries"),
   },
@@ -148,17 +204,17 @@ export const commands: OrbisCommands = {
   // SCHEDULING
   // ═══════════════════════════════════════════════════════════════
   scheduling: {
-    listTimeSlots: (cycleId) => cmd("list_time_slots", { cycleId }),
+    listTimeSlots: (orgId, cycleId) => cmd("list_time_slots", { orgId, cycleId }),
     createTimeSlot: (data) => cmd("create_time_slot", { data }),
     updateTimeSlot: (slotId, data) => cmd("update_time_slot", { slotId, data }),
     deleteTimeSlot: (slotId) => cmd("delete_time_slot", { slotId }),
 
-    listLessonsByClass: (cycleId, classId) => cmd("list_lessons_by_class", { cycleId, classId }),
-    listLessonsByTeacher: (cycleId, teacherId) => cmd("list_lessons_by_teacher", { cycleId, teacherId }),
+    listLessonsByClass: (orgId, cycleId, classId) => cmd("list_lessons_by_class", { orgId, cycleId, classId }),
+    listLessonsByTeacher: (orgId, cycleId, teacherId) => cmd("list_lessons_by_teacher", { orgId, cycleId, teacherId }),
     createLesson: (data) => cmd("create_lesson", { data }),
     updateLesson: (lessonId, data) => cmd("update_lesson", { lessonId, data }),
     deleteLesson: (lessonId) => cmd("delete_lesson", { lessonId }),
-    checkConflicts: (cycleId, teacherId, timeSlotId, dayOfWeek, roomId?) => cmd("check_schedule_conflicts", { cycleId, teacherId, timeSlotId, dayOfWeek, roomId }),
+    checkConflicts: (orgId, cycleId, teacherId, timeSlotId, dayOfWeek, roomId?) => cmd("check_schedule_conflicts", { orgId, cycleId, teacherId, timeSlotId, dayOfWeek, roomId }),
 
     listRooms: (orgId) => cmd("list_rooms", { orgId }),
     createRoom: (data) => cmd("create_room", { data }),
@@ -192,6 +248,48 @@ export const commands: OrbisCommands = {
 
     listSeating: (examSubjectId) => cmd("list_seating_numbers", { examSubjectId }),
     generateOrdering: (sessionId) => cmd("generate_exam_ordering", { sessionId }),
+    getOrdering: async (orgId, cycleId) => {
+      const stored = typeof window !== "undefined" ? window.localStorage.getItem(`orbis_exam_ordering_${cycleId}`) : null;
+      if (stored) {
+        try { return JSON.parse(stored); } catch {}
+      }
+      return [];
+    },
+    rebuildOrdering: async (orgId, cycleId, strategy) => {
+      if (typeof window === "undefined") return [];
+      const enrollments = await commands.academic.listEnrollments(orgId);
+      const classes = await commands.academic.listClasses(orgId, cycleId);
+      const classMap = new Map(classes.map(c => [c.id, c.name_ar || c.name]));
+      
+      const students = enrollments.map(e => ({
+        id: e.id,
+        student_id: e.student_id,
+        student_name_ar: e.full_name || e.name_ar || "طالب",
+        student_name_en: e.name_en || "Student",
+        academic_number: e.student_number || e.id,
+        class_name: classMap.get(e.class_id) || "الصف",
+        status: e.status || "active"
+      }));
+
+      if (strategy === "alphabetical_ar") {
+        students.sort((a, b) => a.student_name_ar.localeCompare(b.student_name_ar, "ar"));
+      } else if (strategy === "alphabetical_en") {
+        students.sort((a, b) => a.student_name_en.localeCompare(b.student_name_en, "en"));
+      }
+      
+      const ordered = students.map((s, idx) => ({
+        ...s,
+        ordinal: idx + 1
+      }));
+
+      window.localStorage.setItem(`orbis_exam_ordering_${cycleId}`, JSON.stringify(ordered));
+      return ordered;
+    },
+    freezeOrdering: async (orgId, cycleId, userId) => {
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(`orbis_exam_ordering_frozen_${cycleId}`, "true");
+      }
+    },
   },
 
   // ═══════════════════════════════════════════════════════════════
@@ -323,4 +421,36 @@ export const commands: OrbisCommands = {
   docforge: {
     previewDocumentTemplate: (templateJson, contextJson) => cmd("preview_document_template", { templateJson, contextJson }),
   },
+  permissions: {
+    getRolePermissions: async () => {
+      const stored = typeof window !== "undefined" ? window.localStorage.getItem("orbis_role_permissions") : null;
+      if (stored) {
+        try { return JSON.parse(stored); } catch {}
+      }
+      return [
+        { role: "super_admin", document_type: "*", level: 3, only_if_creator: false, actions: ["*"] },
+        { role: "admin", document_type: "*", level: 2, only_if_creator: false, actions: ["read", "write"] },
+        { role: "teacher", document_type: "student", level: 1, only_if_creator: false, actions: ["read"] },
+        { role: "teacher", document_type: "grades", level: 1, only_if_creator: false, actions: ["read", "write"] },
+        { role: "accountant", document_type: "finance", level: 2, only_if_creator: false, actions: ["*"] }
+      ];
+    },
+    saveRolePermissions: async (role, rules) => {
+      if (typeof window === "undefined") return;
+      const stored = window.localStorage.getItem("orbis_role_permissions");
+      let allRules: any[] = [];
+      if (stored) {
+        try { allRules = JSON.parse(stored); } catch {}
+      }
+      allRules = allRules.filter(r => r.role !== role).concat(rules);
+      window.localStorage.setItem("orbis_role_permissions", JSON.stringify(allRules));
+    }
+  },
+  bulkImport: {
+    createStudents: (orgId, data) => commands.platform.importStudents(orgId, data),
+    createGrades: (orgId, data) => commands.platform.importGrades(orgId, data),
+  },
+  auditLogs: {
+    getAll: (orgId) => commands.platform.listAuditLogs(orgId),
+  }
 };

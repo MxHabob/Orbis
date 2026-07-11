@@ -54,6 +54,9 @@ export { type ExamCommands } from "./commands/exam";
 export { type IAMCommands } from "./commands/iam";
 export { type OrganizationCommands } from "./commands/organization";
 export { type DocforgeCommands } from "./commands/docforge";
+export { type PermissionsCommands, type PermissionRule } from "./commands/permissions";
+export { type BulkImportCommands } from "./commands/bulkImport";
+export { type AuditLogsCommands } from "./commands/auditLogs";
 
 // ── Errors ──────────────────────────────────────────────────────
 export { OrbisError, extractErrorMessage } from "./errors";

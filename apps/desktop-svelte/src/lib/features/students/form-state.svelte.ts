@@ -202,7 +202,7 @@ export class StudentFormState {
       if (this.isEditMode && this.studentId) {
         let originalStudent: any = null;
         try {
-          originalStudent = await commands.academic.getEnrollment(this.studentId);
+          originalStudent = await commands.academic.getEnrollment(this.orgId, this.studentId);
         } catch (err) {
           console.error("Failed to load student by ID from backend:", err);
         }

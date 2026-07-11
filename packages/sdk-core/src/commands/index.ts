@@ -14,6 +14,9 @@ import type { IAMCommands } from "./iam";
 import type { OrganizationCommands } from "./organization";
 import type { PlatformCommands } from "./platform";
 import type { DocforgeCommands } from "./docforge";
+import type { PermissionsCommands } from "./permissions";
+import type { BulkImportCommands } from "./bulkImport";
+import type { AuditLogsCommands } from "./auditLogs";
 
 export interface OrbisCommands {
   academic: AcademicCommands;
@@ -25,6 +28,9 @@ export interface OrbisCommands {
   organization: OrganizationCommands;
   platform: PlatformCommands;
   docforge: DocforgeCommands;
+  permissions: PermissionsCommands;
+  bulkImport: BulkImportCommands;
+  auditLogs: AuditLogsCommands;
 }
 
 export type { AcademicCommands } from "./academic";
@@ -36,3 +42,6 @@ export type { IAMCommands } from "./iam";
 export type { OrganizationCommands } from "./organization";
 export type { PlatformCommands } from "./platform";
 export type { DocforgeCommands } from "./docforge";
+export type { PermissionsCommands } from "./permissions";
+export type { BulkImportCommands } from "./bulkImport";
+export type { AuditLogsCommands } from "./auditLogs";

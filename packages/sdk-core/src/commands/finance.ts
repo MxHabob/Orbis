@@ -15,8 +15,9 @@ export interface FinanceCommands {
   createTreasury(data: { name: string; name_ar?: string; item_type: string; ledger_account_id: string; currency: string }): Promise<Treasury>;
 
   // ── Fee Templates ───────────────────────────────────────────
-  listFeeTemplates(): Promise<FeeTemplate[]>;
-  listActiveFeeTemplates(): Promise<FeeTemplate[]>;
+  listFeeTemplates(orgId: string): Promise<FeeTemplate[]>;
+  getFeeTemplates(orgId: string): Promise<FeeTemplate[]>;
+  listActiveFeeTemplates(orgId: string): Promise<FeeTemplate[]>;
   createFeeTemplate(data: { name: string; name_ar?: string; category: string; default_amount: number; revenue_account_id: string; receivable_account_id: string; frequency: string; is_mandatory: boolean }): Promise<FeeTemplate>;
   updateFeeTemplate(templateId: string, data: { name?: string; default_amount?: number; is_active?: boolean }): Promise<FeeTemplate>;
   deleteFeeTemplate(templateId: string): Promise<void>;
@@ -31,12 +32,17 @@ export interface FinanceCommands {
   recordPayment(data: { fee_id?: string; enrollment_id?: string; account_id: string; amount: number; currency: string; exchange_rate: number; method: string; treasury_id?: string; payer_name?: string; notes?: string }): Promise<Payment>;
 
   // ── Discounts ───────────────────────────────────────────────
-  listDiscountTemplates(): Promise<DiscountTemplate[]>;
+  listDiscountTemplates(orgId: string): Promise<DiscountTemplate[]>;
+  getDiscountTemplates(orgId: string): Promise<DiscountTemplate[]>;
   createDiscountTemplate(data: { name: string; item_type: string; calculation_method: string; value: number; requires_approval: boolean }): Promise<DiscountTemplate>;
 
   // ── Currencies ──────────────────────────────────────────────
   listCurrencies(): Promise<Currency[]>;
-  createCurrency(data: { code: string; name: string; symbol: string; symbol_position: string; decimal_places: number; exchange_rate: number; is_base: boolean }): Promise<Currency>;
+  getCurrencies(orgId: string): Promise<Currency[]>;
+  createCurrency(data: { code: string; name: string; symbol: string; symbol_position: string; decimal_places: number; exchange_rate: number; is_base: boolean | number }): Promise<Currency>;
+  updateCurrency(orgId: string, code: string, data: { exchange_rate: number }): Promise<Currency>;
+  deleteCurrency(orgId: string, code: string): Promise<void>;
+  seedDefaultFinancials(orgId: string): Promise<void>;
 
   // ── Journal ─────────────────────────────────────────────────
   listJournalEntries(): Promise<JournalEntry[]>;

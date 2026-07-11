@@ -47,6 +47,7 @@ import { academicContext } from "$lib/stores";
 
 const orgId = $derived(page.params.orgId);
 const classId = $derived(page.params.classId);
+const cycleId = $derived(academicContext.effectiveCycleId);
 const rtl = $derived(getLocale() === "ar");
 
 // ── TanStack Queries ──────────────────────────────────────────────────────────
@@ -66,16 +67,9 @@ const classSubjectsQuery = createQuery({
 
 const assessmentsQuery = createQuery({
   queryKey: ["assessments", classId, cycleId],
-  queryFn: () => commands.assessment.listAssessments(cycleId || "").catch(() => []),
-  enabled: !!classId && !!cycleId,
+  queryFn: () => commands.assessment.listAssessments(orgId, cycleId || "").catch(() => []),
+  enabled: !!classId && !!cycleId && !!orgId,
   staleTime: 5 * 60 * 1000,
-});
-
-const gradesQuery = createQuery({
-  queryKey: ["grades", classId, cycleId],
-  queryFn: () => commands.assessment.listGrades(cycleId || "").catch(() => []),
-  enabled: !!classId && !!cycleId,
-  staleTime: 2 * 60 * 1000,
 });
 
 // Dynamic class attendance analytics
@@ -159,7 +153,7 @@ $effect(() => {
   }
 });
 
-const cycleId = $derived(academicContext.effectiveCycleId);
+
 
 const gradeMatrixQuery = createQuery({
   queryKey: ["grade-matrix", orgId, cycleId, classId, selectedSubjectId],
