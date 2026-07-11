@@ -11,7 +11,7 @@
 //!
 //! If any step fails, ProcessManager compensates all completed steps.
 
-use sea_orm::{ConnectionTrait, EntityTrait, ColumnTrait, QueryFilter, PaginatorTrait};
+use sea_orm::{ActiveModelTrait, ConnectionTrait, EntityTrait, ColumnTrait, QueryFilter, PaginatorTrait};
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
@@ -286,8 +286,7 @@ pub async fn register_student(
 
     // ── Step 7: Assign Mandatory Fees ────────────────────────────
     process.begin_step("assign_fees")?;
-    let org_settings = ctx.settings.get_org_settings(&ctx.org_id).await?;
-    let fees_assigned = if org_settings.finance.auto_assign_fees {
+    let fees_assigned = if settings.auto_assign_fees {
         match ctx.fee_assigner.assign_mandatory_fees(&ctx.org_id, &enrollment_id, &class_id).await {
             Ok(ids) => ids.len(),
             Err(e) => {

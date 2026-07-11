@@ -35,19 +35,83 @@ impl PlatformServices {
         use domain_finance::ops::fee_assigner::FinanceFeeAssigner;
         use infra_integration::notification_sender::LogNotificationSender;
 
+        // Build reactive pipeline with analyzers
+        let mut reactive = shared_kernel::reactive::ReactivePipeline::new();
+        reactive.register(Arc::new(
+            domain_assessment::ops::at_risk_predictor::AtRiskPredictor::new(),
+        ));
+
+        let db_for_store = db.clone();
+
         Self {
             permissions: Arc::new(IamPermissionChecker::new(db.clone())),
             audit: Arc::new(DbAuditLogger::new(db.clone())),
             settings: Arc::new(OrgSettingsProvider::new(db.clone())),
             policy: Arc::new(OrgPolicyEngine::new(db.clone())),
             notifier: Arc::new(LogNotificationSender::new()),
-            fee_assigner: Arc::new(FinanceFeeAssigner::new(db.clone())),
+            fee_assigner: Arc::new(FinanceFeeAssigner::new(db)),
             event_bus,
-            event_store: Arc::new(shared_kernel::event_store::EventStore::new(db)),
-            reactive: Arc::new(shared_kernel::reactive::ReactivePipeline::new()),
+            event_store: Arc::new(shared_kernel::event_store::EventStore::new(db_for_store)),
+            reactive: Arc::new(reactive),
             plugins: Arc::new(shared_kernel::plugin::PluginRegistry::new()),
         }
     }
+
+    /// Start the background event subscriber loop.
+    ///
+    /// Subscribes to EventBus and feeds every event through:
+    ///   1. ReactivePipeline (analyzers → DetectedInsight)
+    ///   2. PluginRegistry (plugins react to events)
+    ///   3. Insights are logged (future: persisted to ai_insight table)
+    pub fn start_event_loop(self: &Arc<Self>) {
+        let platform = Arc::clone(self);
+        let mut rx = platform.event_bus.subscribe();
+
+        tokio::spawn(async move {
+            tracing::info!("Event loop started — listening for domain events");
+            loop {
+                match rx.recv().await {
+                    Ok(event) => {
+                        // Skip events that are too deep in the chain
+                        if event.is_chain_too_deep() {
+                            tracing::warn!(
+                                event_type = %event.event_type,
+                                depth = event.chain_depth,
+                                "Event chain too deep — skipping"
+                            );
+                            continue;
+                        }
+
+                        let org_id = &event.org_id;
+
+                        // 1. Run through reactive pipeline (produces insights)
+                        let db = platform.event_store.db();
+                        let insights = platform.reactive.process(db, org_id, &event).await;
+                        if !insights.is_empty() {
+                            tracing::info!(
+                                event = %event.event_type,
+                                insights = insights.len(),
+                                "Reactive pipeline produced insights"
+                            );
+                            // TODO: persist insights to ai_insight table
+                        }
+
+                        // 2. Notify plugins
+                        platform.plugins.dispatch(db, org_id, &event).await;
+                    }
+                    Err(tokio::sync::broadcast::error::RecvError::Lagged(n)) => {
+                        tracing::warn!(missed = n, "Event subscriber lagged — missed events");
+                    }
+                    Err(tokio::sync::broadcast::error::RecvError::Closed) => {
+                        tracing::info!("Event bus closed — stopping event loop");
+                        break;
+                    }
+                }
+            }
+        });
+    }
+
+
 
     /// Create a `ServiceContext` for a specific request.
     pub fn context_for(&self, db: DatabaseConnection, org_id: &str, actor: Actor) -> ServiceContext {
@@ -92,6 +156,9 @@ impl AppState {
         let db = provider.active_db().await;
         let event_bus = Arc::new(EventBus::new());
         let platform = Arc::new(PlatformServices::new(db, event_bus));
+        
+        // Start background event loop (reactive pipeline + plugins)
+        platform.start_event_loop();
         
         Ok(Self { provider, config, platform })
     }

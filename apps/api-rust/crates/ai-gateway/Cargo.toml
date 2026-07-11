@@ -9,20 +9,20 @@ description = "Orbis AI Gateway — unified interface for AI agents with action 
 shared-kernel = { workspace = true }
 
 # Domain crates (for action registration)
-domain-iam = { path = "../domain-iam" }
-domain-lifecycle = { path = "../domain-lifecycle" }
-domain-academic = { path = "../domain-academic" }
-domain-assessment = { path = "../domain-assessment" }
-domain-scheduling = { path = "../domain-scheduling" }
-domain-finance = { path = "../domain-finance" }
-domain-exam = { path = "../domain-exam" }
+domain-iam = { workspace = true }
+domain-lifecycle = { workspace = true }
+domain-academic = { workspace = true }
+domain-assessment = { workspace = true }
+domain-scheduling = { workspace = true }
+domain-finance = { workspace = true }
+domain-exam = { workspace = true }
 
 # Orchestration
-autopilot = { path = "../autopilot" }
+autopilot = { workspace = true }
 
 # Infrastructure
 infra-persistence = { workspace = true }
-infra-integration = { path = "../infra-integration" }
+infra-integration = { workspace = true }
 
 # Database
 sea-orm = { workspace = true }

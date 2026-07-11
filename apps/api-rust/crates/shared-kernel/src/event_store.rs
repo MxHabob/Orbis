@@ -43,6 +43,11 @@ impl EventStore {
         Self { db }
     }
 
+    /// Get a reference to the database connection.
+    pub fn db(&self) -> &DatabaseConnection {
+        &self.db
+    }
+
     /// Append a new event for an aggregate.
     ///
     /// The `version` is auto-incremented per aggregate (aggregate_type + aggregate_id).

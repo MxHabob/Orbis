@@ -797,6 +797,7 @@ dependencies = [
 name = "domain-assessment"
 version = "2.0.0"
 dependencies = [
+ "async-trait",
  "chrono",
  "domain-academic",
  "domain-iam",

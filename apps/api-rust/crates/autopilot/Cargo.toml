@@ -9,11 +9,11 @@ description = "Orbis Autopilot Engine — automated lifecycle management with 3 
 shared-kernel = { workspace = true }
 
 # Domain crates (read-only access for evaluation)
-domain-lifecycle = { path = "../domain-lifecycle" }
-domain-academic = { path = "../domain-academic" }
-domain-assessment = { path = "../domain-assessment" }
-domain-finance = { path = "../domain-finance" }
-domain-iam = { path = "../domain-iam" }
+domain-lifecycle = { workspace = true }
+domain-academic = { workspace = true }
+domain-assessment = { workspace = true }
+domain-finance = { workspace = true }
+domain-iam = { workspace = true }
 
 # Infrastructure
 infra-persistence = { workspace = true }
