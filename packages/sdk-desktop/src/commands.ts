@@ -114,7 +114,7 @@ export const commands: OrbisCommands = {
   // FINANCE
   // ═══════════════════════════════════════════════════════════════
   finance: {
-    listLedgerAccounts: () => cmd("list_ledger_accounts"),
+    listLedgerAccounts: (orgId) => cmd("list_ledger_accounts", { orgId }),
     listTransactionAccounts: () => cmd("list_transaction_accounts"),
     createLedgerAccount: (data) => cmd("create_ledger_account", { data }),
     getAccountStatement: (accountId, startDate?, endDate?) => cmd("get_account_statement", { accountId, startDate, endDate }),
@@ -159,7 +159,7 @@ export const commands: OrbisCommands = {
     deleteLesson: (lessonId) => cmd("delete_lesson", { lessonId }),
     checkConflicts: (cycleId, teacherId, timeSlotId, dayOfWeek, roomId?) => cmd("check_schedule_conflicts", { cycleId, teacherId, timeSlotId, dayOfWeek, roomId }),
 
-    listRooms: () => cmd("list_rooms"),
+    listRooms: (orgId) => cmd("list_rooms", { orgId }),
     createRoom: (data) => cmd("create_room", { data }),
     updateRoom: (roomId, data) => cmd("update_room", { roomId, data }),
     deleteRoom: (roomId) => cmd("delete_room", { roomId }),
@@ -205,7 +205,7 @@ export const commands: OrbisCommands = {
     listUsers: (role?, status?) => cmd("list_users", { role, status }),
     getUser: (userId) => cmd("get_user", { userId }),
     searchUsers: (query) => cmd("search_users", { query }),
-    createUser: (data) => cmd("create_user", { data }),
+    createUser: (orgId, createdBy, data) => cmd("create_user", { orgId, data }),
     updateUser: (userId, data) => cmd("update_user", { userId, data }),
     deleteUser: (userId) => cmd("delete_user", { userId }),
 

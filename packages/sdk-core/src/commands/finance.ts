@@ -5,7 +5,7 @@ import type { Payment, StudentFee, FeeTemplate, Treasury, DiscountTemplate, Ledg
 
 export interface FinanceCommands {
   // ── Ledger ──────────────────────────────────────────────────
-  listLedgerAccounts(): Promise<LedgerAccount[]>;
+  listLedgerAccounts(orgId: string): Promise<LedgerAccount[]>;
   listTransactionAccounts(): Promise<LedgerAccount[]>;
   createLedgerAccount(data: { name: string; name_ar?: string; code: string; item_type: string; currency: string; parent_id?: string }): Promise<LedgerAccount>;
   getAccountStatement(accountId: string, startDate?: string, endDate?: string): Promise<JournalEntry[]>;

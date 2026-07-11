@@ -19,7 +19,7 @@ export interface SchedulingCommands {
   checkConflicts(cycleId: string, teacherId: string, timeSlotId: string, dayOfWeek: number, roomId?: string): Promise<ScheduledLesson[]>;
 
   // ── Rooms ───────────────────────────────────────────────────
-  listRooms(): Promise<Room[]>;
+  listRooms(orgId: string): Promise<Room[]>;
   createRoom(data: { name: string; name_ar?: string; capacity?: number; room_type: string }): Promise<Room>;
   updateRoom(roomId: string, data: { name?: string; capacity?: number }): Promise<Room>;
   deleteRoom(roomId: string): Promise<void>;

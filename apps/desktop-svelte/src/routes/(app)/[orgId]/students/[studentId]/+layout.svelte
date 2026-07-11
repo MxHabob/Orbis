@@ -49,7 +49,6 @@ const studentId = $derived(page.params.studentId || "");
 const enrollmentsQuery = createEnrollmentsQuery(orgId);
 const classesQuery = createClassesQuery(orgId);
 
-// Find active student in query data
 const student = $derived(
   $enrollmentsQuery.data?.find((s) => s.id === studentId),
 );

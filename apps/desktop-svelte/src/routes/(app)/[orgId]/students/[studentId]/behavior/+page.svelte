@@ -48,7 +48,7 @@ async function handleAISummarize() {
   isGeneratingAI = true;
   aiSummary = null;
   try {
-    const aiRes = await commands.assessment.submitBehavior(orgId, {
+    const aiRes = await commands.assessment.submitBehavior(orgId || "", {
       enrollment_id: studentId,
       org_id: orgId,
     });

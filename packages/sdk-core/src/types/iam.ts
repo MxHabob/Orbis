@@ -21,6 +21,7 @@ export interface User {
   is_deleted: number;
   created_at: string;
   updated_at: string;
+  role?: string;
 }
 
 export interface UserRole {
@@ -44,6 +45,13 @@ export interface UserSession {
   expires_at: string;
   last_activity_at: string;
   created_at: string;
+  is_current?: number;
+  last_active_at?: string | null;
+  ip_address?: string | null;
+  device_type?: string | null;
+  user_agent?: string | null;
+  browser?: string | null;
+  os?: string | null;
 }
 
 export interface Permission {

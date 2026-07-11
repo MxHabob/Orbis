@@ -24,6 +24,7 @@ import { createEnrollmentsQuery } from "$lib/features/students";
 import { createClassesQuery } from "$lib/features/academics";
 import { commands, extractErrorMessage } from "$lib/core/ipc";
 import { queryClient } from "$lib/core/query/client";
+import { academicContext } from "$lib/stores";
 
 const orgId = $derived(page.params.orgId || "");
 const studentId = $derived(page.params.studentId || ""); // Enrollment ID
@@ -128,16 +129,17 @@ let behaviorRecords = $state<any[]>([]);
 onMount(async () => {
   evaluationLoading = true;
   try {
-    const [gRes, aRes, bRes] = await Promise.all([
-      commands.grades.getReportCard(studentId).catch(() => null),
-      commands.attendance.getReport(studentId).catch(() => null),
-      commands.behavior
-        .getRecords(orgId, { enrollment_id: studentId })
-        .catch(() => []),
-    ]);
-    gradesReport = gRes;
-    attendanceReport = aRes;
-    behaviorRecords = bRes;
+    const cycleId = academicContext.effectiveCycleId || student?.cycle_id || "";
+    if (cycleId && studentId) {
+      const [gRes, aRes, bRes] = await Promise.all([
+        commands.assessment.getReportCard(studentId, cycleId).catch(() => null),
+        commands.assessment.getAttendanceReport(cycleId, studentId).catch(() => null),
+        commands.assessment.listBehavior(orgId, studentId).catch(() => []),
+      ]);
+      gradesReport = gRes;
+      attendanceReport = aRes;
+      behaviorRecords = bRes;
+    }
   } catch (e) {
     console.error("Failed to load evaluation reports:", e);
   } finally {
@@ -272,8 +274,8 @@ async function saveStudentDetails(e: Event) {
   isSaving = true;
   try {
     // 1. Verify parent control account '110301' exists in chart of accounts
-    const accounts = await commands.finance.getLedgerAccounts(orgId);
-    const hasControlAccount = accounts.some((acc) => acc.code === "110301");
+    const accounts = await commands.finance.listLedgerAccounts(orgId);
+    const hasControlAccount = accounts.some((acc: any) => acc.code === "110301");
     if (!hasControlAccount) {
       toast.error(m.form_error_control_account_missing());
       isSaving = false;

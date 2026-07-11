@@ -14,8 +14,8 @@ export interface IAMCommands {
   listUsers(role?: string, status?: string): Promise<User[]>;
   getUser(userId: string): Promise<User>;
   searchUsers(query: string): Promise<User[]>;
-  createUser(data: { full_name: string; name_ar?: string; email?: string; phone?: string; primary_role: string; password_hash?: string }): Promise<User>;
-  updateUser(userId: string, data: { full_name?: string; name_ar?: string; email?: string; phone?: string; status?: string }): Promise<User>;
+  createUser(orgId: string, createdBy: string, data: any): Promise<User>;
+  updateUser(userId: string, data: any): Promise<User>;
   deleteUser(userId: string): Promise<void>;
 
   // ── Roles ───────────────────────────────────────────────────

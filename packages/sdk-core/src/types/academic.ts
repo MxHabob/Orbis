@@ -73,6 +73,18 @@ export interface Enrollment {
   meta?: string | null;
   created_at: string;
   updated_at: string;
+  name_ar?: string | null;
+  name_en?: string | null;
+  full_name?: string | null;
+  avatar?: string | null;
+  birth_date?: string | null;
+  sex?: string | null;
+  email?: string | null;
+  phone_number?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  guardian_name?: string | null;
+  guardian_phone?: string | null;
 }
 
 export interface Subject {
