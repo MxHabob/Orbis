@@ -36,9 +36,7 @@ async function loadBehavior() {
   isLoading = true;
   try {
     if (!orgId || !studentId) return;
-    records = await commands.behavior.getRecords(orgId, {
-      enrollment_id: studentId,
-    });
+    records = await commands.assessment.listBehavior(orgId, studentId);
   } catch (e) {
     console.error(e);
   } finally {
@@ -50,7 +48,7 @@ async function handleAISummarize() {
   isGeneratingAI = true;
   aiSummary = null;
   try {
-    const aiRes = await commands.behavior.submitAI({
+    const aiRes = await commands.assessment.submitBehavior(orgId, {
       enrollment_id: studentId,
       org_id: orgId,
     });

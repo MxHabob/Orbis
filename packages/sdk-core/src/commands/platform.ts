@@ -41,12 +41,12 @@ export interface PlatformCommands {
   // ── Document Templates ────────────────────────────────────────
   listDocumentTemplates(orgId: string, params?: Record<string, unknown>): Promise<DocumentTemplate[]>;
   getDocumentTemplate(orgId: string, templateId: string): Promise<DocumentTemplate>;
-  createDocumentTemplate(orgId: string, name: string, nameAr?: string, body?: string): Promise<DocumentTemplate>;
+  createDocumentTemplate(orgId: string, userId: string, data: any): Promise<DocumentTemplate>;
   deleteDocumentTemplate(orgId: string, templateId: string): Promise<void>;
   publishDocumentTemplate(orgId: string, templateId: string, userId: string): Promise<void>;
   archiveDocumentTemplate(orgId: string, templateId: string): Promise<void>;
   restoreDocumentTemplate(orgId: string, templateId: string): Promise<void>;
-  updateDocumentTemplate(orgId: string, templateId: string, name?: string, nameAr?: string, body?: string): Promise<DocumentTemplate>;
+  updateDocumentTemplate(orgId: string, templateId: string, userId: string, data: any): Promise<DocumentTemplate>;
 
   // ── AI Autopilot ──────────────────────────────────────────────
   getAutopilotStatus(orgId: string): Promise<AutopilotStatus>;

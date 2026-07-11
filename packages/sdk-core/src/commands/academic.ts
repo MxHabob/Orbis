@@ -30,8 +30,8 @@ export interface AcademicCommands {
   listEnrollments(orgId: string, classId?: string, cycleId?: string): Promise<Enrollment[]>;
   getEnrollment(enrollmentId: string): Promise<Enrollment>;
   createEnrollment(data: { org_id: string; cycle_id: string; student_id: string; class_id: string; student_number: string }): Promise<Enrollment>;
-  withdrawEnrollment(enrollmentId: string, reason: string): Promise<Enrollment>;
-  transferEnrollment(enrollmentId: string, newClassId: string): Promise<Enrollment>;
+  withdrawEnrollment(orgId: string, enrollmentId: string, reason: string): Promise<Enrollment>;
+  transferEnrollment(orgId: string, enrollmentId: string, newClassId: string): Promise<Enrollment>;
   checkDuplicate(studentId: string, cycleId: string): Promise<Enrollment | null>;
 
   // ── Class-Subject ───────────────────────────────────────────
@@ -58,8 +58,8 @@ export interface AcademicCommands {
 
   // ── Documents ───────────────────────────────────────────────
   listDocuments(ownerId?: string): Promise<Document[]>;
-  createDocument(data: { org_id: string; owner_id: string; name: string; title?: string; item_type: string; url?: string }): Promise<Document>;
-  deleteDocument(documentId: string): Promise<void>;
+  createDocument(data: any): Promise<Document>;
+  deleteDocument(orgId: string, documentId: string): Promise<void>;
 
   // ── Notifications ───────────────────────────────────────────
   listNotifications(limit?: number): Promise<Notification[]>;

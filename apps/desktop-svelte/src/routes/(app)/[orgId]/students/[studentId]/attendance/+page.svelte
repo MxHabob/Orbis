@@ -14,7 +14,11 @@ import { formatNumber, formatPercent, formatDate } from "$lib/core/i18n";
 import { DataTable } from "$lib/tables";
 import { studentAttendance as saDef, withIndex } from "$lib/tables/definitions";
 
+import { academicContext } from "$lib/stores";
+
 const studentId = $derived(page.params.studentId || "");
+const orgId = $derived(page.params.orgId || "");
+const cycleId = $derived(academicContext.effectiveCycleId || "");
 
 let report = $state<any>(null);
 let isLoading = $state(true);
@@ -24,7 +28,12 @@ onMount(() => loadAttendance());
 async function loadAttendance() {
   isLoading = true;
   try {
-    report = await commands.attendance.getReport(studentId);
+    if (!orgId || !studentId || !cycleId) return;
+    const enrollments = await commands.academic.listEnrollments(orgId, undefined, cycleId);
+    const activeEnrollment = enrollments.find((e) => e.student_id === studentId);
+    if (activeEnrollment) {
+      report = await commands.assessment.getAttendanceReport(cycleId, activeEnrollment.id);
+    }
   } catch (e) {
     console.error(e);
   } finally {

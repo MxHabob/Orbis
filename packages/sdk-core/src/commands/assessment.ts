@@ -19,9 +19,10 @@ export interface AssessmentCommands {
   getAttendanceReport(cycleId: string, enrollmentId: string): Promise<AttendanceReport>;
 
   // ── Behavior ────────────────────────────────────────────────
-  listBehavior(cycleId: string, enrollmentId?: string): Promise<BehaviorRecord[]>;
-  updateBehavior(recordId: string, data: { action_taken?: string; status?: string; resolution_notes?: string }): Promise<BehaviorRecord>;
-  deleteBehavior(recordId: string): Promise<void>;
+  listBehavior(orgId: string, studentId: string): Promise<BehaviorRecord[]>;
+  updateBehavior(orgId: string, recordId: string, data: { action_taken?: string; status?: string; resolution_notes?: string }): Promise<BehaviorRecord>;
+  deleteBehavior(orgId: string, recordId: string): Promise<void>;
+  submitBehavior(orgId: string, data: any): Promise<any>;
 
   // ── Assessments ─────────────────────────────────────────────
   listAssessments(cycleId: string, classSubjectId?: string): Promise<Assessment[]>;

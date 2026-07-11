@@ -52,8 +52,8 @@ export const commands: OrbisCommands = {
     listEnrollments: (orgId, classId?, cycleId?) => cmd("list_enrollments", { orgId, classId, cycleId }),
     getEnrollment: (enrollmentId) => cmd("get_enrollment", { enrollmentId }),
     createEnrollment: (data) => cmd("create_enrollment", { data }),
-    withdrawEnrollment: (enrollmentId, reason) => cmd("withdraw_enrollment", { enrollmentId, reason }),
-    transferEnrollment: (enrollmentId, newClassId) => cmd("transfer_enrollment", { enrollmentId, newClassId }),
+    withdrawEnrollment: (orgId, enrollmentId, reason) => cmd("withdraw_enrollment", { orgId, enrollmentId, reason }),
+    transferEnrollment: (orgId, enrollmentId, newClassId) => cmd("transfer_enrollment", { orgId, enrollmentId, newClassId }),
     checkDuplicate: (studentId, cycleId) => cmd("check_duplicate_enrollment", { studentId, cycleId }),
 
     listClassSubjects: (classId, cycleId) => cmd("list_class_subjects", { classId, cycleId }),
@@ -76,8 +76,8 @@ export const commands: OrbisCommands = {
     searchGuardians: (query) => cmd("search_guardians", { query }),
 
     listDocuments: (ownerId?) => cmd("list_documents", { ownerId }),
-    createDocument: (data) => cmd("create_document", { data }),
-    deleteDocument: (documentId) => cmd("delete_document", { documentId }),
+    createDocument: (data) => cmd("create_document", { orgId: data.orgId || data.org_id, data: { owner_id: data.ownerId || data.owner_id, name: data.name, item_type: data.item_type || data.type || "file", key: data.url || data.key || `doc_${Date.now()}` } }),
+    deleteDocument: (orgId, documentId) => cmd("delete_document", { orgId, documentId }),
 
     listNotifications: (limit?) => cmd("list_notifications", { limit }),
     markNotificationRead: (notificationId) => cmd("mark_notification_read", { notificationId }),
@@ -99,9 +99,10 @@ export const commands: OrbisCommands = {
     recordBulkAttendance: (cycleId, data) => cmd("record_bulk_attendance", { cycleId, data }),
     getAttendanceReport: (cycleId, enrollmentId) => cmd("get_attendance_report", { cycleId, enrollmentId }),
 
-    listBehavior: (cycleId, enrollmentId?) => cmd("list_behavior", { cycleId, enrollmentId }),
-    updateBehavior: (recordId, data) => cmd("update_behavior", { recordId, data }),
-    deleteBehavior: (recordId) => cmd("delete_behavior", { recordId }),
+    listBehavior: (orgId, studentId) => cmd("list_behavior", { orgId, studentId }),
+    updateBehavior: (orgId, recordId, data) => cmd("update_behavior", { orgId, recordId, data }),
+    deleteBehavior: (orgId, recordId) => cmd("delete_behavior", { orgId, recordId }),
+    submitBehavior: (orgId, data) => cmd("submit_behavior", { orgId, data }),
 
     listAssessments: (cycleId, classSubjectId?) => cmd("list_assessments", { cycleId, classSubjectId }),
     createAssessment: (data) => cmd("create_assessment", { data }),
@@ -259,12 +260,12 @@ export const commands: OrbisCommands = {
     // Document Templates
     listDocumentTemplates: (orgId, params?) => cmd("get_document_templates", { orgId, params }),
     getDocumentTemplate: (orgId, templateId) => cmd("get_document_template", { orgId, templateId }),
-    createDocumentTemplate: (orgId, name, nameAr?, body?) => cmd("create_document_template", { orgId, name, nameAr, body }),
+    createDocumentTemplate: (orgId, userId, data) => cmd("create_document_template", { orgId, data }),
     deleteDocumentTemplate: (orgId, templateId) => cmd("delete_document_template", { orgId, templateId }),
     publishDocumentTemplate: (orgId, templateId, userId) => cmd("publish_document_template", { orgId, templateId, userId }),
     archiveDocumentTemplate: (orgId, templateId) => cmd("archive_document_template", { orgId, templateId }),
     restoreDocumentTemplate: (orgId, templateId) => cmd("restore_document_template", { orgId, templateId }),
-    updateDocumentTemplate: (orgId, templateId, name?, nameAr?, body?) => cmd("update_document_template", { orgId, templateId, name, nameAr, body }),
+    updateDocumentTemplate: (orgId, templateId, userId, data) => cmd("update_document_template", { orgId, templateId, data }),
 
     // AI Autopilot
     getAutopilotStatus: (orgId) => cmd("autopilot_get_status", { orgId }),

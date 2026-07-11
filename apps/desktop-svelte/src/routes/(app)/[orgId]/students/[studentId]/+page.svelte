@@ -300,9 +300,7 @@ async function saveStudentDetails(e: Event) {
 
     // If class has changed, invoke transfer command
     if (student.class_id !== classId) {
-      await commands.academic.transferEnrollment(studentId, {
-        new_class_id: classId,
-      });
+      await commands.academic.transferEnrollment(orgId, studentId, classId);
     }
 
     // Transition enrollment status if it was draft/pending_review and active switch is checked

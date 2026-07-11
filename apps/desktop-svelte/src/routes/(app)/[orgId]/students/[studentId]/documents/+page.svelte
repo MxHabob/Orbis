@@ -78,10 +78,7 @@ async function loadDocuments() {
   error = null;
   try {
     // Fetch real documents for this student
-    documents = await commands.platform.listDocumentsByOwner({
-      orgId,
-      ownerId: studentUserId,
-    });
+    documents = await commands.platform.listDocumentsByOwner(orgId, studentUserId);
   } catch (e) {
     error = e instanceof Error ? e.message : String(e);
   } finally {
@@ -145,7 +142,7 @@ async function handleDelete(docId: string) {
   }
 
   try {
-    await commands.academic.deleteDocument(docId);
+    await commands.academic.deleteDocument(orgId, docId);
     toast.success(m.docs_delete_success());
     await loadDocuments();
   } catch (e: any) {
@@ -173,7 +170,7 @@ async function handleUploadFile() {
 
   try {
     // 1. Soft-delete the placeholder doc
-    await commands.academic.deleteDocument(selectedDoc.id);
+    await commands.academic.deleteDocument(orgId, selectedDoc.id);
 
     // 2. Create new doc entry with file url and details
     const sizeInBytes = uploadFileSize.includes("MB")
