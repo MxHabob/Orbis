@@ -5,6 +5,8 @@ import { commands } from "$lib/core/ipc";
 import DragIndicator from "../components/drag-indicator.svelte";
 import * as m from "$lib/paraglide/messages";
 
+import { academicContext } from "$lib/stores";
+
 let {
   orgId,
   selectedClass = "all",
@@ -25,11 +27,15 @@ let isLoading = $state(true);
 async function loadData() {
   isLoading = true;
   try {
-    const params: any = {};
-    if (selectedClass !== "all") params.class_id = selectedClass;
-    if (selectedTerm !== "all") params.cycle_id = selectedTerm;
+    const classId = selectedClass !== "all" ? selectedClass : "";
+    const cycleId = selectedTerm !== "all" ? selectedTerm : academicContext.effectiveCycleId || "";
 
-    const res = await commands.grades.getAnalytics(orgId, params);
+    if (!classId || !cycleId) {
+      stats = null;
+      return;
+    }
+
+    const res = await commands.assessment.getGradeAnalytics(orgId, classId, cycleId);
     if (
       res &&
       res.grade_distribution &&

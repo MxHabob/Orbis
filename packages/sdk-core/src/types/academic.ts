@@ -177,4 +177,9 @@ export interface Organization {
   is_active: number;
   created_at: string;
   updated_at: string;
+  primary_color?: string | null;
+  date_format?: string | null;
+  hijri_enabled?: number | null;
+  settings?: string | null;
+  logo?: string | null;
 }

@@ -10,10 +10,10 @@ export interface AssessmentCommands {
   submitBulkGrades(cycleId: string, grades: Array<{ enrollment_id: string; subject_name: string; score: number; max_score: number; exam_type: string; semester: string }>): Promise<Grade[]>;
   updateGrade(gradeId: string, data: { score: number; max_score: number; notes?: string; change_reason?: string }): Promise<Grade>;
   getReportCard(enrollmentId: string, cycleId: string): Promise<GradeReportCard>;
-  getGradeAnalytics(cycleId: string, classSubjectId: string): Promise<GradeAnalytics>;
+  getGradeAnalytics(orgId: string, classId: string, cycleId: string): Promise<GradeAnalytics>;
 
   // ── Attendance ──────────────────────────────────────────────
-  listAttendance(cycleId: string, classId?: string, date?: string, enrollmentId?: string): Promise<Attendance[]>;
+  listAttendance(orgId: string, cycleId: string, classId?: string, date?: string, enrollmentId?: string): Promise<Attendance[]>;
   recordAttendance(cycleId: string, data: { enrollment_id: string; class_id: string; date: string; status: string; notes?: string }): Promise<Attendance>;
   recordBulkAttendance(cycleId: string, data: { class_id: string; date: string; period?: string; records: Array<{ enrollment_id: string; status: string; notes?: string }> }): Promise<Attendance[]>;
   getAttendanceReport(cycleId: string, enrollmentId: string): Promise<AttendanceReport>;

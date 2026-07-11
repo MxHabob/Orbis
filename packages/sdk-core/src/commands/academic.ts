@@ -35,8 +35,8 @@ export interface AcademicCommands {
   checkDuplicate(studentId: string, cycleId: string): Promise<Enrollment | null>;
 
   // ── Class-Subject ───────────────────────────────────────────
-  listClassSubjects(classId: string, cycleId: string): Promise<ClassSubject[]>;
-  listTeacherSubjects(teacherId: string, cycleId: string): Promise<ClassSubject[]>;
+  listClassSubjects(orgId: string, classId: string, cycleId?: string): Promise<ClassSubject[]>;
+  listTeacherSubjects(orgId: string, teacherId: string, cycleId?: string): Promise<ClassSubject[]>;
   createClassSubject(data: { class_id: string; subject_id: string; cycle_id: string; primary_teacher_id?: string; weekly_hours?: number }): Promise<ClassSubject>;
   updateClassSubject(id: string, data: { primary_teacher_id?: string; weekly_hours?: number }): Promise<ClassSubject>;
   deleteClassSubject(id: string): Promise<void>;

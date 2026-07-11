@@ -68,10 +68,43 @@ pub async fn record_bulk_attendance(state: State<'_, Arc<AppState>>, org_id: Str
 }
 
 #[tauri::command]
-pub async fn list_attendance(state: State<'_, Arc<AppState>>, org_id: String, class_id: String, date: String) -> CmdResult<serde_json::Value> {
+pub async fn list_attendance(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    cycle_id: Option<String>,
+    class_id: Option<String>,
+    date: Option<String>,
+    enrollment_id: Option<String>,
+) -> CmdResult<serde_json::Value> {
+    use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let r = ops::attendance::list(&ctx, &class_id, &date).await.map_err(CommandError::from)?;
-    Ok(serde_json::to_value(r).unwrap())
+    
+    let mut query = svc_assessment::entities::attendance::Entity::find()
+        .filter(svc_assessment::entities::attendance::Column::OrgId.eq(&org_id));
+
+    if let Some(c_id) = cycle_id {
+        if !c_id.trim().is_empty() {
+            query = query.filter(svc_assessment::entities::attendance::Column::CycleId.eq(c_id));
+        }
+    }
+    if let Some(cl_id) = class_id {
+        if !cl_id.trim().is_empty() {
+            query = query.filter(svc_assessment::entities::attendance::Column::ClassId.eq(cl_id));
+        }
+    }
+    if let Some(dt) = date {
+        if !dt.trim().is_empty() {
+            query = query.filter(svc_assessment::entities::attendance::Column::Date.eq(dt));
+        }
+    }
+    if let Some(e_id) = enrollment_id {
+        if !e_id.trim().is_empty() {
+            query = query.filter(svc_assessment::entities::attendance::Column::EnrollmentId.eq(e_id));
+        }
+    }
+
+    let result = query.all(&ctx.db).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
 }
 
 #[tauri::command]

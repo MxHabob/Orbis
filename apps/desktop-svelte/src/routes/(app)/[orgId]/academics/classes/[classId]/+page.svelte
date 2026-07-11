@@ -58,32 +58,31 @@ const enrollmentsQuery = createQuery({
 });
 
 const classSubjectsQuery = createQuery({
-  queryKey: ["class-subjects", classId],
-  queryFn: () => commands.academic.listClassSubjects(classId),
-  enabled: !!classId,
+  queryKey: ["class-subjects", classId, orgId],
+  queryFn: () => commands.academic.listClassSubjects(orgId, classId),
+  enabled: !!classId && !!orgId,
   staleTime: 5 * 60 * 1000,
 });
 
 const assessmentsQuery = createQuery({
-  queryKey: ["assessments", classId],
-  queryFn: () => commands.assessment.listAssessments({ classId }),
-  enabled: !!classId,
+  queryKey: ["assessments", classId, cycleId],
+  queryFn: () => commands.assessment.listAssessments(cycleId || "").catch(() => []),
+  enabled: !!classId && !!cycleId,
   staleTime: 5 * 60 * 1000,
 });
 
 const gradesQuery = createQuery({
-  queryKey: ["grades", orgId, classId],
-  queryFn: () =>
-    commands.grades.getAll(orgId, { class_id: classId }).catch(() => []),
-  enabled: !!orgId && !!classId,
+  queryKey: ["grades", classId, cycleId],
+  queryFn: () => commands.assessment.listGrades(cycleId || "").catch(() => []),
+  enabled: !!classId && !!cycleId,
   staleTime: 2 * 60 * 1000,
 });
 
 // Dynamic class attendance analytics
 const attendanceQuery = createQuery({
-  queryKey: ["attendance-analytics", orgId, classId],
-  queryFn: () => commands.attendance.getAnalytics(orgId, { class_id: classId }),
-  enabled: !!orgId && !!classId,
+  queryKey: ["attendance-analytics", orgId, classId, cycleId],
+  queryFn: () => commands.assessment.listAttendance(orgId, cycleId || "", classId).catch(() => []),
+  enabled: !!orgId && !!classId && !!cycleId,
   staleTime: 5 * 60 * 1000,
 });
 
@@ -96,15 +95,29 @@ const subjectsCount = $derived(
   new Set((classSubjectsQuery.data || []).map((cs) => String(cs.subject_id)))
     .size,
 );
-const assessmentsCount = $derived((assessmentsQuery.data || []).length);
 
-const attendanceRate = $derived(attendanceQuery.data?.overall_rate ?? 100);
+const assessmentsCount = $derived.by(() => {
+  const allAssessments = assessmentsQuery.data || [];
+  const classSubjectIds = new Set((classSubjectsQuery.data || []).map((cs) => cs.id));
+  return allAssessments.filter((a) => classSubjectIds.has(a.class_subject_id)).length;
+});
+
+const attendanceRate = $derived.by(() => {
+  const list = attendanceQuery.data || [];
+  if (list.length === 0) return 100;
+  const presentCount = list.filter((r) => r.status === "present" || r.status === "late" || String(r.status).toLowerCase().includes("present") || String(r.status).includes("حاضر")).length;
+  return Math.round((presentCount / list.length) * 100);
+});
+
 const avgGradeScore = $derived.by(() => {
   const list = gradesQuery.data || [];
-  if (list.length === 0) return 0;
-  const sum = list.reduce((acc, curr) => acc + (curr.score || 0), 0);
-  return Math.round(sum / list.length);
+  const studentIds = new Set(filteredStudents.map((s) => s.id));
+  const classGrades = list.filter((g) => studentIds.has(g.enrollment_id));
+  if (classGrades.length === 0) return 0;
+  const sum = classGrades.reduce((acc, curr) => acc + (curr.score || 0), 0);
+  return Math.round(sum / classGrades.length);
 });
+
 const classHealthIndex = $derived(
   Math.min(100, Math.round(attendanceRate * 0.6 + avgGradeScore * 0.4)),
 );

@@ -30,16 +30,15 @@ let filteredRoles = $derived(
   ),
 );
 
+const AVAILABLE_ROLES = ["super_admin", "admin", "registrar", "teacher", "accountant", "student", "guardian"];
+
 async function loadRoles() {
   if (!userId) return;
   isLoading = true;
   try {
-    const [userRoles, availableRoles] = await Promise.all([
-      commands.iam.listUserRoles(userId),
-      commands.permissions.getAvailableRoles(),
-    ]);
-    checkedRoles = userRoles;
-    allAvailableRoles = availableRoles;
+    const userRoles = await commands.iam.listUserRoles(userId);
+    checkedRoles = userRoles.map((r: any) => r.role);
+    allAvailableRoles = AVAILABLE_ROLES;
   } catch (e) {
     console.error("Failed to load roles:", e);
   } finally {

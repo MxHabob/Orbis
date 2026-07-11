@@ -56,8 +56,8 @@ export const commands: OrbisCommands = {
     transferEnrollment: (orgId, enrollmentId, newClassId) => cmd("transfer_enrollment", { orgId, enrollmentId, newClassId }),
     checkDuplicate: (studentId, cycleId) => cmd("check_duplicate_enrollment", { studentId, cycleId }),
 
-    listClassSubjects: (classId, cycleId) => cmd("list_class_subjects", { classId, cycleId }),
-    listTeacherSubjects: (teacherId, cycleId) => cmd("list_teacher_subjects", { teacherId, cycleId }),
+    listClassSubjects: (orgId, classId, cycleId?) => cmd("list_class_subjects", { orgId, classId, cycleId }),
+    listTeacherSubjects: (orgId, teacherId, cycleId?) => cmd("list_teacher_subjects", { orgId, teacherId, cycleId }),
     createClassSubject: (data) => cmd("create_class_subject", { data }),
     updateClassSubject: (id, data) => cmd("update_class_subject", { id, data }),
     deleteClassSubject: (id) => cmd("delete_class_subject", { id }),
@@ -92,9 +92,9 @@ export const commands: OrbisCommands = {
     submitBulkGrades: (cycleId, grades) => cmd("submit_bulk_grades", { cycleId, grades }),
     updateGrade: (gradeId, data) => cmd("update_grade", { gradeId, data }),
     getReportCard: (enrollmentId, cycleId) => cmd("get_report_card", { enrollmentId, cycleId }),
-    getGradeAnalytics: (cycleId, classSubjectId) => cmd("get_grade_analytics", { cycleId, classSubjectId }),
+    getGradeAnalytics: (orgId, classId, cycleId) => cmd("get_grade_analytics", { orgId, classId, cycleId }),
 
-    listAttendance: (cycleId, classId?, date?, enrollmentId?) => cmd("list_attendance", { cycleId, classId, date, enrollmentId }),
+    listAttendance: (orgId, cycleId, classId?, date?, enrollmentId?) => cmd("list_attendance", { orgId, cycleId, classId, date, enrollmentId }),
     recordAttendance: (cycleId, data) => cmd("record_attendance", { cycleId, data }),
     recordBulkAttendance: (cycleId, data) => cmd("record_bulk_attendance", { cycleId, data }),
     getAttendanceReport: (cycleId, enrollmentId) => cmd("get_attendance_report", { cycleId, enrollmentId }),
@@ -132,6 +132,7 @@ export const commands: OrbisCommands = {
     assignStudentFee: (data) => cmd("assign_student_fee", { data }),
 
     listPayments: (enrollmentId?, feeId?) => cmd("list_payments", { enrollmentId, feeId }),
+    getPayments: (orgId, studentId?) => cmd("list_payments", { orgId, enrollmentId: studentId }),
     recordPayment: (data) => cmd("record_payment", { data }),
 
     listDiscountTemplates: () => cmd("list_discount_templates"),
@@ -199,19 +200,34 @@ export const commands: OrbisCommands = {
   iam: {
     login: (identifier, passwordHash, ip?) => cmd("login", { identifier, passwordHash, ip }),
     logout: (sessionId) => cmd("logout_session", { sessionId }),
-    changePassword: (userId, newPasswordHash) => cmd("change_password", { userId, newPasswordHash }),
+    changePassword: (userId, data) => {
+      const hash = typeof data === "string" ? data : data.new_password;
+      return cmd("change_password", { userId, data: { new_password_hash: hash } });
+    },
     listSessions: (userId) => cmd("list_user_sessions", { userId }),
 
-    listUsers: (role?, status?) => cmd("list_users", { role, status }),
+    listUsers: async (orgId, filter?) => {
+      const users = await cmd<User[]>("list_users", { orgId });
+      if (filter) {
+        return users.filter(u => {
+          if (filter.role && u.role !== filter.role && u.primary_role !== filter.role) return false;
+          if (filter.status && u.status !== filter.status) return false;
+          return true;
+        });
+      }
+      return users;
+    },
     getUser: (userId) => cmd("get_user", { userId }),
     searchUsers: (query) => cmd("search_users", { query }),
     createUser: (orgId, createdBy, data) => cmd("create_user", { orgId, data }),
     updateUser: (userId, data) => cmd("update_user", { userId, data }),
-    deleteUser: (userId) => cmd("delete_user", { userId }),
+    deleteUser: (userId, role?) => cmd("delete_user", { userId }),
 
     listUserRoles: (userId) => cmd("list_user_roles", { userId }),
     assignRole: (data) => cmd("assign_role", { data }),
     revokeRole: (roleId) => cmd("revoke_role", { roleId }),
+    changeRole: (userId, data) => cmd("change_role", { userId, data }),
+    saveUserRoles: (userId, roles) => cmd("save_user_roles", { userId, roles }),
   },
 
   // ═══════════════════════════════════════════════════════════════

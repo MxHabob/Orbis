@@ -35,10 +35,8 @@ let classes = $state<any[]>([]);
 async function loadOptions() {
   try {
     // Load Terms (Cycles of type 'term')
-    const cycles = await commands.academic.listCycles(orgId, {
-      cycle_type: "term",
-    });
-    terms = cycles || [];
+    const cycles = await commands.academic.listCycles(orgId);
+    terms = cycles ? cycles.filter(c => c.cycle_type === "term" || !c.cycle_type || c.cycle_type === "academic_year") : [];
 
     // Load Classes
     const cl = await commands.academic.listClasses(orgId);

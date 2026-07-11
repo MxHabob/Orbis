@@ -27,6 +27,7 @@ export interface FinanceCommands {
 
   // ── Payments ────────────────────────────────────────────────
   listPayments(enrollmentId?: string, feeId?: string): Promise<Payment[]>;
+  getPayments(orgId: string, studentId?: string): Promise<Payment[]>;
   recordPayment(data: { fee_id?: string; enrollment_id?: string; account_id: string; amount: number; currency: string; exchange_rate: number; method: string; treasury_id?: string; payer_name?: string; notes?: string }): Promise<Payment>;
 
   // ── Discounts ───────────────────────────────────────────────

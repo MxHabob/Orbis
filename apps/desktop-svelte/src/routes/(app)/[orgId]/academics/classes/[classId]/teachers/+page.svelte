@@ -62,7 +62,7 @@ async function loadData() {
   isLoading = true;
   try {
     const [asgn, subj, usr] = await Promise.all([
-      commands.academic.listClassSubjects(),
+      commands.academic.listClassSubjects(orgId, classId),
       commands.academic.listSubjects(orgId),
       commands.iam.listUsers(orgId, { role: "teacher" }),
     ]);

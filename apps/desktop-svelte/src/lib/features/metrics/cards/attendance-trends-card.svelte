@@ -6,6 +6,8 @@ import DragIndicator from "../components/drag-indicator.svelte";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
 
+import { academicContext } from "$lib/stores";
+
 let {
   orgId,
   selectedClass = "all",
@@ -27,34 +29,48 @@ let isLoading = $state(true);
 async function loadData() {
   isLoading = true;
   try {
-    const params: any = {};
-    if (selectedClass !== "all") params.class_id = selectedClass;
-    if (selectedTerm !== "all") params.cycle_id = selectedTerm;
+    const cycleId = selectedTerm !== "all" ? selectedTerm : "";
+    const classId = selectedClass !== "all" ? selectedClass : undefined;
+    const effectiveCycleId = cycleId || academicContext.effectiveCycleId || "";
 
-    const analytics = (await commands.attendance.getAnalytics(
+    if (!effectiveCycleId) {
+      data = [];
+      overallRate = 0;
+      return;
+    }
+
+    const records = await commands.assessment.listAttendance(
       orgId,
-      params,
-    )) as any;
-    overallRate = analytics ? analytics.overall_rate : 0;
+      effectiveCycleId,
+      classId,
+    );
 
-    const records = (await commands.attendance.getAll(orgId, params)) as any[];
     if (records && records.length > 0) {
       const groups: Record<string, { present: number; total: number }> = {};
+      let totalPresent = 0;
+
       for (const r of records) {
-        if (!groups[r.date]) {
-          groups[r.date] = { present: 0, total: 0 };
+        const dateStr = r.date ? String(r.date).slice(0, 10) : "";
+        if (!dateStr) continue;
+
+        if (!groups[dateStr]) {
+          groups[dateStr] = { present: 0, total: 0 };
         }
-        if (r.status === "present" || r.status === "late") {
-          groups[r.date].present += 1;
+        
+        const isPresent = r.status === "present" || r.status === "late" || String(r.status).toLowerCase().includes("present") || String(r.status).includes("حاضر");
+        if (isPresent) {
+          groups[dateStr].present += 1;
+          totalPresent += 1;
         }
-        groups[r.date].total += 1;
+        groups[dateStr].total += 1;
       }
+
+      overallRate = records.length > 0 ? (totalPresent / records.length) * 100 : 0;
 
       const sortedDates = Object.keys(groups).sort();
       data = sortedDates.map((date) => {
         const g = groups[date]!;
         const rate = g.total > 0 ? (g.present / g.total) * 100 : 100;
-        // Shorten label to month name or simple format
         const dateObj = new Date(date);
         const label = isNaN(dateObj.getTime())
           ? date.substring(5)
