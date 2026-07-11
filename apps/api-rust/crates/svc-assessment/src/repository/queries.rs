@@ -2,7 +2,7 @@
 
 use crate::entities::{grade, assessment, attendance, behavior_record};
 use crate::params::{BehaviorParams, GradeParams, AttendanceParams};
-use domain_academic::entities::enrollment;
+use svc_academic::entities::enrollment;
 use sea_orm::{entity::prelude::*, QueryFilter, QueryOrder, QuerySelect, EntityTrait, ColumnTrait};
 
 use super::AssessmentQueryRepo;

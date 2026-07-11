@@ -1,7 +1,7 @@
 //! Guardian operations — student-parent/guardian relationships.
 
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, Condition};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
 use uuid::Uuid;
 
 use shared_kernel::context::ServiceContext;
@@ -39,7 +39,7 @@ pub async fn list_by_guardian(
         .await?)
 }
 
-/// Search guardians by name or phone.
+/// Search guardians by relationship or notes.
 pub async fn search(
     ctx: &ServiceContext,
     query: &str,
@@ -48,12 +48,7 @@ pub async fn search(
 
     let pattern = format!("%{}%", query);
     Ok(student_guardian::Entity::find()
-        .filter(student_guardian::Column::OrgId.eq(&ctx.org_id))
-        .filter(
-            Condition::any()
-                .add(student_guardian::Column::GuardianName.contains(&pattern))
-                .add(student_guardian::Column::Phone.contains(&pattern))
-        )
+        .filter(student_guardian::Column::Relationship.contains(&pattern))
         .all(&ctx.db)
         .await?)
 }
@@ -65,9 +60,8 @@ pub async fn create(
     ctx: &ServiceContext,
     student_id: String,
     guardian_id: String,
-    guardian_name: String,
     relationship: String,
-    phone: Option<String>,
+    relationship_ar: Option<String>,
     is_primary: bool,
 ) -> Result<student_guardian::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::GuardianWrite).await?;
@@ -77,13 +71,25 @@ pub async fn create(
 
     let model = student_guardian::Model {
         id: id.clone(),
-        org_id: ctx.org_id.clone(),
         student_id,
         guardian_id,
-        guardian_name,
         relationship,
-        phone,
+        relationship_ar,
         is_primary: if is_primary { 1 } else { 0 },
+        is_emergency_contact: 0,
+        is_authorized_pickup: 0,
+        can_view_grades: 1,
+        can_view_attendance: 1,
+        can_view_behavior: 1,
+        can_view_finance: 1,
+        can_view_schedule: 1,
+        can_receive_notifications: 1,
+        is_payer: 0,
+        payment_share_percent: None,
+        occupation: None,
+        employer: None,
+        work_phone: None,
+        notes: None,
         created_at: now.clone(),
         updated_at: now,
     };
@@ -109,9 +115,7 @@ pub async fn create(
 pub async fn update(
     ctx: &ServiceContext,
     link_id: &str,
-    guardian_name: Option<String>,
     relationship: Option<String>,
-    phone: Option<String>,
     is_primary: Option<bool>,
 ) -> Result<student_guardian::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::GuardianWrite).await?;
@@ -122,14 +126,8 @@ pub async fn update(
         .ok_or_else(|| AppError::not_found("student_guardian", link_id))?;
 
     let mut active: student_guardian::ActiveModel = existing.into();
-    if let Some(name) = guardian_name {
-        active.guardian_name = Set(name);
-    }
     if let Some(rel) = relationship {
         active.relationship = Set(rel);
-    }
-    if let Some(ph) = phone {
-        active.phone = Set(Some(ph));
     }
     if let Some(primary) = is_primary {
         active.is_primary = Set(if primary { 1 } else { 0 });

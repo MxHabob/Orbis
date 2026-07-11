@@ -11,8 +11,8 @@ use crate::entities::{grade, grade_history};
 use crate::params::GradeParams;
 use crate::repository::{AssessmentCommandRepo, AssessmentQueryRepo};
 
-use domain_academic::entities::enrollment;
-use domain_lifecycle::entities::academic_cycle;
+use svc_academic::entities::enrollment;
+use svc_organization::entities::academic_cycle;
 
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct CreateGradeRequest {

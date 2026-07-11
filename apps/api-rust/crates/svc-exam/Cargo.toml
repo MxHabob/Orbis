@@ -1,5 +1,5 @@
 [package]
-name = "domain-exam"
+name = "svc-exam"
 version = "2.0.0"
 edition = "2021"
 description = "Orbis Exam domain — exam sessions, schedules, proctoring, seating/secret numbers, and auto scheduling"
@@ -8,10 +8,10 @@ description = "Orbis Exam domain — exam sessions, schedules, proctoring, seati
 shared-kernel = { workspace = true }
 infra-persistence = { workspace = true }
 infra-scheduler = { workspace = true }
-domain-academic = { workspace = true }
-domain-lifecycle = { workspace = true }
-domain-scheduling = { workspace = true }
-domain-iam = { workspace = true }
+svc-academic = { workspace = true }
+svc-organization = { workspace = true }
+svc-scheduling = { workspace = true }
+svc-iam = { workspace = true }
 sea-orm = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

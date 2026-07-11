@@ -16,11 +16,11 @@ use shared_kernel::reactive::ReactivePipeline;
 use shared_kernel::traits::Actor;
 
 // Re-export concrete implementations for direct construction
-pub use domain_iam::ops::permission_checker::IamPermissionChecker;
-pub use domain_iam::ops::audit_logger::DbAuditLogger;
-pub use domain_lifecycle::ops::settings::OrgSettingsProvider;
-pub use domain_lifecycle::ops::policy::OrgPolicyEngine;
-pub use domain_finance::ops::fee_assigner::FinanceFeeAssigner;
+pub use svc_iam::ops::permission_checker::IamPermissionChecker;
+pub use svc_iam::ops::audit_logger::DbAuditLogger;
+pub use svc_organization::ops::settings::OrgSettingsProvider;
+pub use svc_organization::ops::policy::OrgPolicyEngine;
+pub use svc_finance::ops::fee_assigner::FinanceFeeAssigner;
 
 /// Platform services container — holds all Arc'd trait implementations.
 ///

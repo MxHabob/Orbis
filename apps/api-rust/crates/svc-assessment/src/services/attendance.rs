@@ -11,8 +11,8 @@ use crate::entities::attendance;
 use crate::params::AttendanceParams;
 use crate::repository::{AssessmentCommandRepo, AssessmentQueryRepo};
 
-use domain_academic::entities::enrollment;
-use domain_iam::entities::user;
+use svc_academic::entities::enrollment;
+use svc_iam::entities::user;
 
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct CreateAttendanceRequest {

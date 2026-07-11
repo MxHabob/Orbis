@@ -74,16 +74,21 @@ pub async fn login(
     let session = user_session::Model {
         id: session_id.clone(),
         user_id: found.id.clone(),
-        org_id: ctx.org_id.clone(),
         token: token.clone(),
         refresh_token: Some(Uuid::new_v4().to_string()),
-        device_name: user_agent.clone(),
+        device_id: None,
         device_type: None,
+        device_name: user_agent.clone(),
+        os: None,
+        browser: None,
         ip_address: ip,
         user_agent,
-        is_active: 1,
+        is_current: 1,
+        is_trusted: 0,
+        mfa_verified: 0,
         expires_at: expires,
-        last_activity_at: now.clone(),
+        refresh_expires_at: None,
+        last_active_at: Some(now.clone()),
         created_at: now,
     };
 
@@ -110,7 +115,7 @@ pub async fn logout(ctx: &ServiceContext, session_id: &str) -> Result<(), AppErr
         .ok_or_else(|| AppError::not_found("user_session", session_id))?;
 
     let mut active: user_session::ActiveModel = existing.into();
-    active.is_active = Set(0);
+    active.is_current = Set(0);
     active.update(&ctx.db).await?;
 
     ctx.event_bus.publish(EventEnvelope {
@@ -171,6 +176,6 @@ pub async fn list_sessions(
     ctx.permissions.check(&ctx.actor, Permission::UserRead).await?;
     Ok(user_session::Entity::find()
         .filter(user_session::Column::UserId.eq(user_id))
-        .filter(user_session::Column::IsActive.eq(1))
+        .filter(user_session::Column::IsCurrent.eq(1))
         .all(&ctx.db).await?)
 }

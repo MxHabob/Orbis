@@ -13,7 +13,7 @@ use serde::Serialize;
 use tracing::debug;
 
 use shared_kernel::errors::AppError;
-use domain_lifecycle::entities::{academic_calendar_event, academic_cycle};
+use svc_organization::entities::{academic_calendar_event, academic_cycle};
 use crate::entities::{autopilot_task, autopilot_config};
 
 /// Snapshot of the system state at a point in time.

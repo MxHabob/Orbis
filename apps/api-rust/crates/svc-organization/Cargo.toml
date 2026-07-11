@@ -1,5 +1,5 @@
 [package]
-name = "domain-lifecycle"
+name = "svc-organization"
 version = "2.0.0"
 edition = "2021"
 description = "Orbis Lifecycle domain — organizations, academic cycles, calendar, policies, promotions"
@@ -7,8 +7,8 @@ description = "Orbis Lifecycle domain — organizations, academic cycles, calend
 [dependencies]
 shared-kernel = { workspace = true }
 infra-persistence = { workspace = true }
-domain-academic = { workspace = true }
-domain-iam = { workspace = true }
+svc-academic = { workspace = true }
+svc-iam = { workspace = true }
 async-trait = { workspace = true }
 bcrypt = { workspace = true }
 sea-orm = { workspace = true }

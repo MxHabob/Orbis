@@ -1,7 +1,7 @@
 //! Document operations — student/staff document CRUD.
 
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, ModelTrait, QueryFilter, QueryOrder};
+use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, ModelTrait, QueryFilter, QueryOrder};
 use uuid::Uuid;
 
 use shared_kernel::context::ServiceContext;
@@ -48,10 +48,9 @@ pub async fn get(ctx: &ServiceContext, id: &str) -> Result<document::Model, AppE
 pub async fn create(
     ctx: &ServiceContext,
     owner_id: String,
-    owner_type: String,
-    doc_type: String,
-    title: String,
-    file_url: Option<String>,
+    name: String,
+    item_type: String,
+    key: String,
 ) -> Result<document::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::DocumentWrite).await?;
 
@@ -62,16 +61,39 @@ pub async fn create(
         id: id.clone(),
         org_id: ctx.org_id.clone(),
         owner_id,
-        owner_type,
-        doc_type,
-        title,
-        file_url,
-        file_size: None,
+        uploaded_by: Some(ctx.actor.as_str().to_string()),
+        name,
+        title: None,
+        description: None,
+        item_type,
+        visibility: "private".into(),
+        size: None,
         mime_type: None,
-        notes: None,
-        is_verified: 0,
-        verified_by: None,
-        verified_at: None,
+        extension: None,
+        storage_provider: "local".into(),
+        bucket: None,
+        key,
+        url: None,
+        thumbnail_url: None,
+        parent_id: None,
+        path: None,
+        depth: Some(0),
+        shared_with: None,
+        share_link: None,
+        share_link_expires_at: None,
+        share_password: None,
+        version: Some(1),
+        previous_version_id: None,
+        is_latest_version: 1,
+        processing_status: None,
+        ocr_text: None,
+        extracted_data: None,
+        is_pinned: 0,
+        is_starred: 0,
+        is_template: 0,
+        tags: None,
+        meta: None,
+        deleted_at: None,
         created_at: now.clone(),
         updated_at: now,
     };

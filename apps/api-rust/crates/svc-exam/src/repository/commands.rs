@@ -398,13 +398,13 @@ impl ExamCommandRepo {
 
     // ── Solve Jobs ──
 
-    pub async fn insert_solve_job(&self, j: domain_scheduling::entities::solve_job::Model) -> Result<domain_scheduling::entities::solve_job::Model, DbErr> {
-        let active: domain_scheduling::entities::solve_job::ActiveModel = j.into();
+    pub async fn insert_solve_job(&self, j: svc_scheduling::entities::solve_job::Model) -> Result<svc_scheduling::entities::solve_job::Model, DbErr> {
+        let active: svc_scheduling::entities::solve_job::ActiveModel = j.into();
         active.insert(&self.db).await
     }
 
-    pub async fn update_solve_job(&self, j: domain_scheduling::entities::solve_job::Model) -> Result<domain_scheduling::entities::solve_job::Model, DbErr> {
-        let active: domain_scheduling::entities::solve_job::ActiveModel = j.into();
+    pub async fn update_solve_job(&self, j: svc_scheduling::entities::solve_job::Model) -> Result<svc_scheduling::entities::solve_job::Model, DbErr> {
+        let active: svc_scheduling::entities::solve_job::ActiveModel = j.into();
         active.update(&self.db).await
     }
 }

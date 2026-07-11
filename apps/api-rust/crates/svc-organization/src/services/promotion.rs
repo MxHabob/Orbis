@@ -10,7 +10,7 @@ use shared_kernel::errors::AppError;
 use crate::entities::{promotion_job, promotion_detail, student_registry_entry};
 use crate::repository::{LifecycleCommandRepo, LifecycleQueryRepo};
 
-use domain_academic::entities::{class, enrollment};
+use svc_academic::entities::{class, enrollment};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PromotionConfig {

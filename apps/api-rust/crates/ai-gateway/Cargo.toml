@@ -9,13 +9,13 @@ description = "Orbis AI Gateway — unified interface for AI agents with action 
 shared-kernel = { workspace = true }
 
 # Domain crates (for action registration)
-domain-iam = { workspace = true }
-domain-lifecycle = { workspace = true }
-domain-academic = { workspace = true }
-domain-assessment = { workspace = true }
-domain-scheduling = { workspace = true }
-domain-finance = { workspace = true }
-domain-exam = { workspace = true }
+svc-iam = { workspace = true }
+svc-organization = { workspace = true }
+svc-academic = { workspace = true }
+svc-assessment = { workspace = true }
+svc-scheduling = { workspace = true }
+svc-finance = { workspace = true }
+svc-exam = { workspace = true }
 
 # Orchestration
 autopilot = { workspace = true }

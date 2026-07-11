@@ -35,19 +35,19 @@ dependencies = [
  "async-trait",
  "autopilot",
  "chrono",
- "domain-academic",
- "domain-assessment",
- "domain-exam",
- "domain-finance",
- "domain-iam",
- "domain-lifecycle",
- "domain-scheduling",
  "infra-integration",
  "infra-persistence",
  "sea-orm",
  "serde",
  "serde_json",
  "shared-kernel",
+ "svc-academic",
+ "svc-assessment",
+ "svc-exam",
+ "svc-finance",
+ "svc-iam",
+ "svc-organization",
+ "svc-scheduling",
  "thiserror 1.0.69",
  "tokio",
  "tracing",
@@ -91,13 +91,6 @@ dependencies = [
  "bcrypt",
  "chrono",
  "csv",
- "domain-academic",
- "domain-assessment",
- "domain-exam",
- "domain-finance",
- "domain-iam",
- "domain-lifecycle",
- "domain-scheduling",
  "infra-persistence",
  "infra-scheduler",
  "jsonwebtoken",
@@ -105,6 +98,13 @@ dependencies = [
  "serde",
  "serde_json",
  "shared-kernel",
+ "svc-academic",
+ "svc-assessment",
+ "svc-exam",
+ "svc-finance",
+ "svc-iam",
+ "svc-organization",
+ "svc-scheduling",
  "tokio",
  "tower-http 0.5.2",
  "tracing",
@@ -184,16 +184,16 @@ name = "autopilot"
 version = "2.0.0"
 dependencies = [
  "chrono",
- "domain-academic",
- "domain-assessment",
- "domain-finance",
- "domain-iam",
- "domain-lifecycle",
  "infra-persistence",
  "sea-orm",
  "serde",
  "serde_json",
  "shared-kernel",
+ "svc-academic",
+ "svc-assessment",
+ "svc-finance",
+ "svc-iam",
+ "svc-organization",
  "thiserror 1.0.69",
  "tokio",
  "tracing",
@@ -773,143 +773,6 @@ dependencies = [
  "thiserror 1.0.69",
  "tokio",
  "tracing",
- "uuid",
-]
-
-[[package]]
-name = "domain-academic"
-version = "2.0.0"
-dependencies = [
- "chrono",
- "csv",
- "infra-persistence",
- "sea-orm",
- "serde",
- "serde_json",
- "shared-kernel",
- "tokio",
- "tracing",
- "utoipa",
- "uuid",
-]
-
-[[package]]
-name = "domain-assessment"
-version = "2.0.0"
-dependencies = [
- "async-trait",
- "chrono",
- "domain-academic",
- "domain-iam",
- "domain-lifecycle",
- "infra-persistence",
- "sea-orm",
- "serde",
- "serde_json",
- "shared-kernel",
- "tokio",
- "tracing",
- "utoipa",
- "uuid",
-]
-
-[[package]]
-name = "domain-exam"
-version = "2.0.0"
-dependencies = [
- "chrono",
- "domain-academic",
- "domain-iam",
- "domain-lifecycle",
- "domain-scheduling",
- "infra-persistence",
- "infra-scheduler",
- "sea-orm",
- "serde",
- "serde_json",
- "shared-kernel",
- "tokio",
- "tracing",
- "utoipa",
- "uuid",
-]
-
-[[package]]
-name = "domain-finance"
-version = "2.0.0"
-dependencies = [
- "async-trait",
- "chrono",
- "domain-academic",
- "domain-iam",
- "domain-lifecycle",
- "infra-persistence",
- "sea-orm",
- "serde",
- "serde_json",
- "shared-kernel",
- "tokio",
- "tracing",
- "utoipa",
- "uuid",
-]
-
-[[package]]
-name = "domain-iam"
-version = "2.0.0"
-dependencies = [
- "async-trait",
- "bcrypt",
- "chrono",
- "infra-persistence",
- "jsonwebtoken",
- "sea-orm",
- "serde",
- "serde_json",
- "shared-kernel",
- "tokio",
- "tracing",
- "utoipa",
- "uuid",
-]
-
-[[package]]
-name = "domain-lifecycle"
-version = "2.0.0"
-dependencies = [
- "async-trait",
- "bcrypt",
- "chrono",
- "domain-academic",
- "domain-iam",
- "infra-persistence",
- "sea-orm",
- "serde",
- "serde_json",
- "shared-kernel",
- "tokio",
- "tracing",
- "utoipa",
- "uuid",
-]
-
-[[package]]
-name = "domain-scheduling"
-version = "2.0.0"
-dependencies = [
- "chrono",
- "domain-academic",
- "domain-iam",
- "domain-lifecycle",
- "infra-persistence",
- "infra-scheduler",
- "sea-orm",
- "serde",
- "serde_json",
- "shared-kernel",
- "tokio",
- "tracing",
- "utoipa",
  "uuid",
 ]
 
@@ -3624,6 +3487,143 @@ name = "subtle"
 version = "2.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
+
+[[package]]
+name = "svc-academic"
+version = "2.0.0"
+dependencies = [
+ "chrono",
+ "csv",
+ "infra-persistence",
+ "sea-orm",
+ "serde",
+ "serde_json",
+ "shared-kernel",
+ "tokio",
+ "tracing",
+ "utoipa",
+ "uuid",
+]
+
+[[package]]
+name = "svc-assessment"
+version = "2.0.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "infra-persistence",
+ "sea-orm",
+ "serde",
+ "serde_json",
+ "shared-kernel",
+ "svc-academic",
+ "svc-iam",
+ "svc-organization",
+ "tokio",
+ "tracing",
+ "utoipa",
+ "uuid",
+]
+
+[[package]]
+name = "svc-exam"
+version = "2.0.0"
+dependencies = [
+ "chrono",
+ "infra-persistence",
+ "infra-scheduler",
+ "sea-orm",
+ "serde",
+ "serde_json",
+ "shared-kernel",
+ "svc-academic",
+ "svc-iam",
+ "svc-organization",
+ "svc-scheduling",
+ "tokio",
+ "tracing",
+ "utoipa",
+ "uuid",
+]
+
+[[package]]
+name = "svc-finance"
+version = "2.0.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "infra-persistence",
+ "sea-orm",
+ "serde",
+ "serde_json",
+ "shared-kernel",
+ "svc-academic",
+ "svc-iam",
+ "svc-organization",
+ "tokio",
+ "tracing",
+ "utoipa",
+ "uuid",
+]
+
+[[package]]
+name = "svc-iam"
+version = "2.0.0"
+dependencies = [
+ "async-trait",
+ "bcrypt",
+ "chrono",
+ "infra-persistence",
+ "jsonwebtoken",
+ "sea-orm",
+ "serde",
+ "serde_json",
+ "shared-kernel",
+ "tokio",
+ "tracing",
+ "utoipa",
+ "uuid",
+]
+
+[[package]]
+name = "svc-organization"
+version = "2.0.0"
+dependencies = [
+ "async-trait",
+ "bcrypt",
+ "chrono",
+ "infra-persistence",
+ "sea-orm",
+ "serde",
+ "serde_json",
+ "shared-kernel",
+ "svc-academic",
+ "svc-iam",
+ "tokio",
+ "tracing",
+ "utoipa",
+ "uuid",
+]
+
+[[package]]
+name = "svc-scheduling"
+version = "2.0.0"
+dependencies = [
+ "chrono",
+ "infra-persistence",
+ "infra-scheduler",
+ "sea-orm",
+ "serde",
+ "serde_json",
+ "shared-kernel",
+ "svc-academic",
+ "svc-iam",
+ "svc-organization",
+ "tokio",
+ "tracing",
+ "utoipa",
+ "uuid",
+]
 
 [[package]]
 name = "swash"

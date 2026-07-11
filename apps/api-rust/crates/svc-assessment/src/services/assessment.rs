@@ -10,8 +10,8 @@ use shared_kernel::errors::AppError;
 use crate::entities::assessment;
 use crate::repository::{AssessmentCommandRepo, AssessmentQueryRepo};
 
-use domain_academic::entities::class_subject;
-use domain_lifecycle::entities::academic_cycle;
+use svc_academic::entities::class_subject;
+use svc_organization::entities::academic_cycle;
 
 #[derive(Serialize, Deserialize, utoipa::ToSchema, Clone, Debug)]
 pub struct CreateAssessmentRequest {

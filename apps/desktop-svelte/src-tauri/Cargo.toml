@@ -32,13 +32,13 @@ tauri-plugin-process = "2.2.1"
 tauri-plugin-fs = "2"
 tokio = { version = "1.38", features = ["full"] }
 shared-kernel = { path = "../../api-rust/crates/shared-kernel" }
-domain-iam = { path = "../../api-rust/crates/domain-iam" }
-domain-lifecycle = { path = "../../api-rust/crates/domain-lifecycle" }
-domain-academic = { path = "../../api-rust/crates/domain-academic" }
-domain-assessment = { path = "../../api-rust/crates/domain-assessment" }
-domain-scheduling = { path = "../../api-rust/crates/domain-scheduling" }
-domain-finance = { path = "../../api-rust/crates/domain-finance" }
-domain-exam = { path = "../../api-rust/crates/domain-exam" }
+svc-iam = { path = "../../api-rust/crates/svc-iam" }
+svc-organization = { path = "../../api-rust/crates/svc-organization" }
+svc-academic = { path = "../../api-rust/crates/svc-academic" }
+svc-assessment = { path = "../../api-rust/crates/svc-assessment" }
+svc-scheduling = { path = "../../api-rust/crates/svc-scheduling" }
+svc-finance = { path = "../../api-rust/crates/svc-finance" }
+svc-exam = { path = "../../api-rust/crates/svc-exam" }
 autopilot = { path = "../../api-rust/crates/autopilot" }
 ai-gateway = { path = "../../api-rust/crates/ai-gateway" }
 infra-persistence = { path = "../../api-rust/crates/infra-persistence" }

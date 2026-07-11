@@ -20,8 +20,8 @@ use shared_kernel::errors::AppError;
 use shared_kernel::process::{ProcessState, CompensationAction};
 use shared_kernel::traits::{AuditEntry, Permission};
 
-use domain_iam::entities::user;
-use domain_academic::entities::{enrollment, student_guardian};
+use svc_iam::entities::user;
+use svc_academic::entities::{enrollment, student_guardian};
 
 /// Student registration request.
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -53,13 +53,13 @@ utoipa = { version = "4.2.3", features = ["axum_extras"] }
 
 # Inter-workspace dependencies (svc-* microservices)
 shared-kernel = { path = "crates/shared-kernel" }
-domain-iam = { path = "crates/svc-iam" }
-domain-lifecycle = { path = "crates/svc-organization" }
-domain-academic = { path = "crates/svc-academic" }
-domain-assessment = { path = "crates/svc-assessment" }
-domain-scheduling = { path = "crates/svc-scheduling" }
-domain-finance = { path = "crates/svc-finance" }
-domain-exam = { path = "crates/svc-exam" }
+svc-iam = { path = "crates/svc-iam" }
+svc-organization = { path = "crates/svc-organization" }
+svc-academic = { path = "crates/svc-academic" }
+svc-assessment = { path = "crates/svc-assessment" }
+svc-scheduling = { path = "crates/svc-scheduling" }
+svc-finance = { path = "crates/svc-finance" }
+svc-exam = { path = "crates/svc-exam" }
 autopilot = { path = "crates/autopilot" }
 ai-gateway = { path = "crates/ai-gateway" }
 infra-persistence = { path = "crates/infra-persistence" }

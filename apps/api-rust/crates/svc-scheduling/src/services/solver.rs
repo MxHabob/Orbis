@@ -16,7 +16,7 @@ use crate::params::RoomParams;
 use crate::repository::{SchedulingCommandRepo, SchedulingQueryRepo};
 use crate::services::schedule::{LessonPlacement, ScheduleService};
 
-use domain_academic::entities::{class, class_subject};
+use svc_academic::entities::{class, class_subject};
 
 
 use infra_scheduler::{

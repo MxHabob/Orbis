@@ -11,7 +11,7 @@ use crate::entities::{exam_session, exam_subject, exam_schedule, exam_hall};
 use crate::params::{ExamSessionParams, ExamScheduleParams, ExamHallParams};
 use crate::repository::{ExamCommandRepo, ExamQueryRepo};
 
-use domain_scheduling::entities::room;
+use svc_scheduling::entities::room;
 
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct CreateExamSessionRequest {

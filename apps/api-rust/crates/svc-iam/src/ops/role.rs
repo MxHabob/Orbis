@@ -26,7 +26,7 @@ pub async fn assign(
     ctx: &ServiceContext, user_id: String, role: String,
     scope_type: String, scope_id: Option<String>,
 ) -> Result<user_role::Model, AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::RoleWrite).await?;
+    ctx.permissions.check(&ctx.actor, Permission::UserRoleWrite).await?;
 
     let id = Uuid::new_v4().to_string();
     let model = user_role::Model {
@@ -62,7 +62,7 @@ pub async fn assign(
 }
 
 pub async fn revoke(ctx: &ServiceContext, role_id: &str) -> Result<(), AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::RoleWrite).await?;
+    ctx.permissions.check(&ctx.actor, Permission::UserRoleWrite).await?;
 
     let existing = user_role::Entity::find_by_id(role_id.to_string())
         .one(&ctx.db).await?

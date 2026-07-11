@@ -1,5 +1,5 @@
 [package]
-name = "domain-scheduling"
+name = "svc-scheduling"
 version = "2.0.0"
 edition = "2021"
 description = "Orbis Scheduling domain — rooms, slots, availability, timetables"
@@ -7,9 +7,9 @@ description = "Orbis Scheduling domain — rooms, slots, availability, timetable
 [dependencies]
 shared-kernel = { workspace = true }
 infra-persistence = { workspace = true }
-domain-academic = { workspace = true }
-domain-lifecycle = { workspace = true }
-domain-iam = { workspace = true }
+svc-academic = { workspace = true }
+svc-organization = { workspace = true }
+svc-iam = { workspace = true }
 infra-scheduler = { workspace = true }
 sea-orm = { workspace = true }
 serde = { workspace = true }

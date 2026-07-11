@@ -28,17 +28,17 @@ pub struct PlatformServices {
 impl PlatformServices {
     /// Build all platform services from a database connection.
     pub fn new(db: DatabaseConnection, event_bus: Arc<EventBus>) -> Self {
-        use domain_iam::ops::permission_checker::IamPermissionChecker;
-        use domain_iam::ops::audit_logger::DbAuditLogger;
-        use domain_lifecycle::ops::settings::OrgSettingsProvider;
-        use domain_lifecycle::ops::policy::OrgPolicyEngine;
-        use domain_finance::ops::fee_assigner::FinanceFeeAssigner;
+        use svc_iam::ops::permission_checker::IamPermissionChecker;
+        use svc_iam::ops::audit_logger::DbAuditLogger;
+        use svc_organization::ops::settings::OrgSettingsProvider;
+        use svc_organization::ops::policy::OrgPolicyEngine;
+        use svc_finance::ops::fee_assigner::FinanceFeeAssigner;
         use infra_integration::notification_sender::LogNotificationSender;
 
         // Build reactive pipeline with analyzers
         let mut reactive = shared_kernel::reactive::ReactivePipeline::new();
         reactive.register(Arc::new(
-            domain_assessment::ops::at_risk_predictor::AtRiskPredictor::new(),
+            svc_assessment::ops::at_risk_predictor::AtRiskPredictor::new(),
         ));
 
         let db_for_store = db.clone();
@@ -177,8 +177,8 @@ impl AppState {
         
         // Resolve current actor from the latest session
         use sea_orm::{EntityTrait, QueryOrder};
-        let session = domain_iam::entities::user_session::Entity::find()
-            .order_by_desc(domain_iam::entities::user_session::Column::CreatedAt)
+        let session = svc_iam::entities::user_session::Entity::find()
+            .order_by_desc(svc_iam::entities::user_session::Column::CreatedAt)
             .one(&db)
             .await?
             .ok_or_else(|| shared_kernel::errors::AppError::unauthorized("No active session"))?;
@@ -201,23 +201,23 @@ impl AppState {
     pub async fn check_tauri_permission(
         &self,
         db: &DatabaseConnection,
-        permission: domain_iam::services::authz::Permission,
-        context: Option<&domain_iam::services::authz::AuthzContext>,
+        permission: svc_iam::services::authz::Permission,
+        context: Option<&svc_iam::services::authz::AuthzContext>,
     ) -> Result<(), shared_kernel::errors::AppError> {
         use sea_orm::{EntityTrait, QueryOrder, QueryFilter, ColumnTrait};
         
-        let latest_session = domain_iam::entities::user_session::Entity::find()
-            .order_by_desc(domain_iam::entities::user_session::Column::CreatedAt)
+        let latest_session = svc_iam::entities::user_session::Entity::find()
+            .order_by_desc(svc_iam::entities::user_session::Column::CreatedAt)
             .one(db)
             .await?
             .ok_or_else(|| shared_kernel::errors::AppError::unauthorized("No active session found"))?;
 
-        let user = domain_iam::entities::user::Entity::find_by_id(latest_session.user_id)
+        let user = svc_iam::entities::user::Entity::find_by_id(latest_session.user_id)
             .one(db)
             .await?
             .ok_or_else(|| shared_kernel::errors::AppError::unauthorized("Active session user not found"))?;
 
-        let authz = domain_iam::services::authz::AuthzService::new();
+        let authz = svc_iam::services::authz::AuthzService::new();
         authz.check_permission(db, &user, permission, context).await?;
 
         Ok(())

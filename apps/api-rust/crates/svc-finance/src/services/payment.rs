@@ -5,7 +5,7 @@ use uuid::Uuid;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use sea_orm::EntityTrait;
-use domain_academic::entities::enrollment;
+use svc_academic::entities::enrollment;
 
 use shared_kernel::errors::AppError;
 use crate::entities::{payment, journal_entry, treasury_transaction};

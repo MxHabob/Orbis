@@ -11,7 +11,7 @@ use crate::entities::{time_slot, scheduled_lesson};
 use crate::params::ScheduleParams;
 use crate::repository::{SchedulingCommandRepo, SchedulingQueryRepo};
 
-use domain_academic::entities::class_subject;
+use svc_academic::entities::class_subject;
 
 #[derive(Serialize, Deserialize, utoipa::ToSchema, Clone, Debug)]
 pub struct CreateTimeSlotRequest {

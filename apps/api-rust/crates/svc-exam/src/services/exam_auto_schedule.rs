@@ -46,8 +46,8 @@ pub struct SolveJobResponse {
     pub created_at: String,
 }
 
-impl From<domain_scheduling::entities::solve_job::Model> for SolveJobResponse {
-    fn from(j: domain_scheduling::entities::solve_job::Model) -> Self {
+impl From<svc_scheduling::entities::solve_job::Model> for SolveJobResponse {
+    fn from(j: svc_scheduling::entities::solve_job::Model) -> Self {
         Self {
             id: j.id,
             org_id: j.org_id,
@@ -103,7 +103,7 @@ impl ExamAutoScheduleService {
         let snapshot = serde_json::to_string(&problem).map_err(|e| AppError::internal(e.to_string()))?;
 
         let now = Utc::now().to_rfc3339();
-        let job = domain_scheduling::entities::solve_job::Model {
+        let job = svc_scheduling::entities::solve_job::Model {
             id: job_id.clone(),
             org_id: org_id.to_string(),
             job_type: "exam".to_string(),
@@ -329,7 +329,7 @@ impl ExamAutoScheduleService {
 
             let mut class_id = "unknown_class".to_string();
             if let Some(cs_id) = &s.class_subject_id {
-                let db_cs = domain_academic::entities::class_subject::Entity::find_by_id(cs_id.clone())
+                let db_cs = svc_academic::entities::class_subject::Entity::find_by_id(cs_id.clone())
                     .one(&self.query.db)
                     .await?;
                 if let Some(cs) = db_cs {

@@ -1,5 +1,5 @@
 [package]
-name = "domain-iam"
+name = "svc-iam"
 version = "2.0.0"
 edition = "2021"
 description = "Orbis IAM domain — authentication, authorization, users, permissions"

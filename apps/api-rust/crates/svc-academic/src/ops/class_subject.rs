@@ -65,7 +65,7 @@ pub async fn create(
         class_id,
         subject_id,
         cycle_id,
-        primary_teacher_id,
+        primary_teacher_id: primary_teacher_id.unwrap_or_default(),
         assistant_teacher_id: None,
         substitute_teacher_id: None,
         grade_groups: None,
@@ -111,7 +111,7 @@ pub async fn update(
 
     let mut active: class_subject::ActiveModel = existing.into();
     if let Some(tid) = primary_teacher_id {
-        active.primary_teacher_id = Set(Some(tid));
+        active.primary_teacher_id = Set(tid);
     }
     if let Some(hrs) = weekly_hours {
         active.weekly_hours = Set(Some(hrs));

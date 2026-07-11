@@ -5,7 +5,7 @@ use uuid::Uuid;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
-use domain_iam::entities::user;
+use svc_iam::entities::user;
 
 use shared_kernel::errors::AppError;
 use crate::entities::{ledger_account, journal_entry};

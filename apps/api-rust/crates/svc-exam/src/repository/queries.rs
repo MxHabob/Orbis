@@ -15,9 +15,9 @@ use crate::params::{
 use sea_orm::{entity::prelude::*, QueryFilter, QueryOrder, EntityTrait, ColumnTrait};
 use super::ExamQueryRepo;
 
-use domain_academic::entities::{enrollment, class};
-use domain_lifecycle::entities::academic_cycle;
-use domain_iam::entities::user;
+use svc_academic::entities::{enrollment, class};
+use svc_organization::entities::academic_cycle;
+use svc_iam::entities::user;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct EnrollmentOrderingRow {
@@ -296,8 +296,8 @@ impl ExamQueryRepo {
 
     // ── Solve Jobs ──
 
-    pub async fn get_solve_job_by_id(&self, id: &str) -> Result<Option<domain_scheduling::entities::solve_job::Model>, DbErr> {
-        domain_scheduling::entities::solve_job::Entity::find_by_id(id.to_string()).one(&self.db).await
+    pub async fn get_solve_job_by_id(&self, id: &str) -> Result<Option<svc_scheduling::entities::solve_job::Model>, DbErr> {
+        svc_scheduling::entities::solve_job::Entity::find_by_id(id.to_string()).one(&self.db).await
     }
 
     pub async fn get_solve_jobs(
@@ -305,24 +305,24 @@ impl ExamQueryRepo {
         org_id: &str,
         job_type: &str,
         target_id: Option<&str>,
-    ) -> Result<Vec<domain_scheduling::entities::solve_job::Model>, DbErr> {
-        let mut query = domain_scheduling::entities::solve_job::Entity::find()
-            .filter(domain_scheduling::entities::solve_job::Column::OrgId.eq(org_id))
-            .filter(domain_scheduling::entities::solve_job::Column::JobType.eq(job_type))
-            .order_by_desc(domain_scheduling::entities::solve_job::Column::CreatedAt);
+    ) -> Result<Vec<svc_scheduling::entities::solve_job::Model>, DbErr> {
+        let mut query = svc_scheduling::entities::solve_job::Entity::find()
+            .filter(svc_scheduling::entities::solve_job::Column::OrgId.eq(org_id))
+            .filter(svc_scheduling::entities::solve_job::Column::JobType.eq(job_type))
+            .order_by_desc(svc_scheduling::entities::solve_job::Column::CreatedAt);
 
         if let Some(tgt) = target_id {
-            query = query.filter(domain_scheduling::entities::solve_job::Column::TargetId.eq(tgt));
+            query = query.filter(svc_scheduling::entities::solve_job::Column::TargetId.eq(tgt));
         }
 
         query.all(&self.db).await
     }
 
     pub async fn count_active_solve_jobs(&self, org_id: &str, job_type: &str) -> Result<u64, DbErr> {
-        domain_scheduling::entities::solve_job::Entity::find()
-            .filter(domain_scheduling::entities::solve_job::Column::OrgId.eq(org_id))
-            .filter(domain_scheduling::entities::solve_job::Column::JobType.eq(job_type))
-            .filter(domain_scheduling::entities::solve_job::Column::Status.is_in(["pending", "running"]))
+        svc_scheduling::entities::solve_job::Entity::find()
+            .filter(svc_scheduling::entities::solve_job::Column::OrgId.eq(org_id))
+            .filter(svc_scheduling::entities::solve_job::Column::JobType.eq(job_type))
+            .filter(svc_scheduling::entities::solve_job::Column::Status.is_in(["pending", "running"]))
             .count(&self.db)
             .await
     }

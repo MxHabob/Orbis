@@ -45,7 +45,6 @@ pub async fn mark_read(
 
     let mut active: notification::ActiveModel = existing.into();
     active.is_read = Set(1);
-    active.read_at = Set(Some(chrono::Utc::now().to_rfc3339()));
 
     Ok(active.update(&ctx.db).await?)
 }

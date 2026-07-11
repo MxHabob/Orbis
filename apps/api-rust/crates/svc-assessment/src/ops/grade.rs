@@ -20,7 +20,7 @@ use crate::services::grade::{
     StudentScore,
 };
 
-use domain_lifecycle::entities::academic_cycle;
+use svc_organization::entities::academic_cycle;
 
 // ── Helpers ─────────────────────────────────────────────────────
 

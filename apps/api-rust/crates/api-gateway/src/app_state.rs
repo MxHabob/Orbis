@@ -26,16 +26,16 @@ pub struct PlatformServices {
 
 impl PlatformServices {
     pub fn new(db: DatabaseConnection, event_bus: Arc<EventBus>) -> Self {
-        use domain_iam::ops::permission_checker::IamPermissionChecker;
-        use domain_iam::ops::audit_logger::DbAuditLogger;
-        use domain_lifecycle::ops::settings::OrgSettingsProvider;
-        use domain_lifecycle::ops::policy::OrgPolicyEngine;
-        use domain_finance::ops::fee_assigner::FinanceFeeAssigner;
+        use svc_iam::ops::permission_checker::IamPermissionChecker;
+        use svc_iam::ops::audit_logger::DbAuditLogger;
+        use svc_organization::ops::settings::OrgSettingsProvider;
+        use svc_organization::ops::policy::OrgPolicyEngine;
+        use svc_finance::ops::fee_assigner::FinanceFeeAssigner;
         use infra_integration::notification_sender::LogNotificationSender;
 
         let mut reactive = shared_kernel::reactive::ReactivePipeline::new();
         reactive.register(Arc::new(
-            domain_assessment::ops::at_risk_predictor::AtRiskPredictor::new(),
+            svc_assessment::ops::at_risk_predictor::AtRiskPredictor::new(),
         ));
 
         let db_for_store = db.clone();
@@ -109,13 +109,13 @@ impl AppState {
     /// Validate a Bearer token and return the user model.
     pub async fn validate_token(&self, token: &str) -> Result<crate::entities::user::Model, AppError> {
         use sea_orm::{EntityTrait, ColumnTrait, QueryFilter};
-        let session = domain_iam::entities::user_session::Entity::find()
-            .filter(domain_iam::entities::user_session::Column::AccessToken.eq(token))
+        let session = svc_iam::entities::user_session::Entity::find()
+            .filter(svc_iam::entities::user_session::Column::AccessToken.eq(token))
             .one(&self.db)
             .await?
             .ok_or_else(|| AppError::unauthorized("Invalid or expired token"))?;
 
-        let user = domain_iam::entities::user::Entity::find_by_id(&session.user_id)
+        let user = svc_iam::entities::user::Entity::find_by_id(&session.user_id)
             .one(&self.db)
             .await?
             .ok_or_else(|| AppError::unauthorized("User not found"))?;

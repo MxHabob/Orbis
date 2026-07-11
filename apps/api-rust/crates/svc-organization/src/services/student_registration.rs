@@ -1,8 +1,8 @@
 use std::sync::Arc;
 use sea_orm::{ActiveModelTrait, ConnectionTrait, EntityTrait, QueryFilter, ColumnTrait, ActiveValue::Set, PaginatorTrait};
 use shared_kernel::errors::AppError;
-use domain_iam::entities::user;
-use domain_academic::entities::{enrollment, student_guardian};
+use svc_iam::entities::user;
+use svc_academic::entities::{enrollment, student_guardian};
 mod local_finance {
     use sea_orm::entity::prelude::*;
     use serde::{Deserialize, Serialize};
