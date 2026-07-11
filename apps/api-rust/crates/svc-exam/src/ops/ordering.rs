@@ -9,14 +9,14 @@ use shared_kernel::traits::Permission;
 
 use crate::entities::{seating_number, secret_number, student_ordering};
 
-/// List seating numbers for an exam subject.
+/// List seating numbers for an exam session.
 pub async fn list_seating(
-    ctx: &ServiceContext, exam_subject_id: &str,
+    ctx: &ServiceContext, exam_session_id: &str,
 ) -> Result<Vec<seating_number::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ExamSessionRead).await?;
     Ok(seating_number::Entity::find()
-        .filter(seating_number::Column::ExamSubjectId.eq(exam_subject_id))
-        .order_by_asc(seating_number::Column::SeatNumber)
+        .filter(seating_number::Column::ExamSessionId.eq(exam_session_id))
+        .order_by_asc(seating_number::Column::SeatingNumber)
         .all(&ctx.db).await?)
 }
 
@@ -26,19 +26,19 @@ pub async fn list_secret_numbers(
 ) -> Result<Vec<secret_number::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ExamSessionRead).await?;
     Ok(secret_number::Entity::find()
-        .filter(secret_number::Column::SessionId.eq(session_id))
+        .filter(secret_number::Column::ExamSessionId.eq(session_id))
         .order_by_asc(secret_number::Column::SecretNumber)
         .all(&ctx.db).await?)
 }
 
-/// List student ordering for a session.
+/// List student ordering for a cycle.
 pub async fn list_ordering(
-    ctx: &ServiceContext, session_id: &str,
+    ctx: &ServiceContext, cycle_id: &str,
 ) -> Result<Vec<student_ordering::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ExamSessionRead).await?;
     Ok(student_ordering::Entity::find()
-        .filter(student_ordering::Column::SessionId.eq(session_id))
-        .order_by_asc(student_ordering::Column::OrderNumber)
+        .filter(student_ordering::Column::CycleId.eq(cycle_id))
+        .order_by_asc(student_ordering::Column::OrderInClass)
         .all(&ctx.db).await?)
 }
 

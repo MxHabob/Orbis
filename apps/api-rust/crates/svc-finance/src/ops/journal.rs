@@ -1,6 +1,6 @@
 //! Journal entry operations.
 
-use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
+use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
 
 use shared_kernel::context::ServiceContext;
 use shared_kernel::errors::AppError;

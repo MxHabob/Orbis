@@ -60,7 +60,7 @@ pub async fn get_report(
         std::sync::Arc::new(cmd_repo),
         std::sync::Arc::new(query_repo),
     );
-    svc.get_attendance_report(enrollment_id, cycle_id).await
+    svc.get_attendance_report(enrollment_id).await
 }
 
 /// Get attendance analytics for a class.
@@ -77,7 +77,7 @@ pub async fn get_analytics(
         std::sync::Arc::new(cmd_repo),
         std::sync::Arc::new(query_repo),
     );
-    svc.get_analytics(cycle_id, class_id).await
+    svc.get_attendance_analytics(cycle_id, class_id).await
 }
 
 // ── Commands ────────────────────────────────────────────────────

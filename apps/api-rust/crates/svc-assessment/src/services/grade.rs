@@ -510,4 +510,46 @@ impl GradeService {
             }
         }
     }
+
+    pub async fn compile_semester_grades(
+        &self,
+        org_id: &str,
+        _graded_by: &str,
+        cycle_id: &str,
+        class_id: &str,
+        semester: &str,
+    ) -> Result<Vec<grade::Model>, AppError> {
+        use sea_orm::{QueryFilter, ColumnTrait, EntityTrait, ActiveModelTrait, ActiveValue::Set};
+        
+        let class_subjects = svc_academic::entities::class_subject::Entity::find()
+            .filter(svc_academic::entities::class_subject::Column::ClassId.eq(class_id))
+            .filter(svc_academic::entities::class_subject::Column::CycleId.eq(cycle_id))
+            .all(&self.query.db)
+            .await?;
+
+        let cs_ids: Vec<String> = class_subjects.into_iter().map(|cs| cs.id).collect();
+
+        if cs_ids.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let grades = grade::Entity::find()
+            .filter(grade::Column::OrgId.eq(org_id))
+            .filter(grade::Column::CycleId.eq(cycle_id))
+            .filter(grade::Column::Semester.eq(semester))
+            .filter(grade::Column::ClassSubjectId.in_list(cs_ids))
+            .all(&self.query.db)
+            .await?;
+
+        let mut compiled = Vec::new();
+        for g in grades {
+            let mut active: grade::ActiveModel = g.into();
+            active.is_final = Set(1);
+            active.updated_at = Set(chrono::Utc::now().to_rfc3339());
+            let updated = self.cmd.update_grade(active).await?;
+            compiled.push(updated);
+        }
+
+        Ok(compiled)
+    }
 }

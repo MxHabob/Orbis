@@ -88,27 +88,21 @@ pub async fn apply(ctx: &ServiceContext, job_id: &str) -> Result<solve_job::Mode
     }
 
     // Delegate to service layer for complex solution parsing
-    let query_repo = crate::repository::SchedulingQueryRepo::new(ctx.db.clone());
-    let cmd_repo = crate::repository::SchedulingCommandRepo::new(ctx.db.clone());
-    let svc = crate::services::solver::SolverService::new(
-        std::sync::Arc::new(cmd_repo),
-        std::sync::Arc::new(query_repo),
+    let query_repo = std::sync::Arc::new(crate::repository::SchedulingQueryRepo::new(ctx.db.clone()));
+    let cmd_repo = std::sync::Arc::new(crate::repository::SchedulingCommandRepo::new(ctx.db.clone()));
+    let schedule_service = std::sync::Arc::new(crate::services::schedule::ScheduleService::new(
+        cmd_repo.clone(),
+        query_repo.clone(),
+    ));
+    let scheduler = std::sync::Arc::new(infra_scheduler::NoOpScheduleSolver);
+    let svc = crate::services::solver::TimetableSolverService::new(
+        cmd_repo.clone(),
+        query_repo.clone(),
+        schedule_service,
+        scheduler,
     );
-    svc.apply_solution(&ctx.org_id, job_id).await?;
+    svc.apply_schedule_solve(&ctx.org_id, job_id).await?;
 
-    let mut active: solve_job::ActiveModel = existing.into();
-    active.status = Set("applied".into());
-    active.updated_at = Set(Utc::now().to_rfc3339());
-
-    let updated = active.update(&ctx.db).await?;
-
-    ctx.audit.log(AuditEntry {
-        org_id: ctx.org_id.clone(), actor: ctx.actor.clone(),
-        action: "schedule_solve.apply".into(), entity_type: "solve_job".into(),
-        entity_id: job_id.into(), old_data: None,
-        new_data: Some(serde_json::json!({ "status": "applied" })),
-        correlation_id: ctx.correlation_id.clone(),
-    }).await?;
-
+    let updated = get_job(ctx, job_id).await?;
     Ok(updated)
 }
