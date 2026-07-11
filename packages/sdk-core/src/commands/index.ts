@@ -4,7 +4,6 @@
  * Every platform adapter must implement this interface:
  * - Desktop → @orbis/sdk-desktop (Tauri invoke)
  * - Web → @orbis/sdk (HTTP fetch)
- * - Mobile → @orbis/sdk-mobile (future)
  */
 import type { AcademicCommands } from "./academic";
 import type { AssessmentCommands } from "./assessment";
@@ -13,6 +12,7 @@ import type { SchedulingCommands } from "./scheduling";
 import type { ExamCommands } from "./exam";
 import type { IAMCommands } from "./iam";
 import type { OrganizationCommands } from "./organization";
+import type { PlatformCommands } from "./platform";
 
 export interface OrbisCommands {
   academic: AcademicCommands;
@@ -22,6 +22,7 @@ export interface OrbisCommands {
   exam: ExamCommands;
   iam: IAMCommands;
   organization: OrganizationCommands;
+  platform: PlatformCommands;
 }
 
 export type { AcademicCommands } from "./academic";
@@ -31,3 +32,4 @@ export type { SchedulingCommands } from "./scheduling";
 export type { ExamCommands } from "./exam";
 export type { IAMCommands } from "./iam";
 export type { OrganizationCommands } from "./organization";
+export type { PlatformCommands } from "./platform";

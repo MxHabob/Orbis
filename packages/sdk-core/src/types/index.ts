@@ -4,3 +4,4 @@ export * from "./finance";
 export * from "./scheduling";
 export * from "./exam";
 export * from "./iam";
+export * from "./platform";

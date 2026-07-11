@@ -2,4 +2,4 @@ export {
   isDesktopApp,
   listenForDeepLinks,
   createDeepLink,
-} from "@orbis/desktop-client/platform";
+} from "@orbis/sdk-desktop";

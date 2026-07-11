@@ -63,7 +63,7 @@ import type {
   CalendarEvent,
   CalendarExecutionMode,
   CalendarEventType,
-} from "@orbis/desktop-client/types";
+} from "@orbis/sdk-core";
 import {
   gregorianToHijri,
   hijriToGregorian,

@@ -63,7 +63,7 @@ import type {
   PromotionJob,
   PromotionDetail,
   ClassMapping,
-} from "@orbis/desktop-client/types";
+} from "@orbis/sdk-core";
 
 let { orgId }: { orgId: string } = $props();
 

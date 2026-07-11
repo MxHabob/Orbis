@@ -21,7 +21,7 @@ import {
 } from "$lib/features/ai/queries";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { localizeHref } from "$lib/paraglide/runtime";
-import type { CalendarEventType, CyclePhase } from "@orbis/desktop-client/types";
+import type { CalendarEventType, CyclePhase } from "@orbis/sdk-core";
 import { toast } from "svelte-sonner";
 import { extractErrorMessage } from "$lib/core/ipc/error";
 

@@ -46,7 +46,7 @@ import {
 import type {
   AcademicOverrideRequest,
   ApprovalAction,
-} from "@orbis/desktop-client/types";
+} from "@orbis/sdk-core";
 
 let { data }: { data: { orgId: string } } = $props();
 const orgId = $derived(data?.orgId ?? "");

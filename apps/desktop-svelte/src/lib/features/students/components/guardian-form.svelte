@@ -18,7 +18,7 @@ import {
 import * as Sheet from "@orbis/ui-svelte/sheet";
 import { commands, extractErrorMessage } from "$lib/core/ipc";
 import { authStore } from "$lib/stores";
-import type { GuardianLink, JsonRecord } from "@orbis/desktop-client";
+import type { GuardianLink, JsonRecord } from "@orbis/sdk-core";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { createUsersQuery } from "$lib/features/settings/queries";

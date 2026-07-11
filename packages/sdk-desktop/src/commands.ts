@@ -221,4 +221,77 @@ export const commands: OrbisCommands = {
     updateSettings: (orgId, settings) => cmd("update_settings", { orgId, settings }),
     getDashboardStats: (orgId) => cmd("get_dashboard_stats", { orgId }),
   },
+
+  // ═══════════════════════════════════════════════════════════════
+  // PLATFORM (Desktop-specific)
+  // ═══════════════════════════════════════════════════════════════
+  platform: {
+    // Academic Years
+    getCurrentYear: () => cmd("get_current_academic_year"),
+    listYears: (orgId) => cmd("list_academic_years", { orgId }),
+    switchYear: (yearId) => cmd("switch_academic_year", { yearId }),
+    isYearArchived: () => cmd("is_year_archived"),
+    getAcademicContext: (orgId) => cmd("get_academic_context", { orgId }),
+    getSetupStatus: (orgId) => cmd("get_setup_status", { orgId }),
+
+    // Promotion
+    listPromotionJobs: (orgId) => cmd("get_promotion_jobs", { orgId }),
+    getPromotionJob: (jobId) => cmd("get_promotion_job", { jobId }),
+    getPromotionDetails: (jobId) => cmd("get_promotion_details", { jobId }),
+    promotionDryRun: (orgId, config) => cmd("promotion_dry_run", { orgId, config }),
+    executePromotion: (jobId) => cmd("execute_promotion", { jobId }),
+    rollbackPromotion: (jobId, userId) => cmd("rollback_promotion", { jobId, userId }),
+    overridePromotionDecision: (request) => cmd("override_promotion_decision", { request }),
+    getPromotionPolicy: (orgId) => cmd("get_promotion_policy", { orgId }),
+
+    // Calendar
+    listCalendarEvents: (orgId, cycleId) => cmd("get_calendar_events", { orgId, cycleId }),
+    listPendingCalendarEvents: (orgId) => cmd("get_pending_calendar_events", { orgId }),
+    getOrgPolicy: (orgId) => cmd("get_org_policy", { orgId }),
+
+    // Overrides
+    listOverrideRequests: (orgId, params?) => cmd("list_override_requests", { orgId, params }),
+    getOverrideRequest: (requestId) => cmd("get_override_request", { requestId }),
+    getPendingApprovals: (orgId, approverRole) => cmd("get_pending_approvals", { orgId, approverRole }),
+
+    // Document Templates
+    listDocumentTemplates: (orgId, params?) => cmd("get_document_templates", { orgId, params }),
+    getDocumentTemplate: (orgId, templateId) => cmd("get_document_template", { orgId, templateId }),
+
+    // AI Autopilot
+    getAutopilotStatus: (orgId) => cmd("autopilot_get_status", { orgId }),
+    getAutopilotTasks: (orgId) => cmd("autopilot_get_tasks", { orgId }),
+    getAutopilotDiagnostics: (orgId) => cmd("autopilot_get_diagnostics", { orgId }),
+    configureAutopilot: (orgId, isEnabled, paused, mode) => cmd("autopilot_configure", { orgId, isEnabled, paused, mode }),
+    runAutopilotTick: (orgId) => cmd("autopilot_run_tick", { orgId }),
+
+    // AI Agent
+    listAgentSessions: (orgId) => cmd("agent_get_sessions", { orgId }),
+    getAgentSessionLogs: (orgId, sessionId) => cmd("agent_get_session_logs", { orgId, sessionId }),
+    approveAgentAction: (orgId, actionLogId, approvedBy) => cmd("agent_approve_action", { orgId, actionLogId, approvedBy }),
+    rejectAgentAction: (orgId, actionLogId, rejectedBy, reason) => cmd("agent_reject_action", { orgId, actionLogId, rejectedBy, reason }),
+
+    // Auth (desktop login flow)
+    login: (identifier, password) => cmd("login", { identifier, passwordHash: password }),
+    logout: (token) => cmd("logout_session", { sessionId: token }),
+
+    // Import/Export
+    importStudents: (orgId, data) => cmd("import_students", { orgId, data }),
+    importGrades: (orgId, data) => cmd("import_grades", { orgId, data }),
+    exportStudents: (orgId) => cmd("export_students", { orgId }),
+    exportGrades: (orgId) => cmd("export_grades", { orgId }),
+
+    // Audit
+    listAuditLogs: (orgId) => cmd("list_audit_logs", { orgId }),
+
+    // Enrollment (extended)
+    transitionEnrollmentStatus: (orgId, enrollmentId, status) => cmd("transition_enrollment_status", { orgId, enrollmentId, status }),
+
+    // Guardians (extended)
+    createGuardianLink: (data) => cmd("create_guardian_link", { data }),
+    updateGuardianLink: (linkId, data) => cmd("update_guardian_link", { linkId, data }),
+
+    // Documents
+    listDocumentsByOwner: (orgId, ownerId) => cmd("list_documents", { ownerId }),
+  },
 };

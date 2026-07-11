@@ -5,7 +5,7 @@
 <script lang="ts">
 import * as Sheet from "@orbis/ui-svelte/sheet";
 import ClassSubjectForm from "$lib/features/academics/components/class-subject-form.svelte";
-import type { ClassSubject } from "@orbis/desktop-client";
+import type { ClassSubject } from "@orbis/sdk-core";
 import * as m from "$lib/paraglide/messages";
 
 let {

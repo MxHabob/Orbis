@@ -48,7 +48,7 @@ import {
   Loader2,
   AlertTriangle,
 } from "lucide-svelte";
-import type { PromotionJob } from "@orbis/desktop-client/types";
+import type { PromotionJob } from "@orbis/sdk-core";
 
 let { orgId, userId }: { orgId: string; userId: string } = $props();
 

@@ -5,73 +5,90 @@
 import { createQuery } from "@tanstack/svelte-query";
 import { commands } from "$lib/core/ipc";
 
-/** Student fees with unpaid count. */
-export function createStudentFeesQuery(orgId: string) {
-  return createQuery({
-    queryKey: ["student-fees", orgId],
-    queryFn: () => commands.finance.getStudentFees(orgId),
-    enabled: !!orgId,
-    staleTime: 2 * 60 * 1000,
-  });
-}
-
 /** Treasuries for an organization. */
-export function createTreasuriesQuery(orgId: string) {
+export function createTreasuriesQuery() {
   return createQuery({
-    queryKey: ["treasuries", orgId],
-    queryFn: () => commands.finance.getTreasuries(orgId),
-    enabled: !!orgId,
+    queryKey: ["treasuries"],
+    queryFn: () => commands.finance.listTreasuries(),
     staleTime: 5 * 60 * 1000,
   });
 }
 
-/** Payments for an organization. */
-export function createPaymentsQuery(orgId: string) {
+/** Payments list. */
+export function createPaymentsQuery(enrollmentId?: string, feeId?: string) {
   return createQuery({
-    queryKey: ["payments", orgId],
-    queryFn: () => commands.finance.getPayments(orgId),
-    enabled: !!orgId,
+    queryKey: ["payments", enrollmentId, feeId],
+    queryFn: () => commands.finance.listPayments(enrollmentId, feeId),
     staleTime: 2 * 60 * 1000,
   });
 }
 
 /** Ledger accounts query. */
-export function createLedgerAccountsQuery(orgId: string) {
+export function createLedgerAccountsQuery() {
   return createQuery({
-    queryKey: ["ledger-accounts", orgId],
-    queryFn: () => commands.finance.getLedgerAccounts(orgId),
-    enabled: !!orgId,
+    queryKey: ["ledger-accounts"],
+    queryFn: () => commands.finance.listLedgerAccounts(),
     staleTime: 5 * 60 * 1000,
   });
 }
 
 /** Transaction/leaf accounts query. */
-export function createTransactionAccountsQuery(orgId: string) {
+export function createTransactionAccountsQuery() {
   return createQuery({
-    queryKey: ["transaction-accounts", orgId],
-    queryFn: () => commands.finance.getTransactionAccounts(orgId),
-    enabled: !!orgId,
+    queryKey: ["transaction-accounts"],
+    queryFn: () => commands.finance.listTransactionAccounts(),
     staleTime: 5 * 60 * 1000,
   });
 }
 
 /** Detailed account statement query. */
 export function createAccountStatementQuery(
-  orgId: string,
   accountId: string,
   startDate: string,
   endDate: string,
 ) {
   return createQuery({
-    queryKey: ["account-statement", orgId, accountId, startDate, endDate],
+    queryKey: ["account-statement", accountId, startDate, endDate],
     queryFn: () =>
-      commands.finance.getAccountStatement(
-        orgId,
-        accountId,
-        startDate,
-        endDate,
-      ),
-    enabled: !!orgId && !!accountId && !!startDate && !!endDate,
+      commands.finance.getAccountStatement(accountId, startDate, endDate),
+    enabled: !!accountId && !!startDate && !!endDate,
     staleTime: 1 * 60 * 1000,
+  });
+}
+
+/** Fee templates query. */
+export function createFeeTemplatesQuery() {
+  return createQuery({
+    queryKey: ["fee-templates"],
+    queryFn: () => commands.finance.listFeeTemplates(),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** Student fees for an enrollment. */
+export function createStudentFeesQuery(enrollmentId: string) {
+  return createQuery({
+    queryKey: ["student-fees", enrollmentId],
+    queryFn: () => commands.finance.listStudentFees(enrollmentId),
+    enabled: !!enrollmentId,
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
+/** Discount templates query. */
+export function createDiscountTemplatesQuery() {
+  return createQuery({
+    queryKey: ["discount-templates"],
+    queryFn: () => commands.finance.listDiscountTemplates(),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** Currencies query. */
+export function createCurrenciesQuery() {
+  return createQuery({
+    queryKey: ["currencies"],
+    queryFn: () => commands.finance.listCurrencies(),
+    staleTime: 10 * 60 * 1000,
   });
 }

@@ -1,28 +1,23 @@
 /**
- * Policy queries — TanStack Query wrappers for promotion policy.
- *
- * Policies are organization-level configuration that rarely changes.
- * Long staleTime (30min) to avoid unnecessary re-fetches.
+ * Policy queries — TanStack Query wrappers for promotion/org policy.
  */
 import { createQuery } from "@tanstack/svelte-query";
 import { commands } from "$lib/core/ipc";
 
-/** Promotion policy for an organization (passing score, attendance, fee carry-over, etc.). */
 export function createPromotionPolicyQuery(orgId: string) {
   return createQuery({
     queryKey: ["promotion-policy", orgId],
-    queryFn: () => commands.promotion.getPolicy(orgId),
+    queryFn: () => commands.platform.getPromotionPolicy(orgId),
     enabled: !!orgId,
-    staleTime: 30 * 60 * 1000, // 30 minutes — policies rarely change
+    staleTime: 30 * 60 * 1000,
   });
 }
 
-/** Organization academic policy (automation level, enrollment/grade policies, etc.). */
 export function createOrgAcademicPolicyQuery(orgId: string) {
   return createQuery({
     queryKey: ["org-academic-policy", orgId],
-    queryFn: () => commands.calendar.getPolicy(orgId),
+    queryFn: () => commands.platform.getOrgPolicy(orgId),
     enabled: !!orgId,
-    staleTime: 30 * 60 * 1000, // 30 minutes
+    staleTime: 30 * 60 * 1000,
   });
 }

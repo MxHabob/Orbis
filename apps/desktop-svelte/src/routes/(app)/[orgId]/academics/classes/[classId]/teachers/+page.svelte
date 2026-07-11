@@ -10,7 +10,7 @@ import { toast } from "svelte-sonner";
 import { Button } from "@orbis/ui-svelte/button";
 import { Plus, BookUser } from "lucide-svelte";
 import { commands } from "$lib/core/ipc";
-import type { ClassSubject, JsonRecord } from "@orbis/desktop-client";
+import type { ClassSubject, JsonRecord } from "@orbis/sdk-core";
 import ClassSubjectSheet from "$lib/features/academics/components/class-subject-sheet.svelte";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";

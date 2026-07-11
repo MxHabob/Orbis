@@ -1,104 +1,73 @@
 /**
  * Academic Year & Promotion queries — TanStack Query hooks.
- * Wraps IPC commands with automatic caching & deduplication.
  */
-import {
-  createQuery,
-  createMutation,
-  useQueryClient,
-} from "@tanstack/svelte-query";
+import { createQuery, createMutation, useQueryClient } from "@tanstack/svelte-query";
 import { commands } from "$lib/core/ipc";
-import type {
-  AcademicYearInfo,
-  AcademicYear,
-  CreateAcademicYearRequest,
-  PromotionJob,
-  PromotionDetail,
-  PromotionConfig,
-  OverrideRequest,
-} from "@orbis/desktop-client/types";
+import type { PromotionConfig } from "@orbis/sdk-core";
 
-// ── Academic Years ──────────────────────────────────────────────────
-
-/** The currently active academic year. */
 export function createCurrentYearQuery() {
   return createQuery({
     queryKey: ["academicYears", "current"],
-    queryFn: () => commands.academicYears.getCurrent(),
-    staleTime: 30 * 60 * 1000, // Very stable — 30 min
-  });
-}
-
-/** Check if current year is archived (read-only). */
-export function createIsArchivedQuery() {
-  return createQuery({
-    queryKey: ["academicYears", "isArchived"],
-    queryFn: () => commands.academicYears.isArchived(),
+    queryFn: () => commands.platform.getCurrentYear(),
     staleTime: 30 * 60 * 1000,
   });
 }
 
-/** Switch to a different academic year. */
-export function createSwitchYearMutation() {
-  const queryClient = useQueryClient();
-  return createMutation({
-    mutationFn: (yearId: string) => commands.academicYears.switch(yearId),
-    onSuccess: () => {
-      // Invalidate ALL queries since the database has changed
-      queryClient.invalidateQueries();
-    },
+export function createIsArchivedQuery() {
+  return createQuery({
+    queryKey: ["academicYears", "isArchived"],
+    queryFn: () => commands.platform.isYearArchived(),
+    staleTime: 30 * 60 * 1000,
   });
 }
 
-// ── Promotion ───────────────────────────────────────────────────────
+export function createSwitchYearMutation() {
+  const queryClient = useQueryClient();
+  return createMutation({
+    mutationFn: (yearId: string) => commands.platform.switchYear(yearId),
+    onSuccess: () => { queryClient.invalidateQueries(); },
+  });
+}
 
-/** All promotion jobs for an organization. */
 export function createPromotionJobsQuery(orgId: string) {
   return createQuery({
     queryKey: ["promotionJobs", orgId],
-    queryFn: () => commands.promotion.getJobs(orgId),
+    queryFn: () => commands.platform.listPromotionJobs(orgId),
     enabled: !!orgId,
     staleTime: 2 * 60 * 1000,
   });
 }
 
-/** Single promotion job by ID. */
 export function createPromotionJobQuery(jobId: string) {
   return createQuery({
     queryKey: ["promotionJobs", "detail", jobId],
-    queryFn: () => commands.promotion.getJob(jobId),
+    queryFn: () => commands.platform.getPromotionJob(jobId),
     enabled: !!jobId,
     staleTime: 30 * 1000,
   });
 }
 
-/** Promotion details (per-student decisions) for a job. */
 export function createPromotionDetailsQuery(jobId: string) {
   return createQuery({
     queryKey: ["promotionDetails", jobId],
-    queryFn: () => commands.promotion.getDetails(jobId),
+    queryFn: () => commands.platform.getPromotionDetails(jobId),
     enabled: !!jobId,
     staleTime: 30 * 1000,
   });
 }
 
-/** Start a promotion dry run. */
 export function createDryRunMutation(orgId: string) {
   const queryClient = useQueryClient();
   return createMutation({
-    mutationFn: (config: PromotionConfig) =>
-      commands.promotion.dryRun(orgId, config),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["promotionJobs"] });
-    },
+    mutationFn: (config: PromotionConfig) => commands.platform.promotionDryRun(orgId, config),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["promotionJobs"] }); },
   });
 }
 
-/** Execute a confirmed promotion. */
 export function createExecutePromotionMutation() {
   const queryClient = useQueryClient();
   return createMutation({
-    mutationFn: (jobId: string) => commands.promotion.execute(jobId),
+    mutationFn: (jobId: string) => commands.platform.executePromotion(jobId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["promotionJobs"] });
       queryClient.invalidateQueries({ queryKey: ["academicYears"] });
@@ -106,24 +75,18 @@ export function createExecutePromotionMutation() {
   });
 }
 
-/** Override a promotion decision for a student. */
 export function createOverrideDecisionMutation() {
   const queryClient = useQueryClient();
   return createMutation({
-    mutationFn: (request: OverrideRequest) =>
-      commands.promotion.override(request),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["promotionDetails"] });
-    },
+    mutationFn: (request: Record<string, unknown>) => commands.platform.overridePromotionDecision(request),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["promotionDetails"] }); },
   });
 }
 
-/** Rollback a completed promotion. */
 export function createRollbackMutation() {
   const queryClient = useQueryClient();
   return createMutation({
-    mutationFn: ({ jobId, userId }: { jobId: string; userId: string }) =>
-      commands.promotion.rollback(jobId, userId),
+    mutationFn: ({ jobId, userId }: { jobId: string; userId: string }) => commands.platform.rollbackPromotion(jobId, userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["promotionJobs"] });
       queryClient.invalidateQueries({ queryKey: ["academicYears"] });

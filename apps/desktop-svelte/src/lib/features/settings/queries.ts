@@ -13,9 +13,9 @@ import { commands } from "$lib/core/ipc";
 export function createOrganizationQuery(orgId: string) {
   return createQuery({
     queryKey: ["organization", orgId],
-    queryFn: () => commands.users.getOrganization(orgId),
+    queryFn: () => commands.organization.getOrganization(orgId),
     enabled: !!orgId,
-    staleTime: 5 * 60 * 1000, // settings don't change very often — 5 min
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -24,9 +24,8 @@ export function createUpdateOrganizationMutation() {
   const queryClient = useQueryClient();
   return createMutation({
     mutationFn: (variables: { orgId: string; request: any }) =>
-      commands.users.updateOrganization(variables.orgId, variables.request),
+      commands.organization.updateOrganization(variables.orgId, variables.request),
     onSuccess: (_, variables) => {
-      // Invalidate organization query to trigger updates in UI
       queryClient.invalidateQueries({
         queryKey: ["organization", variables.orgId],
       });
@@ -38,7 +37,7 @@ export function createUpdateOrganizationMutation() {
 export function createUsersQuery(orgId: string) {
   return createQuery({
     queryKey: ["users", orgId],
-    queryFn: () => commands.users.getUsers(orgId),
+    queryFn: () => commands.iam.listUsers(),
     enabled: !!orgId,
     staleTime: 5 * 60 * 1000,
   });

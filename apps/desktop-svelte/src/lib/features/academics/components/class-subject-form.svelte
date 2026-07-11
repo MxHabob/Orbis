@@ -14,7 +14,7 @@ import {
   SelectItem,
 } from "@orbis/ui-svelte/select";
 import { commands, extractErrorMessage } from "$lib/core/ipc";
-import type { ClassSubject, JsonRecord } from "@orbis/desktop-client";
+import type { ClassSubject, JsonRecord } from "@orbis/sdk-core";
 import { toast } from "svelte-sonner";
 import * as m from "$lib/paraglide/messages";
 import { createCyclesQuery, createClassesQuery, createSubjectsQuery } from "$lib/features/academics/queries";

@@ -1,8 +1,8 @@
 // ── Auth Store ───────────────────────────────────────────────────────
-// Svelte 5 Runes-based authentication state (replaces Zustand).
+// Svelte 5 Runes-based authentication state.
 
 import { commands } from "$lib/core/ipc";
-import type { User, LoginResponse } from "$lib/core/ipc";
+import type { User } from "$lib/core/ipc";
 import { extractErrorMessage } from "$lib/core/ipc";
 
 class AuthStore {
@@ -23,12 +23,11 @@ class AuthStore {
     this.isLoading = true;
     this.error = null;
     try {
-      const res = await commands.auth.login(email, password);
+      const res = await commands.platform.login(email, password);
       this.user = res.user;
       this.token = res.access_token;
       localStorage.setItem("orbis_token", res.access_token);
       localStorage.setItem("orbis_user", JSON.stringify(res.user));
-      // Fire-and-forget — don't block login completion
       this.checkSetupStatus();
     } catch (e) {
       this.error = extractErrorMessage(e);
@@ -40,7 +39,7 @@ class AuthStore {
 
   async logout() {
     if (this.token) {
-      await commands.auth.logout(this.token).catch(() => {});
+      await commands.platform.logout(this.token).catch(() => {});
     }
     this.user = null;
     this.token = null;
@@ -54,9 +53,7 @@ class AuthStore {
     try {
       const token = localStorage.getItem("orbis_token");
       const userStr = localStorage.getItem("orbis_user");
-      const isSetupCompleteStr = localStorage.getItem(
-        "orbis_is_setup_complete",
-      );
+      const isSetupCompleteStr = localStorage.getItem("orbis_is_setup_complete");
       if (token && userStr) {
         this.token = token;
         this.user = JSON.parse(userStr);
@@ -75,12 +72,11 @@ class AuthStore {
       return;
     }
     try {
-      const status = await commands.academics.getSetupStatus(this.orgId);
+      const status = await commands.platform.getSetupStatus(this.orgId);
       this.isSetupComplete = status;
       localStorage.setItem("orbis_is_setup_complete", String(status));
     } catch (e) {
       console.error("Error checking setup status:", e);
-      // Fallback: if cache is present, use it, else default to true to not lock user out
       const cached = localStorage.getItem("orbis_is_setup_complete");
       if (cached !== null) {
         this.isSetupComplete = cached === "true";

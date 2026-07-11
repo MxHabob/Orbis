@@ -11,34 +11,34 @@ import { commands } from "$lib/core/ipc";
 import type { ExamSession, ExamSubject } from "./store.svelte";
 
 /** Get all exam sessions for an organization. */
-export function createExamSessionsQuery(orgId: string, cycleId?: string) {
+export function createExamSessionsQuery(cycleId?: string) {
   return createQuery({
-    queryKey: ["exam-sessions", orgId, cycleId || "all"],
+    queryKey: ["exam-sessions", cycleId || "all"],
     queryFn: () =>
-      commands.exams.getSessions(orgId, cycleId) as Promise<ExamSession[]>,
-    enabled: !!orgId,
+      commands.exam.listSessions(cycleId!) as Promise<ExamSession[]>,
+    enabled: !!cycleId,
     staleTime: 5 * 60 * 1000,
   });
 }
 
 /** Get a single exam session. */
-export function createExamSessionQuery(orgId: string, sessionId: string) {
+export function createExamSessionQuery(sessionId: string) {
   return createQuery({
-    queryKey: ["exam-session", orgId, sessionId],
+    queryKey: ["exam-session", sessionId],
     queryFn: () =>
-      commands.exams.getSession(orgId, sessionId) as Promise<ExamSession>,
-    enabled: !!orgId && !!sessionId,
+      commands.exam.getSession(sessionId) as Promise<ExamSession>,
+    enabled: !!sessionId,
     staleTime: 5 * 60 * 1000,
   });
 }
 
 /** Get exam subjects. */
-export function createExamSubjectsQuery(orgId: string, sessionId: string) {
+export function createExamSubjectsQuery(sessionId: string) {
   return createQuery({
-    queryKey: ["exam-subjects", orgId, sessionId],
+    queryKey: ["exam-subjects", sessionId],
     queryFn: () =>
-      commands.exams.getSubjects(orgId, sessionId) as Promise<ExamSubject[]>,
-    enabled: !!orgId && !!sessionId,
+      commands.exam.listExamSubjects(sessionId) as Promise<ExamSubject[]>,
+    enabled: !!sessionId,
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -48,28 +48,19 @@ export function createSessionMutation() {
   const queryClient = useQueryClient();
   return createMutation({
     mutationFn: (variables: {
-      orgId: string;
-      userId: string;
       data: {
+        cycle_id: string;
         name: string;
-        name_ar: string;
+        name_ar?: string;
         session_type: string;
         start_date: string;
         end_date: string;
-        cycle_id?: string;
       };
     }) =>
-      commands.exams.createSession(variables.orgId, variables.userId, {
-        name: variables.data.name,
-        name_ar: variables.data.name_ar,
-        type: variables.data.session_type,
-        start_date: variables.data.start_date,
-        end_date: variables.data.end_date,
-        cycle_id: variables.data.cycle_id || "",
-      }) as Promise<ExamSession>,
-    onSuccess: (data, variables) => {
+      commands.exam.createSession(variables.data) as Promise<ExamSession>,
+    onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["exam-sessions", variables.orgId],
+        queryKey: ["exam-sessions"],
       });
     },
   });
@@ -80,21 +71,19 @@ export function updateSessionMutation() {
   const queryClient = useQueryClient();
   return createMutation({
     mutationFn: (variables: {
-      orgId: string;
       sessionId: string;
-      updates: Record<string, unknown>;
+      updates: { name?: string; status?: string; start_date?: string; end_date?: string };
     }) =>
-      commands.exams.updateSession(
-        variables.orgId,
+      commands.exam.updateSession(
         variables.sessionId,
         variables.updates,
       ) as Promise<ExamSession>,
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({
-        queryKey: ["exam-sessions", variables.orgId],
+        queryKey: ["exam-sessions"],
       });
       queryClient.invalidateQueries({
-        queryKey: ["exam-session", variables.orgId, variables.sessionId],
+        queryKey: ["exam-session", variables.sessionId],
       });
     },
   });
@@ -105,17 +94,21 @@ export function addExamSubjectMutation() {
   const queryClient = useQueryClient();
   return createMutation({
     mutationFn: (variables: {
-      orgId: string;
       sessionId: string;
-      request: Record<string, unknown>;
+      data: {
+        session_id: string;
+        subject_id: string;
+        subject_name: string;
+        exam_date: string;
+        start_time: string;
+        end_time: string;
+        max_score: number;
+      };
     }) =>
-      commands.exams.createSubject(
-        variables.orgId,
-        variables.request,
-      ) as Promise<ExamSubject>,
-    onSuccess: (data, variables) => {
+      commands.exam.createExamSubject(variables.data) as Promise<ExamSubject>,
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({
-        queryKey: ["exam-subjects", variables.orgId, variables.sessionId],
+        queryKey: ["exam-subjects", variables.sessionId],
       });
     },
   });
