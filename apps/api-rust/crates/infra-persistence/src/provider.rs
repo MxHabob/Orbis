@@ -68,6 +68,8 @@ impl DatabaseProvider {
         info!("✅ Registry database connected at: {:?}", registry_db_path);
 
         // Run migrations on registry database
+        let registry_baseline_sql = include_str!("schemas/registry_schema.sql");
+        let _ = crate::migrations::run_sql_migration(&registry_db, registry_baseline_sql).await;
         let _ = crate::schemas::schema_v2::apply_v2_schema(&registry_db).await;
         crate::schemas::schema_v2::apply_v2_cleanup(&registry_db).await;
 
@@ -97,6 +99,8 @@ impl DatabaseProvider {
             
             // Run migrations on active year database (if not archived)
             if year.status != "archived" {
+                let active_baseline_sql = include_str!("schemas/schema_baseline.sql");
+                let _ = crate::migrations::run_sql_migration(&db, active_baseline_sql).await;
                 let _ = crate::schemas::schema_v2::apply_v2_schema(&db).await;
                 crate::schemas::schema_v2::apply_v2_cleanup(&db).await;
             }
@@ -115,6 +119,8 @@ impl DatabaseProvider {
             info!("🆕 Created default year database at: {:?}", db_path);
             
             // Run migrations on default active year database
+            let active_baseline_sql = include_str!("schemas/schema_baseline.sql");
+            let _ = crate::migrations::run_sql_migration(&db, active_baseline_sql).await;
             let _ = crate::schemas::schema_v2::apply_v2_schema(&db).await;
             crate::schemas::schema_v2::apply_v2_cleanup(&db).await;
             
@@ -149,16 +155,16 @@ impl DatabaseProvider {
     pub async fn is_current_archived(&self) -> bool {
         *self.is_archived.read().await
     }
-
-    /// Create a fresh year database.
     pub async fn create_year_db(&self, db_filename: &str) -> Result<DatabaseConnection, String> {
         let db_path = crate::registry::year_db_path(&self.app_data_dir, db_filename);
         let url = crate::registry::sqlite_url_rwc(&db_path);
         let db = crate::connection::connect_year(&url)
             .await
             .map_err(|e| e.to_string())?;
-            
+             
         // Run migrations on newly created year database
+        let active_baseline_sql = include_str!("schemas/schema_baseline.sql");
+        let _ = crate::migrations::run_sql_migration(&db, active_baseline_sql).await;
         let _ = crate::schemas::schema_v2::apply_v2_schema(&db).await;
         crate::schemas::schema_v2::apply_v2_cleanup(&db).await;
         
@@ -213,6 +219,8 @@ impl DatabaseProvider {
 
         // Run migrations on active database (if not archived)
         if !is_archived {
+            let active_baseline_sql = include_str!("schemas/schema_baseline.sql");
+            let _ = crate::migrations::run_sql_migration(&new_db, active_baseline_sql).await;
             let _ = crate::schemas::schema_v2::apply_v2_schema(&new_db).await;
             crate::schemas::schema_v2::apply_v2_cleanup(&new_db).await;
         }
