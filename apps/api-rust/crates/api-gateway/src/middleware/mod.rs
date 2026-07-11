@@ -6,16 +6,16 @@ use axum::{
     Json,
 };
 use serde_json::json;
-use crate::service::Service;
+use crate::app_state::AppState;
 
+/// Authenticated user extracted from the Authorization header.
 pub struct AuthenticatedUser(pub crate::entities::user::Model);
 
 #[async_trait]
-impl FromRequestParts<Service> for AuthenticatedUser {
+impl FromRequestParts<AppState> for AuthenticatedUser {
     type Rejection = Response;
 
-    async fn from_request_parts(parts: &mut Parts, state: &Service) -> Result<Self, Self::Rejection> {
-        // Retrieve Authorization header
+    async fn from_request_parts(parts: &mut Parts, state: &AppState) -> Result<Self, Self::Rejection> {
         let auth_header = parts
             .headers
             .get(axum::http::header::AUTHORIZATION)

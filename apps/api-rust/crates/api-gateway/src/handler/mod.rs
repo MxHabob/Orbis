@@ -1,32 +1,26 @@
+#[macro_use]
+pub mod macros;
+
 pub mod auth;
-pub mod class;
-pub mod behavior;
-pub mod notification;
-pub mod params {
-    pub use domain_lifecycle::params::{CycleParams, ExportParams};
-    pub use domain_academic::params::{ClassParams, OrgUnitParams, EnrollmentParams, DocumentParams, GuardianParams, ClassSubjectParams, NotificationParams};
-    pub use domain_iam::params::{UserParams, AuditLogParams};
-    pub use domain_assessment::params::{BehaviorParams, GradeParams, AttendanceParams, GradeMatrixParams, AssessmentParams};
-    pub use domain_scheduling::params::{ScheduleParams, RoomParams};
-    pub use domain_finance::params::{FeeTemplateParams, StudentFeeParams, PaymentParams, TreasuryParams, LedgerAccountParams};
-    pub use domain_exam::params::{ExamSessionParams, ExamScheduleParams, ExamHallParams, SeatingNumberParams, SecretNumberParams, ExamProctorParams, TeacherExamAvailabilityParams, StudentOrderingParams};
-}
-pub mod organization;
 pub mod user;
+pub mod organization;
 pub mod academic_cycle;
+pub mod class;
+pub mod subject;
 pub mod org_unit;
 pub mod enrollment;
+pub mod guardian;
+pub mod document;
 pub mod grade;
 pub mod attendance;
+pub mod assessment;
+pub mod behavior;
 pub mod dashboard;
 pub mod audit;
-pub mod import_export;
+pub mod notification;
 pub mod finance;
 pub mod schedule;
 pub mod schedule_solve;
 pub mod room;
-pub mod subject;
-pub mod assessment;
-pub mod guardian;
-pub mod document;
 pub mod exam;
+pub mod import_export;

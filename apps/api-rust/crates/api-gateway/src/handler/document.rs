@@ -1,83 +1,26 @@
-use axum::{
-    extract::{State, Path, Query, Json},
-    http::StatusCode,
-    response::IntoResponse,
-};
+use axum::{extract::{State, Path, Json}, http::StatusCode, response::IntoResponse};
 use serde_json::json;
-use crate::service::Service;
+use crate::app_state::AppState;
 use crate::middleware::AuthenticatedUser;
-use crate::service::document::{CreateDocumentRequest, UpdateDocumentRequest};
+use svc_academic::ops;
 
-#[utoipa::path(get, path = "/api/documents", responses((status = 200)))]
-pub async fn get_documents(
-    State(service): State<Service>,
-    Query(params): Query<crate::handler::params::DocumentParams>,
-    AuthenticatedUser(user): AuthenticatedUser,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    service.check_permission_and_audit(&user, crate::service::authz::Permission::DocumentRead, None).await
-        .map_err(|e| (StatusCode::FORBIDDEN, Json(json!({ "success": false, "error": e }))))?;
-
-    let docs = service.get_documents(
-        &user.org_id,
-        params.owner_id.as_deref(),
-        params.is_template,
-    ).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "success": false, "error": e }))))?;
-    Ok((StatusCode::OK, Json(json!({ "success": true, "data": docs }))))
+#[utoipa::path(get, path = "/api/documents/{owner_id}")]
+pub async fn get_documents(State(state): State<AppState>, Path(owner_id): Path<String>, AuthenticatedUser(user): AuthenticatedUser) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let ctx = state.build_context(&user.org_id, &user.id);
+    let r = ops::document::list(&ctx, &owner_id).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
+    ok!(r)
 }
 
-#[utoipa::path(get, path = "/api/documents/{id}", responses((status = 200)))]
-pub async fn get_document(
-    State(service): State<Service>,
-    Path(id): Path<String>,
-    AuthenticatedUser(user): AuthenticatedUser,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    service.check_permission_and_audit(&user, crate::service::authz::Permission::DocumentRead, None).await
-        .map_err(|e| (StatusCode::FORBIDDEN, Json(json!({ "success": false, "error": e }))))?;
-
-    let doc = service.get_document(&id).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "success": false, "error": e }))))?;
-    Ok((StatusCode::OK, Json(json!({ "success": true, "data": doc }))))
+#[utoipa::path(post, path = "/api/documents")]
+pub async fn post_documents(State(state): State<AppState>, AuthenticatedUser(user): AuthenticatedUser, Json(body): Json<serde_json::Value>) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let ctx = state.build_context(&user.org_id, &user.id);
+    let r = ops::document::create(&ctx, body).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
+    ok!(StatusCode::CREATED, r)
 }
 
-#[utoipa::path(post, path = "/api/documents", responses((status = 201)))]
-pub async fn post_documents(
-    State(service): State<Service>,
-    AuthenticatedUser(user): AuthenticatedUser,
-    Json(req): Json<CreateDocumentRequest>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    service.check_permission_and_audit(&user, crate::service::authz::Permission::DocumentWrite, None).await
-        .map_err(|e| (StatusCode::FORBIDDEN, Json(json!({ "success": false, "error": e }))))?;
-
-    let doc = service.create_document(&user.org_id, &user.id, Some(&user.id), req).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "success": false, "error": e }))))?;
-    Ok((StatusCode::CREATED, Json(json!({ "success": true, "data": doc }))))
-}
-
-#[utoipa::path(put, path = "/api/documents/{id}", responses((status = 200)))]
-pub async fn put_document(
-    State(service): State<Service>,
-    Path(id): Path<String>,
-    AuthenticatedUser(user): AuthenticatedUser,
-    Json(req): Json<UpdateDocumentRequest>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    service.check_permission_and_audit(&user, crate::service::authz::Permission::DocumentWrite, None).await
-        .map_err(|e| (StatusCode::FORBIDDEN, Json(json!({ "success": false, "error": e }))))?;
-
-    let doc = service.update_document(&id, req).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "success": false, "error": e }))))?;
-    Ok((StatusCode::OK, Json(json!({ "success": true, "data": doc }))))
-}
-
-#[utoipa::path(delete, path = "/api/documents/{id}", responses((status = 200)))]
-pub async fn delete_document(
-    State(service): State<Service>,
-    Path(id): Path<String>,
-    AuthenticatedUser(user): AuthenticatedUser,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    service.check_permission_and_audit(&user, crate::service::authz::Permission::DocumentDelete, None).await
-        .map_err(|e| (StatusCode::FORBIDDEN, Json(json!({ "success": false, "error": e }))))?;
-
-    service.delete_document(&id).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "success": false, "error": e }))))?;
-    Ok((StatusCode::OK, Json(json!({ "success": true, "message": "document deleted" }))))
+#[utoipa::path(delete, path = "/api/documents/{id}")]
+pub async fn delete_document(State(state): State<AppState>, Path(id): Path<String>, AuthenticatedUser(user): AuthenticatedUser) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let ctx = state.build_context(&user.org_id, &user.id);
+    ops::document::delete(&ctx, &id).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
+    ok!(json!({"deleted": true}))
 }
