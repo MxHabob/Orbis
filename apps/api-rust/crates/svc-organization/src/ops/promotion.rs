@@ -10,7 +10,7 @@ use shared_kernel::errors::AppError;
 use shared_kernel::traits::{AuditEntry, Permission};
 
 use crate::entities::promotion_job;
-use crate::services::promotion::{PromotionService, PromotionResult};
+use crate::services::promotion::{PromotionConfig, PromotionPreview, PromotionResult, PromotionService};
 
 pub async fn list_jobs(ctx: &ServiceContext) -> Result<Vec<promotion_job::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::PromotionRead).await?;
@@ -72,7 +72,12 @@ fn build_service(ctx: &ServiceContext) -> PromotionService {
     PromotionService::new(Arc::new(cmd_repo), Arc::new(query_repo))
 }
 
-pub async fn start_dry_run(ctx: &ServiceContext, job_id: &str) -> Result<promotion_job::Model, AppError> {
+/// dry_run(&self, year_db, org_id, user_id, config) → PromotionPreview
+pub async fn start_dry_run(
+    ctx: &ServiceContext,
+    job_id: &str,
+    config: PromotionConfig,
+) -> Result<PromotionPreview, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::PromotionWrite).await?;
 
     let existing = get_job(ctx, job_id).await?;
@@ -81,14 +86,19 @@ pub async fn start_dry_run(ctx: &ServiceContext, job_id: &str) -> Result<promoti
     }
 
     let svc = build_service(ctx);
-    svc.dry_run(&ctx.org_id, job_id).await
+    svc.dry_run(&ctx.db, &ctx.org_id, ctx.actor.as_str(), config).await
 }
 
-pub async fn execute(ctx: &ServiceContext, job_id: &str, app_data_dir: &std::path::Path) -> Result<PromotionResult, AppError> {
+/// execute(&self, source_db, job_id, app_data_dir) → PromotionResult
+pub async fn execute(
+    ctx: &ServiceContext,
+    job_id: &str,
+    app_data_dir: &std::path::Path,
+) -> Result<PromotionResult, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::PromotionExecute).await?;
 
     let existing = get_job(ctx, job_id).await?;
-    if existing.status != "dry_run_complete" {
+    if existing.status != "dry_run_complete" && existing.status != "dry_run" && existing.status != "confirmed" {
         return Err(AppError::validation("Must complete dry-run before executing"));
     }
 
@@ -106,7 +116,12 @@ pub async fn execute(ctx: &ServiceContext, job_id: &str, app_data_dir: &std::pat
     Ok(result)
 }
 
-pub async fn rollback(ctx: &ServiceContext, job_id: &str, app_data_dir: &std::path::Path) -> Result<(), AppError> {
+/// rollback(&self, job_id, user_id, app_data_dir) → ()
+pub async fn rollback(
+    ctx: &ServiceContext,
+    job_id: &str,
+    app_data_dir: &std::path::Path,
+) -> Result<(), AppError> {
     ctx.permissions.check(&ctx.actor, Permission::PromotionExecute).await?;
 
     let existing = get_job(ctx, job_id).await?;
@@ -115,7 +130,7 @@ pub async fn rollback(ctx: &ServiceContext, job_id: &str, app_data_dir: &std::pa
     }
 
     let svc = build_service(ctx);
-    svc.rollback(job_id, app_data_dir).await?;
+    svc.rollback(job_id, ctx.actor.as_str(), app_data_dir).await?;
 
     ctx.audit.log(AuditEntry {
         org_id: ctx.org_id.clone(), actor: ctx.actor.clone(),
