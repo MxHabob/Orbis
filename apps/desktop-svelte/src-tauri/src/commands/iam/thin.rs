@@ -27,8 +27,13 @@ pub async fn list_users(state: State<'_, Arc<AppState>>, org_id: String) -> CmdR
 
 #[tauri::command]
 pub async fn get_user(state: State<'_, Arc<AppState>>, user_id: String) -> CmdResult<serde_json::Value> {
+    use sea_orm::EntityTrait;
     let db = state.active_db().await;
-    let r = ops::user::get(&db, &user_id).await.map_err(CommandError::from)?;
+    let u = svc_iam::entities::user::Entity::find_by_id(user_id.clone())
+        .one(&db).await.map_err(CommandError::from)?
+        .ok_or_else(|| CommandError::not_found("User not found"))?;
+    let ctx = state.build_context(&u.org_id).await.map_err(CommandError::from)?;
+    let r = ops::user::get(&ctx, &user_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
 
@@ -41,33 +46,58 @@ pub async fn create_user(state: State<'_, Arc<AppState>>, org_id: String, data: 
 
 #[tauri::command]
 pub async fn update_user(state: State<'_, Arc<AppState>>, user_id: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
+    use sea_orm::EntityTrait;
     let db = state.active_db().await;
-    let r = ops::user::update(&db, &user_id, data).await.map_err(CommandError::from)?;
+    let u = svc_iam::entities::user::Entity::find_by_id(user_id.clone())
+        .one(&db).await.map_err(CommandError::from)?
+        .ok_or_else(|| CommandError::not_found("User not found"))?;
+    let ctx = state.build_context(&u.org_id).await.map_err(CommandError::from)?;
+    let r = ops::user::update(&ctx, &user_id, data).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
 
 #[tauri::command]
 pub async fn delete_user(state: State<'_, Arc<AppState>>, user_id: String) -> CmdResult<()> {
+    use sea_orm::EntityTrait;
     let db = state.active_db().await;
-    ops::user::delete(&db, &user_id).await.map_err(CommandError::from)
+    let u = svc_iam::entities::user::Entity::find_by_id(user_id.clone())
+        .one(&db).await.map_err(CommandError::from)?
+        .ok_or_else(|| CommandError::not_found("User not found"))?;
+    let ctx = state.build_context(&u.org_id).await.map_err(CommandError::from)?;
+    ops::user::delete(&ctx, &user_id).await.map_err(CommandError::from)
 }
 
 #[tauri::command]
 pub async fn change_password(state: State<'_, Arc<AppState>>, user_id: String, data: serde_json::Value) -> CmdResult<()> {
+    use sea_orm::EntityTrait;
     let db = state.active_db().await;
-    ops::user::change_password(&db, &user_id, data).await.map_err(CommandError::from)
+    let u = svc_iam::entities::user::Entity::find_by_id(user_id.clone())
+        .one(&db).await.map_err(CommandError::from)?
+        .ok_or_else(|| CommandError::not_found("User not found"))?;
+    let ctx = state.build_context(&u.org_id).await.map_err(CommandError::from)?;
+    ops::auth::change_password(&ctx, &user_id, data).await.map_err(CommandError::from)
 }
 
 #[tauri::command]
 pub async fn change_role(state: State<'_, Arc<AppState>>, user_id: String, data: serde_json::Value) -> CmdResult<()> {
+    use sea_orm::EntityTrait;
     let db = state.active_db().await;
-    ops::user::change_role(&db, &user_id, data).await.map_err(CommandError::from)
+    let u = svc_iam::entities::user::Entity::find_by_id(user_id.clone())
+        .one(&db).await.map_err(CommandError::from)?
+        .ok_or_else(|| CommandError::not_found("User not found"))?;
+    let ctx = state.build_context(&u.org_id).await.map_err(CommandError::from)?;
+    ops::user::change_role(&ctx, &user_id, data).await.map(|_| ()).map_err(CommandError::from)
 }
 
 #[tauri::command]
 pub async fn list_sessions(state: State<'_, Arc<AppState>>, user_id: String) -> CmdResult<serde_json::Value> {
+    use sea_orm::EntityTrait;
     let db = state.active_db().await;
-    let r = ops::session::list(&db, &user_id).await.map_err(CommandError::from)?;
+    let u = svc_iam::entities::user::Entity::find_by_id(user_id.clone())
+        .one(&db).await.map_err(CommandError::from)?
+        .ok_or_else(|| CommandError::not_found("User not found"))?;
+    let ctx = state.build_context(&u.org_id).await.map_err(CommandError::from)?;
+    let r = ops::auth::list_sessions(&ctx, &user_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
 

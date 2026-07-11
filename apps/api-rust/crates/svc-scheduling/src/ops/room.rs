@@ -10,6 +10,26 @@ use shared_kernel::traits::{AuditEntry, Permission};
 
 use crate::entities::room;
 
+#[derive(serde::Deserialize)]
+pub struct CreateRoomRequest {
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub capacity: Option<i32>,
+    pub room_type: String,
+    pub building: Option<String>,
+    pub floor: Option<i32>,
+}
+
+#[derive(serde::Deserialize)]
+pub struct UpdateRoomRequest {
+    pub name: Option<String>,
+    pub name_ar: Option<String>,
+    pub capacity: Option<i32>,
+    pub room_type: Option<String>,
+    pub building: Option<String>,
+    pub floor: Option<i32>,
+}
+
 pub async fn list(ctx: &ServiceContext) -> Result<Vec<room::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ScheduleRead).await?;
     Ok(room::Entity::find()
@@ -20,18 +40,21 @@ pub async fn list(ctx: &ServiceContext) -> Result<Vec<room::Model>, AppError> {
 }
 
 pub async fn create(
-    ctx: &ServiceContext, name: String, name_ar: Option<String>,
-    capacity: Option<i32>, room_type: String,
-    building: Option<String>, floor: Option<i32>,
+    ctx: &ServiceContext,
+    data: serde_json::Value,
 ) -> Result<room::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ScheduleWrite).await?;
+
+    let req: CreateRoomRequest = serde_json::from_value(data)
+        .map_err(|e| AppError::validation(format!("Invalid create room payload: {e}")))?;
 
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
 
     let model = room::Model {
         id: id.clone(), org_id: ctx.org_id.clone(),
-        name, name_ar, capacity, room_type, building, floor,
+        name: req.name, name_ar: req.name_ar, capacity: req.capacity,
+        room_type: req.room_type, building: req.building, floor: req.floor,
         is_active: 1, created_at: now.clone(), updated_at: now,
     };
 
@@ -51,17 +74,24 @@ pub async fn create(
 
 pub async fn update(
     ctx: &ServiceContext, room_id: &str,
-    name: Option<String>, capacity: Option<i32>,
+    data: serde_json::Value,
 ) -> Result<room::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ScheduleWrite).await?;
+
+    let req: UpdateRoomRequest = serde_json::from_value(data)
+        .map_err(|e| AppError::validation(format!("Invalid update room payload: {e}")))?;
 
     let existing = room::Entity::find_by_id(room_id.to_string())
         .one(&ctx.db).await?
         .ok_or_else(|| AppError::not_found("room", room_id))?;
 
     let mut active: room::ActiveModel = existing.into();
-    if let Some(n) = name { active.name = Set(n); }
-    if let Some(c) = capacity { active.capacity = Set(Some(c)); }
+    if let Some(n) = req.name { active.name = Set(n); }
+    if let Some(na) = req.name_ar { active.name_ar = Set(Some(na)); }
+    if let Some(c) = req.capacity { active.capacity = Set(Some(c)); }
+    if let Some(rt) = req.room_type { active.room_type = Set(rt); }
+    if let Some(b) = req.building { active.building = Set(Some(b)); }
+    if let Some(f) = req.floor { active.floor = Set(Some(f)); }
     active.updated_at = Set(Utc::now().to_rfc3339());
 
     Ok(active.update(&ctx.db).await?)
@@ -69,9 +99,11 @@ pub async fn update(
 
 pub async fn delete(ctx: &ServiceContext, room_id: &str) -> Result<(), AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ScheduleDelete).await?;
+
     let existing = room::Entity::find_by_id(room_id.to_string())
         .one(&ctx.db).await?
         .ok_or_else(|| AppError::not_found("room", room_id))?;
+
     existing.delete(&ctx.db).await?;
     Ok(())
 }

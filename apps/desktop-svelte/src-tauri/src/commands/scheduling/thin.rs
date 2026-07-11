@@ -132,7 +132,7 @@ pub async fn cancel_solve(state: State<'_, Arc<AppState>>, org_id: String, job_i
 #[tauri::command]
 pub async fn apply_solve(state: State<'_, Arc<AppState>>, org_id: String, job_id: String) -> CmdResult<()> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    ops::solver::apply(&ctx, &job_id).await.map_err(CommandError::from)
+    ops::solver::apply(&ctx, &job_id).await.map(|_| ()).map_err(CommandError::from)
 }
 
 #[tauri::command]

@@ -37,6 +37,7 @@ dependencies = [
  "tauri-plugin-process",
  "tauri-plugin-updater",
  "tokio",
+ "tracing",
  "uuid",
 ]
 
@@ -5645,6 +5646,7 @@ dependencies = [
  "serde",
  "serde_json",
  "shared-kernel",
+ "svc-iam",
  "tokio",
  "tracing",
  "utoipa",

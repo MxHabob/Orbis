@@ -84,7 +84,7 @@ pub struct AppState {
 impl AppState {
     pub async fn init() -> Result<Self, Box<dyn std::error::Error>> {
         let config = Arc::new(shared_kernel::config::Config::load());
-        let db = infra_persistence::connection::connect(&config.database_url).await?;
+        let db = infra_persistence::connection::connect_year(&config.database_url).await?;
         let event_bus = Arc::new(EventBus::new());
         let platform = Arc::new(PlatformServices::new(db.clone(), event_bus));
 
@@ -110,7 +110,7 @@ impl AppState {
     pub async fn validate_token(&self, token: &str) -> Result<crate::entities::user::Model, AppError> {
         use sea_orm::{EntityTrait, ColumnTrait, QueryFilter};
         let session = svc_iam::entities::user_session::Entity::find()
-            .filter(svc_iam::entities::user_session::Column::AccessToken.eq(token))
+            .filter(svc_iam::entities::user_session::Column::Token.eq(token))
             .one(&self.db)
             .await?
             .ok_or_else(|| AppError::unauthorized("Invalid or expired token"))?;
@@ -120,13 +120,6 @@ impl AppState {
             .await?
             .ok_or_else(|| AppError::unauthorized("User not found"))?;
 
-        // Map to our entity model
-        Ok(crate::entities::user::Model {
-            id: user.id,
-            org_id: user.org_id,
-            full_name: user.full_name,
-            email: user.email,
-            role: user.primary_role,
-        })
+        Ok(user)
     }
 }

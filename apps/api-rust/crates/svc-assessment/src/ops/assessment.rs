@@ -18,7 +18,7 @@ use crate::entities::assessment;
 pub async fn list(
     ctx: &ServiceContext,
     cycle_id: &str,
-    class_subject_id: Option<String>,
+    class_subject_id: Option<&str>,
 ) -> Result<Vec<assessment::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::AssessmentRead).await?;
 
@@ -39,20 +39,29 @@ pub async fn list(
 // ── Commands ────────────────────────────────────────────────────
 
 /// Create a new assessment definition.
+#[derive(serde::Deserialize)]
+pub struct CreateAssessmentRequest {
+    pub cycle_id: String,
+    pub class_subject_id: String,
+    pub title: String,
+    pub title_ar: Option<String>,
+    pub item_type: String,
+    pub max_score: f64,
+    pub weight: f64,
+    pub grade_group_name: String,
+    pub assessment_date: Option<String>,
+    pub due_date: Option<String>,
+}
+
+/// Create a new assessment definition.
 pub async fn create(
     ctx: &ServiceContext,
-    cycle_id: String,
-    class_subject_id: String,
-    title: String,
-    title_ar: Option<String>,
-    item_type: String,
-    max_score: f64,
-    weight: f64,
-    grade_group_name: String,
-    assessment_date: Option<String>,
-    due_date: Option<String>,
+    data: serde_json::Value,
 ) -> Result<assessment::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::AssessmentWrite).await?;
+
+    let req: CreateAssessmentRequest = serde_json::from_value(data)
+        .map_err(|e| AppError::validation(format!("Invalid create assessment payload: {e}")))?;
 
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
@@ -60,18 +69,18 @@ pub async fn create(
     let model = assessment::Model {
         id: id.clone(),
         org_id: ctx.org_id.clone(),
-        cycle_id,
-        class_subject_id,
-        title,
-        title_ar,
+        cycle_id: req.cycle_id,
+        class_subject_id: req.class_subject_id,
+        title: req.title,
+        title_ar: req.title_ar,
         description: None,
-        item_type,
-        max_score,
+        item_type: req.item_type,
+        max_score: req.max_score,
         passing_score: None,
-        weight,
-        grade_group_name,
-        assessment_date,
-        due_date,
+        weight: req.weight,
+        grade_group_name: req.grade_group_name,
+        assessment_date: req.assessment_date,
+        due_date: req.due_date,
         duration_minutes: None,
         is_published: 0,
         published_at: None,
@@ -118,16 +127,26 @@ pub async fn create(
     Ok(created)
 }
 
+#[derive(serde::Deserialize)]
+pub struct UpdateAssessmentRequest {
+    pub title: Option<String>,
+    pub title_ar: Option<String>,
+    pub max_score: Option<f64>,
+    pub weight: Option<f64>,
+    pub assessment_date: Option<String>,
+    pub due_date: Option<String>,
+}
+
 /// Update an assessment definition.
 pub async fn update(
     ctx: &ServiceContext,
     assessment_id: &str,
-    title: Option<String>,
-    max_score: Option<f64>,
-    weight: Option<f64>,
-    assessment_date: Option<String>,
+    data: serde_json::Value,
 ) -> Result<assessment::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::AssessmentWrite).await?;
+
+    let req: UpdateAssessmentRequest = serde_json::from_value(data)
+        .map_err(|e| AppError::validation(format!("Invalid update assessment payload: {e}")))?;
 
     let existing = assessment::Entity::find_by_id(assessment_id.to_string())
         .one(&ctx.db)
@@ -135,17 +154,23 @@ pub async fn update(
         .ok_or_else(|| AppError::not_found("assessment", assessment_id))?;
 
     let mut active: assessment::ActiveModel = existing.into();
-    if let Some(t) = title {
+    if let Some(t) = req.title {
         active.title = Set(t);
     }
-    if let Some(ms) = max_score {
+    if let Some(ta) = req.title_ar {
+        active.title_ar = Set(Some(ta));
+    }
+    if let Some(ms) = req.max_score {
         active.max_score = Set(ms);
     }
-    if let Some(w) = weight {
+    if let Some(w) = req.weight {
         active.weight = Set(w);
     }
-    if let Some(d) = assessment_date {
+    if let Some(d) = req.assessment_date {
         active.assessment_date = Set(Some(d));
+    }
+    if let Some(due) = req.due_date {
+        active.due_date = Set(Some(due));
     }
     active.updated_at = Set(Utc::now().to_rfc3339());
 

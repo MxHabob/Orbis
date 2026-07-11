@@ -28,15 +28,25 @@ pub async fn list(ctx: &ServiceContext) -> Result<Vec<org_unit::Model>, AppError
 
 // ── Commands ────────────────────────────────────────────────────
 
+#[derive(serde::Deserialize)]
+pub struct CreateOrgUnitPayload {
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub parent_id: Option<String>,
+}
+
 /// Create a new org unit.
 pub async fn create(
     ctx: &ServiceContext,
-    cmd: crate::contracts::commands::CreateOrgUnitCmd,
+    data: serde_json::Value,
 ) -> Result<org_unit::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::OrgUnitWrite).await?;
 
+    let req: CreateOrgUnitPayload = serde_json::from_value(data)
+        .map_err(|e| AppError::validation(format!("Invalid create org unit payload: {e}")))?;
+
     // Calculate depth and path based on parent
-    let (depth, path) = if let Some(ref parent_id) = cmd.parent_id {
+    let (depth, path) = if let Some(ref parent_id) = req.parent_id {
         let parent = org_unit::Entity::find_by_id(parent_id.clone())
             .one(&ctx.db)
             .await?
@@ -52,11 +62,11 @@ pub async fn create(
     let model = org_unit::Model {
         id: id.clone(),
         org_id: ctx.org_id.clone(),
-        name: cmd.name,
-        name_ar: cmd.name_ar,
+        name: req.name,
+        name_ar: req.name_ar,
         code: None,
         unit_type: "department".into(),
-        parent_id: cmd.parent_id,
+        parent_id: req.parent_id,
         path,
         depth,
         head_id: None,
@@ -100,14 +110,22 @@ pub async fn create(
     Ok(created)
 }
 
+#[derive(serde::Deserialize)]
+pub struct UpdateOrgUnitPayload {
+    pub name: String,
+    pub name_ar: Option<String>,
+}
+
 /// Update an org unit.
 pub async fn update(
     ctx: &ServiceContext,
     unit_id: &str,
-    name: String,
-    name_ar: Option<String>,
+    data: serde_json::Value,
 ) -> Result<org_unit::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::OrgUnitWrite).await?;
+
+    let req: UpdateOrgUnitPayload = serde_json::from_value(data)
+        .map_err(|e| AppError::validation(format!("Invalid update org unit payload: {e}")))?;
 
     let existing = org_unit::Entity::find_by_id(unit_id.to_string())
         .one(&ctx.db)
@@ -116,8 +134,8 @@ pub async fn update(
 
     let old_data = serde_json::to_value(&existing).ok();
     let mut active: org_unit::ActiveModel = existing.into();
-    active.name = Set(name);
-    active.name_ar = Set(name_ar);
+    active.name = Set(req.name);
+    active.name_ar = Set(req.name_ar);
     active.updated_at = Set(Utc::now().to_rfc3339());
 
     let updated = active.update(&ctx.db).await?;

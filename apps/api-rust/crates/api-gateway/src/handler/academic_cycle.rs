@@ -2,7 +2,7 @@ use axum::{extract::{State, Path, Query, Json}, http::StatusCode, response::Into
 use serde_json::json;
 use crate::app_state::AppState;
 use crate::middleware::AuthenticatedUser;
-use svc_academic::ops;
+use svc_organization::ops;
 
 #[utoipa::path(get, path = "/api/cycles")]
 pub async fn get_cycles(State(state): State<AppState>, AuthenticatedUser(user): AuthenticatedUser) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {

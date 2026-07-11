@@ -11,7 +11,7 @@ use shared_kernel::traits::{AuditEntry, Permission};
 use crate::entities::solve_job;
 
 pub async fn start(
-    ctx: &ServiceContext, cycle_id: String, mode: Option<String>,
+    ctx: &ServiceContext, cycle_id: &str,
 ) -> Result<solve_job::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ScheduleWrite).await?;
 
@@ -20,8 +20,8 @@ pub async fn start(
 
     let model = solve_job::Model {
         id: id.clone(), org_id: ctx.org_id.clone(),
-        job_type: "schedule".into(), target_id: cycle_id,
-        mode, status: "pending".into(),
+        job_type: "schedule".into(), target_id: cycle_id.to_string(),
+        mode: None, status: "pending".into(),
         problem_snapshot: None, best_solution: None, score: None,
         items_created: 0, error_message: None,
         created_by: Some(ctx.actor.as_str().to_string()),

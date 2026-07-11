@@ -12,23 +12,16 @@ use crate::entities::behavior_record;
 
 // ── Queries ─────────────────────────────────────────────────────
 
-/// List behavior records for an org, optionally filtered.
+/// List behavior records for an enrollment in the org.
 pub async fn list(
     ctx: &ServiceContext,
-    cycle_id: &str,
-    enrollment_id: Option<String>,
+    enrollment_id: &str,
 ) -> Result<Vec<behavior_record::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::BehaviorRead).await?;
 
-    let mut query = behavior_record::Entity::find()
+    Ok(behavior_record::Entity::find()
         .filter(behavior_record::Column::OrgId.eq(&ctx.org_id))
-        .filter(behavior_record::Column::CycleId.eq(cycle_id));
-
-    if let Some(eid) = enrollment_id {
-        query = query.filter(behavior_record::Column::EnrollmentId.eq(eid));
-    }
-
-    Ok(query
+        .filter(behavior_record::Column::EnrollmentId.eq(enrollment_id))
         .order_by_desc(behavior_record::Column::IncidentDate)
         .all(&ctx.db)
         .await?)
@@ -36,21 +29,29 @@ pub async fn list(
 
 // ── Commands ────────────────────────────────────────────────────
 
+#[derive(serde::Deserialize)]
+pub struct SubmitAIBehaviorRequest {
+    pub cycle_id: String,
+    pub enrollment_id: String,
+    pub behavior_type: String,
+    pub severity: String,
+    pub description: String,
+    pub confidence: Option<f64>,
+    pub camera_id: Option<String>,
+    pub model_version: Option<String>,
+    pub location: Option<String>,
+    pub image_evidence: Option<String>,
+}
+
 /// Submit an AI-detected behavior record.
 pub async fn submit_ai(
     ctx: &ServiceContext,
-    cycle_id: String,
-    enrollment_id: String,
-    behavior_type: String,
-    severity: String,
-    description: String,
-    confidence: Option<f64>,
-    camera_id: Option<String>,
-    model_version: Option<String>,
-    location: Option<String>,
-    image_evidence: Option<String>,
+    data: serde_json::Value,
 ) -> Result<behavior_record::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::BehaviorAI).await?;
+
+    let req: SubmitAIBehaviorRequest = serde_json::from_value(data)
+        .map_err(|e| AppError::validation(format!("Invalid behavior payload: {e}")))?;
 
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
@@ -58,17 +59,17 @@ pub async fn submit_ai(
     let model = behavior_record::Model {
         id: id.clone(),
         org_id: ctx.org_id.clone(),
-        cycle_id,
-        enrollment_id,
-        behavior_type,
-        severity,
+        cycle_id: req.cycle_id,
+        enrollment_id: req.enrollment_id,
+        behavior_type: req.behavior_type,
+        severity: req.severity,
         category: None,
         title: "AI Detected Behavior".into(),
         title_ar: Some("سلوك مكتشف بالذكاء الاصطناعي".into()),
-        description,
+        description: req.description,
         incident_date: now.clone(),
         incident_time: Some(Utc::now().format("%H:%M:%S").to_string()),
-        location,
+        location: req.location,
         points: None,
         action_taken: None,
         action_details: None,
@@ -80,16 +81,16 @@ pub async fn submit_ai(
         parent_notified: 0,
         parent_notified_at: None,
         parent_response: None,
-        evidence_urls: image_evidence,
+        evidence_urls: req.image_evidence,
         status: "pending_review".into(),
         resolution_notes: None,
         resolved_at: None,
         resolved_by: None,
         is_private: 0,
         ai_source: Some("orbis_vision".into()),
-        ai_confidence: confidence,
-        ai_model_version: model_version,
-        camera_id,
+        ai_confidence: req.confidence,
+        ai_model_version: req.model_version,
+        camera_id: req.camera_id,
         created_at: now.clone(),
         updated_at: now,
     };

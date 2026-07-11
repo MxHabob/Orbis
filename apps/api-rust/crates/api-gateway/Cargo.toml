@@ -19,6 +19,7 @@ svc-scheduling = { workspace = true }
 svc-finance = { workspace = true }
 svc-exam = { workspace = true }
 infra-persistence = { workspace = true }
+infra-integration = { workspace = true }
 infra-scheduler = { workspace = true }
 shared-kernel = { workspace = true }
 sea-orm = { workspace = true }

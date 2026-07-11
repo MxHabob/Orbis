@@ -19,31 +19,36 @@ pub async fn post_users(State(state): State<AppState>, AuthenticatedUser(user): 
 }
 
 #[utoipa::path(get, path = "/api/users/{id}")]
-pub async fn get_user(State(state): State<AppState>, Path(id): Path<String>) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let r = ops::user::get(&state.db, &id).await.map_err(|e| (StatusCode::NOT_FOUND, Json(json!({"success":false,"error":e.to_string()}))))?;
+pub async fn get_user(State(state): State<AppState>, AuthenticatedUser(user): AuthenticatedUser, Path(id): Path<String>) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let ctx = state.build_context(&user.org_id, &user.id);
+    let r = ops::user::get(&ctx, &id).await.map_err(|e| (StatusCode::NOT_FOUND, Json(json!({"success":false,"error":e.to_string()}))))?;
     ok!(r)
 }
 
 #[utoipa::path(put, path = "/api/users/{id}")]
-pub async fn put_user(State(state): State<AppState>, Path(id): Path<String>, Json(body): Json<serde_json::Value>) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let r = ops::user::update(&state.db, &id, body).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
+pub async fn put_user(State(state): State<AppState>, AuthenticatedUser(user): AuthenticatedUser, Path(id): Path<String>, Json(body): Json<serde_json::Value>) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let ctx = state.build_context(&user.org_id, &user.id);
+    let r = ops::user::update(&ctx, &id, body).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
     ok!(r)
 }
 
 #[utoipa::path(delete, path = "/api/users/{id}")]
-pub async fn delete_user(State(state): State<AppState>, Path(id): Path<String>) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    ops::user::delete(&state.db, &id).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
+pub async fn delete_user(State(state): State<AppState>, AuthenticatedUser(user): AuthenticatedUser, Path(id): Path<String>) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let ctx = state.build_context(&user.org_id, &user.id);
+    ops::user::delete(&ctx, &id).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
     ok!(json!({"deleted": true}))
 }
 
 #[utoipa::path(post, path = "/api/users/{id}/role")]
-pub async fn post_user_role(State(state): State<AppState>, Path(id): Path<String>, Json(body): Json<serde_json::Value>) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    ops::user::change_role(&state.db, &id, body).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
+pub async fn post_user_role(State(state): State<AppState>, AuthenticatedUser(user): AuthenticatedUser, Path(id): Path<String>, Json(body): Json<serde_json::Value>) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let ctx = state.build_context(&user.org_id, &user.id);
+    ops::user::change_role(&ctx, &id, body).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
     ok!(json!({"updated": true}))
 }
 
 #[utoipa::path(post, path = "/api/users/{id}/password")]
-pub async fn post_user_password(State(state): State<AppState>, Path(id): Path<String>, Json(body): Json<serde_json::Value>) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    ops::user::change_password(&state.db, &id, body).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
+pub async fn post_user_password(State(state): State<AppState>, AuthenticatedUser(user): AuthenticatedUser, Path(id): Path<String>, Json(body): Json<serde_json::Value>) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let ctx = state.build_context(&user.org_id, &user.id);
+    ops::auth::change_password(&ctx, &id, body).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
     ok!(json!({"updated": true}))
 }

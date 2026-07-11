@@ -28,20 +28,32 @@ pub async fn get(ctx: &ServiceContext, session_id: &str) -> Result<exam_session:
         .ok_or_else(|| AppError::not_found("exam_session", session_id))
 }
 
+#[derive(serde::Deserialize)]
+pub struct CreateExamSessionRequest {
+    pub cycle_id: String,
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub session_type: String,
+    pub start_date: String,
+    pub end_date: String,
+}
+
 pub async fn create(
     ctx: &ServiceContext,
-    cycle_id: String, name: String, name_ar: Option<String>,
-    session_type: String, start_date: String, end_date: String,
+    data: serde_json::Value,
 ) -> Result<exam_session::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ExamSessionWrite).await?;
+
+    let req: CreateExamSessionRequest = serde_json::from_value(data)
+        .map_err(|e| AppError::validation(format!("Invalid session payload: {e}")))?;
 
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
 
     let model = exam_session::Model {
-        id: id.clone(), org_id: ctx.org_id.clone(), cycle_id,
-        name, name_ar, code: None, session_type,
-        status: "draft".into(), start_date, end_date,
+        id: id.clone(), org_id: ctx.org_id.clone(), cycle_id: req.cycle_id,
+        name: req.name, name_ar: req.name_ar, code: None, session_type: req.session_type,
+        status: "draft".into(), start_date: req.start_date, end_date: req.end_date,
         hijri_start_date: None, hijri_end_date: None,
         applicable_levels: None, applicable_class_ids: None,
         settings: None, grading_deadline: None,

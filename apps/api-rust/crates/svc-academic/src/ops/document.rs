@@ -12,21 +12,16 @@ use crate::entities::document;
 
 // ── Queries ─────────────────────────────────────────────────────
 
-/// List documents, optionally filtered by owner.
+/// List documents, filtered by owner.
 pub async fn list(
     ctx: &ServiceContext,
-    owner_id: Option<String>,
+    owner_id: &str,
 ) -> Result<Vec<document::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::DocumentRead).await?;
 
-    let mut query = document::Entity::find()
-        .filter(document::Column::OrgId.eq(&ctx.org_id));
-
-    if let Some(oid) = owner_id {
-        query = query.filter(document::Column::OwnerId.eq(oid));
-    }
-
-    Ok(query
+    Ok(document::Entity::find()
+        .filter(document::Column::OrgId.eq(&ctx.org_id))
+        .filter(document::Column::OwnerId.eq(owner_id))
         .order_by_desc(document::Column::CreatedAt)
         .all(&ctx.db)
         .await?)
@@ -44,15 +39,23 @@ pub async fn get(ctx: &ServiceContext, id: &str) -> Result<document::Model, AppE
 
 // ── Commands ────────────────────────────────────────────────────
 
+#[derive(serde::Deserialize)]
+pub struct CreateDocumentPayload {
+    pub owner_id: String,
+    pub name: String,
+    pub item_type: String,
+    pub key: String,
+}
+
 /// Create a new document record.
 pub async fn create(
     ctx: &ServiceContext,
-    owner_id: String,
-    name: String,
-    item_type: String,
-    key: String,
+    data: serde_json::Value,
 ) -> Result<document::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::DocumentWrite).await?;
+
+    let req: CreateDocumentPayload = serde_json::from_value(data)
+        .map_err(|e| AppError::validation(format!("Invalid document payload: {e}")))?;
 
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
@@ -60,19 +63,19 @@ pub async fn create(
     let model = document::Model {
         id: id.clone(),
         org_id: ctx.org_id.clone(),
-        owner_id,
+        owner_id: req.owner_id,
         uploaded_by: Some(ctx.actor.as_str().to_string()),
-        name,
+        name: req.name,
         title: None,
         description: None,
-        item_type,
+        item_type: req.item_type,
         visibility: "private".into(),
         size: None,
         mime_type: None,
         extension: None,
         storage_provider: "local".into(),
         bucket: None,
-        key,
+        key: req.key,
         url: None,
         thumbnail_url: None,
         parent_id: None,

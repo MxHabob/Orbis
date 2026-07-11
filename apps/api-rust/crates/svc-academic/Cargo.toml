@@ -6,6 +6,7 @@ description = "Orbis Academic domain — classes, subjects, enrollments, org uni
 
 [dependencies]
 shared-kernel = { workspace = true }
+svc-iam = { workspace = true }
 infra-persistence = { workspace = true }
 sea-orm = { workspace = true }
 serde = { workspace = true }

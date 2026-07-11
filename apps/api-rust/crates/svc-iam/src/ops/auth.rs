@@ -1,7 +1,7 @@
 //! Auth operations — login, logout, password, session management.
 
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, DatabaseConnection};
 use uuid::Uuid;
 
 use shared_kernel::context::ServiceContext;
@@ -14,21 +14,18 @@ use crate::entities::{user, user_session};
 
 /// Authenticate by email/phone + password.
 pub async fn login(
-    ctx: &ServiceContext,
+    db: &DatabaseConnection,
     identifier: &str,
     password_hash: &str,
-    ip: Option<String>,
-    user_agent: Option<String>,
 ) -> Result<(user::Model, user_session::Model), AppError> {
     let found = user::Entity::find()
-        .filter(user::Column::OrgId.eq(&ctx.org_id))
         .filter(user::Column::IsDeleted.eq(0))
         .filter(
             sea_orm::Condition::any()
                 .add(user::Column::Email.eq(identifier))
                 .add(user::Column::Phone.eq(identifier))
         )
-        .one(&ctx.db).await?
+        .one(db).await?
         .ok_or_else(|| AppError::unauthorized("Invalid credentials"))?;
 
     // Check locked
@@ -50,7 +47,7 @@ pub async fn login(
                     (Utc::now() + chrono::Duration::minutes(15)).to_rfc3339()
                 ));
             }
-            active.update(&ctx.db).await?;
+            active.update(db).await?;
             return Err(AppError::unauthorized("Invalid credentials"));
         }
     }
@@ -59,12 +56,11 @@ pub async fn login(
     let now = Utc::now().to_rfc3339();
     let mut active: user::ActiveModel = found.clone().into();
     active.last_login_at = Set(Some(now.clone()));
-    active.last_login_ip = Set(ip.clone());
     active.login_count = Set(Some(found.login_count.unwrap_or(0) + 1));
     active.failed_logins = Set(Some(0));
     active.locked_until = Set(None);
     active.updated_at = Set(now.clone());
-    let updated_user = active.update(&ctx.db).await?;
+    let updated_user = active.update(db).await?;
 
     // Create session
     let session_id = Uuid::new_v4().to_string();
@@ -78,11 +74,11 @@ pub async fn login(
         refresh_token: Some(Uuid::new_v4().to_string()),
         device_id: None,
         device_type: None,
-        device_name: user_agent.clone(),
+        device_name: None,
         os: None,
         browser: None,
-        ip_address: ip,
-        user_agent,
+        ip_address: None,
+        user_agent: None,
         is_current: 1,
         is_trusted: 0,
         mfa_verified: 0,
@@ -93,58 +89,46 @@ pub async fn login(
     };
 
     let session_active: user_session::ActiveModel = session.into();
-    let created_session = session_active.insert(&ctx.db).await?;
-
-    ctx.event_bus.publish(EventEnvelope {
-        event_type: event_types::USER_LOGIN.into(),
-        entity_type: "user".into(), entity_id: found.id.clone(),
-        org_id: ctx.org_id.clone(), actor: ctx.actor.as_str().into(),
-        actor_type: "user".into(),
-        correlation_id: ctx.correlation_id.clone(),
-        payload: serde_json::json!({ "session_id": session_id }),
-        chain_depth: 0,
-    });
+    let created_session = session_active.insert(db).await?;
 
     Ok((updated_user, created_session))
 }
 
 /// Logout — invalidate session.
-pub async fn logout(ctx: &ServiceContext, session_id: &str) -> Result<(), AppError> {
+pub async fn logout(db: &DatabaseConnection, session_id: &str) -> Result<(), AppError> {
     let existing = user_session::Entity::find_by_id(session_id.to_string())
-        .one(&ctx.db).await?
+        .one(db).await?
         .ok_or_else(|| AppError::not_found("user_session", session_id))?;
 
     let mut active: user_session::ActiveModel = existing.into();
     active.is_current = Set(0);
-    active.update(&ctx.db).await?;
-
-    ctx.event_bus.publish(EventEnvelope {
-        event_type: event_types::USER_LOGOUT.into(),
-        entity_type: "user".into(), entity_id: session_id.into(),
-        org_id: ctx.org_id.clone(), actor: ctx.actor.as_str().into(),
-        actor_type: "user".into(),
-        correlation_id: ctx.correlation_id.clone(),
-        payload: serde_json::json!({}),
-        chain_depth: 0,
-    });
+    active.update(db).await?;
 
     Ok(())
+}
+
+#[derive(serde::Deserialize)]
+pub struct ChangePasswordPayload {
+    pub new_password_hash: String,
 }
 
 /// Change password.
 pub async fn change_password(
     ctx: &ServiceContext,
     user_id: &str,
-    new_password_hash: String,
+    data: serde_json::Value,
 ) -> Result<(), AppError> {
     ctx.permissions.check(&ctx.actor, Permission::UserWrite).await?;
+
+    let req: ChangePasswordPayload = serde_json::from_value(data)
+        .map_err(|e| AppError::validation(format!("Invalid change password payload: {e}")))?;
 
     let existing = user::Entity::find_by_id(user_id.to_string())
         .one(&ctx.db).await?
         .ok_or_else(|| AppError::not_found("user", user_id))?;
 
     let mut active: user::ActiveModel = existing.into();
-    active.password_hash = Set(Some(new_password_hash));
+    active.password_hash = Set(Some(req.new_password_hash));
     active.password_changed_at = Set(Some(Utc::now().to_rfc3339()));
     active.updated_at = Set(Utc::now().to_rfc3339());
     active.update(&ctx.db).await?;
@@ -178,4 +162,111 @@ pub async fn list_sessions(
         .filter(user_session::Column::UserId.eq(user_id))
         .filter(user_session::Column::IsCurrent.eq(1))
         .all(&ctx.db).await?)
+}
+
+#[derive(serde::Deserialize)]
+pub struct RegisterPayload {
+    pub org_id: Option<String>,
+    pub full_name: String,
+    pub name_ar: Option<String>,
+    pub email: Option<String>,
+    pub phone: Option<String>,
+    pub primary_role: String,
+    pub password_hash: String,
+}
+
+pub async fn register(
+    db: &DatabaseConnection,
+    data: serde_json::Value,
+) -> Result<user::Model, AppError> {
+    let req: RegisterPayload = serde_json::from_value(data)
+        .map_err(|e| AppError::validation(format!("Invalid register payload: {e}")))?;
+
+    // Check email/phone uniqueness
+    if let Some(ref email) = req.email {
+        let existing = user::Entity::find()
+            .filter(user::Column::Email.eq(email))
+            .one(db).await?;
+        if existing.is_some() {
+            return Err(AppError::conflict(format!("Email '{}' already registered", email)));
+        }
+    }
+    if let Some(ref phone) = req.phone {
+        let existing = user::Entity::find()
+            .filter(user::Column::Phone.eq(phone))
+            .one(db).await?;
+        if existing.is_some() {
+            return Err(AppError::conflict(format!("Phone '{}' already registered", phone)));
+        }
+    }
+
+    let now = Utc::now().to_rfc3339();
+    let id = Uuid::new_v4().to_string();
+    let org_id = req.org_id.unwrap_or_else(|| "default".to_string());
+
+    let model = user::Model {
+        id: id.clone(),
+        org_id,
+        email: req.email,
+        email_verified: 0,
+        email_verified_at: None,
+        phone: req.phone,
+        phone_verified: 0,
+        phone_verified_at: None,
+        password_hash: Some(req.password_hash),
+        password_changed_at: None,
+        password_expires_at: None,
+        mfa_enabled: 0,
+        mfa_secret: None,
+        mfa_backup_codes: None,
+        full_name: req.full_name,
+        name_ar: req.name_ar,
+        name_en: None,
+        avatar: None,
+        sex: None,
+        date_of_birth: None,
+        place_of_birth: None,
+        nationality: None,
+        national_id: None,
+        passport_number: None,
+        address: None,
+        city: None,
+        country: None,
+        postal_code: None,
+        emergency_contact: None,
+        blood_type: None,
+        allergies: None,
+        medical_conditions: None,
+        medical_notes: None,
+        social_links: None,
+        bio: None,
+        primary_role: req.primary_role,
+        status: "active".into(),
+        last_login_at: None,
+        last_login_ip: None,
+        login_count: Some(0),
+        failed_logins: Some(0),
+        locked_until: None,
+        prefs: "{}".into(),
+        meta: "{}".into(),
+        is_deleted: 0,
+        deleted_at: None,
+        deleted_by: None,
+        created_at: now.clone(),
+        updated_at: now,
+        created_by: Some("register".to_string()),
+    };
+
+    let active: user::ActiveModel = model.into();
+    let created = active.insert(db).await?;
+    Ok(created)
+}
+
+pub async fn logout_by_user(db: &DatabaseConnection, user_id: &str) -> Result<(), AppError> {
+    user_session::Entity::update_many()
+        .col_expr(user_session::Column::IsCurrent, sea_orm::sea_query::Expr::value(0))
+        .filter(user_session::Column::UserId.eq(user_id))
+        .exec(db)
+        .await?;
+    Ok(())
 }

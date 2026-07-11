@@ -19,6 +19,10 @@ pub async fn list(ctx: &ServiceContext) -> Result<Vec<ledger_account::Model>, Ap
         .all(&ctx.db).await?)
 }
 
+pub async fn list_accounts(ctx: &ServiceContext) -> Result<Vec<ledger_account::Model>, AppError> {
+    list(ctx).await
+}
+
 pub async fn list_transaction_accounts(ctx: &ServiceContext) -> Result<Vec<ledger_account::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::FinanceRead).await?;
     Ok(ledger_account::Entity::find()

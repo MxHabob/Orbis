@@ -22,16 +22,27 @@ pub async fn list_by_user(
         .all(&ctx.db).await?)
 }
 
+#[derive(serde::Deserialize)]
+pub struct AssignRolePayload {
+    pub user_id: String,
+    pub role: String,
+    pub scope_type: String,
+    pub scope_id: Option<String>,
+}
+
 pub async fn assign(
-    ctx: &ServiceContext, user_id: String, role: String,
-    scope_type: String, scope_id: Option<String>,
+    ctx: &ServiceContext,
+    data: serde_json::Value,
 ) -> Result<user_role::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::UserRoleWrite).await?;
 
+    let req: AssignRolePayload = serde_json::from_value(data)
+        .map_err(|e| AppError::validation(format!("Invalid assign role payload: {e}")))?;
+
     let id = Uuid::new_v4().to_string();
     let model = user_role::Model {
-        id: id.clone(), user_id: user_id.clone(), role: role.clone(),
-        org_id: ctx.org_id.clone(), scope_type, scope_id,
+        id: id.clone(), user_id: req.user_id.clone(), role: req.role.clone(),
+        org_id: ctx.org_id.clone(), scope_type: req.scope_type, scope_id: req.scope_id,
         valid_from: None, valid_until: None, is_primary: 0,
         assigned_by: Some(ctx.actor.as_str().to_string()),
         assigned_at: Utc::now().to_rfc3339(),
@@ -46,7 +57,7 @@ pub async fn assign(
         org_id: ctx.org_id.clone(), actor: ctx.actor.as_str().into(),
         actor_type: ctx.actor.actor_type().into(),
         correlation_id: ctx.correlation_id.clone(),
-        payload: serde_json::json!({ "user_id": user_id, "role": role, "action": "assign" }),
+        payload: serde_json::json!({ "user_id": req.user_id, "role": req.role, "action": "assign" }),
         chain_depth: 0,
     });
 
@@ -61,33 +72,44 @@ pub async fn assign(
     Ok(created)
 }
 
-pub async fn revoke(ctx: &ServiceContext, role_id: &str) -> Result<(), AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::UserRoleWrite).await?;
-
+pub async fn revoke(db: &sea_orm::DatabaseConnection, role_id: &str) -> Result<(), AppError> {
     let existing = user_role::Entity::find_by_id(role_id.to_string())
-        .one(&ctx.db).await?
+        .one(db).await?
         .ok_or_else(|| AppError::not_found("user_role", role_id))?;
 
-    let user_id = existing.user_id.clone();
-    let role = existing.role.clone();
-    existing.delete(&ctx.db).await?;
+    existing.delete(db).await?;
+    Ok(())
+}
 
-    ctx.event_bus.publish(EventEnvelope {
-        event_type: event_types::ROLE_CHANGED.into(),
-        entity_type: "user_role".into(), entity_id: role_id.into(),
-        org_id: ctx.org_id.clone(), actor: ctx.actor.as_str().into(),
-        actor_type: ctx.actor.actor_type().into(),
-        correlation_id: ctx.correlation_id.clone(),
-        payload: serde_json::json!({ "user_id": user_id, "role": role, "action": "revoke" }),
-        chain_depth: 0,
-    });
+pub async fn save_for_user(
+    db: &sea_orm::DatabaseConnection,
+    user_id: &str,
+    roles: Vec<String>,
+) -> Result<(), AppError> {
+    // Delete all current roles for this user
+    user_role::Entity::delete_many()
+        .filter(user_role::Column::UserId.eq(user_id))
+        .exec(db)
+        .await?;
 
-    ctx.audit.log(AuditEntry {
-        org_id: ctx.org_id.clone(), actor: ctx.actor.clone(),
-        action: "role.revoke".into(), entity_type: "user_role".into(),
-        entity_id: role_id.into(), old_data: None, new_data: None,
-        correlation_id: ctx.correlation_id.clone(),
-    }).await?;
+    // Insert new roles
+    for r in roles {
+        let model = user_role::Model {
+            id: Uuid::new_v4().to_string(),
+            user_id: user_id.to_string(),
+            role: r,
+            org_id: "default".to_string(),
+            scope_type: "global".to_string(),
+            scope_id: None,
+            valid_from: None,
+            valid_until: None,
+            is_primary: 0,
+            assigned_by: Some("system".to_string()),
+            assigned_at: Utc::now().to_rfc3339(),
+        };
+        let active: user_role::ActiveModel = model.into();
+        active.insert(db).await?;
+    }
 
     Ok(())
 }

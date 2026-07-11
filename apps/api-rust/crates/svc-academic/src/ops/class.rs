@@ -17,22 +17,15 @@ use crate::entities::class;
 
 // ── Queries ─────────────────────────────────────────────────────
 
-/// List all classes for an org, optionally filtered by cycle.
+/// List all classes for an org.
 pub async fn list(
     ctx: &ServiceContext,
-    cycle_id: Option<String>,
 ) -> Result<Vec<class::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ClassRead).await?;
 
-    let mut query = class::Entity::find()
+    Ok(class::Entity::find()
         .filter(class::Column::OrgId.eq(&ctx.org_id))
-        .filter(class::Column::IsDeleted.eq(0));
-
-    if let Some(cid) = cycle_id {
-        query = query.filter(class::Column::CycleId.eq(cid));
-    }
-
-    Ok(query
+        .filter(class::Column::IsDeleted.eq(0))
         .order_by_asc(class::Column::Level)
         .order_by_asc(class::Column::Name)
         .all(&ctx.db)
@@ -51,12 +44,25 @@ pub async fn get(ctx: &ServiceContext, id: &str) -> Result<class::Model, AppErro
 
 // ── Commands ────────────────────────────────────────────────────
 
+#[derive(serde::Deserialize)]
+pub struct CreateClassPayload {
+    pub org_unit_id: String,
+    pub cycle_id: String,
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub grade_level: String,
+    pub capacity: i32,
+}
+
 /// Create a new class.
 pub async fn create(
     ctx: &ServiceContext,
-    cmd: crate::contracts::commands::CreateClassCmd,
+    data: serde_json::Value,
 ) -> Result<class::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ClassWrite).await?;
+
+    let req: CreateClassPayload = serde_json::from_value(data)
+        .map_err(|e| AppError::validation(format!("Invalid create class payload: {e}")))?;
 
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
@@ -64,14 +70,14 @@ pub async fn create(
     let model = class::Model {
         id: id.clone(),
         org_id: ctx.org_id.clone(),
-        unit_id: cmd.org_unit_id,
-        cycle_id: cmd.cycle_id,
-        name: cmd.name.clone(),
-        name_ar: cmd.name_ar,
-        level: cmd.grade_level,
+        unit_id: req.org_unit_id,
+        cycle_id: req.cycle_id,
+        name: req.name.clone(),
+        name_ar: req.name_ar,
+        level: req.grade_level,
         division: None,
         homeroom_teacher_id: None,
-        capacity: Some(cmd.capacity),
+        capacity: Some(req.capacity),
         current_students: Some(0),
         room_id: None,
         color: None,
@@ -113,27 +119,35 @@ pub async fn create(
     Ok(created)
 }
 
+#[derive(serde::Deserialize)]
+pub struct UpdateClassPayload {
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub level: String,
+    pub division: Option<String>,
+    pub capacity: Option<i32>,
+}
+
 /// Update an existing class.
 pub async fn update(
     ctx: &ServiceContext,
     class_id: &str,
-    name: String,
-    name_ar: Option<String>,
-    level: String,
-    division: Option<String>,
-    capacity: Option<i32>,
+    data: serde_json::Value,
 ) -> Result<class::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ClassWrite).await?;
+
+    let req: UpdateClassPayload = serde_json::from_value(data)
+        .map_err(|e| AppError::validation(format!("Invalid update class payload: {e}")))?;
 
     let existing = get(ctx, class_id).await?;
     let old_data = serde_json::to_value(&existing).ok();
 
     let mut active: class::ActiveModel = existing.into();
-    active.name = Set(name);
-    active.name_ar = Set(name_ar);
-    active.level = Set(level);
-    active.division = Set(division);
-    if let Some(cap) = capacity {
+    active.name = Set(req.name);
+    active.name_ar = Set(req.name_ar);
+    active.level = Set(req.level);
+    active.division = Set(req.division);
+    if let Some(cap) = req.capacity {
         active.capacity = Set(Some(cap));
     }
     active.updated_at = Set(Utc::now().to_rfc3339());
@@ -232,4 +246,18 @@ pub async fn assign_teacher(
     }).await?;
 
     Ok(updated)
+}
+
+pub async fn list_students(
+    ctx: &ServiceContext,
+    class_id: &str,
+) -> Result<Vec<crate::entities::enrollment::Model>, AppError> {
+    ctx.permissions.check(&ctx.actor, Permission::ClassRead).await?;
+
+    Ok(crate::entities::enrollment::Entity::find()
+        .filter(crate::entities::enrollment::Column::OrgId.eq(&ctx.org_id))
+        .filter(crate::entities::enrollment::Column::ClassId.eq(class_id))
+        .filter(crate::entities::enrollment::Column::Status.ne("withdrawn"))
+        .all(&ctx.db)
+        .await?)
 }

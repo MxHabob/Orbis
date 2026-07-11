@@ -2,7 +2,7 @@ use axum::{extract::{State, Json}, http::StatusCode, response::IntoResponse};
 use serde_json::json;
 use crate::app_state::AppState;
 use crate::middleware::AuthenticatedUser;
-use svc_lifecycle::ops;
+use svc_organization::ops;
 
 #[utoipa::path(get, path = "/api/dashboard")]
 pub async fn get_dashboard(State(state): State<AppState>, AuthenticatedUser(user): AuthenticatedUser) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {

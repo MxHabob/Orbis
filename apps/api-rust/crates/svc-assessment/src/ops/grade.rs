@@ -100,34 +100,23 @@ async fn save_grade_history(
 
 // ── Queries ─────────────────────────────────────────────────────
 
-/// List grades, filtered by cycle + optional class/enrollment/subject.
+/// List grades, filtered by assessment_id.
 pub async fn list(
     ctx: &ServiceContext,
-    cycle_id: &str,
-    enrollment_id: Option<String>,
-    class_subject_id: Option<String>,
+    assessment_id: &str,
 ) -> Result<Vec<grade::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::GradeRead).await?;
 
-    let mut query = grade::Entity::find()
+    Ok(grade::Entity::find()
         .filter(grade::Column::OrgId.eq(&ctx.org_id))
-        .filter(grade::Column::CycleId.eq(cycle_id));
-
-    if let Some(eid) = enrollment_id {
-        query = query.filter(grade::Column::EnrollmentId.eq(eid));
-    }
-    if let Some(csid) = class_subject_id {
-        query = query.filter(grade::Column::ClassSubjectId.eq(csid));
-    }
-
-    Ok(query
+        .filter(grade::Column::AssessmentId.eq(assessment_id))
         .order_by_asc(grade::Column::SubjectName)
         .all(&ctx.db)
         .await?)
 }
 
 /// Get a single grade report card for a student enrollment.
-pub async fn get_report_card(
+pub async fn report_card(
     ctx: &ServiceContext,
     enrollment_id: &str,
     cycle_id: &str,
@@ -145,7 +134,7 @@ pub async fn get_report_card(
 }
 
 /// Get grade analytics for a class-subject.
-pub async fn get_analytics(
+pub async fn analytics(
     ctx: &ServiceContext,
     cycle_id: &str,
     class_subject_id: &str,
@@ -162,7 +151,7 @@ pub async fn get_analytics(
 }
 
 /// Get the grade matrix for a class-subject (grid view).
-pub async fn get_matrix(
+pub async fn matrix(
     ctx: &ServiceContext,
     cycle_id: &str,
     class_subject_id: &str,
@@ -180,14 +169,40 @@ pub async fn get_matrix(
 
 // ── Commands ────────────────────────────────────────────────────
 
+#[derive(serde::Deserialize)]
+pub struct CreateGradePayload {
+    pub cycle_id: String,
+    pub enrollment_id: String,
+    pub subject_name: String,
+    pub subject_name_ar: Option<String>,
+    pub score: f64,
+    pub max_score: f64,
+    pub weight: Option<f64>,
+    pub exam_type: String,
+    pub semester: String,
+    pub notes: Option<String>,
+    pub is_final: Option<i32>,
+    pub assessment_id: Option<String>,
+    pub class_subject_id: Option<String>,
+}
+
+#[derive(serde::Deserialize)]
+pub struct SubmitBulkPayload {
+    pub cycle_id: String,
+    pub grades: Vec<CreateGradePayload>,
+}
+
 /// Submit a single grade.
 pub async fn submit(
     ctx: &ServiceContext,
-    cycle_id: &str,
-    req: CreateGradeRequest,
+    data: serde_json::Value,
 ) -> Result<grade::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::GradeWrite).await?;
-    check_cycle_open(ctx, cycle_id).await?;
+
+    let req: CreateGradePayload = serde_json::from_value(data)
+        .map_err(|e| AppError::validation(format!("Invalid grade payload: {e}")))?;
+
+    check_cycle_open(ctx, &req.cycle_id).await?;
 
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
@@ -196,7 +211,7 @@ pub async fn submit(
     let model = grade::Model {
         id: id.clone(),
         org_id: ctx.org_id.clone(),
-        cycle_id: cycle_id.to_string(),
+        cycle_id: req.cycle_id,
         enrollment_id: req.enrollment_id,
         assessment_id: req.assessment_id,
         class_subject_id: req.class_subject_id,
@@ -205,8 +220,8 @@ pub async fn submit(
         score: req.score,
         max_score: req.max_score,
         weight: req.weight.unwrap_or(1.0),
-        grade_letter: Some(score_to_grade_letter(percentage)),
-        grade_points: Some(score_to_grade_points(percentage)),
+        grade_letter: Some(crate::services::grade::GradeService::score_to_grade_letter(percentage)),
+        grade_points: Some(crate::services::grade::GradeService::score_to_grade_points(percentage)),
         exam_type: req.exam_type,
         semester: req.semester,
         notes: req.notes,
@@ -237,16 +252,52 @@ pub async fn submit(
 /// Submit multiple grades at once.
 pub async fn submit_bulk(
     ctx: &ServiceContext,
-    cycle_id: &str,
-    grades: Vec<CreateGradeRequest>,
+    data: serde_json::Value,
 ) -> Result<Vec<grade::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::GradeWrite).await?;
-    check_cycle_open(ctx, cycle_id).await?;
+
+    let grades: Vec<CreateGradePayload> = if let Ok(payload) = serde_json::from_value::<SubmitBulkPayload>(data.clone()) {
+        payload.grades
+    } else {
+        serde_json::from_value(data)
+            .map_err(|e| AppError::validation(format!("Invalid bulk grade payload: {e}")))?
+    };
 
     let mut results = Vec::with_capacity(grades.len());
     for req in grades {
-        let grade = submit(ctx, cycle_id, req).await?;
-        results.push(grade);
+        check_cycle_open(ctx, &req.cycle_id).await?;
+
+        let now = Utc::now().to_rfc3339();
+        let id = Uuid::new_v4().to_string();
+        let percentage = if req.max_score > 0.0 { (req.score / req.max_score) * 100.0 } else { 0.0 };
+
+        let model = grade::Model {
+            id: id.clone(),
+            org_id: ctx.org_id.clone(),
+            cycle_id: req.cycle_id,
+            enrollment_id: req.enrollment_id,
+            assessment_id: req.assessment_id,
+            class_subject_id: req.class_subject_id,
+            subject_name: req.subject_name,
+            subject_name_ar: req.subject_name_ar,
+            score: req.score,
+            max_score: req.max_score,
+            weight: req.weight.unwrap_or(1.0),
+            grade_letter: Some(crate::services::grade::GradeService::score_to_grade_letter(percentage)),
+            grade_points: Some(crate::services::grade::GradeService::score_to_grade_points(percentage)),
+            exam_type: req.exam_type,
+            semester: req.semester,
+            notes: req.notes,
+            graded_by: ctx.actor.as_str().to_string(),
+            graded_at: now.clone(),
+            is_final: req.is_final.unwrap_or(0),
+            created_at: now.clone(),
+            updated_at: now,
+        };
+
+        let active: grade::ActiveModel = model.into();
+        let created = active.insert(&ctx.db).await?;
+        results.push(created);
     }
     Ok(results)
 }
@@ -275,8 +326,8 @@ pub async fn update(
     let mut active: grade::ActiveModel = existing.into();
     active.score = Set(req.score);
     active.max_score = Set(req.max_score);
-    active.grade_letter = Set(Some(score_to_grade_letter(percentage)));
-    active.grade_points = Set(Some(score_to_grade_points(percentage)));
+    active.grade_letter = Set(Some(crate::services::grade::GradeService::score_to_grade_letter(percentage)));
+    active.grade_points = Set(Some(crate::services::grade::GradeService::score_to_grade_points(percentage)));
     if let Some(notes) = req.notes {
         active.notes = Set(Some(notes));
     }
@@ -336,9 +387,13 @@ pub async fn bulk_subject_entry(
 /// Upsert a single grade cell (create or update).
 pub async fn upsert_cell(
     ctx: &ServiceContext,
-    req: UpsertCellRequest,
+    data: serde_json::Value,
 ) -> Result<UpsertCellResult, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::GradeWrite).await?;
+    
+    let req: UpsertCellRequest = serde_json::from_value(data)
+        .map_err(|e| AppError::validation(format!("Invalid upsert payload: {e}")))?;
+
     check_cycle_open(ctx, &req.cycle_id).await?;
 
     let query_repo = crate::repository::AssessmentQueryRepo::new(ctx.db.clone());
@@ -355,7 +410,6 @@ pub async fn compile_semester(
     ctx: &ServiceContext,
     cycle_id: &str,
     class_id: &str,
-    semester: &str,
 ) -> Result<Vec<grade::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::GradeWrite).await?;
 
@@ -365,5 +419,5 @@ pub async fn compile_semester(
         std::sync::Arc::new(cmd_repo),
         std::sync::Arc::new(query_repo),
     );
-    svc.compile_semester_grades(&ctx.org_id, ctx.actor.as_str(), cycle_id, class_id, semester).await
+    svc.compile_semester_grades(&ctx.org_id, ctx.actor.as_str(), cycle_id, class_id, "semester_1").await
 }

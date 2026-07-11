@@ -41,22 +41,36 @@ pub async fn get(ctx: &ServiceContext, lesson_id: &str) -> Result<scheduled_less
         .ok_or_else(|| AppError::not_found("scheduled_lesson", lesson_id))
 }
 
+#[derive(serde::Deserialize)]
+pub struct CreateLessonRequest {
+    pub cycle_id: String,
+    pub class_id: String,
+    pub class_subject_id: String,
+    pub subject_id: String,
+    pub teacher_id: String,
+    pub time_slot_id: String,
+    pub day_of_week: i32,
+    pub room_id: Option<String>,
+}
+
 pub async fn create(
     ctx: &ServiceContext,
-    cycle_id: String, class_id: String, class_subject_id: String,
-    subject_id: String, teacher_id: String, time_slot_id: String,
-    day_of_week: i32, room_id: Option<String>,
+    data: serde_json::Value,
 ) -> Result<scheduled_lesson::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ScheduleWrite).await?;
+
+    let req: CreateLessonRequest = serde_json::from_value(data)
+        .map_err(|e| AppError::validation(format!("Invalid create lesson payload: {e}")))?;
 
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
 
     let model = scheduled_lesson::Model {
-        id: id.clone(), org_id: ctx.org_id.clone(), cycle_id,
-        class_id, class_subject_id, subject_id, teacher_id,
-        substitute_teacher_id: None, time_slot_id, day_of_week,
-        room_id, room_name: None, status: "scheduled".into(),
+        id: id.clone(), org_id: ctx.org_id.clone(), cycle_id: req.cycle_id,
+        class_id: req.class_id, class_subject_id: req.class_subject_id,
+        subject_id: req.subject_id, teacher_id: req.teacher_id,
+        substitute_teacher_id: None, time_slot_id: req.time_slot_id, day_of_week: req.day_of_week,
+        room_id: req.room_id, room_name: None, status: "scheduled".into(),
         is_substituted: 0, substitution_reason: None,
         topic: None, topic_ar: None, objectives: None,
         materials: None, homework: None, homework_due_date: None,
@@ -80,20 +94,30 @@ pub async fn create(
     Ok(created)
 }
 
+#[derive(serde::Deserialize)]
+pub struct UpdateLessonRequest {
+    pub teacher_id: Option<String>,
+    pub room_id: Option<String>,
+    pub topic: Option<String>,
+    pub status: Option<String>,
+}
+
 pub async fn update(
     ctx: &ServiceContext, lesson_id: &str,
-    teacher_id: Option<String>, room_id: Option<String>,
-    topic: Option<String>, status: Option<String>,
+    data: serde_json::Value,
 ) -> Result<scheduled_lesson::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ScheduleWrite).await?;
+
+    let req: UpdateLessonRequest = serde_json::from_value(data)
+        .map_err(|e| AppError::validation(format!("Invalid update lesson payload: {e}")))?;
 
     let existing = get(ctx, lesson_id).await?;
     let mut active: scheduled_lesson::ActiveModel = existing.into();
 
-    if let Some(tid) = teacher_id { active.teacher_id = Set(tid); }
-    if let Some(rid) = room_id { active.room_id = Set(Some(rid)); }
-    if let Some(t) = topic { active.topic = Set(Some(t)); }
-    if let Some(s) = status { active.status = Set(s); }
+    if let Some(tid) = req.teacher_id { active.teacher_id = Set(tid); }
+    if let Some(rid) = req.room_id { active.room_id = Set(Some(rid)); }
+    if let Some(t) = req.topic { active.topic = Set(Some(t)); }
+    if let Some(s) = req.status { active.status = Set(s); }
     active.updated_at = Set(Utc::now().to_rfc3339());
 
     Ok(active.update(&ctx.db).await?)

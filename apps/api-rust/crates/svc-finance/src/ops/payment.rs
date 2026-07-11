@@ -14,46 +14,52 @@ use crate::entities::payment;
 
 pub async fn list(
     ctx: &ServiceContext,
-    enrollment_id: Option<String>,
-    fee_id: Option<String>,
 ) -> Result<Vec<payment::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::FinanceRead).await?;
 
-    let mut query = payment::Entity::find()
-        .filter(payment::Column::OrgId.eq(&ctx.org_id));
+    Ok(payment::Entity::find()
+        .filter(payment::Column::OrgId.eq(&ctx.org_id))
+        .order_by_desc(payment::Column::PaidAt)
+        .all(&ctx.db)
+        .await?)
+}
 
-    if let Some(eid) = enrollment_id {
-        query = query.filter(payment::Column::EnrollmentId.eq(eid));
-    }
-    if let Some(fid) = fee_id {
-        query = query.filter(payment::Column::FeeId.eq(fid));
-    }
-
-    Ok(query.order_by_desc(payment::Column::PaidAt).all(&ctx.db).await?)
+#[derive(serde::Deserialize)]
+pub struct RecordPaymentRequest {
+    pub fee_id: Option<String>,
+    pub enrollment_id: Option<String>,
+    pub account_id: String,
+    pub amount: f64,
+    pub currency: String,
+    pub exchange_rate: f64,
+    pub method: String,
+    pub treasury_id: Option<String>,
+    pub payer_name: Option<String>,
+    pub notes: Option<String>,
 }
 
 pub async fn record(
     ctx: &ServiceContext,
-    fee_id: Option<String>, enrollment_id: Option<String>,
-    account_id: String, amount: f64, currency: String,
-    exchange_rate: f64, method: String,
-    treasury_id: Option<String>, payer_name: Option<String>,
-    notes: Option<String>,
+    data: serde_json::Value,
 ) -> Result<payment::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::FinanceWrite).await?;
 
+    let req: RecordPaymentRequest = serde_json::from_value(data)
+        .map_err(|e| AppError::validation(format!("Invalid payment payload: {e}")))?;
+
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
-    let base_amount = amount * exchange_rate;
+    let base_amount = req.amount * req.exchange_rate;
 
     let model = payment::Model {
         id: id.clone(), org_id: ctx.org_id.clone(),
-        fee_id, enrollment_id, account_id, amount, currency,
-        exchange_rate, base_amount, method,
+        fee_id: req.fee_id, enrollment_id: req.enrollment_id, account_id: req.account_id,
+        amount: req.amount, currency: req.currency,
+        exchange_rate: req.exchange_rate, base_amount, method: req.method,
         reference: None, receipt_number: None, journal_entry_id: None,
-        treasury_id, payer_name, payer_phone: None,
+        treasury_id: req.treasury_id, payer_name: req.payer_name, payer_phone: None,
         payment_type: "payment".into(), related_payment_id: None,
-        notes, paid_at: now.clone(),
+        notes: req.notes, paid_at: now.clone(),
         created_at: now, created_by: Some(ctx.actor.as_str().to_string()),
     };
 

@@ -203,3 +203,64 @@ pub async fn update_organization(
         is_verified: updated.is_verified == 1,
     })
 }
+
+pub async fn get(ctx: &ServiceContext) -> Result<OrganizationResponse, AppError> {
+    get_organization(ctx).await
+}
+
+pub async fn get_main(db: &sea_orm::DatabaseConnection) -> Result<organization::Model, AppError> {
+    let first = organization::Entity::find()
+        .filter(organization::Column::IsDeleted.eq(0))
+        .one(db)
+        .await?;
+    if let Some(org) = first {
+        Ok(org)
+    } else {
+        Err(AppError::not_found("organization", "main"))
+    }
+}
+
+pub async fn update(
+    ctx: &ServiceContext,
+    data: serde_json::Value,
+) -> Result<OrganizationResponse, AppError> {
+    let cmd: UpdateOrganizationCmd = serde_json::from_value(data)
+        .map_err(|e| AppError::validation(format!("Invalid update organization payload: {e}")))?;
+    update_organization(ctx, cmd).await
+}
+
+pub async fn get_settings(ctx: &ServiceContext) -> Result<serde_json::Value, AppError> {
+    let org = organization::Entity::find()
+        .filter(organization::Column::Id.eq(&ctx.org_id))
+        .one(&ctx.db)
+        .await?
+        .ok_or_else(|| AppError::not_found("organization", &ctx.org_id))?;
+    let settings = org.settings.unwrap_or_else(|| "{}".to_string());
+    let val: serde_json::Value = serde_json::from_str(&settings)
+        .unwrap_or_else(|_| serde_json::json!({}));
+    Ok(val)
+}
+
+pub async fn update_settings(
+    ctx: &ServiceContext,
+    data: serde_json::Value,
+) -> Result<(), AppError> {
+    ctx.permissions.check(&ctx.actor, Permission::OrganizationWrite).await?;
+    let org = organization::Entity::find()
+        .filter(organization::Column::Id.eq(&ctx.org_id))
+        .one(&ctx.db)
+        .await?
+        .ok_or_else(|| AppError::not_found("organization", &ctx.org_id))?;
+    let mut active: organization::ActiveModel = org.into();
+    active.settings = Set(Some(data.to_string()));
+    active.updated_at = Set(chrono::Utc::now().naive_utc().to_string());
+    active.update(&ctx.db).await?;
+    Ok(())
+}
+
+pub async fn check_setup(ctx: &ServiceContext) -> Result<serde_json::Value, AppError> {
+    Ok(serde_json::json!({
+        "setup_completed": true,
+        "step": "completed"
+    }))
+}

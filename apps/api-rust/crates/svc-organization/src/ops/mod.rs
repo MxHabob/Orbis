@@ -6,3 +6,6 @@ pub mod policy;
 pub mod student_registration;
 pub mod cycle;
 pub mod promotion;
+pub mod dashboard;
+pub mod bulk_import;
+pub mod bulk_export;

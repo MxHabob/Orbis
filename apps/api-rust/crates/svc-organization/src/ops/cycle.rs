@@ -34,24 +34,36 @@ pub async fn get_current(ctx: &ServiceContext) -> Result<academic_cycle::Model, 
         .ok_or_else(|| AppError::not_found("academic_cycle", "current"))
 }
 
+#[derive(serde::Deserialize)]
+pub struct CreateCyclePayload {
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub cycle_type: String,
+    pub parent_id: Option<String>,
+    pub start_date: String,
+    pub end_date: String,
+    pub grading_system: String,
+}
+
 pub async fn create(
     ctx: &ServiceContext,
-    name: String, name_ar: Option<String>, cycle_type: String,
-    parent_id: Option<String>, start_date: String, end_date: String,
-    grading_system: String,
+    data: serde_json::Value,
 ) -> Result<academic_cycle::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::CycleWrite).await?;
+
+    let req: CreateCyclePayload = serde_json::from_value(data)
+        .map_err(|e| AppError::validation(format!("Invalid create cycle payload: {e}")))?;
 
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
 
     let model = academic_cycle::Model {
         id: id.clone(), org_id: ctx.org_id.clone(),
-        name, name_ar, code: None, cycle_type, parent_id,
-        start_date, end_date,
+        name: req.name, name_ar: req.name_ar, code: None, cycle_type: req.cycle_type, parent_id: req.parent_id,
+        start_date: req.start_date, end_date: req.end_date,
         hijri_start_date: None, hijri_end_date: None,
         exam_start_date: None, exam_end_date: None,
-        weight: None, grading_system,
+        weight: None, grading_system: req.grading_system,
         passing_grade: None, max_grade: None,
         is_current: 0, is_locked: 0, is_enrollment_open: 0,
         is_grade_entry_open: 0,
@@ -75,18 +87,29 @@ pub async fn create(
     Ok(created)
 }
 
+#[derive(serde::Deserialize)]
+pub struct UpdateCyclePayload {
+    pub name: Option<String>,
+    pub start_date: Option<String>,
+    pub end_date: Option<String>,
+}
+
 pub async fn update(
-    ctx: &ServiceContext, cycle_id: &str,
-    name: Option<String>, start_date: Option<String>, end_date: Option<String>,
+    ctx: &ServiceContext,
+    cycle_id: &str,
+    data: serde_json::Value,
 ) -> Result<academic_cycle::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::CycleWrite).await?;
+
+    let req: UpdateCyclePayload = serde_json::from_value(data)
+        .map_err(|e| AppError::validation(format!("Invalid update cycle payload: {e}")))?;
 
     let existing = get(ctx, cycle_id).await?;
     let mut active: academic_cycle::ActiveModel = existing.into();
 
-    if let Some(n) = name { active.name = Set(n); }
-    if let Some(sd) = start_date { active.start_date = Set(sd); }
-    if let Some(ed) = end_date { active.end_date = Set(ed); }
+    if let Some(n) = req.name { active.name = Set(n); }
+    if let Some(sd) = req.start_date { active.start_date = Set(sd); }
+    if let Some(ed) = req.end_date { active.end_date = Set(ed); }
     active.updated_at = Set(Utc::now().to_rfc3339());
 
     Ok(active.update(&ctx.db).await?)
@@ -165,4 +188,18 @@ pub async fn toggle_grade_entry(
     active.updated_at = Set(Utc::now().to_rfc3339());
 
     Ok(active.update(&ctx.db).await?)
+}
+
+pub async fn open_grade_entry(
+    ctx: &ServiceContext,
+    cycle_id: &str,
+) -> Result<academic_cycle::Model, AppError> {
+    toggle_grade_entry(ctx, cycle_id, true, None, None).await
+}
+
+pub async fn close_grade_entry(
+    ctx: &ServiceContext,
+    cycle_id: &str,
+) -> Result<academic_cycle::Model, AppError> {
+    toggle_grade_entry(ctx, cycle_id, false, None, None).await
 }

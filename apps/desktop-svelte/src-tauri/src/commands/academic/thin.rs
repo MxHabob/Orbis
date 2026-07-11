@@ -9,6 +9,7 @@ use crate::state::AppState;
 use crate::commands::error::{CmdResult, CommandError};
 
 use svc_academic::ops;
+use svc_organization::ops as org_ops;
 
 // ── Cycles ──────────────────────────────────────────────────────────
 
@@ -18,7 +19,7 @@ pub async fn list_cycles(
     org_id: String,
 ) -> CmdResult<serde_json::Value> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let result = ops::cycle::list(&ctx).await.map_err(CommandError::from)?;
+    let result = org_ops::cycle::list(&ctx).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -29,7 +30,7 @@ pub async fn get_cycle(
     cycle_id: String,
 ) -> CmdResult<serde_json::Value> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let result = ops::cycle::get(&ctx, &cycle_id).await.map_err(CommandError::from)?;
+    let result = org_ops::cycle::get(&ctx, &cycle_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -40,7 +41,7 @@ pub async fn create_cycle(
     data: serde_json::Value,
 ) -> CmdResult<serde_json::Value> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let result = ops::cycle::create(&ctx, data).await.map_err(CommandError::from)?;
+    let result = org_ops::cycle::create(&ctx, data).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -52,7 +53,7 @@ pub async fn update_cycle(
     data: serde_json::Value,
 ) -> CmdResult<serde_json::Value> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let result = ops::cycle::update(&ctx, &cycle_id, data).await.map_err(CommandError::from)?;
+    let result = org_ops::cycle::update(&ctx, &cycle_id, data).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(result).unwrap())
 }
 
@@ -63,7 +64,7 @@ pub async fn activate_cycle(
     cycle_id: String,
 ) -> CmdResult<()> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    ops::cycle::set_current(&ctx, &cycle_id).await.map_err(CommandError::from)
+    org_ops::cycle::set_current(&ctx, &cycle_id).await.map_err(CommandError::from)
 }
 
 #[tauri::command]
@@ -72,7 +73,7 @@ pub async fn lock_cycle(
     cycle_id: String,
 ) -> CmdResult<()> {
     let ctx = state.build_context("_").await.map_err(CommandError::from)?;
-    ops::cycle::lock(&ctx, &cycle_id).await.map_err(CommandError::from)
+    org_ops::cycle::lock(&ctx, &cycle_id).await.map_err(CommandError::from)
 }
 
 // ── Classes ─────────────────────────────────────────────────────────
@@ -229,7 +230,7 @@ pub async fn withdraw_enrollment(
     enrollment_id: String,
 ) -> CmdResult<()> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    ops::enrollment::withdraw(&ctx, &enrollment_id).await.map_err(CommandError::from)
+    ops::enrollment::withdraw(&ctx, &enrollment_id).await.map(|_| ()).map_err(CommandError::from)
 }
 
 #[tauri::command]
@@ -425,5 +426,5 @@ pub async fn mark_notification_read(
     notification_id: String,
 ) -> CmdResult<()> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    ops::notification::mark_read(&ctx, &notification_id).await.map_err(CommandError::from)
+    ops::notification::mark_read(&ctx, &notification_id).await.map(|_| ()).map_err(CommandError::from)
 }

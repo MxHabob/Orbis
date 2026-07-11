@@ -38,12 +38,22 @@ pub async fn get(ctx: &ServiceContext, id: &str) -> Result<subject::Model, AppEr
 
 // ── Commands ────────────────────────────────────────────────────
 
+#[derive(serde::Deserialize)]
+pub struct CreateSubjectPayload {
+    pub code: String,
+    pub name: String,
+    pub name_ar: Option<String>,
+}
+
 /// Create a new subject.
 pub async fn create(
     ctx: &ServiceContext,
-    cmd: crate::contracts::commands::CreateSubjectCmd,
+    data: serde_json::Value,
 ) -> Result<subject::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::SubjectWrite).await?;
+
+    let req: CreateSubjectPayload = serde_json::from_value(data)
+        .map_err(|e| AppError::validation(format!("Invalid create subject payload: {e}")))?;
 
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
@@ -52,9 +62,9 @@ pub async fn create(
         id: id.clone(),
         org_id: ctx.org_id.clone(),
         unit_id: None,
-        code: cmd.code,
-        name: cmd.name,
-        name_ar: cmd.name_ar,
+        code: req.code,
+        name: req.name,
+        name_ar: req.name_ar,
         name_en: None,
         description: None,
         short_description: None,
@@ -105,25 +115,33 @@ pub async fn create(
     Ok(created)
 }
 
+#[derive(serde::Deserialize)]
+pub struct UpdateSubjectPayload {
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub code: String,
+    pub category: Option<String>,
+}
+
 /// Update a subject.
 pub async fn update(
     ctx: &ServiceContext,
     subject_id: &str,
-    name: String,
-    name_ar: Option<String>,
-    code: String,
-    category: Option<String>,
+    data: serde_json::Value,
 ) -> Result<subject::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::SubjectWrite).await?;
+
+    let req: UpdateSubjectPayload = serde_json::from_value(data)
+        .map_err(|e| AppError::validation(format!("Invalid update subject payload: {e}")))?;
 
     let existing = get(ctx, subject_id).await?;
     let old_data = serde_json::to_value(&existing).ok();
 
     let mut active: subject::ActiveModel = existing.into();
-    active.name = Set(name);
-    active.name_ar = Set(name_ar);
-    active.code = Set(code);
-    if let Some(cat) = category {
+    active.name = Set(req.name);
+    active.name_ar = Set(req.name_ar);
+    active.code = Set(req.code);
+    if let Some(cat) = req.category {
         active.description = Set(Some(cat));
     }
     active.updated_at = Set(Utc::now().to_rfc3339());

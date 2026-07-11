@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize, Debug, Clone, utoipa::ToSchema)]
+#[derive(Deserialize, Serialize, Debug, Clone, Default, utoipa::ToSchema)]
 pub struct BehaviorParams {
     pub student_id: Option<String>,
     pub severity: Option<String>,
@@ -10,7 +10,7 @@ pub struct BehaviorParams {
     pub offset: Option<u64>,
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone, utoipa::ToSchema)]
+#[derive(Deserialize, Serialize, Debug, Clone, Default, utoipa::ToSchema)]
 pub struct GradeParams {
     pub enrollment_id: Option<String>,
     pub class_id: Option<String>,
@@ -25,7 +25,7 @@ pub struct GradeParams {
     pub offset: Option<u64>,
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone, utoipa::ToSchema)]
+#[derive(Deserialize, Serialize, Debug, Clone, Default, utoipa::ToSchema)]
 pub struct AttendanceParams {
     pub enrollment_id: Option<String>,
     pub class_id: Option<String>,
@@ -38,14 +38,14 @@ pub struct AttendanceParams {
     pub offset: Option<u64>,
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone, utoipa::ToSchema)]
+#[derive(Deserialize, Serialize, Debug, Clone, Default, utoipa::ToSchema)]
 pub struct GradeMatrixParams {
     pub cycle_id: String,
     pub class_id: String,
     pub subject_id: String,
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone, utoipa::ToSchema)]
+#[derive(Deserialize, Serialize, Debug, Clone, Default, utoipa::ToSchema)]
 pub struct AssessmentParams {
     pub class_id: String,
     pub subject_id: String,

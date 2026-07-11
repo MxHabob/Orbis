@@ -10,33 +10,47 @@ use shared_kernel::traits::{AuditEntry, Permission};
 
 use crate::entities::time_slot;
 
-pub async fn list(ctx: &ServiceContext, cycle_id: &str) -> Result<Vec<time_slot::Model>, AppError> {
+pub async fn list(ctx: &ServiceContext) -> Result<Vec<time_slot::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ScheduleRead).await?;
     Ok(time_slot::Entity::find()
         .filter(time_slot::Column::OrgId.eq(&ctx.org_id))
-        .filter(time_slot::Column::CycleId.eq(cycle_id))
         .filter(time_slot::Column::IsActive.eq(1))
         .order_by_asc(time_slot::Column::SortOrder)
         .all(&ctx.db).await?)
 }
 
+#[derive(serde::Deserialize)]
+pub struct CreateTimeSlotPayload {
+    pub cycle_id: String,
+    pub slot_number: i32,
+    pub name: Option<String>,
+    pub name_ar: Option<String>,
+    pub start_time: String,
+    pub end_time: String,
+    pub duration_minutes: i32,
+    pub is_break: bool,
+    pub break_type: Option<String>,
+    pub applicable_days: Option<String>,
+}
+
 pub async fn create(
-    ctx: &ServiceContext, cycle_id: String, slot_number: i32,
-    name: Option<String>, name_ar: Option<String>,
-    start_time: String, end_time: String, duration_minutes: i32,
-    is_break: bool, break_type: Option<String>,
-    applicable_days: Option<String>,
+    ctx: &ServiceContext,
+    data: serde_json::Value,
 ) -> Result<time_slot::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ScheduleWrite).await?;
+
+    let req: CreateTimeSlotPayload = serde_json::from_value(data)
+        .map_err(|e| AppError::validation(format!("Invalid create time slot payload: {e}")))?;
 
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
 
     let model = time_slot::Model {
-        id: id.clone(), org_id: ctx.org_id.clone(), cycle_id,
-        slot_number, name, name_ar, start_time, end_time, duration_minutes,
-        is_break: if is_break { 1 } else { 0 }, break_type,
-        applicable_days, sort_order: Some(slot_number),
+        id: id.clone(), org_id: ctx.org_id.clone(), cycle_id: req.cycle_id,
+        slot_number: req.slot_number, name: req.name, name_ar: req.name_ar,
+        start_time: req.start_time, end_time: req.end_time, duration_minutes: req.duration_minutes,
+        is_break: if req.is_break { 1 } else { 0 }, break_type: req.break_type,
+        applicable_days: req.applicable_days, sort_order: Some(req.slot_number),
         is_active: 1, created_at: now.clone(), updated_at: now,
     };
 
@@ -54,20 +68,31 @@ pub async fn create(
     Ok(created)
 }
 
+#[derive(serde::Deserialize)]
+pub struct UpdateTimeSlotPayload {
+    pub name: Option<String>,
+    pub start_time: Option<String>,
+    pub end_time: Option<String>,
+}
+
 pub async fn update(
-    ctx: &ServiceContext, slot_id: &str,
-    name: Option<String>, start_time: Option<String>, end_time: Option<String>,
+    ctx: &ServiceContext,
+    slot_id: &str,
+    data: serde_json::Value,
 ) -> Result<time_slot::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::ScheduleWrite).await?;
+
+    let req: UpdateTimeSlotPayload = serde_json::from_value(data)
+        .map_err(|e| AppError::validation(format!("Invalid update time slot payload: {e}")))?;
 
     let existing = time_slot::Entity::find_by_id(slot_id.to_string())
         .one(&ctx.db).await?
         .ok_or_else(|| AppError::not_found("time_slot", slot_id))?;
 
     let mut active: time_slot::ActiveModel = existing.into();
-    if let Some(n) = name { active.name = Set(Some(n)); }
-    if let Some(s) = start_time { active.start_time = Set(s); }
-    if let Some(e) = end_time { active.end_time = Set(e); }
+    if let Some(n) = req.name { active.name = Set(Some(n)); }
+    if let Some(s) = req.start_time { active.start_time = Set(s); }
+    if let Some(e) = req.end_time { active.end_time = Set(e); }
     active.updated_at = Set(Utc::now().to_rfc3339());
 
     Ok(active.update(&ctx.db).await?)

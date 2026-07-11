@@ -91,6 +91,7 @@ dependencies = [
  "bcrypt",
  "chrono",
  "csv",
+ "infra-integration",
  "infra-persistence",
  "infra-scheduler",
  "jsonwebtoken",

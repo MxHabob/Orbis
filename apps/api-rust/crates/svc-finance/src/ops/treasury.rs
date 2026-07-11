@@ -19,26 +19,34 @@ pub async fn list(ctx: &ServiceContext) -> Result<Vec<treasury::Model>, AppError
         .all(&ctx.db).await?)
 }
 
+#[derive(serde::Deserialize)]
+pub struct CreateTreasuryPayload {
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub item_type: String,
+    pub ledger_account_id: String,
+    pub currency: String,
+}
+
 pub async fn create(
     ctx: &ServiceContext,
-    name: String,
-    name_ar: Option<String>,
-    item_type: String,
-    ledger_account_id: String,
-    currency: String,
+    data: serde_json::Value,
 ) -> Result<treasury::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::FinanceWrite).await?;
+
+    let req: CreateTreasuryPayload = serde_json::from_value(data)
+        .map_err(|e| AppError::validation(format!("Invalid create treasury payload: {e}")))?;
 
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
 
     let model = treasury::Model {
         id: id.clone(), org_id: ctx.org_id.clone(), unit_id: None,
-        name, name_ar, code: None, item_type, ledger_account_id,
+        name: req.name, name_ar: req.name_ar, code: None, item_type: req.item_type, ledger_account_id: req.ledger_account_id,
         bank_name: None, bank_branch: None, account_number: None,
         account_name: None, iban: None, swift_code: None,
         opening_balance: Some(0.0), current_balance: Some(0.0),
-        currency, authorized_users: None, is_default: 0, is_active: 1,
+        currency: req.currency, authorized_users: None, is_default: 0, is_active: 1,
         created_at: now.clone(), updated_at: now,
     };
 

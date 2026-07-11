@@ -53,29 +53,35 @@ pub async fn search(
         .await?)
 }
 
-// ── Commands ────────────────────────────────────────────────────
+#[derive(serde::Deserialize)]
+pub struct CreateGuardianPayload {
+    pub student_id: String,
+    pub guardian_id: String,
+    pub relationship: String,
+    pub relationship_ar: Option<String>,
+    pub is_primary: bool,
+}
 
 /// Create a guardian link.
 pub async fn create(
     ctx: &ServiceContext,
-    student_id: String,
-    guardian_id: String,
-    relationship: String,
-    relationship_ar: Option<String>,
-    is_primary: bool,
+    data: serde_json::Value,
 ) -> Result<student_guardian::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::GuardianWrite).await?;
+
+    let req: CreateGuardianPayload = serde_json::from_value(data)
+        .map_err(|e| AppError::validation(format!("Invalid create guardian payload: {e}")))?;
 
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
 
     let model = student_guardian::Model {
         id: id.clone(),
-        student_id,
-        guardian_id,
-        relationship,
-        relationship_ar,
-        is_primary: if is_primary { 1 } else { 0 },
+        student_id: req.student_id,
+        guardian_id: req.guardian_id,
+        relationship: req.relationship,
+        relationship_ar: req.relationship_ar,
+        is_primary: if req.is_primary { 1 } else { 0 },
         is_emergency_contact: 0,
         is_authorized_pickup: 0,
         can_view_grades: 1,
@@ -112,13 +118,22 @@ pub async fn create(
 }
 
 /// Update a guardian link.
+#[derive(serde::Deserialize)]
+pub struct UpdateGuardianPayload {
+    pub relationship: Option<String>,
+    pub is_primary: Option<bool>,
+}
+
+/// Update a guardian link.
 pub async fn update(
     ctx: &ServiceContext,
     link_id: &str,
-    relationship: Option<String>,
-    is_primary: Option<bool>,
+    data: serde_json::Value,
 ) -> Result<student_guardian::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::GuardianWrite).await?;
+
+    let req: UpdateGuardianPayload = serde_json::from_value(data)
+        .map_err(|e| AppError::validation(format!("Invalid update guardian payload: {e}")))?;
 
     let existing = student_guardian::Entity::find_by_id(link_id.to_string())
         .one(&ctx.db)
@@ -126,10 +141,10 @@ pub async fn update(
         .ok_or_else(|| AppError::not_found("student_guardian", link_id))?;
 
     let mut active: student_guardian::ActiveModel = existing.into();
-    if let Some(rel) = relationship {
+    if let Some(rel) = req.relationship {
         active.relationship = Set(rel);
     }
-    if let Some(primary) = is_primary {
+    if let Some(primary) = req.is_primary {
         active.is_primary = Set(if primary { 1 } else { 0 });
     }
     active.updated_at = Set(Utc::now().to_rfc3339());

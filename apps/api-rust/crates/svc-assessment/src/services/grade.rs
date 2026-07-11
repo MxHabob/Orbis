@@ -537,7 +537,7 @@ impl GradeService {
             .filter(grade::Column::OrgId.eq(org_id))
             .filter(grade::Column::CycleId.eq(cycle_id))
             .filter(grade::Column::Semester.eq(semester))
-            .filter(grade::Column::ClassSubjectId.in_list(cs_ids))
+            .filter(grade::Column::ClassSubjectId.is_in(cs_ids))
             .all(&self.query.db)
             .await?;
 
@@ -551,5 +551,268 @@ impl GradeService {
         }
 
         Ok(compiled)
+    }
+
+    pub async fn get_report_card(
+        &self,
+        enrollment_id: &str,
+        cycle_id: &str,
+    ) -> Result<GradeReportCard, AppError> {
+        let enrollment = enrollment::Entity::find_by_id(enrollment_id.to_string())
+            .one(&self.query.db)
+            .await?
+            .ok_or_else(|| AppError::not_found("enrollment", enrollment_id))?;
+
+        let student = svc_iam::entities::user::Entity::find_by_id(enrollment.student_id.clone())
+            .one(&self.query.db)
+            .await?
+            .ok_or_else(|| AppError::not_found("student", &enrollment.student_id))?;
+
+        let cycle = academic_cycle::Entity::find_by_id(cycle_id.to_string())
+            .one(&self.query.db)
+            .await?
+            .ok_or_else(|| AppError::not_found("academic_cycle", cycle_id))?;
+
+        let passing_grade = 50.0;
+
+        use sea_orm::{QueryFilter, ColumnTrait};
+        let grades = grade::Entity::find()
+            .filter(grade::Column::EnrollmentId.eq(enrollment_id))
+            .filter(grade::Column::CycleId.eq(cycle_id))
+            .all(&self.query.db)
+            .await?;
+
+        let mut subject_map: std::collections::HashMap<String, Vec<grade::Model>> = std::collections::HashMap::new();
+        for g in grades {
+            subject_map.entry(g.subject_name.clone()).or_default().push(g);
+        }
+
+        let mut subjects = Vec::new();
+        let mut total_weight = 0.0f64;
+        let mut weighted_points = 0.0f64;
+        let mut passed_subjects = 0usize;
+        let mut failed_subjects = 0usize;
+
+        for (subject_name, subject_grades) in &subject_map {
+            let sw: f64 = subject_grades.iter().map(|g| g.weight).sum();
+            let weighted_sum: f64 = subject_grades.iter()
+                .map(|g| (g.score / g.max_score) * g.weight)
+                .sum();
+            let percentage = if sw > 0.0 { (weighted_sum / sw) * 100.0 } else { 0.0 };
+
+            let grade_letter = Self::score_to_grade_letter(percentage);
+            let grade_points = Self::score_to_grade_points(percentage);
+            let passed = percentage >= passing_grade;
+
+            if passed { passed_subjects += 1; } else { failed_subjects += 1; }
+
+            total_weight += sw;
+            weighted_points += grade_points * sw;
+
+            subjects.push(SubjectGradeSummary {
+                subject_name: subject_name.clone(),
+                subject_name_ar: subject_grades.first().and_then(|g| g.subject_name_ar.clone()),
+                final_score: if sw > 0.0 { (weighted_sum / sw) * 100.0 } else { 0.0 },
+                max_score: 100.0,
+                percentage,
+                grade_letter,
+                grade_points,
+                passed,
+            });
+        }
+
+        let overall_gpa = if total_weight > 0.0 { weighted_points / total_weight } else { 0.0 };
+        let overall_percentage = if !subjects.is_empty() {
+            subjects.iter().map(|s| s.percentage).sum::<f64>() / subjects.len() as f64
+        } else {
+            0.0
+        };
+
+        let overall_letter = Self::score_to_grade_letter(overall_percentage);
+        subjects.sort_by(|a, b| a.subject_name.cmp(&b.subject_name));
+
+        Ok(GradeReportCard {
+            enrollment_id: enrollment_id.to_string(),
+            student_id: student.id,
+            student_name: student.full_name,
+            cycle_name: cycle.name,
+            subjects,
+            overall_percentage: (overall_percentage * 100.0).round() / 100.0,
+            overall_gpa: (overall_gpa * 100.0).round() / 100.0,
+            overall_letter,
+            total_subjects: subject_map.len(),
+            passed_subjects,
+            failed_subjects,
+        })
+    }
+
+    pub async fn get_analytics(
+        &self,
+        cycle_id: &str,
+        class_subject_id: &str,
+    ) -> Result<GradeAnalytics, AppError> {
+        use sea_orm::{QueryFilter, ColumnTrait};
+        let grades = grade::Entity::find()
+            .filter(grade::Column::CycleId.eq(cycle_id))
+            .filter(grade::Column::ClassSubjectId.eq(class_subject_id))
+            .all(&self.query.db)
+            .await?;
+
+        if grades.is_empty() {
+            return Ok(GradeAnalytics {
+                class_average: 0.0,
+                class_median: 0.0,
+                class_min: 0.0,
+                class_max: 0.0,
+                pass_count: 0,
+                fail_count: 0,
+                pass_rate: 0.0,
+                grade_distribution: GradeDistribution {
+                    excellent: 0,
+                    very_good: 0,
+                    good: 0,
+                    acceptable: 0,
+                    weak: 0,
+                    fail: 0,
+                },
+            });
+        }
+
+        let mut percentages: Vec<f64> = grades.iter()
+            .map(|g| (g.score / g.max_score) * 100.0)
+            .collect();
+        percentages.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+
+        let count = percentages.len();
+        let sum: f64 = percentages.iter().sum();
+        let average = sum / count as f64;
+
+        let median = if count % 2 == 0 {
+            (percentages[count / 2 - 1] + percentages[count / 2]) / 2.0
+        } else {
+            percentages[count / 2]
+        };
+
+        let min = percentages.first().copied().unwrap_or(0.0);
+        let max = percentages.last().copied().unwrap_or(0.0);
+
+        let pass_count = percentages.iter().filter(|&&p| p >= 50.0).count();
+        let fail_count = count - pass_count;
+        let pass_rate = (pass_count as f64 / count as f64) * 100.0;
+
+        let mut dist = GradeDistribution {
+            excellent: 0,
+            very_good: 0,
+            good: 0,
+            acceptable: 0,
+            weak: 0,
+            fail: 0,
+        };
+        for &pct in &percentages {
+            match pct as i32 {
+                90..=100 => dist.excellent += 1,
+                80..=89  => dist.very_good += 1,
+                70..=79  => dist.good += 1,
+                60..=69  => dist.acceptable += 1,
+                50..=59  => dist.weak += 1,
+                _        => dist.fail += 1,
+            }
+        }
+
+        Ok(GradeAnalytics {
+            class_average: (average * 100.0).round() / 100.0,
+            class_median: (median * 100.0).round() / 100.0,
+            class_min: (min * 100.0).round() / 100.0,
+            class_max: (max * 100.0).round() / 100.0,
+            pass_count,
+            fail_count,
+            pass_rate: (pass_rate * 100.0).round() / 100.0,
+            grade_distribution: dist,
+        })
+    }
+
+    pub async fn get_grade_matrix(
+        &self,
+        cycle_id: &str,
+        class_subject_id: &str,
+    ) -> Result<GradeMatrixResponse, AppError> {
+        use sea_orm::{QueryFilter, ColumnTrait, EntityTrait};
+
+        let class_subject = svc_academic::entities::class_subject::Entity::find_by_id(class_subject_id.to_string())
+            .one(&self.query.db)
+            .await?
+            .ok_or_else(|| AppError::not_found("class_subject", class_subject_id))?;
+
+        let enrollments = svc_academic::entities::enrollment::Entity::find()
+            .filter(svc_academic::entities::enrollment::Column::ClassId.eq(&class_subject.class_id))
+            .filter(svc_academic::entities::enrollment::Column::CycleId.eq(cycle_id))
+            .all(&self.query.db)
+            .await?;
+
+        let grades = grade::Entity::find()
+            .filter(grade::Column::CycleId.eq(cycle_id))
+            .filter(grade::Column::ClassSubjectId.eq(class_subject_id))
+            .all(&self.query.db)
+            .await?;
+
+        let mut grades_by_enrollment: std::collections::HashMap<String, Vec<grade::Model>> = std::collections::HashMap::new();
+        for g in grades {
+            grades_by_enrollment.entry(g.enrollment_id.clone()).or_default().push(g);
+        }
+
+        let mut types_set = std::collections::HashSet::new();
+        for g_list in grades_by_enrollment.values() {
+            for g in g_list {
+                types_set.insert(g.exam_type.clone());
+            }
+        }
+        let assessment_types: Vec<String> = types_set.into_iter().collect();
+
+        let mut students = Vec::new();
+        for enrollment in enrollments {
+            let student = svc_iam::entities::user::Entity::find_by_id(enrollment.student_id.clone())
+                .one(&self.query.db)
+                .await?
+                .ok_or_else(|| AppError::not_found("student", &enrollment.student_id))?;
+
+            let student_grades = grades_by_enrollment.get(&enrollment.id).cloned().unwrap_or_default();
+            let mut cells = Vec::new();
+            let mut total = 0.0;
+            let mut max_total = 0.0;
+
+            for g in &student_grades {
+                cells.push(GradeCell {
+                    grade_id: Some(g.id.clone()),
+                    assessment_id: g.assessment_id.clone(),
+                    exam_type: g.exam_type.clone(),
+                    score: Some(g.score),
+                    max_score: g.max_score,
+                });
+                total += g.score;
+                max_total += g.max_score;
+            }
+
+            let percentage = if max_total > 0.0 { (total / max_total) * 100.0 } else { 0.0 };
+            let grade_letter = Self::score_to_grade_letter(percentage);
+
+            students.push(StudentGradeRow {
+                enrollment_id: enrollment.id,
+                student_id: student.id,
+                student_name: student.full_name,
+                student_name_ar: student.name_ar,
+                grades: cells,
+                total,
+                max_total,
+                percentage,
+                grade_letter,
+            });
+        }
+
+        Ok(GradeMatrixResponse {
+            cycle_id: cycle_id.to_string(),
+            class_subject_id: class_subject_id.to_string(),
+            students,
+            assessment_types,
+        })
     }
 }

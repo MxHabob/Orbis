@@ -9,8 +9,8 @@ use shared_kernel::errors::AppError;
 use shared_kernel::traits::{AuditEntry, Permission};
 
 use crate::entities::attendance;
+use crate::params::AttendanceParams;
 use crate::services::attendance::{
-    CreateAttendanceRequest, BulkAttendanceRequest,
     AttendanceReport, AttendanceAnalytics,
 };
 
@@ -19,29 +19,16 @@ use crate::services::attendance::{
 /// List attendance records.
 pub async fn list(
     ctx: &ServiceContext,
-    cycle_id: &str,
-    class_id: Option<String>,
-    date: Option<String>,
-    enrollment_id: Option<String>,
+    class_id: &str,
+    date: &str,
 ) -> Result<Vec<attendance::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::AttendanceRead).await?;
 
-    let mut query = attendance::Entity::find()
+    Ok(attendance::Entity::find()
         .filter(attendance::Column::OrgId.eq(&ctx.org_id))
-        .filter(attendance::Column::CycleId.eq(cycle_id));
-
-    if let Some(cid) = class_id {
-        query = query.filter(attendance::Column::ClassId.eq(cid));
-    }
-    if let Some(d) = date {
-        query = query.filter(attendance::Column::Date.eq(d));
-    }
-    if let Some(eid) = enrollment_id {
-        query = query.filter(attendance::Column::EnrollmentId.eq(eid));
-    }
-
-    Ok(query
-        .order_by_desc(attendance::Column::Date)
+        .filter(attendance::Column::ClassId.eq(class_id))
+        .filter(attendance::Column::Date.eq(date))
+        .order_by_asc(attendance::Column::EnrollmentId)
         .all(&ctx.db)
         .await?)
 }
@@ -77,18 +64,58 @@ pub async fn get_analytics(
         std::sync::Arc::new(cmd_repo),
         std::sync::Arc::new(query_repo),
     );
-    svc.get_attendance_analytics(cycle_id, class_id).await
+    let params = AttendanceParams {
+        cycle_id: Some(cycle_id.to_string()),
+        class_id: Some(class_id.to_string()),
+        ..Default::default()
+    };
+    svc.get_attendance_analytics(&ctx.org_id, params).await
 }
 
 // ── Commands ────────────────────────────────────────────────────
 
+#[derive(serde::Deserialize)]
+pub struct CreateAttendancePayload {
+    pub cycle_id: String,
+    pub enrollment_id: String,
+    pub class_id: String,
+    pub date: String,
+    pub status: String,
+    pub check_in_time: Option<String>,
+    pub check_out_time: Option<String>,
+    pub period: Option<String>,
+    pub subject_name: Option<String>,
+    pub notes: Option<String>,
+    pub excuse_type: Option<String>,
+    pub is_excused: Option<i32>,
+}
+
+#[derive(serde::Deserialize)]
+pub struct BulkAttendancePayload {
+    pub cycle_id: String,
+    pub class_id: String,
+    pub date: String,
+    pub period: Option<String>,
+    pub subject_name: Option<String>,
+    pub records: Vec<BulkAttendanceItem>,
+}
+
+#[derive(serde::Deserialize)]
+pub struct BulkAttendanceItem {
+    pub enrollment_id: String,
+    pub status: String,
+    pub notes: Option<String>,
+}
+
 /// Record attendance for a single student.
 pub async fn record(
     ctx: &ServiceContext,
-    cycle_id: &str,
-    req: CreateAttendanceRequest,
+    data: serde_json::Value,
 ) -> Result<attendance::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::AttendanceWrite).await?;
+
+    let req: CreateAttendancePayload = serde_json::from_value(data)
+        .map_err(|e| AppError::validation(format!("Invalid record attendance payload: {e}")))?;
 
     // Validate status
     let valid_statuses = ["present", "absent", "late", "excused", "sick"];
@@ -104,7 +131,7 @@ pub async fn record(
     let model = attendance::Model {
         id: id.clone(),
         org_id: ctx.org_id.clone(),
-        cycle_id: cycle_id.to_string(),
+        cycle_id: req.cycle_id,
         enrollment_id: req.enrollment_id,
         class_id: req.class_id,
         date: req.date,
@@ -141,27 +168,30 @@ pub async fn record(
 /// Record bulk attendance for an entire class.
 pub async fn record_bulk(
     ctx: &ServiceContext,
-    cycle_id: &str,
-    req: BulkAttendanceRequest,
+    data: serde_json::Value,
 ) -> Result<Vec<attendance::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::AttendanceWrite).await?;
 
+    let req: BulkAttendancePayload = serde_json::from_value(data)
+        .map_err(|e| AppError::validation(format!("Invalid bulk attendance payload: {e}")))?;
+
     let mut results = Vec::with_capacity(req.records.len());
-    for record in req.records {
-        let attendance_req = CreateAttendanceRequest {
-            enrollment_id: record.enrollment_id,
+    for item in req.records {
+        let attendance_req = CreateAttendancePayload {
+            cycle_id: req.cycle_id.clone(),
+            enrollment_id: item.enrollment_id,
             class_id: req.class_id.clone(),
             date: req.date.clone(),
-            status: record.status,
+            status: item.status,
             check_in_time: None,
             check_out_time: None,
             period: req.period.clone(),
             subject_name: req.subject_name.clone(),
-            notes: record.notes,
+            notes: item.notes,
             excuse_type: None,
             is_excused: None,
         };
-        let created = record_single_no_check(ctx, cycle_id, attendance_req).await?;
+        let created = record_single_no_check(ctx, attendance_req).await?;
         results.push(created);
     }
 
@@ -182,8 +212,7 @@ pub async fn record_bulk(
 /// Internal: record without re-checking permissions (already checked in record_bulk).
 async fn record_single_no_check(
     ctx: &ServiceContext,
-    cycle_id: &str,
-    req: CreateAttendanceRequest,
+    req: CreateAttendancePayload,
 ) -> Result<attendance::Model, AppError> {
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
@@ -191,7 +220,7 @@ async fn record_single_no_check(
     let model = attendance::Model {
         id: id.clone(),
         org_id: ctx.org_id.clone(),
-        cycle_id: cycle_id.to_string(),
+        cycle_id: req.cycle_id,
         enrollment_id: req.enrollment_id,
         class_id: req.class_id,
         date: req.date,
@@ -210,4 +239,23 @@ async fn record_single_no_check(
 
     let active: attendance::ActiveModel = model.into();
     Ok(active.insert(&ctx.db).await?)
+}
+
+pub async fn report(
+    ctx: &ServiceContext,
+    class_id: &str,
+    start_date: &str,
+    end_date: &str,
+) -> Result<Vec<attendance::Model>, AppError> {
+    ctx.permissions.check(&ctx.actor, Permission::AttendanceReport).await?;
+
+    Ok(attendance::Entity::find()
+        .filter(attendance::Column::OrgId.eq(&ctx.org_id))
+        .filter(attendance::Column::ClassId.eq(class_id))
+        .filter(attendance::Column::Date.gte(start_date))
+        .filter(attendance::Column::Date.lte(end_date))
+        .order_by_asc(attendance::Column::Date)
+        .order_by_asc(attendance::Column::EnrollmentId)
+        .all(&ctx.db)
+        .await?)
 }

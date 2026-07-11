@@ -10,21 +10,16 @@ use crate::entities::notification;
 
 // ── Queries ─────────────────────────────────────────────────────
 
-/// List notifications for the organization.
 pub async fn list(
     ctx: &ServiceContext,
-    limit: Option<u64>,
 ) -> Result<Vec<notification::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::NotificationRead).await?;
 
-    let mut query = notification::Entity::find()
+    use sea_orm::QuerySelect;
+    let query = notification::Entity::find()
         .filter(notification::Column::OrgId.eq(&ctx.org_id))
-        .order_by_desc(notification::Column::CreatedAt);
-
-    if let Some(lim) = limit {
-        use sea_orm::QuerySelect;
-        query = query.limit(lim);
-    }
+        .order_by_desc(notification::Column::CreatedAt)
+        .limit(100);
 
     Ok(query.all(&ctx.db).await?)
 }
