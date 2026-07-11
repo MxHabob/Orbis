@@ -25,6 +25,20 @@ impl CommandError {
             code: Some(code.into()),
         }
     }
+
+    pub fn not_found(message: impl Into<String>) -> Self {
+        Self {
+            message: message.into(),
+            code: Some("NOT_FOUND".to_string()),
+        }
+    }
+
+    pub fn unauthorized(message: impl Into<String>) -> Self {
+        Self {
+            message: message.into(),
+            code: Some("UNAUTHORIZED".to_string()),
+        }
+    }
 }
 
 impl From<String> for CommandError {
@@ -36,6 +50,15 @@ impl From<String> for CommandError {
 impl From<&str> for CommandError {
     fn from(s: &str) -> Self {
         Self::new(s)
+    }
+}
+
+impl From<sea_orm::DbErr> for CommandError {
+    fn from(err: sea_orm::DbErr) -> Self {
+        Self {
+            message: err.to_string(),
+            code: Some("DATABASE_ERROR".to_string()),
+        }
     }
 }
 

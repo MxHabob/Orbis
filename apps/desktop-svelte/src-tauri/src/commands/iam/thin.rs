@@ -90,7 +90,7 @@ pub async fn change_role(state: State<'_, Arc<AppState>>, user_id: String, data:
 }
 
 #[tauri::command]
-pub async fn list_sessions(state: State<'_, Arc<AppState>>, user_id: String) -> CmdResult<serde_json::Value> {
+pub async fn list_user_sessions(state: State<'_, Arc<AppState>>, user_id: String) -> CmdResult<serde_json::Value> {
     use sea_orm::EntityTrait;
     let db = state.active_db().await;
     let u = svc_iam::entities::user::Entity::find_by_id(user_id.clone())
@@ -103,8 +103,13 @@ pub async fn list_sessions(state: State<'_, Arc<AppState>>, user_id: String) -> 
 
 #[tauri::command]
 pub async fn list_user_roles(state: State<'_, Arc<AppState>>, user_id: String) -> CmdResult<serde_json::Value> {
+    use sea_orm::EntityTrait;
     let db = state.active_db().await;
-    let r = ops::role::list_for_user(&db, &user_id).await.map_err(CommandError::from)?;
+    let user = svc_iam::entities::user::Entity::find_by_id(user_id.clone())
+        .one(&db).await.map_err(CommandError::from)?
+        .ok_or_else(|| CommandError::not_found("User not found"))?;
+    let ctx = state.build_context(&user.org_id).await.map_err(CommandError::from)?;
+    let r = ops::role::list_by_user(&ctx, &user_id).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
 
@@ -132,4 +137,15 @@ pub async fn list_audit_logs(state: State<'_, Arc<AppState>>, org_id: String) ->
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
     let r = ops::audit::list(&ctx).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
+}
+
+#[tauri::command]
+pub async fn search_users(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    query: String,
+) -> CmdResult<serde_json::Value> {
+    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    let result = ops::user::search(&ctx, &query).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(result).unwrap())
 }

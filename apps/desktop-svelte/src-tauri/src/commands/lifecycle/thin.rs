@@ -3,7 +3,7 @@ use std::sync::Arc;
 use tauri::State;
 use crate::state::AppState;
 use crate::commands::error::{CmdResult, CommandError};
-use svc_lifecycle::ops;
+use svc_organization::ops;
 
 // ── Organization ────────────────────────────────────────────────────
 
@@ -51,48 +51,98 @@ pub async fn get_dashboard_stats(state: State<'_, Arc<AppState>>, org_id: String
 #[tauri::command]
 pub async fn get_setup_status(state: State<'_, Arc<AppState>>, org_id: String) -> CmdResult<bool> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    ops::organization::check_setup(&ctx).await.map_err(CommandError::from)
+    let res = ops::organization::check_setup(&ctx).await.map_err(CommandError::from)?;
+    let completed = res.get("setup_completed").and_then(|v| v.as_bool()).unwrap_or(false);
+    Ok(completed)
 }
 
 #[tauri::command]
 pub async fn initialize_school_setup(state: State<'_, Arc<AppState>>, org_id: String, payload: serde_json::Value) -> CmdResult<()> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    ops::setup::initialize(&ctx, payload).await.map_err(CommandError::from)
+    Ok(())
 }
 
 // ── Academic Years ──────────────────────────────────────────────────
 
 #[tauri::command]
 pub async fn get_current_academic_year(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
-    let db = state.active_db().await;
-    let r = ops::academic_year::get_current(&db).await.map_err(CommandError::from)?;
+    use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
+    let reg_db = state.provider.registry();
+    let year_id = state.provider.current_year_id().await;
+    let r = infra_persistence::provider::Entity::find_by_id(year_id)
+        .one(reg_db)
+        .await
+        .map_err(CommandError::from)?
+        .ok_or_else(|| CommandError::not_found("Current academic year not found"))?;
     Ok(serde_json::to_value(r).unwrap())
 }
 
 #[tauri::command]
 pub async fn list_academic_years(state: State<'_, Arc<AppState>>, org_id: String) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let r = ops::academic_year::list(&ctx).await.map_err(CommandError::from)?;
+    use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
+    let reg_db = state.provider.registry();
+    let r = infra_persistence::provider::Entity::find()
+        .filter(infra_persistence::provider::Column::OrgId.eq(org_id))
+        .all(reg_db)
+        .await
+        .map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
 
 #[tauri::command]
 pub async fn switch_academic_year(state: State<'_, Arc<AppState>>, year_id: String) -> CmdResult<()> {
-    let db = state.active_db().await;
-    ops::academic_year::switch(&db, &year_id).await.map_err(CommandError::from)
+    state.provider.switch_year(&year_id).await.map_err(|e| CommandError::new(e))
 }
 
 #[tauri::command]
 pub async fn is_year_archived(state: State<'_, Arc<AppState>>) -> CmdResult<bool> {
-    let db = state.active_db().await;
-    ops::academic_year::is_archived(&db).await.map_err(CommandError::from)
+    let archived = state.provider.is_current_archived().await;
+    Ok(archived)
 }
 
 #[tauri::command]
 pub async fn get_academic_context(state: State<'_, Arc<AppState>>, org_id: String) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let r = ops::academic_year::get_context(&ctx).await.map_err(CommandError::from)?;
-    Ok(serde_json::to_value(r).unwrap())
+    use sea_orm::{EntityTrait, QueryFilter, ColumnTrait, QueryOrder};
+    let db = state.active_db().await;
+    let reg_db = state.provider.registry();
+    
+    // Find active cycle
+    let active_cycle = svc_organization::entities::academic_cycle::Entity::find()
+        .filter(svc_organization::entities::academic_cycle::Column::OrgId.eq(&org_id))
+        .filter(svc_organization::entities::academic_cycle::Column::IsCurrent.eq(1))
+        .one(&db)
+        .await
+        .map_err(CommandError::from)?;
+
+    // Find all cycles
+    let all_cycles = svc_organization::entities::academic_cycle::Entity::find()
+        .filter(svc_organization::entities::academic_cycle::Column::OrgId.eq(&org_id))
+        .order_by_desc(svc_organization::entities::academic_cycle::Column::StartDate)
+        .all(&db)
+        .await
+        .map_err(CommandError::from)?;
+
+    // Get current year info from registry
+    let year_id = state.provider.current_year_id().await;
+    let year = infra_persistence::provider::Entity::find_by_id(&year_id)
+        .one(reg_db)
+        .await
+        .map_err(CommandError::from)?;
+
+    let (year_status, is_read_only) = match year {
+        Some(y) => {
+            let is_arch = y.status == "archived";
+            (y.status, is_arch)
+        }
+        None => ("active".to_string(), false),
+    };
+
+    Ok(serde_json::json!({
+        "active_cycle": active_cycle,
+        "all_cycles": all_cycles,
+        "year_status": year_status,
+        "is_read_only": is_read_only,
+        "year_id": Some(year_id),
+    }))
 }
 
 // ── Promotion ───────────────────────────────────────────────────────
@@ -113,203 +163,780 @@ pub async fn get_promotion_job(state: State<'_, Arc<AppState>>, org_id: String, 
 
 #[tauri::command]
 pub async fn get_promotion_details(state: State<'_, Arc<AppState>>, org_id: String, job_id: String) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let r = ops::promotion::get_details(&ctx, &job_id).await.map_err(CommandError::from)?;
-    Ok(serde_json::to_value(r).unwrap())
+    use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
+    use svc_organization::entities::promotion_detail;
+    let db = state.active_db().await;
+    let details = promotion_detail::Entity::find()
+        .filter(promotion_detail::Column::JobId.eq(&job_id))
+        .all(&db)
+        .await
+        .map_err(CommandError::from)?;
+    Ok(serde_json::to_value(details).unwrap())
 }
 
 #[tauri::command]
-pub async fn promotion_dry_run(state: State<'_, Arc<AppState>>, org_id: String, config: serde_json::Value) -> CmdResult<serde_json::Value> {
+pub async fn promotion_dry_run(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    config: serde_json::Value,
+) -> CmdResult<serde_json::Value> {
+    use svc_organization::services::promotion::PromotionConfig;
+    let config_str = config.to_string();
+    let parsed_config: PromotionConfig = serde_json::from_value(config)
+        .map_err(|e| CommandError::new(format!("Invalid config: {}", e)))?;
+    let source_year_id = parsed_config.source_year_id.clone();
+    
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let r = ops::promotion::dry_run(&ctx, config).await.map_err(CommandError::from)?;
-    Ok(serde_json::to_value(r).unwrap())
+    
+    // 1. Create a promotion job in registry
+    let job = ops::promotion::create_job(&ctx, source_year_id, config_str)
+        .await
+        .map_err(CommandError::from)?;
+        
+    // 2. Run the dry-run on that job
+    let _preview = ops::promotion::start_dry_run(&ctx, &job.id, parsed_config)
+        .await
+        .map_err(CommandError::from)?;
+        
+    // 3. Return the updated job (re-fetch it)
+    let updated_job = ops::promotion::get_job(&ctx, &job.id)
+        .await
+        .map_err(CommandError::from)?;
+        
+    Ok(serde_json::to_value(updated_job).unwrap())
 }
 
 #[tauri::command]
 pub async fn execute_promotion(state: State<'_, Arc<AppState>>, org_id: String, job_id: String) -> CmdResult<serde_json::Value> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let r = ops::promotion::execute(&ctx, &job_id).await.map_err(CommandError::from)?;
+    let r = ops::promotion::execute(&ctx, &job_id, state.provider.app_data_dir()).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
 
 #[tauri::command]
-pub async fn rollback_promotion(state: State<'_, Arc<AppState>>, org_id: String, job_id: String, user_id: String) -> CmdResult<()> {
+pub async fn rollback_promotion(state: State<'_, Arc<AppState>>, org_id: String, job_id: String, _user_id: String) -> CmdResult<()> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    ops::promotion::rollback(&ctx, &job_id, &user_id).await.map_err(CommandError::from)
+    ops::promotion::rollback(&ctx, &job_id, state.provider.app_data_dir()).await.map_err(CommandError::from)
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct OverrideRequest {
+    pub detail_id: String,
+    pub new_decision: String,
+    pub reason: String,
+    pub user_id: String,
 }
 
 #[tauri::command]
-pub async fn override_promotion_decision(state: State<'_, Arc<AppState>>, org_id: String, request: serde_json::Value) -> CmdResult<()> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    ops::promotion::override_decision(&ctx, request).await.map_err(CommandError::from)
+pub async fn override_promotion_decision(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    request: serde_json::Value,
+) -> CmdResult<()> {
+    use sea_orm::{ActiveModelTrait, ActiveValue::Set, EntityTrait};
+    use svc_organization::entities::promotion_detail;
+    let req: OverrideRequest = serde_json::from_value(request)
+        .map_err(|e| CommandError::new(format!("Invalid override request: {}", e)))?;
+    let db = state.active_db().await;
+    let detail = promotion_detail::Entity::find_by_id(req.detail_id)
+        .one(&db)
+        .await
+        .map_err(CommandError::from)?
+        .ok_or_else(|| CommandError::not_found("Promotion detail not found"))?;
+
+    let valid_decisions = ["promoted", "retained", "graduated", "excluded"];
+    if !valid_decisions.contains(&req.new_decision.as_str()) {
+        return Err(CommandError::new(format!(
+            "Invalid decision: {}. Valid: {:?}",
+            req.new_decision, valid_decisions
+        )));
+    }
+
+    let mut active: promotion_detail::ActiveModel = detail.into();
+    active.original_decision = Set(Some(active.decision.unwrap()));
+    active.decision = Set(req.new_decision);
+    active.manual_override = Set(1);
+    active.override_by = Set(Some(req.user_id));
+    active.override_reason = Set(Some(req.reason));
+    
+    active.update(&db).await.map_err(CommandError::from)?;
+    Ok(())
 }
 
 #[tauri::command]
 pub async fn get_promotion_policy(state: State<'_, Arc<AppState>>, org_id: String) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let r = ops::promotion::get_policy(&ctx).await.map_err(CommandError::from)?;
-    Ok(serde_json::to_value(r).unwrap())
+    use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
+    use svc_organization::entities::promotion_policy;
+    let db = state.active_db().await;
+    let policy = promotion_policy::Entity::find()
+        .filter(promotion_policy::Column::OrgId.eq(&org_id))
+        .one(&db)
+        .await
+        .map_err(CommandError::from)?
+        .unwrap_or(promotion_policy::Model {
+            id: format!("{}_policy", org_id),
+            org_id: org_id.clone(),
+            passing_score: 50,
+            min_attendance_rate: 75.0,
+            auto_graduate_final_level: 0,
+            final_level: None,
+            exclude_withdrawn: 1,
+            fee_carry_over_mode: "ignore".to_string(),
+            fee_carry_over_categories: None,
+            carry_over_guardians: 1,
+            carry_over_time_slots: 0,
+            carry_over_class_subjects: 0,
+            auto_create_cycles: 0,
+            cycle_template: None,
+            created_at: chrono::Utc::now().to_rfc3339(),
+            updated_at: chrono::Utc::now().to_rfc3339(),
+        });
+    Ok(serde_json::to_value(policy).unwrap())
 }
 
 // ── Calendar ────────────────────────────────────────────────────────
 
 #[tauri::command]
-pub async fn get_calendar_events(state: State<'_, Arc<AppState>>, org_id: String, cycle_id: String) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let r = ops::calendar::list(&ctx, &cycle_id).await.map_err(CommandError::from)?;
-    Ok(serde_json::to_value(r).unwrap())
+pub async fn get_calendar_events(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    cycle_id: String,
+) -> CmdResult<serde_json::Value> {
+    use sea_orm::{EntityTrait, QueryFilter, ColumnTrait, QueryOrder};
+    use svc_organization::entities::academic_calendar_event;
+    let db = state.active_db().await;
+    let events = academic_calendar_event::Entity::find()
+        .filter(academic_calendar_event::Column::OrgId.eq(org_id))
+        .filter(academic_calendar_event::Column::CycleId.eq(cycle_id))
+        .filter(academic_calendar_event::Column::IsActive.eq(1))
+        .order_by_asc(academic_calendar_event::Column::StartDate)
+        .all(&db)
+        .await
+        .map_err(CommandError::from)?;
+    Ok(serde_json::to_value(events).unwrap())
 }
 
 #[tauri::command]
-pub async fn get_pending_calendar_events(state: State<'_, Arc<AppState>>, org_id: String) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let r = ops::calendar::list_pending(&ctx).await.map_err(CommandError::from)?;
-    Ok(serde_json::to_value(r).unwrap())
+pub async fn get_pending_calendar_events(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+) -> CmdResult<serde_json::Value> {
+    use sea_orm::{EntityTrait, QueryFilter, ColumnTrait, QueryOrder};
+    use svc_organization::entities::academic_calendar_event;
+    let db = state.active_db().await;
+    let today = chrono::Local::now().date_naive().to_string();
+    let events = academic_calendar_event::Entity::find()
+        .filter(academic_calendar_event::Column::OrgId.eq(org_id))
+        .filter(academic_calendar_event::Column::StartDate.lte(today))
+        .filter(academic_calendar_event::Column::IsActive.eq(1))
+        .order_by_asc(academic_calendar_event::Column::StartDate)
+        .all(&db)
+        .await
+        .map_err(CommandError::from)?;
+    Ok(serde_json::to_value(events).unwrap())
 }
 
 #[tauri::command]
-pub async fn create_calendar_event(state: State<'_, Arc<AppState>>, org_id: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let r = ops::calendar::create(&ctx, data).await.map_err(CommandError::from)?;
-    Ok(serde_json::to_value(r).unwrap())
+pub async fn create_calendar_event(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    data: serde_json::Value,
+) -> CmdResult<serde_json::Value> {
+    use sea_orm::{ActiveModelTrait, ActiveValue::Set};
+    use svc_organization::entities::academic_calendar_event;
+    state.provider.ensure_writable().await.map_err(CommandError::from)?;
+    let db = state.active_db().await;
+    let now = chrono::Utc::now().to_rfc3339();
+    
+    let model = academic_calendar_event::Model {
+        id: uuid::Uuid::new_v4().to_string(),
+        org_id,
+        cycle_id: data.get("cycle_id").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+        title: data.get("title").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+        title_ar: data.get("title_ar").and_then(|v| v.as_str().map(|s| s.to_string())),
+        description: data.get("description").and_then(|v| v.as_str().map(|s| s.to_string())),
+        event_type: data.get("event_type").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+        start_date: data.get("start_date").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+        end_date: data.get("end_date").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+        start_time: None,
+        end_time: None,
+        is_recurring: 0,
+        recurrence_rule: None,
+        color: None,
+        is_active: 1,
+        sort_order: Some(0),
+        created_by: None,
+        created_at: now.clone(),
+        updated_at: now,
+    };
+    
+    let active: academic_calendar_event::ActiveModel = model.into();
+    let created = active.insert(&db).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(created).unwrap())
 }
 
 #[tauri::command]
-pub async fn execute_calendar_event(state: State<'_, Arc<AppState>>, org_id: String, event_id: String, executed_by: String) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let r = ops::calendar::execute(&ctx, &event_id, &executed_by).await.map_err(CommandError::from)?;
-    Ok(serde_json::to_value(r).unwrap())
+pub async fn execute_calendar_event(
+    state: State<'_, Arc<AppState>>,
+    _org_id: String,
+    event_id: String,
+    _executed_by: String,
+) -> CmdResult<serde_json::Value> {
+    use sea_orm::EntityTrait;
+    use svc_organization::entities::academic_calendar_event;
+    let db = state.active_db().await;
+    let event = academic_calendar_event::Entity::find_by_id(event_id)
+        .one(&db)
+        .await
+        .map_err(CommandError::from)?
+        .ok_or_else(|| CommandError::not_found("Calendar event not found"))?;
+    Ok(serde_json::to_value(event).unwrap())
 }
 
 #[tauri::command]
-pub async fn delete_calendar_event(state: State<'_, Arc<AppState>>, org_id: String, event_id: String) -> CmdResult<()> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    ops::calendar::delete(&ctx, &event_id).await.map_err(CommandError::from)
+pub async fn delete_calendar_event(
+    state: State<'_, Arc<AppState>>,
+    _org_id: String,
+    event_id: String,
+) -> CmdResult<()> {
+    use sea_orm::{ActiveModelTrait, ActiveValue::Set, EntityTrait};
+    use svc_organization::entities::academic_calendar_event;
+    state.provider.ensure_writable().await.map_err(CommandError::from)?;
+    let db = state.active_db().await;
+    let existing = academic_calendar_event::Entity::find_by_id(event_id)
+        .one(&db)
+        .await
+        .map_err(CommandError::from)?
+        .ok_or_else(|| CommandError::not_found("Calendar event not found"))?;
+
+    let mut active: academic_calendar_event::ActiveModel = existing.into();
+    active.is_active = Set(0);
+    active.updated_at = Set(chrono::Utc::now().to_rfc3339());
+    active.update(&db).await.map_err(CommandError::from)?;
+    Ok(())
 }
 
 #[tauri::command]
-pub async fn generate_default_calendar(state: State<'_, Arc<AppState>>, org_id: String, cycle_id: String) -> CmdResult<()> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    ops::calendar::generate_defaults(&ctx, &cycle_id).await.map_err(CommandError::from)
+pub async fn generate_default_calendar(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    cycle_id: String,
+) -> CmdResult<()> {
+    use sea_orm::{ActiveModelTrait, EntityTrait};
+    use svc_organization::entities::{academic_calendar_event, academic_cycle};
+    state.provider.ensure_writable().await.map_err(CommandError::from)?;
+    let db = state.active_db().await;
+    
+    let cycle = academic_cycle::Entity::find_by_id(&cycle_id)
+        .one(&db)
+        .await
+        .map_err(CommandError::from)?
+        .ok_or_else(|| CommandError::not_found("Academic cycle not found"))?;
+
+    let now = chrono::Utc::now().to_rfc3339();
+
+    // Start event
+    let start_event = academic_calendar_event::Model {
+        id: uuid::Uuid::new_v4().to_string(),
+        org_id: org_id.clone(),
+        cycle_id: cycle.id.clone(),
+        title: format!("Start of {}", cycle.name),
+        title_ar: Some(format!("بداية {}", cycle.name)),
+        description: Some(format!("Academic cycle {} officially begins.", cycle.name)),
+        event_type: "cycle_start".to_string(),
+        start_date: cycle.start_date.clone(),
+        end_date: cycle.start_date.clone(),
+        start_time: None,
+        end_time: None,
+        is_recurring: 0,
+        recurrence_rule: None,
+        color: None,
+        is_active: 1,
+        sort_order: Some(0),
+        created_by: None,
+        created_at: now.clone(),
+        updated_at: now.clone(),
+    };
+    let active_start: academic_calendar_event::ActiveModel = start_event.into();
+    active_start.insert(&db).await.map_err(CommandError::from)?;
+
+    // End event
+    let end_event = academic_calendar_event::Model {
+        id: uuid::Uuid::new_v4().to_string(),
+        org_id,
+        cycle_id: cycle.id.clone(),
+        title: format!("End of {}", cycle.name),
+        title_ar: Some(format!("نهاية {}", cycle.name)),
+        description: Some(format!("Academic cycle {} officially ends.", cycle.name)),
+        event_type: "term_end".to_string(),
+        start_date: cycle.end_date.clone(),
+        end_date: cycle.end_date.clone(),
+        start_time: None,
+        end_time: None,
+        is_recurring: 0,
+        recurrence_rule: None,
+        color: None,
+        is_active: 1,
+        sort_order: Some(0),
+        created_by: None,
+        created_at: now.clone(),
+        updated_at: now,
+    };
+    let active_end: academic_calendar_event::ActiveModel = end_event.into();
+    active_end.insert(&db).await.map_err(CommandError::from)?;
+
+    Ok(())
 }
 
-// ── Overrides ───────────────────────────────────────────────────────
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+pub struct CreateOverrideRequest {
+    pub override_type: String,
+    pub risk_level: String,
+    pub entity_type: String,
+    pub entity_id: String,
+    pub field_name: Option<String>,
+    pub old_value: Option<String>,
+    pub new_value: Option<String>,
+    pub reason: String,
+    pub requested_by: String,
+    pub requested_by_name: Option<String>,
+    pub expires_at: Option<String>,
+}
 
-#[tauri::command]
-pub async fn list_override_requests(state: State<'_, Arc<AppState>>, org_id: String, params: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let r = ops::override_request::list(&ctx, params).await.map_err(CommandError::from)?;
-    Ok(serde_json::to_value(r).unwrap())
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+pub struct ApprovalAction {
+    pub action: String, // "approve" | "reject"
+    pub user_id: String,
+    pub user_name: Option<String>,
+    pub notes: Option<String>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+pub struct OverrideListParams {
+    pub status: Option<String>,
+    pub override_type: Option<String>,
+    pub requested_by: Option<String>,
+    pub limit: Option<u64>,
+    pub offset: Option<u64>,
 }
 
 #[tauri::command]
-pub async fn get_override_request(state: State<'_, Arc<AppState>>, org_id: String, request_id: String) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let r = ops::override_request::get(&ctx, &request_id).await.map_err(CommandError::from)?;
-    Ok(serde_json::to_value(r).unwrap())
+pub async fn list_override_requests(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    params: serde_json::Value,
+) -> CmdResult<serde_json::Value> {
+    use sea_orm::{EntityTrait, QueryFilter, ColumnTrait, QueryOrder, QuerySelect};
+    use svc_organization::entities::academic_override_request;
+    let list_params: OverrideListParams = serde_json::from_value(params)
+        .unwrap_or(OverrideListParams { status: None, override_type: None, requested_by: None, limit: None, offset: None });
+    let db = state.active_db().await;
+    let mut query = academic_override_request::Entity::find()
+        .filter(academic_override_request::Column::OrgId.eq(&org_id));
+
+    if let Some(status) = list_params.status {
+        query = query.filter(academic_override_request::Column::Status.eq(status));
+    }
+    if let Some(override_type) = list_params.override_type {
+        query = query.filter(academic_override_request::Column::OverrideType.eq(override_type));
+    }
+    if let Some(requested_by) = list_params.requested_by {
+        query = query.filter(academic_override_request::Column::RequestedBy.eq(requested_by));
+    }
+    
+    query = query.order_by_desc(academic_override_request::Column::RequestedAt);
+
+    if let Some(limit) = list_params.limit {
+        query = query.limit(limit);
+    }
+    if let Some(offset) = list_params.offset {
+        query = query.offset(offset);
+    }
+
+    let list = query.all(&db).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(list).unwrap())
 }
 
 #[tauri::command]
-pub async fn create_override_request(state: State<'_, Arc<AppState>>, org_id: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let r = ops::override_request::create(&ctx, data).await.map_err(CommandError::from)?;
-    Ok(serde_json::to_value(r).unwrap())
+pub async fn get_override_request(
+    state: State<'_, Arc<AppState>>,
+    _org_id: String,
+    request_id: String,
+) -> CmdResult<serde_json::Value> {
+    use sea_orm::EntityTrait;
+    use svc_organization::entities::academic_override_request;
+    let db = state.active_db().await;
+    let request = academic_override_request::Entity::find_by_id(request_id)
+        .one(&db)
+        .await
+        .map_err(CommandError::from)?
+        .ok_or_else(|| CommandError::not_found("Request not found"))?;
+    Ok(serde_json::to_value(request).unwrap())
 }
 
 #[tauri::command]
-pub async fn process_approval(state: State<'_, Arc<AppState>>, org_id: String, request_id: String, action: serde_json::Value) -> CmdResult<()> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    ops::override_request::process(&ctx, &request_id, action).await.map_err(CommandError::from)
+pub async fn create_override_request(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    data: serde_json::Value,
+) -> CmdResult<serde_json::Value> {
+    use sea_orm::{ActiveModelTrait, EntityTrait};
+    use svc_organization::entities::academic_override_request;
+    let request: CreateOverrideRequest = serde_json::from_value(data)
+        .map_err(|e| CommandError::new(format!("Invalid request data: {}", e)))?;
+    let db = state.active_db().await;
+    let now = chrono::Utc::now().to_rfc3339();
+    
+    let approval_chain = serde_json::json!([
+        { "role": "admin", "status": "pending" }
+    ]).to_string();
+
+    let model = academic_override_request::Model {
+        id: uuid::Uuid::new_v4().to_string(),
+        org_id,
+        override_type: request.override_type,
+        risk_level: request.risk_level,
+        entity_type: request.entity_type,
+        entity_id: request.entity_id,
+        field_name: request.field_name,
+        old_value: request.old_value,
+        new_value: request.new_value,
+        reason: request.reason,
+        requested_by: request.requested_by,
+        requested_by_name: request.requested_by_name,
+        requested_at: now.clone(),
+        status: "pending".to_string(),
+        current_approver_role: Some("admin".to_string()),
+        approval_chain,
+        resolved_by: None,
+        resolved_by_name: None,
+        resolved_at: None,
+        resolution_notes: None,
+        expires_at: request.expires_at,
+        metadata: None,
+        created_at: now.clone(),
+        updated_at: now,
+    };
+
+    let active: academic_override_request::ActiveModel = model.into();
+    let created = active.insert(&db).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(created).unwrap())
 }
 
 #[tauri::command]
-pub async fn cancel_override(state: State<'_, Arc<AppState>>, org_id: String, request_id: String, user_id: String) -> CmdResult<()> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    ops::override_request::cancel(&ctx, &request_id, &user_id).await.map_err(CommandError::from)
+pub async fn process_approval(
+    state: State<'_, Arc<AppState>>,
+    _org_id: String,
+    request_id: String,
+    action: serde_json::Value,
+) -> CmdResult<serde_json::Value> {
+    use sea_orm::{ActiveModelTrait, ActiveValue::Set, EntityTrait};
+    use svc_organization::entities::academic_override_request;
+    let act: ApprovalAction = serde_json::from_value(action)
+        .map_err(|e| CommandError::new(format!("Invalid action data: {}", e)))?;
+    let db = state.active_db().await;
+    
+    let existing = academic_override_request::Entity::find_by_id(&request_id)
+        .one(&db)
+        .await
+        .map_err(CommandError::from)?
+        .ok_or_else(|| CommandError::not_found("Request not found"))?;
+
+    let now = chrono::Utc::now().to_rfc3339();
+    let mut active: academic_override_request::ActiveModel = existing.into();
+    
+    if act.action == "approve" {
+        active.status = Set("approved".to_string());
+        active.current_approver_role = Set(None);
+    } else {
+        active.status = Set("rejected".to_string());
+        active.current_approver_role = Set(None);
+    }
+    
+    active.resolved_by = Set(Some(act.user_id));
+    active.resolved_by_name = Set(act.user_name);
+    active.resolved_at = Set(Some(now.clone()));
+    active.resolution_notes = Set(act.notes);
+    active.updated_at = Set(now);
+
+    let updated = active.update(&db).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(updated).unwrap())
 }
 
 #[tauri::command]
-pub async fn get_pending_approvals(state: State<'_, Arc<AppState>>, org_id: String, approver_role: String) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let r = ops::override_request::list_pending(&ctx, &approver_role).await.map_err(CommandError::from)?;
-    Ok(serde_json::to_value(r).unwrap())
+pub async fn cancel_override(
+    state: State<'_, Arc<AppState>>,
+    _org_id: String,
+    request_id: String,
+    user_id: String,
+) -> CmdResult<serde_json::Value> {
+    use sea_orm::{ActiveModelTrait, ActiveValue::Set, EntityTrait};
+    use svc_organization::entities::academic_override_request;
+    let db = state.active_db().await;
+    
+    let existing = academic_override_request::Entity::find_by_id(&request_id)
+        .one(&db)
+        .await
+        .map_err(CommandError::from)?
+        .ok_or_else(|| CommandError::not_found("Request not found"))?;
+
+    let now = chrono::Utc::now().to_rfc3339();
+    let mut active: academic_override_request::ActiveModel = existing.into();
+    active.status = Set("cancelled".to_string());
+    active.resolved_by = Set(Some(user_id));
+    active.resolved_at = Set(Some(now.clone()));
+    active.updated_at = Set(now);
+
+    let updated = active.update(&db).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(updated).unwrap())
+}
+
+#[tauri::command]
+pub async fn get_pending_approvals(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    approver_role: String,
+) -> CmdResult<serde_json::Value> {
+    use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
+    use svc_organization::entities::academic_override_request;
+    let db = state.active_db().await;
+    let pending = academic_override_request::Entity::find()
+        .filter(academic_override_request::Column::OrgId.eq(org_id))
+        .filter(academic_override_request::Column::Status.eq("pending"))
+        .filter(academic_override_request::Column::CurrentApproverRole.eq(approver_role))
+        .all(&db)
+        .await
+        .map_err(CommandError::from)?;
+    Ok(serde_json::to_value(pending).unwrap())
 }
 
 // ── Policy ──────────────────────────────────────────────────────────
 
 #[tauri::command]
 pub async fn get_org_policy(state: State<'_, Arc<AppState>>, org_id: String) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let r = ops::policy::get(&ctx).await.map_err(CommandError::from)?;
-    Ok(serde_json::to_value(r).unwrap())
+    use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
+    use svc_organization::entities::org_academic_policy;
+    let db = state.active_db().await;
+    let policy = org_academic_policy::Entity::find()
+        .filter(org_academic_policy::Column::OrgId.eq(&org_id))
+        .one(&db)
+        .await
+        .map_err(CommandError::from)?;
+    Ok(serde_json::to_value(policy).unwrap())
 }
 
 #[tauri::command]
 pub async fn update_org_policy(state: State<'_, Arc<AppState>>, org_id: String, data: serde_json::Value) -> CmdResult<()> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    ops::policy::update(&ctx, data).await.map_err(CommandError::from)
+    use sea_orm::{EntityTrait, QueryFilter, ColumnTrait, ActiveModelTrait, ActiveValue::Set};
+    use svc_organization::entities::org_academic_policy;
+    let db = state.active_db().await;
+    let existing = org_academic_policy::Entity::find()
+        .filter(org_academic_policy::Column::OrgId.eq(&org_id))
+        .one(&db)
+        .await
+        .map_err(CommandError::from)?;
+
+    let now = chrono::Utc::now().to_rfc3339();
+    let mut active: org_academic_policy::ActiveModel = match existing {
+        Some(m) => m.into(),
+        None => {
+            let mut a = <org_academic_policy::ActiveModel as std::default::Default>::default();
+            a.id = Set(uuid::Uuid::new_v4().to_string());
+            a.org_id = Set(org_id.clone());
+            a.created_at = Set(now.clone());
+            a
+        }
+    };
+
+    if let Some(val) = data.get("default_grading_system") {
+        if let Some(s) = val.as_str() { active.default_grading_system = Set(s.to_string()); }
+    }
+    if let Some(val) = data.get("default_passing_grade") {
+        if let Some(i) = val.as_i64() { active.default_passing_grade = Set(i as i32); }
+    }
+    if let Some(val) = data.get("default_max_grade") {
+        if let Some(i) = val.as_i64() { active.default_max_grade = Set(i as i32); }
+    }
+    if let Some(val) = data.get("enrollment_auto_close_on_capacity") {
+        if let Some(i) = val.as_i64() { active.enrollment_auto_close_on_capacity = Set(i as i32); }
+    }
+    if let Some(val) = data.get("allow_late_enrollment") {
+        if let Some(i) = val.as_i64() { active.allow_late_enrollment = Set(i as i32); }
+    }
+    if let Some(val) = data.get("late_enrollment_requires_approval") {
+        if let Some(i) = val.as_i64() { active.late_enrollment_requires_approval = Set(i as i32); }
+    }
+    if let Some(val) = data.get("grade_entry_auto_close_on_deadline") {
+        if let Some(i) = val.as_i64() { active.grade_entry_auto_close_on_deadline = Set(i as i32); }
+    }
+    if let Some(val) = data.get("allow_grade_modification_after_close") {
+        if let Some(i) = val.as_i64() { active.allow_grade_modification_after_close = Set(i as i32); }
+    }
+    if let Some(val) = data.get("grade_modification_requires_approval") {
+        if let Some(i) = val.as_i64() { active.grade_modification_requires_approval = Set(i as i32); }
+    }
+    if let Some(val) = data.get("default_event_execution_mode") {
+        if let Some(s) = val.as_str() { active.default_event_execution_mode = Set(s.to_string()); }
+    }
+    if let Some(val) = data.get("settings") {
+        active.settings = Set(val.as_str().map(|s| s.to_string()).or_else(|| Some(val.to_string())));
+    }
+    active.updated_at = Set(now);
+
+    active.save(&db).await.map_err(CommandError::from)?;
+    Ok(())
 }
 
 // ── Document Templates ──────────────────────────────────────────────
 
 #[tauri::command]
-pub async fn get_document_templates(state: State<'_, Arc<AppState>>, org_id: String, params: Option<serde_json::Value>) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let r = ops::document_template::list(&ctx, params).await.map_err(CommandError::from)?;
+pub async fn get_document_templates(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    params: Option<serde_json::Value>,
+) -> CmdResult<serde_json::Value> {
+    use docforge_orbis::template_service::{TemplateService, ListTemplatesParams};
+    let db = state.active_db().await;
+    let p = params.unwrap_or(serde_json::json!({}));
+    let list_params = ListTemplatesParams {
+        org_id,
+        status: p.get("status").and_then(|v| v.as_str().map(|s| s.to_string())),
+        document_type: p.get("document_type").and_then(|v| v.as_str().map(|s| s.to_string())),
+        entity_type: p.get("entity_type").and_then(|v| v.as_str().map(|s| s.to_string())),
+        category_id: p.get("category_id").and_then(|v| v.as_str().map(|s| s.to_string())),
+        search: p.get("search").and_then(|v| v.as_str().map(|s| s.to_string())),
+    };
+    let r = TemplateService::list(&db, list_params).await.map_err(|e| CommandError::new(e))?;
     Ok(serde_json::to_value(r).unwrap())
 }
 
 #[tauri::command]
-pub async fn get_document_template(state: State<'_, Arc<AppState>>, org_id: String, template_id: String) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let r = ops::document_template::get(&ctx, &template_id).await.map_err(CommandError::from)?;
+pub async fn get_document_template(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    template_id: String,
+) -> CmdResult<serde_json::Value> {
+    use docforge_orbis::template_service::TemplateService;
+    let db = state.active_db().await;
+    let r = TemplateService::get_by_id(&db, &org_id, &template_id).await.map_err(|e| CommandError::new(e))?;
     Ok(serde_json::to_value(r).unwrap())
 }
 
 #[tauri::command]
-pub async fn create_document_template(state: State<'_, Arc<AppState>>, org_id: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let r = ops::document_template::create(&ctx, data).await.map_err(CommandError::from)?;
+pub async fn create_document_template(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    data: serde_json::Value,
+) -> CmdResult<serde_json::Value> {
+    use docforge_orbis::template_service::{TemplateService, CreateTemplateRequest};
+    state.provider.ensure_writable().await.map_err(CommandError::from)?;
+    let db = state.active_db().await;
+    let request: CreateTemplateRequest = serde_json::from_value(data)
+        .map_err(|e| CommandError::new(format!("Invalid request data: {}", e)))?;
+    let user_id = resolve_user_id(&db).await?;
+    let r = TemplateService::create(&db, &org_id, &user_id, request).await.map_err(|e| CommandError::new(e))?;
     Ok(serde_json::to_value(r).unwrap())
 }
 
 #[tauri::command]
-pub async fn update_document_template(state: State<'_, Arc<AppState>>, org_id: String, template_id: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let r = ops::document_template::update(&ctx, &template_id, data).await.map_err(CommandError::from)?;
+pub async fn update_document_template(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    template_id: String,
+    data: serde_json::Value,
+) -> CmdResult<serde_json::Value> {
+    use docforge_orbis::template_service::{TemplateService, UpdateTemplateRequest};
+    state.provider.ensure_writable().await.map_err(CommandError::from)?;
+    let db = state.active_db().await;
+    let request: UpdateTemplateRequest = serde_json::from_value(data)
+        .map_err(|e| CommandError::new(format!("Invalid request data: {}", e)))?;
+    let user_id = resolve_user_id(&db).await?;
+    let r = TemplateService::update(&db, &org_id, &template_id, &user_id, request).await.map_err(|e| CommandError::new(e))?;
     Ok(serde_json::to_value(r).unwrap())
 }
 
 #[tauri::command]
-pub async fn delete_document_template(state: State<'_, Arc<AppState>>, org_id: String, template_id: String) -> CmdResult<()> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    ops::document_template::delete(&ctx, &template_id).await.map_err(CommandError::from)
+pub async fn delete_document_template(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    template_id: String,
+) -> CmdResult<()> {
+    use docforge_orbis::template_service::TemplateService;
+    state.provider.ensure_writable().await.map_err(CommandError::from)?;
+    let db = state.active_db().await;
+    TemplateService::delete(&db, &org_id, &template_id).await.map_err(|e| CommandError::new(e))
 }
 
 #[tauri::command]
-pub async fn publish_document_template(state: State<'_, Arc<AppState>>, org_id: String, template_id: String, user_id: String) -> CmdResult<()> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    ops::document_template::publish(&ctx, &template_id, &user_id).await.map_err(CommandError::from)
+pub async fn publish_document_template(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    template_id: String,
+    _user_id: String,
+) -> CmdResult<serde_json::Value> {
+    use docforge_orbis::template_service::TemplateService;
+    state.provider.ensure_writable().await.map_err(CommandError::from)?;
+    let db = state.active_db().await;
+    let user_id = resolve_user_id(&db).await?;
+    let r = TemplateService::publish(&db, &org_id, &template_id, &user_id).await.map_err(|e| CommandError::new(e))?;
+    Ok(serde_json::to_value(r).unwrap())
 }
 
 #[tauri::command]
-pub async fn archive_document_template(state: State<'_, Arc<AppState>>, org_id: String, template_id: String) -> CmdResult<()> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    ops::document_template::archive(&ctx, &template_id).await.map_err(CommandError::from)
+pub async fn archive_document_template(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    template_id: String,
+) -> CmdResult<serde_json::Value> {
+    use docforge_orbis::template_service::TemplateService;
+    state.provider.ensure_writable().await.map_err(CommandError::from)?;
+    let db = state.active_db().await;
+    let r = TemplateService::archive(&db, &org_id, &template_id).await.map_err(|e| CommandError::new(e))?;
+    Ok(serde_json::to_value(r).unwrap())
 }
 
 #[tauri::command]
-pub async fn restore_document_template(state: State<'_, Arc<AppState>>, org_id: String, template_id: String) -> CmdResult<()> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    ops::document_template::restore(&ctx, &template_id).await.map_err(CommandError::from)
+pub async fn restore_document_template(
+    state: State<'_, Arc<AppState>>,
+    org_id: String,
+    template_id: String,
+) -> CmdResult<serde_json::Value> {
+    use docforge_orbis::template_service::TemplateService;
+    state.provider.ensure_writable().await.map_err(CommandError::from)?;
+    let db = state.active_db().await;
+    let r = TemplateService::restore(&db, &org_id, &template_id).await.map_err(|e| CommandError::new(e))?;
+    Ok(serde_json::to_value(r).unwrap())
 }
 
 // ── Enrollment Status ───────────────────────────────────────────────
 
 #[tauri::command]
-pub async fn transition_enrollment_status(state: State<'_, Arc<AppState>>, org_id: String, enrollment_id: String, status: String) -> CmdResult<()> {
-    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    ops::enrollment_status::transition(&ctx, &enrollment_id, &status).await.map_err(CommandError::from)
+pub async fn transition_enrollment_status(
+    state: State<'_, Arc<AppState>>,
+    _org_id: String,
+    enrollment_id: String,
+    status: String,
+) -> CmdResult<serde_json::Value> {
+    use sea_orm::{ActiveModelTrait, ActiveValue::Set, EntityTrait};
+    use svc_academic::entities::enrollment;
+    state.provider.ensure_writable().await.map_err(CommandError::from)?;
+    let db = state.active_db().await;
+    let e = enrollment::Entity::find_by_id(&enrollment_id)
+        .one(&db)
+        .await
+        .map_err(CommandError::from)?
+        .ok_or_else(|| CommandError::not_found("Enrollment not found"))?;
+
+    let now = chrono::Utc::now().to_rfc3339();
+    let mut active: enrollment::ActiveModel = e.into();
+    active.status = Set(status.clone());
+    if status == "withdrawn" {
+        active.withdrawal_date = Set(Some(now.clone()));
+    }
+    active.updated_at = Set(now);
+
+    let updated = active.update(&db).await.map_err(CommandError::from)?;
+    Ok(serde_json::to_value(updated).unwrap())
 }
 
 // ── Import / Export ─────────────────────────────────────────────────
@@ -340,4 +967,15 @@ pub async fn export_grades(state: State<'_, Arc<AppState>>, org_id: String) -> C
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
     let r = ops::bulk_export::grades(&ctx).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
+}
+
+async fn resolve_user_id(db: &sea_orm::DatabaseConnection) -> Result<String, CommandError> {
+    use sea_orm::{EntityTrait, QueryOrder};
+    let session = svc_iam::entities::user_session::Entity::find()
+        .order_by_desc(svc_iam::entities::user_session::Column::CreatedAt)
+        .one(db)
+        .await
+        .map_err(CommandError::from)?
+        .ok_or_else(|| CommandError::unauthorized("No active session"))?;
+    Ok(session.user_id)
 }
