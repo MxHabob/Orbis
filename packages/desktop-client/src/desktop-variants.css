@@ -1,5 +1,0 @@
-/* Desktop + platform variants for Tailwind v4 */
-@custom-variant desktop (html.desktop &);
-@custom-variant mac (html.desktop-platform-darwin &);
-@custom-variant windows (html.desktop-platform-win32 &);
-@custom-variant linux (html.desktop-platform-linux &);
