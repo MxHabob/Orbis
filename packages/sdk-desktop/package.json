@@ -1,0 +1,24 @@
+{
+  "name": "@orbis/sdk-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./commands": "./src/commands.ts"
+  },
+  "dependencies": {
+    "@orbis/sdk-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@orbis/tsconfig": "workspace:*",
+    "typescript": "^5.9.3"
+  },
+  "peerDependencies": {
+    "@tauri-apps/api": "^2.0.0"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}

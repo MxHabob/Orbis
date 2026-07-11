@@ -1,0 +1,115 @@
+//! Document operations — student/staff document CRUD.
+
+use chrono::Utc;
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, ModelTrait, QueryFilter, QueryOrder};
+use uuid::Uuid;
+
+use shared_kernel::context::ServiceContext;
+use shared_kernel::errors::AppError;
+use shared_kernel::traits::{AuditEntry, Permission};
+
+use crate::entities::document;
+
+// ── Queries ─────────────────────────────────────────────────────
+
+/// List documents, optionally filtered by owner.
+pub async fn list(
+    ctx: &ServiceContext,
+    owner_id: Option<String>,
+) -> Result<Vec<document::Model>, AppError> {
+    ctx.permissions.check(&ctx.actor, Permission::DocumentRead).await?;
+
+    let mut query = document::Entity::find()
+        .filter(document::Column::OrgId.eq(&ctx.org_id));
+
+    if let Some(oid) = owner_id {
+        query = query.filter(document::Column::OwnerId.eq(oid));
+    }
+
+    Ok(query
+        .order_by_desc(document::Column::CreatedAt)
+        .all(&ctx.db)
+        .await?)
+}
+
+/// Get a single document by ID.
+pub async fn get(ctx: &ServiceContext, id: &str) -> Result<document::Model, AppError> {
+    ctx.permissions.check(&ctx.actor, Permission::DocumentRead).await?;
+
+    document::Entity::find_by_id(id.to_string())
+        .one(&ctx.db)
+        .await?
+        .ok_or_else(|| AppError::not_found("document", id))
+}
+
+// ── Commands ────────────────────────────────────────────────────
+
+/// Create a new document record.
+pub async fn create(
+    ctx: &ServiceContext,
+    owner_id: String,
+    owner_type: String,
+    doc_type: String,
+    title: String,
+    file_url: Option<String>,
+) -> Result<document::Model, AppError> {
+    ctx.permissions.check(&ctx.actor, Permission::DocumentWrite).await?;
+
+    let now = Utc::now().to_rfc3339();
+    let id = Uuid::new_v4().to_string();
+
+    let model = document::Model {
+        id: id.clone(),
+        org_id: ctx.org_id.clone(),
+        owner_id,
+        owner_type,
+        doc_type,
+        title,
+        file_url,
+        file_size: None,
+        mime_type: None,
+        notes: None,
+        is_verified: 0,
+        verified_by: None,
+        verified_at: None,
+        created_at: now.clone(),
+        updated_at: now,
+    };
+
+    let active: document::ActiveModel = model.into();
+    let created = active.insert(&ctx.db).await?;
+
+    ctx.audit.log(AuditEntry {
+        org_id: ctx.org_id.clone(),
+        actor: ctx.actor.clone(),
+        action: "document.create".into(),
+        entity_type: "document".into(),
+        entity_id: id,
+        old_data: None,
+        new_data: Some(serde_json::to_value(&created).unwrap_or_default()),
+        correlation_id: ctx.correlation_id.clone(),
+    }).await?;
+
+    Ok(created)
+}
+
+/// Delete a document.
+pub async fn delete(ctx: &ServiceContext, doc_id: &str) -> Result<(), AppError> {
+    ctx.permissions.check(&ctx.actor, Permission::DocumentDelete).await?;
+
+    let existing = get(ctx, doc_id).await?;
+    existing.delete(&ctx.db).await?;
+
+    ctx.audit.log(AuditEntry {
+        org_id: ctx.org_id.clone(),
+        actor: ctx.actor.clone(),
+        action: "document.delete".into(),
+        entity_type: "document".into(),
+        entity_id: doc_id.into(),
+        old_data: None,
+        new_data: None,
+        correlation_id: ctx.correlation_id.clone(),
+    }).await?;
+
+    Ok(())
+}
