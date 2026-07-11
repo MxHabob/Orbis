@@ -12,24 +12,10 @@
 -- ═══════════════════════════════════════════════════════════════
 
 -- ── 1. autopilot_config ─────────────────────────────────────
-CREATE TABLE IF NOT EXISTS autopilot_config (
-  id TEXT PRIMARY KEY,
-  org_id TEXT NOT NULL UNIQUE,
-  mode TEXT NOT NULL DEFAULT 'suggested'
-    CHECK (mode IN ('automatic','suggested','manual')),
-  check_interval_minutes INTEGER NOT NULL DEFAULT 60,
-  timezone TEXT NOT NULL DEFAULT 'Asia/Riyadh',
-  require_backup_before_critical INTEGER NOT NULL DEFAULT 1,
-  max_auto_retries INTEGER NOT NULL DEFAULT 3,
-  pause_on_error INTEGER NOT NULL DEFAULT 1,
-  is_enabled INTEGER NOT NULL DEFAULT 1,
-  last_tick_at TEXT,
-  last_tick_result TEXT,
-  paused_at TEXT,
-  pause_reason TEXT,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
-);
+-- REMOVED: Merged into `academic_policies` in schema_baseline.sql.
+-- Autopilot mode, toggles, and grace days are now part of the
+-- unified academic_policies table (one row per org).
+
 
 -- ── 2. autopilot_tasks ──────────────────────────────────────
 CREATE TABLE IF NOT EXISTS autopilot_tasks (

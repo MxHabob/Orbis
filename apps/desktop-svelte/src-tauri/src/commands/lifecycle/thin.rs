@@ -103,45 +103,62 @@ pub async fn is_year_archived(state: State<'_, Arc<AppState>>) -> CmdResult<bool
 pub async fn get_academic_context(state: State<'_, Arc<AppState>>, org_id: String) -> CmdResult<serde_json::Value> {
     use sea_orm::{EntityTrait, QueryFilter, ColumnTrait, QueryOrder};
     let db = state.active_db().await;
-    let reg_db = state.provider.registry();
     
-    // Find active cycle
-    let active_cycle = svc_organization::entities::academic_cycle::Entity::find()
-        .filter(svc_organization::entities::academic_cycle::Column::OrgId.eq(&org_id))
-        .filter(svc_organization::entities::academic_cycle::Column::IsCurrent.eq(1))
+    // Get current year from organization
+    let org = svc_organization::entities::organization::Entity::find_by_id(&org_id)
         .one(&db)
         .await
-        .map_err(CommandError::from)?;
+        .map_err(CommandError::from)?
+        .ok_or_else(|| CommandError::not_found("Organization not found"))?;
 
-    // Find all cycles
-    let all_cycles = svc_organization::entities::academic_cycle::Entity::find()
-        .filter(svc_organization::entities::academic_cycle::Column::OrgId.eq(&org_id))
-        .order_by_desc(svc_organization::entities::academic_cycle::Column::StartDate)
+    let current_year_id = org.current_year_id.clone().unwrap_or_default();
+
+    // Find current year
+    let current_year = if !current_year_id.is_empty() {
+        svc_organization::entities::academic_year::Entity::find_by_id(&current_year_id)
+            .one(&db)
+            .await
+            .map_err(CommandError::from)?
+    } else {
+        None
+    };
+
+    // Find all years
+    let all_years = svc_organization::entities::academic_year::Entity::find()
+        .filter(svc_organization::entities::academic_year::Column::OrgId.eq(&org_id))
+        .order_by_desc(svc_organization::entities::academic_year::Column::StartDate)
         .all(&db)
         .await
         .map_err(CommandError::from)?;
 
-    // Get current year info from registry
-    let year_id = state.provider.current_year_id().await;
-    let year = infra_persistence::provider::Entity::find_by_id(&year_id)
-        .one(reg_db)
-        .await
-        .map_err(CommandError::from)?;
+    // Find periods for current year
+    let periods = if !current_year_id.is_empty() {
+        svc_organization::entities::academic_period::Entity::find()
+            .filter(svc_organization::entities::academic_period::Column::YearId.eq(&current_year_id))
+            .order_by_asc(svc_organization::entities::academic_period::Column::SortOrder)
+            .all(&db)
+            .await
+            .map_err(CommandError::from)?
+    } else {
+        vec![]
+    };
 
-    let (year_status, is_read_only) = match year {
+    let (year_status, is_read_only) = match &current_year {
         Some(y) => {
             let is_arch = y.status == "archived";
-            (y.status, is_arch)
+            let is_locked = y.is_locked == 1;
+            (y.status.clone(), is_arch || is_locked)
         }
         None => ("active".to_string(), false),
     };
 
     Ok(serde_json::json!({
-        "active_cycle": active_cycle,
-        "all_cycles": all_cycles,
+        "current_year": current_year,
+        "all_years": all_years,
+        "periods": periods,
         "year_status": year_status,
         "is_read_only": is_read_only,
-        "year_id": Some(year_id),
+        "year_id": current_year_id,
     }))
 }
 
@@ -266,54 +283,35 @@ pub async fn override_promotion_decision(
 #[tauri::command]
 pub async fn get_promotion_policy(state: State<'_, Arc<AppState>>, org_id: String) -> CmdResult<serde_json::Value> {
     use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
-    use svc_organization::entities::promotion_policy;
+    use svc_organization::entities::academic_policy;
     let db = state.active_db().await;
-    let policy = promotion_policy::Entity::find()
-        .filter(promotion_policy::Column::OrgId.eq(&org_id))
+    let policy = academic_policy::Entity::find()
+        .filter(academic_policy::Column::OrgId.eq(&org_id))
         .one(&db)
         .await
-        .map_err(CommandError::from)?
-        .unwrap_or(promotion_policy::Model {
-            id: format!("{}_policy", org_id),
-            org_id: org_id.clone(),
-            passing_score: 50,
-            min_attendance_rate: 75.0,
-            auto_graduate_final_level: 0,
-            final_level: None,
-            exclude_withdrawn: 1,
-            fee_carry_over_mode: "ignore".to_string(),
-            fee_carry_over_categories: None,
-            carry_over_guardians: 1,
-            carry_over_time_slots: 0,
-            carry_over_class_subjects: 0,
-            auto_create_cycles: 0,
-            cycle_template: None,
-            created_at: chrono::Utc::now().to_rfc3339(),
-            updated_at: chrono::Utc::now().to_rfc3339(),
-        });
+        .map_err(CommandError::from)?;
     Ok(serde_json::to_value(policy).unwrap())
 }
 
-// ── Calendar ────────────────────────────────────────────────────────
+// ── Calendar (periods-based — no more academic_calendar_events) ──
 
 #[tauri::command]
 pub async fn get_calendar_events(
     state: State<'_, Arc<AppState>>,
     org_id: String,
-    cycle_id: String,
+    year_id: String,
 ) -> CmdResult<serde_json::Value> {
     use sea_orm::{EntityTrait, QueryFilter, ColumnTrait, QueryOrder};
-    use svc_organization::entities::academic_calendar_event;
+    use svc_organization::entities::academic_period;
     let db = state.active_db().await;
-    let events = academic_calendar_event::Entity::find()
-        .filter(academic_calendar_event::Column::OrgId.eq(org_id))
-        .filter(academic_calendar_event::Column::CycleId.eq(cycle_id))
-        .filter(academic_calendar_event::Column::IsActive.eq(1))
-        .order_by_asc(academic_calendar_event::Column::StartDate)
+    let periods = academic_period::Entity::find()
+        .filter(academic_period::Column::OrgId.eq(org_id))
+        .filter(academic_period::Column::YearId.eq(year_id))
+        .order_by_asc(academic_period::Column::SortOrder)
         .all(&db)
         .await
         .map_err(CommandError::from)?;
-    Ok(serde_json::to_value(events).unwrap())
+    Ok(serde_json::to_value(periods).unwrap())
 }
 
 #[tauri::command]
@@ -322,169 +320,58 @@ pub async fn get_pending_calendar_events(
     org_id: String,
 ) -> CmdResult<serde_json::Value> {
     use sea_orm::{EntityTrait, QueryFilter, ColumnTrait, QueryOrder};
-    use svc_organization::entities::academic_calendar_event;
+    use svc_organization::entities::academic_period;
     let db = state.active_db().await;
     let today = chrono::Local::now().date_naive().to_string();
-    let events = academic_calendar_event::Entity::find()
-        .filter(academic_calendar_event::Column::OrgId.eq(org_id))
-        .filter(academic_calendar_event::Column::StartDate.lte(today))
-        .filter(academic_calendar_event::Column::IsActive.eq(1))
-        .order_by_asc(academic_calendar_event::Column::StartDate)
+    // Return periods that are active and have pending actions
+    let periods = academic_period::Entity::find()
+        .filter(academic_period::Column::OrgId.eq(org_id))
+        .filter(academic_period::Column::Status.is_not_in(["closed"]))
+        .filter(academic_period::Column::StartDate.lte(&today))
+        .order_by_asc(academic_period::Column::SortOrder)
         .all(&db)
         .await
         .map_err(CommandError::from)?;
-    Ok(serde_json::to_value(events).unwrap())
+    Ok(serde_json::to_value(periods).unwrap())
 }
 
 #[tauri::command]
 pub async fn create_calendar_event(
-    state: State<'_, Arc<AppState>>,
-    org_id: String,
-    data: serde_json::Value,
+    _state: State<'_, Arc<AppState>>,
+    _org_id: String,
+    _data: serde_json::Value,
 ) -> CmdResult<serde_json::Value> {
-    use sea_orm::ActiveModelTrait;
-    use svc_organization::entities::academic_calendar_event;
-    state.provider.ensure_writable().await.map_err(CommandError::from)?;
-    let db = state.active_db().await;
-    let now = chrono::Utc::now().to_rfc3339();
-    
-    let model = academic_calendar_event::Model {
-        id: uuid::Uuid::new_v4().to_string(),
-        org_id,
-        cycle_id: data.get("cycle_id").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-        title: data.get("title").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-        title_ar: data.get("title_ar").and_then(|v| v.as_str().map(|s| s.to_string())),
-        description: data.get("description").and_then(|v| v.as_str().map(|s| s.to_string())),
-        event_type: data.get("event_type").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-        start_date: data.get("start_date").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-        end_date: data.get("end_date").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-        start_time: None,
-        end_time: None,
-        is_recurring: 0,
-        recurrence_rule: None,
-        color: None,
-        is_active: 1,
-        sort_order: Some(0),
-        created_by: None,
-        created_at: now.clone(),
-        updated_at: now,
-    };
-    
-    let active: academic_calendar_event::ActiveModel = model.into();
-    let created = active.insert(&db).await.map_err(CommandError::from)?;
-    Ok(serde_json::to_value(created).unwrap())
+    // Calendar events are now managed through academic_periods.
+    // Create a new period instead.
+    Ok(serde_json::json!({"message": "Use create_period instead. Calendar events are now managed through academic periods."}))
 }
 
 #[tauri::command]
 pub async fn execute_calendar_event(
-    state: State<'_, Arc<AppState>>,
+    _state: State<'_, Arc<AppState>>,
     _org_id: String,
-    event_id: String,
+    _event_id: String,
     _executed_by: String,
 ) -> CmdResult<serde_json::Value> {
-    use sea_orm::EntityTrait;
-    use svc_organization::entities::academic_calendar_event;
-    let db = state.active_db().await;
-    let event = academic_calendar_event::Entity::find_by_id(event_id)
-        .one(&db)
-        .await
-        .map_err(CommandError::from)?
-        .ok_or_else(|| CommandError::not_found("Calendar event not found"))?;
-    Ok(serde_json::to_value(event).unwrap())
+    Ok(serde_json::json!({"message": "Calendar events deprecated. Use Autopilot tasks."}))
 }
 
 #[tauri::command]
 pub async fn delete_calendar_event(
-    state: State<'_, Arc<AppState>>,
+    _state: State<'_, Arc<AppState>>,
     _org_id: String,
-    event_id: String,
+    _event_id: String,
 ) -> CmdResult<()> {
-    use sea_orm::{ActiveModelTrait, ActiveValue::Set, EntityTrait};
-    use svc_organization::entities::academic_calendar_event;
-    state.provider.ensure_writable().await.map_err(CommandError::from)?;
-    let db = state.active_db().await;
-    let existing = academic_calendar_event::Entity::find_by_id(event_id)
-        .one(&db)
-        .await
-        .map_err(CommandError::from)?
-        .ok_or_else(|| CommandError::not_found("Calendar event not found"))?;
-
-    let mut active: academic_calendar_event::ActiveModel = existing.into();
-    active.is_active = Set(0);
-    active.updated_at = Set(chrono::Utc::now().to_rfc3339());
-    active.update(&db).await.map_err(CommandError::from)?;
     Ok(())
 }
 
 #[tauri::command]
 pub async fn generate_default_calendar(
-    state: State<'_, Arc<AppState>>,
-    org_id: String,
-    cycle_id: String,
+    _state: State<'_, Arc<AppState>>,
+    _org_id: String,
+    _year_id: String,
 ) -> CmdResult<()> {
-    use sea_orm::{ActiveModelTrait, EntityTrait};
-    use svc_organization::entities::{academic_calendar_event, academic_cycle};
-    state.provider.ensure_writable().await.map_err(CommandError::from)?;
-    let db = state.active_db().await;
-    
-    let cycle = academic_cycle::Entity::find_by_id(&cycle_id)
-        .one(&db)
-        .await
-        .map_err(CommandError::from)?
-        .ok_or_else(|| CommandError::not_found("Academic cycle not found"))?;
-
-    let now = chrono::Utc::now().to_rfc3339();
-
-    // Start event
-    let start_event = academic_calendar_event::Model {
-        id: uuid::Uuid::new_v4().to_string(),
-        org_id: org_id.clone(),
-        cycle_id: cycle.id.clone(),
-        title: format!("Start of {}", cycle.name),
-        title_ar: Some(format!("بداية {}", cycle.name)),
-        description: Some(format!("Academic cycle {} officially begins.", cycle.name)),
-        event_type: "cycle_start".to_string(),
-        start_date: cycle.start_date.clone(),
-        end_date: cycle.start_date.clone(),
-        start_time: None,
-        end_time: None,
-        is_recurring: 0,
-        recurrence_rule: None,
-        color: None,
-        is_active: 1,
-        sort_order: Some(0),
-        created_by: None,
-        created_at: now.clone(),
-        updated_at: now.clone(),
-    };
-    let active_start: academic_calendar_event::ActiveModel = start_event.into();
-    active_start.insert(&db).await.map_err(CommandError::from)?;
-
-    // End event
-    let end_event = academic_calendar_event::Model {
-        id: uuid::Uuid::new_v4().to_string(),
-        org_id,
-        cycle_id: cycle.id.clone(),
-        title: format!("End of {}", cycle.name),
-        title_ar: Some(format!("نهاية {}", cycle.name)),
-        description: Some(format!("Academic cycle {} officially ends.", cycle.name)),
-        event_type: "term_end".to_string(),
-        start_date: cycle.end_date.clone(),
-        end_date: cycle.end_date.clone(),
-        start_time: None,
-        end_time: None,
-        is_recurring: 0,
-        recurrence_rule: None,
-        color: None,
-        is_active: 1,
-        sort_order: Some(0),
-        created_by: None,
-        created_at: now.clone(),
-        updated_at: now,
-    };
-    let active_end: academic_calendar_event::ActiveModel = end_event.into();
-    active_end.insert(&db).await.map_err(CommandError::from)?;
-
+    // Period templates now handle this. See period_templates entity.
     Ok(())
 }
 
@@ -710,15 +597,15 @@ pub async fn get_pending_approvals(
     Ok(serde_json::to_value(pending).unwrap())
 }
 
-// ── Policy ──────────────────────────────────────────────────────────
+// ── Policy (Unified: academic_policies) ────────────────────────────
 
 #[tauri::command]
 pub async fn get_org_policy(state: State<'_, Arc<AppState>>, org_id: String) -> CmdResult<serde_json::Value> {
     use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
-    use svc_organization::entities::org_academic_policy;
+    use svc_organization::entities::academic_policy;
     let db = state.active_db().await;
-    let policy = org_academic_policy::Entity::find()
-        .filter(org_academic_policy::Column::OrgId.eq(&org_id))
+    let policy = academic_policy::Entity::find()
+        .filter(academic_policy::Column::OrgId.eq(&org_id))
         .one(&db)
         .await
         .map_err(CommandError::from)?;
@@ -728,19 +615,19 @@ pub async fn get_org_policy(state: State<'_, Arc<AppState>>, org_id: String) -> 
 #[tauri::command]
 pub async fn update_org_policy(state: State<'_, Arc<AppState>>, org_id: String, data: serde_json::Value) -> CmdResult<()> {
     use sea_orm::{EntityTrait, QueryFilter, ColumnTrait, ActiveModelTrait, ActiveValue::Set};
-    use svc_organization::entities::org_academic_policy;
+    use svc_organization::entities::academic_policy;
     let db = state.active_db().await;
-    let existing = org_academic_policy::Entity::find()
-        .filter(org_academic_policy::Column::OrgId.eq(&org_id))
+    let existing = academic_policy::Entity::find()
+        .filter(academic_policy::Column::OrgId.eq(&org_id))
         .one(&db)
         .await
         .map_err(CommandError::from)?;
 
     let now = chrono::Utc::now().to_rfc3339();
-    let mut active: org_academic_policy::ActiveModel = match existing {
+    let mut active: academic_policy::ActiveModel = match existing {
         Some(m) => m.into(),
         None => {
-            let mut a = <org_academic_policy::ActiveModel as std::default::Default>::default();
+            let mut a = <academic_policy::ActiveModel as std::default::Default>::default();
             a.id = Set(uuid::Uuid::new_v4().to_string());
             a.org_id = Set(org_id.clone());
             a.created_at = Set(now.clone());
@@ -748,6 +635,7 @@ pub async fn update_org_policy(state: State<'_, Arc<AppState>>, org_id: String, 
         }
     };
 
+    // Grading defaults
     if let Some(val) = data.get("default_grading_system") {
         if let Some(s) = val.as_str() { active.default_grading_system = Set(s.to_string()); }
     }
@@ -757,29 +645,39 @@ pub async fn update_org_policy(state: State<'_, Arc<AppState>>, org_id: String, 
     if let Some(val) = data.get("default_max_grade") {
         if let Some(i) = val.as_i64() { active.default_max_grade = Set(i as i32); }
     }
-    if let Some(val) = data.get("enrollment_auto_close_on_capacity") {
-        if let Some(i) = val.as_i64() { active.enrollment_auto_close_on_capacity = Set(i as i32); }
+    // Enrollment policies
+    if let Some(val) = data.get("enrollment_auto_close") {
+        if let Some(i) = val.as_i64() { active.enrollment_auto_close = Set(i as i32); }
     }
     if let Some(val) = data.get("allow_late_enrollment") {
         if let Some(i) = val.as_i64() { active.allow_late_enrollment = Set(i as i32); }
     }
-    if let Some(val) = data.get("late_enrollment_requires_approval") {
-        if let Some(i) = val.as_i64() { active.late_enrollment_requires_approval = Set(i as i32); }
+    if let Some(val) = data.get("late_enrollment_approval") {
+        if let Some(i) = val.as_i64() { active.late_enrollment_approval = Set(i as i32); }
     }
-    if let Some(val) = data.get("grade_entry_auto_close_on_deadline") {
-        if let Some(i) = val.as_i64() { active.grade_entry_auto_close_on_deadline = Set(i as i32); }
+    // Grade entry policies
+    if let Some(val) = data.get("grade_entry_auto_close") {
+        if let Some(i) = val.as_i64() { active.grade_entry_auto_close = Set(i as i32); }
     }
-    if let Some(val) = data.get("allow_grade_modification_after_close") {
-        if let Some(i) = val.as_i64() { active.allow_grade_modification_after_close = Set(i as i32); }
+    if let Some(val) = data.get("allow_grade_edit_after_close") {
+        if let Some(i) = val.as_i64() { active.allow_grade_edit_after_close = Set(i as i32); }
     }
-    if let Some(val) = data.get("grade_modification_requires_approval") {
-        if let Some(i) = val.as_i64() { active.grade_modification_requires_approval = Set(i as i32); }
+    if let Some(val) = data.get("grade_edit_approval") {
+        if let Some(i) = val.as_i64() { active.grade_edit_approval = Set(i as i32); }
     }
-    if let Some(val) = data.get("default_event_execution_mode") {
-        if let Some(s) = val.as_str() { active.default_event_execution_mode = Set(s.to_string()); }
+    // Promotion policies
+    if let Some(val) = data.get("passing_score") {
+        if let Some(i) = val.as_i64() { active.passing_score = Set(i as i32); }
     }
-    if let Some(val) = data.get("settings") {
-        active.settings = Set(val.as_str().map(|s| s.to_string()).or_else(|| Some(val.to_string())));
+    if let Some(val) = data.get("min_attendance_rate") {
+        if let Some(f) = val.as_f64() { active.min_attendance_rate = Set(f); }
+    }
+    // Autopilot policies
+    if let Some(val) = data.get("autopilot_mode") {
+        if let Some(s) = val.as_str() { active.autopilot_mode = Set(s.to_string()); }
+    }
+    if let Some(val) = data.get("autopilot_enabled") {
+        if let Some(i) = val.as_i64() { active.autopilot_enabled = Set(i as i32); }
     }
     active.updated_at = Set(now);
 

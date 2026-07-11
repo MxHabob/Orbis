@@ -10,13 +10,13 @@ import {
 import { commands } from "$lib/core/ipc";
 import type { ExamSession, ExamSubject } from "./store.svelte";
 
-/** Get all exam sessions for an organization. */
-export function createExamSessionsQuery(cycleId?: string) {
+/** Get all exam sessions for a period. */
+export function createExamSessionsQuery(periodId?: string) {
   return createQuery({
-    queryKey: ["exam-sessions", cycleId || "all"],
+    queryKey: ["exam-sessions", periodId || "all"],
     queryFn: () =>
-      commands.exam.listSessions(cycleId!) as Promise<ExamSession[]>,
-    enabled: !!cycleId,
+      commands.exam.listSessions(periodId!) as Promise<ExamSession[]>,
+    enabled: !!periodId,
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -49,7 +49,7 @@ export function createSessionMutation() {
   return createMutation({
     mutationFn: (variables: {
       data: {
-        cycle_id: string;
+        period_id: string;
         name: string;
         name_ar?: string;
         session_type: string;

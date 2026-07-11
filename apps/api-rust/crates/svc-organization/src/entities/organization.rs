@@ -10,7 +10,7 @@ pub struct Model {
     pub name: String,
     pub name_ar: Option<String>,
     #[sea_orm(unique)]
-    pub slug: String,
+    pub slug: Option<String>,
     #[sea_orm(unique)]
     pub code: Option<String>,
     pub timezone: String,
@@ -33,19 +33,42 @@ pub struct Model {
     pub is_deleted: i32,
     pub deleted_at: Option<String>,
     pub deleted_by: Option<String>,
+
+    /// FK to the currently active academic year.
+    /// Switching years = UPDATE organizations SET current_year_id = ?
+    pub current_year_id: Option<String>,
+
     pub created_at: String,
     pub updated_at: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
-    #[sea_orm(has_many = "super::academic_cycle::Entity")]
-    AcademicCycle,
+    #[sea_orm(has_many = "super::academic_year::Entity")]
+    AcademicYears,
+
+    #[sea_orm(has_many = "super::academic_period::Entity")]
+    AcademicPeriods,
+
+    #[sea_orm(has_one = "super::academic_policy::Entity")]
+    AcademicPolicy,
 }
 
-impl Related<super::academic_cycle::Entity> for Entity {
+impl Related<super::academic_year::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::AcademicCycle.def()
+        Relation::AcademicYears.def()
+    }
+}
+
+impl Related<super::academic_period::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::AcademicPeriods.def()
+    }
+}
+
+impl Related<super::academic_policy::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::AcademicPolicy.def()
     }
 }
 

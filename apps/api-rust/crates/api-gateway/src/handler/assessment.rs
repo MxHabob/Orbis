@@ -7,8 +7,8 @@ use svc_assessment::ops;
 #[utoipa::path(get, path = "/api/assessments")]
 pub async fn get_assessments(State(state): State<AppState>, AuthenticatedUser(user): AuthenticatedUser, Json(body): Json<serde_json::Value>) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let ctx = state.build_context(&user.org_id, &user.id);
-    let cycle_id = body["cycle_id"].as_str().unwrap_or_default();
-    let r = ops::assessment::list(&ctx, cycle_id, None).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
+    let period_id = body["period_id"].as_str().unwrap_or_default();
+    let r = ops::assessment::list(&ctx, period_id, None).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
     ok!(r)
 }
 

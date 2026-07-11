@@ -1,5 +1,454 @@
-﻿-- Orbis SQLite Schema (auto-generated)
+-- ═══════════════════════════════════════════════════════════════
+-- Orbis Unified Schema — Single Database Architecture
+-- All tables in one database. No registry.db, no year DBs.
+-- ═══════════════════════════════════════════════════════════════
 PRAGMA foreign_keys=ON;
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- ── Organizations ──
+-- ══════════════════════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS organizations (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  name_ar TEXT,
+  slug TEXT UNIQUE,
+  code TEXT UNIQUE,
+  timezone TEXT NOT NULL DEFAULT 'Asia/Riyadh',
+  locale TEXT NOT NULL DEFAULT 'ar',
+  currency TEXT NOT NULL DEFAULT 'SAR',
+  date_format TEXT,
+  hijri_enabled INTEGER NOT NULL DEFAULT 1,
+  max_users INTEGER NOT NULL DEFAULT 500,
+  max_students INTEGER NOT NULL DEFAULT 2000,
+  max_storage_gb INTEGER NOT NULL DEFAULT 10,
+  settings TEXT,
+  features TEXT,
+  subscription_plan TEXT NOT NULL DEFAULT 'basic',
+  subscription_expires_at TEXT,
+  logo TEXT,
+  favicon TEXT,
+  primary_color TEXT,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  is_verified INTEGER NOT NULL DEFAULT 0,
+  is_deleted INTEGER NOT NULL DEFAULT 0,
+  deleted_at TEXT,
+  deleted_by TEXT,
+  current_year_id TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- ── Users ──
+-- ══════════════════════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL,
+  username TEXT,
+  email TEXT,
+  phone TEXT,
+  password_hash TEXT,
+  full_name TEXT NOT NULL,
+  full_name_ar TEXT,
+  first_name TEXT,
+  last_name TEXT,
+  first_name_ar TEXT,
+  last_name_ar TEXT,
+  sex TEXT,
+  date_of_birth TEXT,
+  national_id TEXT,
+  passport_number TEXT,
+  nationality TEXT,
+  religion TEXT,
+  blood_type TEXT,
+  address TEXT,
+  city TEXT,
+  state TEXT,
+  country TEXT,
+  postal_code TEXT,
+  primary_role TEXT NOT NULL DEFAULT 'user',
+  avatar TEXT,
+  bio TEXT,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  is_verified INTEGER NOT NULL DEFAULT 0,
+  is_deleted INTEGER NOT NULL DEFAULT 0,
+  deleted_at TEXT,
+  deleted_by TEXT,
+  last_login_at TEXT,
+  student_number TEXT,
+  academic_number TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (org_id) REFERENCES organizations(id)
+);
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- ── Org Units (Branches / Campuses / Divisions) ──
+-- ══════════════════════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS org_units (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL,
+  parent_id TEXT,
+  name TEXT NOT NULL,
+  name_ar TEXT,
+  code TEXT,
+  unit_type TEXT NOT NULL DEFAULT 'division',
+  sort_order INTEGER,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (org_id) REFERENCES organizations(id),
+  FOREIGN KEY (parent_id) REFERENCES org_units(id)
+);
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- ── Academic Year Management ──
+-- ══════════════════════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS academic_years (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  name_ar TEXT,
+  start_date TEXT NOT NULL,
+  end_date TEXT NOT NULL,
+  hijri_start TEXT,
+  hijri_end TEXT,
+  status TEXT NOT NULL DEFAULT 'planning'
+    CHECK (status IN ('planning','active','closing','archived')),
+  is_locked INTEGER NOT NULL DEFAULT 0,
+  locked_at TEXT,
+  locked_by TEXT,
+  lock_reason TEXT,
+  archived_at TEXT,
+  archived_by TEXT,
+  notes TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (org_id) REFERENCES organizations(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_ay_org ON academic_years(org_id);
+CREATE INDEX IF NOT EXISTS idx_ay_org_status ON academic_years(org_id, status);
+
+-- FK: organizations.current_year_id → academic_years.id
+-- (enforced at application level since SQLite ALTER TABLE ADD CONSTRAINT is limited)
+
+-- ── Academic Periods ──
+CREATE TABLE IF NOT EXISTS academic_periods (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL,
+  year_id TEXT NOT NULL,
+  parent_id TEXT,
+  name TEXT NOT NULL,
+  name_ar TEXT,
+  code TEXT,
+  period_type TEXT NOT NULL
+    CHECK (period_type IN ('semester','trimester','quarter','module','block','custom')),
+  start_date TEXT NOT NULL,
+  end_date TEXT NOT NULL,
+  hijri_start TEXT,
+  hijri_end TEXT,
+  enrollment_start TEXT,
+  enrollment_end TEXT,
+  is_enrollment_open INTEGER NOT NULL DEFAULT 0,
+  grade_entry_start TEXT,
+  grade_entry_end TEXT,
+  is_grade_entry_open INTEGER NOT NULL DEFAULT 0,
+  exam_start TEXT,
+  exam_end TEXT,
+  grading_system TEXT NOT NULL DEFAULT 'percentage',
+  passing_grade INTEGER,
+  max_grade INTEGER,
+  weight INTEGER,
+  status TEXT NOT NULL DEFAULT 'planned'
+    CHECK (status IN ('planned','active','grading','closed')),
+  is_locked INTEGER NOT NULL DEFAULT 0,
+  locked_at TEXT,
+  locked_by TEXT,
+  sort_order INTEGER,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (year_id) REFERENCES academic_years(id),
+  FOREIGN KEY (parent_id) REFERENCES academic_periods(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_ap_year ON academic_periods(year_id);
+CREATE INDEX IF NOT EXISTS idx_ap_org_year ON academic_periods(org_id, year_id);
+
+-- ── Academic Policies (unified: grading + enrollment + promotion + autopilot) ──
+CREATE TABLE IF NOT EXISTS academic_policies (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL UNIQUE,
+  default_grading_system TEXT NOT NULL DEFAULT 'percentage',
+  default_passing_grade INTEGER NOT NULL DEFAULT 50,
+  default_max_grade INTEGER NOT NULL DEFAULT 100,
+  enrollment_auto_close INTEGER NOT NULL DEFAULT 1,
+  allow_late_enrollment INTEGER NOT NULL DEFAULT 0,
+  late_enrollment_approval INTEGER NOT NULL DEFAULT 1,
+  grade_entry_auto_close INTEGER NOT NULL DEFAULT 1,
+  allow_grade_edit_after_close INTEGER NOT NULL DEFAULT 0,
+  grade_edit_approval INTEGER NOT NULL DEFAULT 1,
+  passing_score INTEGER NOT NULL DEFAULT 50,
+  min_attendance_rate REAL NOT NULL DEFAULT 75.0,
+  auto_graduate_final_level INTEGER NOT NULL DEFAULT 0,
+  final_level TEXT,
+  exclude_withdrawn INTEGER NOT NULL DEFAULT 1,
+  autopilot_mode TEXT NOT NULL DEFAULT 'suggested'
+    CHECK (autopilot_mode IN ('automatic','suggested','manual')),
+  autopilot_enabled INTEGER NOT NULL DEFAULT 1,
+  auto_open_enrollment INTEGER NOT NULL DEFAULT 1,
+  auto_close_enrollment INTEGER NOT NULL DEFAULT 1,
+  auto_open_grade_entry INTEGER NOT NULL DEFAULT 1,
+  auto_close_grade_entry INTEGER NOT NULL DEFAULT 1,
+  auto_lock_periods INTEGER NOT NULL DEFAULT 1,
+  auto_advance_periods INTEGER NOT NULL DEFAULT 0,
+  auto_archive_years INTEGER NOT NULL DEFAULT 0,
+  grace_days_after_deadline INTEGER NOT NULL DEFAULT 3,
+  notify_before_deadline_days INTEGER NOT NULL DEFAULT 7,
+  default_template_id TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (org_id) REFERENCES organizations(id)
+);
+
+-- ── Period Templates ──
+CREATE TABLE IF NOT EXISTS period_templates (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  name_ar TEXT,
+  institution_type TEXT NOT NULL DEFAULT 'school'
+    CHECK (institution_type IN ('school','university','institute','custom')),
+  structure TEXT NOT NULL,
+  is_default INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (org_id) REFERENCES organizations(id)
+);
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- ── Classes & Enrollments ──
+-- ══════════════════════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS classes (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL,
+  year_id TEXT NOT NULL,
+  unit_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  name_ar TEXT,
+  level TEXT NOT NULL,
+  division TEXT,
+  section TEXT,
+  capacity INTEGER,
+  gender TEXT,
+  homeroom_teacher_id TEXT,
+  sort_order INTEGER,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  is_deleted INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (year_id) REFERENCES academic_years(id),
+  FOREIGN KEY (org_id) REFERENCES organizations(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_classes_org_year ON classes(org_id, year_id);
+
+CREATE TABLE IF NOT EXISTS enrollments (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL,
+  year_id TEXT NOT NULL,
+  student_id TEXT NOT NULL,
+  class_id TEXT NOT NULL,
+  student_number TEXT,
+  academic_number TEXT,
+  status TEXT NOT NULL DEFAULT 'active'
+    CHECK (status IN ('active','transferred','withdrawn','graduated','suspended')),
+  enrollment_date TEXT,
+  withdrawal_date TEXT,
+  withdrawal_reason TEXT,
+  final_score INTEGER,
+  final_grade TEXT,
+  is_promoted INTEGER,
+  promotion_decision TEXT,
+  notes TEXT,
+  is_deleted INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (year_id) REFERENCES academic_years(id),
+  FOREIGN KEY (student_id) REFERENCES users(id),
+  FOREIGN KEY (class_id) REFERENCES classes(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_enr_org_year ON enrollments(org_id, year_id);
+CREATE INDEX IF NOT EXISTS idx_enr_student ON enrollments(student_id);
+CREATE INDEX IF NOT EXISTS idx_enr_class ON enrollments(class_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_enr_unique_active
+  ON enrollments(student_id, year_id)
+  WHERE status != 'withdrawn' AND is_deleted = 0;
+
+-- ── Promotion Jobs ──
+CREATE TABLE IF NOT EXISTS promotion_jobs (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL,
+  source_year_id TEXT NOT NULL,
+  target_year_id TEXT,
+  status TEXT NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending','validating','dry_run','confirmed','executing','completed','failed','rolled_back')),
+  initiated_by TEXT NOT NULL,
+  initiated_by_name TEXT,
+  config TEXT NOT NULL,
+  dry_run_result TEXT,
+  dry_run_at TEXT,
+  total_students INTEGER,
+  promoted_count INTEGER,
+  retained_count INTEGER,
+  graduated_count INTEGER,
+  withdrawn_count INTEGER,
+  excluded_count INTEGER,
+  error_log TEXT,
+  rollback_available INTEGER NOT NULL DEFAULT 1,
+  started_at TEXT,
+  completed_at TEXT,
+  rolled_back_at TEXT,
+  rolled_back_by TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (source_year_id) REFERENCES academic_years(id),
+  FOREIGN KEY (target_year_id) REFERENCES academic_years(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_pj_org ON promotion_jobs(org_id);
+CREATE INDEX IF NOT EXISTS idx_pj_status ON promotion_jobs(status);
+
+-- ── Promotion Details ──
+CREATE TABLE IF NOT EXISTS promotion_details (
+  id TEXT PRIMARY KEY,
+  job_id TEXT NOT NULL,
+  student_id TEXT NOT NULL,
+  student_name TEXT NOT NULL,
+  student_name_ar TEXT,
+  student_number TEXT,
+  source_enrollment_id TEXT NOT NULL,
+  source_class_id TEXT NOT NULL,
+  source_class_name TEXT,
+  source_level TEXT NOT NULL,
+  source_division TEXT,
+  target_enrollment_id TEXT,
+  target_class_id TEXT,
+  target_class_name TEXT,
+  target_level TEXT,
+  decision TEXT NOT NULL
+    CHECK (decision IN ('promoted','retained','graduated','excluded')),
+  reason TEXT NOT NULL,
+  final_score INTEGER,
+  attendance_rate REAL,
+  manual_override INTEGER NOT NULL DEFAULT 0,
+  override_by TEXT,
+  override_reason TEXT,
+  original_decision TEXT,
+  created_at TEXT NOT NULL,
+  FOREIGN KEY (job_id) REFERENCES promotion_jobs(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_pd_job ON promotion_details(job_id);
+CREATE INDEX IF NOT EXISTS idx_pd_student ON promotion_details(student_id);
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- ── Grades ──
+-- ══════════════════════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS grades (
+  id TEXT PRIMARY KEY,
+  enrollment_id TEXT NOT NULL,
+  assessment_id TEXT NOT NULL,
+  score REAL,
+  grade_letter TEXT,
+  is_absent INTEGER NOT NULL DEFAULT 0,
+  is_excused INTEGER NOT NULL DEFAULT 0,
+  comment TEXT,
+  entered_by TEXT,
+  entered_at TEXT,
+  is_published INTEGER NOT NULL DEFAULT 0,
+  is_locked INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (enrollment_id) REFERENCES enrollments(id),
+  FOREIGN KEY (assessment_id) REFERENCES assessments(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_grades_enrollment ON grades(enrollment_id);
+CREATE INDEX IF NOT EXISTS idx_grades_assessment ON grades(assessment_id);
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- ── Notifications ──
+-- ══════════════════════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS notifications (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  title TEXT NOT NULL,
+  title_ar TEXT,
+  body TEXT,
+  body_ar TEXT,
+  notification_type TEXT NOT NULL,
+  entity_type TEXT,
+  entity_id TEXT,
+  is_read INTEGER NOT NULL DEFAULT 0,
+  read_at TEXT,
+  created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_notif_user ON notifications(user_id, is_read);
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- ── Audit Log ──
+-- ══════════════════════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS audit_log (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL,
+  user_id TEXT,
+  action TEXT NOT NULL,
+  entity_type TEXT NOT NULL,
+  entity_id TEXT NOT NULL,
+  changes TEXT,
+  ip_address TEXT,
+  user_agent TEXT,
+  actor_type TEXT DEFAULT 'user',
+  actor_session_id TEXT,
+  correlation_id TEXT,
+  created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_org ON audit_log(org_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_log(entity_type, entity_id);
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- ── User Sessions ──
+-- ══════════════════════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS user_sessions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  org_id TEXT NOT NULL,
+  ip_address TEXT,
+  user_agent TEXT,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  expires_at TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- ── IAM & Auth ──
+-- ══════════════════════════════════════════════════════════════════════════════
 
 CREATE TABLE IF NOT EXISTS user_accounts (
   id TEXT PRIMARY KEY,
@@ -181,7 +630,7 @@ CREATE TABLE IF NOT EXISTS class_subjects (
   id TEXT PRIMARY KEY,
   class_id TEXT NOT NULL,
   subject_id TEXT NOT NULL,
-  cycle_id TEXT NOT NULL,
+  period_id TEXT NOT NULL,
   primary_teacher_id TEXT NOT NULL,
   assistant_teacher_id TEXT,
   substitute_teacher_id TEXT,
@@ -192,7 +641,8 @@ CREATE TABLE IF NOT EXISTS class_subjects (
   assessment_config TEXT,
   is_active INTEGER NOT NULL,
   created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (period_id) REFERENCES academic_periods(id)
 );
 
 CREATE TABLE IF NOT EXISTS student_guardians (
@@ -223,7 +673,7 @@ CREATE TABLE IF NOT EXISTS student_guardians (
 CREATE TABLE IF NOT EXISTS time_slots (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL,
-  cycle_id TEXT NOT NULL,
+  year_id TEXT NOT NULL,
   slot_number INTEGER NOT NULL,
   name TEXT,
   name_ar TEXT,
@@ -242,7 +692,7 @@ CREATE TABLE IF NOT EXISTS time_slots (
 CREATE TABLE IF NOT EXISTS scheduled_lessons (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL,
-  cycle_id TEXT NOT NULL,
+  year_id TEXT NOT NULL,
   class_id TEXT NOT NULL,
   class_subject_id TEXT NOT NULL,
   subject_id TEXT NOT NULL,
@@ -274,7 +724,7 @@ CREATE TABLE IF NOT EXISTS scheduled_lessons (
 CREATE TABLE IF NOT EXISTS assessments (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL,
-  cycle_id TEXT NOT NULL,
+  period_id TEXT NOT NULL,
   class_subject_id TEXT NOT NULL,
   title TEXT NOT NULL,
   title_ar TEXT,
@@ -302,7 +752,7 @@ CREATE TABLE IF NOT EXISTS assessments (
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
-CREATE INDEX IF NOT EXISTS idx_assessments_cs ON assessments(class_subject_id, cycle_id);
+CREATE INDEX IF NOT EXISTS idx_assessments_cs ON assessments(class_subject_id, period_id);
 
 CREATE TABLE IF NOT EXISTS grade_history (
   id TEXT PRIMARY KEY,
@@ -323,7 +773,7 @@ CREATE TABLE IF NOT EXISTS grade_history (
 CREATE TABLE IF NOT EXISTS attendance_daily (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL,
-  cycle_id TEXT NOT NULL,
+  period_id TEXT NOT NULL,
   enrollment_id TEXT NOT NULL,
   date TEXT NOT NULL,
   status TEXT NOT NULL,
@@ -353,7 +803,7 @@ CREATE TABLE IF NOT EXISTS attendance_daily (
 CREATE TABLE IF NOT EXISTS attendance_summary (
   id TEXT PRIMARY KEY,
   enrollment_id TEXT NOT NULL,
-  cycle_id TEXT NOT NULL,
+  period_id TEXT NOT NULL,
   total_lessons INTEGER,
   present_lessons INTEGER,
   absent_lessons INTEGER,
@@ -492,7 +942,7 @@ CREATE TABLE IF NOT EXISTS discount_templates (
 CREATE TABLE IF NOT EXISTS student_fees (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL,
-  cycle_id TEXT NOT NULL,
+  year_id TEXT NOT NULL,
   enrollment_id TEXT NOT NULL,
   fee_template_id TEXT NOT NULL,
   original_amount REAL NOT NULL,
@@ -680,7 +1130,7 @@ CREATE TABLE IF NOT EXISTS teacher_availability (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL,
   teacher_id TEXT NOT NULL,
-  cycle_id TEXT NOT NULL,
+  year_id TEXT NOT NULL,
   day_of_week INTEGER NOT NULL,
   time_slot_id TEXT NOT NULL,
   is_available INTEGER NOT NULL,
@@ -715,7 +1165,7 @@ CREATE TABLE IF NOT EXISTS solve_jobs (
 CREATE TABLE IF NOT EXISTS student_ordering (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL,
-  cycle_id TEXT NOT NULL,
+  year_id TEXT NOT NULL,
   enrollment_id TEXT NOT NULL UNIQUE,
   student_id TEXT NOT NULL,
   class_id TEXT NOT NULL,
@@ -738,14 +1188,14 @@ CREATE TABLE IF NOT EXISTS student_ordering (
   updated_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_so_class_order ON student_ordering(class_id, order_in_class);
-CREATE INDEX IF NOT EXISTS idx_so_sort_key ON student_ordering(org_id, cycle_id, sort_key);
-CREATE INDEX IF NOT EXISTS idx_so_level ON student_ordering(org_id, cycle_id, level, order_in_level);
+CREATE INDEX IF NOT EXISTS idx_so_sort_key ON student_ordering(org_id, year_id, sort_key);
+CREATE INDEX IF NOT EXISTS idx_so_level ON student_ordering(org_id, year_id, level, order_in_level);
 
 -- ── Exam Sessions (Examination Cycles) ──
 CREATE TABLE IF NOT EXISTS exam_sessions (
   id TEXT PRIMARY KEY,
   org_id TEXT NOT NULL,
-  cycle_id TEXT NOT NULL,
+  period_id TEXT NOT NULL,
   name TEXT NOT NULL,
   name_ar TEXT,
   code TEXT,
@@ -767,7 +1217,7 @@ CREATE TABLE IF NOT EXISTS exam_sessions (
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
-CREATE INDEX IF NOT EXISTS idx_es_org_cycle ON exam_sessions(org_id, cycle_id);
+CREATE INDEX IF NOT EXISTS idx_es_org_period ON exam_sessions(org_id, period_id);
 CREATE INDEX IF NOT EXISTS idx_es_status ON exam_sessions(org_id, status);
 
 -- ── Exam Subjects ──

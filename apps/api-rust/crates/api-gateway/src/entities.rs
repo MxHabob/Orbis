@@ -16,8 +16,16 @@ pub mod organization {
     pub use svc_organization::entities::organization::*;
 }
 
-pub mod academic_cycle {
-    pub use svc_organization::entities::academic_cycle::*;
+pub mod academic_period {
+    pub use svc_organization::entities::academic_period::*;
+}
+
+pub mod academic_year {
+    pub use svc_organization::entities::academic_year::*;
+}
+
+pub mod academic_policy {
+    pub use svc_organization::entities::academic_policy::*;
 }
 
 pub mod org_unit {

@@ -6,23 +6,25 @@
 //   suggested  — suggest actions and wait for approval
 //   manual     — observe and notify only
 //
-// Architecture:
-//   Evaluator  → reads system state (calendar, phases, health)
-//   Planner    → creates tasks from state + calendar events
-//   Executor   → runs tasks according to execution mode
-//   Resumption → catches up after app restarts / interruptions
+// Architecture (Unified):
+//   AcademicEvaluator → reads academic_periods dates directly
+//   Planner           → creates tasks from ProposedTask list
+//   AcademicExecutor  → performs real DB mutations for 13 task types
+//   Resumption        → catches up after app restarts / interruptions
 //
 // Communication:
-//   Reads domain state via domain crate query repos
+//   Reads domain state via single DB (no registry_db + year_db)
 //   Publishes results via shared-kernel EventBus
 //   Persists state in autopilot_* tables
+//   Reads policies from academic_policies table
 // ═══════════════════════════════════════════════════════════════
 
 pub mod entities;
 pub mod config;
 pub mod engine;
-pub mod evaluator;
 pub mod planner;
 pub mod executor;
 pub mod resumption;
 pub mod diagnostics;
+pub mod academic_evaluator;
+pub mod academic_executor;

@@ -33,23 +33,23 @@ pub async fn post_grade_upsert(State(state): State<AppState>, AuthenticatedUser(
     ok!(r)
 }
 
-#[utoipa::path(get, path = "/api/grades/matrix/{class_id}/{cycle_id}")]
-pub async fn get_grade_matrix(State(state): State<AppState>, Path((class_id, cycle_id)): Path<(String, String)>, AuthenticatedUser(user): AuthenticatedUser) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+#[utoipa::path(get, path = "/api/grades/matrix/{class_id}/{period_id}")]
+pub async fn get_grade_matrix(State(state): State<AppState>, Path((class_id, period_id)): Path<(String, String)>, AuthenticatedUser(user): AuthenticatedUser) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let ctx = state.build_context(&user.org_id, &user.id);
-    let r = ops::grade::matrix(&ctx, &class_id, &cycle_id).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
+    let r = ops::grade::matrix(&ctx, &class_id, &period_id).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
     ok!(r)
 }
 
-#[utoipa::path(get, path = "/api/report-card/{enrollment_id}/{cycle_id}")]
-pub async fn get_report_card(State(state): State<AppState>, Path((enrollment_id, cycle_id)): Path<(String, String)>, AuthenticatedUser(user): AuthenticatedUser) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+#[utoipa::path(get, path = "/api/report-card/{enrollment_id}/{period_id}")]
+pub async fn get_report_card(State(state): State<AppState>, Path((enrollment_id, period_id)): Path<(String, String)>, AuthenticatedUser(user): AuthenticatedUser) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let ctx = state.build_context(&user.org_id, &user.id);
-    let r = ops::grade::report_card(&ctx, &enrollment_id, &cycle_id).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
+    let r = ops::grade::report_card(&ctx, &enrollment_id, &period_id).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
     ok!(r)
 }
 
-#[utoipa::path(post, path = "/api/grades/compile/{cycle_id}/{class_id}")]
-pub async fn post_compile_semester(State(state): State<AppState>, Path((cycle_id, class_id)): Path<(String, String)>, AuthenticatedUser(user): AuthenticatedUser) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+#[utoipa::path(post, path = "/api/grades/compile/{period_id}/{class_id}")]
+pub async fn post_compile_semester(State(state): State<AppState>, Path((period_id, class_id)): Path<(String, String)>, AuthenticatedUser(user): AuthenticatedUser) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let ctx = state.build_context(&user.org_id, &user.id);
-    let r = ops::grade::compile_semester(&ctx, &cycle_id, &class_id).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
+    let r = ops::grade::compile_semester(&ctx, &period_id, &class_id).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
     ok!(r)
 }

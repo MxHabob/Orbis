@@ -4,7 +4,7 @@ pub mod macros;
 pub mod auth;
 pub mod user;
 pub mod organization;
-pub mod academic_cycle;
+pub mod academic_period;
 pub mod class;
 pub mod subject;
 pub mod org_unit;

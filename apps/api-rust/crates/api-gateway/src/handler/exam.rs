@@ -4,10 +4,10 @@ use crate::app_state::AppState;
 use crate::middleware::AuthenticatedUser;
 use svc_exam::ops;
 
-#[utoipa::path(get, path = "/api/exam/sessions/{cycle_id}")]
-pub async fn get_sessions(State(state): State<AppState>, Path(cycle_id): Path<String>, AuthenticatedUser(user): AuthenticatedUser) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+#[utoipa::path(get, path = "/api/exam/sessions/{period_id}")]
+pub async fn get_sessions(State(state): State<AppState>, Path(period_id): Path<String>, AuthenticatedUser(user): AuthenticatedUser) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let ctx = state.build_context(&user.org_id, &user.id);
-    let r = ops::session::list(&ctx, &cycle_id).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
+    let r = ops::session::list(&ctx, &period_id).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"success":false,"error":e.to_string()}))))?;
     ok!(r)
 }
 

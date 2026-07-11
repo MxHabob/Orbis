@@ -1,84 +1,119 @@
-//! Academic cycle operations — CRUD + lock/unlock + grade entry window.
+//! Academic period operations — CRUD + lock/unlock + enrollment/grade entry windows.
+//!
+//! Replaces the old `cycle.rs` that operated on `academic_cycles`.
+//! All operations now work on `academic_periods` with explicit year scoping via ctx.year_id.
 
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, IntoActiveModel};
 use uuid::Uuid;
 
 use shared_kernel::context::ServiceContext;
 use shared_kernel::errors::AppError;
 use shared_kernel::traits::{AuditEntry, Permission};
 
-use crate::entities::academic_cycle;
+use crate::entities::academic_period;
 
-pub async fn list(ctx: &ServiceContext) -> Result<Vec<academic_cycle::Model>, AppError> {
+/// List all periods for the current year.
+pub async fn list(ctx: &ServiceContext) -> Result<Vec<academic_period::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::CycleRead).await?;
-    Ok(academic_cycle::Entity::find()
-        .filter(academic_cycle::Column::OrgId.eq(&ctx.org_id))
-        .order_by_desc(academic_cycle::Column::StartDate)
+    Ok(academic_period::Entity::find()
+        .filter(academic_period::Column::OrgId.eq(&ctx.org_id))
+        .filter(academic_period::Column::YearId.eq(&ctx.year_id))
+        .order_by_asc(academic_period::Column::SortOrder)
         .all(&ctx.db).await?)
 }
 
-pub async fn get(ctx: &ServiceContext, cycle_id: &str) -> Result<academic_cycle::Model, AppError> {
+/// List periods for a specific year (cross-year queries).
+pub async fn list_by_year(ctx: &ServiceContext, year_id: &str) -> Result<Vec<academic_period::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::CycleRead).await?;
-    academic_cycle::Entity::find_by_id(cycle_id.to_string())
-        .one(&ctx.db).await?
-        .ok_or_else(|| AppError::not_found("academic_cycle", cycle_id))
+    Ok(academic_period::Entity::find()
+        .filter(academic_period::Column::OrgId.eq(&ctx.org_id))
+        .filter(academic_period::Column::YearId.eq(year_id))
+        .order_by_asc(academic_period::Column::SortOrder)
+        .all(&ctx.db).await?)
 }
 
-pub async fn get_current(ctx: &ServiceContext) -> Result<academic_cycle::Model, AppError> {
+/// Get a single period by ID.
+pub async fn get(ctx: &ServiceContext, period_id: &str) -> Result<academic_period::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::CycleRead).await?;
-    academic_cycle::Entity::find()
-        .filter(academic_cycle::Column::OrgId.eq(&ctx.org_id))
-        .filter(academic_cycle::Column::IsCurrent.eq(1))
+    academic_period::Entity::find_by_id(period_id.to_string())
         .one(&ctx.db).await?
-        .ok_or_else(|| AppError::not_found("academic_cycle", "current"))
+        .ok_or_else(|| AppError::not_found("academic_period", period_id))
 }
 
 #[derive(serde::Deserialize)]
-pub struct CreateCyclePayload {
+pub struct CreatePeriodPayload {
     pub name: String,
     pub name_ar: Option<String>,
-    pub cycle_type: String,
+    pub code: Option<String>,
+    pub period_type: String,
     pub parent_id: Option<String>,
     pub start_date: String,
     pub end_date: String,
-    pub grading_system: String,
+    pub enrollment_start: Option<String>,
+    pub enrollment_end: Option<String>,
+    pub grade_entry_start: Option<String>,
+    pub grade_entry_end: Option<String>,
+    pub exam_start: Option<String>,
+    pub exam_end: Option<String>,
+    pub grading_system: Option<String>,
+    pub passing_grade: Option<i32>,
+    pub max_grade: Option<i32>,
+    pub weight: Option<i32>,
+    pub sort_order: Option<i32>,
 }
 
 pub async fn create(
     ctx: &ServiceContext,
     data: serde_json::Value,
-) -> Result<academic_cycle::Model, AppError> {
+) -> Result<academic_period::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::CycleWrite).await?;
 
-    let req: CreateCyclePayload = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid create cycle payload: {e}")))?;
+    let req: CreatePeriodPayload = serde_json::from_value(data)
+        .map_err(|e| AppError::validation(format!("Invalid create period payload: {e}")))?;
 
     let now = Utc::now().to_rfc3339();
     let id = Uuid::new_v4().to_string();
 
-    let model = academic_cycle::Model {
-        id: id.clone(), org_id: ctx.org_id.clone(),
-        name: req.name, name_ar: req.name_ar, code: None, cycle_type: req.cycle_type, parent_id: req.parent_id,
-        start_date: req.start_date, end_date: req.end_date,
-        hijri_start_date: None, hijri_end_date: None,
-        exam_start_date: None, exam_end_date: None,
-        weight: None, grading_system: req.grading_system,
-        passing_grade: None, max_grade: None,
-        is_current: 0, is_locked: 0, is_enrollment_open: 0,
-        is_grade_entry_open: 0,
-        grade_entry_start: None, grade_entry_end: None,
-        locked_at: None, locked_by: None,
-        settings: None, sort_order: None,
-        created_at: now.clone(), updated_at: now,
+    let model = academic_period::ActiveModel {
+        id: Set(id.clone()),
+        org_id: Set(ctx.org_id.clone()),
+        year_id: Set(ctx.year_id.clone()),
+        parent_id: Set(req.parent_id),
+        name: Set(req.name),
+        name_ar: Set(req.name_ar),
+        code: Set(req.code),
+        period_type: Set(req.period_type),
+        start_date: Set(req.start_date),
+        end_date: Set(req.end_date),
+        hijri_start: Set(None),
+        hijri_end: Set(None),
+        enrollment_start: Set(req.enrollment_start),
+        enrollment_end: Set(req.enrollment_end),
+        is_enrollment_open: Set(0),
+        grade_entry_start: Set(req.grade_entry_start),
+        grade_entry_end: Set(req.grade_entry_end),
+        is_grade_entry_open: Set(0),
+        exam_start: Set(req.exam_start),
+        exam_end: Set(req.exam_end),
+        grading_system: Set(req.grading_system.unwrap_or_else(|| "percentage".to_string())),
+        passing_grade: Set(req.passing_grade),
+        max_grade: Set(req.max_grade),
+        weight: Set(req.weight),
+        status: Set("planned".to_string()),
+        is_locked: Set(0),
+        locked_at: Set(None),
+        locked_by: Set(None),
+        sort_order: Set(req.sort_order),
+        created_at: Set(now.clone()),
+        updated_at: Set(now),
     };
 
-    let active: academic_cycle::ActiveModel = model.into();
-    let created = active.insert(&ctx.db).await?;
+    let created = model.insert(&ctx.db).await?;
 
     ctx.audit.log(AuditEntry {
         org_id: ctx.org_id.clone(), actor: ctx.actor.clone(),
-        action: "cycle.create".into(), entity_type: "academic_cycle".into(),
+        action: "period.create".into(), entity_type: "academic_period".into(),
         entity_id: id, old_data: None,
         new_data: Some(serde_json::to_value(&created).unwrap_or_default()),
         correlation_id: ctx.correlation_id.clone(),
@@ -87,72 +122,11 @@ pub async fn create(
     Ok(created)
 }
 
-#[derive(serde::Deserialize)]
-pub struct UpdateCyclePayload {
-    pub name: Option<String>,
-    pub start_date: Option<String>,
-    pub end_date: Option<String>,
-}
-
-pub async fn update(
-    ctx: &ServiceContext,
-    cycle_id: &str,
-    data: serde_json::Value,
-) -> Result<academic_cycle::Model, AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::CycleWrite).await?;
-
-    let req: UpdateCyclePayload = serde_json::from_value(data)
-        .map_err(|e| AppError::validation(format!("Invalid update cycle payload: {e}")))?;
-
-    let existing = get(ctx, cycle_id).await?;
-    let mut active: academic_cycle::ActiveModel = existing.into();
-
-    if let Some(n) = req.name { active.name = Set(n); }
-    if let Some(sd) = req.start_date { active.start_date = Set(sd); }
-    if let Some(ed) = req.end_date { active.end_date = Set(ed); }
-    active.updated_at = Set(Utc::now().to_rfc3339());
-
-    Ok(active.update(&ctx.db).await?)
-}
-
-pub async fn set_current(ctx: &ServiceContext, cycle_id: &str) -> Result<academic_cycle::Model, AppError> {
-    ctx.permissions.check(&ctx.actor, Permission::CycleWrite).await?;
-
-    // Unset all current
-    let all = academic_cycle::Entity::find()
-        .filter(academic_cycle::Column::OrgId.eq(&ctx.org_id))
-        .filter(academic_cycle::Column::IsCurrent.eq(1))
-        .all(&ctx.db).await?;
-
-    for c in all {
-        let mut a: academic_cycle::ActiveModel = c.into();
-        a.is_current = Set(0);
-        a.update(&ctx.db).await?;
-    }
-
-    let existing = get(ctx, cycle_id).await?;
-    let mut active: academic_cycle::ActiveModel = existing.into();
-    active.is_current = Set(1);
-    active.updated_at = Set(Utc::now().to_rfc3339());
-
-    let updated = active.update(&ctx.db).await?;
-
-    ctx.audit.log(AuditEntry {
-        org_id: ctx.org_id.clone(), actor: ctx.actor.clone(),
-        action: "cycle.set_current".into(), entity_type: "academic_cycle".into(),
-        entity_id: cycle_id.into(), old_data: None,
-        new_data: Some(serde_json::json!({ "is_current": true })),
-        correlation_id: ctx.correlation_id.clone(),
-    }).await?;
-
-    Ok(updated)
-}
-
-pub async fn lock(ctx: &ServiceContext, cycle_id: &str) -> Result<academic_cycle::Model, AppError> {
+pub async fn lock(ctx: &ServiceContext, period_id: &str) -> Result<academic_period::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::CycleLock).await?;
 
-    let existing = get(ctx, cycle_id).await?;
-    let mut active: academic_cycle::ActiveModel = existing.into();
+    let existing = get(ctx, period_id).await?;
+    let mut active = existing.into_active_model();
     active.is_locked = Set(1);
     active.locked_at = Set(Some(Utc::now().to_rfc3339()));
     active.locked_by = Set(Some(ctx.actor.as_str().to_string()));
@@ -161,11 +135,11 @@ pub async fn lock(ctx: &ServiceContext, cycle_id: &str) -> Result<academic_cycle
     Ok(active.update(&ctx.db).await?)
 }
 
-pub async fn unlock(ctx: &ServiceContext, cycle_id: &str) -> Result<academic_cycle::Model, AppError> {
+pub async fn unlock(ctx: &ServiceContext, period_id: &str) -> Result<academic_period::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::CycleLock).await?;
 
-    let existing = get(ctx, cycle_id).await?;
-    let mut active: academic_cycle::ActiveModel = existing.into();
+    let existing = get(ctx, period_id).await?;
+    let mut active = existing.into_active_model();
     active.is_locked = Set(0);
     active.locked_at = Set(None);
     active.locked_by = Set(None);
@@ -174,32 +148,32 @@ pub async fn unlock(ctx: &ServiceContext, cycle_id: &str) -> Result<academic_cyc
     Ok(active.update(&ctx.db).await?)
 }
 
-pub async fn toggle_grade_entry(
-    ctx: &ServiceContext, cycle_id: &str, open: bool,
-    start: Option<String>, end: Option<String>,
-) -> Result<academic_cycle::Model, AppError> {
+pub async fn toggle_enrollment(
+    ctx: &ServiceContext,
+    period_id: &str,
+    open: bool,
+) -> Result<academic_period::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::CycleWrite).await?;
 
-    let existing = get(ctx, cycle_id).await?;
-    let mut active: academic_cycle::ActiveModel = existing.into();
-    active.is_grade_entry_open = Set(if open { 1 } else { 0 });
-    if let Some(s) = start { active.grade_entry_start = Set(Some(s)); }
-    if let Some(e) = end { active.grade_entry_end = Set(Some(e)); }
+    let existing = get(ctx, period_id).await?;
+    let mut active = existing.into_active_model();
+    active.is_enrollment_open = Set(if open { 1 } else { 0 });
     active.updated_at = Set(Utc::now().to_rfc3339());
 
     Ok(active.update(&ctx.db).await?)
 }
 
-pub async fn open_grade_entry(
+pub async fn toggle_grade_entry(
     ctx: &ServiceContext,
-    cycle_id: &str,
-) -> Result<academic_cycle::Model, AppError> {
-    toggle_grade_entry(ctx, cycle_id, true, None, None).await
-}
+    period_id: &str,
+    open: bool,
+) -> Result<academic_period::Model, AppError> {
+    ctx.permissions.check(&ctx.actor, Permission::CycleWrite).await?;
 
-pub async fn close_grade_entry(
-    ctx: &ServiceContext,
-    cycle_id: &str,
-) -> Result<academic_cycle::Model, AppError> {
-    toggle_grade_entry(ctx, cycle_id, false, None, None).await
+    let existing = get(ctx, period_id).await?;
+    let mut active = existing.into_active_model();
+    active.is_grade_entry_open = Set(if open { 1 } else { 0 });
+    active.updated_at = Set(Utc::now().to_rfc3339());
+
+    Ok(active.update(&ctx.db).await?)
 }

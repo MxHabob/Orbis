@@ -1,38 +1,39 @@
-//! Engine — main autopilot tick loop that orchestrates Evaluator → Planner → Executor.
+//! Engine — main autopilot tick loop (Unified Single-DB Architecture).
 //!
 //! The engine runs on a configurable interval and:
-//!   1. Loads config for the org
-//!   2. Evaluates system state (Evaluator)
-//!   3. Plans new tasks from calendar events (Planner)
-//!   4. Executes ready/approved tasks (Executor)
-//!   5. Runs diagnostics (Diagnostics)
+//!   1. Loads policy from `academic_policies`
+//!   2. Evaluates academic state via AcademicEvaluator (reads periods directly)
+//!   3. Plans new tasks from ProposedTask list
+//!   4. Executes ready/approved tasks via AcademicExecutor (real DB mutations)
+//!   5. Runs diagnostics
 //!   6. Records tick result
 //!
-//! The engine is designed to be called from a tokio::spawn loop or a Tauri-managed interval.
+//! Key change from v1: Single `db` parameter replaces `registry_db` + `year_db`.
 
 use std::sync::Arc;
+use std::time::Instant;
 use chrono::Utc;
-use sea_orm::{DatabaseConnection, EntityTrait, ColumnTrait, QueryFilter, ActiveModelTrait, Set};
+use sea_orm::{DatabaseConnection, EntityTrait, ColumnTrait, QueryFilter, ActiveModelTrait, Set, IntoActiveModel};
 use serde::Serialize;
-use tracing::{info, error};
+use tracing::{info, error, warn};
+use uuid::Uuid;
 
 use shared_kernel::errors::AppError;
 use shared_kernel::event_bus::{EventBus, EventEnvelope};
+use shared_kernel::types::ExecutionMode;
 
-use crate::config::ResolvedConfig;
+use crate::academic_evaluator::{AcademicEvaluator, ProposedTask, Risk};
+use crate::academic_executor::AcademicExecutor;
 use crate::diagnostics::{Diagnostics, HealthReport, HealthStatus};
-use crate::entities::autopilot_config;
-use crate::evaluator::Evaluator;
-use crate::executor::Executor;
-use crate::planner::Planner;
-use crate::resumption::{ResumptionService, CatchUpReport};
+use crate::entities::{autopilot_task, autopilot_execution_log};
+use svc_organization::entities::academic_policy;
 
 /// Result of a single tick.
 #[derive(Debug, Clone, Serialize)]
 pub struct TickResult {
     pub org_id: String,
     pub tick_at: String,
-    pub snapshot_summary: SnapshotSummary,
+    pub evaluation: EvaluationSummary,
     pub plan: PlanSummary,
     pub execution: ExecutionSummary,
     pub health: HealthReport,
@@ -41,10 +42,8 @@ pub struct TickResult {
 }
 
 #[derive(Debug, Clone, Serialize)]
-pub struct SnapshotSummary {
-    pub active_events: usize,
-    pub missed_events: usize,
-    pub upcoming_events: usize,
+pub struct EvaluationSummary {
+    pub proposed_tasks: usize,
     pub pending_tasks: usize,
     pub failed_tasks: usize,
 }
@@ -53,7 +52,7 @@ pub struct SnapshotSummary {
 pub struct PlanSummary {
     pub tasks_created: usize,
     pub already_planned: usize,
-    pub missed_event_count: usize,
+    pub skipped_manual: usize,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -74,7 +73,7 @@ pub enum TickStatus {
     Disabled,
 }
 
-/// The main Autopilot Engine.
+/// The main Autopilot Engine (Unified Architecture).
 pub struct AutopilotEngine {
     event_bus: Arc<EventBus>,
 }
@@ -84,50 +83,28 @@ impl AutopilotEngine {
         Self { event_bus }
     }
 
-    /// Run catch-up on startup (non-blocking, fire-and-forget).
-    pub async fn startup_catch_up(
-        &self,
-        registry_db: &DatabaseConnection,
-        year_db: &DatabaseConnection,
-        org_id: &str,
-    ) -> Result<CatchUpReport, AppError> {
-        let config = self.load_config(registry_db, org_id).await?;
-
-        if !config.is_enabled {
-            info!(org_id, "Autopilot disabled — skipping catch-up");
-            return Ok(CatchUpReport {
-                missed: vec![],
-                activated: 0,
-                already_planned: 0,
-            });
-        }
-
-        ResumptionService::catch_up(registry_db, year_db, &config).await
-    }
-
     /// Execute a single tick of the autopilot for a given org.
     ///
-    /// This is the main entry point, called periodically from a timer or manually.
+    /// Single `db` parameter — no more registry_db + year_db split.
     pub async fn tick(
         &self,
-        registry_db: &DatabaseConnection,
-        year_db: &DatabaseConnection,
+        db: &DatabaseConnection,
         org_id: &str,
     ) -> TickResult {
         let tick_at = Utc::now().to_rfc3339();
         info!(org_id, "Autopilot tick started");
 
-        // ── 1. Load config ───────────────────────────────────────
-        let config = match self.load_config(registry_db, org_id).await {
-            Ok(c) => c,
+        // ── 1. Load policy ───────────────────────────────────────
+        let policy = match Self::load_policy(db, org_id).await {
+            Ok(p) => p,
             Err(e) => return Self::error_result(org_id, &tick_at, &e.to_string()),
         };
 
-        if !config.is_enabled {
+        if policy.autopilot_enabled == 0 {
             return TickResult {
                 org_id: org_id.to_string(),
                 tick_at,
-                snapshot_summary: SnapshotSummary::empty(),
+                evaluation: EvaluationSummary::empty(),
                 plan: PlanSummary::empty(),
                 execution: ExecutionSummary::empty(),
                 health: HealthReport::healthy(org_id),
@@ -136,74 +113,46 @@ impl AutopilotEngine {
             };
         }
 
-        // Check if paused
-        if let Ok(Some(cfg_model)) = autopilot_config::Entity::find()
-            .filter(autopilot_config::Column::OrgId.eq(org_id))
-            .one(registry_db)
-            .await
-        {
-            if cfg_model.paused_at.is_some() {
-                return TickResult {
-                    org_id: org_id.to_string(),
-                    tick_at,
-                    snapshot_summary: SnapshotSummary::empty(),
-                    plan: PlanSummary::empty(),
-                    execution: ExecutionSummary::empty(),
-                    health: HealthReport::healthy(org_id),
-                    status: TickStatus::Paused,
-                    error: None,
-                };
-            }
-        }
-
-        // ── 2. Evaluate + Plan + Execute + Diagnose (parallel where possible) ──
-        let snapshot = match Evaluator::evaluate(registry_db, year_db, org_id).await {
-            Ok(s) => s,
+        // ── 2. Evaluate academic state ───────────────────────────
+        let proposed_tasks = match AcademicEvaluator::evaluate(db, org_id, &policy).await {
+            Ok(tasks) => tasks,
             Err(e) => return Self::error_result(org_id, &tick_at, &e.to_string()),
         };
 
-        let snapshot_summary = SnapshotSummary {
-            active_events: snapshot.active_events.len(),
-            missed_events: snapshot.missed_events.len(),
-            upcoming_events: snapshot.upcoming_events.len(),
-            pending_tasks: snapshot.pending_tasks.len(),
-            failed_tasks: snapshot.failed_tasks.len(),
+        // Count existing pending/failed tasks
+        let (pending_count, failed_count) = Self::count_task_statuses(db, org_id).await;
+
+        let eval_summary = EvaluationSummary {
+            proposed_tasks: proposed_tasks.len(),
+            pending_tasks: pending_count,
+            failed_tasks: failed_count,
         };
 
-        // Plan
-        let plan_result = match Planner::plan(registry_db, &snapshot, &config).await {
-            Ok(p) => p,
-            Err(e) => return Self::error_result(org_id, &tick_at, &e.to_string()),
-        };
-
+        // ── 3. Plan — create autopilot_tasks from proposals ──────
+        let plan_result = self.plan_tasks(db, org_id, &proposed_tasks, &policy).await;
         let plan_summary = PlanSummary {
-            tasks_created: plan_result.tasks_created.len(),
-            already_planned: plan_result.already_planned,
-            missed_event_count: plan_result.missed_event_count,
+            tasks_created: plan_result.0,
+            already_planned: plan_result.1,
+            skipped_manual: plan_result.2,
         };
 
-        // Execute
-        let executor = Executor::new(self.event_bus.clone());
-        let exec_result = match executor.execute_ready_tasks(registry_db, &config).await {
-            Ok(r) => r,
-            Err(e) => return Self::error_result(org_id, &tick_at, &e.to_string()),
-        };
-
+        // ── 4. Execute ready/approved tasks ──────────────────────
+        let exec_result = self.execute_ready_tasks(db, org_id, &policy).await;
         let exec_summary = ExecutionSummary {
-            executed: exec_result.executed,
-            succeeded: exec_result.succeeded,
-            failed: exec_result.failed,
-            skipped: exec_result.skipped,
+            executed: exec_result.0,
+            succeeded: exec_result.1,
+            failed: exec_result.2,
+            skipped: exec_result.3,
         };
 
-        // Diagnostics
-        let health = match Diagnostics::health_check(registry_db, org_id).await {
+        // ── 5. Diagnostics ───────────────────────────────────────
+        let health = match Diagnostics::health_check(db, org_id).await {
             Ok(h) => h,
-            Err(e) => return Self::error_result(org_id, &tick_at, &e.to_string()),
+            Err(_) => HealthReport::healthy(org_id),
         };
 
-        // ── 3. Determine overall tick status ─────────────────────
-        let status = if exec_result.failed > 0 {
+        // ── 6. Determine status ──────────────────────────────────
+        let status = if exec_result.2 > 0 {
             TickStatus::Warning
         } else if health.status == HealthStatus::Critical {
             TickStatus::Error
@@ -213,21 +162,16 @@ impl AutopilotEngine {
             TickStatus::Ok
         };
 
-        // ── 4. Record tick result ────────────────────────────────
         let tick_result = TickResult {
             org_id: org_id.to_string(),
             tick_at: tick_at.clone(),
-            snapshot_summary,
+            evaluation: eval_summary,
             plan: plan_summary,
             execution: exec_summary,
             health,
             status,
             error: None,
         };
-
-        // Update last_tick in config (fire-and-forget)
-        let result_json = serde_json::to_string(&tick_result).unwrap_or_default();
-        let _ = Self::update_last_tick(registry_db, org_id, &tick_at, &result_json).await;
 
         // Publish tick event
         self.event_bus.publish(EventEnvelope {
@@ -240,7 +184,8 @@ impl AutopilotEngine {
             correlation_id: None,
             payload: serde_json::json!({
                 "status": tick_result.status,
-                "tasks_created": tick_result.plan.tasks_created,
+                "proposed": tick_result.evaluation.proposed_tasks,
+                "created": tick_result.plan.tasks_created,
                 "executed": tick_result.execution.executed,
                 "succeeded": tick_result.execution.succeeded,
                 "failed": tick_result.execution.failed,
@@ -251,51 +196,327 @@ impl AutopilotEngine {
         info!(
             org_id,
             status = ?tick_result.status,
-            tasks_created = tick_result.plan.tasks_created,
+            proposed = tick_result.evaluation.proposed_tasks,
+            created = tick_result.plan.tasks_created,
             executed = tick_result.execution.executed,
-            succeeded = tick_result.execution.succeeded,
-            failed = tick_result.execution.failed,
             "Autopilot tick completed"
         );
 
         tick_result
     }
 
-    // ── Helpers ──────────────────────────────────────────────────
+    // ── Planning ─────────────────────────────────────────────────────
 
-    async fn load_config(
+    /// Create autopilot_task rows from ProposedTask list.
+    /// Returns (created, already_planned, skipped_manual).
+    async fn plan_tasks(
         &self,
         db: &DatabaseConnection,
         org_id: &str,
-    ) -> Result<ResolvedConfig, AppError> {
-        let config = autopilot_config::Entity::find()
-            .filter(autopilot_config::Column::OrgId.eq(org_id))
-            .one(db)
-            .await?;
+        proposals: &[ProposedTask],
+        policy: &academic_policy::Model,
+    ) -> (usize, usize, usize) {
+        let mut created = 0usize;
+        let mut already_planned = 0usize;
+        let mut skipped_manual = 0usize;
 
-        Ok(match config {
-            Some(model) => ResolvedConfig::from_model(&model),
-            None => ResolvedConfig::default_for_org(org_id),
-        })
+        let mode = match policy.autopilot_mode.as_str() {
+            "automatic" => ExecutionMode::Automatic,
+            "suggested" => ExecutionMode::Suggested,
+            _ => ExecutionMode::Manual,
+        };
+
+        for proposal in proposals {
+            // Skip if manual mode
+            if mode == ExecutionMode::Manual {
+                skipped_manual += 1;
+                continue;
+            }
+
+            // Check if task already exists for this target + type (today)
+            let today = Utc::now().date_naive().to_string();
+            let idempotency_key = format!("{}:{}:{}", proposal.task_type, proposal.target_id, today);
+
+            let existing = autopilot_task::Entity::find()
+                .filter(autopilot_task::Column::IdempotencyKey.eq(&idempotency_key))
+                .one(db)
+                .await;
+
+            if let Ok(Some(_)) = existing {
+                already_planned += 1;
+                continue;
+            }
+
+            // Determine initial status based on mode + risk
+            let initial_status = match (&mode, &proposal.risk) {
+                (ExecutionMode::Automatic, Risk::Critical) => autopilot_task::status::SUGGESTED,
+                (ExecutionMode::Automatic, Risk::High) => autopilot_task::status::SUGGESTED,
+                (ExecutionMode::Automatic, _) => autopilot_task::status::READY,
+                (ExecutionMode::Suggested, _) => autopilot_task::status::SUGGESTED,
+                (ExecutionMode::Manual, _) => autopilot_task::status::PENDING,
+            };
+
+            let now = Utc::now().to_rfc3339();
+            let task = autopilot_task::ActiveModel {
+                id: Set(Uuid::new_v4().to_string()),
+                org_id: Set(org_id.to_string()),
+                calendar_event_id: Set(None),
+                task_type: Set(proposal.task_type.clone()),
+                scheduled_at: Set(now.clone()),
+                deadline_at: Set(None),
+                target_entity_type: Set(Some(proposal.target_type.clone())),
+                target_entity_id: Set(Some(proposal.target_id.clone())),
+                params: Set(proposal.params.clone()),
+                prerequisites: Set(None),
+                status: Set(initial_status.to_string()),
+                execution_mode: Set(mode.as_str().to_string()),
+                attempts: Set(0),
+                last_attempt_at: Set(None),
+                last_error: Set(None),
+                suggested_at: Set(if mode == ExecutionMode::Suggested {
+                    Some(now.clone())
+                } else {
+                    None
+                }),
+                approved_by: Set(None),
+                approved_at: Set(None),
+                rejection_reason: Set(None),
+                completed_at: Set(None),
+                result: Set(None),
+                idempotency_key: Set(idempotency_key),
+                created_at: Set(now.clone()),
+                updated_at: Set(now),
+            };
+
+            match task.insert(db).await {
+                Ok(inserted) => {
+                    info!(
+                        task_id = %inserted.id,
+                        task_type = %proposal.task_type,
+                        status = initial_status,
+                        "Autopilot task created"
+                    );
+                    created += 1;
+                }
+                Err(e) => {
+                    warn!(
+                        task_type = %proposal.task_type,
+                        error = %e,
+                        "Failed to create autopilot task"
+                    );
+                }
+            }
+        }
+
+        (created, already_planned, skipped_manual)
     }
 
-    async fn update_last_tick(
+    // ── Execution ────────────────────────────────────────────────────
+
+    /// Execute all tasks that are READY or APPROVED.
+    /// Returns (executed, succeeded, failed, skipped).
+    async fn execute_ready_tasks(
+        &self,
         db: &DatabaseConnection,
         org_id: &str,
-        tick_at: &str,
-        result: &str,
-    ) -> Result<(), AppError> {
-        if let Some(model) = autopilot_config::Entity::find()
-            .filter(autopilot_config::Column::OrgId.eq(org_id))
+        policy: &academic_policy::Model,
+    ) -> (usize, usize, usize, usize) {
+        let tasks = match autopilot_task::Entity::find()
+            .filter(autopilot_task::Column::OrgId.eq(org_id))
+            .filter(autopilot_task::Column::Status.is_in([
+                autopilot_task::status::READY,
+                autopilot_task::status::APPROVED,
+            ]))
+            .all(db)
+            .await
+        {
+            Ok(t) => t,
+            Err(e) => {
+                error!(error = %e, "Failed to load ready tasks");
+                return (0, 0, 0, 0);
+            }
+        };
+
+        let mut executed = 0usize;
+        let mut succeeded = 0usize;
+        let mut failed = 0usize;
+        let mut skipped = 0usize;
+
+        for task in tasks {
+            if task.attempts >= 3 {
+                skipped += 1;
+                let _ = Self::update_task_status(db, &task.id, autopilot_task::status::FAILED, None).await;
+                continue;
+            }
+
+            executed += 1;
+            let start = Instant::now();
+
+            // Execute via AcademicExecutor (real DB mutations)
+            match AcademicExecutor::execute(db, &task, &self.event_bus).await {
+                Ok(output) => {
+                    succeeded += 1;
+
+                    // Update task as completed
+                    let _ = Self::complete_task(db, &task.id, &output).await;
+
+                    // Log execution
+                    let _ = Self::log_execution(
+                        db, org_id, &task.id, &task.task_type,
+                        "completed", Some(&output), None,
+                        start.elapsed().as_millis() as i32,
+                    ).await;
+
+                    info!(
+                        task_id = %task.id,
+                        task_type = %task.task_type,
+                        duration_ms = start.elapsed().as_millis() as u64,
+                        "Task completed"
+                    );
+                }
+                Err(err) => {
+                    failed += 1;
+                    let err_msg = err.to_string();
+
+                    let _ = Self::fail_task(db, &task.id, &err_msg, task.attempts + 1).await;
+                    let _ = Self::log_execution(
+                        db, org_id, &task.id, &task.task_type,
+                        "failed", None, Some(&err_msg),
+                        start.elapsed().as_millis() as i32,
+                    ).await;
+
+                    error!(
+                        task_id = %task.id,
+                        error = %err_msg,
+                        "Task failed"
+                    );
+                }
+            }
+        }
+
+        (executed, succeeded, failed, skipped)
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────
+
+    async fn load_policy(
+        db: &DatabaseConnection,
+        org_id: &str,
+    ) -> Result<academic_policy::Model, AppError> {
+        academic_policy::Entity::find()
+            .filter(academic_policy::Column::OrgId.eq(org_id))
             .one(db)
             .await?
-        {
-            let mut active: autopilot_config::ActiveModel = model.into();
-            active.last_tick_at = Set(Some(tick_at.to_string()));
-            active.last_tick_result = Set(Some(result.to_string()));
-            active.updated_at = Set(Utc::now().to_rfc3339());
-            active.update(db).await?;
-        }
+            .ok_or_else(|| AppError::not_found("academic_policies", org_id))
+    }
+
+    async fn count_task_statuses(db: &DatabaseConnection, org_id: &str) -> (usize, usize) {
+        let all = autopilot_task::Entity::find()
+            .filter(autopilot_task::Column::OrgId.eq(org_id))
+            .filter(autopilot_task::Column::Status.is_in([
+                autopilot_task::status::PENDING,
+                autopilot_task::status::READY,
+                autopilot_task::status::SUGGESTED,
+                autopilot_task::status::FAILED,
+            ]))
+            .all(db)
+            .await
+            .unwrap_or_default();
+
+        let pending = all.iter().filter(|t| {
+            t.status == autopilot_task::status::PENDING
+                || t.status == autopilot_task::status::READY
+                || t.status == autopilot_task::status::SUGGESTED
+        }).count();
+        let failed = all.iter().filter(|t| t.status == autopilot_task::status::FAILED).count();
+        (pending, failed)
+    }
+
+    async fn update_task_status(
+        db: &DatabaseConnection,
+        task_id: &str,
+        status: &str,
+        error: Option<&str>,
+    ) -> Result<(), AppError> {
+        let task = autopilot_task::Entity::find_by_id(task_id.to_string())
+            .one(db)
+            .await?
+            .ok_or_else(|| AppError::not_found("autopilot_task", task_id))?;
+
+        let mut active = task.into_active_model();
+        active.status = Set(status.to_string());
+        active.last_error = Set(error.map(String::from));
+        active.updated_at = Set(Utc::now().to_rfc3339());
+        active.update(db).await?;
+        Ok(())
+    }
+
+    async fn complete_task(
+        db: &DatabaseConnection,
+        task_id: &str,
+        result: &str,
+    ) -> Result<(), AppError> {
+        let task = autopilot_task::Entity::find_by_id(task_id.to_string())
+            .one(db)
+            .await?
+            .ok_or_else(|| AppError::not_found("autopilot_task", task_id))?;
+
+        let mut active = task.into_active_model();
+        active.status = Set(autopilot_task::status::COMPLETED.to_string());
+        active.completed_at = Set(Some(Utc::now().to_rfc3339()));
+        active.result = Set(Some(result.to_string()));
+        active.updated_at = Set(Utc::now().to_rfc3339());
+        active.update(db).await?;
+        Ok(())
+    }
+
+    async fn fail_task(
+        db: &DatabaseConnection,
+        task_id: &str,
+        error: &str,
+        attempts: i32,
+    ) -> Result<(), AppError> {
+        let task = autopilot_task::Entity::find_by_id(task_id.to_string())
+            .one(db)
+            .await?
+            .ok_or_else(|| AppError::not_found("autopilot_task", task_id))?;
+
+        let mut active = task.into_active_model();
+        active.status = Set(if attempts >= 3 {
+            autopilot_task::status::FAILED.to_string()
+        } else {
+            autopilot_task::status::PENDING.to_string()
+        });
+        active.attempts = Set(attempts);
+        active.last_attempt_at = Set(Some(Utc::now().to_rfc3339()));
+        active.last_error = Set(Some(error.to_string()));
+        active.updated_at = Set(Utc::now().to_rfc3339());
+        active.update(db).await?;
+        Ok(())
+    }
+
+    async fn log_execution(
+        db: &DatabaseConnection,
+        org_id: &str,
+        task_id: &str,
+        action: &str,
+        status: &str,
+        details: Option<&str>,
+        error: Option<&str>,
+        duration_ms: i32,
+    ) -> Result<(), AppError> {
+        let log = autopilot_execution_log::ActiveModel {
+            id: Set(Uuid::new_v4().to_string()),
+            org_id: Set(org_id.to_string()),
+            task_id: Set(Some(task_id.to_string())),
+            action: Set(action.to_string()),
+            status: Set(status.to_string()),
+            details: Set(details.map(String::from)),
+            error: Set(error.map(String::from)),
+            duration_ms: Set(Some(duration_ms)),
+            executed_at: Set(Utc::now().to_rfc3339()),
+        };
+        log.insert(db).await?;
         Ok(())
     }
 
@@ -304,7 +525,7 @@ impl AutopilotEngine {
         TickResult {
             org_id: org_id.to_string(),
             tick_at: tick_at.to_string(),
-            snapshot_summary: SnapshotSummary::empty(),
+            evaluation: EvaluationSummary::empty(),
             plan: PlanSummary::empty(),
             execution: ExecutionSummary::empty(),
             health: HealthReport::healthy(org_id),
@@ -316,12 +537,10 @@ impl AutopilotEngine {
 
 // ── Summary helpers ─────────────────────────────────────────────
 
-impl SnapshotSummary {
+impl EvaluationSummary {
     fn empty() -> Self {
         Self {
-            active_events: 0,
-            missed_events: 0,
-            upcoming_events: 0,
+            proposed_tasks: 0,
             pending_tasks: 0,
             failed_tasks: 0,
         }
@@ -333,7 +552,7 @@ impl PlanSummary {
         Self {
             tasks_created: 0,
             already_planned: 0,
-            missed_event_count: 0,
+            skipped_manual: 0,
         }
     }
 }

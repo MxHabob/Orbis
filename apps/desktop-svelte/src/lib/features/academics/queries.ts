@@ -1,19 +1,34 @@
 /**
- * Academic domain queries — cycles, classes, subjects, schedules.
+ * Academic domain queries — periods, classes, subjects, schedules.
  * Wraps IPC commands with TanStack Query for automatic caching.
+ *
+ * Migrated: cycles → periods, cycleId → periodId/yearId.
  */
 import { createQuery } from "@tanstack/svelte-query";
 import { commands } from "$lib/core/ipc";
 
-/** All academic cycles for an organization. */
-export function createCyclesQuery(orgId: string) {
+/** All academic periods for current year. */
+export function createPeriodsQuery(orgId: string) {
   return createQuery({
-    queryKey: ["cycles", orgId],
+    queryKey: ["periods", orgId],
     queryFn: () => commands.academic.listCycles(orgId),
     enabled: !!orgId,
-    staleTime: 10 * 60 * 1000, // Cycles rarely change — 10 min
+    staleTime: 10 * 60 * 1000,
   });
 }
+
+/** Periods for a specific year (cross-year queries). */
+export function createPeriodsByYearQuery(orgId: string, yearId: string) {
+  return createQuery({
+    queryKey: ["periods", orgId, yearId],
+    queryFn: () => commands.academic.listPeriodsByYear(orgId, yearId),
+    enabled: !!orgId && !!yearId,
+    staleTime: 10 * 60 * 1000,
+  });
+}
+
+// Backward compat alias
+export const createCyclesQuery = createPeriodsQuery;
 
 /** Classes for an organization. */
 export function createClassesQuery(orgId: string) {
@@ -31,59 +46,59 @@ export function createSubjectsQuery(orgId: string) {
     queryKey: ["subjects", orgId],
     queryFn: () => commands.academic.listSubjects(orgId),
     enabled: !!orgId,
-    staleTime: 10 * 60 * 1000, // Subjects rarely change
+    staleTime: 10 * 60 * 1000,
   });
 }
 
 /** Class subjects / assignments. */
-export function createClassSubjectsQuery(classId?: string, cycleId?: string) {
+export function createClassSubjectsQuery(classId?: string, periodId?: string) {
   return createQuery({
-    queryKey: ["class-subjects", classId, cycleId],
-    queryFn: () => commands.academic.listClassSubjects(classId!, cycleId!),
-    enabled: !!classId && !!cycleId,
+    queryKey: ["class-subjects", classId, periodId],
+    queryFn: () => commands.academic.listClassSubjects(classId!, periodId!),
+    enabled: !!classId && !!periodId,
     staleTime: 5 * 60 * 1000,
   });
 }
 
 /** Assessments for a class-subject. */
 export function createAssessmentsQuery(params: {
-  cycleId?: string;
+  periodId?: string;
   classSubjectId?: string;
 }) {
   return createQuery({
-    queryKey: ["assessments", params.cycleId, params.classSubjectId],
-    queryFn: () => commands.assessment.listAssessments(params.cycleId!, params.classSubjectId),
-    enabled: !!params.cycleId,
+    queryKey: ["assessments", params.periodId, params.classSubjectId],
+    queryFn: () => commands.assessment.listAssessments(params.periodId!, params.classSubjectId),
+    enabled: !!params.periodId,
     staleTime: 2 * 60 * 1000,
   });
 }
 
-/** Time slots for an academic cycle. */
-export function createTimeSlotsQuery(cycleId?: string) {
+/** Time slots for an academic year. */
+export function createTimeSlotsQuery(yearId?: string) {
   return createQuery({
-    queryKey: ["time-slots", cycleId],
-    queryFn: () => commands.scheduling.listTimeSlots(cycleId!),
-    enabled: !!cycleId,
+    queryKey: ["time-slots", yearId],
+    queryFn: () => commands.scheduling.listTimeSlots(yearId!),
+    enabled: !!yearId,
     staleTime: 10 * 60 * 1000,
   });
 }
 
 /** Class schedule lessons. */
-export function createClassScheduleQuery(cycleId?: string, classId?: string) {
+export function createClassScheduleQuery(yearId?: string, classId?: string) {
   return createQuery({
-    queryKey: ["class-schedule", cycleId, classId],
-    queryFn: () => commands.scheduling.listLessonsByClass(cycleId!, classId!),
-    enabled: !!cycleId && !!classId,
+    queryKey: ["class-schedule", yearId, classId],
+    queryFn: () => commands.scheduling.listLessonsByClass(yearId!, classId!),
+    enabled: !!yearId && !!classId,
     staleTime: 2 * 60 * 1000,
   });
 }
 
 /** Teacher schedule lessons. */
-export function createTeacherScheduleQuery(cycleId?: string, teacherId?: string) {
+export function createTeacherScheduleQuery(yearId?: string, teacherId?: string) {
   return createQuery({
-    queryKey: ["teacher-schedule", cycleId, teacherId],
-    queryFn: () => commands.scheduling.listLessonsByTeacher(cycleId!, teacherId!),
-    enabled: !!cycleId && !!teacherId,
+    queryKey: ["teacher-schedule", yearId, teacherId],
+    queryFn: () => commands.scheduling.listLessonsByTeacher(yearId!, teacherId!),
+    enabled: !!yearId && !!teacherId,
     staleTime: 2 * 60 * 1000,
   });
 }

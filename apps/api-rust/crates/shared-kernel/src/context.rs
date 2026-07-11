@@ -42,6 +42,7 @@ pub struct ServiceContext {
     // ── Core ──
     pub db: DatabaseConnection,
     pub org_id: String,
+    pub year_id: String,
     pub actor: Actor,
     pub correlation_id: Option<String>,
 
@@ -65,6 +66,7 @@ impl ServiceContext {
     pub fn new(
         db: DatabaseConnection,
         org_id: impl Into<String>,
+        year_id: impl Into<String>,
         actor: Actor,
         permissions: Arc<dyn PermissionChecker>,
         audit: Arc<dyn AuditLogger>,
@@ -80,6 +82,7 @@ impl ServiceContext {
         Self {
             db,
             org_id: org_id.into(),
+            year_id: year_id.into(),
             actor,
             correlation_id: None,
             permissions,
@@ -109,6 +112,12 @@ impl ServiceContext {
         child
     }
 
+    /// Switch to a different academic year within the same request.
+    pub fn with_year_id(mut self, year_id: impl Into<String>) -> Self {
+        self.year_id = year_id.into();
+        self
+    }
+
     /// Generate a new correlation ID if none is set.
     pub fn ensure_correlation_id(&mut self) {
         if self.correlation_id.is_none() {
@@ -121,6 +130,7 @@ impl std::fmt::Debug for ServiceContext {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ServiceContext")
             .field("org_id", &self.org_id)
+            .field("year_id", &self.year_id)
             .field("actor", &self.actor)
             .field("correlation_id", &self.correlation_id)
             .finish_non_exhaustive()

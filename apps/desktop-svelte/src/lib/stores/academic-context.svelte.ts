@@ -1,13 +1,13 @@
 /**
  * Academic Context Store — centralized academic state for the entire app.
+ *
+ * Migrated from cycle-based to unified year+period model.
  */
 import type {
   AcademicYear,
   AcademicYearInfo,
   AcademicContextResponse,
-  AcademicCycleContext,
-  AcademicCycleSummary,
-  CyclePhase,
+  AcademicPeriod,
 } from "@orbis/sdk-core";
 import { commands } from "$lib/core/ipc";
 import { extractErrorMessage } from "$lib/core/ipc";
@@ -15,50 +15,57 @@ import { toast } from "svelte-sonner";
 
 class AcademicContextStore {
   currentYear = $state<AcademicYear | null>(null);
-  activeCycle = $state<AcademicCycleContext | null>(null);
-  allCycles = $state<AcademicCycleSummary[]>([]);
-  years = $state<AcademicYearInfo[]>([]);
-  yearStatus = $state<"active" | "archived" | "promoting">("active");
+  allYears = $state<AcademicYearInfo[]>([]);
+  periods = $state<AcademicPeriod[]>([]);
+  yearStatus = $state<"planning" | "active" | "closing" | "archived">("active");
   private _isReadOnly = $state(false);
   isSwitching = $state(false);
   isLoading = $state(false);
   isInitialized = $state(false);
 
-  private _selectedCycleId = $state<string>(localStorage.getItem("orbis_academic_cycle_id") ?? "");
+  private _selectedPeriodId = $state<string>(localStorage.getItem("orbis_academic_period_id") ?? "");
   private _selectedClassId = $state<string>(localStorage.getItem("orbis_academic_class_id") ?? "");
   private _selectedSubjectId = $state<string>(localStorage.getItem("orbis_academic_subject_id") ?? "");
 
-  get selectedCycleId(): string { return this._selectedCycleId; }
-  set selectedCycleId(val: string) { this._selectedCycleId = val; localStorage.setItem("orbis_academic_cycle_id", val); }
+  get selectedPeriodId(): string { return this._selectedPeriodId; }
+  set selectedPeriodId(val: string) { this._selectedPeriodId = val; localStorage.setItem("orbis_academic_period_id", val); }
   get selectedClassId(): string { return this._selectedClassId; }
   set selectedClassId(val: string) { this._selectedClassId = val; localStorage.setItem("orbis_academic_class_id", val); }
   get selectedSubjectId(): string { return this._selectedSubjectId; }
   set selectedSubjectId(val: string) { this._selectedSubjectId = val; localStorage.setItem("orbis_academic_subject_id", val); }
 
+  // Keep backward compat — selectedCycleId maps to selectedPeriodId
+  get selectedCycleId(): string { return this._selectedPeriodId; }
+  set selectedCycleId(val: string) { this.selectedPeriodId = val; }
+
   isReadOnly = $derived(this._isReadOnly || this.currentYear?.status === "archived");
-  hasYears = $derived(this.years.length > 0);
-  canEnroll = $derived((this.activeCycle?.is_enrollment_open ?? false) && !this.isReadOnly);
-  canEditGrades = $derived((this.activeCycle?.is_grade_entry_open ?? false) && !this.isReadOnly);
-  isLocked = $derived(this.activeCycle?.is_locked ?? false);
-  cyclePhase = $derived<CyclePhase>(this.activeCycle?.phase ?? "active");
+  hasYears = $derived(this.allYears.length > 0);
+  canEnroll = $derived(this.activePeriod?.is_enrollment_open === 1 && !this.isReadOnly);
+  canEditGrades = $derived(this.activePeriod?.is_grade_entry_open === 1 && !this.isReadOnly);
+  isLocked = $derived(this.currentYear?.is_locked === 1);
   yearLabel = $derived(this.currentYear?.name ?? "");
   yearLabelAr = $derived(this.currentYear?.name_ar ?? this.currentYear?.name ?? "");
-  statusBadge = $derived<"active" | "archived" | "promoting">(this.yearStatus);
-  effectiveCycleId = $derived(this._selectedCycleId || this.activeCycle?.id || "");
+  statusBadge = $derived<"planning" | "active" | "closing" | "archived">(this.yearStatus);
+  effectivePeriodId = $derived(this._selectedPeriodId || this.activePeriod?.id || "");
+  // backward compat
+  effectiveCycleId = $derived(this.effectivePeriodId);
+
+  /** First active period or first period in list */
+  get activePeriod(): AcademicPeriod | null {
+    return this.periods.find(p => p.status === "active") ?? this.periods[0] ?? null;
+  }
 
   async resolveContext(orgId: string) {
     this.isLoading = true;
     try {
       const ctx: AcademicContextResponse = await commands.platform.getAcademicContext(orgId);
-      this.activeCycle = ctx.active_cycle;
-      this.allCycles = ctx.all_cycles;
-      this.yearStatus = ctx.year_status;
-      this._isReadOnly = ctx.is_read_only;
-      if (ctx.year_id) {
-        this.currentYear = await commands.platform.getCurrentYear();
-      }
-      if (!this._selectedCycleId && ctx.active_cycle) {
-        this._selectedCycleId = ctx.active_cycle.id;
+      this.currentYear = ctx.current_year ?? null;
+      this.allYears = ctx.all_years ?? [];
+      this.periods = ctx.periods ?? [];
+      this.yearStatus = ctx.year_status ?? "active";
+      this._isReadOnly = ctx.is_read_only ?? false;
+      if (!this._selectedPeriodId && this.activePeriod) {
+        this._selectedPeriodId = this.activePeriod.id;
       }
       this.isInitialized = true;
     } catch (e: unknown) {
@@ -78,7 +85,7 @@ class AcademicContextStore {
 
   async loadYears(orgId: string) {
     try {
-      this.years = await commands.platform.listYears(orgId);
+      this.allYears = await commands.platform.listYears(orgId);
     } catch (e: unknown) {
       toast.error(extractErrorMessage(e));
     }
@@ -99,7 +106,7 @@ class AcademicContextStore {
   }
 
   reset() {
-    this.selectedCycleId = "";
+    this.selectedPeriodId = "";
     this.selectedClassId = "";
     this.selectedSubjectId = "";
   }
