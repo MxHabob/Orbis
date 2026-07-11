@@ -52,9 +52,8 @@ export interface AcademicCommands {
   unlockCycle(cycleId: string): Promise<AcademicCycle>;
   toggleGradeEntry(cycleId: string, open: boolean, start?: string, end?: string): Promise<AcademicCycle>;
 
-  // ── Guardians ───────────────────────────────────────────────
-  listGuardiansByStudent(studentId: string): Promise<StudentGuardian[]>;
-  searchGuardians(query: string): Promise<StudentGuardian[]>;
+  listGuardiansByStudent(orgId: string, studentId: string): Promise<StudentGuardian[]>;
+  searchGuardians(orgId: string, query: string): Promise<StudentGuardian[]>;
 
   // ── Documents ───────────────────────────────────────────────
   listDocuments(ownerId?: string): Promise<Document[]>;

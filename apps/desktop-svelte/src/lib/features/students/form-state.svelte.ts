@@ -268,6 +268,7 @@ export class StudentFormState {
           // Fetch guardians
           try {
             const guardiansList = await commands.academic.listGuardiansByStudent(
+              this.orgId,
               originalStudent.student_id,
             );
             const populatedGuardians = [];
@@ -690,7 +691,7 @@ export class StudentFormState {
 
         // Check if link exists
         const existingLinks =
-          await commands.academic.listGuardiansByStudent(targetStudentId);
+          await commands.academic.listGuardiansByStudent(this.orgId, targetStudentId);
         const matchedLink = existingLinks.find(
           (l) => l.guardian_id === guardianUserId,
         );

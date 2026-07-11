@@ -72,8 +72,8 @@ export const commands: OrbisCommands = {
     unlockCycle: (cycleId) => cmd("unlock_cycle", { cycleId }),
     toggleGradeEntry: (cycleId, open, start?, end?) => cmd("toggle_grade_entry", { cycleId, open, start, end }),
 
-    listGuardiansByStudent: (studentId) => cmd("list_guardians_by_student", { studentId }),
-    searchGuardians: (query) => cmd("search_guardians", { query }),
+    listGuardiansByStudent: (orgId, studentId) => cmd("list_guardians_by_student", { orgId, studentId }),
+    searchGuardians: (orgId, query) => cmd("search_guardians", { orgId, query }),
 
     listDocuments: (ownerId?) => cmd("list_documents", { ownerId }),
     createDocument: (data) => cmd("create_document", { orgId: data.orgId || data.org_id, data: { owner_id: data.ownerId || data.owner_id, name: data.name, item_type: data.item_type || data.type || "file", key: data.url || data.key || `doc_${Date.now()}` } }),
@@ -318,7 +318,7 @@ export const commands: OrbisCommands = {
     deleteGuardianLink: (linkId) => cmd("delete_guardian_link", { linkId }),
 
     // Documents
-    listDocumentsByOwner: (orgId, ownerId) => cmd("list_documents", { ownerId }),
+    listDocumentsByOwner: (orgId, ownerId) => cmd("list_documents", { orgId, ownerId }),
   },
   docforge: {
     previewDocumentTemplate: (templateJson, contextJson) => cmd("preview_document_template", { templateJson, contextJson }),
