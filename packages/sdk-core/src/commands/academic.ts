@@ -58,6 +58,8 @@ export interface AcademicCommands {
 
   // ── Documents ───────────────────────────────────────────────
   listDocuments(ownerId?: string): Promise<Document[]>;
+  createDocument(data: { org_id: string; owner_id: string; name: string; title?: string; item_type: string; url?: string }): Promise<Document>;
+  deleteDocument(documentId: string): Promise<void>;
 
   // ── Notifications ───────────────────────────────────────────
   listNotifications(limit?: number): Promise<Notification[]>;

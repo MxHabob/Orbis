@@ -37,12 +37,16 @@ async function loadFinance() {
   isLoading = true;
   try {
     if (!orgId || !studentId) return;
-    const [f, p] = await Promise.all([
-      commands.finance.getStudentFees(orgId, studentId),
-      commands.finance.getPayments(orgId, studentId),
-    ]);
-    fees = f;
-    payments = p;
+    const enrollments = await commands.academic.listEnrollments(orgId);
+    const activeEnrollment = enrollments.find((e) => e.student_id === studentId);
+    if (activeEnrollment) {
+      const [f, p] = await Promise.all([
+        commands.finance.listStudentFees(activeEnrollment.id),
+        commands.finance.listPayments(activeEnrollment.id),
+      ]);
+      fees = f;
+      payments = p;
+    }
   } catch (e) {
     console.error(e);
   } finally {

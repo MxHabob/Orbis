@@ -15,7 +15,11 @@ import { formatDate, formatPercent } from "$lib/core/i18n";
 import { DataTable } from "$lib/tables";
 import { studentGrades as sgDef, withIndex } from "$lib/tables/definitions";
 
+import { academicContext } from "$lib/stores";
+
 const studentId = $derived(page.params.studentId || "");
+const orgId = $derived(page.params.orgId || "");
+const cycleId = $derived(academicContext.effectiveCycleId || "");
 
 let report = $state<any>(null);
 let isLoading = $state(true);
@@ -25,7 +29,12 @@ onMount(() => loadGrades());
 async function loadGrades() {
   isLoading = true;
   try {
-    report = await commands.grades.getReportCard(studentId);
+    if (!orgId || !studentId || !cycleId) return;
+    const enrollments = await commands.academic.listEnrollments(orgId, undefined, cycleId);
+    const activeEnrollment = enrollments.find((e) => e.student_id === studentId);
+    if (activeEnrollment) {
+      report = await commands.assessment.getReportCard(activeEnrollment.id, cycleId);
+    }
   } catch (e) {
     console.error(e);
   } finally {

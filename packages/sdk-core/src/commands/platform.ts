@@ -41,6 +41,12 @@ export interface PlatformCommands {
   // ── Document Templates ────────────────────────────────────────
   listDocumentTemplates(orgId: string, params?: Record<string, unknown>): Promise<DocumentTemplate[]>;
   getDocumentTemplate(orgId: string, templateId: string): Promise<DocumentTemplate>;
+  createDocumentTemplate(orgId: string, name: string, nameAr?: string, body?: string): Promise<DocumentTemplate>;
+  deleteDocumentTemplate(orgId: string, templateId: string): Promise<void>;
+  publishDocumentTemplate(orgId: string, templateId: string, userId: string): Promise<void>;
+  archiveDocumentTemplate(orgId: string, templateId: string): Promise<void>;
+  restoreDocumentTemplate(orgId: string, templateId: string): Promise<void>;
+  updateDocumentTemplate(orgId: string, templateId: string, name?: string, nameAr?: string, body?: string): Promise<DocumentTemplate>;
 
   // ── AI Autopilot ──────────────────────────────────────────────
   getAutopilotStatus(orgId: string): Promise<AutopilotStatus>;
@@ -74,6 +80,7 @@ export interface PlatformCommands {
   // ── Guardians (extended) ──────────────────────────────────────
   createGuardianLink(data: Record<string, unknown>): Promise<any>;
   updateGuardianLink(linkId: string, data: Record<string, unknown>): Promise<any>;
+  deleteGuardianLink(linkId: string): Promise<void>;
 
   // ── Documents ─────────────────────────────────────────────────
   listDocumentsByOwner(orgId: string, ownerId: string): Promise<any[]>;

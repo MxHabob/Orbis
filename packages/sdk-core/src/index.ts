@@ -53,6 +53,7 @@ export { type SchedulingCommands } from "./commands/scheduling";
 export { type ExamCommands } from "./commands/exam";
 export { type IAMCommands } from "./commands/iam";
 export { type OrganizationCommands } from "./commands/organization";
+export { type DocforgeCommands } from "./commands/docforge";
 
 // ── Errors ──────────────────────────────────────────────────────
 export { OrbisError, extractErrorMessage } from "./errors";
@@ -62,3 +63,7 @@ export { Permissions } from "./permissions";
 
 // ── Events ──────────────────────────────────────────────────────
 export { EventTypes } from "./events";
+
+// ── Shared aliases ──────────────────────────────────────────────
+export type GuardianLink = StudentGuardian;
+export type JsonRecord = Record<string, any>;

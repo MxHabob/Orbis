@@ -76,6 +76,8 @@ export const commands: OrbisCommands = {
     searchGuardians: (query) => cmd("search_guardians", { query }),
 
     listDocuments: (ownerId?) => cmd("list_documents", { ownerId }),
+    createDocument: (data) => cmd("create_document", { data }),
+    deleteDocument: (documentId) => cmd("delete_document", { documentId }),
 
     listNotifications: (limit?) => cmd("list_notifications", { limit }),
     markNotificationRead: (notificationId) => cmd("mark_notification_read", { notificationId }),
@@ -257,6 +259,12 @@ export const commands: OrbisCommands = {
     // Document Templates
     listDocumentTemplates: (orgId, params?) => cmd("get_document_templates", { orgId, params }),
     getDocumentTemplate: (orgId, templateId) => cmd("get_document_template", { orgId, templateId }),
+    createDocumentTemplate: (orgId, name, nameAr?, body?) => cmd("create_document_template", { orgId, name, nameAr, body }),
+    deleteDocumentTemplate: (orgId, templateId) => cmd("delete_document_template", { orgId, templateId }),
+    publishDocumentTemplate: (orgId, templateId, userId) => cmd("publish_document_template", { orgId, templateId, userId }),
+    archiveDocumentTemplate: (orgId, templateId) => cmd("archive_document_template", { orgId, templateId }),
+    restoreDocumentTemplate: (orgId, templateId) => cmd("restore_document_template", { orgId, templateId }),
+    updateDocumentTemplate: (orgId, templateId, name?, nameAr?, body?) => cmd("update_document_template", { orgId, templateId, name, nameAr, body }),
 
     // AI Autopilot
     getAutopilotStatus: (orgId) => cmd("autopilot_get_status", { orgId }),
@@ -290,8 +298,12 @@ export const commands: OrbisCommands = {
     // Guardians (extended)
     createGuardianLink: (data) => cmd("create_guardian_link", { data }),
     updateGuardianLink: (linkId, data) => cmd("update_guardian_link", { linkId, data }),
+    deleteGuardianLink: (linkId) => cmd("delete_guardian_link", { linkId }),
 
     // Documents
     listDocumentsByOwner: (orgId, ownerId) => cmd("list_documents", { ownerId }),
+  },
+  docforge: {
+    previewDocumentTemplate: (templateJson, contextJson) => cmd("preview_document_template", { templateJson, contextJson }),
   },
 };

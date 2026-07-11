@@ -13,6 +13,7 @@ import type { ExamCommands } from "./exam";
 import type { IAMCommands } from "./iam";
 import type { OrganizationCommands } from "./organization";
 import type { PlatformCommands } from "./platform";
+import type { DocforgeCommands } from "./docforge";
 
 export interface OrbisCommands {
   academic: AcademicCommands;
@@ -23,6 +24,7 @@ export interface OrbisCommands {
   iam: IAMCommands;
   organization: OrganizationCommands;
   platform: PlatformCommands;
+  docforge: DocforgeCommands;
 }
 
 export type { AcademicCommands } from "./academic";
@@ -33,3 +35,4 @@ export type { ExamCommands } from "./exam";
 export type { IAMCommands } from "./iam";
 export type { OrganizationCommands } from "./organization";
 export type { PlatformCommands } from "./platform";
+export type { DocforgeCommands } from "./docforge";
