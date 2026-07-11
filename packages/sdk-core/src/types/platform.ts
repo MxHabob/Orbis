@@ -102,6 +102,9 @@ export interface OverrideRequest {
   approved_by?: string | null;
   created_at: string;
   updated_at: string;
+  override_type?: string;
+  resolution_notes?: string | null;
+  requested_by_name?: string | null;
 }
 
 export interface CalendarEvent {
@@ -174,4 +177,14 @@ export interface AgentActionLog {
   approved_by?: string | null;
   rejected_by?: string | null;
   created_at: string;
+}
+
+export type AcademicOverrideRequest = OverrideRequest;
+
+export interface ApprovalAction {
+  action: "approve" | "reject" | "escalate";
+  user_id: string;
+  user_name?: string | null;
+  user_role: string;
+  notes?: string | null;
 }

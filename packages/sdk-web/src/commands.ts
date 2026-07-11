@@ -245,6 +245,8 @@ export const commands: OrbisCommands = {
     listOverrideRequests: (_orgId, _params?) => http.get("/api/overrides"),
     getOverrideRequest: (requestId) => http.get(`/api/overrides/${requestId}`),
     getPendingApprovals: (_orgId, approverRole) => http.get(`/api/overrides/pending?role=${approverRole}`),
+    processApproval: (requestId, action) => http.post(`/api/overrides/${requestId}/approve`, action),
+    cancelOverride: (requestId, userId) => http.post(`/api/overrides/${requestId}/cancel`, { userId }),
 
     listDocumentTemplates: (_orgId, _params?) => http.get("/api/document-templates"),
     getDocumentTemplate: (_orgId, templateId) => http.get(`/api/document-templates/${templateId}`),
@@ -285,8 +287,8 @@ export const commands: OrbisCommands = {
     saveRolePermissions: (role, rules) => http.post(`/api/permissions/roles/${role}`, rules),
   },
   bulkImport: {
-    createStudents: (orgId, data) => http.post("/api/import/students", data),
-    createGrades: (orgId, data) => http.post("/api/import/grades", data),
+    createStudents: (orgId, userId, data) => http.post("/api/import/students", { students: data }),
+    createGrades: (orgId, userId, cycleId, data) => http.post("/api/import/grades", { grades: data }),
   },
   auditLogs: {
     getAll: (orgId) => http.get(`/api/audit-logs?orgId=${orgId}`),

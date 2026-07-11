@@ -37,6 +37,8 @@ export interface PlatformCommands {
   listOverrideRequests(orgId: string, params?: Record<string, unknown>): Promise<OverrideRequest[]>;
   getOverrideRequest(requestId: string): Promise<OverrideRequest>;
   getPendingApprovals(orgId: string, approverRole: string): Promise<OverrideRequest[]>;
+  processApproval(requestId: string, action: any): Promise<void>;
+  cancelOverride(requestId: string, userId: string): Promise<void>;
 
   // ── Document Templates ────────────────────────────────────────
   listDocumentTemplates(orgId: string, params?: Record<string, unknown>): Promise<DocumentTemplate[]>;

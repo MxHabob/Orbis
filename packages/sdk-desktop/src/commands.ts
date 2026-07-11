@@ -370,6 +370,8 @@ export const commands: OrbisCommands = {
     listOverrideRequests: (orgId, params?) => cmd("list_override_requests", { orgId, params }),
     getOverrideRequest: (requestId) => cmd("get_override_request", { requestId }),
     getPendingApprovals: (orgId, approverRole) => cmd("get_pending_approvals", { orgId, approverRole }),
+    processApproval: (requestId, action) => cmd("process_approval", { requestId, action }),
+    cancelOverride: (requestId, userId) => cmd("cancel_override", { requestId, userId }),
 
     // Document Templates
     listDocumentTemplates: (orgId, params?) => cmd("get_document_templates", { orgId, params }),
@@ -447,8 +449,8 @@ export const commands: OrbisCommands = {
     }
   },
   bulkImport: {
-    createStudents: (orgId, data) => commands.platform.importStudents(orgId, data),
-    createGrades: (orgId, data) => commands.platform.importGrades(orgId, data),
+    createStudents: (orgId, userId, data) => commands.platform.importStudents(orgId, { students: data }),
+    createGrades: (orgId, userId, cycleId, data) => commands.platform.importGrades(orgId, { grades: data }),
   },
   auditLogs: {
     getAll: (orgId) => commands.platform.listAuditLogs(orgId),
