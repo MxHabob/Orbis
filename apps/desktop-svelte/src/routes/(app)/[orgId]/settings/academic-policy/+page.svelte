@@ -36,16 +36,23 @@ import {
   Calendar,
   Loader2,
   Save,
+  Cpu,
 } from "lucide-svelte";
 import SettingsFormSkeleton from "$lib/shared/skeletons/settings-form-skeleton.svelte";
+import {
+  createAutopilotConfigQuery,
+  useConfigureAutopilot,
+} from "$lib/features/ai/queries";
 
 let { data }: { data: { orgId: string } } = $props();
 const orgId = $derived(data.orgId);
 
 const queryClient = useQueryClient();
 const policyQuery = createOrgAcademicPolicyQuery(orgId);
+const autopilotConfigQuery = createAutopilotConfigQuery(orgId);
+const configureAutopilotMutation = useConfigureAutopilot();
 
-// Form state
+// Form states
 let isSaving = $state(false);
 let form = $state({
   default_grading_system: "percentage",
@@ -58,6 +65,12 @@ let form = $state({
   allow_grade_modification_after_close: false,
   grade_modification_requires_approval: false,
   default_event_execution_mode: "suggested",
+});
+
+let autopilotForm = $state({
+  isEnabled: false,
+  paused: false,
+  mode: "suggested",
 });
 
 // Sync database record to local form state
@@ -85,6 +98,17 @@ $effect(() => {
   }
 });
 
+$effect(() => {
+  if ($autopilotConfigQuery.data) {
+    const cfg = $autopilotConfigQuery.data;
+    autopilotForm = {
+      isEnabled: cfg.is_enabled === 1,
+      paused: cfg.paused_at != null,
+      mode: cfg.mode || "suggested",
+    };
+  }
+});
+
 async function handleSave(e: Event) {
   e.preventDefault();
   isSaving = true;
@@ -106,17 +130,31 @@ async function handleSave(e: Event) {
         form.allow_grade_modification_after_close ? 1 : 0,
       grade_modification_requires_approval:
         form.grade_modification_requires_approval ? 1 : 0,
-      default_event_execution_mode: form.default_event_execution_mode,
+      default_event_execution_mode: autopilotForm.mode,
       settings: null,
     };
 
     await commands.platform.updateOrgPolicy(orgId, payload);
+    
+    // Save Autopilot configuration
+    if ($autopilotConfigQuery.data) {
+      await $configureAutopilotMutation.mutateAsync({
+        orgId,
+        isEnabled: autopilotForm.isEnabled,
+        paused: autopilotForm.paused,
+        mode: autopilotForm.mode,
+      });
+    }
+
     toast.success(
       m.settings_general_save_success
         ? m.settings_general_save_success()
         : "Settings saved successfully",
     );
     queryClient.invalidateQueries({ queryKey: ["org-academic-policy", orgId] });
+    queryClient.invalidateQueries({ queryKey: ["autopilot-config", orgId] });
+    queryClient.invalidateQueries({ queryKey: ["autopilot-tasks", orgId] });
+    queryClient.invalidateQueries({ queryKey: ["autopilot-diagnostics", orgId] });
   } catch (err: unknown) {
     toast.error(extractErrorMessage(err));
   } finally {
@@ -175,50 +213,71 @@ async function handleSave(e: Event) {
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- Automation & Calendar Card -->
+        <!-- AutoPilot Configuration Card -->
         <Card>
           <CardHeader>
             <div class="flex items-center gap-2">
-              <Calendar class="size-4.5 text-primary" />
+              <Cpu class="size-4.5 text-primary" />
               <CardTitle class="text-sm">
-                {m.policy_card_automation ? m.policy_card_automation() : "Calendar & Automation"}
+                {m.autopilot_popover_config_title ? m.autopilot_popover_config_title() : "AutoPilot Configuration"}
               </CardTitle>
             </div>
             <CardDescription class="text-[11px]">
-              {m.policy_card_automation_desc ? m.policy_card_automation_desc() : "Define how calendar events trigger system phases."}
+              Configure automated academic execution rules and operational mode.
             </CardDescription>
           </CardHeader>
           <CardContent class="flex flex-col gap-4">
-            <div class="flex flex-col gap-2">
-              <Label class="text-xs text-muted-foreground">
-                {m.policy_field_exec_mode ? m.policy_field_exec_mode() : "Default Event Execution Mode"}
-              </Label>
-              <Select
-                type="single"
-                value={form.default_event_execution_mode}
-                onValueChange={(v) => { if (v) form.default_event_execution_mode = v; }}
-              >
-                <SelectTrigger class="text-xs capitalize h-9">
-                  {form.default_event_execution_mode}
-                </SelectTrigger>
-                <SelectContent class="text-start">
-                  <SelectItem value="manual">
-                    <span class="font-medium text-xs">Manual</span>
-                    <p class="text-[10px] text-muted-foreground">Admins must execute events manually.</p>
-                  </SelectItem>
-                  <SelectItem value="suggested">
-                    <span class="font-medium text-xs">Suggested</span>
-                    <p class="text-[10px] text-muted-foreground">Events suggest execution on date; triggers approval request.</p>
-                  </SelectItem>
-                  <SelectItem value="automatic">
-                    <span class="font-medium text-xs">Automatic</span>
-                    <p class="text-[10px] text-muted-foreground">Events execute automatically when target date is reached.</p>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+            <!-- Enabled Status -->
+            <div class="flex items-center justify-between py-2 border-b border-border/40">
+              <div class="flex flex-col text-start gap-0.5">
+                <span class="text-xs font-semibold text-foreground">
+                  Enable AutoPilot
+                </span>
+                <span class="text-[10px] text-muted-foreground">Toggle all background lifecycle automations.</span>
+              </div>
+              <Switch bind:checked={autopilotForm.isEnabled} disabled={isSaving} />
             </div>
+
+            <!-- Mode Selection -->
+            {#if autopilotForm.isEnabled}
+              <div class="flex flex-col gap-2 py-2 border-b border-border/40">
+                <Label class="text-xs text-muted-foreground">
+                  {m.policy_field_exec_mode ? m.policy_field_exec_mode() : "Execution Mode"}
+                </Label>
+                <Select
+                  type="single"
+                  value={autopilotForm.mode}
+                  onValueChange={(v) => { if (v) autopilotForm.mode = v; }}
+                >
+                  <SelectTrigger class="text-xs capitalize h-9">
+                    {autopilotForm.mode === 'automatic' 
+                      ? m.autopilot_popover_mode_auto() 
+                      : autopilotForm.mode === 'suggested' 
+                        ? m.autopilot_popover_mode_suggested() 
+                        : m.autopilot_popover_mode_manual()}
+                  </SelectTrigger>
+                  <SelectContent class="text-start text-xs">
+                    <SelectItem value="automatic">{m.autopilot_popover_mode_auto()}</SelectItem>
+                    <SelectItem value="suggested">{m.autopilot_popover_mode_suggested()}</SelectItem>
+                    <SelectItem value="manual">{m.autopilot_popover_mode_manual()}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <!-- Pause Toggle -->
+              <div class="flex items-center justify-between py-2">
+                <div class="flex flex-col text-start gap-0.5">
+                  <span class="text-xs font-semibold text-foreground">
+                    Pause execution
+                  </span>
+                  <span class="text-[10px] text-muted-foreground">Temporarily halt all running processes.</span>
+                </div>
+                <Switch bind:checked={autopilotForm.paused} disabled={isSaving} />
+              </div>
+            {/if}
           </CardContent>
         </Card>
+
 
         <!-- Enrollment Policies Card -->
         <Card>
