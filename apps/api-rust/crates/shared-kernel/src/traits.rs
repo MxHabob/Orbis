@@ -83,6 +83,8 @@ pub enum Permission {
     TemplateGenerateSingle, TemplateGenerateBatch, TemplateGenerateDownload,
     TemplateAssetUpload, TemplateAssetDelete,
     TemplateComponentWrite, TemplateComponentDelete,
+    // Promotion
+    PromotionRead, PromotionWrite, PromotionExecute,
 }
 
 /// Additional authorization context for fine-grained checks.

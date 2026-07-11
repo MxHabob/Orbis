@@ -3,12 +3,14 @@
 use chrono::Utc;
 use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
 use uuid::Uuid;
+use std::sync::Arc;
 
 use shared_kernel::context::ServiceContext;
 use shared_kernel::errors::AppError;
 use shared_kernel::traits::{AuditEntry, Permission};
 
 use crate::entities::promotion_job;
+use crate::services::promotion::{PromotionService, PromotionResult};
 
 pub async fn list_jobs(ctx: &ServiceContext) -> Result<Vec<promotion_job::Model>, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::PromotionRead).await?;
@@ -64,6 +66,12 @@ pub async fn create_job(
     Ok(created)
 }
 
+fn build_service(ctx: &ServiceContext) -> PromotionService {
+    let query_repo = crate::repository::LifecycleQueryRepo::new(ctx.db.clone());
+    let cmd_repo = crate::repository::LifecycleCommandRepo::new(ctx.db.clone());
+    PromotionService::new(Arc::new(cmd_repo), Arc::new(query_repo))
+}
+
 pub async fn start_dry_run(ctx: &ServiceContext, job_id: &str) -> Result<promotion_job::Model, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::PromotionWrite).await?;
 
@@ -72,16 +80,11 @@ pub async fn start_dry_run(ctx: &ServiceContext, job_id: &str) -> Result<promoti
         return Err(AppError::validation("Can only dry-run pending promotion jobs"));
     }
 
-    // Delegate to service layer
-    let query_repo = crate::repository::OrganizationQueryRepo::new(ctx.db.clone());
-    let cmd_repo = crate::repository::OrganizationCommandRepo::new(ctx.db.clone());
-    let svc = crate::services::promotion::PromotionService::new(
-        std::sync::Arc::new(cmd_repo), std::sync::Arc::new(query_repo),
-    );
+    let svc = build_service(ctx);
     svc.dry_run(&ctx.org_id, job_id).await
 }
 
-pub async fn execute(ctx: &ServiceContext, job_id: &str) -> Result<promotion_job::Model, AppError> {
+pub async fn execute(ctx: &ServiceContext, job_id: &str, app_data_dir: &std::path::Path) -> Result<PromotionResult, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::PromotionExecute).await?;
 
     let existing = get_job(ctx, job_id).await?;
@@ -89,12 +92,8 @@ pub async fn execute(ctx: &ServiceContext, job_id: &str) -> Result<promotion_job
         return Err(AppError::validation("Must complete dry-run before executing"));
     }
 
-    let query_repo = crate::repository::OrganizationQueryRepo::new(ctx.db.clone());
-    let cmd_repo = crate::repository::OrganizationCommandRepo::new(ctx.db.clone());
-    let svc = crate::services::promotion::PromotionService::new(
-        std::sync::Arc::new(cmd_repo), std::sync::Arc::new(query_repo),
-    );
-    let result = svc.execute(&ctx.org_id, ctx.actor.as_str(), job_id).await?;
+    let svc = build_service(ctx);
+    let result = svc.execute(&ctx.db, job_id, app_data_dir).await?;
 
     ctx.audit.log(AuditEntry {
         org_id: ctx.org_id.clone(), actor: ctx.actor.clone(),
@@ -107,7 +106,7 @@ pub async fn execute(ctx: &ServiceContext, job_id: &str) -> Result<promotion_job
     Ok(result)
 }
 
-pub async fn rollback(ctx: &ServiceContext, job_id: &str) -> Result<promotion_job::Model, AppError> {
+pub async fn rollback(ctx: &ServiceContext, job_id: &str, app_data_dir: &std::path::Path) -> Result<(), AppError> {
     ctx.permissions.check(&ctx.actor, Permission::PromotionExecute).await?;
 
     let existing = get_job(ctx, job_id).await?;
@@ -115,12 +114,8 @@ pub async fn rollback(ctx: &ServiceContext, job_id: &str) -> Result<promotion_jo
         return Err(AppError::validation("Rollback not available for this job"));
     }
 
-    let query_repo = crate::repository::OrganizationQueryRepo::new(ctx.db.clone());
-    let cmd_repo = crate::repository::OrganizationCommandRepo::new(ctx.db.clone());
-    let svc = crate::services::promotion::PromotionService::new(
-        std::sync::Arc::new(cmd_repo), std::sync::Arc::new(query_repo),
-    );
-    let result = svc.rollback(&ctx.org_id, ctx.actor.as_str(), job_id).await?;
+    let svc = build_service(ctx);
+    svc.rollback(job_id, app_data_dir).await?;
 
     ctx.audit.log(AuditEntry {
         org_id: ctx.org_id.clone(), actor: ctx.actor.clone(),
@@ -129,5 +124,5 @@ pub async fn rollback(ctx: &ServiceContext, job_id: &str) -> Result<promotion_jo
         correlation_id: ctx.correlation_id.clone(),
     }).await?;
 
-    Ok(result)
+    Ok(())
 }
