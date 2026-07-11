@@ -4,7 +4,7 @@ use shared_kernel::context::ServiceContext;
 use shared_kernel::errors::AppError;
 
 pub async fn students(
-    ctx: &ServiceContext,
+    _ctx: &ServiceContext,
 ) -> Result<serde_json::Value, AppError> {
     // Basic stub/mock for student bulk export
     Ok(serde_json::json!({
@@ -15,7 +15,7 @@ pub async fn students(
 }
 
 pub async fn grades(
-    ctx: &ServiceContext,
+    _ctx: &ServiceContext,
 ) -> Result<serde_json::Value, AppError> {
     // Basic stub/mock for grade bulk export
     Ok(serde_json::json!({

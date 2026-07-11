@@ -15,9 +15,8 @@ use shared_kernel::traits::{AuditEntry, Permission};
 
 use crate::entities::{grade, grade_history};
 use crate::services::grade::{
-    CreateGradeRequest, UpdateGradeRequest, BulkSubjectGradeEntry, BulkSubjectGradeResult,
+    UpdateGradeRequest, BulkSubjectGradeEntry, BulkSubjectGradeResult,
     UpsertCellRequest, UpsertCellResult, GradeReportCard, GradeAnalytics, GradeMatrixResponse,
-    StudentScore,
 };
 
 use svc_organization::entities::academic_cycle;
@@ -47,28 +46,6 @@ async fn check_cycle_open(ctx: &ServiceContext, cycle_id: &str) -> Result<(), Ap
         }
     }
     Ok(())
-}
-
-fn score_to_grade_letter(percentage: f64) -> String {
-    match percentage as i32 {
-        90..=100 => "ممتاز".to_string(),
-        80..=89  => "جيد جداً".to_string(),
-        70..=79  => "جيد".to_string(),
-        60..=69  => "مقبول".to_string(),
-        50..=59  => "ضعيف".to_string(),
-        _        => "راسب".to_string(),
-    }
-}
-
-fn score_to_grade_points(percentage: f64) -> f64 {
-    match percentage as i32 {
-        90..=100 => 4.0,
-        80..=89  => 3.5,
-        70..=79  => 3.0,
-        60..=69  => 2.5,
-        50..=59  => 2.0,
-        _        => 0.0,
-    }
 }
 
 async fn save_grade_history(

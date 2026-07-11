@@ -159,7 +159,7 @@ pub async fn agent_get_session_logs(
 #[tauri::command]
 pub async fn agent_approve_action(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
+    _org_id: String,
     action_log_id: String,
     approved_by: String,
 ) -> CmdResult<()> {
@@ -184,9 +184,9 @@ pub async fn agent_approve_action(
 #[tauri::command]
 pub async fn agent_reject_action(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
+    _org_id: String,
     action_log_id: String,
-    rejected_by: String,
+    _rejected_by: String,
     reason: String,
 ) -> CmdResult<()> {
     use sea_orm::{EntityTrait, ActiveModelTrait, ActiveValue::Set};

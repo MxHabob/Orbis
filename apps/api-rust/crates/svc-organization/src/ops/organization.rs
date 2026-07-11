@@ -258,7 +258,7 @@ pub async fn update_settings(
     Ok(())
 }
 
-pub async fn check_setup(ctx: &ServiceContext) -> Result<serde_json::Value, AppError> {
+pub async fn check_setup(_ctx: &ServiceContext) -> Result<serde_json::Value, AppError> {
     Ok(serde_json::json!({
         "setup_completed": true,
         "step": "completed"

@@ -519,7 +519,7 @@ impl GradeService {
         class_id: &str,
         semester: &str,
     ) -> Result<Vec<grade::Model>, AppError> {
-        use sea_orm::{QueryFilter, ColumnTrait, EntityTrait, ActiveModelTrait, ActiveValue::Set};
+        use sea_orm::{QueryFilter, ColumnTrait, EntityTrait};
         
         let class_subjects = svc_academic::entities::class_subject::Entity::find()
             .filter(svc_academic::entities::class_subject::Column::ClassId.eq(class_id))

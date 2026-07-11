@@ -204,7 +204,7 @@ impl AppState {
         permission: svc_iam::services::authz::Permission,
         context: Option<&svc_iam::services::authz::AuthzContext>,
     ) -> Result<(), shared_kernel::errors::AppError> {
-        use sea_orm::{EntityTrait, QueryOrder, QueryFilter, ColumnTrait};
+        use sea_orm::{EntityTrait, QueryOrder};
         
         let latest_session = svc_iam::entities::user_session::Entity::find()
             .order_by_desc(svc_iam::entities::user_session::Column::CreatedAt)

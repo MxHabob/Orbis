@@ -11,7 +11,7 @@
 //!
 //! If any step fails, ProcessManager compensates all completed steps.
 
-use sea_orm::{ActiveModelTrait, ConnectionTrait, EntityTrait, ColumnTrait, QueryFilter, PaginatorTrait};
+use sea_orm::{ActiveModelTrait, EntityTrait, ColumnTrait, QueryFilter, PaginatorTrait};
 use serde::{Deserialize, Serialize};
 use tracing::info;
 

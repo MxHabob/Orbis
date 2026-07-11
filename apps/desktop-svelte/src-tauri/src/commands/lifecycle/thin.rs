@@ -57,7 +57,7 @@ pub async fn get_setup_status(state: State<'_, Arc<AppState>>, org_id: String) -
 }
 
 #[tauri::command]
-pub async fn initialize_school_setup(state: State<'_, Arc<AppState>>, org_id: String, payload: serde_json::Value) -> CmdResult<()> {
+pub async fn initialize_school_setup(_state: State<'_, Arc<AppState>>, _org_id: String, _payload: serde_json::Value) -> CmdResult<()> {
     Ok(())
 }
 
@@ -65,7 +65,7 @@ pub async fn initialize_school_setup(state: State<'_, Arc<AppState>>, org_id: St
 
 #[tauri::command]
 pub async fn get_current_academic_year(state: State<'_, Arc<AppState>>) -> CmdResult<serde_json::Value> {
-    use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
+    use sea_orm::EntityTrait;
     let reg_db = state.provider.registry();
     let year_id = state.provider.current_year_id().await;
     let r = infra_persistence::provider::Entity::find_by_id(year_id)
@@ -162,7 +162,7 @@ pub async fn get_promotion_job(state: State<'_, Arc<AppState>>, org_id: String, 
 }
 
 #[tauri::command]
-pub async fn get_promotion_details(state: State<'_, Arc<AppState>>, org_id: String, job_id: String) -> CmdResult<serde_json::Value> {
+pub async fn get_promotion_details(state: State<'_, Arc<AppState>>, _org_id: String, job_id: String) -> CmdResult<serde_json::Value> {
     use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
     use svc_organization::entities::promotion_detail;
     let db = state.active_db().await;
@@ -230,7 +230,7 @@ pub struct OverrideRequest {
 #[tauri::command]
 pub async fn override_promotion_decision(
     state: State<'_, Arc<AppState>>,
-    org_id: String,
+    _org_id: String,
     request: serde_json::Value,
 ) -> CmdResult<()> {
     use sea_orm::{ActiveModelTrait, ActiveValue::Set, EntityTrait};
@@ -342,7 +342,7 @@ pub async fn create_calendar_event(
     org_id: String,
     data: serde_json::Value,
 ) -> CmdResult<serde_json::Value> {
-    use sea_orm::{ActiveModelTrait, ActiveValue::Set};
+    use sea_orm::ActiveModelTrait;
     use svc_organization::entities::academic_calendar_event;
     state.provider.ensure_writable().await.map_err(CommandError::from)?;
     let db = state.active_db().await;
@@ -580,7 +580,7 @@ pub async fn create_override_request(
     org_id: String,
     data: serde_json::Value,
 ) -> CmdResult<serde_json::Value> {
-    use sea_orm::{ActiveModelTrait, EntityTrait};
+    use sea_orm::ActiveModelTrait;
     use svc_organization::entities::academic_override_request;
     let request: CreateOverrideRequest = serde_json::from_value(data)
         .map_err(|e| CommandError::new(format!("Invalid request data: {}", e)))?;

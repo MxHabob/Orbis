@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use sea_orm::{ActiveModelTrait, ConnectionTrait, EntityTrait, QueryFilter, ColumnTrait, ActiveValue::Set, PaginatorTrait};
+use sea_orm::{ActiveModelTrait, ConnectionTrait, EntityTrait, QueryFilter, ColumnTrait, PaginatorTrait};
 use shared_kernel::errors::AppError;
 use svc_iam::entities::user;
 use svc_academic::entities::{enrollment, student_guardian};

@@ -1,6 +1,5 @@
 //! Student ordering operations — seating numbers, secret numbers.
 
-use chrono::Utc;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
 
 use shared_kernel::context::ServiceContext;

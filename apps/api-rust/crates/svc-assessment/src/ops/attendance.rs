@@ -1,7 +1,7 @@
 //! Attendance operations — record, bulk record, reports, analytics.
 
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, PaginatorTrait};
+use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
 use uuid::Uuid;
 
 use shared_kernel::context::ServiceContext;
@@ -36,7 +36,7 @@ pub async fn list(
 /// Get attendance report for a student.
 pub async fn get_report(
     ctx: &ServiceContext,
-    cycle_id: &str,
+    _cycle_id: &str,
     enrollment_id: &str,
 ) -> Result<AttendanceReport, AppError> {
     ctx.permissions.check(&ctx.actor, Permission::AttendanceReport).await?;

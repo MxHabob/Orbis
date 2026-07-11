@@ -4,7 +4,7 @@ use shared_kernel::context::ServiceContext;
 use shared_kernel::errors::AppError;
 
 pub async fn get_stats(
-    ctx: &ServiceContext,
+    _ctx: &ServiceContext,
 ) -> Result<serde_json::Value, AppError> {
     // Return mock/dummy dashboard stats for now
     Ok(serde_json::json!({
