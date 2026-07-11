@@ -1,2 +1,1 @@
-pub mod autopilot;
-pub mod agent;
+pub mod thin;

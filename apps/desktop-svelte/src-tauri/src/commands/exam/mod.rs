@@ -1,1 +1,1 @@
-pub mod exams;
+pub mod thin;

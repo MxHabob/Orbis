@@ -1,1 +1,1 @@
-pub mod finance;
+pub mod thin;

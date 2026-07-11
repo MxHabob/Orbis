@@ -6,5 +6,4 @@ pub mod assessment;
 pub mod scheduling;
 pub mod finance;
 pub mod exam;
-pub mod widgets;
 pub mod ai;
