@@ -258,9 +258,27 @@ pub async fn update_settings(
     Ok(())
 }
 
-pub async fn check_setup(_ctx: &ServiceContext) -> Result<serde_json::Value, AppError> {
+pub async fn check_setup(ctx: &ServiceContext) -> Result<serde_json::Value, AppError> {
+    use crate::entities::academic_cycle;
+    use svc_academic::entities::class;
+    use sea_orm::{EntityTrait, QueryFilter, ColumnTrait, PaginatorTrait};
+    
+    // Check if there are any academic cycles
+    let cycles_count = academic_cycle::Entity::find()
+        .filter(academic_cycle::Column::OrgId.eq(&ctx.org_id))
+        .count(&ctx.db)
+        .await?;
+
+    // Check if there are any classes
+    let classes_count = class::Entity::find()
+        .filter(class::Column::OrgId.eq(&ctx.org_id))
+        .count(&ctx.db)
+        .await?;
+
+    let is_complete = cycles_count > 0 && classes_count > 0;
+
     Ok(serde_json::json!({
-        "setup_completed": true,
-        "step": "completed"
+        "setup_completed": is_complete,
+        "step": if is_complete { "completed" } else { "onboarding" }
     }))
 }

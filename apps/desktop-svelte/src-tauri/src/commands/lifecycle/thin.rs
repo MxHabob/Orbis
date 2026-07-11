@@ -951,7 +951,8 @@ pub async fn import_students(state: State<'_, Arc<AppState>>, org_id: String, da
 #[tauri::command]
 pub async fn import_grades(state: State<'_, Arc<AppState>>, org_id: String, data: serde_json::Value) -> CmdResult<serde_json::Value> {
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let r = ops::bulk_import::grades(&ctx, data).await.map_err(CommandError::from)?;
+    let grades_list = data.get("grades").cloned().unwrap_or(data);
+    let r = svc_assessment::ops::grade::submit_bulk(&ctx, grades_list).await.map_err(CommandError::from)?;
     Ok(serde_json::to_value(r).unwrap())
 }
 
@@ -964,9 +965,23 @@ pub async fn export_students(state: State<'_, Arc<AppState>>, org_id: String) ->
 
 #[tauri::command]
 pub async fn export_grades(state: State<'_, Arc<AppState>>, org_id: String) -> CmdResult<serde_json::Value> {
+    use sea_orm::{EntityTrait, QueryFilter, ColumnTrait};
+    use svc_assessment::entities::grade;
+    let db = state.active_db().await;
     let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
-    let r = ops::bulk_export::grades(&ctx).await.map_err(CommandError::from)?;
-    Ok(serde_json::to_value(r).unwrap())
+    ctx.permissions.check(&ctx.actor, shared_kernel::traits::Permission::GradeRead).await.map_err(CommandError::from)?;
+
+    let grades = grade::Entity::find()
+        .filter(grade::Column::OrgId.eq(&org_id))
+        .all(&db)
+        .await
+        .map_err(CommandError::from)?;
+
+    Ok(serde_json::json!({
+        "success": true,
+        "message": "Bulk export of grades completed successfully",
+        "data": grades
+    }))
 }
 
 async fn resolve_user_id(db: &sea_orm::DatabaseConnection) -> Result<String, CommandError> {
