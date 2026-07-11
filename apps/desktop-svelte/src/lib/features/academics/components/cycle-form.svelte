@@ -55,7 +55,7 @@ const gradingLabels = $derived({
 async function loadParentYears() {
   if (!orgId) return;
   try {
-    const list = await commands.academics.getYears(orgId);
+    const list = await commands.platform.listYears(orgId);
     // Exclude current cycle if editing to prevent self-referencing
     years = list.filter(
       (y: any) => !isEdit || String(y.id) !== String(cycle.id),
@@ -95,7 +95,7 @@ async function handleSubmit(e: SubmitEvent) {
         passing_grade: passingGrade ? Number(passingGrade) : 50,
         max_grade: maxGrade ? Number(maxGrade) : 100,
       };
-      await commands.academics.updateCycle(cycle.id, request);
+      await commands.academic.updateCycle(cycle.id, request);
       toast.success(m.settings_users_update_success());
     } else {
       const request = {
@@ -110,7 +110,7 @@ async function handleSubmit(e: SubmitEvent) {
         passing_grade: passingGrade ? Number(passingGrade) : 50,
         max_grade: maxGrade ? Number(maxGrade) : 100,
       };
-      await commands.academics.createCycle(orgId, request);
+      await commands.academic.createCycle(orgId, request);
       toast.success(m.cycle_form_success());
     }
 

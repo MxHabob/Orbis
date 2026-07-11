@@ -32,8 +32,8 @@ async function loadData() {
   error = null;
   try {
     const [classData, studentData] = await Promise.all([
-      commands.classes.getAll(data.orgId),
-      commands.enrollments.getAll(data.orgId),
+      commands.academic.listClasses(data.orgId),
+      commands.academic.listEnrollments(data.orgId),
     ]);
     classes = classData;
     students = studentData;

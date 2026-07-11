@@ -37,7 +37,7 @@ async function loadData() {
   if (!studentId) return;
   isLoading = true;
   try {
-    const links = await commands.guardians.getByStudent(studentId);
+    const links = await commands.academic.listGuardiansByStudent(studentId);
     guardians = links;
 
     // Fetch guardian user details in parallel
@@ -45,7 +45,7 @@ async function loadData() {
     await Promise.all(
       links.map(async (link) => {
         try {
-          const u = await commands.users.getUser(String(link.guardian_id));
+          const u = await commands.iam.getUser(String(link.guardian_id));
           if (u) userMap[String(link.guardian_id)] = u as unknown as JsonRecord;
         } catch {}
       }),
@@ -81,7 +81,7 @@ function openEdit(link: GuardianLink) {
 async function handleDelete(link: GuardianLink) {
   if (!confirm(m.guardians_delete_confirm())) return;
   try {
-    await commands.guardians.deleteLink(String(link.id));
+    await commands.platform.deleteGuardianLink(String(link.id));
     guardians = guardians.filter((g) => g.id !== link.id);
     toast.success(m.guardians_delete_success());
   } catch (e: unknown) {

@@ -32,14 +32,14 @@ const currentOrgId = $derived(page.params.orgId || authStore.orgId || "");
 // TanStack query caching for autocomplete using reactive config closures
 const enrollmentsQuery = createQuery({
   get queryKey() { return ["enrollments", currentOrgId]; },
-  queryFn: () => commands.enrollments.getAll(currentOrgId),
+  queryFn: () => commands.academic.listEnrollments(currentOrgId),
   get enabled() { return !!currentOrgId; },
   staleTime: 2 * 60 * 1000,
 });
 
 const usersQuery = createQuery({
   get queryKey() { return ["users", currentOrgId]; },
-  queryFn: () => commands.users.getUsers(currentOrgId),
+  queryFn: () => commands.iam.listUsers(currentOrgId),
   get enabled() { return !!currentOrgId; },
   staleTime: 5 * 60 * 1000,
 });

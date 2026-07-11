@@ -110,7 +110,7 @@ async function handleSave(e: Event) {
       settings: null,
     };
 
-    await commands.calendar.updatePolicy(orgId, payload);
+    await commands.platform.updateOrgPolicy(orgId, payload);
     toast.success(
       m.settings_general_save_success
         ? m.settings_general_save_success()

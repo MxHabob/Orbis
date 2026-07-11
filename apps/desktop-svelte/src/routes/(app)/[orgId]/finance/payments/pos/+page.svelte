@@ -77,7 +77,7 @@ async function loadData() {
   isLoadingData = true;
   try {
     const [studentList, treasuryList] = await Promise.all([
-      commands.enrollments.getAll(data.orgId),
+      commands.academic.listEnrollments(data.orgId),
       commands.finance.getTreasuries(data.orgId),
     ]);
     students = studentList;

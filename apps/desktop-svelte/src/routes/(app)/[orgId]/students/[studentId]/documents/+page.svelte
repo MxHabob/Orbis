@@ -78,7 +78,7 @@ async function loadDocuments() {
   error = null;
   try {
     // Fetch real documents for this student
-    documents = await commands.documents.getAll({
+    documents = await commands.platform.listDocumentsByOwner({
       orgId,
       ownerId: studentUserId,
     });
@@ -117,7 +117,7 @@ async function handleAddDocument() {
       extension: newDocUrl.trim() ? "pdf" : null,
     };
 
-    await commands.documents.create(request);
+    await commands.academic.createDocument(request);
     toast.success(m.docs_create_success());
     showAddModal = false;
 
@@ -145,7 +145,7 @@ async function handleDelete(docId: string) {
   }
 
   try {
-    await commands.documents.delete(docId);
+    await commands.academic.deleteDocument(docId);
     toast.success(m.docs_delete_success());
     await loadDocuments();
   } catch (e: any) {
@@ -173,7 +173,7 @@ async function handleUploadFile() {
 
   try {
     // 1. Soft-delete the placeholder doc
-    await commands.documents.delete(selectedDoc.id);
+    await commands.academic.deleteDocument(selectedDoc.id);
 
     // 2. Create new doc entry with file url and details
     const sizeInBytes = uploadFileSize.includes("MB")
@@ -198,7 +198,7 @@ async function handleUploadFile() {
       tags: selectedDoc.tags,
     };
 
-    await commands.documents.create(request);
+    await commands.academic.createDocument(request);
     toast.success(m.docs_upload_success());
     showUploadModal = false;
     await loadDocuments();

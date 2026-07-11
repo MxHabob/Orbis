@@ -65,13 +65,13 @@ async function handleSubmit(e: SubmitEvent) {
     };
 
     if (isEdit && room) {
-      await commands.schedule.updateRoom(orgId, room.id, {
+      await commands.scheduling.updateRoom(orgId, room.id, {
         ...request,
         is_active: room.is_active,
       });
       toast.success(m.rooms_update_success());
     } else {
-      await commands.schedule.createRoom(orgId, request);
+      await commands.scheduling.createRoom(orgId, request);
       toast.success(m.rooms_create_success());
     }
 

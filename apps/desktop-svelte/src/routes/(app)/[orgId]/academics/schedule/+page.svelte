@@ -58,28 +58,28 @@ function toStore<T>(getter: () => T) {
 // Reactive Queries using toStore for Svelte 5 runes responsiveness
 const cyclesQuery = createQuery(toStore(() => ({
   queryKey: ["cycles", data.orgId],
-  queryFn: () => commands.academics.getCycles(data.orgId),
+  queryFn: () => commands.academic.listCycles(data.orgId),
   enabled: !!data.orgId,
   staleTime: 10 * 60 * 1000,
 })));
 
 const classesQuery = createQuery(toStore(() => ({
   queryKey: ["classes", data.orgId],
-  queryFn: () => commands.classes.getAll(data.orgId),
+  queryFn: () => commands.academic.listClasses(data.orgId),
   enabled: !!data.orgId,
   staleTime: 5 * 60 * 1000,
 })));
 
 const subjectsQuery = createQuery(toStore(() => ({
   queryKey: ["subjects", data.orgId],
-  queryFn: () => commands.subjects.getAll(data.orgId),
+  queryFn: () => commands.academic.listSubjects(data.orgId),
   enabled: !!data.orgId,
   staleTime: 10 * 60 * 1000,
 })));
 
 const usersQuery = createQuery(toStore(() => ({
   queryKey: ["users", data.orgId],
-  queryFn: () => commands.users.getUsers(data.orgId),
+  queryFn: () => commands.iam.listUsers(data.orgId),
   enabled: !!data.orgId,
   staleTime: 5 * 60 * 1000,
 })));
@@ -149,7 +149,7 @@ $effect(() => {
 // Time Slots logic
 const timeSlotsQuery = createQuery(toStore(() => ({
   queryKey: ["time-slots", data.orgId, activeCycleId],
-  queryFn: () => commands.schedule.getTimeSlots(data.orgId, activeCycleId),
+  queryFn: () => commands.scheduling.listTimeSlots(data.orgId, activeCycleId),
   enabled: !!data.orgId && !!activeCycleId,
   staleTime: 10 * 60 * 1000,
 })));
@@ -159,14 +159,14 @@ const timeSlots = $derived($timeSlotsQuery.data ?? []);
 // Schedules logic
 const classScheduleQuery = createQuery(toStore(() => ({
   queryKey: ["class-schedule", data.orgId, activeCycleId, selectedClassId],
-  queryFn: () => commands.schedule.getClassSchedule(data.orgId, activeCycleId, selectedClassId),
+  queryFn: () => commands.scheduling.listLessonsByClass(data.orgId, activeCycleId, selectedClassId),
   enabled: !!data.orgId && !!activeCycleId && !!selectedClassId && viewMode === "class",
   staleTime: 2 * 60 * 1000,
 })));
 
 const teacherScheduleQuery = createQuery(toStore(() => ({
   queryKey: ["teacher-schedule", data.orgId, activeCycleId, selectedTeacherId],
-  queryFn: () => commands.schedule.getTeacherSchedule(data.orgId, activeCycleId, selectedTeacherId),
+  queryFn: () => commands.scheduling.listLessonsByTeacher(data.orgId, activeCycleId, selectedTeacherId),
   enabled: !!data.orgId && !!activeCycleId && !!selectedTeacherId && viewMode === "teacher",
   staleTime: 2 * 60 * 1000,
 })));
@@ -242,7 +242,7 @@ async function handleMoveLesson(
         ? "جاري التحقق من وجود تضاربات..."
         : "Checking for conflicts...",
     );
-    const conflicts = await commands.schedule.checkConflicts({
+    const conflicts = await commands.scheduling.checkConflicts({
       orgId: data.orgId,
       cycleId: activeCycleId,
       timeSlotId: targetSlotId,
@@ -268,7 +268,7 @@ async function handleMoveLesson(
       return;
     }
 
-    await commands.schedule.updateLesson(
+    await commands.scheduling.updateLesson(
       data.orgId,
       lesson.id,
       {
@@ -289,7 +289,7 @@ async function handleMoveLesson(
 async function handleDeleteLesson(lessonId: string) {
   if (!confirm(m.schedule_page_confirm_delete())) return;
   try {
-    await commands.schedule.deleteLesson(lessonId);
+    await commands.scheduling.deleteLesson(lessonId);
     toast.success(m.schedule_page_success_delete());
     refetchLessons();
   } catch (e) {

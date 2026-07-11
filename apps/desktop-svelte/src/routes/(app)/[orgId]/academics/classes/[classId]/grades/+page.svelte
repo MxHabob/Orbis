@@ -46,9 +46,9 @@ async function loadData() {
   isLoading = true;
   try {
     const [enrollments, subjectList, cycleList] = await Promise.all([
-      commands.enrollments.getAll(orgId ?? ""),
-      commands.subjects.getAll(orgId ?? ""),
-      commands.academics.getCycles(orgId ?? ""),
+      commands.academic.listEnrollments(orgId ?? ""),
+      commands.academic.listSubjects(orgId ?? ""),
+      commands.academic.listCycles(orgId ?? ""),
     ]);
 
     // Filter students for this class
@@ -89,7 +89,7 @@ async function loadData() {
 async function loadAssessments() {
   if (!classId || !selectedSubjectId) return;
   try {
-    const list = await commands.assessments.getByClass({
+    const list = await commands.assessment.listAssessments({
       classId,
       subjectId: selectedSubjectId || undefined,
       termId: selectedSemesterId || activeCycleId || "",

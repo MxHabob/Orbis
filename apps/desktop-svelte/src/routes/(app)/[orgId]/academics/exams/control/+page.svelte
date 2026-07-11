@@ -90,8 +90,8 @@ async function loadInitialData() {
   isLoading = true;
   try {
     const [classList, subjectList] = await Promise.all([
-      commands.classes.getAll(orgId),
-      commands.subjects.getAll(orgId),
+      commands.academic.listClasses(orgId),
+      commands.academic.listSubjects(orgId),
     ]);
 
     classes = classList;

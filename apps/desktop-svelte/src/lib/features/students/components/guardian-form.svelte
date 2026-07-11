@@ -233,14 +233,14 @@ async function handleSubmit() {
 
     if (!finalGuardianUserId) {
       // Check if user already exists in db by phone
-      const checkExisting = await commands.guardians.search(
+      const checkExisting = await commands.academic.searchGuardians(
         orgId,
         phoneClean,
       );
       if (checkExisting && checkExisting.length > 0) {
         finalGuardianUserId = checkExisting[0].id;
         // Optionally update the existing user info
-        await commands.users.updateUser(finalGuardianUserId, {
+        await commands.iam.updateUser(finalGuardianUserId, {
           full_name: fullName.trim(),
           name_ar: fullName.trim(),
           phone: phoneClean || null,
@@ -252,7 +252,7 @@ async function handleSubmit() {
         const guardEmail = emailClean || `parent.${Date.now()}@orbis.local`;
         
         // Create a new parent user
-        const guardUser = await commands.users.createUser(orgId, createdBy, {
+        const guardUser = await commands.iam.createUser(orgId, createdBy, {
           email: guardEmail,
           password: tempPassword,
           full_name: fullName.trim(),
@@ -267,7 +267,7 @@ async function handleSubmit() {
       }
     } else {
       // Update existing parent user details
-      await commands.users.updateUser(finalGuardianUserId, {
+      await commands.iam.updateUser(finalGuardianUserId, {
         full_name: fullName.trim(),
         name_ar: fullName.trim(),
         phone: phoneClean || null,
@@ -304,12 +304,12 @@ async function handleSubmit() {
     };
 
     if (isEditMode && editData?.id) {
-      await commands.guardians.updateLink(String(editData.id), request);
+      await commands.platform.updateGuardianLink(String(editData.id), request);
       toast.success(m.guardians_update_success());
     } else {
       // Create link requires guardian_id. Let's make sure it is sent correctly.
       const requestWithGuardian = { ...request, guardian_id: finalGuardianUserId };
-      await commands.guardians.createLink(requestWithGuardian);
+      await commands.platform.createGuardianLink(requestWithGuardian);
       toast.success(m.guardians_create_success());
     }
 

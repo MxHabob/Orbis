@@ -35,7 +35,7 @@ async function loadRoles() {
   isLoading = true;
   try {
     const [userRoles, availableRoles] = await Promise.all([
-      commands.users.getUserRoles(userId),
+      commands.iam.listUserRoles(userId),
       commands.permissions.getAvailableRoles(),
     ]);
     checkedRoles = userRoles;
@@ -71,7 +71,7 @@ async function saveRoles() {
   if (!userId) return;
   isSaving = true;
   try {
-    await commands.users.saveUserRoles(userId, checkedRoles);
+    await commands.iam.saveUserRoles(userId, checkedRoles);
     toast.success(m.settings_user_detail_saved());
   } catch (e: unknown) {
     toast.error((e as any)?.message || "Save failed");

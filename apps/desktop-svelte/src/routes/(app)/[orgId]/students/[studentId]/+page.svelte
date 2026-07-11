@@ -293,14 +293,14 @@ async function saveStudentDetails(e: Event) {
     };
 
     // Update student user details
-    await commands.users.updateUser(
+    await commands.iam.updateUser(
       String(student.student_id),
       studentUserData,
     );
 
     // If class has changed, invoke transfer command
     if (student.class_id !== classId) {
-      await commands.enrollments.transfer(studentId, {
+      await commands.academic.transferEnrollment(studentId, {
         new_class_id: classId,
       });
     }
@@ -310,7 +310,7 @@ async function saveStudentDetails(e: Event) {
       (student.status === "draft" || student.status === "pending_review") &&
       isActiveState
     ) {
-      await commands.enrollments.transitionStatus(orgId, studentId, "active");
+      await commands.platform.transitionEnrollmentStatus(orgId, studentId, "active");
     }
 
     toast.success(m.form_success_update());

@@ -24,7 +24,7 @@ async function loadSessions() {
   if (!userId) return;
   isLoading = true;
   try {
-    const rawSessions = await commands.users.getUserSessions(userId);
+    const rawSessions = await commands.iam.listSessions(userId);
     activeSessions = rawSessions.map((s: UserSession) => {
       const isMobile =
         s.device_type === "mobile" ||

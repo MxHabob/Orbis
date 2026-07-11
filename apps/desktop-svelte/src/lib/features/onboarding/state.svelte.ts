@@ -528,7 +528,7 @@ class OnboardingState {
   async loadExistingOrg(orgId: string) {
     try {
       const { commands } = await import("$lib/core/ipc");
-      const org = await commands.users.getOrganization(orgId);
+      const org = await commands.organization.getOrganization(orgId);
       if (org) {
         this.orgName = org.name;
         this.orgNameAr = org.name_ar || org.name;
@@ -901,7 +901,7 @@ class OnboardingState {
       console.log("Submitting Onboarding Setup Payload:", payload);
 
       const { commands } = await import("$lib/core/ipc");
-      await commands.academics.initializeSchoolSetup(orgId, payload);
+      await commands.platform.initializeSchoolSetup(orgId, payload);
 
       // Save registration configuration to organization settings
       const settingsObj = {
@@ -918,7 +918,7 @@ class OnboardingState {
         },
       };
 
-      const org = await commands.users.getOrganization(orgId);
+      const org = await commands.organization.getOrganization(orgId);
       if (org) {
         const updateRequest = {
           name: org.name,
@@ -931,7 +931,7 @@ class OnboardingState {
           hijri_enabled: org.hijri_enabled,
           settings: JSON.stringify(settingsObj),
         };
-        await commands.users.updateOrganization(orgId, updateRequest);
+        await commands.organization.updateOrganization(orgId, updateRequest);
       }
 
       // Create fee templates for the specified registration fees

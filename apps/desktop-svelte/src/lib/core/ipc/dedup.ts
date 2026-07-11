@@ -7,8 +7,8 @@
  *
  * @example
  * ```ts
- * // Instead of: commands.classes.getAll(orgId)
- * // Use: dedup(`classes:${orgId}`, () => commands.classes.getAll(orgId))
+ * // Instead of: commands.academic.listClasses(orgId)
+ * // Use: dedup(`classes:${orgId}`, () => commands.academic.listClasses(orgId))
  * ```
  */
 const inflight = new Map<string, Promise<any>>();

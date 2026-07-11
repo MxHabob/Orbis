@@ -262,7 +262,7 @@ async function createEvent() {
   }
   isSubmitting = true;
   try {
-    await commands.calendar.create(orgId, {
+    await commands.platform.createCalendarEvent(orgId, {
       cycle_id: cycleId,
       ...newEvent,
     });
@@ -284,7 +284,7 @@ async function createEvent() {
 async function executeEvent(eventId: string) {
   executingId = eventId;
   try {
-    const result = await commands.calendar.execute(eventId, authStore.userId);
+    const result = await commands.platform.executeCalendarEvent(eventId, authStore.userId);
     if (result.outcome === "executed") {
       toast.success(
         m.calendar_event_executed
@@ -308,7 +308,7 @@ async function executeEvent(eventId: string) {
 
 async function deleteEvent(eventId: string) {
   try {
-    await commands.calendar.delete(eventId);
+    await commands.platform.deleteCalendarEvent(eventId);
     toast.success(
       m.calendar_event_deleted ? m.calendar_event_deleted() : "Event deleted",
     );
@@ -323,7 +323,7 @@ async function deleteEvent(eventId: string) {
 async function generateDefaults() {
   isSubmitting = true;
   try {
-    await commands.calendar.generateDefaults(orgId, cycleId);
+    await commands.platform.generateDefaultCalendar(orgId, cycleId);
     toast.success(
       m.calendar_defaults_generated
         ? m.calendar_defaults_generated()

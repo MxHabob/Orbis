@@ -103,7 +103,7 @@ let policyLoaded = $state(false);
 // Load promotion policy and apply defaults (Policy-Driven Architecture)
 onMount(async () => {
   try {
-    const policy = await commands.promotion.getPolicy(orgId);
+    const policy = await commands.platform.getPromotionPolicy(orgId);
     // Apply policy values as defaults (user can still override)
     config.passing_score = policy.passing_score ?? 50;
     config.min_attendance_rate = policy.min_attendance_rate ?? 75;
@@ -172,9 +172,9 @@ function removeMapping(index: number) {
 async function runDryRun() {
   isAnalyzing = true;
   try {
-    previewJob = await commands.promotion.dryRun(orgId, config);
+    previewJob = await commands.platform.promotionDryRun(orgId, config);
     if (previewJob) {
-      previewDetails = await commands.promotion.getDetails(previewJob.id);
+      previewDetails = await commands.platform.getPromotionDetails(previewJob.id);
       if (previewJob.dry_run_result) {
         previewStats = JSON.parse(previewJob.dry_run_result);
       }
@@ -192,7 +192,7 @@ async function executePromotion() {
   showExecuteConfirm = false;
   isExecuting = true;
   try {
-    executionResult = await commands.promotion.execute(previewJob.id);
+    executionResult = await commands.platform.executePromotion(previewJob.id);
     toast.success(m.promo_complete());
     currentStep = 3; // Move to results
   } catch (e: unknown) {

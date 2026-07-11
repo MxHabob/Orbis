@@ -61,7 +61,7 @@ async function loadReferenceData() {
   try {
     const [allUnits, allUsers] = await Promise.all([
       commands.orgUnits.getAll(orgId),
-      commands.users.getUsers(orgId),
+      commands.iam.listUsers(orgId),
     ]);
 
     // Filter units: exclude current unit if editing to prevent cycle

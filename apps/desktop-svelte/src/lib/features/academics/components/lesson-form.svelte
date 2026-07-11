@@ -67,7 +67,7 @@ async function checkScheduleConflict() {
   isCheckingConflict = true;
   conflictError = null;
   try {
-    const conflicts = await commands.schedule.checkConflicts({
+    const conflicts = await commands.scheduling.checkConflicts({
       orgId,
       cycleId,
       timeSlotId,
@@ -106,7 +106,7 @@ async function handleSubmit(e: SubmitEvent) {
       day_of_week: dayOfWeek,
       room: formRoom || undefined,
     };
-    await commands.schedule.createLesson(orgId, request);
+    await commands.scheduling.createLesson(orgId, request);
     toast.success(m.lesson_toast_success());
 
     // Reset fields

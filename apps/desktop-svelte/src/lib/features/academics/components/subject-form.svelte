@@ -40,7 +40,7 @@ async function handleSubmit(e: SubmitEvent) {
       credit_hours: creditHours ? Number(creditHours) : 3,
       color: color || undefined,
     };
-    await commands.subjects.create(orgId, request);
+    await commands.academic.createSubject(orgId, request);
     toast.success(m.subject_toast_success());
 
     // Reset fields

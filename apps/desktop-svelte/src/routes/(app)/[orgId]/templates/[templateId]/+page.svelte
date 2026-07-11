@@ -83,7 +83,7 @@ let store = createEditorStore({
 async function initEditor() {
   isLoading = true;
   try {
-    templateRecord = await commands.documentTemplates.getTemplate(
+    templateRecord = await commands.platform.getDocumentTemplate(
       orgId || "",
       templateId || "",
     );
@@ -121,7 +121,7 @@ async function saveTemplate() {
       tags: templateRecord.tags,
     };
 
-    await commands.documentTemplates.updateTemplate(
+    await commands.platform.updateDocumentTemplate(
       orgId || "",
       templateId || "",
       "current-user",

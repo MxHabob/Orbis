@@ -28,7 +28,7 @@ async function handleUpdatePassword(e: Event) {
 
   isUpdating = true;
   try {
-    await commands.users.changeUserPassword(authStore.userId, {
+    await commands.iam.changePassword(authStore.userId, {
       new_password: newPassword,
     });
     toast.success(m.settings_security_password_success());
@@ -48,7 +48,7 @@ let activeSessions = $state<any[]>([]);
 async function loadSessions() {
   if (!authStore.userId) return;
   try {
-    const rawSessions = await commands.users.getUserSessions(authStore.userId);
+    const rawSessions = await commands.iam.listSessions(authStore.userId);
     activeSessions = rawSessions.map((s: UserSession) => {
       const isMobile =
         s.device_type === "mobile" ||

@@ -62,12 +62,12 @@ async function fetchStats() {
     }
 
     // Fetch guardians list
-    const links = await commands.guardians.getByStudent(student.student_id);
+    const links = await commands.academic.listGuardiansByStudent(student.student_id);
     if (links) {
       const resolved = [];
       for (const link of links) {
         try {
-          const user = await commands.users.getUser(String(link.guardian_id));
+          const user = await commands.iam.getUser(String(link.guardian_id));
           if (user) {
             resolved.push({
               name: user.full_name,

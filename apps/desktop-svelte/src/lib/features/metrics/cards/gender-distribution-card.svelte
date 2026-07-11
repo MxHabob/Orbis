@@ -31,7 +31,7 @@ async function loadData() {
     if (selectedClass !== "all") params.class_id = selectedClass;
     if (selectedTerm !== "all") params.cycle_id = selectedTerm;
 
-    const enrollments = await commands.enrollments.getAll(orgId, params);
+    const enrollments = await commands.academic.listEnrollments(orgId, params);
     if (enrollments && enrollments.length > 0) {
       let female = 0;
       let male = 0;

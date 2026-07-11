@@ -55,7 +55,7 @@ async function loadDropdownData() {
   isLoadingDropdowns = true;
   try {
     const [studentList, treasuryList, currencyList] = await Promise.all([
-      commands.enrollments.getAll(orgId),
+      commands.academic.listEnrollments(orgId),
       commands.finance.getTreasuries(orgId),
       commands.finance.getCurrencies(orgId),
     ]);

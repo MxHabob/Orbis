@@ -233,25 +233,25 @@ async function loadSession() {
   if (!data.orgId || !sessionId) return;
   isLoading = true;
   try {
-    session = await commands.exams.getSession(data.orgId, sessionId);
+    session = await commands.exam.getSession(data.orgId, sessionId);
 
     // Load subjects
     try {
-      subjects = await commands.exams.getSubjects(data.orgId, sessionId);
+      subjects = await commands.exam.getSubjects(data.orgId, sessionId);
     } catch (err) {
       console.error("Failed to load subjects", err);
     }
 
     // Load schedules
     try {
-      schedules = await commands.exams.getSchedules(data.orgId, sessionId);
+      schedules = await commands.exam.getSchedules(data.orgId, sessionId);
     } catch (err) {
       console.error("Failed to load schedules", err);
     }
 
     // Load seating numbers
     try {
-      seatingNumbers = await commands.exams.getSeatingNumbers(
+      seatingNumbers = await commands.exam.getSeatingNumbers(
         data.orgId,
         sessionId,
       );
@@ -261,21 +261,21 @@ async function loadSession() {
 
     // Load halls
     try {
-      halls = await commands.exams.getHalls(data.orgId, sessionId);
+      halls = await commands.exam.getHalls(data.orgId, sessionId);
     } catch (err) {
       console.error("Failed to load halls", err);
     }
 
     // Load proctors
     try {
-      proctors = await commands.exams.getProctors(data.orgId, sessionId);
+      proctors = await commands.exam.getProctors(data.orgId, sessionId);
     } catch (err) {
       console.error("Failed to load proctors", err);
     }
 
     // Load school rooms catalog
     try {
-      rooms = await commands.schedule.getRooms(data.orgId);
+      rooms = await commands.scheduling.listRooms(data.orgId);
     } catch (err) {
       console.error("Failed to load school rooms", err);
     }
@@ -283,8 +283,8 @@ async function loadSession() {
     // Load school classes & subjects catalogs
     try {
       const [classList, subjectList] = await Promise.all([
-        commands.classes.getAll(data.orgId),
-        commands.subjects.getAll(data.orgId),
+        commands.academic.listClasses(data.orgId),
+        commands.academic.listSubjects(data.orgId),
       ]);
       classes = classList;
       schoolSubjects = subjectList;
@@ -311,7 +311,7 @@ onMount(() => {
 // Quick actions
 async function handleGenerateSeating() {
   const userId = authStore.userId || authStore.user?.id || "desktop_user";
-  const promise = commands.exams.generateSeating(data.orgId, sessionId, userId);
+  const promise = commands.exam.generateSeating(data.orgId, sessionId, userId);
   toast.promise(promise, {
     loading: "جاري توليد أرقام الجلوس...",
     success: "تم توليد أرقام الجلوس بنجاح!",
@@ -327,7 +327,7 @@ async function handleGenerateSeating() {
 
 async function handleGenerateSecrets() {
   const userId = authStore.userId || authStore.user?.id || "desktop_user";
-  const promise = commands.exams.generateSecrets(data.orgId, sessionId, userId);
+  const promise = commands.exam.generateSecrets(data.orgId, sessionId, userId);
   toast.promise(promise, {
     loading: "جاري توليد الأرقام السرية...",
     success: "تم توليد الأرقام السرية بنجاح!",
@@ -359,7 +359,7 @@ function generateDatesRange(startStr: string, endStr: string): string[] {
 async function loadSolveJobs() {
   if (!sessionId) return;
   try {
-    const list = await commands.exams.listSolveJobs(data.orgId, sessionId);
+    const list = await commands.exam.listSolveJobs(data.orgId, sessionId);
     solveJobs = list;
 
     // Auto-resume polling if any job is running in background
@@ -400,7 +400,7 @@ async function handleAutoSchedule() {
       preferred_period: preferredPeriod,
       default_duration_minutes: defaultDurationMinutes,
     };
-    const job = await commands.exams.startSolve(data.orgId, userId, req);
+    const job = await commands.exam.startSolve(data.orgId, userId, req);
     activeJob = job;
     toast.success(
       getLocale() === "ar"
@@ -427,7 +427,7 @@ async function startPollingJob(jobId: string) {
 
   pollingInterval = setInterval(async () => {
     try {
-      const job = await commands.exams.getSolveJob(data.orgId, jobId);
+      const job = await commands.exam.getSolveJob(data.orgId, jobId);
       activeJob = job;
 
       if (
@@ -473,7 +473,7 @@ function stopPolling() {
 async function handleCancelSolve() {
   if (!activeJob) return;
   try {
-    const job = await commands.exams.cancelSolve(data.orgId, activeJob.id);
+    const job = await commands.exam.cancelSolve(data.orgId, activeJob.id);
     activeJob = job;
     stopPolling();
     isSolving = false;
@@ -490,7 +490,7 @@ async function handleCancelSolve() {
 
 async function handleApplySolve() {
   if (!activeJob) return;
-  const promise = commands.exams.applySolve(data.orgId, activeJob.id);
+  const promise = commands.exam.applySolve(data.orgId, activeJob.id);
   toast.promise(promise, {
     loading:
       getLocale() === "ar"
@@ -521,7 +521,7 @@ async function handleDeleteSchedule(scheduleId: string) {
     )
   )
     return;
-  const promise = commands.exams.deleteSchedule(data.orgId, scheduleId);
+  const promise = commands.exam.deleteSchedule(data.orgId, scheduleId);
   toast.promise(promise, {
     loading:
       getLocale() === "ar"
@@ -560,7 +560,7 @@ async function handleToggleScheduleStatus(sched: any) {
         ? "تم تفعيل الامتحان بنجاح!"
         : "Activated successfully!";
 
-  const promise = commands.exams.updateScheduleStatus(
+  const promise = commands.exam.updateScheduleStatus(
     data.orgId,
     sched.id,
     newStatus,
@@ -579,7 +579,7 @@ async function handleToggleScheduleStatus(sched: any) {
 }
 
 async function handleAllocateHalls() {
-  const promise = commands.exams.allocateHalls(data.orgId, sessionId, {
+  const promise = commands.exam.allocateHalls(data.orgId, sessionId, {
     separate_divisions: separateDivisions,
     separate_genders: separateGenders,
     balance_halls: balanceHalls,
@@ -601,7 +601,7 @@ async function handleAllocateHalls() {
 
 async function handleActivate() {
   if (!session) return;
-  const promise = commands.exams.updateSession(data.orgId, sessionId, {
+  const promise = commands.exam.updateSession(data.orgId, sessionId, {
     status: "active",
   });
 
@@ -620,7 +620,7 @@ async function handleActivate() {
 }
 
 async function handleToggleHall(room: any) {
-  const promise = commands.exams.createHall(data.orgId, {
+  const promise = commands.exam.createHall(data.orgId, {
     exam_session_id: sessionId,
     room_id: room.id,
     hall_number: room.room_number || room.name || "لجنة",
@@ -651,7 +651,7 @@ async function handleAssignProctors() {
   isLoading = true;
   try {
     for (const sched of schedules) {
-      await commands.exams.autoAssignProctors(data.orgId, sessionId, sched.id, {
+      await commands.exam.autoAssignProctors(data.orgId, sessionId, sched.id, {
         proctors_per_hall: proctorsPerHall,
         prevent_own_subject: preventOwnSubject,
         max_sessions_per_teacher: maxSessionsPerTeacher,

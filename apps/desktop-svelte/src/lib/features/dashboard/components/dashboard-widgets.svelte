@@ -17,7 +17,7 @@ async function fetchStats() {
   isLoading = true;
   error = null;
   try {
-    stats = await commands.dashboard.getStats(orgId);
+    stats = await commands.organization.getDashboardStats(orgId);
   } catch (e) {
     error = e instanceof Error ? e.message : String(e);
     console.error("Error loading dashboard stats:", e);

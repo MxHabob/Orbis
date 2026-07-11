@@ -88,7 +88,7 @@ $effect(() => {
 async function loadClassSubjects() {
   if (!selectedClassId || !cycleId) return;
   try {
-    const list = await commands.schedule.getClassSubjects(
+    const list = await commands.academic.listClassSubjects(
       selectedClassId,
       cycleId,
     );
@@ -113,7 +113,7 @@ async function adjustSubjectHours(csId: string, delta: number) {
 
   try {
     isUpdatingSubjectHours = true;
-    await commands.schedule.updateClassSubject(csId, {
+    await commands.academic.updateClassSubject(csId, {
       weekly_hours: newHours,
     });
     await loadClassSubjects();
@@ -129,7 +129,7 @@ async function adjustSubjectHours(csId: string, delta: number) {
 async function loadSolveJobs() {
   if (!cycleId) return;
   try {
-    const list = await commands.schedule.listSolveJobs(orgId, cycleId);
+    const list = await commands.scheduling.listSolveJobs(orgId, cycleId);
     solveJobs = list;
 
     // Auto-resume polling if any job is running in background
@@ -159,7 +159,7 @@ async function triggerSolving() {
       cycle_id: cycleId,
       mode: solverMode,
     };
-    const job = await commands.schedule.startSolve(orgId, userId, req);
+    const job = await commands.scheduling.startSolve(orgId, userId, req);
     activeJob = job;
     toast.success(m.schedule_ai_optimization_started());
     startPollingJob(String(job.id));
@@ -182,7 +182,7 @@ async function startPollingJob(jobId: string) {
 
   pollingInterval = setInterval(async () => {
     try {
-      const job = await commands.schedule.getSolveJob(orgId, jobId);
+      const job = await commands.scheduling.getSolveJob(orgId, jobId);
       activeJob = job;
 
       if (
@@ -221,7 +221,7 @@ function stopPolling() {
 async function cancelSolving() {
   if (!activeJob) return;
   try {
-    const job = await commands.schedule.cancelSolve(orgId, activeJob.id);
+    const job = await commands.scheduling.cancelSolve(orgId, activeJob.id);
     activeJob = job;
     stopPolling();
     isSolving = false;
@@ -236,7 +236,7 @@ async function applySolving() {
   if (!activeJob) return;
   try {
     toast.loading(m.schedule_ai_applying_timetable());
-    await commands.schedule.applySolve(orgId, activeJob.id);
+    await commands.scheduling.applySolve(orgId, activeJob.id);
     activeJob = null;
     previewDraft = false;
     toast.dismiss();
@@ -263,7 +263,7 @@ function formatTime(seconds: number): string {
 
 async function deleteSolveJob(jobId: string) {
   try {
-    await commands.schedule.deleteSolveJob(orgId, jobId);
+    await commands.scheduling.deleteSolveJob(orgId, jobId);
     toast.success(m.schedule_ai_record_deleted());
     
     // Clear state if deleting currently active job

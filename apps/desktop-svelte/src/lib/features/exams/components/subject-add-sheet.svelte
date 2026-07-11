@@ -89,7 +89,7 @@ async function handleSubmit() {
     isSaving = true;
     try {
       // 1. Create the subject in school catalog
-      const newSub = await commands.subjects.create(orgId, {
+      const newSub = await commands.academic.createSubject(orgId, {
         name: newSubjectName || newSubjectNameAr,
         name_ar: newSubjectNameAr,
         code: newSubjectCode,
@@ -112,7 +112,7 @@ async function handleSubmit() {
   isSaving = true;
   try {
     // 2. Link/create exam subject inside this session
-    await commands.exams.createSubject(orgId, {
+    await commands.exam.createSubject(orgId, {
       exam_session_id: sessionId,
       subject_id: targetSubjectId,
       max_score: maxScore,

@@ -84,7 +84,7 @@ async function handleSubmit(e: SubmitEvent) {
       date_of_birth: dob || null,
     };
 
-    const newUser = await commands.users.createUser(orgId, createdBy, request);
+    const newUser = await commands.iam.createUser(orgId, createdBy, request);
 
     // 2. Update extra fields (name_en, address) since they are not in the primary createUser endpoint
     const updateRequest: Record<string, any> = {};
@@ -96,7 +96,7 @@ async function handleSubmit(e: SubmitEvent) {
     }
 
     if (Object.keys(updateRequest).length > 0) {
-      await commands.users.updateUser(newUser.id, updateRequest);
+      await commands.iam.updateUser(newUser.id, updateRequest);
     }
 
     toast.success(m.settings_users_create_success());

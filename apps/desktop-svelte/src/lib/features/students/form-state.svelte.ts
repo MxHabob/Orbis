@@ -128,8 +128,8 @@ export class StudentFormState {
     try {
       // 1. Fetch active fee templates and discount templates
       const [feeTpls, discountTpls] = await Promise.all([
-        commands.finance.getActiveFeeTemplates(this.orgId),
-        commands.finance.getActiveDiscountTemplates(this.orgId),
+        commands.finance.listFeeTemplates(),
+        commands.finance.listDiscountTemplates(),
       ]);
       this.feeTemplates = feeTpls || [];
       this.discountTemplates = discountTpls || [];
@@ -147,7 +147,7 @@ export class StudentFormState {
       this.selectedOptionalFees = feeMap;
 
       // 4. Load organization settings
-      const org = await commands.users.getOrganization(this.orgId);
+      const org = await commands.organization.getOrganization(this.orgId);
       if (org) {
         this.orgName = String(org.name || org.name_ar || "");
         if (org.settings) {
@@ -183,7 +183,7 @@ export class StudentFormState {
 
       // 5. Load document templates for printing
       try {
-        const templatesList = await commands.documentTemplates.getTemplates(
+        const templatesList = await commands.platform.listDocumentTemplates(
           this.orgId,
           {
             entity_type: "student",
@@ -202,7 +202,7 @@ export class StudentFormState {
       if (this.isEditMode && this.studentId) {
         let originalStudent: any = null;
         try {
-          originalStudent = await commands.enrollments.getById(this.studentId);
+          originalStudent = await commands.academic.getEnrollment(this.studentId);
         } catch (err) {
           console.error("Failed to load student by ID from backend:", err);
         }
@@ -250,9 +250,8 @@ export class StudentFormState {
 
           // Fetch student fees to check which optional fees are assigned
           try {
-            const studentFees = await commands.finance.getStudentFees(
-              this.orgId,
-              this.studentId,
+            const studentFees = await commands.finance.listStudentFees(
+              this.studentId!,
             );
             for (const fee of studentFees as any[]) {
               const feeTemplateId = fee.fee_template_id as string;
@@ -268,13 +267,13 @@ export class StudentFormState {
 
           // Fetch guardians
           try {
-            const guardiansList = await commands.guardians.getByStudent(
+            const guardiansList = await commands.academic.listGuardiansByStudent(
               originalStudent.student_id,
             );
             const populatedGuardians = [];
             for (const link of guardiansList) {
               try {
-                const u = await commands.users.getUser(
+                const u = await commands.iam.getUser(
                   String(link.guardian_id),
                 );
                 if (u) {
@@ -308,10 +307,10 @@ export class StudentFormState {
 
           // Fetch documents
           try {
-            const studentDocs = await commands.documents.getAll({
-              orgId: this.orgId,
-              ownerId: originalStudent.student_id,
-            });
+            const studentDocs = await commands.platform.listDocumentsByOwner(
+              this.orgId,
+              originalStudent.student_id,
+            );
             const submitted = [];
             const requiredDocNames =
               this.orgRequiredDocuments.length > 0
@@ -355,8 +354,7 @@ export class StudentFormState {
         email: field === "email" ? value : undefined,
         phone: field === "phone" ? value : undefined,
       };
-      const duplicates = await commands.enrollments.checkDuplicate(
-        this.orgId,
+      const duplicates = await commands.academic.checkDuplicateEnrollment(
         params,
       );
       if (duplicates && duplicates.length > 0) {
@@ -384,8 +382,7 @@ export class StudentFormState {
     }
     this.activeSearchIndex = index;
     try {
-      this.parentSearchResults = await commands.guardians.search(
-        this.orgId,
+      this.parentSearchResults = await commands.academic.searchGuardians(
         query,
       );
     } catch (err) {
@@ -548,7 +545,7 @@ export class StudentFormState {
 
     try {
       // Verify control account
-      const accounts = await commands.finance.getLedgerAccounts(this.orgId);
+      const accounts = await commands.finance.listLedgerAccounts();
       const hasControlAccount = accounts.some((acc) => acc.code === "110301");
       if (!hasControlAccount) {
         toast.error(m.form_error_control_account_missing());
@@ -575,17 +572,15 @@ export class StudentFormState {
           throw new Error(m.form_error_enrollment_not_found());
         }
         targetStudentId = String(originalStudent.student_id);
-        await commands.users.updateUser(targetStudentId, studentUserData);
+        await commands.iam.updateUser(targetStudentId, studentUserData);
 
         if (originalStudent.class_id !== this.classId) {
-          await commands.enrollments.transfer(this.studentId!, {
-            new_class_id: this.classId,
-          });
+          await commands.academic.transferEnrollment(this.studentId!, this.classId);
         }
 
         // Update registration status transition
         if (originalStudent.status !== this.registrationStatus) {
-          await commands.enrollments.transitionStatus(
+          await commands.platform.transitionEnrollmentStatus(
             this.orgId,
             this.studentId!,
             this.registrationStatus,
@@ -595,10 +590,7 @@ export class StudentFormState {
         toast.success(m.form_success_update());
       } else {
         const tempEmail = this.email.trim() || `stu.${Date.now()}@orbis.local`;
-        const studentUser = await commands.users.createUser(
-          this.orgId,
-          createdBy,
-          {
+        const studentUser = await commands.iam.createUser({
             email: tempEmail,
             password: "Orbis123456",
             full_name: this.nameAr.trim(),
@@ -608,11 +600,10 @@ export class StudentFormState {
             phone: this.phone.trim() || null,
             national_id: this.nationalId.trim() || null,
             date_of_birth: this.birthDate || null,
-          },
-        );
+        });
         targetStudentId = studentUser.id;
 
-        await commands.users.updateUser(studentUser.id, {
+        await commands.iam.updateUser(studentUser.id, {
           name_en: this.nameEn.trim() || null,
           address: this.address.trim() || null,
         });
@@ -632,8 +623,7 @@ export class StudentFormState {
           status: this.registrationStatus,
         };
 
-        const res = await commands.enrollments.create(
-          this.orgId,
+        const res = await commands.academic.createEnrollment(
           enrollmentRequest,
         );
         targetEnrollmentId = String(res.id);
@@ -666,8 +656,7 @@ export class StudentFormState {
 
         if (!guardianUserId) {
           // Search if already exists
-          const checkExisting = await commands.guardians.search(
-            this.orgId,
+          const checkExisting = await commands.academic.searchGuardians(
             guardian.phone,
           );
           if (checkExisting && checkExisting.length > 0) {
@@ -676,10 +665,7 @@ export class StudentFormState {
             // Create new parent user
             const guardEmail =
               guardian.email.trim() || `parent.${Date.now()}@orbis.local`;
-            const guardUser = await commands.users.createUser(
-              this.orgId,
-              createdBy,
-              {
+            const guardUser = await commands.iam.createUser({
                 email: guardEmail,
                 password: "Orbis123456",
                 full_name: guardian.full_name.trim(),
@@ -689,13 +675,12 @@ export class StudentFormState {
                 sex: "male",
                 national_id: guardian.national_id.trim() || null,
                 date_of_birth: null,
-              },
-            );
+            });
             guardianUserId = guardUser.id;
           }
         } else {
           // Update existing parent user
-          await commands.users.updateUser(guardianUserId, {
+          await commands.iam.updateUser(guardianUserId!, {
             full_name: guardian.full_name.trim(),
             name_ar: guardian.full_name.trim(),
             phone: guardian.phone.trim() || null,
@@ -705,7 +690,7 @@ export class StudentFormState {
 
         // Check if link exists
         const existingLinks =
-          await commands.guardians.getByStudent(targetStudentId);
+          await commands.academic.listGuardiansByStudent(targetStudentId);
         const matchedLink = existingLinks.find(
           (l) => l.guardian_id === guardianUserId,
         );
@@ -730,12 +715,12 @@ export class StudentFormState {
         };
 
         if (matchedLink) {
-          await commands.guardians.updateLink(
+          await commands.platform.updateGuardianLink(
             String(matchedLink.id),
             linkRequest,
           );
         } else {
-          await commands.guardians.createLink(linkRequest);
+          await commands.platform.createGuardianLink(linkRequest);
         }
       }
 
@@ -748,7 +733,7 @@ export class StudentFormState {
         for (const key in this.selectedOptionalFees) {
           if (this.selectedOptionalFees[key].checked) {
             try {
-              await commands.finance.assignStudentFee(this.orgId, {
+              await commands.finance.assignFee({
                 enrollment_id: targetEnrollmentId,
                 fee_template_id: key,
                 amount: this.selectedOptionalFees[key].amount,
@@ -766,7 +751,7 @@ export class StudentFormState {
     } catch (e: any) {
       if (targetStudentId && !this.isEditMode) {
         try {
-          await commands.users.deleteUser(targetStudentId, createdBy);
+          await commands.iam.deleteUser(targetStudentId);
         } catch (deleteErr) {
           console.error("Failed to rollback student user creation:", deleteErr);
         }
@@ -786,7 +771,7 @@ export class StudentFormState {
     }
     this.isDownloadingForm = true;
     try {
-      const templateRecord = await commands.documentTemplates.getTemplate(
+      const templateRecord = await commands.platform.getDocumentTemplate(
         this.orgId,
         this.selectedTemplateId,
       );

@@ -54,7 +54,7 @@ async function loadOrdering() {
   }
   isLoading = true;
   try {
-    const result = await commands.exams.getOrdering(data.orgId, currentCycleId);
+    const result = await commands.exam.getOrdering(data.orgId, currentCycleId);
     students = result as any[];
     totalOrdered = students.length;
   } catch (e) {
@@ -76,7 +76,7 @@ $effect(() => {
 async function loadCyclesAndData() {
   isLoading = true;
   try {
-    const resCycles = await commands.academics.getCycles(data.orgId);
+    const resCycles = await commands.academic.listCycles(data.orgId);
     cycles = resCycles || [];
     if (cycles.length > 0) {
       currentCycleId = cycles[0].id;
@@ -101,7 +101,7 @@ async function handleRebuild() {
   }
   isRebuilding = true;
   try {
-    const result = await commands.exams.rebuildOrdering(
+    const result = await commands.exam.rebuildOrdering(
       data.orgId,
       currentCycleId,
       selectedStrategy,
@@ -119,7 +119,7 @@ async function handleFreeze() {
   if (!currentCycleId) return;
   try {
     const userId = authStore.userId || authStore.user?.id || "desktop_user";
-    await commands.exams.freezeOrdering(data.orgId, currentCycleId, userId);
+    await commands.exam.freezeOrdering(data.orgId, currentCycleId, userId);
     toast.success("تم تجميد الترتيب بنجاح");
     isFrozen = true;
   } catch (e: any) {

@@ -59,7 +59,7 @@ async function loadTemplates() {
     if (filterDocType !== "all") listParams.document_type = filterDocType;
     if (searchQuery.trim() !== "") listParams.search = searchQuery.trim();
 
-    const response = await commands.documentTemplates.getTemplates(
+    const response = await commands.platform.listDocumentTemplates(
       orgId,
       listParams,
     );
@@ -164,7 +164,7 @@ async function handleCreateTemplate() {
     };
 
     const userId = "current-user";
-    const response = await commands.documentTemplates.createTemplate(
+    const response = await commands.platform.createDocumentTemplate(
       orgId,
       userId,
       createRequest,
@@ -192,7 +192,7 @@ async function handleDeleteTemplate() {
   if (!templateToDeleteId) return;
 
   try {
-    await commands.documentTemplates.deleteTemplate(orgId, templateToDeleteId);
+    await commands.platform.deleteDocumentTemplate(orgId, templateToDeleteId);
     toast.success("Template deleted successfully");
     loadTemplates();
   } catch (e: unknown) {
@@ -209,7 +209,7 @@ async function handleDeleteTemplate() {
 async function publishTemplate(id: string) {
   try {
     const userId = "current-user";
-    await commands.documentTemplates.publishTemplate(orgId, id, userId);
+    await commands.platform.publishDocumentTemplate(orgId, id, userId);
     toast.success(m.templates_publish_success());
     loadTemplates();
   } catch (e: unknown) {
@@ -222,7 +222,7 @@ async function publishTemplate(id: string) {
 // Handle Template Archiving
 async function archiveTemplate(id: string) {
   try {
-    await commands.documentTemplates.archiveTemplate(orgId, id);
+    await commands.platform.archiveDocumentTemplate(orgId, id);
     toast.success(m.templates_archive_success());
     loadTemplates();
   } catch (e: unknown) {
@@ -235,7 +235,7 @@ async function archiveTemplate(id: string) {
 // Handle Template Restoring
 async function restoreTemplate(id: string) {
   try {
-    await commands.documentTemplates.restoreTemplate(orgId, id);
+    await commands.platform.restoreDocumentTemplate(orgId, id);
     toast.success(m.templates_restore_success());
     loadTemplates();
   } catch (e: unknown) {

@@ -76,9 +76,9 @@ async function loadSearchData() {
   try {
     const [studentsData, classesData, subjectsData] = await Promise.all([
       cachedStudents ??
-        commands.enrollments.getAll(currentOrgId).catch(() => []),
-      cachedClasses ?? commands.classes.getAll(currentOrgId).catch(() => []),
-      cachedSubjects ?? commands.subjects.getAll(currentOrgId).catch(() => []),
+        commands.academic.listEnrollments(currentOrgId).catch(() => []),
+      cachedClasses ?? commands.academic.listClasses(currentOrgId).catch(() => []),
+      cachedSubjects ?? commands.academic.listSubjects(currentOrgId).catch(() => []),
     ]);
     students = studentsData;
     classes = classesData;

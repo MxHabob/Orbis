@@ -38,7 +38,7 @@ async function loadCycles() {
   isLoading = true;
   error = null;
   try {
-    const list = await commands.academics.getCycles(data.orgId);
+    const list = await commands.academic.listCycles(data.orgId);
     cycles = list;
   } catch (e) {
     error = (e as any)?.message || "Failed to load academic cycles";
@@ -73,7 +73,7 @@ function openEditSheet(cycle: any) {
 
 async function handleActivate(cycleId: string) {
   try {
-    await commands.academics.activateCycle(data.orgId, cycleId);
+    await commands.academic.activateCycle(data.orgId, cycleId);
     toast.success(m.settings_cycles_activate_success());
     loadCycles();
   } catch (e) {
@@ -85,7 +85,7 @@ async function handleActivate(cycleId: string) {
 async function handleLock(cycleId: string) {
   if (!confirm(m.settings_cycles_lock_confirm())) return;
   try {
-    await commands.academics.lockCycle(cycleId);
+    await commands.academic.lockCycle(cycleId);
     toast.success(m.settings_cycles_lock_success());
     loadCycles();
   } catch (e) {

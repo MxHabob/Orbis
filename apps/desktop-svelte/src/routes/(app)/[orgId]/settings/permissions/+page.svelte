@@ -142,7 +142,7 @@ async function loadPermissions() {
 async function loadUsers() {
   try {
     if (data.orgId) {
-      usersList = await commands.users.getUsers(data.orgId);
+      usersList = await commands.iam.listUsers(data.orgId);
     }
   } catch (e) {
     console.error("Failed to load users list", e);

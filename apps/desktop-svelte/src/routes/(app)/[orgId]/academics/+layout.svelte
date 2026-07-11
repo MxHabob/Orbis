@@ -30,7 +30,7 @@ let classesCount = $state(0);
 
 async function loadSidebarStats() {
   try {
-    const classList = await commands.classes.getAll(data.orgId);
+    const classList = await commands.academic.listClasses(data.orgId);
     classesCount = classList.length;
   } catch (e) {
     console.error("Error loading sidebar stats:", e);

@@ -86,7 +86,7 @@ async function processApproval(
       user_role: userRole,
       notes: actionNotes.trim() || null,
     };
-    await commands.overrides.processApproval(requestId, approvalAction);
+    await commands.platform.processApproval(requestId, approvalAction);
 
     const actionLabel =
       action === "approve"
@@ -118,7 +118,7 @@ async function processApproval(
 async function cancelRequest(requestId: string) {
   processingId = requestId;
   try {
-    await commands.overrides.cancel(requestId, userId);
+    await commands.platform.cancelOverride(requestId, userId);
     toast.success(
       m.approval_cancelled ? m.approval_cancelled() : "Request cancelled",
     );

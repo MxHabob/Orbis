@@ -53,7 +53,7 @@ async function loadUser() {
   if (!userId) return;
   isLoading = true;
   try {
-    const fetched = (await commands.users.getUser(userId)) as any;
+    const fetched = (await commands.iam.getUser(userId)) as any;
     user = fetched;
     fullName = fetched.full_name || "";
     nameAr = fetched.name_ar || "";
@@ -84,7 +84,7 @@ async function toggleAccountStatus() {
   isSaving = true;
   try {
     const request = { ...user, is_active: nextState };
-    await commands.users.updateUser(userId, request);
+    await commands.iam.updateUser(userId, request);
     isActiveState = nextState;
     toast.success(
       nextState
@@ -111,10 +111,10 @@ async function saveProfile() {
       phone: phone || null,
       is_active: isActiveState,
     };
-    await commands.users.updateUser(userId, request);
+    await commands.iam.updateUser(userId, request);
 
     if (role) {
-      await commands.users.changeUserRole(userId, { role });
+      await commands.iam.changeRole(userId, { role });
     }
 
     toast.success(m.settings_user_detail_saved());

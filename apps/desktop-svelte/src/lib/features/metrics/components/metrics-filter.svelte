@@ -35,13 +35,13 @@ let classes = $state<any[]>([]);
 async function loadOptions() {
   try {
     // Load Terms (Cycles of type 'term')
-    const cycles = await commands.academics.getCycles(orgId, {
+    const cycles = await commands.academic.listCycles(orgId, {
       cycle_type: "term",
     });
     terms = cycles || [];
 
     // Load Classes
-    const cl = await commands.classes.getAll(orgId);
+    const cl = await commands.academic.listClasses(orgId);
     classes = cl || [];
   } catch (e) {
     console.error("Error loading filter options:", e);

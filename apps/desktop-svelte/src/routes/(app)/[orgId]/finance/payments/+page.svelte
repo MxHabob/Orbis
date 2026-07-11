@@ -155,7 +155,7 @@ async function loadData() {
     const [paymentsList, treasuriesList, studentsList] = await Promise.all([
       commands.finance.getPayments(data.orgId),
       commands.finance.getTreasuries(data.orgId),
-      commands.enrollments.getAll(data.orgId),
+      commands.academic.listEnrollments(data.orgId),
     ]);
 
     payments = paymentsList.map((p) => ({

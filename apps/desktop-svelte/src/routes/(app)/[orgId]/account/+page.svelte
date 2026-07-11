@@ -105,7 +105,7 @@ async function handleSaveDetails(e: Event) {
   isSavingDetails = true;
   try {
     // 1. Update full name in database
-    const updatedUser = await commands.users.updateUser(authStore.userId, {
+    const updatedUser = await commands.iam.updateUser(authStore.userId, {
       full_name: fullName,
     });
 
@@ -140,7 +140,7 @@ async function handleSaveAvatar(e: Event) {
   isSavingAvatar = true;
   try {
     // Update avatar on backend
-    const updatedUser = await commands.users.updateUser(authStore.userId, {
+    const updatedUser = await commands.iam.updateUser(authStore.userId, {
       avatar: avatarUrl,
     });
 

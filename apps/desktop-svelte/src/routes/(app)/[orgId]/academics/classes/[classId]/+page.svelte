@@ -52,21 +52,21 @@ const rtl = $derived(getLocale() === "ar");
 // ── TanStack Queries ──────────────────────────────────────────────────────────
 const enrollmentsQuery = createQuery({
   queryKey: ["enrollments", orgId],
-  queryFn: () => commands.enrollments.getAll(orgId),
+  queryFn: () => commands.academic.listEnrollments(orgId),
   enabled: !!orgId,
   staleTime: 5 * 60 * 1000,
 });
 
 const classSubjectsQuery = createQuery({
   queryKey: ["class-subjects", classId],
-  queryFn: () => commands.schedule.getClassSubjects(classId),
+  queryFn: () => commands.academic.listClassSubjects(classId),
   enabled: !!classId,
   staleTime: 5 * 60 * 1000,
 });
 
 const assessmentsQuery = createQuery({
   queryKey: ["assessments", classId],
-  queryFn: () => commands.assessments.getByClass({ classId }),
+  queryFn: () => commands.assessment.listAssessments({ classId }),
   enabled: !!classId,
   staleTime: 5 * 60 * 1000,
 });

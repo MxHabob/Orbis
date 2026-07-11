@@ -56,7 +56,7 @@ async function loadUser() {
   if (!userId) return;
   isLoading = true;
   try {
-    const fetched = (await commands.users.getUser(userId)) as any;
+    const fetched = (await commands.iam.getUser(userId)) as any;
     user = fetched;
     fullName = fetched.full_name || "";
     email = fetched.email || "";
@@ -83,7 +83,7 @@ async function handleResetPassword(e: Event) {
   if (!userId) return;
   isResettingPassword = true;
   try {
-    await commands.users.changeUserPassword(userId as string, {
+    await commands.iam.changePassword(userId as string, {
       new_password: newPassword,
     });
     toast.success(m.settings_user_detail_reset_success());
@@ -101,7 +101,7 @@ async function handleDeleteUser() {
   if (!userId) return;
   if (!confirm(m.settings_user_detail_delete_confirm())) return;
   try {
-    await commands.users.deleteUser(userId as string, "admin");
+    await commands.iam.deleteUser(userId as string, "admin");
     toast.success(m.settings_user_detail_deleted());
     await goto(localizeHref(`/${orgId}/settings/users`));
   } catch (e: unknown) {

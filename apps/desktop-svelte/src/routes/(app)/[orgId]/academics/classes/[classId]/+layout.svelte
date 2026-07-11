@@ -53,8 +53,8 @@ async function loadClassData() {
   isLoading = true;
   try {
     const [classes, enrollments] = await Promise.all([
-      commands.classes.getAll(orgId),
-      commands.enrollments.getAll(orgId),
+      commands.academic.listClasses(orgId),
+      commands.academic.listEnrollments(orgId),
     ]);
     classData = classes.find((c) => String(c.id) === classId);
     studentsCount = enrollments.filter(

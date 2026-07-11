@@ -81,8 +81,8 @@ async function loadFilters() {
   error = null;
   try {
     const [subjectList, cycleList] = await Promise.all([
-      commands.subjects.getAll(orgId),
-      commands.academics.getCycles(orgId),
+      commands.academic.listSubjects(orgId),
+      commands.academic.listCycles(orgId),
     ]);
     subjects = subjectList;
     cycles = cycleList;
@@ -120,7 +120,7 @@ async function loadAssessments() {
   if (!classId) return;
   isAssessmentsLoading = true;
   try {
-    const list = await commands.assessments.getByClass({
+    const list = await commands.assessment.listAssessments({
       classId,
       subjectId: selectedSubjectId || undefined,
       termId: selectedSemesterId || activeCycleId || "",
@@ -157,7 +157,7 @@ async function handleDelete(id: string) {
   )
     return;
   try {
-    await commands.assessments.delete(id);
+    await commands.assessment.deleteAssessment(id);
     assessments = assessments.filter((a) => String(a.id) !== id);
     toast.success(
       m.assessments_delete_success

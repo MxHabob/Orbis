@@ -70,7 +70,7 @@ async function handleSubmit(e: SubmitEvent) {
       weight: weight ? Number(weight) : 15,
       item_type: assessmentType,
     };
-    await commands.assessments.create(request);
+    await commands.assessment.createAssessment(request);
     toast.success(m.assessment_toast_success());
 
     // Reset fields

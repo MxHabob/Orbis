@@ -43,7 +43,7 @@ const userActions: ActionItem[] = [
 async function loadUsers() {
   isLoading = true;
   try {
-    users = await commands.users.getUsers(data.orgId);
+    users = await commands.iam.listUsers(data.orgId);
   } catch (e) {
     toast.error((e as any)?.message || "Failed to load users");
   } finally {
@@ -116,7 +116,7 @@ async function handleAction(event: GridActionEvent) {
   } else if (event.actionId === "delete") {
     if (confirm(`Are you sure you want to delete ${user.full_name}?`)) {
       try {
-        await commands.users.deleteUser(user.id, "admin");
+        await commands.iam.deleteUser(user.id, "admin");
         toast.success("User deleted successfully");
         loadUsers();
       } catch (e) {
