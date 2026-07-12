@@ -37,7 +37,9 @@
     "docker:down": "docker compose -f docker-compose.local.yml down",
     "docker:reset": "docker compose -f docker-compose.local.yml down -v",
     "docker:logs": "docker compose -f docker-compose.local.yml logs -f",
-    "setup:local": "powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1"
+    "setup:local": "powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1",
+    "cli": "cargo run --manifest-path apps/cli/Cargo.toml",
+    "cli:init": "cargo run --manifest-path apps/cli/Cargo.toml -- init"
   },
   "dependencies": {
     "@biomejs/biome": "2.3.13",
