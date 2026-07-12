@@ -37,6 +37,9 @@ impl PlatformServices {
         reactive.register(Arc::new(
             svc_assessment::ops::at_risk_predictor::AtRiskPredictor::new(),
         ));
+        reactive.register(Arc::new(
+            svc_finance::ops::reactive_analyzers::FinanceAnalyzer::new(),
+        ));
 
         let db_for_store = db.clone();
 

@@ -24,8 +24,6 @@ impl DatabaseProvider {
         // Run migrations on database
         let active_baseline_sql = include_str!("schemas/schema_baseline.sql");
         let _ = crate::migrations::run_sql_migration(&db, active_baseline_sql).await;
-        let _ = crate::schemas::schema_v2::apply_v2_schema(&db).await;
-        crate::schemas::schema_v2::apply_v2_cleanup(&db).await;
 
         Ok(Self {
             db,

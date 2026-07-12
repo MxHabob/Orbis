@@ -25,7 +25,7 @@ use shared_kernel::types::ExecutionMode;
 use crate::academic_evaluator::{AcademicEvaluator, ProposedTask, Risk};
 use crate::academic_executor::AcademicExecutor;
 use crate::diagnostics::{Diagnostics, HealthReport, HealthStatus};
-use crate::entities::{autopilot_task, autopilot_execution_log};
+use crate::entities::autopilot_task;
 use svc_organization::entities::academic_policy;
 
 /// Result of a single tick.
@@ -505,18 +505,41 @@ impl AutopilotEngine {
         error: Option<&str>,
         duration_ms: i32,
     ) -> Result<(), AppError> {
-        let log = autopilot_execution_log::ActiveModel {
-            id: Set(Uuid::new_v4().to_string()),
-            org_id: Set(org_id.to_string()),
-            task_id: Set(Some(task_id.to_string())),
-            action: Set(action.to_string()),
-            status: Set(status.to_string()),
-            details: Set(details.map(String::from)),
-            error: Set(error.map(String::from)),
-            duration_ms: Set(Some(duration_ms)),
-            executed_at: Set(Utc::now().to_rfc3339()),
-        };
-        log.insert(db).await?;
+        use sea_orm::{Statement, ConnectionTrait, DbBackend};
+        let now_str = Utc::now().to_rfc3339();
+        let id = Uuid::new_v4().to_string();
+        let session_id = format!("autopilot_sys_{}", org_id);
+
+        let sql = r#"
+            INSERT INTO ai_action_log
+                (id, org_id, session_id, correlation_id, action_code, output_data, reasoning, confidence, status, risk_level, approval_required, duration_ms, error, is_reversible, executed_at, created_at)
+            VALUES
+                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        "#;
+
+        db.execute(Statement::from_sql_and_values(
+            DbBackend::Sqlite,
+            sql,
+            vec![
+                id.into(),
+                org_id.to_string().into(),
+                session_id.into(),
+                task_id.to_string().into(),
+                action.to_string().into(),
+                details.map(String::from).into(),
+                "Autopilot Engine Execution".to_string().into(),
+                1.0.into(), // confidence
+                status.to_string().into(),
+                "low".to_string().into(), // risk_level
+                0.into(), // approval_required
+                duration_ms.into(),
+                error.map(String::from).into(),
+                0.into(), // is_reversible
+                now_str.clone().into(),
+                now_str.into(),
+            ],
+        )).await?;
+
         Ok(())
     }
 

@@ -193,4 +193,56 @@ impl EventStore {
             None => Ok(1),
         }
     }
+
+    /// Persist a new AI insight into the `ai_insights` table.
+    pub async fn persist_insight(
+        &self,
+        org_id: &str,
+        insight_type: &str,
+        entity_type: Option<&str>,
+        entity_id: Option<&str>,
+        title: &str,
+        title_ar: Option<&str>,
+        summary: &str,
+        summary_ar: Option<&str>,
+        severity: &str,
+        confidence: f64,
+        suggested_action: Option<&str>,
+        generated_by: &str,
+    ) -> Result<String, AppError> {
+        let id = format!("insight_{}", uuid::Uuid::new_v4().to_string().replace("-", "")).chars().take(24).collect::<String>();
+        let now = chrono::Utc::now().to_rfc3339();
+
+        let sql = r#"
+            INSERT INTO ai_insights
+                (id, org_id, insight_type, entity_type, entity_id, title, title_ar, summary, summary_ar, severity, confidence, suggested_action, generated_by, valid_from, created_at, updated_at)
+            VALUES
+                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        "#;
+
+        self.db.execute(Statement::from_sql_and_values(
+            DbBackend::Sqlite,
+            sql,
+            vec![
+                id.clone().into(),
+                org_id.to_string().into(),
+                insight_type.to_string().into(),
+                entity_type.map(|s| s.to_string()).into(),
+                entity_id.map(|s| s.to_string()).into(),
+                title.to_string().into(),
+                title_ar.map(|s| s.to_string()).into(),
+                summary.to_string().into(),
+                summary_ar.map(|s| s.to_string()).into(),
+                severity.to_string().into(),
+                confidence.into(),
+                suggested_action.map(|s| s.to_string()).into(),
+                generated_by.to_string().into(),
+                now.clone().into(),
+                now.clone().into(),
+                now.into(),
+            ],
+        )).await?;
+
+        Ok(id)
+    }
 }

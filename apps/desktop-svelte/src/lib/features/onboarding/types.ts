@@ -88,4 +88,5 @@ export interface OnboardingPayload {
   rooms: Room[];
   subjects: SubjectEntry[];
   classes: ClassEntry[];
+  registration_fees: Record<string, number>;
 }

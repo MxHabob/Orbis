@@ -40,6 +40,9 @@ impl PlatformServices {
         reactive.register(Arc::new(
             svc_assessment::ops::at_risk_predictor::AtRiskPredictor::new(),
         ));
+        reactive.register(Arc::new(
+            svc_finance::ops::reactive_analyzers::FinanceAnalyzer::new(),
+        ));
 
         let db_for_store = db.clone();
 
@@ -93,7 +96,28 @@ impl PlatformServices {
                                 insights = insights.len(),
                                 "Reactive pipeline produced insights"
                             );
-                            // TODO: persist insights to ai_insight table
+                            
+                            for insight in insights {
+                                if let Err(e) = platform.event_store.persist_insight(
+                                    org_id,
+                                    &insight.insight_type,
+                                    insight.entity_type.as_deref(),
+                                    insight.entity_id.as_deref(),
+                                    &insight.title,
+                                    insight.title_ar.as_deref(),
+                                    &insight.summary,
+                                    insight.summary_ar.as_deref(),
+                                    &insight.severity,
+                                    insight.confidence,
+                                    insight.suggested_action.as_deref(),
+                                    "reactive_pipeline"
+                                ).await {
+                                    tracing::error!(
+                                        error = %e,
+                                        "Failed to persist AI insight from reactive pipeline"
+                                    );
+                                }
+                            }
                         }
 
                         // 2. Notify plugins

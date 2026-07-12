@@ -5,4 +5,3 @@
 //! Config is now read via `svc_organization::entities::academic_policy`.
 
 pub mod autopilot_task;
-pub mod autopilot_execution_log;

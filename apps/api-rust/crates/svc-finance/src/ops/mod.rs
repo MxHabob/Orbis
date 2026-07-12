@@ -11,3 +11,4 @@ pub mod payment;
 pub mod discount;
 pub mod currency;
 pub mod journal;
+pub mod reactive_analyzers;

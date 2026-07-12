@@ -247,11 +247,8 @@ class OnboardingState {
   activeStep = $state(1);
   isLoading = $state(false);
   errorMessage = $state<string | null>(null);
-  totalSteps = 8;
+  totalSteps = 5;
   completedSteps = $state([
-    false,
-    false,
-    false,
     false,
     false,
     false,
@@ -883,6 +880,7 @@ class OnboardingState {
       })),
       subjects: activeSubjects,
       classes,
+      registration_fees: $state.snapshot(this.registrationFees),
     };
   }
 
