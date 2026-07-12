@@ -62,7 +62,7 @@ let selectedYear = $state("");
 					<div class="flex flex-col md:flex-row gap-8 md:gap-10">
 						<!-- Left Side: Credentials Form -->
 						<div class="flex-1 flex flex-col gap-4">
-							<LoginForm {selectedBranch} {selectedYear} />
+							<LoginForm  />
 						</div>
 
 						<!-- Vertical Divider Line (Only on md devices) -->
@@ -70,7 +70,7 @@ let selectedYear = $state("");
 
 						<!-- Right Side: Environment Selection -->
 						<div class="flex-1 flex flex-col gap-4 border-t md:border-t-0 border-border/60 pt-6 md:pt-0">
-							<EnvironmentSelect bind:selectedBranch={selectedBranch} bind:selectedYear={selectedYear} />
+							<EnvironmentSelect />
 						</div>
 					</div>
 				</div>

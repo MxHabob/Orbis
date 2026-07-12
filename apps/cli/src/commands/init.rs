@@ -30,6 +30,30 @@ struct GitHubAsset {
 }
 
 pub async fn execute() -> Result<()> {
+    // --- Smart Detection ---
+    let ro_url = "sqlite://orbis.db?mode=ro";
+    if Database::connect(ro_url).await.is_ok() {
+        println!("\n{}", "[!] Existing Installation Detected!".yellow().bold());
+        let db_r = Database::connect(ro_url).await?;
+        let res = db_r.query_one(Statement::from_string(
+            DatabaseBackend::Sqlite,
+            "SELECT COUNT(*) as cnt FROM academic_years;".to_owned()
+        )).await;
+        
+        if let Ok(Some(row)) = res {
+            let count: i64 = row.try_get("", "cnt").unwrap_or(0);
+            if count > 0 {
+                println!("{}", "The system is already fully configured and ready.".green());
+                println!("{}", "Action: Run `cli start` (or select 'Start System' from the menu) to boot.".cyan());
+                return Ok(());
+            } else {
+                println!("{}", "The core database exists but Initial Setup (Onboarding) is pending.".yellow());
+                println!("{}", "Action: Run `cli start` to boot the application and complete the setup from the Desktop UI.".cyan());
+                return Ok(());
+            }
+        }
+    }
+
     println!("Welcome to the {}. You are currently not initialized.\n", "Orbis CLI".truecolor(0, 204, 255).bold());
 
     // 1. Database Selection
@@ -40,7 +64,7 @@ pub async fn execute() -> Result<()> {
 
     let db_url = if db_choice.contains("SQLite") {
         println!("{}", "Setting up local SQLite databases...".green());
-        "sqlite://orbis_registry.db?mode=rwc".to_string()
+        "sqlite://orbis.db?mode=rwc".to_string()
     } else {
         Text::new("Enter PostgreSQL Connection String (e.g. postgres://user:pass@localhost/orbis):")
             .prompt()?
@@ -62,7 +86,7 @@ pub async fn execute() -> Result<()> {
     println!("{}", "[*] Creating database and running migrations...".cyan());
     
     // SQLite connection string with create mode
-    let db_url = "sqlite://orbis_registry.db?mode=rwc";
+    let db_url = "sqlite://orbis.db?mode=rwc";
     let db = Database::connect(db_url).await
         .map_err(|e| anyhow!("Failed to connect to database: {}", e))?;
     

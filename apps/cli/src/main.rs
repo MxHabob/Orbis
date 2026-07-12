@@ -27,7 +27,29 @@ enum Commands {
     License,
 }
 
-fn print_banner() {
+use sea_orm::{Database, Statement, DatabaseBackend, ConnectionTrait};
+
+async fn get_system_status() -> (bool, bool) {
+    let db_url = "sqlite://orbis.db?mode=ro";
+    let Ok(db) = Database::connect(db_url).await else {
+        return (false, false);
+    };
+    
+    // Check if there are any academic_years, meaning setup has been done
+    let res = db.query_one(Statement::from_string(
+        DatabaseBackend::Sqlite,
+        "SELECT COUNT(*) as cnt FROM academic_years;".to_owned()
+    )).await;
+    
+    if let Ok(Some(row)) = res {
+        let count: i64 = row.try_get("", "cnt").unwrap_or(0);
+        return (true, count > 0);
+    }
+    
+    (true, false)
+}
+
+async fn print_banner() {
     let orbis_art = r#"
    ____       __    _     
   / __ \_____/ /_  (_)____
@@ -36,11 +58,20 @@ fn print_banner() {
 \____/_/  /_.___/_/____/  
 "#;
 
+    let (db_exists, setup_completed) = get_system_status().await;
+    let status_text = if setup_completed {
+        "Fully Initialized".green()
+    } else if db_exists {
+        "Pending Onboarding".yellow()
+    } else {
+        "Not Initialized".red()
+    };
+
     println!("\n{}", "╭──────────────────────────────────────────────────────────╮".truecolor(100, 100, 100));
     println!("{}", orbis_art.truecolor(0, 204, 255).bold());
     println!("\n  {} {}", "Welcome to the".dimmed(), "Orbis Management System!".bold());
     println!("  {}", "Developed by mulverse".truecolor(180, 0, 255).italic());
-    println!("  {} {}  |  {} {}", "Status:".dimmed(), "Not Initialized".red(), "Environment:".dimmed(), "Production".green());
+    println!("  {} {}  |  {} {}", "Status:".dimmed(), status_text, "Environment:".dimmed(), "Production".green());
     println!("{}", "╰──────────────────────────────────────────────────────────╯\n".truecolor(100, 100, 100));
 }
 
@@ -78,14 +109,14 @@ async fn main() -> Result<()> {
     
     if let Some(cmd) = &cli.command {
         // Run specific command passed via CLI args directly
-        print_banner();
+        print_banner().await;
         handle_command(cmd).await?;
     } else {
         // Interactive Launcher Mode (when double-clicked without arguments)
         use inquire::Select;
         
         loop {
-            print_banner();
+            print_banner().await;
             
             let options = vec![
                 "1. Start System",

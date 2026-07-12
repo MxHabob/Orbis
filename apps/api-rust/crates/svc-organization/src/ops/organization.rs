@@ -297,7 +297,7 @@ pub async fn initialize_school_setup(ctx: &ServiceContext, payload: serde_json::
     txn.execute(Statement::from_string(
         DatabaseBackend::Sqlite,
         format!(
-            "UPDATE organizations SET name = '{}', name_ar = '{}', currency = '{}', setup_completed = 1 WHERE id = '{}';",
+            "UPDATE organizations SET name = '{}', name_ar = '{}', currency = '{}' WHERE id = '{}';",
             org_name.replace("'", "''"), org_name_ar.replace("'", "''"), currency.replace("'", "''"), ctx.org_id.replace("'", "''")
         )
     )).await?;
