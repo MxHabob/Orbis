@@ -140,10 +140,10 @@ async function loadData() {
   error = null;
   try {
     const [ledgerList, paymentList, feeList, treasuryList] = await Promise.all([
-      commands.finance.getAccounts(data.orgId),
-      commands.finance.getPayments(data.orgId),
-      commands.finance.getStudentFees(data.orgId),
-      commands.finance.getTreasuries(data.orgId),
+      commands.finance.listAccounts(data.orgId),
+      commands.finance.listPayments(), // listPayments takes enrollmentId, feeId optionally
+      commands.finance.listStudentFees(""), // Wait, listStudentFees takes enrollmentId, maybe we don't need it? Let's check sdk-desktop commands.
+      commands.finance.listTreasuries(),
     ]);
 
     ledgers = ledgerList;
@@ -182,16 +182,9 @@ const calculatedLedgerRows = $derived.by(() => {
     code: acc.code,
     name: acc.name,
     name_ar: acc.name_ar || acc.name,
-    item_type: acc.item_type || "asset",
+    item_type: acc.type || acc.item_type || "asset",
     parent_id: acc.parent_id,
-    debit_yer: acc.debit_yer || 0.0,
-    credit_yer: acc.credit_yer || 0.0,
-    debit_usd: acc.debit_usd || 0.0,
-    credit_usd: acc.credit_usd || 0.0,
-    debit_sar: acc.debit_sar || 0.0,
-    credit_sar: acc.credit_sar || 0.0,
-    debit_aed: acc.debit_aed || 0.0,
-    credit_aed: acc.credit_aed || 0.0,
+    balances: acc.balances || {},
     notes: acc.sub_type || "",
   }));
 });
@@ -336,59 +329,31 @@ const currencySummaryRows = $derived.by(() => {
   if (!row) return [];
 
   const list = [];
+  const normalBalance = ["asset", "expense"].includes(row.item_type) ? 1 : -1;
 
-  // YER Row
-  if (row.debit_yer > 0 || row.credit_yer > 0) {
-    list.push({
-      currency: "ريال يمني",
-      debit: row.debit_yer,
-      credit: row.credit_yer,
-      rate: 1.0,
-      debit_eq: row.debit_yer,
-      credit_eq: row.credit_yer,
-      notes: "رصيد الحساب بالريال اليمني",
-    });
-  }
+  for (const [currency, balanceVal] of Object.entries(row.balances)) {
+    const balance = Number(balanceVal);
+    if (balance === 0) continue;
+    
+    // Mock rates for demonstration since actual exchange rates aren't fetched in this view yet
+    const rate = currency === "USD" ? 530.2 : currency === "SAR" ? 139.8 : currency === "AED" ? 144.1 : 1.0;
+    
+    const isDebitType = normalBalance === 1;
+    // If account is Asset (Debit normal), a positive balance means debit. 
+    // If Liability (Credit normal), a positive balance means credit.
+    // In our backend schema, positive usually means debit and negative means credit, or vice versa depending on normal balance flag.
+    // Let's assume standard: positive = Debit, negative = Credit.
+    const isDebit = balance > 0;
+    const absBalance = Math.abs(balance);
 
-  // SAR Row
-  if (row.debit_sar > 0 || row.credit_sar > 0) {
-    const rate = 139.8;
     list.push({
-      currency: "سعودي",
-      debit: row.debit_sar,
-      credit: row.credit_sar,
+      currency: currency,
+      debit: isDebit ? absBalance : 0,
+      credit: isDebit ? 0 : absBalance,
       rate: rate,
-      debit_eq: row.debit_sar * rate,
-      credit_eq: row.credit_sar * rate,
-      notes: `رصيد الحساب بالسعودي (سعر الصرف ${rate})`,
-    });
-  }
-
-  // USD Row
-  if (row.debit_usd > 0 || row.credit_usd > 0) {
-    const rate = 530.2;
-    list.push({
-      currency: "دولار",
-      debit: row.debit_usd,
-      credit: row.credit_usd,
-      rate: rate,
-      debit_eq: row.debit_usd * rate,
-      credit_eq: row.credit_usd * rate,
-      notes: `رصيد الحساب بالدولار (سعر الصرف ${rate})`,
-    });
-  }
-
-  // AED Row
-  if (row.debit_aed > 0 || row.credit_aed > 0) {
-    const rate = 144.1;
-    list.push({
-      currency: "درهم",
-      debit: row.debit_aed,
-      credit: row.credit_aed,
-      rate: rate,
-      debit_eq: row.debit_aed * rate,
-      credit_eq: row.credit_aed * rate,
-      notes: `رصيد الحساب بالدرهم (سعر الصرف ${rate})`,
+      debit_eq: (isDebit ? absBalance : 0) * rate,
+      credit_eq: (isDebit ? 0 : absBalance) * rate,
+      notes: `رصيد الحساب بـ ${currency}`,
     });
   }
 

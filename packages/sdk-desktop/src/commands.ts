@@ -114,11 +114,11 @@ export const commands: OrbisCommands = {
   // ═══════════════════════════════════════════════════════════════
   finance: {
     listAccounts: (orgId) => cmd("list_ledger_accounts", { orgId }),
-    listTransactionAccounts: () => cmd("list_transaction_accounts"),
+    listTransactionAccounts: (orgId) => cmd("list_transaction_accounts", { orgId }),
     createAccount: (data) => cmd("create_ledger_account", { data }),
     getAccountStatement: (accountId, startDate?, endDate?) => cmd("get_account_statement", { accountId, startDate, endDate }),
 
-    listTreasuries: () => cmd("list_treasuries"),
+    listTreasuries: (orgId) => cmd("list_treasuries", { orgId }),
     createTreasury: (data) => cmd("create_treasury", { data }),
 
     listFeeTemplates: (orgId) => cmd("list_fee_templates", { orgId }),
@@ -190,7 +190,33 @@ export const commands: OrbisCommands = {
       return;
     },
 
-    listJournalEntries: () => cmd("list_journal_entries"),
+    listJournalEntries: (orgId) => cmd("list_journal_entries", { orgId }),
+
+    listFiscalYears: async (orgId) => {
+      const stored = typeof window !== "undefined" ? window.localStorage.getItem("orbis_fiscal_years") : null;
+      if (stored) {
+        try { return JSON.parse(stored); } catch {}
+      }
+      return [];
+    },
+    createFiscalYear: async (orgId) => {
+      if (typeof window === "undefined") return {} as any;
+      const years = await commands.finance.listFiscalYears(orgId);
+      const yearStr = new Date().getFullYear().toString();
+      const newYear = {
+        id: "fy_" + Date.now(),
+        org_id: orgId,
+        name: `السنة المالية ${yearStr}`,
+        start_date: `${yearStr}-01-01`,
+        end_date: `${yearStr}-12-31`,
+        status: "open",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      years.push(newYear as any);
+      window.localStorage.setItem("orbis_fiscal_years", JSON.stringify(years));
+      return newYear as any;
+    },
   },
 
   // ═══════════════════════════════════════════════════════════════

@@ -1,7 +1,7 @@
 /**
  * Finance command interfaces — mirrors svc-finance/ops.
  */
-import type { Payment, StudentFee, FeeTemplate, Treasury, DiscountTemplate, Account, JournalEntry, Currency } from "../types";
+import type { Payment, StudentFee, FeeTemplate, Treasury, DiscountTemplate, Account, JournalEntry, Currency, FiscalYear } from "../types";
 
 export interface FinanceCommands {
   // ── Ledger ──────────────────────────────────────────────────
@@ -41,5 +41,9 @@ export interface FinanceCommands {
   seedDefaultFinancials(orgId: string): Promise<void>;
 
   // ── Journal ─────────────────────────────────────────────────
-  listJournalEntries(): Promise<JournalEntry[]>;
+  listJournalEntries(orgId: string): Promise<JournalEntry[]>;
+
+  // ── Fiscal Years ────────────────────────────────────────────
+  listFiscalYears(orgId: string): Promise<FiscalYear[]>;
+  createFiscalYear(orgId: string): Promise<FiscalYear>;
 }

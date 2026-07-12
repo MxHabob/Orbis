@@ -73,18 +73,7 @@ let filterMode = $state<"day" | "all">("day");
 let selectedFilterDate = $state(new Date().toISOString().split("T")[0]);
 let showUserRecords = $state(true);
 
-// Rebuilt Entry Form States (Unified Input Grid)
-interface EntryRow {
-  debitAccountId: string;
-  creditAccountId: string;
-  amount: number | null;
-  description: string;
-}
-let entryDate = $state(new Date().toISOString().split("T")[0]);
-let entryCurrency = $state("YER");
-let entryRows = $state<EntryRow[]>([
-  { debitAccountId: "", creditAccountId: "", amount: null, description: "" },
-]);
+
 
 // Search query
 let searchQuery = $state("");
@@ -112,10 +101,10 @@ async function loadData() {
   try {
     const [entriesList, ledgersList] = await Promise.all([
       dedup(`journal_entries:${data.orgId}`, () =>
-        commands.finance.getJournalEntries(data.orgId),
+        commands.finance.listJournalEntries(data.orgId),
       ),
       dedup(`accounts:${data.orgId}`, () =>
-        commands.finance.getTransactionAccounts(data.orgId),
+        commands.finance.listTransactionAccounts(data.orgId),
       ),
     ]);
 
@@ -139,7 +128,7 @@ async function loadData() {
 
 async function loadCurrencies() {
   try {
-    const list = await commands.finance.getCurrencies(data.orgId);
+    const list = await commands.finance.listCurrencies();
     if (list && list.length > 0) {
       currencies = list.map((c) => ({
         code: c.code,
@@ -198,106 +187,9 @@ function selectRow(entry: any) {
   selectedEntry = entry;
 
   // Set fields to entry values to view/copy them
-  entryDate = entry.accounting_date ? entry.accounting_date.split("T")[0] : "";
-  entryCurrency = entry.currency || "YER";
-  entryRows = [
-    {
-      debitAccountId: entry.debit_account_id || "",
-      creditAccountId: entry.credit_account_id || "",
-      amount: entry.amount,
-      description: entry.description_ar || entry.description || "",
-    },
-  ];
 }
 
-// Unified input grid row actions
-function addEntryRow() {
-  entryRows = [
-    ...entryRows,
-    { debitAccountId: "", creditAccountId: "", amount: null, description: "" },
-  ];
-}
 
-function deleteEntryRow(index: number) {
-  if (entryRows.length <= 1) {
-    toast.warning("يجب أن يحتوي جدول القيود على سطر واحد على الأقل");
-    return;
-  }
-  entryRows = entryRows.filter((_, i) => i !== index);
-}
-
-function clearEntryTable() {
-  entryRows = [
-    { debitAccountId: "", creditAccountId: "", amount: null, description: "" },
-  ];
-  entryDate = new Date().toISOString().split("T")[0];
-}
-
-async function handlePostEntries() {
-  if (entryRows.length === 0) {
-    toast.error("الرجاء إضافة سطر قيد محاسبي واحد على الأقل");
-    return;
-  }
-
-  // Validate all rows
-  for (let i = 0; i < entryRows.length; i++) {
-    const row = entryRows[i];
-    const rowNum = i + 1;
-    if (!row.amount || row.amount <= 0) {
-      toast.error(m.finance_je_invalid_amount({ row: rowNum }));
-      return;
-    }
-    if (!row.debitAccountId) {
-      toast.error(m.finance_je_select_debit({ row: rowNum }));
-      return;
-    }
-    if (!row.creditAccountId) {
-      toast.error(m.finance_je_select_credit({ row: rowNum }));
-      return;
-    }
-    if (row.debitAccountId === row.creditAccountId) {
-      toast.error(m.finance_je_debit_credit_equal({ row: rowNum }));
-      return;
-    }
-  }
-
-  let successCount = 0;
-  try {
-    for (const row of entryRows) {
-      const randomRef =
-        "JV-" + String(Math.floor(148000 + Math.random() * 10000));
-      const newEntry = await commands.finance.createJournalEntry(data.orgId, {
-        transaction_ref: randomRef,
-        accounting_date: entryDate,
-        fiscal_period_id: "2026-period",
-        amount: row.amount!,
-        debit_account_id: row.debitAccountId,
-        credit_account_id: row.creditAccountId,
-        currency: entryCurrency,
-        exchange_rate: 1.0,
-        description: row.description || "Manual Journal Entry",
-        description_ar: row.description || null,
-        source_type: "manual",
-      });
-
-      journalEntries = [
-        {
-          ...newEntry,
-          prints_count: 0,
-          user: "U78",
-          branch: "المركز الرئيسي",
-        },
-        ...journalEntries,
-      ];
-      successCount++;
-    }
-
-    toast.success(m.finance_je_batch_post_success({ count: successCount }));
-    clearEntryTable();
-  } catch (e) {
-    toast.error("فشل ترحيل القيود: " + extractErrorMessage(e));
-  }
-}
 
 function handleVoid() {
   if (!selectedEntry) {
@@ -371,158 +263,7 @@ const filteredEntries = $derived.by(() => {
 <div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide text-start font-sans">
   <div class="max-w-7xl mx-auto p-4 md:p-6 flex flex-col gap-6 print:hidden">
 
-    <!-- Voucher Form Card (Unified Row-Based Input) -->
-    <Card class="border border-border/60 shadow-sm overflow-hidden bg-card">
-      <div class="bg-muted/45 border-b border-border/60 p-4 flex flex-wrap items-center justify-between gap-4 select-none">
-        <div class="flex flex-wrap items-center gap-4">
-          <div class="flex flex-col gap-1.5">
-            <Label class="text-xs font-bold text-muted-foreground">تاريخ القيد</Label>
-            <Input
-              type="date"
-              bind:value={entryDate}
-              class="h-8 text-xs font-mono bg-background/50 border-border w-40"
-            />
-          </div>
-          
-          <div class="flex flex-col gap-1.5">
-            <Label class="text-xs font-bold text-muted-foreground">العملة</Label>
-            <Select type="single" bind:value={entryCurrency}>
-              <SelectTrigger class="h-8 text-xs bg-background/50 w-32 border-border cursor-pointer">
-                {entryCurrency}
-              </SelectTrigger>
-              <SelectContent>
-                {#each currencies as curr}
-                  <SelectItem value={curr.code}>{curr.code}</SelectItem>
-                {/each}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </div>
 
-      <div class="p-4 md:p-6 flex flex-col gap-4">
-        <!-- Dynamic Row Grid -->
-        <div class="border border-border/60 rounded-xl bg-muted/10 p-4 shadow-sm flex flex-col gap-2">
-          <!-- Headers -->
-          <div class="hidden md:grid grid-cols-[30px_1fr_1fr_150px_1fr_40px] gap-3 px-2 text-xs font-bold text-muted-foreground select-none pb-2 border-b border-border/40">
-            <div class="text-center">#</div>
-            <div>من حساب (المدين)</div>
-            <div>إلى حساب (الدائن)</div>
-            <div class="ps-2">المبلغ</div>
-            <div class="ps-2">البيان / الملاحظات</div>
-            <div class="text-center">{m.finance_je_col_actions()}</div>
-          </div>
-
-          <!-- Input Rows -->
-          <div class="flex flex-col gap-3 md:gap-2">
-            {#each entryRows as row, index}
-              <div class="grid grid-cols-1 md:grid-cols-[30px_1fr_1fr_150px_1fr_40px] gap-3 items-center bg-muted/30 md:bg-transparent p-3 md:p-0 rounded-lg border border-border/45 md:border-none">
-                <!-- Row Number -->
-                <div class="text-start md:text-center font-mono text-xs font-bold text-muted-foreground">
-                  <span class="md:hidden">السطر </span>{index + 1}
-                </div>
-                
-                <!-- Debit Account -->
-                <div class="flex flex-col gap-1 md:block">
-                  <span class="text-[10px] font-bold text-muted-foreground md:hidden">من حساب (المدين)</span>
-                  <ComboboxDropdown
-                    placeholder={m.finance_je_debit_placeholder()}
-                    searchPlaceholder={m.finance_je_search_acc_placeholder()}
-                    selectedItem={accountItems.find((item) => item.value === row.debitAccountId)}
-                    items={accountItems}
-                    onSelect={(item) => { row.debitAccountId = item ? item.value : ""; }}
-                    class="w-full text-xs h-9 bg-background border-border/60"
-                  />
-                </div>
-
-                <!-- Credit Account -->
-                <div class="flex flex-col gap-1 md:block">
-                  <span class="text-[10px] font-bold text-muted-foreground md:hidden">إلى حساب (الدائن)</span>
-                  <ComboboxDropdown
-                    placeholder={m.finance_je_credit_placeholder()}
-                    searchPlaceholder={m.finance_je_search_acc_placeholder()}
-                    selectedItem={accountItems.find((item) => item.value === row.creditAccountId)}
-                    items={accountItems}
-                    onSelect={(item) => { row.creditAccountId = item ? item.value : ""; }}
-                    class="w-full text-xs h-9 bg-background border-border/60"
-                  />
-                </div>
-
-                <!-- Amount -->
-                <div class="flex flex-col gap-1 md:block">
-                  <span class="text-[10px] font-bold text-muted-foreground md:hidden">المبلغ</span>
-                  <Input
-                    type="number"
-                    bind:value={row.amount}
-                    min="0"
-                    class="h-9 text-xs font-mono text-emerald-600 font-extrabold w-full bg-background border-border/60"
-                    placeholder="0.00"
-                  />
-                </div>
-
-                <!-- Description -->
-                <div class="flex flex-col gap-1 md:block">
-                  <span class="text-[10px] font-bold text-muted-foreground md:hidden">البيان / الملاحظات</span>
-                  <Input
-                    type="text"
-                    bind:value={row.description}
-                    class="h-9 text-xs w-full bg-background border-border/60"
-                    placeholder="البيان الخاص بهذا السطر..."
-                  />
-                </div>
-
-                <!-- Actions -->
-                <div class="flex justify-end md:justify-center">
-                  <Button
-                    variant="ghost"
-                    size="icon-xs"
-                    onclick={() => deleteEntryRow(index)}
-                    class="text-destructive hover:bg-destructive/10 cursor-pointer h-8 w-8"
-                  >
-                    <Trash2 size={14} />
-                  </Button>
-                </div>
-              </div>
-            {/each}
-          </div>
-        </div>
-
-        <!-- Add Row and Action Ribbon -->
-        <div class="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-border/40 select-none">
-          <Button
-            variant="outline"
-            size="sm"
-            onclick={addEntryRow}
-            class="font-bold text-xs h-8 px-4 flex items-center gap-1.5 cursor-pointer border-border text-foreground hover:bg-muted"
-          >
-            <Plus size={14} />
-            <span>{m.finance_je_btn_add_row()}</span>
-          </Button>
-          
-          <div class="flex items-center gap-3">
-            <Button
-              variant="default"
-              size="sm"
-              onclick={handlePostEntries}
-              class="bg-primary hover:bg-primary/95 text-primary-foreground font-bold text-xs h-8 px-5 flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-[0.98] transition-all"
-            >
-              <FileSpreadsheet size={14} />
-              <span>ترحيل القيود</span>
-            </Button>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onclick={clearEntryTable}
-              class="font-bold text-xs h-8 px-4 flex items-center gap-1.5 cursor-pointer active:scale-[0.98] transition-all border-border text-foreground hover:bg-muted"
-            >
-              <Trash2 size={14} />
-              <span>{m.finance_je_btn_clear_batch()}</span>
-            </Button>
-          </div>
-        </div>
-      </div>
-    </Card>
 
     <!-- Entries Log Card -->
     <Card class="border border-border/60 shadow-sm overflow-hidden flex flex-col bg-card">

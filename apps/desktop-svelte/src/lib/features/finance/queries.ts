@@ -6,9 +6,9 @@ import { createQuery } from "@tanstack/svelte-query";
 import { commands } from "$lib/core/ipc";
 
 /** Treasuries for an organization. */
-export function createTreasuriesQuery() {
+export function createTreasuriesQuery(orgId: string) {
   return createQuery({
-    queryKey: ["treasuries"],
+    queryKey: ["treasuries", orgId],
     queryFn: () => commands.finance.listTreasuries(),
     staleTime: 5 * 60 * 1000,
   });
@@ -24,10 +24,10 @@ export function createPaymentsQuery(enrollmentId?: string, feeId?: string) {
 }
 
 /** Ledger accounts query. */
-export function createAccountsQuery() {
+export function createAccountsQuery(orgId: string) {
   return createQuery({
-    queryKey: ["ledger-accounts"],
-    queryFn: () => commands.finance.listAccounts(),
+    queryKey: ["ledger-accounts", orgId],
+    queryFn: () => commands.finance.listAccounts(orgId),
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -57,10 +57,10 @@ export function createAccountStatementQuery(
 }
 
 /** Fee templates query. */
-export function createFeeTemplatesQuery() {
+export function createFeeTemplatesQuery(orgId: string) {
   return createQuery({
-    queryKey: ["fee-templates"],
-    queryFn: () => commands.finance.listFeeTemplates(),
+    queryKey: ["fee-templates", orgId],
+    queryFn: () => commands.finance.listFeeTemplates(orgId),
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -76,10 +76,10 @@ export function createStudentFeesQuery(enrollmentId: string) {
 }
 
 /** Discount templates query. */
-export function createDiscountTemplatesQuery() {
+export function createDiscountTemplatesQuery(orgId: string) {
   return createQuery({
-    queryKey: ["discount-templates"],
-    queryFn: () => commands.finance.listDiscountTemplates(),
+    queryKey: ["discount-templates", orgId],
+    queryFn: () => commands.finance.listDiscountTemplates(orgId),
     staleTime: 5 * 60 * 1000,
   });
 }
