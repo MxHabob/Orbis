@@ -225,7 +225,7 @@ async fn main() -> Result<()> {
                             Ok(true) => {
                                 println!("{}", "[*] Wiping database...".red().bold());
                                 let config = crate::config::CliConfig::default();
-                                let path = config.db_url.replace("sqlite:", "").replace("?mode=rwc", "");
+                                let path = config.db_url.replace("sqlite://", "").replace("?mode=rwc", "").replace("?mode=ro", "");
                                 if std::path::Path::new(&path).exists() {
                                     if let Err(e) = std::fs::remove_file(&path) {
                                         println!("{} Failed to delete database: {}", "Error:".red(), e);
@@ -233,7 +233,7 @@ async fn main() -> Result<()> {
                                         println!("{}", "[+] Database reset successfully. You can now re-initialize the system.".green());
                                     }
                                 } else {
-                                    println!("{}", "[-] Database file not found, nothing to reset.".yellow());
+                                    println!("{} Path attempted: {}", "[-] Database file not found, nothing to reset.".yellow(), path);
                                 }
                             }
                             _ => {

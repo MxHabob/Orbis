@@ -8,8 +8,11 @@ use svc_iam::ops;
 #[tauri::command]
 pub async fn login(state: State<'_, Arc<AppState>>, identifier: String, password_hash: String) -> CmdResult<serde_json::Value> {
     let db = state.db();
-    let r = ops::auth::login(&db, &identifier, &password_hash).await.map_err(CommandError::from)?;
-    Ok(serde_json::to_value(r).unwrap())
+    let (user, session) = ops::auth::login(&db, &identifier, &password_hash).await.map_err(CommandError::from)?;
+    Ok(serde_json::json!({
+        "user": user,
+        "access_token": session.token
+    }))
 }
 
 #[tauri::command]
