@@ -14,17 +14,22 @@ pub async fn execute() -> Result<()> {
     }
 
     let timestamp = Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
-    let db_name = "orbis_registry.db";
-    let db_path = Path::new(db_name);
+    
+    let config = crate::config::CliConfig::default();
+    let db_path_str = config.db_url
+        .replace("sqlite://", "")
+        .replace("?mode=rwc", "")
+        .replace("?mode=ro", "");
+    let db_path = Path::new(&db_path_str);
 
     if !db_path.exists() {
-        return Err(anyhow!("Cannot backup: {} does not exist.", db_name));
+        return Err(anyhow!("Cannot backup: Database file at {:?} does not exist.", db_path));
     }
 
-    let backup_filename = format!("orbis_registry_{}.db.bak", timestamp);
+    let backup_filename = format!("orbis_{}.db.bak", timestamp);
     let backup_path = backup_dir.join(&backup_filename);
 
-    println!("{} Copying {} -> {}...", "[*]".cyan(), db_name, backup_filename);
+    println!("{} Copying {:?} -> {}...", "[*]".cyan(), db_path, backup_filename);
     
     fs::copy(db_path, &backup_path)?;
 

@@ -28,7 +28,7 @@ class AuthStore {
       this.token = res.access_token;
       localStorage.setItem("orbis_token", res.access_token);
       localStorage.setItem("orbis_user", JSON.stringify(res.user));
-      this.checkSetupStatus();
+      await this.checkSetupStatus();
     } catch (e) {
       this.error = extractErrorMessage(e);
       throw e;

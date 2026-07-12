@@ -30,12 +30,31 @@ enum Commands {
 use sea_orm::{Database, Statement, DatabaseBackend, ConnectionTrait};
 
 async fn get_system_status() -> (bool, bool) {
-    let db_url = "sqlite://orbis.db?mode=ro";
-    let Ok(db) = Database::connect(db_url).await else {
+    let config = crate::config::CliConfig::default();
+    let db_url = config.db_url.replace("mode=rwc", "mode=ro");
+
+    let Ok(db) = Database::connect(&db_url).await else {
         return (false, false);
     };
     
-    // Check if there are any academic_years, meaning setup has been done
+    // Check if organizations exist. If not, the CLI init hasn't been done.
+    let org_res = db.query_one(Statement::from_string(
+        DatabaseBackend::Sqlite,
+        "SELECT COUNT(*) as cnt FROM organizations;".to_owned()
+    )).await;
+    
+    let is_initialized = if let Ok(Some(row)) = org_res {
+        let count: i64 = row.try_get("", "cnt").unwrap_or(0);
+        count > 0
+    } else {
+        false
+    };
+
+    if !is_initialized {
+        return (false, false); // Treat as not initialized
+    }
+
+    // Check if there are any academic_years, meaning Svelte onboarding has been done
     let res = db.query_one(Statement::from_string(
         DatabaseBackend::Sqlite,
         "SELECT COUNT(*) as cnt FROM academic_years;".to_owned()
@@ -49,13 +68,26 @@ async fn get_system_status() -> (bool, bool) {
     (true, false)
 }
 
-async fn print_banner() {
+fn get_environment() -> (&'static str, colored::ColoredString) {
+    let env_var = std::env::var("APP_ENV").unwrap_or_else(|_| "development".to_string());
+    match env_var.to_lowercase().as_str() {
+        "production" | "prod" => ("Production", "Production".green()),
+        "staging" | "stage" => ("Staging", "Staging".yellow()),
+        "testing" | "test" => ("Testing", "Testing".magenta()),
+        _ => ("Development", "Development".cyan()),
+    }
+}
+
+async fn print_banner() -> (bool, bool) {
+    // Clear the terminal to prevent scrolling bugs with the interactive menu
+    print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
+
     let orbis_art = r#"
-   ____       __    _     
-  / __ \_____/ /_  (_)____
- / / / / ___/ __ \/ / ___/
-/ /_/ / /  / /_/ / (__  ) 
-\____/_/  /_.___/_/____/  
+   ____  ____  ____  _________   ________    ____
+  / __ \/ __ \/ __ )/  _/ ___/  / ____/ /   /  _/
+ / / / / /_/ / __  |/ / \__ \  / /   / /    / /  
+/ /_/ / _, _/ /_/ // / ___/ / / /___/ /____/ /   
+\____/_/ |_/_____/___//____/  \____/_____/___/   
 "#;
 
     let (db_exists, setup_completed) = get_system_status().await;
@@ -67,12 +99,15 @@ async fn print_banner() {
         "Not Initialized".red()
     };
 
+    let (_, env_colored) = get_environment();
+
     println!("\n{}", "╭──────────────────────────────────────────────────────────╮".truecolor(100, 100, 100));
-    println!("{}", orbis_art.truecolor(0, 204, 255).bold());
-    println!("\n  {} {}", "Welcome to the".dimmed(), "Orbis Management System!".bold());
+    println!("{}", orbis_art.bright_cyan().bold());
     println!("  {}", "Developed by mulverse".truecolor(180, 0, 255).italic());
-    println!("  {} {}  |  {} {}", "Status:".dimmed(), status_text, "Environment:".dimmed(), "Production".green());
+    println!("  {} {}  |  {} {}", "Status:".dimmed(), status_text, "Environment:".dimmed(), env_colored);
     println!("{}", "╰──────────────────────────────────────────────────────────╯\n".truecolor(100, 100, 100));
+
+    (db_exists, setup_completed)
 }
 
 async fn handle_command(command: &Commands) -> Result<()> {
@@ -102,8 +137,10 @@ async fn main() -> Result<()> {
     #[cfg(windows)]
     colored::control::set_virtual_terminal(true).ok();
 
-    // Configure basic tracing
-    tracing_subscriber::fmt::init();
+    // Configure basic tracing (Only ERROR to prevent SQLx from polluting CLI menu)
+    tracing_subscriber::fmt()
+        .with_max_level(tracing_subscriber::filter::LevelFilter::ERROR)
+        .init();
 
     let cli = Cli::parse();
     
@@ -116,16 +153,33 @@ async fn main() -> Result<()> {
         use inquire::Select;
         
         loop {
-            print_banner().await;
+            let (db_exists, setup_completed) = print_banner().await;
             
-            let options = vec![
-                "1. Start System",
-                "2. Initialize / Download App",
-                "3. Run Diagnostics (Doctor)",
-                "4. Backup Database",
-                "5. Manage License",
-                "6. Exit"
-            ];
+            let options = if setup_completed {
+                vec![
+                    "1. Start System",
+                    "2. Run Diagnostics (Doctor)",
+                    "3. Backup Database",
+                    "4. Manage License",
+                    "5. Repair / Reinstall",
+                    "6. Exit",
+                ]
+            } else if db_exists {
+                vec![
+                    "1. Start System (Complete Onboarding)",
+                    "2. Run Diagnostics (Doctor)",
+                    "3. Repair / Reinstall",
+                    "4. Backup Database",
+                    "5. Exit",
+                ]
+            } else {
+                vec![
+                    "1. Initialize System (Required)",
+                    "2. Run Diagnostics (Doctor)",
+                    "3. Start System (Skipped Init)",
+                    "4. Exit",
+                ]
+            };
 
             let choice = Select::new("Select an action:", options)
                 .with_help_message("Use arrow keys to navigate, Enter to select")
@@ -144,7 +198,7 @@ async fn main() -> Result<()> {
                         if let Err(e) = handle_command(&Commands::Start).await {
                             println!("{} {}", "Error:".red(), e);
                         }
-                    } else if choice.contains("Initialize") {
+                    } else if choice.contains("Initialize") || choice.contains("Repair") {
                         if let Err(e) = handle_command(&Commands::Init).await {
                             println!("{} {}", "Error:".red(), e);
                         }

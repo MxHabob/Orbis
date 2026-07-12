@@ -31,13 +31,7 @@ async function handleSubmit(e: SubmitEvent) {
   error = null;
 
   try {
-    // Authenticate with authStore
     await authStore.login(email, password);
-
-    // Note: Environment selection (academic year/branch) is no longer done at login.
-    // The backend manages default active years automatically.
-
-
     goto(localizeHref(`/${authStore.orgId}`));
   } catch (err) {
     error = err instanceof Error ? err.message : m.login_failed();

@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use colored::*;
 use std::process::Command;
-use std::path::Path;
+
 
 pub async fn execute() -> Result<()> {
     println!("{}", "[*] Booting Orbis System...".green().bold());
@@ -12,15 +12,12 @@ pub async fn execute() -> Result<()> {
         "Orbis-Svelte"
     };
 
-    let possible_paths = [
-        Path::new(app_name),
-        Path::new("../desktop-svelte/src-tauri/target/release/Orbis-Svelte.exe"), // Dev environment
-    ];
+    let possible_paths = crate::config::CliConfig::get_app_executable_paths();
 
     let mut found_path = None;
     for path in possible_paths.iter() {
         if path.exists() {
-            found_path = Some(path);
+            found_path = Some(path.clone());
             break;
         }
     }
@@ -31,7 +28,7 @@ pub async fn execute() -> Result<()> {
             println!("{} Spawning application process...", "[*]");
             
             // Spawn as a detached child process (so CLI can exit, or wait)
-            let mut child = Command::new(path)
+            let child = Command::new(path)
                 .spawn()
                 .map_err(|e| anyhow!("Failed to start Orbis-Svelte: {}", e))?;
                 
