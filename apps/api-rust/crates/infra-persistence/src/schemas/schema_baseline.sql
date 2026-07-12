@@ -200,6 +200,8 @@ CREATE TABLE IF NOT EXISTS academic_policies (
   autopilot_mode TEXT NOT NULL DEFAULT 'suggested'
     CHECK (autopilot_mode IN ('automatic','suggested','manual')),
   autopilot_enabled INTEGER NOT NULL DEFAULT 1,
+  max_auto_retries INTEGER NOT NULL DEFAULT 3,
+  pause_on_error INTEGER NOT NULL DEFAULT 0,
   auto_open_enrollment INTEGER NOT NULL DEFAULT 1,
   auto_close_enrollment INTEGER NOT NULL DEFAULT 1,
   auto_open_grade_entry INTEGER NOT NULL DEFAULT 1,

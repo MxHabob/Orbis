@@ -22,9 +22,7 @@
 pub mod entities;
 pub mod config;
 pub mod engine;
-pub mod planner;
-pub mod executor;
-pub mod resumption;
+
 pub mod diagnostics;
 pub mod academic_evaluator;
 pub mod academic_executor;

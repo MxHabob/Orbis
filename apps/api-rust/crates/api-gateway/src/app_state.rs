@@ -58,6 +58,7 @@ impl PlatformServices {
         ServiceContext::new(
             db,
             org_id,
+            "",
             actor,
             self.permissions.clone(),
             self.audit.clone(),

@@ -292,8 +292,8 @@ impl PromotionService {
         self.cmd.update_promotion_job(job.clone()).await?;
 
         // 3. Backup the source year database
-        let source_year = self.query.get_cycle_by_id(&config.source_year_id).await?
-            .ok_or_else(|| AppError::not_found("academic_cycle", &config.source_year_id))?;
+        let source_year = self.query.get_year_by_id(&config.source_year_id).await?
+            .ok_or_else(|| AppError::not_found("academic_year", &config.source_year_id))?;
 
         let source_db_filename = infra_persistence::registry::year_db_filename(&source_year.name);
         let source_db_path = infra_persistence::registry::year_db_path(app_data_dir, &source_db_filename);
@@ -331,39 +331,28 @@ impl PromotionService {
 
         // 8. Register target year in registry
         let now = chrono::Utc::now().to_rfc3339();
-        let target_year = crate::entities::academic_cycle::Model {
+        let target_year = crate::entities::academic_year::Model {
             id: uuid::Uuid::new_v4().to_string(),
             org_id: job.org_id.clone(),
             name: config.target_year_name.clone(),
             name_ar: config.target_year_name_ar.clone(),
-            code: Some(target_db_filename.clone()),
-            cycle_type: "year".to_string(),
-            parent_id: None,
             start_date: config.target_start_date.clone(),
             end_date: config.target_end_date.clone(),
-            hijri_start_date: None,
-            hijri_end_date: None,
-            exam_start_date: None,
-            exam_end_date: None,
-            weight: Some(1),
-            grading_system: "percentage".to_string(),
-            passing_grade: None,
-            max_grade: None,
-            is_current: 0,
+            hijri_start: None,
+            hijri_end: None,
+            status: "active".to_string(),
             is_locked: 0,
-            is_enrollment_open: 1,
-            is_grade_entry_open: 0,
-            grade_entry_start: None,
-            grade_entry_end: None,
             locked_at: None,
             locked_by: None,
-            settings: None,
-            sort_order: Some(0),
+            lock_reason: None,
+            archived_at: None,
+            archived_by: None,
+            notes: None,
             created_at: now.clone(),
             updated_at: now.clone(),
         };
 
-        let target_year = self.cmd.create_cycle(target_year).await?;
+        let target_year = self.cmd.create_year(target_year).await?;
 
         // 9. Update student registry entries
         self.update_student_registry(&details, &target_year.id).await?;
@@ -423,7 +412,7 @@ impl PromotionService {
         }
 
         if let Some(target_year_id) = &job.target_year_id {
-            if let Some(year) = self.query.get_cycle_by_id(target_year_id).await? {
+            if let Some(year) = self.query.get_year_by_id(target_year_id).await? {
                 let target_db_filename = infra_persistence::registry::year_db_filename(&year.name);
                 let target_path = infra_persistence::registry::year_db_path(app_data_dir, &target_db_filename);
                 if target_path.exists() {
@@ -581,10 +570,10 @@ impl PromotionService {
             Self::copy_table_data(source_db, target_db, "student_guardians").await?;
         }
 
-        Self::copy_table_data(source_db, target_db, "academic_cycles").await?;
+        Self::copy_table_data(source_db, target_db, "academic_years").await?;
+        Self::copy_table_data(source_db, target_db, "academic_periods").await?;
 
-        let _ = Self::copy_table_data(source_db, target_db, "org_academic_policies").await;
-        let _ = Self::copy_table_data(source_db, target_db, "promotion_policies").await;
+        let _ = Self::copy_table_data(source_db, target_db, "academic_policies").await;
 
         Ok(())
     }

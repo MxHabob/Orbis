@@ -12,7 +12,7 @@ use crate::params::GradeParams;
 use crate::repository::{AssessmentCommandRepo, AssessmentQueryRepo};
 
 use svc_academic::entities::enrollment;
-use svc_organization::entities::academic_cycle;
+use svc_organization::entities::academic_period;
 
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct CreateGradeRequest {
@@ -208,10 +208,10 @@ impl GradeService {
     }
 
     pub async fn check_cycle_open_for_grading(&self, cycle_id: &str) -> Result<(), AppError> {
-        let cycle = academic_cycle::Entity::find_by_id(cycle_id.to_string())
+        let cycle = academic_period::Entity::find_by_id(cycle_id.to_string())
             .one(&self.query.db)
             .await?
-            .ok_or_else(|| AppError::not_found("academic_cycle", cycle_id))?;
+            .ok_or_else(|| AppError::not_found("academic_period", cycle_id))?;
 
         if cycle.is_locked == 1 {
             return Err(AppError::unauthorized("Academic cycle is locked"));
@@ -568,10 +568,10 @@ impl GradeService {
             .await?
             .ok_or_else(|| AppError::not_found("student", &enrollment.student_id))?;
 
-        let cycle = academic_cycle::Entity::find_by_id(cycle_id.to_string())
+        let cycle = academic_period::Entity::find_by_id(cycle_id.to_string())
             .one(&self.query.db)
             .await?
-            .ok_or_else(|| AppError::not_found("academic_cycle", cycle_id))?;
+            .ok_or_else(|| AppError::not_found("academic_period", cycle_id))?;
 
         let passing_grade = 50.0;
 

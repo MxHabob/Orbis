@@ -47,10 +47,11 @@ impl OrganizationService {
 
         let now = Utc::now().naive_utc().to_string();
         let org = organization::Model {
+            current_year_id: None,
             id: Uuid::new_v4().to_string(),
             name: name.to_string(),
             name_ar: None,
-            slug: slug.to_string(),
+            slug: Some(slug.to_string()),
             code: None,
             timezone: timezone.to_string(),
             locale: locale.to_string(),

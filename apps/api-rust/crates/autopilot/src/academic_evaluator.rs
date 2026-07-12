@@ -8,7 +8,7 @@
 
 use chrono::{NaiveDate, Utc};
 use sea_orm::{DatabaseConnection, EntityTrait, ColumnTrait, QueryFilter};
-use tracing::{debug, warn};
+use tracing::debug;
 
 use shared_kernel::errors::AppError;
 use svc_organization::entities::{academic_year, academic_period, academic_policy};

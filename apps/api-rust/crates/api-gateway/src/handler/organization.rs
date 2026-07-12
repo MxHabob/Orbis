@@ -1,4 +1,4 @@
-use axum::{extract::{State, Path, Json}, http::StatusCode, response::IntoResponse};
+use axum::{extract::{State, Json}, http::StatusCode, response::IntoResponse};
 use serde_json::json;
 use crate::app_state::AppState;
 use crate::middleware::AuthenticatedUser;

@@ -11,7 +11,7 @@ use crate::entities::assessment;
 use crate::repository::{AssessmentCommandRepo, AssessmentQueryRepo};
 
 use svc_academic::entities::class_subject;
-use svc_organization::entities::academic_cycle;
+use svc_organization::entities::academic_period;
 
 #[derive(Serialize, Deserialize, utoipa::ToSchema, Clone, Debug)]
 pub struct CreateAssessmentRequest {
@@ -85,10 +85,10 @@ impl AssessmentService {
         user_id: &str,
         req: CreateAssessmentRequest,
     ) -> Result<assessment::Model, AppError> {
-        let cycle = academic_cycle::Entity::find_by_id(req.cycle_id.clone())
+        let cycle = academic_period::Entity::find_by_id(req.cycle_id.clone())
             .one(&self.query.db)
             .await?
-            .ok_or_else(|| AppError::not_found("academic_cycle", &req.cycle_id))?;
+            .ok_or_else(|| AppError::not_found("academic_period", &req.cycle_id))?;
 
         if cycle.is_locked == 1 {
             return Err(AppError::unauthorized("Cycle is locked"));
@@ -170,10 +170,10 @@ impl AssessmentService {
     ) -> Result<assessment::Model, AppError> {
         let assess = self.get_assessment(id).await?;
 
-        let cycle = academic_cycle::Entity::find_by_id(assess.cycle_id.clone())
+        let cycle = academic_period::Entity::find_by_id(assess.cycle_id.clone())
             .one(&self.query.db)
             .await?
-            .ok_or_else(|| AppError::not_found("academic_cycle", &assess.cycle_id))?;
+            .ok_or_else(|| AppError::not_found("academic_period", &assess.cycle_id))?;
 
         if cycle.is_locked == 1 {
             return Err(AppError::unauthorized("Cycle is locked"));
@@ -199,10 +199,10 @@ impl AssessmentService {
     pub async fn delete_assessment(&self, id: &str) -> Result<(), AppError> {
         let assess = self.get_assessment(id).await?;
 
-        let cycle = academic_cycle::Entity::find_by_id(assess.cycle_id.clone())
+        let cycle = academic_period::Entity::find_by_id(assess.cycle_id.clone())
             .one(&self.query.db)
             .await?
-            .ok_or_else(|| AppError::not_found("academic_cycle", &assess.cycle_id))?;
+            .ok_or_else(|| AppError::not_found("academic_period", &assess.cycle_id))?;
 
         if cycle.is_locked == 1 {
             return Err(AppError::unauthorized("Cycle is locked"));

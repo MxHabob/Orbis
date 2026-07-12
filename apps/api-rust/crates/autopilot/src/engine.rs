@@ -319,7 +319,7 @@ impl AutopilotEngine {
         &self,
         db: &DatabaseConnection,
         org_id: &str,
-        policy: &academic_policy::Model,
+        _policy: &academic_policy::Model,
     ) -> (usize, usize, usize, usize) {
         let tasks = match autopilot_task::Entity::find()
             .filter(autopilot_task::Column::OrgId.eq(org_id))

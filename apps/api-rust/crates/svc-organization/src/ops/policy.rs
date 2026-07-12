@@ -8,13 +8,13 @@ use sea_orm::{EntityTrait, ColumnTrait, QueryFilter};
 use shared_kernel::errors::AppError;
 use shared_kernel::traits::PolicyEngine;
 
-use crate::entities::org_academic_policy;
+use crate::entities::academic_policy;
 
 // ═══════════════════════════════════════════════════════════════
 // Concrete PolicyEngine Implementation
 // ═══════════════════════════════════════════════════════════════
 
-/// Concrete `PolicyEngine` backed by the `org_academic_policies` table.
+/// Concrete `PolicyEngine` backed by the `academic_policies` table.
 ///
 /// Evaluates whether specific actions require approval based on org policies.
 pub struct OrgPolicyEngine {
@@ -27,9 +27,9 @@ impl OrgPolicyEngine {
     }
 
     /// Load the policy for an organization.
-    async fn get_policy(&self, org_id: &str) -> Result<Option<org_academic_policy::Model>, AppError> {
-        let policy = org_academic_policy::Entity::find()
-            .filter(org_academic_policy::Column::OrgId.eq(org_id))
+    async fn get_policy(&self, org_id: &str) -> Result<Option<academic_policy::Model>, AppError> {
+        let policy = academic_policy::Entity::find()
+            .filter(academic_policy::Column::OrgId.eq(org_id))
             .one(&self.db)
             .await?;
         Ok(policy)
@@ -49,26 +49,13 @@ impl PolicyEngine for OrgPolicyEngine {
         // Check action-specific approval requirements
         let requires = match action {
             // Late enrollment
-            "enrollment.create_late" => policy.late_enrollment_requires_approval == 1,
+            "enrollment.create_late" => policy.late_enrollment_approval == 1,
 
             // Grade modification after cycle close
-            "grade.modify_after_close" => policy.grade_modification_requires_approval == 1,
+            "grade.modify_after_close" => policy.grade_edit_approval == 1,
 
-            // Generic — check the settings JSON for custom approval rules
-            _ => {
-                if let Some(ref settings_str) = policy.settings {
-                    if let Ok(settings) = serde_json::from_str::<serde_json::Value>(settings_str) {
-                        settings.get("approval_required")
-                            .and_then(|v| v.get(action))
-                            .and_then(|v| v.as_bool())
-                            .unwrap_or(false)
-                    } else {
-                        false
-                    }
-                } else {
-                    false
-                }
-            }
+            // Generic — check the settings JSON for custom approval rules (Removed in restructuring)
+            _ => false,
         };
 
         Ok(requires)

@@ -14,7 +14,7 @@ use shared_kernel::errors::AppError;
 
 
 use crate::config::ResolvedConfig;
-use crate::evaluator::Evaluator;
+use crate::academic_evaluator::Evaluator;
 use crate::planner::Planner;
 
 /// Report of what happened during catch-up.

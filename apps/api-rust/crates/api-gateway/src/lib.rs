@@ -20,7 +20,7 @@ mod middleware;
 
 use app_state::AppState;
 
-pub async fn start_server(database_url: &str, port: u16) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn start_server(_database_url: &str, port: u16) -> Result<(), Box<dyn std::error::Error>> {
     info!("🚀 Bootstrapping Orbis API Gateway (ops:: architecture)");
 
     let state = AppState::init().await?;

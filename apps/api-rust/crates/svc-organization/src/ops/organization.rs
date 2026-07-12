@@ -30,7 +30,7 @@ pub async fn get_organization(ctx: &ServiceContext) -> Result<OrganizationRespon
         id: org.id,
         name: org.name,
         name_ar: org.name_ar,
-        slug: org.slug,
+        slug: org.slug.unwrap_or_default(),
         timezone: org.timezone,
         locale: org.locale,
         currency: org.currency,
@@ -60,10 +60,11 @@ pub async fn create_organization(
     let org_id = uuid::Uuid::new_v4().to_string();
 
     let org = organization::ActiveModel {
+        current_year_id: Set(None),
         id: Set(org_id.clone()),
         name: Set(cmd.name),
         name_ar: Set(None),
-        slug: Set(cmd.slug),
+        slug: Set(Some(cmd.slug)),
         code: Set(None),
         timezone: Set(cmd.timezone),
         locale: Set(cmd.locale),
@@ -122,7 +123,7 @@ pub async fn create_organization(
         id: inserted.id,
         name: inserted.name,
         name_ar: inserted.name_ar,
-        slug: inserted.slug,
+        slug: inserted.slug.unwrap_or_default(),
         timezone: inserted.timezone,
         locale: inserted.locale,
         currency: inserted.currency,
@@ -194,7 +195,7 @@ pub async fn update_organization(
         id: updated.id,
         name: updated.name,
         name_ar: updated.name_ar,
-        slug: updated.slug,
+        slug: updated.slug.unwrap_or_default(),
         timezone: updated.timezone,
         locale: updated.locale,
         currency: updated.currency,
@@ -259,13 +260,13 @@ pub async fn update_settings(
 }
 
 pub async fn check_setup(ctx: &ServiceContext) -> Result<serde_json::Value, AppError> {
-    use crate::entities::academic_cycle;
+    use crate::entities::academic_year;
     use svc_academic::entities::class;
     use sea_orm::{EntityTrait, QueryFilter, ColumnTrait, PaginatorTrait};
     
-    // Check if there are any academic cycles
-    let cycles_count = academic_cycle::Entity::find()
-        .filter(academic_cycle::Column::OrgId.eq(&ctx.org_id))
+    // Check if there are any academic years
+    let cycles_count = academic_year::Entity::find()
+        .filter(academic_year::Column::OrgId.eq(&ctx.org_id))
         .count(&ctx.db)
         .await?;
 

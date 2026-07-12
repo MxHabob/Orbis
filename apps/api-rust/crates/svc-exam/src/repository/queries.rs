@@ -16,7 +16,7 @@ use sea_orm::{entity::prelude::*, QueryFilter, QueryOrder, EntityTrait, ColumnTr
 use super::ExamQueryRepo;
 
 use svc_academic::entities::{enrollment, class};
-use svc_organization::entities::academic_cycle;
+use svc_organization::entities::academic_period;
 use svc_iam::entities::user;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -45,7 +45,7 @@ impl ExamQueryRepo {
             .await?;
 
         if list.is_empty() {
-            if let Some(cycle) = academic_cycle::Entity::find_by_id(cycle_id.to_string()).one(&self.db).await? {
+            if let Some(cycle) = academic_period::Entity::find_by_id(cycle_id.to_string()).one(&self.db).await? {
                 if let Some(parent_id) = cycle.parent_id {
                     if let Ok(parent_list) = enrollment::Entity::find()
                         .filter(enrollment::Column::OrgId.eq(org_id))

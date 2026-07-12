@@ -1,8 +1,8 @@
 //! Lifecycle query repository — read operations.
 
 use crate::entities::{
-    organization, academic_cycle, academic_calendar_event,
-    org_academic_policy, promotion_policy,
+    organization, academic_year, academic_period,
+    academic_policy,
     promotion_job, promotion_detail, student_registry_entry,
 };
 use sea_orm::{entity::prelude::*, QueryFilter, QueryOrder, EntityTrait, ColumnTrait};
@@ -27,75 +27,37 @@ impl LifecycleQueryRepo {
             .await
     }
 
-    // ── Cycle Queries ───────────────────────────────────────────
+    // ── Year & Period Queries ───────────────────────────────────────────
 
-    pub async fn get_cycle_by_id(&self, id: &str) -> Result<Option<academic_cycle::Model>, DbErr> {
-        academic_cycle::Entity::find_by_id(id.to_string())
+    pub async fn get_year_by_id(&self, id: &str) -> Result<Option<academic_year::Model>, DbErr> {
+        academic_year::Entity::find_by_id(id.to_string())
             .one(&self.db)
             .await
     }
 
-    pub async fn list_cycles_by_org(&self, org_id: &str) -> Result<Vec<academic_cycle::Model>, DbErr> {
-        academic_cycle::Entity::find()
-            .filter(academic_cycle::Column::OrgId.eq(org_id))
-            .order_by_desc(academic_cycle::Column::StartDate)
+    pub async fn list_years_by_org(&self, org_id: &str) -> Result<Vec<academic_year::Model>, DbErr> {
+        academic_year::Entity::find()
+            .filter(academic_year::Column::OrgId.eq(org_id))
+            .order_by_desc(academic_year::Column::StartDate)
             .all(&self.db)
             .await
     }
 
-    pub async fn get_current_cycle(&self, org_id: &str) -> Result<Option<academic_cycle::Model>, DbErr> {
-        academic_cycle::Entity::find()
-            .filter(academic_cycle::Column::OrgId.eq(org_id))
-            .filter(academic_cycle::Column::IsCurrent.eq(1))
-            .one(&self.db)
-            .await
-    }
-
-    pub async fn get_child_cycles(&self, parent_id: &str) -> Result<Vec<academic_cycle::Model>, DbErr> {
-        academic_cycle::Entity::find()
-            .filter(academic_cycle::Column::ParentId.eq(parent_id))
-            .order_by_asc(academic_cycle::Column::SortOrder)
+    pub async fn get_child_periods(&self, parent_id: &str) -> Result<Vec<academic_period::Model>, DbErr> {
+        academic_period::Entity::find()
+            .filter(academic_period::Column::ParentId.eq(parent_id))
+            .order_by_asc(academic_period::Column::SortOrder)
             .all(&self.db)
             .await
     }
 
-    // ── Calendar Event Queries ──────────────────────────────────
 
-    pub async fn list_events_by_cycle(&self, cycle_id: &str) -> Result<Vec<academic_calendar_event::Model>, DbErr> {
-        academic_calendar_event::Entity::find()
-            .filter(academic_calendar_event::Column::CycleId.eq(cycle_id))
-            .filter(academic_calendar_event::Column::IsActive.eq(1))
-            .order_by_asc(academic_calendar_event::Column::StartDate)
-            .all(&self.db)
-            .await
-    }
-
-    pub async fn get_pending_events(
-        &self,
-        org_id: &str,
-        before_date: &str,
-    ) -> Result<Vec<academic_calendar_event::Model>, DbErr> {
-        academic_calendar_event::Entity::find()
-            .filter(academic_calendar_event::Column::OrgId.eq(org_id))
-            .filter(academic_calendar_event::Column::IsActive.eq(1))
-            .filter(academic_calendar_event::Column::StartDate.lte(before_date))
-            .order_by_asc(academic_calendar_event::Column::StartDate)
-            .all(&self.db)
-            .await
-    }
 
     // ── Policy Queries ──────────────────────────────────────────
 
-    pub async fn get_academic_policy(&self, org_id: &str) -> Result<Option<org_academic_policy::Model>, DbErr> {
-        org_academic_policy::Entity::find()
-            .filter(org_academic_policy::Column::OrgId.eq(org_id))
-            .one(&self.db)
-            .await
-    }
-
-    pub async fn get_promotion_policy(&self, org_id: &str) -> Result<Option<promotion_policy::Model>, DbErr> {
-        promotion_policy::Entity::find()
-            .filter(promotion_policy::Column::OrgId.eq(org_id))
+    pub async fn get_academic_policy(&self, org_id: &str) -> Result<Option<academic_policy::Model>, DbErr> {
+        academic_policy::Entity::find()
+            .filter(academic_policy::Column::OrgId.eq(org_id))
             .one(&self.db)
             .await
     }

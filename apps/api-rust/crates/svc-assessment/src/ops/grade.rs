@@ -19,16 +19,16 @@ use crate::services::grade::{
     UpsertCellRequest, UpsertCellResult, GradeReportCard, GradeAnalytics, GradeMatrixResponse,
 };
 
-use svc_organization::entities::academic_cycle;
+use svc_organization::entities::academic_period;
 
 // ── Helpers ─────────────────────────────────────────────────────
 
 /// Check if cycle is open for grade entry.
 async fn check_cycle_open(ctx: &ServiceContext, cycle_id: &str) -> Result<(), AppError> {
-    let cycle = academic_cycle::Entity::find_by_id(cycle_id.to_string())
+    let cycle = academic_period::Entity::find_by_id(cycle_id.to_string())
         .one(&ctx.db)
         .await?
-        .ok_or_else(|| AppError::not_found("academic_cycle", cycle_id))?;
+        .ok_or_else(|| AppError::not_found("academic_period", cycle_id))?;
 
     if cycle.is_locked == 1 {
         return Err(AppError::unauthorized("Academic cycle is locked"));

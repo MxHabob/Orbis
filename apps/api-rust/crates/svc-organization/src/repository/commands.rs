@@ -1,8 +1,8 @@
 //! Lifecycle command repository — write operations.
 
 use crate::entities::{
-    organization, academic_cycle, academic_calendar_event,
-    org_academic_policy, promotion_policy,
+    organization, academic_period,
+    academic_policy,
     promotion_job, promotion_detail, student_registry_entry,
 };
 use sea_orm::{ActiveModelTrait, ActiveValue::Set, DbErr, EntityTrait, ColumnTrait, QueryFilter};
@@ -13,6 +13,7 @@ impl LifecycleCommandRepo {
 
     pub async fn create_organization(&self, o: organization::Model) -> Result<organization::Model, DbErr> {
         let active = organization::ActiveModel {
+            current_year_id: Set(o.current_year_id),
             id: Set(o.id),
             name: Set(o.name),
             name_ar: Set(o.name_ar),
@@ -48,36 +49,49 @@ impl LifecycleCommandRepo {
         model.update(&self.db).await
     }
 
-    // ── Cycle Commands ──────────────────────────────────────────
+    // ── Year Commands ──────────────────────────────────────────
 
-    pub async fn create_cycle(&self, c: academic_cycle::Model) -> Result<academic_cycle::Model, DbErr> {
-        let active = academic_cycle::ActiveModel {
+    pub async fn create_year(&self, y: crate::entities::academic_year::Model) -> Result<crate::entities::academic_year::Model, DbErr> {
+        let active: crate::entities::academic_year::ActiveModel = y.into();
+        active.insert(&self.db).await
+    }
+
+    pub async fn update_year(&self, model: crate::entities::academic_year::ActiveModel) -> Result<crate::entities::academic_year::Model, DbErr> {
+        model.update(&self.db).await
+    }
+
+    // ── Period Commands ──────────────────────────────────────────
+
+    pub async fn create_period(&self, c: academic_period::Model) -> Result<academic_period::Model, DbErr> {
+        let active = academic_period::ActiveModel {
             id: Set(c.id),
             org_id: Set(c.org_id),
+            year_id: Set(c.year_id),
+            parent_id: Set(c.parent_id),
             name: Set(c.name),
             name_ar: Set(c.name_ar),
             code: Set(c.code),
-            cycle_type: Set(c.cycle_type),
-            parent_id: Set(c.parent_id),
+            period_type: Set(c.period_type),
             start_date: Set(c.start_date),
             end_date: Set(c.end_date),
-            hijri_start_date: Set(c.hijri_start_date),
-            hijri_end_date: Set(c.hijri_end_date),
-            exam_start_date: Set(c.exam_start_date),
-            exam_end_date: Set(c.exam_end_date),
-            weight: Set(c.weight),
+            hijri_start: Set(c.hijri_start),
+            hijri_end: Set(c.hijri_end),
+            enrollment_start: Set(c.enrollment_start),
+            enrollment_end: Set(c.enrollment_end),
+            is_enrollment_open: Set(c.is_enrollment_open),
+            grade_entry_start: Set(c.grade_entry_start),
+            grade_entry_end: Set(c.grade_entry_end),
+            is_grade_entry_open: Set(c.is_grade_entry_open),
+            exam_start: Set(c.exam_start),
+            exam_end: Set(c.exam_end),
             grading_system: Set(c.grading_system),
             passing_grade: Set(c.passing_grade),
             max_grade: Set(c.max_grade),
-            is_current: Set(c.is_current),
+            weight: Set(c.weight),
+            status: Set(c.status),
             is_locked: Set(c.is_locked),
-            is_enrollment_open: Set(c.is_enrollment_open),
-            is_grade_entry_open: Set(c.is_grade_entry_open),
-            grade_entry_start: Set(c.grade_entry_start),
-            grade_entry_end: Set(c.grade_entry_end),
             locked_at: Set(c.locked_at),
             locked_by: Set(c.locked_by),
-            settings: Set(c.settings),
             sort_order: Set(c.sort_order),
             created_at: Set(c.created_at),
             updated_at: Set(c.updated_at),
@@ -85,80 +99,46 @@ impl LifecycleCommandRepo {
         active.insert(&self.db).await
     }
 
-    pub async fn update_cycle(&self, model: academic_cycle::ActiveModel) -> Result<academic_cycle::Model, DbErr> {
+    pub async fn update_period(&self, model: academic_period::ActiveModel) -> Result<academic_period::Model, DbErr> {
         model.update(&self.db).await
     }
 
-    // ── Calendar Event Commands ─────────────────────────────────
 
-    pub async fn create_calendar_event(&self, e: academic_calendar_event::Model) -> Result<academic_calendar_event::Model, DbErr> {
-        let active = academic_calendar_event::ActiveModel {
-            id: Set(e.id),
-            org_id: Set(e.org_id),
-            cycle_id: Set(e.cycle_id),
-            event_type: Set(e.event_type),
-            title: Set(e.title),
-            title_ar: Set(e.title_ar),
-            description: Set(e.description),
-            start_date: Set(e.start_date),
-            end_date: Set(e.end_date),
-            start_time: Set(e.start_time),
-            end_time: Set(e.end_time),
-            is_recurring: Set(e.is_recurring),
-            recurrence_rule: Set(e.recurrence_rule),
-            color: Set(e.color),
-            is_active: Set(e.is_active),
-            sort_order: Set(e.sort_order),
-            created_by: Set(e.created_by),
-            created_at: Set(e.created_at),
-            updated_at: Set(e.updated_at),
-        };
-        active.insert(&self.db).await
-    }
-
-    pub async fn update_calendar_event(&self, model: academic_calendar_event::ActiveModel) -> Result<academic_calendar_event::Model, DbErr> {
-        model.update(&self.db).await
-    }
 
     // ── Policy Commands ─────────────────────────────────────────
 
-    pub async fn upsert_academic_policy(&self, p: org_academic_policy::Model) -> Result<org_academic_policy::Model, DbErr> {
-        let active = org_academic_policy::ActiveModel {
+    pub async fn upsert_academic_policy(&self, p: academic_policy::Model) -> Result<academic_policy::Model, DbErr> {
+        let active = academic_policy::ActiveModel {
             id: Set(p.id),
             org_id: Set(p.org_id),
             default_grading_system: Set(p.default_grading_system),
             default_passing_grade: Set(p.default_passing_grade),
             default_max_grade: Set(p.default_max_grade),
-            enrollment_auto_close_on_capacity: Set(p.enrollment_auto_close_on_capacity),
+            enrollment_auto_close: Set(p.enrollment_auto_close),
             allow_late_enrollment: Set(p.allow_late_enrollment),
-            late_enrollment_requires_approval: Set(p.late_enrollment_requires_approval),
-            grade_entry_auto_close_on_deadline: Set(p.grade_entry_auto_close_on_deadline),
-            allow_grade_modification_after_close: Set(p.allow_grade_modification_after_close),
-            grade_modification_requires_approval: Set(p.grade_modification_requires_approval),
-            default_event_execution_mode: Set(p.default_event_execution_mode),
-            settings: Set(p.settings),
-            created_at: Set(p.created_at),
-            updated_at: Set(p.updated_at),
-        };
-        active.insert(&self.db).await
-    }
-
-    pub async fn upsert_promotion_policy(&self, p: promotion_policy::Model) -> Result<promotion_policy::Model, DbErr> {
-        let active = promotion_policy::ActiveModel {
-            id: Set(p.id),
-            org_id: Set(p.org_id),
+            late_enrollment_approval: Set(p.late_enrollment_approval),
+            grade_entry_auto_close: Set(p.grade_entry_auto_close),
+            allow_grade_edit_after_close: Set(p.allow_grade_edit_after_close),
+            grade_edit_approval: Set(p.grade_edit_approval),
             passing_score: Set(p.passing_score),
             min_attendance_rate: Set(p.min_attendance_rate),
             auto_graduate_final_level: Set(p.auto_graduate_final_level),
             final_level: Set(p.final_level),
             exclude_withdrawn: Set(p.exclude_withdrawn),
-            fee_carry_over_mode: Set(p.fee_carry_over_mode),
-            fee_carry_over_categories: Set(p.fee_carry_over_categories),
-            carry_over_guardians: Set(p.carry_over_guardians),
-            carry_over_time_slots: Set(p.carry_over_time_slots),
-            carry_over_class_subjects: Set(p.carry_over_class_subjects),
-            auto_create_cycles: Set(p.auto_create_cycles),
-            cycle_template: Set(p.cycle_template),
+            autopilot_mode: Set(p.autopilot_mode),
+            autopilot_enabled: Set(p.autopilot_enabled),
+            max_auto_retries: Set(p.max_auto_retries),
+            pause_on_error: Set(p.pause_on_error),
+            auto_open_enrollment: Set(p.auto_open_enrollment),
+            auto_close_enrollment: Set(p.auto_close_enrollment),
+            auto_open_grade_entry: Set(p.auto_open_grade_entry),
+            auto_close_grade_entry: Set(p.auto_close_grade_entry),
+            auto_lock_periods: Set(p.auto_lock_periods),
+            auto_advance_periods: Set(p.auto_advance_periods),
+            auto_archive_years: Set(p.auto_archive_years),
+            grace_days_after_deadline: Set(p.grace_days_after_deadline),
+            notify_before_deadline_days: Set(p.notify_before_deadline_days),
+            default_template_id: Set(p.default_template_id),
             created_at: Set(p.created_at),
             updated_at: Set(p.updated_at),
         };

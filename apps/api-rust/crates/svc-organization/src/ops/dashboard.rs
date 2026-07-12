@@ -7,18 +7,20 @@ use shared_kernel::errors::AppError;
 pub async fn get_stats(
     ctx: &ServiceContext,
 ) -> Result<serde_json::Value, AppError> {
-    use crate::entities::academic_cycle;
+    use crate::entities::{academic_year, organization};
     use svc_academic::entities::{class, enrollment};
     use svc_iam::entities::user_role;
 
-    // Get current cycle name
-    let current_cycle = academic_cycle::Entity::find()
-        .filter(academic_cycle::Column::OrgId.eq(&ctx.org_id))
-        .filter(academic_cycle::Column::IsCurrent.eq(1))
-        .one(&ctx.db)
-        .await?
-        .map(|c| c.name)
-        .unwrap_or_else(|| "N/A".to_string());
+    // Get current year name
+    let org = organization::Entity::find_by_id(&ctx.org_id).one(&ctx.db).await?;
+    let mut current_cycle = "N/A".to_string();
+    if let Some(org) = org {
+        if let Some(year_id) = org.current_year_id {
+            if let Some(year) = academic_year::Entity::find_by_id(year_id).one(&ctx.db).await? {
+                current_cycle = year.name;
+            }
+        }
+    }
 
     // Count active student enrollments
     let students_count = enrollment::Entity::find()

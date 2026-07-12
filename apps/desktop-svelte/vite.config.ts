@@ -2,22 +2,17 @@ import { paraglideVitePlugin } from "@inlang/paraglide-js";
 import tailwindcss from "@tailwindcss/vite";
 import adapter from "@sveltejs/adapter-static";
 import { sveltekit } from "@sveltejs/kit/vite";
-import path from "node:path";
 import { defineConfig, loadEnv } from "vite";
 
 const host = process.env.TAURI_DEV_HOST;
 const rootDir = import.meta.dirname;
 
 export default defineConfig(({ mode }) => {
-  // Load env file from the monorepo root
-  const env = loadEnv(mode, path.resolve(rootDir, "../.."), "");
-
   return {
     plugins: [
       tailwindcss(),
       sveltekit({
         compilerOptions: {
-          // Force runes mode for the project, except for libraries. Can be removed in svelte 6.
           runes: ({ filename }) =>
             filename.split(/[/\\]/).includes("node_modules") ? undefined : true,
         },
@@ -30,19 +25,9 @@ export default defineConfig(({ mode }) => {
         outdir: "./src/lib/paraglide",
       }),
     ],
-    define: {
-      "process.env": {
-        NEXT_PUBLIC_API_URL: JSON.stringify(
-          env.NEXT_PUBLIC_API_URL || "http://localhost:3002",
-        ),
-        NEXT_PUBLIC_URL: JSON.stringify(
-          env.NEXT_PUBLIC_URL || "http://localhost:3001",
-        ),
-      },
-    },
     // ── Build Optimization ─────────────────────────────────────────────
     build: {
-      target: "esnext", // Tauri WebView supports modern JS — no transpilation needed
+      target: "esnext",
       minify: "esbuild",
       rollupOptions: {
         output: {
@@ -64,7 +49,8 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 1520,
       strictPort: true,
-      host: host || false,
+      shortcuts: false,
+      host: host || undefined,
       hmr: host
         ? {
             protocol: "ws",

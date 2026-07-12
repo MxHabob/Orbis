@@ -41,6 +41,8 @@ pub struct Model {
     // ── Autopilot policies ──
     pub autopilot_mode: String, // automatic, suggested, manual
     pub autopilot_enabled: i32,
+    pub max_auto_retries: i32,
+    pub pause_on_error: i32,
     pub auto_open_enrollment: i32,
     pub auto_close_enrollment: i32,
     pub auto_open_grade_entry: i32,

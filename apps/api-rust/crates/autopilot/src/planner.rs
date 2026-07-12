@@ -15,7 +15,7 @@ use shared_kernel::types::ExecutionMode;
 
 use crate::config::ResolvedConfig;
 use crate::entities::autopilot_task;
-use crate::evaluator::SystemSnapshot;
+use crate::academic_evaluator::SystemSnapshot;
 
 /// Result of a planning cycle.
 #[derive(Debug, Clone, Default)]
