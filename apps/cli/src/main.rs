@@ -162,7 +162,8 @@ async fn main() -> Result<()> {
                     "3. Backup Database",
                     "4. Manage License",
                     "5. Repair / Reinstall",
-                    "6. Exit",
+                    "6. Reset Database (Wipe All Data)",
+                    "7. Exit",
                 ]
             } else if db_exists {
                 vec![
@@ -170,7 +171,8 @@ async fn main() -> Result<()> {
                     "2. Run Diagnostics (Doctor)",
                     "3. Repair / Reinstall",
                     "4. Backup Database",
-                    "5. Exit",
+                    "5. Reset Database (Wipe All Data)",
+                    "6. Exit",
                 ]
             } else {
                 vec![
@@ -213,6 +215,30 @@ async fn main() -> Result<()> {
                     } else if choice.contains("License") {
                         if let Err(e) = handle_command(&Commands::License).await {
                             println!("{} {}", "Error:".red(), e);
+                        }
+                    } else if choice.contains("Reset Database") {
+                        let confirm = inquire::Confirm::new("Are you sure you want to completely wipe the database? This action CANNOT BE UNDONE!")
+                            .with_default(false)
+                            .prompt();
+                            
+                        match confirm {
+                            Ok(true) => {
+                                println!("{}", "[*] Wiping database...".red().bold());
+                                let config = crate::config::CliConfig::default();
+                                let path = config.db_url.replace("sqlite:", "").replace("?mode=rwc", "");
+                                if std::path::Path::new(&path).exists() {
+                                    if let Err(e) = std::fs::remove_file(&path) {
+                                        println!("{} Failed to delete database: {}", "Error:".red(), e);
+                                    } else {
+                                        println!("{}", "[+] Database reset successfully. You can now re-initialize the system.".green());
+                                    }
+                                } else {
+                                    println!("{}", "[-] Database file not found, nothing to reset.".yellow());
+                                }
+                            }
+                            _ => {
+                                println!("{}", "[-] Reset cancelled.".dimmed());
+                            }
                         }
                     }
 
