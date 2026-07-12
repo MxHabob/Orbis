@@ -34,9 +34,6 @@ class AcademicContextStore {
   get selectedSubjectId(): string { return this._selectedSubjectId; }
   set selectedSubjectId(val: string) { this._selectedSubjectId = val; localStorage.setItem("orbis_academic_subject_id", val); }
 
-  // Keep backward compat — selectedPeriodId maps to selectedPeriodId
-  get selectedPeriodId(): string { return this._selectedPeriodId; }
-  set selectedPeriodId(val: string) { this.selectedPeriodId = val; }
 
   isReadOnly = $derived(this._isReadOnly || this.currentYear?.status === "archived");
   hasYears = $derived(this.allYears.length > 0);
@@ -47,8 +44,6 @@ class AcademicContextStore {
   yearLabelAr = $derived(this.currentYear?.name_ar ?? this.currentYear?.name ?? "");
   statusBadge = $derived<"planning" | "active" | "closing" | "archived">(this.yearStatus);
   effectivePeriodId = $derived(this._selectedPeriodId || this.activePeriod?.id || "");
-  // backward compat
-  effectivePeriodId = $derived(this.effectivePeriodId);
 
   /** First active period or first period in list */
   get activePeriod(): AcademicPeriod | null {
