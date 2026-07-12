@@ -4,7 +4,7 @@
 import type {
   AcademicYear, AcademicYearInfo, AcademicContextResponse,
   PromotionJob, PromotionDetail, PromotionConfig,
-  OverrideRequest, CalendarEvent, OrgPolicy,
+  OverrideRequest, AcademicPolicy,
   DocumentTemplate, AutopilotStatus, AutopilotTask,
   AgentSession, AgentActionLog,
 } from "../types";
@@ -28,10 +28,10 @@ export interface PlatformCommands {
   overridePromotionDecision(request: Record<string, unknown>): Promise<void>;
   getPromotionPolicy(orgId: string): Promise<Record<string, unknown>>;
 
-  // ── Calendar ──────────────────────────────────────────────────
-  listCalendarEvents(orgId: string, cycleId: string): Promise<CalendarEvent[]>;
-  listPendingCalendarEvents(orgId: string): Promise<CalendarEvent[]>;
-  getOrgPolicy(orgId: string): Promise<OrgPolicy>;
+  // ── Calendar / Periods ──────────────────────────────────────
+  listCalendarEvents(orgId: string, yearId: string): Promise<any[]>;
+  listPendingCalendarEvents(orgId: string): Promise<any[]>;
+  getOrgPolicy(orgId: string): Promise<AcademicPolicy | null>;
 
   // ── Overrides / Approvals ─────────────────────────────────────
   listOverrideRequests(orgId: string, params?: Record<string, unknown>): Promise<OverrideRequest[]>;

@@ -3,7 +3,7 @@
 export interface TimeSlot {
   id: string;
   org_id: string;
-  cycle_id: string;
+  year_id: string;
   slot_number: number;
   name?: string | null;
   name_ar?: string | null;
@@ -20,7 +20,7 @@ export interface TimeSlot {
 export interface ScheduledLesson {
   id: string;
   org_id: string;
-  cycle_id: string;
+  year_id: string;
   class_id: string;
   class_subject_id: string;
   subject_id: string;

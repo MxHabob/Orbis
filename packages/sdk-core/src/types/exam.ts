@@ -3,7 +3,7 @@
 export interface ExamSession {
   id: string;
   org_id: string;
-  cycle_id: string;
+  period_id: string;
   name: string;
   name_ar?: string | null;
   session_type: string;

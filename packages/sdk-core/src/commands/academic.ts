@@ -1,14 +1,16 @@
 /**
  * Academic command interfaces — mirrors svc-academic/ops + svc-organization/ops/cycle.
  * Platform adapters (Desktop/Web) implement these interfaces.
+ *
+ * Migrated: cycles → periods, cycleId → periodId/yearId.
  */
-import type { Class, Enrollment, Subject, OrgUnit, ClassSubject, AcademicCycle, StudentGuardian, Document, Notification } from "../types";
+import type { Class, Enrollment, Subject, OrgUnit, ClassSubject, AcademicPeriod, StudentGuardian, Document, Notification } from "../types";
 
 export interface AcademicCommands {
   // ── Classes ─────────────────────────────────────────────────
-  listClasses(orgId: string, cycleId?: string): Promise<Class[]>;
+  listClasses(orgId: string, yearId?: string): Promise<Class[]>;
   getClass(classId: string): Promise<Class>;
-  createClass(data: { org_unit_id: string; cycle_id: string; name: string; name_ar?: string; grade_level: string; capacity: number }): Promise<Class>;
+  createClass(data: { org_unit_id: string; year_id: string; name: string; name_ar?: string; grade_level: string; capacity: number }): Promise<Class>;
   updateClass(classId: string, data: { name: string; name_ar?: string; level: string; division?: string; capacity?: number }): Promise<Class>;
   deleteClass(classId: string): Promise<void>;
   assignTeacher(classId: string, teacherId: string): Promise<Class>;
@@ -27,31 +29,29 @@ export interface AcademicCommands {
   deleteOrgUnit(unitId: string): Promise<void>;
 
   // ── Enrollments ─────────────────────────────────────────────
-  listEnrollments(orgId: string, classId?: string, cycleId?: string): Promise<Enrollment[]>;
+  listEnrollments(orgId: string, classId?: string, yearId?: string): Promise<Enrollment[]>;
   getEnrollment(orgId: string, enrollmentId: string): Promise<Enrollment>;
-  createEnrollment(data: { org_id: string; cycle_id: string; student_id: string; class_id: string; student_number: string }): Promise<Enrollment>;
+  createEnrollment(data: { org_id: string; year_id: string; student_id: string; class_id: string; student_number: string }): Promise<Enrollment>;
   withdrawEnrollment(orgId: string, enrollmentId: string, reason: string): Promise<Enrollment>;
   transferEnrollment(orgId: string, enrollmentId: string, newClassId: string): Promise<Enrollment>;
-  checkDuplicate(studentId: string, cycleId: string): Promise<Enrollment | null>;
+  checkDuplicate(studentId: string, yearId: string): Promise<Enrollment | null>;
 
   // ── Class-Subject ───────────────────────────────────────────
-  listClassSubjects(orgId: string, classId: string, cycleId?: string): Promise<ClassSubject[]>;
-  listTeacherSubjects(orgId: string, teacherId: string, cycleId?: string): Promise<ClassSubject[]>;
-  createClassSubject(data: { class_id: string; subject_id: string; cycle_id: string; primary_teacher_id?: string; weekly_hours?: number }): Promise<ClassSubject>;
+  listClassSubjects(orgId: string, classId: string, periodId?: string): Promise<ClassSubject[]>;
+  listTeacherSubjects(orgId: string, teacherId: string, periodId?: string): Promise<ClassSubject[]>;
+  createClassSubject(data: { class_id: string; subject_id: string; period_id: string; primary_teacher_id?: string; weekly_hours?: number }): Promise<ClassSubject>;
   updateClassSubject(id: string, data: { primary_teacher_id?: string; weekly_hours?: number }): Promise<ClassSubject>;
   deleteClassSubject(id: string): Promise<void>;
 
-  // ── Cycles ──────────────────────────────────────────────────
-  listCycles(orgId: string): Promise<AcademicCycle[]>;
-  getCycle(cycleId: string): Promise<AcademicCycle>;
-  getCurrentCycle(orgId: string): Promise<AcademicCycle>;
-  createCycle(data: { name: string; name_ar?: string; cycle_type: string; parent_id?: string; start_date: string; end_date: string; grading_system: string }): Promise<AcademicCycle>;
-  updateCycle(cycleId: string, data: { name?: string; start_date?: string; end_date?: string }): Promise<AcademicCycle>;
-  setCurrentCycle(cycleId: string): Promise<AcademicCycle>;
-  activateCycle(orgId: string, cycleId: string): Promise<AcademicCycle>;
-  lockCycle(cycleId: string): Promise<AcademicCycle>;
-  unlockCycle(cycleId: string): Promise<AcademicCycle>;
-  toggleGradeEntry(cycleId: string, open: boolean, start?: string, end?: string): Promise<AcademicCycle>;
+  // ── Periods (was Cycles) ────────────────────────────────────
+  listCycles(orgId: string): Promise<AcademicPeriod[]>;
+  listPeriodsByYear(orgId: string, yearId: string): Promise<AcademicPeriod[]>;
+  getCycle(periodId: string): Promise<AcademicPeriod>;
+  createCycle(data: { name: string; name_ar?: string; period_type: string; parent_id?: string; start_date: string; end_date: string; grading_system?: string }): Promise<AcademicPeriod>;
+  lockCycle(orgId: string, periodId: string): Promise<void>;
+  unlockPeriod(orgId: string, periodId: string): Promise<void>;
+  togglePeriodEnrollment(orgId: string, periodId: string, open: boolean): Promise<void>;
+  togglePeriodGradeEntry(orgId: string, periodId: string, open: boolean): Promise<void>;
 
   listGuardiansByStudent(orgId: string, studentId: string): Promise<StudentGuardian[]>;
   searchGuardians(orgId: string, query: string): Promise<StudentGuardian[]>;

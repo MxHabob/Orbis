@@ -23,7 +23,7 @@ export interface Payment {
 export interface StudentFee {
   id: string;
   org_id: string;
-  cycle_id: string;
+  year_id: string;
   enrollment_id: string;
   fee_template_id: string;
   original_amount: number;

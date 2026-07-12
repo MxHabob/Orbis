@@ -1,17 +1,24 @@
 /**
  * Platform command interfaces — Desktop-specific operations.
- * Year management, promotion, calendar, overrides, AI, document templates.
+ * Year management, promotion, periods, overrides, AI, document templates.
+ *
+ * Migrated: cycles → periods, AcademicCycleContext → AcademicPeriod.
  */
+import type { AcademicPeriod } from "./academic";
 
 export interface AcademicYear {
   id: string;
   org_id: string;
   name: string;
   name_ar?: string | null;
-  status: string;
+  status: string; // planning | active | closing | archived
   start_date: string;
   end_date: string;
-  is_current: number;
+  is_locked: number;
+  locked_by?: string | null;
+  lock_reason?: string | null;
+  archived_at?: string | null;
+  archived_by?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -21,38 +28,23 @@ export interface AcademicYearInfo {
   name: string;
   name_ar?: string | null;
   status: string;
-  is_current: number;
-}
-
-export interface AcademicCycleContext {
-  id: string;
-  name: string;
-  name_ar?: string | null;
-  is_enrollment_open: boolean;
-  is_grade_entry_open: boolean;
-  is_locked: boolean;
-  phase: CyclePhase;
-}
-
-export interface AcademicCycleSummary {
-  id: string;
-  name: string;
-  name_ar?: string | null;
-  cycle_type: string;
-  start_date: string;
-  end_date: string;
-  is_current: number;
 }
 
 export interface AcademicContextResponse {
   year_id: string;
-  active_cycle: AcademicCycleContext | null;
-  all_cycles: AcademicCycleSummary[];
-  year_status: "active" | "archived" | "promoting";
+  current_year: AcademicYear | null;
+  all_years: AcademicYearInfo[];
+  periods: AcademicPeriod[];
+  year_status: "planning" | "active" | "closing" | "archived";
   is_read_only: boolean;
 }
 
-export type CyclePhase = "active" | "enrollment" | "grading" | "exam" | "locked" | "archived";
+/** @deprecated Use AcademicContextResponse instead */
+export type AcademicCycleContext = AcademicPeriod;
+/** @deprecated Use AcademicPeriod instead */
+export type AcademicCycleSummary = AcademicPeriod;
+/** @deprecated Use period status instead */
+export type CyclePhase = "planned" | "active" | "grading" | "exam" | "locked" | "closed";
 
 export interface PromotionJob {
   id: string;
@@ -107,6 +99,45 @@ export interface OverrideRequest {
   requested_by_name?: string | null;
 }
 
+/** Unified academic policy (replaces CalendarEvent + OrgPolicy) */
+export interface AcademicPolicy {
+  id: string;
+  org_id: string;
+  // Grading defaults
+  default_grading_system: string;
+  default_passing_grade: number;
+  default_max_grade: number;
+  // Enrollment
+  enrollment_auto_close: number;
+  allow_late_enrollment: number;
+  late_enrollment_approval: number;
+  // Grade entry
+  grade_entry_auto_close: number;
+  allow_grade_edit_after_close: number;
+  grade_edit_approval: number;
+  // Promotion
+  passing_score: number;
+  min_attendance_rate: number;
+  auto_graduate_final_level: number;
+  final_level?: string | null;
+  exclude_withdrawn: number;
+  // Autopilot
+  autopilot_mode: string;
+  autopilot_enabled: number;
+  auto_open_enrollment: number;
+  auto_close_enrollment: number;
+  auto_open_grade_entry: number;
+  auto_close_grade_entry: number;
+  auto_lock_periods: number;
+  auto_advance_periods: number;
+  auto_archive_years: number;
+  grace_days_after_deadline: number;
+  notify_before_deadline_days: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/** @deprecated Use AcademicPolicy instead */
 export interface CalendarEvent {
   id: string;
   org_id: string;
@@ -120,6 +151,7 @@ export interface CalendarEvent {
   created_at: string;
 }
 
+/** @deprecated Use AcademicPolicy instead */
 export interface OrgPolicy {
   id: string;
   org_id: string;

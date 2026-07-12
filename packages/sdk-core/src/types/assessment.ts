@@ -3,7 +3,7 @@
 export interface Grade {
   id: string;
   org_id: string;
-  cycle_id: string;
+  period_id: string;
   enrollment_id: string;
   assessment_id?: string | null;
   class_subject_id?: string | null;
@@ -27,7 +27,7 @@ export interface Grade {
 export interface Attendance {
   id: string;
   org_id: string;
-  cycle_id: string;
+  period_id: string;
   enrollment_id: string;
   class_id: string;
   date: string;
@@ -46,7 +46,7 @@ export interface Attendance {
 export interface BehaviorRecord {
   id: string;
   org_id: string;
-  cycle_id: string;
+  period_id: string;
   enrollment_id: string;
   behavior_type: string;
   severity: string;
@@ -65,7 +65,7 @@ export interface BehaviorRecord {
 export interface Assessment {
   id: string;
   org_id: string;
-  cycle_id: string;
+  period_id: string;
   class_subject_id: string;
   title: string;
   title_ar?: string | null;
@@ -85,7 +85,7 @@ export interface GradeReportCard {
   enrollment_id: string;
   student_id: string;
   student_name: string;
-  cycle_name: string;
+  period_name: string;
   subjects: SubjectGradeSummary[];
   overall_percentage: number;
   overall_gpa: number;

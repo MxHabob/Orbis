@@ -12,7 +12,7 @@ export const commands: OrbisCommands = {
   // ACADEMIC
   // ═══════════════════════════════════════════════════════════════
   academic: {
-    listClasses: (_orgId, _cycleId?) => http.get("/api/classes"),
+    listClasses: (_orgId, _yearId?) => http.get("/api/classes"),
     getClass: (classId) => http.get(`/api/classes/${classId}`),
     createClass: (data) => http.post("/api/classes", data),
     updateClass: (classId, data) => http.put(`/api/classes/${classId}`, data),
@@ -30,29 +30,27 @@ export const commands: OrbisCommands = {
     updateOrgUnit: (unitId, data) => http.put(`/api/units/${unitId}`, data),
     deleteOrgUnit: (unitId) => http.del(`/api/units/${unitId}`),
 
-    listEnrollments: (_orgId, _classId?, _cycleId?) => http.get("/api/enrollments"),
+    listEnrollments: (_orgId, _classId?, _yearId?) => http.get("/api/enrollments"),
     getEnrollment: (enrollmentId) => http.get(`/api/enrollments/${enrollmentId}`),
     createEnrollment: (data) => http.post("/api/enrollments", data),
     withdrawEnrollment: (enrollmentId, reason) => http.post(`/api/enrollments/${enrollmentId}/withdraw`, { reason }),
     transferEnrollment: (enrollmentId, newClassId) => http.post(`/api/enrollments/${enrollmentId}/transfer`, { class_id: newClassId }),
-    checkDuplicate: (studentId, cycleId) => http.get(`/api/enrollments/check-duplicate?student_id=${studentId}&cycle_id=${cycleId}`),
+    checkDuplicate: (studentId, yearId) => http.get(`/api/enrollments/check-duplicate?student_id=${studentId}&year_id=${yearId}`),
 
-    listClassSubjects: (classId, cycleId) => http.get(`/api/class-subjects?class_id=${classId}&cycle_id=${cycleId}`),
-    listTeacherSubjects: (teacherId, cycleId) => http.get(`/api/teacher-subjects?teacher_id=${teacherId}&cycle_id=${cycleId}`),
+    listClassSubjects: (classId, periodId) => http.get(`/api/class-subjects?class_id=${classId}&period_id=${periodId}`),
+    listTeacherSubjects: (teacherId, periodId) => http.get(`/api/teacher-subjects?teacher_id=${teacherId}&period_id=${periodId}`),
     createClassSubject: (data) => http.post("/api/class-subjects", data),
     updateClassSubject: (id, data) => http.put(`/api/class-subjects/${id}`, data),
     deleteClassSubject: (id) => http.del(`/api/class-subjects/${id}`),
 
-    listCycles: (_orgId) => http.get("/api/cycles"),
-    getCycle: (cycleId) => http.get(`/api/cycles/${cycleId}`),
-    getCurrentCycle: (_orgId) => http.get("/api/cycles/current"),
-    createCycle: (data) => http.post("/api/cycles", data),
-    updateCycle: (cycleId, data) => http.put(`/api/cycles/${cycleId}`, data),
-    setCurrentCycle: (cycleId) => http.post(`/api/cycles/${cycleId}/activate`),
-    activateCycle: (orgId, cycleId) => http.post(`/api/cycles/${cycleId}/activate`),
-    lockCycle: (cycleId) => http.post(`/api/cycles/${cycleId}/lock`),
-    unlockCycle: (cycleId) => http.post(`/api/cycles/${cycleId}/unlock`),
-    toggleGradeEntry: (cycleId, open, _start?, _end?) => http.post(`/api/cycles/${cycleId}/grade-entry/${open ? "open" : "close"}`),
+    listCycles: (_orgId) => http.get("/api/periods"),
+    listPeriodsByYear: (_orgId, yearId) => http.get(`/api/periods/year/${yearId}`),
+    getCycle: (periodId) => http.get(`/api/periods/${periodId}`),
+    createCycle: (data) => http.post("/api/periods", data),
+    lockCycle: (_orgId, periodId) => http.post(`/api/periods/${periodId}/lock`),
+    unlockPeriod: (_orgId, periodId) => http.post(`/api/periods/${periodId}/unlock`),
+    togglePeriodEnrollment: (_orgId, periodId, open) => http.post(`/api/periods/${periodId}/enrollment/${open ? "open" : "close"}`),
+    togglePeriodGradeEntry: (_orgId, periodId, open) => http.post(`/api/periods/${periodId}/grade-entry/${open ? "open" : "close"}`),
 
     listGuardiansByStudent: (studentId) => http.get(`/api/guardians/${studentId}`),
     searchGuardians: (query) => http.get(`/api/guardians/search?q=${query}`),
@@ -67,25 +65,25 @@ export const commands: OrbisCommands = {
   // ASSESSMENT
   // ═══════════════════════════════════════════════════════════════
   assessment: {
-    listGrades: (cycleId, enrollmentId?, classSubjectId?) =>
-      http.get(`/api/grades?cycle_id=${cycleId}${enrollmentId ? `&enrollment_id=${enrollmentId}` : ""}${classSubjectId ? `&class_subject_id=${classSubjectId}` : ""}`),
-    submitGrade: (_cycleId, data) => http.post("/api/grades", data),
-    submitBulkGrades: (_cycleId, grades) => http.post("/api/grades/bulk", grades),
+    listGrades: (periodId, enrollmentId?, classSubjectId?) =>
+      http.get(`/api/grades?period_id=${periodId}${enrollmentId ? `&enrollment_id=${enrollmentId}` : ""}${classSubjectId ? `&class_subject_id=${classSubjectId}` : ""}`),
+    submitGrade: (_periodId, data) => http.post("/api/grades", data),
+    submitBulkGrades: (_periodId, grades) => http.post("/api/grades/bulk", grades),
     updateGrade: (gradeId, data) => http.put(`/api/grades/${gradeId}`, data),
-    getReportCard: (enrollmentId, cycleId) => http.get(`/api/report-card/${enrollmentId}/${cycleId}`),
-    getGradeAnalytics: (cycleId, classSubjectId) => http.get(`/api/grades/analytics?cycle_id=${cycleId}&class_subject_id=${classSubjectId}`),
+    getReportCard: (enrollmentId, periodId) => http.get(`/api/report-card/${enrollmentId}/${periodId}`),
+    getGradeAnalytics: (periodId, classSubjectId) => http.get(`/api/grades/analytics?period_id=${periodId}&class_subject_id=${classSubjectId}`),
 
-    listAttendance: (_cycleId, classId?, date?, _enrollmentId?) =>
+    listAttendance: (_periodId, classId?, date?, _enrollmentId?) =>
       http.get(`/api/attendance/${classId ?? "all"}/${date ?? "today"}`),
-    recordAttendance: (_cycleId, data) => http.post("/api/attendance", data),
-    recordBulkAttendance: (_cycleId, data) => http.post("/api/attendance/bulk", data),
-    getAttendanceReport: (_cycleId, enrollmentId) => http.get(`/api/attendance/report/${enrollmentId}`),
+    recordAttendance: (_periodId, data) => http.post("/api/attendance", data),
+    recordBulkAttendance: (_periodId, data) => http.post("/api/attendance/bulk", data),
+    getAttendanceReport: (_periodId, enrollmentId) => http.get(`/api/attendance/report/${enrollmentId}`),
 
-    listBehavior: (_cycleId, enrollmentId?) => http.get(`/api/behavior${enrollmentId ? `/${enrollmentId}` : ""}`),
+    listBehavior: (_periodId, enrollmentId?) => http.get(`/api/behavior${enrollmentId ? `/${enrollmentId}` : ""}`),
     updateBehavior: (recordId, data) => http.put(`/api/behavior/${recordId}`, data),
     deleteBehavior: (recordId) => http.del(`/api/behavior/${recordId}`),
 
-    listAssessments: (_cycleId, classSubjectId?) =>
+    listAssessments: (_periodId, classSubjectId?) =>
       http.get(`/api/assessments${classSubjectId ? `?class_subject_id=${classSubjectId}` : ""}`),
     createAssessment: (data) => http.post("/api/assessments", data),
     updateAssessment: (assessmentId, data) => http.put(`/api/assessments/${assessmentId}`, data),
@@ -136,27 +134,27 @@ export const commands: OrbisCommands = {
   // SCHEDULING
   // ═══════════════════════════════════════════════════════════════
   scheduling: {
-    listTimeSlots: (_cycleId) => http.get("/api/time-slots"),
+    listTimeSlots: (_yearId) => http.get("/api/time-slots"),
     createTimeSlot: (data) => http.post("/api/time-slots", data),
     updateTimeSlot: (slotId, data) => http.put(`/api/time-slots/${slotId}`, data),
     deleteTimeSlot: (slotId) => http.del(`/api/time-slots/${slotId}`),
 
-    listLessonsByClass: (cycleId, classId) => http.get(`/api/schedule/${classId}/${cycleId}`),
-    listLessonsByTeacher: (cycleId, teacherId) => http.get(`/api/schedule/teacher/${teacherId}/${cycleId}`),
+    listLessonsByClass: (yearId, classId) => http.get(`/api/schedule/${classId}/${yearId}`),
+    listLessonsByTeacher: (yearId, teacherId) => http.get(`/api/schedule/teacher/${teacherId}/${yearId}`),
     createLesson: (data) => http.post("/api/lessons", data),
     updateLesson: (lessonId, data) => http.put(`/api/lessons/${lessonId}`, data),
     deleteLesson: (lessonId) => http.del(`/api/lessons/${lessonId}`),
-    checkConflicts: (cycleId, teacherId, timeSlotId, dayOfWeek, roomId?) =>
-      http.post("/api/schedule/conflicts", { cycleId, teacherId, timeSlotId, dayOfWeek, roomId }),
+    checkConflicts: (yearId, teacherId, timeSlotId, dayOfWeek, roomId?) =>
+      http.post("/api/schedule/conflicts", { yearId, teacherId, timeSlotId, dayOfWeek, roomId }),
 
     listRooms: () => http.get("/api/rooms"),
     createRoom: (data) => http.post("/api/rooms", data),
     updateRoom: (roomId, data) => http.put(`/api/rooms/${roomId}`, data),
     deleteRoom: (roomId) => http.del(`/api/rooms/${roomId}`),
 
-    startSolver: (cycleId, mode?) => http.post("/api/schedule/solve", { cycle_id: cycleId, mode }),
+    startSolver: (yearId, mode?) => http.post("/api/schedule/solve", { year_id: yearId, mode }),
     getSolverJob: (jobId) => http.get(`/api/schedule/solve/job/${jobId}`),
-    listSolverJobs: (cycleId) => http.get(`/api/schedule/solve/${cycleId}`),
+    listSolverJobs: (yearId) => http.get(`/api/schedule/solve/${yearId}`),
     cancelSolver: (jobId) => http.post(`/api/schedule/solve/${jobId}/cancel`),
     applySolver: (jobId) => http.post(`/api/schedule/solve/${jobId}/apply`),
   },
@@ -165,7 +163,7 @@ export const commands: OrbisCommands = {
   // EXAM
   // ═══════════════════════════════════════════════════════════════
   exam: {
-    listSessions: (cycleId) => http.get(`/api/exam/sessions/${cycleId}`),
+    listSessions: (periodId) => http.get(`/api/exam/sessions/${periodId}`),
     getSession: (sessionId) => http.get(`/api/exam/sessions/detail/${sessionId}`),
     createSession: (data) => http.post("/api/exam/sessions", data),
     updateSession: (sessionId, data) => http.put(`/api/exam/sessions/${sessionId}`, data),
@@ -181,9 +179,9 @@ export const commands: OrbisCommands = {
 
     listSeating: (examSubjectId) => http.get(`/api/exam/seating/${examSubjectId}`),
     generateOrdering: (sessionId) => http.post(`/api/exam/sessions/${sessionId}/seating`),
-    getOrdering: (orgId, cycleId) => http.get(`/api/exam/ordering?orgId=${orgId}&cycleId=${cycleId}`),
-    rebuildOrdering: (orgId, cycleId, strategy) => http.post(`/api/exam/ordering/rebuild`, { orgId, cycleId, strategy }),
-    freezeOrdering: (orgId, cycleId, userId) => http.post(`/api/exam/ordering/freeze`, { orgId, cycleId, userId }),
+    getOrdering: (orgId, periodId) => http.get(`/api/exam/ordering?orgId=${orgId}&periodId=${periodId}`),
+    rebuildOrdering: (orgId, periodId, strategy) => http.post(`/api/exam/ordering/rebuild`, { orgId, periodId, strategy }),
+    freezeOrdering: (orgId, periodId, userId) => http.post(`/api/exam/ordering/freeze`, { orgId, periodId, userId }),
   },
 
   // ═══════════════════════════════════════════════════════════════
@@ -238,7 +236,7 @@ export const commands: OrbisCommands = {
     overridePromotionDecision: (request) => http.post("/api/promotion/override", request),
     getPromotionPolicy: (_orgId) => http.get("/api/promotion/policy"),
 
-    listCalendarEvents: (_orgId, cycleId) => http.get(`/api/calendar?cycle_id=${cycleId}`),
+    listCalendarEvents: (_orgId, yearId) => http.get(`/api/calendar?year_id=${yearId}`),
     listPendingCalendarEvents: (_orgId) => http.get("/api/calendar/pending"),
     getOrgPolicy: (_orgId) => http.get("/api/organization/policy"),
 
@@ -288,7 +286,7 @@ export const commands: OrbisCommands = {
   },
   bulkImport: {
     createStudents: (orgId, userId, data) => http.post("/api/import/students", { students: data }),
-    createGrades: (orgId, userId, cycleId, data) => http.post("/api/import/grades", { grades: data }),
+    createGrades: (orgId, userId, periodId, data) => http.post("/api/import/grades", { grades: data }),
   },
   auditLogs: {
     getAll: (orgId) => http.get(`/api/audit-logs?orgId=${orgId}`),

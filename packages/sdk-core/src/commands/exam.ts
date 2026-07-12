@@ -1,12 +1,14 @@
 /**
  * Exam command interfaces — mirrors svc-exam/ops.
+ *
+ * Migrated: cycleId → periodId.
  */
 import type { ExamSession, ExamSubject, ExamSchedule, ExamHall, SeatingNumber } from "../types";
 
 export interface ExamCommands {
-  listSessions(cycleId: string): Promise<ExamSession[]>;
+  listSessions(periodId: string): Promise<ExamSession[]>;
   getSession(sessionId: string): Promise<ExamSession>;
-  createSession(data: { cycle_id: string; name: string; name_ar?: string; session_type: string; start_date: string; end_date: string }): Promise<ExamSession>;
+  createSession(data: { period_id: string; name: string; name_ar?: string; session_type: string; start_date: string; end_date: string }): Promise<ExamSession>;
   updateSession(sessionId: string, data: { name?: string; status?: string; start_date?: string; end_date?: string }): Promise<ExamSession>;
 
   listExamSubjects(sessionId: string): Promise<ExamSubject[]>;
@@ -20,7 +22,7 @@ export interface ExamCommands {
 
   listSeating(examSubjectId: string): Promise<SeatingNumber[]>;
   generateOrdering(sessionId: string): Promise<void>;
-  getOrdering(orgId: string, cycleId: string): Promise<any[]>;
-  rebuildOrdering(orgId: string, cycleId: string, strategy: string): Promise<any[]>;
-  freezeOrdering(orgId: string, cycleId: string, userId: string): Promise<void>;
+  getOrdering(orgId: string, periodId: string): Promise<any[]>;
+  rebuildOrdering(orgId: string, periodId: string, strategy: string): Promise<any[]>;
+  freezeOrdering(orgId: string, periodId: string, userId: string): Promise<void>;
 }

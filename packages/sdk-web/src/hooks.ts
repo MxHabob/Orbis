@@ -36,11 +36,11 @@ export const queryKeys = {
   notifications: () => ["notifications"] as const,
 
   // Assessment
-  grades: (cycleId: string) => ["grades", cycleId] as const,
+  grades: (periodId: string) => ["grades", periodId] as const,
   attendance: (classId: string, date: string) => ["attendance", classId, date] as const,
-  assessments: (cycleId: string) => ["assessments", cycleId] as const,
+  assessments: (periodId: string) => ["assessments", periodId] as const,
   behavior: (studentId: string) => ["behavior", studentId] as const,
-  reportCard: (enrollmentId: string, cycleId: string) => ["reportCard", enrollmentId, cycleId] as const,
+  reportCard: (enrollmentId: string, periodId: string) => ["reportCard", enrollmentId, periodId] as const,
 
   // Finance
   feeTemplates: () => ["feeTemplates"] as const,
@@ -52,11 +52,11 @@ export const queryKeys = {
   // Scheduling
   timeSlots: () => ["timeSlots"] as const,
   rooms: () => ["rooms"] as const,
-  schedule: (classId: string, cycleId: string) => ["schedule", classId, cycleId] as const,
-  solverJobs: (cycleId: string) => ["solverJobs", cycleId] as const,
+  schedule: (classId: string, yearId: string) => ["schedule", classId, yearId] as const,
+  solverJobs: (yearId: string) => ["solverJobs", yearId] as const,
 
   // Exam
-  examSessions: (cycleId: string) => ["examSessions", cycleId] as const,
+  examSessions: (periodId: string) => ["examSessions", periodId] as const,
   examHalls: () => ["examHalls"] as const,
 
   // IAM
@@ -125,11 +125,11 @@ export function useCreateEnrollment() {
 
 // ── Assessment Hooks ────────────────────────────────────────────
 
-export function useGrades(cycleId: string) {
+export function useGrades(periodId: string) {
   return useQuery({
-    queryKey: queryKeys.grades(cycleId),
-    queryFn: () => commands.assessment.listGrades(cycleId),
-    enabled: !!cycleId,
+    queryKey: queryKeys.grades(periodId),
+    queryFn: () => commands.assessment.listGrades(periodId),
+    enabled: !!periodId,
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -137,17 +137,17 @@ export function useGrades(cycleId: string) {
 export function useSubmitGrade() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ cycleId, data }: { cycleId: string; data: any }) =>
-      commands.assessment.submitGrade(cycleId, data),
+    mutationFn: ({ periodId, data }: { periodId: string; data: any }) =>
+      commands.assessment.submitGrade(periodId, data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["grades"] }),
   });
 }
 
-export function useReportCard(enrollmentId: string, cycleId: string) {
+export function useReportCard(enrollmentId: string, periodId: string) {
   return useQuery({
-    queryKey: queryKeys.reportCard(enrollmentId, cycleId),
-    queryFn: () => commands.assessment.getReportCard(enrollmentId, cycleId),
-    enabled: !!enrollmentId && !!cycleId,
+    queryKey: queryKeys.reportCard(enrollmentId, periodId),
+    queryFn: () => commands.assessment.getReportCard(enrollmentId, periodId),
+    enabled: !!enrollmentId && !!periodId,
     staleTime: 10 * 60 * 1000,
   });
 }
@@ -161,11 +161,11 @@ export function useAttendance(classId: string, date: string) {
   });
 }
 
-export function useAssessments(cycleId: string) {
+export function useAssessments(periodId: string) {
   return useQuery({
-    queryKey: queryKeys.assessments(cycleId),
-    queryFn: () => commands.assessment.listAssessments(cycleId),
-    enabled: !!cycleId,
+    queryKey: queryKeys.assessments(periodId),
+    queryFn: () => commands.assessment.listAssessments(periodId),
+    enabled: !!periodId,
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -226,22 +226,22 @@ export function useRooms() {
   });
 }
 
-export function useClassSchedule(classId: string, cycleId: string) {
+export function useClassSchedule(classId: string, yearId: string) {
   return useQuery({
-    queryKey: queryKeys.schedule(classId, cycleId),
-    queryFn: () => commands.scheduling.listLessonsByClass(cycleId, classId),
-    enabled: !!classId && !!cycleId,
+    queryKey: queryKeys.schedule(classId, yearId),
+    queryFn: () => commands.scheduling.listLessonsByClass(yearId, classId),
+    enabled: !!classId && !!yearId,
     staleTime: 5 * 60 * 1000,
   });
 }
 
 // ── Exam Hooks ──────────────────────────────────────────────────
 
-export function useExamSessions(cycleId: string) {
+export function useExamSessions(periodId: string) {
   return useQuery({
-    queryKey: queryKeys.examSessions(cycleId),
-    queryFn: () => commands.exam.listSessions(cycleId),
-    enabled: !!cycleId,
+    queryKey: queryKeys.examSessions(periodId),
+    queryFn: () => commands.exam.listSessions(periodId),
+    enabled: !!periodId,
     staleTime: 5 * 60 * 1000,
   });
 }

@@ -129,11 +129,11 @@ let behaviorRecords = $state<any[]>([]);
 onMount(async () => {
   evaluationLoading = true;
   try {
-    const cycleId = academicContext.effectiveCycleId || student?.cycle_id || "";
-    if (cycleId && studentId) {
+    const periodId = academicContext.effectivePeriodId || student?.period_id || "";
+    if (periodId && studentId) {
       const [gRes, aRes, bRes] = await Promise.all([
-        commands.assessment.getReportCard(studentId, cycleId).catch(() => null),
-        commands.assessment.getAttendanceReport(cycleId, studentId).catch(() => null),
+        commands.assessment.getReportCard(studentId, periodId).catch(() => null),
+        commands.assessment.getAttendanceReport(periodId, studentId).catch(() => null),
         commands.assessment.listBehavior(orgId, studentId).catch(() => []),
       ]);
       gradesReport = gRes;

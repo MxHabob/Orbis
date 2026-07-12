@@ -21,7 +21,7 @@ let { data }: { data: { orgId: string } } = $props();
 const queryClient = useQueryClient();
 
 // Sync state selections
-let activeCycleId = $state<string>("");
+let activeYearId = $state<string>("");
 let selectedClassId = $state<string>("");
 let selectedTeacherId = $state<string>("");
 let viewMode = $state<"class" | "teacher">("class");
@@ -99,14 +99,14 @@ const teachers = $derived(
   )
 );
 
-// Track cycles and activeCycleId selection
+// Track cycles and activeYearId selection
 $effect(() => {
-  if (cycles.length > 0 && !activeCycleId) {
+  if (cycles.length > 0 && !activeYearId) {
     const active =
       cycles.find((c: any) => c.is_current === 1 || c.is_current === true) ||
       cycles[0];
     if (active) {
-      activeCycleId = String(active.id);
+      activeYearId = String(active.id);
     }
   }
 });
@@ -148,9 +148,9 @@ $effect(() => {
 
 // Time Slots logic
 const timeSlotsQuery = createQuery(toStore(() => ({
-  queryKey: ["time-slots", data.orgId, activeCycleId],
-  queryFn: () => commands.scheduling.listTimeSlots(data.orgId, activeCycleId),
-  enabled: !!data.orgId && !!activeCycleId,
+  queryKey: ["time-slots", data.orgId, activeYearId],
+  queryFn: () => commands.scheduling.listTimeSlots(data.orgId, activeYearId),
+  enabled: !!data.orgId && !!activeYearId,
   staleTime: 10 * 60 * 1000,
 })));
 
@@ -158,16 +158,16 @@ const timeSlots = $derived($timeSlotsQuery.data ?? []);
 
 // Schedules logic
 const classScheduleQuery = createQuery(toStore(() => ({
-  queryKey: ["class-schedule", data.orgId, activeCycleId, selectedClassId],
-  queryFn: () => commands.scheduling.listLessonsByClass(data.orgId, activeCycleId, selectedClassId),
-  enabled: !!data.orgId && !!activeCycleId && !!selectedClassId && viewMode === "class",
+  queryKey: ["class-schedule", data.orgId, activeYearId, selectedClassId],
+  queryFn: () => commands.scheduling.listLessonsByClass(data.orgId, activeYearId, selectedClassId),
+  enabled: !!data.orgId && !!activeYearId && !!selectedClassId && viewMode === "class",
   staleTime: 2 * 60 * 1000,
 })));
 
 const teacherScheduleQuery = createQuery(toStore(() => ({
-  queryKey: ["teacher-schedule", data.orgId, activeCycleId, selectedTeacherId],
-  queryFn: () => commands.scheduling.listLessonsByTeacher(data.orgId, activeCycleId, selectedTeacherId),
-  enabled: !!data.orgId && !!activeCycleId && !!selectedTeacherId && viewMode === "teacher",
+  queryKey: ["teacher-schedule", data.orgId, activeYearId, selectedTeacherId],
+  queryFn: () => commands.scheduling.listLessonsByTeacher(data.orgId, activeYearId, selectedTeacherId),
+  enabled: !!data.orgId && !!activeYearId && !!selectedTeacherId && viewMode === "teacher",
   staleTime: 2 * 60 * 1000,
 })));
 
@@ -244,7 +244,7 @@ async function handleMoveLesson(
     );
     const conflicts = await commands.scheduling.checkConflicts({
       orgId: data.orgId,
-      cycleId: activeCycleId,
+      yearId: activeYearId,
       timeSlotId: targetSlotId,
       dayOfWeek: targetDay,
       teacherId: lesson.teacher_id,
@@ -299,10 +299,10 @@ async function handleDeleteLesson(lessonId: string) {
 
 function refetchLessons() {
   queryClient.invalidateQueries({
-    queryKey: ["class-schedule", data.orgId, activeCycleId, selectedClassId],
+    queryKey: ["class-schedule", data.orgId, activeYearId, selectedClassId],
   });
   queryClient.invalidateQueries({
-    queryKey: ["teacher-schedule", data.orgId, activeCycleId, selectedTeacherId],
+    queryKey: ["teacher-schedule", data.orgId, activeYearId, selectedTeacherId],
   });
 }
 
@@ -378,7 +378,7 @@ function openScheduler(day: number, slotId: string) {
   {#if !isLoading && !error}
     <SchedulerAiPanel
       orgId={data.orgId}
-      cycleId={activeCycleId}
+      yearId={activeYearId}
       selectedClassId={selectedClassId}
       selectedTeacherId={selectedTeacherId}
       viewMode={viewMode}
@@ -394,7 +394,7 @@ function openScheduler(day: number, slotId: string) {
 <LessonCreateSheet
   bind:open={isModalOpen}
   orgId={data.orgId}
-  cycleId={activeCycleId}
+  yearId={activeYearId}
   classId={selectedClassId}
   dayOfWeek={activeDay}
   timeSlotId={activeSlotId}

@@ -229,8 +229,8 @@ const systemPages = $derived([
     icon: Shield,
   },
   {
-    title: m.settings_nav_cycles ? m.settings_nav_cycles() : "Academic Cycles",
-    path: `/${currentOrgId}/settings/cycles`,
+    title: m.settings_nav_periods ? m.settings_nav_periods() : "Academic Periods",
+    path: `/${currentOrgId}/settings/periods`,
     icon: Calendar,
   },
   {

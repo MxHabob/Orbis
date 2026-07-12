@@ -152,8 +152,8 @@ const breadcrumbs = $derived.by(() => {
       items.push({ label: m.settings_nav_users() });
     } else if (pathname.includes("/permissions")) {
       items.push({ label: m.settings_nav_permissions() });
-    } else if (pathname.includes("/cycles")) {
-      items.push({ label: m.settings_nav_cycles() });
+    } else if (pathname.includes("/periods")) {
+      items.push({ label: m.settings_nav_periods ? m.settings_nav_periods() : "Academic Periods" });
     } else if (pathname.includes("/units")) {
       items.push({ label: m.settings_nav_units() });
     } else if (pathname.includes("/rooms")) {

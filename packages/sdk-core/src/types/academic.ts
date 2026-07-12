@@ -1,42 +1,52 @@
 /**
  * Academic domain types — mirrors Rust entities in svc-academic + svc-organization.
+ *
+ * Migrated: AcademicCycle → AcademicPeriod, cycle_id → period_id/year_id.
  */
 
-export interface AcademicCycle {
+/** Academic Period (replaces AcademicCycle) */
+export interface AcademicPeriod {
   id: string;
   org_id: string;
+  year_id: string;
+  parent_id?: string | null;
   name: string;
   name_ar?: string | null;
   code?: string | null;
-  cycle_type: string;
-  parent_id?: string | null;
+  period_type: string;
   start_date: string;
   end_date: string;
-  hijri_start_date?: string | null;
-  hijri_end_date?: string | null;
-  exam_start_date?: string | null;
-  exam_end_date?: string | null;
-  weight?: number | null;
+  hijri_start?: string | null;
+  hijri_end?: string | null;
+  enrollment_start?: string | null;
+  enrollment_end?: string | null;
+  is_enrollment_open: number;
+  grade_entry_start?: string | null;
+  grade_entry_end?: string | null;
+  is_grade_entry_open: number;
+  exam_start?: string | null;
+  exam_end?: string | null;
   grading_system: string;
   passing_grade?: number | null;
   max_grade?: number | null;
-  is_current: number;
+  weight?: number | null;
+  status: string;
   is_locked: number;
-  is_enrollment_open: number;
-  is_grade_entry_open: number;
-  grade_entry_start?: string | null;
-  grade_entry_end?: string | null;
-  settings?: string | null;
+  locked_at?: string | null;
+  locked_by?: string | null;
   sort_order?: number | null;
   created_at: string;
   updated_at: string;
 }
 
+/** @deprecated Use AcademicPeriod instead */
+export type AcademicCycle = AcademicPeriod;
+
 export interface Class {
   id: string;
   org_id: string;
   unit_id: string;
-  cycle_id: string;
+  year_id: string;
   name: string;
   name_ar?: string | null;
   level: string;
@@ -55,7 +65,7 @@ export interface Class {
 export interface Enrollment {
   id: string;
   org_id: string;
-  cycle_id: string;
+  year_id: string;
   student_id: string;
   class_id: string;
   student_number: string;
@@ -120,7 +130,7 @@ export interface ClassSubject {
   id: string;
   class_id: string;
   subject_id: string;
-  cycle_id: string;
+  period_id: string;
   primary_teacher_id?: string | null;
   weekly_hours?: number | null;
   is_active: number;
@@ -170,6 +180,7 @@ export interface Organization {
   name_ar?: string | null;
   slug: string;
   code?: string | null;
+  current_year_id?: string | null;
   timezone: string;
   locale: string;
   currency: string;

@@ -1,6 +1,7 @@
 <script lang="ts">
 import { onMount } from "svelte";
 import { commands } from "$lib/core/ipc";
+import { extractErrorMessage } from "$lib/core/ipc";
 import { Button } from "@orbis/ui-svelte/button";
 import { Skeleton } from "@orbis/ui-svelte/skeleton";
 import { Badge } from "@orbis/ui-svelte/badge";
@@ -17,80 +18,78 @@ import {
   ChevronDown,
   Award,
 } from "lucide-svelte";
-import CycleCreateSheet from "$lib/features/academics/components/cycle-create-sheet.svelte";
+import PeriodCreateSheet from "$lib/features/academics/components/period-create-sheet.svelte";
 import * as m from "$lib/paraglide/messages";
 
 let { data }: { data: { orgId: string } } = $props();
 
 // State
-let cycles = $state<any[]>([]);
+let periods = $state<any[]>([]);
 let isLoading = $state(true);
 let error = $state<string | null>(null);
 
 // Sheet controls
 let isSheetOpen = $state(false);
-let editingCycle = $state<any>(null);
+let editingPeriod = $state<any>(null);
 
 // Collapsed states for parent years
 let collapsedYears = $state<Record<string, boolean>>({});
 
-async function loadCycles() {
+async function loadPeriods() {
   isLoading = true;
   error = null;
   try {
     const list = await commands.academic.listCycles(data.orgId);
-    cycles = list;
-  } catch (e) {
-    error = (e as any)?.message || "Failed to load academic cycles";
-    toast.error("Failed to load academic cycles");
+    periods = list;
+  } catch (e: unknown) {
+    error = extractErrorMessage(e);
+    toast.error(extractErrorMessage(e));
   } finally {
     isLoading = false;
   }
 }
 
 onMount(() => {
-  loadCycles();
+  loadPeriods();
 });
 
-// Group cycles into hierarchical Year -> Term
+// Group periods into hierarchical Year -> Term
 let years = $derived(
-  cycles.filter((c) => c.parent_id === null || c.parent_id === undefined),
+  periods.filter((p) => p.parent_id === null || p.parent_id === undefined),
 );
 
 function getTermsForYear(yearId: string) {
-  return cycles.filter((c) => c.parent_id === yearId);
+  return periods.filter((p) => p.parent_id === yearId);
 }
 
 function openCreateSheet() {
-  editingCycle = null;
+  editingPeriod = null;
   isSheetOpen = true;
 }
 
-function openEditSheet(cycle: any) {
-  editingCycle = cycle;
+function openEditSheet(period: any) {
+  editingPeriod = period;
   isSheetOpen = true;
 }
 
-async function handleActivate(cycleId: string) {
+async function handleActivate(periodId: string) {
   try {
-    await commands.academic.activateCycle(data.orgId, cycleId);
-    toast.success(m.settings_cycles_activate_success());
-    loadCycles();
-  } catch (e) {
-    const errorMsg = (e as any)?.message || "Activation failed";
-    toast.error(errorMsg);
+    await commands.academic.lockCycle(data.orgId, periodId);
+    toast.success(m.settings_periods_activate_success());
+    loadPeriods();
+  } catch (e: unknown) {
+    toast.error(extractErrorMessage(e));
   }
 }
 
-async function handleLock(cycleId: string) {
-  if (!confirm(m.settings_cycles_lock_confirm())) return;
+async function handleLock(periodId: string) {
+  if (!confirm(m.settings_periods_lock_confirm())) return;
   try {
-    await commands.academic.lockCycle(cycleId);
-    toast.success(m.settings_cycles_lock_success());
-    loadCycles();
-  } catch (e) {
-    const errorMsg = (e as any)?.message || "Locking failed";
-    toast.error(errorMsg);
+    await commands.academic.lockCycle(data.orgId, periodId);
+    toast.success(m.settings_periods_lock_success());
+    loadPeriods();
+  } catch (e: unknown) {
+    toast.error(extractErrorMessage(e));
   }
 }
 
@@ -100,7 +99,7 @@ function toggleCollapse(yearId: string) {
 </script>
 
 <svelte:head>
-  <title>{m.settings_cycles_window_title()} | Orbis</title>
+  <title>{m.settings_periods_window_title()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide">
@@ -109,7 +108,7 @@ function toggleCollapse(yearId: string) {
     <div class="flex items-center gap-2">
       {#if !isLoading}
         <span class="text-[10px] px-2 py-0.5 rounded bg-muted font-mono text-muted-foreground font-bold">
-          {m.settings_cycles_count({ count: cycles.length })}
+          {m.settings_periods_count({ count: periods.length })}
         </span>
       {/if}
     </div>
@@ -117,7 +116,7 @@ function toggleCollapse(yearId: string) {
     <div class="flex items-center gap-2 shrink-0 flex-nowrap">
       <Button variant="lime" class="text-xs h-9 px-4 font-semibold" onclick={openCreateSheet}>
         <Plus size={14} class="me-1.5" />
-        {m.settings_cycles_add()}
+        {m.settings_periods_add()}
       </Button>
     </div>
   </div>
@@ -159,12 +158,12 @@ function toggleCollapse(yearId: string) {
                     
                     <!-- Status Badges -->
                     {#if year.is_current === 1}
-                      <Badge variant="success" class="text-[9px] px-2 py-0 h-4.5 rounded-full font-bold">
-                        {m.settings_cycles_status_active()}
+                      <Badge variant="lime" class="text-[9px] px-2 py-0 h-4.5 rounded-full font-bold">
+                        {m.settings_periods_status_active()}
                       </Badge>
                     {:else}
                       <Badge variant="secondary" class="text-[9px] px-2 py-0 h-4.5 rounded-full font-bold">
-                        {year.is_locked === 1 ? m.settings_cycles_status_locked() : m.settings_cycles_status_inactive()}
+                        {year.is_locked === 1 ? m.settings_periods_status_locked() : m.settings_periods_status_inactive()}
                       </Badge>
                     {/if}
                     
@@ -183,7 +182,6 @@ function toggleCollapse(yearId: string) {
 
               <!-- Right Actions -->
               <div class="flex items-center gap-2 sm:justify-end">
-                <!-- Activate -->
                 {#if year.is_current !== 1 && year.is_locked !== 1}
                   <Button
                     variant="outline"
@@ -191,11 +189,10 @@ function toggleCollapse(yearId: string) {
                     onclick={() => handleActivate(year.id)}
                   >
                     <CheckCircle2 size={12} class="me-1" />
-                    {m.settings_cycles_activate()}
+                    {m.settings_periods_activate()}
                   </Button>
                 {/if}
 
-                <!-- Lock -->
                 {#if year.is_current === 1 && year.is_locked !== 1}
                   <Button
                     variant="outline"
@@ -203,11 +200,10 @@ function toggleCollapse(yearId: string) {
                     onclick={() => handleLock(year.id)}
                   >
                     <LockIcon size={12} class="me-1" />
-                    {m.settings_cycles_lock()}
+                    {m.settings_periods_lock()}
                   </Button>
                 {/if}
 
-                <!-- Edit -->
                 <Button
                   variant="outline"
                   class="text-[10px] h-7 px-2.5 font-semibold text-foreground"
@@ -219,12 +215,12 @@ function toggleCollapse(yearId: string) {
               </div>
             </div>
 
-            <!-- Nested Terms (shown if not collapsed and there are child terms) -->
+            <!-- Nested Terms -->
             {#if !isCollapsed}
-              <div class="pl-8 pr-4 py-2 flex flex-col gap-2 transition-all duration-200">
+              <div class="ps-8 pe-4 py-2 flex flex-col gap-2 transition-all duration-200">
                 {#if childTerms.length === 0}
                   <div class="text-[10px] text-muted-foreground/60 py-3 text-start select-none">
-                    No academic terms registered for this year.
+                    {m.settings_periods_no_terms()}
                   </div>
                 {:else}
                   {#each childTerms as term (term.id)}
@@ -236,12 +232,12 @@ function toggleCollapse(yearId: string) {
                           </span>
                           
                           {#if term.is_current === 1}
-                            <Badge variant="success" class="text-[8px] px-1.5 py-0 h-4 rounded font-bold">
-                              Active
+                            <Badge variant="lime" class="text-[8px] px-1.5 py-0 h-4 rounded font-bold">
+                              {m.settings_periods_status_active()}
                             </Badge>
                           {:else if term.is_locked === 1}
                             <Badge variant="destructive" class="text-[8px] px-1.5 py-0 h-4 rounded font-bold">
-                              Locked
+                              {m.settings_periods_status_locked()}
                             </Badge>
                           {/if}
 
@@ -263,7 +259,7 @@ function toggleCollapse(yearId: string) {
                             class="text-[9px] h-6 px-2 text-emerald-500 hover:bg-emerald-500/5"
                             onclick={() => handleActivate(term.id)}
                           >
-                            Activate
+                            {m.settings_periods_activate()}
                           </Button>
                         {/if}
                         {#if term.is_current === 1 && term.is_locked !== 1}
@@ -272,7 +268,7 @@ function toggleCollapse(yearId: string) {
                             class="text-[9px] h-6 px-2 text-rose-500 hover:bg-rose-500/5"
                             onclick={() => handleLock(term.id)}
                           >
-                            Lock
+                            {m.settings_periods_lock()}
                           </Button>
                         {/if}
                         
@@ -281,7 +277,7 @@ function toggleCollapse(yearId: string) {
                           class="text-[9px] h-6 px-2"
                           onclick={() => openEditSheet(term)}
                         >
-                          Edit
+                          {m.templates_action_edit()}
                         </Button>
                       </div>
                     </div>
@@ -296,9 +292,9 @@ function toggleCollapse(yearId: string) {
 </div>
 
 <!-- Sheets -->
-<CycleCreateSheet
+<PeriodCreateSheet
   bind:open={isSheetOpen}
   orgId={data.orgId}
-  cycle={editingCycle}
-  onSuccess={loadCycles}
+  period={editingPeriod}
+  onSuccess={loadPeriods}
 />

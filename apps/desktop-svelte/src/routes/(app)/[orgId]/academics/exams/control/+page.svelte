@@ -26,7 +26,7 @@ const orgId = $derived(data?.orgId || "");
 let cycles = $derived(academicContext.allCycles);
 let classes = $state<any[]>([]);
 let subjects = $state<any[]>([]);
-let selectedCycleId = $state<string>("");
+let selectedPeriodId = $state<string>("");
 let selectedClassId = $state<string>("");
 let selectedSubjectId = $state<string>("");
 let isLoading = $state(true);
@@ -38,8 +38,8 @@ let gridSource = $state<Record<string, unknown>[]>([]);
 let assessmentKeys = $state<string[]>([]);
 
 onMount(() => {
-  if (academicContext.effectiveCycleId)
-    selectedCycleId = academicContext.effectiveCycleId;
+  if (academicContext.effectivePeriodId)
+    selectedPeriodId = academicContext.effectivePeriodId;
   if (academicContext.selectedClassId)
     selectedClassId = academicContext.selectedClassId;
   if (academicContext.selectedSubjectId)
@@ -47,7 +47,7 @@ onMount(() => {
 });
 
 $effect(() => {
-  if (selectedCycleId) academicContext.selectedCycleId = selectedCycleId;
+  if (selectedPeriodId) academicContext.selectedPeriodId = selectedPeriodId;
 });
 $effect(() => {
   if (selectedClassId) academicContext.selectedClassId = selectedClassId;
@@ -56,18 +56,18 @@ $effect(() => {
   if (selectedSubjectId) academicContext.selectedSubjectId = selectedSubjectId;
 });
 
-let selectedCycle = $derived(
-  cycles.find((c) => String(c.id) === selectedCycleId),
+let selectedPeriod = $derived(
+  cycles.find((c) => String(c.id) === selectedPeriodId),
 );
-let isCycleLocked = $derived(
-  selectedCycle?.is_locked === true || selectedCycle?.is_locked === 1,
+let isPeriodLocked = $derived(
+  selectedPeriod?.is_locked === true || selectedPeriod?.is_locked === 1,
 );
 let isGradeEntryOpen = $derived(
-  selectedCycle?.is_grade_entry_open === true ||
-    selectedCycle?.is_grade_entry_open === 1,
+  selectedPeriod?.is_grade_entry_open === true ||
+    selectedPeriod?.is_grade_entry_open === 1,
 );
 let canEnterGrades = $derived(
-  !isCycleLocked && isGradeEntryOpen && !academicContext.isReadOnly,
+  !isPeriodLocked && isGradeEntryOpen && !academicContext.isReadOnly,
 );
 
 let gridColumns = $derived.by(() => {
@@ -97,9 +97,9 @@ async function loadInitialData() {
     classes = classList;
     subjects = subjectList;
 
-    // If no cycle selected yet, use context's effective cycle
-    if (!selectedCycleId && academicContext.effectiveCycleId) {
-      selectedCycleId = academicContext.effectiveCycleId;
+    // If no period selected yet, use context's effective period
+    if (!selectedPeriodId && academicContext.effectivePeriodId) {
+      selectedPeriodId = academicContext.effectivePeriodId;
     }
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e));
@@ -117,7 +117,7 @@ $effect(() => {
 
 // ── Grade Matrix ───────────────────────────────────────────────────────────
 async function loadGradeMatrix() {
-  if (!selectedCycleId || !selectedClassId || !selectedSubjectId) return;
+  if (!selectedPeriodId || !selectedClassId || !selectedSubjectId) return;
   isMatrixLoading = true;
   matrixData = null as any;
   gridSource = [];
@@ -125,7 +125,7 @@ async function loadGradeMatrix() {
   try {
     const result = (await commands.grades.getGradeMatrix(
       orgId,
-      selectedCycleId,
+      selectedPeriodId,
       selectedClassId,
       selectedSubjectId,
     )) as unknown as GradeMatrixResponse;
@@ -148,7 +148,7 @@ async function loadGradeMatrix() {
 }
 
 $effect(() => {
-  if (selectedCycleId && selectedClassId && selectedSubjectId) {
+  if (selectedPeriodId && selectedClassId && selectedSubjectId) {
     loadGradeMatrix();
   }
 });
@@ -198,7 +198,7 @@ async function handleSaveAll() {
     }
 
     const request = {
-      cycle_id: selectedCycleId,
+      period_id: selectedPeriodId,
       class_id: selectedClassId,
       subject_id: selectedSubjectId,
       subject_name: sub?.name || "",
@@ -304,7 +304,7 @@ onMount(() => {
       {isSaving}
       {isDirty}
       {canEnterGrades}
-      {selectedCycleId}
+      {selectedPeriodId}
       onRefresh={loadGradeMatrix}
       onSaveAll={handleSaveAll}
       onCellEdit={handleCellEdit}

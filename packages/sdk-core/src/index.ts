@@ -16,7 +16,7 @@
 // ── Types ───────────────────────────────────────────────────────
 export type * from "./types/index";
 export {
-  type AcademicCycle, type Class, type Enrollment, type Subject,
+  type AcademicPeriod, type AcademicCycle, type Class, type Enrollment, type Subject,
   type OrgUnit, type ClassSubject, type StudentGuardian, type Document,
   type Notification, type Organization,
 } from "./types/academic";
