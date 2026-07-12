@@ -57,8 +57,9 @@ pub async fn get_setup_status(state: State<'_, Arc<AppState>>, org_id: String) -
 }
 
 #[tauri::command]
-pub async fn initialize_school_setup(_state: State<'_, Arc<AppState>>, _org_id: String, _payload: serde_json::Value) -> CmdResult<()> {
-    Ok(())
+pub async fn initialize_school_setup(state: State<'_, Arc<AppState>>, org_id: String, payload: serde_json::Value) -> CmdResult<()> {
+    let ctx = state.build_context(&org_id).await.map_err(CommandError::from)?;
+    ops::organization::initialize_school_setup(&ctx, payload).await.map_err(CommandError::from)
 }
 
 // ── Academic Years ──────────────────────────────────────────────────

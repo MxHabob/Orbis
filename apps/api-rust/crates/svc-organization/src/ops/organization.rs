@@ -283,3 +283,186 @@ pub async fn check_setup(ctx: &ServiceContext) -> Result<serde_json::Value, AppE
         "step": if is_complete { "completed" } else { "onboarding" }
     }))
 }
+
+pub async fn initialize_school_setup(ctx: &ServiceContext, payload: serde_json::Value) -> Result<(), AppError> {
+    use sea_orm::{ConnectionTrait, TransactionTrait, Statement, DatabaseBackend};
+    
+    let txn = ctx.db.begin().await?;
+
+    let org_name = payload.get("org_name").and_then(|v| v.as_str()).unwrap_or("Organization");
+    let org_name_ar = payload.get("org_name_ar").and_then(|v| v.as_str()).unwrap_or(org_name);
+    let currency = payload.get("currency").and_then(|v| v.as_str()).unwrap_or("YER");
+    
+    // 1. Update Organization
+    txn.execute(Statement::from_string(
+        DatabaseBackend::Sqlite,
+        format!(
+            "UPDATE organizations SET name = '{}', name_ar = '{}', currency = '{}', setup_completed = 1 WHERE id = '{}';",
+            org_name.replace("'", "''"), org_name_ar.replace("'", "''"), currency.replace("'", "''"), ctx.org_id.replace("'", "''")
+        )
+    )).await?;
+
+    // 2. Insert Root Unit
+    let root_unit_id = payload.get("root_unit_id").and_then(|v| v.as_str()).unwrap_or_else(|| "unit-default");
+    let root_name = payload.get("root_unit_name").and_then(|v| v.as_str()).unwrap_or("Main Unit");
+    let root_name_ar = payload.get("root_unit_name_ar").and_then(|v| v.as_str()).unwrap_or(root_name);
+    
+    txn.execute(Statement::from_string(
+        DatabaseBackend::Sqlite,
+        format!(
+            "INSERT INTO org_units (id, org_id, name, name_ar, type_code, status) VALUES ('{}', '{}', '{}', '{}', 'root', 'active') ON CONFLICT DO NOTHING;",
+            root_unit_id.replace("'", "''"), ctx.org_id.replace("'", "''"), root_name.replace("'", "''"), root_name_ar.replace("'", "''")
+        )
+    )).await?;
+
+    let mut year_id_val = String::from("default-year");
+
+    // 3. Insert periods
+    if let Some(periods) = payload.get("periods").and_then(|v| v.as_array()) {
+        for p in periods {
+            let id = p.get("id").and_then(|v| v.as_str()).unwrap_or("");
+            let parent_id = p.get("parent_id").and_then(|v| v.as_str());
+            let name = p.get("name").and_then(|v| v.as_str()).unwrap_or("");
+            let name_ar = p.get("name_ar").and_then(|v| v.as_str()).unwrap_or(name);
+            let start_date = p.get("start_date").and_then(|v| v.as_str()).unwrap_or("2026-01-01");
+            let end_date = p.get("end_date").and_then(|v| v.as_str()).unwrap_or("2026-12-31");
+            let ptype = p.get("period_type").and_then(|v| v.as_str()).unwrap_or("term");
+
+            if ptype == "year" {
+                year_id_val = id.to_string();
+                txn.execute(Statement::from_string(
+                    DatabaseBackend::Sqlite,
+                    format!(
+                        "INSERT INTO academic_years (id, org_id, name, name_ar, start_date, end_date, status) VALUES ('{}', '{}', '{}', '{}', '{}', '{}', 'active') ON CONFLICT DO NOTHING;",
+                        id.replace("'", "''"), ctx.org_id.replace("'", "''"), name.replace("'", "''"), name_ar.replace("'", "''"), start_date, end_date
+                    )
+                )).await?;
+            } else {
+                let mapped_ptype = if ptype == "term" { "semester" } else { "custom" };
+                let parent_val = if let Some(pid) = parent_id { format!("'{}'", pid.replace("'", "''")) } else { "NULL".to_string() };
+                txn.execute(Statement::from_string(
+                    DatabaseBackend::Sqlite,
+                    format!(
+                        "INSERT INTO academic_periods (id, org_id, year_id, parent_id, name, name_ar, period_type, start_date, end_date) VALUES ('{}', '{}', '{}', {}, '{}', '{}', '{}', '{}', '{}') ON CONFLICT DO NOTHING;",
+                        id.replace("'", "''"), ctx.org_id.replace("'", "''"), year_id_val.replace("'", "''"), parent_val, name.replace("'", "''"), name_ar.replace("'", "''"), mapped_ptype, start_date, end_date
+                    )
+                )).await?;
+            }
+        }
+    }
+
+    // 4. Insert classes
+    if let Some(classes) = payload.get("classes").and_then(|v| v.as_array()) {
+        for c in classes {
+            let id = c.get("id").and_then(|v| v.as_str()).unwrap_or("");
+            let name = c.get("name").and_then(|v| v.as_str()).unwrap_or("");
+            let name_ar = c.get("name_ar").and_then(|v| v.as_str()).unwrap_or(name);
+            let level = c.get("level").and_then(|v| v.as_str()).unwrap_or("grade1");
+            let div = c.get("division").and_then(|v| v.as_str()).unwrap_or("A");
+            txn.execute(Statement::from_string(
+                DatabaseBackend::Sqlite,
+                format!(
+                    "INSERT INTO classes (id, org_id, year_id, unit_id, name, name_ar, level, division, capacity, status) VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', 30, 'active') ON CONFLICT DO NOTHING;",
+                    id.replace("'", "''"), ctx.org_id.replace("'", "''"), year_id_val.replace("'", "''"), root_unit_id.replace("'", "''"), name.replace("'", "''"), name_ar.replace("'", "''"), level.replace("'", "''"), div.replace("'", "''")
+                )
+            )).await?;
+        }
+    }
+
+    // 5. Insert subjects
+    if let Some(subjects) = payload.get("subjects").and_then(|v| v.as_array()) {
+        for s in subjects {
+            let id = s.get("id").and_then(|v| v.as_str()).unwrap_or("");
+            let name = s.get("name").and_then(|v| v.as_str()).unwrap_or("");
+            let name_ar = s.get("name_ar").and_then(|v| v.as_str()).unwrap_or(name);
+            let code = s.get("code").and_then(|v| v.as_str()).unwrap_or("");
+            txn.execute(Statement::from_string(
+                DatabaseBackend::Sqlite,
+                format!(
+                    "INSERT INTO subjects (id, org_id, unit_id, code, name, name_ar, is_core, status) VALUES ('{}', '{}', '{}', '{}', '{}', '{}', 1, 'active') ON CONFLICT DO NOTHING;",
+                    id.replace("'", "''"), ctx.org_id.replace("'", "''"), root_unit_id.replace("'", "''"), code.replace("'", "''"), name.replace("'", "''"), name_ar.replace("'", "''")
+                )
+            )).await?;
+        }
+    }
+
+    // 6. Insert time_slots
+    if let Some(slots) = payload.get("time_slots").and_then(|v| v.as_array()) {
+        for (i, s) in slots.iter().enumerate() {
+            let name = s.get("name").and_then(|v| v.as_str()).unwrap_or("");
+            let name_ar = s.get("name_ar").and_then(|v| v.as_str()).unwrap_or(name);
+            let start = s.get("start_time").and_then(|v| v.as_str()).unwrap_or("08:00");
+            let end = s.get("end_time").and_then(|v| v.as_str()).unwrap_or("09:00");
+            let id = format!("ts-{}-{}", ctx.org_id, i);
+            txn.execute(Statement::from_string(
+                DatabaseBackend::Sqlite,
+                format!(
+                    "INSERT INTO time_slots (id, org_id, year_id, slot_number, name, name_ar, start_time, end_time, duration_minutes, is_break) VALUES ('{}', '{}', '{}', {}, '{}', '{}', '{}', '{}', 45, 0) ON CONFLICT DO NOTHING;",
+                    id.replace("'", "''"), ctx.org_id.replace("'", "''"), year_id_val.replace("'", "''"), i+1, name.replace("'", "''"), name_ar.replace("'", "''"), start.replace("'", "''"), end.replace("'", "''")
+                )
+            )).await?;
+        }
+    }
+
+    // 7. Insert rooms
+    if let Some(rooms) = payload.get("rooms").and_then(|v| v.as_array()) {
+        for r in rooms {
+            let id = r.get("id").and_then(|v| v.as_str()).unwrap_or("");
+            let name = r.get("name").and_then(|v| v.as_str()).unwrap_or("");
+            let name_ar = r.get("name_ar").and_then(|v| v.as_str()).unwrap_or(name);
+            txn.execute(Statement::from_string(
+                DatabaseBackend::Sqlite,
+                format!(
+                    "INSERT INTO rooms (id, org_id, name, name_ar, capacity, room_type, is_active, created_at) VALUES ('{}', '{}', '{}', '{}', 30, 'classroom', 1, '{}') ON CONFLICT DO NOTHING;",
+                    id.replace("'", "''"), ctx.org_id.replace("'", "''"), name.replace("'", "''"), name_ar.replace("'", "''"), chrono::Utc::now().to_rfc3339()
+                )
+            )).await?;
+        }
+    }
+
+    // 8. Fiscal Year and Fiscal Periods (Default)
+    let current_year = chrono::Utc::now().format("%Y").to_string();
+    let created_at = chrono::Utc::now().to_rfc3339();
+    let fy_id = format!("{}-fy", ctx.org_id);
+    txn.execute(Statement::from_string(
+        DatabaseBackend::Sqlite,
+        format!(
+            "INSERT INTO fiscal_years (id, org_id, name, start_date, end_date, status, created_at, updated_at) VALUES ('{}', '{}', '{}', '{}-01-01', '{}-12-31', 'open', '{}', '{}') ON CONFLICT DO NOTHING;",
+            fy_id, ctx.org_id, current_year, current_year, current_year, created_at, created_at
+        )
+    )).await?;
+
+    for month in 1..=12 {
+        let fp_id = format!("{}-fp-{:02}", ctx.org_id, month);
+        let name = format!("Month {}", month);
+        let start_date = format!("{}-{:02}-01", current_year, month);
+        let end_day = match month {
+            4 | 6 | 9 | 11 => 30,
+            2 => 28,
+            _ => 31,
+        };
+        let end_date = format!("{}-{:02}-{:02}", current_year, month, end_day);
+        
+        txn.execute(Statement::from_string(
+            DatabaseBackend::Sqlite,
+            format!(
+                "INSERT INTO fiscal_periods (id, org_id, fiscal_year_id, name, start_date, end_date, status, created_at, updated_at) VALUES ('{}', '{}', '{}', '{}', '{}', '{}', 'open', '{}', '{}') ON CONFLICT DO NOTHING;",
+                fp_id, ctx.org_id, fy_id, name, start_date, end_date, created_at, created_at
+            )
+        )).await?;
+    }
+
+    // 9. Default Chart of Accounts
+    let acc_id = format!("{}-acc-main-cash", ctx.org_id);
+    txn.execute(Statement::from_string(
+        DatabaseBackend::Sqlite,
+        format!(
+            "INSERT INTO accounts (id, org_id, code, name, name_ar, type_code, balance_type, category_code, is_active, allow_manual_entries, currency, balances) VALUES ('{}', '{}', '1101', 'Main Cash', 'الصندوق الرئيسي / الخزينة', 'asset', 'debit', 'cash', 1, 1, '{}', '{{}}') ON CONFLICT DO NOTHING;",
+            acc_id, ctx.org_id, currency.replace("'", "''")
+        )
+    )).await?;
+
+    txn.commit().await?;
+    
+    Ok(())
+}

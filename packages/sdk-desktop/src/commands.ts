@@ -393,6 +393,7 @@ export const commands: OrbisCommands = {
     isYearArchived: (yearId) => cmd("is_year_archived", { yearId }),
     getAcademicContext: (orgId) => cmd("get_academic_context", { orgId }),
     getSetupStatus: (orgId) => cmd("get_setup_status", { orgId }),
+    initializeSchoolSetup: (orgId, payload) => cmd("initialize_school_setup", { orgId, payload }),
 
     // Promotion
     listPromotionJobs: (orgId) => cmd("get_promotion_jobs", { orgId }),

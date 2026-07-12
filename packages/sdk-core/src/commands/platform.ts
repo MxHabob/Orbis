@@ -17,6 +17,7 @@ export interface PlatformCommands {
   isYearArchived(yearId: string): Promise<boolean>;
   getAcademicContext(orgId: string): Promise<AcademicContextResponse>;
   getSetupStatus(orgId: string): Promise<boolean>;
+  initializeSchoolSetup(orgId: string, payload: any): Promise<void>;
 
   // ── Promotion ─────────────────────────────────────────────────
   listPromotionJobs(orgId: string): Promise<PromotionJob[]>;
